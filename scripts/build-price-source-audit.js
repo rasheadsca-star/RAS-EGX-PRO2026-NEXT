@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /*
-  EGX Pro Hub V8.9.8 — Price Source Audit
+  EGX Pro Hub V11.2 — Price Source Audit synced with Price Truth Layer
   Purpose: expose price source / precision / execution block reasons so the UI can explain
-  why a symbol was accepted, blocked, or downgraded. No manual data, no cache reset.
+  why a symbol price was accepted, blocked, or downgraded. No manual data, no cache reset. Final investment blocking remains in unified-decision-board.
 */
 const fs = require('fs');
 const path = require('path');
@@ -41,20 +41,28 @@ function sourceLabel(r){
   if(r?.verified===true||r?.isExecutionSafe===true)return 'verified';
   return s || 'unknown';
 }
-function stateOf(price, row={}, finalRow={}, signalRow={}){
-  const precisionRisk = Boolean(row.precisionRisk || finalRow.precisionRisk || signalRow.precisionRisk || subPoundPrecisionRisk(price,row));
-  const conflict = Boolean(row.hasConflict || row.priceConflict || finalRow.priceState==='conflict' || signalRow.blocks?.includes?.('price_mismatch'));
-  const stale = Boolean(row.isStale || row.stale || finalRow.priceState==='stale' || signalRow.blocks?.includes?.('stale_price'));
-  const blockedByFinal = String(finalRow.grade||finalRow.classification||'').toLowerCase()==='blocked';
-  const executionAllowed = !precisionRisk && !conflict && !stale && !blockedByFinal;
+function stateOf(price, row={}, finalRow={}, signalRow={}, truthRow={}){
+  if(truthRow && truthRow.symbol){
+    const precisionRisk = Boolean(truthRow.precisionRisk);
+    const conflict = Boolean(truthRow.conflictAmongFreshSources || truthRow.priceTruthState==='CONFLICT');
+    const stale = Boolean(truthRow.staleOnly || truthRow.priceTruthState==='STALE');
+    const executionAllowed = Boolean(truthRow.executionPriceOk);
+    const reasons = Array.isArray(truthRow.reasons) ? truthRow.reasons.slice() : [];
+    if(!executionAllowed && !reasons.length) reasons.push('السعر غير صالح حسب Price Truth Layer');
+    return {precisionRisk, conflict, stale, executionAllowed, reasons};
+  }
+  const precisionRisk = Boolean(row.precisionRisk || subPoundPrecisionRisk(price,row));
+  const conflict = Boolean(row.hasConflict || row.priceConflict);
+  const stale = Boolean(row.isStale || row.stale);
+  const executionAllowed = !precisionRisk && !conflict && !stale;
   const reasons=[];
   if(precisionRisk)reasons.push('دقة السعر غير كافية للتنفيذ');
-  if(conflict)reasons.push('تعارض بين مصادر السعر');
+  if(conflict)reasons.push('تعارض بين مصادر السعر الحديثة');
   if(stale)reasons.push('السعر قديم أو يحتاج تحديث');
-  if(blockedByFinal && !reasons.length)reasons.push(finalRow.executionBlockReason || 'محجوب من محرك الترتيب النهائي');
   return {precisionRisk,conflict,stale,executionAllowed,reasons};
 }
 const priceRec=readJson('data/price-reconciliation-report.json',{});
+const priceTruth=readJson('data/price-truth-layer.json',{});
 const market=readJson('data/market.json',{});
 const cache=readJson('data/full-market-cache.json',{});
 const recs=readJson('data/recommendations.json',{});
@@ -65,14 +73,15 @@ const map=new Map();
 function add(rows,tag){for(const r of rows||[]){const s=symOf(r);if(!s)continue;if(!map.has(s))map.set(s,{symbol:s,seenIn:[]});Object.assign(map.get(s),r);map.get(s).seenIn.push(tag);}}
 add(arr(cache,['rows']),'cache'); add(arr(market,['rows']),'market'); add(arr(recs,['all','rows']),'recommendations');
 const priceMap=new Map(arr(priceRec,['rows','symbols']).map(r=>[symOf(r),r]));
+const truthMap=new Map(arr(priceTruth,['rows']).map(r=>[symOf(r),r]));
 const finalMap=new Map(arr(finalRanking,['rows']).map(r=>[symOf(r),r]));
 const signalMap=new Map(arr(signalQuality,['rows']).map(r=>[symOf(r),r]));
 const rows=[];
 for(const [symbol,base] of map.entries()){
-  const pr=priceMap.get(symbol)||{}; const fr=finalMap.get(symbol)||{}; const sq=signalMap.get(symbol)||{};
-  const price=priceOf(pr)||priceOf(base)||priceOf(fr)||priceOf(sq); if(!price)continue;
-  const dec=inferredDecimals(price, {...base,...pr});
-  const state=stateOf(price, {...base,...pr}, fr, sq);
+  const pr=priceMap.get(symbol)||{}; const fr=finalMap.get(symbol)||{}; const sq=signalMap.get(symbol)||{}; const tr=truthMap.get(symbol)||{};
+  const price=priceOf(tr)||priceOf(pr)||priceOf(base)||priceOf(fr)||priceOf(sq); if(!price)continue;
+  const dec=inferredDecimals(price, {...base,...pr,...tr});
+  const state=stateOf(price, {...base,...pr}, fr, sq, tr);
   const src=sourceLabel({...base,...pr});
   const pricePrecision = price>0 && price<1 ? `${dec}/3` : `${dec}/2`;
   const executionState = state.executionAllowed ? 'allowed' : 'blocked';
@@ -82,7 +91,7 @@ for(const [symbol,base] of map.entries()){
     price,
     priceDisplay: price>0&&price<1 ? Number(price).toFixed(3) : Number(price).toFixed(2),
     source: src,
-    sourceUsed: pr.sourceUsed||pr.sourceName||base.sourceUsed||base.sourceName||src,
+    sourceUsed: tr.selectedSource||pr.sourceUsed||pr.sourceName||base.sourceUsed||base.sourceName||src,
     pricePrecision,
     decimals: dec,
     precisionRisk: state.precisionRisk,
@@ -94,7 +103,7 @@ for(const [symbol,base] of map.entries()){
     finalGrade: fr.grade||fr.classification||sq.grade||'',
     finalScore: fr.finalScore??sq.compositeScore??null,
     sourceTags: Array.from(new Set(base.seenIn||[])),
-    updatedAt: pr.generatedAt||pr.updatedAt||base.updatedAt||base.cacheUpdatedAt||null
+    updatedAt: tr.selectedTimestamp||pr.generatedAt||pr.updatedAt||base.updatedAt||base.cacheUpdatedAt||null
   });
 }
 rows.sort((a,b)=> Number(a.executionAllowed)-Number(b.executionAllowed) || Number(b.precisionRisk)-Number(a.precisionRisk) || String(a.symbol).localeCompare(String(b.symbol)) );
@@ -110,5 +119,5 @@ const summary={
   sourceCoveragePct: total ? Math.round((rows.filter(r=>r.source&&r.source!=='unknown').length/total)*1000)/10 : 0,
   marketCoveragePct: num(sourceHealth.universeCoveragePct ?? sourceHealth.coveragePct ?? sourceHealth.coverage, 0)
 };
-writeJson('data/price-source-audit.json',{ok:true,engine:'v8_9_8_price_source_audit',generatedAt:new Date().toISOString(),summary,rows,note:'Execution gate: any sub-1 EGP price without verified 0.001 precision is blocked from executable recommendations.'});
+writeJson('data/price-source-audit.json',{ok:true,engine:'v11_2_price_source_audit_synced_with_price_truth',generatedAt:new Date().toISOString(),summary,rows,note:'V11.2: price audit is synced with Price Truth Layer. Final BUY permission still depends on unified-decision-board gates: history, liquidity, plan, and risk/reward.'});
 console.log('Price source audit generated', summary);

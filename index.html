@@ -5198,8 +5198,8 @@ function renderRecommendationValidationPanel(){
       return `${header('محفظتي وربطها بالقرار','اربط مراكزك الحالية بقرار V11: احتفاظ، تخفيف، مراقبة، أو منع تنفيذ.')}${quickJump()}<section class="v11-grid">${V.card('عدد المراكز',V.f0(rows.length),'من الإدخال اليدوي','info')}${V.card('القيمة التقريبية',V.f0(value),'حسب السعر المقروء','info')}${V.card('مراكز محجوبة',V.f0(rows.filter(x=>x.decision?.finalDecision==='BLOCKED').length),'تحتاج مراجعة','bad')}${V.card('مراقبة/انتظار',V.f0(rows.filter(x=>['WATCH','BUY_TOMORROW_CONDITIONAL'].includes(x.decision?.finalDecision)).length),'لا تنفيذ تلقائي','warn')}</section><div class="v11-main"><div class="panel v11-portfolio"><h3>إدخال المحفظة</h3><textarea id="v11PortfolioText" placeholder="COMI,5000,77.50">${V.e(txt)}</textarea><div class="v11-actions" style="margin-top:8px"><button class="btn primary" id="v11SavePortfolio">حفظ وربط القرار</button></div></div><div class="panel"><h3>قاعدة المحفظة</h3><div class="v11-note">القرار هنا لا يضيف شراء جديد تلقائيًا؛ إذا كان السهم محجوبًا تظهر الأولوية للمراجعة أو تخفيف المخاطر حسب مركزك.</div></div></div><section class="panel" style="margin-top:12px"><h3>ربط المراكز بقرار V11</h3><div class="tablewrap"><table class="v11-table"><thead><tr><th>السهم</th><th>كمية</th><th>متوسط</th><th>سعر حالي</th><th>قرار V11</th><th>إجراء محفظة</th><th>سبب</th></tr></thead><tbody>${rows.map(x=>{const d=x.decision;const action=!d?'غير موجود بالبيانات':d.finalDecision==='BLOCKED'?'مراجعة/تخفيف مخاطرة':d.finalDecision==='NO_TRADE'?'عدم زيادة المركز':d.finalDecision==='WATCH'?'احتفاظ ومراقبة':d.finalDecision==='BUY_TOMORROW_CONDITIONAL'?'زيادة مشروطة فقط':'مراجعة مضاربة منفصلة';return `<tr><td><b>${V.e(x.symbol)}</b></td><td>${V.f0(x.qty)}</td><td>${V.f(x.avg)}</td><td>${V.f(d?.price)}</td><td>${d?V.badge(d.finalDecision):'-'}</td><td><b>${V.e(action)}</b></td><td>${V.e(d?.why||'لا توجد بيانات كافية')}</td></tr>`}).join('')||'<tr><td colspan="7" class="muted">أدخل المحفظة أولًا.</td></tr>'}</tbody></table></div></section>`;
     }
     function renderV11Health(){
-      const s=V.summary(), g=EGX.unifiedDecisionBoard?.gateway||{}, h=EGX.historyIntegrity||{}, pr=EGX.priceReconciliation?.summary||{}, sc=EGX.sectorCompletion||{};
-      return `${header('صحة البيانات قبل التوصية','هذه الشاشة تظهر هل البيانات تصلح للتنفيذ أم للمراقبة فقط قبل أي قرار شراء.')}${quickJump()}<section class="v11-grid">${V.card('التغطية',`${V.f0(g.coveragePct||EGX.source?.coveragePct||EGX.source?.reliableCoveragePct||0)}%`,`صفوف السوق ${V.f0(g.marketRows||EGX.market?.rows?.length||0)}`,'info')}${V.card('تعارض أسعار',V.f0(s.priceConflicts||pr.conflict||0),'أي تعارض يمنع الشراء','bad')}${V.card('تاريخ ≥20 جلسة',V.f0(s.historyEnoughForExecution||0),'الحد الأدنى للتنفيذ','warn')}${V.card('قطاعات غير مصنفة',V.f0(s.unknownSector??sc.unclassifiedSymbols??0),'تخصم من الثقة','warn')}</section><div class="v11-main"><div class="panel"><h3>حكم صلاحية التنفيذ</h3><div class="v11-note ${(s.executionAllowed||0)>0?'good':'warn'}"><b>${V.e(s.executionReadiness||'WATCH_ONLY_NO_EXECUTION')}</b><br>${V.e(s.conclusion||'')}</div><div class="v11-metrics">${V.metric('آخر بناء',EGX.unifiedDecisionBoard?.generatedAt?new Date(EGX.unifiedDecisionBoard.generatedAt).toLocaleString('en-GB'):'-')}${V.metric('مصدر البيانات','Public Delayed')}${V.metric('Fallback',g.fallbackUsed||g.lastGoodSnapshotUsed?'نعم':'لا')}${V.metric('متوسط التاريخ',`${V.f0(h.avgSessions||0)}/50`)}${V.metric('50 جلسة كاملة',V.f0(s.fullHistory50||h.full50Symbols||0))}</div></div><div class="panel"><h3>أسباب المنع الأعلى</h3>${Object.entries(s.blockedByReason||{}).slice(0,10).map(([k,v])=>`<div class="ministat"><span>${V.e(k)}</span><b>${V.f0(v)}</b></div>`).join('')||'<div class="muted">لا توجد.</div>'}</div></div>`;
+      const s=V.summary(), g=EGX.unifiedDecisionBoard?.gateway||{}, h=EGX.historyTrustRecovery?.summary||EGX.historyIntegrity?.summary||{}, pr=EGX.priceReconciliation?.summary||{}, pt=EGX.priceTruthLayer?.summary||{}, sc=EGX.sectorCompletion?.summary||EGX.sectorCompletion||{};
+      return `${header('صحة البيانات قبل التوصية','هذه الشاشة تظهر هل البيانات تصلح للتنفيذ أم للمراقبة فقط قبل أي قرار شراء.')}${quickJump()}<section class="v11-grid">${V.card('التغطية',`${V.f0(pt.reliableCoveragePct ?? g.coveragePct ?? EGX.source?.coveragePct ?? EGX.source?.reliableCoveragePct ?? 0)}%`,`صفوف السوق ${V.f0(g.marketRows||EGX.market?.rows?.length||0)}`,'info')}${V.card('تعارض أسعار حقيقية',V.f0(s.priceConflicts ?? pt.conflict ?? pr.conflict ?? 0),'بعد تجاهل الكاش القديم','bad')}${V.card('تاريخ ≥20 جلسة',V.f0(s.historyEnoughForExecution||0),'الحد الأدنى للتنفيذ','warn')}${V.card('قطاعات غير مصنفة',V.f0(s.unknownSector??sc.unclassifiedSymbols??0),'تخصم من الثقة','warn')}</section><div class="v11-main"><div class="panel"><h3>حكم صلاحية التنفيذ</h3><div class="v11-note ${(s.executionAllowed||0)>0?'good':'warn'}"><b>${V.e(s.executionReadiness||'WATCH_ONLY_NO_EXECUTION')}</b><br>${V.e(s.conclusion||'')}</div><div class="v11-metrics">${V.metric('آخر بناء',EGX.unifiedDecisionBoard?.generatedAt?new Date(EGX.unifiedDecisionBoard.generatedAt).toLocaleString('en-GB'):'-')}${V.metric('مصدر البيانات','Public Delayed + Price Truth')}${V.metric('Fallback',g.fallbackUsed||g.lastGoodSnapshotUsed?'نعم':'لا')}${V.metric('متوسط التاريخ',`${V.f0(h.avgSessions||0)}/50`)}${V.metric('50 جلسة كاملة',V.f0(s.fullHistory50 ?? h.full50Symbols ?? 0))}${V.metric('تعارضات Cache متجاهلة',V.f0(pt.staleComparisonsIgnored ?? pr.staleComparisonsIgnored ?? 0))}</div></div><div class="panel"><h3>أسباب المنع الأعلى</h3>${Object.entries(s.blockedByReason||{}).slice(0,10).map(([k,v])=>`<div class="ministat"><span>${V.e(k)}</span><b>${V.f0(v)}</b></div>`).join('')||'<div class="muted">لا توجد.</div>'}</div></div>`;
     }
     function renderV11Performance(){
       const p=EGX.recommendationPerformanceIndex||{}, sm=p.summary||{};
@@ -5274,7 +5274,7 @@ function renderRecommendationValidationPanel(){
       return `${header('رفع الثقة V11.1','رفع الثقة يتم عبر سعر موثوق، تاريخ حقيقي، سيولة، خطة صحيحة، وسجل Paper Trading — بدون أي مدخلات غير عامة أو بيانات وهمية.')}${quickJump()}
       <section class="v11-grid">
         ${card('تغطية سعر موثوق',`${F(pt.reliableCoveragePct||m.priceReliableCoveragePct||0,1)}%`,'Price Truth Layer','info')}
-        ${card('تعارضات حقيقية',F(pt.conflict||0),'بعد تجاهل Cache القديم','bad')}
+        ${card('تعارضات حقيقية',F(pt.conflict ?? 0),'بعد تجاهل Cache القديم','bad')}
         ${card('تاريخ 50 جلسة',F(h.ready50||0),'هدف التشغيل 80% من السوق','warn')}
         ${card('خطط صالحة',F(tp.valid||0),'الهدف/الوقف/الدخول منضبط','good')}
       </section>
@@ -5308,6 +5308,65 @@ function renderRecommendationValidationPanel(){
     };
     setTimeout(loadV111,1600);
   }catch(e){console.warn('V11.1 Trust Lift UI skipped',e)}
+})();
+
+
+/* ===================== V11.3 Historical Backfill Recovery UI ===================== */
+(function v113HistoricalRecoveryUI(){
+  try{
+    const E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const N=(v,d=0)=>{const n=Number(String(v??'').replace(/[,%٬،]/g,''));return Number.isFinite(n)?n:d};
+    const F=(v,dp=0)=>Number(N(v,0)).toLocaleString('en-US',{maximumFractionDigits:dp,minimumFractionDigits:dp});
+    const card=(t,v,s,c='info')=>`<div class="kpi ${c}"><div>${E(t)}</div><b>${E(v)}</b><small>${E(s||'')}</small></div>`;
+    const note=(txt,c='')=>`<div class="v11-note ${c}">${E(txt||'')}</div>`;
+    async function loadV113(){
+      try{
+        EGX.v113ReadinessReport=await loadJson('data/v11-3-readiness-report.json',{});
+        EGX.readinessAcceleratorReport=await loadJson('data/readiness-accelerator-report.json',{});
+        EGX.historySourceDiagnostics=await loadJson('data/history-source-diagnostics.json',{});
+        EGX.historyIntegrityV2=await loadJson('data/history-integrity-v2.json',{});
+        EGX.historicalSourceRegistry=await loadJson('data/historical-source-registry.json',{});
+        EGX.symbolResolverReport=await loadJson('data/symbol-resolver-report.json',{});
+        EGX.historyBackfillReport=await loadJson('data/history-backfill-report.json',{});
+        if(['historyRecovery','trustLift','dataQualityHub'].includes(EGX.screen)) render();
+      }catch(e){console.warn('V11.3 history recovery files not loaded',e)}
+    }
+    function renderHistoryRecovery(){
+      const r=EGX.v113ReadinessReport||EGX.readinessAcceleratorReport||{}, m=r.metrics||{}, h=EGX.historyIntegrityV2?.summary||{}, d=EGX.historySourceDiagnostics||{}, ds=d.summary||{}, bf=EGX.historyBackfillReport||{}, bsm=bf.summary||{}, sr=EGX.symbolResolverReport?.summary||{}, rows=Array.isArray(d.rows)?d.rows:[];
+      const topFailures=Object.entries(ds.commonFailures||{}).sort((a,b)=>b[1]-a[1]).slice(0,8);
+      const near=Array.isArray(r.topNearReady)?r.topNearReady:[];
+      return `${header('استرجاع التاريخ V11.3','محرك Backfill فعلي يحاول جمع آخر 50–120 جلسة من مصادر عامة/مرخصة فقط، مع تشخيص سبب فشل كل سهم — بدون CSV يدوي أو بيانات وهمية.')}${quickJump()}
+      <section class="v11-grid">
+        ${card('تاريخ ≥20 جلسة',F(h.ready20||m.ready20||0),'حد أدنى للتوصية المشروطة','warn')}
+        ${card('تاريخ 50 جلسة',F(h.ready50||m.ready50||0),'ثقة فنية كاملة','warn')}
+        ${card('متوسط الجلسات',`${F(h.avgSessions||m.avgSessions||0,1)}/50`,'يتحسن مع كل Backfill','info')}
+        ${card('رموز محلولة',F(sr.total||0),`غير مصنف ${F(sr.sectorUnknown||0)}`,'good')}
+      </section>
+      <div class="v11-main">
+        <div class="panel"><h3>حالة التسريع</h3>${note(r.conclusion||'لم يتم بناء تقرير V11.3 بعد.', r.readyForLiveExecution?'good':'warn')}<div class="v11-metrics"><div class="metric"><span>المرحلة</span><b>${E(r.phase||'PHASE_1_MONITORING')}</b></div><div class="metric"><span>فُحص في آخر Backfill</span><b>${F(bsm.scannedThisRun||0)}</b></div><div class="metric"><span>رموز تحسنت</span><b>${F(bsm.improvedSymbols||0)}</b></div><div class="metric"><span>جلسات مضافة</span><b>${F(bsm.sessionsAdded||0)}</b></div></div>${note('لتشغيل المحرك العميق الآن: Actions → Update EGX Market Data → Run workflow → history_maintenance = true.','info')}</div>
+        <div class="panel"><h3>بوابات الجاهزية</h3>${(r.checks||[]).map(c=>`<div class="ministat"><span>${E(c.name)}</span><b class="${c.pass?'pos':'neg'}">${c.pass?'ناجح':'غير مكتمل'} — ${E(c.value)}</b></div>`).join('')||note('لا توجد فحوصات بعد.','warn')}</div>
+      </div>
+      <div class="v11-main" style="margin-top:12px">
+        <div class="panel"><h3>أسباب فشل التاريخ الأكثر تكرارًا</h3>${topFailures.length?topFailures.map(([k,v])=>`<div class="ministat"><span>${E(k)}</span><b>${F(v)}</b></div>`).join(''):note('لا توجد أسباب فشل مسجلة أو لم يتم تشغيل Backfill عميق بعد.','warn')}</div>
+        <div class="panel"><h3>أقرب الأسهم للجاهزية</h3>${near.length?`<div class="tablewrap"><table class="compact-table"><thead><tr><th>الرمز</th><th>الجاهزية</th><th>التاريخ</th><th>السعر</th><th>السيولة</th><th>الخطة</th><th>القطاع</th></tr></thead><tbody>${near.slice(0,12).map(x=>`<tr><td class="symbol">${E(x.symbol)}</td><td>${F(x.readinessScore)}%</td><td>${F(x.historySessions)}/50</td><td class="${x.priceOk?'pos':'neg'}">${x.priceOk?'OK':'-'}</td><td class="${x.liquidityOk?'pos':'neg'}">${x.liquidityOk?'OK':'-'}</td><td class="${x.planOk?'pos':'neg'}">${x.planOk?'OK':'-'}</td><td>${E(x.sector||'-')}</td></tr>`).join('')}</tbody></table></div>`:note('لا توجد قائمة جاهزية بعد.','warn')}</div>
+      </div>
+      <section class="panel" style="margin-top:12px"><h3>تشخيص سهم بسهم</h3><div class="tablewrap"><table class="compact-table"><thead><tr><th>الرمز</th><th>الجلسات</th><th>الحالة</th><th>السبب</th><th>آخر محاولة</th></tr></thead><tbody>${rows.slice(0,80).map(x=>`<tr><td class="symbol">${E(x.symbol)}</td><td>${F(x.sessions)}/50</td><td>${E(x.state)}</td><td>${E(x.reason)}</td><td>${E(x.lastAttempt||'-')}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">لم يتم تحميل التشخيص بعد.</td></tr>'}</tbody></table></div></section>`;
+    }
+    const previousContentV113=content;
+    content=function(){ if(EGX.screen==='historyRecovery') return renderHistoryRecovery(); return previousContentV113(); };
+    const previousQuickJumpV113=quickJump;
+    quickJump=function(){
+      const items=[['todayDecision','🎯 قرار اليوم'],['stockSearch','🔎 تحليل سهم'],['portfolioRiskHub','💼 محفظتي'],['dataQualityHub','▤ صحة البيانات'],['historyRecovery','📈 استرجاع التاريخ'],['performanceIndex','✓ سجل الدقة'],['trustLift','🚀 رفع الثقة']];
+      return `<div class="screen-jump ux106-jump v11-jump">${items.map(i=>`<button data-screen="${i[0]}" class="${EGX.screen===i[0]?'active':''}">${i[1]}</button>`).join('')}</div>`;
+    };
+    const previousSideV113=side;
+    side=function(){
+      const html=previousSideV113();
+      if(html.includes('data-screen="historyRecovery"')) return html;
+      return html.replace('data-screen="trustLift" class="', 'data-screen="historyRecovery" class="v11-primary-nav"><span>📈</span>استرجاع التاريخ<small>V11.3 Backfill</small></button><button data-screen="trustLift" class="');
+    };
+    setTimeout(loadV113,1900);
+  }catch(e){console.warn('V11.3 Historical Recovery UI skipped',e)}
 })();
 
 init().catch(e=>{

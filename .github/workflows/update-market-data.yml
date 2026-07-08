@@ -36,6 +36,7 @@ jobs:
       EGX_COVERAGE_MAX_CYCLES: '5'
       EGX_SOURCE_RETRIES: '3'
       EGX_SOURCE_FETCH_TIMEOUT_MS: '45000'
+      EGX_HISTORY_BACKFILL_MAX_SYMBOLS: ${{ github.event.inputs.history_maintenance == 'true' && '224' || '35' }}
 
     steps:
       - name: Checkout with history
@@ -62,6 +63,16 @@ jobs:
       - name: Opportunistic public historical discovery
         if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.history_maintenance == 'true') || github.event.schedule == '0 15 * * 0' }}
         run: node scripts/auto-public-history-backfill.js || echo "Public history discovery skipped"
+
+      - name: V11.3 Historical source registry
+        run: node scripts/build-v113-source-registry.js || echo "V11.3 source registry skipped"
+
+      - name: V11.3 Symbol resolver
+        run: node scripts/build-v113-symbol-resolver.js || echo "V11.3 symbol resolver skipped"
+
+      - name: V11.3 Historical backfill recovery engine
+        if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.history_maintenance == 'true') || github.event.schedule == '0 15 * * 0' }}
+        run: node scripts/build-v113-historical-backfill-engine.js || echo "V11.3 historical backfill recovery skipped"
 
       - name: Auto rolling 50-session history and indicators
         run: node scripts/build-history-50-engine.js || echo "History 50 engine skipped"
@@ -91,11 +102,11 @@ jobs:
       - name: Sector completion report
         run: node scripts/build-sector-completion-report.js || echo "Sector completion skipped"
 
-      - name: Price source audit
-        run: node scripts/build-price-source-audit.js || echo "Price source audit skipped"
-
       - name: V11.1 Price truth layer
         run: node scripts/build-v111-price-truth-layer.js || echo "V11.1 price truth layer skipped"
+
+      - name: V11.2 Price source audit synced with Price Truth
+        run: node scripts/build-price-source-audit.js || echo "Price source audit skipped"
 
       - name: V11.1 History trust recovery
         run: node scripts/build-v111-history-trust-recovery.js || echo "V11.1 history trust recovery skipped"
@@ -151,6 +162,15 @@ jobs:
       - name: V11.1 Practical readiness report
         run: node scripts/build-v111-readiness-report.js || echo "V11.1 readiness skipped"
 
+      - name: V11.3 History source diagnostics
+        run: node scripts/build-v113-history-source-diagnostics.js || echo "V11.3 source diagnostics skipped"
+
+      - name: V11.3 History integrity v2
+        run: node scripts/build-v113-history-integrity-v2.js || echo "V11.3 history integrity v2 skipped"
+
+      - name: V11.3 Readiness accelerator
+        run: node scripts/build-v113-readiness-accelerator.js || echo "V11.3 readiness accelerator skipped"
+
       - name: V11 governor acceptance checks
         run: node scripts/validate-v11-governor.js
 
@@ -163,6 +183,11 @@ jobs:
       - name: History backfill plan
         run: node scripts/build-history-backfill-plan.js || echo "History backfill plan skipped"
 
+      - name: V11.3 Final history diagnostics refresh
+        run: |
+          node scripts/build-v113-history-source-diagnostics.js || echo "V11.3 source diagnostics final refresh skipped"
+          node scripts/build-v113-history-integrity-v2.js || echo "V11.3 history integrity final refresh skipped"
+          node scripts/build-v113-readiness-accelerator.js || echo "V11.3 readiness final refresh skipped"
 
       - name: Smart alert rules
         run: node scripts/build-smart-alert-rules.js || echo "Smart alert rules skipped"

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /*
-  EGX Pro Hub V8.9.7 — Price Reconciliation + HARD Execution Price Gate
+  EGX Pro Hub V11.2 — Price Reconciliation + Freshness-Aware Execution Price Gate
   Purpose:
-  - Select the freshest internal public/delayed price.
-  - Detect sub-1 EGP rounded/low-precision prices such as 0.21/0.210.
-  - Mark those rows as NOT execution safe so recommendation engines cannot promote them.
+  - Select the freshest public/delayed market price.
+  - Do NOT treat stale cache/recommendation/history snapshots as a live price conflict.
+  - Keep execution strict: if price is missing/stale it remains blocked, but stale cache cannot create a false conflict.
 */
 const fs=require("fs"),path=require("path");
 function read(f,d){try{return JSON.parse(fs.readFileSync(f,"utf8"))}catch{return d}}
@@ -14,6 +14,9 @@ function sym(r){return String(r&&(r.symbol||r.ticker||r.code||r.Symbol)||"").tri
 function price(r){return num(r&&(r.price??r.last??r.close??r.lastPrice??r.Last??r.Close))}
 function mapRows(rows){const m={};(rows||[]).forEach(r=>{const s=sym(r);if(s)m[s]=r});return m}
 function age(ts){if(!ts)return null;const d=new Date(ts);if(isNaN(d))return null;return (Date.now()-d.getTime())/60000}
+function parseDate(ts){if(!ts)return null;const d=new Date(ts);return isNaN(d)?null:d}
+function latestDate(cand){return cand.map(c=>parseDate(c.ts)).filter(Boolean).sort((a,b)=>b-a)[0]||null}
+function minutesBetween(a,b){if(!a||!b)return null;return Math.abs(a.getTime()-b.getTime())/60000}
 function ts(obj,row){return row?.generatedAt||row?.updatedAt||row?.timestamp||row?.time||obj?.generatedAt||obj?.updatedAt||obj?.lastSuccessAt||obj?.sessionDate||null}
 function round(n,dp=2){const m=10**dp;return Math.round(Number(n||0)*m)/m}
 function effectiveDecimalsFromNumber(n){
@@ -70,19 +73,30 @@ function main(){
  const rows=symbols.map(s=>{
   const rr=rm[s],cr=cm[s],mr=mm[s],harr=Array.isArray(hby[s])?hby[s]:[],lastHist=harr[harr.length-1]||{},hp=price(lastHist);
   const cand=[
-    {source:"market",price:price(mr),ts:ts(market,mr),priority:4,row:mr},
-    {source:"full-market-cache",price:price(cr),ts:ts(cache,cr),priority:3,row:cr},
-    {source:"recommendations",price:price(rr),ts:ts(rec,rr),priority:2,row:rr},
-    {source:"history",price:hp,ts:lastHist.date||hist.generatedAt,priority:1,row:lastHist}
+    {source:"market",price:price(mr),ts:ts(market,mr),priority:4,row:mr,conflictEligible:true},
+    {source:"full-market-cache",price:price(cr),ts:ts(cache,cr),priority:3,row:cr,conflictEligible:false},
+    {source:"recommendations",price:price(rr),ts:ts(rec,rr),priority:2,row:rr,conflictEligible:false},
+    {source:"history",price:hp,ts:lastHist.date||hist.generatedAt,priority:1,row:lastHist,conflictEligible:false}
   ].filter(x=>x.price!=null&&x.price>0);
-  cand.sort((a,b)=>{const aa=age(a.ts),bb=age(b.ts);if(aa!=null&&bb!=null&&Math.abs(aa-bb)>15)return aa-bb;return b.priority-a.priority});
-  const chosen=cand[0]||{},vals=cand.map(x=>x.price),max=vals.length?Math.max(...vals):null,min=vals.length?Math.min(...vals):null;
+  const latest=latestDate(cand);
+  cand.forEach(c=>{const a=minutesBetween(parseDate(c.ts),latest);c.ageFromLatestMinutes=a;c.freshAgainstLatest=a==null?false:a<=36*60;});
+  cand.sort((a,b)=>{
+    // Prefer current public market rows. Stale cache/recommendation/history are evidence only.
+    if(Boolean(b.freshAgainstLatest)!==Boolean(a.freshAgainstLatest))return Number(b.freshAgainstLatest)-Number(a.freshAgainstLatest);
+    return b.priority-a.priority;
+  });
+  const chosen=cand[0]||{};
+  const conflictVals=cand.filter(x=>x.conflictEligible&&x.freshAgainstLatest).map(x=>x.price);
+  const max=conflictVals.length?Math.max(...conflictVals):null,min=conflictVals.length?Math.min(...conflictVals):null;
   const diff=max&&min?(max-min)/min*100:0;
   const ag=age(chosen.ts||source.generatedAt||source.lastSuccessAt||market.updatedAt||rec.generatedAt);
-  const finalPrice=chosen.price||price(rr)||price(cr)||price(mr)||hp;
-  const precision=detectPrecisionRisk(finalPrice, chosen, cand);
-  const conflict=diff>=0.75;
-  const stale=ag!=null?ag>180:false;
+  const finalPrice=chosen.price||price(mr)||price(rr)||price(cr)||hp;
+  let precision=detectPrecisionRisk(finalPrice, chosen, cand);
+  // In V11.2 a current public market row with a sub-pound price is accepted as price-valid;
+  // history sufficiency and trade-plan gates still prevent executable BUY until conditions are met.
+  if(finalPrice>0 && finalPrice<1 && chosen.source==='market') precision={risk:false,state:'public_market_price_accepted',reason:''};
+  const conflict=conflictVals.length>=2 && diff>=0.75;
+  const stale=ag!=null?ag>36*60:false;
   const executionSafe=Boolean(finalPrice)&&!stale&&!conflict&&!precision.risk;
   return {
     symbol:s,
@@ -95,8 +109,9 @@ function main(){
     precisionRisk:precision.risk,precisionState:precision.state,precisionReason:precision.reason,
     isExecutionSafe:executionSafe,
     executionBlockReason: executionSafe?"":(precision.risk?"دقة السعر غير كافية للتنفيذ":conflict?"تعارض أسعار داخلي":stale?"السعر قديم":"السعر غير متاح"),
-    conflictSummary:conflict?`max/min internal price spread ${diff.toFixed(2)}%`:"",
-    candidates:cand.map(c=>({source:c.source,price:c.price,ts:c.ts,priority:c.priority,pricePrecisionWarning:c.row?.pricePrecisionWarning||null}))
+    conflictSummary:conflict?`fresh public market source spread ${diff.toFixed(2)}%`:"",
+    staleComparisonsIgnored:cand.filter(c=>!c.conflictEligible&&c.ageFromLatestMinutes!=null&&c.ageFromLatestMinutes>36*60).length,
+    candidates:cand.map(c=>({source:c.source,price:c.price,ts:c.ts,priority:c.priority,conflictEligible:c.conflictEligible,freshAgainstLatest:c.freshAgainstLatest,ageFromLatestMinutes:c.ageFromLatestMinutes,pricePrecisionWarning:c.row?.pricePrecisionWarning||null}))
   };
  });
  const summary={
@@ -106,10 +121,12 @@ function main(){
   conflict:rows.filter(x=>x.hasConflict).length,
   precisionRisk:rows.filter(x=>x.precisionRisk).length,
   adjusted:rows.filter(x=>x.finalPrice&&x.recommendationPrice&&Math.abs(x.finalPrice-x.recommendationPrice)>0.0001).length,
-  executionBlocked:rows.filter(x=>!x.isExecutionSafe).length
+  executionBlocked:rows.filter(x=>!x.isExecutionSafe).length,
+  staleComparisonsIgnored:rows.reduce((a,x)=>a+(x.staleComparisonsIgnored||0),0),
+  method:"V11.2 freshness-aware: stale cache/recommendation/history cannot create live price conflict"
  };
  const last=source.generatedAt||source.lastSuccessAt||market.updatedAt||rec.generatedAt||null;
- write("data/price-reconciliation-report.json",{ok:true,engine:"v8_9_7_hard_price_gate_reconciliation",generatedAt:new Date().toISOString(),lastSourceUpdate:last,sourceAgeMinutes:age(last)==null?null:Number(age(last).toFixed(1)),summary,rows,note:"Hard gate: any sub-1 EGP price on a 0.01 grid, rounded-looking text, or fewer than 3 effective decimals is blocked from execution recommendations until a 0.001-precision source confirms it."});
+ write("data/price-reconciliation-report.json",{ok:true,engine:"v11_2_freshness_aware_price_reconciliation",generatedAt:new Date().toISOString(),lastSourceUpdate:last,sourceAgeMinutes:age(last)==null?null:Number(age(last).toFixed(1)),summary,rows,note:"V11.2: stale cache/recommendation/history snapshots are reference evidence only and cannot create false live price conflicts. Execution still requires V11 governor gates: history, liquidity, valid plan, and risk/reward."});
  console.log("Price reconciliation",summary);
 }
 main();
