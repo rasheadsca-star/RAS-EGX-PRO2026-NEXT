@@ -35,8 +35,10 @@ jobs:
       EGX_TRUSTED_COVERAGE_TARGET: '80'
       EGX_COVERAGE_MAX_CYCLES: '5'
       EGX_SOURCE_RETRIES: '3'
-      EGX_SOURCE_FETCH_TIMEOUT_MS: '45000'
-      EGX_HISTORY_BACKFILL_MAX_SYMBOLS: ${{ github.event.inputs.history_maintenance == 'true' && '224' || '35' }}
+      EGX_SOURCE_FETCH_TIMEOUT_MS: '7000'
+      EGX_HISTORY_BACKFILL_BATCH_SIZE: '40'
+      EGX_HISTORY_BACKFILL_MAX_SYMBOLS: '40'
+      EGX_HISTORY_BACKFILL_MAX_MS: '840000'
 
     steps:
       - name: Checkout with history
@@ -70,9 +72,9 @@ jobs:
       - name: V11.3 Symbol resolver
         run: node scripts/build-v113-symbol-resolver.js || echo "V11.3 symbol resolver skipped"
 
-      - name: V11.4 Historical source adapter fix and backfill engine
+      - name: V11.5 Batch historical backfill controller
         if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.history_maintenance == 'true') || github.event.schedule == '0 15 * * 0' }}
-        run: node scripts/build-v114-history-adapter-fix.js || echo "V11.4 historical source adapter fix skipped"
+        run: node scripts/build-v115-batch-backfill-controller.js || echo "V11.5 batch backfill skipped"
 
       - name: Auto rolling 50-session history and indicators
         run: node scripts/build-history-50-engine.js || echo "History 50 engine skipped"
