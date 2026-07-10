@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>EGX Pro — V13.0 إصلاح الأسهم السبعة</title>
+  <style>
+    :root{color-scheme:dark;--bg:#06111f;--card:#0d2035;--line:#294966;--text:#f3f7fb;--muted:#9db0c3;--good:#24d17e;--warn:#ffbf3f;--bad:#ff6262;--cyan:#24c9e8}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}.wrap{width:min(1180px,calc(100% - 24px));margin:18px auto 50px}.hero,.section,.metric{border:1px solid var(--line);background:var(--card);border-radius:16px}.hero{padding:20px}.hero h1{margin:0 0 8px;font-size:24px}.hero p{margin:0;color:var(--muted);line-height:1.8}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.btn{display:inline-block;border:1px solid #55799c;border-radius:10px;padding:9px 13px;color:#fff;text-decoration:none;background:#102a44}.warning{margin:12px 0;padding:12px;border:1px solid #8d6819;background:#3b2b06;border-radius:12px;color:#ffe7a7;line-height:1.8}.metrics{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:10px;margin:12px 0}.metric{padding:14px;text-align:center}.metric span{display:block;color:var(--muted);font-size:12px}.metric strong{display:block;font-size:27px;margin-top:8px}.good{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}.section{padding:16px;margin-top:12px}.section h2{margin:0 0 12px;font-size:18px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:880px}th,td{border-bottom:1px solid #203d58;padding:10px;text-align:right;font-size:13px;vertical-align:top}th{color:#c8d7e6;background:#0a1b2d;position:sticky;top:0}.pill{display:inline-block;padding:5px 9px;border-radius:999px;border:1px solid #3c607e;font-size:12px}.pill.good{background:#0b432d}.pill.warn{background:#493606}.pill.bad{background:#4a1717}.small{font-size:12px;color:var(--muted);line-height:1.7}.loading{text-align:center;padding:40px;color:var(--muted)}code{direction:ltr;display:inline-block}.empty{padding:20px;text-align:center;color:var(--muted)}
+    @media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <h1>EGX Pro — V13.0 إصلاح الأسهم السبعة</h1>
+      <p>إصلاح آمن للأسهم ضعيفة التداول، تشخيص فروق السعر المعدل، واستبعاد ESRS من السوق النشط وفق قرار الشطب الرسمي، دون تعديل التطبيق المستقر.</p>
+      <div class="actions">
+        <a class="btn" href="./history-100.html">لوحة التاريخ</a>
+        <a class="btn" href="../">التطبيق المستقر</a>
+        <button class="btn" type="button" onclick="loadData()">تحديث</button>
+      </div>
+    </header>
+    <div class="warning">بيانات Starta/TradingView مصدر احتياطي غير رسمي. إصلاح EGSA وFAITA لا يطبق أي معامل تلقائيًا، ويحتاج موافقة موثقة. الثقة 100% لا تمنح إلا عند التحقق الرسمي من EGX.</div>
+    <section id="content" class="loading">جارٍ تحميل تقرير V13.0…</section>
+  </main>
+  <script>
+    const statusClass = (status) => {
+      if (['improved','improved_with_admin_approval','inactive_delisted'].includes(status)) return 'good';
+      if (['manual_approval_required','diagnosed_ready','diagnosed_delisted'].includes(status)) return 'warn';
+      return 'bad';
+    };
+    const label = (status) => ({
+      improved:'تم الإصلاح', improved_with_admin_approval:'تم بمعامل معتمد', inactive_delisted:'مشطوب ومستبعد',
+      manual_approval_required:'يحتاج اعتمادًا', diagnosed_ready:'جاهز نظريًا', diagnosed_delisted:'سيُستبعد', failed:'فشل'
+    }[status] || status || 'غير معروف');
+    const n = (value) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG') : '—';
+    const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    async function getJson(url){const r=await fetch(`${url}?v=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(`${url}: HTTP ${r.status}`);return r.json()}
+    async function loadData(){
+      const root=document.getElementById('content');root.className='loading';root.textContent='جارٍ تحميل تقرير V13.0…';
+      try{
+        const [report,summary]=await Promise.all([getJson('../data/history-targeted-seven-report.json'),getJson('../data/history-summary.json')]);
+        const rows=(report.results||[]).map((r)=>`<tr><td><strong>${esc(r.ticker)}</strong></td><td><span class="pill ${statusClass(r.status)}">${esc(label(r.status))}</span></td><td>${esc(r.action||'—')}</td><td>${n(r.beforeSessions)}</td><td>${n(r.afterSessions)}</td><td>${n(r.appendedSessions)}</td><td>${esc(r.evidence?.method||r.adjustment?.factor||'—')}</td><td class="small">${esc(r.error||((r.warnings||[]).join('، '))||'—')}</td></tr>`).join('');
+        const approvals=(report.results||[]).filter((r)=>r.adjustment).map((r)=>`<tr><td>${esc(r.ticker)}</td><td>${n(r.adjustment.observations)}</td><td><code>${esc(r.adjustment.factor)}</code></td><td>${esc(r.adjustment.stable?'ثابت':'غير ثابت')}</td><td>${esc(r.adjustment.maxDeviationPct)}%</td><td>${esc(label(r.status))}</td></tr>`).join('');
+        root.className='';
+        root.innerHTML=`
+          <div class="metrics">
+            <div class="metric"><span>الأسهم النشطة</span><strong>${n(summary.coverage?.denominator)}</strong></div>
+            <div class="metric"><span>100 جلسة</span><strong class="good">${n(summary.symbolsComplete100)}</strong></div>
+            <div class="metric"><span>تم إصلاحها</span><strong class="good">${n(report.counts?.improved)}</strong></div>
+            <div class="metric"><span>تحتاج موافقة</span><strong class="warn">${n(report.counts?.manualApprovalRequired)}</strong></div>
+            <div class="metric"><span>مستبعدة للشطب</span><strong class="warn">${n(report.counts?.inactiveDelisted)}</strong></div>
+            <div class="metric"><span>فشل</span><strong class="bad">${n(report.counts?.failed)}</strong></div>
+          </div>
+          <section class="section"><h2>نتائج الأسهم المستهدفة</h2><div class="table-wrap"><table><thead><tr><th>السهم</th><th>الحالة</th><th>الإجراء</th><th>قبل</th><th>بعد</th><th>مضافة</th><th>الدليل/المعامل</th><th>التفاصيل</th></tr></thead><tbody>${rows||'<tr><td colspan="8" class="empty">لا توجد نتائج.</td></tr>'}</tbody></table></div></section>
+          <section class="section"><h2>مراجعة EGSA وFAITA</h2><div class="table-wrap"><table><thead><tr><th>السهم</th><th>الملاحظات</th><th>المعامل المكتشف</th><th>ثبات المعامل</th><th>أقصى انحراف</th><th>الحالة</th></tr></thead><tbody>${approvals||'<tr><td colspan="6" class="empty">لم ينتج تحليل معاملات بعد.</td></tr>'}</tbody></table></div><p class="small">لا يتم تعديل الأسعار إلا بعد ملء <code>data/history-adjustment-approval.json</code> بمراجع موثقة وتشغيل وضع apply_approved_adjustments.</p></section>
+          <section class="section"><h2>ESRS</h2><p class="small">${report.delistedInstrument?`تم استبعاد ${esc(report.delistedInstrument.ticker)} من المقام النشط، مع الاحتفاظ بالتاريخ لأغراض التدقيق.`:'لم يُنفذ تنظيف الشطب في هذا التشغيل.'}</p></section>
+        `;
+      }catch(error){root.className='section';root.innerHTML=`<h2>تعذر تحميل البيانات</h2><p class="bad">${esc(error.message)}</p><p class="small">شغّل GitHub Action باسم EGX Targeted Seven-Symbol Repair — V13.0 مرة واحدة.</p>`}
+    }
+    loadData();
+  </script>
+</body>
+</html>
