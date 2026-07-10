@@ -37,10 +37,6 @@ function identityCheck(meta, requestedSymbol, mapEntry, localReference) {
   const warnings = [];
   let score = 0;
 
-  // Yahoo commonly reports Egyptian listings with exchangeName="CAI"
-  // and fullExchangeName="Egypt". The previous implementation used
-  // exchangeName OR fullExchangeName, so "CAI" hid the stronger
-  // fullExchangeName evidence and every correct EGX symbol scored too low.
   const exchangeEvidence = [
     meta.exchangeName,
     meta.fullExchangeName,
@@ -57,17 +53,13 @@ function identityCheck(meta, requestedSymbol, mapEntry, localReference) {
   const expectedSymbol = String(requestedSymbol || '').toUpperCase();
   const expectedCurrency = String(mapEntry.currency || 'EGP').toUpperCase();
 
-  if (returnedSymbol === expectedSymbol) {
-    score += 35;
-  } else {
-    warnings.push(`returned_symbol_mismatch:${returnedSymbol || 'missing'}`);
-  }
+  const exactSymbol = returnedSymbol === expectedSymbol;
+  if (exactSymbol) score += 35;
+  else warnings.push(`returned_symbol_mismatch:${returnedSymbol || 'missing'}`);
 
-  if (currency === expectedCurrency) {
-    score += 25;
-  } else {
-    warnings.push(`currency_mismatch:${currency || 'missing'}`);
-  }
+  const currencyMatches = currency === expectedCurrency;
+  if (currencyMatches) score += 25;
+  else warnings.push(`currency_mismatch:${currency || 'missing'}`);
 
   const cairoExchangeConfirmed =
     /(^|[^a-z])(cai|cairo|egypt|egx)([^a-z]|$)/i.test(exchangeText) ||
@@ -77,28 +69,56 @@ function identityCheck(meta, requestedSymbol, mapEntry, localReference) {
       /egypt/i.test(String(meta.fullExchangeName || ''))
     );
 
-  if (cairoExchangeConfirmed) {
-    score += 30;
-  } else {
-    warnings.push(`exchange_not_confirmed:${exchangeText || 'missing'}`);
-  }
+  if (cairoExchangeConfirmed) score += 30;
+  else warnings.push(`exchange_not_confirmed:${exchangeText || 'missing'}`);
 
   const regularMarketPrice = toNumber(meta.regularMarketPrice);
+  let localDifferencePct = null;
   if (localReference?.close && regularMarketPrice) {
-    const differencePct = Math.abs(regularMarketPrice - localReference.close) / localReference.close * 100;
-    if (differencePct <= 25) {
-      score += 10;
-    } else {
-      warnings.push(`latest_price_far_from_local_reference:${round(differencePct, 3)}%`);
-    }
+    localDifferencePct = Math.abs(regularMarketPrice - localReference.close) / localReference.close * 100;
+    if (localDifferencePct <= 25) score += 10;
+    else warnings.push(`latest_price_far_from_local_reference:${round(localDifferencePct, 3)}%`);
   } else if (meta.shortName || meta.longName) {
     score += 10;
   } else {
     warnings.push('company_name_missing');
   }
 
+  const normalVerified = score >= 80;
+  const guardedPolicyRequested = mapEntry.identityPolicy === 'guarded_local_crosscheck'
+    && mapEntry.identityReviewStatus === 'eligible_for_guarded_salvage';
+  const maxDifferencePct = Number(mapEntry.identityMaxPriceDifferencePct || 8);
+  const mapDeclaresEgx = String(mapEntry.exchange || '').toUpperCase() === 'EGX';
+  const cairoSuffix = expectedSymbol.endsWith('.CA') && returnedSymbol.endsWith('.CA');
+  const currencyAcceptable = currencyMatches || (!currency && expectedCurrency === 'EGP');
+  const nameEvidence = Boolean(meta.shortName || meta.longName || mapEntry.companyNameAr || mapEntry.companyNameEn);
+  const guardedVerified = Boolean(
+    !normalVerified &&
+    guardedPolicyRequested &&
+    score >= 60 &&
+    exactSymbol &&
+    cairoSuffix &&
+    mapDeclaresEgx &&
+    currencyAcceptable &&
+    nameEvidence &&
+    localReference?.close &&
+    regularMarketPrice &&
+    localDifferencePct !== null &&
+    localDifferencePct <= maxDifferencePct
+  );
+
+  if (guardedVerified) warnings.push(`guarded_identity_salvage:local_price_diff_${round(localDifferencePct, 3)}%`);
+  if (guardedVerified && !currency) warnings.push('currency_missing_but_guarded_by_exact_symbol_egx_and_local_price');
+
+  const verified = normalVerified || guardedVerified;
+  const baseConfidence = normalVerified ? 75 : (guardedVerified ? (currencyMatches ? 70 : 65) : 0);
+
   return {
-    verified: score >= 80,
+    verified,
+    normalVerified,
+    guardedVerified,
+    policy: normalVerified ? 'standard_identity' : (guardedVerified ? 'guarded_local_crosscheck' : 'rejected'),
+    baseConfidence,
     score,
     warnings,
     evidence: {
@@ -111,6 +131,10 @@ function identityCheck(meta, requestedSymbol, mapEntry, localReference) {
       shortName: meta.shortName || null,
       longName: meta.longName || null,
       regularMarketPrice,
+      localReferenceClose: localReference?.close || null,
+      localDifferencePct: localDifferencePct === null ? null : round(localDifferencePct, 4),
+      guardedPolicyRequested,
+      guardedMaxDifferencePct: maxDifferencePct,
     },
   };
 }
@@ -152,12 +176,12 @@ function parseYahooPayload(payload, requestedSymbol, mapEntry, localReference, s
       fetchedAt: nowIso(),
       validatedAt: null,
       confidence: {
-        overall: identity.verified ? 75 : 0,
-        ohlc: identity.verified ? 75 : 0,
-        volume: quote.volume?.[index] === null || quote.volume?.[index] === undefined ? 60 : (identity.verified ? 75 : 0),
+        overall: identity.baseConfidence,
+        ohlc: identity.baseConfidence,
+        volume: quote.volume?.[index] === null || quote.volume?.[index] === undefined ? 60 : identity.baseConfidence,
         symbolIdentity: identity.score,
       },
-      validationStatus: identity.verified ? 'single_source_validated' : 'symbol_identity_failed',
+      validationStatus: identity.guardedVerified ? 'guarded_identity_validated' : (identity.verified ? 'single_source_validated' : 'symbol_identity_failed'),
       warnings: unique([
         ...identity.warnings,
         quote.volume?.[index] === null || quote.volume?.[index] === undefined ? 'volume_missing' : null,
