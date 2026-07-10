@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>EGX Pro — V13.2 قرار مؤهل وتداول ورقي</title>
+  <style>
+    :root{color-scheme:dark;--bg:#06111f;--panel:#0c2035;--line:#264766;--text:#edf6ff;--muted:#9db2c8;--green:#22d38a;--blue:#35b6ff;--amber:#ffc84b;--red:#ff6577}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}.wrap{max-width:1500px;margin:auto;padding:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}.head{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.head h1{margin:0;font-size:24px}.sub{color:var(--muted);font-size:13px;line-height:1.8}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{color:#fff;background:#12304d;border:1px solid #4c759d;border-radius:9px;padding:9px 13px;text-decoration:none;cursor:pointer}.warn{background:#3b2b04;border-color:#735b14;color:#ffe29b}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}.card{background:#0a1a2c;border:1px solid #2d5275;border-radius:12px;padding:13px}.card small{color:var(--muted)}.num{font-size:27px;font-weight:800;margin-top:8px}.green{color:var(--green)}.blue{color:var(--blue)}.amber{color:var(--amber)}.red{color:var(--red)}nav{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.tab{padding:9px 13px;border:1px solid #375d80;border-radius:9px;background:#0c2137;color:#fff;cursor:pointer}.tab.active{background:#174267}.section{display:none}.section.active{display:block}table{width:100%;border-collapse:collapse;min-width:920px}th,td{border-bottom:1px solid #23435f;padding:10px;text-align:right;vertical-align:top}th{color:#b9d7ef;background:#0b1b2d;position:sticky;top:0}.scroll{overflow:auto}.pill{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;border:1px solid #43688a}.pill.green{background:#0b5139}.pill.amber{background:#4a3505}.pill.red{background:#4b1620}.gates{font-size:12px;color:var(--muted);line-height:1.7}.empty{padding:28px;text-align:center;color:var(--muted)}.decision{font-size:21px;font-weight:800}.footer{color:var(--muted);text-align:center;padding:12px;font-size:12px}@media(max-width:700px){.wrap{padding:8px}.head h1{font-size:19px}.num{font-size:23px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="panel head">
+    <div><h1>EGX Pro — V13.2 القرار المؤهل والتداول الورقي</h1><div class="sub">لا يدخل القرار إلا الأسهم المؤهلة في V13.1. التنفيذ الحقيقي مغلق افتراضيًا، والقياس يبدأ من جلسة لاحقة دون أثر رجعي.</div></div>
+    <div class="actions"><button class="btn" onclick="loadAll()">تحديث</button><a class="btn" href="./history-eligibility.html">أهلية التاريخ</a><a class="btn" href="../">التطبيق المستقر</a></div>
+  </header>
+  <div id="message" class="panel warn">جارٍ تحميل نتائج V13.2…</div>
+  <section class="panel"><div class="decision" id="decisionLabel">—</div><div class="sub" id="decisionReason">—</div></section>
+  <section class="cards" id="cards"></section>
+  <nav>
+    <button class="tab active" data-tab="candidates">المرشحون</button>
+    <button class="tab" data-tab="paper">التداول الورقي</button>
+    <button class="tab" data-tab="metrics">النتائج</button>
+    <button class="tab" data-tab="watch">المراقبة والاستبعاد</button>
+  </nav>
+  <section id="candidates" class="section active panel"><h2>مرشحو القرار والتداول الورقي</h2><div class="scroll" id="candidateTable"></div></section>
+  <section id="paper" class="section panel"><h2>دفتر التداول الورقي</h2><div class="scroll" id="paperTable"></div></section>
+  <section id="metrics" class="section panel"><h2>قياس النتائج</h2><div class="cards" id="metricCards"></div><div class="scroll" id="checkpointTable"></div></section>
+  <section id="watch" class="section panel"><h2>مراقبة فقط وحالات المراجعة</h2><div class="scroll" id="watchTable"></div></section>
+  <div class="footer">هذه لوحة قياس وليست توصية شراء. البيانات العامة قد تكون متأخرة أو غير متحققة رسميًا.</div>
+</div>
+<script>
+const fmt=n=>Number.isFinite(Number(n))?Number(n).toLocaleString('ar-EG',{maximumFractionDigits:3}):'—';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function card(label,value,cls='',note=''){return `<div class="card"><small>${esc(label)}</small><div class="num ${cls}">${esc(value)}</div><div class="sub">${esc(note)}</div></div>`}
+function table(headers,rows){if(!rows.length)return '<div class="empty">لا توجد بيانات في هذا القسم.</div>';return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`}
+function gateText(c){return [...(c.paperGates||[]),...(c.decisionGates||[])].filter(g=>!g.pass).map(g=>`${g.label}: ${g.detail}`).join(' • ')||'اجتاز البوابات المعروضة';}
+function render(data,metrics,ledger){
+ document.getElementById('message').style.display='none';
+ document.getElementById('decisionLabel').textContent=data.decision?.labelAr||'—';document.getElementById('decisionReason').textContent=data.decision?.reasonAr||'';
+ document.getElementById('cards').innerHTML=[
+  card('جلسة البيانات',data.sessionId,'blue'),card('مؤهل تاريخيًا للقرار',data.eligibility?.decisionEligibleHistory||0,'green'),card('مؤهل تاريخيًا للورقي',data.eligibility?.paperTradingEligibleHistory||0,'blue'),card('مرشحو القرار',data.decision?.decisionCandidates||0,'green'),card('مرشحو الورقي',data.decision?.paperCandidates||0,'blue'),card('إشارات جديدة',data.decision?.newPaperSignals||0,'amber'),card('ثقة مستقلة عالية',data.eligibility?.highConfidenceEligibleHistory||0,'amber'),card('قائمة المراجعة',data.eligibility?.reviewQueue||0,'amber')
+ ].join('');
+ const all=[...(data.topDecisionCandidates||[]).map(x=>({...x,kind:'مرشح قرار'})),...(data.topPaperCandidates||[]).filter(x=>!(data.topDecisionCandidates||[]).some(d=>d.ticker===x.ticker)).map(x=>({...x,kind:'ورقي فقط'}))];
+ document.getElementById('candidateTable').innerHTML=table(['السهم','التصنيف','السعر','الدخول','الهدف','الوقف','R/R','الدرجة','الحالة'],all.map(c=>`<tr><td><b>${esc(c.ticker)}</b><br><span class="sub">${esc(c.companyNameAr||c.companyNameEn||'')}</span></td><td><span class="pill ${c.kind==='مرشح قرار'?'green':'amber'}">${c.kind}</span></td><td>${fmt(c.price)}</td><td>${fmt(c.entryLow)} – ${fmt(c.entryHigh)}</td><td>${fmt(c.target1)}</td><td>${fmt(c.stopLoss)}</td><td>${fmt(c.riskReward)}</td><td>${fmt(c.score)}</td><td class="gates">${esc(gateText(c))}</td></tr>`));
+ const trades=[...(data.paperTrading?.open||[]),...(data.paperTrading?.pending||[]),...(data.paperTrading?.recentClosed||[]),...(data.paperTrading?.recentExpired||[])];
+ document.getElementById('paperTable').innerHTML=table(['السهم','الحالة','جلسة الإشارة','الدخول','الهدف','الوقف','النتيجة','السبب'],trades.map(t=>`<tr><td><b>${esc(t.ticker)}</b></td><td><span class="pill ${t.status==='CLOSED'?(t.netReturnPct>0?'green':'red'):(t.status==='OPEN'?'blue':'amber')}">${esc(t.status)}</span></td><td>${esc(t.signalSession)}</td><td>${fmt(t.entryPrice??t.entryHigh)}</td><td>${fmt(t.target1)}</td><td>${fmt(t.stopLoss)}</td><td>${t.netReturnPct==null?'—':fmt(t.netReturnPct)+'%'}</td><td>${esc(t.exitReason||'—')}</td></tr>`));
+ document.getElementById('metricCards').innerHTML=[card('صفقات مغلقة',metrics.closedTrades||0,'blue'),card('نسبة النجاح',fmt(metrics.winRatePct)+'%',metrics.closedTrades?'green':'amber'),card('Profit Factor',fmt(metrics.profitFactor),'blue'),card('متوسط العائد',fmt(metrics.averageNetReturnPct)+'%',metrics.averageNetReturnPct>0?'green':'red'),card('متوسط R',fmt(metrics.averageR)+'R','blue'),card('أقصى تراجع',fmt(metrics.maxDrawdownPct)+'%',metrics.maxDrawdownPct<=10?'green':'red'),card('أطول خسائر متتالية',metrics.maxConsecutiveLosses||0,'amber')].join('');
+ const cp=Object.entries(metrics.checkpointMetrics||{});document.getElementById('checkpointTable').innerHTML=table(['بعد جلسات','عدد العينات','متوسط العائد الصافي','نسبة الموجب'],cp.map(([h,v])=>`<tr><td>${h}</td><td>${v.samples}</td><td>${fmt(v.averageNetReturnPct)}%</td><td>${fmt(v.positivePct)}%</td></tr>`));
+ const watches=[...(data.watchOnly||[]).slice(0,50),...(data.reviewCases||[]).slice(0,50)];document.getElementById('watchTable').innerHTML=table(['السهم','الحالة','الجلسات','آخر جلسة','السبب'],watches.map(x=>`<tr><td><b>${esc(x.ticker)}</b></td><td>${esc(x.statusLabelAr||x.eligibility?.statusLabelAr||x.status||'مراقبة')}</td><td>${fmt(x.sessions??x.eligibility?.sessions)}</td><td>${esc(x.lastSession??x.eligibility?.lastSession??'—')}</td><td class="gates">${esc((x.reasons||x.failedReasons||[]).join(' • '))}</td></tr>`));
+}
+async function loadAll(){try{const bust=Date.now();const [d,m,l]=await Promise.all(['./data/v13-2-decision.json','./data/v13-2-paper-metrics.json','./data/v13-2-paper-ledger.json'].map(u=>fetch(`${u}?v=${bust}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`${u}: HTTP ${r.status}`);return r.json()})));render(d,m,l)}catch(e){const box=document.getElementById('message');box.style.display='block';box.textContent=`لم تُبن بيانات V13.2 بعد أو تعذر تحميلها: ${e.message}. شغّل GitHub Action الخاص بـV13.2 مرة واحدة.`}}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active')});loadAll();
+</script>
+</body></html>
