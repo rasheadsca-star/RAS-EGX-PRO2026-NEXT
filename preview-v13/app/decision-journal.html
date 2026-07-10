@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V13.8 — سجل القرارات</title>
+<style>
+:root{color-scheme:dark;--p:#0b1f33;--p2:#102b45;--line:#2b5674;--t:#ecf8ff;--m:#9ebdd0;--b:#38bdf8;--g:#36d995;--a:#ffc857;--r:#ff6d7d}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#04101b,#071a2b);color:var(--t);font-family:Tahoma,Arial,sans-serif}button,input,select,textarea{font:inherit}.wrap{max-width:1500px;margin:auto;padding:14px}.hero,.panel{background:rgba(11,31,51,.97);border:1px solid var(--line);border-radius:15px;margin-bottom:12px}.hero{padding:15px;display:flex;justify-content:space-between;gap:10px;align-items:center}.hero h1{margin:0 0 6px;font-size:21px}.muted{color:var(--m);font-size:11px;line-height:1.7}.btn{background:#123c59;border:1px solid #3b769a;color:var(--t);padding:9px 12px;border-radius:9px;cursor:pointer}.btn.danger{border-color:#81414e;color:#ffc5cc}.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:11px}.card{background:var(--p2);border:1px solid #2a536e;border-radius:10px;padding:11px}.card small{display:block;color:var(--m)}.card b{display:block;font-size:20px;margin-top:8px}.toolbar{display:flex;gap:7px;flex-wrap:wrap;padding:11px;border-bottom:1px solid var(--line)}input,select,textarea{background:#091c2e;border:1px solid #376682;color:var(--t);padding:9px;border-radius:8px}table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #193d55;text-align:right;font-size:11px;vertical-align:top}th{background:#0f2a43}.table{overflow:auto}.ticker{color:var(--b)}.good{color:var(--g)}.bad{color:var(--r)}.warn{color:var(--a)}.empty{padding:35px;text-align:center;color:var(--m)}textarea{width:100%;min-width:190px;min-height:60px}.notice{padding:11px;border:1px solid #6c5a2d;background:#302716;border-radius:10px;color:#ffe9a7;font-size:11px;line-height:1.7}@media(max-width:850px){.cards{grid-template-columns:repeat(3,1fr)}}@media(max-width:550px){.wrap{padding:6px}.hero{flex-direction:column;align-items:stretch}.cards{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body><div class="wrap">
+<div class="hero"><div><h1>V13.8 — سجل القرارات الثابت</h1><div class="muted">يحفظ لقطة الإشارة والخطة والحجم الورقي وقت القرار. تغيير النتائج لاحقًا لا يعدّل اللقطة الأصلية.</div></div><div><a class="btn" href="risk-allocation.html">المخاطر والتخصيص</a> <button class="btn" id="exportJson">تصدير JSON</button> <button class="btn" id="exportCsv">تصدير CSV</button> <button class="btn danger" id="clear">مسح السجل</button></div></div>
+<div class="panel"><div class="cards" id="cards"></div></div>
+<div class="panel"><div class="toolbar"><select id="filter"><option value="all">كل القرارات</option><option value="PAPER_SIMULATION">محاكاة ورقية</option><option value="WATCH">مراقبة</option><option value="REJECTED">مرفوض</option><option value="REVIEWED">تمت المراجعة</option></select><input id="search" placeholder="بحث بالرمز أو الاستراتيجية"></div>
+<div class="table"><table><thead><tr><th>السهم</th><th>جلسة القرار</th><th>الاستراتيجية</th><th>لقطة الخطة الأصلية</th><th>الحجم الورقي</th><th>قرار المستخدم</th><th>ملاحظات</th><th>الحفظ</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="panel" style="padding:12px"><div class="notice">السجل محلي في هذا المتصفح فقط. لا يُرفع إلى GitHub ولا يعدّل سجل التداول الورقي الآلي. وهو أداة توثيق ومراجعة، وليس تنفيذًا حقيقيًا.</div></div>
+</div>
+<script>
+'use strict';
+const KEY='egx-v138-decision-journal';
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const N=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toLocaleString('ar-EG',{maximumFractionDigits:d}):'—';
+let journal=[];
+function load(){try{const value=JSON.parse(localStorage.getItem(KEY)||'[]');journal=Array.isArray(value)?value:[]}catch{journal=[]}render()}
+function save(){localStorage.setItem(KEY,JSON.stringify(journal))}
+function card(l,v,n=''){return `<div class="card"><small>${E(l)}</small><b>${E(v)}</b><small>${E(n)}</small></div>`}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function render(){
+  const filter=document.getElementById('filter').value,q=document.getElementById('search').value.trim().toLowerCase();
+  const filtered=journal.filter(x=>(filter==='all'||x.decision===filter)&&(!q||String(x.ticker).toLowerCase().includes(q)||String(x.strategyLabelAr||x.strategyId||'').toLowerCase().includes(q)));
+  const counts=new Map();journal.forEach(x=>counts.set(x.decision,(counts.get(x.decision)||0)+1));
+  document.getElementById('cards').innerHTML=[
+    card('إجمالي القرارات',N(journal.length,0),'لقطات ثابتة'),
+    card('محاكاة ورقية',N(counts.get('PAPER_SIMULATION')||0,0)),
+    card('مراقبة',N(counts.get('WATCH')||0,0)),
+    card('مرفوض',N(counts.get('REJECTED')||0,0)),
+    card('تمت المراجعة',N(counts.get('REVIEWED')||0,0)),
+    card('جلسات مختلفة',N(new Set(journal.map(x=>x.sessionId).filter(Boolean)).size,0))
+  ].join('');
+  document.getElementById('rows').innerHTML=filtered.length?filtered.slice().reverse().map(item=>{
+    const p=item.allocationSnapshot||{};
+    return `<tr>
+      <td><b class="ticker">${E(item.ticker)}</b><br>${E(item.companyNameAr||'')}</td>
+      <td>${E(item.sessionId||'—')}<br><span class="muted">${E(item.createdAt||'')}</span></td>
+      <td>${E(item.strategyLabelAr||item.strategyId||'—')}<br>${E(item.source||'')}</td>
+      <td>دخول ${N(p.entry,3)}<br>وقف ${N(p.stop,3)}<br>هدف 1 ${N(p.target1,3)}<br>R/R ${N(p.riskReward1,2)}</td>
+      <td>${N(p.quantity,0)} سهم<br>${N(p.notional,2)} جنيه<br>خطر الوقف ${N(p.stopRisk,2)}</td>
+      <td><select data-decision="${E(item.id)}"><option value="PAPER_SIMULATION" ${item.decision==='PAPER_SIMULATION'?'selected':''}>محاكاة ورقية</option><option value="WATCH" ${item.decision==='WATCH'?'selected':''}>مراقبة</option><option value="REJECTED" ${item.decision==='REJECTED'?'selected':''}>مرفوض</option><option value="REVIEWED" ${item.decision==='REVIEWED'?'selected':''}>تمت المراجعة</option></select></td>
+      <td><textarea data-notes="${E(item.id)}">${E(item.notes||'')}</textarea></td>
+      <td><button class="btn" data-save="${E(item.id)}">حفظ</button><br><br><button class="btn danger" data-delete="${E(item.id)}">حذف</button></td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="8" class="empty">لا توجد قرارات محفوظة. أضف فرصة من صفحة المخاطر والتخصيص.</td></tr>';
+  document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>{const item=journal.find(x=>x.id===b.dataset.save);if(!item)return;item.decision=document.querySelector(`[data-decision="${CSS.escape(item.id)}"]`).value;item.notes=document.querySelector(`[data-notes="${CSS.escape(item.id)}"]`).value;item.updatedAt=new Date().toISOString();save();render()});
+  document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{journal=journal.filter(x=>x.id!==b.dataset.delete);save();render()});
+}
+document.getElementById('filter').onchange=render;document.getElementById('search').oninput=render;
+document.getElementById('clear').onclick=()=>{if(confirm('مسح سجل القرارات المحلي بالكامل؟')){journal=[];save();render()}};
+document.getElementById('exportJson').onclick=()=>download('egx-v138-decision-journal.json',JSON.stringify(journal,null,2),'application/json');
+document.getElementById('exportCsv').onclick=()=>{const rows=['ticker,sessionId,strategy,decision,quantity,entry,stop,target1,riskReward,notes',...journal.map(x=>{const p=x.allocationSnapshot||{};return [x.ticker,x.sessionId,x.strategyId,x.decision,p.quantity,p.entry,p.stop,p.target1,p.riskReward1,JSON.stringify(x.notes||'')].join(',')})];download('egx-v138-decision-journal.csv',rows.join('\n'),'text/csv')};
+load();
+</script></body></html>

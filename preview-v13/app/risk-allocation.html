@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V13.8 — المخاطر وتخصيص رأس المال</title>
+<style>
+:root{color-scheme:dark;--bg:#06111d;--p:#0b1f33;--p2:#102b45;--line:#2b5674;--t:#ecf8ff;--m:#9ebdd0;--b:#38bdf8;--g:#36d995;--a:#ffc857;--r:#ff6d7d}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#04101b,#071a2b);color:var(--t);font-family:Tahoma,Arial,sans-serif}button,input,select,textarea{font:inherit}a{color:inherit;text-decoration:none}
+.wrap{max-width:1550px;margin:auto;padding:14px}.hero,.panel{background:rgba(11,31,51,.97);border:1px solid var(--line);border-radius:15px;margin-bottom:12px}.hero{padding:15px;display:flex;justify-content:space-between;gap:10px;align-items:center}.hero h1{margin:0 0 6px;font-size:21px}.muted{color:var(--m);font-size:11px;line-height:1.7}
+.btn{background:#123c59;border:1px solid #3b769a;color:var(--t);padding:9px 12px;border-radius:9px;cursor:pointer}.btn.good{border-color:#2b8b63;color:#bdf6dc}.btn.warn{border-color:#8d7432;color:#ffe6a6}
+.settings{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:12px}label{font-size:10px;color:var(--m)}input,select{width:100%;margin-top:5px;background:#091c2e;border:1px solid #376682;color:var(--t);padding:9px;border-radius:8px}
+.cards{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:11px}.card{background:var(--p2);border:1px solid #2a536e;border-radius:10px;padding:11px}.card small{display:block;color:var(--m)}.card b{display:block;font-size:20px;margin-top:8px}.good{color:var(--g)}.bad{color:var(--r)}.warnText{color:var(--a)}
+.section-head{padding:12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}.section-head h2{font-size:16px;margin:0}.grid{display:grid;grid-template-columns:repeat(3,minmax(270px,1fr));gap:9px;padding:11px}.candidate{background:#081a2b;border:1px solid #2b5674;border-radius:12px;padding:12px}.candidate h3{margin:0 0 8px}.ticker{color:var(--b)}.tags{display:flex;gap:5px;flex-wrap:wrap}.tag{font-size:10px;border:1px solid #315f7d;border-radius:999px;padding:4px 7px}.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px}.num{background:#0d2941;border-radius:8px;padding:7px;font-size:10px;color:var(--m)}.num b{display:block;color:var(--t);font-size:14px;margin-top:4px}.reason{font-size:10px;line-height:1.7;padding:8px;border-radius:8px;margin-top:8px}.reason.good{background:#123527;border:1px solid #286c50}.reason.warn{background:#362d18;border:1px solid #6f5b2d;color:#ffe5a5}.reason.bad{background:#391d25;border:1px solid #7c3c4b;color:#ffc5cc}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid #193d55;text-align:right;font-size:11px;vertical-align:top}th{background:#0f2a43}.table{overflow:auto}.empty{padding:35px;text-align:center;color:var(--m)}.notice{padding:11px;border:1px solid #6c5a2d;background:#302716;border-radius:10px;color:#ffe9a7;font-size:11px;line-height:1.7}.bar{height:7px;background:#132f45;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:#38bdf8}
+@media(max-width:1100px){.settings,.cards{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.wrap{padding:6px}.hero{flex-direction:column;align-items:stretch}.settings,.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.nums{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div><h1>V13.8 — المخاطر وتخصيص رأس المال</h1><div class="muted">يقرأ محفظة V13.7 المحفوظة في متصفحك، ويحسب حجمًا ورقيًا محافظًا لكل فرصة. لا توجد أوامر شراء أو بيع.</div></div>
+    <div><a class="btn" href="portfolio.html">المحفظة</a> <a class="btn" href="decision-journal.html">سجل القرارات</a></div>
+  </div>
+
+  <div class="panel">
+    <div class="settings">
+      <label>رأس المال للتحليل<input id="capital" type="number" min="0" step="1000"></label>
+      <label>المخاطرة لكل صفقة %<input id="riskPct" type="number" min="0.1" max="5" step="0.1"></label>
+      <label>أقصى وزن للسهم %<input id="maxStock" type="number" min="1" max="100" step="1"></label>
+      <label>أقصى وزن للقطاع %<input id="maxSector" type="number" min="1" max="100" step="1"></label>
+      <label>حد المشاركة في السيولة %<input id="liquidityPct" type="number" min="0.1" max="10" step="0.1"></label>
+      <label>&nbsp;<button class="btn good" id="saveSettings">حفظ وإعادة الحساب</button></label>
+    </div>
+  </div>
+
+  <div class="panel"><div class="cards" id="summaryCards"></div></div>
+
+  <div class="panel">
+    <div class="section-head"><h2>مخاطر المحفظة الحالية</h2><span class="muted">تقدير محافظ يعتمد على المخاطر الفردية، وليس ضمانًا للخسارة القصوى.</span></div>
+    <div class="table"><table><thead><tr><th>السهم</th><th>القيمة</th><th>الوزن</th><th>القطاع</th><th>المخاطر</th><th>VaR يومي 95%</th><th>أقصى تراجع 100 جلسة</th><th>تنبيه الارتباط</th></tr></thead><tbody id="holdingRows"></tbody></table></div>
+  </div>
+
+  <div class="panel">
+    <div class="section-head"><h2>تخصيص ورقي للفرص الحالية</h2><select id="statusFilter"><option value="all">كل الفرص</option><option value="ready">جاهز للتخصيص الورقي</option><option value="watch">مراقبة</option><option value="blocked">مرفوض للمحفظة</option></select></div>
+    <div class="grid" id="candidateGrid"></div>
+  </div>
+
+  <div class="panel" style="padding:12px"><div class="notice">الحجم المقترح هو حد أقصى لمحاكاة ورقية وفق المخاطرة والوزن والسيولة والقطاع والارتباط. لا يُرسل إلى وسيط، ولا يمثل توصية مضمونة أو أمر تنفيذ.</div></div>
+</div>
+<script>
+'use strict';
+
+const PORTFOLIO_KEY='egx-v137-portfolio';
+const SETTINGS_KEY='egx-v138-risk-settings';
+const JOURNAL_KEY='egx-v138-decision-journal';
+const RISK_PATH='../../data/quant/portfolio-risk-universe.json';
+const STOCK_PATH='../../data/quant/stock-intelligence-index.json';
+
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const N=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toLocaleString('ar-EG',{maximumFractionDigits:d}):'—';
+const A=v=>Array.isArray(v)?v:[];
+let riskDoc=null,stockDoc=null,portfolio=[],settings={},profileMap=new Map(),stockMap=new Map();
+
+function loadLocal(key,fallback){try{const value=JSON.parse(localStorage.getItem(key)||'null');return value??fallback}catch{return fallback}}
+function saveLocal(key,value){localStorage.setItem(key,JSON.stringify(value))}
+function card(label,value,note='',cls=''){return `<div class="card"><small>${E(label)}</small><b class="${cls}">${E(value)}</b><small>${E(note)}</small></div>`}
+
+function initialSettings(){
+  const p=riskDoc?.policy||{};
+  return {
+    capital:0,
+    riskPct:Number(p.defaultRiskPerTradePct||0.5),
+    maxStock:Number(p.maximumStockWeightPct||20),
+    maxSector:Number(p.maximumSectorWeightPct||35),
+    liquidityPct:Number(p.maximumLiquidityParticipationPct||2)
+  };
+}
+
+function enrichPortfolio(){
+  return portfolio.map(h=>{
+    const stock=stockMap.get(String(h.ticker||'').toUpperCase());
+    const profile=profileMap.get(String(h.ticker||'').toUpperCase());
+    const qty=Number(h.quantity),avg=Number(h.averagePrice),price=Number(stock?.price);
+    const value=Number.isFinite(price)&&qty>0?price*qty:0;
+    return {...h,ticker:String(h.ticker||'').toUpperCase(),stock,profile,qty,avg,price,value};
+  });
+}
+
+function correlationWarning(ticker,holdings,total){
+  const profile=profileMap.get(ticker);
+  if(!profile||!total)return null;
+  let best=null;
+  for(const neighbor of A(profile.topCorrelated)){
+    const holding=holdings.find(h=>h.ticker===neighbor.ticker);
+    if(!holding||!holding.value)continue;
+    const weight=holding.value/total*100;
+    if(weight<5)continue;
+    if(!best||neighbor.correlation>best.correlation)best={...neighbor,weight};
+  }
+  return best;
+}
+
+function allocation(candidate,holdings,total,capital,sectorValues){
+  const p=candidate.riskProfile||{}, plan=candidate.plan||{};
+  const entry=Number(candidate.referenceEntry),stop=Number(plan.stopLoss);
+  const sector=p.sector||'غير مصنف';
+  const existing=holdings.find(h=>h.ticker===candidate.ticker);
+  const existingValue=existing?.value||0;
+  const sectorValue=sectorValues.get(sector)||0;
+  const reasons=[];
+
+  if(candidate.status!=='PAPER_READY')reasons.push('الإشارة ما زالت مراقبة وليست جاهزة ورقيًا');
+  if(!(entry>0))reasons.push('سعر الدخول غير متاح');
+  if(!(stop>0&&entry>stop))reasons.push('وقف الخسارة غير صالح');
+  if(!(Number(p.averageTurnover20Egp)>0))reasons.push('السيولة التاريخية غير متاحة');
+  if(!(capital>0))reasons.push('أدخل رأس مال للتحليل');
+
+  if(reasons.length){
+    return {code:candidate.status==='PAPER_READY'?'BLOCKED':'WATCH',label:candidate.status==='PAPER_READY'?'مرفوض للمحفظة':'مراقبة فقط',reasons,qty:0};
+  }
+
+  const riskAmount=capital*(settings.riskPct/100);
+  const riskPerShare=entry-stop;
+  const qtyRisk=Math.floor(riskAmount/riskPerShare);
+  const stockCap=Math.max(0,capital*(settings.maxStock/100)-existingValue);
+  const qtyStock=Math.floor(stockCap/entry);
+  const sectorCap=Math.max(0,capital*(settings.maxSector/100)-sectorValue);
+  const qtySector=Math.floor(sectorCap/entry);
+  const liquidityCap=Number(p.averageTurnover20Egp)*(settings.liquidityPct/100);
+  const qtyLiquidity=Math.floor(liquidityCap/entry);
+
+  const corr=correlationWarning(candidate.ticker,holdings,total);
+  let corrMultiplier=1;
+  if(corr&&corr.correlation>=Number(riskDoc.policy.correlationBlock||0.9)){
+    corrMultiplier=0;
+    reasons.push(`ارتباط مرتفع جدًا ${N(corr.correlation,2)} مع ${corr.ticker}`);
+  }else if(corr&&corr.correlation>=Number(riskDoc.policy.correlationWarning||0.75)){
+    corrMultiplier=0.5;
+    reasons.push(`تم خفض الحجم 50% لارتباط ${N(corr.correlation,2)} مع ${corr.ticker}`);
+  }
+
+  const baseQty=Math.max(0,Math.min(qtyRisk,qtyStock,qtySector,qtyLiquidity));
+  const qty=Math.floor(baseQty*corrMultiplier);
+  if(qtyRisk<=0)reasons.push('ميزانية المخاطرة لا تسمح بسهم واحد');
+  if(qtyStock<=0)reasons.push('وصل السهم إلى حد الوزن الأقصى');
+  if(qtySector<=0)reasons.push('وصل القطاع إلى حد الوزن الأقصى');
+  if(qtyLiquidity<=0)reasons.push('حد السيولة لا يسمح بسهم واحد');
+  if(qty<=0)return {code:'BLOCKED',label:'مرفوض للمحفظة',reasons,qty:0,corr};
+
+  const notional=qty*entry;
+  const stopRisk=qty*riskPerShare;
+  const newWeight=(existingValue+notional)/capital*100;
+  const newSectorWeight=(sectorValue+notional)/capital*100;
+
+  return {
+    code:'READY',label:'مناسب لمحاكاة ورقية',reasons,qty,entry,stop,notional,stopRisk,
+    newWeight,newSectorWeight,qtyRisk,qtyStock,qtySector,qtyLiquidity,corr,sector
+  };
+}
+
+function addJournal(candidate,allocation){
+  const journal=loadLocal(JOURNAL_KEY,[]);
+  const id=`${candidate.ticker}-${riskDoc.sessionId}-${candidate.strategyId||'strategy'}-${Date.now()}`;
+  journal.push({
+    id,
+    createdAt:new Date().toISOString(),
+    sessionId:riskDoc.sessionId,
+    ticker:candidate.ticker,
+    companyNameAr:candidate.companyNameAr||candidate.riskProfile?.companyNameAr||'',
+    strategyId:candidate.strategyId,
+    strategyLabelAr:candidate.strategyLabelAr,
+    source:candidate.source,
+    originalStatus:candidate.status,
+    recommendationScore:candidate.recommendationScore,
+    decision:'PAPER_SIMULATION',
+    notes:'',
+    allocationSnapshot:{
+      quantity:allocation.qty,
+      entry:allocation.entry,
+      stop:allocation.stop,
+      target1:candidate.plan?.target1,
+      target2:candidate.plan?.target2,
+      riskReward1:candidate.plan?.riskReward1,
+      notional:allocation.notional,
+      stopRisk:allocation.stopRisk,
+      portfolioWeightAfter:allocation.newWeight,
+      sectorWeightAfter:allocation.newSectorWeight,
+      riskScore:candidate.riskProfile?.riskScore,
+      riskLabelAr:candidate.riskProfile?.riskLabelAr
+    }
+  });
+  saveLocal(JOURNAL_KEY,journal);
+  alert('تم حفظ لقطة القرار في سجل V13.8. لم يتم تنفيذ أي صفقة.');
+}
+
+function render(){
+  const holdings=enrichPortfolio();
+  const total=holdings.reduce((sum,h)=>sum+h.value,0);
+  const capital=Number(settings.capital)>0?Number(settings.capital):total;
+  const sectorValues=new Map();
+  holdings.forEach(h=>{const sector=h.profile?.sector||h.stock?.sector||'غير مصنف';sectorValues.set(sector,(sectorValues.get(sector)||0)+h.value)});
+
+  const conservativeVar=capital?holdings.reduce((sum,h)=>sum+((h.value/capital)*(Number(h.profile?.var95OneDayPct)||0)),0):0;
+  const maxWeight=capital?Math.max(0,...holdings.map(h=>h.value/capital*100)):0;
+  const maxSectorWeight=capital?Math.max(0,...sectorValues.values())/capital*100:0;
+  const highRiskValue=holdings.filter(h=>h.profile?.riskCode==='HIGH').reduce((sum,h)=>sum+h.value,0);
+
+  document.getElementById('summaryCards').innerHTML=[
+    card('رأس المال المستخدم',N(capital,2),'قيمة المحفظة أو الإدخال اليدوي'),
+    card('قيمة الحيازات',N(total,2),'جنيه'),
+    card('أكبر وزن سهم',`${N(maxWeight,1)}%`,`الحد ${N(settings.maxStock,1)}%`,maxWeight>settings.maxStock?'bad':'good'),
+    card('أكبر وزن قطاع',`${N(maxSectorWeight,1)}%`,`الحد ${N(settings.maxSector,1)}%`,maxSectorWeight>settings.maxSector?'bad':'good'),
+    card('VaR محافظ يومي',`${N(conservativeVar,2)}%`,'جمع موزون للمخاطر الفردية',conservativeVar>2.5?'warnText':''),
+    card('حيازات مرتفعة المخاطر',N(highRiskValue,2),'قيمة سوقية',highRiskValue>0?'warnText':'good')
+  ].join('');
+
+  document.getElementById('holdingRows').innerHTML=holdings.length?holdings.map(h=>{
+    const weight=capital?h.value/capital*100:0;
+    const corr=correlationWarning(h.ticker,holdings.filter(x=>x.ticker!==h.ticker),total);
+    return `<tr>
+      <td><b class="ticker">${E(h.ticker)}</b><br>${E(h.stock?.companyNameAr||h.stock?.companyNameEn||'')}</td>
+      <td>${N(h.value,2)}</td><td>${N(weight,1)}%<div class="bar"><i style="width:${Math.min(100,weight)}%"></i></div></td>
+      <td>${E(h.profile?.sector||h.stock?.sector||'غير مصنف')}</td>
+      <td class="${h.profile?.riskCode==='HIGH'?'bad':h.profile?.riskCode==='LOW'?'good':'warnText'}">${E(h.profile?.riskLabelAr||'غير متاح')}<br>${N(h.profile?.riskScore,0)}/100</td>
+      <td>${N(h.profile?.var95OneDayPct,2)}%</td><td>${N(h.profile?.maxDrawdown100Pct,2)}%</td>
+      <td>${corr?`${E(corr.ticker)} — ${N(corr.correlation,2)}`:'—'}</td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="8" class="empty">المحفظة فارغة. أضف الحيازات في صفحة المحفظة أو أدخل رأس مال لتحليل الفرص دون حيازات.</td></tr>';
+
+  const filter=document.getElementById('statusFilter').value;
+  const computed=A(riskDoc.candidates).map(candidate=>({candidate,allocation:allocation(candidate,holdings,total,capital,sectorValues)}));
+  const filtered=computed.filter(item=>filter==='all'||(filter==='ready'&&item.allocation.code==='READY')||(filter==='watch'&&item.allocation.code==='WATCH')||(filter==='blocked'&&item.allocation.code==='BLOCKED'));
+
+  document.getElementById('candidateGrid').innerHTML=filtered.length?filtered.map(({candidate,allocation:a})=>{
+    const p=candidate.riskProfile||{};
+    const reasonClass=a.code==='READY'?'good':a.code==='WATCH'?'warn':'bad';
+    return `<article class="candidate">
+      <h3><span class="ticker">${E(candidate.ticker)}</span> — ${E(candidate.companyNameAr||candidate.companyNameEn||'')}</h3>
+      <div class="tags"><span class="tag">${E(candidate.statusLabelAr)}</span><span class="tag">${E(candidate.strategyLabelAr||candidate.strategyId||'')}</span><span class="tag">${E(p.riskLabelAr||'مخاطر غير متاحة')}</span></div>
+      <div class="nums">
+        <div class="num">الدخول<b>${N(candidate.referenceEntry,3)}</b></div><div class="num">الوقف<b>${N(candidate.plan?.stopLoss,3)}</b></div><div class="num">المسافة للوقف<b>${N(candidate.stopDistancePct,2)}%</b></div>
+        <div class="num">الكمية الورقية القصوى<b>${N(a.qty,0)}</b></div><div class="num">قيمة المحاكاة<b>${N(a.notional,2)}</b></div><div class="num">الخطر عند الوقف<b>${N(a.stopRisk,2)}</b></div>
+        <div class="num">وزن السهم بعد الإضافة<b>${N(a.newWeight,1)}%</b></div><div class="num">وزن القطاع بعد الإضافة<b>${N(a.newSectorWeight,1)}%</b></div><div class="num">سيولة 20 جلسة<b>${N(p.averageTurnover20Egp,0)}</b></div>
+      </div>
+      <div class="reason ${reasonClass}"><b>${E(a.label)}</b><br>${E((a.reasons||[]).join(' | ')||'اجتاز حدود المخاطرة والوزن والقطاع والسيولة والارتباط الحالية.')}</div>
+      ${a.code==='READY'?`<div style="margin-top:9px"><button class="btn good" data-journal="${E(candidate.ticker)}|${E(candidate.strategyId||'')}">إضافة لسجل المحاكاة الورقية</button></div>`:''}
+    </article>`;
+  }).join(''):'<div class="empty">لا توجد فرص مطابقة للفلتر الحالي.</div>';
+
+  document.querySelectorAll('[data-journal]').forEach(button=>button.onclick=()=>{
+    const [ticker,strategy]=button.dataset.journal.split('|');
+    const item=computed.find(x=>x.candidate.ticker===ticker&&(x.candidate.strategyId||'')===strategy);
+    if(item)addJournal(item.candidate,item.allocation);
+  });
+}
+
+async function load(){
+  try{
+    const [riskResponse,stockResponse]=await Promise.all([
+      fetch(`${RISK_PATH}?v=${Date.now()}`,{cache:'no-store'}),
+      fetch(`${STOCK_PATH}?v=${Date.now()}`,{cache:'no-store'})
+    ]);
+    if(!riskResponse.ok)throw new Error(`ملف المخاطر HTTP ${riskResponse.status}`);
+    if(!stockResponse.ok)throw new Error(`ملف الأسهم HTTP ${stockResponse.status}`);
+    riskDoc=await riskResponse.json();stockDoc=await stockResponse.json();
+    profileMap=new Map(A(riskDoc.profiles).map(x=>[x.ticker,x]));
+    stockMap=new Map(A(stockDoc.stocks).map(x=>[x.ticker,x]));
+    portfolio=loadLocal(PORTFOLIO_KEY,[]);
+    settings={...initialSettings(),...loadLocal(SETTINGS_KEY,{})};
+    document.getElementById('capital').value=settings.capital||'';
+    document.getElementById('riskPct').value=settings.riskPct;
+    document.getElementById('maxStock').value=settings.maxStock;
+    document.getElementById('maxSector').value=settings.maxSector;
+    document.getElementById('liquidityPct').value=settings.liquidityPct;
+    render();
+  }catch(error){
+    document.getElementById('candidateGrid').innerHTML=`<div class="empty">لم يتم بناء V13.8 بعد: ${E(error.message)}</div>`;
+  }
+}
+
+document.getElementById('saveSettings').onclick=()=>{
+  settings={
+    capital:Number(document.getElementById('capital').value)||0,
+    riskPct:Number(document.getElementById('riskPct').value)||0.5,
+    maxStock:Number(document.getElementById('maxStock').value)||20,
+    maxSector:Number(document.getElementById('maxSector').value)||35,
+    liquidityPct:Number(document.getElementById('liquidityPct').value)||2
+  };
+  saveLocal(SETTINGS_KEY,settings);render();
+};
+document.getElementById('statusFilter').onchange=render;
+load();
+</script>
+</body></html>
