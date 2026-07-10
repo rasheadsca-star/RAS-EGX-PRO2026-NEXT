@@ -1,0 +1,234 @@
+name: EGX Historical Seed Gap Completion — V12.7
+
+on:
+  workflow_dispatch:
+    inputs:
+      batch_number:
+        description: "Gap batch number"
+        required: true
+        default: "1"
+        type: string
+      batch_size:
+        description: "Symbols per batch (1-25)"
+        required: true
+        default: "11"
+        type: string
+      ticker:
+        description: "Optional single ticker; leave empty for batch"
+        required: false
+        default: ""
+        type: string
+      min_improved:
+        description: "Minimum improved symbols required (0 allows diagnostic-only success)"
+        required: true
+        default: "0"
+        type: string
+      force_refresh:
+        description: "Retry even if gap was previously marked complete"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-historical-update
+  cancel-in-progress: false
+
+jobs:
+  complete-gap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout current main with history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate V12.7 package and stable-app isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            scripts/history/seed-gap-completion.cjs
+            scripts/history/seed-gap-acceptance.cjs
+            scripts/history/adapters/yahoo-seed-gap-adapter.cjs
+            scripts/history/history-validator.cjs
+            scripts/history/history-storage.cjs
+            scripts/history/history-summary-builder.cjs
+            scripts/history/lib/http-client.cjs
+            scripts/history/lib/utils.cjs
+            data/history-gap-completion-config.json
+            data/history-seed-import-report.json
+            data/history-summary.json
+            data/symbol-map.json
+            preview-v12/history-100.html
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing required file: $file"; exit 1; }
+          done
+          node --check scripts/history/seed-gap-completion.cjs
+          node --check scripts/history/seed-gap-acceptance.cjs
+          node --check scripts/history/adapters/yahoo-seed-gap-adapter.cjs
+          node -e "JSON.parse(require('fs').readFileSync('data/history-gap-completion-config.json','utf8')); console.log('Config JSON valid')"
+          test -z "$(git diff --name-only -- index.html service-worker.js assets config preview-v12/index.html)"
+          echo "V12.7 package validation passed. Stable application files are isolated."
+
+      - name: Complete post-seed historical gaps
+        id: gap
+        env:
+          GAP_BATCH_NUMBER: ${{ inputs.batch_number }}
+          GAP_BATCH_SIZE: ${{ inputs.batch_size }}
+          GAP_TICKER: ${{ inputs.ticker }}
+          GAP_FORCE_REFRESH: ${{ inputs.force_refresh }}
+          GAP_REQUEST_CONCURRENCY: "2"
+          GAP_BATCH_DELAY_MS: "1600"
+          GAP_SYMBOL_DELAY_MS: "600"
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/seed-gap-completion.cjs | tee /tmp/v12-7-gap.log
+          improved=$(node -e "const r=require('./data/history-gap-completion-report.json'); process.stdout.write(String(r.counts?.improved||0))")
+          completed=$(node -e "const r=require('./data/history-gap-completion-report.json'); process.stdout.write(String(r.counts?.completed100Current||0))")
+          failed=$(node -e "const r=require('./data/history-gap-completion-report.json'); process.stdout.write(String(r.counts?.failed||0))")
+          echo "improved=$improved" >> "$GITHUB_OUTPUT"
+          echo "completed=$completed" >> "$GITHUB_OUTPUT"
+          echo "failed=$failed" >> "$GITHUB_OUTPUT"
+          echo "Improved=$improved, completed100Current=$completed, failed=$failed"
+          if [ "$improved" -lt "${{ inputs.min_improved }}" ]; then
+            echo "Only $improved symbols improved; minimum required is ${{ inputs.min_improved }}"
+            exit 1
+          fi
+
+      - name: Run V12.7 acceptance tests
+        env:
+          GAP_MIN_IMPROVED: ${{ inputs.min_improved }}
+        run: node scripts/history/seed-gap-acceptance.cjs
+
+      - name: Enforce strict write isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t selected < <(node -e "const r=require('./data/history-gap-completion-report.json'); for(const t of (r.selectedTickers||[])) console.log(String(t).toUpperCase())")
+          declare -A selected_set=()
+          for ticker in "${selected[@]}"; do selected_set["$ticker"]=1; done
+
+          mapfile -t changed < <(
+            {
+              git diff --name-only
+              git diff --cached --name-only
+              git ls-files --others --exclude-standard
+            } | sed '/^$/d' | sort -u
+          )
+
+          echo "Changed files:"
+          if [ "${#changed[@]}" -eq 0 ]; then echo "none"; else printf '%s\n' "${changed[@]}"; fi
+
+          for file in "${changed[@]}"; do
+            case "$file" in
+              data/history/*.json)
+                ticker="$(basename "$file" .json | tr '[:lower:]' '[:upper:]')"
+                if [ -z "${selected_set[$ticker]+x}" ]; then
+                  echo "SAFETY STOP: history file outside selected seed-gap set: $file"
+                  exit 1
+                fi
+                ;;
+              data/symbol-map.json|data/history-summary.json|data/session-calendar.json|data/source-audit.json|data/history-last-run.json|data/history-gap-completion-report.json|data/history-gap-completion-errors.json)
+                ;;
+              *)
+                echo "SAFETY STOP: forbidden changed path: $file"
+                exit 1
+                ;;
+            esac
+          done
+
+          test -z "$(git diff --name-only -- index.html service-worker.js assets config preview-v12/index.html)"
+          echo "Isolation passed: only selected V12.7 history outputs changed."
+
+      - name: Commit valid V12.7 outputs only
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          allowed=(
+            data/symbol-map.json
+            data/history
+            data/history-summary.json
+            data/session-calendar.json
+            data/source-audit.json
+            data/history-last-run.json
+            data/history-gap-completion-report.json
+            data/history-gap-completion-errors.json
+          )
+          for item in "${allowed[@]}"; do
+            if [ -e "$item" ] || git ls-files --error-unmatch "$item" >/dev/null 2>&1; then
+              git add -A -- "$item"
+            fi
+          done
+
+          if git diff --cached --quiet; then
+            echo "No valid V12.7 changes to commit."
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "V12.7 complete historical seed gaps"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload V12.7 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-7-seed-gap-${{ github.run_number }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            data/history-gap-completion-report.json
+            data/history-gap-completion-errors.json
+            data/history-summary.json
+            data/history-last-run.json
+            /tmp/v12-7-gap.log
+
+  deploy:
+    needs: complete-gap
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload current repository to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy V12.7 history preview
+        id: deployment
+        uses: actions/deploy-pages@v4
