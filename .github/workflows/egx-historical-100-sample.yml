@@ -1,23 +1,25 @@
-name: EGX Historical 100 Sessions — V12.4 Repair & Batches
+name: EGX Historical 100 Sessions — V12.5 Cleanup & Fallback
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "build_map_only, sample, batch_backfill, incremental_batch, retry_failed, repair_failed_batch, repair_symbol"
+        description: "cleanup_and_classify, salvage_identity, import_approved_fallback, batch_backfill, incremental_batch, retry_failed, repair_failed_batch, repair_symbol, build_map_only"
         required: true
         type: choice
-        default: batch_backfill
+        default: cleanup_and_classify
         options:
-          - build_map_only
-          - sample
+          - cleanup_and_classify
+          - salvage_identity
+          - import_approved_fallback
           - batch_backfill
           - incremental_batch
           - retry_failed
           - repair_failed_batch
           - repair_symbol
+          - build_map_only
       batch_number:
-        description: "1-based batch number for backfill, retry, or failed-symbol repair"
+        description: "1-based batch number; use 1 for cleanup/import"
         required: true
         default: "1"
         type: string
@@ -27,16 +29,15 @@ on:
         default: "20"
         type: string
       ticker:
-        description: "Ticker only when mode=repair_symbol, e.g. COMI"
+        description: "Ticker only when mode=repair_symbol"
         required: false
         type: string
       min_success:
-        description: "Minimum valid files required in selected batch; use 1 to keep valid partial results"
+        description: "Minimum valid files required when a fetch/import is performed"
         required: true
         default: "1"
         type: string
   schedule:
-    # Sunday–Thursday after EGX close. Each run updates the next rotating batch.
     - cron: "30 15 * * 0-4"
 
 permissions:
@@ -51,7 +52,7 @@ concurrency:
 jobs:
   history:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
 
     steps:
       - name: Checkout main with history
@@ -81,18 +82,16 @@ jobs:
             echo "batch_number=${{ inputs.batch_number }}" >> "$GITHUB_OUTPUT"
             echo "batch_size=${{ inputs.batch_size }}" >> "$GITHUB_OUTPUT"
             echo "ticker=${{ inputs.ticker }}" >> "$GITHUB_OUTPUT"
-            if [ "${{ inputs.mode }}" = "repair_symbol" ]; then
-              echo "min_success=1" >> "$GITHUB_OUTPUT"
-            else
-              echo "min_success=${{ inputs.min_success }}" >> "$GITHUB_OUTPUT"
-            fi
+            echo "min_success=${{ inputs.min_success }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate package files and stable-app isolation
+      - name: Validate V12.5 package and stable-app isolation
         shell: bash
         run: |
           set -euo pipefail
           required=(
+            scripts/history/universe-cleanup-fallback.cjs
+            scripts/history/approved-fallback-importer.cjs
             scripts/history/full-market-universe-builder.cjs
             scripts/history/failed-symbol-resolver.cjs
             scripts/history/historical-100-runner.cjs
@@ -101,19 +100,37 @@ jobs:
             scripts/history/adapters/yahoo-history-adapter.cjs
             data/symbol-map.json
             data/history-verification-overrides.json
+            data/history-fallback-import.json
             preview-v12/history-100.html
           )
           for file in "${required[@]}"; do
             test -f "$file" || { echo "Missing required file: $file"; exit 1; }
           done
-          echo "Stable V11/V11.5 files are outside the write allow-list."
+          node --check scripts/history/universe-cleanup-fallback.cjs
+          node --check scripts/history/approved-fallback-importer.cjs
+          node --check scripts/history/full-market-universe-builder.cjs
+          node --check scripts/history/historical-100-runner.cjs
+          node --check scripts/history/adapters/yahoo-history-adapter.cjs
+          echo "V11/V11.5 stable files remain outside the write allow-list."
 
-      - name: Build and expand full-market symbol map
+      - name: Build or refresh full-market symbol map
+        if: steps.run-config.outputs.mode == 'build_map_only' || steps.run-config.outputs.mode == 'batch_backfill' || steps.run-config.outputs.mode == 'incremental_batch' || steps.run-config.outputs.mode == 'retry_failed' || steps.run-config.outputs.mode == 'repair_failed_batch' || steps.run-config.outputs.mode == 'repair_symbol' || steps.run-config.outputs.mode == 'incremental_auto'
         env:
           HISTORY_UNIVERSE_MAX: "300"
         run: node scripts/history/full-market-universe-builder.cjs
 
-      - name: Resolve failed Yahoo symbols and clean obvious non-securities
+      - name: Clean universe and classify unresolved symbols
+        id: cleanup
+        if: steps.run-config.outputs.mode == 'cleanup_and_classify' || steps.run-config.outputs.mode == 'salvage_identity'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/universe-cleanup-fallback.cjs
+          eligible_count=$(node -e "const r=require('./data/history-universe-cleanup-report.json'); process.stdout.write(String(r.counts?.eligible_guarded_salvage||0))")
+          echo "eligible_count=$eligible_count" >> "$GITHUB_OUTPUT"
+          echo "Guarded identity salvage candidates: $eligible_count"
+
+      - name: Resolve failed Yahoo symbols
         id: repair-map
         if: steps.run-config.outputs.mode == 'repair_failed_batch'
         env:
@@ -126,12 +143,11 @@ jobs:
           node scripts/history/failed-symbol-resolver.cjs
           resolved_count=$(node -e "const r=require('./data/history-symbol-repair-report.json'); process.stdout.write(String((r.resolvedTickers||[]).length))")
           echo "resolved_count=$resolved_count" >> "$GITHUB_OUTPUT"
-          echo "Resolved candidates in this repair batch: $resolved_count"
 
-      - name: Fetch and validate selected historical batch
-        if: steps.run-config.outputs.mode != 'build_map_only' && (steps.run-config.outputs.mode != 'repair_failed_batch' || steps.repair-map.outputs.resolved_count != '0')
+      - name: Fetch and validate selected historical data
+        if: (steps.run-config.outputs.mode == 'salvage_identity' && steps.cleanup.outputs.eligible_count != '0') || steps.run-config.outputs.mode == 'batch_backfill' || steps.run-config.outputs.mode == 'incremental_batch' || steps.run-config.outputs.mode == 'retry_failed' || steps.run-config.outputs.mode == 'repair_symbol' || steps.run-config.outputs.mode == 'incremental_auto' || (steps.run-config.outputs.mode == 'repair_failed_batch' && steps.repair-map.outputs.resolved_count != '0')
         env:
-          HISTORY_MODE: ${{ steps.run-config.outputs.mode == 'repair_failed_batch' && 'retry_resolved' || steps.run-config.outputs.mode }}
+          HISTORY_MODE: ${{ steps.run-config.outputs.mode == 'salvage_identity' && 'retry_identity' || (steps.run-config.outputs.mode == 'repair_failed_batch' && 'retry_resolved' || steps.run-config.outputs.mode) }}
           HISTORY_TICKER: ${{ steps.run-config.outputs.ticker }}
           HISTORY_BATCH_NUMBER: ${{ steps.run-config.outputs.batch_number }}
           HISTORY_BATCH_SIZE: ${{ steps.run-config.outputs.batch_size }}
@@ -140,10 +156,14 @@ jobs:
           HISTORY_SYMBOL_DELAY_MS: "550"
         run: node scripts/history/historical-100-runner.cjs
 
-      - name: Run acceptance tests
-        if: steps.run-config.outputs.mode != 'build_map_only' && (steps.run-config.outputs.mode != 'repair_failed_batch' || steps.repair-map.outputs.resolved_count != '0')
+      - name: Import administrator-approved fallback history
+        if: steps.run-config.outputs.mode == 'import_approved_fallback'
+        run: node scripts/history/approved-fallback-importer.cjs
+
+      - name: Run acceptance tests after fetch or import
+        if: (steps.run-config.outputs.mode == 'salvage_identity' && steps.cleanup.outputs.eligible_count != '0') || steps.run-config.outputs.mode == 'batch_backfill' || steps.run-config.outputs.mode == 'incremental_batch' || steps.run-config.outputs.mode == 'retry_failed' || steps.run-config.outputs.mode == 'repair_symbol' || steps.run-config.outputs.mode == 'incremental_auto' || steps.run-config.outputs.mode == 'import_approved_fallback' || (steps.run-config.outputs.mode == 'repair_failed_batch' && steps.repair-map.outputs.resolved_count != '0')
         env:
-          HISTORY_MODE: ${{ steps.run-config.outputs.mode == 'repair_failed_batch' && 'retry_resolved' || steps.run-config.outputs.mode }}
+          HISTORY_MODE: ${{ steps.run-config.outputs.mode == 'salvage_identity' && 'retry_identity' || steps.run-config.outputs.mode }}
           HISTORY_TICKER: ${{ steps.run-config.outputs.ticker }}
           HISTORY_MIN_SUCCESS: ${{ steps.run-config.outputs.min_success }}
         run: node scripts/history/acceptance-tests.cjs
@@ -162,24 +182,24 @@ jobs:
           const entries = (Array.isArray(raw) ? raw : Object.values(raw)).filter((entry) => entry.active !== false);
           const summary = buildSummary(root, entries, {
             yahoo: { status: 'configured', role: 'historical backfill' },
-            egx: { status: 'manual_or_future_adapter', role: 'official verification' },
-            mubasher: { status: 'existing_cache_when_available', role: 'latest-session cross-check' },
-            investing: { status: 'manual_fallback', role: 'fallback/manual verification' },
+            egx: { status: 'manual_or_approved_import', role: 'official verification' },
+            mubasher: { status: 'existing_cache_or_approved_import', role: 'cross-check/fallback' },
+            investing: { status: 'approved_import', role: 'fallback' },
           });
           buildSessionCalendar(root, summary);
           const batchSize = 20;
           writeJsonAtomic(path.join(root, 'data/history-batch-state.json'), {
-            schemaVersion: '12.3.0', generatedAt: nowIso(), totalSymbols: entries.length,
+            schemaVersion: '12.5.0', generatedAt: nowIso(), totalSymbols: entries.length,
             batchSize, totalBatches: Math.max(1, Math.ceil(entries.length / batchSize)),
             lastMode: 'build_map_only', lastBatchNumber: null, nextIncrementalBatch: 1,
           });
           writeJsonAtomic(path.join(root, 'data/history-last-run.json'), {
-            schemaVersion: '12.3.0', generatedAt: nowIso(), mode: 'build_map_only',
+            schemaVersion: '12.5.0', generatedAt: nowIso(), mode: 'build_map_only',
             selectedTickers: [], coverageAfterRun: summary.coverage,
           });
           NODE
 
-      - name: Enforce strict write isolation
+      - name: Enforce strict historical write isolation
         shell: bash
         run: |
           set -euo pipefail
@@ -192,18 +212,14 @@ jobs:
           )
 
           echo "Changed files:"
-          if [ "${#changed[@]}" -eq 0 ]; then
-            echo "none"
-          else
-            printf '%s\n' "${changed[@]}"
-          fi
+          if [ "${#changed[@]}" -eq 0 ]; then echo "none"; else printf '%s\n' "${changed[@]}"; fi
 
           for file in "${changed[@]}"; do
             case "$file" in
-              data/symbol-map.json|data/history-universe-report.json|data/history/*.json|data/history-summary.json|data/source-audit.json|data/history-errors.json|data/session-calendar.json|data/corporate-actions.json|data/history-batch-state.json|data/history-last-run.json|data/history-symbol-repair-report.json)
+              data/symbol-map.json|data/history-universe-report.json|data/history/*.json|data/history-summary.json|data/source-audit.json|data/history-errors.json|data/session-calendar.json|data/corporate-actions.json|data/history-batch-state.json|data/history-last-run.json|data/history-symbol-repair-report.json|data/history-universe-cleanup-report.json|data/history-fallback-queue.json|data/history-fallback-import-report.json)
                 ;;
               *)
-                echo "SAFETY STOP: historical workflow attempted to change forbidden path: $file"
+                echo "SAFETY STOP: forbidden changed path: $file"
                 exit 1
                 ;;
             esac
@@ -212,7 +228,7 @@ jobs:
           test -z "$(git diff --name-only -- index.html service-worker.js assets config preview-v12/index.html)"
           echo "Isolation passed. Stable application files were not touched."
 
-      - name: Commit valid full-market history outputs only
+      - name: Commit valid V12.5 history outputs only
         id: commit
         shell: bash
         run: |
@@ -232,6 +248,9 @@ jobs:
             data/history-batch-state.json
             data/history-last-run.json
             data/history-symbol-repair-report.json
+            data/history-universe-cleanup-report.json
+            data/history-fallback-queue.json
+            data/history-fallback-import-report.json
           )
           for item in "${allowed[@]}"; do
             if [ -e "$item" ] || git ls-files --error-unmatch "$item" >/dev/null 2>&1; then
@@ -240,31 +259,33 @@ jobs:
           done
 
           if git diff --cached --quiet; then
-            echo "No valid history changes to commit."
+            echo "No valid V12.5 changes to commit."
             echo "committed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          git commit -m "V12.4 repair failed EGX historical symbols"
+          git commit -m "V12.5 clean EGX universe and prepare verified fallbacks"
           git pull --rebase origin main
           git push origin HEAD:main
           echo "committed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Upload diagnostic artifact
+      - name: Upload V12.5 diagnostic artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v12-4-symbol-repair-diagnostics-${{ github.run_number }}
+          name: v12-5-cleanup-fallback-${{ github.run_number }}
           if-no-files-found: ignore
           retention-days: 14
           path: |
             data/history-summary.json
             data/history-errors.json
-            data/source-audit.json
             data/history-universe-report.json
             data/history-batch-state.json
             data/history-last-run.json
             data/history-symbol-repair-report.json
+            data/history-universe-cleanup-report.json
+            data/history-fallback-queue.json
+            data/history-fallback-import-report.json
 
   deploy:
     needs: history
@@ -290,6 +311,6 @@ jobs:
         with:
           path: "."
 
-      - name: Deploy V12.4 repaired history preview
+      - name: Deploy V12.5 history preview
         id: deployment
         uses: actions/deploy-pages@v4
