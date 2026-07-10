@@ -60,6 +60,13 @@ function clamp(value, min = 0, max = 100) {
   return Math.max(min, Math.min(max, number(value, min)));
 }
 
+function median(values) {
+  const clean = (values || []).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!clean.length) return 0;
+  const middle = Math.floor(clean.length / 2);
+  return clean.length % 2 ? clean[middle] : (clean[middle - 1] + clean[middle]) / 2;
+}
+
 function percentScore(value, fallback = 0) {
   let parsed = number(value, fallback);
   if (parsed > 0 && parsed <= 1) parsed *= 100;
@@ -179,7 +186,7 @@ function detectCandidateSource(policy) {
   return { file: null, json: {}, rows: [], sessionDate: null };
 }
 
-function normalizeCandidate(raw, eligibility, policy, sourceSession) {
+function normalizeCandidate(raw, eligibility, policy, sourceSession, historicalLiquidity = null) {
   const ticker = tickerOf(raw);
   const price = number(first(raw, ['price', 'lastPrice', 'last', 'close', 'currentPrice', 'marketPrice', 'last_price']));
   let entryLow = number(first(raw, ['entryLow', 'entryFrom', 'entryMin', 'buyFrom', 'tradePlan.entryLow', 'plan.entryLow']));
@@ -198,37 +205,89 @@ function normalizeCandidate(raw, eligibility, policy, sourceSession) {
     'dataQualityScore', 'dataQuality', 'qualityScore', 'scores.quality',
     'quality', 'coverageScore', 'safetyGovernorScore'
   ], 0));
-  const liquidityScore = percentScore(first(raw, [
+  const rawLiquidityScore = percentScore(first(raw, [
     'liquidityScore', 'scores.liquidity', 'liquidity.score', 'liquidityGrade'
   ], 0));
-  const turnover = number(first(raw, [
+  const rawTurnover = number(first(raw, [
     'turnover', 'tradedValue', 'valueTraded', 'traded_value', 'tradeValue',
     'liquidityValue', 'totalValue', 'averageTurnover20', 'avgTurnover20'
   ]), 0);
-  const rowSession = dateOnly(first(raw, [
-    'sessionDate', 'marketSession', 'date', 'asOf', 'priceDate', 'latestSession',
-    'updatedAt', 'generatedAt'
-  ])) || sourceSession;
+
+  const explicitRowSession = dateOnly(first(raw, [
+    'sessionDate', 'marketSession', 'date', 'asOf', 'priceDate', 'latestSession'
+  ]));
+  const generatedRowDate = dateOnly(first(raw, ['updatedAt', 'generatedAt']));
+  let rowSession = explicitRowSession || sourceSession || generatedRowDate;
+  let sourceSessionAdjusted = false;
+  if (
+    !explicitRowSession
+    && policy.clampGenerationDateToLatestMarketSession === true
+    && rowSession
+    && eligibility.latestMarketSession
+    && compareDates(rowSession, eligibility.latestMarketSession) > 0
+  ) {
+    rowSession = eligibility.latestMarketSession;
+    sourceSessionAdjusted = true;
+  }
+
+  const historicalLiquidityScore = percentScore(historicalLiquidity?.percentileScore, 0);
+  const historicalMedianTurnover = number(historicalLiquidity?.medianTurnover, 0);
+  const historicalNonZeroSessions = number(historicalLiquidity?.nonZeroSessions, 0);
+  const historicalFallbackReady =
+    policy.historicalLiquidityFallbackEnabled === true
+    && historicalNonZeroSessions >= Number(policy.historicalLiquidityMinimumNonZeroSessions || 8)
+    && historicalLiquidityScore >= Number(policy.historicalLiquidityMinimumPercentile || 40);
+
+  const rawLiquidityReady =
+    rawTurnover >= Number(policy.minimumTurnoverEgp || 0)
+    || rawLiquidityScore >= Number(policy.minimumLiquidityScore || 0);
+
+  const liquidityScore = Math.max(rawLiquidityScore, historicalLiquidityScore);
+  const turnover = rawTurnover > 0 ? rawTurnover : historicalMedianTurnover;
+  const liquiditySource = rawLiquidityReady
+    ? 'candidate_source'
+    : historicalFallbackReady
+      ? 'history_20_session_relative_liquidity'
+      : historicalLiquidityScore > 0
+        ? 'history_liquidity_below_gate'
+        : 'missing';
   const entryMid = entryLow !== null && entryHigh !== null ? (entryLow + entryHigh) / 2 : null;
   const risk = entryMid !== null && stopLoss !== null ? entryMid - stopLoss : null;
   const reward = entryMid !== null && target1 !== null ? target1 - entryMid : null;
   const riskReward = risk > 0 && reward > 0 ? reward / risk : number(first(raw, ['rr', 'riskReward', 'risk_reward']));
   const planComplete = [entryLow, entryHigh, stopLoss, target1].every((value) => Number.isFinite(value));
   const planLogical = planComplete && price > 0 && entryLow <= entryHigh && stopLoss < entryLow && target1 > entryHigh;
-  const liquid = turnover >= Number(policy.minimumTurnoverEgp || 0) || liquidityScore >= Number(policy.minimumLiquidityScore || 0);
+  const liquid = rawLiquidityReady || historicalFallbackReady;
   const sourceLag = daysBetween(eligibility.latestMarketSession, rowSession);
-  const sourceFresh = rowSession !== null && sourceLag !== null && sourceLag >= -1 && sourceLag <= Number(policy.maximumSignalAgeCalendarDays || 4);
+  const sourceFresh = rowSession !== null
+    && sourceLag !== null
+    && sourceLag >= 0
+    && sourceLag <= Number(policy.maximumSignalAgeCalendarDays || 4);
 
   const paperGates = [
     gate('historyEligibility', 'أهلية التاريخ للتداول الورقي', eligibility.paperTradingEligible === true, eligibility.statusLabelAr || eligibility.status),
     gate('price', 'السعر', price !== null && price > 0, price !== null ? `السعر ${round(price, 4)}` : 'السعر غير متاح'),
-    gate('sourceFreshness', 'حداثة ملف الفرص', sourceFresh, rowSession ? `جلسة المصدر ${rowSession}، فرق ${sourceLag} يوم` : 'تاريخ مصدر الفرص غير متاح'),
+    gate(
+      'sourceFreshness',
+      'حداثة ملف الفرص',
+      sourceFresh,
+      rowSession
+        ? `جلسة المصدر ${rowSession}، فرق ${sourceLag} يوم${sourceSessionAdjusted ? ' (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)' : ''}`
+        : 'تاريخ مصدر الفرص غير متاح'
+    ),
     gate('explicitPlan', 'خطة صفقة أصلية', planComplete, planComplete ? 'الدخول والوقف والهدف متاحة' : 'الخطة ناقصة؛ لا يتم اشتقاق قيم تقديرية'),
     gate('planLogic', 'منطق الخطة', planLogical, planLogical ? 'الوقف أسفل الدخول والهدف أعلاه' : 'ترتيب الدخول/الوقف/الهدف غير صالح'),
     gate('riskReward', 'العائد للمخاطرة', riskReward !== null && riskReward >= Number(policy.minimumPaperRiskReward || 1.25), riskReward !== null ? `${round(riskReward)} : 1` : 'غير قابل للحساب'),
     gate('confidence', 'قوة الإشارة', confidence >= Number(policy.minimumPaperConfidence || 60), `${confidence}%`),
     gate('dataQuality', 'جودة البيانات', dataQuality >= Number(policy.minimumPaperDataQuality || 65), `${dataQuality}%`),
-    gate('liquidity', 'السيولة', liquid, `القيمة ${Math.round(turnover).toLocaleString('en-US')}، الدرجة ${liquidityScore}%`)
+    gate(
+      'liquidity',
+      'السيولة',
+      liquid,
+      liquiditySource === 'candidate_source'
+        ? `مصدر الفرص: القيمة ${Math.round(rawTurnover).toLocaleString('en-US')}، الدرجة ${rawLiquidityScore}%`
+        : `تاريخ 20 جلسة: وسيط القيمة ${Math.round(historicalMedianTurnover).toLocaleString('en-US')}، الترتيب النسبي ${historicalLiquidityScore}%، جلسات تداول ${historicalNonZeroSessions}`
+    )
   ];
 
   const decisionGates = [
@@ -261,6 +320,17 @@ function normalizeCandidate(raw, eligibility, policy, sourceSession) {
     dataQuality,
     liquidityScore,
     turnover,
+    liquiditySource,
+    liquidityEvidence: {
+      rawLiquidityScore,
+      rawTurnover: round(rawTurnover, 2),
+      historicalPercentileScore: historicalLiquidityScore,
+      historicalMedianTurnover: round(historicalMedianTurnover, 2),
+      historicalMedianVolume: round(historicalLiquidity?.medianVolume || 0, 2),
+      historicalNonZeroSessions,
+      historyLookbackSessions: Number(historicalLiquidity?.lookbackSessions || 0),
+      sourceSessionAdjusted
+    },
     score,
     sourceSignal: cleanText(first(raw, ['recommendation', 'decision', 'signal', 'status', 'action']), 100),
     eligibility: {
@@ -324,6 +394,46 @@ function loadHistory(ticker) {
     map.set(date, { date, open, high, low, close, volume });
   }
   return [...map.values()].sort((a, b) => compareDates(a.date, b.date));
+}
+
+
+function buildHistoricalLiquidityProfiles(items, currentSession, policy) {
+  const lookback = Number(policy.historicalLiquidityLookbackSessions || 20);
+  const rawProfiles = [];
+
+  for (const item of items || []) {
+    const ticker = safeTicker(item?.ticker);
+    if (!ticker || item?.active === false || item?.delisted === true) continue;
+    const rows = loadHistory(ticker).filter((row) => compareDates(row.date, currentSession) <= 0).slice(-lookback);
+    const tradingRows = rows.filter((row) => Number.isFinite(row.volume) && row.volume > 0 && row.close > 0);
+    const turnovers = tradingRows.map((row) => row.close * row.volume).filter((value) => Number.isFinite(value) && value > 0);
+    const volumes = tradingRows.map((row) => row.volume).filter((value) => Number.isFinite(value) && value > 0);
+    rawProfiles.push({
+      ticker,
+      lookbackSessions: rows.length,
+      nonZeroSessions: tradingRows.length,
+      medianTurnover: median(turnovers),
+      averageTurnover: turnovers.length ? turnovers.reduce((sum, value) => sum + value, 0) / turnovers.length : 0,
+      medianVolume: median(volumes),
+      percentileScore: 0
+    });
+  }
+
+  const ranked = rawProfiles
+    .filter((item) => item.medianTurnover > 0)
+    .slice()
+    .sort((a, b) => a.medianTurnover - b.medianTurnover);
+
+  for (const profile of rawProfiles) {
+    if (!(profile.medianTurnover > 0) || !ranked.length) {
+      profile.percentileScore = 0;
+      continue;
+    }
+    const lowerOrEqual = ranked.filter((item) => item.medianTurnover <= profile.medianTurnover).length;
+    profile.percentileScore = round((lowerOrEqual / ranked.length) * 100, 1);
+  }
+
+  return new Map(rawProfiles.map((profile) => [profile.ticker, profile]));
 }
 
 function loadLedger(currentSession) {
@@ -560,6 +670,7 @@ function main() {
   const currentSession = [eligibility.latestMarketSession, historySummary.latestMarketSession].filter(Boolean).sort().at(-1);
   if (!currentSession) throw new Error('latestMarketSession is unavailable in history-eligibility.json');
   const eligibilityMap = new Map((eligibility.items || []).map((item) => [safeTicker(item.ticker), item]));
+  const historicalLiquidityProfiles = buildHistoricalLiquidityProfiles(eligibility.items || [], currentSession, policy);
   const source = detectCandidateSource(policy);
   const candidateMap = new Map();
   for (const raw of source.rows) {
@@ -567,7 +678,13 @@ function main() {
     const baseEligibility = eligibilityMap.get(ticker);
     if (!ticker || !baseEligibility || baseEligibility.active === false || baseEligibility.delisted === true) continue;
     const eligible = effectiveEligibility(baseEligibility, currentSession, policy);
-    const normalized = normalizeCandidate(raw, eligible, policy, source.sessionDate);
+    const normalized = normalizeCandidate(
+      raw,
+      { ...eligible, latestMarketSession: currentSession },
+      policy,
+      source.sessionDate,
+      historicalLiquidityProfiles.get(ticker)
+    );
     const existing = candidateMap.get(ticker);
     if (!existing || normalized.score > existing.score) candidateMap.set(ticker, normalized);
   }
@@ -614,7 +731,9 @@ function main() {
       candidateFile: source.file,
       candidateSourceSession: source.sessionDate,
       rowsRead: source.rows.length,
-      matchedSymbols: candidates.length
+      matchedSymbols: candidates.length,
+      historicalLiquidityProfiles: historicalLiquidityProfiles.size,
+      candidatesUsingHistoricalLiquidity: candidates.filter((item) => item.liquiditySource === 'history_20_session_relative_liquidity').length
     },
     eligibility: {
       activeSymbols: eligibility.counts?.activeSymbols || 0,
@@ -649,6 +768,8 @@ function main() {
       'Only V13.1 paperTradingEligible symbols may create paper signals.',
       'Only V13.1 decisionEligible symbols may appear in the decision shortlist.',
       'No plan values are estimated when entry, stop, or target is missing.',
+      'When candidate turnover is missing, liquidity may be derived conservatively from the relative 20-session median close×volume using real stored history.',
+      'A generated-at date later than the latest market session is never treated as a future trading session.',
       'The first run activates the ledger and creates no retroactive trades.',
       'Trade entry is evaluated from the session after the signal.',
       'If stop and target are touched in the same session, the stop is recorded first.',
@@ -664,6 +785,8 @@ function main() {
   console.log(`V13.2 matched candidates: ${candidates.length}`);
   console.log(`V13.2 decision candidates: ${decisionCandidates.length}`);
   console.log(`V13.2 paper candidates: ${paperCandidates.length}`);
+  console.log(`V13.2 historical liquidity profiles: ${historicalLiquidityProfiles.size}`);
+  console.log(`V13.2 candidates using historical liquidity: ${candidates.filter((item) => item.liquiditySource === 'history_20_session_relative_liquidity').length}`);
   console.log(`V13.2 new signals: ${update.newSignals.length}`);
   console.log(`V13.2 ledger: ${ledger.trades.length} trades; ${metrics.closedTrades} closed`);
   console.log(`V13.2 decision: ${decision.code}; live=${liveUnlocked}`);

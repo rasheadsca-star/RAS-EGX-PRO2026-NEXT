@@ -34,6 +34,20 @@ for (const candidate of decision.topPaperCandidates) {
   const item = eligibilityMap.get(candidate.ticker);
   if (!item?.paperTradingEligible) fail(`${candidate.ticker} is shown as paper candidate without V13.1 paper eligibility`);
   if (!candidate.paperPass) fail(`${candidate.ticker} is shown as paper candidate without passing paper gates`);
+  const liquidityGate = (candidate.paperGates || []).find((gate) => gate.id === 'liquidity');
+  if (!liquidityGate?.pass) fail(`${candidate.ticker} entered paper candidates without passing the liquidity gate`);
+  if (!['candidate_source', 'history_20_session_relative_liquidity'].includes(candidate.liquiditySource)) {
+    fail(`${candidate.ticker} has an unsupported liquidity source: ${candidate.liquiditySource}`);
+  }
+  if (candidate.liquiditySource === 'history_20_session_relative_liquidity') {
+    const evidence = candidate.liquidityEvidence || {};
+    if (!(Number(evidence.historicalNonZeroSessions) >= 8)) {
+      fail(`${candidate.ticker} historical liquidity fallback has too few non-zero sessions`);
+    }
+    if (!(Number(evidence.historicalPercentileScore) >= 40)) {
+      fail(`${candidate.ticker} historical liquidity fallback is below the configured percentile gate`);
+    }
+  }
   if (![candidate.entryLow, candidate.entryHigh, candidate.stopLoss, candidate.target1].every(Number.isFinite)) {
     fail(`${candidate.ticker} has an incomplete explicit plan`);
   }
