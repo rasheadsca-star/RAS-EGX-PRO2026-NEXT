@@ -1,0 +1,238 @@
+name: EGX Gap Diagnostics & Approved Import — V12.8
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "diagnose"
+        type: choice
+        options:
+          - diagnose
+          - import_approved
+          - diagnose_and_import
+      ticker:
+        description: "Optional single ticker; leave empty for all candidates"
+        required: false
+        default: ""
+        type: string
+      live_yahoo_diagnostics:
+        description: "Collect Yahoo metadata for diagnosis only; never writes history"
+        required: true
+        default: true
+        type: boolean
+      min_imported:
+        description: "Minimum approved tickers that must be imported"
+        required: true
+        default: "0"
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-historical-update
+  cancel-in-progress: false
+
+jobs:
+  diagnose-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout current main with history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate V12.8 package and stable-app isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            scripts/history/gap-diagnostics.cjs
+            scripts/history/approved-gap-importer.cjs
+            scripts/history/approved-gap-acceptance.cjs
+            scripts/history/adapters/yahoo-gap-diagnostic-adapter.cjs
+            scripts/history/history-validator.cjs
+            scripts/history/history-storage.cjs
+            scripts/history/history-summary-builder.cjs
+            scripts/history/lib/http-client.cjs
+            scripts/history/lib/utils.cjs
+            data/history-gap-diagnostics-config.json
+            data/history-approved-gap-import.json
+            data/history-gap-completion-report.json
+            data/history-summary.json
+            data/symbol-map.json
+            preview-v12/history-100.html
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing required file: $file"; exit 1; }
+          done
+          node --check scripts/history/gap-diagnostics.cjs
+          node --check scripts/history/approved-gap-importer.cjs
+          node --check scripts/history/approved-gap-acceptance.cjs
+          node --check scripts/history/adapters/yahoo-gap-diagnostic-adapter.cjs
+          node -e "JSON.parse(require('fs').readFileSync('data/history-gap-diagnostics-config.json','utf8')); JSON.parse(require('fs').readFileSync('data/history-approved-gap-import.json','utf8')); console.log('V12.8 JSON files valid')"
+          test -z "$(git diff --name-only -- index.html service-worker.js assets config preview-v12/index.html)"
+          echo "V12.8 package validation passed. Stable application files are isolated."
+
+      - name: Build gap diagnostics and approved import queue
+        if: ${{ inputs.mode != 'import_approved' }}
+        env:
+          GAP_LIVE_YAHOO_DIAGNOSTICS: ${{ inputs.live_yahoo_diagnostics }}
+          GAP_DIAGNOSTIC_TICKER: ${{ inputs.ticker }}
+          GAP_DIAGNOSTIC_DELAY_MS: "500"
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/gap-diagnostics.cjs | tee /tmp/v12-8-diagnostics.log
+
+      - name: Import administrator-approved gap sessions
+        if: ${{ inputs.mode != 'diagnose' }}
+        env:
+          APPROVED_GAP_TICKER: ${{ inputs.ticker }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/approved-gap-importer.cjs | tee /tmp/v12-8-import.log
+
+      - name: Run V12.8 acceptance tests
+        env:
+          GAP_V128_MODE: ${{ inputs.mode }}
+          GAP_MIN_IMPORTED: ${{ inputs.min_imported }}
+        run: node scripts/history/approved-gap-acceptance.cjs
+
+      - name: Enforce strict write isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t imported < <(
+            if [ -f data/history-approved-gap-import-report.json ]; then
+              node -e "const r=require('./data/history-approved-gap-import-report.json'); for(const x of (r.results||[])) if(x.status==='imported') console.log(String(x.ticker).toUpperCase())"
+            fi
+          )
+          declare -A imported_set=()
+          for ticker in "${imported[@]}"; do imported_set["$ticker"]=1; done
+
+          mapfile -t changed < <(
+            {
+              git diff --name-only
+              git diff --cached --name-only
+              git ls-files --others --exclude-standard
+            } | sed '/^$/d' | sort -u
+          )
+
+          echo "Changed files:"
+          if [ "${#changed[@]}" -eq 0 ]; then echo "none"; else printf '%s\n' "${changed[@]}"; fi
+
+          for file in "${changed[@]}"; do
+            case "$file" in
+              data/history/*.json)
+                ticker="$(basename "$file" .json | tr '[:lower:]' '[:upper:]')"
+                if [ -z "${imported_set[$ticker]+x}" ]; then
+                  echo "SAFETY STOP: history file outside approved imported set: $file"
+                  exit 1
+                fi
+                ;;
+              data/history-gap-diagnostics-report.json|data/history-approved-gap-queue.json|data/history-approved-gap-import-report.json|data/history-approved-gap-quarantine.json|data/history-summary.json|data/session-calendar.json|data/source-audit.json|data/history-last-run.json)
+                ;;
+              *)
+                echo "SAFETY STOP: forbidden changed path: $file"
+                exit 1
+                ;;
+            esac
+          done
+
+          test -z "$(git diff --name-only -- index.html service-worker.js assets config preview-v12/index.html)"
+          echo "Isolation passed: V12.8 changed only diagnostic and approved history outputs."
+
+      - name: Commit valid V12.8 outputs only
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          allowed=(
+            data/history
+            data/history-gap-diagnostics-report.json
+            data/history-approved-gap-queue.json
+            data/history-approved-gap-import-report.json
+            data/history-approved-gap-quarantine.json
+            data/history-summary.json
+            data/session-calendar.json
+            data/source-audit.json
+            data/history-last-run.json
+          )
+          for item in "${allowed[@]}"; do
+            if [ -e "$item" ] || git ls-files --error-unmatch "$item" >/dev/null 2>&1; then
+              git add -A -- "$item"
+            fi
+          done
+
+          if git diff --cached --quiet; then
+            echo "No valid V12.8 changes to commit."
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git commit -m "V12.8 diagnose gaps and import approved sessions"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload V12.8 diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v12-8-gap-diagnostics-${{ github.run_number }}
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            data/history-gap-diagnostics-report.json
+            data/history-approved-gap-queue.json
+            data/history-approved-gap-import-report.json
+            data/history-approved-gap-quarantine.json
+            data/history-summary.json
+            /tmp/v12-8-diagnostics.log
+            /tmp/v12-8-import.log
+
+  deploy:
+    needs: diagnose-import
+    if: success()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload current repository to Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy V12.8 history preview
+        id: deployment
+        uses: actions/deploy-pages@v4
