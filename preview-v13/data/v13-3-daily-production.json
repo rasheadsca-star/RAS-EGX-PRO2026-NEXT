@@ -1,0 +1,4948 @@
+{
+  "schemaVersion": "13.3.0",
+  "generatedAt": "2026-07-10T13:55:24.133Z",
+  "mode": "DAILY_PRODUCTION_UNIFIED_DECISION_CENTER",
+  "stableApplicationTouched": false,
+  "liveExecutionEnabled": false,
+  "failClosed": true,
+  "status": {
+    "code": "MARKET_CLOSED",
+    "labelAr": "السوق مغلق",
+    "reasonAr": "التشغيل الآلي مخصص للأحد إلى الخميس."
+  },
+  "schedule": {
+    "timezone": "Africa/Cairo",
+    "tradingDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday"
+    ],
+    "weekendDays": [
+      "Friday",
+      "Saturday"
+    ],
+    "cronUtc": "30 13 * * 0-4",
+    "currentCairoDate": "2026-07-10",
+    "currentCairoWeekday": "Friday",
+    "runDayAllowed": false,
+    "forceNonTradingDay": false
+  },
+  "market": {
+    "latestAvailableSession": "2026-07-09",
+    "expectedLatestSession": "2026-07-09",
+    "lagTradingDays": 0,
+    "decisionFresh": true,
+    "paperFresh": true
+  },
+  "pipeline": {
+    "stages": [
+      {
+        "name": "calendar",
+        "labelAr": "تقويم السوق",
+        "status": "warning",
+        "ok": false,
+        "critical": false,
+        "detail": "Friday — السوق مغلق"
+      },
+      {
+        "name": "marketData",
+        "labelAr": "بيانات السوق",
+        "status": "passed",
+        "ok": true,
+        "critical": true,
+        "detail": "جلسة 2026-07-09، التأخر 0 يوم تداول"
+      },
+      {
+        "name": "history",
+        "labelAr": "التاريخ",
+        "status": "passed",
+        "ok": true,
+        "critical": true,
+        "detail": "193 سهم مكتمل"
+      },
+      {
+        "name": "eligibility",
+        "labelAr": "الأهلية",
+        "status": "passed",
+        "ok": true,
+        "critical": true,
+        "detail": "191 مؤهل للقرار"
+      },
+      {
+        "name": "decision",
+        "labelAr": "محرك القرار",
+        "status": "passed",
+        "ok": true,
+        "critical": true,
+        "detail": "PAPER_ONLY — جلسة 2026-07-09"
+      },
+      {
+        "name": "paper",
+        "labelAr": "التداول الورقي",
+        "status": "passed",
+        "ok": true,
+        "critical": true,
+        "detail": "0 صفقة مسجلة"
+      }
+    ],
+    "passed": true,
+    "criticalFailures": []
+  },
+  "counts": {
+    "activeSymbols": 242,
+    "numericComplete100": 193,
+    "decisionEligibleHistory": 191,
+    "paperEligibleHistory": 193,
+    "independentHighConfidenceHistory": 0,
+    "reviewQueue": 51,
+    "decisionCandidates": 0,
+    "paperCandidates": 0,
+    "watchOnly": 100,
+    "closedTrades": 0,
+    "openTrades": 0,
+    "pendingTrades": 0
+  },
+  "today": {
+    "decisionCandidates": [],
+    "paperCandidates": [],
+    "watchOnly": [
+      {
+        "ticker": "OIH",
+        "companyNameAr": "أوراسكوم للاستثمار القابضة",
+        "companyNameEn": "Orascom Investment Holding",
+        "price": 1.42,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 1.41,
+        "entryHigh": 1.41,
+        "stopLoss": 1.36,
+        "target1": 1.47,
+        "target2": 1.43,
+        "riskReward": 1.2,
+        "confidence": 88,
+        "dataQuality": 91,
+        "liquidityScore": 81.5,
+        "turnover": 43151243.400000006,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 81.5,
+          "historicalMedianTurnover": 43151243.4,
+          "historicalMedianVolume": 31963884,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 77.7,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 75.15,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 1.42"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "1.2 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "91%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 43,151,243، الترتيب النسبي 81.5%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "1.2 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "91%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 1.2 : 1",
+          "عائد/مخاطرة القرار: 1.2 : 1"
+        ]
+      },
+      {
+        "ticker": "ASCM",
+        "companyNameAr": "أسيك للتعدين أسكوم",
+        "companyNameEn": "ASEC Company for Mining ASCOM",
+        "price": 58.04,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 58.13,
+        "entryHigh": 59.85,
+        "stopLoss": 56.39,
+        "target1": 60.62,
+        "target2": 62.15,
+        "riskReward": 0.627,
+        "confidence": 90,
+        "dataQuality": 94,
+        "liquidityScore": 86.8,
+        "turnover": 59718842.370198,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 86.8,
+          "historicalMedianTurnover": 59718842.37,
+          "historicalMedianVolume": 990198,
+          "historicalNonZeroSessions": 15,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 76.9,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 58.04"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.63 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "90%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "94%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 59,718,842، الترتيب النسبي 86.8%، جلسات تداول 15"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.63 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "90%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "94%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.63 : 1",
+          "عائد/مخاطرة القرار: 0.63 : 1"
+        ]
+      },
+      {
+        "ticker": "ARVA",
+        "companyNameAr": "العربية للصمامات",
+        "companyNameEn": "Arab Valves Company",
+        "price": 10.84,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 10.83,
+        "entryHigh": 10.86,
+        "stopLoss": 10.25,
+        "target1": 11.53,
+        "target2": 12.16,
+        "riskReward": 1.151,
+        "confidence": 88,
+        "dataQuality": 93,
+        "liquidityScore": 65.6,
+        "turnover": 18114542.25,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 65.6,
+          "historicalMedianTurnover": 18114542.25,
+          "historicalMedianVolume": 1648275,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 75.7,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 10.84"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "1.15 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "93%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 18,114,542، الترتيب النسبي 65.6%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "1.15 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "93%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 1.15 : 1",
+          "عائد/مخاطرة القرار: 1.15 : 1"
+        ]
+      },
+      {
+        "ticker": "MFSC",
+        "companyNameAr": "مصر للأسواق الحرة",
+        "companyNameEn": "Egypt Free Shops",
+        "price": 47.17,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 47.33,
+        "entryHigh": 48,
+        "stopLoss": 45.25,
+        "target1": 51.71,
+        "target2": 54.55,
+        "riskReward": 1.675,
+        "confidence": 91,
+        "dataQuality": 98,
+        "liquidityScore": 32.3,
+        "turnover": 5090527.143779,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 32.3,
+          "historicalMedianTurnover": 5090527.14,
+          "historicalMedianVolume": 111577.5,
+          "historicalNonZeroSessions": 16,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 75.6,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 47.17"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.67 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "91%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "98%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 5,090,527، الترتيب النسبي 32.3%، جلسات تداول 16"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "1.67 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "91%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "98%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 5,090,527، الترتيب النسبي 32.3%، جلسات تداول 16"
+        ]
+      },
+      {
+        "ticker": "RAYA",
+        "companyNameAr": "راية القابضة",
+        "companyNameEn": "Raya Holding Company for Financial Investments",
+        "price": 8,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 7.55,
+        "entryHigh": 7.79,
+        "stopLoss": 7.1,
+        "target1": 8.28,
+        "target2": 8.15,
+        "riskReward": 1.07,
+        "confidence": 81,
+        "dataQuality": 85,
+        "liquidityScore": 90.5,
+        "turnover": 76206842.64,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 90.5,
+          "historicalMedianTurnover": 76206842.64,
+          "historicalMedianVolume": 10949259,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 74.9,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 8"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "1.07 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 76,206,843، الترتيب النسبي 90.5%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "1.07 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "85%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 1.07 : 1",
+          "عائد/مخاطرة القرار: 1.07 : 1"
+        ]
+      },
+      {
+        "ticker": "GBCO",
+        "companyNameAr": "جي بي كوربوريشن",
+        "companyNameEn": "GB Corp",
+        "price": 30.72,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 31.65,
+        "entryHigh": 32.39,
+        "stopLoss": 28.877,
+        "target1": 32.93,
+        "target2": 33.41,
+        "riskReward": 0.29,
+        "confidence": 85,
+        "dataQuality": 91,
+        "liquidityScore": 88.9,
+        "turnover": 71839986.87,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 88.9,
+          "historicalMedianTurnover": 71839986.87,
+          "historicalMedianVolume": 2476387,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 73.5,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 30.72"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.29 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "91%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 71,839,987، الترتيب النسبي 88.9%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.29 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "91%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.29 : 1",
+          "عائد/مخاطرة القرار: 0.29 : 1"
+        ]
+      },
+      {
+        "ticker": "CANA",
+        "companyNameAr": "بنك قناة السويس",
+        "companyNameEn": "Suez Canal Bank",
+        "price": 36.88,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 35.49,
+        "entryHigh": 35.57,
+        "stopLoss": 34.43,
+        "target1": 38.171,
+        "target2": 39.316,
+        "riskReward": 2.401,
+        "confidence": 79,
+        "dataQuality": 83,
+        "liquidityScore": 39.7,
+        "turnover": 7927190.252982001,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 39.7,
+          "historicalMedianTurnover": 7927190.25,
+          "historicalMedianVolume": 212982,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 73.1,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 36.88"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "2.4 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "79%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "83%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 7,927,190، الترتيب النسبي 39.7%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "2.4 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "79%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "83%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 7,927,190، الترتيب النسبي 39.7%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "DOMT",
+        "companyNameAr": "دومتي",
+        "companyNameEn": "Arabian Food Industries DOMTY",
+        "price": 26.93,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 26.72,
+        "entryHigh": 26.95,
+        "stopLoss": 25.93,
+        "target1": 28.46,
+        "target2": 30.02,
+        "riskReward": 1.796,
+        "confidence": 88,
+        "dataQuality": 93,
+        "liquidityScore": 24.3,
+        "turnover": 3201094.339177,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 24.3,
+          "historicalMedianTurnover": 3201094.34,
+          "historicalMedianVolume": 119177,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 73,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 26.93"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.8 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "93%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 3,201,094، الترتيب النسبي 24.3%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "1.8 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "93%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 3,201,094، الترتيب النسبي 24.3%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "EASB",
+        "companyNameAr": "ثمار للوساطة",
+        "companyNameEn": "Egyptian Arabian Company Themar for securities Brokerage",
+        "price": 7.05,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 7.43,
+        "entryHigh": 7.56,
+        "stopLoss": 6.95,
+        "target1": 7.68,
+        "target2": 8.01,
+        "riskReward": 0.339,
+        "confidence": 89,
+        "dataQuality": 96,
+        "liquidityScore": 65.1,
+        "turnover": 18091920.44,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 65.1,
+          "historicalMedianTurnover": 18091920.44,
+          "historicalMedianVolume": 2409044,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 72.7,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 7.05"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.34 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "89%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "96%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 18,091,920، الترتيب النسبي 65.1%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.34 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "89%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "96%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.34 : 1",
+          "عائد/مخاطرة القرار: 0.34 : 1"
+        ]
+      },
+      {
+        "ticker": "FERC",
+        "companyNameAr": "فيركيم مصر",
+        "companyNameEn": "Ferchem Misr for fertilizers and chemicals",
+        "price": 75.93,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 73.26,
+        "entryHigh": 73.43,
+        "stopLoss": 71.23,
+        "target1": 78.588,
+        "target2": 80.945,
+        "riskReward": 2.479,
+        "confidence": 80,
+        "dataQuality": 85,
+        "liquidityScore": 22.8,
+        "turnover": 3036686.31928,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 22.8,
+          "historicalMedianTurnover": 3036686.32,
+          "historicalMedianVolume": 40360,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.9,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 75.93"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "2.48 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 3,036,686، الترتيب النسبي 22.8%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "2.48 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "85%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 3,036,686، الترتيب النسبي 22.8%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "ALUM",
+        "companyNameAr": "الألومنيوم العربية",
+        "companyNameEn": "Arab Aluminum Company",
+        "price": 22.95,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 20.9,
+        "entryHigh": 21.28,
+        "stopLoss": 20.28,
+        "target1": 23.753,
+        "target2": 24.466,
+        "riskReward": 3.288,
+        "confidence": 76,
+        "dataQuality": 81,
+        "liquidityScore": 37,
+        "turnover": 6543155.52,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 37,
+          "historicalMedianTurnover": 6543155.52,
+          "historicalMedianVolume": 289843,
+          "historicalNonZeroSessions": 15,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.9,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 22.95"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "3.29 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 6,543,156، الترتيب النسبي 37%، جلسات تداول 15"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "3.29 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "81%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 6,543,156، الترتيب النسبي 37%، جلسات تداول 15"
+        ]
+      },
+      {
+        "ticker": "ISPH",
+        "companyNameAr": "ابن سينا فارما",
+        "companyNameEn": "Ibnsina Pharma",
+        "price": 11.6,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 11.57,
+        "entryHigh": 11.64,
+        "stopLoss": 11.22,
+        "target1": 11.76,
+        "target2": 11.86,
+        "riskReward": 0.403,
+        "confidence": 83,
+        "dataQuality": 86,
+        "liquidityScore": 85.2,
+        "turnover": 50920009.6,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 85.2,
+          "historicalMedianTurnover": 50920009.6,
+          "historicalMedianVolume": 4389656,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.7,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 11.6"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.4 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "83%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "86%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 50,920,010، الترتيب النسبي 85.2%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.4 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "83%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "86%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.4 : 1",
+          "عائد/مخاطرة القرار: 0.4 : 1"
+        ]
+      },
+      {
+        "ticker": "MENA",
+        "companyNameAr": "مينا للاستثمار السياحي والعقاري",
+        "companyNameEn": "Mena for Touristic & Real Estate Investment",
+        "price": 7.09,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 6.75,
+        "entryHigh": 6.87,
+        "stopLoss": 6.55,
+        "target1": 7.338,
+        "target2": 7.558,
+        "riskReward": 2.031,
+        "confidence": 80,
+        "dataQuality": 84,
+        "liquidityScore": 37.6,
+        "turnover": 6943273.4799999995,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 37.6,
+          "historicalMedianTurnover": 6943273.48,
+          "historicalMedianVolume": 1007732,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.6,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 7.09"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "2.03 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "84%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 6,943,273، الترتيب النسبي 37.6%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "2.03 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "84%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 6,943,273، الترتيب النسبي 37.6%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "PHTV",
+        "companyNameAr": "بيراميزا للفنادق",
+        "companyNameEn": "Pyramisa Hotels & Resorts",
+        "price": 291.02,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 268.2,
+        "entryHigh": 274.38,
+        "stopLoss": 260.2,
+        "target1": 301.206,
+        "target2": 310.242,
+        "riskReward": 2.698,
+        "confidence": 76,
+        "dataQuality": 81,
+        "liquidityScore": 34.9,
+        "turnover": 6124952.49214,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 34.9,
+          "historicalMedianTurnover": 6124952.49,
+          "historicalMedianVolume": 29572,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.6,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 291.02"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "2.7 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 6,124,952، الترتيب النسبي 34.9%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "2.7 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "81%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 6,124,952، الترتيب النسبي 34.9%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "CIEB",
+        "companyNameAr": "كريدي أجريكول مصر",
+        "companyNameEn": "Credit Agricole Egypt Bank",
+        "price": 24.12,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 23.56,
+        "entryHigh": 23.58,
+        "stopLoss": 22.85,
+        "target1": 25,
+        "target2": 26.37,
+        "riskReward": 1.986,
+        "confidence": 80,
+        "dataQuality": 85,
+        "liquidityScore": 36,
+        "turnover": 6283497.130322,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 36,
+          "historicalMedianTurnover": 6283497.13,
+          "historicalMedianVolume": 269678,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.4,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-07",
+          "confidence": 75,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 24.12"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.99 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 6,283,497، الترتيب النسبي 36%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "1.99 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "85%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 6,283,497، الترتيب النسبي 36%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "INFI",
+        "companyNameAr": "الإسماعيلية الوطنية للصناعات الغذائية",
+        "companyNameEn": "Ismailia National Co. for Food Industries",
+        "price": 98.04,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 90.37,
+        "entryHigh": 90.61,
+        "stopLoss": 87.1,
+        "target1": 101.471,
+        "target2": 102.98,
+        "riskReward": 3.239,
+        "confidence": 76,
+        "dataQuality": 81,
+        "liquidityScore": 33.3,
+        "turnover": 5460216.5,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 33.3,
+          "historicalMedianTurnover": 5460216.5,
+          "historicalMedianVolume": 54466,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.4,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 98.04"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "3.24 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 5,460,217، الترتيب النسبي 33.3%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "3.24 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "81%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 5,460,217، الترتيب النسبي 33.3%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "DAPH",
+        "companyNameAr": "المشروعات الصناعية والهندسية",
+        "companyNameEn": "Development & Engineering Consultants",
+        "price": 82.72,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 80.64,
+        "entryHigh": 80.85,
+        "stopLoss": 78.23,
+        "target1": 85.99,
+        "target2": 90.72,
+        "riskReward": 2.085,
+        "confidence": 80,
+        "dataQuality": 85,
+        "liquidityScore": 31.7,
+        "turnover": 4833416.928905,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 31.7,
+          "historicalMedianTurnover": 4833416.93,
+          "historicalMedianVolume": 59635,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.2,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 82.72"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "2.09 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 4,833,417، الترتيب النسبي 31.7%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "2.09 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "85%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 4,833,417، الترتيب النسبي 31.7%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "EAST",
+        "companyNameAr": "الشرقية - إيسترن كومباني",
+        "companyNameEn": "Eastern Company",
+        "price": 36.96,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 37.1,
+        "entryHigh": 37.41,
+        "stopLoss": 36,
+        "target1": 37.79,
+        "target2": 38.08,
+        "riskReward": 0.426,
+        "confidence": 84,
+        "dataQuality": 88,
+        "liquidityScore": 74.6,
+        "turnover": 27479400,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 74.6,
+          "historicalMedianTurnover": 27479400,
+          "historicalMedianVolume": 732784,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 71.1,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-07",
+          "confidence": 75,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 36.96"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.43 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "84%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 27,479,400، الترتيب النسبي 74.6%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.43 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "84%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "88%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.43 : 1",
+          "عائد/مخاطرة القرار: 0.43 : 1"
+        ]
+      },
+      {
+        "ticker": "SUGR",
+        "companyNameAr": "الدلتا للسكر",
+        "companyNameEn": "Delta Sugar Company",
+        "price": 46.9,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 46,
+        "entryHigh": 46.51,
+        "stopLoss": 44.63,
+        "target1": 48.541,
+        "target2": 47.7,
+        "riskReward": 1.407,
+        "confidence": 86,
+        "dataQuality": 89,
+        "liquidityScore": 32.8,
+        "turnover": 5451714.067338,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 32.8,
+          "historicalMedianTurnover": 5451714.07,
+          "historicalMedianVolume": 112662,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 70.8,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 46.9"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.41 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "86%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "89%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 5,451,714، الترتيب النسبي 32.8%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "1.41 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "86%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "89%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 5,451,714، الترتيب النسبي 32.8%، جلسات تداول 17",
+          "عائد/مخاطرة القرار: 1.41 : 1"
+        ]
+      },
+      {
+        "ticker": "AALR",
+        "companyNameAr": "العامة لاستصلاح الأراضي والتنمية والتعمير",
+        "companyNameEn": "General Company For Land Reclamation Development & Reconstruction",
+        "price": 222.12,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 201.26,
+        "entryHigh": 202.71,
+        "stopLoss": 195.25,
+        "target1": 229.894,
+        "target2": 227.37,
+        "riskReward": 4.144,
+        "confidence": 76,
+        "dataQuality": 81,
+        "liquidityScore": 29.1,
+        "turnover": 4486034.563545,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 29.1,
+          "historicalMedianTurnover": 4486034.56,
+          "historicalMedianVolume": 22104,
+          "historicalNonZeroSessions": 16,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 70.8,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-07",
+          "confidence": 75,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 222.12"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "4.14 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 4,486,035، الترتيب النسبي 29.1%، جلسات تداول 16"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "4.14 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "81%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 4,486,035، الترتيب النسبي 29.1%، جلسات تداول 16"
+        ]
+      },
+      {
+        "ticker": "SAUD",
+        "companyNameAr": "بنك البركة مصر",
+        "companyNameEn": "alBaraka Bank Egypt",
+        "price": 21.74,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 20.75,
+        "entryHigh": 21.13,
+        "stopLoss": 20.13,
+        "target1": 22.501,
+        "target2": 23.176,
+        "riskReward": 1.927,
+        "confidence": 80,
+        "dataQuality": 84,
+        "liquidityScore": 33.9,
+        "turnover": 5715657.22,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 33.9,
+          "historicalMedianTurnover": 5715657.22,
+          "historicalMedianVolume": 264859,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 70.6,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 21.74"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.93 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "84%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 5,715,657، الترتيب النسبي 33.9%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "1.93 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "84%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 5,715,657، الترتيب النسبي 33.9%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "AXPH",
+        "companyNameAr": "الإسكندرية للأدوية",
+        "companyNameEn": "Alexandria Pharmaceuticals & Chemical Industries",
+        "price": 1185.46,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 1106.2,
+        "entryHigh": 1194.16,
+        "stopLoss": 1084.27,
+        "target1": 1266.91,
+        "target2": 1336.59,
+        "riskReward": 1.771,
+        "confidence": 87,
+        "dataQuality": 91,
+        "liquidityScore": 13.2,
+        "turnover": 1580993.733485,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 13.2,
+          "historicalMedianTurnover": 1580993.73,
+          "historicalMedianVolume": 1415,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 70.5,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-07",
+          "confidence": 75,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 1185.46"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.77 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "87%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "91%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 1,580,994، الترتيب النسبي 13.2%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "1.77 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "87%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "91%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 1,580,994، الترتيب النسبي 13.2%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "ZEOT",
+        "companyNameAr": "الزيوت المستخلصة",
+        "companyNameEn": "Extracted Oil & Derivatives",
+        "price": 11.11,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 10.87,
+        "entryHigh": 11.06,
+        "stopLoss": 10.41,
+        "target1": 11.23,
+        "target2": 11.57,
+        "riskReward": 0.477,
+        "confidence": 83,
+        "dataQuality": 86,
+        "liquidityScore": 73,
+        "turnover": 24704163.6,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 73,
+          "historicalMedianTurnover": 24704163.6,
+          "historicalMedianVolume": 2321616.5,
+          "historicalNonZeroSessions": 16,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 70.4,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 75.15,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 11.11"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.48 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "83%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "86%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 24,704,164، الترتيب النسبي 73%، جلسات تداول 16"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.48 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "83%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "86%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.48 : 1",
+          "عائد/مخاطرة القرار: 0.48 : 1"
+        ]
+      },
+      {
+        "ticker": "IFAP",
+        "companyNameAr": "الدولية للمحاصيل الزراعية",
+        "companyNameEn": "International Company for Agricultural Crops",
+        "price": 19.57,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 19.11,
+        "entryHigh": 19.15,
+        "stopLoss": 18.57,
+        "target1": 20.2,
+        "target2": 21.31,
+        "riskReward": 1.911,
+        "confidence": 80,
+        "dataQuality": 85,
+        "liquidityScore": 28,
+        "turnover": 4320738.1,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 28,
+          "historicalMedianTurnover": 4320738.1,
+          "historicalMedianVolume": 221690,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 69.9,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 19.57"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.91 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 4,320,738، الترتيب النسبي 28%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "1.91 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "80%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "85%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 4,320,738، الترتيب النسبي 28%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "GSSC",
+        "companyNameAr": "الصوامع والتخزين",
+        "companyNameEn": "General Co. For Silos & Storage",
+        "price": 257,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 242.86,
+        "entryHigh": 243.72,
+        "stopLoss": 236.45,
+        "target1": 265.995,
+        "target2": 273.975,
+        "riskReward": 3.319,
+        "confidence": 76,
+        "dataQuality": 81,
+        "liquidityScore": 21.7,
+        "turnover": 3000161.464152,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 21.7,
+          "historicalMedianTurnover": 3000161.46,
+          "historicalMedianVolume": 12076,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 69.8,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 257"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "3.32 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 3,000,161، الترتيب النسبي 21.7%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "3.32 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "81%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 3,000,161، الترتيب النسبي 21.7%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "ARCC",
+        "companyNameAr": "العربية للأسمنت",
+        "companyNameEn": "Arabian Cement Company S.A.E.",
+        "price": 55.54,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 54.03,
+        "entryHigh": 55.6,
+        "stopLoss": 52.42,
+        "target1": 56.16,
+        "target2": 57.23,
+        "riskReward": 0.562,
+        "confidence": 82,
+        "dataQuality": 85,
+        "liquidityScore": 68.3,
+        "turnover": 20036208.498923,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 68.3,
+          "historicalMedianTurnover": 20036208.5,
+          "historicalMedianVolume": 368923,
+          "historicalNonZeroSessions": 15,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 69.6,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 55.54"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.56 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "82%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "85%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 20,036,208، الترتيب النسبي 68.3%، جلسات تداول 15"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.56 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "82%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "85%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.56 : 1",
+          "عائد/مخاطرة القرار: 0.56 : 1"
+        ]
+      },
+      {
+        "ticker": "PHAR",
+        "companyNameAr": "إيبيكو",
+        "companyNameEn": "Egyptian International Pharmaceutical Industries Company",
+        "price": 86.09,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 85.56,
+        "entryHigh": 88.63,
+        "stopLoss": 82.61,
+        "target1": 89.53,
+        "target2": 91.66,
+        "riskReward": 0.543,
+        "confidence": 88,
+        "dataQuality": 91,
+        "liquidityScore": 45.5,
+        "turnover": 9320369.810031,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 45.5,
+          "historicalMedianTurnover": 9320369.81,
+          "historicalMedianVolume": 106677,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 69.5,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 86.09"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.54 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "91%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 9,320,370، الترتيب النسبي 45.5%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.54 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "88%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "91%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.54 : 1",
+          "عائد/مخاطرة القرار: 0.54 : 1"
+        ]
+      },
+      {
+        "ticker": "RACC",
+        "companyNameAr": "راية لخدمات مراكز الاتصالات",
+        "companyNameEn": "Raya Customer Experience",
+        "price": 10.01,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 9.63,
+        "entryHigh": 9.68,
+        "stopLoss": 9.34,
+        "target1": 10.29,
+        "target2": 10.86,
+        "riskReward": 2.016,
+        "confidence": 76,
+        "dataQuality": 81,
+        "liquidityScore": 36.5,
+        "turnover": 6509896.8,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 36.5,
+          "historicalMedianTurnover": 6509896.8,
+          "historicalMedianVolume": 665647,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 69.5,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-07",
+          "confidence": 75,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 10.01"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "2.02 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "81%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 6,509,897، الترتيب النسبي 36.5%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "2.02 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "76%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "81%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 6,509,897، الترتيب النسبي 36.5%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "MILS",
+        "companyNameAr": "مطاحن شمال القاهرة",
+        "companyNameEn": "North Cairo Flour Mills",
+        "price": 134.02,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 126.45,
+        "entryHigh": 130.94,
+        "stopLoss": 122.67,
+        "target1": 138.711,
+        "target2": 136.08,
+        "riskReward": 1.662,
+        "confidence": 79,
+        "dataQuality": 83,
+        "liquidityScore": 38.6,
+        "turnover": 7014161.773155,
+        "liquiditySource": "history_liquidity_below_gate",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 38.6,
+          "historicalMedianTurnover": 7014161.77,
+          "historicalMedianVolume": 53835,
+          "historicalNonZeroSessions": 17,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 69.4,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 134.02"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": true,
+            "detail": "1.66 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "79%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "83%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": false,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 7,014,162، الترتيب النسبي 38.6%، جلسات تداول 17"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": true,
+            "detail": "1.66 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "79%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "83%"
+          }
+        ],
+        "failedReasons": [
+          "السيولة: تاريخ 20 جلسة: وسيط القيمة 7,014,162، الترتيب النسبي 38.6%، جلسات تداول 17"
+        ]
+      },
+      {
+        "ticker": "HDBK",
+        "companyNameAr": "بنك التعمير والإسكان",
+        "companyNameEn": "Housing and Development Bank Egypt",
+        "price": 79.33,
+        "sourceSession": "2026-07-09",
+        "sourceLagCalendarDays": 0,
+        "entryLow": 159.22,
+        "entryHigh": 164.17,
+        "stopLoss": 74.57,
+        "target1": 174.17,
+        "target2": 183.75,
+        "riskReward": 0.143,
+        "confidence": 79,
+        "dataQuality": 91,
+        "liquidityScore": 76.2,
+        "turnover": 33326291.035377003,
+        "liquiditySource": "history_20_session_relative_liquidity",
+        "liquidityEvidence": {
+          "rawLiquidityScore": 0,
+          "rawTurnover": 0,
+          "historicalPercentileScore": 76.2,
+          "historicalMedianTurnover": 33326291.04,
+          "historicalMedianVolume": 350468.5,
+          "historicalNonZeroSessions": 16,
+          "historyLookbackSessions": 20,
+          "sourceSessionAdjusted": true
+        },
+        "score": 69.3,
+        "sourceSignal": "",
+        "eligibility": {
+          "status": "complete_recent",
+          "statusLabelAr": "مكتمل وحديث",
+          "sessions": 100,
+          "lastSession": "2026-07-08",
+          "confidence": 74.65,
+          "decisionEligible": true,
+          "paperTradingEligible": true,
+          "highConfidenceEligible": false
+        },
+        "paperPass": false,
+        "decisionPass": false,
+        "paperGates": [
+          {
+            "id": "historyEligibility",
+            "label": "أهلية التاريخ للتداول الورقي",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "price",
+            "label": "السعر",
+            "pass": true,
+            "detail": "السعر 79.33"
+          },
+          {
+            "id": "sourceFreshness",
+            "label": "حداثة ملف الفرص",
+            "pass": true,
+            "detail": "جلسة المصدر 2026-07-09، فرق 0 يوم (تم ضبط تاريخ الإنشاء إلى آخر جلسة سوق)"
+          },
+          {
+            "id": "explicitPlan",
+            "label": "خطة صفقة أصلية",
+            "pass": true,
+            "detail": "الدخول والوقف والهدف متاحة"
+          },
+          {
+            "id": "planLogic",
+            "label": "منطق الخطة",
+            "pass": true,
+            "detail": "الوقف أسفل الدخول والهدف أعلاه"
+          },
+          {
+            "id": "riskReward",
+            "label": "العائد للمخاطرة",
+            "pass": false,
+            "detail": "0.14 : 1"
+          },
+          {
+            "id": "confidence",
+            "label": "قوة الإشارة",
+            "pass": true,
+            "detail": "79%"
+          },
+          {
+            "id": "dataQuality",
+            "label": "جودة البيانات",
+            "pass": true,
+            "detail": "91%"
+          },
+          {
+            "id": "liquidity",
+            "label": "السيولة",
+            "pass": true,
+            "detail": "تاريخ 20 جلسة: وسيط القيمة 33,326,291، الترتيب النسبي 76.2%، جلسات تداول 16"
+          }
+        ],
+        "decisionGates": [
+          {
+            "id": "decisionHistoryEligibility",
+            "label": "أهلية التاريخ للقرار",
+            "pass": true,
+            "detail": "مكتمل وحديث"
+          },
+          {
+            "id": "decisionRiskReward",
+            "label": "عائد/مخاطرة القرار",
+            "pass": false,
+            "detail": "0.14 : 1"
+          },
+          {
+            "id": "decisionConfidence",
+            "label": "قوة إشارة القرار",
+            "pass": true,
+            "detail": "79%"
+          },
+          {
+            "id": "decisionDataQuality",
+            "label": "جودة بيانات القرار",
+            "pass": true,
+            "detail": "91%"
+          }
+        ],
+        "failedReasons": [
+          "العائد للمخاطرة: 0.14 : 1",
+          "عائد/مخاطرة القرار: 0.14 : 1"
+        ]
+      }
+    ],
+    "rejectionSummary": [
+      {
+        "reason": "السيولة: تاريخ 20 جلسة: وسيط القيمة 0، الترتيب النسبي 0%، جلسات تداول 0",
+        "count": 10
+      },
+      {
+        "reason": "قوة إشارة القرار: 58%",
+        "count": 6
+      },
+      {
+        "reason": "قوة الإشارة: 58%",
+        "count": 6
+      },
+      {
+        "reason": "أهلية التاريخ للتداول الورقي: ملف التاريخ غير موجود",
+        "count": 5
+      },
+      {
+        "reason": "أهلية التاريخ للقرار: ملف التاريخ غير موجود",
+        "count": 5
+      },
+      {
+        "reason": "جودة بيانات القرار: 68%",
+        "count": 4
+      },
+      {
+        "reason": "جودة بيانات القرار: 69%",
+        "count": 4
+      },
+      {
+        "reason": "جودة بيانات القرار: 72%",
+        "count": 4
+      },
+      {
+        "reason": "قوة إشارة القرار: 47%",
+        "count": 4
+      },
+      {
+        "reason": "قوة إشارة القرار: 59%",
+        "count": 4
+      },
+      {
+        "reason": "قوة الإشارة: 47%",
+        "count": 4
+      },
+      {
+        "reason": "قوة الإشارة: 59%",
+        "count": 4
+      },
+      {
+        "reason": "العائد للمخاطرة: 0.48 : 1",
+        "count": 3
+      },
+      {
+        "reason": "جودة البيانات: 58%",
+        "count": 3
+      },
+      {
+        "reason": "جودة البيانات: 63%",
+        "count": 3
+      },
+      {
+        "reason": "جودة بيانات القرار: 58%",
+        "count": 3
+      },
+      {
+        "reason": "جودة بيانات القرار: 63%",
+        "count": 3
+      },
+      {
+        "reason": "عائد/مخاطرة القرار: 0.48 : 1",
+        "count": 3
+      },
+      {
+        "reason": "قوة إشارة القرار: 51%",
+        "count": 3
+      },
+      {
+        "reason": "قوة الإشارة: 51%",
+        "count": 3
+      }
+    ]
+  },
+  "paper": {
+    "metrics": {
+      "schemaVersion": "13.2.0",
+      "generatedAt": "2026-07-10T13:55:24.032Z",
+      "activationSession": "2026-07-09",
+      "lastProcessedSession": "2026-07-09",
+      "totalTrades": 0,
+      "pendingTrades": 0,
+      "openTrades": 0,
+      "expiredTrades": 0,
+      "closedTrades": 0,
+      "wins": 0,
+      "losses": 0,
+      "targetExits": 0,
+      "stopExits": 0,
+      "timeExits": 0,
+      "winRatePct": 0,
+      "averageNetReturnPct": 0,
+      "averageR": 0,
+      "profitFactor": 0,
+      "maxDrawdownPct": 0,
+      "maxConsecutiveLosses": 0,
+      "checkpointMetrics": {
+        "1": {
+          "samples": 0,
+          "averageNetReturnPct": 0,
+          "positivePct": 0
+        },
+        "3": {
+          "samples": 0,
+          "averageNetReturnPct": 0,
+          "positivePct": 0
+        },
+        "5": {
+          "samples": 0,
+          "averageNetReturnPct": 0,
+          "positivePct": 0
+        },
+        "10": {
+          "samples": 0,
+          "averageNetReturnPct": 0,
+          "positivePct": 0
+        }
+      },
+      "measured": false,
+      "note": "لم تُغلق صفقات بعد؛ لا توجد دقة مثبتة."
+    },
+    "recentTrades": [],
+    "assumptions": {
+      "direction": "long_only",
+      "entryStartsAfterSignalSession": true,
+      "conservativeEntry": "entryHigh when range is touched",
+      "sameBarConflict": "stop_first",
+      "pendingExpirySessions": 3,
+      "timeExitSessions": 10,
+      "roundTripCostPct": 0.4,
+      "noRetroactiveSignals": true
+    },
+    "activationSession": "2026-07-09",
+    "lastProcessedSession": "2026-07-09"
+  },
+  "reviewQueue": {
+    "total": 51,
+    "items": [
+      {
+        "ticker": "EGSA",
+        "status": "manual_adjustment_review",
+        "statusLabelAr": "مراجعة تعديل مطلوبة",
+        "priority": 1,
+        "sessions": 64,
+        "lastSession": "2026-02-04",
+        "marketLagCalendarDays": 155,
+        "confidence": 65,
+        "reasons": [
+          "history_stale:155_calendar_days",
+          "sessions_below_decision_minimum:64",
+          "corporate_action_or_adjusted_close_review_required"
+        ],
+        "requiredAction": "official_or_independent_adjustment_review",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": {
+            "factor": 1.07737981,
+            "observations": 55,
+            "maxDeviationPct": 0.000854,
+            "sourceUrl": "https://starta.46-224-223-172.sslip.io/api/v1/egx/ohlc/EGSA?period=5y&limit=2000",
+            "reason": "corporate_action_or_adjusted_close_review_required"
+          },
+          "targetedStatus": "manual_approval_required",
+          "targetedAction": "stable_adjustment_factor_detected_no_write",
+          "startaStatus": "failed"
+        }
+      },
+      {
+        "ticker": "FAITA",
+        "status": "manual_adjustment_review",
+        "statusLabelAr": "مراجعة تعديل مطلوبة",
+        "priority": 1,
+        "sessions": 76,
+        "lastSession": "2026-02-04",
+        "marketLagCalendarDays": 155,
+        "confidence": 65,
+        "reasons": [
+          "history_stale:155_calendar_days",
+          "sessions_below_decision_minimum:76",
+          "corporate_action_or_adjusted_close_review_required"
+        ],
+        "requiredAction": "official_or_independent_adjustment_review",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": {
+            "factor": 1.04122845,
+            "observations": 76,
+            "maxDeviationPct": 0.005982,
+            "sourceUrl": "https://starta.46-224-223-172.sslip.io/api/v1/egx/ohlc/FAITA?period=5y&limit=2000",
+            "reason": "corporate_action_or_adjusted_close_review_required"
+          },
+          "targetedStatus": "manual_approval_required",
+          "targetedAction": "stable_adjustment_factor_detected_no_write",
+          "startaStatus": "failed"
+        }
+      },
+      {
+        "ticker": "SAIB",
+        "status": "complete_but_under_review",
+        "statusLabelAr": "مكتمل تحت المراجعة",
+        "priority": 1,
+        "sessions": 100,
+        "lastSession": "2026-07-06",
+        "marketLagCalendarDays": 3,
+        "confidence": 65.2,
+        "reasons": [
+          "no_overlap_bridge_exceeds_safety_limit:14.218%"
+        ],
+        "requiredAction": "independent_source_or_corporate_action_review",
+        "evidence": {
+          "riskyBridge": {
+            "method": "exact_isin_contiguous_bridge",
+            "overlapCount": 0,
+            "closeDifferencePct": 14.218,
+            "thresholdPct": 2,
+            "reason": "no_overlap_bridge_exceeds_safety_limit"
+          },
+          "manualAdjustment": null,
+          "targetedStatus": "improved",
+          "targetedAction": "sparse_extended_overlap_repair",
+          "startaStatus": "failed"
+        }
+      },
+      {
+        "ticker": "NDRL",
+        "status": "complete_but_stale",
+        "statusLabelAr": "مكتمل لكنه قديم",
+        "priority": 2,
+        "sessions": 100,
+        "lastSession": "2026-02-04",
+        "marketLagCalendarDays": 155,
+        "confidence": 65,
+        "reasons": [
+          "history_stale:155_calendar_days"
+        ],
+        "requiredAction": "recent_session_refresh",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": "failed",
+          "targetedAction": "sparse_extended_overlap_repair",
+          "startaStatus": "failed"
+        }
+      },
+      {
+        "ticker": "SPHT",
+        "status": "partial_and_stale",
+        "statusLabelAr": "جزئي وقديم",
+        "priority": 2,
+        "sessions": 96,
+        "lastSession": "2026-02-04",
+        "marketLagCalendarDays": 155,
+        "confidence": 65,
+        "reasons": [
+          "history_stale:155_calendar_days",
+          "sessions_below_decision_minimum:96"
+        ],
+        "requiredAction": "recent_gap_completion_with_verified_identity",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": "failed",
+          "targetedAction": "sparse_extended_overlap_repair",
+          "startaStatus": "failed"
+        }
+      },
+      {
+        "ticker": "EOSB",
+        "status": "partial_recent",
+        "statusLabelAr": "جزئي حديث",
+        "priority": 3,
+        "sessions": 98,
+        "lastSession": "2026-06-22",
+        "marketLagCalendarDays": 17,
+        "confidence": 75,
+        "reasons": [
+          "sessions_below_decision_minimum:98"
+        ],
+        "requiredAction": "continue_collection_until_100_sessions",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "GPPL",
+        "status": "partial_recent",
+        "statusLabelAr": "جزئي حديث",
+        "priority": 3,
+        "sessions": 95,
+        "lastSession": "2026-07-09",
+        "marketLagCalendarDays": 0,
+        "confidence": 65.42,
+        "reasons": [
+          "sessions_below_decision_minimum:95"
+        ],
+        "requiredAction": "continue_collection_until_100_sessions",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": "improved",
+          "targetedAction": "sparse_extended_overlap_repair",
+          "startaStatus": "failed"
+        }
+      },
+      {
+        "ticker": "ACAP",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "ACTF",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "AIDC",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "AIHC",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "ALRA",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "ASCOM",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "BLOCKS",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "BONY",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "BUCKETS",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "CFGH",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "CPME",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "CRST",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "DGTZ",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "DOMTY",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "EGYFERT",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "FOLLOW",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "GGRN",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "GOUR",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "GPIM",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "GTEX",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "ICON",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "IRAX",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      },
+      {
+        "ticker": "KORA",
+        "status": "missing_history",
+        "statusLabelAr": "ملف التاريخ غير موجود",
+        "priority": 5,
+        "sessions": 0,
+        "lastSession": null,
+        "marketLagCalendarDays": null,
+        "confidence": 0,
+        "reasons": [
+          "symbol_not_verified",
+          "sessions_below_decision_minimum:0",
+          "confidence_below_decision_minimum:0"
+        ],
+        "requiredAction": "build_history_file",
+        "evidence": {
+          "riskyBridge": null,
+          "manualAdjustment": null,
+          "targetedStatus": null,
+          "targetedAction": null,
+          "startaStatus": null
+        }
+      }
+    ]
+  },
+  "sourceHealth": {
+    "availableCount": 7,
+    "degradedCount": 0,
+    "files": [
+      {
+        "path": "data/source-health.json",
+        "exists": true,
+        "status": "available",
+        "generatedAt": "2026-07-10T01:36:35.420Z",
+        "ageHours": 12.31,
+        "session": null,
+        "explicitStatus": null
+      },
+      {
+        "path": "source-health.json",
+        "exists": true,
+        "status": "available",
+        "generatedAt": null,
+        "ageHours": null,
+        "session": null,
+        "explicitStatus": null
+      },
+      {
+        "path": "data/app-health.json",
+        "exists": false,
+        "status": "missing",
+        "generatedAt": null,
+        "session": null
+      },
+      {
+        "path": "data/price-freshness-report.json",
+        "exists": true,
+        "status": "available",
+        "generatedAt": "2026-07-10T01:39:43.752Z",
+        "ageHours": 12.26,
+        "session": null,
+        "explicitStatus": null
+      },
+      {
+        "path": "data/price-reconciliation-report.json",
+        "exists": true,
+        "status": "available",
+        "generatedAt": "2026-07-10T01:39:43.816Z",
+        "ageHours": 12.26,
+        "session": null,
+        "explicitStatus": null
+      },
+      {
+        "path": "data/price-source-audit.json",
+        "exists": true,
+        "status": "available",
+        "generatedAt": "2026-07-10T01:39:57.603Z",
+        "ageHours": 12.26,
+        "session": null,
+        "explicitStatus": null
+      },
+      {
+        "path": "data/workflow-source-verification.json",
+        "exists": true,
+        "status": "available",
+        "generatedAt": "2026-07-10T01:39:58.132Z",
+        "ageHours": 12.26,
+        "session": null,
+        "explicitStatus": null
+      },
+      {
+        "path": "data/source-audit.json",
+        "exists": true,
+        "status": "available",
+        "generatedAt": "2026-07-10T10:57:20.785Z",
+        "ageHours": 2.97,
+        "session": null,
+        "explicitStatus": null
+      }
+    ]
+  },
+  "promotionGate": {
+    "passed": false,
+    "checks": [
+      {
+        "id": "measuredSessions",
+        "labelAr": "جلسات القياس",
+        "value": 0,
+        "target": 20,
+        "pass": false
+      },
+      {
+        "id": "closedTrades",
+        "labelAr": "الصفقات المغلقة",
+        "value": 0,
+        "target": 50,
+        "pass": false
+      },
+      {
+        "id": "profitFactor",
+        "labelAr": "Profit Factor",
+        "value": 0,
+        "target": 1.2,
+        "pass": false
+      },
+      {
+        "id": "averageR",
+        "labelAr": "متوسط R",
+        "value": 0,
+        "target": 0.01,
+        "pass": false
+      },
+      {
+        "id": "maxDrawdown",
+        "labelAr": "أقصى تراجع",
+        "value": 0,
+        "target": 10,
+        "pass": true
+      },
+      {
+        "id": "independentConfidence",
+        "labelAr": "أسهم بثقة مستقلة عالية",
+        "value": 0,
+        "target": 5,
+        "pass": false
+      }
+    ],
+    "noteAr": "لم يكتمل سجل القياس المطلوب لنقل V13 إلى التطبيق المستقر."
+  },
+  "navigation": {
+    "stableApplication": "../",
+    "historyEligibility": "../preview-v12/history-eligibility.html",
+    "detailedPaperDecision": "../preview-v12/decision-paper-v13-2.html"
+  },
+  "warnings": [
+    "هذه اللوحة للتداول الورقي والقياس فقط وليست توصية شراء أو ضمانًا للعائد.",
+    "التنفيذ الحقيقي مغلق دائمًا في V13.3.",
+    "الجمعة والسبت يومَا عطلة، والتشغيل المجدول من الأحد إلى الخميس.",
+    "عند قدم البيانات أو فقد ملف حرج، تُفرغ المرشحات تلقائيًا بدل استخدام بيانات غير آمنة."
+  ]
+}
