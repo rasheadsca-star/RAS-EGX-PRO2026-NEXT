@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "13.5.0",
+  "market": {
+    "name": "Egyptian Exchange",
+    "timezone": "Africa/Cairo",
+    "tradingDays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+    "weekendDays": ["Friday", "Saturday"],
+    "scheduledCronUtc": "50 14 * * 0-4"
+  },
+  "calibration": {
+    "minimumWalkForwardFolds": 3,
+    "recentFoldCount": 3,
+    "minimumValidationTrades": 5,
+    "minimumValidationProfitFactor": 1.05,
+    "minimumValidationAverageR": 0.0,
+    "maximumValidationDrawdownPct": 15,
+    "minimumPositiveFoldRatio": 0.34,
+    "basePaperScore": 70,
+    "minimumAdaptivePaperScore": 68,
+    "maximumAdaptivePaperScore": 85,
+    "minimumVariantStabilityPct": 40,
+    "strongValidationProfitFactor": 1.5,
+    "strongValidationAverageR": 0.2
+  },
+  "paperSafety": {
+    "activationMode": "BASELINE_ONLY_NO_RETROACTIVE_SIGNALS",
+    "registerCurrentSessionOnActivation": false,
+    "entrySlippagePct": 0.15,
+    "roundTripCostPct": 0.6,
+    "maximumEntryGapPct": 3.0,
+    "validEntrySessions": 1,
+    "maximumHoldingSessions": 10,
+    "sameBarConflictRule": "stop_first",
+    "fullExitAtTarget1": true,
+    "snapshotHorizons": [1, 3, 5, 10],
+    "maximumOpenSignalsPerTicker": 1,
+    "maximumNewSignalsPerSession": 8
+  },
+  "strategyCircuitBreaker": {
+    "minimumClosedPaperTrades": 8,
+    "pauseBelowProfitFactor": 0.85,
+    "pauseAtOrBelowAverageR": -0.1,
+    "pauseAboveDrawdownPct": 15,
+    "pauseAtConsecutiveLosses": 4,
+    "cautionMinimumClosedTrades": 4,
+    "cautionBelowProfitFactor": 1.0,
+    "cautionAtOrBelowAverageR": 0.0,
+    "resumeMinimumProfitFactor": 1.1,
+    "resumeMinimumAverageR": 0.05
+  },
+  "recommendations": {
+    "maximumPaperCandidates": 8,
+    "maximumConditionalWatch": 20,
+    "nearTriggerMinimumProximityPct": 78,
+    "watchMinimumProximityPct": 55,
+    "minimumDataConfidence": 65
+  },
+  "safety": {
+    "liveExecutionEnabled": false,
+    "noLookahead": true,
+    "noRetroactiveSignalCreation": true,
+    "immutableOriginalPlans": true,
+    "blockedTickers": ["SAIB", "NDRL", "SPHT", "EGSA", "FAITA", "ESRS"],
+    "blockedEligibilityStatuses": [
+      "complete_but_under_review",
+      "complete_but_stale",
+      "partial_and_stale",
+      "manual_adjustment_review",
+      "inactive_delisted"
+    ]
+  }
+}
