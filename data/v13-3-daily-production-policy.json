@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "13.3.0",
+  "market": {
+    "name": "Egyptian Exchange",
+    "timezone": "Africa/Cairo",
+    "tradingDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday"
+    ],
+    "tradingDayNumbersJs": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "weekendDays": [
+      "Friday",
+      "Saturday"
+    ],
+    "expectedPostSessionHourCairo": 15,
+    "scheduledCronUtc": "30 13 * * 0-4",
+    "scheduleExplanation": "13:30 UTC = 15:30 Cairo in winter or 16:30 in summer; both are after the regular session."
+  },
+  "freshness": {
+    "maximumDecisionLagTradingDays": 0,
+    "maximumPaperLagTradingDays": 1,
+    "maximumArtifactAgeHours": 36
+  },
+  "display": {
+    "topDecisionCandidates": 10,
+    "topPaperCandidates": 15,
+    "topWatchOnly": 30,
+    "topReviewQueue": 30,
+    "recentTrades": 30
+  },
+  "promotionGate": {
+    "minimumMeasuredSessions": 20,
+    "minimumClosedTrades": 50,
+    "minimumProfitFactor": 1.2,
+    "minimumAverageR": 0.01,
+    "maximumDrawdownPct": 10,
+    "minimumIndependentHighConfidenceSymbols": 5
+  },
+  "safety": {
+    "allowLiveExecution": false,
+    "failClosedOnStaleDecisionData": true,
+    "failClosedOnMissingEligibility": true,
+    "failClosedOnMissingPaperLedger": true,
+    "preserveLastValidArtifacts": true,
+    "prohibitedDecisionStatuses": [
+      "complete_but_under_review",
+      "complete_but_stale",
+      "partial_and_stale",
+      "manual_adjustment_review",
+      "inactive_delisted"
+    ],
+    "explicitlyBlockedTickers": [
+      "SAIB",
+      "NDRL",
+      "SPHT",
+      "EGSA",
+      "FAITA",
+      "ESRS"
+    ]
+  },
+  "sourceHealthCandidates": [
+    "data/source-health.json",
+    "source-health.json",
+    "data/app-health.json",
+    "data/price-freshness-report.json",
+    "data/price-reconciliation-report.json",
+    "data/price-source-audit.json",
+    "data/workflow-source-verification.json",
+    "data/source-audit.json"
+  ]
+}
