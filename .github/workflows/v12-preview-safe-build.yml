@@ -55,14 +55,37 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t changed < <(git status --porcelain | sed -E 's/^.. //' | sed -E 's/^"|"$//g')
-          printf 'Changed files:\n%s\n' "${changed[*]:-none}"
+
+          # Read actual changed/untracked FILES individually.
+          # Using plain `git status --porcelain` can collapse a new directory
+          # into `preview-v12/data/`, which caused the previous false safety stop.
+          mapfile -t changed < <(
+            {
+              git diff --name-only
+              git diff --cached --name-only
+              git ls-files --others --exclude-standard
+            } | sed '/^$/d' | sort -u
+          )
+
+          printf 'Changed files:\n'
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo "none"
+          else
+            printf '%s\n' "${changed[@]}"
+          fi
+
           for file in "${changed[@]}"; do
             case "$file" in
-              preview-v12/data/unified-goal-v12.json|preview-v12/data/paper-ledger.json) ;;
-              *) echo "SAFETY STOP: workflow attempted to change $file"; exit 1 ;;
+              preview-v12/data/unified-goal-v12.json|preview-v12/data/paper-ledger.json)
+                ;;
+              *)
+                echo "SAFETY STOP: workflow attempted to change $file"
+                exit 1
+                ;;
             esac
           done
+
+          echo "Write isolation passed: only preview-v12/data outputs changed."
 
       - name: Commit preview outputs only
         shell: bash
