@@ -68,7 +68,16 @@ if (known.SAIB) {
 if (known.GPPL) {
   if (known.GPPL.sessions < 50 || known.GPPL.sessions >= 100) fail(`GPPL expected partial history, got ${known.GPPL.sessions}`);
   if (known.GPPL.status !== 'partial_recent') fail(`GPPL status must be partial_recent, got ${known.GPPL.status}`);
-  if (!known.GPPL.paperTradingEligible) fail('GPPL should remain paper-trading eligible');
+  if (!known.GPPL.paperTradingEligible) {
+    fail(
+      `GPPL should remain paper-trading eligible; ` +
+      `status=${known.GPPL.status}, sessions=${known.GPPL.sessions}, ` +
+      `recent=${known.GPPL.recent}, active=${known.GPPL.active}, ` +
+      `delisted=${known.GPPL.delisted}, symbolVerified=${known.GPPL.symbolVerified}, ` +
+      `verificationBasis=${known.GPPL.symbolVerificationBasis || 'none'}, ` +
+      `confidence=${known.GPPL.confidence}`
+    );
+  }
   if (known.GPPL.decisionEligible) fail('GPPL must not be decision eligible before 100 sessions');
 }
 if (known.NDRL) {

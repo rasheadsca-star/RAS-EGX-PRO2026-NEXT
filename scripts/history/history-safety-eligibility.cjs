@@ -96,6 +96,45 @@ function getConfidence(history) {
   return values.length ? round(values.reduce((sum, value) => sum + value, 0) / values.length, 2) : 0;
 }
 
+function currentIdentityEvidence(history, targetedResult, startaResult) {
+  const historyVerified =
+    history?.symbolVerified === true ||
+    history?.symbolVerification?.verified === true;
+
+  const targetedIdentity = targetedResult?.identity || null;
+  const targetedVerified =
+    targetedIdentity?.verified === true &&
+    targetedIdentity?.exactSymbol === true &&
+    targetedIdentity?.egxMarket === true &&
+    targetedIdentity?.exactIsin === true;
+
+  const startaIdentity = startaResult?.identity || null;
+  const expectedIsin = String(history?.isin || '').trim().toUpperCase();
+  const observedIsin = String(
+    startaIdentity?.identity?.isin ||
+    startaIdentity?.identity?.raw?.isin ||
+    ''
+  ).trim().toUpperCase();
+  const startaIsinAccepted = !expectedIsin || (observedIsin && observedIsin === expectedIsin);
+  const startaVerified =
+    startaIdentity?.verified === true &&
+    startaIdentity?.exactSymbol === true &&
+    startaIdentity?.egxMarket === true &&
+    startaIsinAccepted;
+
+  if (targetedVerified) {
+    return { verified: true, basis: 'v13_targeted_exact_symbol_egx_isin' };
+  }
+  if (historyVerified) {
+    return { verified: true, basis: 'current_history_symbol_verification' };
+  }
+  if (startaVerified) {
+    return { verified: true, basis: 'starta_exact_symbol_egx_isin' };
+  }
+
+  return { verified: false, basis: null };
+}
+
 function riskyBridgeEvidence(targetedResult, history, policy) {
   const evidence = targetedResult?.evidence || history?.v13TargetedRepair?.sparseEvidence || null;
   if (!evidence) return null;
@@ -190,7 +229,18 @@ function main() {
     const recent = marketLagCalendarDays !== null && marketLagCalendarDays <= Number(policy.maximumMarketLagCalendarDays || 21);
     const active = entryRaw.active !== false && entryRaw.excludeFromDecision !== true;
     const delisted = entryRaw.instrumentStatus === 'delisted' || history?.instrumentStatus === 'delisted' || targetedResult?.status === 'inactive_delisted';
-    const symbolVerified = history?.symbolVerified !== false && entryRaw.symbolVerified !== false;
+    const currentIdentity = currentIdentityEvidence(history, targetedResult, startaResult);
+    const mapExplicitlyRejected = entryRaw.symbolVerified === false;
+    const historyExplicitlyRejected =
+      history?.symbolVerified === false ||
+      history?.symbolVerification?.verified === false;
+
+    // A stale map flag must not override newer, stronger identity evidence.
+    // GPPL is the concrete case: V13.0 verified exact ticker + EGX + ISIN,
+    // while the older symbol map still carried symbolVerified=false.
+    const symbolVerified =
+      currentIdentity.verified ||
+      (!mapExplicitlyRejected && !historyExplicitlyRejected);
     const confidence = getConfidence(history);
     const manualAdjustment = manualAdjustmentEvidence(targetedResult);
     const riskyBridge = riskyBridgeEvidence(targetedResult, history, policy);
@@ -242,6 +292,9 @@ function main() {
       recent,
       confidence,
       symbolVerified,
+      symbolVerificationBasis: currentIdentity.basis || (
+        symbolVerified ? 'map_and_history_not_explicitly_rejected' : 'verification_rejected_or_missing'
+      ),
       status,
       statusLabelAr: policy.statuses?.[status] || status,
       decisionEligible,
