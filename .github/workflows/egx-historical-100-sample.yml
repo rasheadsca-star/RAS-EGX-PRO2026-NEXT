@@ -1,10 +1,10 @@
-name: EGX Historical 100 Sessions — Full Market Batches
+name: EGX Historical 100 Sessions — V12.4 Repair & Batches
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "build_map_only, sample, batch_backfill, incremental_batch, retry_failed, repair_symbol"
+        description: "build_map_only, sample, batch_backfill, incremental_batch, retry_failed, repair_failed_batch, repair_symbol"
         required: true
         type: choice
         default: batch_backfill
@@ -14,9 +14,10 @@ on:
           - batch_backfill
           - incremental_batch
           - retry_failed
+          - repair_failed_batch
           - repair_symbol
       batch_number:
-        description: "1-based batch number for batch_backfill/incremental_batch"
+        description: "1-based batch number for backfill, retry, or failed-symbol repair"
         required: true
         default: "1"
         type: string
@@ -93,6 +94,7 @@ jobs:
           set -euo pipefail
           required=(
             scripts/history/full-market-universe-builder.cjs
+            scripts/history/failed-symbol-resolver.cjs
             scripts/history/historical-100-runner.cjs
             scripts/history/acceptance-tests.cjs
             scripts/history/history-summary-builder.cjs
@@ -111,10 +113,25 @@ jobs:
           HISTORY_UNIVERSE_MAX: "300"
         run: node scripts/history/full-market-universe-builder.cjs
 
-      - name: Fetch and validate selected historical batch
-        if: steps.run-config.outputs.mode != 'build_map_only'
+      - name: Resolve failed Yahoo symbols and clean obvious non-securities
+        id: repair-map
+        if: steps.run-config.outputs.mode == 'repair_failed_batch'
         env:
-          HISTORY_MODE: ${{ steps.run-config.outputs.mode }}
+          HISTORY_REPAIR_BATCH_NUMBER: ${{ steps.run-config.outputs.batch_number }}
+          HISTORY_REPAIR_BATCH_SIZE: ${{ steps.run-config.outputs.batch_size }}
+          HISTORY_REPAIR_DELAY_MS: "500"
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/failed-symbol-resolver.cjs
+          resolved_count=$(node -e "const r=require('./data/history-symbol-repair-report.json'); process.stdout.write(String((r.resolvedTickers||[]).length))")
+          echo "resolved_count=$resolved_count" >> "$GITHUB_OUTPUT"
+          echo "Resolved candidates in this repair batch: $resolved_count"
+
+      - name: Fetch and validate selected historical batch
+        if: steps.run-config.outputs.mode != 'build_map_only' && (steps.run-config.outputs.mode != 'repair_failed_batch' || steps.repair-map.outputs.resolved_count != '0')
+        env:
+          HISTORY_MODE: ${{ steps.run-config.outputs.mode == 'repair_failed_batch' && 'retry_resolved' || steps.run-config.outputs.mode }}
           HISTORY_TICKER: ${{ steps.run-config.outputs.ticker }}
           HISTORY_BATCH_NUMBER: ${{ steps.run-config.outputs.batch_number }}
           HISTORY_BATCH_SIZE: ${{ steps.run-config.outputs.batch_size }}
@@ -124,9 +141,9 @@ jobs:
         run: node scripts/history/historical-100-runner.cjs
 
       - name: Run acceptance tests
-        if: steps.run-config.outputs.mode != 'build_map_only'
+        if: steps.run-config.outputs.mode != 'build_map_only' && (steps.run-config.outputs.mode != 'repair_failed_batch' || steps.repair-map.outputs.resolved_count != '0')
         env:
-          HISTORY_MODE: ${{ steps.run-config.outputs.mode }}
+          HISTORY_MODE: ${{ steps.run-config.outputs.mode == 'repair_failed_batch' && 'retry_resolved' || steps.run-config.outputs.mode }}
           HISTORY_TICKER: ${{ steps.run-config.outputs.ticker }}
           HISTORY_MIN_SUCCESS: ${{ steps.run-config.outputs.min_success }}
         run: node scripts/history/acceptance-tests.cjs
@@ -183,7 +200,7 @@ jobs:
 
           for file in "${changed[@]}"; do
             case "$file" in
-              data/symbol-map.json|data/history-universe-report.json|data/history/*.json|data/history-summary.json|data/source-audit.json|data/history-errors.json|data/session-calendar.json|data/corporate-actions.json|data/history-batch-state.json|data/history-last-run.json)
+              data/symbol-map.json|data/history-universe-report.json|data/history/*.json|data/history-summary.json|data/source-audit.json|data/history-errors.json|data/session-calendar.json|data/corporate-actions.json|data/history-batch-state.json|data/history-last-run.json|data/history-symbol-repair-report.json)
                 ;;
               *)
                 echo "SAFETY STOP: historical workflow attempted to change forbidden path: $file"
@@ -203,10 +220,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add data/symbol-map.json data/history-universe-report.json data/history \
-            data/history-summary.json data/source-audit.json data/history-errors.json \
-            data/session-calendar.json data/corporate-actions.json \
-            data/history-batch-state.json data/history-last-run.json
+          allowed=(
+            data/symbol-map.json
+            data/history-universe-report.json
+            data/history
+            data/history-summary.json
+            data/source-audit.json
+            data/history-errors.json
+            data/session-calendar.json
+            data/corporate-actions.json
+            data/history-batch-state.json
+            data/history-last-run.json
+            data/history-symbol-repair-report.json
+          )
+          for item in "${allowed[@]}"; do
+            if [ -e "$item" ] || git ls-files --error-unmatch "$item" >/dev/null 2>&1; then
+              git add -A -- "$item"
+            fi
+          done
 
           if git diff --cached --quiet; then
             echo "No valid history changes to commit."
@@ -214,7 +245,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "V12.3 update EGX historical full-market batch"
+          git commit -m "V12.4 repair failed EGX historical symbols"
           git pull --rebase origin main
           git push origin HEAD:main
           echo "committed=true" >> "$GITHUB_OUTPUT"
@@ -223,7 +254,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v12-3-full-market-diagnostics-${{ github.run_number }}
+          name: v12-4-symbol-repair-diagnostics-${{ github.run_number }}
           if-no-files-found: ignore
           retention-days: 14
           path: |
@@ -233,6 +264,7 @@ jobs:
             data/history-universe-report.json
             data/history-batch-state.json
             data/history-last-run.json
+            data/history-symbol-repair-report.json
 
   deploy:
     needs: history
@@ -258,6 +290,6 @@ jobs:
         with:
           path: "."
 
-      - name: Deploy V12.3 full-market history preview
+      - name: Deploy V12.4 repaired history preview
         id: deployment
         uses: actions/deploy-pages@v4
