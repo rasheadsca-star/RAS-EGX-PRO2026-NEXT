@@ -1,0 +1,141 @@
+name: EGX History Safety & Eligibility Rebuild — V13.1
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "rebuild"
+        type: choice
+        options:
+          - rebuild
+          - check_only
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-history-safety-eligibility-v13-1
+  cancel-in-progress: false
+
+jobs:
+  rebuild-eligibility:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate V13.1 package and stable-app isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            scripts/history/history-safety-eligibility.cjs
+            scripts/history/history-safety-acceptance.cjs
+            data/history-safety-policy.json
+            data/symbol-map.json
+            data/history-summary.json
+            data/history-targeted-seven-report.json
+            preview-v12/history-eligibility.html
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing required file: $file"; exit 1; }
+          done
+          test -d data/history || { echo "Missing required directory: data/history"; exit 1; }
+          node --check scripts/history/history-safety-eligibility.cjs
+          node --check scripts/history/history-safety-acceptance.cjs
+
+      - name: Rebuild history safety and eligibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/history-safety-eligibility.cjs
+
+      - name: Run V13.1 acceptance tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/history-safety-acceptance.cjs
+
+      - name: Enforce strict write isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t changed < <(
+            {
+              git diff --name-only
+              git diff --cached --name-only
+              git ls-files --others --exclude-standard
+            } | sed '/^$/d' | sort -u
+          )
+
+          echo "Changed files:"
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo "none"
+          else
+            printf '%s\n' "${changed[@]}"
+          fi
+
+          for file in "${changed[@]}"; do
+            case "$file" in
+              data/history-eligibility.json|\
+              data/history-safety-report.json|\
+              data/decision-eligible-symbols.json|\
+              data/history-review-queue.json)
+                ;;
+              *)
+                echo "SAFETY STOP: forbidden changed path: $file"
+                exit 1
+                ;;
+            esac
+          done
+
+      - name: Commit V13.1 outputs
+        if: ${{ inputs.mode == 'rebuild' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            data/history-eligibility.json \
+            data/history-safety-report.json \
+            data/decision-eligible-symbols.json \
+            data/history-review-queue.json
+          if git diff --cached --quiet; then
+            echo "No V13.1 output changes to commit."
+            exit 0
+          fi
+          git commit -m "V13.1 rebuild historical safety eligibility"
+          git push origin HEAD:main
+
+      - name: Configure GitHub Pages
+        if: ${{ inputs.mode == 'rebuild' }}
+        uses: actions/configure-pages@v5
+
+      - name: Upload repository for Pages
+        if: ${{ inputs.mode == 'rebuild' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy V13.1 preview
+        if: ${{ inputs.mode == 'rebuild' }}
+        id: deployment
+        uses: actions/deploy-pages@v4
