@@ -1,0 +1,67 @@
+name: Repair V13.3 Final
+
+on:
+  push:
+    paths:
+      - ".github/workflows/repair-v133-final.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: repair-v133-final
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Restore V13.3 page
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p preview-v13
+          python3 -c "import base64,gzip,pathlib; pathlib.Path('preview-v13/index.html').write_bytes(gzip.decompress(base64.b64decode('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')))"
+          test "$(wc -c < preview-v13/index.html)" -gt 5000
+          grep -q "EGX Pro V13.3" preview-v13/index.html
+          grep -q "v13-3-daily-production.json" preview-v13/index.html
+          echo "V13.3 page restored successfully."
+
+      - name: Commit repaired page
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v13/index.html
+          if git diff --cached --quiet; then
+            echo "Page already repaired."
+          else
+            git commit -m "Repair V13.3 preview page"
+            git push origin HEAD:main
+          fi
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
