@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "13.4.0",
+  "generatedAt": "2026-07-10T15:15:05.343Z",
+  "latestMarketSession": "2026-07-09",
+  "liveExecutionEnabled": false,
+  "recommendationMode": "NEXT_SESSION_AND_3_TO_10_SESSION_SWING_PAPER_ONLY",
+  "marketRegime": {
+    "code": "BALANCED",
+    "labelAr": "سوق متوازن/جانبي",
+    "basedOn": "equal-weight market breadth proxy from stored daily histories",
+    "symbolsMeasured": 196,
+    "aboveSma20Pct": 60.71,
+    "aboveSma50Pct": 68.88,
+    "advancersPct": 28.57,
+    "medianReturn20Pct": 0.047,
+    "medianAtrPct": 3.359
+  },
+  "strategies": [
+    {
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "selectedVariantId": "balanced",
+      "selectedVariant": {
+        "id": "balanced",
+        "minRsi": 50,
+        "maxRsi": 70,
+        "minVolumeRatio": 0.8,
+        "minRelativeStrength20": 0,
+        "minResistanceUpsidePct": 1.5
+      },
+      "folds": 17,
+      "validationMetrics": {
+        "totalSignals": 314,
+        "closedTrades": 291,
+        "cancelledTrades": 23,
+        "wins": 125,
+        "losses": 166,
+        "winRatePct": 42.96,
+        "profitFactor": 1.07,
+        "averageReturnPct": 0.16,
+        "averageR": 0.038,
+        "medianR": -0.287,
+        "maxDrawdownPct": 320.945,
+        "sameBarStopFirstCount": 0
+      },
+      "researchValidated": false,
+      "productionEligible": false,
+      "status": "RESEARCH_ONLY"
+    },
+    {
+      "strategyId": "breakout",
+      "strategyLabelAr": "اختراق مؤكد",
+      "selectedVariantId": "early",
+      "selectedVariant": {
+        "id": "early",
+        "breakoutBufferPct": 0,
+        "minVolumeRatio": 1,
+        "minRsi": 52,
+        "maxRsi": 75,
+        "minRelativeStrength20": 0
+      },
+      "folds": 17,
+      "validationMetrics": {
+        "totalSignals": 76,
+        "closedTrades": 68,
+        "cancelledTrades": 8,
+        "wins": 27,
+        "losses": 41,
+        "winRatePct": 39.71,
+        "profitFactor": 1.102,
+        "averageReturnPct": 0.255,
+        "averageR": 0.031,
+        "medianR": -0.372,
+        "maxDrawdownPct": 114.307,
+        "sameBarStopFirstCount": 0
+      },
+      "researchValidated": false,
+      "productionEligible": false,
+      "status": "RESEARCH_ONLY"
+    },
+    {
+      "strategyId": "pullback",
+      "strategyLabelAr": "ارتداد من دعم داخل اتجاه صاعد",
+      "selectedVariantId": "wide",
+      "selectedVariant": {
+        "id": "wide",
+        "maxDistanceSma20Pct": 3.5,
+        "minRsi": 40,
+        "maxRsi": 62,
+        "minVolumeRatio": 0.6,
+        "minRelativeStrength20": -3
+      },
+      "folds": 17,
+      "validationMetrics": {
+        "totalSignals": 132,
+        "closedTrades": 125,
+        "cancelledTrades": 7,
+        "wins": 41,
+        "losses": 84,
+        "winRatePct": 32.8,
+        "profitFactor": 0.72,
+        "averageReturnPct": -0.671,
+        "averageR": -0.192,
+        "medianR": -0.517,
+        "maxDrawdownPct": 179.202,
+        "sameBarStopFirstCount": 0
+      },
+      "researchValidated": false,
+      "productionEligible": false,
+      "status": "RESEARCH_ONLY"
+    }
+  ],
+  "promotionRules": {
+    "researchMinimumTrades": 5,
+    "researchMinimumProfitFactor": 1.05,
+    "researchMinimumAverageR": 0,
+    "researchMaximumDrawdownPct": 15,
+    "productionMinimumTrades": 20,
+    "productionMinimumProfitFactor": 1.2,
+    "productionMinimumAverageR": 0.05,
+    "productionMaximumDrawdownPct": 10
+  },
+  "warningAr": "النتائج تاريخية وورقية ولا تضمن أرباحًا مستقبلية. لا يوجد تنفيذ حقيقي."
+}

@@ -1,0 +1,167 @@
+{
+  "schemaVersion": "13.4.0",
+  "market": {
+    "name": "Egyptian Exchange",
+    "timezone": "Africa/Cairo",
+    "tradingDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday"
+    ],
+    "weekendDays": [
+      "Friday",
+      "Saturday"
+    ],
+    "scheduledCronUtc": "15 14 * * 0-4"
+  },
+  "research": {
+    "minimumHistorySessions": 80,
+    "minimumDecisionSessions": 100,
+    "featureWarmupSessions": 55,
+    "walkForwardMinimumTrainingSessions": 60,
+    "walkForwardValidationSessions": 10,
+    "minimumTrainingTradesPerVariant": 5,
+    "maximumHoldingSessions": 10,
+    "entrySlippagePct": 0.15,
+    "roundTripCostPct": 0.6,
+    "sameBarConflictRule": "stop_first",
+    "maximumEntryGapPct": 3.0
+  },
+  "liquidity": {
+    "minimumAverageTurnover20Egp": 100000,
+    "minimumNonZeroVolumeSessions20": 8,
+    "minimumLatestVolumeRatio": 0.6
+  },
+  "validation": {
+    "researchMinimumTrades": 5,
+    "researchMinimumProfitFactor": 1.05,
+    "researchMinimumAverageR": 0.0,
+    "researchMaximumDrawdownPct": 15,
+    "productionMinimumTrades": 20,
+    "productionMinimumProfitFactor": 1.2,
+    "productionMinimumAverageR": 0.05,
+    "productionMaximumDrawdownPct": 10
+  },
+  "recommendations": {
+    "maximumPaperCandidates": 10,
+    "maximumWatchCandidates": 20,
+    "minimumPaperScore": 70,
+    "minimumWatchScore": 55,
+    "minimumRiskReward": 1.8,
+    "validEntrySessions": 1,
+    "target2RiskMultiple": 2.6,
+    "blockPaperCandidatesInBearishRegime": true,
+    "blockPaperCandidatesInHighVolatilityRegime": true
+  },
+  "safety": {
+    "liveExecutionEnabled": false,
+    "noLookahead": true,
+    "noRetroactiveEdits": true,
+    "blockedTickers": [
+      "SAIB",
+      "NDRL",
+      "SPHT",
+      "EGSA",
+      "FAITA",
+      "ESRS"
+    ],
+    "blockedEligibilityStatuses": [
+      "complete_but_under_review",
+      "complete_but_stale",
+      "partial_and_stale",
+      "manual_adjustment_review",
+      "inactive_delisted"
+    ]
+  },
+  "strategies": {
+    "trend_follow": {
+      "labelAr": "اتجاه قوي مع سيولة",
+      "variants": [
+        {
+          "id": "balanced",
+          "minRsi": 50,
+          "maxRsi": 70,
+          "minVolumeRatio": 0.8,
+          "minRelativeStrength20": 0,
+          "minResistanceUpsidePct": 1.5
+        },
+        {
+          "id": "strict",
+          "minRsi": 52,
+          "maxRsi": 68,
+          "minVolumeRatio": 1.0,
+          "minRelativeStrength20": 2,
+          "minResistanceUpsidePct": 2.0
+        },
+        {
+          "id": "momentum",
+          "minRsi": 55,
+          "maxRsi": 72,
+          "minVolumeRatio": 1.2,
+          "minRelativeStrength20": 3,
+          "minResistanceUpsidePct": 0.5
+        }
+      ]
+    },
+    "breakout": {
+      "labelAr": "اختراق مؤكد",
+      "variants": [
+        {
+          "id": "early",
+          "breakoutBufferPct": 0.0,
+          "minVolumeRatio": 1.0,
+          "minRsi": 52,
+          "maxRsi": 75,
+          "minRelativeStrength20": 0
+        },
+        {
+          "id": "balanced",
+          "breakoutBufferPct": 0.2,
+          "minVolumeRatio": 1.2,
+          "minRsi": 55,
+          "maxRsi": 75,
+          "minRelativeStrength20": 1
+        },
+        {
+          "id": "strict",
+          "breakoutBufferPct": 0.5,
+          "minVolumeRatio": 1.5,
+          "minRsi": 58,
+          "maxRsi": 72,
+          "minRelativeStrength20": 2
+        }
+      ]
+    },
+    "pullback": {
+      "labelAr": "ارتداد من دعم داخل اتجاه صاعد",
+      "variants": [
+        {
+          "id": "wide",
+          "maxDistanceSma20Pct": 3.5,
+          "minRsi": 40,
+          "maxRsi": 62,
+          "minVolumeRatio": 0.6,
+          "minRelativeStrength20": -3
+        },
+        {
+          "id": "balanced",
+          "maxDistanceSma20Pct": 2.5,
+          "minRsi": 42,
+          "maxRsi": 60,
+          "minVolumeRatio": 0.7,
+          "minRelativeStrength20": -2
+        },
+        {
+          "id": "strict",
+          "maxDistanceSma20Pct": 1.8,
+          "minRsi": 45,
+          "maxRsi": 58,
+          "minVolumeRatio": 0.9,
+          "minRelativeStrength20": 0
+        }
+      ]
+    }
+  }
+}
