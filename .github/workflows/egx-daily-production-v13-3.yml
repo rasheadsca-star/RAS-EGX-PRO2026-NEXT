@@ -1,0 +1,193 @@
+name: EGX Daily Production & Unified Decision Center — V13.3
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "update"
+        type: choice
+        options:
+          - update
+          - check_only
+      refresh_core_data:
+        description: "Run a light market-data refresh before V13.1/V13.2"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      force_non_trading_day:
+        description: "Allow a manual Friday/Saturday diagnostic run"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+  schedule:
+    # Sunday through Thursday. GitHub cron is UTC.
+    # 13:30 UTC = 15:30 Cairo in winter / 16:30 in summer.
+    - cron: "30 13 * * 0-4"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-daily-production-v13-3
+  cancel-in-progress: false
+
+jobs:
+  daily-production:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      V13_3_FORCE_NON_TRADING_DAY: ${{ github.event_name == 'workflow_dispatch' && inputs.force_non_trading_day || 'false' }}
+
+    steps:
+      - name: Checkout current main with history
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate V13.3 and dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            scripts/production/v13-3-daily-production.cjs
+            scripts/production/v13-3-acceptance.cjs
+            data/v13-3-daily-production-policy.json
+            preview-v13/index.html
+
+            scripts/history/history-safety-eligibility.cjs
+            scripts/history/history-safety-acceptance.cjs
+            data/history-safety-policy.json
+
+            scripts/decision/v13-2-eligibility-gated-paper.cjs
+            scripts/decision/v13-2-acceptance.cjs
+            data/v13-2-decision-paper-policy.json
+
+            data/history-summary.json
+            data/symbol-map.json
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing required file: $file"; exit 1; }
+          done
+          test -d data/history || { echo "Missing required directory: data/history"; exit 1; }
+          node --check scripts/production/v13-3-daily-production.cjs
+          node --check scripts/production/v13-3-acceptance.cjs
+          node --check scripts/history/history-safety-eligibility.cjs
+          node --check scripts/decision/v13-2-eligibility-gated-paper.cjs
+
+      - name: Optional light market-data refresh
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.refresh_core_data == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/collect-market-gateway.js || echo "Gateway refresh failed; V13.3 will fail closed if stored data is stale."
+          node scripts/build-history-50-engine.js || echo "History-50 refresh skipped."
+          node scripts/build-price-freshness-report.js || echo "Price freshness refresh skipped."
+          node scripts/build-price-reconciliation-report.js || echo "Price reconciliation refresh skipped."
+          node scripts/build-final-opportunity-ranking.js || echo "Final opportunity ranking refresh skipped."
+          node scripts/collect-mubasher-analysis-tools.js || echo "Mubasher analysis tools refresh skipped."
+          node scripts/build-multi-source-intelligence.js || echo "Multi-source intelligence refresh skipped."
+          node scripts/apply-multisource-intelligence-to-ranking.js || echo "Multi-source ranking application skipped."
+          node scripts/build-v111-price-truth-layer.js || echo "Price truth refresh skipped."
+          node scripts/build-price-source-audit.js || echo "Price-source audit refresh skipped."
+          node scripts/build-v111-liquidity-gate.js || echo "Liquidity gate refresh skipped."
+          node scripts/build-v111-trade-plan-validator.js || echo "Trade-plan refresh skipped."
+
+      - name: Rebuild V13.1 historical eligibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/history/history-safety-eligibility.cjs
+          node scripts/history/history-safety-acceptance.cjs
+
+      - name: Update V13.2 eligibility-gated paper ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/decision/v13-2-eligibility-gated-paper.cjs
+          node scripts/decision/v13-2-acceptance.cjs
+
+      - name: Build V13.3 unified production center
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/production/v13-3-daily-production.cjs
+          node scripts/production/v13-3-acceptance.cjs
+
+      - name: Enforce stable-app isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t changed < <(
+            {
+              git diff --name-only
+              git diff --cached --name-only
+              git ls-files --others --exclude-standard
+            } | sed '/^$/d' | sort -u
+          )
+
+          echo "Changed files:"
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo "none"
+          else
+            printf '%s\n' "${changed[@]}"
+          fi
+
+          for file in "${changed[@]}"; do
+            case "$file" in
+              data/*|preview-v12/data/*|preview-v13/data/*)
+                ;;
+              *)
+                echo "SAFETY STOP: forbidden changed path: $file"
+                exit 1
+                ;;
+            esac
+          done
+
+      - name: Commit daily production outputs
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'update' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data preview-v12/data preview-v13/data
+          if git diff --cached --quiet; then
+            echo "No daily production changes to commit."
+          else
+            git commit -m "V13.3 daily production decision and paper measurement"
+            git push origin HEAD:main
+          fi
+
+      - name: Configure GitHub Pages
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'update' }}
+        uses: actions/configure-pages@v5
+
+      - name: Upload repository for Pages
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'update' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy V13.3 unified center
+        if: ${{ github.event_name == 'schedule' || inputs.mode == 'update' }}
+        id: deployment
+        uses: actions/deploy-pages@v4
