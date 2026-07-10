@@ -1,0 +1,80 @@
+name: V12 Preview Safe Build
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 16 * * 0-4"
+  workflow_run:
+    workflows: ["Update EGX Market Data"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v12-preview-safe-build
+  cancel-in-progress: false
+
+jobs:
+  build-preview:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build isolated V12 preview
+        run: node scripts/v12-preview-build.js
+
+      - name: Validate generated JSON and fail-closed mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const file = 'preview-v12/data/unified-goal-v12.json';
+          if (!fs.existsSync(file)) throw new Error('Missing preview decision file');
+          const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+          if (!data.deployment || data.deployment.mode !== 'ISOLATED_PREVIEW') throw new Error('Not an isolated preview output');
+          if (!Array.isArray(data.opportunities)) throw new Error('Invalid opportunities payload');
+          if (data.decision?.liveReadyCount > 0 && !data.goLive?.ready) throw new Error('Fail-closed violation: live recommendations without passed system gates');
+          console.log(`Preview validated: ${data.source?.uniqueSymbols || 0} symbols, decision=${data.decision?.code}`);
+          NODE
+
+      - name: Enforce write isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t changed < <(git status --porcelain | sed -E 's/^.. //' | sed -E 's/^"|"$//g')
+          printf 'Changed files:\n%s\n' "${changed[*]:-none}"
+          for file in "${changed[@]}"; do
+            case "$file" in
+              preview-v12/data/unified-goal-v12.json|preview-v12/data/paper-ledger.json) ;;
+              *) echo "SAFETY STOP: workflow attempted to change $file"; exit 1 ;;
+            esac
+          done
+
+      - name: Commit preview outputs only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add preview-v12/data/unified-goal-v12.json preview-v12/data/paper-ledger.json
+          if git diff --cached --quiet; then
+            echo "No preview data changes to commit."
+            exit 0
+          fi
+          git commit -m "Update isolated V12 preview decision and paper ledger"
+          git pull --rebase origin main
+          git push origin HEAD:main
