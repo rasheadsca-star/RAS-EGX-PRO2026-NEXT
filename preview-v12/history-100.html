@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>V12.2 — قاعدة 100 جلسة</title>
+  <style>
+    :root{--bg:#07111f;--panel:#0e1b2d;--panel2:#13243a;--line:#28415f;--text:#f4f8fc;--muted:#9eb0c4;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--blue:#38bdf8}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}.wrap{max-width:1500px;margin:auto;padding:18px}.head{display:flex;align-items:center;justify-content:space-between;gap:15px;background:linear-gradient(110deg,#0b2239,#0c1727);border:1px solid var(--line);border-radius:18px;padding:17px 20px}.head h1{font-size:22px;margin:0}.head p{margin:7px 0 0;color:var(--muted);font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{color:#fff;text-decoration:none;border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:9px 12px;cursor:pointer;font-family:inherit}.kpis{display:grid;grid-template-columns:repeat(6,minmax(140px,1fr));gap:10px;margin:14px 0}.kpi,.section{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:14px}.kpi span{display:block;color:var(--muted);font-size:11px}.kpi strong{display:block;font-size:23px;margin-top:9px}.kpi small{display:block;color:var(--muted);margin-top:6px}.section{margin-bottom:14px}.section h2{font-size:17px;margin:0 0 12px}.note{border-right:3px solid var(--amber);background:#2d230d;color:#fde9ad;padding:10px;border-radius:10px;line-height:1.8;margin-bottom:12px}.table{overflow:auto;border:1px solid var(--line);border-radius:12px}.table table{width:100%;border-collapse:collapse;min-width:1150px}.table th,.table td{text-align:right;padding:10px;border-bottom:1px solid #213955;font-size:11px}.table th{background:#11243a;position:sticky;top:0}.badge{display:inline-flex;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:bold}.ok{background:#14532d;color:#bbf7d0}.warn{background:#713f12;color:#fef3c7}.bad{background:#3f1d29;color:#fecdd3}.muted{color:var(--muted)}.bar{height:7px;background:#06101c;border-radius:999px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:linear-gradient(90deg,#0ea5e9,#22c55e)}.error{color:#fecaca;text-align:center;padding:40px}.loading{text-align:center;color:var(--muted);padding:50px}.sources{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.source{background:#0a1626;border:1px solid var(--line);border-radius:12px;padding:11px}.source b,.source small{display:block}.source small{color:var(--muted);margin-top:6px;line-height:1.5}.ltr{direction:ltr;text-align:left}@media(max-width:1050px){.kpis{grid-template-columns:repeat(3,1fr)}.sources{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.wrap{padding:8px}.head{display:block}.actions{margin-top:12px}.kpis,.sources{grid-template-columns:1fr 1fr}.kpi strong{font-size:19px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="head">
+      <div><h1>EGX Pro V12.2 — Historical 100 Sample Validation</h1><p>100 جلسة فعلية، OHLCV خام، تدقيق المصدر، وعدم استخدام البيانات الناقصة كتوصية عالية الثقة.</p></div>
+      <div class="actions"><a class="btn" href="./">العودة إلى V12 Preview</a><button class="btn" id="reload">تحديث</button></div>
+    </header>
+    <div id="app" class="loading">جارٍ قراءة data/history-summary.json…</div>
+  </main>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const esc = (v) => String(v ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+  const n = (v,d=0) => Number.isFinite(Number(v)) ? Number(v).toLocaleString('ar-EG',{maximumFractionDigits:d}) : '—';
+  const pct = (v) => `${n(v,1)}%`;
+  const date = (v) => v ? new Date(v).toLocaleString('ar-EG',{timeZone:'Africa/Cairo'}) : '—';
+  const statusLabel = {historical_complete_100:'مكتمل 100 جلسة',historical_partial_50:'جزئي 50–99',historical_limited_20:'محدود 20–49',historical_limited_5:'محدود 5–19',historical_insufficient:'غير كافٍ'};
+  const tone = (x) => x==='historical_complete_100'?'ok':(x==='historical_partial_50'||x==='historical_limited_20'?'warn':'bad');
+  const kpi=(label,value,note='')=>`<article class="kpi"><span>${esc(label)}</span><strong>${value}</strong>${note?`<small>${esc(note)}</small>`:''}</article>`;
+  function render(d){
+    const c=d.coverage||{};
+    const rows=(d.symbols||[]).map(x=>`<tr>
+      <td><b>${esc(x.ticker)}</b><div class="muted">${esc(x.companyNameAr||x.companyNameEn)}</div></td>
+      <td><b>${n(x.availableSessions)}</b><div class="bar"><i style="width:${Math.min(100,Number(x.availableSessions||0))}%"></i></div></td>
+      <td><span class="badge ${tone(x.historyStatus)}">${esc(statusLabel[x.historyStatus]||x.historyStatus)}</span></td>
+      <td>${esc(x.firstSession)}</td><td>${esc(x.lastSession)}</td>
+      <td>${esc(x.primarySource)}</td><td>${esc((x.verificationSources||[]).join('، ')||'مصدر واحد')}</td>
+      <td>${pct(x.averageConfidence)}</td>
+      <td><span class="badge ${x.symbolVerified?'ok':'bad'}">${x.symbolVerified?'متحقق وقت التشغيل':'غير متحقق'}</span></td>
+      <td><span class="badge ${x.staleData||x.updateFailed?'bad':'ok'}">${x.updateFailed?'فشل التحديث':(x.staleData?'قديمة':'صالحة')}</span></td>
+      <td><a class="btn" href="../${esc(x.sourceFile||'')}" target="_blank" rel="noopener">عرض الملف</a></td>
+    </tr>`).join('');
+    const sources=Object.entries(d.sources||{}).map(([key,value])=>`<div class="source"><b>${esc(key.toUpperCase())}</b><small>الحالة: ${esc(value.status)}</small><small>${esc(value.role)}</small></div>`).join('');
+    $('#app').className='';
+    $('#app').innerHTML=`
+      <section class="kpis">
+        ${kpi('الأسهم بالعينة',n(d.symbolsTotal))}${kpi('رموز متحققة',n(d.symbolsRuntimeVerified))}
+        ${kpi('20 جلسة أو أكثر',`${n(c.sessions20Count)} — ${pct(c.sessions20Pct)}`)}
+        ${kpi('50 جلسة أو أكثر',`${n(c.sessions50Count)} — ${pct(c.sessions50Pct)}`)}
+        ${kpi('100 جلسة',`${n(c.sessions100Count)} — ${pct(c.sessions100Pct)}`)}
+        ${kpi('متوسط الثقة',pct(d.averageConfidence),`آخر جلسة: ${d.latestMarketSession||'—'}`)}
+      </section>
+      <section class="section"><div class="note"><b>قاعدة الاستخدام:</b> الثقة 100% لا تمنح إلا عند تحقق رسمي من EGX. Yahoo يستخدم للتجميع التاريخي، ولا يتحول وحده إلى مصدر رسمي.</div><h2>حالة المصادر</h2><div class="sources">${sources}</div></section>
+      <section class="section"><h2>تغطية العينة وتدقيق كل سهم</h2><div class="table"><table><thead><tr><th>السهم</th><th>الجلسات</th><th>حالة التاريخ</th><th>أول جلسة</th><th>آخر جلسة</th><th>المصدر</th><th>التحقق</th><th>الثقة</th><th>الرمز</th><th>حالة الملف</th><th>التدقيق</th></tr></thead><tbody>${rows||'<tr><td colspan="11">لا توجد ملفات تاريخ بعد.</td></tr>'}</tbody></table></div></section>
+      <section class="section"><div class="muted">تم التوليد: ${date(d.generatedAt)} — مقام التغطية: ${n(c.denominator)} رمزًا متحققًا. النسب لا تُحسب من Cache آخر جلسة.</div></section>`;
+  }
+  async function load(){
+    $('#app').className='loading'; $('#app').textContent='جارٍ تحميل ملخص التاريخ…';
+    try{const r=await fetch(`../data/history-summary.json?v=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);render(await r.json())}
+    catch(e){$('#app').className='error';$('#app').innerHTML=`لم تُبن قاعدة V12.2 بعد أو لم تُنشر.<br><span class="ltr">${esc(e.message)}</span><br><br>شغّل Action: EGX Historical 100 Sessions — Sample`}
+  }
+  $('#reload').onclick=load; load();
+})();
+</script>
+</body>
+</html>
