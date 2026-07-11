@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "13.10.0",
+  "name": "Full-Market Freshness & Tiered Confidence Engine",
+  "freshness": {
+    "fullMarketRefreshEnabled": true,
+    "batchSize": 25,
+    "requestConcurrency": 2,
+    "symbolDelayMs": 700,
+    "batchDelayMs": 1600,
+    "minimumExactFreshCoveragePct": 80,
+    "minimumDecisionSessions": 50,
+    "neverUseLaggedHistoryForNewSignals": true
+  },
+  "gates": {
+    "hardConditionIds": [
+      "warmup",
+      "turnover",
+      "volumeSessions",
+      "atr",
+      "relativeStrength",
+      "trendStructure",
+      "breakout",
+      "nearSma20",
+      "touchedZone"
+    ],
+    "softConditionIds": [
+      "volumeRatioFloor",
+      "volumeRatio",
+      "rsiRange",
+      "rsiRecovery",
+      "resistanceRoom",
+      "positiveClose",
+      "sma20Slope"
+    ],
+    "unknownFailedConditionTreatment": "hard"
+  },
+  "tierAExperimentalPaper": {
+    "enabled": true,
+    "minimumRecommendationScore": 70,
+    "maximumSoftFailures": 1,
+    "maximumHardFailures": 0,
+    "maximumCandidates": 7,
+    "maximumRiskPerTradePct": 0.25,
+    "automaticRegistration": false,
+    "labelAr": "مرشح ورقي تجريبي — ثقة متوسطة",
+    "requiresExactLatestSession": true,
+    "requiresEligibility": true,
+    "requiresRegimeAllowed": true,
+    "requiresValidEntryStop": true
+  },
+  "tierBPriorityWatch": {
+    "enabled": true,
+    "minimumRecommendationScore": 60,
+    "maximumSoftFailures": 2,
+    "maximumHardFailures": 0,
+    "maximumCandidates": 20,
+    "labelAr": "مراقبة أولوية — قريب من الاكتمال"
+  },
+  "portfolioValidation": {
+    "riskPerTradePct": 0.25,
+    "maximumConcurrentTrades": 5,
+    "minimumAcceptedTrades": 5,
+    "minimumProfitFactor": 0.95,
+    "minimumAverageR": -0.02,
+    "maximumDrawdownPct": 8,
+    "startingEquity": 100000
+  },
+  "safety": {
+    "liveExecutionEnabled": false,
+    "productionThresholdsChanged": false,
+    "strictProductionCandidatesOverwritten": false,
+    "experimentalCandidatesAutoRegistered": false,
+    "paperOnly": true,
+    "noLookahead": true,
+    "noRetroactiveSignals": true,
+    "stableV11Modified": false
+  }
+}
