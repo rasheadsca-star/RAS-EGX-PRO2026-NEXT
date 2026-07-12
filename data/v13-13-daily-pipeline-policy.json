@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "13.13.0",
+  "name": "Post-Close Session Consolidation & Live Re-Ranking",
+  "schedule": {
+    "timezone": "Africa/Cairo",
+    "tradingDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday"
+    ],
+    "intradayStartLocal": "09:55",
+    "intradayEndLocal": "14:45",
+    "postCloseStartLocal": "15:00",
+    "postCloseEndLocal": "18:00",
+    "intervalMinutes": 15
+  },
+  "consolidation": {
+    "minimumCoveragePct": 75,
+    "minimumAcceptedSymbols": 100,
+    "maximumPreviousCloseMismatchPct": 12,
+    "maximumSourceAgeMinutes": 240,
+    "maximumHistorySessions": 180,
+    "allowSameSessionReplacement": true,
+    "requireOpenHighLowCloseVolume": true,
+    "requireSameCairoDate": true,
+    "retryUntilSuccessful": true
+  },
+  "liveRanking": {
+    "baselineDecisionScoreWeight": 0.7,
+    "tierWeights": {
+      "STRICT_PAPER": 24,
+      "TIER_A_EXPERIMENTAL_PAPER": 16,
+      "TIER_B_PRIORITY_WATCH": 5
+    },
+    "stateAdjustments": {
+      "ENTRY_ZONE": 12,
+      "BREAKOUT_CONFIRMED": 10,
+      "TARGET1_HIT": 2,
+      "TARGET2_HIT": -2,
+      "WATCH": 0,
+      "BELOW_ENTRY": 2,
+      "ABOVE_ENTRY": -6,
+      "SUPPORT_BROKEN": -24,
+      "STOP_BREACHED": -35,
+      "MARKET_LEADER": 0
+    },
+    "maximumMomentumAdjustment": 8,
+    "maximumTurnoverPaceAdjustment": 8,
+    "stalePenalty": 30,
+    "missingIntradayPenalty": 18,
+    "maximumDisplayedCandidates": 10
+  },
+  "safety": {
+    "liveExecutionEnabled": false,
+    "automaticOrderSubmission": false,
+    "automaticPaperRegistration": false,
+    "intradayTierPromotionEnabled": false,
+    "fabricateMissingOHLCV": false,
+    "replaceDailyStrategyWithIntradaySignal": false,
+    "publicDelayedData": true,
+    "stableV11Modified": false
+  }
+}

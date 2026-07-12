@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V13.13 — الترتيب الحي</title>
+<style>
+:root{color-scheme:dark;--p:#0b1f33;--p2:#102b45;--line:#2b5674;--t:#ecf8ff;--m:#9ebdd0;--b:#38bdf8;--g:#36d995;--a:#ffc857;--r:#ff6d7d}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#04101b,#071a2b);color:var(--t);font-family:Tahoma,Arial,sans-serif}a{color:inherit;text-decoration:none}button{font:inherit}.wrap{max-width:1560px;margin:auto;padding:11px}.hero,.panel{background:rgba(11,31,51,.97);border:1px solid var(--line);border-radius:15px;margin-bottom:10px}.hero{padding:14px;display:flex;justify-content:space-between;gap:10px;align-items:center}.hero h1{margin:0 0 6px;font-size:21px}.muted{color:var(--m);font-size:11px;line-height:1.7}.btn{background:#123c59;border:1px solid #3b769a;color:var(--t);padding:9px 11px;border-radius:9px;cursor:pointer}.btn.primary{background:#12638e}.cards{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:10px}.card{background:var(--p2);border:1px solid #2a536e;border-radius:10px;padding:10px;min-height:82px}.card small{display:block;color:var(--m)}.card b{display:block;font-size:19px;margin-top:7px}.good{color:var(--g)}.warn{color:var(--a)}.bad{color:var(--r)}.blue{color:var(--b)}.notice{padding:10px;border:1px solid #6c5a2d;background:#302716;border-radius:10px;color:#ffe9a7;font-size:11px;line-height:1.8}.notice.bad{border-color:#7d3648;background:#341b23;color:#ffc8d0}.section-head{padding:11px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}.section-head h2{font-size:16px;margin:0}.body{padding:10px}.grid{display:grid;grid-template-columns:repeat(3,minmax(280px,1fr));gap:8px}.candidate{background:#081a2b;border:1px solid #2b5674;border-radius:12px;padding:11px}.candidate h3{margin:0 0 7px;font-size:15px}.ticker{color:var(--b);font-weight:bold}.tags{display:flex;gap:5px;flex-wrap:wrap}.tag{font-size:10px;border:1px solid #315f7d;border-radius:999px;padding:4px 7px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}.metric{background:#0b2439;border-radius:7px;padding:6px;font-size:9px;color:var(--m)}.metric b{display:block;color:var(--t);font-size:12px;margin-top:3px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #193d55;text-align:right;font-size:10px;vertical-align:top}th{background:#0f2a43;position:sticky;top:0}.table{overflow:auto;max-height:650px}.state{display:inline-block;border:1px solid #315f7d;border-radius:999px;padding:4px 7px}.state.risk{border-color:#8c4252;color:#ffc7cf}.state.opportunity{border-color:#2c7c5a;color:#c7ffe1}.state.watch{border-color:#776532;color:#ffe4a0}.empty{padding:35px;text-align:center;color:var(--m)}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.wrap{padding:5px}.hero{flex-direction:column;align-items:stretch}.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body><div class="wrap">
+<div class="hero"><div><h1>V13.13 — الترتيب الحي</h1><div class="muted">يعيد ترتيب مرشحي قرار اليوم باستخدام السعر والحجم الحاليين، دون تغيير طبقة التوصية اليومية.</div></div><div><a class="btn" href="daily-decision.html">قرار اليوم</a> <a class="btn" href="intraday-monitor.html">تنبيهات الجلسة</a> <button class="btn primary" id="refresh">تحديث العرض</button></div></div>
+<div class="panel"><div class="cards" id="summary"></div></div>
+<div class="panel"><div class="body"><div id="health"></div></div></div>
+<div class="panel"><div class="section-head"><h2>أفضل المرشحين وفق الترتيب الحي</h2><span class="muted">الدرجة الحية ليست احتمال ربح.</span></div><div class="body"><div class="grid" id="top"></div></div></div>
+<div class="panel"><div class="section-head"><h2>مقارنة الترتيب الأساسي بالترتيب الحي</h2><span class="muted">الطبقة B تظل مراقبة فقط مهما تحسن ترتيبها.</span></div><div class="table"><table><thead><tr><th>الحي</th><th>الأساسي</th><th>السهم</th><th>الطبقة الأصلية</th><th>الحالة الحالية</th><th>السعر</th><th>تغير الجلسة</th><th>سرعة التداول</th><th>الدرجة الأساسية</th><th>الدرجة الحية</th><th>التغير</th><th>الإجراء</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="panel" style="padding:10px"><div class="notice">الترتيب الحي لا يغير طبقة التوصية، ولا يحول سهم المراقبة إلى شراء، ولا يرسل أوامر. بيانات عامة متأخرة وليست بثًا لحظيًا مرخصًا.</div></div>
+</div>
+<script>
+'use strict';
+const PATH='../../data/quant/live-reranked-decision-v13-13.json';
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const N=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toLocaleString('ar-EG',{maximumFractionDigits:d}):'—';
+const A=v=>Array.isArray(v)?v:[];
+let doc=null;
+function card(l,v,n='',c=''){return `<div class="card"><small>${E(l)}</small><b class="${c}">${E(v)}</b><small>${E(n)}</small></div>`}
+function stateClass(code){return ['STOP_BREACHED','SUPPORT_BROKEN'].includes(code)?'risk':['ENTRY_ZONE','BREAKOUT_CONFIRMED','TARGET1_HIT','TARGET2_HIT'].includes(code)?'opportunity':'watch'}
+function candidate(x){return `<article class="candidate"><h3><span class="ticker">#${N(x.liveRank,0)} ${E(x.ticker)}</span> — ${E(x.companyNameAr||x.companyNameEn||'')}</h3><div class="tags"><span class="tag">${E(x.baselineTierLabelAr||x.baselineTier||'')}</span><span class="tag state ${stateClass(x.state)}">${E(x.stateLabelAr)}</span></div><div class="metrics"><div class="metric">الحي<b>${N(x.liveDecisionScore,1)}</b></div><div class="metric">الأساسي<b>${N(x.baselineDecisionScore,1)}</b></div><div class="metric">السعر<b>${N(x.price,3)}</b></div><div class="metric">تغير الجلسة<b>${N(x.changePct,2)}%</b></div><div class="metric">سرعة التداول<b>${N(x.turnoverPaceRatio,2)}×</b></div><div class="metric">تغير الترتيب<b>${Number(x.rankChange)>0?'+':''}${N(x.rankChange,0)}</b></div><div class="metric">الدخول<b>${x.plan?`${N(x.plan.entryLow,3)}–${N(x.plan.entryHigh,3)}`:'—'}</b></div><div class="metric">الوقف<b>${x.plan?N(x.plan.stopLoss,3):'—'}</b></div></div><p class="muted">${E(x.reasonAr)}</p></article>`}
+function render(){
+ const c=doc.counts||{};
+ document.getElementById('summary').innerHTML=[
+  card('جلسة التحليل اليومي',doc.analysisSessionId||'—','أساس المؤشرات والطبقة'),
+  card('لقطة السوق الحالية',doc.marketSnapshotDate||'—',doc.marketSessionState||'—',doc.marketSnapshotCurrent?'good':'bad'),
+  card('حالة الترتيب',doc.status==='LIVE_RERANK_AVAILABLE'?'متاح':'بيانات قديمة',doc.publicDelayedData?'بيانات عامة متأخرة':'',doc.status==='LIVE_RERANK_AVAILABLE'?'good':'warn'),
+  card('المرشحون',N(c.candidates,0),'مرشحو قرار اليوم'),
+  card('مؤهل ورقيًا',N(c.actionablePaper,0),'حسب الطبقة اليومية'),
+  card('داخل الدخول',N(c.entryZone,0),'يحتاج مراجعة الخطة',c.entryZone?'good':''),
+  card('حالات خطر',N(c.riskStates,0),'وقف أو كسر دعم',c.riskStates?'bad':'good')
+ ].join('');
+ document.getElementById('health').innerHTML=doc.marketSnapshotCurrent
+  ? `<div class="notice"><b>الربط يعمل:</b> التحليل اليومي مبني على ${E(doc.analysisSessionId||'—')}، وآخر لقطة سوق ${E(doc.marketSnapshotDate||'—')}. لا يغير طبقة التوصية.</div>`
+  : `<div class="notice bad"><b>تنبيه:</b> لقطة السوق ليست من تاريخ اليوم؛ لا تعتمد على الترتيب الحي حتى يصل تحديث جديد.</div>`;
+ document.getElementById('top').innerHTML=A(doc.topCandidates).length?A(doc.topCandidates).slice(0,6).map(candidate).join(''):'<div class="empty">لا توجد مرشحات.</div>';
+ document.getElementById('rows').innerHTML=A(doc.candidates).length?A(doc.candidates).map(x=>`<tr><td><b>${N(x.liveRank,0)}</b></td><td>${N(x.baselineRank,0)}</td><td><b class="ticker">${E(x.ticker)}</b><br>${E(x.companyNameAr||x.companyNameEn||'')}</td><td>${E(x.baselineTierLabelAr||x.baselineTier||'')}</td><td><span class="state ${stateClass(x.state)}">${E(x.stateLabelAr)}</span></td><td>${N(x.price,3)}</td><td>${N(x.changePct,2)}%</td><td>${N(x.turnoverPaceRatio,2)}×</td><td>${N(x.baselineDecisionScore,1)}</td><td>${N(x.liveDecisionScore,1)}</td><td>${Number(x.rankChange)>0?'+':''}${N(x.rankChange,0)}</td><td>${x.baselineTier==='TIER_B_PRIORITY_WATCH'?'مراقبة فقط':x.stale?'انتظر تحديثًا':'راجع الخطة ورقيًا'}</td></tr>`).join(''):'<tr><td colspan="12" class="empty">لا توجد بيانات.</td></tr>';
+}
+async function load(){try{const r=await fetch(`${PATH}?v=${Date.now()}`,{cache:'no-store'});if(!r.ok)throw new Error(`HTTP ${r.status}`);doc=await r.json();render()}catch(e){document.getElementById('health').innerHTML=`<div class="notice bad">تعذر تحميل V13.13: ${E(e.message)}</div>`}}
+document.getElementById('refresh').onclick=load;load();setInterval(load,60000);
+</script></body></html>

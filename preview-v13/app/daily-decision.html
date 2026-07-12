@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V13.11 — قرار اليوم</title>
+<title>V13.13 — قرار اليوم الحي</title>
 <style>
 :root{color-scheme:dark;--bg:#06111d;--p:#0b1f33;--p2:#102b45;--line:#2b5674;--t:#ecf8ff;--m:#9ebdd0;--b:#38bdf8;--g:#36d995;--a:#ffc857;--r:#ff6d7d;--purple:#b899ff}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#04101b,#071a2b);color:var(--t);font-family:Tahoma,Arial,sans-serif}button,input,select,textarea{font:inherit}a{color:inherit;text-decoration:none}
@@ -21,11 +21,12 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 @media(max-width:1150px){.cards{grid-template-columns:repeat(4,1fr)}.top-grid{grid-template-columns:1fr}.plan-grid,.allocation{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.wrap{padding:5px}.hero{flex-direction:column;align-items:stretch}.cards{grid-template-columns:repeat(2,1fr)}.plan-grid,.allocation{grid-template-columns:repeat(2,1fr)}.checks{grid-template-columns:1fr}.mini{grid-template-columns:repeat(2,1fr)}.chart-wrap svg{height:260px}}
 </style></head>
 <body><div class="wrap">
-<div class="hero"><div><h1>V13.11 — قرار اليوم</h1><div class="muted">صفحة العمل اليومية الوحيدة: اختيار أفضل الفرص، الرسم البياني، خطة الدخول، حجم الصفقة الورقية، وتسجيل القرار.</div></div><div><a class="btn" href="tiered-confidence.html">الثقة المتدرجة</a> <a class="btn" href="decision-journal.html">سجل القرارات</a> <a class="btn warn" href="intraday-monitor.html">🔔 تنبيهات الجلسة <span id="intradayBadge">0</span></a> <button class="btn primary" id="reload">تحديث العرض</button></div></div>
+<div class="hero"><div><h1>V13.13 — قرار اليوم الحي</h1><div class="muted">صفحة العمل اليومية الوحيدة: اختيار أفضل الفرص، الرسم البياني، خطة الدخول، حجم الصفقة الورقية، وتسجيل القرار.</div></div><div><a class="btn" href="tiered-confidence.html">الثقة المتدرجة</a> <a class="btn" href="decision-journal.html">سجل القرارات</a> <a class="btn warn" href="intraday-monitor.html">🔔 تنبيهات الجلسة <span id="intradayBadge">0</span></a> <a class="btn" href="live-decision.html">الترتيب الحي V13.13</a> <button class="btn primary" id="reload">تحديث العرض</button></div></div>
 <div class="panel"><div class="cards" id="summary"></div></div>
 <div class="panel"><div class="body"><div id="dailyStatus"></div></div></div>
 <div class="panel"><div class="section-head"><h2>متابعة الجلسة V13.12</h2><a class="btn" href="intraday-monitor.html">فتح كل التنبيهات</a></div><div class="body"><div id="intradayStrip" class="notice">جارٍ تحميل آخر لقطة أثناء الجلسة…</div></div></div>
 
+<div class="panel"><div class="section-head"><h2>الترتيب الحي V13.13</h2><a class="btn" href="live-decision.html">فتح الترتيب الكامل</a></div><div class="body"><div id="liveRankStrip1313" class="notice">جارٍ تحميل الترتيب الحي…</div></div></div>
 <div class="top-grid">
   <div class="panel">
     <div class="section-head"><h2>أفضل 3 فرص</h2><span class="muted">الترتيب: الطبقة ثم درجة القرار</span></div>
@@ -267,5 +268,24 @@ async function loadV1312Strip(){
  }
 }
 loadV1312Strip();setInterval(loadV1312Strip,60000);
+</script>
+
+<script>
+'use strict';
+const V1313_PATH='../../data/quant/live-reranked-decision-v13-13.json';
+async function loadLiveRank1313(){
+ try{
+  const r=await fetch(`${V1313_PATH}?v=${Date.now()}`,{cache:'no-store'});
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const d=await r.json(),top=(Array.isArray(d.topCandidates)?d.topCandidates:[]).slice(0,3);
+  const text=top.map(x=>`#${x.liveRank} ${x.ticker} (${N(x.liveDecisionScore,1)}) — ${x.stateLabelAr}`).join(' | ');
+  const el=document.getElementById('liveRankStrip1313');
+  el.className=`notice ${d.marketSnapshotCurrent?'good':'bad'}`;
+  el.innerHTML=`<b>جلسة التحليل اليومي:</b> ${E(d.analysisSessionId||'—')} — <b>لقطة السوق الحالية:</b> ${E(d.marketSnapshotDate||'—')}<br>${E(text||'لا توجد مرشحات')}<br><span class="muted">الترتيب الحي لا يغير طبقة التوصية ولا يحول المراقبة إلى شراء.</span>`;
+ }catch(e){
+  document.getElementById('liveRankStrip1313').textContent=`V13.13: ${e.message}`;
+ }
+}
+loadLiveRank1313();setInterval(loadLiveRank1313,60000);
 </script>
 </body></html>
