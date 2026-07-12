@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V13.12 — تنبيهات الجلسة</title>
+<style>
+:root{color-scheme:dark;--bg:#06111d;--p:#0b1f33;--p2:#102b45;--line:#2b5674;--t:#ecf8ff;--m:#9ebdd0;--b:#38bdf8;--g:#36d995;--a:#ffc857;--r:#ff6d7d;--v:#b899ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#04101b,#071a2b);color:var(--t);font-family:Tahoma,Arial,sans-serif}button,select{font:inherit}a{color:inherit;text-decoration:none}.wrap{max-width:1580px;margin:auto;padding:11px}.hero,.panel{background:rgba(11,31,51,.97);border:1px solid var(--line);border-radius:15px;margin-bottom:10px}.hero{padding:14px;display:flex;justify-content:space-between;gap:10px;align-items:center}.hero h1{margin:0 0 6px;font-size:21px}.muted{color:var(--m);font-size:11px;line-height:1.7}.btn{background:#123c59;border:1px solid #3b769a;color:var(--t);padding:9px 11px;border-radius:9px;cursor:pointer}.btn.primary{background:#12638e}.btn.good{border-color:#2e8b64;color:#c8ffe4}.btn.warn{border-color:#8a7130;color:#ffe8aa}.bell{position:relative}.badge{position:absolute;top:-8px;left:-8px;background:var(--r);color:#fff;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:10px;font-weight:bold;border:2px solid #071725}
+.cards{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;padding:10px}.card{background:var(--p2);border:1px solid #2a536e;border-radius:10px;padding:10px;min-height:82px}.card small{display:block;color:var(--m)}.card b{display:block;font-size:19px;margin-top:7px}.goodText{color:var(--g)}.warnText{color:var(--a)}.badText{color:var(--r)}.blueText{color:var(--b)}
+.notice{padding:10px;border:1px solid #6c5a2d;background:#302716;border-radius:10px;color:#ffe9a7;font-size:11px;line-height:1.8}.notice.bad{border-color:#7d3648;background:#341b23;color:#ffc8d0}.notice.good{border-color:#2d7154;background:#122e23;color:#c7ffe2}
+.section-head{padding:11px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}.section-head h2{font-size:16px;margin:0}.body{padding:10px}.filters{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.filters select{background:#091c2e;border:1px solid #376682;color:var(--t);padding:8px;border-radius:8px}
+.alerts{display:grid;gap:8px}.alert{border:1px solid #2b5674;background:#091d30;border-radius:11px;padding:10px;display:grid;grid-template-columns:95px minmax(0,1fr) 120px;gap:9px;align-items:start}.alert.critical{border-color:#8b4050;background:#2d1720}.alert.opportunity{border-color:#2e7b5b;background:#102a21}.alert.warning{border-color:#826b31;background:#2b2515}.level{font-size:10px;border-radius:999px;padding:5px 8px;text-align:center;border:1px solid currentColor}.alert h3{margin:0 0 5px;font-size:14px}.alert p{margin:3px 0;font-size:10px;line-height:1.7;color:var(--m)}.time{text-align:left;font-size:10px;color:var(--m)}
+table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #193d55;text-align:right;font-size:10px;vertical-align:top}th{background:#0f2a43;position:sticky;top:0}.table{overflow:auto;max-height:650px}.ticker{color:var(--b);font-weight:bold}.state{font-size:10px;border:1px solid #315f7d;border-radius:999px;padding:4px 7px;display:inline-block}.state.risk{border-color:#8c4252;color:#ffc7cf}.state.opportunity{border-color:#2c7c5a;color:#c7ffe1}.state.watch{border-color:#776532;color:#ffe4a0}.empty{padding:35px;text-align:center;color:var(--m)}
+@media(max-width:1100px){.cards{grid-template-columns:repeat(4,1fr)}}@media(max-width:700px){.wrap{padding:5px}.hero{flex-direction:column;align-items:stretch}.cards{grid-template-columns:repeat(2,1fr)}.alert{grid-template-columns:1fr}.time{text-align:right}}
+</style></head>
+<body><div class="wrap">
+<div class="hero">
+  <div><h1>V13.12 — تنبيهات الجلسة</h1><div class="muted">مقارنة تلقائية كل 15 دقيقة أثناء جلسة القاهرة، مع تحديث تلقائي كل 60 ثانية للنتائج المنشورة.</div></div>
+  <div class="filters">
+    <a class="btn" href="daily-decision.html">قرار اليوم</a>
+    <button class="btn primary bell" id="enableNotifications">🔔 تشغيل إشعارات ويندوز<span class="badge" id="bellBadge">0</span></button>
+    <button class="btn" id="refresh">تحديث الآن</button>
+  </div>
+</div>
+
+<div class="panel"><div class="cards" id="summary"></div></div>
+<div class="panel"><div class="body"><div id="health"></div></div></div>
+
+<div class="panel">
+  <div class="section-head">
+    <h2>التنبيهات المهمة</h2>
+    <div class="filters">
+      <select id="levelFilter"><option value="all">كل المستويات</option><option value="critical">حرج</option><option value="opportunity">فرصة</option><option value="warning">تحذير</option><option value="info">معلومة</option></select>
+      <select id="candidateFilter"><option value="all">كل الأسهم</option><option value="candidate">مرشحو قرار اليوم</option></select>
+      <button class="btn" id="markSeen">تحديد الكل كمقروء</button>
+    </div>
+  </div>
+  <div class="body"><div class="alerts" id="alerts"></div></div>
+</div>
+
+<div class="panel">
+  <div class="section-head"><h2>الأسهم المتابعة أثناء الجلسة</h2><span class="muted">مرشحو قرار اليوم أولًا، ثم أعلى الأسهم في قيمة التداول.</span></div>
+  <div class="table"><table><thead><tr><th>السهم</th><th>السعر</th><th>تغير الجلسة</th><th>منذ اللقطة السابقة</th><th>الحالة</th><th>الطبقة</th><th>الدخول</th><th>الوقف</th><th>الهدف 1</th><th>سرعة التداول</th><th>قيمة التداول</th><th>وقت المصدر</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+
+<div class="panel" style="padding:10px">
+  <div class="notice">بيانات عامة متأخرة وليست بثًا لحظيًا من البورصة. التنبيه يعني حدوث تغير يستحق المراجعة، وليس أمر شراء أو بيع.</div>
+</div>
+</div>
+<script>
+'use strict';
+const LATEST='../../data/intraday/latest.json', ALERTS='../../data/intraday/alerts.json';
+const SEEN='egx-v1312-seen-alerts', NOTIFY='egx-v1312-notifications-enabled';
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const N=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toLocaleString('ar-EG',{maximumFractionDigits:d}):'—';
+const A=v=>Array.isArray(v)?v:[];
+let latest=null,feed=null;
+function seen(){try{return new Set(JSON.parse(localStorage.getItem(SEEN)||'[]'))}catch{return new Set()}}
+function saveSeen(set){localStorage.setItem(SEEN,JSON.stringify([...set].slice(-500)))}
+function card(l,v,n='',c=''){return `<div class="card"><small>${E(l)}</small><b class="${c}">${E(v)}</b><small>${E(n)}</small></div>`}
+function stateClass(code){return ['STOP_BREACHED','SUPPORT_BROKEN'].includes(code)?'risk':['ENTRY_ZONE','BREAKOUT_CONFIRMED','TARGET1_HIT','TARGET2_HIT'].includes(code)?'opportunity':'watch'}
+function levelAr(level){return ({critical:'حرج',opportunity:'فرصة',warning:'تحذير',info:'معلومة'})[level]||level}
+function render(){
+ const s=latest.source||{},c=latest.counts||{},ac=feed.counts||{},unread=A(feed.alerts).filter(x=>!seen().has(x.id)).length;
+ document.getElementById('bellBadge').textContent=unread>99?'99+':unread;
+ document.getElementById('summary').innerHTML=[
+  card('وقت آخر بناء',latest.cairoTime||'—','توقيت القاهرة'),
+  card('حالة الجلسة',latest.marketSessionState==='OPEN'?'مفتوحة':latest.marketSessionState==='PRE_OPEN'?'قبل الافتتاح':'بعد الإغلاق',`${N(latest.sessionProgressPct,0)}%`,'blueText'),
+  card('عمر أحدث بيانات',`${N(s.newestDataAgeMinutes,1)} دقيقة`,s.selectedSource||'—',Number(s.newestDataAgeMinutes)>45?'badText':'goodText'),
+  card('أسهم متابعة',N(c.trackedSymbols,0),`${N(c.decisionCandidates,0)} مرشح قرار`),
+  card('تنبيهات غير مقروءة',N(unread,0),`${N(feed.newAlertCount,0)} جديد`,unread?'warnText':'goodText'),
+  card('حالات فرصة',N(c.opportunityStates,0),'دخول/اختراق/هدف',c.opportunityStates?'goodText':''),
+  card('حالات خطر',N(c.riskStates,0),'وقف/كسر دعم',c.riskStates?'badText':'goodText')
+ ].join('');
+ const stale=Number(c.staleRows)||0, fallback=s.fallbackUsed===true;
+ document.getElementById('health').innerHTML=stale||fallback
+  ? `<div class="notice bad"><b>تنبيه جودة البيانات:</b> ${stale?`${stale} صفوف قديمة. `:''}${fallback?'تم استخدام آخر لقطة صالحة بدل تحديث جديد.':''}</div>`
+  : `<div class="notice good"><b>التحديث سليم:</b> تمت مقارنة اللقطة الحالية بالسابقة. المصدر عام ومتأخر، وليس لحظيًا.</div>`;
+ renderAlerts();renderRows();notifyNew();
+}
+function renderAlerts(){
+ const level=document.getElementById('levelFilter').value,candidateOnly=document.getElementById('candidateFilter').value==='candidate',candidateSet=new Set(A(latest.rows).filter(x=>x.isDecisionCandidate).map(x=>x.ticker)),seenSet=seen();
+ const rows=A(feed.alerts).filter(x=>(level==='all'||x.level===level)&&(!candidateOnly||candidateSet.has(x.ticker)));
+ document.getElementById('alerts').innerHTML=rows.length?rows.map(x=>`<article class="alert ${E(x.level)}"><div><div class="level">${E(levelAr(x.level))}</div><div class="muted" style="margin-top:6px">${seenSet.has(x.id)?'مقروء':'● جديد'}</div></div><div><h3>${E(x.titleAr)}</h3><p>${E(x.detailAr)}</p><p><b>الإجراء:</b> ${E(x.actionAr)}</p></div><div class="time">${E((x.generatedAt||'').replace('T',' ').slice(0,16))}<br>${x.tier?E(x.tier):''}</div></article>`).join(''):'<div class="empty">لا توجد تنبيهات مطابقة.</div>';
+}
+function renderRows(){
+ document.getElementById('rows').innerHTML=A(latest.rows).length?A(latest.rows).map(x=>`<tr><td><b class="ticker">${E(x.ticker)}</b><br>${E(x.companyNameAr||x.companyNameEn||'')}</td><td>${N(x.price,3)}</td><td class="${Number(x.changePct)>=0?'goodText':'badText'}">${N(x.changePct,2)}%</td><td>${N(x.priceMoveSincePreviousSnapshotPct,2)}%</td><td><span class="state ${stateClass(x.state)}">${E(x.stateLabelAr)}</span></td><td>${E(x.tierLabelAr||'قائد تداول')}</td><td>${x.plan?`${N(x.plan.entryLow,3)}–${N(x.plan.entryHigh,3)}`:'—'}</td><td>${x.plan?N(x.plan.stopLoss,3):'—'}</td><td>${x.plan?N(x.plan.target1,3):'—'}</td><td>${N(x.turnoverPaceRatio,2)}×</td><td>${N(x.turnover,0)}</td><td>${E((x.fetchedAt||'').replace('T',' ').slice(0,16))}${x.stale?'<br><span class="badText">قديم</span>':''}</td></tr>`).join(''):'<tr><td colspan="12" class="empty">لا توجد بيانات صالحة.</td></tr>';
+}
+function notifyNew(){
+ if(localStorage.getItem(NOTIFY)!=='true'||Notification.permission!=='granted')return;
+ const seenSet=seen(),allowed=new Set(['critical','opportunity','warning']);
+ const pending=A(feed.newAlerts).filter(x=>allowed.has(x.level)&&!seenSet.has(x.id));
+ pending.slice(0,5).forEach(x=>{
+  try{new Notification(`EGX Pro — ${x.titleAr}`,{body:x.actionAr,tag:x.id,renotify:false})}catch{}
+  seenSet.add(x.id);
+ });
+ if(pending.length)saveSeen(seenSet);
+}
+async function load(){
+ try{
+  const [l,a]=await Promise.all([fetch(`${LATEST}?v=${Date.now()}`,{cache:'no-store'}),fetch(`${ALERTS}?v=${Date.now()}`,{cache:'no-store'})]);
+  if(!l.ok)throw new Error(`Latest HTTP ${l.status}`);if(!a.ok)throw new Error(`Alerts HTTP ${a.status}`);
+  latest=await l.json();feed=await a.json();render();
+ }catch(e){document.getElementById('health').innerHTML=`<div class="notice bad">تعذر تحميل V13.12: ${E(e.message)}</div>`}
+}
+document.getElementById('enableNotifications').onclick=async()=>{
+ if(!('Notification'in window)){alert('المتصفح لا يدعم إشعارات سطح المكتب.');return}
+ const permission=await Notification.requestPermission();
+ if(permission==='granted'){localStorage.setItem(NOTIFY,'true');new Notification('EGX Pro V13.12',{body:'تم تشغيل إشعارات ويندوز أثناء فتح التطبيق.'});}
+ else{localStorage.setItem(NOTIFY,'false');alert('لم يتم السماح بالإشعارات.');}
+};
+document.getElementById('refresh').onclick=load;
+document.getElementById('markSeen').onclick=()=>{const set=seen();A(feed?.alerts).forEach(x=>set.add(x.id));saveSeen(set);render();};
+document.getElementById('levelFilter').onchange=renderAlerts;
+document.getElementById('candidateFilter').onchange=renderAlerts;
+load();setInterval(load,60000);
+</script></body></html>

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "13.12.0",
+  "name": "Intraday Monitor & Smart Alerts",
+  "schedule": {
+    "requestedIntervalMinutes": 15,
+    "browserRefreshSeconds": 60,
+    "timezone": "Africa/Cairo",
+    "marketOpenLocal": "10:00",
+    "marketCloseLocal": "14:30",
+    "workflowWindowStartLocal": "09:55",
+    "workflowWindowEndLocal": "14:45",
+    "tradingDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday"
+    ]
+  },
+  "universe": {
+    "trackDecisionCandidates": true,
+    "trackTopTurnoverMarketLeaders": true,
+    "maximumMarketLeaders": 25,
+    "maximumTrackedSymbols": 60
+  },
+  "thresholds": {
+    "candidateSnapshotMovePct": 1.5,
+    "marketLeaderSnapshotMovePct": 3.0,
+    "positiveSessionThresholdsPct": [
+      3,
+      5,
+      10
+    ],
+    "negativeSessionThresholdsPct": [
+      -3,
+      -5,
+      -10
+    ],
+    "turnoverPaceAlertRatio": 1.5,
+    "turnoverPaceStrongRatio": 2.0,
+    "decisionScoreChangePoints": 8,
+    "staleAfterMinutes": 45,
+    "minimumTurnoverForLeaderEgp": 1000000,
+    "breakoutBufferPct": 0.15,
+    "supportBreakBufferPct": 0.15
+  },
+  "retention": {
+    "maximumAlerts": 250,
+    "maximumNewAlertsPerRun": 50,
+    "maximumHistorySnapshots": 120
+  },
+  "notifications": {
+    "browserNotificationsEnabled": true,
+    "notificationLevels": [
+      "critical",
+      "opportunity",
+      "warning"
+    ],
+    "telegramOptional": true,
+    "telegramMaximumAlertsPerMessage": 8
+  },
+  "safety": {
+    "publicDelayedData": true,
+    "liveExchangeFeedClaimed": false,
+    "liveExecutionEnabled": false,
+    "automaticOrderSubmission": false,
+    "automaticPaperRegistration": false,
+    "tierPromotionDuringSession": false,
+    "noFabricatedPrices": true,
+    "noFabricatedVolumes": true,
+    "stableV11Modified": false
+  }
+}

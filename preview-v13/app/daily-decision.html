@@ -21,9 +21,10 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 @media(max-width:1150px){.cards{grid-template-columns:repeat(4,1fr)}.top-grid{grid-template-columns:1fr}.plan-grid,.allocation{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.wrap{padding:5px}.hero{flex-direction:column;align-items:stretch}.cards{grid-template-columns:repeat(2,1fr)}.plan-grid,.allocation{grid-template-columns:repeat(2,1fr)}.checks{grid-template-columns:1fr}.mini{grid-template-columns:repeat(2,1fr)}.chart-wrap svg{height:260px}}
 </style></head>
 <body><div class="wrap">
-<div class="hero"><div><h1>V13.11 — قرار اليوم</h1><div class="muted">صفحة العمل اليومية الوحيدة: اختيار أفضل الفرص، الرسم البياني، خطة الدخول، حجم الصفقة الورقية، وتسجيل القرار.</div></div><div><a class="btn" href="tiered-confidence.html">الثقة المتدرجة</a> <a class="btn" href="decision-journal.html">سجل القرارات</a> <button class="btn primary" id="reload">تحديث العرض</button></div></div>
+<div class="hero"><div><h1>V13.11 — قرار اليوم</h1><div class="muted">صفحة العمل اليومية الوحيدة: اختيار أفضل الفرص، الرسم البياني، خطة الدخول، حجم الصفقة الورقية، وتسجيل القرار.</div></div><div><a class="btn" href="tiered-confidence.html">الثقة المتدرجة</a> <a class="btn" href="decision-journal.html">سجل القرارات</a> <a class="btn warn" href="intraday-monitor.html">🔔 تنبيهات الجلسة <span id="intradayBadge">0</span></a> <button class="btn primary" id="reload">تحديث العرض</button></div></div>
 <div class="panel"><div class="cards" id="summary"></div></div>
 <div class="panel"><div class="body"><div id="dailyStatus"></div></div></div>
+<div class="panel"><div class="section-head"><h2>متابعة الجلسة V13.12</h2><a class="btn" href="intraday-monitor.html">فتح كل التنبيهات</a></div><div class="body"><div id="intradayStrip" class="notice">جارٍ تحميل آخر لقطة أثناء الجلسة…</div></div></div>
 
 <div class="top-grid">
   <div class="panel">
@@ -243,4 +244,28 @@ async function load(){
 }
 document.getElementById('reload').onclick=load;document.getElementById('capital').oninput=calculateAllocation;document.getElementById('riskPct').oninput=calculateAllocation;document.getElementById('saveDecision').onclick=saveDecision;
 load();
-</script></body></html>
+</script>
+<script>
+'use strict';
+const V1312_LATEST='../../data/intraday/latest.json',V1312_ALERTS='../../data/intraday/alerts.json';
+const V1312_SEEN='egx-v1312-seen-alerts';
+function v1312Seen(){try{return new Set(JSON.parse(localStorage.getItem(V1312_SEEN)||'[]'))}catch{return new Set()}}
+async function loadV1312Strip(){
+ try{
+  const [lr,ar]=await Promise.all([fetch(`${V1312_LATEST}?v=${Date.now()}`,{cache:'no-store'}),fetch(`${V1312_ALERTS}?v=${Date.now()}`,{cache:'no-store'})]);
+  if(!lr.ok||!ar.ok)throw new Error('لم تصل لقطة الجلسة بعد');
+  const l=await lr.json(),a=await ar.json(),seen=v1312Seen(),unread=(Array.isArray(a.alerts)?a.alerts:[]).filter(x=>!seen.has(x.id)).length;
+  const primary=(Array.isArray(l.rows)?l.rows:[]).find(x=>x.isDecisionCandidate)||null;
+  document.getElementById('intradayBadge').textContent=unread>99?'99+':unread;
+  document.getElementById('intradayStrip').className=`notice ${Number(l.source?.newestDataAgeMinutes)>45?'bad':'good'}`;
+  document.getElementById('intradayStrip').innerHTML=primary
+   ? `<b>آخر تحديث: ${E(l.cairoTime||'—')}</b> — <span class="ticker">${E(primary.ticker)}</span> السعر ${N(primary.price,3)}، التغير ${N(primary.changePct,2)}%، الحالة: <b>${E(primary.stateLabelAr)}</b>، تنبيهات غير مقروءة: ${N(unread,0)}.<br><span class="muted">تحديث تلقائي كل 60 ثانية من ملف الجلسة المنشور؛ البيانات عامة متأخرة.</span>`
+   : `<b>آخر تحديث: ${E(l.cairoTime||'—')}</b> — لا توجد أسهم مرشحة محدثة داخل لقطة الجلسة.`;
+ }catch(e){
+  document.getElementById('intradayStrip').className='notice';
+  document.getElementById('intradayStrip').textContent=`V13.12: ${e.message}`;
+ }
+}
+loadV1312Strip();setInterval(loadV1312Strip,60000);
+</script>
+</body></html>
