@@ -1,0 +1,29 @@
+V13.16 Stabilization — PAT Setup
+=================================
+
+سبب النسخة الجديدة:
+GitHub يرفض تعديل ملفات .github/workflows باستخدام GITHUB_TOKEN العادي.
+هذه النسخة تستخدم Secret محدود الصلاحيات باسم STABILIZE_PAT.
+
+الصلاحيات المطلوبة للـFine-grained PAT:
+- Repository access: Only select repositories
+  RAS-EGX-PRO2026-NEXT
+- Contents: Read and write
+- Workflows: Read and write
+- Expiration: 7 days أو أقل
+
+اسم Repository Secret:
+STABILIZE_PAT
+
+مسار رفع Workflow:
+.github/workflows/v13-16-one-time-stabilize-PAT.yml
+
+التشغيل:
+Actions
+> V13.16 One-Time Stabilize Repository — PAT
+> Run workflow
+> confirmation = STABILIZE_V13_16
+
+بعد النجاح:
+1. احذف Secret باسم STABILIZE_PAT من إعدادات المستودع.
+2. ارجع إلى Developer settings وألغِ Fine-grained token.
