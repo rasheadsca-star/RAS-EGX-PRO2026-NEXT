@@ -1,0 +1,353 @@
+name: V13.16 One-Time Stabilize Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type STABILIZE_V13_16 to archive legacy workflows and create the stable tag"
+        required: true
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v13-16-one-time-stabilization
+  cancel-in-progress: false
+
+jobs:
+  stabilize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Confirm explicit authorization
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRMATION" != "STABILIZE_V13_16" ]; then
+            echo "Confirmation text is incorrect."
+            exit 1
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate V13.16 baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f preview-v13/app/unified-decision-center.html
+          test -f .github/workflows/install-and-run-v13-14-unified-center-final.yml
+          grep -q "V13.16" preview-v13/app/unified-decision-center.html
+          grep -q "Install & Run V13.16" .github/workflows/install-and-run-v13-14-unified-center-final.yml
+          echo "V13.16 baseline validation passed."
+
+      - name: Archive legacy workflows and create manual emergency deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import shutil
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          root = Path(".")
+          workflow_dir = root / ".github" / "workflows"
+          archive_dir = root / "archive" / "workflows-disabled-v13-16"
+          ops_dir = root / "data" / "ops"
+
+          primary_name = "install-and-run-v13-14-unified-center-final.yml"
+          emergency_name = "v13-16-emergency-stable-deploy.yml"
+          one_time_name = "v13-16-one-time-stabilize.yml"
+
+          primary = workflow_dir / primary_name
+          if not primary.exists():
+              raise SystemExit(f"Primary workflow is missing: {primary}")
+
+          archive_dir.mkdir(parents=True, exist_ok=True)
+          ops_dir.mkdir(parents=True, exist_ok=True)
+
+          emergency = r"""name: V13.16 Manual Stable Deployment
+
+          on:
+            workflow_dispatch:
+              inputs:
+                confirmation:
+                  description: "Type DEPLOY_V13_16_STABLE"
+                  required: true
+                  default: ""
+                stable_ref:
+                  description: "Stable tag or commit to deploy"
+                  required: true
+                  default: "V13.16-STABLE"
+
+          permissions:
+            contents: read
+            pages: write
+            id-token: write
+
+          concurrency:
+            group: v13-16-manual-stable-deployment
+            cancel-in-progress: false
+
+          jobs:
+            deploy-stable:
+              runs-on: ubuntu-latest
+              environment:
+                name: github-pages
+                url: ${{ steps.deployment.outputs.page_url }}
+
+              steps:
+                - name: Confirm emergency deployment
+                  shell: bash
+                  env:
+                    CONFIRMATION: ${{ inputs.confirmation }}
+                  run: |
+                    set -euo pipefail
+                    if [ "$CONFIRMATION" != "DEPLOY_V13_16_STABLE" ]; then
+                      echo "Confirmation text is incorrect."
+                      exit 1
+                    fi
+
+                - name: Checkout stable snapshot
+                  uses: actions/checkout@v4
+                  with:
+                    ref: ${{ inputs.stable_ref }}
+                    fetch-depth: 1
+
+                - name: Verify stable application
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    test -f preview-v13/app/unified-decision-center.html
+                    grep -q "V13.16" preview-v13/app/unified-decision-center.html
+                    echo "Stable snapshot verified."
+
+                - name: Configure Pages
+                  uses: actions/configure-pages@v5
+
+                - name: Upload stable repository
+                  uses: actions/upload-pages-artifact@v3
+                  with:
+                    path: "."
+
+                - name: Deploy stable snapshot
+                  id: deployment
+                  uses: actions/deploy-pages@v4
+          """
+          # Remove indentation added by embedding this YAML inside Python.
+          emergency = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in emergency.splitlines()
+          ).lstrip() + "\n"
+          (workflow_dir / emergency_name).write_text(emergency, encoding="utf-8")
+
+          preserved = {primary_name, emergency_name}
+          moved = []
+
+          for item in sorted(workflow_dir.iterdir()):
+              if not item.is_file() or item.suffix.lower() not in {".yml", ".yaml"}:
+                  continue
+              if item.name in preserved:
+                  continue
+
+              destination = archive_dir / item.name
+              if destination.exists():
+                  if destination.read_bytes() == item.read_bytes():
+                      item.unlink()
+                  else:
+                      stem = destination.stem
+                      suffix = destination.suffix
+                      index = 2
+                      while True:
+                          candidate = archive_dir / f"{stem}-{index}{suffix}"
+                          if not candidate.exists():
+                              destination = candidate
+                              break
+                          index += 1
+                      shutil.move(str(item), str(destination))
+              else:
+                  shutil.move(str(item), str(destination))
+
+              moved.append({
+                  "source": f".github/workflows/{item.name}",
+                  "archive": destination.as_posix()
+              })
+
+          remaining = sorted(
+              item.name for item in workflow_dir.iterdir()
+              if item.is_file() and item.suffix.lower() in {".yml", ".yaml"}
+          )
+          expected = sorted([primary_name, emergency_name])
+          if remaining != expected:
+              raise SystemExit(
+                  f"Unexpected active workflows after cleanup. "
+                  f"Expected {expected}, found {remaining}"
+              )
+
+          cleanup_report = {
+              "schemaVersion": "13.16.0",
+              "generatedAt": datetime.now(timezone.utc).isoformat(),
+              "mode": "ARCHIVE_NOT_DELETE",
+              "stableTag": "V13.16-STABLE",
+              "activeWorkflows": remaining,
+              "archivedCount": len(moved),
+              "archivedWorkflows": moved,
+              "notesAr": [
+                  "لم تُحذف ملفات Workflows القديمة؛ نُقلت إلى مجلد الأرشيف.",
+                  "التشغيل التلقائي أصبح من Workflow الرئيسي فقط.",
+                  "Workflow الطوارئ يدوي فقط ولا يحتوي على جدول زمني."
+              ]
+          }
+          (ops_dir / "workflow-cleanup-v13-16.json").write_text(
+              json.dumps(cleanup_report, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8"
+          )
+
+          baseline_doc = """# V13.16 Stable Baseline
+
+          تم تثبيت هذه النسخة بوصفها خط الأساس المستقر.
+
+          ## Workflows النشطة
+
+          1. `.github/workflows/install-and-run-v13-14-unified-center-final.yml`
+             - التشغيل الرئيسي والتحديث وجمع الأدلة والنشر.
+
+          2. `.github/workflows/v13-16-emergency-stable-deploy.yml`
+             - نشر يدوي للطوارئ فقط من Tag ثابت.
+             - لا يعمل بجدول زمني.
+             - لا يغيّر فرع `main`.
+
+          ## الأرشيف
+
+          كل Workflows السابقة محفوظة داخل:
+
+          `archive/workflows-disabled-v13-16/`
+
+          ولم يتم حذفها.
+
+          ## Tag المستقر
+
+          `V13.16-STABLE`
+
+          ## سياسة التجميد
+
+          لا تُغيّر الاستراتيجيات أو الترتيب أو حدود الاعتماد قبل اكتمال فترة القياس، إلا لعلاج خطأ برمجي موثق.
+          """
+          baseline_doc = "\n".join(
+              line[10:] if line.startswith("          ") else line
+              for line in baseline_doc.splitlines()
+          ).lstrip() + "\n"
+          (root / "STABLE_BASELINE_V13_16.md").write_text(
+              baseline_doc,
+              encoding="utf-8"
+          )
+
+          print(f"Archived workflows: {len(moved)}")
+          print("Active workflows:", ", ".join(remaining))
+          PY
+
+      - name: Validate clean active workflow set
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow_dir = Path(".github/workflows")
+          files = sorted(
+              item.name for item in workflow_dir.iterdir()
+              if item.is_file() and item.suffix.lower() in {".yml", ".yaml"}
+          )
+          expected = sorted([
+              "install-and-run-v13-14-unified-center-final.yml",
+              "v13-16-emergency-stable-deploy.yml"
+          ])
+          if files != expected:
+              raise SystemExit(f"Active workflow validation failed: {files}")
+
+          emergency = (
+              workflow_dir / "v13-16-emergency-stable-deploy.yml"
+          ).read_text(encoding="utf-8")
+          if "schedule:" in emergency:
+              raise SystemExit("Emergency workflow must not contain a schedule.")
+          if "workflow_dispatch:" not in emergency:
+              raise SystemExit("Emergency workflow must remain manual.")
+          print("Active workflow set validated.")
+          PY
+
+      - name: Commit archived workflows and stable controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .github/workflows
+          git add archive/workflows-disabled-v13-16
+          git add data/ops/workflow-cleanup-v13-16.json
+          git add STABLE_BASELINE_V13_16.md
+
+          if git diff --cached --quiet; then
+            echo "No cleanup changes to commit."
+          else
+            git commit -m "Freeze V13.16 stable baseline and archive legacy workflows"
+            git pull --rebase -X ours origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Create immutable stable tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          git checkout main
+          git reset --hard origin/main
+
+          if git ls-remote --exit-code --tags origin \
+            "refs/tags/V13.16-STABLE" >/dev/null 2>&1; then
+            echo "Tag V13.16-STABLE already exists; it will not be moved."
+          else
+            git tag -a V13.16-STABLE \
+              -m "EGX Pro V13.16 stable operational baseline"
+            git push origin V13.16-STABLE
+          fi
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view V13.16-STABLE >/dev/null 2>&1; then
+            echo "Release V13.16-STABLE already exists."
+          else
+            gh release create V13.16-STABLE \
+              --title "EGX Pro V13.16 Stable" \
+              --notes "Stable operational baseline. Legacy workflows were archived rather than deleted. Only the primary workflow and a manual emergency deployment workflow remain active. Strategy rules, ranking rules, activation thresholds, and live-execution safety were not changed."
+          fi
+
+      - name: Final verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          git checkout main
+          git reset --hard origin/main
+
+          active_count="$(
+            find .github/workflows -maxdepth 1 -type f \
+              \( -name '*.yml' -o -name '*.yaml' \) | wc -l
+          )"
+          test "$active_count" -eq 2
+          test -f archive/workflows-disabled-v13-16/v13-16-one-time-stabilize.yml
+          test -f STABLE_BASELINE_V13_16.md
+          git show-ref --tags --verify --quiet refs/tags/V13.16-STABLE
+          echo "V13.16 STABILIZATION COMPLETED SUCCESSFULLY"
