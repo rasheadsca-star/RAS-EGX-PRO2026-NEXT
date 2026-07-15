@@ -99,21 +99,6 @@ function validPlan(plan) {
     n(plan?.stopLoss, 0) > 0 && n(plan?.entryHigh, 0) > n(plan?.stopLoss, 0) &&
     n(plan?.target1, 0) > n(plan?.entryLow, 0);
 }
-function technicalTierOrder(tier) {
-  return ({
-    STRICT_PAPER: 0,
-    TIER_A_EXPERIMENTAL_PAPER: 1,
-    TIER_B_PRIORITY_WATCH: 2,
-    DISCOVERY_WATCH: 3
-  })[tier] ?? 9;
-}
-function technicalCompare(a, b) {
-  return technicalTierOrder(a.tier) - technicalTierOrder(b.tier) ||
-    n(a.baselineRank, 999) - n(b.baselineRank, 999) ||
-    n(b.recommendationScore, 0) - n(a.recommendationScore, 0) ||
-    n(a.liveRank, 999) - n(b.liveRank, 999) ||
-    a.ticker.localeCompare(b.ticker);
-}
 function finalDecision(candidate, context, policy) {
   const tier = candidate.tier;
   const state = candidate.state;
@@ -125,14 +110,11 @@ function finalDecision(candidate, context, policy) {
   if (tier === 'DISCOVERY_WATCH') {
     return { code: 'WATCH_ONLY', labelAr: 'مراقبة سوقية', actionable: false, reasonAr: 'السهم نشط في السوق لكنه لم يجتز طبقات التوصية اليومية.' };
   }
+  if (tier === 'TIER_B_PRIORITY_WATCH') {
+    return { code: 'WATCH_ONLY', labelAr: 'مراقبة فقط', actionable: false, reasonAr: 'الطبقة B لا تتحول إلى شراء بسبب حركة لحظية.' };
+  }
   if (context.sessionIntegrityOk !== true) {
     return { code: 'BLOCKED_SESSION_MISMATCH', labelAr: 'موقوف — الجلسات غير متطابقة', actionable: false, reasonAr: 'طبقات القرار أو الترتيب الحي لا تشير إلى جلسة تحليل واحدة.' };
-  }
-  if (tier === 'TIER_B_PRIORITY_WATCH') {
-    if (candidate.strategyExecutable !== true) {
-      return { code: 'WATCH_RESEARCH_ONLY', labelAr: 'B — مراقبة بحثية فقط', actionable: false, reasonAr: `السهم من الطبقة B والاستراتيجية ${strategyStatusLabel(candidate.strategyValidationStatus)}؛ يظل ظاهرًا في ترتيبه الفني ولا يتحول إلى شراء.` };
-    }
-    return { code: 'WATCH_ONLY', labelAr: 'B — مراقبة فقط', actionable: false, reasonAr: 'الطبقة B تظل للمراقبة حتى لو كانت الاستراتيجية مؤهلة.' };
   }
   if (candidate.strategyExecutable !== true) {
     return { code: 'BLOCKED_RESEARCH', labelAr: 'بحث ومراقبة فقط', actionable: false, reasonAr: `الاستراتيجية ${strategyStatusLabel(candidate.strategyValidationStatus)} ولم تثبت صلاحيتها للتداول الورقي التنفيذي.` };
@@ -312,17 +294,14 @@ function main() {
       source: i.source || l.source || null
     };
     item.finalDecision = finalDecision(item, { operationalStatus, analysisSession, marketDate, sessionIntegrityOk }, policy);
-    item.safetyPriorityScore = round(priority(item, policy), 2);
-    item.priorityScore = item.safetyPriorityScore;
+    item.priorityScore = round(priority(item, policy), 2);
     item.riskPct = tier === 'STRICT_PAPER' ? n(policy.decision.strictRiskPct, 0.5) : n(policy.decision.tierARiskPct, 0.25);
     return item;
-  }).sort(technicalCompare)
-  .map((item, index) => ({
-    ...item,
-    technicalRank: index + 1,
-    unifiedRank: index + 1,
-    rankingBasis: 'TIER_STRENGTH_THEN_BASELINE_RANK'
-  }));
+  }).sort((a, b) =>
+    n(b.priorityScore, 0) - n(a.priorityScore, 0) ||
+    n(a.liveRank, 999) - n(b.liveRank, 999) ||
+    a.ticker.localeCompare(b.ticker)
+  ).map((item, index) => ({ ...item, unifiedRank: index + 1 }));
 
   const candidateTickers = new Set(candidates.map(item => item.ticker));
   const discoveryWatch = A(intraday.rows)
@@ -341,29 +320,23 @@ function main() {
       latestAlerts: A(alertMap.get(safeTicker(row.ticker))).slice(0, 3)
     }));
 
-  const technicalLeader = candidates[0] || null;
-  const readyCandidate = candidates.find(item => item.finalDecision.actionable === true) || null;
-  const tierBLeader = candidates.find(item => item.tier === 'TIER_B_PRIORITY_WATCH') || null;
-  const primary = technicalLeader;
+  const primary = candidates.find(item => item.finalDecision.actionable) || candidates[0] || null;
   const counts = {
     totalCandidates: candidates.length,
     strict: candidates.filter(item => item.tier === 'STRICT_PAPER').length,
     tierA: candidates.filter(item => item.tier === 'TIER_A_EXPERIMENTAL_PAPER').length,
     tierB: candidates.filter(item => item.tier === 'TIER_B_PRIORITY_WATCH').length,
-    ready: candidates.filter(item => item.finalDecision.actionable === true).length,
+    ready: candidates.filter(item => item.finalDecision.code === 'READY_FOR_PAPER_REVIEW').length,
     wait: candidates.filter(item => item.finalDecision.code === 'WAIT_FOR_ENTRY').length,
     blocked: candidates.filter(item => item.finalDecision.code.startsWith('BLOCKED')).length,
-    researchOnly: candidates.filter(item => item.strategyExecutable !== true).length,
-    tierAResearchOnly: candidates.filter(item => item.tier === 'TIER_A_EXPERIMENTAL_PAPER' && item.strategyExecutable !== true).length,
-    tierBResearchOnly: candidates.filter(item => item.tier === 'TIER_B_PRIORITY_WATCH' && item.strategyExecutable !== true).length,
-    hiddenTechnicalCandidates: 0,
+    researchOnly: candidates.filter(item => item.finalDecision.code === 'BLOCKED_RESEARCH').length,
     sessionMismatchBlocked: candidates.filter(item => item.finalDecision.code === 'BLOCKED_SESSION_MISMATCH').length,
     unreadAlerts: A(alerts.newAlerts).length,
     discoveryWatch: discoveryWatch.length
   };
 
   const output = {
-    schemaVersion: '13.14.0', patchVersion: '13.15.2', generatedAt, operationalStatus, operationalLabelAr,
+    schemaVersion: '13.14.0', patchVersion: '13.15.0', generatedAt, operationalStatus, operationalLabelAr,
     analysisSession, marketDate, marketCurrent, analysisCurrent, finalizationCurrent,
     sessionIntegrity: {
       ok: sessionIntegrityOk,
@@ -387,20 +360,8 @@ function main() {
       coveragePct: finalization.coveragePct, accepted: finalization.counts?.acceptedCoverage,
       eligible: finalization.counts?.eligibleSymbols, targetPassed: finalization.targetPassed
     } : null,
-    counts,
-    rankingPolicy: {
-      mode: 'TIER_STRENGTH_THEN_BASELINE_RANK',
-      safetyGateChangesRanking: false,
-      safetyGateHidesCandidates: false,
-      explanationAr: 'الترتيب الفني مستقل عن قرار الأمان: الصارمة ثم A ثم B، وداخل الطبقة حسب الترتيب الأساسي.'
-    },
-    primaryCandidate: primary,
-    technicalLeader,
-    readyCandidate,
-    tierBLeader,
+    counts, primaryCandidate: primary,
     topCandidates: candidates.slice(0, n(policy.decision.maximumPrimaryCandidates, 5)),
-    readyCandidates: candidates.filter(item => item.finalDecision.actionable === true).slice(0, n(policy.decision.maximumPrimaryCandidates, 5)),
-    tierBWatch: candidates.filter(item => item.tier === 'TIER_B_PRIORITY_WATCH').slice(0, n(policy.decision.maximumPrimaryCandidates, 5)),
     candidates: candidates.slice(0, n(policy.decision.maximumAllCandidates, 60)),
     discoveryWatch,
     allocationPolicy: {
@@ -410,14 +371,14 @@ function main() {
       maximumSectorWeightPct: n(policy.decision.maximumSectorWeightPct, 30),
       maximumLiquidityParticipationPct: n(policy.decision.maximumLiquidityParticipationPct, 1)
     },
-    warningAr: 'الترتيب الفني الكامل يظل ظاهرًا ولا يتغير بسبب قاطع الأمان. الأول فنيًا ليس توصية شراء، والجاهز للتنفيذ الورقي يظهر في حقل مستقل. التنفيذ الحقيقي مغلق.'
+    warningAr: 'هذه الصفحة توحد الطبقات والسعر والخطة والتنبيهات. التنفيذ الحقيقي مغلق. سجل V13.15 الورقي غير قابل للتعديل بأثر رجعي، والاستراتيجية لا تُفعّل ورقيًا إلا بعد اجتياز بوابة الأدلة المستقبلية.'
   };
   writeJson(FILES.output, output);
-  console.log(`V13.15.2 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
+  console.log(`V13.15 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
 }
 
 try { main(); }
 catch (error) {
-  console.error(`V13.15.2 unified center failed: ${error.stack || error.message}`);
+  console.error(`V13.15 unified center failed: ${error.stack || error.message}`);
   process.exit(1);
 }
