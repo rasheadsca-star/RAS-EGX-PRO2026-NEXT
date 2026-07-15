@@ -35,6 +35,8 @@ const policy = read('data/v13-14-unified-center-policy.json');
 const mode = String(process.env.V13_14_ACCEPTANCE_MODE || 'AUTO').toUpperCase();
 
 if (center.schemaVersion !== '13.14.0') fail(`unexpected schema ${center.schemaVersion}`);
+if (center.patchVersion !== '13.14.1') fail(`unexpected patch ${center.patchVersion}`);
+if (!center.sessionIntegrity || typeof center.sessionIntegrity.ok !== 'boolean') fail('session integrity report missing');
 if (center.liveExecutionEnabled !== false) fail('live execution must remain disabled');
 if (center.automaticOrderSubmission !== false) fail('automatic order submission must remain disabled');
 if (!Array.isArray(center.candidates) || !Array.isArray(center.topCandidates)) fail('candidate arrays missing');
@@ -49,6 +51,9 @@ for (const item of center.candidates) {
     fail(`${item.ticker} invalid actionable tier`);
   }
   if (item.finalDecision.actionable === true) {
+    if (center.sessionIntegrity.ok !== true) fail(`${item.ticker} actionable with mixed sessions`);
+    if (item.strategyExecutable !== true) fail(`${item.ticker} actionable with non-executable strategy`);
+    if (/RESEARCH|PAUSED|STOP|UNKNOWN/i.test(String(item.strategyValidationStatus || ''))) fail(`${item.ticker} actionable with unsafe strategy status`);
     if (!(Number(item.plan?.entryHigh) > Number(item.plan?.stopLoss))) fail(`${item.ticker} invalid actionable plan`);
     if (item.stale === true || item.marketCurrent !== true) fail(`${item.ticker} actionable with stale market data`);
   }
@@ -70,7 +75,7 @@ if (mode === 'POSTCLOSE_CONFIRMED') {
 
 const page = fs.readFileSync(path.join(ROOT, 'preview-v13/app/unified-decision-center.html'), 'utf8');
 for (const text of [
-  'V13.14', 'مركز القرار الموحد', 'القرار النهائي', 'السعر الحالي', 'منطقة الدخول',
+  'V13.14.1', 'مركز القرار الموحد', 'القرار النهائي', 'السعر الحالي', 'منطقة الدخول',
   'الهدف الأول', 'وقف الخسارة', 'الرسم البياني', 'جميع الطبقات', 'تشغيل إشعارات ويندوز'
 ]) {
   if (!page.includes(text)) fail(`unified page missing ${text}`);
@@ -84,4 +89,10 @@ for (const text of ['EGX Pro V13.14', 'unified-decision-center.html', 'مركز 
 }
 if (!index.includes('class="view active" id="view-center1314"')) fail('V13.14 center is not the default view');
 
-console.log(`V13.14 acceptance tests passed in ${mode} mode.`);
+if (!page.includes('دعم تاريخي 20 جلسة')) fail('unified page must label historical support explicitly');
+if (!page.includes('حالة الاستراتيجية')) fail('unified page missing strategy status gate');
+if (!index.includes("const container = safeElement('stockSearchCards')")) fail('index missing null-safe stock search');
+if (!index.includes('activeStrategies ??')) fail('index still treats zero active strategies as missing');
+if (!index.includes('sessionIntegrityNotice')) fail('index missing session integrity notice');
+
+console.log(`V13.14.1 acceptance tests passed in ${mode} mode.`);
