@@ -18,8 +18,6 @@ const FILES = {
   risk: path.join(Q, 'portfolio-risk-universe.json'),
   finalization: path.join(DATA, 'postclose', 'latest-v13-14.json'),
   strategyHealth: path.join(Q, 'strategy-health.json'),
-  evidenceHealth: path.join(Q, 'strategy-health-v13-15.json'),
-  evidenceLedger: path.join(DATA, 'evidence', 'paper-signals-v13-15.json'),
   output: path.join(Q, 'unified-autonomous-center-v13-14.json')
 };
 
@@ -80,8 +78,6 @@ function stateLabel(code) {
 }
 function strategyStatusLabel(status) {
   return ({
-    ACTIVE_PAPER: 'نشطة ورقيًا',
-    ACTIVE_LIMITED: 'نشطة ورقيًا بحدود',
     ACTIVE: 'نشطة',
     APPROVED: 'معتمدة',
     PRODUCTION: 'إنتاجية',
@@ -164,8 +160,7 @@ function main() {
   const stockIndex = readJson(FILES.stockIndex, { stocks: [] });
   const risk = readJson(FILES.risk, { profiles: [] });
   const finalization = readJson(FILES.finalization, null);
-  const strategyHealth = readJson(FILES.evidenceHealth, null) || readJson(FILES.strategyHealth, { strategies: [] });
-  const evidenceLedger = readJson(FILES.evidenceLedger, { signals: [], counts: {} });
+  const strategyHealth = readJson(FILES.strategyHealth, { strategies: [] });
 
   const stockMap = new Map(A(stockIndex.stocks).map(item => [safeTicker(item.ticker), item]));
   const riskMap = new Map(A(risk.profiles).map(item => [safeTicker(item.ticker), item]));
@@ -228,7 +223,7 @@ function main() {
     const rp = riskMap.get(ticker) || base.riskProfile || {};
     const strategy = strategyMap.get(String(base.strategyId || '').trim()) || {};
     const strategyValidationStatus = base.strategyValidationStatus || base.adaptive?.strategyHealthStatus || strategy.status || 'UNKNOWN';
-    const strategyExecutable = /^(ACTIVE_PAPER|ACTIVE_LIMITED|ACTIVE|APPROVED|PRODUCTION)$/i.test(String(strategyValidationStatus));
+    const strategyExecutable = /^(ACTIVE|APPROVED|PRODUCTION)$/i.test(String(strategyValidationStatus));
     const tier = base.tier || l.baselineTier || 'TIER_B_PRIORITY_WATCH';
     const currentPrice = n(i.price, n(l.price, n(stock.price)));
     const state = i.state || l.state || 'NO_INTRADAY_DATA';
@@ -336,7 +331,7 @@ function main() {
   };
 
   const output = {
-    schemaVersion: '13.14.0', patchVersion: '13.15.0', generatedAt, operationalStatus, operationalLabelAr,
+    schemaVersion: '13.14.0', patchVersion: '13.14.1', generatedAt, operationalStatus, operationalLabelAr,
     analysisSession, marketDate, marketCurrent, analysisCurrent, finalizationCurrent,
     sessionIntegrity: {
       ok: sessionIntegrityOk,
@@ -347,14 +342,6 @@ function main() {
     },
     marketSessionState: intraday.marketSessionState || live.marketSessionState || null,
     publicDelayedData: true, liveExecutionEnabled: false, automaticOrderSubmission: false,
-    evidence: {
-      schemaVersion: strategyHealth.schemaVersion || null,
-      validationMode: strategyHealth.validationMode || null,
-      generatedAt: strategyHealth.generatedAt || null,
-      summary: strategyHealth.summary || {},
-      ledgerCounts: evidenceLedger.counts || {},
-      immutableRegistration: evidenceLedger.immutableRegistration === true
-    },
     finalization: finalization ? {
       status: finalization.status, sessionDate: finalization.sessionDate,
       coveragePct: finalization.coveragePct, accepted: finalization.counts?.acceptedCoverage,
@@ -371,14 +358,14 @@ function main() {
       maximumSectorWeightPct: n(policy.decision.maximumSectorWeightPct, 30),
       maximumLiquidityParticipationPct: n(policy.decision.maximumLiquidityParticipationPct, 1)
     },
-    warningAr: 'هذه الصفحة توحد الطبقات والسعر والخطة والتنبيهات. التنفيذ الحقيقي مغلق. سجل V13.15 الورقي غير قابل للتعديل بأثر رجعي، والاستراتيجية لا تُفعّل ورقيًا إلا بعد اجتياز بوابة الأدلة المستقبلية.'
+    warningAr: 'هذه الصفحة توحد الطبقات والسعر والخطة والتنبيهات. التنفيذ الحقيقي مغلق. الدعم والمقاومة التاريخيان ليسا مستويات مباشر، والاستراتيجيات البحثية لا تصبح قابلة للتنفيذ.'
   };
   writeJson(FILES.output, output);
-  console.log(`V13.15 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
+  console.log(`V13.14.1 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
 }
 
 try { main(); }
 catch (error) {
-  console.error(`V13.15 unified center failed: ${error.stack || error.message}`);
+  console.error(`V13.14.1 unified center failed: ${error.stack || error.message}`);
   process.exit(1);
 }
