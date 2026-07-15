@@ -72,7 +72,7 @@ function main(){
       :'لم يتم توليد ترتيب فرص صالح';
 
   const decision={
-    ok:true,engine:'goal_reconciled_ranked_opportunities_v15_2',generatedAt:NOW,
+    ok:true,engine:'goal_reconciled_ranked_opportunities_v15_3',generatedAt:NOW,
     mainDecision,
     caution:'فرص المتابعة ليست أوامر شراء. التنفيذ لا يُسمح به إلا عند اجتياز السعر والسيولة والدعم/المقاومة وبوابة الجودة.',
     summary:{

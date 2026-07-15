@@ -1,6 +1,6 @@
 (() => {
 'use strict';
-const BUILD='V15.2-RECONCILED';
+const BUILD='V15.3-SR-TRUTH';
 let deferredInstall=null;
 const state={decision:null,ranking:null,market:null,health:null,query:'',filter:'ALL'};
 const $=id=>document.getElementById(id);
@@ -23,7 +23,7 @@ async function jsonFile(path,fallback){
 async function refreshWorker(){
   try{
     if('serviceWorker' in navigator){
-      const reg=await navigator.serviceWorker.register(`service-worker.js?v=15201`,{scope:'./',updateViaCache:'none'});
+      const reg=await navigator.serviceWorker.register(`service-worker.js?v=15301`,{scope:'./',updateViaCache:'none'});
       await reg.update();
       if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
     }
@@ -137,7 +137,7 @@ function render(){
     exec===0?'صفر تنفيذ لا يعني صفر فرص؛ يعني أن بوابة التنفيذ لم تكتمل.':`هناك ${exec} فرصة اجتازت بوابة التنفيذ.`,
     `تغطية الدعم والمقاومة الموثقة في market.json هي ${srPct.toFixed(1)}%.`,
     'مناطق الدخول والأهداف الظاهرة كـ«خطة تجريبية» مأخوذة من محرك الترتيب وليست بديلًا عن مستويات مباشر الموثقة.',
-    'الأيقونة واللينك يجب أن يعرضا Build V15.2 بعد فتح صفحة reset مرة واحدة.'
+    'الأيقونة واللينك يجب أن يعرضا Build V15.3 بعد فتح صفحة reset مرة واحدة.'
   ];
   $('healthNotes').innerHTML=notes.map(n=>`<li>${esc(n)}</li>`).join('');
   $('healthGrid').innerHTML=[
