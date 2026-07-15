@@ -363,7 +363,7 @@ function main() {
   };
 
   const output = {
-    schemaVersion: '13.14.0', patchVersion: '13.16.0', generatedAt, operationalStatus, operationalLabelAr,
+    schemaVersion: '13.14.0', patchVersion: '13.15.2', generatedAt, operationalStatus, operationalLabelAr,
     analysisSession, marketDate, marketCurrent, analysisCurrent, finalizationCurrent,
     sessionIntegrity: {
       ok: sessionIntegrityOk,
@@ -410,14 +410,14 @@ function main() {
       maximumSectorWeightPct: n(policy.decision.maximumSectorWeightPct, 30),
       maximumLiquidityParticipationPct: n(policy.decision.maximumLiquidityParticipationPct, 1)
     },
-    warningAr: 'الترتيب والاستراتيجيات لم تتغير في V13.16. أضيفت فقط صحة تشغيل وتقرير جلسة ومختبر ظل لا يؤثر في القرار. التنفيذ الحقيقي مغلق.'
+    warningAr: 'الترتيب الفني الكامل يظل ظاهرًا ولا يتغير بسبب قاطع الأمان. الأول فنيًا ليس توصية شراء، والجاهز للتنفيذ الورقي يظهر في حقل مستقل. التنفيذ الحقيقي مغلق.'
   };
   writeJson(FILES.output, output);
-  console.log(`V13.16 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
+  console.log(`V13.15.2 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
 }
 
 try { main(); }
 catch (error) {
-  console.error(`V13.16 unified center failed: ${error.stack || error.message}`);
+  console.error(`V13.15.2 unified center failed: ${error.stack || error.message}`);
   process.exit(1);
 }
