@@ -1,4 +1,4 @@
-name: Install & Run V13.16 Operational Hardening
+name: Install & Run V13.16.1 Operational Validation Hotfix
 
 on:
   workflow_dispatch:
@@ -112,8 +112,10 @@ jobs:
           PY
           node --check /tmp/v1315-index.js
           node --check /tmp/v1315-center.js
-          grep -q "V13.15" preview-v13/app/index.html
-          grep -q "سجل غير قابل للتعديل" preview-v13/app/unified-decision-center.html
+          grep -q "EGX Pro V13.16" preview-v13/app/index.html
+          grep -q "صحة التشغيل V13.16" preview-v13/app/unified-decision-center.html
+          grep -q "تقرير الجلسة المحفوظ" preview-v13/app/unified-decision-center.html
+          grep -q "مختبر الظل" preview-v13/app/unified-decision-center.html
           echo "V13.16 INSTALL VALIDATION PASSED"
 
       - name: Resolve Cairo mode
