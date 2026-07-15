@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061426">
+  <title>EGX PWA Snapshot Auditor</title>
+  <style>
+    :root{
+      color-scheme:dark;
+      --bg:#061426;--panel:#0a2138;--line:#245b7a;--text:#f4f8fc;
+      --muted:#9ab7cb;--green:#17c27d;--amber:#efb126;--red:#ef556c;--blue:#28baf3;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif;padding:20px}
+    .wrap{max-width:920px;margin:auto}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:14px}
+    h1{margin:0 0 8px;font-size:28px}
+    p{color:var(--muted);line-height:1.8}
+    .notice{border:1px solid #167a50;background:#0b3b2b;color:#caffE5;border-radius:13px;padding:13px;line-height:1.8}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    button{border:1px solid #2d7297;background:#0a2d49;color:#fff;border-radius:12px;padding:13px 18px;font-weight:800;cursor:pointer}
+    button.primary{background:linear-gradient(135deg,#16a8e8,#176fd7)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+    progress{width:100%;height:18px;margin:14px 0}
+    pre{direction:ltr;text-align:left;white-space:pre-wrap;word-break:break-word;background:#041522;border:1px solid #173d56;border-radius:12px;padding:14px;min-height:150px;max-height:420px;overflow:auto;color:#ccecff}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+    .metric{background:#071a2c;border:1px solid #1b4d6c;border-radius:12px;padding:13px;text-align:center}
+    .metric b{display:block;font-size:24px;color:var(--blue);margin-top:5px}
+    .safe{color:var(--green);font-weight:900}
+    .warn{color:var(--amber);font-weight:900}
+    @media(max-width:700px){.grid{grid-template-columns:1fr}.actions{display:grid}button{width:100%}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <section class="card">
+    <h1>فحص نسخة أيقونة EGX Pro</h1>
+    <p>
+      هذه الصفحة تقرأ فقط Service Worker وCache Storage وLocal Storage وIndexedDB
+      الخاصة بالموقع، ثم تنزّل ملف فحص. لا تحذف أو تعدّل أي بيانات ولا تسجّل Service Worker جديدًا.
+    </p>
+    <div class="notice">
+      <span class="safe">آمنة للقراءة فقط.</span>
+      لا تضغط مسح بيانات الموقع ولا تحذف الأيقونة قبل تنزيل ملف الفحص.
+    </div>
+    <div class="actions">
+      <button id="scanBtn" class="primary">ابدأ الفحص وتنزيل النسخة</button>
+      <button id="summaryBtn">فحص سريع بدون تنزيل</button>
+    </div>
+    <progress id="progress" value="0" max="100"></progress>
+    <div class="grid">
+      <div class="metric">Service Workers<b id="swCount">--</b></div>
+      <div class="metric">Cache Entries<b id="cacheCount">--</b></div>
+      <div class="metric">IndexedDB Stores<b id="dbCount">--</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>سجل الفحص</h2>
+    <pre id="log">جاهز. اضغط «ابدأ الفحص وتنزيل النسخة».</pre>
+  </section>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const logEl = $('log');
+  const progress = $('progress');
+  const scanBtn = $('scanBtn');
+  const summaryBtn = $('summaryBtn');
+
+  function log(message) {
+    const time = new Date().toLocaleTimeString('en-GB');
+    logEl.textContent += `\n[${time}] ${message}`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function setProgress(value) {
+    progress.value = Math.max(0, Math.min(100, value));
+  }
+
+  function bytesToBase64(bytes) {
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
+  async function sha256(buffer) {
+    if (!crypto?.subtle) return null;
+    const digest = await crypto.subtle.digest('SHA-256', buffer);
+    return [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  function isTextContent(contentType, url) {
+    return /text|json|javascript|xml|html|css|svg|manifest/i.test(contentType || '') ||
+      /\.(?:html?|js|mjs|css|json|txt|xml|svg|webmanifest|yml|yaml)(?:$|\?)/i.test(url);
+  }
+
+  async function exportServiceWorkers() {
+    if (!('serviceWorker' in navigator)) return [];
+    const regs = await navigator.serviceWorker.getRegistrations();
+    return regs.map(reg => ({
+      scope: reg.scope,
+      updateViaCache: reg.updateViaCache,
+      active: reg.active ? {
+        scriptURL: reg.active.scriptURL,
+        state: reg.active.state
+      } : null,
+      waiting: reg.waiting ? {
+        scriptURL: reg.waiting.scriptURL,
+        state: reg.waiting.state
+      } : null,
+      installing: reg.installing ? {
+        scriptURL: reg.installing.scriptURL,
+        state: reg.installing.state
+      } : null
+    }));
+  }
+
+  async function exportCaches(includeBodies) {
+    if (!('caches' in window)) return { caches: [], entryCount: 0 };
+    const names = await caches.keys();
+    const exported = [];
+    let entryCount = 0;
+
+    for (let cacheIndex = 0; cacheIndex < names.length; cacheIndex++) {
+      const name = names[cacheIndex];
+      const cache = await caches.open(name);
+      const requests = await cache.keys();
+      const entries = [];
+      log(`Cache: ${name} — ${requests.length} ملف`);
+      entryCount += requests.length;
+
+      for (let i = 0; i < requests.length; i++) {
+        const request = requests[i];
+        const response = await cache.match(request);
+        if (!response) continue;
+
+        const headers = {};
+        response.headers.forEach((value, key) => { headers[key] = value; });
+        const entry = {
+          url: request.url,
+          method: request.method,
+          requestMode: request.mode,
+          status: response.status,
+          statusText: response.statusText,
+          type: response.type,
+          redirected: response.redirected,
+          headers
+        };
+
+        if (includeBodies) {
+          try {
+            const buffer = await response.clone().arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            entry.byteLength = bytes.byteLength;
+            entry.sha256 = await sha256(buffer);
+            const contentType = headers['content-type'] || '';
+            if (isTextContent(contentType, request.url)) {
+              entry.encoding = 'utf-8';
+              entry.bodyText = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
+            } else {
+              entry.encoding = 'base64';
+              entry.bodyBase64 = bytesToBase64(bytes);
+            }
+          } catch (error) {
+            entry.bodyError = String(error?.message || error);
+          }
+        }
+
+        entries.push(entry);
+        const done = cacheIndex + (i + 1) / Math.max(1, requests.length);
+        setProgress(10 + Math.round((done / Math.max(1, names.length)) * 55));
+      }
+      exported.push({ name, entries });
+    }
+
+    return { caches: exported, entryCount };
+  }
+
+  async function exportIndexedDB(includeData) {
+    if (!indexedDB?.databases) {
+      return { databases: [], storeCount: 0, note: 'indexedDB.databases() غير مدعومة في هذا المتصفح.' };
+    }
+
+    const dbInfos = await indexedDB.databases();
+    const databases = [];
+    let storeCount = 0;
+
+    for (let i = 0; i < dbInfos.length; i++) {
+      const info = dbInfos[i];
+      if (!info.name) continue;
+
+      const dbExport = {
+        name: info.name,
+        version: info.version,
+        stores: []
+      };
+
+      try {
+        const db = await new Promise((resolve, reject) => {
+          const req = indexedDB.open(info.name);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+          req.onupgradeneeded = () => {
+            try { req.transaction.abort(); } catch {}
+            reject(new Error('تم منع أي ترقية لقاعدة البيانات أثناء الفحص.'));
+          };
+        });
+
+        const storeNames = [...db.objectStoreNames];
+        storeCount += storeNames.length;
+        for (const storeName of storeNames) {
+          const storeInfo = { name: storeName };
+          if (includeData) {
+            try {
+              const values = await new Promise((resolve, reject) => {
+                const tx = db.transaction(storeName, 'readonly');
+                const store = tx.objectStore(storeName);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+              });
+              storeInfo.totalRead = values.length;
+              storeInfo.records = values.slice(0, 5000);
+              if (values.length > 5000) storeInfo.truncated = true;
+            } catch (error) {
+              storeInfo.error = String(error?.message || error);
+            }
+          }
+          dbExport.stores.push(storeInfo);
+        }
+        db.close();
+      } catch (error) {
+        dbExport.error = String(error?.message || error);
+      }
+      databases.push(dbExport);
+      setProgress(68 + Math.round(((i + 1) / Math.max(1, dbInfos.length)) * 15));
+    }
+
+    return { databases, storeCount };
+  }
+
+  function exportStorage() {
+    const local = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      local[key] = localStorage.getItem(key);
+    }
+    const session = {};
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      session[key] = sessionStorage.getItem(key);
+    }
+    return { localStorage: local, sessionStorage: session };
+  }
+
+  async function buildSnapshot(includeBodies, includeData) {
+    logEl.textContent = 'بدأ الفحص…';
+    scanBtn.disabled = true;
+    summaryBtn.disabled = true;
+    setProgress(3);
+
+    try {
+      log(`Origin: ${location.origin}`);
+      log(`Page: ${location.href}`);
+      const serviceWorkers = await exportServiceWorkers();
+      $('swCount').textContent = serviceWorkers.length;
+      log(`Service Workers: ${serviceWorkers.length}`);
+      setProgress(9);
+
+      const cacheExport = await exportCaches(includeBodies);
+      $('cacheCount').textContent = cacheExport.entryCount;
+      log(`إجمالي ملفات الكاش: ${cacheExport.entryCount}`);
+      setProgress(67);
+
+      const indexed = await exportIndexedDB(includeData);
+      $('dbCount').textContent = indexed.storeCount;
+      log(`IndexedDB stores: ${indexed.storeCount}`);
+      setProgress(84);
+
+      const storage = exportStorage();
+      const snapshot = {
+        format: 'EGX_PWA_SNAPSHOT_AUDIT_V1',
+        readOnly: true,
+        exportedAt: new Date().toISOString(),
+        page: {
+          href: location.href,
+          origin: location.origin,
+          userAgent: navigator.userAgent,
+          language: navigator.language,
+          online: navigator.onLine,
+          displayModeStandalone: matchMedia('(display-mode: standalone)').matches
+        },
+        serviceWorkers,
+        cacheStorage: cacheExport.caches,
+        indexedDB: indexed.databases,
+        indexedDBNote: indexed.note || null,
+        localStorage: storage.localStorage,
+        sessionStorage: storage.sessionStorage
+      };
+
+      setProgress(94);
+      log('اكتمل جمع النسخة.');
+
+      if (includeBodies) {
+        const json = JSON.stringify(snapshot, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `egx-pwa-icon-snapshot-${stamp}.json`;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 30000);
+        log(`تم تنزيل: ${filename}`);
+        log('ارفع الملف الناتج في محادثة ChatGPT للمراجعة.');
+      } else {
+        log('الفحص السريع انتهى بدون تنزيل.');
+        log(JSON.stringify({
+          serviceWorkers,
+          cacheNames: cacheExport.caches.map(c => ({ name: c.name, entries: c.entries.length })),
+          indexedDB: indexed.databases.map(d => ({ name: d.name, stores: d.stores.map(s => s.name) })),
+          localStorageKeys: Object.keys(storage.localStorage)
+        }, null, 2));
+      }
+
+      setProgress(100);
+    } catch (error) {
+      log(`خطأ: ${error?.stack || error}`);
+      setProgress(0);
+    } finally {
+      scanBtn.disabled = false;
+      summaryBtn.disabled = false;
+    }
+  }
+
+  scanBtn.addEventListener('click', () => buildSnapshot(true, true));
+  summaryBtn.addEventListener('click', () => buildSnapshot(false, false));
+})();
+</script>
+</body>
+</html>
