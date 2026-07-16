@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "13.17.0",
+  "name": "Market Search and Momentum Money-Flow Intelligence",
+  "productionSafety": {
+    "changesProductionRanking": false,
+    "changesStrategyRules": false,
+    "changesActivationThresholds": false,
+    "changesEntryStopTargets": false,
+    "liveExecutionEnabled": false,
+    "automaticOrderSubmission": false
+  },
+  "marketSearch": {
+    "includeAllMarketSymbols": true,
+    "includeHistoryOnlySymbols": true,
+    "outsideRecommendationLabelAr": "ليس ضمن توصيات اليوم",
+    "forceOutsideStocksIntoTier": false,
+    "maximumDisplayedResults": 12
+  },
+  "indicators": {
+    "rsiPeriod": 14,
+    "mfiPeriod": 14,
+    "cmfPeriod": 20,
+    "relativeVolumePeriod": 20,
+    "trendLookbackSessions": 5,
+    "scoreWeights": {
+      "rsi": 0.2,
+      "mfi": 0.2,
+      "cmf": 0.25,
+      "relativeVolume": 0.15,
+      "adlTrend": 0.1,
+      "pvtTrend": 0.1
+    },
+    "minimumHistorySessions": 20
+  },
+  "languageSafety": {
+    "inferInstitutionIdentity": false,
+    "allowedLabelAr": "ضغط شرائي تقديري",
+    "forbiddenClaimsAr": [
+      "المؤسسات تشتري بشكل مؤكد",
+      "هوية المشتري مؤكدة"
+    ]
+  },
+  "output": {
+    "searchIndex": "data/quant/market-search-index-v13-17.json",
+    "moneyFlow": "data/lab/momentum-money-flow-v13-17.json"
+  }
+}

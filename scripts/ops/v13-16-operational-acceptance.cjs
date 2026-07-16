@@ -25,7 +25,7 @@ function hash(value) {
   return crypto.createHash('sha256').update(JSON.stringify(stable(value))).digest('hex');
 }
 function fail(message) {
-  console.error(`V13.16 OPERATIONAL ACCEPTANCE FAILURE: ${message}`);
+  console.error(`V13.17 OPERATIONAL ACCEPTANCE FAILURE: ${message}`);
   process.exit(1);
 }
 
@@ -37,7 +37,7 @@ const ops = read('data/ops/operational-health-v13-16.json');
 const report = read('data/reports/daily/latest.json');
 const shadow = read('data/lab/shadow-diagnostics-v13-16.json');
 
-if (center.patchVersion !== '13.16.0') fail(`unexpected center patch ${center.patchVersion}`);
+if (center.patchVersion !== '13.17.0') fail(`unexpected center patch ${center.patchVersion}`);
 if (center.liveExecutionEnabled !== false || center.automaticOrderSubmission !== false) fail('center execution safety changed');
 if (policy.safety.liveExecutionEnabled !== false || policy.safety.automaticOrderSubmission !== false) fail('operational policy execution safety changed');
 if (policy.safety.strategyRulesChanged !== false) fail('operational package claims strategy rules changed');
@@ -63,4 +63,4 @@ if (limited.minimumClosedTrades !== 50 || limited.minimumForwardSessions !== 20 
   fail('ACTIVE_LIMITED thresholds changed');
 }
 
-console.log(`V13.16 operational acceptance passed: state=${ops.state}, scheduledLegacy=${workflowAudit.counts?.scheduledLegacy || 0}, report=${report.sessionDate}.`);
+console.log(`V13.17 operational acceptance passed: state=${ops.state}, scheduledLegacy=${workflowAudit.counts?.scheduledLegacy || 0}, report=${report.sessionDate}.`);

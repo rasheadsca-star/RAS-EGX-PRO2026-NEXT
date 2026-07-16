@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "13.16.0",
+  "name": "Operational Hardening",
+  "freshness": {
+    "marketMaximumMinutes": 90,
+    "centerMaximumMinutes": 180,
+    "sourceMaximumMinutes": 180
+  },
+  "coverage": {
+    "warningBelowPct": 98,
+    "criticalBelowPct": 90
+  },
+  "workflowAudit": {
+    "primaryWorkflow": ".github/workflows/install-and-run-v13-14-unified-center-final.yml",
+    "mode": "REPORT_ONLY",
+    "scheduledLegacyIsWarning": true,
+    "automaticArchiveEnabled": false
+  },
+  "dailyReport": {
+    "archivePreviousRevision": true,
+    "maximumRankingRows": 15,
+    "maximumClosedRows": 30
+  },
+  "shadowLab": {
+    "enabled": true,
+    "affectsProductionRanking": false,
+    "affectsProductionDecision": false,
+    "minimumLiquidityPercentile": 70,
+    "maximumRsiTrend": 70,
+    "maximumRsiBreakout": 75,
+    "minimumVolumeRatioBreakout": 1.2,
+    "maximumChaseAboveEntryPct": 2
+  },
+  "safety": {
+    "liveExecutionEnabled": false,
+    "automaticOrderSubmission": false,
+    "strategyRulesChanged": false,
+    "rankingRulesChanged": false,
+    "activationThresholdsChanged": false
+  }
+}

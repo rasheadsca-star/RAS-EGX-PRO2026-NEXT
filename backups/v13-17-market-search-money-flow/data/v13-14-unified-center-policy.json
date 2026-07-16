@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "13.14.0",
+  "name": "Unified Autonomous Decision Center",
+  "schedule": {
+    "timezone": "Africa/Cairo",
+    "tradingDays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+    "intradayStartLocal": "09:45",
+    "intradayEndLocal": "14:45",
+    "postCloseStartLocal": "15:00",
+    "postCloseEndLocal": "20:30",
+    "intervalMinutes": 15,
+    "browserRefreshSeconds": 60
+  },
+  "finalization": {
+    "minimumCoveragePct": 75,
+    "minimumAcceptedSymbols": 100,
+    "maximumPreviousCloseMismatchPct": 12,
+    "maximumSourceAgeMinutes": 360,
+    "maximumHistorySessions": 180,
+    "requireExactOHLCV": true,
+    "allowSameSessionReplacement": true,
+    "mergeAllAvailableSources": true,
+    "countAlreadyValidHistoryRows": true,
+    "retryFullHistoryRefreshOnFailure": true
+  },
+  "decision": {
+    "maximumPrimaryCandidates": 5,
+    "maximumAllCandidates": 60,
+    "maximumDiscoveryWatch": 15,
+    "freshDataMinutes": 45,
+    "currentMarketRequiredForIntradayReady": true,
+    "strictRiskPct": 0.5,
+    "tierARiskPct": 0.25,
+    "maximumStockWeightPct": 15,
+    "maximumSectorWeightPct": 30,
+    "maximumLiquidityParticipationPct": 1,
+    "decisionPriority": {
+      "READY_FOR_PAPER_REVIEW": 100,
+      "WAIT_FOR_ENTRY": 85,
+      "PROFIT_MANAGEMENT": 80,
+      "DO_NOT_CHASE": 65,
+      "WATCH_ONLY": 50,
+      "BLOCKED_RISK": 20,
+      "BLOCKED_STALE": 10,
+      "BLOCKED_INCOMPLETE": 0
+    }
+  },
+  "safety": {
+    "liveExecutionEnabled": false,
+    "automaticOrderSubmission": false,
+    "automaticPaperRegistration": false,
+    "intradayTierPromotionEnabled": false,
+    "tierBActionable": false,
+    "fabricateMissingOHLCV": false,
+    "fabricateMissingPlan": false,
+    "publicDelayedData": true,
+    "stableV11Modified": false
+  }
+}
