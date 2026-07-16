@@ -17,9 +17,8 @@
 
 ## ملاحظات التشغيل
 
-- تحذير: Latest source report is 235 minutes old.
 - تحذير: Data coverage is 96%, below preferred 98%.
 - تحذير: 10 scheduled legacy workflow(s) may cause independent updates.
-- تحذير: 26 workflows can deploy Pages.
+- تحذير: 27 workflows can deploy Pages.
 
-بصمة التقرير: `c9d5114abb89348e05b5ded22b15383a2aa23693f8843ed017917bd975932438`
+بصمة التقرير: `0cec545e5bc15055b10104cce9e0bb6ee23b351e0dff9db6e8c3ab1b11abb6d4`
