@@ -54,15 +54,16 @@
   "safety": {
     "liveExecutionEnabled": false,
     "automaticOrderSubmission": false,
-    "automaticPaperRegistration": false,
+    "automaticPaperRegistration": true,
     "intradayTierPromotionEnabled": false,
     "tierBActionable": false,
     "fabricateMissingOHLCV": false,
     "fabricateMissingPlan": false,
     "publicDelayedData": true,
-    "stableV11Modified": false
+    "stableV11Modified": false,
+    "automaticPaperRegistrationScope": "EVIDENCE_ONLY_NO_ORDERS"
   },
-  "patchVersion": "13.14.1",
+  "patchVersion": "13.17.0",
   "sessionIntegrity": {
     "requireSingleAnalysisSession": true,
     "blockActionableOnMismatch": true,
@@ -70,17 +71,57 @@
   },
   "strategyGate": {
     "actionableStatuses": [
+      "ACTIVE_PAPER",
+      "ACTIVE_LIMITED",
       "ACTIVE",
       "APPROVED",
       "PRODUCTION"
     ],
     "blockResearchOnly": true,
-    "blockUnknownStatus": true
+    "blockUnknownStatus": true,
+    "evidenceHealthPreferred": true
   },
   "supportResistance": {
     "historicalWindowSessions": 20,
     "historicalLabelsMustBeExplicit": true,
     "directLevelsRequireVerifiedFlag": true,
     "directLevelsAreOptionalForPaperReview": true
+  },
+  "evidenceCore": {
+    "enabled": true,
+    "ledgerPath": "data/evidence/paper-signals-v13-15.json",
+    "healthPath": "data/quant/strategy-health-v13-15.json",
+    "immutableRegistration": true,
+    "conservativeSameBarResolution": "STOP_FIRST",
+    "liveExecutionRemainsDisabled": true
+  },
+  "rankingPolicy": {
+    "mode": "TIER_STRENGTH_THEN_BASELINE_RANK",
+    "tierOrder": [
+      "STRICT_PAPER",
+      "TIER_A_EXPERIMENTAL_PAPER",
+      "TIER_B_PRIORITY_WATCH"
+    ],
+    "liveRankMayReorderInsideTier": false,
+    "safetyGateMayHideTechnicalCandidates": false,
+    "descriptionAr": "قاطع الأمان يغير القرار ولا يغير أو يخفي الترتيب الفني."
+  },
+  "operationalHardening": {
+    "enabled": true,
+    "strategyRulesChanged": false,
+    "rankingRulesChanged": false,
+    "productionDecisionRulesChanged": false,
+    "workflowAuditMode": "REPORT_ONLY",
+    "dailyReportRevisionArchive": true,
+    "shadowLabAffectsProduction": false,
+    "healthOutput": "data/ops/operational-health-v13-16.json",
+    "dailyReportOutput": "data/reports/daily/latest.json",
+    "shadowOutput": "data/lab/shadow-diagnostics-v13-16.json"
+  },
+  "v13_17": {
+    "fullMarketSearch": true,
+    "momentumMoneyFlowShadowOnly": true,
+    "productionRankingChanged": false,
+    "strategyRulesChanged": false
   }
 }
