@@ -14,7 +14,7 @@ function read(relative, required = true) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 function fail(message) {
-  console.error(`V13.14 ACCEPTANCE FAILURE: ${message}`);
+  console.error(`V13.17 ACCEPTANCE FAILURE: ${message}`);
   process.exit(1);
 }
 
@@ -24,7 +24,11 @@ const required = [
   'scripts/postclose/v13-14-session-finalizer.cjs',
   'scripts/quant/v13-14-unified-center.cjs',
   'preview-v13/app/unified-decision-center.html',
-  'preview-v13/app/index.html'
+  'preview-v13/app/index.html',
+  'data/v13-15-evidence-policy.json',
+  'scripts/evidence/v13-15-paper-ledger.cjs',
+  'scripts/evidence/v13-15-strategy-health.cjs',
+  'scripts/evidence/v13-15-evidence-acceptance.cjs'
 ];
 for (const relative of required) {
   if (!fs.existsSync(path.join(ROOT, relative))) fail(`missing ${relative}`);
@@ -53,9 +57,34 @@ for (const item of center.candidates) {
     if (item.stale === true || item.marketCurrent !== true) fail(`${item.ticker} actionable with stale market data`);
   }
 }
-for (let i = 1; i < center.candidates.length; i += 1) {
-  if (Number(center.candidates[i - 1].priorityScore) < Number(center.candidates[i].priorityScore)) fail('unified ranking order invalid');
+const tierOrder = tier => ({
+  STRICT_PAPER: 0,
+  TIER_A_EXPERIMENTAL_PAPER: 1,
+  TIER_B_PRIORITY_WATCH: 2,
+  DISCOVERY_WATCH: 3
+})[tier] ?? 9;
+function compareTechnical(a, b) {
+  return tierOrder(a.tier) - tierOrder(b.tier) ||
+    Number(a.baselineRank || 999) - Number(b.baselineRank || 999) ||
+    Number(b.recommendationScore || 0) - Number(a.recommendationScore || 0) ||
+    Number(a.liveRank || 999) - Number(b.liveRank || 999) ||
+    String(a.ticker).localeCompare(String(b.ticker));
 }
+for (let i = 0; i < center.candidates.length; i += 1) {
+  const item = center.candidates[i];
+  if (Number(item.technicalRank) !== i + 1 || Number(item.unifiedRank) !== i + 1) {
+    fail(`${item.ticker} technical rank is inconsistent`);
+  }
+  if (i > 0 && compareTechnical(center.candidates[i - 1], item) > 0) {
+    fail('technical ranking order invalid');
+  }
+}
+if (center.counts?.hiddenTechnicalCandidates !== 0) fail('technical candidates were hidden');
+if ((center.technicalLeader?.ticker || null) !== (center.candidates[0]?.ticker || null)) fail('technical leader mismatch');
+const expectedBLeader = center.candidates.find(item => item.tier === 'TIER_B_PRIORITY_WATCH') || null;
+if ((center.tierBLeader?.ticker || null) !== (expectedBLeader?.ticker || null)) fail('Tier B leader mismatch');
+const expectedReady = center.candidates.find(item => item.finalDecision?.actionable === true) || null;
+if ((center.readyCandidate?.ticker || null) !== (expectedReady?.ticker || null)) fail('ready candidate mismatch');
 
 if (mode === 'POSTCLOSE_CONFIRMED') {
   const report = read('data/postclose/latest-v13-14.json');
@@ -79,9 +108,9 @@ if (!page.includes('../../data/quant/unified-autonomous-center-v13-14.json')) fa
 if (/navigator\.serviceWorker|service-worker\.js/.test(page)) fail('unified page must not modify the service worker');
 
 const index = fs.readFileSync(path.join(ROOT, 'preview-v13/app/index.html'), 'utf8');
-for (const text of ['EGX Pro V13.14', 'unified-decision-center.html', 'مركز القرار الموحد V13.14']) {
+for (const text of ['EGX Pro V13.17', 'unified-decision-center.html', 'مركز القرار الموحد V13.17']) {
   if (!index.includes(text)) fail(`index missing ${text}`);
 }
-if (!index.includes('class="view active" id="view-center1314"')) fail('V13.14 center is not the default view');
+if (!index.includes('class="view active" id="view-center1314"')) fail('V13.17 center is not the default view');
 
 console.log(`V13.14 acceptance tests passed in ${mode} mode.`);

@@ -80,6 +80,21 @@ function validPlan(plan) {
     n(plan?.stopLoss, 0) > 0 && n(plan?.entryHigh, 0) > n(plan?.stopLoss, 0) &&
     n(plan?.target1, 0) > n(plan?.entryLow, 0);
 }
+function technicalTierOrder(tier) {
+  return ({
+    STRICT_PAPER: 0,
+    TIER_A_EXPERIMENTAL_PAPER: 1,
+    TIER_B_PRIORITY_WATCH: 2,
+    DISCOVERY_WATCH: 3
+  })[tier] ?? 9;
+}
+function technicalCompare(a, b) {
+  return technicalTierOrder(a.tier) - technicalTierOrder(b.tier) ||
+    n(a.baselineRank, 999) - n(b.baselineRank, 999) ||
+    n(b.recommendationScore, 0) - n(a.recommendationScore, 0) ||
+    n(a.liveRank, 999) - n(b.liveRank, 999) ||
+    a.ticker.localeCompare(b.ticker);
+}
 function finalDecision(candidate, context, policy) {
   const tier = candidate.tier;
   const state = candidate.state;
@@ -227,11 +242,13 @@ function main() {
     item.priorityScore = round(priority(item, policy), 2);
     item.riskPct = tier === 'STRICT_PAPER' ? n(policy.decision.strictRiskPct, 0.5) : n(policy.decision.tierARiskPct, 0.25);
     return item;
-  }).sort((a, b) =>
-    n(b.priorityScore, 0) - n(a.priorityScore, 0) ||
-    n(a.liveRank, 999) - n(b.liveRank, 999) ||
-    a.ticker.localeCompare(b.ticker)
-  ).map((item, index) => ({ ...item, unifiedRank: index + 1 }));
+  }).sort(technicalCompare)
+  .map((item, index) => ({
+    ...item,
+    technicalRank: index + 1,
+    unifiedRank: index + 1,
+    rankingBasis: 'TIER_STRENGTH_THEN_BASELINE_RANK'
+  }));
 
   const candidateTickers = new Set(candidates.map(item => item.ticker));
   const discoveryWatch = A(intraday.rows)
@@ -250,13 +267,16 @@ function main() {
       latestAlerts: A(alertMap.get(safeTicker(row.ticker))).slice(0, 3)
     }));
 
-  const primary = candidates.find(item => item.finalDecision.actionable) || candidates[0] || null;
+  const technicalLeader = candidates[0] || null;
+  const readyCandidate = candidates.find(item => item.finalDecision.actionable === true) || null;
+  const tierBLeader = candidates.find(item => item.tier === 'TIER_B_PRIORITY_WATCH') || null;
+  const primary = technicalLeader;
   const counts = {
     totalCandidates: candidates.length,
     strict: candidates.filter(item => item.tier === 'STRICT_PAPER').length,
     tierA: candidates.filter(item => item.tier === 'TIER_A_EXPERIMENTAL_PAPER').length,
     tierB: candidates.filter(item => item.tier === 'TIER_B_PRIORITY_WATCH').length,
-    ready: candidates.filter(item => item.finalDecision.code === 'READY_FOR_PAPER_REVIEW').length,
+    ready: candidates.filter(item => item.finalDecision.actionable === true).length,
     wait: candidates.filter(item => item.finalDecision.code === 'WAIT_FOR_ENTRY').length,
     blocked: candidates.filter(item => item.finalDecision.code.startsWith('BLOCKED')).length,
     unreadAlerts: A(alerts.newAlerts).length,
@@ -268,13 +288,33 @@ function main() {
     analysisSession, marketDate, marketCurrent, analysisCurrent, finalizationCurrent,
     marketSessionState: intraday.marketSessionState || live.marketSessionState || null,
     publicDelayedData: true, liveExecutionEnabled: false, automaticOrderSubmission: false,
+    evidence: {
+      schemaVersion: strategyHealth.schemaVersion || null,
+      validationMode: strategyHealth.validationMode || null,
+      generatedAt: strategyHealth.generatedAt || null,
+      summary: strategyHealth.summary || {},
+      ledgerCounts: evidenceLedger.counts || {},
+      immutableRegistration: evidenceLedger.immutableRegistration === true
+    },
     finalization: finalization ? {
       status: finalization.status, sessionDate: finalization.sessionDate,
       coveragePct: finalization.coveragePct, accepted: finalization.counts?.acceptedCoverage,
       eligible: finalization.counts?.eligibleSymbols, targetPassed: finalization.targetPassed
     } : null,
-    counts, primaryCandidate: primary,
+    counts,
+    rankingPolicy: {
+      mode: 'TIER_STRENGTH_THEN_BASELINE_RANK',
+      safetyGateChangesRanking: false,
+      safetyGateHidesCandidates: false,
+      explanationAr: 'الترتيب الفني مستقل عن قرار الأمان: الصارمة ثم A ثم B، وداخل الطبقة حسب الترتيب الأساسي.'
+    },
+    primaryCandidate: primary,
+    technicalLeader,
+    readyCandidate,
+    tierBLeader,
     topCandidates: candidates.slice(0, n(policy.decision.maximumPrimaryCandidates, 5)),
+    readyCandidates: candidates.filter(item => item.finalDecision.actionable === true).slice(0, n(policy.decision.maximumPrimaryCandidates, 5)),
+    tierBWatch: candidates.filter(item => item.tier === 'TIER_B_PRIORITY_WATCH').slice(0, n(policy.decision.maximumPrimaryCandidates, 5)),
     candidates: candidates.slice(0, n(policy.decision.maximumAllCandidates, 60)),
     discoveryWatch,
     allocationPolicy: {
