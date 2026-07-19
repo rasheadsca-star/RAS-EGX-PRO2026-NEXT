@@ -3,7 +3,13 @@
   "name": "Unified Autonomous Decision Center",
   "schedule": {
     "timezone": "Africa/Cairo",
-    "tradingDays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+    "tradingDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday"
+    ],
     "intradayStartLocal": "09:45",
     "intradayEndLocal": "14:45",
     "postCloseStartLocal": "15:00",
@@ -55,5 +61,26 @@
     "fabricateMissingPlan": false,
     "publicDelayedData": true,
     "stableV11Modified": false
+  },
+  "patchVersion": "13.14.1",
+  "sessionIntegrity": {
+    "requireSingleAnalysisSession": true,
+    "blockActionableOnMismatch": true,
+    "ignoreIncompatibleLiveLayer": true
+  },
+  "strategyGate": {
+    "actionableStatuses": [
+      "ACTIVE",
+      "APPROVED",
+      "PRODUCTION"
+    ],
+    "blockResearchOnly": true,
+    "blockUnknownStatus": true
+  },
+  "supportResistance": {
+    "historicalWindowSessions": 20,
+    "historicalLabelsMustBeExplicit": true,
+    "directLevelsRequireVerifiedFlag": true,
+    "directLevelsAreOptionalForPaperReview": true
   }
 }
