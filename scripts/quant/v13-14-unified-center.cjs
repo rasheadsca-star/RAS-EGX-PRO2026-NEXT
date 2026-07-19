@@ -164,7 +164,6 @@ function main() {
 
   const stockMap = new Map(A(stockIndex.stocks).map(item => [safeTicker(item.ticker), item]));
   const riskMap = new Map(A(risk.profiles).map(item => [safeTicker(item.ticker), item]));
-  const strategyMap = new Map(A(strategyHealth.strategies).map(item => [String(item.strategyId || '').trim(), item]));
   const liveMap = new Map(A(live.candidates).map(item => [safeTicker(item.ticker), item]));
   const intradayMap = new Map(A(intraday.rows).map(item => [safeTicker(item.ticker), item]));
   const alertMap = new Map();
@@ -176,37 +175,15 @@ function main() {
     alertMap.set(ticker, list);
   }
 
-  const dailySession = dateOnly(daily.sessionId);
-  const tieredSession = dateOnly(tiered.sessionId);
-  const liveAnalysisSession = dateOnly(live.analysisSessionId);
-  const liveMarketDate = dateOnly(live.marketSnapshotDate);
-  const analysisSession = dailySession || tieredSession || liveAnalysisSession || null;
-  const marketDate = dateOnly(intraday.cairoDate) || liveMarketDate || null;
-  const sessionSources = {
-    daily: dailySession,
-    tiered: tieredSession,
-    liveAnalysis: liveAnalysisSession,
-    liveMarket: liveMarketDate,
-    intraday: dateOnly(intraday.cairoDate),
-    strategyHealth: dateOnly(strategyHealth.sessionId)
-  };
-  const analysisLayerEntries = Object.entries({ daily: dailySession, tiered: tieredSession, liveAnalysis: liveAnalysisSession })
-    .filter(([, value]) => value);
-  const mismatchedAnalysisLayers = analysisLayerEntries
-    .filter(([, value]) => analysisSession && value !== analysisSession)
-    .map(([source, value]) => ({ source, session: value }));
-  const sessionIntegrityOk = Boolean(analysisSession) && mismatchedAnalysisLayers.length === 0;
+  const analysisSession = daily.sessionId || tiered.sessionId || live.analysisSessionId || null;
+  const marketDate = intraday.cairoDate || live.marketSnapshotDate || null;
   const marketCurrent = marketDate === today;
-  const analysisCurrent = sessionIntegrityOk && analysisSession === marketDate && marketCurrent;
+  const analysisCurrent = analysisSession === marketDate && marketCurrent;
   const finalizationCurrent = finalization && finalization.targetPassed === true && finalization.sessionDate === marketDate;
-  const liveCompatible = liveAnalysisSession === analysisSession && (!liveMarketDate || liveMarketDate === marketDate);
 
   let operationalStatus = 'STALE_BLOCKED';
   let operationalLabelAr = 'البيانات غير محدثة';
-  if (!sessionIntegrityOk) {
-    operationalStatus = 'MIXED_SESSION_BLOCKED';
-    operationalLabelAr = 'موقوف — جلسات الطبقات غير متطابقة';
-  } else if (analysisCurrent) {
+  if (analysisCurrent) {
     operationalStatus = 'CONFIRMED_LATEST_SESSION';
     operationalLabelAr = 'قرار يومي مؤكد ومتابعة حية';
   } else if (marketCurrent && analysisSession) {
@@ -217,7 +194,7 @@ function main() {
   const baseCandidates = A(daily.candidates);
   const candidates = baseCandidates.map(base => {
     const ticker = safeTicker(base.ticker);
-    const l = liveCompatible ? (liveMap.get(ticker) || {}) : {};
+    const l = liveMap.get(ticker) || {};
     const i = intradayMap.get(ticker) || {};
     const stock = stockMap.get(ticker) || base.stock || {};
     const rp = riskMap.get(ticker) || base.riskProfile || {};
@@ -228,11 +205,6 @@ function main() {
     const currentPrice = n(i.price, n(l.price, n(stock.price)));
     const state = i.state || l.state || 'NO_INTRADAY_DATA';
     const stale = i.stale === true || l.stale === true || !marketCurrent;
-    const directSupportVerified = verifiedDirectSupport(stock) || verifiedDirectSupport(i);
-    const directSupport1 = directSupportVerified ? n(stock.support1, n(i.support1)) : null;
-    const directResistance1 = directSupportVerified ? n(stock.resistance1, n(i.resistance1)) : null;
-    const historicalSupport20 = n(stock.support20, n(i.support20));
-    const historicalResistance20 = n(stock.resistance20, n(i.resistance20));
     const item = {
       ticker,
       companyNameAr: base.companyNameAr || stock.companyNameAr || i.companyNameAr || '',
@@ -256,20 +228,8 @@ function main() {
       stale,
       marketCurrent,
       plan: base.plan || l.plan || null,
-      planSource: base.plan ? 'DAILY_DECISION_MODEL' : l.plan ? 'LIVE_RERANK_MODEL' : null,
-      strategyId: base.strategyId || null,
-      strategyValidationStatus,
-      strategyStatusLabelAr: strategyStatusLabel(strategyValidationStatus),
-      strategyExecutable,
-      historicalSupport20,
-      historicalResistance20,
-      support20: historicalSupport20,
-      resistance20: historicalResistance20,
-      directSupportVerified,
-      directSupport1,
-      directResistance1,
-      directSupportSource: directSupportVerified ? (stock.supportResistanceSource || i.supportResistanceSource || null) : null,
-      supportReferenceType: directSupportVerified ? 'VERIFIED_DIRECT' : 'HISTORICAL_20_SESSION',
+      support20: n(stock.support20, n(i.support20)),
+      resistance20: n(stock.resistance20, n(i.resistance20)),
       rsi14: n(stock.rsi14),
       volumeRatio20: n(stock.volumeRatio20),
       turnover: n(i.turnover),
@@ -333,13 +293,6 @@ function main() {
   const output = {
     schemaVersion: '13.14.0', patchVersion: '13.14.1', generatedAt, operationalStatus, operationalLabelAr,
     analysisSession, marketDate, marketCurrent, analysisCurrent, finalizationCurrent,
-    sessionIntegrity: {
-      ok: sessionIntegrityOk,
-      canonicalAnalysisSession: analysisSession,
-      sourceSessions: sessionSources,
-      mismatchedAnalysisLayers,
-      liveCompatible
-    },
     marketSessionState: intraday.marketSessionState || live.marketSessionState || null,
     publicDelayedData: true, liveExecutionEnabled: false, automaticOrderSubmission: false,
     finalization: finalization ? {

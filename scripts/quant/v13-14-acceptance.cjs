@@ -51,9 +51,6 @@ for (const item of center.candidates) {
     fail(`${item.ticker} invalid actionable tier`);
   }
   if (item.finalDecision.actionable === true) {
-    if (center.sessionIntegrity.ok !== true) fail(`${item.ticker} actionable with mixed sessions`);
-    if (item.strategyExecutable !== true) fail(`${item.ticker} actionable with non-executable strategy`);
-    if (/RESEARCH|PAUSED|STOP|UNKNOWN/i.test(String(item.strategyValidationStatus || ''))) fail(`${item.ticker} actionable with unsafe strategy status`);
     if (!(Number(item.plan?.entryHigh) > Number(item.plan?.stopLoss))) fail(`${item.ticker} invalid actionable plan`);
     if (item.stale === true || item.marketCurrent !== true) fail(`${item.ticker} actionable with stale market data`);
   }
