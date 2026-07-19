@@ -17,7 +17,6 @@ const FILES = {
   stockIndex: path.join(Q, 'stock-intelligence-index.json'),
   risk: path.join(Q, 'portfolio-risk-universe.json'),
   finalization: path.join(DATA, 'postclose', 'latest-v13-14.json'),
-  strategyHealth: path.join(Q, 'strategy-health.json'),
   output: path.join(Q, 'unified-autonomous-center-v13-14.json')
 };
 
@@ -76,20 +75,6 @@ function stateLabel(code) {
     NO_INTRADAY_DATA: 'لا توجد لقطة جلسة'
   })[code] || code || 'مراقبة';
 }
-function strategyStatusLabel(status) {
-  return ({
-    ACTIVE: 'نشطة',
-    APPROVED: 'معتمدة',
-    PRODUCTION: 'إنتاجية',
-    RESEARCH_ONLY: 'بحثية فقط',
-    PAUSED: 'متوقفة مؤقتًا',
-    STOPPED: 'موقوفة'
-  })[String(status || '').toUpperCase()] || status || 'غير متاحة';
-}
-function verifiedDirectSupport(row) {
-  return row?.supportResistanceVerified === true && n(row?.support1, 0) > 0 &&
-    n(row?.resistance1, 0) > n(row?.support1, 0);
-}
 function validPlan(plan) {
   return n(plan?.entryLow, 0) > 0 && n(plan?.entryHigh, 0) >= n(plan?.entryLow, 0) &&
     n(plan?.stopLoss, 0) > 0 && n(plan?.entryHigh, 0) > n(plan?.stopLoss, 0) &&
@@ -108,12 +93,6 @@ function finalDecision(candidate, context, policy) {
   }
   if (tier === 'TIER_B_PRIORITY_WATCH') {
     return { code: 'WATCH_ONLY', labelAr: 'مراقبة فقط', actionable: false, reasonAr: 'الطبقة B لا تتحول إلى شراء بسبب حركة لحظية.' };
-  }
-  if (context.sessionIntegrityOk !== true) {
-    return { code: 'BLOCKED_SESSION_MISMATCH', labelAr: 'موقوف — الجلسات غير متطابقة', actionable: false, reasonAr: 'طبقات القرار أو الترتيب الحي لا تشير إلى جلسة تحليل واحدة.' };
-  }
-  if (candidate.strategyExecutable !== true) {
-    return { code: 'BLOCKED_RESEARCH', labelAr: 'بحث ومراقبة فقط', actionable: false, reasonAr: `الاستراتيجية ${strategyStatusLabel(candidate.strategyValidationStatus)} ولم تثبت صلاحيتها للتداول الورقي التنفيذي.` };
   }
   if (!fresh && policy.decision.currentMarketRequiredForIntradayReady) {
     return { code: 'BLOCKED_STALE', labelAr: 'انتظر تحديث البيانات', actionable: false, reasonAr: 'السعر الحالي قديم أو لقطة السوق ليست من اليوم.' };
@@ -160,11 +139,9 @@ function main() {
   const stockIndex = readJson(FILES.stockIndex, { stocks: [] });
   const risk = readJson(FILES.risk, { profiles: [] });
   const finalization = readJson(FILES.finalization, null);
-  const strategyHealth = readJson(FILES.strategyHealth, { strategies: [] });
 
   const stockMap = new Map(A(stockIndex.stocks).map(item => [safeTicker(item.ticker), item]));
   const riskMap = new Map(A(risk.profiles).map(item => [safeTicker(item.ticker), item]));
-  const strategyMap = new Map(A(strategyHealth.strategies).map(item => [String(item.strategyId || '').trim(), item]));
   const liveMap = new Map(A(live.candidates).map(item => [safeTicker(item.ticker), item]));
   const intradayMap = new Map(A(intraday.rows).map(item => [safeTicker(item.ticker), item]));
   const alertMap = new Map();
@@ -176,37 +153,15 @@ function main() {
     alertMap.set(ticker, list);
   }
 
-  const dailySession = dateOnly(daily.sessionId);
-  const tieredSession = dateOnly(tiered.sessionId);
-  const liveAnalysisSession = dateOnly(live.analysisSessionId);
-  const liveMarketDate = dateOnly(live.marketSnapshotDate);
-  const analysisSession = dailySession || tieredSession || liveAnalysisSession || null;
-  const marketDate = dateOnly(intraday.cairoDate) || liveMarketDate || null;
-  const sessionSources = {
-    daily: dailySession,
-    tiered: tieredSession,
-    liveAnalysis: liveAnalysisSession,
-    liveMarket: liveMarketDate,
-    intraday: dateOnly(intraday.cairoDate),
-    strategyHealth: dateOnly(strategyHealth.sessionId)
-  };
-  const analysisLayerEntries = Object.entries({ daily: dailySession, tiered: tieredSession, liveAnalysis: liveAnalysisSession })
-    .filter(([, value]) => value);
-  const mismatchedAnalysisLayers = analysisLayerEntries
-    .filter(([, value]) => analysisSession && value !== analysisSession)
-    .map(([source, value]) => ({ source, session: value }));
-  const sessionIntegrityOk = Boolean(analysisSession) && mismatchedAnalysisLayers.length === 0;
+  const analysisSession = daily.sessionId || tiered.sessionId || live.analysisSessionId || null;
+  const marketDate = intraday.cairoDate || live.marketSnapshotDate || null;
   const marketCurrent = marketDate === today;
-  const analysisCurrent = sessionIntegrityOk && analysisSession === marketDate && marketCurrent;
+  const analysisCurrent = analysisSession === marketDate && marketCurrent;
   const finalizationCurrent = finalization && finalization.targetPassed === true && finalization.sessionDate === marketDate;
-  const liveCompatible = liveAnalysisSession === analysisSession && (!liveMarketDate || liveMarketDate === marketDate);
 
   let operationalStatus = 'STALE_BLOCKED';
   let operationalLabelAr = 'البيانات غير محدثة';
-  if (!sessionIntegrityOk) {
-    operationalStatus = 'MIXED_SESSION_BLOCKED';
-    operationalLabelAr = 'موقوف — جلسات الطبقات غير متطابقة';
-  } else if (analysisCurrent) {
+  if (analysisCurrent) {
     operationalStatus = 'CONFIRMED_LATEST_SESSION';
     operationalLabelAr = 'قرار يومي مؤكد ومتابعة حية';
   } else if (marketCurrent && analysisSession) {
@@ -217,22 +172,14 @@ function main() {
   const baseCandidates = A(daily.candidates);
   const candidates = baseCandidates.map(base => {
     const ticker = safeTicker(base.ticker);
-    const l = liveCompatible ? (liveMap.get(ticker) || {}) : {};
+    const l = liveMap.get(ticker) || {};
     const i = intradayMap.get(ticker) || {};
     const stock = stockMap.get(ticker) || base.stock || {};
     const rp = riskMap.get(ticker) || base.riskProfile || {};
-    const strategy = strategyMap.get(String(base.strategyId || '').trim()) || {};
-    const strategyValidationStatus = base.strategyValidationStatus || base.adaptive?.strategyHealthStatus || strategy.status || 'UNKNOWN';
-    const strategyExecutable = /^(ACTIVE|APPROVED|PRODUCTION)$/i.test(String(strategyValidationStatus));
     const tier = base.tier || l.baselineTier || 'TIER_B_PRIORITY_WATCH';
     const currentPrice = n(i.price, n(l.price, n(stock.price)));
     const state = i.state || l.state || 'NO_INTRADAY_DATA';
     const stale = i.stale === true || l.stale === true || !marketCurrent;
-    const directSupportVerified = verifiedDirectSupport(stock) || verifiedDirectSupport(i);
-    const directSupport1 = directSupportVerified ? n(stock.support1, n(i.support1)) : null;
-    const directResistance1 = directSupportVerified ? n(stock.resistance1, n(i.resistance1)) : null;
-    const historicalSupport20 = n(stock.support20, n(i.support20));
-    const historicalResistance20 = n(stock.resistance20, n(i.resistance20));
     const item = {
       ticker,
       companyNameAr: base.companyNameAr || stock.companyNameAr || i.companyNameAr || '',
@@ -256,20 +203,8 @@ function main() {
       stale,
       marketCurrent,
       plan: base.plan || l.plan || null,
-      planSource: base.plan ? 'DAILY_DECISION_MODEL' : l.plan ? 'LIVE_RERANK_MODEL' : null,
-      strategyId: base.strategyId || null,
-      strategyValidationStatus,
-      strategyStatusLabelAr: strategyStatusLabel(strategyValidationStatus),
-      strategyExecutable,
-      historicalSupport20,
-      historicalResistance20,
-      support20: historicalSupport20,
-      resistance20: historicalResistance20,
-      directSupportVerified,
-      directSupport1,
-      directResistance1,
-      directSupportSource: directSupportVerified ? (stock.supportResistanceSource || i.supportResistanceSource || null) : null,
-      supportReferenceType: directSupportVerified ? 'VERIFIED_DIRECT' : 'HISTORICAL_20_SESSION',
+      support20: n(stock.support20, n(i.support20)),
+      resistance20: n(stock.resistance20, n(i.resistance20)),
       rsi14: n(stock.rsi14),
       volumeRatio20: n(stock.volumeRatio20),
       turnover: n(i.turnover),
@@ -288,7 +223,7 @@ function main() {
       sourceMode: i.sourceMode || 'public_delayed',
       source: i.source || l.source || null
     };
-    item.finalDecision = finalDecision(item, { operationalStatus, analysisSession, marketDate, sessionIntegrityOk }, policy);
+    item.finalDecision = finalDecision(item, { operationalStatus, analysisSession, marketDate }, policy);
     item.priorityScore = round(priority(item, policy), 2);
     item.riskPct = tier === 'STRICT_PAPER' ? n(policy.decision.strictRiskPct, 0.5) : n(policy.decision.tierARiskPct, 0.25);
     return item;
@@ -324,22 +259,13 @@ function main() {
     ready: candidates.filter(item => item.finalDecision.code === 'READY_FOR_PAPER_REVIEW').length,
     wait: candidates.filter(item => item.finalDecision.code === 'WAIT_FOR_ENTRY').length,
     blocked: candidates.filter(item => item.finalDecision.code.startsWith('BLOCKED')).length,
-    researchOnly: candidates.filter(item => item.finalDecision.code === 'BLOCKED_RESEARCH').length,
-    sessionMismatchBlocked: candidates.filter(item => item.finalDecision.code === 'BLOCKED_SESSION_MISMATCH').length,
     unreadAlerts: A(alerts.newAlerts).length,
     discoveryWatch: discoveryWatch.length
   };
 
   const output = {
-    schemaVersion: '13.14.0', patchVersion: '13.14.1', generatedAt, operationalStatus, operationalLabelAr,
+    schemaVersion: '13.14.0', generatedAt, operationalStatus, operationalLabelAr,
     analysisSession, marketDate, marketCurrent, analysisCurrent, finalizationCurrent,
-    sessionIntegrity: {
-      ok: sessionIntegrityOk,
-      canonicalAnalysisSession: analysisSession,
-      sourceSessions: sessionSources,
-      mismatchedAnalysisLayers,
-      liveCompatible
-    },
     marketSessionState: intraday.marketSessionState || live.marketSessionState || null,
     publicDelayedData: true, liveExecutionEnabled: false, automaticOrderSubmission: false,
     finalization: finalization ? {
@@ -358,14 +284,14 @@ function main() {
       maximumSectorWeightPct: n(policy.decision.maximumSectorWeightPct, 30),
       maximumLiquidityParticipationPct: n(policy.decision.maximumLiquidityParticipationPct, 1)
     },
-    warningAr: 'هذه الصفحة توحد الطبقات والسعر والخطة والتنبيهات. التنفيذ الحقيقي مغلق. الدعم والمقاومة التاريخيان ليسا مستويات مباشر، والاستراتيجيات البحثية لا تصبح قابلة للتنفيذ.'
+    warningAr: 'هذه الصفحة توحد الطبقات والسعر والخطة والتنبيهات. لا تضمن الربح ولا ترسل أوامر حقيقية.'
   };
   writeJson(FILES.output, output);
-  console.log(`V13.14.1 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
+  console.log(`V13.14 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
 }
 
 try { main(); }
 catch (error) {
-  console.error(`V13.14.1 unified center failed: ${error.stack || error.message}`);
+  console.error(`V13.14 unified center failed: ${error.stack || error.message}`);
   process.exit(1);
 }
