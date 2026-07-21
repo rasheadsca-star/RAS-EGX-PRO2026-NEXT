@@ -1,146 +1,360 @@
-/*
-EGX Pro Hub V9.8.7 — Data Gateway & Source Resilience
-Pipeline:
-Source Adapters -> Validation -> Reconciliation -> Last Good Snapshot -> data/*.json
-*/
-const fs=require("fs");
-const path=require("path");
-const cp=require("child_process");
+/* EGX Pro V13.17.1 — Production Data Gateway
+ * Fetch -> sanitize -> OHLC integrity gate -> atomic snapshot -> last-good fallback.
+ * This gateway never promotes a snapshot based on row count alone.
+ */
+'use strict';
 
-const RUN_AT=new Date().toISOString();
-const FULL_ROWS=Number(process.env.EGX_GATEWAY_FULL_ROWS||200);
-const CONDITIONAL_ROWS=Number(process.env.EGX_GATEWAY_CONDITIONAL_ROWS||80);
-const UNIVERSE=Number(process.env.EGX_EXPECTED_UNIVERSE||224);
+const fs = require('fs');
+const path = require('path');
+const cp = require('child_process');
+const crypto = require('crypto');
 
-function read(f,d){try{return JSON.parse(fs.readFileSync(f,"utf8"))}catch{return d}}
-function write(f,o){fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(o,null,2),"utf8")}
-function rowsOf(m){return Array.isArray(m?.rows)?m.rows:[]}
-function n(v){const x=Number(v);return Number.isFinite(x)?x:0}
-function ageMinutes(t){if(!t)return null;const d=new Date(t);if(isNaN(d))return null;return Number(((Date.now()-d.getTime())/60000).toFixed(1))}
-function pct(rows,total=UNIVERSE){return total?Number((rows/total*100).toFixed(1)):0}
-function sourceName(fetch, status, health){return fetch.sourceName||status.sourceName||health.sourceName||fetch.mode||status.mode||"unknown"}
-function classify(rows, realFetch){
-  if(realFetch && rows>=FULL_ROWS)return {accepted:true,status:"accepted_full",level:"ok",fallback:false};
-  if(realFetch && rows>=CONDITIONAL_ROWS)return {accepted:true,status:"accepted_partial",level:"warn",fallback:false};
-  return {accepted:false,status:"rejected_low_coverage",level:"bad",fallback:true};
-}
-function buildMarketFromLastGood(lastGood){
-  const rows=rowsOf(lastGood);
-  return {ok:true,generatedAt:RUN_AT,updatedAt:lastGood.updatedAt||lastGood.generatedAt||RUN_AT,source:"last_good_market_snapshot",sourceUrl:lastGood.sourceUrl||null,rows,note:"Degraded mode: current public fetch failed; using last good snapshot."};
-}
-function updateAlerts(report, previous){
-  const prevFailures=n(previous.consecutiveFailures);
-  const failed=report.level==="bad"||report.status==="degraded_last_good"||report.status==="failed_no_snapshot";
-  const recovered=!failed && prevFailures>0;
-  const consecutiveFailures=failed?prevFailures+1:0;
-  const alerts=[];
-  if(failed&&consecutiveFailures>=2)alerts.push({level:"critical",type:"source_failure",title:"فشل جلب المصدر الخارجي أكثر من مرة",text:`Consecutive failures: ${consecutiveFailures}`,action:"راجع مصدر مباشر أو EGX_MARKET_JSON_URL"});
-  else if(failed)alerts.push({level:"warning",type:"source_degraded",title:"تم استخدام وضع Degraded",text:"المصدر الحالي لم ينجح بما يكفي",action:"راجع بوابة البيانات"});
-  if(recovered)alerts.push({level:"info",type:"source_recovered",title:"تم استعادة الجلب الخارجي",text:"المصدر عاد للعمل بعد فشل سابق",action:"راجع تدقيق الأسعار"});
-  return {ok:true,generatedAt:RUN_AT,consecutiveFailures,recovered,alerts,lastGatewayStatus:report.status,lastGatewayLevel:report.level};
-}
-function writeHealth(report, marketRows){
-  write("data/source-health.json",{
-    ok:report.accepted||report.fallbackUsed,
-    generatedAt:RUN_AT,
-    lastSuccessAt:report.lastGoodAt||RUN_AT,
-    mode:report.mode,
-    sourceName:report.selectedSource,
-    sourceUrl:report.selectedUrl||null,
-    marketRows,
-    totalUniverse:UNIVERSE,
-    universeCoveragePct:pct(marketRows),
-    coveragePct:pct(marketRows),
-    fallbackUsed:report.fallbackUsed,
-    lastGoodSnapshotUsed:report.lastGoodSnapshotUsed,
-    delayed:true
-  });
-}
-function main(){
-  const beforeMarket=read("data/market.json",{});
-  const beforeLastGood=read("data/last-good-market.json",null);
-  const previousAlerts=read("data/source-alerts.json",{});
-  const preRows=rowsOf(beforeMarket).length;
+const RUN_AT = new Date().toISOString();
+const FULL_ROWS = Number(process.env.EGX_GATEWAY_FULL_ROWS || 180);
+const CONDITIONAL_ROWS = Number(process.env.EGX_GATEWAY_CONDITIONAL_ROWS || 100);
+const UNIVERSE = Number(process.env.EGX_EXPECTED_UNIVERSE || 224);
+const MIN_PRICE_VALID_PCT = Number(process.env.EGX_GATEWAY_MIN_PRICE_VALID_PCT || 98);
+const MIN_OHLC_VALID_PCT = Number(process.env.EGX_GATEWAY_MIN_OHLC_VALID_PCT || 80);
+const MIN_PARTIAL_OHLC_VALID_PCT = Number(process.env.EGX_GATEWAY_MIN_PARTIAL_OHLC_VALID_PCT || 65);
+const MAX_LAST_GOOD_AGE_MINUTES = Number(process.env.EGX_GATEWAY_MAX_LAST_GOOD_AGE_MINUTES || 10080);
 
-  let fetchExit=null, fetchStdout="", fetchStderr="";
-  if(fs.existsSync("scripts/fetch-market-data.js")){
-    const res=cp.spawnSync(process.execPath,["scripts/fetch-market-data.js"],{encoding:"utf8",timeout:Number(process.env.EGX_FETCH_TIMEOUT_MS||240000),env:process.env});
-    fetchExit=res.status;
-    fetchStdout=res.stdout||"";
-    fetchStderr=res.stderr||"";
+function read(file, fallback) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
+}
+
+function writeAtomic(file, value) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temp = `${file}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(temp, JSON.stringify(value, null, 2), 'utf8');
+  fs.renameSync(temp, file);
+}
+
+function rowsOf(value) { return Array.isArray(value?.rows) ? value.rows : []; }
+function finite(value) { const number = Number(value); return Number.isFinite(number) ? number : null; }
+function positive(value) { const number = finite(value); return number !== null && number > 0 ? number : null; }
+function pct(part, total) { return total ? Number((part / total * 100).toFixed(2)) : 0; }
+function ageMinutes(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? Number(((Date.now() - date.getTime()) / 60000).toFixed(1)) : null;
+}
+function cairoDate() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date()).reduce((acc, part) => (acc[part.type] = part.value, acc), {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+function hash(value) {
+  return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+function symbolOf(row) {
+  return String(row?.symbol || row?.ticker || '').trim().toUpperCase();
+}
+
+function inspectRow(row) {
+  const price = positive(row?.price ?? row?.last ?? row?.close);
+  const open = positive(row?.open);
+  const high = positive(row?.high);
+  const low = positive(row?.low);
+  const previousClose = positive(row?.previousClose);
+  const volume = finite(row?.volume);
+  const eps = price ? Math.max(price * 1e-6, 1e-9) : 1e-9;
+  const ohlcComplete = Boolean(price && open && high && low);
+  const ohlcValid = Boolean(ohlcComplete && high + eps >= Math.max(price, open, low) && low - eps <= Math.min(price, open, high));
+  const previousCloseValid = previousClose === null || (price && previousClose / price >= 0.2 && previousClose / price <= 5);
+  const volumeValid = volume === null || volume >= 0;
+  const reasons = [];
+  if (!symbolOf(row)) reasons.push('missing_symbol');
+  if (!price) reasons.push('invalid_price');
+  if (ohlcComplete && !ohlcValid) reasons.push('invalid_ohlc_relation');
+  if (!previousCloseValid) reasons.push('implausible_previous_close');
+  if (!volumeValid) reasons.push('negative_volume');
+  return { price, open, high, low, previousClose, volume, ohlcComplete, ohlcValid, previousCloseValid, volumeValid, reasons };
+}
+
+function sanitizeRow(row) {
+  const inspection = inspectRow(row);
+  if (!inspection.price || !symbolOf(row)) return null;
+  const clean = { ...row, symbol: symbolOf(row), price: inspection.price, last: inspection.price };
+  if (!inspection.ohlcValid) {
+    clean.open = null;
+    clean.high = null;
+    clean.low = null;
+    clean.ohlcQuality = inspection.ohlcComplete ? 'INVALID_REMOVED' : 'INCOMPLETE';
+  } else {
+    clean.open = inspection.open;
+    clean.high = inspection.high;
+    clean.low = inspection.low;
+    clean.ohlcQuality = 'VALID';
+  }
+  clean.previousClose = inspection.previousCloseValid ? inspection.previousClose : null;
+  if (!inspection.volumeValid) clean.volume = null;
+  clean.marketDataQualityVersion = '13.17.1';
+  return clean;
+}
+
+function uniqueRows(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const clean = sanitizeRow(row);
+    if (!clean) continue;
+    const symbol = symbolOf(clean);
+    if (!map.has(symbol)) map.set(symbol, clean);
+  }
+  return [...map.values()];
+}
+
+function qualityOf(rawRows) {
+  const rows = Array.isArray(rawRows) ? rawRows : [];
+  const seen = new Set();
+  let duplicateSymbols = 0;
+  let priceValidRows = 0;
+  let ohlcCompleteRows = 0;
+  let ohlcValidRows = 0;
+  let invalidOhlcRows = 0;
+  let invalidPreviousCloseRows = 0;
+  let invalidVolumeRows = 0;
+  const invalidExamples = [];
+  for (const row of rows) {
+    const symbol = symbolOf(row);
+    if (symbol && seen.has(symbol)) duplicateSymbols += 1;
+    if (symbol) seen.add(symbol);
+    const inspection = inspectRow(row);
+    if (inspection.price) priceValidRows += 1;
+    if (inspection.ohlcComplete) ohlcCompleteRows += 1;
+    if (inspection.ohlcValid) ohlcValidRows += 1;
+    if (inspection.ohlcComplete && !inspection.ohlcValid) invalidOhlcRows += 1;
+    if (!inspection.previousCloseValid) invalidPreviousCloseRows += 1;
+    if (!inspection.volumeValid) invalidVolumeRows += 1;
+    if (inspection.reasons.length && invalidExamples.length < 25) invalidExamples.push({ symbol, reasons: inspection.reasons, price: row?.price ?? row?.last, open: row?.open, high: row?.high, low: row?.low });
+  }
+  return {
+    totalRows: rows.length,
+    uniqueSymbols: seen.size,
+    duplicateSymbols,
+    priceValidRows,
+    priceValidPct: pct(priceValidRows, rows.length),
+    ohlcCompleteRows,
+    ohlcValidRows,
+    ohlcValidPct: pct(ohlcValidRows, Math.max(priceValidRows, 1)),
+    invalidOhlcRows,
+    invalidPreviousCloseRows,
+    invalidVolumeRows,
+    invalidExamples
+  };
+}
+
+function classify(quality, realFetch) {
+  const full = realFetch && quality.uniqueSymbols >= FULL_ROWS && quality.priceValidPct >= MIN_PRICE_VALID_PCT && quality.ohlcValidPct >= MIN_OHLC_VALID_PCT && quality.invalidOhlcRows === 0;
+  const partial = realFetch && quality.uniqueSymbols >= CONDITIONAL_ROWS && quality.priceValidPct >= MIN_PRICE_VALID_PCT && quality.ohlcValidPct >= MIN_PARTIAL_OHLC_VALID_PCT && quality.invalidOhlcRows === 0;
+  if (full) return { accepted: true, executionGrade: true, status: 'accepted_execution_grade', level: 'ok' };
+  if (partial) return { accepted: true, executionGrade: false, status: 'accepted_operational_partial', level: 'warn' };
+  return { accepted: false, executionGrade: false, status: 'rejected_quality_or_coverage', level: 'bad' };
+}
+
+function sourceName(fetchReport, fetchStatus, sourceHealth) {
+  return fetchReport.sourceName || fetchStatus.sourceName || sourceHealth.sourceName || fetchReport.mode || fetchStatus.mode || 'unknown';
+}
+
+function validLastGood(snapshot) {
+  if (!snapshot || !rowsOf(snapshot).length) return { valid: false, reason: 'missing_snapshot', quality: qualityOf([]), age: null };
+  const quality = qualityOf(rowsOf(snapshot));
+  const age = ageMinutes(snapshot.updatedAt || snapshot.generatedAt);
+  const valid = quality.uniqueSymbols >= CONDITIONAL_ROWS && quality.priceValidPct >= MIN_PRICE_VALID_PCT && quality.invalidOhlcRows === 0 && quality.ohlcValidPct >= MIN_PARTIAL_OHLC_VALID_PCT && (age === null || age <= MAX_LAST_GOOD_AGE_MINUTES);
+  return { valid, reason: valid ? null : 'snapshot_failed_quality_or_age', quality, age };
+}
+
+function updateAlerts(report, previous) {
+  const priorFailures = Number(previous?.consecutiveFailures || 0);
+  const failed = report.level === 'bad' || report.fallbackUsed;
+  const consecutiveFailures = failed ? priorFailures + 1 : 0;
+  const alerts = [];
+  if (report.quality.invalidOhlcRows > 0) alerts.push({ level: 'critical', type: 'invalid_ohlc', title: 'تم رفض علاقات OHLC غير منطقية', text: `${report.quality.invalidOhlcRows} صفوف`, action: 'راجع مصدر الأسعار قبل أي قرار تنفيذي' });
+  if (report.fallbackUsed) alerts.push({ level: 'warning', type: 'last_good_fallback', title: 'تم استخدام آخر لقطة سليمة', text: `العمر ${report.lastGoodAgeMinutes ?? '—'} دقيقة`, action: 'لا تعتمد على الإغلاق حتى عودة المصدر الحالي' });
+  if (!report.ok) alerts.push({ level: 'critical', type: 'gateway_blocked', title: 'بوابة البيانات أوقفت التحديث', text: report.message, action: 'القرار التنفيذي مغلق تلقائيًا' });
+  if (report.executionGrade) alerts.push({ level: 'info', type: 'execution_grade', title: 'بيانات السوق اجتازت بوابة الجودة', text: `OHLC صالح ${report.quality.ohlcValidPct}%`, action: 'يمكن استكمال بوابات الجلسة والأدلة' });
+  return { ok: true, generatedAt: RUN_AT, consecutiveFailures, recovered: !failed && priorFailures > 0, alerts, lastGatewayStatus: report.status, lastGatewayLevel: report.level };
+}
+
+function main() {
+  const beforeMarket = read('data/market.json', {});
+  const beforeLastGood = read('data/last-good-market.json', null);
+  const previousAlerts = read('data/source-alerts.json', {});
+
+  let fetchExit = null;
+  let fetchStdout = '';
+  let fetchStderr = '';
+  if (fs.existsSync('scripts/fetch-market-data.js')) {
+    const result = cp.spawnSync(process.execPath, ['scripts/fetch-market-data.js'], {
+      encoding: 'utf8', timeout: Number(process.env.EGX_FETCH_TIMEOUT_MS || 360000), env: process.env
+    });
+    fetchExit = result.status;
+    fetchStdout = result.stdout || '';
+    fetchStderr = result.stderr || '';
   }
 
-  const afterMarket=read("data/market.json",{});
-  const fetchReport=read("data/source-fetch-report.json",{});
-  const fetchStatus=read("data/fetch-status.json",{});
-  const sourceHealth=read("data/source-health.json",{});
-  const afterRows=rowsOf(afterMarket).length;
-  const realFetch=!!(fetchReport.realFetch||fetchStatus.realFetch);
-  const selected=sourceName(fetchReport,fetchStatus,sourceHealth);
-  const selectedUrl=fetchReport.selected?.url||fetchStatus.sourceUrl||sourceHealth.sourceUrl||null;
-  const classifyResult=classify(afterRows, realFetch);
-  let report={
-    ok:false,
-    engine:"v9_8_7_data_gateway",
-    generatedAt:RUN_AT,
-    mode:"multi_source_gateway",
-    status:classifyResult.status,
-    level:classifyResult.level,
-    accepted:classifyResult.accepted,
-    selectedSource:selected,
+  const candidateMarket = read('data/market.json', {});
+  const fetchReport = read('data/source-fetch-report.json', {});
+  const fetchStatus = read('data/fetch-status.json', {});
+  const sourceHealth = read('data/source-health.json', {});
+  const rawRows = rowsOf(candidateMarket);
+  const quality = qualityOf(rawRows);
+  const sanitizedRows = uniqueRows(rawRows);
+  const realFetch = Boolean(fetchReport.realFetch || fetchStatus.realFetch);
+  const classification = classify(quality, realFetch);
+  const selectedSource = sourceName(fetchReport, fetchStatus, sourceHealth);
+  const selectedUrl = fetchReport.selected?.url || fetchStatus.sourceUrl || sourceHealth.sourceUrl || candidateMarket.sourceUrl || null;
+
+  const report = {
+    ok: false,
+    engine: 'v13.17.1_production_data_gateway',
+    generatedAt: RUN_AT,
+    marketDate: cairoDate(),
+    status: classification.status,
+    level: classification.level,
+    accepted: classification.accepted,
+    executionGrade: classification.executionGrade,
+    selectedSource,
     selectedUrl,
-    marketRows:afterRows,
-    expectedUniverse:UNIVERSE,
-    coveragePct:pct(afterRows),
-    fallbackUsed:false,
-    lastGoodSnapshotUsed:false,
-    lastGoodAt:null,
-    lastGoodAgeMinutes:null,
+    marketRows: sanitizedRows.length,
+    expectedUniverse: UNIVERSE,
+    coveragePct: pct(sanitizedRows.length, UNIVERSE),
+    fallbackUsed: false,
+    lastGoodSnapshotUsed: false,
+    lastGoodAt: null,
+    lastGoodAgeMinutes: null,
+    quality,
+    thresholds: { FULL_ROWS, CONDITIONAL_ROWS, MIN_PRICE_VALID_PCT, MIN_OHLC_VALID_PCT, MIN_PARTIAL_OHLC_VALID_PCT, MAX_LAST_GOOD_AGE_MINUTES },
     fetchExit,
-    message:"",
-    sources:fetchReport.attempts||[],
-    fetchStdout:fetchStdout.slice(-4000),
-    fetchStderr:fetchStderr.slice(-4000)
+    fetchStdout: fetchStdout.slice(-4000),
+    fetchStderr: fetchStderr.slice(-4000),
+    message: ''
   };
 
-  if(classifyResult.accepted){
-    const snapshot={...afterMarket,ok:true,generatedAt:RUN_AT,updatedAt:RUN_AT,source:selected,sourceUrl:selectedUrl,rows:rowsOf(afterMarket),gatewayAccepted:true};
-    write("data/last-good-market.json",snapshot);
-    report.ok=true;
-    report.message=afterRows>=FULL_ROWS?"Full gateway acceptance":"Conditional gateway acceptance; coverage is enough but not complete.";
-    report.lastGoodAt=RUN_AT;
-    report.lastGoodAgeMinutes=0;
-    writeHealth(report,afterRows);
-    write("data/fetch-status.json",{...fetchStatus,ok:true,realFetch:true,generatedAt:RUN_AT,mode:"multi_source_gateway",sourceName:selected,marketRows:afterRows,coveragePct:report.coveragePct,message:report.message});
-  }else{
-    const lastGood=beforeLastGood&&rowsOf(beforeLastGood).length?beforeLastGood:(preRows>=CONDITIONAL_ROWS?{...beforeMarket,generatedAt:beforeMarket.generatedAt||beforeMarket.updatedAt||RUN_AT,updatedAt:beforeMarket.updatedAt||beforeMarket.generatedAt||RUN_AT,rows:rowsOf(beforeMarket),source:beforeMarket.source||"pre_gateway_market"}:null);
-    if(lastGood&&rowsOf(lastGood).length>=CONDITIONAL_ROWS){
-      const lgRows=rowsOf(lastGood).length;
-      const restored=buildMarketFromLastGood(lastGood);
-      write("data/market.json",restored);
-      report.ok=true;
-      report.status="degraded_last_good";
-      report.level="warn";
-      report.fallbackUsed=true;
-      report.lastGoodSnapshotUsed=true;
-      report.marketRows=lgRows;
-      report.coveragePct=pct(lgRows);
-      report.lastGoodAt=lastGood.updatedAt||lastGood.generatedAt||null;
-      report.lastGoodAgeMinutes=ageMinutes(report.lastGoodAt);
-      report.message="Current source fetch was rejected; last good snapshot restored.";
-      writeHealth(report,lgRows);
-      write("data/fetch-status.json",{...fetchStatus,ok:true,realFetch:false,generatedAt:RUN_AT,mode:"degraded_last_good_snapshot",sourceName:"last_good_market_snapshot",marketRows:lgRows,coveragePct:report.coveragePct,message:report.message});
-    }else{
-      report.ok=false;
-      report.status="failed_no_snapshot";
-      report.level="bad";
-      report.message="Current source fetch failed and no acceptable last-good snapshot exists.";
-      write("data/fetch-status.json",{...fetchStatus,ok:false,realFetch:false,generatedAt:RUN_AT,mode:"gateway_failed_no_snapshot",marketRows:afterRows,coveragePct:pct(afterRows),message:report.message});
+  if (classification.accepted) {
+    const market = {
+      ...candidateMarket,
+      ok: true,
+      generatedAt: RUN_AT,
+      updatedAt: RUN_AT,
+      marketDate: report.marketDate,
+      source: selectedSource,
+      sourceUrl: selectedUrl,
+      rows: sanitizedRows,
+      gatewayAccepted: true,
+      executionGrade: classification.executionGrade,
+      marketDataQualityVersion: '13.17.1',
+      qualitySummary: quality,
+      snapshotHash: hash(sanitizedRows),
+      note: classification.executionGrade ? 'Production-grade public/delayed snapshot passed coverage and OHLC integrity gates. Manual broker verification remains required.' : 'Operational partial snapshot accepted for monitoring only; post-close execution gate remains closed.'
+    };
+    writeAtomic('data/market.json', market);
+    report.ok = true;
+    report.message = classification.executionGrade ? 'Execution-grade market snapshot accepted.' : 'Operational partial snapshot accepted; execution grade not reached.';
+    if (classification.executionGrade) {
+      writeAtomic('data/last-good-market.json', { ...market, lastGoodPromotedAt: RUN_AT, immutableSnapshotHash: market.snapshotHash });
+      report.lastGoodAt = RUN_AT;
+      report.lastGoodAgeMinutes = 0;
+    }
+  } else {
+    writeAtomic('data/quarantine/latest-rejected-market.json', {
+      generatedAt: RUN_AT,
+      source: selectedSource,
+      sourceUrl: selectedUrl,
+      quality,
+      sampleRows: rawRows.slice(0, 40),
+      reason: classification.status
+    });
+    const lastGoodCheck = validLastGood(beforeLastGood);
+    const previousCheck = validLastGood(beforeMarket);
+    const fallback = lastGoodCheck.valid ? beforeLastGood : previousCheck.valid ? beforeMarket : null;
+    const fallbackCheck = lastGoodCheck.valid ? lastGoodCheck : previousCheck;
+    if (fallback) {
+      const fallbackRows = uniqueRows(rowsOf(fallback));
+      writeAtomic('data/market.json', {
+        ...fallback,
+        ok: true,
+        generatedAt: RUN_AT,
+        source: 'last_good_market_snapshot',
+        rows: fallbackRows,
+        gatewayAccepted: false,
+        executionGrade: false,
+        fallbackUsed: true,
+        marketDataQualityVersion: '13.17.1',
+        note: 'Current source rejected by quality gate. A previously validated snapshot is shown for monitoring only; post-close execution is blocked.'
+      });
+      report.ok = true;
+      report.status = 'degraded_validated_last_good';
+      report.level = 'warn';
+      report.fallbackUsed = true;
+      report.lastGoodSnapshotUsed = true;
+      report.marketRows = fallbackRows.length;
+      report.coveragePct = pct(fallbackRows.length, UNIVERSE);
+      report.lastGoodAt = fallback.updatedAt || fallback.generatedAt || null;
+      report.lastGoodAgeMinutes = fallbackCheck.age;
+      report.message = 'Current source rejected; validated last-good snapshot restored for monitoring only.';
+    } else {
+      writeAtomic('data/market.json', {
+        ok: false,
+        generatedAt: RUN_AT,
+        updatedAt: candidateMarket.updatedAt || RUN_AT,
+        source: selectedSource,
+        sourceUrl: selectedUrl,
+        rows: sanitizedRows,
+        gatewayAccepted: false,
+        executionGrade: false,
+        marketDataQualityVersion: '13.17.1',
+        qualitySummary: quality,
+        note: 'No validated last-good snapshot exists. Data is quarantined and all execution gates are closed.'
+      });
+      report.ok = false;
+      report.status = 'blocked_no_valid_snapshot';
+      report.level = 'bad';
+      report.message = 'Current source failed quality checks and no validated fallback exists.';
     }
   }
 
-  write("data/source-gateway-report.json",report);
-  write("data/source-alerts.json",updateAlerts(report,previousAlerts));
-  console.log("Data Gateway", {status:report.status, rows:report.marketRows, coverage:report.coveragePct, fallback:report.fallbackUsed});
+  writeAtomic('data/market-quality-report.json', report);
+  writeAtomic('data/source-gateway-report.json', report);
+  writeAtomic('data/source-alerts.json', updateAlerts(report, previousAlerts));
+  writeAtomic('data/source-health.json', {
+    ok: report.ok,
+    generatedAt: RUN_AT,
+    lastSuccessAt: report.executionGrade ? RUN_AT : report.lastGoodAt,
+    mode: report.status,
+    sourceName: report.selectedSource,
+    sourceUrl: report.selectedUrl,
+    marketRows: report.marketRows,
+    totalUniverse: UNIVERSE,
+    universeCoveragePct: report.coveragePct,
+    coveragePct: report.coveragePct,
+    executionGrade: report.executionGrade,
+    fallbackUsed: report.fallbackUsed,
+    delayed: true,
+    quality: report.quality
+  });
+  writeAtomic('data/fetch-status.json', {
+    ...fetchStatus,
+    ok: report.ok,
+    realFetch: realFetch && report.accepted,
+    generatedAt: RUN_AT,
+    mode: report.status,
+    sourceName: report.fallbackUsed ? 'last_good_market_snapshot' : selectedSource,
+    marketRows: report.marketRows,
+    coveragePct: report.coveragePct,
+    executionGrade: report.executionGrade,
+    message: report.message
+  });
+
+  console.log('V13.17.1 Data Gateway', {
+    status: report.status,
+    executionGrade: report.executionGrade,
+    rows: report.marketRows,
+    coveragePct: report.coveragePct,
+    ohlcValidPct: report.quality.ohlcValidPct,
+    invalidOhlcRows: report.quality.invalidOhlcRows,
+    fallbackUsed: report.fallbackUsed
+  });
 }
+
 main();

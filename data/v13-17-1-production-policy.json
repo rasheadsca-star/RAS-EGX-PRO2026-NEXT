@@ -1,0 +1,41 @@
+{
+  "version": "13.17.1",
+  "releaseChannel": "production-gated",
+  "systemRole": "production_decision_support",
+  "marketData": {
+    "minimumExecutionGradeRows": 180,
+    "minimumOperationalRows": 100,
+    "minimumPriceValidityPct": 98,
+    "minimumExecutionGradeOhlcPct": 80,
+    "minimumOperationalOhlcPct": 65,
+    "rejectInvalidOhlcRelations": true,
+    "promoteLastGoodOnlyWhenExecutionGrade": true,
+    "atomicWrites": true,
+    "quarantineRejectedSnapshots": true
+  },
+  "decisionExecution": {
+    "automaticBrokerOrders": false,
+    "manualBrokerConfirmationRequired": true,
+    "manualPriceVerificationRequired": true,
+    "allowManualExecutionReviewOnlyWhenAllGatesPass": true,
+    "requiredGates": [
+      "execution_grade_market_data",
+      "finalized_current_session",
+      "session_integrity",
+      "strategy_evidence_gate",
+      "candidate_risk_gate"
+    ]
+  },
+  "moneyFlow": {
+    "productionRole": "confirmation_only",
+    "affectsRanking": false,
+    "affectsStrategyRules": false,
+    "identityInference": false
+  },
+  "safety": {
+    "neverBypassFinalization": true,
+    "neverConvertProvisionalToFinal": true,
+    "neverUseRejectedSnapshotForExecution": true,
+    "preserveTierOrder": "STRICT_THEN_A_THEN_B"
+  }
+}

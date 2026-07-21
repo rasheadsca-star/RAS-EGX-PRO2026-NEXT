@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#07121e">
-  <title>EGX Pro V13.17 — واجهة التشغيل الموحدة</title>
+  <title>EGX Pro V13.17.1 — واجهة التشغيل الموحدة</title>
   <style>
     :root{
       color-scheme:dark;
@@ -60,18 +60,18 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <h1>EGX Pro V13.17</h1>
+      <h1>EGX Pro V13.17.1</h1>
       <small>واجهة تشغيل موحدة<br>صفحة قرار واحدة محدثة آليًا</small>
     </div>
     <nav class="nav">
       <div class="group">صفحة العمل اليومية</div>
-      <button class="active" data-view="center1314">مركز القرار الموحد V13.17</button>
+      <button class="active" data-view="center1314">مركز القرار الموحد V13.17.1</button>
       <div class="group">أدوات تشخيصية فقط</div>
       <button data-view="links">فتح الأدوات القديمة</button>
     </nav>
     <div class="side-footer">
-      التنفيذ الحقيقي مغلق.<br>
-      البيانات والتوصيات للبحث والتداول الورقي فقط.
+      تشغيلي محكوم ببوابات الجودة والجلسة والأدلة.<br>لا تُرسل أوامر للوسيط تلقائيًا.<br>
+      المراجعة التنفيذية اليدوية لا تُفتح إلا بعد اجتياز جميع البوابات.
     </div>
   </aside>
 
@@ -90,8 +90,8 @@
 
     <div class="content">
       <section class="view active" id="view-center1314">
-        <div class="hero"><div><h2>مركز القرار الموحد V13.17</h2><div class="muted">الصفحة الوحيدة للعمل اليومي: جميع الطبقات والسعر والدخول والأهداف والوقف والرسم والتنبيهات.</div></div><a class="btn primary" href="unified-decision-center.html" target="_blank">فتح في نافذة مستقلة</a></div>
-        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.17 Unified Autonomous Decision Center" src="unified-decision-center.html?embedded=1"></iframe></div></div>
+        <div class="hero"><div><h2>مركز القرار الموحد V13.17.1</h2><div class="muted">الصفحة الوحيدة للعمل اليومي: جميع الطبقات والسعر والدخول والأهداف والوقف والرسم والتنبيهات.</div></div><a class="btn primary" href="unified-decision-center.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.17.1 Unified Autonomous Decision Center" src="unified-decision-center.html?embedded=1"></iframe></div></div>
       </section>
 
       <section class="view" id="view-daily1311">
@@ -295,7 +295,7 @@ function safeRender(name, fn) {
     fn();
   } catch (error) {
     state.uiErrors.push({ name, message: error?.message || String(error) });
-    console.error(`[V13.17] ${name} failed`, error);
+    console.error(`[V13.17.1] ${name} failed`, error);
   }
 }
 
@@ -468,7 +468,7 @@ function openDrawer(item) {
     </div>
     ${item.reason ? `<div class="section-body"><h3>سبب الترشيح</h3><div class="reason">${E(item.reason)}</div></div>` : ''}
     <div class="section-body"><h3>${missing.length ? 'الشروط غير المكتملة' : 'حالة البوابات'}</h3>
-    ${missing.length ? `<div class="fail">${missing.map(E).join('<br>')}</div>` : '<div class="notice">اجتاز الشروط المعروضة. التسجيل ورقي فقط والتنفيذ الحقيقي مغلق.</div>'}</div>
+    ${missing.length ? `<div class="fail">${missing.map(E).join('<br>')}</div>` : '<div class="notice">اجتاز الشروط المعروضة. التسجيل ورقي فقط ولا أوامر وسيط تلقائية.</div>'}</div>
     <div class="notice">هذه نتيجة بحثية وليست ضمانًا للعائد أو أمر شراء فعلي. مستويات الدعم والمقاومة المعروضة تاريخية وليست من مباشر.</div>
   `;
   document.getElementById('drawerBackdrop').classList.add('open');
@@ -488,7 +488,7 @@ function renderDashboard() {
     `<span class="pill ${connected === total ? 'good' : 'warn'}">المصادر ${connected}/${total}</span>
      <span class="pill info">جلسة موحدة ${E(session)}</span>
      <span class="pill ${health.consistent ? 'good' : 'warn'}">${health.consistent ? 'الجلسات متطابقة' : 'تم استبعاد الطبقات القديمة'}</span>
-     <span class="pill bad">التنفيذ الحقيقي مغلق</span>`;
+     <span class="pill bad">لا أوامر وسيط تلقائية</span>`;
 
   const notice = safeElement('sessionIntegrityNotice');
   if (notice) {
@@ -715,7 +715,7 @@ async function loadAll() {
     await Promise.all(Object.entries(PATHS).map(([key,path]) => fetchJson(key,path)));
     renderAll();
   } catch (error) {
-    console.error('[V13.17] loadAll failed', error);
+    console.error('[V13.17.1] loadAll failed', error);
   } finally {
     if (button) {
       button.disabled = false;

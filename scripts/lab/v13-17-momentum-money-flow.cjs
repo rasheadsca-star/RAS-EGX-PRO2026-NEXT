@@ -67,7 +67,7 @@ function pressure(m){
   let points=0,known=0;for(const [ok,weight] of [[m.cmf20!==null?m.cmf20>.08:null,2],[m.mfi14!==null?m.mfi14>=55:null,1],[m.adlTrend5!==null?m.adlTrend5>0:null,1],[m.relativeVolume20!==null?m.relativeVolume20>=1.1:null,1]]){if(ok!==null){known+=weight;if(ok)points+=weight}}
   if(!known)return {code:'UNKNOWN',labelAr:'غير متاح'};const ratio=points/known;return ratio>=.75?{code:'HIGH_ESTIMATE',labelAr:'ضغط شرائي مرتفع — تقديري'}:ratio>=.45?{code:'MEDIUM_ESTIMATE',labelAr:'ضغط شرائي متوسط — تقديري'}:{code:'LOW_ESTIMATE',labelAr:'ضغط شرائي ضعيف — تقديري'};
 }
-const policy=readJson(FILES.policy);if(!policy)throw new Error('Missing V13.17 intelligence policy');
+const policy=readJson(FILES.policy);if(!policy)throw new Error('Missing V13.17.1 intelligence policy');
 const center=readJson(FILES.center,{candidates:[]});const candidateMap=new Map(A(center.candidates).map(x=>[ticker(x.ticker),x]));
 if(!fs.existsSync(FILES.history))throw new Error('Missing data/history');
 const files=fs.readdirSync(FILES.history).filter(name=>name.endsWith('.json')).sort();const rows=[];
@@ -79,5 +79,5 @@ for(const filename of files){const t=ticker(filename.replace(/\.json$/i,''));if(
 }
 rows.sort((a,b)=>(b.moneyFlowQualityScore??-1)-(a.moneyFlowQualityScore??-1)||a.ticker.localeCompare(b.ticker));
 const counts=rows.reduce((acc,x)=>(acc[x.classification.code]=(acc[x.classification.code]||0)+1,acc),{});
-writeJson(FILES.output,{schemaVersion:'13.17.0',generatedAt:new Date().toISOString(),analysisSession:center.analysisSession||null,mode:'SHADOW_ONLY',affectsProductionRanking:false,affectsProductionDecision:false,changesStrategyRules:false,changesEntryStopTargets:false,identityInference:false,disclaimerAr:'المؤشرات تقيس السعر والحجم وتدفق المال تقديريًا فقط، ولا تكشف هوية الأفراد أو المؤسسات. لا تؤثر نتائجها في ترتيب أو قرارات النسخة الحالية.',summary:{historyFiles:files.length,analyzedStocks:rows.length,minimumHistoryMet:rows.filter(x=>x.minimumHistoryMet).length,todayCandidates:rows.filter(x=>x.inTodayRecommendations).length,classifications:counts},stocks:rows});
-console.log(`V13.17 momentum/money-flow: analyzed=${rows.length}, confirmed=${counts.CONFIRMED_MOMENTUM||0}, accumulation=${counts.POSSIBLE_ACCUMULATION||0}.`);
+writeJson(FILES.output,{schemaVersion:'13.17.1',generatedAt:new Date().toISOString(),analysisSession:center.analysisSession||null,mode:'SHADOW_ONLY',affectsProductionRanking:false,affectsProductionDecision:false,changesStrategyRules:false,changesEntryStopTargets:false,identityInference:false,disclaimerAr:'المؤشرات تقيس السعر والحجم وتدفق المال تقديريًا فقط، ولا تكشف هوية الأفراد أو المؤسسات. لا تؤثر نتائجها في ترتيب أو قرارات النسخة الحالية.',summary:{historyFiles:files.length,analyzedStocks:rows.length,minimumHistoryMet:rows.filter(x=>x.minimumHistoryMet).length,todayCandidates:rows.filter(x=>x.inTodayRecommendations).length,classifications:counts},stocks:rows});
+console.log(`V13.17.1 momentum/money-flow: analyzed=${rows.length}, confirmed=${counts.CONFIRMED_MOMENTUM||0}, accumulation=${counts.POSSIBLE_ACCUMULATION||0}.`);

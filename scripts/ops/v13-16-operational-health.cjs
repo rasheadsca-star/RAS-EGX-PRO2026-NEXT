@@ -104,7 +104,7 @@ if (!center) critical.push('Unified center output is missing.');
 if (center?.liveExecutionEnabled !== false) critical.push('Live execution is not explicitly disabled.');
 if (center?.automaticOrderSubmission !== false) critical.push('Automatic order submission is not explicitly disabled.');
 if (center?.sessionIntegrity?.ok !== true) critical.push('Analysis layers do not share one confirmed session.');
-if (center?.patchVersion !== '13.17.0') critical.push(`Unexpected center patch: ${center?.patchVersion || 'missing'}.`);
+if (center?.patchVersion !== '13.17.1') critical.push(`Unexpected center patch: ${center?.patchVersion || 'missing'}.`);
 if (!fs.existsSync(FILES.ledger)) critical.push('Immutable paper ledger is missing.');
 if (!fs.existsSync(FILES.health)) critical.push('Forward strategy health output is missing.');
 
@@ -140,7 +140,7 @@ const runUrl = process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY &&
   : null;
 
 const output = {
-  schemaVersion: '13.17.0',
+  schemaVersion: '13.17.1',
   generatedAt: new Date().toISOString(),
   cairo: now,
   state,
@@ -189,7 +189,7 @@ const output = {
     actor: process.env.GITHUB_ACTOR || null,
     eventName: process.env.GITHUB_EVENT_NAME || null,
     url: runUrl,
-    controller: '.github/workflows/install-and-run-v13-14-unified-center-final.yml',
+    controller: '.github/workflows/v13-17-full-market-search-money-flow.yml',
     scheduleNoteAr: 'التشغيل التلقائي كل 15 دقيقة داخل نافذة الجدول، مع تثبيت ما بعد الإغلاق.'
   },
   finalization: {
@@ -203,4 +203,4 @@ const output = {
   info
 };
 writeJson(FILES.output, output);
-console.log(`V13.17 operational health: state=${state}, critical=${critical.length}, warnings=${warnings.length}.`);
+console.log(`V13.17.1 operational health: state=${state}, critical=${critical.length}, warnings=${warnings.length}.`);

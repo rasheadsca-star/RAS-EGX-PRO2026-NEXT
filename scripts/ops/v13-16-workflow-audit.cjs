@@ -7,7 +7,7 @@ const path = require('path');
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const WORKFLOWS = path.join(ROOT, '.github', 'workflows');
 const OUTPUT = path.join(ROOT, 'data', 'ops', 'workflow-inventory-v13-16.json');
-const PRIMARY = 'install-and-run-v13-14-unified-center-final.yml';
+const PRIMARY = 'v13-17-full-market-search-money-flow.yml';
 
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });

@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#07121e">
+  <title>EGX Pro V13.17 — واجهة التشغيل الموحدة</title>
+  <style>
+    :root{
+      color-scheme:dark;
+      --bg:#06111d;--panel:#0b1d30;--panel2:#102941;--panel3:#0a1828;
+      --line:#274c68;--text:#ecf8ff;--muted:#9db9cc;--blue:#38bdf8;
+      --green:#37d996;--amber:#ffc857;--red:#ff6b7d;--purple:#b899ff;
+      --sidebar:260px
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#04101b,#071a2a 45%,#06111d);color:var(--text);font-family:Tahoma,Arial,sans-serif}
+    button,input,select{font:inherit}
+    a{color:inherit;text-decoration:none}
+    .app{display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr);min-height:100vh}
+    .sidebar{position:sticky;top:0;height:100vh;background:#071522;border-left:1px solid var(--line);padding:16px 12px;overflow:auto;z-index:20}
+    .brand{padding:8px 8px 18px;border-bottom:1px solid #173950;margin-bottom:12px}
+    .brand h1{font-size:18px;margin:0 0 7px}.brand small{display:block;color:var(--muted);line-height:1.7}
+    .nav{display:grid;gap:6px}.nav button{width:100%;text-align:right;border:1px solid transparent;background:transparent;color:var(--text);padding:11px;border-radius:10px;cursor:pointer}
+    .nav button:hover{background:#0c263b;border-color:#23475f}.nav button.active{background:#123d5a;border-color:#3b799d;color:#fff}
+    .nav .group{font-size:11px;color:#7196ad;padding:13px 8px 5px}
+    .side-footer{margin-top:16px;border-top:1px solid #173950;padding-top:13px;color:var(--muted);font-size:11px;line-height:1.7}
+    .main{min-width:0}.topbar{position:sticky;top:0;z-index:15;background:rgba(5,18,30,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:12px 18px;display:flex;align-items:center;gap:12px}
+    .menu{display:none;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:8px;padding:8px;cursor:pointer}
+    .search{flex:1;position:relative}.search input{width:100%;background:#0b2135;border:1px solid #315974;color:var(--text);padding:11px 13px;border-radius:12px;outline:none}.search input:focus{border-color:var(--blue)}
+    .top-actions{display:flex;gap:7px}.btn{border:1px solid #376b8c;background:#102d46;color:var(--text);padding:9px 12px;border-radius:9px;cursor:pointer}.btn:hover{background:#15405f}.btn.primary{background:#116493;border-color:#2d95c5}.btn.danger{border-color:#80424d;color:#ffb8c1}
+    .content{padding:17px;max-width:1580px;margin:auto}.view{display:none}.view.active{display:block}
+    .hero,.section{background:rgba(11,29,48,.96);border:1px solid var(--line);border-radius:16px;margin-bottom:13px}
+    .hero{padding:17px;display:flex;justify-content:space-between;gap:12px;align-items:center}.hero h2{margin:0 0 7px;font-size:22px}.muted{color:var(--muted);font-size:12px;line-height:1.75}
+    .statusline{display:flex;gap:7px;flex-wrap:wrap}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:11px;background:#0e2941}.pill.good{border-color:#277653;color:#aaf3d2}.pill.warn{border-color:#7a642d;color:#ffe4a3}.pill.bad{border-color:#824151;color:#ffc0c9}.pill.info{border-color:#357a9c;color:#bdeaff}
+    .cards{display:grid;grid-template-columns:repeat(6,minmax(135px,1fr));gap:9px;padding:12px}.card{background:var(--panel2);border:1px solid #274c68;border-radius:12px;padding:13px;min-height:96px}.card .label{font-size:11px;color:var(--muted)}.card .value{font-size:25px;font-weight:bold;margin-top:10px}.card .note{font-size:10px;color:var(--muted);margin-top:7px;line-height:1.5}
+    .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px;border-bottom:1px solid #1c3d55}.section-head h3{margin:0;font-size:16px}.section-body{padding:13px}
+    .grid{display:grid;grid-template-columns:repeat(3,minmax(250px,1fr));gap:10px}.candidate{background:#081a2a;border:1px solid #28506b;border-radius:13px;padding:13px;cursor:pointer;transition:.16s}.candidate:hover{transform:translateY(-1px);border-color:#45a1cf}
+    .candidate h3{margin:0 0 8px;font-size:17px}.ticker{color:var(--blue);font-weight:bold}.tags{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}.tag{font-size:10px;border:1px solid #315773;border-radius:999px;padding:4px 7px;background:#0d263d}
+    .numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px}.num{background:#0c253b;border-radius:8px;padding:7px;font-size:10px;color:var(--muted)}.num b{display:block;color:var(--text);font-size:14px;margin-top:4px}
+    .reason{font-size:11px;line-height:1.7;color:#d5eaf6;margin-top:10px}.fail{font-size:10px;color:#ffd4aa;background:#372a19;border:1px solid #6e552d;padding:8px;border-radius:8px;margin-top:8px}
+    .progress{height:7px;background:#152e41;border-radius:999px;overflow:hidden;margin:8px 0}.progress i{display:block;height:100%;background:linear-gradient(90deg,#38bdf8,#37d996)}
+    .toolbar{display:flex;gap:7px;flex-wrap:wrap}.toolbar select,.toolbar input{background:#0b2135;border:1px solid #315974;color:var(--text);padding:8px;border-radius:8px}
+    table{width:100%;border-collapse:collapse;background:#081a2a;border-radius:10px;overflow:hidden}th,td{padding:9px;border-bottom:1px solid #17384e;text-align:right;font-size:11px;vertical-align:top}th{background:#0e2941;color:#c8ebfb;position:sticky;top:0}
+    .table-wrap{overflow:auto;max-height:620px}.empty{padding:32px;text-align:center;color:var(--muted);line-height:1.9}
+    .stage{display:grid;grid-template-columns:14px 160px 1fr;gap:9px;align-items:center;padding:10px;border-bottom:1px solid #17384e}.dot{width:10px;height:10px;border-radius:50%}.dot.passed{background:var(--green)}.dot.blocked{background:var(--red)}.dot.warning{background:var(--amber)}
+    .v11bar{padding:11px;display:flex;gap:7px;flex-wrap:wrap;border-bottom:1px solid var(--line)}.iframe-wrap{height:calc(100vh - 205px);min-height:600px;background:#02070b}.iframe-wrap iframe{width:100%;height:100%;border:0;background:#02070b}
+    .module-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.module{background:#0b2135;border:1px solid #2a536f;border-radius:12px;padding:12px;cursor:pointer}.module:hover{border-color:#55a9d3}.module b{display:block;margin-bottom:7px}.module span{font-size:11px;color:var(--muted);line-height:1.6}
+    .source-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.source{background:#0b2135;border:1px solid #2a536f;border-radius:10px;padding:11px}.source b{display:block;margin-bottom:6px}.source small{color:var(--muted)}
+    .drawer-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:50}.drawer-backdrop.open{display:block}.drawer{position:absolute;left:0;top:0;height:100%;width:min(520px,92vw);background:#081827;border-right:1px solid #3a6c8b;padding:17px;overflow:auto}.drawer h2{margin:0 0 12px}.close{float:left;border:1px solid var(--line);background:#102941;color:var(--text);border-radius:8px;padding:7px 10px;cursor:pointer}
+    .search-results{position:absolute;top:48px;right:0;left:0;background:#071827;border:1px solid #315974;border-radius:10px;max-height:420px;overflow:auto;display:none;box-shadow:0 12px 30px #0009}.search-results.open{display:block}.search-row{padding:10px;border-bottom:1px solid #193c54;cursor:pointer}.search-row:hover{background:#0f3049}.search-row b{color:var(--blue)}
+    .notice{padding:11px;border:1px solid #5b4d27;background:#2c2516;color:#ffe8a8;border-radius:10px;font-size:11px;line-height:1.7}.notice.good{border-color:#277653;background:#102f25;color:#c7ffe1}.notice.bad{border-color:#824151;background:#321a22;color:#ffc7cf}
+    @media(max-width:1180px){.cards{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:repeat(2,1fr)}.source-list{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:820px){:root{--sidebar:0px}.app{display:block}.sidebar{position:fixed;right:-280px;width:270px;transition:.2s}.sidebar.open{right:0}.menu{display:block}.content{padding:9px}.topbar{padding:9px}.top-actions .hide-mobile{display:none}.grid{grid-template-columns:1fr}.module-grid{grid-template-columns:repeat(2,1fr)}.iframe-wrap{height:calc(100vh - 230px)}}
+    @media(max-width:520px){.cards{grid-template-columns:repeat(2,1fr);padding:8px}.hero{align-items:flex-start;flex-direction:column}.module-grid,.source-list{grid-template-columns:1fr}.numbers{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <h1>EGX Pro V13.17</h1>
+      <small>واجهة تشغيل موحدة<br>صفحة قرار واحدة محدثة آليًا</small>
+    </div>
+    <nav class="nav">
+      <div class="group">صفحة العمل اليومية</div>
+      <button class="active" data-view="center1314">مركز القرار الموحد V13.17</button>
+      <div class="group">أدوات تشخيصية فقط</div>
+      <button data-view="links">فتح الأدوات القديمة</button>
+    </nav>
+    <div class="side-footer">
+      التنفيذ الحقيقي مغلق.<br>
+      البيانات والتوصيات للبحث والتداول الورقي فقط.
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="menu" id="menuBtn">☰</button>
+      <div class="search">
+        <input id="globalSearch" autocomplete="off" placeholder="ابحث باسم السهم أو الرمز داخل نتائج V13…">
+        <div class="search-results" id="searchResults"></div>
+      </div>
+      <div class="top-actions">
+        <button class="btn primary" id="refreshBtn">تحديث البيانات</button>
+        <a class="btn hide-mobile" href="../../" target="_blank" rel="noopener">فتح V11 منفصلًا</a>
+      </div>
+    </header>
+
+    <div class="content">
+      <section class="view active" id="view-center1314">
+        <div class="hero"><div><h2>مركز القرار الموحد V13.17</h2><div class="muted">الصفحة الوحيدة للعمل اليومي: جميع الطبقات والسعر والدخول والأهداف والوقف والرسم والتنبيهات.</div></div><a class="btn primary" href="unified-decision-center.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.17 Unified Autonomous Decision Center" src="unified-decision-center.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-daily1311">
+        <div class="hero"><div><h2>قرار اليوم V13.11</h2><div class="muted">صفحة واحدة للاختيار والرسم البياني وخطة الدخول وحجم الصفقة الورقية وتسجيل القرار.</div></div><a class="btn primary" href="daily-decision.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.11 Daily Decision Workspace" src="daily-decision.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-intraday1312">
+        <div class="hero"><div><h2>تنبيهات الجلسة V13.12</h2><div class="muted">تحديث كل 15 دقيقة، مقارنة اللقطات، جرس تنبيهات، وإشعارات ويندوز عند فتح التطبيق.</div></div><a class="btn primary" href="intraday-monitor.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.12 Intraday Monitor" src="intraday-monitor.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-live1313">
+        <div class="hero"><div><h2>الترتيب الحي V13.13</h2><div class="muted">دمج جلسة الإغلاق يوميًا وإعادة ترتيب المرشحين أثناء الجلسة دون تغيير طبقة التوصية.</div></div><a class="btn primary" href="live-decision.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.13 Live Re-Ranking" src="live-decision.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-dashboard">
+        <div class="hero">
+          <div>
+            <h2>لوحة التشغيل الموحدة</h2>
+            <div class="muted">نقطة دخول واحدة للواجهة المستقرة وطبقات القرار والبحث والتداول الورقي.</div>
+          </div>
+          <div class="statusline" id="globalStatus"></div>
+        </div>
+        <div class="notice" id="sessionIntegrityNotice" style="margin-bottom:13px">جارٍ التحقق من تطابق جلسات V13.3 وV13.4 وV13.5…</div>
+        <div class="section"><div class="cards" id="dashboardCards"></div></div>
+        <div class="section">
+          <div class="section-head"><h3>أهم فرص الجلسة</h3><button class="btn" data-jump="recommendations">عرض الكل</button></div>
+          <div class="section-body"><div class="grid" id="dashboardCandidates"></div></div>
+        </div>
+        <div class="section">
+          <div class="section-head"><h3>مميزات التشغيل السابقة</h3></div>
+          <div class="section-body">
+            <div class="module-grid">
+              <div class="module" data-jump="stock"><b>البحث وتحليل سهم</b><span>الرسوم والمؤشرات والسعر والدعم والمقاومة داخل V11.</span></div>
+              <div class="module" data-jump="market"><b>ملخص السوق والفرص</b><span>لوحة السوق وفرص الشراء والقوائم التشغيلية السابقة.</span></div>
+              <div class="module" data-jump="portfolio"><b>المحفظة</b><span>الحيازات والربح والخسارة والتركيز.</span></div>
+              <div class="module" data-jump="risk"><b>تخصيص المخاطر</b><span>حجم ورقي وفق الوقف والسيولة والقطاع والارتباط.</span></div>
+              <div class="module" data-jump="journal"><b>سجل القرارات</b><span>توثيق الخطة الأصلية والملاحظات دون أثر رجعي.</span></div>
+              <div class="module" data-jump="audit139"><b>تدقيق التوصيات V13.9</b><span>تعرف أين تُرفض الأسهم وهل المشكلة في البيانات أو الإشارة أو الاستراتيجية.</span></div>
+              <div class="module" data-jump="daily1311"><b>قرار اليوم V13.11</b><span>أفضل 3 فرص والرسم والخطة والحجم وسجل القرار في صفحة واحدة.</span></div>
+              <div class="module" data-jump="intraday1312"><b>تنبيهات الجلسة V13.12</b><span>أسعار متغيرة أثناء الجلسة وتنبيهات دخول وهدف ووقف وحجم.</span></div>
+              <div class="module" data-jump="live1313"><b>الترتيب الحي V13.13</b><span>يربط قرار اليوم بلقطة السوق ويدمج جلسة الإغلاق تلقائيًا.</span></div>
+              <div class="module" data-jump="confidence1310"><b>الثقة المتدرجة V13.10</b><span>يفصل الشروط الإلزامية عن المرنة ويمنع استخدام التاريخ المتأخر.</span></div>
+              <div class="module" data-jump="paper"><b>التداول الورقي V13.5</b><span>نتائج قابلة للقياس دون تنفيذ حقيقي أو تعديل بأثر رجعي.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-recommendations">
+        <div class="hero">
+          <div><h2>الفرص والتوصيات</h2><div class="muted">دمج V13.4 وV13.5، مع تمييز الجاهز ورقيًا والمراقبة المشروطة.</div></div>
+          <div class="toolbar">
+            <select id="candidateStatus"><option value="all">كل الحالات</option><option value="paper">جاهز ورقيًا</option><option value="watch">مراقبة مشروطة</option></select>
+            <select id="candidateSort"><option value="score">الأعلى درجة</option><option value="proximity">الأقرب للاكتمال</option><option value="rr">أعلى R/R</option><option value="ticker">الرمز</option></select>
+          </div>
+        </div>
+        <div class="section"><div class="cards" id="recommendationCards"></div></div>
+        <div class="section"><div class="section-body"><div class="grid" id="allCandidates"></div></div></div>
+      </section>
+
+      <section class="view" id="view-paper">
+        <div class="hero"><div><h2>متابعة التداول الورقي</h2><div class="muted">الإشارات والصفقات والنتائج بعد التكاليف والانزلاق الافتراضي.</div></div><a class="btn" href="../paper-tracker.html" target="_blank">الصفحة التفصيلية</a></div>
+        <div class="section"><div class="cards" id="paperCards"></div></div>
+        <div class="section"><div class="section-head"><h3>الإشارات والصفقات</h3></div><div class="section-body table-wrap"><table><thead><tr><th>السهم</th><th>الاستراتيجية</th><th>جلسة الإشارة</th><th>الحالة</th><th>الدخول</th><th>الخروج</th><th>العائد</th><th>R</th><th>الجلسات</th></tr></thead><tbody id="paperRows"></tbody></table></div></div>
+      </section>
+
+      <section class="view" id="view-strategies">
+        <div class="hero"><div><h2>التحليل الكمي وصحة الاستراتيجيات</h2><div class="muted">Walk-Forward، حدود القبول المتكيفة، ثبات النماذج وقاطع الأمان.</div></div><a class="btn" href="../quant-research.html" target="_blank">بحث V13.4 الكامل</a></div>
+        <div class="section"><div class="section-head"><h3>صحة الاستراتيجيات</h3></div><div class="section-body table-wrap"><table><thead><tr><th>الاستراتيجية</th><th>الحالة</th><th>صحة النموذج</th><th>حد القبول</th><th>الثبات</th><th>PF تاريخي</th><th>Average R</th><th>PF ورقي</th></tr></thead><tbody id="strategyRows"></tbody></table></div></div>
+        <div class="section"><div class="section-head"><h3>روابط البحث</h3></div><div class="section-body module-grid"><a class="module" href="../quant-research.html" target="_blank"><b>نتائج Walk-Forward</b><span>مراحل الاختبار والأداء خارج فترة الضبط.</span></a><a class="module" href="../recommendations.html" target="_blank"><b>توصيات V13.4</b><span>المحرك الكمي قبل المعايرة المتكيفة.</span></a><a class="module" href="../adaptive-recommendations.html" target="_blank"><b>توصيات V13.5</b><span>الجاهز ورقيًا والأقرب لاكتمال الشروط.</span></a><a class="module" href="../paper-tracker.html" target="_blank"><b>سجل القياس</b><span>الصفقات المغلقة وProfit Factor وAverage R.</span></a></div></div>
+      </section>
+
+      <section class="view" id="view-audit139">
+        <div class="hero"><div><h2>تدقيق ومعايرة محرك التوصيات V13.9</h2><div class="muted">قمع استبعاد الأسهم، إصلاح Maximum Drawdown، وتحليل الفرص التجريبية دون تخفيف الإنتاج.</div></div><a class="btn primary" href="recommendation-audit.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.9 Recommendation Engine Audit" src="recommendation-audit.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-confidence1310">
+        <div class="hero"><div><h2>تحديث السوق والثقة المتدرجة V13.10</h2><div class="muted">تحديث كامل للسوق، شروط إلزامية ومرنة، وطبقة ورقية تجريبية لا تغير الإنتاج.</div></div><a class="btn primary" href="tiered-confidence.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.10 Tiered Confidence" src="tiered-confidence.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-health">
+        <div class="hero"><div><h2>صحة البيانات والتشغيل</h2><div class="muted">حالة مراحل V13.3 وحداثة الملفات والمصادر.</div></div><a class="btn" href="../index.html" target="_blank">مركز V13.3</a></div>
+        <div class="section"><div class="section-head"><h3>مراحل التشغيل</h3></div><div id="pipelineStages"></div></div>
+        <div class="section"><div class="section-head"><h3>المصادر والملفات</h3></div><div class="section-body"><div class="source-list" id="sourceHealth"></div></div></div>
+      </section>
+
+      <section class="view" id="view-v11">
+        <div class="hero"><div><h2>V11 المستقر — التشغيل الكامل</h2><div class="muted">تم الاحتفاظ به كما هو دون تعديل. استخدم كل وظائفه من داخل الإطار.</div></div><a class="btn" href="../../" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section">
+          <div class="v11bar"><button class="btn" data-v11hint="استخدم مربع البحث داخل V11 للوصول إلى تحليل سهم.">البحث وتحليل سهم</button><button class="btn" data-v11hint="افتح قسم فرص الشراء أو محرك القرار داخل V11.">الفرص</button><button class="btn" data-v11hint="افتح قسم المحفظة داخل V11 للاستيراد والمتابعة.">المحفظة</button><button class="btn" data-v11hint="افتح ملخص السوق داخل V11.">ملخص السوق</button><span class="muted" id="v11Hint">كل المميزات السابقة تعمل داخل الإطار أدناه.</span></div>
+          <div class="iframe-wrap"><iframe id="v11Frame" title="EGX Pro V11 stable application" src="../../?workspace=v136"></iframe></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-stock">
+        <div class="hero"><div><h2>البحث والتحليل الأصلي لكل الأسهم</h2><div class="muted">واجهة V13.7 تقرأ قاعدة التاريخ مباشرة وتحسب المؤشرات والدعم والمقاومة والسيولة لكل سهم.</div></div><a class="btn primary" href="stock-analysis.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.7 Native Stock Analysis" src="stock-analysis.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-portfolio">
+        <div class="hero"><div><h2>مختبر المحفظة الأصلي</h2><div class="muted">حساب القيمة والربح والخسارة والتركيز والمخاطر الفنية من بيانات V13.7؛ الحيازات محفوظة محليًا في المتصفح.</div></div><a class="btn primary" href="portfolio.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.7 Native Portfolio Lab" src="portfolio.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-risk">
+        <div class="hero"><div><h2>المخاطر وتخصيص رأس المال</h2><div class="muted">حجم ورقي محافظ وفق الوقف والوزن والقطاع والسيولة والارتباط مع الحيازات.</div></div><a class="btn primary" href="risk-allocation.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.8 Portfolio Risk Allocation" src="risk-allocation.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-journal">
+        <div class="hero"><div><h2>سجل القرارات</h2><div class="muted">لقطات ثابتة لخطة الإشارة والحجم الورقي والملاحظات دون تعديل بأثر رجعي.</div></div><a class="btn primary" href="decision-journal.html" target="_blank">فتح في نافذة مستقلة</a></div>
+        <div class="section"><div class="iframe-wrap" style="height:calc(100vh - 180px)"><iframe title="V13.8 Decision Journal" src="decision-journal.html?embedded=1"></iframe></div></div>
+      </section>
+
+      <section class="view" id="view-market">
+        <div class="hero"><div><h2>السوق والفرص</h2><div class="muted">لوحة السوق التشغيلية محفوظة في V11، والتوصيات البحثية المفلترة في V13.</div></div></div>
+        <div class="section"><div class="section-body module-grid"><div class="module" data-jump="v11"><b>ملخص السوق V11</b><span>المؤشرات والقوائم والسيولة وحركة الجلسة.</span></div><div class="module" data-jump="recommendations"><b>فرص V13.4/V13.5</b><span>التوصيات الكمية والمراقبة المشروطة.</span></div><div class="module" data-jump="health"><b>صحة البيانات</b><span>لا تستخدم القرار قبل التأكد من حداثة الجلسة والمصادر.</span></div><div class="module" data-jump="paper"><b>نتائج الإشارات</b><span>تحقق من الأداء الورقي قبل رفع الثقة.</span></div></div></div>
+      </section>
+
+      <section class="view" id="view-links">
+        <div class="hero"><div><h2>صفحات V13 التفصيلية</h2><div class="muted">الوصول المباشر إلى كل طبقة دون فقد واجهة التشغيل الموحدة.</div></div></div>
+        <div class="section"><div class="section-body module-grid">
+          <a class="module" href="../index.html" target="_blank"><b>V13.3 مركز القرار</b><span>الأهلية وصحة التشغيل والمراجعة.</span></a>
+          <a class="module" href="../recommendations.html" target="_blank"><b>V13.4 التوصيات</b><span>محرك التوصيات اليومية وWalk-Forward.</span></a>
+          <a class="module" href="../quant-research.html" target="_blank"><b>V13.4 البحث الكمي</b><span>نتائج الاستراتيجيات والاختبارات.</span></a>
+          <a class="module" href="../adaptive-recommendations.html" target="_blank"><b>V13.5 المعايرة</b><span>الفرص الجاهزة والأقرب للاكتمال.</span></a>
+          <a class="module" href="../paper-tracker.html" target="_blank"><b>V13.5 التداول الورقي</b><span>الإشارات والنتائج ومقاييس المخاطر.</span></a>
+          <a class="module" href="recommendation-audit.html" target="_blank"><b>V13.9 تدقيق التوصيات</b><span>قمع القرار والمعايرة التجريبية وإصلاح Drawdown.</span></a>
+          <a class="module" href="daily-decision.html" target="_blank"><b>V13.11 قرار اليوم</b><span>الاختيار اليومي والرسم والخطة وحجم الصفقة الورقية.</span></a>
+          <a class="module" href="intraday-monitor.html" target="_blank"><b>V13.12 تنبيهات الجلسة</b><span>تحديثات كل 15 دقيقة وتنبيهات داخل التطبيق وويندوز.</span></a>
+          <a class="module" href="live-decision.html" target="_blank"><b>V13.13 الترتيب الحي</b><span>دمج الإغلاق اليومي وإعادة ترتيب المرشحين بالسعر والحجم الحاليين.</span></a>
+          <a class="module" href="tiered-confidence.html" target="_blank"><b>V13.10 الثقة المتدرجة</b><span>تغطية آخر جلسة والطبقتان A وB وتقييم المحفظة.</span></a>
+          <a class="module" href="risk-allocation.html" target="_blank"><b>V13.8 المخاطر والتخصيص</b><span>حدود الحجم والوزن والقطاع والسيولة والارتباط.</span></a>
+          <a class="module" href="decision-journal.html" target="_blank"><b>V13.8 سجل القرارات</b><span>لقطة الخطة والحجم الورقي والمراجعة.</span></a>
+          <a class="module" href="../../" target="_blank"><b>V11 المستقر</b><span>كل وظائف التشغيل القديمة دون تعديل.</span></a>
+        </div></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="drawer-backdrop" id="drawerBackdrop">
+  <aside class="drawer" id="drawer">
+    <button class="close" id="drawerClose">إغلاق</button>
+    <div id="drawerContent"></div>
+  </aside>
+</div>
+
+<script>
+'use strict';
+
+const PATHS = {
+  v133: '../data/v13-3-daily-production.json',
+  v134: '../../data/quant/daily-recommendations.json',
+  v135: '../../data/quant/adaptive-daily-recommendations.json',
+  health: '../../data/quant/strategy-health.json',
+  ledger: '../../data/quant/paper-recommendation-ledger.json',
+  metrics: '../../data/quant/paper-recommendation-metrics.json'
+};
+
+const state = {
+  docs: {},
+  sourceState: {},
+  candidates: [],
+  excludedCandidates: [],
+  duplicateCount: 0,
+  truthSession: null,
+  sessionHealth: null,
+  uiErrors: [],
+  searchQuery: '',
+  activeView: 'center1314'
+};
+
+const E = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+}[char]));
+
+const N = (value, digits = 2) => Number.isFinite(Number(value))
+  ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits })
+  : '—';
+
+const A = value => Array.isArray(value) ? value : [];
+
+function sessionDate(value) {
+  const match = String(value || '').match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : null;
+}
+function latestSession(values) {
+  return values.map(sessionDate).filter(Boolean).sort().at(-1) || null;
+}
+function safeElement(id) {
+  return document.getElementById(id);
+}
+function safeRender(name, fn) {
+  try {
+    fn();
+  } catch (error) {
+    state.uiErrors.push({ name, message: error?.message || String(error) });
+    console.error(`[V13.17] ${name} failed`, error);
+  }
+}
+
+function card(label, value, note = '', kind = '') {
+  return `<div class="card"><div class="label">${E(label)}</div><div class="value ${E(kind)}">${E(value)}</div><div class="note">${E(note)}</div></div>`;
+}
+
+async function fetchJson(key, path) {
+  try {
+    const response = await fetch(`${path}?v=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    state.docs[key] = data;
+    state.sourceState[key] = { ok: true, message: 'متاح' };
+  } catch (error) {
+    state.docs[key] = null;
+    state.sourceState[key] = { ok: false, message: error.message };
+  }
+}
+
+function normalizeCandidate(raw, source, status, sourceSession) {
+  const plan = raw?.plan || {};
+  const indicators = raw?.indicators || {};
+  const adaptive = raw?.adaptive || {};
+  const strategyStatus = raw?.strategyValidationStatus || adaptive?.strategyHealthStatus || '';
+  return {
+    raw,
+    source,
+    sourceSession: sessionDate(sourceSession),
+    signalDate: sessionDate(raw?.signalDate || raw?.sessionId || sourceSession),
+    status,
+    ticker: String(raw?.ticker || '').toUpperCase(),
+    company: raw?.companyNameAr || raw?.companyNameEn || '',
+    statusLabel: raw?.statusLabelAr || (status === 'paper' ? 'مرشح تداول ورقي' : 'مراقبة مشروطة'),
+    strategy: raw?.strategyLabelAr || raw?.strategyId || '',
+    strategyId: raw?.strategyId || '',
+    strategyStatus,
+    strategyExecutable: /ACTIVE|APPROVED|PRODUCTION/i.test(strategyStatus) && !/RESEARCH|PAUSED|STOP/i.test(strategyStatus),
+    score: Number(raw?.recommendationScore || 0),
+    proximity: Number(adaptive?.proximityPct || (status === 'paper' ? 100 : 0)),
+    price: Number(raw?.price),
+    entryLow: Number(plan?.entryLow),
+    entryHigh: Number(plan?.entryHigh),
+    stop: Number(plan?.stopLoss),
+    target1: Number(plan?.target1),
+    target2: Number(plan?.target2),
+    rr: Number(plan?.riskReward1),
+    rsi: Number(indicators?.rsi14),
+    volumeRatio: Number(indicators?.volumeRatio20),
+    relativeStrength: Number(indicators?.relativeStrength20Pct),
+    historicalSupport20: Number(indicators?.support20),
+    historicalResistance20: Number(indicators?.resistance20),
+    reason: raw?.reasonAr || '',
+    failed: A(raw?.failedConditions),
+    missing: A(adaptive?.missingRequirementsAr)
+  };
+}
+function buildCandidates() {
+  const v134 = state.docs.v134 || {};
+  const v135 = state.docs.v135 || {};
+  const sessions = {
+    v133: sessionDate(state.docs.v133?.market?.latestAvailableSession),
+    v134: sessionDate(v134.sessionId),
+    v135: sessionDate(v135.sessionId),
+    health: sessionDate(state.docs.health?.sessionId),
+    metrics: sessionDate(state.docs.metrics?.sessionId)
+  };
+  state.truthSession = latestSession([sessions.v134, sessions.v135]);
+  const distinctSessions = [...new Set(Object.values(sessions).filter(Boolean))];
+  state.sessionHealth = {
+    sessions,
+    truthSession: state.truthSession,
+    consistent: distinctSessions.length <= 1,
+    distinctSessions
+  };
+
+  const list = [
+    ...A(v135.paperCandidates).map(item => normalizeCandidate(item, 'V13.5', 'paper', v135.sessionId)),
+    ...A(v135.conditionalWatch).map(item => normalizeCandidate(item, 'V13.5', 'watch', v135.sessionId)),
+    ...A(v134.paperCandidates).map(item => normalizeCandidate(item, 'V13.4', 'paper', v134.sessionId)),
+    ...A(v134.watchCandidates).map(item => normalizeCandidate(item, 'V13.4', 'watch', v134.sessionId))
+  ].filter(item => item.ticker);
+
+  const currentSessionRows = state.truthSession
+    ? list.filter(item => item.signalDate === state.truthSession)
+    : list;
+  state.excludedCandidates = list.filter(item => state.truthSession && item.signalDate !== state.truthSession);
+
+  const groups = new Map();
+  for (const item of currentSessionRows) {
+    const rows = groups.get(item.ticker) || [];
+    rows.push(item);
+    groups.set(item.ticker, rows);
+  }
+  state.duplicateCount = [...groups.values()].reduce((sum, rows) => sum + Math.max(0, rows.length - 1), 0);
+
+  const statusRank = value => value === 'paper' ? 2 : 1;
+  const sourceRank = value => value === 'V13.5' ? 2 : 1;
+  state.candidates = [...groups.values()].map(rows => rows.sort((a, b) =>
+    statusRank(b.status) - statusRank(a.status) ||
+    Number(b.strategyExecutable) - Number(a.strategyExecutable) ||
+    b.score - a.score ||
+    b.proximity - a.proximity ||
+    sourceRank(b.source) - sourceRank(a.source)
+  )[0]).sort((a, b) =>
+    statusRank(b.status) - statusRank(a.status) ||
+    b.score - a.score ||
+    b.proximity - a.proximity ||
+    a.ticker.localeCompare(b.ticker)
+  );
+}
+function candidateHtml(item) {
+  const missing = item.missing.length ? item.missing : item.failed;
+  return `<article class="candidate" data-candidate="${E(item.source)}|${E(item.status)}|${E(item.ticker)}|${E(item.strategy)}">
+    <h3><span class="ticker">${E(item.ticker)}</span> — ${E(item.company)}</h3>
+    <div class="tags">
+      <span class="tag">${E(item.statusLabel)}</span>
+      <span class="tag">${E(item.strategy)}</span>
+      <span class="tag">${E(item.source)} • ${E(item.signalDate || 'جلسة غير محددة')}</span>
+      <span class="tag">${E(item.strategyStatus || 'حالة الاستراتيجية غير متاحة')}</span>
+      <span class="tag">درجة ${N(item.score,1)}</span>
+    </div>
+    ${item.source === 'V13.5' ? `<div class="muted">قرب اكتمال الإشارة: <b>${N(item.proximity,1)}%</b></div><div class="progress"><i style="width:${Math.max(0,Math.min(100,item.proximity||0))}%"></i></div>` : ''}
+    <div class="numbers">
+      <div class="num">السعر<b>${N(item.price,3)}</b></div>
+      <div class="num">الدخول<b>${N(item.entryLow,3)}–${N(item.entryHigh,3)}</b></div>
+      <div class="num">الوقف<b>${N(item.stop,3)}</b></div>
+      <div class="num">الهدف 1<b>${N(item.target1,3)}</b></div>
+      <div class="num">R/R<b>${N(item.rr,2)}</b></div>
+      <div class="num">RSI<b>${N(item.rsi,1)}</b></div>
+    </div>
+    <div class="muted" style="margin-top:7px">الدعم والمقاومة هنا تاريخيان لـ20 جلسة: ${N(item.historicalSupport20,3)} / ${N(item.historicalResistance20,3)} — وليسا مستويات مباشر.</div>
+    ${item.reason ? `<div class="reason">${E(item.reason)}</div>` : ''}
+    ${missing.length ? `<div class="fail">${E(missing.slice(0,3).join(' | '))}</div>` : ''}
+  </article>`;
+}
+
+function attachCandidateEvents() {
+  document.querySelectorAll('[data-candidate]').forEach(node => {
+    node.onclick = () => {
+      const [source,status,ticker,strategy] = node.dataset.candidate.split('|');
+      const found = state.candidates.find(item =>
+        item.source === source && item.status === status &&
+        item.ticker === ticker && item.strategy === strategy
+      );
+      if (found) openDrawer(found);
+    };
+  });
+}
+
+function openDrawer(item) {
+  const missing = item.missing.length ? item.missing : item.failed;
+  document.getElementById('drawerContent').innerHTML = `
+    <h2><span class="ticker">${E(item.ticker)}</span> — ${E(item.company)}</h2>
+    <div class="tags"><span class="tag">${E(item.statusLabel)}</span><span class="tag">${E(item.strategy)}</span><span class="tag">${E(item.source)}</span></div>
+    <div class="cards" style="grid-template-columns:repeat(2,1fr);padding:0;margin:14px 0">
+      ${card('السعر',N(item.price,3))}
+      ${card('درجة التوصية',N(item.score,1))}
+      ${card('الدخول',`${N(item.entryLow,3)}–${N(item.entryHigh,3)}`)}
+      ${card('وقف الخسارة',N(item.stop,3))}
+      ${card('الهدف الأول',N(item.target1,3))}
+      ${card('الهدف الثاني',N(item.target2,3))}
+      ${card('R/R',N(item.rr,2))}
+      ${card('RSI',N(item.rsi,1))}
+      ${card('الحجم النسبي',N(item.volumeRatio,2))}
+      ${card('القوة النسبية',`${N(item.relativeStrength,2)}%`)}
+      ${card('الدعم التاريخي 20 جلسة',N(item.historicalSupport20,3))}
+      ${card('المقاومة التاريخية 20 جلسة',N(item.historicalResistance20,3))}
+      ${card('جلسة الإشارة',item.signalDate || '—')}
+    </div>
+    ${item.reason ? `<div class="section-body"><h3>سبب الترشيح</h3><div class="reason">${E(item.reason)}</div></div>` : ''}
+    <div class="section-body"><h3>${missing.length ? 'الشروط غير المكتملة' : 'حالة البوابات'}</h3>
+    ${missing.length ? `<div class="fail">${missing.map(E).join('<br>')}</div>` : '<div class="notice">اجتاز الشروط المعروضة. التسجيل ورقي فقط والتنفيذ الحقيقي مغلق.</div>'}</div>
+    <div class="notice">هذه نتيجة بحثية وليست ضمانًا للعائد أو أمر شراء فعلي. مستويات الدعم والمقاومة المعروضة تاريخية وليست من مباشر.</div>
+  `;
+  document.getElementById('drawerBackdrop').classList.add('open');
+}
+
+function renderDashboard() {
+  const metrics = state.docs.metrics?.overall || {};
+  const session = state.truthSession || '—';
+  const regime = state.docs.v134?.marketRegime?.labelAr || state.docs.v135?.marketRegime?.labelAr || state.docs.v134?.marketRegime?.code || 'غير متاح';
+  const connected = Object.values(state.sourceState).filter(x => x.ok).length;
+  const total = Object.keys(PATHS).length;
+  const paperCount = state.candidates.filter(item => item.status === 'paper').length;
+  const watchCount = state.candidates.filter(item => item.status === 'watch').length;
+  const health = state.sessionHealth || { consistent: true, distinctSessions: [] };
+
+  document.getElementById('globalStatus').innerHTML =
+    `<span class="pill ${connected === total ? 'good' : 'warn'}">المصادر ${connected}/${total}</span>
+     <span class="pill info">جلسة موحدة ${E(session)}</span>
+     <span class="pill ${health.consistent ? 'good' : 'warn'}">${health.consistent ? 'الجلسات متطابقة' : 'تم استبعاد الطبقات القديمة'}</span>
+     <span class="pill bad">التنفيذ الحقيقي مغلق</span>`;
+
+  const notice = safeElement('sessionIntegrityNotice');
+  if (notice) {
+    notice.className = `notice ${health.consistent ? 'good' : ''}`;
+    notice.innerHTML = health.consistent
+      ? `✓ جميع ملفات القرار المتاحة تشير إلى جلسة ${E(session)}.`
+      : `تم اعتماد جلسة ${E(session)} فقط واستبعاد ${N(state.excludedCandidates.length,0)} نتيجة من جلسات أقدم (${E(health.distinctSessions.join('، '))}). تم حذف ${N(state.duplicateCount,0)} تكرار للسهم نفسه.`;
+  }
+
+  document.getElementById('dashboardCards').innerHTML = [
+    card('جلسة القرار المعتمدة', session, 'لا يتم خلط الجلسات', 'info'),
+    card('نظام السوق', regime, 'من أحدث طبقة متوافقة'),
+    card('جاهز ورقيًا', N(paperCount,0), 'من الجلسة الموحدة فقط', 'good'),
+    card('مراقبة مشروطة', N(watchCount,0), 'من الجلسة الموحدة فقط', 'warn'),
+    card('صفقات مغلقة', N(metrics.closedTrades,0), 'سجل V13.5'),
+    card('Profit Factor', N(metrics.profitFactor,2), 'بعد التكاليف الافتراضية')
+  ].join('');
+
+  const top = state.candidates.slice().sort((a,b) =>
+    (b.status === 'paper') - (a.status === 'paper') ||
+    b.score - a.score || b.proximity - a.proximity
+  ).slice(0,6);
+  document.getElementById('dashboardCandidates').innerHTML =
+    top.length ? top.map(candidateHtml).join('') : '<div class="empty">لا توجد نتائج من جلسة موحدة صالحة.</div>';
+}
+function filteredCandidates() {
+  const status = document.getElementById('candidateStatus')?.value || 'all';
+  const sort = document.getElementById('candidateSort')?.value || 'score';
+  let list = state.candidates.filter(item => status === 'all' || item.status === status);
+  list.sort((a,b) => {
+    if (sort === 'proximity') return b.proximity - a.proximity || b.score - a.score;
+    if (sort === 'rr') return (b.rr || 0) - (a.rr || 0) || b.score - a.score;
+    if (sort === 'ticker') return a.ticker.localeCompare(b.ticker);
+    return b.score - a.score || b.proximity - a.proximity;
+  });
+  return list.slice(0,60);
+}
+
+function renderRecommendations() {
+  const v134 = state.docs.v134 || {};
+  const v135 = state.docs.v135 || {};
+  const activeStrategies = v135.counts?.activeStrategies ?? state.docs.health?.activeStrategies ?? A(state.docs.health?.strategies).filter(x => /ACTIVE|APPROVED|PRODUCTION/i.test(x.status || '')).length;
+  const researchStrategies = state.docs.health?.researchOnlyStrategies ?? A(state.docs.health?.strategies).filter(x => /RESEARCH/i.test(x.status || '')).length;
+  document.getElementById('recommendationCards').innerHTML = [
+    card('V13.5 جاهز ورقيًا',N(v135.counts?.adaptivePaperCandidates,0),'بعد المعايرة','good'),
+    card('V13.5 مراقبة',N(v135.counts?.conditionalWatch,0),'حسب القرب','warn'),
+    card('V13.4 مرشحو ورقي',N(v134.counts?.paperCandidates,0),'قبل المعايرة'),
+    card('أسهم محللة',N(v134.counts?.symbolsAnalyzed,0),'قاعدة التاريخ'),
+    card('استراتيجيات نشطة',N(activeStrategies,0),`بحثية فقط: ${N(researchStrategies,0)}`),
+    card('إشارات جديدة',N(v135.counts?.newSignalsRegistered,0),'جلسة V13.5')
+  ].join('');
+  const list = filteredCandidates();
+  document.getElementById('allCandidates').innerHTML =
+    list.length ? list.map(candidateHtml).join('') : '<div class="empty">لا توجد نتائج مطابقة للفلتر الحالي.</div>';
+}
+
+function renderPaper() {
+  const overall = state.docs.metrics?.overall || {};
+  const signals = A(state.docs.ledger?.signals).slice().sort((a,b) =>
+    String(b.signalDate || '').localeCompare(String(a.signalDate || ''))
+  ).slice(0,100);
+
+  document.getElementById('paperCards').innerHTML = [
+    card('إجمالي الإشارات',N(overall.totalSignals,0),'منذ التفعيل'),
+    card('معلقة للدخول',N(overall.pendingEntries,0),'الجلسة التالية'),
+    card('صفقات مفتوحة',N(overall.openTrades,0),'ورقي فقط'),
+    card('صفقات مغلقة',N(overall.closedTrades,0),'بعد التكاليف'),
+    card('نسبة النجاح',`${N(overall.winRatePct,1)}%`,'ليست المعيار الوحيد'),
+    card('Profit Factor',N(overall.profitFactor,2),'الهدف البحثي ≥ 1.20'),
+    card('Average R',N(overall.averageR,2),'بعد التكاليف'),
+    card('Max Drawdown',`${N(overall.maxDrawdownPct,2)}%`,'قياس المخاطر'),
+    card('سلسلة الخسائر',N(overall.maxConsecutiveLosses,0),'قاطع الأمان'),
+    card('بعد جلسة',`${N(overall.snapshots?.['1']?.averageReturnPct,2)}%`,'متوسط القياس'),
+    card('بعد 5 جلسات',`${N(overall.snapshots?.['5']?.averageReturnPct,2)}%`,'متوسط القياس'),
+    card('بعد 10 جلسات',`${N(overall.snapshots?.['10']?.averageReturnPct,2)}%`,'متوسط القياس')
+  ].join('');
+
+  document.getElementById('paperRows').innerHTML = signals.length ? signals.map(signal => `
+    <tr>
+      <td><b class="ticker">${E(signal.ticker)}</b></td>
+      <td>${E(signal.strategyLabelAr || signal.strategyId || '—')}</td>
+      <td>${E(signal.signalDate || '—')}</td>
+      <td>${E(signal.status || '—')}</td>
+      <td>${E(signal.entryDate || '—')}<br>${N(signal.entryPrice,3)}</td>
+      <td>${E(signal.exitDate || signal.cancelDate || signal.expiryDate || '—')}<br>${N(signal.exitPrice,3)}</td>
+      <td>${N(signal.netReturnPct,2)}%</td>
+      <td>${N(signal.rMultiple,2)}</td>
+      <td>${N(signal.holdingSessions,0)}</td>
+    </tr>`).join('') : '<tr><td colspan="9" class="empty">تم إنشاء خط الأساس أو لم تصل جلسة جديدة بعد.</td></tr>';
+}
+
+function renderStrategies() {
+  const strategies = A(state.docs.health?.strategies);
+  document.getElementById('strategyRows').innerHTML = strategies.length ? strategies.map(item => `
+    <tr>
+      <td>${E(item.strategyLabelAr || item.strategyId || '—')}</td>
+      <td>${E(item.statusLabelAr || item.status || '—')}</td>
+      <td>${N(item.healthScore,1)}</td>
+      <td>${N(item.minimumAdaptivePaperScore,1)}</td>
+      <td>${N(item.variantStabilityPct,1)}%</td>
+      <td>${N(item.validationMetrics?.profitFactor,2)}</td>
+      <td>${N(item.validationMetrics?.averageR,2)}</td>
+      <td>${N(item.paperMetrics?.profitFactor,2)}</td>
+    </tr>`).join('') : '<tr><td colspan="8" class="empty">ملف صحة الاستراتيجيات غير متاح بعد.</td></tr>';
+}
+
+function renderHealth() {
+  const v133 = state.docs.v133 || {};
+  const stages = A(v133.pipeline?.stages);
+  document.getElementById('pipelineStages').innerHTML = stages.length ? stages.map(stage => `
+    <div class="stage"><span class="dot ${E(stage.status || 'warning')}"></span><b>${E(stage.labelAr || stage.name)}</b><span class="muted">${E(stage.detail || '')}</span></div>
+  `).join('') : '<div class="empty">ملف V13.3 غير متاح أو لم يُبن بعد.</div>';
+
+  const sourceFiles = A(v133.sourceHealth?.files);
+  const internal = Object.entries(state.sourceState).map(([key,value]) => ({
+    path: PATHS[key], status: value.ok ? 'available' : 'missing', session: null, ageHours: null
+  }));
+  const sources = sourceFiles.length ? sourceFiles : internal;
+  document.getElementById('sourceHealth').innerHTML = sources.map(source => `
+    <div class="source"><b>${E(source.path || 'مصدر')}</b><span class="pill ${source.status === 'available' ? 'good' : source.status === 'degraded' ? 'warn' : 'bad'}">${E(source.status || 'unknown')}</span><br><small>الجلسة: ${E(source.session || '—')} • العمر: ${N(source.ageHours,1)} ساعة</small></div>
+  `).join('');
+}
+
+function renderStockSearch(query = state.searchQuery) {
+  const container = safeElement('stockSearchCards');
+  if (!container) return;
+  const q = String(query || '').trim().toLowerCase();
+  const matches = q ? state.candidates.filter(item =>
+    item.ticker.toLowerCase().includes(q) ||
+    item.company.toLowerCase().includes(q) ||
+    item.strategy.toLowerCase().includes(q)
+  ).slice(0,20) : state.candidates.slice(0,9);
+  container.innerHTML =
+    matches.length ? matches.map(candidateHtml).join('') : '<div class="empty">لا يوجد السهم في نتائج V13 الحالية. استخدم V11 لتحليل كل أسهم السوق.</div>';
+}
+function renderSearchResults(query) {
+  const box = document.getElementById('searchResults');
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) { box.classList.remove('open'); box.innerHTML = ''; return; }
+  const matches = state.candidates.filter(item =>
+    item.ticker.toLowerCase().includes(q) ||
+    item.company.toLowerCase().includes(q) ||
+    item.strategy.toLowerCase().includes(q)
+  ).slice(0,12);
+  box.innerHTML = matches.length ? matches.map(item => `
+    <div class="search-row" data-search-candidate="${E(item.source)}|${E(item.status)}|${E(item.ticker)}|${E(item.strategy)}">
+      <b>${E(item.ticker)}</b> — ${E(item.company)}<br>
+      <span class="muted">${E(item.statusLabel)} • ${E(item.strategy)} • درجة ${N(item.score,1)}</span>
+    </div>`).join('') :
+    `<div class="search-row" data-open-v11="1"><b>لا توجد نتيجة في V13</b><br><span class="muted">اضغط لفتح V11 وتحليل السهم من قاعدة السوق الكاملة.</span></div>`;
+  box.classList.add('open');
+
+  box.querySelectorAll('[data-search-candidate]').forEach(row => {
+    row.onclick = () => {
+      const [source,status,ticker,strategy] = row.dataset.searchCandidate.split('|');
+      const found = state.candidates.find(item => item.source === source && item.status === status && item.ticker === ticker && item.strategy === strategy);
+      box.classList.remove('open');
+      if (found) openDrawer(found);
+    };
+  });
+  box.querySelector('[data-open-v11]')?.addEventListener('click', () => {
+    box.classList.remove('open');
+    showView('v11');
+  });
+}
+
+function showView(name) {
+  state.activeView = name;
+  document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(button => button.classList.toggle('active', button.dataset.view === name));
+  document.getElementById(`view-${name}`)?.classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (name === 'stock') renderStockSearch();
+}
+
+function bindEvents() {
+  document.querySelectorAll('.nav button[data-view]').forEach(button => button.onclick = () => showView(button.dataset.view));
+  document.querySelectorAll('[data-jump]').forEach(button => button.onclick = () => showView(button.dataset.jump));
+  safeElement('menuBtn')?.addEventListener('click', () => safeElement('sidebar')?.classList.toggle('open'));
+  safeElement('refreshBtn')?.addEventListener('click', loadAll);
+  safeElement('drawerClose')?.addEventListener('click', () => safeElement('drawerBackdrop')?.classList.remove('open'));
+  document.getElementById('drawerBackdrop').onclick = event => {
+    if (event.target.id === 'drawerBackdrop') event.currentTarget.classList.remove('open');
+  };
+  safeElement('candidateStatus')?.addEventListener('change', () => { renderRecommendations(); attachCandidateEvents(); });
+  safeElement('candidateSort')?.addEventListener('change', () => { renderRecommendations(); attachCandidateEvents(); });
+  document.querySelectorAll('[data-v11hint]').forEach(button => button.onclick = () => {
+    document.getElementById('v11Hint').textContent = button.dataset.v11hint;
+    document.getElementById('v11Frame').focus();
+  });
+  document.getElementById('globalSearch').oninput = event => {
+    state.searchQuery = event.target.value;
+    renderSearchResults(state.searchQuery);
+    if (state.activeView === 'stock') {
+      renderStockSearch(state.searchQuery);
+      attachCandidateEvents();
+    }
+  };
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.search')) document.getElementById('searchResults').classList.remove('open');
+  });
+}
+
+function renderAll() {
+  state.uiErrors = [];
+  safeRender('buildCandidates', buildCandidates);
+  safeRender('renderDashboard', renderDashboard);
+  safeRender('renderRecommendations', renderRecommendations);
+  safeRender('renderPaper', renderPaper);
+  safeRender('renderStrategies', renderStrategies);
+  safeRender('renderHealth', renderHealth);
+  safeRender('renderStockSearch', renderStockSearch);
+  safeRender('attachCandidateEvents', attachCandidateEvents);
+}
+
+async function loadAll() {
+  const button = safeElement('refreshBtn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'جارٍ التحديث…';
+  }
+  try {
+    await Promise.all(Object.entries(PATHS).map(([key,path]) => fetchJson(key,path)));
+    renderAll();
+  } catch (error) {
+    console.error('[V13.17] loadAll failed', error);
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = state.uiErrors.length ? `تحديث البيانات (${state.uiErrors.length} تنبيه)` : 'تحديث البيانات';
+    }
+  }
+}
+
+bindEvents();
+loadAll();
+</script>
+</body>
+</html>

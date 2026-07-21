@@ -103,7 +103,7 @@ const maxRanking = n(policy.dailyReport.maximumRankingRows, 15);
 const maxClosed = n(policy.dailyReport.maximumClosedRows, 30);
 
 const report = {
-  schemaVersion: '13.17.0',
+  schemaVersion: '13.17.1',
   generatedAt: new Date().toISOString(),
   sessionDate,
   analysisSession: center.analysisSession || null,
@@ -220,10 +220,10 @@ const entries = files.map(name => {
   };
 });
 writeJson(FILES.index, {
-  schemaVersion: '13.17.0',
+  schemaVersion: '13.17.1',
   generatedAt: new Date().toISOString(),
   totalReports: entries.length,
   latestSession: entries.at(-1)?.sessionDate || null,
   reports: entries
 });
-console.log(`V13.17 daily report: session=${sessionDate}, new=${newSignals.length}, entered=${entered.length}, closed=${closed.length}.`);
+console.log(`V13.17.1 daily report: session=${sessionDate}, new=${newSignals.length}, entered=${entered.length}, closed=${closed.length}.`);

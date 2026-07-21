@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "13.16.0",
-  "name": "Operational Hardening",
+  "schemaVersion": "13.17.1",
+  "name": "Production Operational Hardening",
   "freshness": {
     "marketMaximumMinutes": 90,
     "centerMaximumMinutes": 180,
@@ -11,7 +11,7 @@
     "criticalBelowPct": 90
   },
   "workflowAudit": {
-    "primaryWorkflow": ".github/workflows/install-and-run-v13-14-unified-center-final.yml",
+    "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
     "mode": "REPORT_ONLY",
     "scheduledLegacyIsWarning": true,
     "automaticArchiveEnabled": false
@@ -37,5 +37,11 @@
     "strategyRulesChanged": false,
     "rankingRulesChanged": false,
     "activationThresholdsChanged": false
+  },
+  "productionGate": {
+    "enabled": true,
+    "automaticBrokerOrders": false,
+    "manualConfirmationRequired": true,
+    "qualityReport": "data/market-quality-report.json"
   }
 }

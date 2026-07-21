@@ -363,7 +363,7 @@ function main() {
   };
 
   const output = {
-    schemaVersion: '13.14.0', patchVersion: '13.17.0', generatedAt, operationalStatus, operationalLabelAr,
+    schemaVersion: '13.14.0', patchVersion: '13.17.1', generatedAt, operationalStatus, operationalLabelAr,
     analysisSession, marketDate, marketCurrent, analysisCurrent, finalizationCurrent,
     sessionIntegrity: {
       ok: sessionIntegrityOk,
@@ -410,14 +410,14 @@ function main() {
       maximumSectorWeightPct: n(policy.decision.maximumSectorWeightPct, 30),
       maximumLiquidityParticipationPct: n(policy.decision.maximumLiquidityParticipationPct, 1)
     },
-    warningAr: 'الترتيب والاستراتيجيات لم تتغير في V13.17. أضيف بحث شامل للسوق وذكاء زخم وتدفق مال في مختبر الظل فقط. التنفيذ الحقيقي مغلق.'
+    warningAr: 'الإصدار تشغيلي محكوم بالبوابات. البحث شامل، وجودة OHLC إلزامية، وذكاء السيولة للتأكيد فقط. لا توجد أوامر وسيط تلقائية.'
   };
   writeJson(FILES.output, output);
-  console.log(`V13.17 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
+  console.log(`V13.17.1 center: status=${operationalStatus}, analysis=${analysisSession}, market=${marketDate}, candidates=${candidates.length}, ready=${counts.ready}`);
 }
 
 try { main(); }
 catch (error) {
-  console.error(`V13.17 unified center failed: ${error.stack || error.message}`);
+  console.error(`V13.17.1 unified center failed: ${error.stack || error.message}`);
   process.exit(1);
 }

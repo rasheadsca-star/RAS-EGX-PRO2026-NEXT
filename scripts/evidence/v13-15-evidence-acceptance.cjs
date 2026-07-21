@@ -51,7 +51,7 @@ function registrationFields(signal) {
   };
 }
 function fail(message) {
-  console.error(`V13.17 EVIDENCE ACCEPTANCE FAILURE: ${message}`);
+  console.error(`V13.17.1 EVIDENCE ACCEPTANCE FAILURE: ${message}`);
   process.exit(1);
 }
 function passes(metrics, gate) {
@@ -72,7 +72,7 @@ if (policy.safety.liveExecutionEnabled !== false) fail('policy live execution mu
 if (policy.safety.automaticOrderSubmission !== false) fail('automatic orders must be disabled');
 if (ledger.immutableRegistration !== true) fail('ledger immutable registration flag missing');
 if (center.liveExecutionEnabled !== false || center.automaticOrderSubmission !== false) fail('center live execution is not closed');
-if (center.patchVersion !== '13.17.0') fail(`unexpected center patch ${center.patchVersion}`);
+if (center.patchVersion !== '13.17.1') fail(`unexpected center patch ${center.patchVersion}`);
 
 const ids = A(ledger.signals).map(signal => signal.id);
 if (new Set(ids).size !== ids.length) fail('duplicate signal IDs');
@@ -113,4 +113,4 @@ for (const candidate of A(center.candidates)) {
   }
 }
 
-console.log(`V13.17 evidence acceptance passed: signals=${ids.length}, strategies=${health.strategies.length}.`);
+console.log(`V13.17.1 evidence acceptance passed: signals=${ids.length}, strategies=${health.strategies.length}.`);
