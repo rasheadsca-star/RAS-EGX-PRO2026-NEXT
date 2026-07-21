@@ -142,3 +142,26 @@ function buildSessionCalendar(repoRoot, summary) {
 }
 
 module.exports = { historyStatus, buildSummary, buildSessionCalendar };
+
+/* V13_17_1_HISTORY_SUMMARY_CLI_PATCH
+ * Permanent CLI entry point: the original file exported functions only, so
+ * `node scripts/history/history-summary-builder.cjs` silently did nothing.
+ */
+if (require.main === module) {
+  const repoRoot = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
+  const rawMap = readJson(path.join(repoRoot, 'data', 'symbol-map.json'), {});
+  const mapEntries = Array.isArray(rawMap)
+    ? rawMap
+    : Object.entries(rawMap || {}).map(([ticker, value]) => ({
+        ...(value || {}),
+        ticker: value?.ticker || ticker,
+      }));
+  const activeEntries = mapEntries.filter((entry) => entry?.ticker && entry.active !== false);
+  const summary = buildSummary(repoRoot, activeEntries, {});
+  const calendar = buildSessionCalendar(repoRoot, summary);
+  console.log(
+    `History summary rebuilt: symbols=${summary.symbolsTotal}, ` +
+    `latest=${summary.latestMarketSession || 'none'}, ` +
+    `calendar=${calendar.latestMarketSession || 'none'}`
+  );
+}
