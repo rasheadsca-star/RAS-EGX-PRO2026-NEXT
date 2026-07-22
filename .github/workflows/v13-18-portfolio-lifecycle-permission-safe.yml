@@ -1,0 +1,152 @@
+name: Install V13.18 Portfolio Lifecycle — Permission-Safe
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v13-18-portfolio-lifecycle-permission-safe.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-v13-18-portfolio-permission-safe
+  cancel-in-progress: true
+
+env:
+  V13_18_PAYLOAD_SHA256: "2de68057534180bf6540ba5de1d59aae44edafb9e4a6ccfccbf807cb8e734072"
+
+jobs:
+  install-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy3.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy1.outputs.page_url }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install permission-safe V13.18 payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PYINSTALL'
+          import base64, hashlib, io, os, tarfile
+          from pathlib import Path
+
+          raw = base64.b64decode('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')
+          actual = hashlib.sha256(raw).hexdigest()
+          expected = os.environ['V13_18_PAYLOAD_SHA256']
+          if actual != expected:
+              raise SystemExit(f'Payload checksum mismatch: {actual} != {expected}')
+
+          with tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz') as archive:
+              archive.extractall(Path('.'))
+
+          required = [
+              'scripts/ops/v13-18-portfolio-ui-patch.py',
+              'scripts/ops/v13-18-portfolio-acceptance.py',
+              'data/ops/v13-18-portfolio-policy.json',
+          ]
+          missing = [item for item in required if not Path(item).exists()]
+          if missing:
+              raise SystemExit('Missing V13.18 payload files: ' + ', '.join(missing))
+          print(f'Permission-safe V13.18 payload verified: sha256={actual}')
+          PYINSTALL
+
+      - name: Apply V13.18 portfolio lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/ops/v13-18-portfolio-ui-patch.py
+
+      - name: Validate V13.18 UI and local portfolio engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/ops/v13-18-portfolio-acceptance.py --ui-only
+          grep -q "V13.18 — مركز القرار والمحفظة" preview-v13/app/unified-decision-center.html
+          grep -q "محفظتي — متابعة الصفقات المفتوحة V13.18" preview-v13/app/unified-decision-center.html
+          grep -q "egx-v1318-portfolio-lifecycle" preview-v13/app/unified-decision-center.html
+          echo "V13.18 PERMISSION-SAFE INSTALL VALIDATION PASSED"
+
+      - name: Commit V13.18 application files only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Deliberately do not stage or modify any .github/workflows file here.
+          git add             scripts/ops/v13-18-portfolio-ui-patch.py             scripts/ops/v13-18-portfolio-acceptance.py             data/ops/v13-18-portfolio-policy.json             preview-v13/app/index.html             preview-v13/app/unified-decision-center.html
+
+          if git diff --cached --quiet; then
+            echo "V13.18 application files are already installed."
+          else
+            git commit -m "Install V13.18 portfolio lifecycle without workflow-token escalation"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Confirm no workflow file was included in the automated commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git show --name-only --pretty="" HEAD | grep -q '^\.github/workflows/'; then
+            echo "A workflow file was unexpectedly included in the automated commit."
+            exit 1
+          fi
+          echo "V13.18 workflow-permission safety passed."
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload repository for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy V13.18 attempt 1
+        id: deploy1
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Wait before deployment retry 2
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 60
+
+      - name: Deploy V13.18 attempt 2
+        if: steps.deploy1.outcome == 'failure'
+        id: deploy2
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+
+      - name: Wait before deployment retry 3
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        run: sleep 120
+
+      - name: Deploy V13.18 attempt 3
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        id: deploy3
+        uses: actions/deploy-pages@v4
+
+      - name: Final V13.18 permission-safe result
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "V13.18 PORTFOLIO LIFECYCLE INSTALLED"
+          echo "V13.18 application commit did not modify GitHub workflow files."
+          echo "Upload the separately supplied canonical production workflow manually for permanent reapplication."
+          echo "Automatic broker orders remain disabled."
