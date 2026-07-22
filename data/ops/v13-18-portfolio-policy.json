@@ -1,0 +1,44 @@
+{
+  "version": "13.18.0",
+  "module": "PORTFOLIO_POSITION_LIFECYCLE",
+  "storage": {
+    "scope": "LOCAL_DEVICE_ONLY",
+    "key": "egx-v1318-portfolio-lifecycle",
+    "uploadedToGitHub": false,
+    "backupExportImport": true,
+    "legacyMigrationKey": "egx-v137-portfolio"
+  },
+  "positionLifecycle": {
+    "openPositionPersistsWhenRecommendationDisappears": true,
+    "todayRecommendationSeparatedFromOpenPositionDecision": true,
+    "originalRecommendationSnapshotImmutable": true,
+    "manualEntryPrice": true,
+    "manualQuantity": true,
+    "manualFees": true,
+    "manualStopAndTargets": true,
+    "closeWithActualExitPrice": true,
+    "closedTradeHistory": true
+  },
+  "monitoringStates": [
+    "CONTINUE",
+    "NO_ADD_HOLD",
+    "RISK_REVIEW",
+    "TARGET1_HIT",
+    "TARGET2_HIT",
+    "STOP_HIT",
+    "DATA_MISSING"
+  ],
+  "safety": {
+    "automaticBrokerOrders": false,
+    "automaticBuySellExecution": false,
+    "disappearingFromDailyRecommendationsMeansSell": false,
+    "missingPriceCreatesDecision": false,
+    "stopPriceGuaranteedExecutionPrice": false,
+    "manualBrokerVerificationRequired": true
+  },
+  "permanence": {
+    "canonicalWorkflow": ".github/workflows/v13-17-1-exact-fresh-production-universe.yml",
+    "reappliedAfterProductionPayload": true,
+    "marker": "V13_18_PORTFOLIO_REAPPLY"
+  }
+}
