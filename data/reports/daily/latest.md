@@ -17,8 +17,8 @@
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 96.43%, below preferred 98%.
+- تحذير: Data coverage is 97.77%, below preferred 98%.
 - تحذير: 10 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 28 workflows can deploy Pages.
 
-بصمة التقرير: `fa2b57b378ecaf1b5c8e8cfff3c42c04ba40479647be2a70d707feeffea15f72`
+بصمة التقرير: `0f16b19e8e4ef16792f583b8e07c3c3727162ffb8d5d7dc2810889eed01a2b55`
