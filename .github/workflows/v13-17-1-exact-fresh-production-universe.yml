@@ -1,4 +1,4 @@
-name: Install & Run V13.17.1 Exact-Fresh Production Universe
+name: Install & Run V13.20 Exact-Fresh Production + Multi-Session Priority
 
 on:
   workflow_dispatch:
@@ -93,6 +93,37 @@ jobs:
           node --check scripts/fetch-market-data.js
           grep -q "V13_17_1_QUOTE_WINDOW_PATCH" scripts/fetch-market-data.js
 
+      # V13_18_PORTFOLIO_REAPPLY
+      - name: Reapply V13.18 portfolio lifecycle UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/ops/v13-18-portfolio-ui-patch.py
+          python3 scripts/ops/v13-18-portfolio-acceptance.py --ui-only
+
+      # V13_19_RECOMMENDATION_RISK_HEALTH_REAPPLY
+      - name: Reapply V13.19 recommendation history, risk and health UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f scripts/ops/v13-19-ui-patch.py
+          test -f scripts/ops/v13-19-acceptance.py
+          test -f data/ops/v13-19-policy.json
+          python3 scripts/ops/v13-19-ui-patch.py
+          python3 scripts/ops/v13-19-acceptance.py --ui-only
+
+      # V13_20_MULTI_SESSION_PRIORITY_REAPPLY
+      - name: Reapply V13.20 purchase-priority results UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f scripts/ops/v13-20-ui-patch.py
+          test -f scripts/ops/v13-20-acceptance.cjs
+          test -f scripts/research/v13-20-multi-session-ranking-backtest.cjs
+          test -f data/ops/v13-20-policy.json
+          python3 scripts/ops/v13-20-ui-patch.py
+          grep -q "V13_20_MULTI_SESSION_PRIORITY" preview-v13/app/unified-decision-center.html
+
       - name: Permanently enable executable history summary rebuild
         shell: bash
         run: |
@@ -138,12 +169,12 @@ jobs:
           node --check scripts/history/history-summary-builder.cjs
           grep -q "V13_17_1_HISTORY_SUMMARY_CLI_PATCH" scripts/history/history-summary-builder.cjs
 
-      - name: Permanently retire conflicting legacy schedulers
+      - name: Audit conflicting legacy schedulers without mutating workflows
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PYRETIRE'
-          import json, shutil
+          python3 - <<'PYAUDIT'
+          import json
           from pathlib import Path
           legacy = [
               '.github/workflows/v13-17-full-market-search-money-flow.yml',
@@ -153,29 +184,17 @@ jobs:
               '.github/workflows/V13_14_1_FIX.yml',
               '.github/workflows/install-and-run-v13-14-unified-center-final(1) (1).yml',
           ]
-          backup = Path('backups/v13-17-1-production-hardening/retired-workflows')
-          backup.mkdir(parents=True, exist_ok=True)
-          retired = []
-          for rel in legacy:
-              source = Path(rel)
-              if not source.exists():
-                  continue
-              destination = backup / source.name
-              if not destination.exists():
-                  shutil.copy2(source, destination)
-              source.unlink()
-              retired.append(rel)
+          present = [item for item in legacy if Path(item).exists()]
           report = {
-              'version': '13.17.1',
+              'version': '13.19.0',
               'canonicalWorkflow': '.github/workflows/v13-17-1-exact-fresh-production-universe.yml',
-              'retiredLegacySchedulers': legacy,
-              'removedThisRun': retired,
-              'backupDirectory': str(backup),
-              'reason': 'Prevent older scheduled workflows from overwriting the active production-gated release.'
+              'legacyWorkflowFilesStillPresent': present,
+              'workflowFilesModifiedByThisRun': False,
+              'actionRequired': 'Keep legacy workflows disabled. This production run does not create, delete, or edit workflow files.'
           }
           Path('data/v13-17-1-retired-workflows.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
-          print(f'Legacy workflow retirement complete: removed={len(retired)}')
-          PYRETIRE
+          print(f'Legacy workflow audit complete: present={len(present)}, no workflow files modified.')
+          PYAUDIT
 
       - name: Validate installed code and permanent safeguards
         shell: bash
@@ -217,10 +236,15 @@ jobs:
           node --check /tmp/v13171-index.js
           node --check /tmp/v13171-center.js
           node scripts/ops/v13-17-1-selftest.cjs
+          python3 scripts/ops/v13-19-acceptance.py --ui-only
+          grep -q "V13_19_RECOMMENDATION_HISTORY_RISK_HEALTH" preview-v13/app/unified-decision-center.html
+          grep -q "V13_19_RECOMMENDATION_RISK_HEALTH_REAPPLY" .github/workflows/v13-17-1-exact-fresh-production-universe.yml
+          grep -q "V13_20_MULTI_SESSION_PRIORITY_REAPPLY" .github/workflows/v13-17-1-exact-fresh-production-universe.yml
+          grep -q "V13_20_MULTI_SESSION_PRIORITY" preview-v13/app/unified-decision-center.html
           node scripts/history/history-summary-builder.cjs
           grep -q "V13_17_1_HISTORY_SUMMARY_CLI_PATCH" scripts/history/history-summary-builder.cjs
-          grep -q "EGX Pro V13.17.1" preview-v13/app/index.html
-          grep -q "V13.17.1 — مركز القرار الموحد" preview-v13/app/unified-decision-center.html
+          grep -q "EGX Pro V13.20" preview-v13/app/index.html
+          grep -q "V13.20 — أفضلية الشراء والاختبار المستمر" preview-v13/app/unified-decision-center.html
           grep -q "production-readiness-v13-17-1.json" preview-v13/app/unified-decision-center.html
           grep -q '"automaticBrokerOrders": false' data/v13-17-1-production-policy.json
           echo "V13.17.1 INSTALL AND PERMANENCE VALIDATION PASSED"
@@ -580,6 +604,15 @@ jobs:
           node scripts/ops/v13-16-daily-report.cjs
           node scripts/ops/v13-17-acceptance.cjs
 
+      - name: Build V13.20 multi-session purchase-priority backtest
+        if: steps.mode.outputs.mode != 'skip'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/research/v13-20-multi-session-ranking-backtest.cjs
+          node scripts/ops/v13-20-acceptance.cjs
+          echo "V13.20 CONTINUOUS RESULTS UPDATED"
+
       - name: Build production readiness gate
         if: steps.mode.outputs.mode != 'skip'
         run: node scripts/ops/v13-17-1-production-gate.cjs
@@ -631,6 +664,7 @@ jobs:
             scripts/evidence
             scripts/ops
             scripts/lab
+            scripts/research
             data/v13-14-unified-center-policy.json
             data/v13-15-evidence-policy.json
             data/v13-16-operational-policy.json
@@ -652,6 +686,7 @@ jobs:
             data/ops
             data/reports
             data/lab
+            data/research
             data/history
             data/history-summary.json
             data/history-last-run.json
@@ -667,12 +702,11 @@ jobs:
             preview-v13/app/unified-decision-center.html
             backups/v13-17-1-production-hardening
           )
-          git add -A .github/workflows
           for item in "${paths[@]}"; do [ -e "$item" ] && git add "$item"; done
           if git diff --cached --quiet; then
-            echo "No V13.17.1 changes to commit."
+            echo "No V13.20 application or production-data changes to commit."
           else
-            git commit -m "Operate V13.17.1 on a verified exact-fresh production universe"
+            git commit -m "Operate V13.20 multi-session priority on the exact-fresh production core"
             git pull --rebase -X ours origin main
             git push origin HEAD:main
           fi
@@ -687,7 +721,7 @@ jobs:
         with:
           path: "."
 
-      - name: Deploy V13.17.1 attempt 1
+      - name: Deploy V13.20 attempt 1
         if: steps.mode.outputs.mode != 'skip' && steps.mode.outputs.mode != 'validate_only'
         id: deploy1
         continue-on-error: true
@@ -697,7 +731,7 @@ jobs:
         if: steps.mode.outputs.mode != 'skip' && steps.mode.outputs.mode != 'validate_only' && steps.deploy1.outcome == 'failure'
         run: sleep 90
 
-      - name: Deploy V13.17.1 attempt 2
+      - name: Deploy V13.20 attempt 2
         if: steps.mode.outputs.mode != 'skip' && steps.mode.outputs.mode != 'validate_only' && steps.deploy1.outcome == 'failure'
         id: deploy2
         continue-on-error: true
@@ -707,7 +741,7 @@ jobs:
         if: steps.mode.outputs.mode != 'skip' && steps.mode.outputs.mode != 'validate_only' && steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         run: sleep 180
 
-      - name: Deploy V13.17.1 attempt 3
+      - name: Deploy V13.20 attempt 3
         if: steps.mode.outputs.mode != 'skip' && steps.mode.outputs.mode != 'validate_only' && steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         id: deploy3
         uses: actions/deploy-pages@v4
@@ -729,4 +763,5 @@ jobs:
             echo "Production gate blocked: current session did not finalize. Provisional diagnostics were committed and deployed."
             exit 1
           fi
-          echo "V13.17.1 PRODUCTION RUN PASSED"
+          echo "V13.17.1 PRODUCTION CORE PASSED"
+          echo "V13.19 RECOMMENDATION HISTORY, PORTFOLIO RISK & SYSTEM HEALTH PASSED"
