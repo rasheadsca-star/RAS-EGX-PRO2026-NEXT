@@ -112,10 +112,26 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
+def ensure_v19_labels(text: str) -> str:
+    # Do not downgrade an already installed successor release.
+    if 'V13_20_MULTI_SESSION_PRIORITY' in text:
+        return text
+    text = re.sub(r'<title>V13\.[^<]*</title>', '<title>V13.19 — التوصيات والمحفظة والمخاطر</title>', text, count=1)
+    text = re.sub(r'<h1>V13\.[^<]*</h1>', '<h1>V13.19 — التوصيات والمحفظة والمخاطر</h1>', text, count=1)
+    text = text.replace('تعذر تحميل مركز V13.18:', 'تعذر تحميل مركز V13.19:', 1)
+    text = text.replace("new Notification('EGX Pro V13.18'", "new Notification('EGX Pro V13.19'", 1)
+    return text
+
+
 def patch_center():
     text = CENTER.read_text(encoding='utf-8')
     if MARKER in text:
-        print('V13.19 history, risk and health UI already applied.')
+        repaired = ensure_v19_labels(text)
+        if repaired != text:
+            CENTER.write_text(repaired, encoding='utf-8')
+            print('V13.19 UI already existed; repaired version title and labels.')
+        else:
+            print('V13.19 history, risk and health UI already applied.')
         return
     if 'V13_18_PORTFOLIO_LIFECYCLE' not in text:
         raise RuntimeError('V13.18 portfolio base must be applied before V13.19.')
@@ -143,6 +159,7 @@ def patch_center():
     text = text.replace('portfolioSave(rows);renderPortfolio()}\nfunction portfolioDelete', 'portfolioSave(rows);renderPortfolio();renderV19Risk();renderV19History()}\nfunction portfolioDelete', 1)
     text = text.replace("portfolioSave(portfolioLoad().filter(x=>x.id!==id));renderPortfolio()", "portfolioSave(portfolioLoad().filter(x=>x.id!==id));renderPortfolio();renderV19Risk();renderV19History()", 1)
     text = text.replace("portfolioSave(clean);renderPortfolio();alert('تم استيراد النسخة الاحتياطية.')", "portfolioSave(clean);renderPortfolio();renderV19Risk();renderV19History();alert('تم استيراد النسخة الاحتياطية.')", 1)
+    text = ensure_v19_labels(text)
     CENTER.write_text(text, encoding='utf-8')
     print('Applied V13.19 recommendation history, portfolio risk and system health UI.')
 

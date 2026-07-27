@@ -42,7 +42,16 @@ def main():
     if not CENTER.exists(): raise SystemExit(f'Missing {CENTER}')
     html=CENTER.read_text('utf-8')
     if MARKER in html:
-        print('V13.20 UI already installed.')
+        repaired=html
+        repaired=re.sub(r'<title>V13\.[^<]*</title>','<title>V13.20 — أفضلية الشراء والاختبار المستمر</title>',repaired,count=1)
+        repaired=re.sub(r'<h1>V13\.[^<]*</h1>','<h1>V13.20 — أفضلية الشراء والاختبار المستمر</h1>',repaired,count=1)
+        if repaired!=html:
+            CENTER.write_text(repaired,'utf-8')
+        if INDEX.exists():
+            idx=INDEX.read_text('utf-8')
+            idx2=idx.replace('EGX Pro V13.19','EGX Pro V13.20').replace('V13.19 — التوصيات والمحفظة والمخاطر','V13.20 — أفضلية الشراء والاختبار المستمر')
+            if idx2!=idx: INDEX.write_text(idx2,'utf-8')
+        print('V13.20 UI already installed; version labels verified.')
         return
     if 'V13_19_RECOMMENDATION_HISTORY_RISK_HEALTH' not in html:
         raise SystemExit('V13.19 must be installed before V13.20')

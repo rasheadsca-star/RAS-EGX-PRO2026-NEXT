@@ -35,9 +35,14 @@ def main():
     index = INDEX.read_text(encoding='utf-8')
     policy = json.loads(POLICY.read_text(encoding='utf-8'))
 
+    require(html, MARKER, 'main marker')
+    v19_title = 'V13.19 — التوصيات والمحفظة والمخاطر'
+    v20_title = 'V13.20 — أفضلية الشراء والاختبار المستمر'
+    successor_ok = 'V13_20_MULTI_SESSION_PRIORITY' in html and v20_title in html
+    if v19_title not in html and not successor_ok:
+        fail(f'missing V13.19 title or valid V13.20 successor title: {v19_title}')
+
     for needle, label in [
-        (MARKER, 'main marker'),
-        ('V13.19 — التوصيات والمحفظة والمخاطر', 'V13.19 title'),
         ('سجل التوصيات اليومية V13.19', 'recommendation history panel'),
         ('مخاطر المحفظة V13.19', 'portfolio risk panel'),
         ('صحة النظام V13.19', 'system health panel'),
@@ -55,7 +60,8 @@ def main():
     ]:
         require(html, needle, label)
 
-    require(index, 'EGX Pro V13.19', 'entry page version')
+    if 'EGX Pro V13.19' not in index and 'EGX Pro V13.20' not in index:
+        fail('missing V13.19/V13.20 entry page version')
     require(index, 'V13_19_RECOMMENDATION_HISTORY_RISK_HEALTH_INDEX', 'entry marker')
 
     ids = re.findall(r'\bid="([^"]+)"', html)
