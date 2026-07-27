@@ -1,0 +1,114 @@
+name: Deploy V13.20 Stable Confirmed App
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v13-20-stable-work-deploy.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-v13-20-stable-confirmed
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout confirmed main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate V13.20 application
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            preview-v13/app/index.html
+            preview-v13/app/unified-decision-center.html
+            scripts/ops/v13-20-acceptance.cjs
+            data/ops/v13-20-policy.json
+            data/research/v13-20-multi-session-results.json
+            data/market-quality-acceptance-v13-17-1.json
+            data/v13-17-1-production-policy.json
+          )
+          for file in "${required[@]}"; do
+            test -f "$file" || { echo "Missing required file: $file"; exit 1; }
+          done
+          grep -q "EGX Pro V13.20" preview-v13/app/index.html
+          grep -q "V13.20 — أفضلية الشراء والاختبار المستمر" preview-v13/app/unified-decision-center.html
+          grep -q "التوصية الأولى" preview-v13/app/unified-decision-center.html
+          grep -q "التوصية الثانية" preview-v13/app/unified-decision-center.html
+          grep -q "التوصية الثالثة" preview-v13/app/unified-decision-center.html
+          grep -q '"automaticBrokerOrders": false' data/v13-17-1-production-policy.json
+          python3 - <<'PY'
+          import json, re
+          from pathlib import Path
+          for file in [
+              'data/ops/v13-20-policy.json',
+              'data/research/v13-20-multi-session-results.json',
+              'data/market-quality-acceptance-v13-17-1.json',
+              'data/v13-17-1-production-policy.json',
+          ]:
+              json.loads(Path(file).read_text(encoding='utf-8'))
+          for source, target in [
+              ('preview-v13/app/index.html', '/tmp/v1320-index.js'),
+              ('preview-v13/app/unified-decision-center.html', '/tmp/v1320-center.js'),
+          ]:
+              text = Path(source).read_text(encoding='utf-8')
+              scripts = '\n'.join(re.findall(r'<script[^>]*>(.*?)</script>', text, flags=re.S))
+              Path(target).write_text(scripts, encoding='utf-8')
+              ids = re.findall(r'\bid=["\']([^"\']+)["\']', text)
+              duplicates = sorted({value for value in ids if ids.count(value) > 1})
+              if duplicates:
+                  raise SystemExit(f'Duplicate HTML ids in {source}: {duplicates}')
+          print('JSON and HTML structure passed')
+          PY
+          node --check /tmp/v1320-index.js
+          node --check /tmp/v1320-center.js
+          node scripts/ops/v13-20-acceptance.cjs
+          echo "V13.20 STABLE APPLICATION VALIDATION PASSED"
+
+      - name: Publish deployment status
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const q=JSON.parse(fs.readFileSync('data/market-quality-acceptance-v13-17-1.json','utf8'));
+          const r=JSON.parse(fs.readFileSync('data/research/v13-20-multi-session-results.json','utf8'));
+          console.log({
+            appVersion:'V13.20',
+            lastConfirmedSession:r?.currentSession?.sessionDate||r?.source?.marketDate||null,
+            qualityAccepted:q?.ok===true,
+            executionGrade:q?.executionGrade===true,
+            automaticBrokerOrders:false,
+            note:'Static deployment of the latest confirmed session; no new market session is invented.'
+          });
+          NODE
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload V13.20 site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy V13.20
+        id: deployment
+        uses: actions/deploy-pages@v4
