@@ -1,18 +1,18 @@
-# تقرير جلسة 2026-07-27
+# تقرير جلسة 2026-07-28
 
 - حالة التشغيل: **يحتاج متابعة**
-- الأول فنيًا: **MASR**
-- أول B للمراقبة: **ADIB**
+- الأول فنيًا: **GDWA**
+- أول B للمراقبة: **SPMD**
 - الجاهز ورقيًا: **لا يوجد**
-- إشارات جديدة: **21**
-- دخول جديد: **0**
-- صفقات مغلقة: **9**
-- منتهية دون دخول: **1**
+- إشارات جديدة: **20**
+- دخول جديد: **20**
+- صفقات مغلقة: **7**
+- منتهية دون دخول: **2**
 
 ## حالة الاستراتيجيات
 
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 14, PF 1.7383, Average R 0.3876
-- breakout: RESEARCH_ONLY — صفقات مغلقة 10, PF 1.0475, Average R 0.0299
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 20, PF 2.0088, Average R 0.4766
+- breakout: RESEARCH_ONLY — صفقات مغلقة 11, PF 0.8979, Average R -0.0682
 - pullback: RESEARCH_ONLY — صفقات مغلقة 2, PF 999, Average R 1.8752
 
 ## ملاحظات التشغيل
@@ -21,4 +21,4 @@
 - تحذير: 11 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 31 workflows can deploy Pages.
 
-بصمة التقرير: `45d20a7393ab4155da9e3b28592f65493e8fc3b7217e66fb9187a189d5966734`
+بصمة التقرير: `8b15a642e9b4d18fd93caa2253fba09eb5c7e499488531f64a8cca0ace57826a`
