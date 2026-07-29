@@ -1,25 +1,24 @@
-# تقرير جلسة 2026-07-28
+# تقرير جلسة 2026-07-29
 
-- حالة التشغيل: **موقوف**
-- الأول فنيًا: **GDWA**
-- أول B للمراقبة: **SPMD**
+- حالة التشغيل: **يحتاج متابعة**
+- الأول فنيًا: **UNIP**
+- أول B للمراقبة: **GDWA**
 - الجاهز ورقيًا: **لا يوجد**
 - إشارات جديدة: **20**
-- دخول جديد: **20**
-- صفقات مغلقة: **7**
+- دخول جديد: **22**
+- صفقات مغلقة: **21**
 - منتهية دون دخول: **2**
 
 ## حالة الاستراتيجيات
 
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 20, PF 2.0088, Average R 0.4766
-- breakout: RESEARCH_ONLY — صفقات مغلقة 11, PF 0.8979, Average R -0.0682
-- pullback: RESEARCH_ONLY — صفقات مغلقة 2, PF 999, Average R 1.8752
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 38, PF 1.0252, Average R 0.0156
+- breakout: RESEARCH_ONLY — صفقات مغلقة 12, PF 1.1291, Average R 0.079
+- pullback: RESEARCH_ONLY — صفقات مغلقة 4, PF 1.7859, Average R 0.4126
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is only 87.5%.
-- تحذير: Candidate market data age reached 161.6 minutes.
+- تحذير: Data coverage is 96.43%, below preferred 98%.
 - تحذير: 11 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 31 workflows can deploy Pages.
 
-بصمة التقرير: `5653e8292119316e787c389c6e029a48628926c4c1e4bb6aa292533c471a27ca`
+بصمة التقرير: `726e46592bce89a54aa56ca26f73d8f1c48a2438903c5a7a363c52e115e99f0b`
