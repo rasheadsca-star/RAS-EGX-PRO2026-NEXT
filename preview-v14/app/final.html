@@ -27,6 +27,20 @@
 <script>
 'use strict';
 const frame=document.getElementById('appFrame');
+function cleanImportedNames(){
+  try{
+    const doc=frame.contentDocument;if(!doc?.body)return;
+    const walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);
+    let node;
+    while((node=walker.nextNode())){
+      const text=String(node.nodeValue||'');
+      if(/AdSlot|Arab for Development and Real Estate Investment|Arab Development & Real Estate Investment/.test(text)){
+        node.nodeValue=text.replace(/[^\n]*?(?:AdSlot|Arab for Development and Real Estate Investment|Arab Development & Real Estate Investment)[^\n]*/g,'العربية للتنمية والاستثمار العقاري');
+      }
+    }
+  }catch(error){console.warn('Name cleanup skipped',error)}
+}
+frame.addEventListener('load',cleanImportedNames);
 document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===button));frame.src=button.dataset.src}));
 </script>
 </body>
