@@ -1,6 +1,6 @@
 # تقرير جلسة 2026-07-28
 
-- حالة التشغيل: **يحتاج متابعة**
+- حالة التشغيل: **موقوف**
 - الأول فنيًا: **GDWA**
 - أول B للمراقبة: **SPMD**
 - الجاهز ورقيًا: **لا يوجد**
@@ -17,8 +17,8 @@
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 95.98%, below preferred 98%.
+- تحذير: Data coverage is only 87.5%.
 - تحذير: 11 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 31 workflows can deploy Pages.
 
-بصمة التقرير: `df929f72d21a364a435bcc26e76429c1655329681905175f88ca7f7d2189de69`
+بصمة التقرير: `f51d34e051b0009e24724b02ba40e82a10f71be7a9b70b58af6beb819bfd4e60`
