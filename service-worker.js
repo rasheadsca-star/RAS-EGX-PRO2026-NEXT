@@ -1,5 +1,5 @@
-// V15.4-LATEST-ICON-MIGRATION
-const BUILD = 'V15.4-LATEST-ICON-MIGRATION-20260803';
+// V16 PROFESSIONAL ICON MIGRATION
+const BUILD = 'V16.0-PROFESSIONAL-20260803';
 const ROOT_URL = new URL('./', self.location.href);
 const LATEST_URL = new URL(`./?launch=legacy-icon&latest=1&sw=${encodeURIComponent(BUILD)}`, ROOT_URL).href;
 
@@ -10,7 +10,8 @@ function isLegacyAppUrl(value) {
     return [
       '/preview-v13/app/unified-decision-center.html',
       '/preview-v13/app/index.html',
-      '/preview-v14/app/index.html'
+      '/preview-v14/app/index.html',
+      '/preview-v15/app/index.html'
     ].some(suffix => path.endsWith(suffix));
   } catch (_) {
     return false;
@@ -24,42 +25,33 @@ function isDirectLaunch(request, url) {
   )) return true;
   if (!request.referrer) return true;
   try {
-    const referrer = new URL(request.referrer);
-    return referrer.origin !== url.origin;
+    return new URL(request.referrer).origin !== url.origin;
   } catch (_) {
     return true;
   }
 }
 
-self.addEventListener('install', event => {
-  event.waitUntil(self.skipWaiting());
-});
+self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(keys.map(key => caches.delete(key)));
     await self.clients.claim();
-
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     await Promise.all(windows.map(async client => {
       if (!isLegacyAppUrl(client.url)) return;
-      try {
-        await client.navigate(LATEST_URL);
-      } catch (_) {
-        // The next direct navigation is still intercepted below.
-      }
+      try { await client.navigate(LATEST_URL); } catch (_) {}
     }));
   })());
 });
 
 self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
-  if (event.data && event.data.type === 'OPEN_LATEST') {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data?.type === 'OPEN_LATEST') {
     event.waitUntil((async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      const current = windows[0];
-      if (current) await current.navigate(LATEST_URL);
+      if (windows[0]) await windows[0].navigate(LATEST_URL);
       else await self.clients.openWindow(LATEST_URL);
     })());
   }
@@ -70,19 +62,17 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-
   if (req.mode === 'navigate' && isLegacyAppUrl(url) && isDirectLaunch(req, url)) {
     event.respondWith(Response.redirect(LATEST_URL, 302));
     return;
   }
-
   event.respondWith((async () => {
     try {
       return await fetch(req, { cache: 'no-store' });
     } catch (error) {
       if (req.mode === 'navigate') {
         return new Response(
-          '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><body style="background:#061426;color:#fff;font-family:Arial;padding:30px"><h2>غير متصل</h2><p>تم منع عرض نسخة قديمة. اتصل بالإنترنت ثم أعد فتح التطبيق.</p></body></html>',
+          '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><body style="background:#061426;color:#fff;font-family:Arial;padding:30px"><h2>غير متصل</h2><p>لا يتم عرض نسخة قديمة دون اتصال. اتصل بالإنترنت ثم أعد فتح EGX Pro V16.</p></body></html>',
           { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } }
         );
       }
