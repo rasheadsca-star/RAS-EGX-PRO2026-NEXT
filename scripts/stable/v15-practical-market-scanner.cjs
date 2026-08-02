@@ -432,7 +432,8 @@ function main() {
       stabilityScore: stabilityResult.score,
       stabilityLabelAr: stabilityResult.labelAr,
       stabilityReasonsAr: stabilityResult.reasonsAr,
-      pilotPassed: validationPassed && testPassed && stabilityResult.passedPilotGate,
+      pilotPassed: validationPassed && testPassed,
+      pilotRiskMode: validationPassed && testPassed && !stabilityResult.passedProfessionalGate ? 'REDUCED_RISK' : 'STANDARD_RISK',
       professionalEvidencePassed: validationPassed && testPassed && stabilityResult.passedProfessionalGate,
       evidenceTier: stabilityResult.passedProfessionalGate ? 'PROFESSIONAL_BACKTEST' : 'PILOT_SHORT_SAMPLE',
       selectionScore: round(selectionScore, 2),
@@ -462,7 +463,7 @@ function main() {
       if (item.ret20 > MAX_RECOMMENDATION_RET20) chaseReasons.push(`صعود 20 جلسة ${round(item.ret20, 2)}%`);
       if (item.breakoutPct > 8) chaseReasons.push('ممتد بعيدًا عن الاختراق');
       if (riskReward < MIN_RISK_REWARD) chaseReasons.push(`العائد/المخاطرة ${round(riskReward, 2)} أقل من الحد`);
-      const professionalEligible = chaseReasons.length === 0 && result.stabilityScore >= 45;
+      const professionalEligible = chaseReasons.length === 0 && result.stabilityScore >= 10;
       opportunities.push({
         ticker: item.ticker,
         companyNameAr: item.companyNameAr,
@@ -473,6 +474,8 @@ function main() {
         modelStabilityScore: result.stabilityScore,
         modelStabilityLabelAr: result.stabilityLabelAr,
         modelEvidenceTier: result.evidenceTier,
+        pilotRiskMode: result.pilotRiskMode,
+        modelStabilityReasonsAr: result.stabilityReasonsAr,
         localRank: localRank + 1,
         combinedScore: result.selectionScore * 3 + (12 - localRank) * 2 + result.stabilityScore * 0.1,
         extended: !professionalEligible,
