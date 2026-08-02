@@ -57,6 +57,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check preview-v16/app/app.js
+          node --check preview-v16/app/pilot-policy.js
+          node --check preview-v16/app/launch.js
           test -s preview-v16/app/index.html
           test -s preview-v16/app/styles.css
 
@@ -103,10 +105,12 @@ jobs:
           const f=read('data/fetch-status.json');
           const evaluation=read('data/stable/v15-recommendation-evaluation.json');
           const out={
-            schemaVersion:'16.0.0',
+            schemaVersion:'16.0.1',
             generatedAt:new Date().toISOString(),
             lastAutomaticScanAt:new Date().toISOString(),
             productInterface:'EGX_PROFESSIONAL_V16',
+            evidenceTier:d.evidenceTier||'RESEARCH',
+            professionalEvidenceReady:d.professionalEvidenceReady===true,
             automation:{enabled:true,cadence:'HOURLY_AFTER_MARKET_CLOSE',cron:'20 13-17 * * 0-4',tradingDays:'SUNDAY_THROUGH_THURSDAY',attemptsPerTradingDay:5,timezoneReference:'UTC_WITH_CAIRO_AFTER_CLOSE_GUARD'},
             sessionDate:d.sessionDate||null,
             expectedLatestSession:d.expectedLatestSession||p.expectedSession||null,
@@ -140,6 +144,7 @@ jobs:
           const updateStatus=read('data/stable/v15-update-status.json');
           const html=fs.readFileSync('preview-v16/app/index.html','utf8');
           const js=fs.readFileSync('preview-v16/app/app.js','utf8');
+          const policy=fs.readFileSync('preview-v16/app/pilot-policy.js','utf8');
           const root=fs.readFileSync('index.html','utf8');
           const manifest=read('manifest.json');
           if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected decision schema');
@@ -148,25 +153,39 @@ jobs:
           if(updateStatus.productInterface!=='EGX_PROFESSIONAL_V16') throw new Error('V16 interface marker missing');
           if(updateStatus.automation?.enabled!==true||updateStatus.automation?.attemptsPerTradingDay!==5) throw new Error('Automatic scan cadence invalid');
           if(updateStatus.recommendationGeneratedAt!==d.generatedAt||updateStatus.sessionDate!==d.sessionDate) throw new Error('Heartbeat does not point to latest recommendation set');
+          if(updateStatus.evidenceTier!==d.evidenceTier||updateStatus.professionalEvidenceReady!==d.professionalEvidenceReady) throw new Error('Evidence tier heartbeat mismatch');
           if(evaluation.methodology?.version!=='V15_CONSERVATIVE_DAILY_OHLC_1.0'||ledger.methodologyVersion!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Evaluation methodology mismatch');
           if(!Array.isArray(evaluation.records)||!Array.isArray(ledger.records)) throw new Error('Recommendation archive malformed');
           const ids=evaluation.records.map(x=>x.id);if(new Set(ids).size!==ids.length) throw new Error('Duplicate recommendation IDs');
           if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD'||d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
           if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
+          if(!(d.guardrails?.minimumRiskReward>=1.15)) throw new Error('Minimum professional risk/reward missing');
+          if(!(d.guardrails?.maximumRecommendationRsi<=78)) throw new Error('Anti-chasing RSI gate missing');
+          if(d.guardrails?.hotMomentumWatchOnly!==true||d.guardrails?.modelStabilityGate!==true) throw new Error('Professional watch/stability gates missing');
           if(f.executionGrade!==true||p.ready!==true){if(d.practicalReady!==false||d.recommendations?.length) throw new Error('Recommendations leaked from unverified prices');}
-          if(!Array.isArray(v.validatedModels)||!v.validatedModels.length) throw new Error('No validated models');
+          if(!Array.isArray(v.validatedModels)||!v.validatedModels.length) throw new Error('No Pilot-validated models');
           for(const id of v.validatedModels){const m=v.models.find(x=>x.id===id);if(!m?.validationPassed||!m?.testPassed) throw new Error(`${id} did not pass both stages`);if(!(m.test.targetRatePct>m.test.stopRatePct&&m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${id} failed final evidence gate`);}
           if(d.practicalReady){
             if(d.sessionDate!==d.expectedLatestSession||d.sessionDate!==p.expectedSession||p.acceptedRows<80) throw new Error('Recommendations are stale or market breadth is insufficient');
             if(!Array.isArray(d.recommendations)||d.recommendations.length<1||d.recommendations.length>5) throw new Error('Invalid recommendation count');
-            for(const r of d.recommendations){if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability gate failed`);if(!(r.entryLow>0&&r.entryHigh>=r.entryLow&&r.stopLoss<r.entryLow&&r.target1>r.entryHigh)) throw new Error(`${r.ticker}: invalid plan`);if(!(r.outOfSampleAverageReturnPct>0&&r.outOfSampleProfitFactor>=1.15)) throw new Error(`${r.ticker}: weak out-of-sample evidence`);if(!evaluation.records.find(x=>x.recommendationDate===d.sessionDate&&x.ticker===r.ticker&&x.strategyId===r.strategyId)) throw new Error(`${r.ticker}: recommendation not archived`);}
+            for(const r of d.recommendations){
+              if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability gate failed`);
+              if(!(r.entryLow>0&&r.entryHigh>=r.entryLow&&r.stopLoss<r.entryLow&&r.target1>r.entryHigh)) throw new Error(`${r.ticker}: invalid plan`);
+              if(!(r.riskReward>=d.guardrails.minimumRiskReward)) throw new Error(`${r.ticker}: risk/reward below professional minimum`);
+              if(!(r.rsi14<=d.guardrails.maximumRecommendationRsi)) throw new Error(`${r.ticker}: RSI chase gate failed`);
+              if(!(r.ret5Pct<=d.guardrails.maximumRecommendationReturn5Pct)) throw new Error(`${r.ticker}: five-session chase gate failed`);
+              if(!(r.outOfSampleAverageReturnPct>0&&r.outOfSampleProfitFactor>=1.15)) throw new Error(`${r.ticker}: weak out-of-sample evidence`);
+              if(d.professionalEvidenceReady!==true&&r.pilotRiskMode!=='REDUCED_RISK') throw new Error(`${r.ticker}: short evidence sample must use reduced risk`);
+              if(!evaluation.records.find(x=>x.recommendationDate===d.sessionDate&&x.ticker===r.ticker&&x.strategyId===r.strategyId)) throw new Error(`${r.ticker}: recommendation not archived`);
+            }
           }
           for(const marker of ['EGX Pro Professional V16','جاهزية المنتج للاعتماد المهني','المراجعة المالية','السجل الحي والاختبارات','portfolioRiskLimit','fundamentalTicker']) if(!html.includes(marker)) throw new Error(`V16 HTML marker missing: ${marker}`);
           for(const marker of ['egx-v16-fundamentals','لا تُستخدم نسبة Backtest','حساس لدورة السوق','automaticOrders','riskReward']) if(!js.includes(marker)) throw new Error(`V16 JS marker missing: ${marker}`);
+          for(const marker of ['Pilot منخفض المخاطرة','Math.min(requestedRiskPct, 0.25)','minimumRiskReward','maximumRecommendationRsi']) if(!policy.includes(marker)) throw new Error(`Pilot policy marker missing: ${marker}`);
           for(const marker of ['v15-update-status.json','installed-icon','preview-v16/app/index.html','cache:\'no-store\'']) if(!root.includes(marker)) throw new Error(`V16 launcher marker missing: ${marker}`);
           if(manifest.start_url!=='./?launch=pwa&latest=1'||manifest.short_name!=='EGX Pro V16') throw new Error('Installed manifest is not V16');
           const htmlIds=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);const dup=[...new Set(htmlIds.filter((x,i)=>htmlIds.indexOf(x)!==i))];if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
-          console.log({interface:updateStatus.productInterface,session:d.sessionDate,prices:{ready:p.ready,accepted:p.acceptedRows,source:p.source?.name},recommendations:d.recommendations.map(x=>x.ticker),liveEvidence:evaluation.summary,missingSymbols:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows}});
+          console.log({interface:updateStatus.productInterface,evidenceTier:d.evidenceTier,session:d.sessionDate,prices:{ready:p.ready,accepted:p.acceptedRows,source:p.source?.name},recommendations:d.recommendations.map(x=>({ticker:x.ticker,rr:x.riskReward,rsi:x.rsi14,riskMode:x.pilotRiskMode})),liveEvidence:evaluation.summary,missingSymbols:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows}});
           NODE
 
       - name: Commit refreshed market truth and reports
