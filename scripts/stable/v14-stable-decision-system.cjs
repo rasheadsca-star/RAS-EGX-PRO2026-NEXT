@@ -582,24 +582,72 @@ function estimateCandidate(candidate, historicalSignals, regime, policy) {
   };
 }
 
-function watchScore(candidate) {
+// V14_HYBRID_WATCH_RANKING: technical selection first, probability and risk decide order.
+function watchScore(candidate, estimate = {}) {
   const stock = candidate?.stock || {};
   const risk = candidate?.riskProfile || {};
   const exactFresh = candidate?.exactFresh !== false;
   const hardFailures = num(candidate?.hardFailureCount, arr(candidate?.hardFailures).length || 0);
   const rsi14 = num(stock.rsi14 ?? candidate?.rsi14, 55);
-  const overboughtPenalty = Math.max(0, rsi14 - 72) * 2;
+  const targetProbability = num(estimate?.targetProbabilityPct, 0);
+  const stopProbability = num(estimate?.stopProbabilityPct, 100);
+  const probabilityEdge = num(estimate?.probabilityEdgePct, targetProbability - stopProbability);
+  const expectedReturn = num(estimate?.expectedNetReturn5Pct, -5);
+  const effectiveSample = num(estimate?.effectiveSample, 0);
+  const distinctSessions = num(estimate?.distinctTrainingSessions, 0);
+  const overboughtPenalty = Math.max(0, rsi14 - 72) * 1.8;
+  const negativeEdgePenalty = targetProbability <= stopProbability ? 16 : 0;
+  const negativeReturnPenalty = expectedReturn <= 0 ? 10 : 0;
+
+  const technicalComponent =
+    (exactFresh ? 24 : -80)
+    + (hardFailures === 0 ? 18 : -hardFailures * 30)
+    + num(candidate?.decisionScore, 0) * 0.2
+    + num(candidate?.recommendationScore, 0) * 0.16
+    + num(stock.technicalScore, 0) * 0.12
+    + num(risk.liquidityPercentile, 0) * 0.07
+    - num(risk.riskScore, 50) * 0.11
+    - overboughtPenalty;
+
+  const probabilityComponent =
+    targetProbability * 0.3
+    - stopProbability * 0.22
+    + clamp(probabilityEdge, -30, 30) * 1.35
+    + clamp(expectedReturn, -4, 6) * 4.5
+    + Math.min(effectiveSample, 100) * 0.04
+    + Math.min(distinctSessions, 40) * 0.1;
+
   return round(
-    (exactFresh ? 40 : -80)
-    + (hardFailures === 0 ? 25 : -hardFailures * 35)
-    + num(candidate?.decisionScore, 0) * 0.35
-    + num(candidate?.recommendationScore, 0) * 0.25
-    + num(stock.technicalScore, 0) * 0.18
-    + num(risk.liquidityPercentile, 0) * 0.08
-    - num(risk.riskScore, 50) * 0.12
-    - overboughtPenalty,
+    technicalComponent + probabilityComponent - negativeEdgePenalty - negativeReturnPenalty,
     2,
   );
+}
+
+function opportunityBucket(candidate, estimate = {}) {
+  const stock = candidate?.stock || {};
+  const risk = candidate?.riskProfile || {};
+  const target = num(estimate?.targetProbabilityPct, 0);
+  const stop = num(estimate?.stopProbabilityPct, 100);
+  const edge = num(estimate?.probabilityEdgePct, target - stop);
+  const expected = num(estimate?.expectedNetReturn5Pct, -999);
+  const riskScore = num(risk.riskScore, 100);
+  const liquidity = num(risk.liquidityPercentile, 0);
+  const turnover = num(stock.averageTurnover20Egp ?? risk.averageTurnover20Egp, 0);
+  const positiveEdge = target > stop && edge > 0;
+  const positiveReturn = expected > 0;
+  const operationalQuality = riskScore <= 60 && liquidity >= 20 && turnover >= 5000000;
+  if (positiveEdge && positiveReturn && operationalQuality) return 0;
+  if (positiveEdge && positiveReturn) return 1;
+  if (positiveReturn) return 2;
+  return 3;
+}
+
+function opportunityStatus(candidate, estimate = {}) {
+  const bucket = opportunityBucket(candidate, estimate);
+  if (bucket === 0) return { code: 'STRONG_RESEARCH_EDGE', labelAr: 'أفضلية بحثية موجبة مع سيولة ومخاطر مقبولة' };
+  if (bucket === 1) return { code: 'POSITIVE_RESEARCH_EDGE', labelAr: 'أفضلية بحثية موجبة لكن بعض شروط التشغيل لم تكتمل' };
+  if (bucket === 2) return { code: 'TECHNICAL_WATCH', labelAr: 'عائد متوقع موجب لكن احتمال الهدف لا يتفوق على الوقف' };
+  return { code: 'NEGATIVE_EDGE_WATCH', labelAr: 'مراقبة فنية فقط — الأفضلية الاحتمالية سالبة' };
 }
 
 function candidateGateReasons(candidate, estimate, context, policy) {
@@ -642,7 +690,12 @@ function mapWatchCandidate(candidate, estimate, rank) {
     companyNameAr: candidate.companyNameAr || candidate.nameAr || candidate.companyNameEn || candidate.ticker,
     tier: candidate.tier || 'UNRANKED',
     tierLabelAr: candidate.tierLabelAr || candidate.statusLabelAr || candidate.tier || 'غير مصنف',
-    watchScore: watchScore(candidate),
+    watchScore: watchScore(candidate, estimate),
+    opportunityBucket: opportunityBucket(candidate, estimate),
+    opportunityStatus: opportunityStatus(candidate, estimate).code,
+    opportunityStatusAr: opportunityStatus(candidate, estimate).labelAr,
+    targetBeatsStop: num(estimate?.targetProbabilityPct, 0) > num(estimate?.stopProbabilityPct, 100),
+    positiveExpectedReturn: num(estimate?.expectedNetReturn5Pct, -999) > 0,
     technicalRank: num(candidate.rank ?? candidate.technicalRank ?? candidate.unifiedRank),
     currentPrice: num(stock.price ?? candidate.currentPrice ?? candidate.price),
     recommendationScore: num(candidate.recommendationScore),
@@ -770,13 +823,17 @@ function main() {
     estimates.set(candidate.ticker, estimateCandidate(candidate, historical.signals, currentRegime, policy));
   }
 
-  const sortedWatch = [...candidates].sort((a, b) =>
-    tierOrder(a.tier) - tierOrder(b.tier)
-    || watchScore(b) - watchScore(a)
-    || num(b.decisionScore, 0) - num(a.decisionScore, 0)
-    || num(b.recommendationScore, 0) - num(a.recommendationScore, 0)
-    || a.ticker.localeCompare(b.ticker)
-  );
+  const sortedWatch = [...candidates].sort((a, b) => {
+    const estimateA = estimates.get(a.ticker) || {};
+    const estimateB = estimates.get(b.ticker) || {};
+    return opportunityBucket(a, estimateA) - opportunityBucket(b, estimateB)
+      || watchScore(b, estimateB) - watchScore(a, estimateA)
+      || num(estimateB.targetProbabilityPct, 0) - num(estimateA.targetProbabilityPct, 0)
+      || num(estimateA.stopProbabilityPct, 100) - num(estimateB.stopProbabilityPct, 100)
+      || tierOrder(a.tier) - tierOrder(b.tier)
+      || num(b.decisionScore, 0) - num(a.decisionScore, 0)
+      || a.ticker.localeCompare(b.ticker);
+  });
 
   const watchlist = sortedWatch
     .slice(0, policy.watchlistSize)
@@ -904,6 +961,9 @@ function main() {
       qualifiedCount: qualifiedRecommendations.length,
       researchQualifiedCount: researchQualified.length,
       watchlistCount: watchlist.length,
+      topFiveAreRecommendations: false,
+      watchlistPurpose: 'RESEARCH_MONITORING_ONLY',
+      watchlistRankingMode: 'HYBRID_TECHNICAL_PROBABILITY_RISK',
     },
     marketRegime: currentRegime,
     topFiveWatchlist: watchlist,

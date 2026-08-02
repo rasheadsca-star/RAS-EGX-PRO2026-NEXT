@@ -22,7 +22,13 @@
     "entryExpirySessions": 3,
     "maximumHoldSessions": 10,
     "primaryHorizonSessions": 5,
-    "horizons": [1, 2, 3, 5, 10],
+    "horizons": [
+      1,
+      2,
+      3,
+      5,
+      10
+    ],
     "rsiMin": 48,
     "rsiMax": 72,
     "minimumVolumeRatio20": 0.8,
@@ -66,5 +72,18 @@
     "manualBrokerConfirmationRequired": true,
     "manualPriceVerificationRequired": true,
     "allowExecutionLabelOnlyAfterForwardValidation": true
+  },
+  "watchRanking": {
+    "mode": "HYBRID_TECHNICAL_PROBABILITY_RISK",
+    "technicalCandidateSource": "V13 tiers and technical decision scores",
+    "rankingPriority": [
+      "positive_probability_edge",
+      "positive_expected_return",
+      "hybrid_score",
+      "target_probability",
+      "lower_stop_probability"
+    ],
+    "topFiveAreRecommendations": false,
+    "descriptionAr": "أفضل خمسة هي مراقبة بحثية فقط. يبدأ الاختيار من مرشحي V13 الفنيين ثم يعاد ترتيبهم باحتمال الهدف والوقف والعائد المتوقع والسيولة والمخاطر."
   }
 }

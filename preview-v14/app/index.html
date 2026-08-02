@@ -19,7 +19,7 @@
   <header class="hero">
     <div>
       <h1>EGX Pro V14.0 — نظام القرار المستقر</h1>
-      <p>أفضل خمسة أسهم تحت النظر دائمًا، ومن صفر إلى ثلاث توصيات مؤهلة فقط بعد اجتياز الدليل والمخاطر وجودة البيانات.</p>
+      <p>التوصيات المؤهلة تظهر منفصلة بوضوح. أما أفضل خمسة فهي مراقبة بحثية فقط، مرتبة بمزيج من القوة الفنية واحتمال الهدف والوقف والعائد المتوقع والمخاطر.</p>
     </div>
     <div class="hero-actions">
       <button class="btn primary" id="refreshBtn">تحديث التقرير</button>
@@ -58,16 +58,19 @@ function planHtml(plan){
   return `<div class="plan"><div>الدخول<b>${fmt(plan?.entryLow,4)} – ${fmt(plan?.entryHigh,4)}</b></div><div>وقف الخسارة<b>${fmt(plan?.stopLoss,4)}</b></div><div>الهدف الأول<b>${fmt(plan?.target1,4)}</b></div><div>العائد/المخاطرة<b>${fmt(plan?.riskReward1,2)}</b></div></div>`;
 }
 
+// V14_HYBRID_WATCH_UI
 function watchCard(item){
   const probability=item?.probability||{};
+  const edge=n(probability.probabilityEdgePct);
+  const strong=item.opportunityBucket===0||item.opportunityBucket===1;
   return `<article class="watch">
     <div class="rank">${esc(item.watchRank)}</div>
     <h3><span class="blue">${esc(item.ticker)}</span></h3>
     <div class="name">${esc(item.companyNameAr)}</div>
-    <div class="tags"><span class="tag ${tierClass(item.tier)}">الطبقة ${tierShort(item.tier)}</span><span class="tag ${item.exactFresh?'strict':'warn'}">${item.exactFresh?'حديث':'متأخر'}</span><span class="tag ${n(item.riskScore)<=60?'strict':'warn'}">${esc(item.riskLabelAr)}</span></div>
-    <div class="metrics"><div class="metric">سعر آخر جلسة<b>${fmt(item.currentPrice,4)}</b></div><div class="metric">درجة المراقبة<b>${fmt(item.watchScore,1)}</b></div><div class="metric">احتمال الهدف المقدر<b>${pct(probability.targetProbabilityPct)}</b></div><div class="metric">العائد المتوقع 5 جلسات<b class="${n(probability.expectedNetReturn5Pct)>=0?'green':'red'}">${pct(probability.expectedNetReturn5Pct)}</b></div><div class="metric">السيولة 20 جلسة<b>${money(item.averageTurnover20Egp)}</b></div><div class="metric">RSI14<b>${fmt(item.rsi14,1)}</b></div></div>
+    <div class="tags"><span class="tag ${tierClass(item.tier)}">الطبقة ${tierShort(item.tier)}</span><span class="tag ${item.exactFresh?'strict':'warn'}">${item.exactFresh?'حديث':'متأخر'}</span><span class="tag ${strong?'strict':'warn'}">${strong?'أفضلية موجبة':'مراقبة فقط'}</span></div>
+    <div class="metrics"><div class="metric">سعر آخر جلسة<b>${fmt(item.currentPrice,4)}</b></div><div class="metric">درجة الفرصة الهجينة<b>${fmt(item.watchScore,1)}</b></div><div class="metric">احتمال الهدف<b>${pct(probability.targetProbabilityPct)}</b></div><div class="metric">احتمال الوقف<b class="${n(probability.stopProbabilityPct)>n(probability.targetProbabilityPct)?'red':'green'}">${pct(probability.stopProbabilityPct)}</b></div><div class="metric">أفضلية الهدف على الوقف<b class="${edge>0?'green':'red'}">${pct(edge)}</b></div><div class="metric">العائد المتوقع 5 جلسات<b class="${n(probability.expectedNetReturn5Pct)>0?'green':'red'}">${pct(probability.expectedNetReturn5Pct)}</b></div><div class="metric">السيولة 20 جلسة<b>${money(item.averageTurnover20Egp)}</b></div><div class="metric">المخاطر<b>${fmt(item.riskScore,0)}</b></div></div>
     ${planHtml(item.plan)}
-    <div class="watch-note">تحت المراقبة — ليست أمر شراء. ترتيبها يوضح أفضلية المتابعة الحالية فقط.</div>
+    <div class="watch-note">${esc(item.opportunityStatusAr||'مراقبة بحثية فقط')}. هذه البطاقة ليست توصية شراء ولا تدخل ضمن عدد التوصيات المؤهلة.</div>
   </article>`;
 }
 
@@ -107,7 +110,7 @@ function render(data){
 
     <section class="panel"><div class="panel-head"><div><h2>القرار اليوم</h2><p>بوابة «لا شراء» تمنع تحويل الأسهم الضعيفة إلى توصيات لمجرد ملء القائمة.</p></div></div><div class="body">${decisionHtml}</div></section>
 
-    <section class="panel"><div class="panel-head"><div><h2>أفضل خمسة أسهم تحت النظر الآن</h2><p>قائمة متابعة ثابتة الظهور، مرتبة داخل Strict ثم A ثم B وفق الجودة الفنية والسيولة والمخاطر وحداثة البيانات.</p></div></div><div class="body"><div class="top-grid">${watchlist.length?watchlist.map(watchCard).join(''):'<div class="empty">لا توجد بيانات مرشحين صالحة في آخر جلسة مؤكدة.</div>'}</div></div></section>
+    <section class="panel"><div class="panel-head"><div><h2>أفضل خمسة أسهم تحت النظر الآن — مراقبة بحثية وليست توصيات شراء</h2><p>الترتيب الهجين يبدأ بمرشحي V13 الفنيين ثم يعيد ترتيبهم باحتمال الهدف مقابل الوقف والعائد المتوقع والسيولة والمخاطر. الأفضلية السالبة تظهر بوضوح ولا تُقدَّم كشراء.</p></div></div><div class="body"><div class="top-grid">${watchlist.length?watchlist.map(watchCard).join(''):'<div class="empty">لا توجد بيانات مرشحين صالحة في آخر جلسة مؤكدة.</div>'}</div></div></section>
 
     <section class="panel"><div class="panel-head"><div><h2>${esc(recTitle)}</h2><p>${esc(recNote)}</p></div></div><div class="body"><div class="rec-grid">${recSource.length?recSource.map(recommendationCard).join(''):'<div class="empty">لا توجد أسهم اجتازت بوابات الاحتمال والمخاطر والعينة في التقرير الحالي.</div>'}</div></div></section>
 
@@ -119,7 +122,7 @@ function render(data){
 
     <section class="panel"><div class="panel-head"><div><h2>صحة النظام</h2><p>آخر حالة بيانات منشورة ومصادر التقرير.</p></div></div><div class="body"><div class="health-grid">${health('الاستقرار التقني',system.technicallyStable?'مستقر':'يحتاج مراجعة',system.technicallyStable?'green':'red')}${health('تأكيد الجلسة',system.sessionReady?'مؤكدة':'غير مؤكدة',system.sessionReady?'green':'red')}${health('جودة السوق',healthData.qualityStatus||'—',system.marketDataReady?'green':'red')}${health('صفوف السوق',fmt(healthData.marketRows,0),'blue')}${health('آخر جلسة تاريخية',healthData.historyLatestSession||'—','blue')}${health('جلسات أمامية مكتملة',fmt(forward.completedForwardSessions,0),'purple')}${health('أوامر الوسيط الآلية','مغلقة','green')}${health('وقت إنشاء التقرير',new Date(data.generatedAt).toLocaleString('ar-EG'),'blue')}</div></div></section>
 
-    <section class="panel"><div class="panel-head"><div><h2>منهجية V14.0</h2><p>قواعد ثابتة وواضحة بدل الاستمرار في تغيير الأوزان يوميًا.</p></div></div><div class="body"><div class="method">• أفضل خمسة أسهم تظهر دائمًا للمتابعة، لكنها لا تتحول تلقائيًا إلى شراء.<br>• من صفر إلى ثلاث توصيات فقط بعد اجتياز الاحتمال، أفضلية الهدف على الوقف، العائد الصافي، العينة، السيولة، المخاطر، الجلسة وجودة البيانات.<br>• الاختبار التاريخي Walk-Forward ويمنع استخدام بيانات المستقبل.<br>• عند تحقق الهدف والوقف في الشمعة نفسها يُحتسب الوقف أولًا كقاعدة محافظة.<br>• التكاليف المستخدمة في المعايرة: ${pct(data.evidence?.methodology?.costsPct)}.<br>• ${esc(data.evidence?.methodology?.noteAr)}</div></div></section>`;
+    <section class="panel"><div class="panel-head"><div><h2>منهجية V14.0</h2><p>قواعد ثابتة وواضحة بدل الاستمرار في تغيير الأوزان يوميًا.</p></div></div><div class="body"><div class="method">• أفضل خمسة أسهم هي قائمة مراقبة بحثية وليست توصيات شراء؛ ترتيبها يستخدم القوة الفنية مع احتمال الهدف والوقف والعائد المتوقع والسيولة والمخاطر.<br>• من صفر إلى ثلاث توصيات فقط بعد اجتياز الاحتمال، أفضلية الهدف على الوقف، العائد الصافي، العينة، السيولة، المخاطر، الجلسة وجودة البيانات.<br>• الاختبار التاريخي Walk-Forward ويمنع استخدام بيانات المستقبل.<br>• عند تحقق الهدف والوقف في الشمعة نفسها يُحتسب الوقف أولًا كقاعدة محافظة.<br>• التكاليف المستخدمة في المعايرة: ${pct(data.evidence?.methodology?.costsPct)}.<br>• ${esc(data.evidence?.methodology?.noteAr)}</div></div></section>`;
 }
 
 async function load(){

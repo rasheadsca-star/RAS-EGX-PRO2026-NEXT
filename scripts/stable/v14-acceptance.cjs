@@ -30,6 +30,14 @@ if (result.qualifiedRecommendations.some(item => String(item.tier || '').include
 if (result.qualifiedRecommendations.some((item, index) => item.recommendationRank !== index + 1)) fail('qualified recommendation ranks are invalid');
 if (result.decision?.noTrade === true && result.qualifiedRecommendations.length !== 0) fail('no-trade status conflicts with qualified recommendations');
 if (result.decision?.noTrade === false && result.qualifiedRecommendations.length === 0) fail('trade status conflicts with empty recommendations');
+if (result.decision?.topFiveAreRecommendations !== false) fail('top-five watchlist is mislabeled as recommendations');
+if (result.topFiveWatchlist.some(item => item.status !== 'WATCH_ONLY')) fail('watchlist contains a non-watch status');
+for (let index = 1; index < result.topFiveWatchlist.length; index += 1) {
+  const previous = result.topFiveWatchlist[index - 1];
+  const current = result.topFiveWatchlist[index];
+  if (Number(previous.opportunityBucket) > Number(current.opportunityBucket)) fail('watchlist opportunity buckets are not sorted');
+  if (Number(previous.opportunityBucket) === Number(current.opportunityBucket) && Number(previous.watchScore) < Number(current.watchScore)) fail('watchlist hybrid scores are not sorted');
+}
 if (!result.evidence?.methodology?.futureLeakageForbidden) fail('future leakage safeguard is missing');
 if (!result.evidence?.methodology?.walkForward) fail('walk-forward safeguard is missing');
 if (result.evidence?.methodology?.sameBarRule !== 'STOP_FIRST') fail('same-bar conservative rule changed');
@@ -38,6 +46,7 @@ if (!Array.isArray(forward.sessions)) fail('forward session ledger is invalid');
 for (const marker of [
   'EGX Pro V14.0',
   'أفضل خمسة أسهم تحت النظر الآن',
+  'مراقبة بحثية وليست توصيات شراء',
   'التوصية الأولى',
   'لا توجد توصية شراء مؤهلة حاليًا',
   'V14_STABLE_DECISION_SYSTEM',
