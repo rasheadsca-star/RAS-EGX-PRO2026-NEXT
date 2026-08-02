@@ -1,0 +1,179 @@
+name: V15 Precise Public Price Activation
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v15-public-price-acceptance-hotfix.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: v15-precise-public-price-activation
+  cancel-in-progress: true
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Accept precise public symbol pages with jump guard
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/stable/v15-live-price-truth.cjs')
+          s=p.read_text()
+          s=s.replace(
+          "    authenticated: meta.authenticated === true,\n    fetchedAt: meta.fetchedAt,",
+          "    authenticated: meta.authenticated === true,\n    trustedSingle: meta.trustedSingle === true,\n    fetchedAt: meta.fetchedAt,"
+          )
+          old="""function sourceExistingMarket(expectedSession) {
+  const status = readJson(FETCH_STATUS_PATH, {});
+  const doc = readJson(MARKET_PATH, {});
+  const fetchedAt = doc.generatedAt || doc.updatedAt || status.generatedAt || new Date().toISOString();
+  const rows = normalizePayload(doc, {
+    source: String(doc.source || status.sourceName || 'existing_market'),
+    sourceFamily: 'mubasher_or_configured_public',
+    authenticated: false,
+    fetchedAt, expectedSession,
+    allowExpectedDate: status.realFetch === true
+  }).filter(x => x.date === expectedSession);
+  return {
+    name: 'existing_market_after_legacy_fetch', sourceFamily: 'mubasher_or_configured_public', authenticated: false, rows,
+    attempts: [{ ok: status.realFetch === true && rows.length > 0, rows: rows.length, realFetch: status.realFetch === true, mode: status.mode || null }]
+  };
+}
+"""
+          new="""function sourceExistingMarket(expectedSession) {
+  const status = readJson(FETCH_STATUS_PATH, {});
+  const doc = readJson(MARKET_PATH, {});
+  const fetchedAt = doc.generatedAt || doc.updatedAt || status.generatedAt || new Date().toISOString();
+  const sourceName = String(doc.source || status.sourceName || 'existing_market');
+  const trustedSingle = status.realFetch === true && /mubasher_symbol_pages_precise/i.test(sourceName);
+  const rows = normalizePayload(doc, {
+    source: sourceName,
+    sourceFamily: 'mubasher_or_configured_public',
+    authenticated: false,
+    trustedSingle,
+    fetchedAt, expectedSession,
+    allowExpectedDate: status.realFetch === true
+  }).filter(x => x.date === expectedSession);
+  return {
+    name: 'existing_market_after_legacy_fetch', sourceFamily: 'mubasher_or_configured_public', authenticated: false, trustedSingle, rows,
+    attempts: [{ ok: status.realFetch === true && rows.length > 0, rows: rows.length, realFetch: status.realFetch === true, trustedSingle, sourceName, mode: status.mode || null }]
+  };
+}
+
+function previousTrustedClose(ticker, beforeDate) {
+  const doc = readJson(path.join(HISTORY_DIR, `${ticker}.json`), {});
+  const rows = (Array.isArray(doc.sessions) ? doc.sessions : []).filter(row => {
+    const date = dateOnly(row.date || row.sessionDate);
+    const warnings = Array.isArray(row.warnings) ? row.warnings.map(String) : [];
+    return date && date < beforeDate && Number(row.close) > 0 && String(row.validationStatus || '') !== 'source_conflict' && !warnings.some(w => /local_price_conflict|latest_close_conflict/i.test(w));
+  }).sort((a,b)=>String(a.date||a.sessionDate).localeCompare(String(b.date||b.sessionDate)));
+  return Number(rows.at(-1)?.close) || null;
+}
+"""
+          if old not in s: raise SystemExit('sourceExistingMarket block not found')
+          s=s.replace(old,new)
+          s=s.replace(
+          "    const authenticated = current.filter(x => x.authenticated);\n    let picked = null, mode = null, matchedSources = [];",
+          "    const authenticated = current.filter(x => x.authenticated);\n    const trustedSingle = current.filter(x => x.authenticated || x.trustedSingle);\n    let picked = null, mode = null, matchedSources = [];"
+          )
+          old2="""    if (!picked && authenticated.length) {
+      picked = [authenticated[0]]; mode = 'AUTHENTICATED_SINGLE_SOURCE'; matchedSources = picked.map(x => x.source);
+    }
+    if (!picked) {
+"""
+          new2="""    if (!picked && trustedSingle.length) {
+      const candidate = trustedSingle[0];
+      const previousClose = previousTrustedClose(ticker, expectedSession);
+      const jumpPct = previousClose > 0 ? Math.abs(candidate.close / previousClose - 1) * 100 : 0;
+      if (candidate.authenticated || jumpPct <= 30) {
+        picked = [candidate];
+        mode = candidate.authenticated ? 'AUTHENTICATED_SINGLE_SOURCE' : 'PRECISE_PUBLIC_SINGLE_SOURCE';
+        matchedSources = picked.map(x => x.source);
+      } else {
+        rejected.push({ ticker, reason: 'SINGLE_SOURCE_EXTREME_JUMP', previousClose, currentClose: candidate.close, jumpPct: round(jumpPct,2), source: candidate.source });
+        continue;
+      }
+    }
+    if (!picked) {
+"""
+          if old2 not in s: raise SystemExit('single source block not found')
+          s=s.replace(old2,new2)
+          s=s.replace(
+          "      confidence: { overall: mode === 'MULTI_SOURCE_MATCH' ? 92 : 88, ohlc: 88, volume: 80, symbolIdentity: 95 },\n      validationStatus: mode === 'MULTI_SOURCE_MATCH' ? 'multi_source_confirmed' : 'authenticated_source_confirmed',",
+          "      confidence: { overall: mode === 'MULTI_SOURCE_MATCH' ? 92 : mode === 'AUTHENTICATED_SINGLE_SOURCE' ? 88 : 84, ohlc: 86, volume: 80, symbolIdentity: 95 },\n      validationStatus: mode === 'MULTI_SOURCE_MATCH' ? 'multi_source_confirmed' : mode === 'AUTHENTICATED_SINGLE_SOURCE' ? 'authenticated_source_confirmed' : 'precise_public_source_confirmed',"
+          )
+          p.write_text(s)
+          PY
+          node --check scripts/stable/v15-live-price-truth.cjs
+
+      - name: Fetch precise current EGX prices
+        run: |
+          set -euo pipefail
+          node scripts/fetch-market-data.js
+          node scripts/stable/v15-live-price-truth.cjs
+
+      - name: Rebuild current-session decision
+        run: |
+          set -euo pipefail
+          node scripts/stable/v15-practical-market-scanner.cjs
+          node scripts/stable/v15-price-truth-gate.cjs
+
+      - name: Verify practical activation
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const p=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
+          const f=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
+          const d=JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json','utf8'));
+          if(!p.ready||p.acceptedRows<80) throw new Error(`Price truth not ready: ${p.acceptedRows}`);
+          if(f.executionGrade!==true) throw new Error('Fetch status is not execution grade');
+          if(d.sessionDate!==d.expectedLatestSession) throw new Error(`Stale decision ${d.sessionDate} vs ${d.expectedLatestSession}`);
+          if(!d.priceTruth?.ready) throw new Error('Decision price truth is not ready');
+          for(const r of d.recommendations||[]){
+            if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: probability gate`);
+          }
+          const audit={AALR:307,ODIN:2.9,NIPH:233};
+          const rows=new Map((p.sampleAccepted||[]).map(x=>[x.ticker,x.close]));
+          const checks=Object.entries(audit).map(([ticker,observed])=>({ticker,provider:rows.get(ticker)||null,observed,diffPct:rows.get(ticker)?Math.abs(rows.get(ticker)/observed-1)*100:null}));
+          console.log(JSON.stringify({provider:{session:p.expectedSession,accepted:p.acceptedRows,rejected:p.rejectedRows,sources:p.sources},decision:{ready:d.practicalReady,status:d.status,recommendations:(d.recommendations||[]).map(x=>({ticker:x.ticker,close:x.close,entryLow:x.entryLow,entryHigh:x.entryHigh}))},auditChecks:checks},null,2));
+          NODE
+
+      - name: Commit and deploy
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/stable/v15-live-price-truth.cjs data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          git commit -m "Activate V15 with precise current public prices" || true
+          for attempt in 1 2 3; do
+            if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt*12))
+          done
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - id: deployment
+        uses: actions/deploy-pages@v4
