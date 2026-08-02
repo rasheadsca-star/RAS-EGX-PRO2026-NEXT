@@ -7,6 +7,7 @@ on:
       - "scripts/stable/v15-practical-market-scanner.cjs"
       - "scripts/stable/v15-price-truth-gate.cjs"
       - "scripts/stable/v15-live-price-truth.cjs"
+      - "scripts/stable/v15-missing-symbol-fallback.cjs"
       - "scripts/fetch-market-data.js"
       - "preview-v15/app/index.html"
       - "index.html"
@@ -52,11 +53,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Run legacy public-market collector
+      - name: Run public-market collector
         run: |
           set +e
           node scripts/fetch-market-data.js
-          echo "Legacy collector exit code: $?"
+          echo "Primary collector exit code: $?"
+          node --check scripts/stable/v15-missing-symbol-fallback.cjs
+          node scripts/stable/v15-missing-symbol-fallback.cjs
+          echo "Missing-symbol fallback exit code: $?"
           exit 0
 
       - name: Build current price truth
@@ -84,10 +88,12 @@ jobs:
           const v=JSON.parse(fs.readFileSync('data/research/v15-practical-validation.json','utf8'));
           const f=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
           const p=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
+          const missing=JSON.parse(fs.readFileSync('data/stable/v15-missing-symbol-report.json','utf8'));
           const html=fs.readFileSync('preview-v15/app/index.html','utf8');
           const root=fs.readFileSync('index.html','utf8');
           if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected V15 decision schema');
           if(!String(p.schemaVersion||'').startsWith('15.2.')) throw new Error('Unexpected price-truth schema');
+          if(!String(missing.schemaVersion||'').startsWith('15.0.')) throw new Error('Missing-symbol report unavailable');
           if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD') throw new Error('Full-market mode missing');
           if(d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
           if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
@@ -119,7 +125,10 @@ jobs:
           const ids=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
           const dup=[...new Set(ids.filter((x,i)=>ids.indexOf(x)!==i))];
           if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
-          console.log({session:d.sessionDate,expected:d.expectedLatestSession,priceTruth:d.priceTruth,provider:{ready:p.ready,accepted:p.acceptedRows,source:p.source},status:d.status,recommendations:d.recommendations.map(x=>x.ticker)});
+          const focus=['AALR','ODIN','NIPH'];
+          const recovered=new Map((missing.recovered||[]).map(x=>[x.symbol,x.price]));
+          const failed=new Set((missing.failed||[]).map(x=>x.symbol));
+          console.log({session:d.sessionDate,expected:d.expectedLatestSession,provider:{ready:p.ready,accepted:p.acceptedRows,source:p.source},missing:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows,focus:focus.map(symbol=>({symbol,price:recovered.get(symbol)||null,failed:failed.has(symbol)}))},status:d.status,recommendations:d.recommendations.map(x=>x.ticker)});
           NODE
 
       - name: Commit refreshed market truth and reports
@@ -127,9 +136,9 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh V15 from current execution-grade prices"
+            git commit -m "Refresh V15 with missing-symbol recovery"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
