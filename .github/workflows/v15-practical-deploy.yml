@@ -6,13 +6,22 @@ on:
     paths:
       - "scripts/stable/v15-practical-market-scanner.cjs"
       - "scripts/stable/v15-price-truth-gate.cjs"
+      - "scripts/stable/v15-live-price-truth.cjs"
       - "scripts/fetch-market-data.js"
       - "preview-v15/app/index.html"
       - "index.html"
       - "manifest.json"
       - ".github/workflows/v15-practical-deploy.yml"
   schedule:
-    - cron: "40 17 * * 0-4"
+    - cron: "20 12 * * 0-4"
+
+env:
+  EGXAPI_KEY: ${{ secrets.EGXAPI_KEY }}
+  EGX_KEY: ${{ secrets.EGX_KEY }}
+  EGX_MARKET_JSON_URL: ${{ secrets.EGX_MARKET_JSON_URL }}
+  PUBLIC_MARKET_JSON_URL: ${{ secrets.PUBLIC_MARKET_JSON_URL }}
+  EGX_MIN_EXECUTION_ROWS: "80"
+  EGX_PRICE_MATCH_TOLERANCE_PCT: "1.75"
 
 permissions:
   contents: write
@@ -26,7 +35,7 @@ concurrency:
 jobs:
   validate-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -42,10 +51,19 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Attempt fresh market-price fetch
+      - name: Run legacy public-market collector
         run: |
           set +e
           node scripts/fetch-market-data.js
+          echo "Legacy collector exit code: $?"
+          exit 0
+
+      - name: Build current multi-source price truth
+        run: |
+          set +e
+          node --check scripts/stable/v15-live-price-truth.cjs
+          node scripts/stable/v15-live-price-truth.cjs
+          echo "Multi-source provider exit code: $?"
           exit 0
 
       - name: Rebuild V15 and enforce price truth
@@ -63,16 +81,19 @@ jobs:
           const fs=require('fs');
           const d=JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json','utf8'));
           const v=JSON.parse(fs.readFileSync('data/research/v15-practical-validation.json','utf8'));
+          const f=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
+          const p=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
           const html=fs.readFileSync('preview-v15/app/index.html','utf8');
           const root=fs.readFileSync('index.html','utf8');
-          if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected V15 schema');
+          if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected V15 decision schema');
+          if(p.schemaVersion!=='15.1.0') throw new Error('Unexpected price-truth schema');
           if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD') throw new Error('Full-market mode missing');
           if(d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
           if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
           if(!d.priceTruth) throw new Error('Price-truth diagnostics missing');
-          if(d.priceTruth.ready!==true){
+          if(f.executionGrade!==true||p.ready!==true){
             if(d.practicalReady!==false) throw new Error('Non-current prices cannot be practical-ready');
-            if(!Array.isArray(d.recommendations)||d.recommendations.length!==0) throw new Error('Recommendations leaked from stale prices');
+            if(!Array.isArray(d.recommendations)||d.recommendations.length!==0) throw new Error('Recommendations leaked from unverified prices');
           }
           if(!Array.isArray(v.validatedModels)||v.validatedModels.length===0) throw new Error('No validated models');
           for(const modelId of v.validatedModels){
@@ -82,8 +103,9 @@ jobs:
             if(!(m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${modelId} test return gate failed`);
           }
           if(d.practicalReady){
-            if(d.priceTruth.ready!==true) throw new Error('Practical recommendations lack price truth');
-            if(d.sessionDate!==d.expectedLatestSession) throw new Error('Practical recommendations use a stale session');
+            if(d.priceTruth.ready!==true||f.executionGrade!==true||p.ready!==true) throw new Error('Practical recommendations lack execution-grade price truth');
+            if(d.sessionDate!==d.expectedLatestSession||d.sessionDate!==p.expectedSession) throw new Error('Practical recommendations use a stale session');
+            if(p.acceptedRows<80) throw new Error('Insufficient current market breadth');
             if(!Array.isArray(d.recommendations)||d.recommendations.length<1||d.recommendations.length>5) throw new Error('Invalid practical recommendation count');
             for(const r of d.recommendations){
               if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability is not above stop`);
@@ -96,17 +118,17 @@ jobs:
           const ids=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
           const dup=[...new Set(ids.filter((x,i)=>ids.indexOf(x)!==i))];
           if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
-          console.log({session:d.sessionDate,expected:d.expectedLatestSession,priceTruth:d.priceTruth,status:d.status,recommendations:d.recommendations.map(x=>x.ticker)});
+          console.log({session:d.sessionDate,expected:d.expectedLatestSession,priceTruth:d.priceTruth,provider:{ready:p.ready,accepted:p.acceptedRows,sources:p.sources},status:d.status,recommendations:d.recommendations.map(x=>x.ticker)});
           NODE
 
-      - name: Commit refreshed reports
+      - name: Commit refreshed market truth and reports
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json data/fetch-status.json
+          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh V15 with price-truth gate"
+            git commit -m "Refresh V15 from current multi-source price truth"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
