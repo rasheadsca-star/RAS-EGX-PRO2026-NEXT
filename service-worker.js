@@ -1,18 +1,68 @@
-// V15.3-SR-TRUTH
-const BUILD = 'V15.3-SR-TRUTH';
+// V15.4-LATEST-ICON-MIGRATION
+const BUILD = 'V15.4-LATEST-ICON-MIGRATION-20260803';
+const ROOT_URL = new URL('./', self.location.href);
+const LATEST_URL = new URL(`./?launch=legacy-icon&latest=1&sw=${encodeURIComponent(BUILD)}`, ROOT_URL).href;
 
-self.addEventListener('install', () => self.skipWaiting());
+function isLegacyAppUrl(value) {
+  try {
+    const url = value instanceof URL ? value : new URL(value);
+    const path = url.pathname.replace(/\/+$/, '');
+    return [
+      '/preview-v13/app/unified-decision-center.html',
+      '/preview-v13/app/index.html',
+      '/preview-v14/app/index.html'
+    ].some(suffix => path.endsWith(suffix));
+  } catch (_) {
+    return false;
+  }
+}
+
+function isDirectLaunch(request, url) {
+  if (url.searchParams.has('allowLegacy')) return false;
+  if (['pwa', 'desktop-icon', 'installed-icon', 'legacy-icon'].some(value =>
+    Array.from(url.searchParams.values()).includes(value)
+  )) return true;
+  if (!request.referrer) return true;
+  try {
+    const referrer = new URL(request.referrer);
+    return referrer.origin !== url.origin;
+  } catch (_) {
+    return true;
+  }
+}
+
+self.addEventListener('install', event => {
+  event.waitUntil(self.skipWaiting());
+});
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
     await Promise.all(keys.map(key => caches.delete(key)));
     await self.clients.claim();
+
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    await Promise.all(windows.map(async client => {
+      if (!isLegacyAppUrl(client.url)) return;
+      try {
+        await client.navigate(LATEST_URL);
+      } catch (_) {
+        // The next direct navigation is still intercepted below.
+      }
+    }));
   })());
 });
 
 self.addEventListener('message', event => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data && event.data.type === 'OPEN_LATEST') {
+    event.waitUntil((async () => {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const current = windows[0];
+      if (current) await current.navigate(LATEST_URL);
+      else await self.clients.openWindow(LATEST_URL);
+    })());
+  }
 });
 
 self.addEventListener('fetch', event => {
@@ -20,6 +70,11 @@ self.addEventListener('fetch', event => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+
+  if (req.mode === 'navigate' && isLegacyAppUrl(url) && isDirectLaunch(req, url)) {
+    event.respondWith(Response.redirect(LATEST_URL, 302));
+    return;
+  }
 
   event.respondWith((async () => {
     try {
