@@ -1,22 +1,18 @@
-name: V15 Practical Validate and Deploy
+name: EGX Professional V16 Validate and Deploy
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - "scripts/stable/v15-practical-market-scanner.cjs"
-      - "scripts/stable/v15-price-truth-gate.cjs"
-      - "scripts/stable/v15-live-price-truth.cjs"
-      - "scripts/stable/v15-missing-symbol-fallback.cjs"
-      - "scripts/stable/v15-recommendation-evaluator.cjs"
+      - "scripts/stable/v15-*.cjs"
       - "scripts/fetch-market-data.js"
-      - "preview-v15/app/index.html"
+      - "preview-v15/app/**"
+      - "preview-v16/app/**"
       - "index.html"
       - "manifest.json"
+      - "service-worker.js"
       - ".github/workflows/v15-practical-deploy.yml"
   schedule:
-    # Five automatic attempts after market close, Sunday through Thursday.
-    # 13:20-17:20 UTC remains after 15:00 Cairo in both standard and daylight time.
     - cron: "20 13-17 * * 0-4"
 
 env:
@@ -35,7 +31,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: v15-practical-pages
+  group: egx-professional-v16-pages
   cancel-in-progress: true
 
 jobs:
@@ -57,6 +53,13 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Validate professional V16 assets
+        run: |
+          set -euo pipefail
+          node --check preview-v16/app/app.js
+          test -s preview-v16/app/index.html
+          test -s preview-v16/app/styles.css
+
       - name: Run public-market collector
         run: |
           set +e
@@ -75,7 +78,7 @@ jobs:
           echo "Price-truth provider exit code: $?"
           exit 0
 
-      - name: Rebuild V15 and enforce price truth
+      - name: Rebuild recommendations and enforce price truth
         run: |
           set -euo pipefail
           node --check scripts/stable/v15-practical-market-scanner.cjs
@@ -94,41 +97,29 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const fs=require('fs');
-          const path=require('path');
           const read=file=>JSON.parse(fs.readFileSync(file,'utf8'));
           const d=read('data/stable/v15-practical-decision.json');
           const p=read('data/stable/v15-price-truth.json');
           const f=read('data/fetch-status.json');
           const evaluation=read('data/stable/v15-recommendation-evaluation.json');
           const out={
-            schemaVersion:'15.0.0',
+            schemaVersion:'16.0.0',
             generatedAt:new Date().toISOString(),
             lastAutomaticScanAt:new Date().toISOString(),
-            automation:{
-              enabled:true,
-              cadence:'HOURLY_AFTER_MARKET_CLOSE',
-              cron:'20 13-17 * * 0-4',
-              tradingDays:'SUNDAY_THROUGH_THURSDAY',
-              attemptsPerTradingDay:5,
-              timezoneReference:'UTC_WITH_CAIRO_AFTER_CLOSE_GUARD'
-            },
+            productInterface:'EGX_PROFESSIONAL_V16',
+            automation:{enabled:true,cadence:'HOURLY_AFTER_MARKET_CLOSE',cron:'20 13-17 * * 0-4',tradingDays:'SUNDAY_THROUGH_THURSDAY',attemptsPerTradingDay:5,timezoneReference:'UTC_WITH_CAIRO_AFTER_CLOSE_GUARD'},
             sessionDate:d.sessionDate||null,
             expectedLatestSession:d.expectedLatestSession||p.expectedSession||null,
             recommendationGeneratedAt:d.generatedAt||null,
             recommendationsReady:d.practicalReady===true,
             recommendationCount:Array.isArray(d.recommendations)?d.recommendations.length:0,
             recommendationTickers:Array.isArray(d.recommendations)?d.recommendations.map(x=>x.ticker):[],
-            priceTruth:{
-              ready:p.ready===true,
-              executionGrade:p.executionGrade===true,
-              acceptedRows:p.acceptedRows||0,
-              source:p.source?.name||f.sourceName||null,
-              sourceGeneratedAt:p.source?.generatedAt||f.generatedAt||null
-            },
+            priceTruth:{ready:p.ready===true,executionGrade:p.executionGrade===true,acceptedRows:p.acceptedRows||0,source:p.source?.name||f.sourceName||null,sourceGeneratedAt:p.source?.generatedAt||f.generatedAt||null},
             evaluationGeneratedAt:evaluation.generatedAt||null,
-            evaluationArchivedRecommendations:evaluation.summary?.archivedRecommendations||0
+            evaluationArchivedRecommendations:evaluation.summary?.archivedRecommendations||0,
+            liveResolvedTrades:evaluation.summary?.resolvedTrades||0,
+            liveEvidenceGate:evaluation.summary?.resolvedTrades>=100?'PROFESSIONAL':evaluation.summary?.resolvedTrades>=30?'ADVANCED_PILOT':'RESEARCH'
           };
-          fs.mkdirSync(path.dirname('data/stable/v15-update-status.json'),{recursive:true});
           fs.writeFileSync('data/stable/v15-update-status.json',JSON.stringify(out,null,2)+'\n');
           console.log(out);
           NODE
@@ -138,72 +129,44 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const fs=require('fs');
-          const d=JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json','utf8'));
-          const v=JSON.parse(fs.readFileSync('data/research/v15-practical-validation.json','utf8'));
-          const f=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
-          const p=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
-          const missing=JSON.parse(fs.readFileSync('data/stable/v15-missing-symbol-report.json','utf8'));
-          const evaluation=JSON.parse(fs.readFileSync('data/stable/v15-recommendation-evaluation.json','utf8'));
-          const ledger=JSON.parse(fs.readFileSync('data/stable/v15-recommendation-ledger.json','utf8'));
-          const updateStatus=JSON.parse(fs.readFileSync('data/stable/v15-update-status.json','utf8'));
-          const html=fs.readFileSync('preview-v15/app/index.html','utf8');
+          const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
+          const d=read('data/stable/v15-practical-decision.json');
+          const v=read('data/research/v15-practical-validation.json');
+          const f=read('data/fetch-status.json');
+          const p=read('data/stable/v15-price-truth.json');
+          const missing=read('data/stable/v15-missing-symbol-report.json');
+          const evaluation=read('data/stable/v15-recommendation-evaluation.json');
+          const ledger=read('data/stable/v15-recommendation-ledger.json');
+          const updateStatus=read('data/stable/v15-update-status.json');
+          const html=fs.readFileSync('preview-v16/app/index.html','utf8');
+          const js=fs.readFileSync('preview-v16/app/app.js','utf8');
           const root=fs.readFileSync('index.html','utf8');
-          const manifest=JSON.parse(fs.readFileSync('manifest.json','utf8'));
-          if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected V15 decision schema');
+          const manifest=read('manifest.json');
+          if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected decision schema');
           if(!String(p.schemaVersion||'').startsWith('15.2.')) throw new Error('Unexpected price-truth schema');
-          if(!String(missing.schemaVersion||'').startsWith('15.0.')) throw new Error('Missing-symbol report unavailable');
-          if(!String(evaluation.schemaVersion||'').startsWith('15.0.')) throw new Error('Recommendation evaluation report unavailable');
-          if(!String(ledger.schemaVersion||'').startsWith('15.0.')) throw new Error('Recommendation ledger unavailable');
-          if(!String(updateStatus.schemaVersion||'').startsWith('15.0.')) throw new Error('Automatic update status unavailable');
-          if(updateStatus.automation?.enabled!==true) throw new Error('Periodic automatic scan is disabled');
-          if(updateStatus.automation?.attemptsPerTradingDay!==5) throw new Error('Unexpected automatic scan cadence');
-          if(updateStatus.recommendationGeneratedAt!==d.generatedAt) throw new Error('Update status does not point to latest recommendations');
-          if(updateStatus.sessionDate!==d.sessionDate) throw new Error('Update status session mismatch');
-          if(evaluation.methodology?.version!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Unexpected evaluation methodology');
-          if(ledger.methodologyVersion!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Ledger methodology mismatch');
-          if(!Array.isArray(evaluation.records)||!Array.isArray(ledger.records)) throw new Error('Recommendation archive is malformed');
-          const ids=evaluation.records.map(x=>x.id);
-          if(new Set(ids).size!==ids.length) throw new Error('Duplicate recommendation IDs in evaluation report');
-          if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD') throw new Error('Full-market mode missing');
-          if(d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
+          if(!String(updateStatus.schemaVersion||'').startsWith('16.0.')) throw new Error('Professional heartbeat missing');
+          if(updateStatus.productInterface!=='EGX_PROFESSIONAL_V16') throw new Error('V16 interface marker missing');
+          if(updateStatus.automation?.enabled!==true||updateStatus.automation?.attemptsPerTradingDay!==5) throw new Error('Automatic scan cadence invalid');
+          if(updateStatus.recommendationGeneratedAt!==d.generatedAt||updateStatus.sessionDate!==d.sessionDate) throw new Error('Heartbeat does not point to latest recommendation set');
+          if(evaluation.methodology?.version!=='V15_CONSERVATIVE_DAILY_OHLC_1.0'||ledger.methodologyVersion!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Evaluation methodology mismatch');
+          if(!Array.isArray(evaluation.records)||!Array.isArray(ledger.records)) throw new Error('Recommendation archive malformed');
+          const ids=evaluation.records.map(x=>x.id);if(new Set(ids).size!==ids.length) throw new Error('Duplicate recommendation IDs');
+          if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD'||d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
           if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
-          if(!d.priceTruth) throw new Error('Price-truth diagnostics missing');
-          if(f.executionGrade!==true||p.ready!==true){
-            if(d.practicalReady!==false) throw new Error('Non-current prices cannot be practical-ready');
-            if(!Array.isArray(d.recommendations)||d.recommendations.length!==0) throw new Error('Recommendations leaked from unverified prices');
-          }
-          if(!Array.isArray(v.validatedModels)||v.validatedModels.length===0) throw new Error('No validated models');
-          for(const modelId of v.validatedModels){
-            const m=v.models.find(x=>x.id===modelId);
-            if(!m?.validationPassed||!m?.testPassed) throw new Error(`${modelId} did not pass both stages`);
-            if(!(m.test.targetRatePct>m.test.stopRatePct)) throw new Error(`${modelId} target rate does not exceed stop rate`);
-            if(!(m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${modelId} test return gate failed`);
-          }
+          if(f.executionGrade!==true||p.ready!==true){if(d.practicalReady!==false||d.recommendations?.length) throw new Error('Recommendations leaked from unverified prices');}
+          if(!Array.isArray(v.validatedModels)||!v.validatedModels.length) throw new Error('No validated models');
+          for(const id of v.validatedModels){const m=v.models.find(x=>x.id===id);if(!m?.validationPassed||!m?.testPassed) throw new Error(`${id} did not pass both stages`);if(!(m.test.targetRatePct>m.test.stopRatePct&&m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${id} failed final evidence gate`);}
           if(d.practicalReady){
-            if(d.priceTruth.ready!==true||f.executionGrade!==true||p.ready!==true) throw new Error('Practical recommendations lack execution-grade price truth');
-            if(d.sessionDate!==d.expectedLatestSession||d.sessionDate!==p.expectedSession) throw new Error('Practical recommendations use a stale session');
-            if(p.acceptedRows<80) throw new Error('Insufficient current market breadth');
-            if(!Array.isArray(d.recommendations)||d.recommendations.length<1||d.recommendations.length>5) throw new Error('Invalid practical recommendation count');
-            for(const r of d.recommendations){
-              if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability is not above stop`);
-              if(!(r.entryLow>0&&r.entryHigh>=r.entryLow&&r.stopLoss<r.entryLow&&r.target1>r.entryHigh)) throw new Error(`${r.ticker}: invalid entry plan`);
-              if(!(r.outOfSampleAverageReturnPct>0&&r.outOfSampleProfitFactor>=1.15)) throw new Error(`${r.ticker}: weak out-of-sample evidence`);
-              const archived=evaluation.records.find(x=>x.recommendationDate===d.sessionDate&&x.ticker===r.ticker&&x.strategyId===r.strategyId);
-              if(!archived) throw new Error(`${r.ticker}: current recommendation was not archived`);
-              if(!(archived.entryLow>0&&archived.entryHigh>=archived.entryLow&&archived.stopLoss<archived.entryLow&&archived.target1>archived.entryHigh)) throw new Error(`${r.ticker}: archived plan is invalid`);
-            }
+            if(d.sessionDate!==d.expectedLatestSession||d.sessionDate!==p.expectedSession||p.acceptedRows<80) throw new Error('Recommendations are stale or market breadth is insufficient');
+            if(!Array.isArray(d.recommendations)||d.recommendations.length<1||d.recommendations.length>5) throw new Error('Invalid recommendation count');
+            for(const r of d.recommendations){if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability gate failed`);if(!(r.entryLow>0&&r.entryHigh>=r.entryLow&&r.stopLoss<r.entryLow&&r.target1>r.entryHigh)) throw new Error(`${r.ticker}: invalid plan`);if(!(r.outOfSampleAverageReturnPct>0&&r.outOfSampleProfitFactor>=1.15)) throw new Error(`${r.ticker}: weak out-of-sample evidence`);if(!evaluation.records.find(x=>x.recommendationDate===d.sessionDate&&x.ticker===r.ticker&&x.strategyId===r.strategyId)) throw new Error(`${r.ticker}: recommendation not archived`);}
           }
-          for(const marker of ['V15_PRACTICAL_FULL_MARKET_SYSTEM','V15_PREVIOUS_RECOMMENDATIONS_EVALUATION','أفضل الفرص العملية الآن','تقييم التوصيات السابقة','احتمال الهدف — اختبار نهائي','أسهم قوية لكن لا يُفضّل مطاردتها الآن','../../data/stable/v15-practical-decision.json','../../data/stable/v15-recommendation-evaluation.json']) if(!html.includes(marker)) throw new Error(`Missing UI marker: ${marker}`);
-          for(const marker of ['v15-update-status.json','installed-icon','latest=1','cache:\'no-store\'']) if(!root.includes(marker)) throw new Error(`Latest launcher marker missing: ${marker}`);
-          if(manifest.start_url!=='./?launch=pwa&latest=1') throw new Error('Installed icon does not use latest launcher');
-          if(!root.includes('preview-v15/app/index.html')) throw new Error('Root launcher does not point to V15');
-          const htmlIds=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
-          const dup=[...new Set(htmlIds.filter((x,i)=>htmlIds.indexOf(x)!==i))];
-          if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
-          const focus=['AALR','ODIN','NIPH'];
-          const recovered=new Map((missing.recovered||[]).map(x=>[x.symbol,x.price]));
-          const failed=new Set((missing.failed||[]).map(x=>x.symbol));
-          console.log({automaticUpdate:updateStatus.automation,session:d.sessionDate,expected:d.expectedLatestSession,provider:{ready:p.ready,accepted:p.acceptedRows,source:p.source},missing:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows,focus:focus.map(symbol=>({symbol,price:recovered.get(symbol)||null,failed:failed.has(symbol)}))},status:d.status,recommendations:d.recommendations.map(x=>x.ticker),evaluation:evaluation.summary});
+          for(const marker of ['EGX Pro Professional V16','جاهزية المنتج للاعتماد المهني','المراجعة المالية','السجل الحي والاختبارات','portfolioRiskLimit','fundamentalTicker']) if(!html.includes(marker)) throw new Error(`V16 HTML marker missing: ${marker}`);
+          for(const marker of ['egx-v16-fundamentals','لا تُستخدم نسبة Backtest','حساس لدورة السوق','automaticOrders','riskReward']) if(!js.includes(marker)) throw new Error(`V16 JS marker missing: ${marker}`);
+          for(const marker of ['v15-update-status.json','installed-icon','preview-v16/app/index.html','cache:\'no-store\'']) if(!root.includes(marker)) throw new Error(`V16 launcher marker missing: ${marker}`);
+          if(manifest.start_url!=='./?launch=pwa&latest=1'||manifest.short_name!=='EGX Pro V16') throw new Error('Installed manifest is not V16');
+          const htmlIds=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);const dup=[...new Set(htmlIds.filter((x,i)=>htmlIds.indexOf(x)!==i))];if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
+          console.log({interface:updateStatus.productInterface,session:d.sessionDate,prices:{ready:p.ready,accepted:p.acceptedRows,source:p.source?.name},recommendations:d.recommendations.map(x=>x.ticker),liveEvidence:evaluation.summary,missingSymbols:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows}});
           NODE
 
       - name: Commit refreshed market truth and reports
@@ -213,7 +176,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/stable/v15-recommendation-ledger.json data/stable/v15-recommendation-evaluation.json data/stable/v15-update-status.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh V15 market scan recommendations and update status"
+            git commit -m "Refresh EGX Professional V16 market evidence"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
@@ -229,6 +192,6 @@ jobs:
         with:
           path: "."
 
-      - name: Deploy V15
+      - name: Deploy Professional V16
         id: deployment
         uses: actions/deploy-pages@v4
