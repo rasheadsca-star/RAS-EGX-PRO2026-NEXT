@@ -440,6 +440,27 @@ function mergeCandidate(existing, incoming) {
   merged.stock = { ...(existing?.stock || {}), ...(incoming?.stock || {}) };
   merged.riskProfile = { ...(existing?.riskProfile || {}), ...(incoming?.riskProfile || {}) };
   merged.plan = { ...(existing?.plan || {}), ...(incoming?.plan || {}) };
+
+  // The autonomous center is merged after the daily workspace. Mirror its
+  // latest-session top-level values into the nested structures consumed by V14,
+  // so stale workspace values cannot override Thursday/live snapshot values.
+  const livePrice = num(incoming?.currentPrice ?? incoming?.price);
+  const liveRsi14 = num(incoming?.rsi14);
+  const liveVolumeRatio20 = num(incoming?.volumeRatio20);
+  const liveAverageTurnover20Egp = num(incoming?.averageTurnover20Egp);
+  const liveTechnicalScore = num(incoming?.technicalScore);
+  const liveRiskScore = num(incoming?.riskScore);
+  const liveLiquidityPercentile = num(incoming?.liquidityPercentile);
+
+  if (livePrice !== null) merged.stock.price = livePrice;
+  if (liveRsi14 !== null) merged.stock.rsi14 = liveRsi14;
+  if (liveVolumeRatio20 !== null) merged.stock.volumeRatio20 = liveVolumeRatio20;
+  if (liveAverageTurnover20Egp !== null) merged.stock.averageTurnover20Egp = liveAverageTurnover20Egp;
+  if (liveTechnicalScore !== null) merged.stock.technicalScore = liveTechnicalScore;
+  if (liveRiskScore !== null) merged.riskProfile.riskScore = liveRiskScore;
+  if (liveLiquidityPercentile !== null) merged.riskProfile.liquidityPercentile = liveLiquidityPercentile;
+  if (incoming?.riskLabelAr) merged.riskProfile.riskLabelAr = incoming.riskLabelAr;
+
   return merged;
 }
 
@@ -720,10 +741,19 @@ function main() {
   const historical = buildHistoricalEvidence(histories, featureStore, policy);
 
   const historyDates = [...featureStore.regimes.keys()].sort();
-  const sessionDate = dateOnly(center?.analysisSession)
-    || dateOnly(center?.marketDate)
-    || dateOnly(workspace?.sessionId)
-    || dateOnly(researchV1320?.currentSession?.sessionDate)
+  const historyDateSet = new Set(historyDates);
+  const sessionCandidates = [
+    summary?.latestMarketSession,
+    historyDates.at(-1),
+    researchV1320?.currentSession?.sessionDate,
+    workspace?.sessionId,
+    center?.analysisSession,
+    center?.marketDate,
+  ]
+    .map(dateOnly)
+    .filter(date => date && historyDateSet.has(date))
+    .sort();
+  const sessionDate = sessionCandidates.at(-1)
     || historyDates.at(-1)
     || null;
   if (!sessionDate) throw new Error('Unable to resolve the current analysis session');
