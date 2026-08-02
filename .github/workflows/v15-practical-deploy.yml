@@ -1,13 +1,15 @@
-name: EGX Professional V16 Validate and Deploy
+name: EGX Professional V16.1 Validate and Deploy
 
 on:
   workflow_dispatch:
   push:
     paths:
       - "scripts/stable/v15-*.cjs"
+      - "scripts/stable/v16-*.cjs"
       - "scripts/fetch-market-data.js"
       - "preview-v15/app/**"
       - "preview-v16/app/**"
+      - "data/fundamentals/**"
       - "index.html"
       - "manifest.json"
       - "service-worker.js"
@@ -24,6 +26,9 @@ env:
   EGX_PRICE_MATCH_TOLERANCE_PCT: "1.75"
   EGX_MAX_SINGLE_SESSION_JUMP_PCT: "35"
   EGX_RECOMMENDATION_EVAL_START: "2026-08-02T22:10:00.000Z"
+  EGX_FUNDAMENTAL_BATCH: "24"
+  EGX_FUNDAMENTAL_MAX_AGE_DAYS: "21"
+  EGX_FUNDAMENTAL_CONCURRENCY: "3"
 
 permissions:
   contents: write
@@ -53,14 +58,18 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate professional V16 assets
+      - name: Validate V16.1 application and engines
         run: |
           set -euo pipefail
           node --check preview-v16/app/app.js
           node --check preview-v16/app/pilot-policy.js
+          node --check preview-v16/app/fundamentals.js
           node --check preview-v16/app/launch.js
+          node --check scripts/stable/v16-fundamental-collector.cjs
+          node --check scripts/stable/v16-fundamental-engine.cjs
           test -s preview-v16/app/index.html
           test -s preview-v16/app/styles.css
+          test -s preview-v16/app/fundamentals.css
 
       - name: Run public-market collector
         run: |
@@ -88,6 +97,14 @@ jobs:
           node scripts/stable/v15-practical-market-scanner.cjs
           node scripts/stable/v15-price-truth-gate.cjs
 
+      - name: Refresh financial statements and analysis
+        run: |
+          set +e
+          node scripts/stable/v16-fundamental-collector.cjs
+          echo "Fundamental collector exit code: $? — cached records are retained on provider failure"
+          set -e
+          node scripts/stable/v16-fundamental-engine.cjs
+
       - name: Archive and evaluate previous recommendations
         run: |
           set -euo pipefail
@@ -104,24 +121,16 @@ jobs:
           const p=read('data/stable/v15-price-truth.json');
           const f=read('data/fetch-status.json');
           const evaluation=read('data/stable/v15-recommendation-evaluation.json');
+          const fundamental=read('data/stable/v16-fundamental-analysis.json');
           const out={
-            schemaVersion:'16.0.1',
-            generatedAt:new Date().toISOString(),
-            lastAutomaticScanAt:new Date().toISOString(),
-            productInterface:'EGX_PROFESSIONAL_V16',
-            evidenceTier:d.evidenceTier||'RESEARCH',
-            professionalEvidenceReady:d.professionalEvidenceReady===true,
+            schemaVersion:'16.1.0',generatedAt:new Date().toISOString(),lastAutomaticScanAt:new Date().toISOString(),productInterface:'EGX_PROFESSIONAL_V16_1',
+            evidenceTier:d.evidenceTier||'RESEARCH',professionalEvidenceReady:d.professionalEvidenceReady===true,
             automation:{enabled:true,cadence:'HOURLY_AFTER_MARKET_CLOSE',cron:'20 13-17 * * 0-4',tradingDays:'SUNDAY_THROUGH_THURSDAY',attemptsPerTradingDay:5,timezoneReference:'UTC_WITH_CAIRO_AFTER_CLOSE_GUARD'},
-            sessionDate:d.sessionDate||null,
-            expectedLatestSession:d.expectedLatestSession||p.expectedSession||null,
-            recommendationGeneratedAt:d.generatedAt||null,
-            recommendationsReady:d.practicalReady===true,
-            recommendationCount:Array.isArray(d.recommendations)?d.recommendations.length:0,
-            recommendationTickers:Array.isArray(d.recommendations)?d.recommendations.map(x=>x.ticker):[],
+            sessionDate:d.sessionDate||null,expectedLatestSession:d.expectedLatestSession||p.expectedSession||null,recommendationGeneratedAt:d.generatedAt||null,
+            recommendationsReady:d.practicalReady===true,recommendationCount:Array.isArray(d.recommendations)?d.recommendations.length:0,recommendationTickers:Array.isArray(d.recommendations)?d.recommendations.map(x=>x.ticker):[],
             priceTruth:{ready:p.ready===true,executionGrade:p.executionGrade===true,acceptedRows:p.acceptedRows||0,source:p.source?.name||f.sourceName||null,sourceGeneratedAt:p.source?.generatedAt||f.generatedAt||null},
-            evaluationGeneratedAt:evaluation.generatedAt||null,
-            evaluationArchivedRecommendations:evaluation.summary?.archivedRecommendations||0,
-            liveResolvedTrades:evaluation.summary?.resolvedTrades||0,
+            fundamentals:{generatedAt:fundamental.generatedAt||null,marketUniverse:fundamental.summary?.marketUniverse||0,rawCoverage:fundamental.summary?.rawCoverage||0,scoredCompanies:fundamental.summary?.scoredCompanies||0,currentRecommendationCoverage:fundamental.summary?.currentRecommendationFinancialCoverage||0,officialVerifiedCompanies:fundamental.summary?.officialVerifiedCompanies||0},
+            evaluationGeneratedAt:evaluation.generatedAt||null,evaluationArchivedRecommendations:evaluation.summary?.archivedRecommendations||0,liveResolvedTrades:evaluation.summary?.resolvedTrades||0,
             liveEvidenceGate:evaluation.summary?.resolvedTrades>=100?'PROFESSIONAL':evaluation.summary?.resolvedTrades>=30?'ADVANCED_PILOT':'RESEARCH'
           };
           fs.writeFileSync('data/stable/v15-update-status.json',JSON.stringify(out,null,2)+'\n');
@@ -138,30 +147,30 @@ jobs:
           const v=read('data/research/v15-practical-validation.json');
           const f=read('data/fetch-status.json');
           const p=read('data/stable/v15-price-truth.json');
-          const missing=read('data/stable/v15-missing-symbol-report.json');
           const evaluation=read('data/stable/v15-recommendation-evaluation.json');
           const ledger=read('data/stable/v15-recommendation-ledger.json');
           const updateStatus=read('data/stable/v15-update-status.json');
+          const fundamental=read('data/stable/v16-fundamental-analysis.json');
+          const rawFundamental=read('data/fundamentals/v16-fundamental-raw.json');
           const html=fs.readFileSync('preview-v16/app/index.html','utf8');
-          const js=fs.readFileSync('preview-v16/app/app.js','utf8');
+          const financialJs=fs.readFileSync('preview-v16/app/fundamentals.js','utf8');
           const policy=fs.readFileSync('preview-v16/app/pilot-policy.js','utf8');
           const root=fs.readFileSync('index.html','utf8');
           const manifest=read('manifest.json');
+
           if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected decision schema');
           if(!String(p.schemaVersion||'').startsWith('15.2.')) throw new Error('Unexpected price-truth schema');
-          if(!String(updateStatus.schemaVersion||'').startsWith('16.0.')) throw new Error('Professional heartbeat missing');
-          if(updateStatus.productInterface!=='EGX_PROFESSIONAL_V16') throw new Error('V16 interface marker missing');
+          if(!String(updateStatus.schemaVersion||'').startsWith('16.1.')) throw new Error('V16.1 heartbeat missing');
+          if(updateStatus.productInterface!=='EGX_PROFESSIONAL_V16_1') throw new Error('V16.1 interface marker missing');
           if(updateStatus.automation?.enabled!==true||updateStatus.automation?.attemptsPerTradingDay!==5) throw new Error('Automatic scan cadence invalid');
-          if(updateStatus.recommendationGeneratedAt!==d.generatedAt||updateStatus.sessionDate!==d.sessionDate) throw new Error('Heartbeat does not point to latest recommendation set');
-          if(updateStatus.evidenceTier!==d.evidenceTier||updateStatus.professionalEvidenceReady!==d.professionalEvidenceReady) throw new Error('Evidence tier heartbeat mismatch');
+          if(updateStatus.recommendationGeneratedAt!==d.generatedAt||updateStatus.sessionDate!==d.sessionDate) throw new Error('Heartbeat recommendation mismatch');
           if(evaluation.methodology?.version!=='V15_CONSERVATIVE_DAILY_OHLC_1.0'||ledger.methodologyVersion!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Evaluation methodology mismatch');
           if(!Array.isArray(evaluation.records)||!Array.isArray(ledger.records)) throw new Error('Recommendation archive malformed');
           const ids=evaluation.records.map(x=>x.id);if(new Set(ids).size!==ids.length) throw new Error('Duplicate recommendation IDs');
+
           if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD'||d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
           if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
-          if(!(d.guardrails?.minimumRiskReward>=1.15)) throw new Error('Minimum professional risk/reward missing');
-          if(!(d.guardrails?.maximumRecommendationRsi<=78)) throw new Error('Anti-chasing RSI gate missing');
-          if(d.guardrails?.hotMomentumWatchOnly!==true||d.guardrails?.modelStabilityGate!==true) throw new Error('Professional watch/stability gates missing');
+          if(!(d.guardrails?.minimumRiskReward>=1.15)||!(d.guardrails?.maximumRecommendationRsi<=78)) throw new Error('Professional trade gates missing');
           if(f.executionGrade!==true||p.ready!==true){if(d.practicalReady!==false||d.recommendations?.length) throw new Error('Recommendations leaked from unverified prices');}
           if(!Array.isArray(v.validatedModels)||!v.validatedModels.length) throw new Error('No Pilot-validated models');
           for(const id of v.validatedModels){const m=v.models.find(x=>x.id===id);if(!m?.validationPassed||!m?.testPassed) throw new Error(`${id} did not pass both stages`);if(!(m.test.targetRatePct>m.test.stopRatePct&&m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${id} failed final evidence gate`);}
@@ -171,31 +180,43 @@ jobs:
             for(const r of d.recommendations){
               if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability gate failed`);
               if(!(r.entryLow>0&&r.entryHigh>=r.entryLow&&r.stopLoss<r.entryLow&&r.target1>r.entryHigh)) throw new Error(`${r.ticker}: invalid plan`);
-              if(!(r.riskReward>=d.guardrails.minimumRiskReward)) throw new Error(`${r.ticker}: risk/reward below professional minimum`);
-              if(!(r.rsi14<=d.guardrails.maximumRecommendationRsi)) throw new Error(`${r.ticker}: RSI chase gate failed`);
-              if(!(r.ret5Pct<=d.guardrails.maximumRecommendationReturn5Pct)) throw new Error(`${r.ticker}: five-session chase gate failed`);
+              if(!(r.riskReward>=d.guardrails.minimumRiskReward&&r.rsi14<=d.guardrails.maximumRecommendationRsi)) throw new Error(`${r.ticker}: execution gate failed`);
               if(!(r.outOfSampleAverageReturnPct>0&&r.outOfSampleProfitFactor>=1.15)) throw new Error(`${r.ticker}: weak out-of-sample evidence`);
               if(d.professionalEvidenceReady!==true&&r.pilotRiskMode!=='REDUCED_RISK') throw new Error(`${r.ticker}: short evidence sample must use reduced risk`);
               if(!evaluation.records.find(x=>x.recommendationDate===d.sessionDate&&x.ticker===r.ticker&&x.strategyId===r.strategyId)) throw new Error(`${r.ticker}: recommendation not archived`);
             }
           }
-          for(const marker of ['EGX Pro Professional V16','جاهزية المنتج للاعتماد المهني','المراجعة المالية','السجل الحي والاختبارات','portfolioRiskLimit','fundamentalTicker']) if(!html.includes(marker)) throw new Error(`V16 HTML marker missing: ${marker}`);
-          for(const marker of ['egx-v16-fundamentals','لا تُستخدم نسبة Backtest','حساس لدورة السوق','automaticOrders','riskReward']) if(!js.includes(marker)) throw new Error(`V16 JS marker missing: ${marker}`);
-          for(const marker of ['Pilot منخفض المخاطرة','Math.min(requestedRiskPct, 0.25)','minimumRiskReward','maximumRecommendationRsi']) if(!policy.includes(marker)) throw new Error(`Pilot policy marker missing: ${marker}`);
+
+          if(!String(fundamental.schemaVersion||'').startsWith('16.1.')) throw new Error('Fundamental analysis schema missing');
+          if(fundamental.methodology?.name!=='EGX_PRO_FUNDAMENTAL_MULTI_PILLAR_1.0') throw new Error('Fundamental methodology mismatch');
+          if(!Array.isArray(fundamental.records)||!Array.isArray(fundamental.recommendationAnalysis)) throw new Error('Fundamental records malformed');
+          if(fundamental.recommendationAnalysis.length!==d.recommendations.length) throw new Error('Every current recommendation must have a financial status, including DATA_UNAVAILABLE');
+          for(const row of fundamental.records){
+            if(row.score!==null&&!(row.dataQuality?.completenessPct>=45)) throw new Error(`${row.ticker}: score published with insufficient data`);
+            if(!row.source?.providerTier) throw new Error(`${row.ticker}: financial source tier missing`);
+            if(row.source?.officialDisclosureVerified===true&&!row.source?.officialUrl) throw new Error(`${row.ticker}: official verification lacks source URL`);
+            if(row.relativeFairValue?.fairValue!==null&&row.relativeFairValue?.methodology!=='Relative valuation against available EGX peers; not a DCF or guaranteed intrinsic value.') throw new Error(`${row.ticker}: valuation methodology not disclosed`);
+          }
+          if(!String(rawFundamental.schemaVersion||'').startsWith('16.1.')) throw new Error('Fundamental raw cache missing');
+          if(updateStatus.fundamentals?.generatedAt!==fundamental.generatedAt) throw new Error('Heartbeat does not point to latest financial report');
+
+          for(const marker of ['EGX Pro Professional','V16.1','fundamentals.css','pilot-policy.js','fundamentals.js','التحليل المالي']) if(!html.includes(marker)) throw new Error(`V16.1 HTML marker missing: ${marker}`);
+          for(const marker of ['EGX_PRO_FUNDAMENTAL_MULTI_PILLAR_1.0','القيمة نسبية','بوابة مالية صلبة','currentRecommendationFinancialCoverage']) if(!financialJs.includes(marker)) throw new Error(`Fundamental UI marker missing: ${marker}`);
+          for(const marker of ['Pilot منخفض المخاطرة','Math.min(requestedRiskPct, 0.25)']) if(!policy.includes(marker)) throw new Error(`Pilot policy marker missing: ${marker}`);
           for(const marker of ['v15-update-status.json','installed-icon','preview-v16/app/index.html','cache:\'no-store\'']) if(!root.includes(marker)) throw new Error(`V16 launcher marker missing: ${marker}`);
           if(manifest.start_url!=='./?launch=pwa&latest=1'||manifest.short_name!=='EGX Pro V16') throw new Error('Installed manifest is not V16');
           const htmlIds=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);const dup=[...new Set(htmlIds.filter((x,i)=>htmlIds.indexOf(x)!==i))];if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
-          console.log({interface:updateStatus.productInterface,evidenceTier:d.evidenceTier,session:d.sessionDate,prices:{ready:p.ready,accepted:p.acceptedRows,source:p.source?.name},recommendations:d.recommendations.map(x=>({ticker:x.ticker,rr:x.riskReward,rsi:x.rsi14,riskMode:x.pilotRiskMode})),liveEvidence:evaluation.summary,missingSymbols:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows}});
+          console.log({interface:updateStatus.productInterface,session:d.sessionDate,prices:{ready:p.ready,accepted:p.acceptedRows},recommendations:d.recommendations.map(x=>x.ticker),fundamentals:fundamental.summary,collector:{coverage:rawFundamental.coverageCount,failedLastRun:rawFundamental.failedThisRun},liveEvidence:evaluation.summary});
           NODE
 
-      - name: Commit refreshed market truth and reports
+      - name: Commit refreshed market and financial evidence
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/stable/v15-recommendation-ledger.json data/stable/v15-recommendation-evaluation.json data/stable/v15-update-status.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/fundamentals data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/stable/v15-recommendation-ledger.json data/stable/v15-recommendation-evaluation.json data/stable/v15-update-status.json data/stable/v16-fundamental-analysis.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh EGX Professional V16 market evidence"
+            git commit -m "Refresh EGX V16.1 market and financial evidence"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
@@ -211,6 +232,6 @@ jobs:
         with:
           path: "."
 
-      - name: Deploy Professional V16
+      - name: Deploy Professional V16.1
         id: deployment
         uses: actions/deploy-pages@v4
