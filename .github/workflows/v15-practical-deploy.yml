@@ -5,6 +5,8 @@ on:
   push:
     paths:
       - "scripts/stable/v15-practical-market-scanner.cjs"
+      - "scripts/stable/v15-price-truth-gate.cjs"
+      - "scripts/fetch-market-data.js"
       - "preview-v15/app/index.html"
       - "index.html"
       - "manifest.json"
@@ -40,11 +42,19 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Rebuild V15 practical decision
+      - name: Attempt fresh market-price fetch
+        run: |
+          set +e
+          node scripts/fetch-market-data.js
+          exit 0
+
+      - name: Rebuild V15 and enforce price truth
         run: |
           set -euo pipefail
           node --check scripts/stable/v15-practical-market-scanner.cjs
+          node --check scripts/stable/v15-price-truth-gate.cjs
           node scripts/stable/v15-practical-market-scanner.cjs
+          node scripts/stable/v15-price-truth-gate.cjs
 
       - name: Acceptance checks
         run: |
@@ -55,10 +65,15 @@ jobs:
           const v=JSON.parse(fs.readFileSync('data/research/v15-practical-validation.json','utf8'));
           const html=fs.readFileSync('preview-v15/app/index.html','utf8');
           const root=fs.readFileSync('index.html','utf8');
-          if(d.schemaVersion!=='15.0.0') throw new Error('Unexpected V15 schema');
+          if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected V15 schema');
           if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD') throw new Error('Full-market mode missing');
           if(d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
           if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
+          if(!d.priceTruth) throw new Error('Price-truth diagnostics missing');
+          if(d.priceTruth.ready!==true){
+            if(d.practicalReady!==false) throw new Error('Non-current prices cannot be practical-ready');
+            if(!Array.isArray(d.recommendations)||d.recommendations.length!==0) throw new Error('Recommendations leaked from stale prices');
+          }
           if(!Array.isArray(v.validatedModels)||v.validatedModels.length===0) throw new Error('No validated models');
           for(const modelId of v.validatedModels){
             const m=v.models.find(x=>x.id===modelId);
@@ -67,6 +82,8 @@ jobs:
             if(!(m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${modelId} test return gate failed`);
           }
           if(d.practicalReady){
+            if(d.priceTruth.ready!==true) throw new Error('Practical recommendations lack price truth');
+            if(d.sessionDate!==d.expectedLatestSession) throw new Error('Practical recommendations use a stale session');
             if(!Array.isArray(d.recommendations)||d.recommendations.length<1||d.recommendations.length>5) throw new Error('Invalid practical recommendation count');
             for(const r of d.recommendations){
               if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability is not above stop`);
@@ -79,7 +96,7 @@ jobs:
           const ids=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
           const dup=[...new Set(ids.filter((x,i)=>ids.indexOf(x)!==i))];
           if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
-          console.log({session:d.sessionDate,validatedModels:v.validatedModels,recommendations:d.recommendations.map(x=>({ticker:x.ticker,strategy:x.strategyId,target:x.estimatedTargetProbabilityPct,stop:x.estimatedStopProbabilityPct})),capture:d.missedOpportunityCapture});
+          console.log({session:d.sessionDate,expected:d.expectedLatestSession,priceTruth:d.priceTruth,status:d.status,recommendations:d.recommendations.map(x=>x.ticker)});
           NODE
 
       - name: Commit refreshed reports
@@ -87,9 +104,9 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          git add data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json data/fetch-status.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh V15 practical market decision"
+            git commit -m "Refresh V15 with price-truth gate"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
