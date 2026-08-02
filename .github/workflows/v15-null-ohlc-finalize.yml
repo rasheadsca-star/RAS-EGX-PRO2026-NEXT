@@ -1,0 +1,101 @@
+name: V15 Null OHLC Finalize
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v15-null-ohlc-finalize.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: v15-null-ohlc-finalize
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fetch current precise market
+        run: |
+          set -euo pipefail
+          node scripts/fetch-market-data.js
+          node scripts/stable/v15-missing-symbol-fallback.cjs || true
+
+      - name: Rebuild price truth and decision
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v15-live-price-truth.cjs
+          node scripts/stable/v15-live-price-truth.cjs
+          node scripts/stable/v15-practical-market-scanner.cjs
+          node scripts/stable/v15-price-truth-gate.cjs
+
+      - name: Strict focus audit
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const truth=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
+          const market=JSON.parse(fs.readFileSync('data/market.json','utf8'));
+          const decision=JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json','utf8'));
+          const expected=truth.expectedSession;
+          if(!truth.ready||truth.executionGrade!==true) throw new Error('Price truth not execution grade');
+          if(!String(truth.schemaVersion).startsWith('15.2.')) throw new Error('Unexpected truth schema');
+          if(truth.acceptedRows<80||truth.updatedHistoryFiles<80) throw new Error('Insufficient current-session breadth');
+          const marketMap=new Map((market.rows||[]).map(r=>[String(r.symbol||r.ticker||'').toUpperCase(),Number(r.price??r.last??r.close)]));
+          const auditMap=new Map((truth.focusAudit||[]).map(x=>[x.ticker,x]));
+          const expectedRanges={AALR:[295,315],ODIN:[2.80,3.05],NIPH:[225,242]};
+          const audit=[];
+          for(const [ticker,[lo,hi]] of Object.entries(expectedRanges)){
+            const item=auditMap.get(ticker);
+            const marketPrice=marketMap.get(ticker);
+            const file=path.join('data/history',`${ticker}.json`);
+            const history=JSON.parse(fs.readFileSync(file,'utf8'));
+            const latest=(history.sessions||[]).find(x=>String(x.date||x.sessionDate).slice(0,10)===expected);
+            if(!item||item.status!=='ACCEPTED') throw new Error(`${ticker}: not accepted: ${JSON.stringify(item)}`);
+            if(history.lastSession!==expected||!latest) throw new Error(`${ticker}: current session missing from history`);
+            if(!(marketPrice>=lo&&marketPrice<=hi)) throw new Error(`${ticker}: market price ${marketPrice} outside audit range`);
+            if(Math.abs(Number(latest.close)/marketPrice-1)>0.001) throw new Error(`${ticker}: history/market mismatch`);
+            audit.push({ticker,marketPrice,historyClose:latest.close,lastSession:history.lastSession,status:item.status,warnings:latest.warnings||[]});
+          }
+          if(decision.sessionDate!==expected||decision.priceTruth?.ready!==true) throw new Error('Decision did not use current price truth');
+          console.log(JSON.stringify({truth:{accepted:truth.acceptedRows,rejected:truth.rejectedRows,dropped:truth.droppedRows,updated:truth.updatedHistoryFiles},focus:audit,decision:{ready:decision.practicalReady,status:decision.status,recommendations:(decision.recommendations||[]).map(x=>({ticker:x.ticker,close:x.close,entryLow:x.entryLow,entryHigh:x.entryHigh}))}},null,2));
+          NODE
+
+      - name: Commit final current-session files
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Finalize V15 current prices including AALR ODIN NIPH"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt*15))
+            done
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - id: deployment
+        uses: actions/deploy-pages@v4
