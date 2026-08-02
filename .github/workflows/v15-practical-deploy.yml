@@ -15,7 +15,9 @@ on:
       - "manifest.json"
       - ".github/workflows/v15-practical-deploy.yml"
   schedule:
-    - cron: "20 12 * * 0-4"
+    # Five automatic attempts after market close, Sunday through Thursday.
+    # 13:20-17:20 UTC remains after 15:00 Cairo in both standard and daylight time.
+    - cron: "20 13-17 * * 0-4"
 
 env:
   EGXAPI_KEY: ${{ secrets.EGXAPI_KEY }}
@@ -87,6 +89,50 @@ jobs:
           node --check scripts/stable/v15-recommendation-evaluator.cjs
           node scripts/stable/v15-recommendation-evaluator.cjs
 
+      - name: Write automatic scan heartbeat
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const read=file=>JSON.parse(fs.readFileSync(file,'utf8'));
+          const d=read('data/stable/v15-practical-decision.json');
+          const p=read('data/stable/v15-price-truth.json');
+          const f=read('data/fetch-status.json');
+          const evaluation=read('data/stable/v15-recommendation-evaluation.json');
+          const out={
+            schemaVersion:'15.0.0',
+            generatedAt:new Date().toISOString(),
+            lastAutomaticScanAt:new Date().toISOString(),
+            automation:{
+              enabled:true,
+              cadence:'HOURLY_AFTER_MARKET_CLOSE',
+              cron:'20 13-17 * * 0-4',
+              tradingDays:'SUNDAY_THROUGH_THURSDAY',
+              attemptsPerTradingDay:5,
+              timezoneReference:'UTC_WITH_CAIRO_AFTER_CLOSE_GUARD'
+            },
+            sessionDate:d.sessionDate||null,
+            expectedLatestSession:d.expectedLatestSession||p.expectedSession||null,
+            recommendationGeneratedAt:d.generatedAt||null,
+            recommendationsReady:d.practicalReady===true,
+            recommendationCount:Array.isArray(d.recommendations)?d.recommendations.length:0,
+            recommendationTickers:Array.isArray(d.recommendations)?d.recommendations.map(x=>x.ticker):[],
+            priceTruth:{
+              ready:p.ready===true,
+              executionGrade:p.executionGrade===true,
+              acceptedRows:p.acceptedRows||0,
+              source:p.source?.name||f.sourceName||null,
+              sourceGeneratedAt:p.source?.generatedAt||f.generatedAt||null
+            },
+            evaluationGeneratedAt:evaluation.generatedAt||null,
+            evaluationArchivedRecommendations:evaluation.summary?.archivedRecommendations||0
+          };
+          fs.mkdirSync(path.dirname('data/stable/v15-update-status.json'),{recursive:true});
+          fs.writeFileSync('data/stable/v15-update-status.json',JSON.stringify(out,null,2)+'\n');
+          console.log(out);
+          NODE
+
       - name: Acceptance checks
         run: |
           set -euo pipefail
@@ -99,13 +145,20 @@ jobs:
           const missing=JSON.parse(fs.readFileSync('data/stable/v15-missing-symbol-report.json','utf8'));
           const evaluation=JSON.parse(fs.readFileSync('data/stable/v15-recommendation-evaluation.json','utf8'));
           const ledger=JSON.parse(fs.readFileSync('data/stable/v15-recommendation-ledger.json','utf8'));
+          const updateStatus=JSON.parse(fs.readFileSync('data/stable/v15-update-status.json','utf8'));
           const html=fs.readFileSync('preview-v15/app/index.html','utf8');
           const root=fs.readFileSync('index.html','utf8');
+          const manifest=JSON.parse(fs.readFileSync('manifest.json','utf8'));
           if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected V15 decision schema');
           if(!String(p.schemaVersion||'').startsWith('15.2.')) throw new Error('Unexpected price-truth schema');
           if(!String(missing.schemaVersion||'').startsWith('15.0.')) throw new Error('Missing-symbol report unavailable');
           if(!String(evaluation.schemaVersion||'').startsWith('15.0.')) throw new Error('Recommendation evaluation report unavailable');
           if(!String(ledger.schemaVersion||'').startsWith('15.0.')) throw new Error('Recommendation ledger unavailable');
+          if(!String(updateStatus.schemaVersion||'').startsWith('15.0.')) throw new Error('Automatic update status unavailable');
+          if(updateStatus.automation?.enabled!==true) throw new Error('Periodic automatic scan is disabled');
+          if(updateStatus.automation?.attemptsPerTradingDay!==5) throw new Error('Unexpected automatic scan cadence');
+          if(updateStatus.recommendationGeneratedAt!==d.generatedAt) throw new Error('Update status does not point to latest recommendations');
+          if(updateStatus.sessionDate!==d.sessionDate) throw new Error('Update status session mismatch');
           if(evaluation.methodology?.version!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Unexpected evaluation methodology');
           if(ledger.methodologyVersion!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Ledger methodology mismatch');
           if(!Array.isArray(evaluation.records)||!Array.isArray(ledger.records)) throw new Error('Recommendation archive is malformed');
@@ -141,6 +194,8 @@ jobs:
             }
           }
           for(const marker of ['V15_PRACTICAL_FULL_MARKET_SYSTEM','V15_PREVIOUS_RECOMMENDATIONS_EVALUATION','أفضل الفرص العملية الآن','تقييم التوصيات السابقة','احتمال الهدف — اختبار نهائي','أسهم قوية لكن لا يُفضّل مطاردتها الآن','../../data/stable/v15-practical-decision.json','../../data/stable/v15-recommendation-evaluation.json']) if(!html.includes(marker)) throw new Error(`Missing UI marker: ${marker}`);
+          for(const marker of ['v15-update-status.json','installed-icon','latest=1','cache:\'no-store\'']) if(!root.includes(marker)) throw new Error(`Latest launcher marker missing: ${marker}`);
+          if(manifest.start_url!=='./?launch=pwa&latest=1') throw new Error('Installed icon does not use latest launcher');
           if(!root.includes('preview-v15/app/index.html')) throw new Error('Root launcher does not point to V15');
           const htmlIds=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
           const dup=[...new Set(htmlIds.filter((x,i)=>htmlIds.indexOf(x)!==i))];
@@ -148,7 +203,7 @@ jobs:
           const focus=['AALR','ODIN','NIPH'];
           const recovered=new Map((missing.recovered||[]).map(x=>[x.symbol,x.price]));
           const failed=new Set((missing.failed||[]).map(x=>x.symbol));
-          console.log({session:d.sessionDate,expected:d.expectedLatestSession,provider:{ready:p.ready,accepted:p.acceptedRows,source:p.source},missing:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows,focus:focus.map(symbol=>({symbol,price:recovered.get(symbol)||null,failed:failed.has(symbol)}))},status:d.status,recommendations:d.recommendations.map(x=>x.ticker),evaluation:evaluation.summary});
+          console.log({automaticUpdate:updateStatus.automation,session:d.sessionDate,expected:d.expectedLatestSession,provider:{ready:p.ready,accepted:p.acceptedRows,source:p.source},missing:{before:missing.missingBeforeFallback,recovered:missing.recoveredRows,final:missing.finalRows,focus:focus.map(symbol=>({symbol,price:recovered.get(symbol)||null,failed:failed.has(symbol)}))},status:d.status,recommendations:d.recommendations.map(x=>x.ticker),evaluation:evaluation.summary});
           NODE
 
       - name: Commit refreshed market truth and reports
@@ -156,9 +211,9 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/stable/v15-recommendation-ledger.json data/stable/v15-recommendation-evaluation.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/stable/v15-recommendation-ledger.json data/stable/v15-recommendation-evaluation.json data/stable/v15-update-status.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh V15 recommendations and evaluation"
+            git commit -m "Refresh V15 market scan recommendations and update status"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
