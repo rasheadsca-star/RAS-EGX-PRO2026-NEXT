@@ -1,0 +1,110 @@
+name: V15 Practical Validate and Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/stable/v15-practical-market-scanner.cjs"
+      - "preview-v15/app/index.html"
+      - "index.html"
+      - "manifest.json"
+      - ".github/workflows/v15-practical-deploy.yml"
+  schedule:
+    - cron: "40 17 * * 0-4"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: v15-practical-pages
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Rebuild V15 practical decision
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v15-practical-market-scanner.cjs
+          node scripts/stable/v15-practical-market-scanner.cjs
+
+      - name: Acceptance checks
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json','utf8'));
+          const v=JSON.parse(fs.readFileSync('data/research/v15-practical-validation.json','utf8'));
+          const html=fs.readFileSync('preview-v15/app/index.html','utf8');
+          const root=fs.readFileSync('index.html','utf8');
+          if(d.schemaVersion!=='15.0.0') throw new Error('Unexpected V15 schema');
+          if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD') throw new Error('Full-market mode missing');
+          if(d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
+          if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
+          if(!Array.isArray(v.validatedModels)||v.validatedModels.length===0) throw new Error('No validated models');
+          for(const modelId of v.validatedModels){
+            const m=v.models.find(x=>x.id===modelId);
+            if(!m?.validationPassed||!m?.testPassed) throw new Error(`${modelId} did not pass both stages`);
+            if(!(m.test.targetRatePct>m.test.stopRatePct)) throw new Error(`${modelId} target rate does not exceed stop rate`);
+            if(!(m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${modelId} test return gate failed`);
+          }
+          if(d.practicalReady){
+            if(!Array.isArray(d.recommendations)||d.recommendations.length<1||d.recommendations.length>5) throw new Error('Invalid practical recommendation count');
+            for(const r of d.recommendations){
+              if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability is not above stop`);
+              if(!(r.entryLow>0&&r.entryHigh>=r.entryLow&&r.stopLoss<r.entryLow&&r.target1>r.entryHigh)) throw new Error(`${r.ticker}: invalid entry plan`);
+              if(!(r.outOfSampleAverageReturnPct>0&&r.outOfSampleProfitFactor>=1.15)) throw new Error(`${r.ticker}: weak out-of-sample evidence`);
+            }
+          }
+          for(const marker of ['V15_PRACTICAL_FULL_MARKET_SYSTEM','أفضل الفرص العملية الآن','احتمال الهدف — اختبار نهائي','أسهم قوية لكن لا يُفضّل مطاردتها الآن','../../data/stable/v15-practical-decision.json']) if(!html.includes(marker)) throw new Error(`Missing UI marker: ${marker}`);
+          if(!root.includes('preview-v15/app/index.html')) throw new Error('Root launcher does not point to V15');
+          const ids=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);
+          const dup=[...new Set(ids.filter((x,i)=>ids.indexOf(x)!==i))];
+          if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
+          console.log({session:d.sessionDate,validatedModels:v.validatedModels,recommendations:d.recommendations.map(x=>({ticker:x.ticker,strategy:x.strategyId,target:x.estimatedTargetProbabilityPct,stop:x.estimatedStopProbabilityPct})),capture:d.missedOpportunityCapture});
+          NODE
+
+      - name: Commit refreshed reports
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/stable/v15-practical-decision.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh V15 practical market decision"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt*15))
+            done
+          fi
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy V15
+        id: deployment
+        uses: actions/deploy-pages@v4
