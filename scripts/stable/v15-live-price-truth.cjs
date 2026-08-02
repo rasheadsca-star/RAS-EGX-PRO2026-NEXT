@@ -13,9 +13,17 @@ const OUT_PATH = path.join(ROOT, 'data/stable/v15-price-truth.json');
 const MIN_EXECUTION_ROWS = Number(process.env.EGX_MIN_EXECUTION_ROWS || 80);
 const MAX_SINGLE_SESSION_JUMP_PCT = Number(process.env.EGX_MAX_SINGLE_SESSION_JUMP_PCT || 35);
 const PRECISE_SOURCE_PATTERN = /mubasher_symbol_pages_precise/i;
+const FOCUS_TICKERS = ['AALR', 'ODIN', 'NIPH'];
 
-const n = (value, fallback = null) => Number.isFinite(Number(value)) ? Number(value) : fallback;
-const round = (value, digits = 4) => Number.isFinite(Number(value)) ? Number(Number(value).toFixed(digits)) : null;
+function n(value, fallback = null) {
+  if (value === null || value === undefined || value === '') return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+function round(value, digits = 4) {
+  const parsed = n(value, null);
+  return parsed === null ? null : Number(parsed.toFixed(digits));
+}
 const dateOnly = value => (String(value || '').match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
 const normSymbol = value => String(value || '').trim().toUpperCase().replace(/\.CA$/i, '').replace(/[^A-Z0-9._-]/g, '');
 
@@ -41,7 +49,7 @@ function expectedLatestCompletedSessionCairo(now = new Date()) {
   );
   const date = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));
   const cairoHour = Number(parts.hour) + Number(parts.minute) / 60;
-  const isTradingDay = () => [0, 1, 2, 3, 4].includes(date.getUTCDay()); // Sunday–Thursday
+  const isTradingDay = () => [0, 1, 2, 3, 4].includes(date.getUTCDay());
   if (isTradingDay() && cairoHour < 15) date.setUTCDate(date.getUTCDate() - 1);
   while (!isTradingDay()) date.setUTCDate(date.getUTCDate() - 1);
   return date.toISOString().slice(0, 10);
@@ -75,14 +83,17 @@ function previousTrustedClose(ticker, beforeDate) {
 function normalizeMarketRow(row, expectedSession, sourceName, generatedAt) {
   const ticker = normSymbol(row?.symbol || row?.ticker || row?.code);
   const close = n(row?.price ?? row?.last ?? row?.close);
-  if (!ticker || !(close > 0)) return null;
+  if (!ticker || !(close > 0)) return { dropped: true, ticker: ticker || null, reason: 'INVALID_TICKER_OR_CLOSE' };
 
   const previousClose = n(row?.previousClose);
+  const hasCompleteOhlc = n(row?.open) > 0 && n(row?.high) > 0 && n(row?.low) > 0;
   const open = n(row?.open, previousClose ?? close);
   const high = Math.max(n(row?.high, Math.max(open, close)), open, close);
   const low = Math.min(n(row?.low, Math.min(open, close)), open, close);
   const volume = Math.max(0, n(row?.volume, 0));
-  if (!(open > 0 && high >= open && high >= close && low > 0 && low <= open && low <= close)) return null;
+  if (!(open > 0 && high >= open && high >= close && low > 0 && low <= open && low <= close)) {
+    return { dropped: true, ticker, reason: 'INVALID_RECONSTRUCTED_OHLC', close: round(close), open: round(open), high: round(high), low: round(low) };
+  }
 
   const priorTrusted = previousTrustedClose(ticker, expectedSession);
   const jumpPct = priorTrusted > 0 ? Math.abs(close / priorTrusted - 1) * 100 : null;
@@ -126,9 +137,9 @@ function normalizeMarketRow(row, expectedSession, sourceName, generatedAt) {
     sourceUrls: row?.sourceUrl ? { primary: row.sourceUrl, verification: [] } : undefined,
     fetchedAt: row?.updatedAt || generatedAt,
     validatedAt: new Date().toISOString(),
-    confidence: { overall: 84, ohlc: row?.open && row?.high && row?.low ? 86 : 78, volume: volume > 0 ? 82 : 65, symbolIdentity: 95 },
+    confidence: { overall: 84, ohlc: hasCompleteOhlc ? 86 : 78, volume: volume > 0 ? 82 : 65, symbolIdentity: 95 },
     validationStatus: 'precise_public_source_confirmed',
-    warnings: row?.open && row?.high && row?.low ? [] : ['partial_ohlc_reconstructed_from_close_or_previous_close'],
+    warnings: hasCompleteOhlc ? [] : ['partial_ohlc_reconstructed_from_close_or_previous_close'],
     priceTruthMode: 'PRECISE_PUBLIC_SINGLE_SOURCE_WITH_ANOMALY_GUARD',
     previousTrustedClose: round(priorTrusted),
     jumpPct: round(jumpPct, 2)
@@ -137,9 +148,13 @@ function normalizeMarketRow(row, expectedSession, sourceName, generatedAt) {
 
 function mergeIntoHistory(rows) {
   let updated = 0;
+  const missingHistoryFiles = [];
   for (const row of rows) {
     const file = path.join(HISTORY_DIR, `${row.ticker}.json`);
-    if (!fs.existsSync(file)) continue;
+    if (!fs.existsSync(file)) {
+      missingHistoryFiles.push(row.ticker);
+      continue;
+    }
     const document = readJson(file, {});
     const sessions = Array.isArray(document.sessions) ? document.sessions : [];
     const byDate = new Map();
@@ -165,7 +180,7 @@ function mergeIntoHistory(rows) {
     writeJson(file, document);
     updated++;
   }
-  return updated;
+  return { updated, missingHistoryFiles };
 }
 
 function main() {
@@ -184,11 +199,13 @@ function main() {
 
   const accepted = [];
   const rejected = [];
+  const dropped = [];
   if (sourceEligible) {
     for (const row of rows) {
       const normalized = normalizeMarketRow(row, expectedSession, sourceName, generatedAt);
       if (!normalized) continue;
       if (normalized.rejected) rejected.push(normalized);
+      else if (normalized.dropped) dropped.push(normalized);
       else accepted.push(normalized);
     }
   } else {
@@ -208,11 +225,14 @@ function main() {
   const unique = new Map();
   for (const row of accepted) unique.set(row.ticker, row);
   const acceptedRows = [...unique.values()];
-  const updatedHistoryFiles = mergeIntoHistory(acceptedRows);
-  const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS && updatedHistoryFiles >= MIN_EXECUTION_ROWS;
+  const mergeResult = mergeIntoHistory(acceptedRows);
+  const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS && mergeResult.updated >= MIN_EXECUTION_ROWS;
+  const acceptedMap = new Map(acceptedRows.map(row => [row.ticker, row]));
+  const rejectedMap = new Map(rejected.filter(row => row.ticker).map(row => [row.ticker, row]));
+  const droppedMap = new Map(dropped.filter(row => row.ticker).map(row => [row.ticker, row]));
 
   const report = {
-    schemaVersion: '15.2.0',
+    schemaVersion: '15.2.1',
     generatedAt: new Date().toISOString(),
     expectedSession,
     ready,
@@ -223,9 +243,26 @@ function main() {
     source: { name: sourceName, generatedAt, currentSnapshot, preciseSource, realFetch, inputRows: rows.length },
     acceptedRows: acceptedRows.length,
     rejectedRows: rejected.length,
-    updatedHistoryFiles,
-    sampleAccepted: acceptedRows.slice(0, 30).map(row => ({ ticker: row.ticker, close: row.close, previousTrustedClose: row.previousTrustedClose, jumpPct: row.jumpPct, mode: row.priceTruthMode })),
-    sampleRejected: rejected.slice(0, 50)
+    droppedRows: dropped.length,
+    updatedHistoryFiles: mergeResult.updated,
+    missingHistoryFiles: mergeResult.missingHistoryFiles,
+    focusAudit: FOCUS_TICKERS.map(ticker => {
+      const acceptedRow = acceptedMap.get(ticker);
+      const rejectedRow = rejectedMap.get(ticker);
+      const droppedRow = droppedMap.get(ticker);
+      const history = readJson(path.join(HISTORY_DIR, `${ticker}.json`), {});
+      return {
+        ticker,
+        status: acceptedRow ? 'ACCEPTED' : rejectedRow ? 'REJECTED' : droppedRow ? 'DROPPED' : 'NOT_IN_MARKET',
+        close: acceptedRow?.close ?? rejectedRow?.close ?? droppedRow?.close ?? null,
+        reason: rejectedRow?.reason ?? droppedRow?.reason ?? null,
+        historyLastSession: history?.lastSession || null,
+        historyLatestClose: history?.priceTruthLatest?.close ?? null
+      };
+    }),
+    sampleAccepted: acceptedRows.slice(0, 40).map(row => ({ ticker: row.ticker, close: row.close, previousTrustedClose: row.previousTrustedClose, jumpPct: row.jumpPct, mode: row.priceTruthMode, warnings: row.warnings })),
+    sampleRejected: rejected.slice(0, 50),
+    sampleDropped: dropped.slice(0, 50)
   };
   writeJson(OUT_PATH, report);
 
@@ -245,7 +282,8 @@ function main() {
     executionGrade: ready,
     expectedSession,
     currentSessionRows: acceptedRows.length,
-    rejectedCurrentSessionRows: rejected.length
+    rejectedCurrentSessionRows: rejected.length,
+    droppedCurrentSessionRows: dropped.length
   });
 
   console.log(JSON.stringify(report, null, 2));
@@ -257,7 +295,7 @@ try {
 } catch (error) {
   const generatedAt = new Date().toISOString();
   const expectedSession = expectedLatestCompletedSessionCairo();
-  writeJson(OUT_PATH, { schemaVersion: '15.2.0', generatedAt, expectedSession, ready: false, executionGrade: false, error: error.stack || error.message });
+  writeJson(OUT_PATH, { schemaVersion: '15.2.1', generatedAt, expectedSession, ready: false, executionGrade: false, error: error.stack || error.message });
   writeJson(FETCH_STATUS_PATH, { ok: false, realFetch: false, scriptExists: true, generatedAt, mode: 'v15_price_truth_exception', executionGrade: false, expectedSession, message: error.message });
   console.error(error);
   process.exitCode = 1;
