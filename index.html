@@ -9,7 +9,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>EGX Pro V15 — آخر تحديث</title>
-  <link rel="manifest" href="manifest.json?v=v15-latest-launcher-20260803">
+  <link rel="manifest" href="manifest.json?v=v15-latest-launcher-20260803b">
   <style>
     html,body{margin:0;min-height:100%;background:#071521;color:#ecf8ff;font-family:Tahoma,Arial,sans-serif}
     body{display:grid;place-items:center;padding:24px;text-align:center}.box{max-width:680px;background:#0b2031;border:1px solid #2d5872;border-radius:18px;padding:28px;box-shadow:0 16px 42px rgba(0,0,0,.25)}h1{margin:0 0 12px;font-size:24px}p{color:#9fb9c9;line-height:1.9}.status{margin-top:12px;color:#ffca61;font-size:12px}a{display:inline-block;margin-top:15px;background:#10658f;border:1px solid #3b769a;color:#fff;text-decoration:none;padding:11px 16px;border-radius:10px}
@@ -34,32 +34,38 @@
     const button=document.getElementById('openApp');
 
     const buildTarget=(stamp)=>`${appUrl}?entry=installed-icon&latest=1&v=${encodeURIComponent(stamp||Date.now())}${evaluation?'#evaluationPanel':''}`;
+    const labelTime=value=>{
+      const date=new Date(value);
+      return Number.isNaN(date.getTime())?'آخر نسخة منشورة':date.toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'});
+    };
 
-    async function getLatestStamp(){
+    async function resolveLatest(){
       const cacheBust=`?t=${Date.now()}`;
       try{
         const heartbeat=await fetch(statusUrl+cacheBust,{cache:'no-store',headers:{'cache-control':'no-cache'}});
         if(heartbeat.ok){
           const data=await heartbeat.json();
-          return data.recommendationGeneratedAt||data.generatedAt||data.lastAutomaticScanAt;
+          const stamp=data.recommendationGeneratedAt||data.generatedAt||data.lastAutomaticScanAt;
+          return {stamp,label:`آخر مسح آلي: ${labelTime(data.lastAutomaticScanAt||stamp)}`};
         }
       }catch(_){ }
       try{
         const decision=await fetch(decisionUrl+cacheBust,{cache:'no-store',headers:{'cache-control':'no-cache'}});
         if(decision.ok){
           const data=await decision.json();
-          return data.generatedAt||data.sessionDate;
+          const stamp=data.generatedAt||data.sessionDate;
+          return {stamp,label:`آخر توصيات منشورة: ${labelTime(stamp)}`};
         }
       }catch(_){ }
-      return Date.now();
+      return {stamp:Date.now(),label:'تعذر قراءة وقت التحديث؛ سيتم فتح التقرير مع تحديث إجباري'};
     }
 
     async function launch(){
-      const stamp=await getLatestStamp();
-      const target=buildTarget(stamp);
+      const latest=await resolveLatest();
+      const target=buildTarget(latest.stamp);
       button.href=target;
-      statusEl.textContent='تم العثور على آخر تحديث — جارٍ فتحه الآن';
-      location.replace(target);
+      statusEl.textContent=`${latest.label} — جارٍ الفتح`;
+      window.setTimeout(()=>location.replace(target),80);
     }
 
     button.addEventListener('click',event=>{
