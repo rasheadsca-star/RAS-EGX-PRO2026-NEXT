@@ -1,7 +1,7 @@
 'use strict';
 (() => {
-  const VERSION = '16.3.1';
-  const SW_BUILD = 'V16.3.1-MOBILE-HOTFIX-20260803';
+  const VERSION = '16.3.2';
+  const SW_BUILD = 'V16.3.2-RECOMMENDATION-FRESHNESS-20260803';
   const head = document.head || document.documentElement;
 
   document.documentElement.dataset.egxVersion = VERSION;
@@ -31,21 +31,23 @@
     head.appendChild(link);
   }
 
-  const loadUpgrade = () => new Promise(resolve => {
-    const existing = document.querySelector('script[data-v163]');
-    if (existing) {
-      if (document.documentElement.dataset.v163Ready === 'true') resolve();
-      else existing.addEventListener('load', resolve, { once: true });
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = `v16-3.js?v=${VERSION}`;
-    script.defer = true;
-    script.dataset.v163 = 'true';
-    script.onload = resolve;
-    script.onerror = resolve;
-    (document.body || document.documentElement).appendChild(script);
-  });
+  function loadScript(src, datasetKey) {
+    return new Promise(resolve => {
+      const existing = document.querySelector(`script[data-${datasetKey}]`);
+      if (existing) {
+        existing.addEventListener('load', resolve, { once: true });
+        setTimeout(resolve, 0);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `${src}?v=${VERSION}`;
+      script.defer = true;
+      script.dataset[datasetKey] = 'true';
+      script.onload = resolve;
+      script.onerror = resolve;
+      (document.body || document.documentElement).appendChild(script);
+    });
+  }
 
   const openRequestedView = () => {
     const params = new URLSearchParams(location.search);
@@ -57,7 +59,8 @@
 
   const start = async () => {
     await refreshServiceWorker();
-    await loadUpgrade();
+    await loadScript('v16-3.js', 'v163');
+    await loadScript('recommendation-freshness.js', 'recommendationFreshness');
     openRequestedView();
   };
 
