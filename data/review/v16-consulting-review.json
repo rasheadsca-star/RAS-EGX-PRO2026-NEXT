@@ -1,36 +1,37 @@
 {
-  "schemaVersion": "16.2.1",
-  "generatedAt": "2026-08-03T00:21:15.438Z",
+  "schemaVersion": "16.3.0",
+  "generatedAt": "2026-08-03T00:21:44.679Z",
   "application": "EGX Pro Professional V16.1",
   "methodology": "20-role consulting review with evidence-based closure, financial quality gate and final receiver enforcement",
   "cyclesCompleted": 20,
-  "acceptance": "ACCEPTED_ZERO_FINDINGS",
+  "acceptance": "REJECTED_BLOCKING_FINDINGS",
   "acceptanceCriteria": {
     "zeroCritical": true,
-    "zeroHigh": true,
-    "noBlockingErrors": true,
-    "allTwentyCyclesExecuted": true
+    "zeroHigh": false,
+    "noBlockingErrors": false,
+    "allTwentyCyclesExecuted": true,
+    "wholeApplicationScope": true
   },
   "summary": {
-    "totalChecks": 73,
-    "closedChecks": 73,
-    "openChecks": 0,
-    "blockingFindings": 0,
+    "totalChecks": 102,
+    "closedChecks": 101,
+    "openChecks": 1,
+    "blockingFindings": 1,
     "severity": {
       "CRITICAL": {
-        "total": 7,
+        "total": 15,
         "open": 0,
-        "closed": 7
+        "closed": 15
       },
       "HIGH": {
-        "total": 40,
-        "open": 0,
-        "closed": 40
+        "total": 59,
+        "open": 1,
+        "closed": 58
       },
       "MEDIUM": {
-        "total": 22,
+        "total": 24,
         "open": 0,
-        "closed": 22
+        "closed": 24
       },
       "LOW": {
         "total": 4,
@@ -42,7 +43,9 @@
     "financialCoverageCurrentRecommendations": 5,
     "marketUniverse": 225,
     "acceptedPriceRows": 209,
-    "liveResolvedTrades": 0
+    "liveResolvedTrades": 0,
+    "financialRawCoverage": 45,
+    "financialRecommendationCoverage": 5
   },
   "cycles": [
     {
@@ -81,11 +84,27 @@
           "status": "CLOSED",
           "evidence": "{\"name\":\"mubasher_symbol_pages_precise_enriched\",\"generatedAt\":\"2026-08-02T23:28:06.102Z\",\"currentSnapshot\":true,\"preciseSource\":true,\"realFetch\":true,\"inputRows\":217}",
           "remediation": null
+        },
+        {
+          "id": "APPX_DATA_01",
+          "severity": "CRITICAL",
+          "title": "كل أسعار التوصيات صادرة من بوابة تنفيذ موثقة",
+          "status": "CLOSED",
+          "evidence": "executionGrade=true; recs=5",
+          "remediation": null
+        },
+        {
+          "id": "APPX_DATA_02",
+          "severity": "HIGH",
+          "title": "فهرس السوق يغطي نطاقًا واسعًا",
+          "status": "CLOSED",
+          "evidence": "marketStocks=225",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 6,
+        "closed": 6,
         "open": 0,
         "blocking": 0
       }
@@ -126,11 +145,27 @@
           "status": "CLOSED",
           "evidence": "DAPH:46.3>23.9, EALR:46.3>23.9, HELI:46.3>23.9, SCEM:37.3>23.9, OCDI:46.3>23.9",
           "remediation": null
+        },
+        {
+          "id": "APPX_TECH_01",
+          "severity": "CRITICAL",
+          "title": "لا توجد توصية تتجاوز قواعد RSI وRR",
+          "status": "CLOSED",
+          "evidence": "DAPH:RR1.24/RSI74.8, EALR:RR1.24/RSI76.5, HELI:RR1.24/RSI77.4, SCEM:RR1.18/RSI75.3, OCDI:RR1.24/RSI70.1",
+          "remediation": null
+        },
+        {
+          "id": "APPX_TECH_02",
+          "severity": "HIGH",
+          "title": "الخطة الفنية كاملة لكل توصية",
+          "status": "CLOSED",
+          "evidence": "validPlans=5/5",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 6,
+        "closed": 6,
         "open": 0,
         "blocking": 0
       }
@@ -171,11 +206,43 @@
           "status": "CLOSED",
           "evidence": "methodology disclosure present",
           "remediation": null
+        },
+        {
+          "id": "APPX_FIN_01",
+          "severity": "CRITICAL",
+          "title": "المجمّع المالي يستخدم محلل الوحدات الآمن",
+          "status": "CLOSED",
+          "evidence": "parser=V16.3_EXACT_ROWS_UNIT_SAFE_1.0",
+          "remediation": null
+        },
+        {
+          "id": "APPX_FIN_02",
+          "severity": "CRITICAL",
+          "title": "لا توجد تعارضات وحدات أو تضخيم مبالغ",
+          "status": "CLOSED",
+          "evidence": "extreme=none; psFactors=DAPH:1.00,EALR:1.00,HELI:1.00,OCDI:1.00,SCEM:1.00,AALR:1.00,ABUK:1.00,ACAMD:1.00,ACAP:1.00,ACGC:1.00",
+          "remediation": null
+        },
+        {
+          "id": "APPX_FIN_03",
+          "severity": "HIGH",
+          "title": "لا توجد سجلات مالية مقبولة تحمل شذوذات Parser",
+          "status": "CLOSED",
+          "evidence": "accepted=45",
+          "remediation": null
+        },
+        {
+          "id": "APPX_FIN_04",
+          "severity": "HIGH",
+          "title": "كل توصية لها حالة مالية صريحة من البيانات الجديدة",
+          "status": "CLOSED",
+          "evidence": "raw=5/5; report=5/5",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 8,
+        "closed": 8,
         "open": 0,
         "blocking": 0
       }
@@ -216,11 +283,27 @@
           "status": "CLOSED",
           "evidence": "portfolio policy controls present",
           "remediation": null
+        },
+        {
+          "id": "APPX_RISK_01",
+          "severity": "CRITICAL",
+          "title": "التنفيذ الآلي غير موجود والمخاطرة التجريبية مخفضة",
+          "status": "CLOSED",
+          "evidence": "auto=false; pilot=REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK",
+          "remediation": null
+        },
+        {
+          "id": "APPX_RISK_02",
+          "severity": "HIGH",
+          "title": "واجهة المحفظة تحتوي حدود التعرض وحجم المركز",
+          "status": "CLOSED",
+          "evidence": "portfolio and pilot limits found",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 6,
+        "closed": 6,
         "open": 0,
         "blocking": 0
       }
@@ -285,11 +368,27 @@
           "status": "CLOSED",
           "evidence": "raw cache not loaded by HTML",
           "remediation": null
+        },
+        {
+          "id": "APPX_ARCH_01",
+          "severity": "HIGH",
+          "title": "الرابط والـManifest والـService Worker موحدة على V16",
+          "status": "CLOSED",
+          "evidence": "manifest=EGX Pro V16",
+          "remediation": null
+        },
+        {
+          "id": "APPX_ARCH_02",
+          "severity": "HIGH",
+          "title": "مسار الاعتماد يشغل كل محركات الجودة الحالية",
+          "status": "CLOSED",
+          "evidence": "workflow modules verified",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 7,
-        "closed": 7,
+        "total": 9,
+        "closed": 9,
         "open": 0,
         "blocking": 0
       }
@@ -330,11 +429,27 @@
           "status": "CLOSED",
           "evidence": "length=4803",
           "remediation": null
+        },
+        {
+          "id": "APPX_QA_01",
+          "severity": "HIGH",
+          "title": "أصول التطبيق الأساسية موجودة وحالات الفراغ واضحة",
+          "status": "CLOSED",
+          "evidence": "core assets and empty state verified",
+          "remediation": null
+        },
+        {
+          "id": "APPX_QA_02",
+          "severity": "MEDIUM",
+          "title": "لا توجد معرفات HTML مكررة",
+          "status": "CLOSED",
+          "evidence": "HTML id uniqueness checked",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 6,
+        "closed": 6,
         "open": 0,
         "blocking": 0
       }
@@ -357,7 +472,7 @@
           "severity": "HIGH",
           "title": "تقرير التحليل المالي مولد من دورة فعلية",
           "status": "CLOSED",
-          "evidence": "universe=225; lastRun=2026-08-03T00:21:15.124Z",
+          "evidence": "universe=225; lastRun=2026-08-03T00:21:44.395Z",
           "remediation": null
         },
         {
@@ -365,7 +480,7 @@
           "severity": "MEDIUM",
           "title": "القوائم القديمة مصنفة لا مخفية",
           "status": "CLOSED",
-          "evidence": "stale-tagged records=3/96",
+          "evidence": "stale-tagged records=3/45",
           "remediation": null
         }
       ],
@@ -412,11 +527,19 @@
           "status": "CLOSED",
           "evidence": "tier=PILOT_SHORT_SAMPLE",
           "remediation": null
+        },
+        {
+          "id": "APPX_STATS_01",
+          "severity": "CRITICAL",
+          "title": "الدليل التاريخي منفصل عن الحي وتكاليف التداول محسوبة",
+          "status": "CLOSED",
+          "evidence": "futureLeakage=true; costs=0.6",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 5,
+        "closed": 5,
         "open": 0,
         "blocking": 0
       }
@@ -457,11 +580,19 @@
           "status": "CLOSED",
           "evidence": "separation labels present",
           "remediation": null
+        },
+        {
+          "id": "APPX_LIVE_01",
+          "severity": "HIGH",
+          "title": "أرشيف اليوم يحفظ كل التوصيات دون حذف النتائج",
+          "status": "CLOSED",
+          "evidence": "archived=5/5",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 5,
+        "closed": 5,
         "open": 0,
         "blocking": 0
       }
@@ -494,11 +625,19 @@
           "status": "CLOSED",
           "evidence": "matched=5/5",
           "remediation": null
+        },
+        {
+          "id": "APPX_SEARCH_01",
+          "severity": "HIGH",
+          "title": "البحث شامل ويصرح بعدم وجود السهم ضمن توصيات اليوم",
+          "status": "CLOSED",
+          "evidence": "full market search language verified",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -539,11 +678,27 @@
           "status": "CLOSED",
           "evidence": "refresh button present",
           "remediation": null
+        },
+        {
+          "id": "APPX_UX_01",
+          "severity": "HIGH",
+          "title": "الواجهة تعرض الفني والمالي والمخاطر والسجل كمكونات مستقلة",
+          "status": "CLOSED",
+          "evidence": "main modules visible",
+          "remediation": null
+        },
+        {
+          "id": "APPX_UX_02",
+          "severity": "HIGH",
+          "title": "لا توجد وعود ربح أو إخفاء لمرحلة Pilot",
+          "status": "CLOSED",
+          "evidence": "claim and maturity disclosure checked",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 6,
+        "closed": 6,
         "open": 0,
         "blocking": 0
       }
@@ -576,11 +731,19 @@
           "status": "CLOSED",
           "evidence": "h1/h2 present",
           "remediation": null
+        },
+        {
+          "id": "APPX_A11Y_01",
+          "severity": "MEDIUM",
+          "title": "اللغة والاتجاه ووصف التنقل متوفرة",
+          "status": "CLOSED",
+          "evidence": "RTL and navigation label verified",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -613,11 +776,19 @@
           "status": "CLOSED",
           "evidence": "local-only disclosure present",
           "remediation": null
+        },
+        {
+          "id": "APPX_SEC_01",
+          "severity": "CRITICAL",
+          "title": "لا توجد أسرار مكشوفة أو تنفيذ أوامر وسيط",
+          "status": "CLOSED",
+          "evidence": "secret and broker execution scan clean",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -650,11 +821,19 @@
           "status": "CLOSED",
           "evidence": "no-store launcher fetch",
           "remediation": null
+        },
+        {
+          "id": "APPX_PWA_01",
+          "severity": "HIGH",
+          "title": "الأيقونة المثبتة لا تفتح إصدارًا قديمًا",
+          "status": "CLOSED",
+          "evidence": "start=./?launch=pwa&latest=1",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -687,11 +866,19 @@
           "status": "CLOSED",
           "evidence": "cache retention disclosure present",
           "remediation": null
+        },
+        {
+          "id": "APPX_OPS_01",
+          "severity": "HIGH",
+          "title": "الـHeartbeat متزامن مع الفني والمالي",
+          "status": "CLOSED",
+          "evidence": "decision=2026-08-02T23:29:02.334Z; hb=2026-08-02T23:29:02.334Z; financial=2026-08-03T00:21:44.517Z; hbFinancial=2026-08-03T00:21:44.517Z",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -714,7 +901,7 @@
           "severity": "HIGH",
           "title": "لا تُنشر درجة عند اكتمال ضعيف",
           "status": "CLOSED",
-          "evidence": "records=96",
+          "evidence": "records=45",
           "remediation": null
         },
         {
@@ -724,11 +911,19 @@
           "status": "CLOSED",
           "evidence": "official source URL rule",
           "remediation": null
+        },
+        {
+          "id": "APPX_FM_01",
+          "severity": "HIGH",
+          "title": "البيانات القديمة أو غير المكتملة لا تحصل على درجة",
+          "status": "CLOSED",
+          "evidence": "scored=45",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -751,7 +946,7 @@
           "severity": "HIGH",
           "title": "لا قيمة عادلة دون أقران كافين",
           "status": "CLOSED",
-          "evidence": "valuations=96; minimumPeers=3",
+          "evidence": "valuations=45; minimumPeers=3",
           "remediation": null
         },
         {
@@ -761,11 +956,19 @@
           "status": "CLOSED",
           "evidence": "valuation caveat present",
           "remediation": null
+        },
+        {
+          "id": "APPX_VAL_01",
+          "severity": "HIGH",
+          "title": "القيمة العادلة لا تظهر دون ثلاثة أقران ومنهج معلن",
+          "status": "CLOSED",
+          "evidence": "peer and methodology gate verified",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -798,11 +1001,19 @@
           "status": "CLOSED",
           "evidence": "financial source and statement-date fields verified",
           "remediation": null
+        },
+        {
+          "id": "APPX_COMM_01",
+          "severity": "HIGH",
+          "title": "المنتج يوضح المصدر والتاريخ والقيود قبل القرار",
+          "status": "CLOSED",
+          "evidence": "commercial transparency verified",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 3,
-        "closed": 3,
+        "total": 4,
+        "closed": 4,
         "open": 0,
         "blocking": 0
       }
@@ -835,13 +1046,21 @@
           "status": "CLOSED",
           "evidence": "EGX Pro V16",
           "remediation": null
+        },
+        {
+          "id": "APPX_REG_01",
+          "severity": "HIGH",
+          "title": "إضافة المالي لم تكسر البحث أو الخطة أو المحفظة",
+          "status": "OPEN",
+          "evidence": "integration markers and plans verified",
+          "remediation": "إصلاح التكامل وإعادة الاختبار."
         }
       ],
       "summary": {
-        "total": 3,
+        "total": 4,
         "closed": 3,
-        "open": 0,
-        "blocking": 0
+        "open": 1,
+        "blocking": 1
       }
     },
     {
@@ -870,7 +1089,7 @@
           "severity": "HIGH",
           "title": "Heartbeat يطابق التقارير الحالية",
           "status": "CLOSED",
-          "evidence": "decision=2026-08-02T23:29:02.334Z; heartbeat=2026-08-02T23:29:02.334Z; financial=2026-08-03T00:21:15.295Z; hbFinancial=2026-08-03T00:21:15.295Z",
+          "evidence": "decision=2026-08-02T23:29:02.334Z; heartbeat=2026-08-02T23:29:02.334Z; financial=2026-08-03T00:21:44.517Z; hbFinancial=2026-08-03T00:21:44.517Z",
           "remediation": null
         },
         {
@@ -880,16 +1099,74 @@
           "status": "CLOSED",
           "evidence": "htmlV16.1=true; productInterface=EGX_PROFESSIONAL_V16_1",
           "remediation": null
+        },
+        {
+          "id": "APPX_FINAL_01",
+          "severity": "CRITICAL",
+          "title": "نطاق المراجعة هو التطبيق بالكامل",
+          "status": "CLOSED",
+          "evidence": "WHOLE_APPLICATION: market data, technical, financial, portfolio, risk, live ledger, search, UX, accessibility, security, PWA, automation and deployment",
+          "remediation": null
+        },
+        {
+          "id": "APPX_FINAL_02",
+          "severity": "HIGH",
+          "title": "تم تنفيذ عشرين دورة كاملة على النسخة الحالية",
+          "status": "CLOSED",
+          "evidence": "cycles=20",
+          "remediation": null
         }
       ],
       "summary": {
-        "total": 4,
-        "closed": 4,
+        "total": 6,
+        "closed": 6,
         "open": 0,
         "blocking": 0
       }
     }
   ],
-  "openFindings": [],
-  "blockingFindings": []
+  "openFindings": [
+    {
+      "cycle": 19,
+      "role": "مراجع الانحدار والتكامل",
+      "id": "APPX_REG_01",
+      "severity": "HIGH",
+      "title": "إضافة المالي لم تكسر البحث أو الخطة أو المحفظة",
+      "status": "OPEN",
+      "evidence": "integration markers and plans verified",
+      "remediation": "إصلاح التكامل وإعادة الاختبار."
+    }
+  ],
+  "blockingFindings": [
+    {
+      "cycle": 19,
+      "role": "مراجع الانحدار والتكامل",
+      "id": "APPX_REG_01",
+      "severity": "HIGH",
+      "title": "إضافة المالي لم تكسر البحث أو الخطة أو المحفظة",
+      "status": "OPEN",
+      "evidence": "integration markers and plans verified",
+      "remediation": "إصلاح التكامل وإعادة الاختبار."
+    }
+  ],
+  "scope": {
+    "type": "WHOLE_APPLICATION",
+    "modules": [
+      "market-data",
+      "price-truth",
+      "technical-analysis",
+      "fundamental-analysis",
+      "recommendations",
+      "risk-management",
+      "portfolio",
+      "live-ledger",
+      "full-market-search",
+      "user-experience",
+      "accessibility",
+      "security",
+      "PWA-cache",
+      "automation",
+      "deployment"
+    ]
+  }
 }
