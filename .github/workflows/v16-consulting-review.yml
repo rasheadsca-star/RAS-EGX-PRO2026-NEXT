@@ -37,7 +37,7 @@ jobs:
           set -euo pipefail
           node --check scripts/stable/v16-consulting-review.cjs
           node --check scripts/stable/v16-consulting-review-finalizer.cjs
-          node --check scripts/stable/v16-fundamental-collector.cjs
+          node --check scripts/stable/v16-fundamental-collector-v2.cjs
           node --check scripts/stable/v16-fundamental-engine.cjs
           node --check scripts/stable/v16-fundamental-quality-gate.cjs
           node --check scripts/stable/v16-update-heartbeat.cjs
@@ -53,8 +53,8 @@ jobs:
           EGX_FUNDAMENTAL_TIMEOUT_MS: "25000"
         run: |
           set +e
-          node scripts/stable/v16-fundamental-collector.cjs
-          echo "Collector exit code: $?"
+          node scripts/stable/v16-fundamental-collector-v2.cjs
+          echo "Exact-row collector exit code: $?"
           set -e
           node scripts/stable/v16-fundamental-engine.cjs
           node scripts/stable/v16-fundamental-quality-gate.cjs
