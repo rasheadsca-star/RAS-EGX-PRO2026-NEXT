@@ -9,10 +9,12 @@ async function openApp(page, view = 'dashboard') {
   return errors;
 }
 
-test('dashboard loads V16.3 market regime and release status', async ({ page }) => {
+test('dashboard loads V16.3 market regime, recommendations and release status', async ({ page }) => {
   const errors = await openApp(page);
   await expect(page.locator('#marketRegimeCard')).toBeVisible();
   await expect(page.locator('#marketRegimeCard')).toContainText('محرك حالة السوق');
+  await expect(page.locator('#recommendationGrid')).toBeVisible();
+  await expect(page.locator('#recommendationGrid')).not.toBeEmpty();
   await expect(page.locator('#releaseStatusCard')).toContainText('V16.3');
   await expect(page.locator('html')).toHaveAttribute('data-egx-version', '16.3');
   expect(errors).toEqual([]);
