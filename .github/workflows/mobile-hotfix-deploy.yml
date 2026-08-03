@@ -1,0 +1,71 @@
+name: EGX V16.3.1 Mobile Hotfix Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "index.html"
+      - "manifest.json"
+      - "service-worker.js"
+      - "preview-v16/app/index.html"
+      - "preview-v16/app/launch.js"
+      - "preview-v16/app/v16-3.js"
+      - "preview-v16/app/v16-3.css"
+      - ".github/workflows/mobile-hotfix-deploy.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-v16-mobile-hotfix-pages
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy-mobile-shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate V16.3.1 mobile shell
+        run: |
+          set -euo pipefail
+          node --check preview-v16/app/app.js
+          node --check preview-v16/app/pilot-policy.js
+          node --check preview-v16/app/fundamentals.js
+          node --check preview-v16/app/v16-3.js
+          node --check preview-v16/app/launch.js
+          node --check service-worker.js
+          grep -q "V16.3" index.html
+          grep -q "16.3.1" manifest.json
+          grep -q "V16.3.1-MOBILE-HOTFIX" service-worker.js
+          grep -q "const VERSION = '16.3.1'" preview-v16/app/launch.js
+          test -s preview-v16/app/v16-3.css
+          test -s preview-v16/app/v16-3.js
+          touch .nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy mobile hotfix to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
