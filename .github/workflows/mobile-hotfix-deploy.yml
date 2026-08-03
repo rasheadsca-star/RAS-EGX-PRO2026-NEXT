@@ -14,7 +14,7 @@ on:
       - ".github/workflows/mobile-hotfix-deploy.yml"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -34,7 +34,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -69,3 +69,36 @@ jobs:
       - name: Deploy mobile hotfix to Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Record successful mobile deployment
+        env:
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          mkdir -p data/stable
+          node - <<'NODE'
+          const fs = require('fs');
+          const out = {
+            schemaVersion: '16.3.1',
+            generatedAt: new Date().toISOString(),
+            release: 'V16.3.1_MOBILE_HOTFIX',
+            status: 'DEPLOYED',
+            deployedUrl: process.env.DEPLOYED_URL || null,
+            sourceCommit: process.env.GITHUB_SHA || null,
+            mobileCacheReset: true,
+            serviceWorkerBuild: 'V16.3.1-MOBILE-HOTFIX-20260803'
+          };
+          fs.writeFileSync('data/stable/v16-mobile-deploy-status.json', JSON.stringify(out, null, 2) + '\n');
+          console.log(out);
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/stable/v16-mobile-deploy-status.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Confirm V16.3.1 mobile hotfix deployment"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
+          fi
