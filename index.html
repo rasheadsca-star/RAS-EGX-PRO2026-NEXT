@@ -4,25 +4,26 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071521">
-  <meta name="description" content="EGX Pro Professional V16 — فتح آخر مسح داخل منصة التحليل الاحترافية الموحدة">
+  <meta name="description" content="EGX Pro Professional V16.3 — فتح آخر إصدار من منصة التحليل الفني والمالي وإدارة المخاطر">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>EGX Pro Professional V16</title>
-  <link rel="manifest" href="manifest.json?v=v16-professional-20260803">
+  <title>EGX Pro Professional V16.3</title>
+  <link rel="manifest" href="manifest.json?v=16.3.1-mobile-hotfix">
   <style>html,body{margin:0;min-height:100%;background:#071521;color:#ecf8ff;font-family:Tahoma,Arial,sans-serif}body{display:grid;place-items:center;padding:24px;text-align:center}.box{max-width:680px;background:#0b2031;border:1px solid #2d5872;border-radius:18px;padding:28px;box-shadow:0 16px 42px #0005}h1{margin:0 0 12px;font-size:24px}p{color:#9fb9c9;line-height:1.9}.status{margin-top:12px;color:#ffca61;font-size:12px}a{display:inline-block;margin-top:15px;background:#10658f;border:1px solid #3b769a;color:#fff;text-decoration:none;padding:11px 16px;border-radius:10px}</style>
 </head>
 <body>
   <main class="box">
-    <h1>جارٍ فتح EGX Pro Professional V16…</h1>
-    <p>يتم تفعيل آخر إصدار، قراءة أحدث مسح آلي، ثم فتح منصة القرار الفني والمالي وإدارة المخاطر.</p>
-    <div class="status" id="launchStatus">جارٍ قراءة آخر تحديث…</div>
-    <a id="openApp" href="preview-v16/app/index.html?entry=manual">فتح التطبيق الآن</a>
+    <h1>جارٍ فتح EGX Pro Professional V16.3…</h1>
+    <p>يتم حذف الكاش القديم، تفعيل آخر Service Worker، ثم فتح منصة V16.3 وحالة السوق والسجل الحي ومخاطر المحفظة.</p>
+    <div class="status" id="launchStatus">جارٍ تفعيل تحديث الهاتف…</div>
+    <a id="openApp" href="preview-v16/app/index.html?entry=manual&version=16.3.1">فتح V16.3 الآن</a>
   </main>
   <script>
   (()=>{
     'use strict';
-    const SW_VERSION='V16.0-PROFESSIONAL-20260803';
+    const RELEASE='16.3.1';
+    const SW_VERSION='V16.3.1-MOBILE-HOTFIX-20260803';
     const statusUrl='data/stable/v15-update-status.json';
     const decisionUrl='data/stable/v15-practical-decision.json';
     const appUrl='preview-v16/app/index.html';
@@ -30,12 +31,38 @@
     const requested=params.get('view')==='evaluation'?'evidence':params.get('view');
     const statusEl=document.getElementById('launchStatus');
     const button=document.getElementById('openApp');
-    const target=stamp=>`${appUrl}?entry=installed-icon&latest=1&v=${encodeURIComponent(stamp||Date.now())}${requested?`&view=${encodeURIComponent(requested)}`:''}`;
+    const target=stamp=>`${appUrl}?entry=installed-icon&latest=1&version=${RELEASE}&mobileReset=1&v=${encodeURIComponent(stamp||Date.now())}${requested?`&view=${encodeURIComponent(requested)}`:''}`;
     const label=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'آخر نسخة منشورة':d.toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'})};
-    async function activate(){if(!('serviceWorker'in navigator))return;try{const r=await navigator.serviceWorker.register(`service-worker.js?v=${encodeURIComponent(SW_VERSION)}`,{scope:'./',updateViaCache:'none'});await r.update();const w=r.waiting||r.installing;if(w)w.postMessage({type:'SKIP_WAITING'});}catch(_){}}
-    async function latest(){const q=`?t=${Date.now()}`;try{const r=await fetch(statusUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.recommendationGeneratedAt||d.generatedAt,label:`آخر مسح آلي: ${label(d.lastAutomaticScanAt||d.generatedAt)}`}}}catch(_){}try{const r=await fetch(decisionUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.generatedAt,label:`آخر توصيات: ${label(d.generatedAt)}`}}}catch(_){}return{stamp:Date.now(),label:'فتح V16 بتحديث إجباري'}}
-    async function launch(){await activate();const l=await latest(),u=target(l.stamp);button.href=u;statusEl.textContent=l.label+' — جارٍ فتح V16';setTimeout(()=>location.replace(u),100)}
-    button.onclick=e=>{e.preventDefault();launch()};launch();
+    async function clearLegacy(){
+      try{const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}catch(_){}
+    }
+    async function activate(){
+      if(!('serviceWorker'in navigator))return;
+      try{
+        const registration=await navigator.serviceWorker.register(`service-worker.js?v=${encodeURIComponent(SW_VERSION)}`,{scope:'./',updateViaCache:'none'});
+        await registration.update();
+        const worker=registration.waiting||registration.installing;
+        if(worker)worker.postMessage({type:'SKIP_WAITING'});
+      }catch(_){}
+    }
+    async function latest(){
+      const q=`?t=${Date.now()}`;
+      try{const r=await fetch(statusUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.recommendationGeneratedAt||d.generatedAt,label:`آخر مسح آلي: ${label(d.lastAutomaticScanAt||d.generatedAt)}`}}}catch(_){}
+      try{const r=await fetch(decisionUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.generatedAt,label:`آخر توصيات: ${label(d.generatedAt)}`}}}catch(_){}
+      return{stamp:Date.now(),label:'فتح V16.3 بتحديث إجباري'};
+    }
+    async function launch(){
+      statusEl.textContent='جارٍ حذف كاش النسخة القديمة…';
+      await clearLegacy();
+      await activate();
+      const latestState=await latest();
+      const url=target(latestState.stamp);
+      button.href=url;
+      statusEl.textContent=latestState.label+' — فتح V16.3.1';
+      setTimeout(()=>location.replace(url),150);
+    }
+    button.onclick=event=>{event.preventDefault();launch()};
+    launch();
   })();
   </script>
 </body>
