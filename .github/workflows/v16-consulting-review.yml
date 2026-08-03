@@ -5,8 +5,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "scripts/stable/v16-consulting-review.cjs"
-      - "scripts/stable/v16-fundamental-*.cjs"
+      - "scripts/stable/v16-*.cjs"
       - "preview-v16/app/**"
       - ".github/workflows/v16-consulting-review.yml"
 
@@ -37,13 +36,16 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/stable/v16-consulting-review.cjs
+          node --check scripts/stable/v16-consulting-review-finalizer.cjs
           node --check scripts/stable/v16-fundamental-collector.cjs
           node --check scripts/stable/v16-fundamental-engine.cjs
+          node --check scripts/stable/v16-fundamental-quality-gate.cjs
+          node --check scripts/stable/v16-update-heartbeat.cjs
           node --check preview-v16/app/app.js
           node --check preview-v16/app/pilot-policy.js
           node --check preview-v16/app/fundamentals.js
 
-      - name: Refresh priority financial coverage
+      - name: Refresh and quality-gate financial coverage
         env:
           EGX_FUNDAMENTAL_BATCH: "40"
           EGX_FUNDAMENTAL_MAX_AGE_DAYS: "21"
@@ -55,18 +57,26 @@ jobs:
           echo "Collector exit code: $?"
           set -e
           node scripts/stable/v16-fundamental-engine.cjs
+          node scripts/stable/v16-fundamental-quality-gate.cjs
+          node scripts/stable/v16-update-heartbeat.cjs
 
-      - name: Execute all 20 consulting cycles
+      - name: Execute and finalize exactly 20 consulting cycles
         env:
           REVIEW_FAIL_ON_BLOCKING: "0"
-        run: node scripts/stable/v16-consulting-review.cjs
+        run: |
+          set -euo pipefail
+          node scripts/stable/v16-consulting-review.cjs
+          set +e
+          node scripts/stable/v16-consulting-review-finalizer.cjs
+          echo "Finalizer exit code: $? — report will be committed before the receiver gate"
+          set -e
 
       - name: Commit financial refresh and review evidence
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/fundamentals/v16-fundamental-raw.json data/stable/v16-fundamental-analysis.json data/review/v16-consulting-review.json data/review/v16-consulting-review.md
+          git add data/fundamentals/v16-fundamental-raw.json data/stable/v16-fundamental-analysis.json data/stable/v15-update-status.json data/review/v16-consulting-review.json data/review/v16-consulting-review.md
           if ! git diff --cached --quiet; then
             git commit -m "Run EGX V16.1 twenty-cycle consulting review"
             for attempt in 1 2 3; do
@@ -81,7 +91,9 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const report = JSON.parse(fs.readFileSync('data/review/v16-consulting-review.json', 'utf8'));
-          if (report.cyclesCompleted !== 20) throw new Error('All 20 review cycles were not executed');
+          if (report.cyclesCompleted !== 20 || report.acceptanceCriteria?.allTwentyCyclesExecuted !== true) {
+            throw new Error('Exactly 20 review cycles were not executed');
+          }
           if (!report.acceptanceCriteria?.zeroCritical || !report.acceptanceCriteria?.zeroHigh) {
             const blocking = (report.blockingFindings || []).map(x => `${x.id}:${x.title}`).join(' | ');
             throw new Error(`Final receiver rejected the application: ${blocking}`);
