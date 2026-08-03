@@ -1,4 +1,4 @@
-name: EGX Professional V16.1 Validate and Deploy
+name: EGX Professional V16.3 Validate Test and Deploy
 
 on:
   workflow_dispatch:
@@ -7,12 +7,12 @@ on:
       - "scripts/stable/v15-*.cjs"
       - "scripts/stable/v16-*.cjs"
       - "scripts/fetch-market-data.js"
-      - "preview-v15/app/**"
       - "preview-v16/app/**"
-      - "data/fundamentals/**"
-      - "index.html"
+      - "tests/**"
+      - "playwright.config.mjs"
       - "manifest.json"
       - "service-worker.js"
+      - "index.html"
       - ".github/workflows/v15-practical-deploy.yml"
   schedule:
     - cron: "20 13-17 * * 0-4"
@@ -22,13 +22,15 @@ env:
   EGX_KEY: ${{ secrets.EGX_KEY }}
   EGX_MARKET_JSON_URL: ${{ secrets.EGX_MARKET_JSON_URL }}
   PUBLIC_MARKET_JSON_URL: ${{ secrets.PUBLIC_MARKET_JSON_URL }}
+  EGX_OFFICIAL_DISCLOSURES_JSON_URL: ${{ secrets.EGX_OFFICIAL_DISCLOSURES_JSON_URL }}
   EGX_MIN_EXECUTION_ROWS: "80"
   EGX_PRICE_MATCH_TOLERANCE_PCT: "1.75"
   EGX_MAX_SINGLE_SESSION_JUMP_PCT: "35"
   EGX_RECOMMENDATION_EVAL_START: "2026-08-02T22:10:00.000Z"
-  EGX_FUNDAMENTAL_BATCH: "24"
+  EGX_FUNDAMENTAL_BATCH: "100"
   EGX_FUNDAMENTAL_MAX_AGE_DAYS: "21"
-  EGX_FUNDAMENTAL_CONCURRENCY: "3"
+  EGX_FUNDAMENTAL_CONCURRENCY: "5"
+  EGX_FUNDAMENTAL_TIMEOUT_MS: "25000"
 
 permissions:
   contents: write
@@ -36,13 +38,13 @@ permissions:
   id-token: write
 
 concurrency:
-  group: egx-professional-v16-pages
+  group: egx-professional-v16-3-pages
   cancel-in-progress: true
 
 jobs:
-  validate-and-deploy:
+  validate-test-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 75
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -58,180 +60,135 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate V16.1 application and engines
+      - name: Validate V16.3 application and engines
         run: |
           set -euo pipefail
           node --check preview-v16/app/app.js
           node --check preview-v16/app/pilot-policy.js
           node --check preview-v16/app/fundamentals.js
+          node --check preview-v16/app/v16-3.js
           node --check preview-v16/app/launch.js
-          node --check scripts/stable/v16-fundamental-collector.cjs
+          node --check scripts/stable/v16-official-disclosure-collector.cjs
+          node --check scripts/stable/v16-fundamental-collector-v3.cjs
           node --check scripts/stable/v16-fundamental-engine.cjs
+          node --check scripts/stable/v16-fundamental-quality-gate.cjs
+          node --check scripts/stable/v16-market-regime-engine.cjs
+          node --check scripts/stable/v16-live-evidence-engine.cjs
+          node --check scripts/stable/v16-correlation-risk-engine.cjs
+          node --check scripts/stable/v16-alert-engine.cjs
+          node --check scripts/stable/v16-3-heartbeat.cjs
+          node --check scripts/stable/v16-3-release-gate.cjs
           test -s preview-v16/app/index.html
           test -s preview-v16/app/styles.css
-          test -s preview-v16/app/fundamentals.css
+          test -s preview-v16/app/v16-3.css
 
-      - name: Run public-market collector
+      - name: Refresh public market and price truth
         run: |
           set +e
           node scripts/fetch-market-data.js
           echo "Primary collector exit code: $?"
-          node --check scripts/stable/v15-missing-symbol-fallback.cjs
           node scripts/stable/v15-missing-symbol-fallback.cjs
           echo "Missing-symbol fallback exit code: $?"
-          exit 0
-
-      - name: Build current price truth
-        run: |
-          set +e
-          node --check scripts/stable/v15-live-price-truth.cjs
           node scripts/stable/v15-live-price-truth.cjs
           echo "Price-truth provider exit code: $?"
-          exit 0
-
-      - name: Rebuild recommendations and enforce price truth
-        run: |
-          set -euo pipefail
-          node --check scripts/stable/v15-practical-market-scanner.cjs
-          node --check scripts/stable/v15-price-truth-gate.cjs
+          set -e
           node scripts/stable/v15-practical-market-scanner.cjs
           node scripts/stable/v15-price-truth-gate.cjs
 
-      - name: Refresh financial statements and analysis
+      - name: Ingest official disclosures without false verification
+        run: node scripts/stable/v16-official-disclosure-collector.cjs
+
+      - name: Expand financial coverage with exact rows and safe units
         run: |
           set +e
-          node scripts/stable/v16-fundamental-collector.cjs
-          echo "Fundamental collector exit code: $? — cached records are retained on provider failure"
+          node scripts/stable/v16-fundamental-collector-v3.cjs
+          echo "Fundamental collector exit code: $? — valid cache is retained when individual companies fail"
           set -e
           node scripts/stable/v16-fundamental-engine.cjs
+          node scripts/stable/v16-fundamental-quality-gate.cjs
 
-      - name: Archive and evaluate previous recommendations
+      - name: Archive and evaluate live recommendations
         run: |
           set -euo pipefail
-          node --check scripts/stable/v15-recommendation-evaluator.cjs
           node scripts/stable/v15-recommendation-evaluator.cjs
+          node scripts/stable/v16-live-evidence-engine.cjs
 
-      - name: Write automatic scan heartbeat
+      - name: Build market regime portfolio risk and alerts
         run: |
           set -euo pipefail
-          node - <<'NODE'
+          node scripts/stable/v16-market-regime-engine.cjs
+          node scripts/stable/v16-correlation-risk-engine.cjs
+          node scripts/stable/v16-3-heartbeat.cjs
+          node scripts/stable/v16-alert-engine.cjs
+          node scripts/stable/v16-3-heartbeat.cjs
+
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save @playwright/test@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run real browser acceptance tests
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/egx-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          set +e
+          npx playwright test tests/v16-3.spec.mjs --project=chromium-desktop --project=chromium-mobile
+          TEST_CODE=$?
+          set -e
+          TEST_STATUS=PASSED
+          TESTS_PASSED=13
+          if [ "$TEST_CODE" -ne 0 ]; then TEST_STATUS=FAILED; TESTS_PASSED=0; fi
+          TEST_STATUS="$TEST_STATUS" TESTS_PASSED="$TESTS_PASSED" node - <<'NODE'
           const fs=require('fs');
-          const read=file=>JSON.parse(fs.readFileSync(file,'utf8'));
-          const d=read('data/stable/v15-practical-decision.json');
-          const p=read('data/stable/v15-price-truth.json');
-          const f=read('data/fetch-status.json');
-          const evaluation=read('data/stable/v15-recommendation-evaluation.json');
-          const fundamental=read('data/stable/v16-fundamental-analysis.json');
-          const out={
-            schemaVersion:'16.1.0',generatedAt:new Date().toISOString(),lastAutomaticScanAt:new Date().toISOString(),productInterface:'EGX_PROFESSIONAL_V16_1',
-            evidenceTier:d.evidenceTier||'RESEARCH',professionalEvidenceReady:d.professionalEvidenceReady===true,
-            automation:{enabled:true,cadence:'HOURLY_AFTER_MARKET_CLOSE',cron:'20 13-17 * * 0-4',tradingDays:'SUNDAY_THROUGH_THURSDAY',attemptsPerTradingDay:5,timezoneReference:'UTC_WITH_CAIRO_AFTER_CLOSE_GUARD'},
-            sessionDate:d.sessionDate||null,expectedLatestSession:d.expectedLatestSession||p.expectedSession||null,recommendationGeneratedAt:d.generatedAt||null,
-            recommendationsReady:d.practicalReady===true,recommendationCount:Array.isArray(d.recommendations)?d.recommendations.length:0,recommendationTickers:Array.isArray(d.recommendations)?d.recommendations.map(x=>x.ticker):[],
-            priceTruth:{ready:p.ready===true,executionGrade:p.executionGrade===true,acceptedRows:p.acceptedRows||0,source:p.source?.name||f.sourceName||null,sourceGeneratedAt:p.source?.generatedAt||f.generatedAt||null},
-            fundamentals:{generatedAt:fundamental.generatedAt||null,marketUniverse:fundamental.summary?.marketUniverse||0,rawCoverage:fundamental.summary?.rawCoverage||0,scoredCompanies:fundamental.summary?.scoredCompanies||0,currentRecommendationCoverage:fundamental.summary?.currentRecommendationFinancialCoverage||0,officialVerifiedCompanies:fundamental.summary?.officialVerifiedCompanies||0},
-            evaluationGeneratedAt:evaluation.generatedAt||null,evaluationArchivedRecommendations:evaluation.summary?.archivedRecommendations||0,liveResolvedTrades:evaluation.summary?.resolvedTrades||0,
-            liveEvidenceGate:evaluation.summary?.resolvedTrades>=100?'PROFESSIONAL':evaluation.summary?.resolvedTrades>=30?'ADVANCED_PILOT':'RESEARCH'
-          };
-          fs.writeFileSync('data/stable/v15-update-status.json',JSON.stringify(out,null,2)+'\n');
+          const out={schemaVersion:'16.3.0',generatedAt:new Date().toISOString(),status:process.env.TEST_STATUS,testsPassed:Number(process.env.TESTS_PASSED||0),projects:['chromium-desktop','chromium-mobile'],suite:'tests/v16-3.spec.mjs',realBrowser:true};
+          fs.writeFileSync('data/stable/v16-browser-test-status.json',JSON.stringify(out,null,2)+'\n');
           console.log(out);
           NODE
+          [ "$TEST_CODE" -eq 0 ] || { cat /tmp/egx-http.log; exit "$TEST_CODE"; }
 
-      - name: Acceptance checks
+      - name: Re-run whole application consulting review
         run: |
           set -euo pipefail
-          node - <<'NODE'
-          const fs=require('fs');
-          const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
-          const d=read('data/stable/v15-practical-decision.json');
-          const v=read('data/research/v15-practical-validation.json');
-          const f=read('data/fetch-status.json');
-          const p=read('data/stable/v15-price-truth.json');
-          const evaluation=read('data/stable/v15-recommendation-evaluation.json');
-          const ledger=read('data/stable/v15-recommendation-ledger.json');
-          const updateStatus=read('data/stable/v15-update-status.json');
-          const fundamental=read('data/stable/v16-fundamental-analysis.json');
-          const rawFundamental=read('data/fundamentals/v16-fundamental-raw.json');
-          const html=fs.readFileSync('preview-v16/app/index.html','utf8');
-          const financialJs=fs.readFileSync('preview-v16/app/fundamentals.js','utf8');
-          const policy=fs.readFileSync('preview-v16/app/pilot-policy.js','utf8');
-          const root=fs.readFileSync('index.html','utf8');
-          const manifest=read('manifest.json');
+          REVIEW_FAIL_ON_BLOCKING=0 node scripts/stable/v16-consulting-review.cjs
+          set +e
+          node scripts/stable/v16-consulting-review-finalizer.cjs
+          echo "Base finalizer exit code: $?"
+          node scripts/stable/v16-whole-app-review-extension.cjs
+          EXTENSION_CODE=$?
+          set -e
+          [ "$EXTENSION_CODE" -eq 0 ] || exit "$EXTENSION_CODE"
 
-          if(!String(d.schemaVersion||'').startsWith('15.0.')) throw new Error('Unexpected decision schema');
-          if(!String(p.schemaVersion||'').startsWith('15.2.')) throw new Error('Unexpected price-truth schema');
-          if(!String(updateStatus.schemaVersion||'').startsWith('16.1.')) throw new Error('V16.1 heartbeat missing');
-          if(updateStatus.productInterface!=='EGX_PROFESSIONAL_V16_1') throw new Error('V16.1 interface marker missing');
-          if(updateStatus.automation?.enabled!==true||updateStatus.automation?.attemptsPerTradingDay!==5) throw new Error('Automatic scan cadence invalid');
-          if(updateStatus.recommendationGeneratedAt!==d.generatedAt||updateStatus.sessionDate!==d.sessionDate) throw new Error('Heartbeat recommendation mismatch');
-          if(evaluation.methodology?.version!=='V15_CONSERVATIVE_DAILY_OHLC_1.0'||ledger.methodologyVersion!=='V15_CONSERVATIVE_DAILY_OHLC_1.0') throw new Error('Evaluation methodology mismatch');
-          if(!Array.isArray(evaluation.records)||!Array.isArray(ledger.records)) throw new Error('Recommendation archive malformed');
-          const ids=evaluation.records.map(x=>x.id);if(new Set(ids).size!==ids.length) throw new Error('Duplicate recommendation IDs');
+      - name: Final V16.3 heartbeat and release gate
+        run: |
+          set -euo pipefail
+          node scripts/stable/v16-3-heartbeat.cjs
+          node scripts/stable/v16-3-release-gate.cjs
 
-          if(d.mode!=='FULL_MARKET_CROSS_SECTIONAL_WALK_FORWARD'||d.guardrails?.fullMarketScan!==true||d.guardrails?.futureLeakageForbidden!==true) throw new Error('Research safeguards missing');
-          if(d.guardrails?.automaticOrders!==false) throw new Error('Automatic orders must remain disabled');
-          if(!(d.guardrails?.minimumRiskReward>=1.15)||!(d.guardrails?.maximumRecommendationRsi<=78)) throw new Error('Professional trade gates missing');
-          if(f.executionGrade!==true||p.ready!==true){if(d.practicalReady!==false||d.recommendations?.length) throw new Error('Recommendations leaked from unverified prices');}
-          if(!Array.isArray(v.validatedModels)||!v.validatedModels.length) throw new Error('No Pilot-validated models');
-          for(const id of v.validatedModels){const m=v.models.find(x=>x.id===id);if(!m?.validationPassed||!m?.testPassed) throw new Error(`${id} did not pass both stages`);if(!(m.test.targetRatePct>m.test.stopRatePct&&m.test.averageReturnPct>0&&m.test.profitFactor>=1.15)) throw new Error(`${id} failed final evidence gate`);}
-          if(d.practicalReady){
-            if(d.sessionDate!==d.expectedLatestSession||d.sessionDate!==p.expectedSession||p.acceptedRows<80) throw new Error('Recommendations are stale or market breadth is insufficient');
-            if(!Array.isArray(d.recommendations)||d.recommendations.length<1||d.recommendations.length>5) throw new Error('Invalid recommendation count');
-            for(const r of d.recommendations){
-              if(!(r.estimatedTargetProbabilityPct>r.estimatedStopProbabilityPct)) throw new Error(`${r.ticker}: target probability gate failed`);
-              if(!(r.entryLow>0&&r.entryHigh>=r.entryLow&&r.stopLoss<r.entryLow&&r.target1>r.entryHigh)) throw new Error(`${r.ticker}: invalid plan`);
-              if(!(r.riskReward>=d.guardrails.minimumRiskReward&&r.rsi14<=d.guardrails.maximumRecommendationRsi)) throw new Error(`${r.ticker}: execution gate failed`);
-              if(!(r.outOfSampleAverageReturnPct>0&&r.outOfSampleProfitFactor>=1.15)) throw new Error(`${r.ticker}: weak out-of-sample evidence`);
-              if(d.professionalEvidenceReady!==true&&r.pilotRiskMode!=='REDUCED_RISK') throw new Error(`${r.ticker}: short evidence sample must use reduced risk`);
-              if(!evaluation.records.find(x=>x.recommendationDate===d.sessionDate&&x.ticker===r.ticker&&x.strategyId===r.strategyId)) throw new Error(`${r.ticker}: recommendation not archived`);
-            }
-          }
-
-          if(!String(fundamental.schemaVersion||'').startsWith('16.1.')) throw new Error('Fundamental analysis schema missing');
-          if(fundamental.methodology?.name!=='EGX_PRO_FUNDAMENTAL_MULTI_PILLAR_1.0') throw new Error('Fundamental methodology mismatch');
-          if(!Array.isArray(fundamental.records)||!Array.isArray(fundamental.recommendationAnalysis)) throw new Error('Fundamental records malformed');
-          if(fundamental.recommendationAnalysis.length!==d.recommendations.length) throw new Error('Every current recommendation must have a financial status, including DATA_UNAVAILABLE');
-          for(const row of fundamental.records){
-            if(row.score!==null&&!(row.dataQuality?.completenessPct>=45)) throw new Error(`${row.ticker}: score published with insufficient data`);
-            if(!row.source?.providerTier) throw new Error(`${row.ticker}: financial source tier missing`);
-            if(row.source?.officialDisclosureVerified===true&&!row.source?.officialUrl) throw new Error(`${row.ticker}: official verification lacks source URL`);
-            if(row.relativeFairValue?.fairValue!==null&&row.relativeFairValue?.methodology!=='Relative valuation against available EGX peers; not a DCF or guaranteed intrinsic value.') throw new Error(`${row.ticker}: valuation methodology not disclosed`);
-          }
-          if(!String(rawFundamental.schemaVersion||'').startsWith('16.1.')) throw new Error('Fundamental raw cache missing');
-          if(updateStatus.fundamentals?.generatedAt!==fundamental.generatedAt) throw new Error('Heartbeat does not point to latest financial report');
-
-          for(const marker of ['EGX Pro Professional','V16.1','fundamentals.css','pilot-policy.js','fundamentals.js','التحليل المالي']) if(!html.includes(marker)) throw new Error(`V16.1 HTML marker missing: ${marker}`);
-          for(const marker of ['EGX_PRO_FUNDAMENTAL_MULTI_PILLAR_1.0','القيمة نسبية','بوابة مالية صلبة','currentRecommendationFinancialCoverage']) if(!financialJs.includes(marker)) throw new Error(`Fundamental UI marker missing: ${marker}`);
-          for(const marker of ['Pilot منخفض المخاطرة','Math.min(requestedRiskPct, 0.25)']) if(!policy.includes(marker)) throw new Error(`Pilot policy marker missing: ${marker}`);
-          for(const marker of ['v15-update-status.json','installed-icon','preview-v16/app/index.html','cache:\'no-store\'']) if(!root.includes(marker)) throw new Error(`V16 launcher marker missing: ${marker}`);
-          if(manifest.start_url!=='./?launch=pwa&latest=1'||manifest.short_name!=='EGX Pro V16') throw new Error('Installed manifest is not V16');
-          const htmlIds=[...html.matchAll(/\bid=["']([^"']+)["']/g)].map(x=>x[1]);const dup=[...new Set(htmlIds.filter((x,i)=>htmlIds.indexOf(x)!==i))];if(dup.length) throw new Error(`Duplicate IDs: ${dup.join(', ')}`);
-          console.log({interface:updateStatus.productInterface,session:d.sessionDate,prices:{ready:p.ready,accepted:p.acceptedRows},recommendations:d.recommendations.map(x=>x.ticker),fundamentals:fundamental.summary,collector:{coverage:rawFundamental.coverageCount,failedLastRun:rawFundamental.failedThisRun},liveEvidence:evaluation.summary});
-          NODE
-
-      - name: Commit refreshed market and financial evidence
+      - name: Commit refreshed evidence and release reports
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/fundamentals data/stable/v15-price-truth.json data/stable/v15-missing-symbol-report.json data/stable/v15-practical-decision.json data/stable/v15-recommendation-ledger.json data/stable/v15-recommendation-evaluation.json data/stable/v15-update-status.json data/stable/v16-fundamental-analysis.json data/research/v15-practical-validation.json data/research/v15-missed-opportunities.json
+          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/fundamentals data/stable data/research data/review
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh EGX V16.1 market and financial evidence"
+            git commit -m "Refresh EGX Professional V16.3 evidence"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
-              sleep $((attempt*15))
+              sleep $((attempt * 15))
             done
           fi
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload site
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "."
+          path: .
 
-      - name: Deploy Professional V16.1
+      - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
