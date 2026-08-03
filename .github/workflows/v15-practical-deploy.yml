@@ -77,6 +77,7 @@ jobs:
           node --check scripts/stable/v16-correlation-risk-engine.cjs
           node --check scripts/stable/v16-alert-engine.cjs
           node --check scripts/stable/v16-3-heartbeat.cjs
+          node --check scripts/stable/v16-3-whole-app-review.cjs
           node --check scripts/stable/v16-3-release-gate.cjs
           test -s preview-v16/app/index.html
           test -s preview-v16/app/styles.css
@@ -148,17 +149,10 @@ jobs:
           NODE
           [ "$TEST_CODE" -eq 0 ] || { cat /tmp/egx-http.log; exit "$TEST_CODE"; }
 
-      - name: Re-run whole application consulting review
+      - name: Run V16.3 twenty-cycle whole application review
         run: |
           set -euo pipefail
-          REVIEW_FAIL_ON_BLOCKING=0 node scripts/stable/v16-consulting-review.cjs
-          set +e
-          node scripts/stable/v16-consulting-review-finalizer.cjs
-          echo "Base finalizer exit code: $?"
-          node scripts/stable/v16-whole-app-review-extension.cjs
-          EXTENSION_CODE=$?
-          set -e
-          [ "$EXTENSION_CODE" -eq 0 ] || exit "$EXTENSION_CODE"
+          node scripts/stable/v16-3-whole-app-review.cjs
 
       - name: Final V16.3 heartbeat and release gate
         run: |
