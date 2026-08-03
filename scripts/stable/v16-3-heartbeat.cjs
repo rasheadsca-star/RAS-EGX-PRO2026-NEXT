@@ -22,7 +22,7 @@ const live = read('data/stable/v16-live-evidence.json');
 const correlation = read('data/stable/v16-correlation-risk.json');
 const alerts = read('data/stable/v16-alerts.json');
 const browser = read('data/stable/v16-browser-test-status.json', { status: 'PENDING', generatedAt: null });
-const review = read('data/review/v16-consulting-review.json');
+const review = read('data/review/v16-3-whole-app-review.json');
 const now = new Date().toISOString();
 const out = {
   schemaVersion: '16.3.0',
@@ -107,7 +107,8 @@ const out = {
     generatedAt: review.generatedAt || null,
     scope: review.scope?.type || null,
     acceptance: review.acceptance || null,
-    openChecks: review.summary?.openChecks ?? null
+    openChecks: review.summary?.openChecks ?? null,
+    blockingFindings: review.summary?.blockingFindings ?? null
   }
 };
 write('data/stable/v15-update-status.json', out);
