@@ -1,4 +1,4 @@
-name: EGX V16.3.1 Mobile Hotfix Deploy
+name: EGX V16.3.2 Mobile and Recommendation Freshness Deploy
 
 on:
   workflow_dispatch:
@@ -11,7 +11,11 @@ on:
       - "preview-v16/app/launch.js"
       - "preview-v16/app/v16-3.js"
       - "preview-v16/app/v16-3.css"
+      - "preview-v16/app/recommendation-freshness.js"
+      - "scripts/stable/v16-recommendation-freshness-guard.cjs"
       - ".github/workflows/mobile-hotfix-deploy.yml"
+  schedule:
+    - cron: "35 13-18 * * 0-4"
 
 permissions:
   contents: write
@@ -19,13 +23,13 @@ permissions:
   id-token: write
 
 concurrency:
-  group: egx-v16-mobile-hotfix-pages
+  group: egx-v16-mobile-freshness-pages
   cancel-in-progress: true
 
 jobs:
-  validate-and-deploy-mobile-shell:
+  validate-guard-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -41,21 +45,44 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate V16.3.1 mobile shell
+      - name: Validate V16.3.2 mobile shell and freshness guard
         run: |
           set -euo pipefail
           node --check preview-v16/app/app.js
           node --check preview-v16/app/pilot-policy.js
           node --check preview-v16/app/fundamentals.js
           node --check preview-v16/app/v16-3.js
+          node --check preview-v16/app/recommendation-freshness.js
           node --check preview-v16/app/launch.js
+          node --check scripts/stable/v16-recommendation-freshness-guard.cjs
           node --check service-worker.js
           grep -q "V16.3" index.html
-          grep -q "16.3.1" manifest.json
-          grep -q "V16.3.1-MOBILE-HOTFIX" service-worker.js
-          grep -q "const VERSION = '16.3.1'" preview-v16/app/launch.js
+          grep -q "const VERSION = '16.3.2'" preview-v16/app/launch.js
           test -s preview-v16/app/v16-3.css
           test -s preview-v16/app/v16-3.js
+          test -s preview-v16/app/recommendation-freshness.js
+
+      - name: Classify recommendation freshness without fabricating new picks
+        env:
+          EGX_MARKET_HOLIDAYS: ${{ vars.EGX_MARKET_HOLIDAYS }}
+        run: |
+          set -euo pipefail
+          node scripts/stable/v16-recommendation-freshness-guard.cjs
+
+      - name: Commit freshness evidence before deployment
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/stable/v15-practical-decision.json data/stable/v16-recommendation-freshness.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Classify current EGX recommendation freshness"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
+          fi
           touch .nojekyll
 
       - name: Configure Pages
@@ -66,11 +93,11 @@ jobs:
         with:
           path: .
 
-      - name: Deploy mobile hotfix to Pages
+      - name: Deploy V16.3.2 to Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Record successful mobile deployment
+      - name: Record successful V16.3.2 deployment
         env:
           DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
@@ -78,15 +105,19 @@ jobs:
           mkdir -p data/stable
           node - <<'NODE'
           const fs = require('fs');
+          const freshness = JSON.parse(fs.readFileSync('data/stable/v16-recommendation-freshness.json', 'utf8'));
           const out = {
-            schemaVersion: '16.3.1',
+            schemaVersion: '16.3.2',
             generatedAt: new Date().toISOString(),
-            release: 'V16.3.1_MOBILE_HOTFIX',
+            release: 'V16.3.2_RECOMMENDATION_FRESHNESS',
             status: 'DEPLOYED',
             deployedUrl: process.env.DEPLOYED_URL || null,
             sourceCommit: process.env.GITHUB_SHA || null,
             mobileCacheReset: true,
-            serviceWorkerBuild: 'V16.3.1-MOBILE-HOTFIX-20260803'
+            recommendationFresh: freshness.isFresh === true,
+            decisionSession: freshness.decisionSession,
+            expectedSession: freshness.expectedSession,
+            displayMode: freshness.displayMode
           };
           fs.writeFileSync('data/stable/v16-mobile-deploy-status.json', JSON.stringify(out, null, 2) + '\n');
           console.log(out);
@@ -95,7 +126,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/stable/v16-mobile-deploy-status.json
           if ! git diff --cached --quiet; then
-            git commit -m "Confirm V16.3.1 mobile hotfix deployment"
+            git commit -m "Confirm V16.3.2 freshness deployment"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
