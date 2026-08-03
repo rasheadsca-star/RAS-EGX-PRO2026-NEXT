@@ -1,15 +1,28 @@
 {
-  "schemaVersion": "15.0.0",
-  "generatedAt": "2026-08-03T01:11:18.867Z",
-  "auditStartAt": "2026-08-02T22:10:00.000Z",
-  "titleAr": "تقييم التوصيات السابقة",
+  "schemaVersion": "16.2.0",
+  "generatedAt": "2026-08-03T01:11:19.030Z",
   "methodology": {
-    "version": "V15_CONSERVATIVE_DAILY_OHLC_1.0",
-    "entryRuleAr": "التوصية صالحة لأول جلسة تالية فقط. لا يُحتسب دخول عند فجوة أعلى من المنطقة أو افتتاح أسفل الوقف.",
-    "intradayRuleAr": "عند لمس منطقة الدخول أثناء الجلسة يُستخدم الحد الأعلى كسعر دخول تحفظي، ويبدأ فحص الهدف والوقف من الجلسة التالية لعدم معرفة ترتيب الحركة داخل اليوم.",
-    "ambiguityRuleAr": "إذا لمس الهدف والوقف في الجلسة نفسها تُحسب النتيجة وقف خسارة تحفظيًا.",
-    "costsRuleAr": "العائد الصافي يخصم تكاليف التداول المستخدمة في اختبار النموذج.",
-    "trustedHistoryOnly": true
+    "name": "EGX_PRO_LIVE_EVIDENCE_2.0",
+    "sourceEvaluationMethodology": "V15_CONSERVATIVE_DAILY_OHLC_1.0",
+    "conservativeExecution": true,
+    "benchmark": "MEDIAN_EQUAL_WEIGHT_EGX_UNIVERSE",
+    "principles": [
+      "Backtest statistics are never merged into the live track record.",
+      "Cancelled and not-entered recommendations remain visible.",
+      "Same-session target and stop ambiguity remains a conservative stop.",
+      "Professional evidence requires both sample size and elapsed market time."
+    ]
+  },
+  "evidenceTier": "RESEARCH",
+  "professionalEvidenceReady": false,
+  "professionalGate": {
+    "minimumResolvedTrades": 100,
+    "minimumObservedCalendarDays": 90,
+    "resolvedTrades": 0,
+    "observedCalendarDays": 0,
+    "sampleGatePassed": false,
+    "timeGatePassed": false,
+    "disclosureAr": "لم يكتمل بعد الحد الأدنى لإثبات الأداء الحي؛ التطبيق يظل Professional Pilot."
   },
   "summary": {
     "archivedRecommendations": 10,
@@ -17,108 +30,186 @@
     "resolvedTrades": 0,
     "openTrades": 0,
     "awaitingNextSession": 10,
-    "notEnteredOrCancelled": 0,
-    "targetHits": 0,
-    "stopHits": 0,
-    "expiredPositive": 0,
-    "expiredNegative": 0,
-    "expiredFlat": 0,
-    "profitableResolvedTrades": 0,
-    "losingResolvedTrades": 0,
-    "successRatePct": null,
-    "targetVsStopRatePct": null,
+    "cancelledOrNotEntered": 0,
+    "wins": 0,
+    "losses": 0,
+    "winRatePct": null,
     "averageNetReturnPct": null,
-    "cumulativeNetReturnPct": null,
-    "profitFactor": null
+    "medianNetReturnPct": 0,
+    "cumulativeCompoundedReturnPct": null,
+    "profitFactor": null,
+    "maxDrawdownPct": 0,
+    "observedCalendarDays": 0,
+    "firstRecommendationDate": "2026-08-02",
+    "latestObservedDate": "2026-08-02",
+    "equityCurve": [],
+    "averageAlphaVsMarketPct": null
   },
   "byStrategy": [
     {
-      "strategyId": "BREAKOUT_CONTINUATION",
-      "strategyLabelAr": "اختراق مع استمرار وسيولة",
+      "name": "BREAKOUT_CONTINUATION",
       "archivedRecommendations": 4,
       "enteredTrades": 0,
       "resolvedTrades": 0,
       "openTrades": 0,
       "awaitingNextSession": 4,
-      "notEnteredOrCancelled": 0,
-      "targetHits": 0,
-      "stopHits": 0,
-      "expiredPositive": 0,
-      "expiredNegative": 0,
-      "expiredFlat": 0,
-      "profitableResolvedTrades": 0,
-      "losingResolvedTrades": 0,
-      "successRatePct": null,
-      "targetVsStopRatePct": null,
+      "cancelledOrNotEntered": 0,
+      "wins": 0,
+      "losses": 0,
+      "winRatePct": null,
       "averageNetReturnPct": null,
-      "cumulativeNetReturnPct": null,
-      "profitFactor": null
+      "medianNetReturnPct": 0,
+      "cumulativeCompoundedReturnPct": null,
+      "profitFactor": null,
+      "maxDrawdownPct": 0,
+      "observedCalendarDays": 0,
+      "firstRecommendationDate": "2026-08-02",
+      "latestObservedDate": "2026-08-02",
+      "equityCurve": []
     },
     {
-      "strategyId": "HOT_MOMENTUM",
-      "strategyLabelAr": "استمرار زخم ساخن",
-      "archivedRecommendations": 1,
-      "enteredTrades": 0,
-      "resolvedTrades": 0,
-      "openTrades": 0,
-      "awaitingNextSession": 1,
-      "notEnteredOrCancelled": 0,
-      "targetHits": 0,
-      "stopHits": 0,
-      "expiredPositive": 0,
-      "expiredNegative": 0,
-      "expiredFlat": 0,
-      "profitableResolvedTrades": 0,
-      "losingResolvedTrades": 0,
-      "successRatePct": null,
-      "targetVsStopRatePct": null,
-      "averageNetReturnPct": null,
-      "cumulativeNetReturnPct": null,
-      "profitFactor": null
-    },
-    {
-      "strategyId": "LIQUID_LEADERS",
-      "strategyLabelAr": "قيادات سائلة قوية نسبيًا",
-      "archivedRecommendations": 1,
-      "enteredTrades": 0,
-      "resolvedTrades": 0,
-      "openTrades": 0,
-      "awaitingNextSession": 1,
-      "notEnteredOrCancelled": 0,
-      "targetHits": 0,
-      "stopHits": 0,
-      "expiredPositive": 0,
-      "expiredNegative": 0,
-      "expiredFlat": 0,
-      "profitableResolvedTrades": 0,
-      "losingResolvedTrades": 0,
-      "successRatePct": null,
-      "targetVsStopRatePct": null,
-      "averageNetReturnPct": null,
-      "cumulativeNetReturnPct": null,
-      "profitFactor": null
-    },
-    {
-      "strategyId": "MOMENTUM_ACCELERATION",
-      "strategyLabelAr": "تسارع زخم نسبي",
+      "name": "MOMENTUM_ACCELERATION",
       "archivedRecommendations": 4,
       "enteredTrades": 0,
       "resolvedTrades": 0,
       "openTrades": 0,
       "awaitingNextSession": 4,
-      "notEnteredOrCancelled": 0,
-      "targetHits": 0,
-      "stopHits": 0,
-      "expiredPositive": 0,
-      "expiredNegative": 0,
-      "expiredFlat": 0,
-      "profitableResolvedTrades": 0,
-      "losingResolvedTrades": 0,
-      "successRatePct": null,
-      "targetVsStopRatePct": null,
+      "cancelledOrNotEntered": 0,
+      "wins": 0,
+      "losses": 0,
+      "winRatePct": null,
       "averageNetReturnPct": null,
-      "cumulativeNetReturnPct": null,
-      "profitFactor": null
+      "medianNetReturnPct": 0,
+      "cumulativeCompoundedReturnPct": null,
+      "profitFactor": null,
+      "maxDrawdownPct": 0,
+      "observedCalendarDays": 0,
+      "firstRecommendationDate": "2026-08-02",
+      "latestObservedDate": "2026-08-02",
+      "equityCurve": []
+    },
+    {
+      "name": "HOT_MOMENTUM",
+      "archivedRecommendations": 1,
+      "enteredTrades": 0,
+      "resolvedTrades": 0,
+      "openTrades": 0,
+      "awaitingNextSession": 1,
+      "cancelledOrNotEntered": 0,
+      "wins": 0,
+      "losses": 0,
+      "winRatePct": null,
+      "averageNetReturnPct": null,
+      "medianNetReturnPct": 0,
+      "cumulativeCompoundedReturnPct": null,
+      "profitFactor": null,
+      "maxDrawdownPct": 0,
+      "observedCalendarDays": 0,
+      "firstRecommendationDate": "2026-08-02",
+      "latestObservedDate": "2026-08-02",
+      "equityCurve": []
+    },
+    {
+      "name": "LIQUID_LEADERS",
+      "archivedRecommendations": 1,
+      "enteredTrades": 0,
+      "resolvedTrades": 0,
+      "openTrades": 0,
+      "awaitingNextSession": 1,
+      "cancelledOrNotEntered": 0,
+      "wins": 0,
+      "losses": 0,
+      "winRatePct": null,
+      "averageNetReturnPct": null,
+      "medianNetReturnPct": 0,
+      "cumulativeCompoundedReturnPct": null,
+      "profitFactor": null,
+      "maxDrawdownPct": 0,
+      "observedCalendarDays": 0,
+      "firstRecommendationDate": "2026-08-02",
+      "latestObservedDate": "2026-08-02",
+      "equityCurve": []
+    }
+  ],
+  "byProfile": [
+    {
+      "name": "FAST",
+      "archivedRecommendations": 6,
+      "enteredTrades": 0,
+      "resolvedTrades": 0,
+      "openTrades": 0,
+      "awaitingNextSession": 6,
+      "cancelledOrNotEntered": 0,
+      "wins": 0,
+      "losses": 0,
+      "winRatePct": null,
+      "averageNetReturnPct": null,
+      "medianNetReturnPct": 0,
+      "cumulativeCompoundedReturnPct": null,
+      "profitFactor": null,
+      "maxDrawdownPct": 0,
+      "observedCalendarDays": 0,
+      "firstRecommendationDate": "2026-08-02",
+      "latestObservedDate": "2026-08-02",
+      "equityCurve": []
+    },
+    {
+      "name": "BALANCED",
+      "archivedRecommendations": 4,
+      "enteredTrades": 0,
+      "resolvedTrades": 0,
+      "openTrades": 0,
+      "awaitingNextSession": 4,
+      "cancelledOrNotEntered": 0,
+      "wins": 0,
+      "losses": 0,
+      "winRatePct": null,
+      "averageNetReturnPct": null,
+      "medianNetReturnPct": 0,
+      "cumulativeCompoundedReturnPct": null,
+      "profitFactor": null,
+      "maxDrawdownPct": 0,
+      "observedCalendarDays": 0,
+      "firstRecommendationDate": "2026-08-02",
+      "latestObservedDate": "2026-08-02",
+      "equityCurve": []
+    }
+  ],
+  "probabilityCalibration": [
+    {
+      "label": "0–30%",
+      "recommendations": 0,
+      "resolved": 0,
+      "predictedAveragePct": null,
+      "actualTargetHitPct": null
+    },
+    {
+      "label": "30–40%",
+      "recommendations": 1,
+      "resolved": 0,
+      "predictedAveragePct": 37.3,
+      "actualTargetHitPct": null
+    },
+    {
+      "label": "40–50%",
+      "recommendations": 4,
+      "resolved": 0,
+      "predictedAveragePct": 46.3,
+      "actualTargetHitPct": null
+    },
+    {
+      "label": "50–60%",
+      "recommendations": 5,
+      "resolved": 0,
+      "predictedAveragePct": 58,
+      "actualTargetHitPct": null
+    },
+    {
+      "label": "60%+",
+      "recommendations": 0,
+      "resolved": 0,
+      "predictedAveragePct": null,
+      "actualTargetHitPct": null
     }
   ],
   "records": [
@@ -158,7 +249,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|OCDI|MOMENTUM_ACCELERATION",
@@ -196,7 +292,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|AALR|HOT_MOMENTUM",
@@ -234,7 +335,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|SCEM|LIQUID_LEADERS",
@@ -272,7 +378,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|HELI|MOMENTUM_ACCELERATION",
@@ -310,7 +421,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|MIPH|BREAKOUT_CONTINUATION",
@@ -348,7 +464,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|EALR|MOMENTUM_ACCELERATION",
@@ -386,7 +507,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|OCDI|BREAKOUT_CONTINUATION",
@@ -424,7 +550,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|DAPH|BREAKOUT_CONTINUATION",
@@ -462,7 +593,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     },
     {
       "id": "2026-08-02|DAPH|MOMENTUM_ACCELERATION",
@@ -500,7 +636,12 @@
       "maxFavorableExcursionPct": null,
       "maxAdverseExcursionPct": null,
       "sessionsObserved": 0,
-      "evaluationWindowDates": []
+      "evaluationWindowDates": [],
+      "benchmark": {
+        "methodology": "Median equal-weight EGX universe return over the same entry/exit dates",
+        "returnPct": null,
+        "alphaPct": null
+      }
     }
   ]
 }

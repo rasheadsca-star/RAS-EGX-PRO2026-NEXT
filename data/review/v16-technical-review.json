@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-03T00:57:14.773Z",
+  "generatedAt": "2026-08-03T01:12:54.548Z",
   "application": "EGX Pro Professional V16.3",
   "scope": {
     "type": "TECHNICAL_ANALYSIS_ONLY",
@@ -12,30 +12,30 @@
   "acceptance": "REJECTED_BLOCKING_TECHNICAL_FINDINGS",
   "acceptanceCriteria": {
     "exactlyTwentyCycles": true,
-    "zeroCritical": false,
+    "zeroCritical": true,
     "zeroHigh": false,
-    "pilotScopeEnforced": false
+    "pilotScopeEnforced": true
   },
   "summary": {
     "totalChecks": 41,
-    "closedChecks": 32,
-    "openChecks": 9,
-    "blockingFindings": 8,
+    "closedChecks": 39,
+    "openChecks": 2,
+    "blockingFindings": 2,
     "severity": {
       "CRITICAL": {
         "total": 11,
-        "open": 3,
-        "closed": 8
+        "open": 0,
+        "closed": 11
       },
       "HIGH": {
         "total": 26,
-        "open": 5,
-        "closed": 21
+        "open": 2,
+        "closed": 24
       },
       "MEDIUM": {
         "total": 4,
-        "open": 1,
-        "closed": 3
+        "open": 0,
+        "closed": 4
       },
       "LOW": {
         "total": 0,
@@ -135,9 +135,9 @@
           "id": "T04-2",
           "severity": "MEDIUM",
           "title": "حالة السوق تدخل في تفسير الاتجاه",
-          "status": "OPEN",
-          "evidence": "regime=undefined; analyzed=undefined",
-          "remediation": "تشغيل محرك حالة السوق."
+          "status": "CLOSED",
+          "evidence": "regime=RISK_ON; analyzed=183",
+          "remediation": null
         }
       ]
     },
@@ -265,9 +265,9 @@
           "id": "T10-1",
           "severity": "CRITICAL",
           "title": "محرك حالة السوق ينتج معامل مخاطرة صالحًا",
-          "status": "OPEN",
-          "evidence": "regime=undefined; multiplier=undefined",
-          "remediation": "إصلاح المحرك أو استخدام وضع دفاعي."
+          "status": "CLOSED",
+          "evidence": "regime=RISK_ON; multiplier=1",
+          "remediation": null
         },
         {
           "id": "T10-2",
@@ -380,17 +380,17 @@
           "id": "T15-1",
           "severity": "HIGH",
           "title": "عدم الاستقرار موثق ولا يُخفى",
-          "status": "OPEN",
-          "evidence": "MOMENTUM_ACCELERATION:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر, LIQUID_LEADERS:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر",
-          "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
+          "status": "CLOSED",
+          "evidence": "DAPH:غير مستقر/REDUCED_RISK, EALR:غير مستقر/REDUCED_RISK, HELI:غير مستقر/REDUCED_RISK, SCEM:غير مستقر/REDUCED_RISK, OCDI:غير مستقر/REDUCED_RISK",
+          "remediation": null
         },
         {
           "id": "T15-2",
           "severity": "CRITICAL",
           "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
-          "status": "OPEN",
-          "evidence": "professional=false; modes=REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK",
-          "remediation": "فرض وضع Pilot منخفض المخاطرة."
+          "status": "CLOSED",
+          "evidence": "decisionTier=PILOT_SHORT_SAMPLE; professional=false; modes=REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK",
+          "remediation": null
         }
       ]
     },
@@ -403,17 +403,17 @@
           "id": "T16-1",
           "severity": "HIGH",
           "title": "قصر عينة الاختبار مصرح به",
-          "status": "OPEN",
-          "evidence": "test=15; professionalMinimum=20",
-          "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
+          "status": "CLOSED",
+          "evidence": "decisionTier=PILOT_SHORT_SAMPLE; test sample remains explicitly Pilot",
+          "remediation": null
         },
         {
           "id": "T16-2",
           "severity": "CRITICAL",
           "title": "الجاهزية المهنية مرتبطة بـ100 صفقة و90 يومًا",
-          "status": "OPEN",
-          "evidence": "resolved=undefined; days=undefined; ready=undefined",
-          "remediation": "إعادة تصنيف المنتج Pilot."
+          "status": "CLOSED",
+          "evidence": "resolved=0; days=0; ready=false",
+          "remediation": null
         }
       ]
     },
@@ -473,7 +473,7 @@
           "severity": "HIGH",
           "title": "اختبارات متصفح حقيقية ناجحة",
           "status": "OPEN",
-          "evidence": "status=undefined; realBrowser=undefined",
+          "evidence": "status=FAILED; tests=0; realBrowser=true",
           "remediation": "تشغيل Playwright وإصلاح الرحلة."
         },
         {
@@ -481,7 +481,7 @@
           "severity": "HIGH",
           "title": "اختبارات المتصفح تغطي البحث والتوصيات والمحفظة",
           "status": "OPEN",
-          "evidence": "browser test markers found",
+          "evidence": "search, recommendation, correlation, stress and portfolio controls covered",
           "remediation": "توسيع الاختبارات."
         }
       ]
@@ -503,9 +503,9 @@
           "id": "T20-2",
           "severity": "HIGH",
           "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
-          "status": "OPEN",
-          "evidence": "Pilot disclosure and claims checked",
-          "remediation": "إزالة الادعاءات وإظهار القيود."
+          "status": "CLOSED",
+          "evidence": "tier=PILOT_SHORT_SAMPLE; reducedRisk=true; noProfitClaim=true",
+          "remediation": null
         },
         {
           "id": "T20-3",
@@ -520,59 +520,11 @@
   ],
   "openFindings": [
     {
-      "id": "T04-2",
-      "severity": "MEDIUM",
-      "title": "حالة السوق تدخل في تفسير الاتجاه",
-      "status": "OPEN",
-      "evidence": "regime=undefined; analyzed=undefined",
-      "remediation": "تشغيل محرك حالة السوق."
-    },
-    {
-      "id": "T10-1",
-      "severity": "CRITICAL",
-      "title": "محرك حالة السوق ينتج معامل مخاطرة صالحًا",
-      "status": "OPEN",
-      "evidence": "regime=undefined; multiplier=undefined",
-      "remediation": "إصلاح المحرك أو استخدام وضع دفاعي."
-    },
-    {
-      "id": "T15-1",
-      "severity": "HIGH",
-      "title": "عدم الاستقرار موثق ولا يُخفى",
-      "status": "OPEN",
-      "evidence": "MOMENTUM_ACCELERATION:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر, LIQUID_LEADERS:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر",
-      "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
-    },
-    {
-      "id": "T15-2",
-      "severity": "CRITICAL",
-      "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
-      "status": "OPEN",
-      "evidence": "professional=false; modes=REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK",
-      "remediation": "فرض وضع Pilot منخفض المخاطرة."
-    },
-    {
-      "id": "T16-1",
-      "severity": "HIGH",
-      "title": "قصر عينة الاختبار مصرح به",
-      "status": "OPEN",
-      "evidence": "test=15; professionalMinimum=20",
-      "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
-    },
-    {
-      "id": "T16-2",
-      "severity": "CRITICAL",
-      "title": "الجاهزية المهنية مرتبطة بـ100 صفقة و90 يومًا",
-      "status": "OPEN",
-      "evidence": "resolved=undefined; days=undefined; ready=undefined",
-      "remediation": "إعادة تصنيف المنتج Pilot."
-    },
-    {
       "id": "T19-1",
       "severity": "HIGH",
       "title": "اختبارات متصفح حقيقية ناجحة",
       "status": "OPEN",
-      "evidence": "status=undefined; realBrowser=undefined",
+      "evidence": "status=FAILED; tests=0; realBrowser=true",
       "remediation": "تشغيل Playwright وإصلاح الرحلة."
     },
     {
@@ -580,65 +532,17 @@
       "severity": "HIGH",
       "title": "اختبارات المتصفح تغطي البحث والتوصيات والمحفظة",
       "status": "OPEN",
-      "evidence": "browser test markers found",
+      "evidence": "search, recommendation, correlation, stress and portfolio controls covered",
       "remediation": "توسيع الاختبارات."
-    },
-    {
-      "id": "T20-2",
-      "severity": "HIGH",
-      "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
-      "status": "OPEN",
-      "evidence": "Pilot disclosure and claims checked",
-      "remediation": "إزالة الادعاءات وإظهار القيود."
     }
   ],
   "blockingFindings": [
     {
-      "id": "T10-1",
-      "severity": "CRITICAL",
-      "title": "محرك حالة السوق ينتج معامل مخاطرة صالحًا",
-      "status": "OPEN",
-      "evidence": "regime=undefined; multiplier=undefined",
-      "remediation": "إصلاح المحرك أو استخدام وضع دفاعي."
-    },
-    {
-      "id": "T15-1",
-      "severity": "HIGH",
-      "title": "عدم الاستقرار موثق ولا يُخفى",
-      "status": "OPEN",
-      "evidence": "MOMENTUM_ACCELERATION:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر, LIQUID_LEADERS:غير مستقر, MOMENTUM_ACCELERATION:غير مستقر",
-      "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
-    },
-    {
-      "id": "T15-2",
-      "severity": "CRITICAL",
-      "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
-      "status": "OPEN",
-      "evidence": "professional=false; modes=REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK",
-      "remediation": "فرض وضع Pilot منخفض المخاطرة."
-    },
-    {
-      "id": "T16-1",
-      "severity": "HIGH",
-      "title": "قصر عينة الاختبار مصرح به",
-      "status": "OPEN",
-      "evidence": "test=15; professionalMinimum=20",
-      "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
-    },
-    {
-      "id": "T16-2",
-      "severity": "CRITICAL",
-      "title": "الجاهزية المهنية مرتبطة بـ100 صفقة و90 يومًا",
-      "status": "OPEN",
-      "evidence": "resolved=undefined; days=undefined; ready=undefined",
-      "remediation": "إعادة تصنيف المنتج Pilot."
-    },
-    {
       "id": "T19-1",
       "severity": "HIGH",
       "title": "اختبارات متصفح حقيقية ناجحة",
       "status": "OPEN",
-      "evidence": "status=undefined; realBrowser=undefined",
+      "evidence": "status=FAILED; tests=0; realBrowser=true",
       "remediation": "تشغيل Playwright وإصلاح الرحلة."
     },
     {
@@ -646,16 +550,8 @@
       "severity": "HIGH",
       "title": "اختبارات المتصفح تغطي البحث والتوصيات والمحفظة",
       "status": "OPEN",
-      "evidence": "browser test markers found",
+      "evidence": "search, recommendation, correlation, stress and portfolio controls covered",
       "remediation": "توسيع الاختبارات."
-    },
-    {
-      "id": "T20-2",
-      "severity": "HIGH",
-      "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
-      "status": "OPEN",
-      "evidence": "Pilot disclosure and claims checked",
-      "remediation": "إزالة الادعاءات وإظهار القيود."
     }
   ],
   "finalReceiverDecisionAr": "مرفوض فنيًا حتى إغلاق الملاحظات الحرجة والعالية."
