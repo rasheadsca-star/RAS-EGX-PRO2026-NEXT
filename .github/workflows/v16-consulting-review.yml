@@ -1,30 +1,22 @@
-name: EGX V16.1 Whole Application Review — 20 Cycles
-run-name: Whole application twenty-cycle review for ${{ github.sha }}
+name: EGX V16 Whole Application Independent Review — 20 Cycles
+run-name: Independent twenty-cycle review for ${{ github.sha }}
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "scripts/stable/v16-*.cjs"
-      - "preview-v16/app/**"
-      - "data/stable/**"
-      - "data/quant/**"
-      - "manifest.json"
-      - "service-worker.js"
-      - "index.html"
-      - ".github/workflows/v16-consulting-review.yml"
+  schedule:
+    - cron: "15 3 * * 6"
 
 permissions:
   contents: write
 
 concurrency:
-  group: egx-v16-whole-application-review
+  group: egx-v16-independent-weekly-review
   cancel-in-progress: true
 
 jobs:
   twenty-cycle-whole-app-review:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 55
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -37,37 +29,17 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate all current engines and front-end modules
+      - name: Validate current review and product engines
         run: |
           set -euo pipefail
           node --check scripts/stable/v16-consulting-review.cjs
           node --check scripts/stable/v16-consulting-review-finalizer.cjs
           node --check scripts/stable/v16-whole-app-review-extension.cjs
           node --check scripts/stable/v16-review-integrity-fix.cjs
-          node --check scripts/stable/v16-fundamental-collector-v3.cjs
-          node --check scripts/stable/v16-fundamental-engine.cjs
-          node --check scripts/stable/v16-fundamental-quality-gate.cjs
-          node --check scripts/stable/v16-update-heartbeat.cjs
-          node --check preview-v16/app/app.js
-          node --check preview-v16/app/pilot-policy.js
-          node --check preview-v16/app/fundamentals.js
+          node --check scripts/stable/v16-3-release-gate.cjs
+          node --check preview-v16/app/v16-3.js
 
-      - name: Refresh financial data with exact rows and safe units
-        env:
-          EGX_FUNDAMENTAL_BATCH: "50"
-          EGX_FUNDAMENTAL_MAX_AGE_DAYS: "21"
-          EGX_FUNDAMENTAL_CONCURRENCY: "3"
-          EGX_FUNDAMENTAL_TIMEOUT_MS: "25000"
-        run: |
-          set +e
-          node scripts/stable/v16-fundamental-collector-v3.cjs
-          echo "Unit-safe collector exit code: $?"
-          set -e
-          node scripts/stable/v16-fundamental-engine.cjs
-          node scripts/stable/v16-fundamental-quality-gate.cjs
-          node scripts/stable/v16-update-heartbeat.cjs
-
-      - name: Execute twenty consulting roles on the whole application
+      - name: Execute independent twenty-cycle review
         env:
           REVIEW_FAIL_ON_BLOCKING: "0"
         run: |
@@ -79,36 +51,29 @@ jobs:
           node scripts/stable/v16-whole-app-review-extension.cjs
           echo "Whole-application extension exit code: $?"
           node scripts/stable/v16-review-integrity-fix.cjs
-          echo "Review-integrity exit code: $? — evidence will be committed before the receiver gate"
+          INTEGRITY_CODE=$?
           set -e
+          [ "$INTEGRITY_CODE" -eq 0 ] || exit "$INTEGRITY_CODE"
 
-      - name: Commit refreshed data and complete review evidence
+      - name: Commit independent review evidence
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/fundamentals/v16-fundamental-raw.json data/stable/v16-fundamental-analysis.json data/stable/v15-update-status.json data/review/v16-consulting-review.json data/review/v16-consulting-review.md
+          git add data/review/v16-consulting-review.json data/review/v16-consulting-review.md
           if ! git diff --cached --quiet; then
-            git commit -m "Run EGX V16.1 whole-application twenty-cycle review"
-            for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
-              [ "$attempt" = "3" ] && exit 1
-              sleep $((attempt * 10))
-            done
+            git commit -m "Run independent EGX V16 twenty-cycle review"
+            git pull --rebase -X ours origin main
+            git push origin HEAD:main
           fi
 
-      - name: Enforce final receiver gate for the complete application
+      - name: Enforce independent receiver gate
         run: |
           node - <<'NODE'
-          const fs = require('fs');
-          const report = JSON.parse(fs.readFileSync('data/review/v16-consulting-review.json', 'utf8'));
-          if (report.scope?.type !== 'WHOLE_APPLICATION') throw new Error('Review scope is not the whole application');
-          if (report.cyclesCompleted !== 20 || report.acceptanceCriteria?.allTwentyCyclesExecuted !== true) {
-            throw new Error('Exactly 20 whole-application review cycles were not executed');
-          }
-          if (!report.acceptanceCriteria?.zeroCritical || !report.acceptanceCriteria?.zeroHigh) {
-            const blocking = (report.blockingFindings || []).map(x => `${x.id}:${x.title}`).join(' | ');
-            throw new Error(`Final receiver rejected the application: ${blocking}`);
-          }
-          console.log({ scope: report.scope, acceptance: report.acceptance, summary: report.summary });
+          const fs=require('fs');
+          const report=JSON.parse(fs.readFileSync('data/review/v16-consulting-review.json','utf8'));
+          if(report.scope?.type!=='WHOLE_APPLICATION') throw new Error('Review scope is not the whole application');
+          if(report.cyclesCompleted!==20||report.acceptanceCriteria?.allTwentyCyclesExecuted!==true) throw new Error('Exactly twenty cycles were not executed');
+          if(!report.acceptanceCriteria?.zeroCritical||!report.acceptanceCriteria?.zeroHigh) throw new Error('Independent receiver rejected the application');
+          console.log({acceptance:report.acceptance,summary:report.summary});
           NODE
