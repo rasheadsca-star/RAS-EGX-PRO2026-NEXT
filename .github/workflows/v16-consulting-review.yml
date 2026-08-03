@@ -1,0 +1,89 @@
+name: EGX V16.1 Consulting Review — 20 Cycles
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/stable/v16-consulting-review.cjs"
+      - "scripts/stable/v16-fundamental-*.cjs"
+      - "preview-v16/app/**"
+      - ".github/workflows/v16-consulting-review.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-v16-consulting-review
+  cancel-in-progress: true
+
+jobs:
+  twenty-cycle-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate review and financial engines
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-consulting-review.cjs
+          node --check scripts/stable/v16-fundamental-collector.cjs
+          node --check scripts/stable/v16-fundamental-engine.cjs
+          node --check preview-v16/app/app.js
+          node --check preview-v16/app/pilot-policy.js
+          node --check preview-v16/app/fundamentals.js
+
+      - name: Refresh priority financial coverage
+        env:
+          EGX_FUNDAMENTAL_BATCH: "40"
+          EGX_FUNDAMENTAL_MAX_AGE_DAYS: "21"
+          EGX_FUNDAMENTAL_CONCURRENCY: "3"
+          EGX_FUNDAMENTAL_TIMEOUT_MS: "25000"
+        run: |
+          set +e
+          node scripts/stable/v16-fundamental-collector.cjs
+          echo "Collector exit code: $?"
+          set -e
+          node scripts/stable/v16-fundamental-engine.cjs
+
+      - name: Execute all 20 consulting cycles
+        env:
+          REVIEW_FAIL_ON_BLOCKING: "0"
+        run: node scripts/stable/v16-consulting-review.cjs
+
+      - name: Commit financial refresh and review evidence
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/fundamentals/v16-fundamental-raw.json data/stable/v16-fundamental-analysis.json data/review/v16-consulting-review.json data/review/v16-consulting-review.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Run EGX V16.1 twenty-cycle consulting review"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 10))
+            done
+          fi
+
+      - name: Enforce final receiver gate
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('data/review/v16-consulting-review.json', 'utf8'));
+          if (report.cyclesCompleted !== 20) throw new Error('All 20 review cycles were not executed');
+          if (!report.acceptanceCriteria?.zeroCritical || !report.acceptanceCriteria?.zeroHigh) {
+            const blocking = (report.blockingFindings || []).map(x => `${x.id}:${x.title}`).join(' | ');
+            throw new Error(`Final receiver rejected the application: ${blocking}`);
+          }
+          console.log({ acceptance: report.acceptance, summary: report.summary });
+          NODE
