@@ -1,0 +1,72 @@
+name: EGX V16.3 Technical Review — 20 Cycles
+run-name: Dedicated technical review for ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["EGX Professional V16.3 Validate Test and Deploy"]
+    types: [completed]
+  push:
+    paths:
+      - "scripts/stable/v16-technical-review-20-cycles.cjs"
+      - ".github/workflows/v16-technical-review.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-v16-3-technical-review
+  cancel-in-progress: true
+
+jobs:
+  technical-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout latest main evidence
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate technical reviewer
+        run: node --check scripts/stable/v16-technical-review-20-cycles.cjs
+
+      - name: Execute all twenty technical cycles
+        env:
+          TECH_REVIEW_FAIL_ON_BLOCKING: "0"
+        run: node scripts/stable/v16-technical-review-20-cycles.cjs
+
+      - name: Commit technical review evidence
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/review/v16-technical-review.json data/review/v16-technical-review.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Run EGX V16.3 twenty-cycle technical review"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
+          fi
+
+      - name: Enforce technical receiver gate
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const report=JSON.parse(fs.readFileSync('data/review/v16-technical-review.json','utf8'));
+          if(report.scope?.type!=='TECHNICAL_ANALYSIS_ONLY') throw new Error('Technical-only review scope missing');
+          if(report.cyclesCompleted!==20||report.acceptanceCriteria?.exactlyTwentyCycles!==true) throw new Error('Exactly 20 technical cycles were not executed');
+          if(report.acceptanceCriteria?.zeroCritical!==true||report.acceptanceCriteria?.zeroHigh!==true){
+            const findings=(report.blockingFindings||[]).map(row=>`${row.id}:${row.title}`).join(' | ');
+            throw new Error(`Technical receiver rejected the application: ${findings}`);
+          }
+          console.log({acceptance:report.acceptance,summary:report.summary});
+          NODE
