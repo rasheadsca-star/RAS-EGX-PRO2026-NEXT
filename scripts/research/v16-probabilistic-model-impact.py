@@ -73,8 +73,10 @@ def vector(f,fl):
     cont=[clip(f['ret1']/10,-1,1),clip(f['ret3']/20,-1,1),clip(f['ret5']/30,-1,1),clip(f['ret20']/80,-1,1),clip(f['rs20']/50,-1,1),clip(math.log(max(f['vr'],.125),2)/4,-1,1),clip((f['rsi']-55)/35,-1,1),clip(f['breakout']/15,-1,1),clip((f['range']-.5)*2,-1,1),clip((math.log10(max(f['turn'],1))-6.5)/2.5,-1,1),1 if f['trend'] else 0,clip(f['atrpct']/8,0,1),sum(fl)/7]
     return [1]+fl+pair+cont
 NAMES=['INTERCEPT']+[f'MODEL:{x[0]}' for x in MODELS]+[f'PAIR:{MODELS[i][0]}&{MODELS[j][0]}' for i in range(7) for j in range(i+1,7)]+['RET1','RET3','RET5','RET20','RS20','VOLUME_RATIO','RSI','BREAKOUT','RANGE','TURNOVER','TREND','ATR','MODEL_COUNT']
+def class_weight(rows):
+    pos=max(1,sum(x['y'] for x in rows)); return clip((len(rows)-pos)/pos,1,12)
 def update(w,rows,epochs=10,lr=.025,l2=.015):
-    pos=max(1,sum(x['y'] for x in rows)); pw=clip((len(rows)-pos)/pos,1,12)
+    pw=class_weight(rows)
     for _ in range(epochs):
         g=[0.0]*len(w)
         for x in rows:
@@ -82,7 +84,8 @@ def update(w,rows,epochs=10,lr=.025,l2=.015):
             for i,v in enumerate(x['x']):g[i]+=e*v
         for i in range(len(w)):w[i]-=lr*(g[i]/len(rows)+(0 if i==0 else l2*w[i]))
     return w
-def pred(w,x): return sigmoid(sum(a*b for a,b in zip(w,x['x'])))
+def pred(w,x,pw=1):
+    raw=sum(a*b for a,b in zip(w,x['x'])); return sigmoid(raw-math.log(max(pw,1)))
 
 def main():
     hs=[norm_hist(p) for p in HD.glob('*.json')]; hs=[h for h in hs if h['ok'] and len(h['rows'])>=60]
@@ -124,26 +127,38 @@ def main():
         if z['signals']<8:continue
         pp=post(z['hits'],z['signals'],base);combos.append({'mask':mask,'models':[MODELS[i][0] for i,v in enumerate(z['flags']) if v],'signals':z['signals'],'hits':z['hits'],'posteriorProbabilityPct':r(pp*100,3),'lift':r(pp/base,4),'averageNextReturnPct':r(m(z['ret']),4)})
     combos.sort(key=lambda x:(x['lift'],x['signals']),reverse=True)
-    sd=dates[:-1]; warm=[x for d in sd[:WARMUP] for x in bydate[d]]; w=update([0.0]*len(NAMES),warm,30,.03)
+    sd=dates[:-1]; warm=[x for d in sd[:WARMUP] for x in bydate[d]]; seen=list(warm); w=update([0.0]*len(NAMES),warm,30,.03)
     ses=[]
     for d in sd[WARMUP:]:
-        q=bydate[d]; sc=sorted([(pred(w,x),x) for x in q],reverse=True,key=lambda z:z[0]);
+        q=bydate[d]; pw=class_weight(seen); sc=sorted([(pred(w,x,pw),x) for x in q],reverse=True,key=lambda z:z[0]);
         def km(k):
             z=[x for _,x in sc[:k]];return {'hits':sum(x['y'] for x in z),'averageNextReturnPct':r(m([x['ret'] for x in z]),4)}
-        ses.append({'signalDate':d,'outcomeDate':q[0]['outcome'],'top5':km(5),'top10':km(10),'top20':km(20),'brier':r(m([(pred(w,x)-x['y'])**2 for x in q]),6)})
-        w=update(w,q,10,.022)
+        ses.append({'signalDate':d,'outcomeDate':q[0]['outcome'],'top5':km(5),'top10':km(10),'top20':km(20),'brier':r(m([(pred(w,x,pw)-x['y'])**2 for x in q]),6)})
+        w=update(w,q,10,.022); seen+=q
     wf={'evaluatedSessions':len(ses),'averageTop5Hits':r(m([x['top5']['hits'] for x in ses]),4),'averageTop10Hits':r(m([x['top10']['hits'] for x in ses]),4),'precisionAt10Pct':r(m([x['top10']['hits']/10 for x in ses])*100,3),'averageNextReturnTop5Pct':r(m([x['top5']['averageNextReturnPct'] for x in ses]),4),'averageNextReturnTop10Pct':r(m([x['top10']['averageNextReturnPct'] for x in ses]),4),'brierScore':r(m([x['brier'] for x in ses]),6)}
-    final=update([0.0]*len(NAMES),rows,50,.028); pos=sum(max(0,final[1+i]) for i in range(7))
+    final=update([0.0]*len(NAMES),rows,50,.028); final_pw=class_weight(rows); pos=sum(max(0,final[1+i]) for i in range(7))
     weights=[]
     for i,(mid,lab,_) in enumerate(MODELS):weights.append({'id':mid,'labelAr':lab,'coefficient':r(final[1+i],6),'oddsMultiplier':r(math.exp(final[1+i]),4),'normalizedPositiveWeightPct':r(max(0,final[1+i])/pos*100 if pos else 0,3),'bayesianLift':next(x['lift'] for x in single if x['id']==mid)})
     weights.sort(key=lambda x:x['normalizedPositiveWeightPct'],reverse=True)
     latest=dates[-1]; cur=[]
     for f in bd[latest]:
-        fl=flags(f); x={'x':vector(f,fl)}; cur.append({'ticker':f['ticker'],'companyNameAr':f['name'],'prob':pred(final,x),'modelCount':sum(fl),'matchedModels':[MODELS[i][0] for i,v in enumerate(fl) if v],'close':f['close'],'ret1Pct':f['ret1'],'ret5Pct':f['ret5'],'ret20Pct':f['ret20'],'relativeStrength20Pct':f['rs20'],'volumeRatio20':f['vr'],'rsi14':f['rsi'],'breakoutPct':f['breakout'],'turnover':f['turn']})
+        fl=flags(f); x={'x':vector(f,fl)}; cur.append({'ticker':f['ticker'],'companyNameAr':f['name'],'prob':pred(final,x,final_pw),'modelCount':sum(fl),'matchedModels':[MODELS[i][0] for i,v in enumerate(fl) if v],'close':f['close'],'ret1Pct':f['ret1'],'ret5Pct':f['ret5'],'ret20Pct':f['ret20'],'relativeStrength20Pct':f['rs20'],'volumeRatio20':f['vr'],'rsi14':f['rsi'],'breakoutPct':f['breakout'],'turnover':f['turn']})
     cur.sort(key=lambda x:x['prob'],reverse=True); recommended={x.get('ticker') for x in (rd(DEC,{}) or {}).get('recommendations',[])}
     tom=[]
     for i,x in enumerate(cur[:15],1):tom.append({'rank':i,'ticker':x['ticker'],'companyNameAr':x['companyNameAr'],'probabilityTop10Pct':r(x['prob']*100,3),'liftVsBase':r(x['prob']/base,3),'modelCount':x['modelCount'],'matchedModels':x['matchedModels'],'close':r(x['close'],4),'ret1Pct':r(x['ret1Pct'],2),'ret5Pct':r(x['ret5Pct'],2),'ret20Pct':r(x['ret20Pct'],2),'relativeStrength20Pct':r(x['relativeStrength20Pct'],2),'volumeRatio20':r(x['volumeRatio20'],2),'rsi14':r(x['rsi14'],1),'breakoutPct':r(x['breakoutPct'],2),'averageTurnover20Egp':r(x['turnover'],0),'band':'CORE_RESEARCH' if i<=3 else 'RESERVE_RESEARCH' if i<=7 else 'WATCH_RESEARCH','currentScannerRecommendation':x['ticker'] in recommended})
     matrix=[{'model':MODELS[i][0],'correlations':{MODELS[j][0]:r(corr([x['flags'][i] for x in rows],[x['flags'][j] for x in rows]),5) for j in range(7)}} for i in range(7)]
-    out={'schemaVersion':'16.4.0-research','generatedAt':__import__('datetime').datetime.utcnow().isoformat()+'Z','methodology':{'outcome':'Top 10 close-to-close gainers in next session','signalSessions':len(sd),'firstSignalSession':sd[0],'lastHistoricalSignalSession':sd[-1],'latestPredictionSession':latest,'noFutureLeakage':True,'bayesianPriorStrength':PRIOR,'walkForwardWarmupSessions':WARMUP,'noteAr':'بحث احتمالي وليس ضمانًا للربح أو أمر شراء.'},'dataset':{'histories':len(hs),'usableDates':len(dates),'labeledRows':len(rows),'baseProbabilityPct':r(base*100,3)},'singleModelImpact':sorted(single,key=lambda x:x['lift'],reverse=True),'jointModelImpact':{'topPairs':pairs[:21],'topExactCombinations':combos[:20],'signalCorrelationMatrix':matrix},'probabilisticWeights':weights,'walkForwardValidation':{'metrics':wf,'recentSessions':ses[-15:]},'tomorrowPredictions':tom}
+    execution=[]
+    for x in cur:
+        reasons=[]
+        if x['rsi14']>82: reasons.append('RSI_ABOVE_82')
+        if x['ret20Pct']>80: reasons.append('RETURN20_ABOVE_80')
+        if x['ret5Pct']>30: reasons.append('RETURN5_ABOVE_30')
+        if x['breakoutPct']>8: reasons.append('EXTENDED_ABOVE_BREAKOUT')
+        if x['turnover']<1_000_000: reasons.append('LOW_TURNOVER')
+        if reasons: continue
+        execution.append({'ticker':x['ticker'],'companyNameAr':x['companyNameAr'],'prob':x['prob'],'modelCount':x['modelCount'],'matchedModels':x['matchedModels'],'close':x['close'],'rsi14':x['rsi14'],'ret5Pct':x['ret5Pct'],'ret20Pct':x['ret20Pct'],'volumeRatio20':x['volumeRatio20'],'breakoutPct':x['breakoutPct'],'turnover':x['turnover']})
+    exe=[]
+    for i,x in enumerate(execution[:12],1): exe.append({'rank':i,'ticker':x['ticker'],'companyNameAr':x['companyNameAr'],'probabilityTop10Pct':r(x['prob']*100,3),'liftVsBase':r(x['prob']/base,3),'modelCount':x['modelCount'],'matchedModels':x['matchedModels'],'close':r(x['close'],4),'rsi14':r(x['rsi14'],1),'ret5Pct':r(x['ret5Pct'],2),'ret20Pct':r(x['ret20Pct'],2),'volumeRatio20':r(x['volumeRatio20'],2),'breakoutPct':r(x['breakoutPct'],2),'averageTurnover20Egp':r(x['turnover'],0),'band':'CORE_EXECUTION_RESEARCH' if i<=3 else 'RESERVE_EXECUTION_RESEARCH'})
+    out={'schemaVersion':'16.4.1-research','generatedAt':__import__('datetime').datetime.utcnow().isoformat()+'Z','methodology':{'outcome':'Top 10 close-to-close gainers in next session','signalSessions':len(sd),'firstSignalSession':sd[0],'lastHistoricalSignalSession':sd[-1],'latestPredictionSession':latest,'noFutureLeakage':True,'bayesianPriorStrength':PRIOR,'walkForwardWarmupSessions':WARMUP,'probabilityCorrection':'Prior correction for class-weighted logistic odds','executionFilter':'RSI<=82, ret20<=80%, ret5<=30%, breakout<=8%, turnover>=1m','noteAr':'بحث احتمالي وليس ضمانًا للربح أو أمر شراء.'},'dataset':{'histories':len(hs),'usableDates':len(dates),'labeledRows':len(rows),'baseProbabilityPct':r(base*100,3)},'singleModelImpact':sorted(single,key=lambda x:x['lift'],reverse=True),'jointModelImpact':{'topPairs':pairs[:21],'topExactCombinations':combos[:20],'signalCorrelationMatrix':matrix},'probabilisticWeights':weights,'walkForwardValidation':{'metrics':wf,'recentSessions':ses[-15:]},'tomorrowPredictions':tom,'tomorrowExecutionCandidates':exe}
     wr(OUT,out); print(json.dumps({'signalSessions':len(sd),'baseProbabilityPct':out['dataset']['baseProbabilityPct'],'walkForward':wf,'topTomorrow':tom[:10]},ensure_ascii=False,indent=2))
 if __name__=='__main__':main()
