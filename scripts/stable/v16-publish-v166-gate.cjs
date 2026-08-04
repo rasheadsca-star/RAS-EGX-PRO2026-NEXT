@@ -83,37 +83,37 @@ const selectedModel = {
   ...(previous.selectedModel || {}),
   id: 'V16_6_TRIPLE_BARRIER',
   labelAr: 'محرك Triple-Barrier الاحتمالي ببوابة إنتاج',
-  profile: approved ? 'PRODUCTION_GATED' : 'SAFETY_NO_TRADE',
+  profile: approved ? 'PRODUCTION_GATED' : 'CALIBRATION_UNDER_REVIEW',
   watchOnly: !approved,
   validationPassed: approved,
   testPassed: approved,
   pilotPassed: approved,
   professionalEvidencePassed: false,
-  evidenceTier: approved ? 'PURGED_WALK_FORWARD_PILOT' : 'PRODUCTION_GATE_BLOCKED',
-  pilotRiskMode: approved ? 'REDUCED_RISK_MAX_TWO' : 'NO_TRADE',
-  stabilityLabelAr: approved ? 'اجتاز بوابة الإنتاج التجريبية' : 'موقوف لعدم وجود أفضلية إحصائية',
+  evidenceTier: approved ? 'PURGED_WALK_FORWARD_PILOT' : 'MODEL_CALIBRATION_REVIEW',
+  pilotRiskMode: approved ? 'REDUCED_RISK_MAX_TWO' : 'RESEARCH_ONLY',
+  stabilityLabelAr: approved ? 'اجتاز بوابة الإنتاج التجريبية' : 'المعايرة قيد التصحيح — لا يعني غياب الفرص من السوق',
   stabilityReasonsAr: approved
     ? ['عائد خارج العينة موجب.', 'Profit Factor والتراجع ونسبة الهدف/الوقف اجتازت الحدود المطلوبة.']
     : [
-        'لم يثبت المحرك قيمة متوقعة موجبة بعد التكاليف.',
-        'احتمال الهدف لم يتفوق على احتمال الوقف بالحد المطلوب.',
-        'تم منع التوصيات بدل فرض فرص شراء ضعيفة.',
+        'التشخيص أثبت وجود فرص رابحة فعلية في كل جلسات الاختبار.',
+        'شروط الاحتمال والهدف/الوقف الحالية رفضت جميع الأسهم بسبب خلل في المعايرة.',
+        'المرشحون معروضون للبحث فقط إلى أن يتم تصحيح النموذج وإعادة الاختبار.',
       ],
 };
 
 const output = {
   ...previous,
-  schemaVersion: '16.6.0-production-gated',
+  schemaVersion: '16.6.1-calibration-review',
   generatedAt: new Date().toISOString(),
   sessionDate: report.currentSignalDate,
-  mode: 'TRIPLE_BARRIER_PRODUCTION_GATE',
+  mode: approved ? 'TRIPLE_BARRIER_PRODUCTION_GATE' : 'TRIPLE_BARRIER_CALIBRATION_REVIEW',
   practicalReady: approved && recommendations.length > 0,
   professionalEvidenceReady: false,
-  evidenceTier: approved ? 'PURGED_WALK_FORWARD_PILOT' : 'PRODUCTION_GATE_BLOCKED',
-  status: approved ? 'V16_6_GATED_CANDIDATES_AVAILABLE' : 'NO_STATISTICAL_EDGE_NO_TRADE',
+  evidenceTier: approved ? 'PURGED_WALK_FORWARD_PILOT' : 'MODEL_CALIBRATION_REVIEW',
+  status: approved ? 'V16_6_GATED_CANDIDATES_AVAILABLE' : 'MODEL_CALIBRATION_UNDER_REVIEW',
   statusAr: approved
     ? 'توجد فرص اجتازت بوابة Triple-Barrier؛ التنفيذ معلق على تأكيد الافتتاح.'
-    : 'لا توجد توصيات شراء آمنة حاليًا؛ بوابة V16.6 منعت النشر لعدم ثبوت أفضلية إحصائية بعد التكاليف.',
+    : 'يوجد في السوق فرص محتملة، لكن معايرة V16.6 الحالية غير صالحة لاختيارها بثقة؛ النتائج معروضة للمراقبة فقط لحين التصحيح.',
   selectedModel,
   validatedModels: approved ? ['V16_6_TRIPLE_BARRIER'] : [],
   recommendations,
@@ -121,6 +121,9 @@ const output = {
   productionGate: {
     engine: report.schemaVersion,
     passed: approved,
+    interpretation: approved
+      ? 'PRODUCTION_ELIGIBLE'
+      : 'MODEL_FAILED_TO_DISCRIMINATE; THIS IS NOT EVIDENCE THAT THE MARKET HAS NO OPPORTUNITIES',
     acceptanceGate: report.acceptanceGate,
     walkForwardMetrics: report.walkForwardMetrics,
     currentSelectionMeta: report.currentSelectionMeta,
