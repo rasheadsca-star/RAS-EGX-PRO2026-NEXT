@@ -1,0 +1,1136 @@
+{
+  "schemaVersion": "16.7.1-coherent-blocked-nested-walk-forward",
+  "generatedAt": "2026-08-04T23:04:04.315471+00:00",
+  "status": "RESEARCH_GATE_NOT_PASSED",
+  "productionEligible": false,
+  "methodology": {
+    "probabilityModel": "Single coherent softmax for TARGET, STOP and TIME_EXIT.",
+    "timeExitModel": "Per-stock regularized expected return model.",
+    "outerValidation": "Blocked walk-forward with 5-session fixed deployment blocks.",
+    "innerSelection": "4-session inner validation with 3-session embargo.",
+    "candidateGate": "Positive conditional expected value after 0.60% round-trip cost.",
+    "configurations": [
+      {
+        "id": "FAST_2D",
+        "horizon": 2,
+        "targetAtr": 1.0,
+        "stopAtr": 0.8
+      },
+      {
+        "id": "BALANCED_3D",
+        "horizon": 3,
+        "targetAtr": 1.25,
+        "stopAtr": 0.9
+      },
+      {
+        "id": "BALANCED_5D",
+        "horizon": 5,
+        "targetAtr": 1.5,
+        "stopAtr": 1.0
+      }
+    ]
+  },
+  "walkForwardMetrics": {
+    "evaluatedSessions": 21,
+    "tradedSessions": 16,
+    "noTradeSessions": 5,
+    "averagePositionsPerTradedSession": 1.0,
+    "sessionWinRatePct": 37.5,
+    "averageNetPortfolioReturnPct": -0.9562,
+    "medianNetPortfolioReturnPct": -0.6554,
+    "compoundedNetReturnPct": -15.404,
+    "maximumDrawdownPct": -24.785,
+    "profitFactor": 0.532,
+    "selectedTrades": 16,
+    "tradeWinRatePct": 37.5,
+    "targets": 1,
+    "stops": 1,
+    "timeExits": 12,
+    "averagePredictedConditionalEvPct": 0.9251,
+    "averageActualTradeReturnPct": -0.9562
+  },
+  "acceptanceGate": {
+    "minimumEvaluatedSessions": true,
+    "minimumTradedSessions": true,
+    "positiveAverageNetReturn": false,
+    "positiveCompoundedReturn": false,
+    "profitFactorAtLeast110": false,
+    "maximumDrawdownAboveMinus12": false,
+    "tradeWinRateAtLeast40": false,
+    "calibrationDirectionValid": false
+  },
+  "configurationUsage": {
+    "FAST_2D": 10,
+    "BALANCED_3D": 0,
+    "BALANCED_5D": 11
+  },
+  "currentSignalDate": "2026-08-04",
+  "currentConfiguration": {
+    "id": "BALANCED_5D",
+    "horizon": 5,
+    "targetAtr": 1.5,
+    "stopAtr": 1.0
+  },
+  "currentSelectionMeta": {
+    "utilityPct": 0.9060379577566742
+  },
+  "currentRecommendations": [],
+  "currentResearchCandidates": [
+    {
+      "rank": 1,
+      "ticker": "CAED",
+      "companyNameAr": "القاهرة للخدمات التعليمية",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 119.8259,
+      "entryHigh": 123.2141,
+      "stopLoss": 107.4029,
+      "target1": 142.6957,
+      "close": 121.52,
+      "probabilityEntryPct": 55.83,
+      "probabilityTargetPct": 30.11,
+      "probabilityStopPct": 32.83,
+      "probabilityTimeExitPct": 37.06,
+      "predictedTimeExitReturnPct": -0.4,
+      "conditionalExpectedValuePct": 0.906,
+      "unconditionalExpectedValuePct": 0.506,
+      "targetLiftVsTrainingBase": 1.135,
+      "qualityScore": 0.856,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 68.5,
+      "volumeRatio20": 0.11,
+      "momentumFailureRiskPct": 25.4,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 123.2141,
+        "cancelIfOpenBelow": 107.4029,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 2,
+      "ticker": "AMES",
+      "companyNameAr": "مركز الإسكندرية الطبي",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 109.8516,
+      "entryHigh": 113.1084,
+      "stopLoss": 97.91,
+      "target1": 131.835,
+      "close": 111.48,
+      "probabilityEntryPct": 55.99,
+      "probabilityTargetPct": 29.76,
+      "probabilityStopPct": 32.54,
+      "probabilityTimeExitPct": 37.7,
+      "predictedTimeExitReturnPct": -0.417,
+      "conditionalExpectedValuePct": 0.941,
+      "unconditionalExpectedValuePct": 0.527,
+      "targetLiftVsTrainingBase": 1.122,
+      "qualityScore": 0.8542,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 75.5,
+      "volumeRatio20": 0.23,
+      "momentumFailureRiskPct": 39.6,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [
+        "RETURN20_ABOVE_80"
+      ],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 113.1084,
+        "cancelIfOpenBelow": 97.91,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 3,
+      "ticker": "MILS",
+      "companyNameAr": "مطاحن شمال القاهرة",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 190.4781,
+      "entryHigh": 194.9819,
+      "stopLoss": 173.9643,
+      "target1": 220.8786,
+      "close": 192.73,
+      "probabilityEntryPct": 55.18,
+      "probabilityTargetPct": 31.39,
+      "probabilityStopPct": 33.62,
+      "probabilityTimeExitPct": 34.99,
+      "predictedTimeExitReturnPct": -0.342,
+      "conditionalExpectedValuePct": 0.802,
+      "unconditionalExpectedValuePct": 0.442,
+      "targetLiftVsTrainingBase": 1.183,
+      "qualityScore": 0.7905,
+      "matchedModels": [
+        "MOMENTUM_ACCELERATION",
+        "HOT_MOMENTUM"
+      ],
+      "effectiveModelSupport": 0.207,
+      "rsi14": 76.5,
+      "volumeRatio20": 0.92,
+      "momentumFailureRiskPct": 18.5,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 194.9819,
+        "cancelIfOpenBelow": 173.9643,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 4,
+      "ticker": "AFMC",
+      "companyNameAr": "مطاحن ومخابز الإسكندرية",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 207.2258,
+      "entryHigh": 212.3742,
+      "stopLoss": 188.3486,
+      "target1": 241.9771,
+      "close": 209.8,
+      "probabilityEntryPct": 55.71,
+      "probabilityTargetPct": 31.95,
+      "probabilityStopPct": 34.29,
+      "probabilityTimeExitPct": 33.76,
+      "predictedTimeExitReturnPct": -0.373,
+      "conditionalExpectedValuePct": 0.871,
+      "unconditionalExpectedValuePct": 0.485,
+      "targetLiftVsTrainingBase": 1.204,
+      "qualityScore": 0.7796,
+      "matchedModels": [
+        "HOT_MOMENTUM"
+      ],
+      "effectiveModelSupport": 0.207,
+      "rsi14": 79.9,
+      "volumeRatio20": 1.66,
+      "momentumFailureRiskPct": 51.5,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [
+        "RETURN20_ABOVE_80",
+        "RETURN5_ABOVE_30"
+      ],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 212.3742,
+        "cancelIfOpenBelow": 188.3486,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 5,
+      "ticker": "KWIN",
+      "companyNameAr": "القاهرة الوطنية للاستثمار",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 86.1845,
+      "entryHigh": 88.2155,
+      "stopLoss": 78.7371,
+      "target1": 99.8943,
+      "close": 87.2,
+      "probabilityEntryPct": 55.34,
+      "probabilityTargetPct": 29.84,
+      "probabilityStopPct": 32.31,
+      "probabilityTimeExitPct": 37.85,
+      "predictedTimeExitReturnPct": -0.355,
+      "conditionalExpectedValuePct": 0.701,
+      "unconditionalExpectedValuePct": 0.388,
+      "targetLiftVsTrainingBase": 1.125,
+      "qualityScore": 0.6737,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 67.5,
+      "volumeRatio20": 0.89,
+      "momentumFailureRiskPct": 15.9,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 88.2155,
+        "cancelIfOpenBelow": 78.7371,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 6,
+      "ticker": "SAIB",
+      "companyNameAr": "بنك الشركة المصرفية العربية الدولية",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 2.0905,
+      "entryHigh": 2.1295,
+      "stopLoss": 1.9471,
+      "target1": 2.3543,
+      "close": 2.11,
+      "probabilityEntryPct": 52.86,
+      "probabilityTargetPct": 31.19,
+      "probabilityStopPct": 32.14,
+      "probabilityTimeExitPct": 36.67,
+      "predictedTimeExitReturnPct": -0.182,
+      "conditionalExpectedValuePct": 0.684,
+      "unconditionalExpectedValuePct": 0.361,
+      "targetLiftVsTrainingBase": 1.175,
+      "qualityScore": 0.6668,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 50.0,
+      "volumeRatio20": 2.01,
+      "momentumFailureRiskPct": 13.8,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [
+        "LOW_TURNOVER"
+      ],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 2.1295,
+        "cancelIfOpenBelow": 1.9471,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 7,
+      "ticker": "EASB",
+      "companyNameAr": "ثمار للوساطة",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 7.0066,
+      "entryHigh": 7.1334,
+      "stopLoss": 6.5414,
+      "target1": 7.8629,
+      "close": 7.07,
+      "probabilityEntryPct": 53.2,
+      "probabilityTargetPct": 30.83,
+      "probabilityStopPct": 32.4,
+      "probabilityTimeExitPct": 36.77,
+      "predictedTimeExitReturnPct": -0.18,
+      "conditionalExpectedValuePct": 0.59,
+      "unconditionalExpectedValuePct": 0.314,
+      "targetLiftVsTrainingBase": 1.162,
+      "qualityScore": 0.5862,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 48.2,
+      "volumeRatio20": 0.43,
+      "momentumFailureRiskPct": 8.0,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 7.1334,
+        "cancelIfOpenBelow": 6.5414,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 8,
+      "ticker": "ELKA",
+      "companyNameAr": "القاهرة للإسكان والتعمير",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 1.7155,
+      "entryHigh": 1.7445,
+      "stopLoss": 1.6093,
+      "target1": 1.9111,
+      "close": 1.73,
+      "probabilityEntryPct": 52.94,
+      "probabilityTargetPct": 31.43,
+      "probabilityStopPct": 32.81,
+      "probabilityTimeExitPct": 35.76,
+      "predictedTimeExitReturnPct": -0.181,
+      "conditionalExpectedValuePct": 0.551,
+      "unconditionalExpectedValuePct": 0.292,
+      "targetLiftVsTrainingBase": 1.185,
+      "qualityScore": 0.5692,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 47.4,
+      "volumeRatio20": 0.78,
+      "momentumFailureRiskPct": 0.0,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 1.7445,
+        "cancelIfOpenBelow": 1.6093,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 9,
+      "ticker": "SCFM",
+      "companyNameAr": "مطاحن جنوب القاهرة والجيزة",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 273.7853,
+      "entryHigh": 278.8947,
+      "stopLoss": 255.0507,
+      "target1": 308.2739,
+      "close": 276.34,
+      "probabilityEntryPct": 54.3,
+      "probabilityTargetPct": 30.5,
+      "probabilityStopPct": 32.48,
+      "probabilityTimeExitPct": 37.02,
+      "predictedTimeExitReturnPct": -0.276,
+      "conditionalExpectedValuePct": 0.543,
+      "unconditionalExpectedValuePct": 0.295,
+      "targetLiftVsTrainingBase": 1.15,
+      "qualityScore": 0.5321,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 62.0,
+      "volumeRatio20": 0.41,
+      "momentumFailureRiskPct": 10.3,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 278.8947,
+        "cancelIfOpenBelow": 255.0507,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    },
+    {
+      "rank": 10,
+      "ticker": "CEFM",
+      "companyNameAr": "مطاحن مصر الوسطى",
+      "category": "WATCH",
+      "configuration": "BALANCED_5D",
+      "holdingSessions": 5,
+      "entryLow": 137.6308,
+      "entryHigh": 140.0692,
+      "stopLoss": 128.69,
+      "target1": 154.09,
+      "close": 138.85,
+      "probabilityEntryPct": 54.68,
+      "probabilityTargetPct": 31.71,
+      "probabilityStopPct": 33.79,
+      "probabilityTimeExitPct": 34.51,
+      "predictedTimeExitReturnPct": -0.297,
+      "conditionalExpectedValuePct": 0.512,
+      "unconditionalExpectedValuePct": 0.28,
+      "targetLiftVsTrainingBase": 1.195,
+      "qualityScore": 0.4765,
+      "matchedModels": [],
+      "effectiveModelSupport": 0.0,
+      "rsi14": 79.3,
+      "volumeRatio20": 0.65,
+      "momentumFailureRiskPct": 22.2,
+      "marketRegime": "NEUTRAL",
+      "exclusionReasons": [],
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 140.0692,
+        "cancelIfOpenBelow": 128.69,
+        "ruleAr": "تنفذ فقط إذا افتتح داخل النطاق وبقي فوق وقف الخسارة مع سيولة مؤكدة خلال أول 10–15 دقيقة؛ يمنع مطاردة فجوة صاعدة."
+      }
+    }
+  ],
+  "recentWalkForwardSessions": [
+    {
+      "signalDate": "2026-07-08",
+      "configuration": "FAST_2D",
+      "positions": 0,
+      "tickers": [],
+      "portfolioNetReturnPct": 0.0,
+      "selectionMeta": {
+        "reason": "NO_POSITIVE_EV_CANDIDATE"
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": []
+    },
+    {
+      "signalDate": "2026-07-09",
+      "configuration": "FAST_2D",
+      "positions": 0,
+      "tickers": [],
+      "portfolioNetReturnPct": 0.0,
+      "selectionMeta": {
+        "reason": "NO_POSITIVE_EV_CANDIDATE"
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": []
+    },
+    {
+      "signalDate": "2026-07-12",
+      "configuration": "FAST_2D",
+      "positions": 0,
+      "tickers": [],
+      "portfolioNetReturnPct": 0.0,
+      "selectionMeta": {
+        "reason": "NO_POSITIVE_EV_CANDIDATE"
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": []
+    },
+    {
+      "signalDate": "2026-07-13",
+      "configuration": "FAST_2D",
+      "positions": 0,
+      "tickers": [],
+      "portfolioNetReturnPct": 0.0,
+      "selectionMeta": {
+        "reason": "NO_POSITIVE_EV_CANDIDATE"
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": []
+    },
+    {
+      "signalDate": "2026-07-14",
+      "configuration": "FAST_2D",
+      "positions": 1,
+      "tickers": [
+        "MHOT"
+      ],
+      "portfolioNetReturnPct": 0.8769,
+      "selectionMeta": {
+        "utilityPct": 0.1174714245103543
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": [
+        {
+          "ticker": "MHOT",
+          "status": "TIME_EXIT",
+          "netReturnPct": 0.8769,
+          "predictedConditionalEvPct": 0.1175,
+          "pTargetPct": 30.6,
+          "pStopPct": 32.4
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-15",
+      "configuration": "FAST_2D",
+      "positions": 1,
+      "tickers": [
+        "HDBK"
+      ],
+      "portfolioNetReturnPct": -1.8314,
+      "selectionMeta": {
+        "utilityPct": 0.22915188842164239
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": [
+        {
+          "ticker": "HDBK",
+          "status": "TIME_EXIT",
+          "netReturnPct": -1.8314,
+          "predictedConditionalEvPct": 0.2292,
+          "pTargetPct": 31.43,
+          "pStopPct": 32.6
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-16",
+      "configuration": "FAST_2D",
+      "positions": 1,
+      "tickers": [
+        "MHOT"
+      ],
+      "portfolioNetReturnPct": -2.1767,
+      "selectionMeta": {
+        "utilityPct": 0.16061579540793
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": [
+        {
+          "ticker": "MHOT",
+          "status": "TIME_EXIT",
+          "netReturnPct": -2.1767,
+          "predictedConditionalEvPct": 0.1606,
+          "pTargetPct": 31.23,
+          "pStopPct": 32.37
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-19",
+      "configuration": "FAST_2D",
+      "positions": 1,
+      "tickers": [
+        "HDBK"
+      ],
+      "portfolioNetReturnPct": 2.0992,
+      "selectionMeta": {
+        "utilityPct": 0.09650755103368007
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": [
+        {
+          "ticker": "HDBK",
+          "status": "TIME_EXIT",
+          "netReturnPct": 2.0992,
+          "predictedConditionalEvPct": 0.0965,
+          "pTargetPct": 30.91,
+          "pStopPct": 32.41
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-20",
+      "configuration": "FAST_2D",
+      "positions": 1,
+      "tickers": [
+        "HDBK"
+      ],
+      "portfolioNetReturnPct": 0.0,
+      "selectionMeta": {
+        "utilityPct": 0.11868367876792114
+      },
+      "innerValidation": {
+        "objective": -6.34539,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 0,
+          "noTradeSessions": 4,
+          "averagePositionsPerTradedSession": 0.0,
+          "sessionWinRatePct": 0.0,
+          "averageNetPortfolioReturnPct": 0.0,
+          "medianNetPortfolioReturnPct": 0.0,
+          "compoundedNetReturnPct": 0.0,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 0,
+          "tradeWinRatePct": 0.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 0,
+          "averagePredictedConditionalEvPct": 0.0,
+          "averageActualTradeReturnPct": 0.0
+        }
+      },
+      "trades": [
+        {
+          "ticker": "HDBK",
+          "status": "NO_ENTRY_GAP_ABOVE",
+          "netReturnPct": 0.0,
+          "predictedConditionalEvPct": 0.1187,
+          "pTargetPct": 31.49,
+          "pStopPct": 32.79
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-21",
+      "configuration": "BALANCED_5D",
+      "positions": 1,
+      "tickers": [
+        "UNIT"
+      ],
+      "portfolioNetReturnPct": -2.8703,
+      "selectionMeta": {
+        "utilityPct": 1.70149687140345
+      },
+      "innerValidation": {
+        "objective": 2.57471,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 2,
+          "noTradeSessions": 2,
+          "averagePositionsPerTradedSession": 1.0,
+          "sessionWinRatePct": 100.0,
+          "averageNetPortfolioReturnPct": 3.7201,
+          "medianNetPortfolioReturnPct": 3.7201,
+          "compoundedNetReturnPct": 7.567,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 2,
+          "tradeWinRatePct": 100.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 2,
+          "averagePredictedConditionalEvPct": 0.4778,
+          "averageActualTradeReturnPct": 3.7201
+        }
+      },
+      "trades": [
+        {
+          "ticker": "UNIT",
+          "status": "TIME_EXIT",
+          "netReturnPct": -2.8703,
+          "predictedConditionalEvPct": 1.7015,
+          "pTargetPct": 36.31,
+          "pStopPct": 27.13
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-22",
+      "configuration": "BALANCED_5D",
+      "positions": 1,
+      "tickers": [
+        "HDBK"
+      ],
+      "portfolioNetReturnPct": -1.3108,
+      "selectionMeta": {
+        "utilityPct": 1.7692278093966745
+      },
+      "innerValidation": {
+        "objective": 2.57471,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 2,
+          "noTradeSessions": 2,
+          "averagePositionsPerTradedSession": 1.0,
+          "sessionWinRatePct": 100.0,
+          "averageNetPortfolioReturnPct": 3.7201,
+          "medianNetPortfolioReturnPct": 3.7201,
+          "compoundedNetReturnPct": 7.567,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 2,
+          "tradeWinRatePct": 100.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 2,
+          "averagePredictedConditionalEvPct": 0.4778,
+          "averageActualTradeReturnPct": 3.7201
+        }
+      },
+      "trades": [
+        {
+          "ticker": "HDBK",
+          "status": "TIME_EXIT",
+          "netReturnPct": -1.3108,
+          "predictedConditionalEvPct": 1.7692,
+          "pTargetPct": 34.45,
+          "pStopPct": 29.31
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-23",
+      "configuration": "BALANCED_5D",
+      "positions": 1,
+      "tickers": [
+        "CAED"
+      ],
+      "portfolioNetReturnPct": 2.0586,
+      "selectionMeta": {
+        "utilityPct": 2.269216422798018
+      },
+      "innerValidation": {
+        "objective": 2.57471,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 2,
+          "noTradeSessions": 2,
+          "averagePositionsPerTradedSession": 1.0,
+          "sessionWinRatePct": 100.0,
+          "averageNetPortfolioReturnPct": 3.7201,
+          "medianNetPortfolioReturnPct": 3.7201,
+          "compoundedNetReturnPct": 7.567,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 2,
+          "tradeWinRatePct": 100.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 2,
+          "averagePredictedConditionalEvPct": 0.4778,
+          "averageActualTradeReturnPct": 3.7201
+        }
+      },
+      "trades": [
+        {
+          "ticker": "CAED",
+          "status": "TIME_EXIT",
+          "netReturnPct": 2.0586,
+          "predictedConditionalEvPct": 2.2692,
+          "pTargetPct": 37.11,
+          "pStopPct": 28.74
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-26",
+      "configuration": "BALANCED_5D",
+      "positions": 1,
+      "tickers": [
+        "CAED"
+      ],
+      "portfolioNetReturnPct": 0.0,
+      "selectionMeta": {
+        "utilityPct": 2.42624021788467
+      },
+      "innerValidation": {
+        "objective": 2.57471,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 2,
+          "noTradeSessions": 2,
+          "averagePositionsPerTradedSession": 1.0,
+          "sessionWinRatePct": 100.0,
+          "averageNetPortfolioReturnPct": 3.7201,
+          "medianNetPortfolioReturnPct": 3.7201,
+          "compoundedNetReturnPct": 7.567,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 2,
+          "tradeWinRatePct": 100.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 2,
+          "averagePredictedConditionalEvPct": 0.4778,
+          "averageActualTradeReturnPct": 3.7201
+        }
+      },
+      "trades": [
+        {
+          "ticker": "CAED",
+          "status": "NO_ENTRY_GAP_ABOVE",
+          "netReturnPct": 0.0,
+          "predictedConditionalEvPct": 2.4262,
+          "pTargetPct": 36.73,
+          "pStopPct": 27.48
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-27",
+      "configuration": "BALANCED_5D",
+      "positions": 1,
+      "tickers": [
+        "UNIT"
+      ],
+      "portfolioNetReturnPct": 0.0108,
+      "selectionMeta": {
+        "utilityPct": 1.8005245692933012
+      },
+      "innerValidation": {
+        "objective": 2.57471,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 2,
+          "noTradeSessions": 2,
+          "averagePositionsPerTradedSession": 1.0,
+          "sessionWinRatePct": 100.0,
+          "averageNetPortfolioReturnPct": 3.7201,
+          "medianNetPortfolioReturnPct": 3.7201,
+          "compoundedNetReturnPct": 7.567,
+          "maximumDrawdownPct": 0.0,
+          "profitFactor": null,
+          "selectedTrades": 2,
+          "tradeWinRatePct": 100.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 2,
+          "averagePredictedConditionalEvPct": 0.4778,
+          "averageActualTradeReturnPct": 3.7201
+        }
+      },
+      "trades": [
+        {
+          "ticker": "UNIT",
+          "status": "TIME_EXIT",
+          "netReturnPct": 0.0108,
+          "predictedConditionalEvPct": 1.8005,
+          "pTargetPct": 36.19,
+          "pStopPct": 27.05
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-28",
+      "configuration": "BALANCED_5D",
+      "positions": 1,
+      "tickers": [
+        "SEIG"
+      ],
+      "portfolioNetReturnPct": 10.1911,
+      "selectionMeta": {
+        "utilityPct": 1.1361536135612293
+      },
+      "innerValidation": {
+        "objective": 1.44372,
+        "metrics": {
+          "evaluatedSessions": 4,
+          "tradedSessions": 4,
+          "noTradeSessions": 0,
+          "averagePositionsPerTradedSession": 1.0,
+          "sessionWinRatePct": 50.0,
+          "averageNetPortfolioReturnPct": 1.1208,
+          "medianNetPortfolioReturnPct": 0.4979,
+          "compoundedNetReturnPct": 4.455,
+          "maximumDrawdownPct": -1.311,
+          "profitFactor": 4.42,
+          "selectedTrades": 4,
+          "tradeWinRatePct": 50.0,
+          "targets": 0,
+          "stops": 0,
+          "timeExits": 3,
+          "averagePredictedConditionalEvPct": 0.6885,
+          "averageActualTradeReturnPct": 1.1208
+        }
+      },
+      "trades": [
+        {
+          "ticker": "SEIG",
+          "status": "TARGET_HIT",
+          "netReturnPct": 10.1911,
+          "predictedConditionalEvPct": 1.1362,
+          "pTargetPct": 33.38,
+          "pStopPct": 27.82
+        }
+      ]
+    }
+  ],
+  "latestConfigurationValidation": [
+    {
+      "configuration": "BALANCED_5D",
+      "objective": 0.66278,
+      "metrics": {
+        "evaluatedSessions": 4,
+        "tradedSessions": 4,
+        "noTradeSessions": 0,
+        "averagePositionsPerTradedSession": 1.0,
+        "sessionWinRatePct": 50.0,
+        "averageNetPortfolioReturnPct": 0.4359,
+        "medianNetPortfolioReturnPct": 0.4979,
+        "compoundedNetReturnPct": 1.724,
+        "maximumDrawdownPct": -1.311,
+        "profitFactor": 2.33,
+        "selectedTrades": 4,
+        "tradeWinRatePct": 50.0,
+        "targets": 0,
+        "stops": 0,
+        "timeExits": 3,
+        "averagePredictedConditionalEvPct": 0.6377,
+        "averageActualTradeReturnPct": 0.4359
+      }
+    },
+    {
+      "configuration": "BALANCED_3D",
+      "objective": -6.34539,
+      "metrics": {
+        "evaluatedSessions": 4,
+        "tradedSessions": 1,
+        "noTradeSessions": 3,
+        "averagePositionsPerTradedSession": 1.0,
+        "sessionWinRatePct": 0.0,
+        "averageNetPortfolioReturnPct": 0.0,
+        "medianNetPortfolioReturnPct": 0.0,
+        "compoundedNetReturnPct": 0.0,
+        "maximumDrawdownPct": 0.0,
+        "profitFactor": null,
+        "selectedTrades": 1,
+        "tradeWinRatePct": 0.0,
+        "targets": 0,
+        "stops": 0,
+        "timeExits": 0,
+        "averagePredictedConditionalEvPct": 0.2209,
+        "averageActualTradeReturnPct": 0.0
+      }
+    },
+    {
+      "configuration": "FAST_2D",
+      "objective": -6.34539,
+      "metrics": {
+        "evaluatedSessions": 4,
+        "tradedSessions": 0,
+        "noTradeSessions": 4,
+        "averagePositionsPerTradedSession": 0.0,
+        "sessionWinRatePct": 0.0,
+        "averageNetPortfolioReturnPct": 0.0,
+        "medianNetPortfolioReturnPct": 0.0,
+        "compoundedNetReturnPct": 0.0,
+        "maximumDrawdownPct": 0.0,
+        "profitFactor": null,
+        "selectedTrades": 0,
+        "tradeWinRatePct": 0.0,
+        "targets": 0,
+        "stops": 0,
+        "timeExits": 0,
+        "averagePredictedConditionalEvPct": 0.0,
+        "averageActualTradeReturnPct": 0.0
+      }
+    }
+  ],
+  "notesAr": [
+    "عدم اجتياز البوابة لا يعني غياب الفرص، بل يعني عدم ثبوت جودة اختيار النموذج.",
+    "الإعداد يثبت لخمس جلسات خارج العينة بدل إعادة اختياره بعد معرفة نتيجة كل جلسة.",
+    "التنفيذ النهائي يحتاج تأكيد الافتتاح والسيولة خلال أول 10–15 دقيقة."
+  ]
+}
