@@ -6,13 +6,13 @@ on:
     paths:
       - "scripts/research/v167_core.py"
       - "scripts/research/v16-v167-coherent-engine.py"
-      - "scripts/research/v16-v167-run.py"
+      - "scripts/research/v16-v167-blocked-run.py"
       - ".github/workflows/v16-v167-coherent-engine.yml"
   push:
     paths:
       - "scripts/research/v167_core.py"
       - "scripts/research/v16-v167-coherent-engine.py"
-      - "scripts/research/v16-v167-run.py"
+      - "scripts/research/v16-v167-blocked-run.py"
       - ".github/workflows/v16-v167-coherent-engine.yml"
   schedule:
     - cron: "55 12 * * 0-4"
@@ -27,7 +27,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 35
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -43,10 +43,10 @@ jobs:
         run: |
           python -m py_compile scripts/research/v167_core.py
           python -m py_compile scripts/research/v16-v167-coherent-engine.py
-          python -m py_compile scripts/research/v16-v167-run.py
+          python -m py_compile scripts/research/v16-v167-blocked-run.py
 
-      - name: Run coherent nested walk-forward
-        run: python scripts/research/v16-v167-run.py
+      - name: Run coherent blocked nested walk-forward
+        run: python scripts/research/v16-v167-blocked-run.py
 
       - name: Upload V16.7 report
         uses: actions/upload-artifact@v4
