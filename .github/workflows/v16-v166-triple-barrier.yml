@@ -2,6 +2,10 @@ name: EGX V16.6 Triple-Barrier Gate
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/research/v16-v166-triple-barrier.py"
+      - ".github/workflows/v16-v166-triple-barrier.yml"
   push:
     paths:
       - "scripts/research/v16-v166-triple-barrier.py"
@@ -13,7 +17,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: egx-v16-v166-triple-barrier
+  group: egx-v16-v166-triple-barrier-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -21,10 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
-      - name: Checkout main
+      - name: Checkout source
         uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Setup Python
@@ -38,7 +41,14 @@ jobs:
       - name: Run V16.6 gate
         run: python scripts/research/v16-v166-triple-barrier.py
 
-      - name: Commit research report
+      - name: Upload gate report
+        uses: actions/upload-artifact@v4
+        with:
+          name: v16-v166-triple-barrier-report
+          path: data/research/v16-v166-triple-barrier.json
+
+      - name: Commit research report on main push only
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -52,5 +62,3 @@ jobs:
               sleep $((attempt * 8))
             done
           fi
-
-# trigger: 2026-08-05-v166
