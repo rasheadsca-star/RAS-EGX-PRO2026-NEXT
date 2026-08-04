@@ -5,10 +5,14 @@ on:
   pull_request:
     paths:
       - "scripts/research/v16-v166-triple-barrier.py"
+      - "scripts/research/v16-two-stage-recommendations.py"
+      - "scripts/stable/v16-publish-v166-gate.cjs"
       - ".github/workflows/v16-v166-triple-barrier.yml"
   push:
     paths:
       - "scripts/research/v16-v166-triple-barrier.py"
+      - "scripts/research/v16-two-stage-recommendations.py"
+      - "scripts/stable/v16-publish-v166-gate.cjs"
       - ".github/workflows/v16-v166-triple-barrier.yml"
   schedule:
     - cron: "45 12 * * 0-4"
@@ -35,11 +39,23 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate engine
-        run: python -m py_compile scripts/research/v16-v166-triple-barrier.py
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate engines
+        run: |
+          python -m py_compile scripts/research/v16-v166-triple-barrier.py
+          python -m py_compile scripts/research/v16-two-stage-recommendations.py
+          node --check scripts/stable/v16-publish-v166-gate.cjs
 
       - name: Run V16.6 gate
         run: python scripts/research/v16-v166-triple-barrier.py
+
+      - name: Publish gated application decision
+        if: github.event_name != 'pull_request'
+        run: node scripts/stable/v16-publish-v166-gate.cjs
 
       - name: Upload gate report
         uses: actions/upload-artifact@v4
@@ -47,15 +63,15 @@ jobs:
           name: v16-v166-triple-barrier-report
           path: data/research/v16-v166-triple-barrier.json
 
-      - name: Commit research report on main push only
+      - name: Commit report and gated decision on main only
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/research/v16-v166-triple-barrier.json
+          git add data/research/v16-v166-triple-barrier.json data/stable/v15-practical-decision.json
           if ! git diff --cached --quiet; then
-            git commit -m "Publish V16.6 triple-barrier gate report"
+            git commit -m "Publish V16.6 gated decision to app"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
