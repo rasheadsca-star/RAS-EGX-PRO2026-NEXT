@@ -1,0 +1,187 @@
+name: EGX V16 Daily Recommendation Scan
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v16-daily-recommendation-scan.yml"
+  schedule:
+    - cron: "15 13-20 * * 0-4"
+
+env:
+  EGXAPI_KEY: ${{ secrets.EGXAPI_KEY }}
+  EGX_KEY: ${{ secrets.EGX_KEY }}
+  EGX_MARKET_JSON_URL: ${{ secrets.EGX_MARKET_JSON_URL }}
+  PUBLIC_MARKET_JSON_URL: ${{ secrets.PUBLIC_MARKET_JSON_URL }}
+  EGX_MIN_EXECUTION_ROWS: "80"
+  EGX_PRICE_MATCH_TOLERANCE_PCT: "1.75"
+  EGX_MAX_SINGLE_SESSION_JUMP_PCT: "35"
+  EGX_MARKET_HOLIDAYS: ${{ vars.EGX_MARKET_HOLIDAYS }}
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-v16-daily-recommendation-scan
+  cancel-in-progress: true
+
+jobs:
+  scan-and-publish-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      fresh: ${{ steps.scan.outputs.fresh }}
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate scan engines
+        run: |
+          set -euo pipefail
+          node --check scripts/fetch-market-data.js
+          node --check scripts/stable/v15-missing-symbol-fallback.cjs
+          node --check scripts/stable/v15-live-price-truth.cjs
+          node --check scripts/stable/v15-practical-market-scanner.cjs
+          node --check scripts/stable/v15-price-truth-gate.cjs
+          node --check scripts/stable/v15-recommendation-evaluator.cjs
+          node --check scripts/stable/v16-live-evidence-engine.cjs
+          node --check scripts/stable/v16-market-regime-engine.cjs
+          node --check scripts/stable/v16-correlation-risk-engine.cjs
+          node --check scripts/stable/v16-alert-engine.cjs
+          node --check scripts/stable/v16-recommendation-freshness-guard.cjs
+
+      - name: Scan current session and rebuild recommendations
+        id: scan
+        run: |
+          set -euo pipefail
+          cp data/stable/v15-practical-decision.json /tmp/previous-practical-decision.json
+          FRESH=0
+          ATTEMPTS=0
+          for ATTEMPT in 1 2 3; do
+            ATTEMPTS="$ATTEMPT"
+            echo "Starting EGX daily scan attempt $ATTEMPT/3"
+            set +e
+            node scripts/fetch-market-data.js
+            FETCH_CODE=$?
+            node scripts/stable/v15-missing-symbol-fallback.cjs
+            FALLBACK_CODE=$?
+            node scripts/stable/v15-live-price-truth.cjs
+            TRUTH_CODE=$?
+            node scripts/stable/v15-practical-market-scanner.cjs
+            SCANNER_CODE=$?
+            node scripts/stable/v15-price-truth-gate.cjs
+            GATE_CODE=$?
+            set -e
+            echo "attempt=$ATTEMPT fetch=$FETCH_CODE fallback=$FALLBACK_CODE truth=$TRUTH_CODE scanner=$SCANNER_CODE gate=$GATE_CODE"
+            if node - <<'NODE'
+          const fs = require('fs');
+          const decision = JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json', 'utf8'));
+          const ready = decision?.priceTruth?.ready === true
+            && decision?.practicalReady === true
+            && decision?.sessionDate === decision?.expectedLatestSession
+            && Array.isArray(decision?.recommendations)
+            && decision.recommendations.length > 0;
+          console.log({
+            sessionDate: decision.sessionDate,
+            expectedLatestSession: decision.expectedLatestSession,
+            priceTruthReady: decision?.priceTruth?.ready,
+            recommendationCount: decision?.recommendations?.length || 0,
+            ready,
+          });
+          process.exit(ready ? 0 : 1);
+          NODE
+            then
+              FRESH=1
+              break
+            fi
+            [ "$ATTEMPT" = "3" ] || sleep 45
+          done
+
+          if [ "$FRESH" = "1" ]; then
+            node scripts/stable/v15-recommendation-evaluator.cjs
+            node scripts/stable/v16-live-evidence-engine.cjs
+            node scripts/stable/v16-market-regime-engine.cjs
+            node scripts/stable/v16-correlation-risk-engine.cjs
+            node scripts/stable/v16-alert-engine.cjs
+          else
+            cp /tmp/previous-practical-decision.json data/stable/v15-practical-decision.json
+          fi
+
+          node scripts/stable/v16-recommendation-freshness-guard.cjs
+          FRESH="$FRESH" ATTEMPTS="$ATTEMPTS" node - <<'NODE'
+          const fs = require('fs');
+          const read = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; } };
+          const fetchStatus = read('data/fetch-status.json');
+          const freshness = read('data/stable/v16-recommendation-freshness.json');
+          const decision = read('data/stable/v15-practical-decision.json');
+          const out = {
+            schemaVersion: '16.3.4',
+            generatedAt: new Date().toISOString(),
+            trigger: process.env.GITHUB_EVENT_NAME || null,
+            attempts: Number(process.env.ATTEMPTS || 0),
+            acceptedFreshSession: process.env.FRESH === '1' && freshness.isFresh === true,
+            expectedSession: freshness.expectedSession,
+            decisionSession: freshness.decisionSession,
+            priceSession: freshness.priceSession,
+            executionGrade: freshness.executionGrade,
+            fetchMode: fetchStatus.mode || null,
+            fetchedRows: fetchStatus.marketRows || null,
+            recommendationCount: Array.isArray(decision.recommendations) ? decision.recommendations.length : 0,
+            recommendationTickers: (decision.recommendations || []).map(row => row.ticker),
+            status: freshness.isFresh ? 'FRESH_RECOMMENDATIONS_PUBLISHED' : 'CURRENT_SESSION_NOT_ACCEPTED',
+            statusAr: freshness.isFresh
+              ? 'تم مسح السوق وتحليل الأسهم واعتماد توصيات جلسة اليوم.'
+              : 'اكتمل المسح، لكن جلسة اليوم لم تجتز جميع بوابات الأسعار والتنفيذ؛ أبقيت آخر جلسة كمرجع فقط.',
+          };
+          fs.writeFileSync('data/stable/v16-immediate-scan-status.json', JSON.stringify(out, null, 2) + '\n');
+          console.log(out);
+          NODE
+          echo "fresh=$FRESH" >> "$GITHUB_OUTPUT"
+
+      - name: Commit scan result regardless of acceptance
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "4189824+github-actions[bot]@users.noreply.github.com"
+          git add data/history data/market.json data/fetch-status.json data/source-health.json data/source-fetch-report.json data/stable data/research
+          if ! git diff --cached --quiet; then
+            git commit -m "Run EGX V16 daily recommendation scan"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 10))
+            done
+          fi
+
+      - name: Prepare Pages artifact
+        run: touch .nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy-current-session:
+    needs: scan-and-publish-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy refreshed recommendations
+        id: deployment
+        uses: actions/deploy-pages@v4
