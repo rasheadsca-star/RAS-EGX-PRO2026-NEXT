@@ -1,13 +1,13 @@
-# تقرير جلسة 2026-07-29
+# تقرير جلسة 2026-08-04
 
 - حالة التشغيل: **يحتاج متابعة**
-- الأول فنيًا: **UNIP**
-- أول B للمراقبة: **GDWA**
+- الأول فنيًا: **OLFI**
+- أول B للمراقبة: **OLFI**
 - الجاهز ورقيًا: **لا يوجد**
 - إشارات جديدة: **20**
-- دخول جديد: **22**
-- صفقات مغلقة: **21**
-- منتهية دون دخول: **2**
+- دخول جديد: **0**
+- صفقات مغلقة: **15**
+- منتهية دون دخول: **0**
 
 ## حالة الاستراتيجيات
 
@@ -18,7 +18,7 @@
 ## ملاحظات التشغيل
 
 - تحذير: Data coverage is 95.54%, below preferred 98%.
-- تحذير: 16 scheduled legacy workflow(s) may cause independent updates.
-- تحذير: 35 workflows can deploy Pages.
+- تحذير: 17 scheduled legacy workflow(s) may cause independent updates.
+- تحذير: 36 workflows can deploy Pages.
 
-بصمة التقرير: `e0be4151e7f1fed1d9e050134a7ee5386ab5d9931214c880ad5067253b2ae789`
+بصمة التقرير: `b962ad883b552faa7e21a479395fa12a3e0df59662bdbf89e66124bd7fc50337`
