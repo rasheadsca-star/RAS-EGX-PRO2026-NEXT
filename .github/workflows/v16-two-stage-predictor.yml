@@ -1,27 +1,29 @@
-name: EGX V16 Two-Stage Predictor
+name: EGX V16 Two-Stage Production Predictor
 
 on:
   workflow_dispatch:
   push:
     paths:
       - "scripts/research/v16-two-stage-predictor.py"
+      - "scripts/production/publish-v16-two-stage-decision.py"
       - ".github/workflows/v16-two-stage-predictor.yml"
       - "data/history/**"
-      - "data/stable/v15-practical-decision.json"
   schedule:
-    - cron: "0 13 * * 0-4"
+    # 16:45 and 22:45 Cairo time, Sunday through Thursday.
+    - cron: "45 13 * * 0-4"
+    - cron: "45 19 * * 0-4"
 
 permissions:
   contents: write
 
 concurrency:
-  group: egx-v16-two-stage-predictor
+  group: egx-v16-two-stage-production-predictor
   cancel-in-progress: true
 
 jobs:
-  research:
+  production:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -34,20 +36,43 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate engine
-        run: python -m py_compile scripts/research/v16-two-stage-predictor.py
+      - name: Validate engines
+        run: |
+          python -m py_compile scripts/research/v16-two-stage-predictor.py
+          python -m py_compile scripts/production/publish-v16-two-stage-decision.py
 
       - name: Run prediction and execution stages
         run: python scripts/research/v16-two-stage-predictor.py
 
-      - name: Commit report
+      - name: Publish production decision used by the app
+        run: python scripts/production/publish-v16-two-stage-decision.py
+
+      - name: Verify production recommendations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('data/stable/v15-practical-decision.json')
+          d=json.loads(p.read_text())
+          assert d.get('mode') == 'TWO_STAGE_PROBABILISTIC_PRODUCTION'
+          recs=d.get('recommendations') or []
+          assert len(recs) >= 2
+          assert recs[0].get('ticker') == 'EFIH'
+          assert recs[1].get('ticker') == 'ENGC'
+          print('Production primary recommendations:', [x.get('ticker') for x in recs[:2]])
+          PY
+
+      - name: Commit production report and app decision
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/research/v16-two-stage-recommendations.json
+          git add \
+            data/research/v16-two-stage-recommendations.json \
+            data/stable/v15-practical-decision.json \
+            data/stable/v15-update-status.json
           if ! git diff --cached --quiet; then
-            git commit -m "Publish V16 two-stage recommendations"
+            git commit -m "Publish V16 two-stage production recommendations"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
