@@ -52,14 +52,14 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          p=Path('data/stable/v15-practical-decision.json')
-          d=json.loads(p.read_text())
-          assert d.get('mode') == 'TWO_STAGE_PROBABILISTIC_PRODUCTION'
-          recs=d.get('recommendations') or []
-          assert len(recs) >= 2
-          assert recs[0].get('ticker') == 'EFIH'
-          assert recs[1].get('ticker') == 'ENGC'
-          print('Production primary recommendations:', [x.get('ticker') for x in recs[:2]])
+          report=json.loads(Path('data/research/v16-two-stage-recommendations.json').read_text())
+          decision=json.loads(Path('data/stable/v15-practical-decision.json').read_text())
+          expected=[x.get('ticker') for x in (report.get('newRecommendations') or [])[:5]]
+          actual=[x.get('ticker') for x in (decision.get('recommendations') or [])[:5]]
+          assert decision.get('mode') == 'TWO_STAGE_PROBABILISTIC_PRODUCTION'
+          assert len(actual) >= 2
+          assert actual == expected, (actual, expected)
+          print('Production recommendations:', actual)
           PY
 
       - name: Commit production report and app decision
