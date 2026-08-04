@@ -1,20 +1,20 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-08-03T17:29:11.423Z",
+  "generatedAt": "2026-08-04T08:31:15.563Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
     "total": 54,
-    "scheduled": 15,
-    "scheduledLegacy": 15,
+    "scheduled": 16,
+    "scheduledLegacy": 16,
     "pageDeployers": 35,
     "repositoryWriters": 52,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "15 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "16 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "35 workflows can deploy GitHub Pages.",
     "52 workflows can write to the repository."
   ],
@@ -59,6 +59,13 @@
       "name": "EGX Quant Research & Daily Recommendations — V13.4",
       "schedules": [
         "15 14 * * 0-4"
+      ]
+    },
+    {
+      "filename": "mobile-hotfix-deploy.yml",
+      "name": "EGX V16.3.3 Immediate Market Rescan and Deploy",
+      "schedules": [
+        "35 13-20 * * 0-4"
       ]
     },
     {
@@ -578,11 +585,13 @@
     {
       "filename": "mobile-hotfix-deploy.yml",
       "relativePath": ".github/workflows/mobile-hotfix-deploy.yml",
-      "name": "EGX V16.3.1 Mobile Hotfix Deploy",
+      "name": "EGX V16.3.3 Immediate Market Rescan and Deploy",
       "isPrimary": false,
       "isEmergency": false,
-      "hasSchedule": false,
-      "schedules": [],
+      "hasSchedule": true,
+      "schedules": [
+        "35 13-20 * * 0-4"
+      ],
       "hasWorkflowDispatch": true,
       "hasPush": true,
       "deploysPages": true,
