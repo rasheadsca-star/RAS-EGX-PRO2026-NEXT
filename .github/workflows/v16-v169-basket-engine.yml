@@ -18,10 +18,11 @@ on:
       - "data/market.json"
       - "data/history/**"
       - "data/stable/v15-price-truth.json"
+      - "data/stable/v15-practical-decision.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
   schedule:
-    # Run after the final post-close market-data window in Cairo.
-    - cron: "20 13 * * 0-4"
+    # Reassert V16.9 after post-close scanners without creating duplicate commits.
+    - cron: "*/15 13-20 * * 0-4"
 
 permissions:
   contents: write
@@ -46,34 +47,87 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Decide whether publication is required
+        id: need
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          def read(path):
+              try:
+                  return json.loads(Path(path).read_text(encoding='utf-8'))
+              except Exception:
+                  return {}
+
+          event = os.environ.get('GITHUB_EVENT_NAME', '')
+          actor = os.environ.get('GITHUB_ACTOR', '')
+          decision = read('data/stable/v15-practical-decision.json')
+          research = read('data/research/v16-v169-basket-engine.json')
+          price = read('data/stable/v15-price-truth.json')
+
+          expected = price.get('expectedSession') or research.get('currentSignalDate')
+          model_id = ((decision.get('selectedModel') or {}).get('id'))
+          primary = model_id == 'V16_9_EQUAL_WEIGHT_BASKET'
+          aligned = (
+              bool(expected)
+              and decision.get('sessionDate') == expected
+              and research.get('currentSignalDate') == expected
+          )
+          forced = event in {'workflow_dispatch', 'pull_request'} or actor != 'github-actions[bot]'
+          should_run = forced or not (primary and aligned)
+
+          print({
+              'event': event,
+              'actor': actor,
+              'expectedSession': expected,
+              'decisionSession': decision.get('sessionDate'),
+              'researchSignalDate': research.get('currentSignalDate'),
+              'selectedModel': model_id,
+              'primary': primary,
+              'aligned': aligned,
+              'forced': forced,
+              'run': should_run,
+          })
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"run={'true' if should_run else 'false'}\n")
+          PY
+
       - name: Setup Python
+        if: steps.need.outputs.run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Setup Node
+        if: steps.need.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
       - name: Validate frozen release source
+        if: steps.need.outputs.run == 'true'
         run: |
           python -m py_compile scripts/research/v16-v169-basket-engine.py
           python -m py_compile scripts/stable/v16-v169-live-evaluation.py
           node --check scripts/stable/v16-publish-v169-basket.cjs
 
       - name: Run frozen V16.9 basket engine
+        if: steps.need.outputs.run == 'true'
         run: python scripts/research/v16-v169-basket-engine.py
 
       - name: Publish reduced-risk basket decision
-        if: github.event_name != 'pull_request'
+        if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         run: node scripts/stable/v16-publish-v169-basket.cjs
 
       - name: Update immutable live evaluation ledger
-        if: github.event_name != 'pull_request'
+        if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         run: python scripts/stable/v16-v169-live-evaluation.py
 
       - name: Upload V16.9 reports
+        if: steps.need.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: v16-v169-frozen-pilot-reports
@@ -83,7 +137,7 @@ jobs:
             data/stable/v16-v169-release-lock.json
 
       - name: Commit report, primary app decision and live ledger
-        if: github.event_name != 'pull_request'
+        if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -103,22 +157,22 @@ jobs:
           fi
 
       - name: Configure GitHub Pages
-        if: github.event_name != 'pull_request'
+        if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
 
       - name: Upload complete application
-        if: github.event_name != 'pull_request'
+        if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
       - name: Deploy V16.9 basket application
-        if: github.event_name != 'pull_request'
+        if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         id: deployment
         uses: actions/deploy-pages@v4
 
       - name: Show published basket
-        if: github.event_name != 'pull_request'
+        if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         run: |
           python - <<'PY'
           import json
