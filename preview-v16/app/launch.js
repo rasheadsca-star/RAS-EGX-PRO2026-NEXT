@@ -1,7 +1,7 @@
 'use strict';
 (() => {
-  const VERSION = '16.3.2';
-  const SW_BUILD = 'V16.3.2-RECOMMENDATION-FRESHNESS-20260803';
+  const VERSION = '16.3.3';
+  const SW_BUILD = 'V16.3.3-V169-BASKET-OVERLAY-20260805';
   const head = document.head || document.documentElement;
 
   document.documentElement.dataset.egxVersion = VERSION;
@@ -61,6 +61,7 @@
     await refreshServiceWorker();
     await loadScript('v16-3.js', 'v163');
     await loadScript('recommendation-freshness.js', 'recommendationFreshness');
+    await loadScript('v16-9-basket-overlay.js', 'v169BasketOverlay');
     openRequestedView();
   };
 
