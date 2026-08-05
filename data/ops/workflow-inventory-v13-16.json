@@ -1,22 +1,22 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-08-05T12:52:25.005Z",
+  "generatedAt": "2026-08-05T15:11:16.786Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 69,
-    "scheduled": 23,
-    "scheduledLegacy": 23,
-    "pageDeployers": 36,
-    "repositoryWriters": 67,
+    "total": 70,
+    "scheduled": 24,
+    "scheduledLegacy": 24,
+    "pageDeployers": 37,
+    "repositoryWriters": 68,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "23 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
-    "36 workflows can deploy GitHub Pages.",
-    "67 workflows can write to the repository."
+    "24 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "37 workflows can deploy GitHub Pages.",
+    "68 workflows can write to the repository."
   ],
   "scheduledLegacy": [
     {
@@ -181,7 +181,14 @@
       "filename": "v16-v169-basket-engine.yml",
       "name": "EGX V16.9 Basket Engine",
       "schedules": [
-        "59 12 * * 0-4"
+        "*/15 13-20 * * 0-4"
+      ]
+    },
+    {
+      "filename": "v16-v169-target-audit.yml",
+      "name": "EGX V16.9 Target Hit Audit",
+      "schedules": [
+        "35 13 * * 0-4"
       ]
     }
   ],
@@ -1194,7 +1201,23 @@
       "isEmergency": false,
       "hasSchedule": true,
       "schedules": [
-        "59 12 * * 0-4"
+        "*/15 13-20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": true,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "v16-v169-target-audit.yml",
+      "relativePath": ".github/workflows/v16-v169-target-audit.yml",
+      "name": "EGX V16.9 Target Hit Audit",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "35 13 * * 0-4"
       ],
       "hasWorkflowDispatch": true,
       "hasPush": true,
