@@ -1,0 +1,104 @@
+name: EGX V16.9 Protected App Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "index.html"
+      - "manifest.json"
+      - "service-worker.js"
+      - "preview-v16/app/v169.html"
+      - "preview-v16/app/decision-source.js"
+      - "data/stable/v16-v169-primary-decision.json"
+      - ".github/workflows/v169-primary-pages-deploy.yml"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-v169-protected-pages
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate protected V16.9 entry
+        run: |
+          set -euo pipefail
+          node --check service-worker.js
+          node --check preview-v16/app/decision-source.js
+          test -s preview-v16/app/v169.html
+          test -s data/stable/v16-v169-primary-decision.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
+          const model = decision?.selectedModel?.id;
+          const tickers = (decision.recommendations || []).map(row => row.ticker);
+          if (model !== 'V16_9_EQUAL_WEIGHT_BASKET') {
+            throw new Error(`Unexpected primary model: ${model}`);
+          }
+          if (tickers.length < 3) {
+            throw new Error('Protected V16.9 basket is empty.');
+          }
+          console.log({ model, sessionDate: decision.sessionDate, tickers });
+          NODE
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload protected application
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy protected V16.9 application
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Record protected deployment
+        env:
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
+          const output = {
+            schemaVersion: '16.9.1-protected-pages',
+            generatedAt: new Date().toISOString(),
+            status: 'DEPLOYED',
+            deployedUrl: process.env.DEPLOYED_URL || null,
+            sourceCommit: process.env.GITHUB_SHA || null,
+            primaryDecisionModel: decision?.selectedModel?.id || null,
+            sessionDate: decision.sessionDate || null,
+            recommendationTickers: (decision.recommendations || []).map(row => row.ticker),
+            protectedDecisionPath: 'data/stable/v16-v169-primary-decision.json',
+            applicationEntry: 'preview-v16/app/v169.html',
+          };
+          fs.writeFileSync('data/stable/v16-v169-pages-status.json', JSON.stringify(output, null, 2) + '\n');
+          console.log(output);
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/stable/v16-v169-pages-status.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Confirm protected V16.9 Pages deployment"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
+          fi
