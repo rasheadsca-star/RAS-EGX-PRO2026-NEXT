@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071521">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-  <title>EGX Pro V16.9.1</title>
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>EGX Pro V16.9.2</title>
   <style>
     html,body{margin:0;min-height:100%;background:#071521;color:#ecf8ff;font-family:Tahoma,Arial,sans-serif}
     body{display:grid;place-items:center;text-align:center;padding:24px}
@@ -15,19 +17,19 @@
 </head>
 <body>
   <main class="loader">
-    <h2>جارٍ تحميل محرك V16.9…</h2>
-    <p>يتم ربط التطبيق بملف التوصيات المعزول حتى لا تستبدله المحركات القديمة.</p>
+    <h2>جارٍ تحميل محرك V16.9.2…</h2>
+    <p>يتم ربط التوصيات وحالة جلسة السوق بملف V16.9 المعزول.</p>
   </main>
   <script>
   (async()=>{
-    const response=await fetch(`index.html?source=v16.9.1&t=${Date.now()}`,{cache:'no-store'});
+    const response=await fetch(`index.html?source=v16.9.2&t=${Date.now()}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
     const marker='<script src="app.js?v=16.1.0"><\/script>';
-    const replacement='<script src="decision-source.js?v=16.9.1"><\/script><script src="app.js?v=16.9.1"><\/script>';
+    const replacement='<script src="decision-source.js?v=16.9.2"><\/script><script src="app.js?v=16.9.2"><\/script>';
     html=html.replace(marker,replacement)
-      .replaceAll('V16.1','V16.9.1')
-      .replaceAll('v=16.1.0','v=16.9.1');
+      .replaceAll('V16.1','V16.9.2')
+      .replaceAll('v=16.1.0','v=16.9.2');
     document.open();
     document.write(html);
     document.close();
