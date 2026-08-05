@@ -15,12 +15,18 @@ on:
       - "scripts/stable/v16-publish-v169-basket.cjs"
       - "scripts/stable/v16-v169-live-evaluation.py"
       - "data/stable/v16-v169-release-lock.json"
+      - "data/market.json"
+      - "data/history/**"
+      - "data/stable/v15-price-truth.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
   schedule:
-    - cron: "59 12 * * 0-4"
+    # Run after the final post-close market-data window in Cairo.
+    - cron: "20 13 * * 0-4"
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: egx-v169-basket-${{ github.ref }}
@@ -30,10 +36,14 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
       - name: Setup Python
@@ -72,22 +82,53 @@ jobs:
             data/stable/v16-v169-live-evaluation.json
             data/stable/v16-v169-release-lock.json
 
-      - name: Commit report, app decision and live ledger on main only
+      - name: Commit report, primary app decision and live ledger
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
-          git config user.email "4189822+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             data/research/v16-v169-basket-engine.json \
             data/stable/v15-practical-decision.json \
             data/stable/v16-v169-live-evaluation.json \
             data/stable/v16-v169-release-lock.json
           if ! git diff --cached --quiet; then
-            git commit -m "Track frozen V16.9 basket pilot"
+            git commit -m "Publish next-session V16.9 basket"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
               sleep $((attempt * 8))
             done
           fi
+
+      - name: Configure GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Upload complete application
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy V16.9 basket application
+        if: github.event_name != 'pull_request'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Show published basket
+        if: github.event_name != 'pull_request'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('data/research/v16-v169-basket-engine.json').read_text(encoding='utf-8'))
+          print({
+              'signalDate': report.get('currentSignalDate'),
+              'basketSize': report.get('currentBasketSize'),
+              'tickers': [row.get('ticker') for row in report.get('currentBasket', [])],
+              'method': report.get('methodology', {}).get('ranking'),
+              'deployedUrl': '${{ steps.deployment.outputs.page_url }}',
+          })
+          PY
