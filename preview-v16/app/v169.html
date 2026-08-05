@@ -23,8 +23,8 @@
     const response=await fetch(`index.html?source=v16.9.1&t=${Date.now()}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
-    const marker='<script src="app.js?v=16.1.0"><\\/script>';
-    const replacement='<script src="decision-source.js?v=16.9.1"><\\/script><script src="app.js?v=16.9.1"><\\/script>';
+    const marker='<script src="app.js?v=16.1.0"><\/script>';
+    const replacement='<script src="decision-source.js?v=16.9.1"><\/script><script src="app.js?v=16.9.1"><\/script>';
     html=html.replace(marker,replacement)
       .replaceAll('V16.1','V16.9.1')
       .replaceAll('v=16.1.0','v=16.9.1');
