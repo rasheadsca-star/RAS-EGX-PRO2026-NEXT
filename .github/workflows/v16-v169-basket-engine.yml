@@ -6,11 +6,15 @@ on:
     paths:
       - "scripts/research/v16-v169-basket-engine.py"
       - "scripts/stable/v16-publish-v169-basket.cjs"
+      - "scripts/stable/v16-v169-live-evaluation.py"
+      - "data/stable/v16-v169-release-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
   push:
     paths:
       - "scripts/research/v16-v169-basket-engine.py"
       - "scripts/stable/v16-publish-v169-basket.cjs"
+      - "scripts/stable/v16-v169-live-evaluation.py"
+      - "data/stable/v16-v169-release-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
   schedule:
     - cron: "59 12 * * 0-4"
@@ -42,33 +46,45 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate source
+      - name: Validate frozen release source
         run: |
           python -m py_compile scripts/research/v16-v169-basket-engine.py
+          python -m py_compile scripts/stable/v16-v169-live-evaluation.py
           node --check scripts/stable/v16-publish-v169-basket.cjs
 
-      - name: Run basket engine
+      - name: Run frozen V16.9 basket engine
         run: python scripts/research/v16-v169-basket-engine.py
 
       - name: Publish reduced-risk basket decision
         if: github.event_name != 'pull_request'
         run: node scripts/stable/v16-publish-v169-basket.cjs
 
-      - name: Upload V16.9 report
+      - name: Update immutable live evaluation ledger
+        if: github.event_name != 'pull_request'
+        run: python scripts/stable/v16-v169-live-evaluation.py
+
+      - name: Upload V16.9 reports
         uses: actions/upload-artifact@v4
         with:
-          name: v16-v169-basket-engine-report
-          path: data/research/v16-v169-basket-engine.json
+          name: v16-v169-frozen-pilot-reports
+          path: |
+            data/research/v16-v169-basket-engine.json
+            data/stable/v16-v169-live-evaluation.json
+            data/stable/v16-v169-release-lock.json
 
-      - name: Commit report and application decision on main only
+      - name: Commit report, app decision and live ledger on main only
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "4189822+github-actions[bot]@users.noreply.github.com"
-          git add data/research/v16-v169-basket-engine.json data/stable/v15-practical-decision.json
+          git add \
+            data/research/v16-v169-basket-engine.json \
+            data/stable/v15-practical-decision.json \
+            data/stable/v16-v169-live-evaluation.json \
+            data/stable/v16-v169-release-lock.json
           if ! git diff --cached --quiet; then
-            git commit -m "Publish V16.9 basket pilot to app"
+            git commit -m "Track frozen V16.9 basket pilot"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
