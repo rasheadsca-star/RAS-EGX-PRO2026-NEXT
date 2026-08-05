@@ -55,9 +55,9 @@ function previousTradingDate(dateText, holidays) {
 function expectedSession(now) {
   const holidays = holidaySet();
   let candidate = now.date;
-  // The EGX close is before this guard's after-market runs. Before 16:00 Cairo,
-  // keep the previous completed trading session rather than treating intraday data as final.
-  if (now.hour < 16) candidate = previousDate(candidate);
+  // EGX regular trading closes at 14:30 Cairo. Keep a 30-minute buffer for
+  // delayed public-source finalisation, then accept the current session from 15:00.
+  if (now.hour < 15) candidate = previousDate(candidate);
   return previousTradingDate(candidate, holidays);
 }
 
@@ -124,7 +124,7 @@ if (!isFresh) {
 }
 
 const report = {
-  schemaVersion: '16.3.2',
+  schemaVersion: '16.3.3',
   generatedAt: new Date().toISOString(),
   cairoNow: now,
   expectedSession: expected,
