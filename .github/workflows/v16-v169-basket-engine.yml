@@ -21,6 +21,7 @@ on:
       - "data/history/**"
       - "data/stable/v15-price-truth.json"
       - "data/stable/v15-practical-decision.json"
+      - "data/stable/v16-v169-primary-decision.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
   schedule:
     # Reassert V16.9 after post-close scanners without creating duplicate commits.
@@ -66,31 +67,44 @@ jobs:
 
           event = os.environ.get('GITHUB_EVENT_NAME', '')
           actor = os.environ.get('GITHUB_ACTOR', '')
-          decision = read('data/stable/v15-practical-decision.json')
+          legacy = read('data/stable/v15-practical-decision.json')
+          primary = read('data/stable/v16-v169-primary-decision.json')
           research = read('data/research/v16-v169-basket-engine.json')
           price = read('data/stable/v15-price-truth.json')
           target_audit_exists = Path('data/research/v16-v169-target-hit-audit.json').exists()
 
           expected = price.get('expectedSession') or research.get('currentSignalDate')
-          model_id = ((decision.get('selectedModel') or {}).get('id'))
-          primary = model_id == 'V16_9_EQUAL_WEIGHT_BASKET'
-          aligned = (
-              bool(expected)
-              and decision.get('sessionDate') == expected
-              and research.get('currentSignalDate') == expected
+          legacy_model = ((legacy.get('selectedModel') or {}).get('id'))
+          primary_model = ((primary.get('selectedModel') or {}).get('id'))
+          research_aligned = bool(expected) and research.get('currentSignalDate') == expected
+          legacy_aligned = (
+              legacy_model == 'V16_9_EQUAL_WEIGHT_BASKET'
+              and legacy.get('sessionDate') == expected
+          )
+          primary_aligned = (
+              primary_model == 'V16_9_EQUAL_WEIGHT_BASKET'
+              and primary.get('sessionDate') == expected
           )
           forced = event in {'workflow_dispatch', 'pull_request'} or actor != 'github-actions[bot]'
-          should_run = forced or not (primary and aligned and target_audit_exists)
+          should_run = forced or not (
+              research_aligned
+              and primary_aligned
+              and legacy_aligned
+              and target_audit_exists
+          )
 
           print({
               'event': event,
               'actor': actor,
               'expectedSession': expected,
-              'decisionSession': decision.get('sessionDate'),
+              'legacySession': legacy.get('sessionDate'),
+              'primarySession': primary.get('sessionDate'),
               'researchSignalDate': research.get('currentSignalDate'),
-              'selectedModel': model_id,
-              'primary': primary,
-              'aligned': aligned,
+              'legacyModel': legacy_model,
+              'primaryModel': primary_model,
+              'researchAligned': research_aligned,
+              'legacyAligned': legacy_aligned,
+              'primaryAligned': primary_aligned,
               'targetAuditExists': target_audit_exists,
               'forced': forced,
               'run': should_run,
@@ -127,7 +141,7 @@ jobs:
         if: steps.need.outputs.run == 'true'
         run: python scripts/research/v16-v169-target-hit-audit.py
 
-      - name: Publish reduced-risk basket decision
+      - name: Publish isolated V16.9 primary decision
         if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         run: node scripts/stable/v16-publish-v169-basket.cjs
 
@@ -143,10 +157,11 @@ jobs:
           path: |
             data/research/v16-v169-basket-engine.json
             data/research/v16-v169-target-hit-audit.json
+            data/stable/v16-v169-primary-decision.json
             data/stable/v16-v169-live-evaluation.json
             data/stable/v16-v169-release-lock.json
 
-      - name: Commit report, audit, primary app decision and live ledger
+      - name: Commit report, isolated primary decision and live ledger
         if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         run: |
           set -euo pipefail
@@ -156,10 +171,11 @@ jobs:
             data/research/v16-v169-basket-engine.json \
             data/research/v16-v169-target-hit-audit.json \
             data/stable/v15-practical-decision.json \
+            data/stable/v16-v169-primary-decision.json \
             data/stable/v16-v169-live-evaluation.json \
             data/stable/v16-v169-release-lock.json
           if ! git diff --cached --quiet; then
-            git commit -m "Publish next-session V16.9 basket and target audit"
+            git commit -m "Publish isolated next-session V16.9 basket"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
@@ -190,8 +206,10 @@ jobs:
           from pathlib import Path
           report = json.loads(Path('data/research/v16-v169-basket-engine.json').read_text(encoding='utf-8'))
           audit = json.loads(Path('data/research/v16-v169-target-hit-audit.json').read_text(encoding='utf-8'))
+          decision = json.loads(Path('data/stable/v16-v169-primary-decision.json').read_text(encoding='utf-8'))
           print({
               'signalDate': report.get('currentSignalDate'),
+              'decisionModel': (decision.get('selectedModel') or {}).get('id'),
               'basketSize': report.get('currentBasketSize'),
               'tickers': [row.get('ticker') for row in report.get('currentBasket', [])],
               'targetTouchRateOfExecutablePct': audit.get('targetTouchRateOfExecutablePct'),
