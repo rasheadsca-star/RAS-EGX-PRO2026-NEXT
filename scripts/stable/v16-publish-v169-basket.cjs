@@ -6,7 +6,8 @@ const path = require('path');
 
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const reportPath = path.join(root, 'data/research/v16-v169-basket-engine.json');
-const decisionPath = path.join(root, 'data/stable/v15-practical-decision.json');
+const legacyDecisionPath = path.join(root, 'data/stable/v15-practical-decision.json');
+const primaryDecisionPath = path.join(root, 'data/stable/v16-v169-primary-decision.json');
 const PILOT_ALLOCATION_PCT = 50;
 
 function readJson(filePath, fallback = {}) {
@@ -30,7 +31,9 @@ if (!report.schemaVersion) {
   throw new Error('Missing V16.9 basket report; refusing to overwrite application decision.');
 }
 
-const previous = readJson(decisionPath, {});
+// The isolated primary file is the authoritative prior state. The shared legacy
+// file is only a compatibility mirror because older engines may overwrite it.
+const previous = readJson(primaryDecisionPath, readJson(legacyDecisionPath, {}));
 const sourceBasket = Array.isArray(report.currentBasket) ? report.currentBasket : [];
 const approved = report.productionEligible === true && sourceBasket.length >= 3;
 const memberPortfolioWeightPct = approved
@@ -75,7 +78,7 @@ const recommendations = approved
 const metrics = report.blockedWalkForwardMetrics || {};
 const output = {
   ...previous,
-  schemaVersion: '16.9.0-production-basket-pilot',
+  schemaVersion: '16.9.1-production-basket-pilot',
   generatedAt: new Date().toISOString(),
   sessionDate: report.currentSignalDate,
   mode: 'EQUAL_WEIGHT_BASKET_PILOT',
@@ -127,12 +130,17 @@ const output = {
     riskNoticeAr: 'السلة اجتازت اختبارًا تاريخيًا محدودًا ولا تضمن الربح. الأسهم ذات RSI أعلى من 80 زخمها ساخن وتتطلب التزامًا صارمًا بنطاق الدخول.',
   },
   researchWatchlist: report.currentResearchBasket || [],
+  primaryDecisionSource: 'V16_9_ISOLATED_FILE',
 };
 
-writeJsonAtomic(decisionPath, output);
+// The application reads the isolated file. The shared legacy path remains a
+// mirror for old links, but no longer controls what the user sees.
+writeJsonAtomic(primaryDecisionPath, output);
+writeJsonAtomic(legacyDecisionPath, output);
 console.log(JSON.stringify({
   status: output.status,
   basketSize: recommendations.length,
   totalAllocationPct: output.basketPlan.totalAllocationPct,
   memberPortfolioWeightPct,
+  primaryDecisionPath: path.relative(root, primaryDecisionPath),
 }, null, 2));
