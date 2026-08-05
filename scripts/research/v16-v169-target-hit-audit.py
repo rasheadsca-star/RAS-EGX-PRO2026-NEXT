@@ -109,6 +109,11 @@ def main():
     histories = [norm_hist(path) for path in HISTORY_DIR.glob('*.json')]
     histories = [history for history in histories if history['ok'] and len(history['rows']) >= 60]
 
+    raw_by_date = {}
+    for history in histories:
+        for raw in history['rows']:
+            raw_by_date.setdefault(raw['date'], {})[history['ticker']] = raw
+
     by_date = {}
     for history in histories:
         for index in range(55, len(history['rows'])):
@@ -124,14 +129,15 @@ def main():
             feature['rs20'] = feature['ret20'] - med20
 
     rows_by_date = {}
-    all_rows = []
     for date_index, signal_date in enumerate(dates[:-1]):
         outcome_date = dates[date_index + 1]
         outcomes = {feature['ticker']: feature for feature in by_date[outcome_date]}
+        raw_outcomes = raw_by_date.get(outcome_date, {})
         session = []
         for feature in by_date[signal_date]:
             outcome = outcomes.get(feature['ticker'])
-            if not outcome:
+            outcome_raw = raw_outcomes.get(feature['ticker'])
+            if not outcome or not outcome_raw:
                 continue
             flags = extended_flags(feature)
             row = {
@@ -142,9 +148,9 @@ def main():
                 'flags': flags,
                 'xNew': extended_vector(feature, flags),
                 'nextReturn': pct(outcome['close'], feature['close']),
-                'nextOpen': outcome['open'],
-                'nextHigh': outcome['high'],
-                'nextLow': outcome['low'],
+                'nextOpen': outcome_raw['open'],
+                'nextHigh': outcome_raw['high'],
+                'nextLow': outcome_raw['low'],
             }
             session.append(row)
         session.sort(key=lambda row: row['nextReturn'], reverse=True)
@@ -152,7 +158,6 @@ def main():
         for row in session:
             row['yTop10'] = 1 if row['ticker'] in top10 else 0
         rows_by_date[signal_date] = session
-        all_rows.extend(session)
 
     signal_dates = dates[:-1]
     warmup_rows = [row for date in signal_dates[:WARMUP] for row in rows_by_date[date]]
@@ -212,9 +217,9 @@ def main():
     positive_sessions = sum(session['netReturnPct'] > 0 for session in audited)
 
     report = {
-        'schemaVersion': '16.9.0-target-hit-audit',
+        'schemaVersion': '16.9.1-target-hit-audit',
         'generatedAt': datetime.now(timezone.utc).isoformat(),
-        'method': 'Exact V16.9 walk-forward ranking and dynamic basket-size selection; target/stop audited from next-session daily OHLC.',
+        'method': 'Exact V16.9 walk-forward ranking and dynamic basket-size selection; target/stop audited from next-session raw daily OHLC.',
         'auditWindow': {
             'requestedSessions': AUDIT_SESSIONS,
             'completedSessions': len(audited),
