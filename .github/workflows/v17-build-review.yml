@@ -12,6 +12,9 @@ on:
       - "data/stable/v16-v169-primary-decision.json"
       - "data/stable/v16-market-regime.json"
       - "data/stable/v16-live-evidence.json"
+      - "data/research/v16-v169-target-hit-audit.json"
+      - "data/history/**"
+      - "data/market.json"
       - "data/fetch-status.json"
       - ".github/workflows/v17-build-review.yml"
 
@@ -41,6 +44,7 @@ jobs:
       - name: Static validation
         run: |
           set -euo pipefail
+          node --check scripts/v17/resolve-ledger.cjs
           node --check scripts/v17/build-snapshot.cjs
           node --check scripts/v17/review.cjs
           node --check preview-v17/app/app.js
@@ -50,6 +54,9 @@ jobs:
             echo "Legacy source reference detected in V17 app"
             exit 1
           fi
+
+      - name: Resolve prior V17 signals conservatively
+        run: node scripts/v17/resolve-ledger.cjs
 
       - name: Build canonical V17 snapshot
         run: node scripts/v17/build-snapshot.cjs
@@ -65,7 +72,7 @@ jobs:
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
           curl --fail --silent http://127.0.0.1:4173/preview-v17/app/index.html | grep -q "EGX Pro V17"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.status!=='READY_FOR_NEXT_SESSION_REVIEW')process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.status!=='READY_FOR_NEXT_SESSION_REVIEW')process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.counts.CRITICAL||x.counts.MAJOR)process.exit(1);})"
 
       - name: Commit review evidence
