@@ -43,6 +43,19 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
+      - name: Prove frozen V16 application is unchanged
+        run: |
+          set -euo pipefail
+          git fetch origin release/v16.9.2-frozen-20260806:refs/remotes/origin/release/v16.9.2-frozen-20260806
+          CHANGED_FILES="$(git diff --name-only origin/release/v16.9.2-frozen-20260806...HEAD)"
+          echo "$CHANGED_FILES"
+          VIOLATIONS="$(printf '%s\n' "$CHANGED_FILES" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/|scripts/stable/|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
+          if [ -n "$VIOLATIONS" ]; then
+            echo "Protected V16 files changed:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
