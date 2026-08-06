@@ -49,7 +49,7 @@ jobs:
           git fetch origin release/v16.9.2-frozen-20260806:refs/remotes/origin/release/v16.9.2-frozen-20260806
           CHANGED_FILES="$(git diff --name-only origin/release/v16.9.2-frozen-20260806...HEAD)"
           echo "$CHANGED_FILES"
-          VIOLATIONS="$(printf '%s\n' "$CHANGED_FILES" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/|scripts/stable/|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
+          VIOLATIONS="$(printf '%s\n' "$CHANGED_FILES" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/.*|scripts/stable/.*|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
           if [ -n "$VIOLATIONS" ]; then
             echo "Protected V16 files changed:"
             echo "$VIOLATIONS"
