@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071522">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta name="description" content="EGX Pro V17 — منصة قرار استثماري تجريبية مع مصدر حقيقة واحد وسجل إشارات غير قابل للاستبدال">
+  <title>EGX Pro V17</title>
+  <link rel="stylesheet" href="styles.css?v=17.0.0-rc1">
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">تخطي إلى المحتوى</a>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark" aria-hidden="true">17</div>
+        <div>
+          <div class="eyebrow">EGX PRO</div>
+          <h1>منصة القرار V17</h1>
+          <p>محرك واحد، جلسة واحدة، وسجل حي لا يُستبدل.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="update-box" aria-live="polite">
+          <span>آخر تحديث</span>
+          <strong id="lastUpdated">جارٍ التحميل…</strong>
+        </div>
+        <button class="button primary" id="refreshButton" type="button">تحديث البيانات</button>
+      </div>
+    </header>
+
+    <nav class="main-nav" aria-label="أقسام التطبيق">
+      <button class="nav-button active" data-view="dashboard" type="button">لوحة القرار</button>
+      <button class="nav-button" data-view="market" type="button">بحث السوق</button>
+      <button class="nav-button" data-view="portfolio" type="button">المحفظة</button>
+      <button class="nav-button" data-view="evidence" type="button">الدليل الحي</button>
+      <button class="nav-button" data-view="health" type="button">سلامة النظام</button>
+    </nav>
+
+    <main id="mainContent">
+      <section class="view active" id="view-dashboard" aria-labelledby="dashboardTitle">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">القرار الحالي</span>
+            <h2 id="dashboardTitle">سلة الجلسة التالية</h2>
+          </div>
+          <span class="status-pill" id="snapshotStatus">جارٍ التحقق</span>
+        </div>
+
+        <div class="notice strong" id="decisionDisclosure">
+          هذه السلة للمراجعة قبل الجلسة وليست أمر شراء آليًا. التنفيذ يتطلب افتتاحًا داخل النطاق وسيولة مؤكدة.
+        </div>
+
+        <div class="score-grid" aria-label="مؤشرات منفصلة للجاهزية">
+          <article class="score-card market-score">
+            <div class="score-label">قوة السوق</div>
+            <strong id="marketStrengthScore">—</strong>
+            <span id="marketRegimeLabel">جارٍ القراءة</span>
+          </article>
+          <article class="score-card">
+            <div class="score-label">جودة البيانات</div>
+            <strong id="dataQualityScore">—</strong>
+            <span>اتساق الجلسة والمصدر</span>
+          </article>
+          <article class="score-card evidence-score">
+            <div class="score-label">الدليل الحي</div>
+            <strong id="liveEvidenceScore">—</strong>
+            <span>حجم العينة والزمن المرصود</span>
+          </article>
+          <article class="score-card">
+            <div class="score-label">سلامة التشغيل</div>
+            <strong id="operationalScore">—</strong>
+            <span>محرك واحد وحدود مخاطرة</span>
+          </article>
+        </div>
+
+        <div class="panel-grid summary-grid">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="panel-kicker">حقيقة الجلسة</span>
+                <h3>مصدر القرار</h3>
+              </div>
+            </div>
+            <div class="metric-grid" id="sessionMetrics"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <span class="panel-kicker">سياسة المحفظة</span>
+                <h3>التعرض والنقد</h3>
+              </div>
+            </div>
+            <div class="allocation-wrap">
+              <div class="allocation-bar"><i id="allocationBar"></i></div>
+              <div class="metric-grid" id="allocationMetrics"></div>
+            </div>
+          </article>
+        </div>
+
+        <article class="panel recommendation-panel">
+          <div class="panel-head split">
+            <div>
+              <span class="panel-kicker">المحرك الأساسي</span>
+              <h3 id="engineTitle">جارٍ تحميل المحرك…</h3>
+              <p id="engineSubtitle">يتم فحص مصدر الحقيقة الواحد.</p>
+            </div>
+            <div class="legend">
+              <span><i class="dot good"></i>داخل الخطة</span>
+              <span><i class="dot warn"></i>زخم ساخن</span>
+            </div>
+          </div>
+          <div class="recommendation-grid" id="recommendationGrid" aria-live="polite"></div>
+        </article>
+      </section>
+
+      <section class="view" id="view-market" aria-labelledby="marketTitle">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">كل السوق</span>
+            <h2 id="marketTitle">بحث سريع وشفاف</h2>
+          </div>
+        </div>
+        <article class="panel">
+          <div class="search-row">
+            <label class="field grow">
+              <span>ابحث بالرمز أو الاسم</span>
+              <input id="marketSearch" type="search" placeholder="مثال: MOIN أو المهندس للتأمين" autocomplete="off">
+            </label>
+            <label class="field">
+              <span>النطاق</span>
+              <select id="marketFilter">
+                <option value="all">كل الأسهم</option>
+                <option value="recommended">السلة الحالية</option>
+                <option value="outside">خارج السلة</option>
+                <option value="gainers">الأسهم الصاعدة</option>
+              </select>
+            </label>
+          </div>
+          <div class="market-summary" id="marketSummary"></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>السهم</th><th>السعر</th><th>التغير</th><th>الحجم</th><th>الحالة</th></tr></thead>
+              <tbody id="marketRows"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="view-portfolio" aria-labelledby="portfolioTitle">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">إدارة المخاطر</span>
+            <h2 id="portfolioTitle">حاسبة السلة والمراكز</h2>
+          </div>
+        </div>
+        <div class="panel-grid portfolio-grid">
+          <article class="panel">
+            <div class="panel-head"><div><h3>إعداد رأس المال</h3><p>الحساب محلي على جهازك ولا يرسل أوامر.</p></div></div>
+            <div class="form-grid">
+              <label class="field"><span>رأس المال</span><input id="capitalInput" type="number" min="1000" step="1000" value="100000"></label>
+              <label class="field"><span>مخاطرة الصفقة %</span><input id="riskInput" type="number" min="0.05" max="1" step="0.05" value="0.25"></label>
+            </div>
+            <div class="notice">الأوزان غير المتفعلة تظل نقدًا ولا تُوزع على باقي الأسهم.</div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h3>ملخص السلة</h3><p>حساب نظري وفق نقاط الدخول والوقف المنشورة.</p></div></div>
+            <div class="metric-grid" id="portfolioSummary"></div>
+          </article>
+        </div>
+        <article class="panel">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>السهم</th><th>الوزن</th><th>قيمة المركز</th><th>سعر الدخول</th><th>الكمية</th><th>الخطر النظري</th></tr></thead>
+              <tbody id="positionRows"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="view-evidence" aria-labelledby="evidenceTitle">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">بدون خلط مع Backtest</span>
+            <h2 id="evidenceTitle">الدليل الحي الفعلي</h2>
+          </div>
+          <span class="status-pill neutral" id="evidenceStage">Pilot</span>
+        </div>
+        <div class="notice" id="evidenceDisclosure">يتم تحميل بوابة العينة والزمن.</div>
+        <div class="panel-grid evidence-grid">
+          <article class="panel"><div class="panel-head"><h3>بوابة الاعتماد</h3></div><div class="metric-grid" id="evidenceGate"></div></article>
+          <article class="panel"><div class="panel-head"><h3>أداء المحرك الحالي</h3></div><div class="metric-grid" id="strategyEvidence"></div></article>
+        </div>
+      </section>
+
+      <section class="view" id="view-health" aria-labelledby="healthTitle">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">مراجعة قابلة للتدقيق</span>
+            <h2 id="healthTitle">سلامة النظام ومصدر الحقيقة</h2>
+          </div>
+        </div>
+        <div class="panel-grid health-grid">
+          <article class="panel"><div class="panel-head"><h3>اتساق البيانات</h3></div><div id="healthChecks" class="check-list"></div></article>
+          <article class="panel"><div class="panel-head"><h3>سلسلة المصدر</h3></div><div id="lineageList" class="lineage-list"></div></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js?v=17.0.0-rc1"></script>
+</body>
+</html>
