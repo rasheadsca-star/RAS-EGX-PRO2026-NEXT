@@ -20,6 +20,15 @@ on:
       - "data/market.json"
       - "data/fetch-status.json"
       - ".github/workflows/v17-build-review.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "preview-v17/**"
+      - "scripts/v17/**"
+      - "docs/v17/**"
+      - "data/v17/**"
+      - ".github/workflows/v17-build-review.yml"
   schedule:
     - cron: "50 13-20 * * 0-4"
 
@@ -29,7 +38,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: egx-v17-${{ github.ref_name }}
+  group: egx-v17-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -37,12 +46,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     env:
-      BRANCH_NAME: ${{ github.ref_name }}
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
-      - name: Checkout active V17 branch
+      - name: Checkout V17 merge candidate
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Prove frozen V16 application is unchanged
@@ -103,6 +111,7 @@ jobs:
           curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.counts.CRITICAL||x.counts.MAJOR||x.counts.MINOR)process.exit(1);})"
 
       - name: Commit V17 evidence to active branch
+        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -120,13 +129,13 @@ jobs:
           fi
 
       - name: Upload main Pages artifact
-        if: github.ref_name == 'main'
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
   deploy-v17:
-    if: github.ref_name == 'main'
+    if: github.event_name != 'pull_request' && github.ref_name == 'main'
     needs: build-review
     runs-on: ubuntu-latest
     environment:
