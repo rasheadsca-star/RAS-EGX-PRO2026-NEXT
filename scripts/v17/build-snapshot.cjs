@@ -13,6 +13,7 @@ const input = {
   fetchStatus: path.join(root, 'data/fetch-status.json'),
   market: path.join(root, 'data/market.json'),
   researchAudit: path.join(root, 'data/research/v16-v169-target-hit-audit.json'),
+  challengerStatus: path.join(root, 'data/v17/challenger-status.json'),
 };
 const outputDir = path.join(root, 'data/v17');
 const snapshotPath = path.join(outputDir, 'current.json');
@@ -153,6 +154,11 @@ const legacyLive = readJson(input.legacyLive, {});
 const fetchStatus = readJson(input.fetchStatus, {});
 const market = readJson(input.market, {});
 const researchAudit = readJson(input.researchAudit, {});
+const challengerStatus = readJson(input.challengerStatus, {
+  status: 'CHALLENGER_GATE_NOT_RUN',
+  activeEngine: 'V16_9_EQUAL_WEIGHT_BASKET',
+  promotionAllowed: false,
+});
 const generatedAt = new Date().toISOString();
 const ledger = readJson(ledgerPath, {
   schemaVersion: '17.0.0-ledger',
@@ -164,6 +170,9 @@ if (!Array.isArray(ledger.entries)) ledger.entries = [];
 const engineId = decision?.selectedModel?.id;
 if (engineId !== 'V16_9_EQUAL_WEIGHT_BASKET') {
   throw new Error(`V17 accepts one production engine only; received ${engineId || 'missing'}`);
+}
+if (challengerStatus.activeEngine !== engineId || challengerStatus.promotionAllowed === true) {
+  throw new Error('Challenger gate attempted to replace the champion automatically.');
 }
 
 const recommendations = Array.isArray(decision.recommendations) ? decision.recommendations : [];
@@ -232,6 +241,7 @@ const immutablePayload = {
     target: row.target,
     stop: row.stop,
     portfolioWeightPct: row.portfolioWeightPct,
+    basketWeightPct: row.basketWeightPct,
   })),
 };
 const signalId = `${sessionDate}:${engineId}`;
@@ -288,7 +298,8 @@ const operationalScore = round(clamp(
   + (sessionAligned ? 20 : 0)
   + (duplicateTickers.length === 0 ? 15 : 0)
   + (totalAllocationPct <= 50 ? 15 : 0)
-  + (ledger.entries.some(entry => entry.signalId === signalId) ? 15 : 0),
+  + (ledger.entries.some(entry => entry.signalId === signalId) ? 10 : 0)
+  + (challengerStatus.promotionAllowed === false ? 5 : 0),
   0,
   100,
 ), 2);
@@ -301,7 +312,7 @@ const status = sessionAligned && executionGrade ? 'READY_FOR_NEXT_SESSION_REVIEW
 const hotMomentumCount = normalizedRecommendations.filter(row => row.hotMomentumRisk).length;
 
 const snapshot = {
-  schemaVersion: '17.0.0-rc2',
+  schemaVersion: '17.0.0-rc3',
   generatedAt,
   status,
   statusAr: status === 'READY_FOR_NEXT_SESSION_REVIEW'
@@ -315,6 +326,14 @@ const snapshot = {
     labelAr: 'سلة احتمالية متساوية الأوزان — تشغيل V17 معزول',
     singleProductionEngine: true,
     selectionMethodFrozen: true,
+  },
+  championChallenger: {
+    activeEngine: challengerStatus.activeEngine,
+    status: challengerStatus.status,
+    statusAr: challengerStatus.statusAr,
+    challenger: challengerStatus.challenger || null,
+    promotionAllowed: false,
+    nextAction: challengerStatus.nextAction || null,
   },
   market: {
     sessionDate: marketSession,
@@ -387,6 +406,7 @@ const snapshot = {
     historicalAuditSource: 'data/research/v16-v169-target-hit-audit.json',
     marketSource: 'data/market.json',
     nativeLedger: 'data/v17/ledger.json',
+    challengerGateSource: 'data/v17/challenger-status.json',
     canonicalPath: 'data/v17/current.json',
   },
 };
@@ -403,5 +423,6 @@ console.log(JSON.stringify({
   scores: snapshot.readiness,
   marketQuality,
   nativeEvidence,
+  challengerStatus: challengerStatus.status,
   ledgerEntries: ledger.entries.length,
 }, null, 2));
