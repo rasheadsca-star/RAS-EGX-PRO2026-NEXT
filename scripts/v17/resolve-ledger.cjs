@@ -115,9 +115,15 @@ for (const entry of ledger.entries) {
     };
   });
 
+  const totalPortfolioWeight = members.reduce((sum, member) => sum + finite(member.portfolioWeightPct, 0), 0);
   const basketSleeveReturnPct = outcomes.reduce((sum, outcome, index) => {
-    const weight = finite(members[index]?.basketWeightPct, 0) / 100;
-    return sum + weight * finite(outcome.netReturnPct, 0);
+    const explicitBasketWeight = finite(members[index]?.basketWeightPct);
+    const normalizedWeight = explicitBasketWeight !== null
+      ? explicitBasketWeight / 100
+      : totalPortfolioWeight > 0
+        ? finite(members[index]?.portfolioWeightPct, 0) / totalPortfolioWeight
+        : 0;
+    return sum + normalizedWeight * finite(outcome.netReturnPct, 0);
   }, 0);
   const totalPortfolioReturnPct = outcomes.reduce((sum, outcome, index) => {
     const weight = finite(members[index]?.portfolioWeightPct, 0) / 100;
