@@ -6,12 +6,7 @@
     market: '../../data/market.json',
   };
 
-  const state = {
-    current: null,
-    market: [],
-    view: 'dashboard',
-  };
-
+  const state = { current: null, market: [], view: 'dashboard' };
   const $ = id => document.getElementById(id);
   const number = value => Number.isFinite(Number(value)) ? Number(value) : null;
   const fmt = (value, digits = 2) => number(value) === null ? '—' : Number(value).toLocaleString('en-GB', { maximumFractionDigits: digits });
@@ -55,11 +50,11 @@
     const current = state.current;
     const date = new Date(current.generatedAt);
     $('lastUpdated').textContent = Number.isNaN(date.getTime()) ? current.generatedAt : date.toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
-    const status = $('snapshotStatus');
     const ready = current.status === 'READY_FOR_NEXT_SESSION_REVIEW';
-    status.textContent = ready ? 'جاهز للمراجعة قبل الجلسة' : 'موقوف لحماية القرار';
-    status.classList.toggle('blocked', !ready);
+    $('snapshotStatus').textContent = ready ? 'جاهز للمراجعة قبل الجلسة' : 'موقوف لحماية القرار';
+    $('snapshotStatus').classList.toggle('blocked', !ready);
     $('decisionDisclosure').textContent = current.statusAr || 'هذه السلة للمراجعة وليست أمر شراء آليًا.';
+    $('decisionWarning').textContent = current.decisionWarnings?.warningAr || 'التنفيذ مشروط بالافتتاح والسيولة.';
   }
 
   function renderScores() {
@@ -124,38 +119,59 @@
   function renderEvidence() {
     const current = state.current;
     const readiness = current.readiness || {};
-    const gate = current.evidence?.gate || {};
-    const strategy = current.evidence?.productionStrategySummary || {};
+    const native = current.evidence?.nativeV17 || {};
+    const nativeGate = native.gate || {};
+    const research = current.evidence?.researchAudit || {};
+    const legacy = current.evidence?.legacyMethodEvidence || {};
+
     $('evidenceStage').textContent = readiness.releaseStage === 'PROFESSIONAL_EVIDENCE' ? 'دليل مهني' : 'Pilot مضبوط';
-    $('evidenceDisclosure').textContent = readiness.disclosureAr || 'الدليل الحي منفصل عن الاختبار التاريخي.';
-    $('evidenceGate').innerHTML = [
-      metric('الصفقات المحسومة', `${fmt(gate.resolvedTrades, 0)} / ${fmt(gate.minimumResolvedTrades, 0)}`),
-      metric('الأيام المرصودة', `${fmt(gate.observedCalendarDays, 0)} / ${fmt(gate.minimumObservedCalendarDays, 0)}`),
-      metric('بوابة العينة', gate.sampleGatePassed ? 'مكتملة' : 'غير مكتملة'),
-      metric('بوابة الزمن', gate.timeGatePassed ? 'مكتملة' : 'غير مكتملة'),
+    $('evidenceDisclosure').textContent = readiness.disclosureAr || 'الدليل الحي V17 منفصل عن الاختبار التاريخي.';
+    $('nativeEvidence').innerHTML = [
+      metric('السلال الصادرة', fmt(native.issuedBaskets, 0)),
+      metric('السلال المحسومة', `${fmt(native.resolvedBaskets, 0)} / ${fmt(nativeGate.minimumResolvedBaskets, 0)}`),
+      metric('الأعضاء المحسومون', `${fmt(native.resolvedMembers, 0)} / ${fmt(nativeGate.minimumResolvedMembers, 0)}`),
+      metric('الأيام المرصودة', `${fmt(nativeGate.observedCalendarDays, 0)} / ${fmt(nativeGate.minimumObservedCalendarDays, 0)}`),
+      metric('نسبة فوز السلة', pct(native.winRatePct)),
+      metric('متوسط السلة', pct(native.averageBasketReturnPct, 3)),
     ].join('');
-    $('strategyEvidence').innerHTML = strategy.name ? [
-      metric('توصيات مؤرشفة', fmt(strategy.archivedRecommendations, 0)),
-      metric('صفقات محسومة', fmt(strategy.resolvedTrades, 0)),
-      metric('نسبة الفوز', pct(strategy.winRatePct)),
-      metric('متوسط العائد الصافي', pct(strategy.averageNetReturnPct, 3)),
-      metric('Profit Factor', strategy.profitFactor === null ? 'غير قابل للحساب بعد' : fmt(strategy.profitFactor, 3)),
-      metric('أقصى تراجع', pct(strategy.maxDrawdownPct, 3)),
-    ].join('') : '<div class="empty">لم يتكون سجل حي مستقل للمحرك بعد.</div>';
+    $('researchEvidence').innerHTML = [
+      metric('الجلسات المختبرة', fmt(research.auditWindow?.completedSessions, 0)),
+      metric('تحقيق الهدف المحافظ', pct(research.conservativeTargetHitRatePct, 2)),
+      metric('جلسات سلة رابحة', pct(research.positiveBasketSessionPct, 1)),
+      metric('متوسط العائد الصافي', pct(research.averageNetReturnPct, 3)),
+      metric('Profit Factor', fmt(research.profitFactor, 3)),
+      metric('أقصى تراجع', pct(research.maximumDrawdownPct, 3)),
+    ].join('');
+    $('legacyEvidence').innerHTML = legacy.name ? [
+      metric('التوصيات السابقة', fmt(legacy.archivedRecommendations, 0)),
+      metric('الصفقات المحسومة', fmt(legacy.resolvedTrades, 0)),
+      metric('نسبة الفوز', pct(legacy.winRatePct)),
+      metric('متوسط العائد', pct(legacy.averageNetReturnPct, 3)),
+      metric('Profit Factor', legacy.profitFactor === null ? 'غير قابل للحساب' : fmt(legacy.profitFactor, 3)),
+      metric('الأيام المرصودة', fmt(legacy.observedCalendarDays, 0)),
+    ].join('') : '<div class="empty">لا يوجد مرجع سابق متاح.</div>';
   }
 
   function renderHealth() {
     const current = state.current;
     const health = current.systemHealth || {};
+    const quality = health.marketDataQuality || {};
     const checks = [
       ['محرك إنتاج واحد', current.engine?.singleProductionEngine === true],
+      ['طريقة الاختيار مجمدة', current.engine?.selectionMethodFrozen === true],
       ['اتساق جلسة القرار والمصدر', health.sessionAligned === true],
       ['بيانات بدرجة تنفيذ', health.executionGrade === true],
       ['منع الأوامر الآلية', current.portfolioPolicy?.automaticOrders === false],
       ['إبقاء الوزن غير المتفعل نقدًا', current.portfolioPolicy?.unfilledMemberPolicy === 'KEEP_CASH'],
-      ['فصل قوة السوق عن الدليل الحي', current.readiness?.marketStrengthScore !== current.readiness?.liveEvidenceScore],
+      ['الدليل الحي خاص بـV17', Boolean(current.evidence?.nativeV17)],
     ];
     $('healthChecks').innerHTML = checks.map(([label, passed]) => `<div class="check-item"><span>${escapeHtml(label)}</span><b class="${passed ? 'good' : 'bad'}">${passed ? 'سليم' : 'مرفوض'}</b></div>`).join('');
+    $('dataQualityDetails').innerHTML = [
+      metric('إجمالي الصفوف', fmt(quality.totalRows, 0)),
+      metric('تغطية السعر', pct(quality.pricedCoveragePct, 2)),
+      metric('اكتمال OHLC', pct(quality.completeOhlcPct, 2)),
+      metric('نظافة أسماء الشركات', pct(quality.cleanCompanyNamePct, 2)),
+    ].join('');
     $('lineageList').innerHTML = Object.entries(current.lineage || {}).map(([key, value]) => `<div class="lineage-item"><span>${escapeHtml(key)}</span><code>${escapeHtml(value)}</code></div>`).join('');
   }
 
@@ -196,11 +212,11 @@
   function renderPortfolio() {
     if (!state.current) return;
     const capital = Math.max(0, number($('capitalInput')?.value) || 0);
-    const riskPct = Math.max(0, number($('riskInput')?.value) || 0);
+    const requestedRisk = Math.max(0, number($('riskInput')?.value) || 0);
     const marketRiskCap = number(state.current.market?.maxTradeRiskPct);
     if ($('riskInput') && marketRiskCap !== null) {
       $('riskInput').max = String(marketRiskCap);
-      if (riskPct > marketRiskCap) $('riskInput').value = String(marketRiskCap);
+      if (requestedRisk > marketRiskCap) $('riskInput').value = String(marketRiskCap);
     }
     const appliedRiskPct = Math.min(number($('riskInput')?.value) || 0, marketRiskCap ?? 1);
     let totalValue = 0;
@@ -262,6 +278,5 @@
   $('marketFilter').addEventListener('change', renderMarket);
   $('capitalInput').addEventListener('input', renderPortfolio);
   $('riskInput').addEventListener('input', renderPortfolio);
-
   load();
 })();
