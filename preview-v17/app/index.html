@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta name="description" content="EGX Pro V17 — منصة قرار استثماري تجريبية مع مصدر حقيقة واحد وسجل إشارات غير قابل للاستبدال">
   <title>EGX Pro V17</title>
-  <link rel="stylesheet" href="styles.css?v=17.0.0-rc1">
+  <link rel="stylesheet" href="styles.css?v=17.0.0-rc2">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">تخطي إلى المحتوى</a>
@@ -51,6 +51,7 @@
         <div class="notice strong" id="decisionDisclosure">
           هذه السلة للمراجعة قبل الجلسة وليست أمر شراء آليًا. التنفيذ يتطلب افتتاحًا داخل النطاق وسيولة مؤكدة.
         </div>
+        <div class="notice warning" id="decisionWarning" aria-live="polite">يتم فحص مخاطر الزخم والافتتاح.</div>
 
         <div class="score-grid" aria-label="مؤشرات منفصلة للجاهزية">
           <article class="score-card market-score">
@@ -61,12 +62,12 @@
           <article class="score-card">
             <div class="score-label">جودة البيانات</div>
             <strong id="dataQualityScore">—</strong>
-            <span>اتساق الجلسة والمصدر</span>
+            <span>تغطية السعر وOHLC ونظافة الأسماء</span>
           </article>
           <article class="score-card evidence-score">
-            <div class="score-label">الدليل الحي</div>
+            <div class="score-label">الدليل الحي V17</div>
             <strong id="liveEvidenceScore">—</strong>
-            <span>حجم العينة والزمن المرصود</span>
+            <span>سجل V17 الأصلي فقط</span>
           </article>
           <article class="score-card">
             <div class="score-label">سلامة التشغيل</div>
@@ -182,15 +183,16 @@
       <section class="view" id="view-evidence" aria-labelledby="evidenceTitle">
         <div class="section-heading">
           <div>
-            <span class="section-kicker">بدون خلط مع Backtest</span>
-            <h2 id="evidenceTitle">الدليل الحي الفعلي</h2>
+            <span class="section-kicker">فصل كامل بين الأدلة</span>
+            <h2 id="evidenceTitle">الدليل الحي والاختبار التاريخي</h2>
           </div>
           <span class="status-pill neutral" id="evidenceStage">Pilot</span>
         </div>
-        <div class="notice" id="evidenceDisclosure">يتم تحميل بوابة العينة والزمن.</div>
+        <div class="notice" id="evidenceDisclosure">يتم تحميل سجل V17 الأصلي.</div>
         <div class="panel-grid evidence-grid">
-          <article class="panel"><div class="panel-head"><h3>بوابة الاعتماد</h3></div><div class="metric-grid" id="evidenceGate"></div></article>
-          <article class="panel"><div class="panel-head"><h3>أداء المحرك الحالي</h3></div><div class="metric-grid" id="strategyEvidence"></div></article>
+          <article class="panel"><div class="panel-head"><div><h3>السجل الحي الأصلي لـV17</h3><p>هو وحده الذي يحدد الجاهزية المهنية.</p></div></div><div class="metric-grid" id="nativeEvidence"></div></article>
+          <article class="panel"><div class="panel-head"><div><h3>التدقيق التاريخي لنفس التكنيك</h3><p>مرجع بحثي، وليس سجلًا حيًا.</p></div></div><div class="metric-grid" id="researchEvidence"></div></article>
+          <article class="panel"><div class="panel-head"><div><h3>نتائج V16.9 السابقة</h3><p>مرجع منهجي منفصل، لا يدخل في درجة V17.</p></div></div><div class="metric-grid" id="legacyEvidence"></div></article>
         </div>
       </section>
 
@@ -203,6 +205,7 @@
         </div>
         <div class="panel-grid health-grid">
           <article class="panel"><div class="panel-head"><h3>اتساق البيانات</h3></div><div id="healthChecks" class="check-list"></div></article>
+          <article class="panel"><div class="panel-head"><h3>جودة سوق البيانات</h3></div><div id="dataQualityDetails" class="metric-grid"></div></article>
           <article class="panel"><div class="panel-head"><h3>سلسلة المصدر</h3></div><div id="lineageList" class="lineage-list"></div></article>
         </div>
       </section>
@@ -210,6 +213,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=17.0.0-rc1"></script>
+  <script src="app.js?v=17.0.0-rc2"></script>
 </body>
 </html>
