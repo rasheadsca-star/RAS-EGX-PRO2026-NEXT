@@ -1,9 +1,10 @@
-name: EGX V17 Build and Independent Review
+name: EGX V17 Build Review and Deploy
 
 on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - develop/v17-rebuild
     paths:
       - "preview-v17/**"
@@ -17,23 +18,29 @@ on:
       - "data/market.json"
       - "data/fetch-status.json"
       - ".github/workflows/v17-build-review.yml"
+  schedule:
+    - cron: "50 13-20 * * 0-4"
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
-  group: egx-v17-build-review
+  group: egx-v17-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   build-review:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
+    env:
+      BRANCH_NAME: ${{ github.ref_name }}
     steps:
-      - name: Checkout V17 development branch
+      - name: Checkout active V17 branch
         uses: actions/checkout@v4
         with:
-          ref: develop/v17-rebuild
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Setup Node
@@ -73,9 +80,9 @@ jobs:
           sleep 2
           curl --fail --silent http://127.0.0.1:4173/preview-v17/app/index.html | grep -q "EGX Pro V17"
           curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.status!=='READY_FOR_NEXT_SESSION_REVIEW')process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);})"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.counts.CRITICAL||x.counts.MAJOR)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.counts.CRITICAL||x.counts.MAJOR||x.counts.MINOR)process.exit(1);})"
 
-      - name: Commit review evidence
+      - name: Commit V17 evidence to active branch
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
@@ -84,10 +91,28 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "Build and review V17 canonical release candidate"
             for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin develop/v17-rebuild && git push origin HEAD:develop/v17-rebuild; then
+              if git pull --rebase -X ours origin "$BRANCH_NAME" && git push origin "HEAD:$BRANCH_NAME"; then
                 break
               fi
               [ "$attempt" = "3" ] && exit 1
               sleep $((attempt * 6))
             done
           fi
+
+      - name: Upload main Pages artifact
+        if: github.ref_name == 'main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy-v17:
+    if: github.ref_name == 'main'
+    needs: build-review
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}preview-v17/app/
+    steps:
+      - name: Deploy repository with isolated V17 path
+        id: deployment
+        uses: actions/deploy-pages@v4
