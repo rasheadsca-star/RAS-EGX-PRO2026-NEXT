@@ -7,6 +7,7 @@ const path = require('path');
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const currentPath = path.join(root, 'data/v17/current.json');
 const ledgerPath = path.join(root, 'data/v17/ledger.json');
+const challengerPath = path.join(root, 'data/v17/challenger-status.json');
 const reviewPath = path.join(root, 'data/v17/review.json');
 const appFiles = [
   'preview-v17/app/index.html',
@@ -16,6 +17,7 @@ const appFiles = [
 const requiredEngineFiles = [
   'scripts/v17/build-snapshot.cjs',
   'scripts/v17/resolve-ledger.cjs',
+  'scripts/v17/challenger-gate.cjs',
   'scripts/v17/review.cjs',
 ];
 
@@ -44,16 +46,19 @@ const add = (severity, code, message, location = null) => findings.push({ severi
 
 if (!exists('data/v17/current.json')) add('CRITICAL', 'MISSING_CANONICAL_SNAPSHOT', 'Canonical V17 snapshot is missing.', 'data/v17/current.json');
 if (!exists('data/v17/ledger.json')) add('CRITICAL', 'MISSING_IMMUTABLE_LEDGER', 'Immutable V17 ledger is missing.', 'data/v17/ledger.json');
+if (!exists('data/v17/challenger-status.json')) add('CRITICAL', 'MISSING_CHALLENGER_GATE', 'Champion-challenger status is missing.', 'data/v17/challenger-status.json');
 for (const file of appFiles) if (!exists(file)) add('CRITICAL', 'MISSING_APP_FILE', `Required application file is missing: ${file}`, file);
 for (const file of requiredEngineFiles) if (!exists(file)) add('CRITICAL', 'MISSING_ENGINE_FILE', `Required V17 engine file is missing: ${file}`, file);
 
 let current = null;
 let ledger = null;
+let challenger = null;
 if (!findings.some(item => item.code === 'MISSING_CANONICAL_SNAPSHOT')) current = readJson(currentPath);
 if (!findings.some(item => item.code === 'MISSING_IMMUTABLE_LEDGER')) ledger = readJson(ledgerPath);
+if (!findings.some(item => item.code === 'MISSING_CHALLENGER_GATE')) challenger = readJson(challengerPath);
 
 if (current) {
-  if (current.schemaVersion !== '17.0.0-rc2') add('MAJOR', 'UNEXPECTED_SCHEMA', `Unexpected schema ${current.schemaVersion}.`, 'data/v17/current.json');
+  if (current.schemaVersion !== '17.0.0-rc3') add('MAJOR', 'UNEXPECTED_SCHEMA', `Unexpected schema ${current.schemaVersion}.`, 'data/v17/current.json');
   if (current.engine?.id !== 'V16_9_EQUAL_WEIGHT_BASKET') add('CRITICAL', 'MULTIPLE_OR_WRONG_ENGINE', 'V17 production engine is not the approved single engine.', 'current.engine.id');
   if (current.engine?.singleProductionEngine !== true) add('MAJOR', 'ENGINE_NOT_LOCKED', 'Single production engine flag is not enforced.', 'current.engine.singleProductionEngine');
   if (current.engine?.selectionMethodFrozen !== true) add('MAJOR', 'SELECTION_METHOD_NOT_FROZEN', 'Selection method can change without a new version.', 'current.engine.selectionMethodFrozen');
@@ -108,6 +113,21 @@ if (current) {
   if (current.readiness?.marketStrengthScore === current.readiness?.liveEvidenceScore && current.readiness?.marketStrengthScore === 100) {
     add('MAJOR', 'MERGED_READINESS_SCORE', 'Market strength appears to be presented as evidence readiness.', 'readiness');
   }
+
+  if (!current.championChallenger) add('CRITICAL', 'CHAMPION_STATUS_NOT_EXPOSED', 'Canonical snapshot does not expose champion-challenger state.', 'championChallenger');
+  if (current.championChallenger?.activeEngine !== current.engine?.id) add('CRITICAL', 'CHAMPION_ENGINE_MISMATCH', 'Displayed engine differs from the champion gate.', 'championChallenger.activeEngine');
+  if (current.championChallenger?.promotionAllowed !== false) add('CRITICAL', 'AUTOMATIC_CHALLENGER_PROMOTION', 'A challenger can replace the champion automatically.', 'championChallenger.promotionAllowed');
+}
+
+if (challenger && current) {
+  if (challenger.activeEngine !== 'V16_9_EQUAL_WEIGHT_BASKET') add('CRITICAL', 'CHALLENGER_GATE_CHANGED_ACTIVE_ENGINE', 'Challenger gate changed active production engine.', 'data/v17/challenger-status.json');
+  if (challenger.promotionAllowed !== false) add('CRITICAL', 'CHALLENGER_GATE_AUTO_PROMOTION', 'Challenger gate permits automatic promotion.', 'data/v17/challenger-status.json');
+  if (!['NO_ELIGIBLE_CHALLENGER', 'CHALLENGER_REJECTED', 'CHALLENGER_ELIGIBLE_FOR_SEPARATE_RELEASE_REVIEW'].includes(challenger.status)) {
+    add('MAJOR', 'UNKNOWN_CHALLENGER_STATUS', `Unexpected challenger status ${challenger.status}.`, 'data/v17/challenger-status.json');
+  }
+  if (challenger.status === 'CHALLENGER_ELIGIBLE_FOR_SEPARATE_RELEASE_REVIEW' && current.engine.id !== 'V16_9_EQUAL_WEIGHT_BASKET') {
+    add('CRITICAL', 'ELIGIBLE_CHALLENGER_AUTO_ACTIVATED', 'An eligible challenger was activated without a separate release.', 'current.engine.id');
+  }
 }
 
 if (ledger && current) {
@@ -132,6 +152,7 @@ if (appFiles.every(exists)) {
   for (const token of ['nativeV17', 'researchAudit', 'legacyMethodEvidence', 'marketDataQuality']) {
     if (!appSource.includes(token)) add('MAJOR', 'EVIDENCE_LAYER_NOT_RENDERED', `V17 UI does not render required layer ${token}.`, 'preview-v17/app/app.js');
   }
+  if (!appSource.includes('championChallenger')) add('MAJOR', 'CHALLENGER_STATUS_NOT_RENDERED', 'V17 UI does not render champion-challenger status.', 'preview-v17/app/app.js');
   if (!appSource.includes('قوة السوق') || !appSource.includes('الدليل الحي V17')) {
     add('MAJOR', 'READINESS_LABELS_UNCLEAR', 'UI must visibly separate market strength from native V17 evidence.', 'preview-v17/app');
   }
@@ -148,9 +169,9 @@ const counts = findings.reduce((acc, item) => {
 }, { CRITICAL: 0, MAJOR: 0, MINOR: 0, INFO: 0 });
 
 const report = {
-  schemaVersion: '17.0.0-review-2',
+  schemaVersion: '17.0.0-review-3',
   generatedAt: new Date().toISOString(),
-  reviewer: 'V17_INDEPENDENT_CRITIC_GATE_CYCLE_2',
+  reviewer: 'V17_INDEPENDENT_CRITIC_GATE_CYCLE_3',
   verdict: counts.CRITICAL === 0 && counts.MAJOR === 0 ? (findings.length === 0 ? 'NO_COMMENTS' : 'ACCEPTED_WITH_NON_BLOCKING_NOTES') : 'REJECTED',
   counts,
   findings,
@@ -164,6 +185,7 @@ const report = {
     nativeEvidenceIsolation: true,
     historicalEvidenceSeparation: true,
     marketDataQualityScoring: true,
+    championChallengerGovernance: true,
     legacyIsolation: true,
     responsiveAndAccessibleUi: true,
   },
