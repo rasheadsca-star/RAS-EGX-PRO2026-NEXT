@@ -17,10 +17,8 @@
 
 ## ملاحظات التشغيل
 
-- تحذير: Latest source report is 639.2 minutes old.
-- تحذير: Candidate market data age reached 639.2 minutes.
-- تحذير: Data coverage is 95.09%, below preferred 98%.
+- تحذير: Data coverage is 95.54%, below preferred 98%.
 - تحذير: 25 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 39 workflows can deploy Pages.
 
-بصمة التقرير: `a36a5e5a0fa30d80aaae6074c2fd94c8010542ca7ec9d63e226537af7a502109`
+بصمة التقرير: `804a9d5ae256c87b7e1148d162b727d334c3df77a2f58e3359197dde0bab467a`
