@@ -156,6 +156,7 @@
     const current = state.current;
     const health = current.systemHealth || {};
     const quality = health.marketDataQuality || {};
+    const governance = current.championChallenger || {};
     const checks = [
       ['محرك إنتاج واحد', current.engine?.singleProductionEngine === true],
       ['طريقة الاختيار مجمدة', current.engine?.selectionMethodFrozen === true],
@@ -164,6 +165,8 @@
       ['منع الأوامر الآلية', current.portfolioPolicy?.automaticOrders === false],
       ['إبقاء الوزن غير المتفعل نقدًا', current.portfolioPolicy?.unfilledMemberPolicy === 'KEEP_CASH'],
       ['الدليل الحي خاص بـV17', Boolean(current.evidence?.nativeV17)],
+      ['المحرك الأساسي مطابق للـChampion', governance.activeEngine === current.engine?.id],
+      ['منع الترقية الآلية للمنافس', governance.promotionAllowed === false],
     ];
     $('healthChecks').innerHTML = checks.map(([label, passed]) => `<div class="check-item"><span>${escapeHtml(label)}</span><b class="${passed ? 'good' : 'bad'}">${passed ? 'سليم' : 'مرفوض'}</b></div>`).join('');
     $('dataQualityDetails').innerHTML = [
@@ -171,6 +174,8 @@
       metric('تغطية السعر', pct(quality.pricedCoveragePct, 2)),
       metric('اكتمال OHLC', pct(quality.completeOhlcPct, 2)),
       metric('نظافة أسماء الشركات', pct(quality.cleanCompanyNamePct, 2)),
+      metric('المحرك الأساسي', governance.activeEngine || '—'),
+      metric('حالة المنافس', governance.statusAr || governance.status || '—'),
     ].join('');
     $('lineageList').innerHTML = Object.entries(current.lineage || {}).map(([key, value]) => `<div class="lineage-item"><span>${escapeHtml(key)}</span><code>${escapeHtml(value)}</code></div>`).join('');
   }
