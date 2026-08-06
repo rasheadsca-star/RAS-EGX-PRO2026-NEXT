@@ -9,11 +9,10 @@ const championPath = path.join(root, 'data/research/v16-v169-basket-engine.json'
 const candidatePath = path.join(root, 'data/v17/challenger-candidate.json');
 const outputPath = path.join(root, 'data/v17/challenger-status.json');
 
-function readJson(filePath, fallback = null) {
+function readJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
-    if (fallback !== null) return fallback;
     throw new Error(`Cannot read ${path.relative(root, filePath)}: ${error.message}`);
   }
 }
@@ -27,6 +26,7 @@ function writeJsonAtomic(filePath, value) {
 }
 
 function finite(value, fallback = null) {
+  if (value === null || value === undefined || value === '') return fallback;
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
 }
@@ -50,7 +50,7 @@ const champion = {
   source: 'data/research/v16-v169-basket-engine.json',
 };
 
-const candidate = readJson(candidatePath, null);
+const candidate = fs.existsSync(candidatePath) ? readJson(candidatePath) : null;
 const generatedAt = new Date().toISOString();
 const criteria = {
   methodology: 'BLOCKED_WALK_FORWARD_WITH_INDEPENDENT_HOLDOUT',
