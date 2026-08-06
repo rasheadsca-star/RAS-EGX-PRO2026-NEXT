@@ -1,0 +1,147 @@
+name: EGX V17 Build Review and Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - develop/v17-rebuild
+    paths:
+      - "preview-v17/**"
+      - "scripts/v17/**"
+      - "docs/v17/**"
+      - "data/v17/challenger-candidate.json"
+      - "data/stable/v16-v169-primary-decision.json"
+      - "data/stable/v16-market-regime.json"
+      - "data/stable/v16-live-evidence.json"
+      - "data/research/v16-v169-basket-engine.json"
+      - "data/research/v16-v169-target-hit-audit.json"
+      - "data/history/**"
+      - "data/market.json"
+      - "data/fetch-status.json"
+      - ".github/workflows/v17-build-review.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "preview-v17/**"
+      - "scripts/v17/**"
+      - "docs/v17/**"
+      - "data/v17/**"
+      - ".github/workflows/v17-build-review.yml"
+  schedule:
+    - cron: "50 13-20 * * 0-4"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: egx-v17-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Checkout V17 merge candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prove frozen V16 application is unchanged
+        run: |
+          set -euo pipefail
+          git fetch origin release/v16.9.2-frozen-20260806:refs/remotes/origin/release/v16.9.2-frozen-20260806
+          CHANGED_FILES="$(git diff --name-only origin/release/v16.9.2-frozen-20260806...HEAD)"
+          echo "$CHANGED_FILES"
+          VIOLATIONS="$(printf '%s\n' "$CHANGED_FILES" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/.*|scripts/stable/.*|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
+          if [ -n "$VIOLATIONS" ]; then
+            echo "Protected V16 files changed:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Static validation
+        run: |
+          set -euo pipefail
+          node --check scripts/v17/resolve-ledger.cjs
+          node --check scripts/v17/challenger-gate.cjs
+          node --check scripts/v17/build-snapshot.cjs
+          node --check scripts/v17/review.cjs
+          node --check preview-v17/app/app.js
+          test -s preview-v17/app/index.html
+          test -s preview-v17/app/styles.css
+          if grep -R "v15-practical-decision.json\|v15-update-status.json\|decision-source.js" preview-v17/app; then
+            echo "Legacy source reference detected in V17 app"
+            exit 1
+          fi
+
+      - name: Resolve prior V17 signals conservatively
+        run: node scripts/v17/resolve-ledger.cjs
+
+      - name: Run champion challenger governance gate
+        run: node scripts/v17/challenger-gate.cjs
+
+      - name: Build canonical V17 snapshot
+        run: node scripts/v17/build-snapshot.cjs
+
+      - name: Independent critic and destructive review
+        run: node scripts/v17/review.cjs
+
+      - name: Browser-facing smoke checks
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 >/tmp/v17-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          curl --fail --silent http://127.0.0.1:4173/preview-v17/app/index.html | grep -q "EGX Pro V17"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.status!=='READY_FOR_NEXT_SESSION_REVIEW')process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);if(x.championChallenger.activeEngine!==x.engine.id||x.championChallenger.promotionAllowed!==false)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/challenger-status.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||x.promotionAllowed!==false)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.counts.CRITICAL||x.counts.MAJOR||x.counts.MINOR)process.exit(1);})"
+
+      - name: Commit V17 evidence to active branch
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v17/current.json data/v17/ledger.json data/v17/challenger-status.json data/v17/review.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Build and review V17 canonical release candidate"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin "$BRANCH_NAME" && git push origin "HEAD:$BRANCH_NAME"; then
+                break
+              fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 6))
+            done
+          fi
+
+      - name: Upload main Pages artifact
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy-v17:
+    if: github.event_name != 'pull_request' && github.ref_name == 'main'
+    needs: build-review
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/preview-v17/app/
+    steps:
+      - name: Deploy repository with isolated V17 path
+        id: deployment
+        uses: actions/deploy-pages@v4
