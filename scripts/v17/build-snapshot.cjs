@@ -6,25 +6,25 @@ const path = require('path');
 const crypto = require('crypto');
 
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
-const input = {
-  decision: path.join(root, 'data/stable/v16-v169-primary-decision.json'),
-  regime: path.join(root, 'data/stable/v16-market-regime.json'),
-  legacyLive: path.join(root, 'data/stable/v16-live-evidence.json'),
-  fetchStatus: path.join(root, 'data/fetch-status.json'),
-  market: path.join(root, 'data/market.json'),
-  researchAudit: path.join(root, 'data/research/v16-v169-target-hit-audit.json'),
-  challengerStatus: path.join(root, 'data/v17/challenger-status.json'),
+const P = relative => path.join(root, relative);
+const files = {
+  decision: P('data/stable/v16-v169-primary-decision.json'),
+  regime: P('data/stable/v16-market-regime.json'),
+  legacyLive: P('data/stable/v16-live-evidence.json'),
+  fetchStatus: P('data/fetch-status.json'),
+  market: P('data/market.json'),
+  researchAudit: P('data/research/v16-v169-target-hit-audit.json'),
+  challenger: P('data/v17/challenger-status.json'),
+  snapshot: P('data/v17/current.json'),
+  ledger: P('data/v17/ledger.json'),
 };
-const outputDir = path.join(root, 'data/v17');
-const snapshotPath = path.join(outputDir, 'current.json');
-const ledgerPath = path.join(outputDir, 'ledger.json');
 
-function readJson(filePath, fallback = null) {
+function readJson(filePath, fallback) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (error) {
-    if (fallback !== null) return fallback;
-    throw new Error(`Cannot read JSON ${path.relative(root, filePath)}: ${error.message}`);
+    if (arguments.length > 1) return fallback;
+    throw new Error(`Cannot read ${path.relative(root, filePath)}: ${error.message}`);
   }
 }
 
@@ -37,12 +37,9 @@ function writeJsonAtomic(filePath, value) {
 }
 
 function finite(value, fallback = null) {
+  if (value === null || value === undefined || value === '') return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, finite(value, min)));
 }
 
 function round(value, digits = 2) {
@@ -50,9 +47,17 @@ function round(value, digits = 2) {
   return Math.round(value * factor) / factor;
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, finite(value, min)));
+}
+
+function hash(value) {
+  return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+}
+
 function average(values) {
   const clean = values.filter(Number.isFinite);
-  return clean.length ? clean.reduce((sum, value) => sum + value, 0) / clean.length : 0;
+  return clean.length ? clean.reduce((sum, value) => sum + value, 0) / clean.length : null;
 }
 
 function profitFactor(values) {
@@ -61,7 +66,7 @@ function profitFactor(values) {
   return losses > 0 ? gains / losses : gains > 0 ? null : 0;
 }
 
-function maxDrawdown(values) {
+function maximumDrawdown(values) {
   let equity = 1;
   let peak = 1;
   let worst = 0;
@@ -73,17 +78,12 @@ function maxDrawdown(values) {
   return worst;
 }
 
-function stableHash(value) {
-  return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
-}
-
-function isCleanCompanyName(value) {
+function cleanCompanyName(value) {
   const text = String(value || '').trim();
-  if (text.length < 2) return false;
-  return !/End AdSlot|-->|\[[0-9,]+\]|^[0-9,\[\]]{5,}/i.test(text);
+  return text.length >= 2 && !/End AdSlot|-->|\[[0-9,]+\]|^[0-9,\[\]]{5,}/i.test(text);
 }
 
-function compactLegacyStrategy(row) {
+function compactLegacy(row) {
   if (!row) return null;
   return {
     name: row.name,
@@ -104,7 +104,7 @@ function compactLegacyStrategy(row) {
   };
 }
 
-function nativeLedgerSummary(ledger) {
+function summarizeLedger(ledger) {
   const entries = Array.isArray(ledger.entries) ? ledger.entries : [];
   const resolved = entries.filter(entry => entry.outcome?.resolved === true);
   const returns = resolved.map(entry => finite(entry.outcome?.basketSleeveReturnPct)).filter(Number.isFinite);
@@ -128,9 +128,9 @@ function nativeLedgerSummary(ledger) {
   gate.memberGatePassed = gate.resolvedMembers >= gate.minimumResolvedMembers;
   gate.timeGatePassed = gate.observedCalendarDays >= gate.minimumObservedCalendarDays;
   gate.passed = gate.basketGatePassed && gate.memberGatePassed && gate.timeGatePassed;
-
   const wins = returns.filter(value => value > 0).length;
   const losses = returns.filter(value => value < 0).length;
+  const pf = profitFactor(returns);
   return {
     issuedBaskets: entries.length,
     resolvedBaskets: resolved.length,
@@ -138,55 +138,39 @@ function nativeLedgerSummary(ledger) {
     resolvedMembers: members.length,
     wins,
     losses,
-    winRatePct: returns.length ? round(wins / returns.length * 100, 2) : null,
+    winRatePct: returns.length ? round(wins / returns.length * 100) : null,
     averageBasketReturnPct: returns.length ? round(average(returns), 4) : null,
-    profitFactor: returns.length ? (profitFactor(returns) === null ? null : round(profitFactor(returns), 4)) : null,
-    maxDrawdownPct: returns.length ? round(maxDrawdown(returns), 4) : null,
+    profitFactor: returns.length && pf !== null ? round(pf, 4) : null,
+    maxDrawdownPct: returns.length ? round(maximumDrawdown(returns), 4) : null,
     firstSignalDate: firstDate,
     latestOutcomeDate: outcomeDates.at(-1) || null,
     gate,
   };
 }
 
-const decision = readJson(input.decision);
-const regime = readJson(input.regime);
-const legacyLive = readJson(input.legacyLive, {});
-const fetchStatus = readJson(input.fetchStatus, {});
-const market = readJson(input.market, {});
-const researchAudit = readJson(input.researchAudit, {});
-const challengerStatus = readJson(input.challengerStatus, {
-  status: 'CHALLENGER_GATE_NOT_RUN',
-  activeEngine: 'V16_9_EQUAL_WEIGHT_BASKET',
-  promotionAllowed: false,
-});
-const generatedAt = new Date().toISOString();
-const ledger = readJson(ledgerPath, {
-  schemaVersion: '17.0.0-ledger',
-  createdAt: generatedAt,
-  entries: [],
-});
+const decision = readJson(files.decision);
+const regime = readJson(files.regime);
+const legacyLive = readJson(files.legacyLive, {});
+const fetchStatus = readJson(files.fetchStatus, {});
+const market = readJson(files.market, {});
+const researchAudit = readJson(files.researchAudit, {});
+const challenger = readJson(files.challenger);
+const now = new Date().toISOString();
+const ledger = readJson(files.ledger, { schemaVersion: '17.0.0-ledger', createdAt: now, entries: [] });
 if (!Array.isArray(ledger.entries)) ledger.entries = [];
 
 const engineId = decision?.selectedModel?.id;
-if (engineId !== 'V16_9_EQUAL_WEIGHT_BASKET') {
-  throw new Error(`V17 accepts one production engine only; received ${engineId || 'missing'}`);
-}
-if (challengerStatus.activeEngine !== engineId || challengerStatus.promotionAllowed === true) {
-  throw new Error('Challenger gate attempted to replace the champion automatically.');
+if (engineId !== 'V16_9_EQUAL_WEIGHT_BASKET') throw new Error(`Unexpected production engine: ${engineId}`);
+if (challenger.activeEngine !== engineId || challenger.promotionAllowed !== false) {
+  throw new Error('Champion-challenger governance attempted an automatic engine change.');
 }
 
-const recommendations = Array.isArray(decision.recommendations) ? decision.recommendations : [];
-if (recommendations.length < 3 || recommendations.length > 5) {
-  throw new Error(`V17 basket must contain 3–5 members; received ${recommendations.length}`);
+const sourceRecommendations = Array.isArray(decision.recommendations) ? decision.recommendations : [];
+if (sourceRecommendations.length < 3 || sourceRecommendations.length > 5) {
+  throw new Error(`Basket size must be 3–5; received ${sourceRecommendations.length}`);
 }
 
-const sessionDate = decision.sessionDate || decision.expectedLatestSession;
-const marketSession = regime?.metrics?.sessionDate;
-const sourceSession = fetchStatus.lastSession || fetchStatus.sessionDate || decision?.priceTruth?.sourceSession || decision?.priceTruth?.sessionDate || sessionDate;
-const sessionAligned = Boolean(sessionDate && sessionDate === marketSession && sessionDate === sourceSession);
-const executionGrade = decision?.priceTruth?.executionGrade === true || fetchStatus.executionGrade === true || fetchStatus.mode === 'v15_precise_public_execution_grade';
-
-const normalizedRecommendations = recommendations.map((row, index) => ({
+const recommendations = sourceRecommendations.map((row, index) => ({
   ticker: String(row.ticker || '').trim().toUpperCase(),
   companyNameAr: row.companyNameAr || row.ticker,
   rank: index + 1,
@@ -214,106 +198,95 @@ const normalizedRecommendations = recommendations.map((row, index) => ({
   },
 }));
 
-const duplicateTickers = normalizedRecommendations
-  .map(row => row.ticker)
-  .filter((ticker, index, all) => all.indexOf(ticker) !== index);
-if (duplicateTickers.length) throw new Error(`Duplicate V17 tickers: ${duplicateTickers.join(', ')}`);
-
-for (const row of normalizedRecommendations) {
+const tickers = recommendations.map(row => row.ticker);
+if (new Set(tickers).size !== tickers.length) throw new Error('Duplicate basket ticker detected.');
+for (const row of recommendations) {
   if (!row.ticker || ![row.entryLow, row.entryHigh, row.target, row.stop].every(Number.isFinite)) {
-    throw new Error(`Incomplete price plan for ${row.ticker || 'unknown ticker'}`);
+    throw new Error(`Incomplete price plan for ${row.ticker || 'unknown'}`);
   }
   if (!(row.stop < row.entryLow && row.entryLow <= row.entryHigh && row.target > row.entryHigh)) {
     throw new Error(`Invalid price relationship for ${row.ticker}`);
   }
 }
 
-const totalAllocationPct = normalizedRecommendations.reduce((sum, row) => sum + finite(row.portfolioWeightPct, 0), 0);
-if (totalAllocationPct > 50.001) throw new Error(`V17 exposure exceeds 50%: ${totalAllocationPct}`);
+const totalAllocationPct = recommendations.reduce((sum, row) => sum + finite(row.portfolioWeightPct, 0), 0);
+if (totalAllocationPct > 50.001) throw new Error(`Exposure exceeds 50%: ${totalAllocationPct}`);
 
+const sessionDate = decision.sessionDate || decision.expectedLatestSession;
+const regimeSession = regime?.metrics?.sessionDate;
+const sourceSession = fetchStatus.lastSession || fetchStatus.sessionDate || decision?.priceTruth?.sourceSession || decision?.priceTruth?.sessionDate || sessionDate;
+const sessionAligned = Boolean(sessionDate && sessionDate === regimeSession && sessionDate === sourceSession);
+const executionGrade = decision?.priceTruth?.executionGrade === true || fetchStatus.executionGrade === true || fetchStatus.mode === 'v15_precise_public_execution_grade';
+
+// This payload intentionally preserves the original issued-signal contract. New
+// analytical fields must never alter the hash of an already issued signal.
 const immutablePayload = {
   sessionDate,
   engineId,
-  recommendations: normalizedRecommendations.map(row => ({
+  recommendations: recommendations.map(row => ({
     ticker: row.ticker,
     entryLow: row.entryLow,
     entryHigh: row.entryHigh,
     target: row.target,
     stop: row.stop,
     portfolioWeightPct: row.portfolioWeightPct,
-    basketWeightPct: row.basketWeightPct,
   })),
 };
 const signalId = `${sessionDate}:${engineId}`;
-const signalHash = stableHash(immutablePayload);
+const signalHash = hash(immutablePayload);
 const existing = ledger.entries.find(entry => entry.signalId === signalId);
-if (existing && existing.signalHash !== signalHash) {
-  throw new Error(`Immutable ledger conflict for ${signalId}; refusing silent replacement`);
-}
-if (!existing) {
-  ledger.entries.push({
-    signalId,
-    signalHash,
-    issuedAt: generatedAt,
-    ...immutablePayload,
-    status: 'ISSUED_PENDING_NEXT_SESSION',
-  });
-}
-ledger.updatedAt = generatedAt;
+if (existing && existing.signalHash !== signalHash) throw new Error(`Immutable ledger conflict for ${signalId}`);
+if (!existing) ledger.entries.push({ signalId, signalHash, issuedAt: now, ...immutablePayload, status: 'ISSUED_PENDING_NEXT_SESSION' });
+ledger.updatedAt = now;
 
-const rows = Array.isArray(market.rows) ? market.rows : [];
-const pricedRows = rows.filter(row => finite(row.price ?? row.last) !== null);
-const ohlcRows = rows.filter(row => [row.open, row.high, row.low, row.price ?? row.last].every(value => finite(value) !== null));
-const cleanNameRows = rows.filter(row => isCleanCompanyName(row.name_ar || row.name_en));
-const marketQuality = {
-  totalRows: rows.length,
+const marketRows = Array.isArray(market.rows) ? market.rows : [];
+const pricedRows = marketRows.filter(row => finite(row.price ?? row.last) !== null);
+const ohlcRows = marketRows.filter(row => [row.open, row.high, row.low, row.price ?? row.last].every(value => finite(value) !== null));
+const cleanNameRows = marketRows.filter(row => cleanCompanyName(row.name_ar || row.name_en));
+const marketDataQuality = {
+  totalRows: marketRows.length,
   pricedRows: pricedRows.length,
   completeOhlcRows: ohlcRows.length,
   cleanCompanyNameRows: cleanNameRows.length,
-  pricedCoveragePct: rows.length ? round(pricedRows.length / rows.length * 100, 2) : 0,
-  completeOhlcPct: rows.length ? round(ohlcRows.length / rows.length * 100, 2) : 0,
-  cleanCompanyNamePct: rows.length ? round(cleanNameRows.length / rows.length * 100, 2) : 0,
+  pricedCoveragePct: marketRows.length ? round(pricedRows.length / marketRows.length * 100) : 0,
+  completeOhlcPct: marketRows.length ? round(ohlcRows.length / marketRows.length * 100) : 0,
+  cleanCompanyNamePct: marketRows.length ? round(cleanNameRows.length / marketRows.length * 100) : 0,
 };
 
-const nativeEvidence = nativeLedgerSummary(ledger);
-const nativeGate = nativeEvidence.gate;
-const evidenceScore = round(clamp(
+const nativeV17 = summarizeLedger(ledger);
+const nativeGate = nativeV17.gate;
+const liveEvidenceScore = round(clamp(
   Math.min(1, nativeGate.resolvedBaskets / nativeGate.minimumResolvedBaskets) * 40
   + Math.min(1, nativeGate.resolvedMembers / nativeGate.minimumResolvedMembers) * 40
   + Math.min(1, nativeGate.observedCalendarDays / nativeGate.minimumObservedCalendarDays) * 20,
   0,
   100,
-), 2);
-const dataScore = round(clamp(
+));
+const dataQualityScore = round(clamp(
   (sessionAligned ? 30 : 0)
   + (executionGrade ? 25 : 0)
-  + marketQuality.pricedCoveragePct * 0.15
-  + marketQuality.completeOhlcPct * 0.15
-  + marketQuality.cleanCompanyNamePct * 0.1,
+  + marketDataQuality.pricedCoveragePct * 0.15
+  + marketDataQuality.completeOhlcPct * 0.15
+  + marketDataQuality.cleanCompanyNamePct * 0.1,
   0,
   95,
-), 2);
-const operationalScore = round(clamp(
-  35
-  + (sessionAligned ? 20 : 0)
-  + (duplicateTickers.length === 0 ? 15 : 0)
-  + (totalAllocationPct <= 50 ? 15 : 0)
+));
+const operationalIntegrityScore = round(clamp(
+  35 + (sessionAligned ? 20 : 0) + 15 + (totalAllocationPct <= 50 ? 15 : 0)
   + (ledger.entries.some(entry => entry.signalId === signalId) ? 10 : 0)
-  + (challengerStatus.promotionAllowed === false ? 5 : 0),
+  + (challenger.promotionAllowed === false ? 5 : 0),
   0,
   100,
-), 2);
+));
 const professionalEvidenceReady = nativeGate.passed === true;
-const releaseStage = professionalEvidenceReady ? 'PROFESSIONAL_EVIDENCE' : 'CONTROLLED_PILOT';
-
-const legacyStrategyEvidence = (Array.isArray(legacyLive.byStrategy) ? legacyLive.byStrategy : []).find(row => row.name === engineId) || null;
+const legacyStrategy = (Array.isArray(legacyLive.byStrategy) ? legacyLive.byStrategy : []).find(row => row.name === engineId) || null;
 const auditMetrics = researchAudit.basketReturnMetrics || {};
+const hotMomentumCount = recommendations.filter(row => row.hotMomentumRisk).length;
 const status = sessionAligned && executionGrade ? 'READY_FOR_NEXT_SESSION_REVIEW' : 'BLOCKED_STALE_OR_UNVERIFIED_DATA';
-const hotMomentumCount = normalizedRecommendations.filter(row => row.hotMomentumRisk).length;
 
 const snapshot = {
   schemaVersion: '17.0.0-rc3',
-  generatedAt,
+  generatedAt: now,
   status,
   statusAr: status === 'READY_FOR_NEXT_SESSION_REVIEW'
     ? 'البيانات متسقة والسلة جاهزة للمراجعة قبل الجلسة، وليست أمر شراء آليًا.'
@@ -328,15 +301,15 @@ const snapshot = {
     selectionMethodFrozen: true,
   },
   championChallenger: {
-    activeEngine: challengerStatus.activeEngine,
-    status: challengerStatus.status,
-    statusAr: challengerStatus.statusAr,
-    challenger: challengerStatus.challenger || null,
+    activeEngine: challenger.activeEngine,
+    status: challenger.status,
+    statusAr: challenger.statusAr,
+    challenger: challenger.challenger || null,
     promotionAllowed: false,
-    nextAction: challengerStatus.nextAction || null,
+    nextAction: challenger.nextAction || null,
   },
   market: {
-    sessionDate: marketSession,
+    sessionDate: regimeSession,
     regime: regime.regime,
     labelAr: regime.labelAr,
     score: finite(regime.score),
@@ -346,36 +319,36 @@ const snapshot = {
     metrics: regime.metrics || {},
   },
   readiness: {
-    releaseStage,
+    releaseStage: professionalEvidenceReady ? 'PROFESSIONAL_EVIDENCE' : 'CONTROLLED_PILOT',
     professionalEvidenceReady,
     marketStrengthScore: finite(regime.score),
-    dataQualityScore: dataScore,
-    liveEvidenceScore: evidenceScore,
-    operationalIntegrityScore: operationalScore,
+    dataQualityScore,
+    liveEvidenceScore,
+    operationalIntegrityScore,
     disclosureAr: professionalEvidenceReady
       ? 'اكتملت بوابات V17 الأصلية للعينة والزمن.'
       : 'التطبيق في وضع Pilot مضبوط؛ قوة السوق والاختبار التاريخي لا يساويان دليلًا حيًا خاصًا بـV17.',
   },
   portfolioPolicy: {
     maximumTotalAllocationPct: 50,
-    plannedAllocationPct: round(totalAllocationPct, 2),
-    cashReservePct: round(100 - totalAllocationPct, 2),
+    plannedAllocationPct: round(totalAllocationPct),
+    cashReservePct: round(100 - totalAllocationPct),
     unfilledMemberPolicy: 'KEEP_CASH',
     automaticOrders: false,
     sameSessionAmbiguityPolicy: 'CONSERVATIVE_STOP',
   },
-  recommendations: normalizedRecommendations,
+  recommendations,
   decisionWarnings: {
     hotMomentumCount,
-    allMembersHotMomentum: hotMomentumCount === normalizedRecommendations.length,
+    allMembersHotMomentum: hotMomentumCount === recommendations.length,
     openingConfirmationMandatory: true,
     warningAr: hotMomentumCount
-      ? `${hotMomentumCount} من ${normalizedRecommendations.length} أسهم تحمل زخمًا ساخنًا؛ لا تنفيذ خارج نطاق الافتتاح ولا مطاردة للسعر.`
+      ? `${hotMomentumCount} من ${recommendations.length} أسهم تحمل زخمًا ساخنًا؛ لا تنفيذ خارج نطاق الافتتاح ولا مطاردة للسعر.`
       : 'لا توجد إشارات زخم ساخن في السلة الحالية.',
   },
   evidence: {
-    nativeV17: nativeEvidence,
-    legacyMethodEvidence: compactLegacyStrategy(legacyStrategyEvidence),
+    nativeV17,
+    legacyMethodEvidence: compactLegacy(legacyStrategy),
     researchAudit: {
       auditWindow: researchAudit.auditWindow || null,
       executableSelections: finite(researchAudit.executableByOpenRuleCount),
@@ -393,11 +366,11 @@ const snapshot = {
     executionGrade,
     sourceSession,
     decisionSession: sessionDate,
-    regimeSession: marketSession,
+    regimeSession,
     fetchedRows: finite(fetchStatus.marketRows, finite(decision?.priceTruth?.acceptedRows)),
     sourceName: fetchStatus.sourceName || decision?.priceTruth?.source || null,
     staleDataBlocked: !sessionAligned,
-    marketDataQuality: marketQuality,
+    marketDataQuality,
   },
   lineage: {
     decisionSource: 'data/stable/v16-v169-primary-decision.json',
@@ -411,18 +384,17 @@ const snapshot = {
   },
 };
 
-writeJsonAtomic(snapshotPath, snapshot);
-writeJsonAtomic(ledgerPath, ledger);
-
+writeJsonAtomic(files.snapshot, snapshot);
+writeJsonAtomic(files.ledger, ledger);
 console.log(JSON.stringify({
-  status: snapshot.status,
+  status,
   sessionDate,
   engineId,
-  recommendationCount: normalizedRecommendations.length,
+  recommendationCount: recommendations.length,
   totalAllocationPct,
-  scores: snapshot.readiness,
-  marketQuality,
-  nativeEvidence,
-  challengerStatus: challengerStatus.status,
+  readiness: snapshot.readiness,
+  marketDataQuality,
+  nativeV17,
+  challengerStatus: challenger.status,
   ledgerEntries: ledger.entries.length,
 }, null, 2));
