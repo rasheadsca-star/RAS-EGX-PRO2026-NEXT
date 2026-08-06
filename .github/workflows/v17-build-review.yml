@@ -10,9 +10,11 @@ on:
       - "preview-v17/**"
       - "scripts/v17/**"
       - "docs/v17/**"
+      - "data/v17/challenger-candidate.json"
       - "data/stable/v16-v169-primary-decision.json"
       - "data/stable/v16-market-regime.json"
       - "data/stable/v16-live-evidence.json"
+      - "data/research/v16-v169-basket-engine.json"
       - "data/research/v16-v169-target-hit-audit.json"
       - "data/history/**"
       - "data/market.json"
@@ -65,6 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/v17/resolve-ledger.cjs
+          node --check scripts/v17/challenger-gate.cjs
           node --check scripts/v17/build-snapshot.cjs
           node --check scripts/v17/review.cjs
           node --check preview-v17/app/app.js
@@ -77,6 +80,9 @@ jobs:
 
       - name: Resolve prior V17 signals conservatively
         run: node scripts/v17/resolve-ledger.cjs
+
+      - name: Run champion challenger governance gate
+        run: node scripts/v17/challenger-gate.cjs
 
       - name: Build canonical V17 snapshot
         run: node scripts/v17/build-snapshot.cjs
@@ -92,15 +98,16 @@ jobs:
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
           curl --fail --silent http://127.0.0.1:4173/preview-v17/app/index.html | grep -q "EGX Pro V17"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.status!=='READY_FOR_NEXT_SESSION_REVIEW')process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.status!=='READY_FOR_NEXT_SESSION_REVIEW')process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);if(x.championChallenger.activeEngine!==x.engine.id||x.championChallenger.promotionAllowed!==false)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/challenger-status.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||x.promotionAllowed!==false)process.exit(1);})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.counts.CRITICAL||x.counts.MAJOR||x.counts.MINOR)process.exit(1);})"
 
       - name: Commit V17 evidence to active branch
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
+          git config user.name "github-actions[bot]]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v17/current.json data/v17/ledger.json data/v17/review.json
+          git add data/v17/current.json data/v17/ledger.json data/v17/challenger-status.json data/v17/review.json
           if ! git diff --cached --quiet; then
             git commit -m "Build and review V17 canonical release candidate"
             for attempt in 1 2 3; do
@@ -124,7 +131,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}preview-v17/app/
+      url: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/preview-v17/app/
     steps:
       - name: Deploy repository with isolated V17 path
         id: deployment
