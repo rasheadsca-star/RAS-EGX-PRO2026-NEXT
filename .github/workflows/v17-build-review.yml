@@ -145,3 +145,53 @@ jobs:
       - name: Deploy repository with isolated V17 path
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Checkout main for deployment evidence
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Record verified V17 deployment
+        env:
+          PAGES_ROOT: ${{ steps.deployment.outputs.page_url }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const current = JSON.parse(fs.readFileSync('data/v17/current.json', 'utf8'));
+          const review = JSON.parse(fs.readFileSync('data/v17/review.json', 'utf8'));
+          if (review.verdict !== 'NO_COMMENTS' || review.counts.CRITICAL || review.counts.MAJOR || review.counts.MINOR) {
+            throw new Error('Refusing to record deployment without a zero-comments review.');
+          }
+          const root = String(process.env.PAGES_ROOT || 'https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/').replace(/\/+$/, '');
+          const output = {
+            schemaVersion: '17.0.0-pages-status',
+            generatedAt: new Date().toISOString(),
+            status: 'DEPLOYED',
+            deployedUrl: `${root}/preview-v17/app/`,
+            sourceCommit: process.env.SOURCE_COMMIT || null,
+            snapshotGeneratedAt: current.generatedAt,
+            sessionDate: current.sessionDate,
+            engine: current.engine?.id || null,
+            reviewVerdict: review.verdict,
+            reviewCounts: review.counts,
+            frozenV16Preserved: true
+          };
+          fs.writeFileSync('data/v17/deploy-status.json', JSON.stringify(output, null, 2) + '\n');
+          console.log(output);
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v17/deploy-status.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Confirm verified V17 Pages deployment"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then
+                break
+              fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 6))
+            done
+          fi
