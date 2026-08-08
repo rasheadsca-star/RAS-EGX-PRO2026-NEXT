@@ -1,35 +1,30 @@
 'use strict';
-(() => {
-  const state = { bottom: [], recovery: [], sort: { bottom: { key: 'metrics.distanceFromAvailableWindowAdjustedLowPct', direction: 1 }, recovery: { key: 'recoveryScore', direction: -1 } } };
-  const $ = id => document.getElementById(id);
-  const valueAt = (row, key) => key.split('.').reduce((value, part) => value?.[part], row);
-  const fmt = (value, reason = 'البيانات غير متاحة للفترة المطلوبة') => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : `غير متاح — ${reason}`;
-  const escapeHtml = value => String(value ?? 'غير متاح').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const stageClass = stage => ({ BOTTOMING: 'stage-bottom', EARLY_RECOVERY: 'stage-early', RECOVERY_CONFIRMED: 'stage-confirmed' }[stage] || 'stage-neutral');
-  function filteredSorted(type) {
-    const query = $('filter').value.trim().toLowerCase(); const sort = state.sort[type];
-    return state[type].filter(row => !query || `${row.displayName} ${row.companyNameAr || ''} ${row.companyNameEn || ''} ${row.symbol} ${row.bottomClassificationAr} ${row.recoveryStageAr} ${(row.reasonsAr || []).join(' ')}`.toLowerCase().includes(query)).sort((a, b) => {
-      const av = valueAt(a, sort.key); const bv = valueAt(b, sort.key);
-      if (typeof av === 'string') return av.localeCompare(bv, 'ar') * sort.direction;
-      return ((Number(av) || -Infinity) - (Number(bv) || -Infinity)) * sort.direction;
-    });
+(()=>{
+  const $=id=>document.getElementById(id),state={data:null};
+  const esc=v=>String(v??'غير متاح').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt=v=>Number.isFinite(Number(v))?Number(v).toLocaleString('ar-EG',{maximumFractionDigits:2}):'غير متاح';
+  const pct=v=>Number.isFinite(Number(v))?`${fmt(v)}٪`:'غير متاح';
+  const location=p=>p<=10?'عند قاع دورة الهبوط':p<=25?'بالقرب من قاع دورة الهبوط':p<=40?'داخل منطقة قاع دورة الهبوط':'تعافى بعيدًا عن قاع الدورة';
+  const reasonAr=r=>{const c=String(r||'');if(c.startsWith('CORPORATE_ACTION_REVIEW_REQUIRED'))return'مراجعة إجراء رأسمالي مطلوبة بسبب انقطاع مشتبه به في السعر المعدل';if(c.startsWith('MISSING_ADJUSTED_CLOSE'))return'بيانات السعر المعدل غير مكتملة';if(c==='INSUFFICIENT_52_WEEK_COVERAGE')return'التغطية لا تكفي لأفق 52 أسبوعًا';if(c==='SOURCE_RETRIEVAL_FAILED')return'تعذر استرجاع التاريخ من المصدر';return'تحتاج البيانات إلى مراجعة فنية قبل المقارنة';};
+  const confidenceAr=v=>String(v||'').startsWith('HIGH')?'مرتفعة':String(v||'').startsWith('MEDIUM')?'متوسطة':'تحتاج مراجعة';
+  const selected=()=>$('horizon').value,h=r=>r.horizons?.[selected()],query=()=>$('filter').value.trim().toLowerCase();
+  const visible=r=>!query()||`${r.displayName||r.companyNameAr||''} ${r.ticker} ${r.companyNameEn||''}`.toLowerCase().includes(query());
+  const why=(r,x)=>`السهم أقل من القمة المعدلة بنسبة ${pct(x.currentDrawdownPct)}، واستعاد ${pct(x.recoveryPositionPct)} من المسافة بين قاع ما بعد القمة والقمة السابقة. ${r.recoveryStageAr}.`;
+  const identity=r=>`<td>${esc(r.displayName||r.companyNameAr||r.companyNameEn||r.ticker)}</td><td dir="ltr">${esc(r.ticker)}</td>`;
+  function render(){
+    const d=state.data,all=d.results.filter(visible),valid=all.filter(r=>r.dataQualityStatus==='VALID'&&h(r)?.available),review=all.filter(r=>r.dataQualityStatus!=='VALID');
+    const deep=valid.slice().sort((a,b)=>h(b).currentDrawdownPct-h(a).currentDrawdownPct),bottom=valid.slice().sort((a,b)=>h(a).recoveryPositionPct-h(b).recoveryPositionPct);
+    const deepNear=valid.filter(r=>h(r).currentDrawdownPct>=35&&h(r).recoveryPositionPct<=30).sort((a,b)=>h(b).currentDrawdownPct-h(a).currentDrawdownPct||h(a).recoveryPositionPct-h(b).recoveryPositionPct);
+    const recovery=valid.filter(r=>h(r).currentDrawdownPct>=20&&h(r).recoveryPositionPct<=40&&['BOTTOMING','EARLY_RECOVERY','RECOVERY_CONFIRMED'].includes(r.recoveryStage)).sort((a,b)=>b.recoveryScore-a.recoveryScore);
+    const research=valid.filter(r=>r.researchRecommendations?.[selected()]).sort((a,b)=>{const ar=a.researchRecommendations[selected()],br=b.researchRecommendations[selected()];return ar.priority-br.priority||b.recoveryScore-a.recoveryScore||b.strengthScore-a.strengthScore||b.dataConfidence-a.dataConfidence});
+    $('scanned').textContent=fmt(d.summary.canonicalOrdinaryEquities);$('valid').textContent=fmt(valid.length);$('review').textContent=fmt(d.summary.dataReviewRequired);$('gte35').textContent=fmt(valid.filter(r=>h(r).currentDrawdownPct>=35).length);$('gte50').textContent=fmt(valid.filter(r=>h(r).currentDrawdownPct>=50).length);$('gte65').textContent=fmt(valid.filter(r=>h(r).currentDrawdownPct>=65).length);$('nearBottom').textContent=fmt(valid.filter(r=>h(r).recoveryPositionPct<=25).length);$('early').textContent=fmt(recovery.filter(r=>r.recoveryStage==='EARLY_RECOVERY').length);$('confirmed').textContent=fmt(recovery.filter(r=>r.recoveryStage==='RECOVERY_CONFIRMED').length);
+    $('drawdownRows').innerHTML=deep.map(r=>{const x=h(r);return `<tr>${identity(r)}<td>${fmt(x.high)}</td><td>${esc(x.highDate)}</td><td>${fmt(x.current)}</td><td>${pct(x.currentDrawdownPct)}</td><td>${fmt(x.postPeakLow)}</td><td>${esc(x.postPeakLowDate)}</td><td>${pct(x.recoveryPositionPct)}</td><td>${pct(r.dataConfidence)}</td></tr>`}).join('');
+    $('researchRows').innerHTML=research.map(r=>{const x=h(r),rec=r.researchRecommendations[selected()];return `<tr>${identity(r)}<td><strong>${esc(rec.labelAr)}</strong></td><td>${esc(rec.riskLabelAr)}</td><td class="reasons">${esc(rec.reasonsAr.join(' '))}</td><td>${esc(r.recoveryStageAr)}</td><td>${pct(x.currentDrawdownPct)}</td><td>${pct(x.recoveryPositionPct)}</td><td>${fmt(r.strengthScore)}</td><td>${fmt(r.recoveryScore)}</td><td>${pct(r.dataConfidence)}</td></tr>`}).join('');
+    $('bottomRows').innerHTML=bottom.map(r=>{const x=h(r);return `<tr>${identity(r)}<td>${fmt(x.postPeakLow)}</td><td>${esc(x.postPeakLowDate)}</td><td>${fmt(x.current)}</td><td>${pct(x.distanceAbovePostPeakLowPct)}</td><td>${pct(x.recoveryPositionPct)}</td><td>${pct(x.currentDrawdownPct)}</td><td>${location(x.recoveryPositionPct)}</td><td>${esc(r.recoveryStageAr)}</td><td class="reasons">${esc(why(r,x))}</td></tr>`}).join('');
+    $('deepNearRows').innerHTML=deepNear.map(r=>{const x=h(r);return `<tr>${identity(r)}<td>${fmt(x.high)}</td><td>${fmt(x.postPeakLow)}</td><td>${fmt(x.current)}</td><td>${pct(x.currentDrawdownPct)}</td><td>${pct(x.recoveryPositionPct)}</td><td>${pct(x.distanceAbovePostPeakLowPct)}</td><td>${esc(r.recoveryStageAr)}</td><td class="reasons">${esc(why(r,x))}</td></tr>`}).join('');
+    $('recoveryRows').innerHTML=recovery.map(r=>{const x=h(r),t=r.horizons.technical;return `<tr>${identity(r)}<td>${pct(x.currentDrawdownPct)}</td><td>${pct(x.recoveryPositionPct)}</td><td>${fmt(t.rsi14)}</td><td>${fmt(r.historicalDiscountScore)}</td><td>${fmt(r.strengthScore)}</td><td>${fmt(r.recoveryScore)}</td><td>${esc(r.recoveryStageAr)}</td><td class="reasons">${esc(why(r,x))}</td></tr>`}).join('');
+    $('reviewRows').innerHTML=review.map(r=>`<tr class="review-row">${identity(r)}<td>${fmt(r.sessionCount)}</td><td>${esc(r.coverageStart)}</td><td>${esc(r.coverageEnd)}</td><td>${esc(confidenceAr(r.corporateActionConfidence))}</td><td class="reasons">${esc((r.dataQualityReasons||[]).map(reasonAr).join(' · '))}</td></tr>`).join('');
   }
-  function common(row) { return `<td class="share-name">${escapeHtml(row.displayName)}</td><td class="ticker" dir="ltr">${escapeHtml(row.symbol)}</td>`; }
-  function renderBottom() {
-    $('bottomRows').innerHTML = filteredSorted('bottom').map(row => `<tr class="bottom-${row.bottomClassification.toLowerCase()}">${common(row)}<td>${fmt(row.metrics.availableWindowAdjustedHigh)}</td><td>${fmt(row.metrics.currentAdjustedPrice)}</td><td>${fmt(row.metrics.drawdownFromAvailableWindowAdjustedHighPct)}٪</td><td>${fmt(row.metrics.availableWindowAdjustedLow)}</td><td>${fmt(row.metrics.distanceFromAvailableWindowAdjustedLowPct)}٪</td><td><span class="stage">${escapeHtml(row.bottomClassificationAr)}</span></td><td>${fmt(row.metrics.horizons?.week52?.drawdownFromHighPct, row.metrics.horizons?.week52?.unavailableReason === 'INSUFFICIENT_52_WEEK_COVERAGE' ? 'تغطية 52 أسبوعًا غير مكتملة' : undefined)}</td><td>${fmt(row.metrics.horizons?.week52?.distanceFromLowPct, row.metrics.horizons?.week52?.unavailableReason === 'INSUFFICIENT_52_WEEK_COVERAGE' ? 'تغطية 52 أسبوعًا غير مكتملة' : undefined)}</td><td>${fmt(row.metrics.rsi14)}</td><td><span class="stage ${stageClass(row.recoveryStage)}">${escapeHtml(row.recoveryStageAr)}</span></td><td>${fmt(row.dataConfidence)}٪</td></tr>`).join('');
-  }
-  function renderRecovery() {
-    $('recoveryRows').innerHTML = filteredSorted('recovery').map(row => `<tr>${common(row)}<td>${fmt(row.metrics.availableWindowAdjustedHigh)}</td><td>${fmt(row.metrics.currentAdjustedPrice)}</td><td>${fmt(row.metrics.drawdownFromAvailableWindowAdjustedHighPct)}٪</td><td>${fmt(row.metrics.availableWindowAdjustedLow)}</td><td>${fmt(row.metrics.distanceFromAvailableWindowAdjustedLowPct)}٪</td><td>${escapeHtml(row.bottomClassificationAr)}</td><td>${fmt(row.metrics.rsi14)}</td><td>${fmt(row.strengthScore)}</td><td>${fmt(row.recoveryScore)}</td><td><span class="stage ${stageClass(row.recoveryStage)}">${escapeHtml(row.recoveryStageAr)}</span></td><td>${fmt(row.dataConfidence)}٪</td><td class="reasons">${escapeHtml((row.reasonsAr || ['لا توجد أسباب مترجمة']).join(' · '))}</td></tr>`).join('');
-  }
-  function render() { renderBottom(); renderRecovery(); }
-  async function load() {
-    try {
-      const response = await fetch(`../../data/v17/historical-recovery/current.json?v=${Date.now()}`, { cache: 'no-store' }); if (!response.ok) throw new Error(`تعذر تحميل الملف، رمز الاستجابة ${response.status}`);
-      const data = await response.json(); state.bottom = data.bottomUniverse || []; state.recovery = data.topRecoveryOpportunities || [];
-      const cards = data.summary.dashboardCounts || {}; $('scanned').textContent = fmt(data.summary.stocksScanned); $('validData').textContent = fmt(data.summary.validDataStocks); $('review').textContent = fmt(data.summary.quarantinedOrDataReview); $('extremeBottom').textContent = fmt(cards.extremeBottom || 0); $('nearBottom').textContent = fmt(cards.nearBottom || 0); $('bottomZone').textContent = fmt(cards.bottomZone || 0); $('aboveBottom').textContent = fmt(cards.aboveBottomZone || 0); $('noRecovery').textContent = fmt(cards.noRecovery || 0); $('bottoming').textContent = fmt(cards.bottoming || 0); $('early').textContent = fmt(cards.earlyRecovery || 0); $('confirmed').textContent = fmt(cards.confirmedRecovery || 0); $('extended').textContent = fmt(cards.movedAwayFromLow || 0); $('opportunities').textContent = fmt(cards.topRecoveryOpportunities || 0);
-      $('status').textContent = data.generatedAt ? `آخر تحديث محلي: ${new Date(data.generatedAt).toLocaleString('ar-EG')}` : 'لم يتم إنشاء النتائج بعد'; render();
-    } catch (error) { $('status').textContent = `تعذر تحميل نتائج النموذج: ${error.message}`; }
-  }
-  document.querySelectorAll('table[data-table] th[data-key]').forEach(th => th.addEventListener('click', () => { const type = th.closest('table').dataset.table; const sort = state.sort[type]; sort.direction = sort.key === th.dataset.key ? -sort.direction : 1; sort.key = th.dataset.key; render(); }));
-  $('filter').addEventListener('input', render); load();
+  async function load(){try{const res=await fetch(`../../data/v17/historical-recovery/long-history/compact-market.json?v=${Date.now()}`,{cache:'no-store'});if(!res.ok)throw new Error(`HTTP ${res.status}`);state.data=await res.json();$('status').textContent=`آخر تحديث: ${new Date(state.data.generatedAt).toLocaleString('ar-EG')}`;render()}catch(e){$('status').textContent=`تعذر تحميل المحرك طويل الأفق: ${e.message}`}}
+  $('horizon').addEventListener('change',render);$('filter').addEventListener('input',render);load();
 })();

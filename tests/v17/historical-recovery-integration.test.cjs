@@ -37,16 +37,14 @@ test('frozen V16.9 path protection rejects every protected category', () => {
   assert.equal(result.violations.length, 4);
   assert.ok(!result.violations.includes('preview-v17/historical-recovery/app.js'));
 });
-test('Arabic UI has complete primary translations and renders localized stages and reasons', () => {
+test('Arabic long-history UI has complete primary translations and hides raw reason codes', () => {
   const root = path.resolve(__dirname, '../..');
   const html = fs.readFileSync(path.join(root, 'preview-v17/historical-recovery/index.html'), 'utf8');
   const app = fs.readFileSync(path.join(root, 'preview-v17/historical-recovery/app.js'), 'utf8');
-  for (const text of ['نموذج أبحاث التعافي قصير المدى', 'وضع البحث قصير المدى', 'عدد الأسهم التي تم فحصها', 'بيانات سليمة', 'تحتاج مراجعة بيانات', 'عند قاع شديد', 'بالقرب من القاع', 'داخل منطقة القاع', 'أعلى من منطقة القاع', 'لا توجد إشارات تعافٍ', 'تكوين قاع', 'بداية تعافٍ', 'تعافٍ مؤكد', 'تعافٍ ممتد', 'أفضل فرص التعافي', 'الأسهم الموجودة عند القاع أو بالقرب منه', 'كيف نقرأ النتائج؟', 'اسم السهم', 'الكود', 'أسباب التصنيف']) assert.ok(html.includes(text), text);
+  for (const text of ['محرك التعافي التاريخي طويل الأفق', 'عدد الأسهم التي تم فحصها', 'بيانات تاريخية سليمة', 'تحتاج مراجعة بيانات', 'أكثر من 35% تحت القمة', 'عند القاع أو قريب منه', 'بداية تعافٍ', 'تعافٍ مؤكد', 'أفضل فرص التعافي', 'الأسهم الأقرب إلى قاع دورة الهبوط', 'الأسهم التي هبطت بقوة وما زالت قرب قاع دورة الهبوط', 'أكبر فجوة عن القمة', 'كيف نقرأ النتائج؟', 'اسم السهم', 'الكود', 'سبب المراجعة']) assert.ok(html.includes(text), text);
   assert.match(html, /<html lang="ar" dir="rtl">/);
-  assert.ok(app.includes('row.recoveryStageAr'));
-  assert.ok(app.includes('row.bottomClassificationAr'));
-  assert.ok(app.includes('row.reasonsAr'));
-  assert.ok(app.includes('row.displayName'));
-  assert.ok(!app.includes('>${escapeHtml(row.recoveryStage)}<'));
-  assert.ok(!app.includes("(row.reasons || []).join"));
+  assert.ok(app.includes('r.recoveryStageAr'));
+  assert.ok(app.includes('r.displayName'));
+  assert.ok(app.includes('reasonAr'));
+  assert.ok(!app.includes("(r.dataQualityReasons||[]).join"));
 });

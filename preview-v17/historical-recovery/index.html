@@ -1,64 +1,12 @@
-<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>نموذج أبحاث التعافي قصير المدى</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <main>
-    <header>
-      <p class="eyebrow">وضع البحث قصير المدى</p>
-      <h1>نموذج أبحاث التعافي قصير المدى</h1>
-      <p class="independent">هذه الأداة مستقلة تمامًا عن سلة التوصيات اليومية، ونتائجها لأغراض البحث والتحليل فقط وليست توصيات شراء أو بيع.</p>
-      <p>يعتمد التحليل على الأسعار المعدلة خلال فترة البيانات المحلية المتاحة، ولا تُعد بيانات التعديلات السعرية وحدها دليلًا نهائيًا على الإجراءات الرأسمالية.</p>
-    </header>
-    <section class="summary" aria-label="ملخص نتائج الماسح">
-      <article><span>عدد الأسهم التي تم فحصها</span><strong id="scanned">—</strong></article>
-      <article><span>بيانات سليمة</span><strong id="validData">—</strong></article>
-      <article class="quality-card"><span>تحتاج مراجعة بيانات</span><strong id="review">—</strong></article>
-      <article><span>عند قاع شديد</span><strong id="extremeBottom">—</strong></article>
-      <article><span>بالقرب من القاع</span><strong id="nearBottom">—</strong></article>
-      <article><span>داخل منطقة القاع</span><strong id="bottomZone">—</strong></article>
-      <article><span>أعلى من منطقة القاع</span><strong id="aboveBottom">—</strong></article>
-      <article><span>لا توجد إشارات تعافٍ</span><strong id="noRecovery">—</strong></article>
-      <article><span>تكوين قاع</span><strong id="bottoming">—</strong></article>
-      <article><span>بداية تعافٍ</span><strong id="early">—</strong></article>
-      <article><span>تعافٍ مؤكد</span><strong id="confirmed">—</strong></article>
-      <article><span>تعافٍ ممتد</span><strong id="extended">—</strong></article>
-      <article><span>أفضل فرص التعافي</span><strong id="opportunities">—</strong></article>
-    </section>
-    <div class="toolbar global-toolbar"><label>بحث بالاسم أو الكود أو المرحلة <input id="filter" type="search" placeholder="اكتب اسم السهم أو الكود"></label><span id="status" role="status">جارٍ تحميل نتائج البحث المحلية…</span></div>
-    <section class="table-panel">
-      <div class="panel-title"><div><p class="eyebrow">جميع الأسهم ذات البيانات السليمة</p><h2>الأسهم الموجودة عند القاع أو بالقرب منه</h2></div></div>
-      <div class="table-wrap">
-        <table data-table="bottom">
-          <thead><tr>
-            <th data-key="displayName">اسم السهم</th><th data-key="symbol">الكود</th><th data-key="metrics.availableWindowAdjustedHigh">قمة النافذة القصيرة</th><th data-key="metrics.currentAdjustedPrice">السعر المعدل الحالي</th><th data-key="metrics.drawdownFromAvailableWindowAdjustedHighPct">الهبوط من قمة النافذة</th><th data-key="metrics.availableWindowAdjustedLow">قاع النافذة القصيرة</th><th data-key="metrics.distanceFromAvailableWindowAdjustedLowPct">البعد عن قاع النافذة</th><th data-key="bottomClassificationAr">موقع السهم من القاع</th><th data-key="metrics.horizons.week52.drawdownFromHighPct">الهبوط من قمة 52 أسبوعًا</th><th data-key="metrics.horizons.week52.distanceFromLowPct">البعد عن قاع 52 أسبوعًا</th><th data-key="metrics.rsi14">مؤشر RSI</th><th data-key="recoveryStageAr">مرحلة التعافي</th><th data-key="dataConfidence">موثوقية البيانات</th>
-          </tr></thead>
-          <tbody id="bottomRows"></tbody>
-        </table>
-      </div>
-    </section>
-    <section class="table-panel second-table">
-      <div class="panel-title"><div><p class="eyebrow">مجموعة فرعية تظهر دلائل تعافٍ</p><h2>أفضل فرص التعافي</h2></div></div>
-      <div class="table-wrap"><table data-table="recovery"><thead><tr>
-        <th data-key="displayName">اسم السهم</th><th data-key="symbol">الكود</th><th data-key="metrics.availableWindowAdjustedHigh">قمة النافذة القصيرة</th><th data-key="metrics.currentAdjustedPrice">السعر المعدل الحالي</th><th data-key="metrics.drawdownFromAvailableWindowAdjustedHighPct">الهبوط من القمة</th><th data-key="metrics.availableWindowAdjustedLow">قاع النافذة القصيرة</th><th data-key="metrics.distanceFromAvailableWindowAdjustedLowPct">البعد عن القاع</th><th data-key="bottomClassificationAr">موقع السهم من القاع</th><th data-key="metrics.rsi14">مؤشر RSI</th><th data-key="strengthScore">درجة القوة</th><th data-key="recoveryScore">درجة التعافي</th><th data-key="recoveryStageAr">مرحلة التعافي</th><th data-key="dataConfidence">موثوقية البيانات</th><th>أسباب التصنيف</th>
-      </tr></thead><tbody id="recoveryRows"></tbody></table></div>
-    </section>
-    <section class="explanation" aria-labelledby="readingTitle">
-      <h2 id="readingTitle">كيف نقرأ النتائج؟</h2>
-      <ol>
-        <li><strong>نسبة الهبوط من القمة:</strong> كلما ارتفعت، كان السهم قد فقد نسبة أكبر من أعلى سعر معدل خلال فترة البيانات المتاحة.</li>
-        <li><strong>الارتفاع عن القاع:</strong> يوضح مقدار ابتعاد السعر الحالي عن أدنى سعر معدل في الفترة.</li>
-        <li><strong>درجة قوة السهم:</strong> تقيس قوة الحركة الحالية والزخم والاتجاه والسيولة.</li>
-        <li><strong>درجة التعافي:</strong> تقيس جودة التعافي بعد هبوط سابق، وليست مجرد قياس لقوة الصعود.</li>
-        <li><strong>مرحلة التعافي:</strong> توضح موضع السهم داخل دورة الهبوط وتكوين القاع والتعافي.</li>
-        <li><strong>موثوقية البيانات:</strong> توضح مدى الثقة في البيانات المستخدمة، خصوصًا عند وجود إجراءات رأسمالية أو بيانات تاريخية ناقصة.</li>
-      </ol>
-    </section>
-  </main>
-  <script src="app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>محرك التعافي التاريخي طويل الأفق</title><link rel="stylesheet" href="styles.css"></head><body><main>
+<header><p class="eyebrow">LONG_HORIZON_RESEARCH</p><h1>محرك التعافي التاريخي طويل الأفق</h1><p class="independent">هذه الأداة مستقلة تمامًا عن سلة التوصيات اليومية.</p><p class="independent">هذه التصنيفات بحثية وتعتمد على البيانات الفنية والتاريخية المتاحة، ولا تمثل توصية شخصية بالشراء أو البيع. ولا تتضمن حتى الآن تقييمًا ماليًا كاملًا لجودة الأعمال والأرباح والمديونية والتدفقات النقدية.</p><p><span class="stage stage-bottom">التحليل المالي الأساسي: لم يُدمج بعد</span></p><p>تعتمد المقارنات على السعر المعدل المقدم من المصدر مع رقابة مستقلة على الانقطاعات والإجراءات الرأسمالية. لا يُعامل المصدر كدليل رسمي على كل إجراء رأسمالي.</p></header>
+<section class="controls"><label>الأفق التاريخي <select id="horizon"><option value="week52">52 أسبوع</option><option value="year3">3 سنوات</option><option value="year5">5 سنوات</option><option value="maxAvailable" selected>كامل التاريخ المتاح</option></select></label><label>بحث <input id="filter" type="search" placeholder="اسم السهم أو الكود"></label><span id="status" role="status">جارٍ التحميل…</span></section>
+<section class="summary" aria-label="ملخص"><article><span>عدد الأسهم التي تم فحصها</span><strong id="scanned">—</strong></article><article><span>بيانات تاريخية سليمة</span><strong id="valid">—</strong></article><article class="quality-card"><span>تحتاج مراجعة بيانات</span><strong id="review">—</strong></article><article><span>أكثر من 35% تحت القمة</span><strong id="gte35">—</strong></article><article><span>أكثر من 50% تحت القمة</span><strong id="gte50">—</strong></article><article><span>أكثر من 65% تحت القمة</span><strong id="gte65">—</strong></article><article><span>عند القاع أو قريب منه</span><strong id="nearBottom">—</strong></article><article><span>بداية تعافٍ</span><strong id="early">—</strong></article><article><span>تعافٍ مؤكد</span><strong id="confirmed">—</strong></article></section>
+<section class="table-panel"><div class="panel-title"><h2>أكبر فجوة عن القمة</h2></div><div class="table-wrap"><table><thead><tr><th>اسم السهم</th><th>الكود</th><th>القمة المعدلة</th><th>تاريخ القمة</th><th>السعر الحالي</th><th>نسبة الهبوط</th><th>قاع ما بعد القمة</th><th>تاريخ القاع</th><th>موضع التعافي</th><th>موثوقية البيانات</th></tr></thead><tbody id="drawdownRows"></tbody></table></div></section>
+<section class="table-panel central-panel"><div class="panel-title"><h2>أفضل المرشحين الاستثمارية البحثية</h2><p>ترتيب بحثي فني وتاريخي مستقل، وليس توصية مالية أساسية مكتملة.</p></div><div class="table-wrap"><table><thead><tr><th>اسم السهم</th><th>الكود</th><th>التوصية البحثية</th><th>مستوى المخاطرة</th><th>لماذا؟</th><th>مرحلة التعافي</th><th>نسبة الهبوط من القمة</th><th>موقع التعافي من القاع</th><th>درجة القوة</th><th>درجة التعافي</th><th>موثوقية البيانات</th></tr></thead><tbody id="researchRows"></tbody></table></div></section>
+<section class="table-panel"><div class="panel-title"><h2>الأسهم الأقرب إلى قاع دورة الهبوط</h2></div><div class="table-wrap"><table><thead><tr><th>اسم السهم</th><th>الكود</th><th>قاع ما بعد القمة</th><th>تاريخ القاع</th><th>السعر الحالي</th><th>الارتفاع عن القاع</th><th>موضع التعافي</th><th>الهبوط من القمة</th><th>موقع السهم</th><th>مرحلة التعافي</th><th>التفسير</th></tr></thead><tbody id="bottomRows"></tbody></table></div></section>
+<section class="table-panel central-panel"><div class="panel-title"><h2>الأسهم التي هبطت بقوة وما زالت قرب قاع دورة الهبوط</h2><p>هبوط لا يقل عن 35٪ وموضع تعافٍ لا يتجاوز 30٪.</p></div><div class="table-wrap"><table><thead><tr><th>اسم السهم</th><th>الكود</th><th>القمة المعدلة</th><th>قاع ما بعد القمة</th><th>السعر الحالي</th><th>نسبة الهبوط</th><th>موضع التعافي</th><th>الارتفاع عن القاع</th><th>المرحلة</th><th>التفسير</th></tr></thead><tbody id="deepNearRows"></tbody></table></div></section>
+<section class="table-panel"><div class="panel-title"><h2>أفضل فرص التعافي</h2></div><div class="table-wrap"><table><thead><tr><th>اسم السهم</th><th>الكود</th><th>الهبوط التاريخي</th><th>المسافة من القاع</th><th>RSI</th><th>درجة الخصم</th><th>درجة القوة</th><th>درجة التعافي</th><th>المرحلة</th><th>لماذا ظهر السهم؟</th></tr></thead><tbody id="recoveryRows"></tbody></table></div></section>
+<section class="table-panel"><div class="panel-title"><h2>تحتاج مراجعة بيانات</h2></div><div class="table-wrap"><table><thead><tr><th>اسم السهم</th><th>الكود</th><th>الجلسات</th><th>بداية التغطية</th><th>نهاية التغطية</th><th>ثقة الإجراءات الرأسمالية</th><th>سبب المراجعة</th></tr></thead><tbody id="reviewRows"></tbody></table></div></section>
+<section class="explanation"><h2>كيف نقرأ النتائج؟</h2><p>يبدأ المحرك بالقمة المعدلة داخل الأفق المختار، ثم يبحث عن أدنى سعر معدل بعدها فقط. موضع التعافي يساوي صفرًا عند قاع دورة الهبوط و100٪ عند استعادة القمة السابقة. يبقى القاع المطلق داخل الأفق معلومة مرجعية ولا يُستخدم لتحديد قرب السهم من قاع دورة التعافي.</p></section>
+</main><script src="app.js"></script></body></html>
