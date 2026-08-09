@@ -34,14 +34,22 @@ jobs:
           ELIGIBLE="$(node -e "const {shouldRunScheduledMode}=require('./scripts/v17/historical-recovery/intelligence/exchange-calendar.cjs');process.stdout.write(String(shouldRunScheduledMode('POST_MARKET')))" )"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then ELIGIBLE=true; fi
           echo "eligible=$ELIGIBLE" >> "$GITHUB_OUTPUT"
+      - name: Refresh curated V17 evidence artifacts fail-safe
+        if: steps.gate.outputs.eligible == 'true'
+        run: |
+          node scripts/v17/historical-recovery/acquisition/orchestration/build.cjs
+          node scripts/v17/historical-recovery/acquisition/orchestration/validate.cjs
       - name: Build new immutable V17 research snapshot
         if: steps.gate.outputs.eligible == 'true'
-        run: node scripts/v17/historical-recovery/intelligence/build.cjs
+        run: |
+          node scripts/v17/historical-recovery/intelligence/build.cjs
+          node scripts/v17/historical-recovery/acquisition/orchestration/report.cjs
       - name: Complete scanner and intelligence validation
         if: steps.gate.outputs.eligible == 'true'
         shell: bash
         run: |
           node --test tests/v17/historical-recovery*.test.cjs
+          node scripts/v17/historical-recovery/acquisition/orchestration/validate.cjs
           node scripts/v17/historical-recovery/long-history/validate-compact.cjs
           node scripts/v17/historical-recovery/fundamentals/validate.cjs
           node scripts/v17/historical-recovery/news/validate.cjs
@@ -71,7 +79,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v17/historical-recovery/integrated-market.json data/v17/historical-recovery/fundamentals/current.json data/v17/historical-recovery/news/current.json data/v17/historical-recovery/intelligence/
+          git add data/v17/historical-recovery/acquisition/current.json data/v17/historical-recovery/acquisition/pilot-report.json data/v17/historical-recovery/fundamentals/verified-input.json data/v17/historical-recovery/news/verified-events.json data/v17/historical-recovery/integrated-market.json data/v17/historical-recovery/fundamentals/current.json data/v17/historical-recovery/news/current.json data/v17/historical-recovery/intelligence/
           if ! git diff --cached --quiet; then
             git commit -m "chore(v17): refresh integrated recovery research"
             for ATTEMPT in 1 2 3; do

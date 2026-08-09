@@ -41,11 +41,19 @@ function describeChange(previous, current) {
   if (!previous) return { changed: false, types: [], reasonsAr: ['هذه أول لقطة قرار متكامل للسهم.'] };
   const types = [];
   const reasonsAr = [];
+  const previousFundamental = previous.fundamental?.fundamentalDataConfidence || 'UNAVAILABLE';
+  const currentFundamental = current.fundamental?.fundamentalDataConfidence || 'UNAVAILABLE';
+  if (previousFundamental === 'UNAVAILABLE' && currentFundamental !== 'UNAVAILABLE') {
+    types.push('NEW_EVIDENCE');
+    reasonsAr.push('اكتمال دليل مالي جديد / تحسن اكتمال البيانات. هذا تغير في اكتمال الأدلة، وليس تحسنًا جديدًا في أداء الشركة.');
+  }
   const oldRank = DECISION_RANK[previous.classificationCode] || 99;
   const newRank = DECISION_RANK[current.classificationCode] || 99;
   if (newRank < oldRank) { types.push('CLASSIFICATION_UPGRADE'); reasonsAr.push('ارتفع التصنيف البحثي بعد عبور بوابة جوهرية.'); }
   if (newRank > oldRank) { types.push('CLASSIFICATION_DOWNGRADE'); reasonsAr.push('انخفض التصنيف البحثي بسبب تغير جوهري في الأدلة أو اكتمالها.'); }
-  if (current.risk?.classification !== previous.risk?.classification) {
+  if (current.risk?.classification !== previous.risk?.classification
+    && previous.risk?.classification && previous.risk.classification !== 'UNAVAILABLE'
+    && current.risk?.classification && current.risk.classification !== 'UNAVAILABLE') {
     const riskRank = { UNAVAILABLE: 0, RELATIVELY_LOW: 1, MEDIUM: 2, HIGH: 3, VERY_HIGH: 4 };
     if ((riskRank[current.risk?.classification] || 0) > (riskRank[previous.risk?.classification] || 0)) { types.push('RISK_INCREASE'); reasonsAr.push('ارتفع مستوى المخاطرة المالية.'); }
     else { types.push('RISK_DECREASE'); reasonsAr.push('انخفض مستوى المخاطرة المالية.'); }

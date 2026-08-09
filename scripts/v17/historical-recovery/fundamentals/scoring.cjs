@@ -99,10 +99,12 @@ function component(name, weight, metrics) {
 }
 
 function scoreFundamentals(company, options = {}) {
-  const periods = Array.isArray(company?.periods) ? company.periods : [];
+  const suppliedPeriods = Array.isArray(company?.periods) ? company.periods : [];
+  const periods = suppliedPeriods.filter(period => period?.comparable !== false && (!period?.periodType || period.periodType === 'ANNUAL'));
   const model = company?.sectorModel || sectorModel(company?.sector);
-  if (!periods.length) return unavailableFundamentals(company, model, 'NO_VERIFIED_FINANCIAL_PERIODS');
+  if (!periods.length && !company?.interimPeriods?.length) return unavailableFundamentals(company, model, 'NO_VERIFIED_FINANCIAL_PERIODS');
   if (!Array.isArray(company?.provenance) || !company.provenance.length) return unavailableFundamentals(company, model, 'SOURCE_PROVENANCE_REQUIRED');
+  if (periods.length < 2) return partialFundamentals(company, model, periods, options, periods.length ? 'INSUFFICIENT_COMPARABLE_ANNUAL_HISTORY' : 'INTERIM_EVIDENCE_ONLY');
   const currencies = new Set(periods.map(period => period.currency || company.currency).filter(Boolean).map(value => String(value).toUpperCase()));
   if (currencies.size !== 1) return unavailableFundamentals(company, model, 'MIXED_OR_MISSING_CURRENCY');
   const m = deriveMetrics(periods);
@@ -153,7 +155,7 @@ function scoreFundamentals(company, options = {}) {
   const ageMonths = reportingAgeMonths(m.latest.periodEnd, options.asOf || new Date());
   const sourceConfidence = String(company.sourceConfidence || 'LOW').toUpperCase();
   const dataConfidence = ageMonths > 18 || periods.length < 2 ? 'LOW'
-    : sourceConfidence === 'HIGH' && sufficient.length === 5 ? 'HIGH'
+    : sourceConfidence === 'HIGH' && sufficient.length === 5 && periods.length >= 3 ? 'HIGH'
       : sourceConfidence === 'HIGH' || sourceConfidence === 'MEDIUM' ? 'MEDIUM' : 'LOW';
   const risk = scoreFinancialRisk(m, dataConfidence, ageMonths, bank);
   const valuation = scoreValuation(company.valuation || {}, model);
@@ -175,6 +177,53 @@ function scoreFundamentals(company, options = {}) {
     missingFields: company.missingFields || [],
     staleFinancialStatements: ageMonths > 18,
     reportingAgeMonths: Number.isFinite(ageMonths) ? Number(ageMonths.toFixed(1)) : null,
+    statementScope: company.statementScope || m.latest.statementScope || null,
+    periodHistory: periods.map(period => ({ periodEnd: period.periodEnd, periodType: period.periodType || 'ANNUAL', statementScope: period.statementScope || company.statementScope || null, publicationDate: period.publicationDate || null, effectiveAvailableDate: period.effectiveAvailableDate || null })),
+    latestInterimPeriod: company.interimPeriods?.at(-1) || null,
+    fieldEvidence: company.fieldEvidence || {},
+    dataPoints: company.dataPoints || [],
+  };
+}
+
+function emptyComponents() {
+  return {
+    profitability: { score: null, sufficient: false, evidence: [] },
+    growth: { score: null, sufficient: false, evidence: [] },
+    balanceSheet: { score: null, sufficient: false, evidence: [] },
+    cashFlow: { score: null, sufficient: false, evidence: [] },
+    earningsStability: { score: null, sufficient: false, evidence: [] },
+  };
+}
+
+function partialFundamentals(company, model, periods, options = {}, reason = 'PARTIAL_EVIDENCE') {
+  const metrics = periods.length ? deriveMetrics(periods) : null;
+  const latest = periods.at(-1) || company.interimPeriods?.at(-1) || {};
+  const ageMonths = reportingAgeMonths(latest.periodEnd, options.asOf || new Date());
+  const bank = model === SECTOR_MODELS.BANK;
+  const risk = periods.length ? scoreFinancialRisk(metrics, 'LOW', ageMonths, bank) : { score: null, classification: 'UNAVAILABLE', labelAr: 'غير متاح', evidence: [] };
+  return {
+    ticker: company.ticker || null,
+    sectorModel: model,
+    latestReportingPeriod: latest.periodEnd || null,
+    publicationDate: latest.publicationDate || null,
+    currency: company.currency || latest.currency || null,
+    fundamentalDataConfidence: 'LOW',
+    fundamentalQualityScore: null,
+    components: emptyComponents(),
+    financialRisk: risk,
+    valuation: scoreValuation(company.valuation || {}, model),
+    valueTrapRisk: { score: null, classification: 'UNAVAILABLE', labelAr: 'غير متاح', reasons: [] },
+    metrics,
+    provenance: company.provenance || [],
+    missingFields: [...new Set([...(company.missingFields || []), reason])],
+    staleFinancialStatements: Number.isFinite(ageMonths) ? ageMonths > 18 : null,
+    reportingAgeMonths: Number.isFinite(ageMonths) ? Number(ageMonths.toFixed(1)) : null,
+    partialReason: reason,
+    statementScope: company.statementScope || latest.statementScope || null,
+    periodHistory: periods.map(period => ({ periodEnd: period.periodEnd, periodType: period.periodType || 'ANNUAL', statementScope: period.statementScope || company.statementScope || null, publicationDate: period.publicationDate || null, effectiveAvailableDate: period.effectiveAvailableDate || null })),
+    latestInterimPeriod: company.interimPeriods?.at(-1) || null,
+    fieldEvidence: company.fieldEvidence || {},
+    dataPoints: company.dataPoints || [],
   };
 }
 
@@ -209,8 +258,19 @@ function scoreValuation(valuation, model) {
     metrics.push({ metric: 'DIVIDEND_YIELD_PCT', value: valuation.dividendYieldPct, score: scoreHigher(valuation.dividendYieldPct, 0, 10) });
   }
   const available = metrics.filter(x => finite(x.score));
-  if (available.length < 2) return { status: 'VALUATION_DATA_INSUFFICIENT', score: null, metrics, sectorModel: model };
-  return { status: 'AVAILABLE', score: Number(avg(available.map(x => x.score)).toFixed(2)), metrics, sectorModel: model };
+  const audit = {
+    valuationTimestamp: valuation.valuationTimestamp || null,
+    priceTimestamp: valuation.priceTimestamp || null,
+    priceSource: valuation.priceSource || null,
+    currency: valuation.currency || null,
+    sharesOutstanding: finite(valuation.sharesOutstanding) ? Number(valuation.sharesOutstanding) : null,
+    shareEvidence: valuation.shareEvidence || null,
+    earningsPeriodEnd: valuation.earningsPeriodEnd || null,
+    method: valuation.method || null,
+    issues: valuation.issues || [],
+  };
+  if (available.length < 2) return { status: 'VALUATION_DATA_INSUFFICIENT', score: null, metrics, sectorModel: model, ...audit };
+  return { status: 'AVAILABLE', score: Number(avg(available.map(x => x.score)).toFixed(2)), metrics, sectorModel: model, ...audit };
 }
 
 function scoreValueTrap(m, qualityScore, risk, valuation, materialNegativeEvent = false) {
@@ -238,13 +298,7 @@ function unavailableFundamentals(company = {}, model = sectorModel(company.secto
     currency: null,
     fundamentalDataConfidence: 'UNAVAILABLE',
     fundamentalQualityScore: null,
-    components: {
-      profitability: { score: null, sufficient: false, evidence: [] },
-      growth: { score: null, sufficient: false, evidence: [] },
-      balanceSheet: { score: null, sufficient: false, evidence: [] },
-      cashFlow: { score: null, sufficient: false, evidence: [] },
-      earningsStability: { score: null, sufficient: false, evidence: [] },
-    },
+    components: emptyComponents(),
     financialRisk: { score: null, classification: 'UNAVAILABLE', labelAr: 'غير متاح', evidence: [] },
     valuation: { status: 'VALUATION_DATA_INSUFFICIENT', score: null, metrics: [], sectorModel: model },
     valueTrapRisk: { score: null, classification: 'UNAVAILABLE', labelAr: 'غير متاح', reasons: [] },
@@ -254,6 +308,9 @@ function unavailableFundamentals(company = {}, model = sectorModel(company.secto
     staleFinancialStatements: null,
     reportingAgeMonths: null,
     unavailableReason: reason,
+    latestInterimPeriod: company.interimPeriods?.at(-1) || null,
+    fieldEvidence: company.fieldEvidence || {},
+    dataPoints: company.dataPoints || [],
   };
 }
 
@@ -266,5 +323,6 @@ module.exports = {
   scoreFinancialRisk,
   scoreValuation,
   scoreValueTrap,
+  partialFundamentals,
   unavailableFundamentals,
 };

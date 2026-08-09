@@ -19,7 +19,13 @@ function buildFundamentalDataset({ universe, input, asOf = new Date() }) {
     generatedAt: asOf.toISOString(),
     researchOnly: true,
     sourceAuditRequired: true,
-    summary: { universe: universe.length, confidenceCounts: counts, scored: results.filter(x => Number.isFinite(x.fundamentalQualityScore)).length },
+    summary: {
+      universe: universe.length,
+      confidenceCounts: counts,
+      covered: results.filter(x => x.fundamentalDataConfidence !== 'UNAVAILABLE').length,
+      scored: results.filter(x => Number.isFinite(x.fundamentalQualityScore)).length,
+      partialEvidence: results.filter(x => x.fundamentalDataConfidence === 'LOW' && !Number.isFinite(x.fundamentalQualityScore)).length,
+    },
     results,
   };
 }

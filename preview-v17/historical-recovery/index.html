@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="منصة بحثية مستقلة لتحليل الخصم التاريخي والتعافي والجودة المالية والأحداث لأسهم البورصة المصرية">
   <title>ماسح التعافي التاريخي للأسهم — ذكاء استثماري متكامل</title>
-  <link rel="stylesheet" href="styles.css?v=17.4.0">
-  <link rel="stylesheet" href="responsive-fix.css?v=17.4.0">
+  <link rel="stylesheet" href="styles.css?v=17.5.0">
+  <link rel="stylesheet" href="responsive-fix.css?v=17.5.0">
+  <link rel="stylesheet" href="acquisition.css?v=17.5.0">
 </head>
 <body>
 <main>
@@ -14,10 +15,12 @@
     <div>
       <p class="eyebrow">V17 · بحث مستقل طويل الأفق</p>
       <h1>ماسح التعافي التاريخي للأسهم</h1>
+      <p class="pilot-label">مرحلة تجريبية لجمع الأدلة المالية والإفصاحات الموثقة</p>
       <p class="subtitle">منصة ذكاء استثماري تدمج دورة الهبوط والتعافي والفنيات والأساسيات والتقييم والأحداث — عند توافر أدلة موثقة.</p>
     </div>
     <div class="disclaimers">
       <p class="independent">هذه الأداة مستقلة تمامًا عن سلة التوصيات اليومية.</p>
+      <p class="pilot-disclaimer">التغطية المالية والإخبارية ما زالت جزئية، وعدم توافر البيانات لا يعني تقييمًا سلبيًا للشركة.</p>
       <p>هذه التصنيفات بحثية وتعتمد على البيانات التاريخية والفنية والمالية والأخبار المتاحة، ولا تمثل توصية شخصية بالشراء أو البيع.</p>
       <p id="coverageWarning" class="warning">جارٍ التحقق من حالة تغطية البيانات…</p>
       <p><span class="badge badge-warning">البيانات المالية غير كافية حتى استكمال مصدر موثوق ومنظم</span></p>
@@ -42,8 +45,14 @@
     <article><span>تغطية السعر والتاريخ</span><strong id="priceCoverage">—</strong></article>
     <article><span>بيانات تاريخية سليمة</span><strong id="historyValid">—</strong></article>
     <article><span>تغطية مالية موثقة</span><strong id="fundamentalCoverage">—</strong></article>
-    <article><span>تغطية أخبار وإفصاحات</span><strong id="newsCoverage">—</strong></article>
-    <article><span>بيانات متكاملة</span><strong id="fullCoverage">—</strong></article>
+    <article><span>قابلة لحساب الجودة المالية</span><strong id="fundamentalEligible">—</strong></article>
+    <article><span>تغطية أخبار وإفصاحات رسمية</span><strong id="newsCoverage">—</strong></article>
+    <article><span>تغطية مالية مرتفعة</span><strong id="financialHigh">—</strong></article>
+    <article><span>تغطية مالية متوسطة</span><strong id="financialMedium">—</strong></article>
+    <article><span>تغطية مالية منخفضة</span><strong id="financialLow">—</strong></article>
+    <article class="quality-card"><span>بيانات مالية غير متاحة</span><strong id="financialUnavailable">—</strong></article>
+    <article><span>أخبار ثانوية موثقة</span><strong id="verifiedNewsCoverage">—</strong></article>
+    <article><span>تغطية متكاملة</span><strong id="fullCoverage">—</strong></article>
     <article><span>بيانات جزئية</span><strong id="partialCoverage">—</strong></article>
     <article class="quality-card"><span>تحتاج مراجعة</span><strong id="reviewCount">—</strong></article>
     <article class="positive-card"><span>ترقيات جديدة</span><strong id="upgradeCount">—</strong></article>
@@ -60,6 +69,12 @@
   <section class="source-health-panel">
     <div class="panel-heading"><div><p class="section-kicker">شفافية المصدر</p><h2>حالة مصادر البيانات</h2></div><p>تعطل أي مصدر لا ينتج قرارًا يبدو مكتملًا.</p></div>
     <div id="sourceHealth" class="source-health"></div>
+  </section>
+
+  <section id="coverage" class="coverage-panel table-panel">
+    <div class="panel-heading"><div><p class="section-kicker">تغطية البيانات</p><h2>لوحة الأدلة الموثقة — تجربة التسع شركات</h2></div><p>عدم وجود تغطية لا يمثل رأيًا سلبيًا في الشركة؛ بل يعني أن الدليل المطلوب لم يكتمل بعد.</p></div>
+    <div class="coverage-grid" id="evidenceCoverage"></div>
+    <div class="table-wrap"><table><thead><tr><th>اسم الشركة</th><th>الكود</th><th>ثقة الهوية</th><th>التغطية المالية</th><th>آخر فترة</th><th>نوع القوائم</th><th>نوع المصدر</th><th>حالة التقييم</th><th>النواقص</th></tr></thead><tbody id="pilotCoverageRows"></tbody></table></div>
   </section>
 
   <nav class="jump-nav" aria-label="الانتقال بين الأقسام">
@@ -117,6 +132,11 @@
     <article class="table-panel"><div class="panel-heading"><div><h2>بيانات تاريخية تحتاج مراجعة</h2></div></div><div class="table-wrap"><table><thead><tr><th>اسم الشركة</th><th>الكود</th><th>الجلسات</th><th>نهاية التغطية</th><th>سبب المراجعة</th></tr></thead><tbody id="historyReviewRows"></tbody></table></div></article>
   </section>
 
+  <section class="table-panel">
+    <div class="panel-heading"><div><h2>طوابير مراجعة الأدلة</h2></div><p>الأدلة الغامضة لا تُحذف ولا تدخل القرار؛ تبقى هنا حتى التحقق.</p></div>
+    <div id="reviewQueues" class="review-queues"></div>
+  </section>
+
   <section class="explanation">
     <h2>كيف نقرأ النتائج؟</h2>
     <ol>
@@ -132,6 +152,6 @@
 </main>
 
 <dialog id="detailDialog"><button id="closeDetail" class="close-button" type="button" aria-label="إغلاق">×</button><div id="detailContent"></div></dialog>
-<script src="app.js?v=17.4.0"></script>
+<script src="app.js?v=17.5.0"></script>
 </body>
 </html>

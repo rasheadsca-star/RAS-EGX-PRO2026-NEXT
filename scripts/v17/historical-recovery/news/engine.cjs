@@ -70,8 +70,11 @@ function deduplicateEvents(events, asOf = new Date()) {
   return [...byFingerprint.values()];
 }
 
-function buildNewsDataset({ universe, events = [], asOf = new Date(), sourceHealth = 'FAILED' }) {
+function buildNewsDataset({ universe, events = [], asOf = new Date(), sourceHealth = 'FAILED', coverageTickers = [], officialCoverageTickers = [], verifiedSecondaryCoverageTickers = [] }) {
   const scored = deduplicateEvents(events, asOf);
+  const covered = new Set((coverageTickers || []).map(value => String(value).toUpperCase()));
+  const officialCovered = new Set((officialCoverageTickers || []).map(value => String(value).toUpperCase()));
+  const secondaryCovered = new Set((verifiedSecondaryCoverageTickers || []).map(value => String(value).toUpperCase()));
   const results = universe.map(stock => {
     const ticker = String(stock.ticker).toUpperCase();
     const relevant = scored.filter(event => String(event.ticker || '').toUpperCase() === ticker
@@ -79,7 +82,7 @@ function buildNewsDataset({ universe, events = [], asOf = new Date(), sourceHeal
       || (event.sector && event.sector === stock.sector)
       || (event.sectorModel && event.sectorModel === stock.sectorModel));
     const eligible = relevant.filter(event => event.decisionEligible);
-    const coverageStatus = relevant.length ? 'EVENT_COVERED' : sourceHealth === 'HEALTHY' ? 'COVERED_NO_MATERIAL_EVENT' : 'SOURCE_COVERAGE_UNAVAILABLE';
+    const coverageStatus = relevant.length ? 'EVENT_COVERED' : (covered.has(ticker) || officialCovered.has(ticker) || secondaryCovered.has(ticker) || sourceHealth === 'HEALTHY') ? 'COVERED_NO_MATERIAL_EVENT' : 'SOURCE_COVERAGE_UNAVAILABLE';
     const netImpact = eligible.length ? clamp(eligible.reduce((sum, event) => sum + event.newsImpactScore, 0), -100, 100)
       : coverageStatus === 'SOURCE_COVERAGE_UNAVAILABLE' ? null : 0;
     const confidence = eligible.length ? Math.max(...eligible.map(event => Number(event.sourceConfidence)))
@@ -89,6 +92,8 @@ function buildNewsDataset({ universe, events = [], asOf = new Date(), sourceHeal
       newsImpactScore: netImpact === null ? null : Number(netImpact.toFixed(2)),
       newsConfidence: confidence,
       coverageStatus,
+      officialCoverage: officialCovered.has(ticker),
+      verifiedSecondaryCoverage: secondaryCovered.has(ticker),
       materialEvents: relevant.sort((a, b) => String(b.eventDate).localeCompare(String(a.eventDate))),
       latestMaterialEvent: relevant[0] || null,
     };
@@ -104,6 +109,10 @@ function buildNewsDataset({ universe, events = [], asOf = new Date(), sourceHeal
       uniqueEvents: scored.length,
       verifiedDecisionEligibleEvents: scored.filter(x => x.decisionEligible).length,
       coveredSymbols: results.filter(x => x.coverageStatus !== 'SOURCE_COVERAGE_UNAVAILABLE').length,
+      officialCoveredSymbols: results.filter(x => x.officialCoverage).length,
+      verifiedSecondaryCoveredSymbols: results.filter(x => x.verifiedSecondaryCoverage).length,
+      coveredNoMaterialEvent: results.filter(x => x.coverageStatus === 'COVERED_NO_MATERIAL_EVENT').length,
+      sourceUnavailable: results.filter(x => x.coverageStatus === 'SOURCE_COVERAGE_UNAVAILABLE').length,
     },
     events: scored,
     results,

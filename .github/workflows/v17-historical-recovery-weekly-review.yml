@@ -26,6 +26,8 @@ jobs:
       - name: Deep deterministic review
         shell: bash
         run: |
+          node scripts/v17/historical-recovery/acquisition/orchestration/build.cjs
+          node scripts/v17/historical-recovery/acquisition/orchestration/validate.cjs
           node --test tests/v17/historical-recovery*.test.cjs
           node scripts/v17/historical-recovery/long-history/validate-compact.cjs
           node scripts/v17/historical-recovery/fundamentals/validate.cjs

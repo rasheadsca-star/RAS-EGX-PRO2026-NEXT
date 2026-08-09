@@ -29,7 +29,15 @@ function buildIntegratedDataset({ market, fundamentalInput, newsInput, previousS
   const fundamentals = buildFundamentalDataset({ universe: market.results, input: fundamentalInput, asOf });
   const fundamentalByTicker = new Map(fundamentals.results.map(row => [row.ticker, row]));
   const newsUniverse = market.results.map(stock => ({ ...stock, sectorModel: fundamentalByTicker.get(stock.ticker)?.sectorModel || null }));
-  const news = buildNewsDataset({ universe: newsUniverse, events: newsInput.events || [], asOf, sourceHealth: newsInput.sourceHealth || 'FAILED' });
+  const news = buildNewsDataset({
+    universe: newsUniverse,
+    events: newsInput.events || [],
+    asOf,
+    sourceHealth: newsInput.sourceHealth || 'FAILED',
+    coverageTickers: newsInput.coverageTickers || [],
+    officialCoverageTickers: newsInput.officialCoverageTickers || [],
+    verifiedSecondaryCoverageTickers: newsInput.verifiedSecondaryCoverageTickers || [],
+  });
   const newsByTicker = new Map(news.results.map(row => [row.ticker, row]));
   const integrated = market.results.map(row => integrateStock(row, fundamentalByTicker.get(row.ticker), newsByTicker.get(row.ticker)));
   const snapshot = buildDecisionSnapshot(integrated, previousSnapshot, asOf, { minimumScoreDelta: 5 });
@@ -40,8 +48,14 @@ function buildIntegratedDataset({ market, fundamentalInput, newsInput, previousS
     canonicalEquityUniverse: market.summary.canonicalOrdinaryEquities,
     priceHistoryCovered: market.summary.successfullyCoveredEquities,
     historicalDataValid: market.summary.validHistoricalData,
-    fundamentalCoverage: fundamentals.summary.scored,
+    fundamentalCoverage: fundamentals.summary.covered,
+    fundamentalScored: fundamentals.summary.scored,
+    fundamentalConfidenceCounts: fundamentals.summary.confidenceCounts,
     newsDisclosureCoverage: news.summary.coveredSymbols,
+    officialDisclosureCoverage: news.summary.officialCoveredSymbols,
+    verifiedSecondaryNewsCoverage: news.summary.verifiedSecondaryCoveredSymbols,
+    coveredNoRecentMaterialEvent: news.summary.coveredNoMaterialEvent,
+    newsSourceUnavailable: news.summary.sourceUnavailable,
     fullDataCoverage: integrated.filter(x => x.dataCompleteness === 'FULL').length,
     partialDataCoverage: integrated.filter(x => x.dataCompleteness === 'PARTIAL').length,
     unavailableData: integrated.filter(x => x.dataCompleteness === 'UNAVAILABLE').length,
@@ -85,7 +99,10 @@ function runBuild(root = path.resolve(process.env.GITHUB_WORKSPACE || '.'), asOf
   const indexFile = path.join(intelligenceDir, 'history/index.json');
   const currentSnapshotFile = path.join(intelligenceDir, 'current.json');
   const alertFile = path.join(intelligenceDir, 'alerts.json');
-  const previousSnapshot = fs.existsSync(currentSnapshotFile) ? readJson(currentSnapshotFile) : null;
+  const explicitBaseline = process.env.V17_EVIDENCE_BASELINE_SNAPSHOT;
+  const previousSnapshot = explicitBaseline
+    ? readJson(path.resolve(root, explicitBaseline))
+    : fs.existsSync(currentSnapshotFile) ? readJson(currentSnapshotFile) : null;
   const previousAlerts = fs.existsSync(alertFile) ? readJson(alertFile) : null;
   const built = buildIntegratedDataset({ market, fundamentalInput, newsInput, previousSnapshot, previousAlerts, asOf });
   const validation = validateIntegratedOutput(built.publicDataset);

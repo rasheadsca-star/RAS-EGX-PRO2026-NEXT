@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { data: null, sort: {} };
+  const state = { data: null, acquisition: null, sort: {} };
   const esc = value => String(value ?? 'غير متاح').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
   const fmt = (value, digits = 2) => finite(value) ? Number(value).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: digits }) : 'غير متاح';
@@ -32,7 +32,7 @@
   const fundamentalTone = row => row.fundamental?.fundamentalDataConfidence === 'HIGH' ? 'positive'
     : row.fundamental?.fundamentalDataConfidence === 'MEDIUM' ? 'neutral' : 'warning';
   const locationAr = value => value <= 10 ? 'عند قاع دورة الهبوط' : value <= 25 ? 'بالقرب من قاع دورة الهبوط' : value <= 40 ? 'داخل منطقة القاع' : 'تعافى بعيدًا عن القاع';
-  const changeTypeAr = code => ({ CLASSIFICATION_UPGRADE: 'ترقية التصنيف', CLASSIFICATION_DOWNGRADE: 'خفض التصنيف', RISK_INCREASE: 'ارتفاع المخاطر', RISK_DECREASE: 'انخفاض المخاطر', TECHNICAL_CHANGE: 'تغير فني', DATA_QUALITY_IMPROVED: 'تحسن جودة البيانات', DATA_QUALITY_DETERIORATED: 'تراجع جودة البيانات', BREAK_BELOW_POST_PEAK_TROUGH: 'كسر قاع دورة الهبوط', MATERIAL_NEGATIVE_NEWS: 'خبر سلبي جوهري' }[code] || 'تغير جوهري');
+  const changeTypeAr = code => ({ CLASSIFICATION_UPGRADE: 'ترقية التصنيف', CLASSIFICATION_DOWNGRADE: 'خفض التصنيف', RISK_INCREASE: 'ارتفاع المخاطر', RISK_DECREASE: 'انخفاض المخاطر', TECHNICAL_CHANGE: 'تغير فني', DATA_QUALITY_IMPROVED: 'تحسن جودة البيانات', DATA_QUALITY_DETERIORATED: 'تراجع جودة البيانات', BREAK_BELOW_POST_PEAK_TROUGH: 'كسر قاع دورة الهبوط', MATERIAL_NEGATIVE_NEWS: 'خبر سلبي جوهري', NEW_EVIDENCE: 'اكتمال أدلة جديدة' }[code] || 'تغير جوهري');
   const valuationMetricAr = code => ({ P_E: 'مضاعف الربحية', P_B: 'مضاعف القيمة الدفترية', EV_EBITDA: 'قيمة المنشأة إلى الأرباح التشغيلية', DIVIDEND_YIELD_PCT: 'عائد التوزيعات' }[code] || 'مقياس تقييم');
   const historyReasonAr = reason => {
     const value = String(reason || '');
@@ -43,6 +43,30 @@
     if (value.includes('INSUFFICIENT')) return 'التغطية التاريخية لا تكفي للأفق المطلوب.';
     return 'تحتاج البيانات إلى مراجعة فنية قبل استخدامها.';
   };
+  const confidenceAr = value => ({ HIGH: 'مرتفعة', MEDIUM: 'متوسطة', LOW: 'منخفضة', UNAVAILABLE: 'غير متاحة', REJECTED: 'مرفوضة' }[value] || 'غير متاحة');
+  const statementScopeAr = value => ({ CONSOLIDATED: 'مجمعة', STANDALONE: 'مستقلة' }[value] || 'غير متاح');
+  const valuationStatusAr = value => value === 'AVAILABLE' ? 'متاح' : 'بيانات التقييم غير كافية';
+  const sourceTypeAr = value => ({ OFFICIAL_COMPANY_IR: 'علاقات المستثمرين الرسمية', OFFICIAL_COMPANY_EARNINGS_RELEASE: 'بيان نتائج رسمي', OFFICIAL_COMPANY_PRESS_RELEASE: 'بيان صحفي رسمي' }[value] || 'مصدر رسمي');
+  const reviewReasonAr = reason => {
+    const value = String(reason || '');
+    if (value.includes('IDENTITY')) return 'إعادة مراجعة الهوية مطلوبة.';
+    if (value.includes('CURRENT_DOCUMENT_LINKS')) return 'روابط القوائم الحالية في موقع علاقات المستثمرين غير متاحة أو معطلة.';
+    if (value.includes('2024_AND_OLDER') || value.includes('NO_2025') || value.includes('STALE')) return 'لم تُعثر على قوائم حديثة كافية في المصدر الرسمي أثناء الفحص.';
+    if (value.includes('NO_STABLE_FIRST_PARTY')) return 'لم يُتحقق من مسار ثابت لقوائم رسمية من الشركة.';
+    if (value.includes('OFFICIAL_SITE_IS_STALE')) return 'الموقع الرسمي قديم ولم تُعثر فيه على قائمة حديثة قابلة للتحقق.';
+    if (value.includes('PROVIDER_COUPLED')) return 'صفحة علاقات المستثمرين تعتمد على مزود مضمّن وتحتاج مراجعة مستند يدويًا.';
+    if (value.includes('PUBLICATION_TIMESTAMP')) return 'توقيت النشر الرسمي يحتاج مراجعة؛ لذلك لا يدخل المستند في أثر الأحداث الزمني.';
+    if (value.includes('PUBLICATION_DATE_CROSS_CHECKED')) return 'توقيت النشر الرسمي يحتاج مراجعة؛ تاريخ النشر متقاطع التحقق لكن التوقيت الدقيق غير مكتمل.';
+    if (value.includes('ANNUAL')) return 'لا توجد فترتان سنويتان قابلتان للمقارنة.';
+    if (value.includes('OPERATING_PROFIT')) return 'بند الربح التشغيلي يحتاج مراجعة دلالية قبل استخدامه.';
+    if (value.includes('EBITDA')) return 'الأرباح قبل الفوائد والضرائب والإهلاك غير متحققة صراحةً.';
+    if (value.includes('DIVIDEND')) return 'توزيعات السهم غير متحققة.';
+    if (value.includes('INTEREST_EXPENSE')) return 'مصروفات الفائدة غير متحققة.';
+    if (value.includes('CASH_FLOW')) return 'بيانات التدفق النقدي غير مكتملة.';
+    if (value.includes('DEBT')) return 'بيانات الدين غير مكتملة.';
+    if (value.includes('EPS')) return 'ربحية السهم غير مكتملة.';
+    return 'الدليل غير مكتمل ويحتاج مراجعة قبل استخدامه.';
+  };
 
   function populateSummary(rows) {
     const s = state.data.summary;
@@ -50,7 +74,14 @@
     $('priceCoverage').textContent = fmt(s.priceHistoryCovered, 0);
     $('historyValid').textContent = fmt(s.historicalDataValid, 0);
     $('fundamentalCoverage').textContent = fmt(s.fundamentalCoverage, 0);
+    $('fundamentalEligible').textContent = fmt(s.fundamentalScored, 0);
     $('newsCoverage').textContent = fmt(s.newsDisclosureCoverage, 0);
+    const financial = state.acquisition?.summary?.financialCoverage || {};
+    $('financialHigh').textContent = fmt(financial.HIGH, 0);
+    $('financialMedium').textContent = fmt(financial.MEDIUM, 0);
+    $('financialLow').textContent = fmt(financial.LOW, 0);
+    $('financialUnavailable').textContent = fmt(financial.UNAVAILABLE, 0);
+    $('verifiedNewsCoverage').textContent = fmt(state.acquisition?.summary?.verifiedSecondaryNewsCoverage, 0);
     $('fullCoverage').textContent = fmt(s.fullDataCoverage, 0);
     $('partialCoverage').textContent = fmt(s.partialDataCoverage, 0);
     $('reviewCount').textContent = fmt(s.unavailableData, 0);
@@ -66,10 +97,31 @@
     $('materialNews').textContent = fmt(new Set(rows.flatMap(row => (row.news?.materialEvents || []).map(event => event.fingerprint))).size, 0);
     $('opportunityEntries').textContent = fmt(changed.filter(row => row.changeTypes?.includes('CLASSIFICATION_UPGRADE') && ['مرشح استثماري قوي بعد التأكيد', 'مرشح استثماري تدريجي'].includes(row.classificationAr)).length, 0);
     $('opportunityExits').textContent = fmt(changed.filter(row => row.changeTypes?.includes('CLASSIFICATION_DOWNGRADE') && ['مرشح استثماري قوي بعد التأكيد', 'مرشح استثماري تدريجي'].includes(row.previousDecisionAr)).length, 0);
+    const pilot = state.acquisition?.summary;
     const insufficient = s.fundamentalCoverage === 0 || s.newsDisclosureCoverage === 0;
     $('coverageWarning').textContent = insufficient
       ? 'تنبيه جودة: التغطية المالية أو الإخبارية الموثقة غير متاحة حاليًا؛ لذلك لا يصدر النظام درجات استثمارية متكاملة أو مرشحين إيجابيين مصطنعين.'
-      : 'توجد تغطية مالية وإخبارية موثقة، مع استمرار تطبيق بوابات المخاطر والثقة.';
+      : pilot?.verifiedSecondaryNewsCoverage === 0
+        ? `تغطية تجريبية جزئية: ${fmt(pilot.normalizedFinancialCompanies, 0)} من ٩ شركات لها دليل مالي منظم، ولا توجد أخبار ثانوية موثقة مؤهلة حاليًا. تستمر جميع بوابات المخاطر والثقة.`
+        : 'توجد تغطية مالية وإخبارية موثقة جزئيًا، مع استمرار تطبيق بوابات المخاطر والثقة.';
+  }
+
+  function renderAcquisitionCoverage() {
+    const acquisition = state.acquisition;
+    if (!acquisition) return;
+    const s = acquisition.summary;
+    const cards = [
+      ['السعر والتاريخ', `${fmt(state.data.summary.historicalDataValid, 0)} من ${fmt(state.data.summary.canonicalEquityUniverse, 0)}`],
+      ['البيانات المالية في التجربة', `${fmt(s.normalizedFinancialCompanies, 0)} من ${fmt(s.pilotCompanies, 0)}`],
+      ['صالحة لحساب جودة مالية', fmt(s.scoredFinancialCompanies, 0)],
+      ['الإفصاحات الرسمية المفحوصة', fmt(s.officialDisclosureCoverage, 0)],
+      ['الأخبار الثانوية الموثقة', fmt(s.verifiedSecondaryNewsCoverage, 0)],
+      ['أحداث مؤهلة لتغيير القرار', fmt(s.verifiedDecisionEligibleEvents, 0)],
+    ];
+    $('evidenceCoverage').innerHTML = cards.map(([label, value]) => `<article><span>${esc(label)}</span><strong>${esc(value)}</strong></article>`).join('');
+    $('pilotCoverageRows').innerHTML = acquisition.companies.map(row => `<tr><td class="share-name">${esc(row.companyNameAr || row.companyNameEn || row.ticker)}</td><td class="ticker" dir="ltr">${esc(row.ticker)}</td><td>${esc(confidenceAr(row.identityConfidence))}</td><td>${esc(confidenceAr(row.financialCoverage))}</td><td>${dateAr(row.latestFinancialPeriod)}</td><td>${esc(statementScopeAr(row.statementScope))}</td><td>${row.sourceUrl ? `<a href="${esc(row.sourceUrl)}" target="_blank" rel="noopener">${esc(sourceTypeAr(row.sourceType))}</a>` : 'غير متاح'}</td><td>${esc(valuationStatusAr(row.valuationStatus))}</td><td class="reasons">${esc((row.missingFields || []).map(reviewReasonAr).join(' '))}</td></tr>`).join('');
+    const labels = { companyIdentity: 'مراجعة هوية الشركة', financialDocument: 'مراجعة مستند مالي', publicationTiming: 'مراجعة توقيت النشر', currencyUnit: 'مراجعة العملة والوحدة', sourceConflict: 'مراجعة اختلاف المصادر', corporateAction: 'مراجعة إجراء رأسمالي', disclosure: 'مراجعة إفصاح', newsClassification: 'مراجعة تصنيف الخبر' };
+    $('reviewQueues').innerHTML = Object.entries(acquisition.reviewQueues || {}).map(([key, items]) => `<article><h3>${esc(labels[key] || 'مراجعة')}</h3><strong>${fmt(items.length, 0)}</strong>${items.length ? `<ul>${items.slice(0, 12).map(item => `<li><span dir="ltr">${esc(item.ticker || '—')}</span> — ${esc(reviewReasonAr(item.reason || item.reasons?.[0]))}</li>`).join('')}</ul>` : '<p>لا توجد عناصر.</p>'}</article>`).join('');
   }
 
   function renderSourceHealth() {
@@ -127,7 +179,7 @@
   function render() {
     if (!state.data) return;
     const rows = state.data.results;
-    populateSummary(rows); renderSourceHealth(); renderIntegrated(rows); renderDeep(rows); renderRecovery(rows); renderBottomAndTraps(rows); renderChangesAndNews(rows); renderQuality(rows);
+    populateSummary(rows); renderSourceHealth(); renderAcquisitionCoverage(); renderIntegrated(rows); renderDeep(rows); renderRecovery(rows); renderBottomAndTraps(rows); renderChangesAndNews(rows); renderQuality(rows);
     bindDetails(); bindSorting();
   }
 
@@ -140,9 +192,10 @@
       <div class="detail-grid">
         <section><h3>الدورة التاريخية</h3><dl><dt>القمة المعدلة</dt><dd>${fmt(h?.high)} — ${dateAr(h?.highDate)}</dd><dt>قاع ما بعد القمة</dt><dd>${fmt(h?.postPeakLow)} — ${dateAr(h?.postPeakLowDate)}</dd><dt>الهبوط من القمة</dt><dd>${pct(h?.currentDrawdownPct)}</dd><dt>موضع التعافي</dt><dd>${pct(h?.recoveryPositionPct)}</dd></dl></section>
         <section><h3>الفنيات</h3><dl><dt>درجة القوة</dt><dd>${fmt(row.technical.strengthScore)}</dd><dt>درجة التعافي</dt><dd>${fmt(row.technical.recoveryScore)}</dd><dt>RSI</dt><dd>${fmt(row.technical.rsi14)}</dd><dt>EMA 20 / 50 / 200</dt><dd>${fmt(row.technical.ema20)} / ${fmt(row.technical.ema50)} / ${fmt(row.technical.ema200)}</dd><dt>زخم 5 / 20 جلسة</dt><dd>${pct(row.technical.momentum5Pct)} / ${pct(row.technical.momentum20Pct)}</dd><dt>زخم 60 / 120 جلسة</dt><dd>${pct(row.technical.momentum60Pct)} / ${pct(row.technical.momentum120Pct)}</dd><dt>توسع أحجام التداول</dt><dd>${finite(row.technical.volumeExpansionRatio) ? `${fmt(row.technical.volumeExpansionRatio)} مرة` : 'غير متاح'}</dd></dl></section>
-        <section><h3>التحليل المالي</h3><p>${badge(fundamentalStatus(row), fundamentalTone(row))}</p><dl><dt>الجودة المالية</dt><dd>${fmt(f?.fundamentalQualityScore)}</dd><dt>الربحية</dt><dd>${fmt(f?.components?.profitability?.score)}</dd><dt>النمو</dt><dd>${fmt(f?.components?.growth?.score)}</dd><dt>الميزانية</dt><dd>${fmt(f?.components?.balanceSheet?.score)}</dd><dt>التدفق النقدي</dt><dd>${fmt(f?.components?.cashFlow?.score)}</dd><dt>آخر فترة</dt><dd>${dateAr(f?.latestReportingPeriod)}</dd></dl></section>
+        <section><h3>البيانات المالية الأساسية</h3><p>${badge(fundamentalStatus(row), fundamentalTone(row))}</p><dl><dt>آخر فترة مالية</dt><dd>${dateAr(f?.latestReportingPeriod)}</dd><dt>تاريخ النشر</dt><dd>${dateAr(f?.publicationDate)}</dd><dt>نوع القوائم</dt><dd>${esc(statementScopeAr(f?.statementScope))}</dd><dt>العملة</dt><dd>${esc(f?.currency || 'غير متاح')}</dd><dt>الإيرادات</dt><dd>${fmt(f?.metrics?.latest?.revenue)}</dd><dt>نمو الإيرادات</dt><dd>${pct(f?.metrics?.revenueGrowthPct)}</dd><dt>صافي الربح</dt><dd>${fmt(f?.metrics?.latest?.netProfit)}</dd><dt>نمو الأرباح</dt><dd>${pct(f?.metrics?.earningsGrowthPct)}</dd><dt>ربحية السهم</dt><dd>${fmt(f?.metrics?.latest?.eps)}</dd><dt>العائد على حقوق الملكية</dt><dd>${pct(f?.metrics?.roePct)}</dd><dt>العائد على الأصول</dt><dd>${pct(f?.metrics?.roaPct)}</dd><dt>إجمالي الدين</dt><dd>${fmt(f?.metrics?.latest?.totalDebt)}</dd><dt>صافي الدين</dt><dd>${fmt(f?.metrics?.netDebt)}</dd><dt>التدفق النقدي التشغيلي</dt><dd>${fmt(f?.metrics?.latest?.operatingCashFlow)}</dd><dt>التدفق النقدي الحر</dt><dd>${fmt(f?.metrics?.freeCashFlow)}</dd></dl><p>المصدر: ${safeUrl(f?.provenance?.[0]?.sourceUrl) ? `<a href="${esc(f.provenance[0].sourceUrl)}" target="_blank" rel="noopener">عرض المستند الرسمي</a>` : 'غير متاح'}</p></section>
+        <section><h3>جودة الشركة ومكونات التحليل</h3><dl><dt>درجة جودة الشركة</dt><dd>${fmt(f?.fundamentalQualityScore)}</dd><dt>الربحية</dt><dd>${fmt(f?.components?.profitability?.score)}</dd><dt>النمو</dt><dd>${fmt(f?.components?.growth?.score)}</dd><dt>الميزانية</dt><dd>${fmt(f?.components?.balanceSheet?.score)}</dd><dt>جودة التدفق النقدي</dt><dd>${fmt(f?.components?.cashFlow?.score)}</dd><dt>استقرار الأرباح</dt><dd>${fmt(f?.components?.earningsStability?.score)}</dd><dt>موثوقية البيانات</dt><dd>${esc(confidenceAr(f?.fundamentalDataConfidence))}</dd></dl></section>
         <section><h3>التقييم والمخاطر</h3><dl><dt>درجة التقييم</dt><dd>${fmt(f?.valuation?.score)}</dd><dt>المقاييس المتاحة</dt><dd>${esc((f?.valuation?.metrics || []).filter(metric => finite(metric.value)).map(metric => `${valuationMetricAr(metric.metric)}: ${fmt(metric.value)}`).join(' · ') || 'غير متاح')}</dd><dt>المقارنة القطاعية</dt><dd>غير متاحة دون مصدر سوق موثوق وكامل.</dd><dt>المخاطرة المالية</dt><dd>${esc(row.risk?.labelAr || 'غير متاح')}</dd><dt>خطر مصيدة القيمة</dt><dd>${esc(row.valueTrapRisk?.labelAr || 'غير متاح')}</dd><dt>الثقة الكلية</dt><dd>${pct(row.overallDataConfidence)}</dd></dl></section>
-        <section class="detail-wide"><h3>الأخبار والأحداث</h3>${sourceEvents.length ? sourceEvents.map(event => `<article class="event"><strong>${esc(event.summaryAr || 'حدث موثق')}</strong><p>${esc(event.explanationAr)}</p><span>الأثر: ${fmt(event.newsImpactScore)} · الثقة: ${pct(event.sourceConfidence)} · ${dateAr(event.eventDate)}</span></article>`).join('') : '<p>تغطية الأخبار الآلية غير متاحة أو لا توجد أحداث موثقة في المدخل الحالي.</p>'}</section>
+        <section class="detail-wide"><h3>الأخبار والأحداث</h3>${sourceEvents.length ? sourceEvents.map(event => `<article class="event"><strong>${esc(event.summaryAr || 'حدث موثق')}</strong><p>${esc(event.explanationAr)}</p><span>الأثر: ${fmt(event.newsImpactScore)} · الثقة: ${pct(event.sourceConfidence)} · ${dateAr(event.eventDate)}</span></article>`).join('') : n?.coverageStatus === 'COVERED_NO_MATERIAL_EVENT' ? '<p>تم فحص المصدر الرسمي ضمن نطاق التجربة، ولم يوجد حدث جوهري مكتمل التوقيت ومؤهل لتغيير القرار.</p>' : '<p>تغطية الأخبار والإفصاحات غير متاحة لهذا السهم حاليًا؛ ولا يعني ذلك عدم وجود أخبار.</p>'}</section>
         <section class="detail-wide"><h3>سجل تغير القرار</h3><p>${esc(row.previousDecisionAr || 'لا يوجد — أول تقييم متكامل')} ← ${esc(row.classificationAr)}</p><p>${esc((row.changeReasonsAr || []).join(' ') || 'لم يحدث تغير قرار بعد إنشاء اللقطة المتكاملة الأولى.')}</p></section>
         <section class="detail-wide"><h3>لماذا هذا التصنيف؟</h3><ul>${[...(row.positivesAr || []), ...(row.negativesAr || []), ...(row.classificationReasonsAr || [])].map(reason => `<li>${esc(reason)}</li>`).join('')}</ul></section>
       </div>`;
@@ -170,9 +223,12 @@
 
   async function load() {
     try {
-      const response = await fetch(`../../data/v17/historical-recovery/integrated-market.json?v=${Date.now()}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      state.data = await response.json();
+      const [response, acquisitionResponse] = await Promise.all([
+        fetch(`../../data/v17/historical-recovery/integrated-market.json?v=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`../../data/v17/historical-recovery/acquisition/current.json?v=${Date.now()}`, { cache: 'no-store' }),
+      ]);
+      if (!response.ok || !acquisitionResponse.ok) throw new Error(`HTTP ${response.status}/${acquisitionResponse.status}`);
+      [state.data, state.acquisition] = await Promise.all([response.json(), acquisitionResponse.json()]);
       populateClassificationFilter(state.data.results);
       $('status').textContent = `آخر تحديث بحثي: ${dateTimeAr(state.data.generatedAt)}`;
       render();

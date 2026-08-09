@@ -32,6 +32,7 @@ jobs:
       - name: Validate verified inputs and last public state
         if: steps.gate.outputs.eligible == 'true' || github.event_name == 'workflow_dispatch'
         run: |
+          node scripts/v17/historical-recovery/acquisition/orchestration/validate.cjs
           node scripts/v17/historical-recovery/long-history/validate-compact.cjs
           node scripts/v17/historical-recovery/fundamentals/validate.cjs
           node scripts/v17/historical-recovery/news/validate.cjs

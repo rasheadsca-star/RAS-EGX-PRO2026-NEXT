@@ -41,10 +41,12 @@ test('Arabic integrated long-history UI has complete primary translations and hi
   const root = path.resolve(__dirname, '../..');
   const html = fs.readFileSync(path.join(root, 'preview-v17/historical-recovery/index.html'), 'utf8');
   const app = fs.readFileSync(path.join(root, 'preview-v17/historical-recovery/app.js'), 'utf8');
-  for (const text of ['ماسح التعافي التاريخي للأسهم', 'الشركات في النطاق', 'بيانات تاريخية سليمة', 'تحتاج مراجعة', 'تغطية مالية موثقة', 'تغطية أخبار وإفصاحات', 'تغيرات إيجابية جديدة', 'تغيرات سلبية جديدة', 'أسهم دخلت قائمة الفرص', 'أسهم خرجت من قائمة الفرص', 'أفضل فرص التعافي', 'الأسهم الموجودة عند القاع أو بالقرب منه', 'الأسهم التي هبطت بقوة وما زالت قرب قاع دورة الهبوط', 'أفضل المرشحين الاستثمارية البحثية', 'مصائد القيمة المحتملة', 'أهم الأخبار الجوهرية', 'أهم المتغيرات وتغيرات القرار', 'كيف نقرأ النتائج؟', 'اسم الشركة', 'الكود']) assert.ok(html.includes(text), text);
+  for (const text of ['ماسح التعافي التاريخي للأسهم', 'مرحلة تجريبية لجمع الأدلة المالية والإفصاحات الموثقة', 'التغطية المالية والإخبارية ما زالت جزئية، وعدم توافر البيانات لا يعني تقييمًا سلبيًا للشركة.', 'الشركات في النطاق', 'بيانات تاريخية سليمة', 'تحتاج مراجعة', 'تغطية مالية موثقة', 'قابلة لحساب الجودة المالية', 'تغطية متكاملة', 'تغطية أخبار وإفصاحات', 'تغطية مالية مرتفعة', 'تغطية مالية متوسطة', 'تغطية مالية منخفضة', 'بيانات مالية غير متاحة', 'لوحة الأدلة الموثقة', 'طوابير مراجعة الأدلة', 'تغيرات إيجابية جديدة', 'تغيرات سلبية جديدة', 'أسهم دخلت قائمة الفرص', 'أسهم خرجت من قائمة الفرص', 'أفضل فرص التعافي', 'الأسهم الموجودة عند القاع أو بالقرب منه', 'الأسهم التي هبطت بقوة وما زالت قرب قاع دورة الهبوط', 'أفضل المرشحين الاستثمارية البحثية', 'مصائد القيمة المحتملة', 'أهم الأخبار الجوهرية', 'أهم المتغيرات وتغيرات القرار', 'كيف نقرأ النتائج؟', 'اسم الشركة', 'الكود']) assert.ok(html.includes(text), text);
   assert.match(html, /<html lang="ar" dir="rtl">/);
   assert.ok(app.includes('row.technical.recoveryStageAr'));
   assert.ok(app.includes('row.companyNameAr'));
   assert.ok(app.includes('historyReasonAr'));
+  assert.ok(app.includes('reviewReasonAr'));
+  assert.ok(app.includes('acquisition/current.json'));
   assert.ok(!app.includes(".historicalDataQuality.reasons.join"));
 });
