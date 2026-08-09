@@ -48,5 +48,6 @@ test('Arabic integrated long-history UI has complete primary translations and hi
   assert.ok(app.includes('historyReasonAr'));
   assert.ok(app.includes('reviewReasonAr'));
   assert.ok(app.includes('acquisition/current.json'));
+  for (const label of ['مراجعة هوية الشركة', 'مراجعة مستند مالي', 'مراجعة توقيت النشر', 'مراجعة العملة/الوحدة', 'مراجعة اختلاف المصادر', 'مراجعة إجراء رأسمالي', 'مراجعة الإفصاح', 'مراجعة تصنيف الخبر']) assert.ok(app.includes(label), label);
   assert.ok(!app.includes(".historicalDataQuality.reasons.join"));
 });
