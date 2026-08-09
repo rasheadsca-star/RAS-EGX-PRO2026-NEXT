@@ -1,22 +1,22 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-08-06T15:15:22.795Z",
+  "generatedAt": "2026-08-09T07:41:58.420Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 72,
-    "scheduled": 25,
-    "scheduledLegacy": 25,
-    "pageDeployers": 39,
-    "repositoryWriters": 70,
+    "total": 75,
+    "scheduled": 28,
+    "scheduledLegacy": 28,
+    "pageDeployers": 40,
+    "repositoryWriters": 71,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "25 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
-    "39 workflows can deploy GitHub Pages.",
-    "70 workflows can write to the repository."
+    "28 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "40 workflows can deploy GitHub Pages.",
+    "71 workflows can write to the repository."
   ],
   "scheduledLegacy": [
     {
@@ -196,6 +196,27 @@
       "name": "EGX V17 Build Review and Deploy",
       "schedules": [
         "50 13-20 * * 0-4"
+      ]
+    },
+    {
+      "filename": "v17-historical-recovery-post-market.yml",
+      "name": "V17 Historical Recovery Post-Market Review",
+      "schedules": [
+        "15 12,13 * * 0-4"
+      ]
+    },
+    {
+      "filename": "v17-historical-recovery-pre-market.yml",
+      "name": "V17 Historical Recovery Pre-Market Monitor",
+      "schedules": [
+        "15 5,6 * * 0-4"
+      ]
+    },
+    {
+      "filename": "v17-historical-recovery-weekly-review.yml",
+      "name": "V17 Historical Recovery Weekly Deep Review",
+      "schedules": [
+        "30 7 * * 5"
       ]
     }
   ],
@@ -1260,6 +1281,54 @@
       "hasPush": true,
       "deploysPages": true,
       "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "v17-historical-recovery-post-market.yml",
+      "relativePath": ".github/workflows/v17-historical-recovery-post-market.yml",
+      "name": "V17 Historical Recovery Post-Market Review",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "15 12,13 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": false,
+      "deploysPages": true,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "v17-historical-recovery-pre-market.yml",
+      "relativePath": ".github/workflows/v17-historical-recovery-pre-market.yml",
+      "name": "V17 Historical Recovery Pre-Market Monitor",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "15 5,6 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": false,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "v17-historical-recovery-weekly-review.yml",
+      "relativePath": ".github/workflows/v17-historical-recovery-weekly-review.yml",
+      "name": "V17 Historical Recovery Weekly Deep Review",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "30 7 * * 5"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": false,
+      "deploysPages": false,
+      "writesRepository": false,
       "classification": "LEGACY_OR_AUXILIARY"
     }
   ]
