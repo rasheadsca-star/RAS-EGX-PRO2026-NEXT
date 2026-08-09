@@ -4,9 +4,10 @@
   const URLS = {
     current: '../../data/v17/current.json',
     market: '../../data/market.json',
+    bridge: '../../data/v17/investment-bridge/current.json',
   };
 
-  const state = { current: null, market: [], view: 'dashboard' };
+  const state = { current: null, market: [], bridge: null, view: 'dashboard' };
   const $ = id => document.getElementById(id);
   const number = value => Number.isFinite(Number(value)) ? Number(value) : null;
   const fmt = (value, digits = 2) => number(value) === null ? '—' : Number(value).toLocaleString('en-GB', { maximumFractionDigits: digits });
@@ -44,6 +45,7 @@
     document.querySelectorAll('.nav-button').forEach(button => button.classList.toggle('active', button.dataset.view === name));
     if (name === 'market') renderMarket();
     if (name === 'portfolio') renderPortfolio();
+    if (name === 'investmentBridge') renderInvestmentBridge();
   }
 
   function renderHeader() {
@@ -90,6 +92,7 @@
 
   function renderRecommendations() {
     const current = state.current;
+    const bridgeBadges = new Map([...(state.bridge?.newMatches || []), ...(state.bridge?.dailyRecommendationBadges || [])].map(row => [row.ticker, row.badgeAr || row.conversionStateAr]));
     $('engineTitle').textContent = current.engine?.labelAr || current.engine?.id || 'المحرك غير معروف';
     $('engineSubtitle').textContent = `${current.recommendations.length} أسهم — جلسة إشارة ${current.sessionDate} — الاحتفاظ المخطط جلسة واحدة`;
     $('recommendationGrid').innerHTML = current.recommendations.map(row => {
@@ -110,6 +113,7 @@
           <span class="chip">حجم ×${fmt(row.volumeRatio20, 2)}</span>
           <span class="chip">احتمال Top 10: ${pct(row.probabilityTop10Pct, 2)}</span>
           ${hot ? '<span class="chip warn">زخم ساخن — لا تطارد السعر</span>' : ''}
+          ${bridgeBadges.has(row.ticker) ? `<span class="chip bridge-badge">${escapeHtml(bridgeBadges.get(row.ticker))}</span>` : ''}
         </div>
         <div class="execution-rule">راقب أول ${fmt(row.executionRules?.observeFirstMinutes, 0)} دقيقة. يُلغى التنفيذ إذا كان الافتتاح خارج النطاق أو لم تتأكد السيولة. هذه ليست أمر شراء.</div>
       </article>`;
@@ -251,12 +255,55 @@
     ].join('');
   }
 
+  function renderInvestmentBridge() {
+    const bridge = state.bridge;
+    if (!bridge) {
+      $('bridgeStatus').textContent = 'غير متاح';
+      $('bridgeMatchRows').innerHTML = '<tr><td colspan="6" class="empty">بيانات جسر V17 غير متاحة حاليًا.</td></tr>';
+      $('bridgePositionCards').innerHTML = '<div class="empty">لا يوجد تقرير متابعة محفوظ.</div>';
+      $('bridgeAlerts').innerHTML = '<div class="empty">لا توجد تنبيهات.</div>';
+      return;
+    }
+    $('bridgeStatus').textContent = bridge.researchOnly ? 'بحثي مستقل' : 'تحقق مطلوب';
+    $('bridgeDisclaimer').textContent = bridge.independenceStatementAr || $('bridgeDisclaimer').textContent;
+    $('bridgeHighDisclaimer').textContent = bridge.historicalHighDisclaimerAr || $('bridgeHighDisclaimer').textContent;
+    $('bridgeActiveCount').textContent = fmt(bridge.activePositions?.length || 0, 0);
+    $('bridgeCandidatesCount').textContent = fmt(bridge.newConversionCandidates?.length || 0, 0);
+    $('bridgeApproachCount').textContent = fmt(bridge.approachingHigh?.length || 0, 0);
+    $('bridgeExitCount').textContent = fmt(bridge.exitSignals?.length || 0, 0);
+    $('bridgeMatchRows').innerHTML = (bridge.newMatches || []).length ? bridge.newMatches.map(row => `<tr>
+      <td><b>${escapeHtml(row.ticker)}</b></td>
+      <td>${escapeHtml(row.historicalRecovery)}</td>
+      <td>${pct(row.drawdownFromHighPct)}</td>
+      <td>${pct(row.recoveryPositionPct)}</td>
+      <td>${escapeHtml(row.recoveryStage)}</td>
+      <td>${escapeHtml(row.badgeAr || row.conversionStateAr)}</td>
+    </tr>`).join('') : '<tr><td colspan="6" class="empty">لا يوجد توافق تاريخي مؤهل ضمن توصيات اليوم.</td></tr>';
+    $('bridgePositionCards').innerHTML = (bridge.activePositions || []).length ? bridge.activePositions.map(row => `<article class="bridge-card">
+      <div class="rec-head"><div><h4>${escapeHtml(row.companyArabic || row.ticker)} — ${escapeHtml(row.ticker)}</h4><p>${escapeHtml(row.currentInvestmentClassification)}</p></div><span class="weight-badge">${escapeHtml(row.dailyReview?.decisionAr || row.status)}</span></div>
+      <div class="rec-prices">
+        <div class="price-box"><small>سعر التحويل</small><b>${fmt(row.conversionReferencePrice, 4)}</b></div>
+        <div class="price-box"><small>السعر الحالي</small><b>${fmt(row.currentPrice, 4)}</b></div>
+        <div class="price-box"><small>العائد منذ التحويل</small><b>${pct(row.unrealizedReturnPct)}</b></div>
+        <div class="price-box"><small>المسافة للقمة</small><b>${pct(row.distanceToHistoricalHighPct)}</b></div>
+      </div>
+      <div class="execution-rule"><b>لماذا؟</b> ${escapeHtml((row.dailyReview?.whyAr || []).join(' '))}</div>
+      <div class="execution-rule"><b>ما الذي تغير منذ أمس؟</b> ${escapeHtml((row.dailyReview?.changedSinceYesterdayAr || []).join(' ') || 'لا تغير جوهري.')}</div>
+    </article>`).join('') : '<div class="empty">لا توجد مراكز استثمارية محولة نشطة حاليًا</div>';
+    $('bridgeAlerts').innerHTML = (bridge.alerts || []).length ? bridge.alerts.map(row => `<div class="check-item"><span>${escapeHtml(row.ticker || 'عام')} — ${escapeHtml(row.textAr)}</span><b>${escapeHtml(row.priority)}</b></div>`).join('') : '<div class="empty">لا توجد تنبيهات جوهرية.</div>';
+  }
+
   async function load() {
     $('refreshButton').disabled = true;
     try {
-      const [current, market] = await Promise.all([fetchJson(URLS.current), fetchJson(URLS.market)]);
+      const [current, market, bridgeResult] = await Promise.all([
+        fetchJson(URLS.current),
+        fetchJson(URLS.market),
+        fetchJson(URLS.bridge).catch(() => null),
+      ]);
       state.current = current;
       state.market = Array.isArray(market.rows) ? market.rows : [];
+      state.bridge = bridgeResult;
       renderHeader();
       renderScores();
       renderSession();
@@ -265,6 +312,7 @@
       renderHealth();
       renderMarket();
       renderPortfolio();
+      renderInvestmentBridge();
       showToast('تم تحميل مصدر الحقيقة V17 بنجاح');
     } catch (error) {
       console.error(error);

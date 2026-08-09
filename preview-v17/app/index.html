@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta name="description" content="EGX Pro V17 — منصة قرار استثماري تجريبية مع مصدر حقيقة واحد وسجل إشارات غير قابل للاستبدال">
   <title>EGX Pro V17</title>
-  <link rel="stylesheet" href="styles.css?v=17.0.0-rc2">
+  <link rel="stylesheet" href="styles.css?v=17.0.0-rc4">
 </head>
 <body>
   <a class="skip-link" href="#mainContent">تخطي إلى المحتوى</a>
@@ -34,6 +34,7 @@
       <button class="nav-button active" data-view="dashboard" type="button">لوحة القرار</button>
       <button class="nav-button" data-view="market" type="button">بحث السوق</button>
       <button class="nav-button" data-view="portfolio" type="button">المحفظة</button>
+      <button class="nav-button" data-view="investmentBridge" type="button">المراكز الاستثمارية من التوصيات اليومية</button>
       <button class="nav-button" data-view="evidence" type="button">الدليل الحي</button>
       <button class="nav-button" data-view="health" type="button">سلامة النظام</button>
     </nav>
@@ -180,6 +181,41 @@
         </article>
       </section>
 
+      <section class="view" id="view-investmentBridge" aria-labelledby="investmentBridgeTitle">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">V17 مستقل</span>
+            <h2 id="investmentBridgeTitle">المراكز الاستثمارية من التوصيات اليومية</h2>
+          </div>
+          <span class="status-pill neutral" id="bridgeStatus">بحثي فقط</span>
+        </div>
+        <div class="notice strong" id="bridgeDisclaimer">التحويل إلى متابعة استثمارية هو تصنيف بحثي مستقل عن التوصية اليومية، ولا يمثل توصية شخصية بالشراء أو الاحتفاظ أو البيع.</div>
+        <div class="notice warning" id="bridgeHighDisclaimer">القمة التاريخية مستوى مرجعي لإعادة التقييم وليست سعر بيع مضمونًا.</div>
+        <div class="score-grid">
+          <article class="score-card bridge-count"><div class="score-label">المراكز النشطة</div><strong id="bridgeActiveCount">—</strong><span>منفصلة عن أداء اليومي</span></article>
+          <article class="score-card bridge-count"><div class="score-label">فرص التحويل الجديدة</div><strong id="bridgeCandidatesCount">—</strong><span>لا تُجبر الأسهم على التأهل</span></article>
+          <article class="score-card bridge-count"><div class="score-label">اقتربت من القمة</div><strong id="bridgeApproachCount">—</strong><span>إعادة تقييم لا بيع تلقائي</span></article>
+          <article class="score-card bridge-count"><div class="score-label">إشارات خروج</div><strong id="bridgeExitCount">—</strong><span>بحثية مستقلة</span></article>
+        </div>
+        <article class="panel">
+          <div class="panel-head split"><div><span class="panel-kicker">تقاطع توصيات اليوم × الحصر التاريخي</span><h3>التوافق مع الحصر التاريخي</h3></div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>السهم</th><th>الحصر التاريخي</th><th>الهبوط من القمة</th><th>موضع التعافي</th><th>مرحلة التعافي</th><th>حالة التحويل</th></tr></thead>
+              <tbody id="bridgeMatchRows"></tbody>
+            </table>
+          </div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h3>متابعة المراكز الاستثمارية المحولة من التوصيات اليومية</h3><p>تقرير يومي مستقل لا يغير نتيجة صفقة الجلسة الواحدة.</p></div></div>
+          <div id="bridgePositionCards" class="bridge-position-grid"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h3>التنبيهات اليومية</h3><p>معلومة، تنبيه، تنبيه مهم، تنبيه حرج.</p></div></div>
+          <div id="bridgeAlerts" class="check-list"></div>
+        </article>
+      </section>
+
       <section class="view" id="view-evidence" aria-labelledby="evidenceTitle">
         <div class="section-heading">
           <div>
@@ -213,6 +249,6 @@
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=17.0.0-rc2"></script>
+  <script src="app.js?v=17.0.0-rc4"></script>
 </body>
 </html>
