@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $ = id => document.getElementById(id);
-  const state = { data: null, acquisition: null, sort: {} };
+  const state = { data: null, acquisition: null, daily: null, scanner: null, sort: {} };
   const esc = value => String(value ?? 'غير متاح').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
   const fmt = (value, digits = 2) => finite(value) ? Number(value).toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: digits }) : 'غير متاح';
@@ -17,7 +17,7 @@
     return matchText && (!selectedClassification() || row.classificationCode === selectedClassification());
   };
   const stockName = row => row.companyNameAr || row.companyNameEn || row.ticker;
-  const identity = row => `<td data-value="${esc(stockName(row))}" class="share-name">${esc(stockName(row))}</td><td data-value="${esc(row.ticker)}" class="ticker" dir="ltr">${esc(row.ticker)}</td>`;
+  const identity = row => { const daily = (state.daily?.recommendations || []).some(item => item.ticker === row.ticker),scanner=(state.scanner?.results||[]).find(item=>item.symbol===row.ticker),semantic=V17HistoricalSemantics.classify({integrated:row,scanner});const dailyLabel=semantic.reviewRequired?'ضمن توصيات اليوم — البيانات تحت المراجعة':semantic.meaningfulRecoveryCycle?'ضمن توصيات اليوم — دورة تعافٍ مطابقة':'ضمن توصيات اليوم — بيانات تاريخية فقط';return `<td data-value="${esc(stockName(row))}" class="share-name">${esc(stockName(row))}${daily ? ` <span class="badge badge-${semantic.reviewRequired?'danger':'neutral'}">${esc(dailyLabel)}</span>` : ''}</td><td data-value="${esc(row.ticker)}" class="ticker" dir="ltr">${esc(row.ticker)}</td>`; };
   const cell = (value, display = null, className = '') => `<td data-value="${esc(finite(value) ? Number(value) : value)}"${className ? ` class="${className}"` : ''}>${display ?? esc(value)}</td>`;
   const emptyRow = (columns, message = 'لا توجد نتائج تستوفي الشروط الحالية.') => `<tr class="empty-row"><td colspan="${columns}">${esc(message)}</td></tr>`;
   const badge = (text, tone = 'neutral') => `<span class="badge badge-${tone}">${esc(text)}</span>`;
@@ -223,13 +223,17 @@
 
   async function load() {
     try {
-      const [response, acquisitionResponse] = await Promise.all([
+      const [response, acquisitionResponse, dailyResponse, scannerResponse] = await Promise.all([
         fetch(`../../data/v17/historical-recovery/integrated-market.json?v=${Date.now()}`, { cache: 'no-store' }),
         fetch(`../../data/v17/historical-recovery/acquisition/current.json?v=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`../../data/v17/current.json?v=${Date.now()}`, { cache: 'no-store' }),
+        fetch(`../../data/v17/historical-recovery/current.json?v=${Date.now()}`, { cache: 'no-store' }),
       ]);
-      if (!response.ok || !acquisitionResponse.ok) throw new Error(`HTTP ${response.status}/${acquisitionResponse.status}`);
-      [state.data, state.acquisition] = await Promise.all([response.json(), acquisitionResponse.json()]);
+      if (!response.ok || !acquisitionResponse.ok || !dailyResponse.ok || !scannerResponse.ok) throw new Error(`HTTP ${response.status}/${acquisitionResponse.status}/${dailyResponse.status}/${scannerResponse.status}`);
+      [state.data, state.acquisition, state.daily, state.scanner] = await Promise.all([response.json(), acquisitionResponse.json(), dailyResponse.json(), scannerResponse.json()]);
       populateClassificationFilter(state.data.results);
+      const requestedTicker = new URLSearchParams(location.search).get('ticker');
+      if (requestedTicker) $('filter').value = requestedTicker.toUpperCase();
       $('status').textContent = `آخر تحديث بحثي: ${dateTimeAr(state.data.generatedAt)}`;
       render();
     } catch (error) {

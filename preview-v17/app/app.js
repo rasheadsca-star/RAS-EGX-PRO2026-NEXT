@@ -5,9 +5,11 @@
     current: '../../data/v17/current.json',
     market: '../../data/market.json',
     bridge: '../../data/v17/investment-bridge/current.json',
+    historical: '../../data/v17/historical-recovery/integrated-market.json',
+    historicalCurrent: '../../data/v17/historical-recovery/current.json',
   };
 
-  const state = { current: null, market: [], bridge: null, view: 'dashboard' };
+  const state = { current: null, market: [], bridge: null, historical: null, historicalCurrent: null, view: 'dashboard' };
   const $ = id => document.getElementById(id);
   const number = value => Number.isFinite(Number(value)) ? Number(value) : null;
   const fmt = (value, digits = 2) => number(value) === null ? '—' : Number(value).toLocaleString('en-GB', { maximumFractionDigits: digits });
@@ -37,6 +39,46 @@
 
   function metric(label, value, extraClass = '') {
     return `<div class="metric ${extraClass}"><small>${escapeHtml(label)}</small><b>${escapeHtml(value)}</b></div>`;
+  }
+
+  const byTicker = (rows, ticker, key = 'ticker') => (rows || []).find(row => String(row?.[key] || '').toUpperCase() === ticker);
+  const historyStageAr = code => ({ BOTTOMING: 'تكوين قاع', EARLY_RECOVERY: 'بداية تعافٍ', RECOVERY_CONFIRMED: 'تعافٍ مؤكد', RECOVERY_EXTENDED: 'تعافٍ ممتد' }[code] || 'غير متاح');
+  const executionStateAr = code => ({ PENDING_OPEN_CONFIRMATION: 'ينتظر تأكيد الافتتاح', EXECUTED: 'تم تنفيذ يومي صالح', KEEP_CASH: 'احتفاظ بالسيولة' }[code] || 'ينتظر تحقق شروط التنفيذ');
+  function linkedRecord(ticker) {
+    const integrated = byTicker(state.historical?.results, ticker);
+    const scanner = byTicker(state.historicalCurrent?.results, ticker, 'symbol');
+    const badge = byTicker(state.bridge?.dailyRecommendationBadges, ticker);
+    const bridgeMatch = byTicker(state.bridge?.newMatches, ticker);
+    return { integrated, scanner, badge, bridgeMatch, matched: Boolean(integrated || scanner) };
+  }
+  function historicalQuality(link) {
+    return V17HistoricalSemantics.quality(link.integrated, link.scanner);
+  }
+  const semanticFor = link => V17HistoricalSemantics.classify({ integrated: link.integrated, scanner: link.scanner, bridgeBadge: link.badge });
+  function bridgePresentation(row, link) {
+    const allowed = link.badge?.conversionAllowed === true;
+    if (allowed) return { label: 'مؤهل للتحويل بعد تنفيذ صالح', reasons: [] };
+    const reasons = [];
+    if (row.state !== 'EXECUTED') reasons.push('لم يحدث تنفيذ يومي صالح');
+    if (link.integrated?.fundamental?.fundamentalDataConfidence === 'UNAVAILABLE') reasons.push('البيانات المالية غير مكتملة');
+    const quality = historicalQuality(link);
+    if (!quality.acceptable) reasons.push(quality.labelAr);
+    if (!link.matched) return { label: 'توصية يومية فقط', reasons: [] };
+    return { label: link.badge?.badgeAr || link.bridgeMatch?.conversionStateAr || 'غير مؤهل للتحويل حاليًا', reasons: [...new Set(reasons)] };
+  }
+
+  function renderHistoricalSummary() {
+    const rows = state.current?.recommendations || [], links = rows.map(row => { const link=linkedRecord(row.ticker); return { row, link, semantic: semanticFor(link) }; });
+    const stage = code => links.filter(x => x.semantic.meaningfulRecoveryCycle && x.semantic.stage === code).length;
+    const review = links.filter(x => x.semantic.reviewRequired).length;
+    $('historicalLinkMetrics').innerHTML = [
+      metric('التوصيات اليومية', fmt(rows.length, 0)), metric('بيانات تاريخية متاحة', fmt(links.filter(x => x.semantic.dataAvailable).length, 0)),
+      metric('مطابقات دورة قاع/تعافٍ فعلية', fmt(links.filter(x => x.semantic.meaningfulRecoveryCycle).length, 0)),
+      metric('بيانات تاريخية تحت المراجعة', fmt(review, 0), review ? 'negative' : 'positive'),
+      metric('قريب من القاع', fmt(stage('BOTTOMING'), 0)), metric('تعافٍ مبكر', fmt(stage('EARLY_RECOVERY'), 0)),
+      metric('تعافٍ مؤكد', fmt(stage('RECOVERY_CONFIRMED'), 0)), metric('تعافٍ ممتد', fmt(stage('RECOVERY_EXTENDED'), 0)),
+      metric('مؤهلون للربط الاستثماري', fmt(links.filter(x => x.semantic.investmentBridgeEligible).length, 0)),
+    ].join('');
   }
 
   function setView(name) {
@@ -92,16 +134,31 @@
 
   function renderRecommendations() {
     const current = state.current;
-    const bridgeBadges = new Map([...(state.bridge?.newMatches || []), ...(state.bridge?.dailyRecommendationBadges || [])].map(row => [row.ticker, row.badgeAr || row.conversionStateAr]));
+    const bridgeBadges = new Map((state.bridge?.dailyRecommendationBadges || []).map(row => [row.ticker, row.badgeAr]));
     $('engineTitle').textContent = current.engine?.labelAr || current.engine?.id || 'المحرك غير معروف';
     $('engineSubtitle').textContent = `${current.recommendations.length} أسهم — جلسة إشارة ${current.sessionDate} — الاحتفاظ المخطط جلسة واحدة`;
     $('recommendationGrid').innerHTML = current.recommendations.map(row => {
       const hot = row.hotMomentumRisk === true;
+      const link = linkedRecord(row.ticker), semantic = semanticFor(link), integrated = link.integrated, historical = integrated?.historical, technical = integrated?.technical || {}, scanner = link.scanner, quality = historicalQuality(link), bridge = bridgePresentation(row, link);
+      const stage = technical.recoveryStageAr || scanner?.recoveryStageAr || scanner?.stageAr || historyStageAr(technical.recoveryStage || scanner?.recoveryStage);
+      const recoveryScore = number(technical.recoveryScore) ?? number(scanner?.recoveryScore), strengthScore = number(technical.strengthScore) ?? number(scanner?.strengthScore);
+      const cycleStory = semantic.meaningfulRecoveryCycle ? `<div class="cycle-story"><b>دورة التعافي</b><span>القمة المرجعية ${fmt(historical?.high,4)}</span><i>↓</i><span>القاع بعد القمة ${fmt(historical?.postPeakLow,4)}</span><i>↑</i><span>السعر الحالي ${fmt(historical?.current,4)}</span></div>` : '';
+      const historicalBlock = link.matched ? `<div class="historical-compact semantic-${semantic.state.toLowerCase()}">
+          <div class="historical-heading"><b>الوضع التاريخي للسهم</b><span class="quality-badge ${quality.tone}">${escapeHtml(quality.labelAr)}</span></div>
+          <div class="semantic-levels"><span>البيانات التاريخية: متاحة</span><b>${escapeHtml(semantic.cycleLabelAr)}</b><span>الربط الاستثماري: ${semantic.investmentBridgeEligible?'مؤهل':'غير مؤهل حاليًا'}</span></div>
+          <div class="story-grid"><p><small>حالة الدخول اليوم</small>${escapeHtml(hot ? 'زخم ساخن — التنفيذ مشروط بالنطاق ولا تطارد السعر' : 'التنفيذ مشروط بنطاق الدخول والسيولة')}</p><p><small>الحالة الدلالية</small>${escapeHtml(semantic.labelAr)}</p><p><small>السياق الحالي</small>${escapeHtml(stage)}</p><p><small>الربط</small>${escapeHtml(bridge.label)}</p></div>${cycleStory}
+          <div class="bridge-reasons"><b>حالة الربط الاستثماري:</b> ${escapeHtml(bridge.label)}${bridge.reasons.length ? `<span>${escapeHtml(bridge.reasons.join(' · '))}</span>` : ''}</div>
+          <details><summary>عرض تفاصيل التعافي التاريخي</summary><div class="historical-details">
+            <dl><dt>مستوى التغطية</dt><dd>${escapeHtml(semantic.labelAr)}</dd><dt>القمة المرجعية التاريخية</dt><dd>${fmt(historical?.high, 4)} — ${escapeHtml(historical?.highDate || 'غير متاح')}</dd><dt>القاع بعد القمة</dt><dd>${fmt(historical?.postPeakLow, 4)} — ${escapeHtml(historical?.postPeakLowDate || 'غير متاح')}</dd><dt>أقصى هبوط من القمة إلى قاع الدورة</dt><dd>${pct(semantic.peakToTroughDeclinePct)}</dd><dt>المتبقي حاليًا دون القمة</dt><dd>${pct(semantic.currentDrawdownPct)}</dd><dt>المسافة فوق قاع ما بعد القمة</dt><dd>${pct(historical?.distanceAbovePostPeakLowPct)}</dd><dt>موضع التعافي</dt><dd>${pct(semantic.recoveryPositionPct)}</dd><dt>مرحلة التعافي</dt><dd>${escapeHtml(stage)}</dd><dt>Recovery Score</dt><dd>${fmt(recoveryScore)}</dd><dt>Strength Score</dt><dd>${fmt(strengthScore)}</dd><dt>التصنيف البحثي التاريخي</dt><dd>${escapeHtml(integrated?.classificationAr || scanner?.bottomClassificationAr || 'غير متاح')}</dd><dt>ثقة البيانات</dt><dd>${pct(integrated?.historicalDataQuality?.confidence ?? scanner?.dataConfidence)}</dd><dt>حالة إجراءات الشركات</dt><dd>${escapeHtml(quality.labelAr)}</dd><dt>أسباب عدم الأهلية</dt><dd>${escapeHtml(bridge.reasons.join(' · ') || 'لا توجد أسباب مسجلة')}</dd></dl>
+            <p class="reference-warning">القمة المرجعية ليست هدف بيع مضمونًا.</p><div class="detail-actions"><a href="../historical-recovery/?ticker=${encodeURIComponent(row.ticker)}">عرض التحليل التاريخي</a><button type="button" data-open-bridge>عرض الربط الاستثماري</button></div>
+          </div></details>
+        </div>` : `<div class="historical-compact no-match"><b>الوضع التاريخي للسهم</b><p>لا توجد مطابقة تاريخية صالحة حاليًا</p></div>`;
       return `<article class="recommendation-card ${hot ? 'hot' : ''}" data-ticker="${escapeHtml(row.ticker)}">
         <div class="rec-head">
           <div><h4>${escapeHtml(row.ticker)}</h4><p>${escapeHtml(cleanName(row.companyNameAr, row.ticker))}</p></div>
           <span class="weight-badge">${pct(row.portfolioWeightPct)} من المحفظة</span>
         </div>
+        <section class="daily-view"><h5>الرؤية اليومية</h5>
         <div class="rec-prices">
           <div class="price-box"><small>الدخول من</small><b>${fmt(row.entryLow, 4)}</b></div>
           <div class="price-box"><small>الدخول إلى</small><b>${fmt(row.entryHigh, 4)}</b></div>
@@ -115,9 +172,12 @@
           ${hot ? '<span class="chip warn">زخم ساخن — لا تطارد السعر</span>' : ''}
           ${bridgeBadges.has(row.ticker) ? `<span class="chip bridge-badge">${escapeHtml(bridgeBadges.get(row.ticker))}</span>` : ''}
         </div>
-        <div class="execution-rule">راقب أول ${fmt(row.executionRules?.observeFirstMinutes, 0)} دقيقة. يُلغى التنفيذ إذا كان الافتتاح خارج النطاق أو لم تتأكد السيولة. هذه ليست أمر شراء.</div>
+        <div class="execution-rule"><b>${escapeHtml(executionStateAr(row.state))}.</b> راقب أول ${fmt(row.executionRules?.observeFirstMinutes, 0)} دقيقة. يُلغى التنفيذ إذا كان الافتتاح خارج النطاق أو لم تتأكد السيولة. هذه ليست أمر شراء.</div></section>
+        <section class="historical-view"><h5>الرؤية التاريخية</h5>${historicalBlock}</section>
       </article>`;
     }).join('');
+    document.querySelectorAll('[data-open-bridge]').forEach(button => button.addEventListener('click', () => setView('investmentBridge')));
+    renderHistoricalSummary();
   }
 
   function renderEvidence() {
@@ -296,14 +356,18 @@
   async function load() {
     $('refreshButton').disabled = true;
     try {
-      const [current, market, bridgeResult] = await Promise.all([
+      const [current, market, bridgeResult, historical, historicalCurrent] = await Promise.all([
         fetchJson(URLS.current),
         fetchJson(URLS.market),
         fetchJson(URLS.bridge).catch(() => null),
+        fetchJson(URLS.historical).catch(() => null),
+        fetchJson(URLS.historicalCurrent).catch(() => null),
       ]);
       state.current = current;
       state.market = Array.isArray(market.rows) ? market.rows : [];
       state.bridge = bridgeResult;
+      state.historical = historical;
+      state.historicalCurrent = historicalCurrent;
       renderHeader();
       renderScores();
       renderSession();
