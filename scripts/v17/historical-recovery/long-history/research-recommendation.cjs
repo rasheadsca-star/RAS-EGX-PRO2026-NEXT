@@ -1,5 +1,5 @@
 'use strict';
-const LABELS={STRONG_CONFIRMED:'مرشح قوي بعد تأكيد',STAGED_BUY:'مرشح شراء تدريجي',POSITIVE_WATCH:'مراقبة إيجابية',HIGH_RISK_RECOVERY:'فرصة تعافٍ عالية المخاطر',BOTTOM_WATCH:'مراقبة قاع',WAIT:'انتظار'};
+const LABELS={STRONG_CONFIRMED:'مرشح استثماري قوي بعد التأكيد',STAGED_BUY:'مرشح استثماري تدريجي',POSITIVE_WATCH:'مراقبة إيجابية',HIGH_RISK_RECOVERY:'فرصة تعافٍ عالية المخاطر',BOTTOM_WATCH:'مراقبة قاع',WAIT:'انتظار'};
 const RISK={RELATIVELY_LOW:'منخفض نسبيًا',MEDIUM:'متوسط',HIGH:'مرتفع',VERY_HIGH:'مرتفع جدًا'};
 const priority={STRONG_CONFIRMED:1,STAGED_BUY:2,HIGH_RISK_RECOVERY:3,POSITIVE_WATCH:4,BOTTOM_WATCH:5,WAIT:6};
 const finite=v=>Number.isFinite(Number(v)),pct=v=>Number(v).toLocaleString('ar-EG',{maximumFractionDigits:1});

@@ -3,8 +3,12 @@
 
 const protectedPrefixes = [
   'preview-v169/',
+  'preview-v16/',
   'scripts/stable/',
   'data/stable/',
+  'data/history/',
+  'data/research/v16',
+  'scripts/research/v16',
 ];
 
 const protectedFiles = new Set([
@@ -18,6 +22,9 @@ const protectedFiles = new Set([
   '.github/workflows/v16-v169-basket-engine.yml',
   '.github/workflows/v16-v169-target-audit.yml',
   '.github/workflows/v169-primary-pages-deploy.yml',
+  'data/symbol-map.json',
+  'data/v17/current.json',
+  'data/v17/ledger.json',
 ]);
 
 function normalize(file) {
@@ -26,7 +33,8 @@ function normalize(file) {
 
 function isProtected(file) {
   const normalized = normalize(file);
-  return protectedPrefixes.some(prefix => normalized.startsWith(prefix)) || protectedFiles.has(normalized);
+  const protectedWorkflow = /^\.github\/workflows\/(?:v16|v169)[^/]*\.ya?ml$/i.test(normalized);
+  return protectedPrefixes.some(prefix => normalized.startsWith(prefix)) || protectedFiles.has(normalized) || protectedWorkflow;
 }
 
 function checkPaths(paths) {
