@@ -1,5 +1,5 @@
 'use strict';
-const U={d:'../../data/stable/v15-practical-decision.json',v:'../../data/research/v15-practical-validation.json',e:'../../data/stable/v15-recommendation-evaluation.json',p:'../../data/stable/v15-price-truth.json',u:'../../data/stable/v15-update-status.json',m:'../../data/quant/market-search-index-v13-17.json'},K={pf:'egx-v16-professional-portfolio',f:'egx-v16-fundamentals',s:'egx-v16-risk-settings'},S={d:null,v:null,e:null,p:null,u:null,m:null,sel:null,pf:[],f:{},s:{portfolioRiskLimit:2,portfolioPositionLimit:5,strategyExposureLimit:40}},$=x=>document.getElementById(x),A=x=>Array.isArray(x)?x:[],N=x=>Number.isFinite(Number(x))?Number(x):null,F=(x,d=2)=>N(x)===null?'—':Number(x).toLocaleString('en-GB',{maximumFractionDigits:d}),P=x=>N(x)===null?'—':F(x,1)+'%',M=x=>N(x)===null?'—':Number(x).toLocaleString('en-GB',{maximumFractionDigits:0})+' ج.م',C=(x,a,b)=>Math.max(a,Math.min(b,x)),E=x=>String(x??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),L=(k,f)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}},W=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const U={d:'../../data/stable/v15-practical-decision.json',v:'../../data/research/v15-practical-validation.json',e:'../../data/stable/v15-recommendation-evaluation.json',h:'../../data/stable/v16-v169-live-evaluation.json',p:'../../data/stable/v15-price-truth.json',u:'../../data/stable/v15-update-status.json',m:'../../data/quant/market-search-index-v13-17.json'},K={pf:'egx-v16-professional-portfolio',f:'egx-v16-fundamentals',s:'egx-v16-risk-settings'},S={d:null,v:null,e:null,h:null,p:null,u:null,m:null,sel:null,pf:[],f:{},s:{portfolioRiskLimit:2,portfolioPositionLimit:5,strategyExposureLimit:40}},$=x=>document.getElementById(x),A=x=>Array.isArray(x)?x:[],N=x=>Number.isFinite(Number(x))?Number(x):null,F=(x,d=2)=>N(x)===null?'—':Number(x).toLocaleString('en-GB',{maximumFractionDigits:d}),P=x=>N(x)===null?'—':F(x,1)+'%',M=x=>N(x)===null?'—':Number(x).toLocaleString('en-GB',{maximumFractionDigits:0})+' ج.م',C=(x,a,b)=>Math.max(a,Math.min(b,x)),E=x=>String(x??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),L=(k,f)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}},W=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const toast=t=>{let e=$('toast');e.textContent=t;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)},J=async(u,o=false)=>{try{let r=await fetch(u+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);return await r.json()}catch(e){if(o)return null;throw e}},norm=x=>String(x||'').toLowerCase().normalize('NFKD').replace(/[\u064b-\u065f\u0670]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/[^a-z0-9\u0600-\u06ff]+/g,' ').replace(/\s+/g,' ').trim(),model=id=>A(S.v?.models).find(x=>x.id===id),market=t=>A(S.m?.stocks).find(x=>x.ticker===t),fund=t=>S.f[t]||null;
 function fs(d,price){if(!d||!d.auditedData)return{score:0,label:'غير مكتمل',cls:'bad',notes:['لا توجد أرقام مالية موثقة ومدققة.']};let s=0,n=[],r=N(d.revenueGrowth),p=N(d.profitGrowth),roe=N(d.roe),de=N(d.debtEquity),pe=N(d.pe),fv=N(d.fairValue),cp=N(price);if(r!==null){s+=r>=15?15:r>0?8:0;n.push(r>0?'نمو الإيرادات موجب.':'الإيرادات لا تنمو.')}if(p!==null){s+=p>=20?20:p>0?10:0;n.push(p>0?'نمو الأرباح موجب.':'ضغط في الأرباح.')}if(roe!==null){s+=roe>=20?20:roe>=12?12:roe>0?5:0;n.push('ROE '+P(roe))}if(de!==null){s+=de<=.5?15:de<=1?9:de<=2?3:0;if(de>2)n.push('مديونية مرتفعة.')}if(pe!==null){s+=pe>0&&pe<=12?12:pe<=20?7:pe>0?2:0;n.push('P/E '+F(pe,1))}if(d.positiveCfo){s+=10;n.push('التدفق التشغيلي موجب.')}else n.push('التدفق التشغيلي غير مؤكد.');if(fv!==null&&cp>0){let u=(fv/cp-1)*100;s+=u>=20?8:u>=8?4:0;n.push('هامش القيمة العادلة '+P(u))}s=C(s,0,100);return{score:s,label:s>=70?'قوي':s>=50?'مقبول':s>=30?'ضعيف':'غير كافٍ',cls:s>=70?'good':s>=50?'warn':'bad',notes:n}}
 function stab(m){if(!m)return{score:0,label:'غير متاح',cls:'bad',reason:'لا توجد نتائج.'};let s=100,r=[],d=m.development||{},v=m.validation||{},t=m.test||{};if((N(d.averageReturnPct)||0)<=0){s-=35;r.push('فترة التطوير خاسرة.')}if((N(d.profitFactor)||0)<1){s-=20;r.push('PF التطوير أقل من 1.')}if((N(t.profitFactor)||0)<1.3){s-=15;r.push('أفضلية الاختبار محدودة.')}if(Math.abs((N(v.winRatePct)||0)-(N(t.winRatePct)||0))>15){s-=15;r.push('اختلاف كبير بين التحقق والاختبار.')}if((S.v?.sessions?.test||0)<20){s-=20;r.push('الاختبار النهائي يغطي '+(S.v?.sessions?.test||0)+' جلسات فقط.')}s=C(s,0,100);return{score:s,label:s>=70?'مستقر نسبيًا':s>=45?'حساس لدورة السوق':'غير مستقر',cls:s>=70?'good':s>=45?'warn':'bad',reason:r.join(' ')||'نتائج متقاربة.'}}
@@ -22,8 +22,68 @@ function fillF(){let z=new Map();A(S.m?.stocks).forEach(x=>z.set(x.ticker,x.comp
 function loadF(){let d=fund($('fundamentalTicker').value)||{};['revenueGrowth','profitGrowth','roe','debtEquity','pe','fairValue','fundamentalNotes'].forEach(i=>$(i).value=d[i]??'');$('positiveCfo').checked=!!d.positiveCfo;$('auditedData').checked=!!d.auditedData;renderF()}
 function saveF(){let t=$('fundamentalTicker').value;S.f[t]={revenueGrowth:N($('revenueGrowth').value),profitGrowth:N($('profitGrowth').value),roe:N($('roe').value),debtEquity:N($('debtEquity').value),pe:N($('pe').value),fairValue:N($('fairValue').value),positiveCfo:$('positiveCfo').checked,auditedData:$('auditedData').checked,fundamentalNotes:$('fundamentalNotes').value.trim()};W(K.f,S.f);renderF();renderReady();renderRecs();if(S.sel?.ticker===t)renderSelected();toast('تم حفظ المراجعة المالية.')}
 function renderF(){let t=$('fundamentalTicker').value,m=market(t),r=A(S.d?.recommendations).find(x=>x.ticker===t),s=fs(fund(t),r?.close??m?.price);$('fundamentalScoreCard').innerHTML=`<div class="score-circle" style="background:conic-gradient(${s.score>=70?'var(--green)':s.score>=50?'var(--amber)':'var(--red)'} ${s.score*3.6}deg,#17364b 0)"><strong>${Math.round(s.score)}</strong><span>${E(s.label)}</span></div><div class="score-notes">${s.notes.map(x=>`<div class="score-note">${E(x)}</div>`).join('')}${fund(t)?.fundamentalNotes?`<div class="score-note">ملاحظات: ${E(fund(t).fundamentalNotes)}</div>`:''}</div>`}
-function renderEvidence(){let l=live(),s=S.e?.summary||{};$('liveEvidenceSummary').innerHTML=[['مؤرشف',l.archived],['دخل فعليًا',l.entered],['منتهي',l.resolved],['نسبة النجاح الحية',P(s.successRatePct)],['متوسط العائد الصافي',P(s.averageNetReturnPct)],['Profit Factor حي',F(s.profitFactor)]].map(x=>`<div class="summary-card"><small>${x[0]}</small><b>${x[1]}</b></div>`).join('');$('confidenceGate').innerHTML=`<div class="confidence-box"><span class="badge ${l.resolved>=100?'good':l.resolved>=30?'warn':'bad'}">${l.stage}</span><div class="confidence-progress"><i style="width:${C(l.resolved,0,100)}%"></i></div><b>${l.resolved}/100 صفقة منتهية</b><div class="professional-verdict warn">لا تُستخدم نسبة Backtest كأنها نسبة نجاح حية.</div></div>`;$('evaluationRows').innerHTML=A(S.e?.records).map(x=>`<tr><td>${E(x.recommendationDate)}</td><td><b class="blue">${E(x.ticker)}</b></td><td>${E(x.strategyLabelAr)}</td><td>${F(x.entryPrice??x.entryHigh,3)}</td><td>${F(x.target1,3)}</td><td>${F(x.stopLoss,3)}</td><td><span class="model-status warn">${E(x.statusAr)}</span></td><td>${P(x.netReturnPct)}</td></tr>`).join('')||'<tr><td colspan="8" class="empty">لا يوجد سجل.</td></tr>';$('modelRows').innerHTML=A(S.v?.models).map(m=>{let s=stab(m);return`<tr><td><b>${E(m.labelAr)}</b><br><small>${E(m.id)}</small></td><td>${P(m.development?.averageReturnPct)} | PF ${F(m.development?.profitFactor)}</td><td>${P(m.validation?.averageReturnPct)} | PF ${F(m.validation?.profitFactor)}</td><td>${P(m.test?.averageReturnPct)} | PF ${F(m.test?.profitFactor)}</td><td>${F(m.test?.profitFactor)}</td><td>${Math.round(s.score)}/100</td><td><span class="model-status ${s.cls}">${E(s.label)}</span><br><small>${E(s.reason)}</small></td></tr>`}).join('')}
+function renderEvidence(){
+  const history=S.h||{};
+  const ms=history.memberSummary||{};
+  const sessions=A(history.sessions);
+  const records=sessions.flatMap(session=>
+    A(session.members).map(member=>({
+      ...member,
+      recommendationDate:session.signalDate,
+      strategyLabelAr:'سلة V16.9 الرئيسية'
+    }))
+  ).sort((a,b)=>
+    String(b.recommendationDate||'').localeCompare(String(a.recommendationDate||'')) ||
+    (N(a.rank)||999)-(N(b.rank)||999)
+  );
+
+  const total=N(ms.totalRecommendations)??records.length;
+  const targetHits=N(ms.targetHits)??records.filter(x=>x.memberStatus==='TARGET_HIT').length;
+  const stopHits=N(ms.stopHits)??records.filter(x=>x.memberStatus==='STOP_HIT').length;
+  const waiting=N(ms.waiting)??records.filter(x=>x.memberStatus==='WAITING').length;
+  const resolved=targetHits+stopHits;
+  const successRate=N(ms.successRatePct)??(resolved?targetHits/resolved*100:null);
+  const progress=total?C(resolved/total*100,0,100):0;
+
+  $('liveEvidenceSummary').innerHTML=[
+    ['إجمالي التوصيات الرئيسية',F(total,0)],
+    ['حققت الهدف',F(targetHits,0)],
+    ['وقف خسارة',F(stopHits,0)],
+    ['ما زالت في الانتظار',F(waiting,0)],
+    ['نسبة النجاح للمحسوم',P(successRate)],
+    ['الجلسات الرئيسية',F(sessions.length,0)]
+  ].map(x=>`<div class="summary-card"><small>${x[0]}</small><b>${x[1]}</b></div>`).join('');
+
+  $('confidenceGate').innerHTML=`
+    <div class="confidence-box">
+      <span class="badge ${waiting===0&&total?'good':resolved?'warn':'bad'}">متابعة التوصيات الرئيسية</span>
+      <div class="confidence-progress"><i style="width:${progress}%"></i></div>
+      <b>${resolved}/${total} توصية محسومة</b>
+      <div class="professional-verdict warn">
+        نسبة النجاح = حققت الهدف ÷ (حققت الهدف + وقف الخسارة). التوصيات المنتظرة لا تدخل في النسبة.
+      </div>
+    </div>`;
+
+  $('evaluationRows').innerHTML=records.map(x=>{
+    const status=x.memberStatus||'WAITING';
+    const cls=status==='TARGET_HIT'?'good':status==='STOP_HIT'?'bad':'warn';
+    const statusAr=x.statusAr||(status==='TARGET_HIT'?'تم تحقيق الهدف':status==='STOP_HIT'?'تم ضرب وقف الخسارة':'ما زالت داخل الانتظار');
+    const realized=status==='TARGET_HIT'||status==='STOP_HIT';
+    return `<tr>
+      <td>${E(x.recommendationDate)}</td>
+      <td><b class="blue">${E(x.ticker)}</b></td>
+      <td>${E(x.strategyLabelAr)}</td>
+      <td>${F(x.entryPrice??x.entryHigh,3)}</td>
+      <td>${F(x.target1,3)}</td>
+      <td>${F(x.stopLoss,3)}</td>
+      <td><span class="model-status ${cls}">${E(statusAr)}</span></td>
+      <td>${realized?P(x.netReturnPct):'—'}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" class="empty">لا يوجد سجل للتوصيات الرئيسية.</td></tr>';
+
+  $('modelRows').innerHTML=A(S.v?.models).map(m=>{let s=stab(m);return`<tr><td><b>${E(m.labelAr)}</b><br><small>${E(m.id)}</small></td><td>${P(m.development?.averageReturnPct)} | PF ${F(m.development?.profitFactor)}</td><td>${P(m.validation?.averageReturnPct)} | PF ${F(m.validation?.profitFactor)}</td><td>${P(m.test?.averageReturnPct)} | PF ${F(m.test?.profitFactor)}</td><td>${F(m.test?.profitFactor)}</td><td>${Math.round(s.score)}/100</td><td><span class="model-status ${s.cls}">${E(s.label)}</span><br><small>${E(s.reason)}</small></td></tr>`}).join('');
+}
 function view(n){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view===n));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='view-'+n));if(n==='market')renderMarket();if(n==='portfolio')renderPF();if(n==='fundamentals')fillF();if(n==='evidence')renderEvidence();scrollTo({top:0,behavior:'smooth'})}
 function bind(){document.querySelectorAll('.tab').forEach(x=>x.onclick=()=>view(x.dataset.view));$('refreshBtn').onclick=load;$('recommendationFilter').onchange=renderRecs;$('marketSearch').oninput=renderMarket;$('marketScope').onchange=renderMarket;['capitalInput','riskPctInput','maxWeightInput'].forEach(i=>$(i).oninput=()=>{calc();renderPF()});$('addPortfolioBtn').onclick=add;['portfolioRiskLimit','portfolioPositionLimit','strategyExposureLimit'].forEach(i=>$(i).oninput=renderPF);$('clearPortfolioBtn').onclick=()=>{S.pf=[];W(K.pf,[]);renderPF()};$('fundamentalTicker').onchange=loadF;$('saveFundamentalBtn').onclick=saveF}
-async function load(){try{$('lastUpdate').textContent='جارٍ تحديث البيانات…';[S.d,S.v,S.e,S.p,S.u,S.m]=await Promise.all([J(U.d),J(U.v),J(U.e),J(U.p),J(U.u,true),J(U.m,true)]);S.pf=L(K.pf,[]);S.f=L(K.f,{});S.s={...S.s,...L(K.s,{})};$('portfolioRiskLimit').value=S.s.portfolioRiskLimit;$('portfolioPositionLimit').value=S.s.portfolioPositionLimit;$('strategyExposureLimit').value=S.s.strategyExposureLimit;let t=S.u?.lastAutomaticScanAt||S.d.generatedAt;$('lastUpdate').textContent='آخر مسح: '+new Date(t).toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'});renderReady();renderTruth();renderRecs();renderMarket();renderPF();renderEvidence();let f=A(S.d.recommendations)[0];if(f)await select(f.ticker);fillF();toast('تم تحميل V16 الاحترافية.')}catch(e){document.querySelector('main').innerHTML='<div class="panel"><div class="empty red">تعذر التحميل: '+E(e.message)+'</div></div>'}}
+async function load(){try{$('lastUpdate').textContent='جارٍ تحديث البيانات…';[S.d,S.v,S.e,S.h,S.p,S.u,S.m]=await Promise.all([J(U.d),J(U.v),J(U.e),J(U.h,true),J(U.p),J(U.u,true),J(U.m,true)]);S.pf=L(K.pf,[]);S.f=L(K.f,{});S.s={...S.s,...L(K.s,{})};$('portfolioRiskLimit').value=S.s.portfolioRiskLimit;$('portfolioPositionLimit').value=S.s.portfolioPositionLimit;$('strategyExposureLimit').value=S.s.strategyExposureLimit;let t=S.u?.lastAutomaticScanAt||S.d.generatedAt;$('lastUpdate').textContent='آخر مسح: '+new Date(t).toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'});renderReady();renderTruth();renderRecs();renderMarket();renderPF();renderEvidence();let f=A(S.d.recommendations)[0];if(f)await select(f.ticker);fillF();toast('تم تحميل V16 الاحترافية.')}catch(e){document.querySelector('main').innerHTML='<div class="panel"><div class="empty red">تعذر التحميل: '+E(e.message)+'</div></div>'}}
 bind();load();setInterval(load,300000);
