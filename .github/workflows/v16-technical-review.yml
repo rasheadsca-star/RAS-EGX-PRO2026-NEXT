@@ -109,7 +109,7 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "Run EGX V16.3 twenty-cycle technical review"
             for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              if git pull --rebase --autostash -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
               sleep $((attempt * 8))
             done
