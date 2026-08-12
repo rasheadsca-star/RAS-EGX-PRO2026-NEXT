@@ -209,8 +209,69 @@ for (const row of recommendations) {
   }
 }
 
-const totalAllocationPct = recommendations.reduce((sum, row) => sum + finite(row.portfolioWeightPct, 0), 0);
-if (totalAllocationPct > 50.001) throw new Error(`Exposure exceeds 50%: ${totalAllocationPct}`);
+
+const MAX_TOTAL_ALLOCATION_PCT = 50;
+const ALLOCATION_ROUNDING_TOLERANCE_PCT = 0.03;
+
+const sourceWeights = recommendations.map(
+  row => finite(row.portfolioWeightPct, 0)
+);
+
+const sourceTotalAllocationPct = round(
+  sourceWeights.reduce((sum, value) => sum + value, 0),
+  4
+);
+
+const declaredTotalAllocationPct = finite(
+  decision?.basketPlan?.totalAllocationPct,
+  MAX_TOTAL_ALLOCATION_PCT
+);
+
+const nearlyEqualWeights =
+  sourceWeights.length > 0 &&
+  (Math.max(...sourceWeights) - Math.min(...sourceWeights)) <= 0.02;
+
+const roundingOnlyOverflow =
+  sourceTotalAllocationPct > MAX_TOTAL_ALLOCATION_PCT &&
+  sourceTotalAllocationPct <=
+    MAX_TOTAL_ALLOCATION_PCT + ALLOCATION_ROUNDING_TOLERANCE_PCT &&
+  declaredTotalAllocationPct <= MAX_TOTAL_ALLOCATION_PCT &&
+  Math.abs(
+    sourceTotalAllocationPct - declaredTotalAllocationPct
+  ) <= ALLOCATION_ROUNDING_TOLERANCE_PCT &&
+  nearlyEqualWeights;
+
+if (roundingOnlyOverflow) {
+  const factor = 10000;
+  const totalUnits = Math.round(
+    declaredTotalAllocationPct * factor
+  );
+  const baseUnits = Math.floor(
+    totalUnits / recommendations.length
+  );
+  const remainder =
+    totalUnits - baseUnits * recommendations.length;
+
+  recommendations.forEach((row, index) => {
+    row.portfolioWeightPct =
+      (baseUnits + (index < remainder ? 1 : 0)) / factor;
+  });
+}
+
+const totalAllocationPct = round(
+  recommendations.reduce(
+    (sum, row) =>
+      sum + finite(row.portfolioWeightPct, 0),
+    0
+  ),
+  4
+);
+
+if (totalAllocationPct > MAX_TOTAL_ALLOCATION_PCT) {
+  throw new Error(
+    `Exposure exceeds ${MAX_TOTAL_ALLOCATION_PCT}%: ${totalAllocationPct}`
+  );
+}
 
 const sessionDate = decision.sessionDate || decision.expectedLatestSession;
 const regimeSession = regime?.metrics?.sessionDate;
