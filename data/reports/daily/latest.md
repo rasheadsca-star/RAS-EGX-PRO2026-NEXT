@@ -3,7 +3,7 @@
 - حالة التشغيل: **يحتاج متابعة**
 - الأول فنيًا: **ATLC**
 - أول B للمراقبة: **MCRO**
-- الجاهز ورقيًا: **ENGC**
+- الجاهز ورقيًا: **ISMA**
 - إشارات جديدة: **20**
 - دخول جديد: **20**
 - صفقات مغلقة: **17**
@@ -17,8 +17,8 @@
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 93.75%, below preferred 98%.
+- تحذير: Data coverage is 95.98%, below preferred 98%.
 - تحذير: 28 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `f60b7d556649d522ec83281e39fef0e4eb781f86577b54cb0c8840c1fbcf84cc`
+بصمة التقرير: `5ebd41d7b183abaae678bf7be6fb7b4b9e14778cd6e60fdd456079056388a2f8`
