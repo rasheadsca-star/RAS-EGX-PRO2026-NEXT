@@ -1,6 +1,6 @@
 {
   "version": "13.17.1",
-  "generatedAt": "2026-08-12T07:14:04.852Z",
+  "generatedAt": "2026-08-12T08:40:43.550Z",
   "systemRole": "production_decision_support",
   "releaseChannel": "production-gated",
   "operational": true,
@@ -11,20 +11,22 @@
   "manualBrokerConfirmationRequired": true,
   "manualPriceVerificationRequired": true,
   "gates": {
-    "marketExecutionGrade": true,
+    "marketExecutionGrade": false,
     "finalizedCurrentSession": false,
     "sessionIntegrity": true,
-    "candidateRiskGate": true,
+    "candidateRiskGate": false,
     "strategyEvidenceGate": true
   },
   "failedGates": [
-    "finalizedCurrentSession"
+    "marketExecutionGrade",
+    "finalizedCurrentSession",
+    "candidateRiskGate"
   ],
   "evidenceGate": "PAPER_GATE_PASSED",
   "candidate": {
     "ticker": "ATLC",
-    "decision": "READY_FOR_PAPER_REVIEW",
-    "decisionLabelAr": "جاهز للمراجعة الورقية منخفضة المخاطر",
+    "decision": "DO_NOT_CHASE",
+    "decisionLabelAr": "لا تطارد السعر",
     "tier": "TIER_A_EXPERIMENTAL_PAPER"
   },
   "warningAr": "هذا إصدار تشغيلي لدعم القرار. لا يرسل أوامر شراء أو بيع تلقائيًا، ولا يصبح أي سهم قابلًا للمراجعة التنفيذية إلا بعد اجتياز جودة البيانات والجلسة والأدلة والمخاطر."
