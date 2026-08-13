@@ -250,7 +250,7 @@ async function mapLimit(items, limit, worker) {
   const freshRows = referenceSessionDate ? rows.filter(row => row.sourceSessionDate === referenceSessionDate) : [];
   const staleRows = rows.filter(row => !referenceSessionDate || row.sourceSessionDate !== referenceSessionDate);
   const coveragePct = eligible.length ? Number((rows.length / eligible.length * 100).toFixed(2)) : 0;
-  const freshnessPct = rows.length ? Number((freshRows.length / rows.length * 100).toFixed(2)) : 0;
+  const freshnessPct = eligible.length ? Number((freshRows.length / eligible.length * 100).toFixed(2)) : 0;
   const executionGrade = Boolean(
     referenceSessionDate &&
     rows.length >= MIN_ROWS &&
@@ -287,7 +287,7 @@ async function mapLimit(items, limit, worker) {
   writeJson(OUT_PATH, output);
   writeJson(REPORT_PATH, report);
 
-  console.log(`Direct S/R rows: ${rows.length}/${eligible.length} (${coveragePct}% coverage); fresh ${freshRows.length}/${rows.length} (${freshnessPct}%)`);
+  console.log(`Direct S/R rows: ${rows.length}/${eligible.length} (${coveragePct}% coverage); fresh ${freshRows.length}/${eligible.length} eligible (${freshnessPct}%)`);
   if (!executionGrade) {
     console.error(`Direct S/R is not execution-grade: rows>=${MIN_ROWS}, coverage>=${MIN_COVERAGE_PCT}%, freshness>=${MIN_FRESHNESS_PCT}% required for ${referenceSessionDate || 'unknown session'}.`);
     process.exit(2);
