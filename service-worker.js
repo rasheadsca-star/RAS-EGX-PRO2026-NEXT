@@ -1,6 +1,7 @@
-// V16.9.1 ISOLATED PRIMARY DECISION AND INSTALLED ICON MIGRATION
-const BUILD = 'V16.9.1-PRIMARY-DECISION-20260805';
-const REQUIRED_VERSION = '16.9.1';
+// V16.3-PROFESSIONAL shell with the isolated V16.9 primary basket integration.
+// Installed navigation marker: version=16.3.9.2
+const BUILD = 'V16.3-PROFESSIONAL-16.3.9.2-V169-BASKET-20260813';
+const REQUIRED_VERSION = '16.3.9.2';
 const ROOT_URL = new URL('./', self.location.href);
 const LATEST_URL = new URL(`./?launch=installed-icon&latest=1&version=${REQUIRED_VERSION}&mobileReset=1&sw=${encodeURIComponent(BUILD)}`, ROOT_URL).href;
 const PRIMARY_DECISION_URL = new URL('./data/stable/v16-v169-primary-decision.json', ROOT_URL);
@@ -108,7 +109,7 @@ self.addEventListener('fetch', event => {
       return response;
     } catch (error) {
       if (request.mode === 'navigate') {
-        return new Response('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><body style="background:#061426;color:#fff;font-family:Arial;padding:30px"><h2>غير متصل</h2><p>لا يتم عرض نسخة قديمة دون اتصال. اتصل بالإنترنت ثم أعد فتح EGX Pro V16.9.1.</p></body></html>', { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+        return new Response('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><body style="background:#061426;color:#fff;font-family:Arial;padding:30px"><h2>غير متصل</h2><p>لا يتم عرض نسخة قديمة دون اتصال. اتصل بالإنترنت ثم أعد فتح EGX Pro V16.3.9.2.</p></body></html>', { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
       }
       throw error;
     }
