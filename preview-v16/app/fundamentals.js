@@ -173,7 +173,11 @@
   function renderAutomatedFundamentals() {
     const view = $('view-fundamentals');
     if (!view) return;
-    if (!local.report) { view.innerHTML = '<article class="panel"><div class="loading">جارٍ تحميل قاعدة التحليل المالي…</div></article>'; return; }
+    if (!local.report) {
+      view.innerHTML = '<article class="panel"><div class="loading">جارٍ تحميل قاعدة التحليل المالي…</div></article>';
+      document.dispatchEvent(new CustomEvent('egx:fundamentals-rendered'));
+      return;
+    }
     const summary = local.report.summary || {}, recs = A(local.report.recommendationAnalysis);
     if (!local.selected) local.selected = recs.find(item => N(item.score) !== null)?.ticker || A(local.report.records)[0]?.ticker || null;
     view.innerHTML = `<div class="finance-summary-grid"><div class="truth-card"><small>تغطية السوق</small><b>${F(summary.rawCoverage, 0)}/${F(summary.marketUniverse, 0)}</b><span>تم جمع بيانات مالية</span></div><div class="truth-card"><small>درجات قابلة للحكم</small><b>${F(summary.scoredCompanies, 0)}</b><span>اجتازت حد اكتمال البيانات</span></div><div class="truth-card"><small>قوائم حديثة</small><b>${F(summary.freshStatements, 0)}</b><span>حتى 240 يومًا</span></div><div class="truth-card"><small>توثيق رسمي</small><b>${F(summary.officialVerifiedCompanies, 0)}</b><span>تمت مطابقة الإفصاح</span></div><div class="truth-card"><small>توصيات اليوم المغطاة</small><b>${F(summary.currentRecommendationFinancialCoverage, 0)}/${F(summary.currentRecommendationCount, 0)}</b><span>درجة مالية متاحة</span></div></div><article class="panel"><div class="panel-head"><div><h2>الحكم المالي على توصيات اليوم</h2><p>القرار الفني القصير الأجل منفصل عن صلاحية السهم للاستثمار. الدرجة المالية لا تحوّل التوصية إلى أمر شراء.</p></div></div><div class="financial-recommendation-strip">${recs.map(item => `<button type="button" data-fin-rec="${E(item.ticker)}" class="financial-rec-item ${scoreClass(item.score)}"><b>${E(item.ticker)}</b><strong>${N(item.score) === null ? 'قيد الجمع' : `${E(item.grade)} · ${F(item.score, 0)}`}</strong><span>${E(item.verdictAr)}</span></button>`).join('')}</div></article><article class="panel"><div class="panel-head split"><div><h2>ماسح التحليل المالي</h2><p>ربحية ونمو وتدفقات ومديونية وتقييم نسبي وجودة إفصاح.</p></div><div class="filters"><input id="financialSearch" class="control" placeholder="بحث بالرمز أو الاسم أو القطاع"><select id="financialVerdictFilter" class="control"><option value="all">كل الأحكام</option><option value="INVESTMENT_REVIEW">مراجعة استثمارية</option><option value="WATCH">مراقبة</option><option value="WEAK">ضعيف</option><option value="AVOID_INVESTMENT_REVIEW">مخاطر مرتفعة</option><option value="DATA_INSUFFICIENT">بيانات غير كافية</option></select></div></div><div class="table-wrap finance-table-wrap"><table class="finance-table"><thead><tr><th>السهم</th><th>الدرجة</th><th>الحكم</th><th>نمو الإيرادات</th><th>نمو الربح</th><th>هامش الربح</th><th>OCF</th><th>D/E</th><th>P/E</th><th>هامش القيمة</th><th>عمر القوائم</th></tr></thead><tbody id="automatedFinancialRows"></tbody></table></div></article><div id="automatedFinancialDetail">${selectedFinancialPanel(financialRecord(local.selected) || recommendationFinancial(local.selected))}</div><article class="panel"><div class="panel-head"><div><h2>منهجية وحدود التحليل</h2><p>حماية من الأرقام المضللة والخلط بين القيمة النسبية والقيمة الجوهرية.</p></div></div><div class="body"><ul class="method-list">${A(local.report.methodology?.principles).map(item => `<li>${E(item)}</li>`).join('')}</ul></div></article>`;
@@ -182,6 +186,7 @@
     $('financialVerdictFilter').addEventListener('change', event => { local.verdict = event.target.value; renderFinancialTable(); });
     view.querySelectorAll('[data-fin-rec]').forEach(button => button.addEventListener('click', () => { local.selected = button.dataset.finRec; renderAutomatedFundamentals(); $('automatedFinancialDetail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
     renderFinancialTable();
+    document.dispatchEvent(new CustomEvent('egx:fundamentals-rendered'));
   }
 
   try { renderFund = renderAutomatedFundamentals; } catch (_) {}

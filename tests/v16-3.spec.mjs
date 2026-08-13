@@ -62,6 +62,13 @@ test('financial view shows coverage and official disclosure gate', async ({ page
   await expect(page.locator('#officialDisclosureCard')).toContainText(
     /موثق|غير مهيأة|FETCHED|NOT_CONFIGURED/,
   );
+
+  const recommendation = page.locator('[data-fin-rec]').first();
+  if (await recommendation.count()) {
+    await recommendation.click();
+    await expect(page.locator('#financialCoverageCard')).toBeVisible();
+    await expect(page.locator('#officialDisclosureCard')).toBeVisible();
+  }
 });
 
 test('live evidence stays separated from backtest', async ({ page }) => {

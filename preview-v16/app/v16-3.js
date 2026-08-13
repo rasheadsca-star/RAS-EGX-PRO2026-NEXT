@@ -242,5 +242,9 @@
     bind();
     load();
   }
+  document.addEventListener('egx:fundamentals-rendered', () => {
+    injectShell();
+    renderFinancial();
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();
