@@ -1,10 +1,9 @@
 {
-  "schemaVersion": "17.0.0-resilient-session-gate-2",
-  "generatedAt": "2026-08-13T20:18:31.531Z",
+  "schemaVersion": "17.0.0-resilient-session-gate-3",
+  "generatedAt": "2026-08-13T20:29:50.564Z",
   "mode": "DEGRADED",
   "reasons": [
-    "AUXILIARY_MUBASHER_FEED_UNAVAILABLE",
-    "SUPPORT_RESISTANCE_UNAVAILABLE_OR_UNVERIFIED"
+    "SUPPORT_RESISTANCE_GLOBAL_THRESHOLD_NOT_MET"
   ],
   "priceTruth": {
     "healthy": true,
@@ -13,21 +12,34 @@
     "sourceCoveragePct": 100,
     "stale": false,
     "sourceAgeMinutes": 2.5,
-    "sourceName": "mubasher_symbol_pages_precise_enriched"
+    "lastSourceUpdate": "2026-08-13T20:26:52.437Z",
+    "sourceName": "mubasher_symbol_pages_precise_enriched",
+    "contract": "MANDATORY_MARKET_COLLECTOR_IS_PRICE_TRUTH; NO_ORPHANED_PRIMARY_COMMAND_REQUIRED"
   },
   "executionInputs": {
     "ready": false,
-    "auxiliaryFeedReady": false,
-    "supportResistanceReady": false
+    "supportResistanceReady": false,
+    "supportResistanceMethod": "NONE_VERIFIED_AT_GLOBAL_THRESHOLD",
+    "direct": {
+      "collectorOutcome": "unknown",
+      "mergeOutcome": "unknown",
+      "sourceRows": 199,
+      "coveragePct": 95.67,
+      "globalThresholdPassed": true
+    },
+    "rendered": {
+      "collectorOutcome": "failure",
+      "mergeOutcome": "skipped",
+      "sourceRows": 46,
+      "coveragePct": null,
+      "globalThresholdPassed": false
+    }
   },
   "sourceState": {
-    "auxiliaryMubasherFeed": "failure",
-    "renderedSupportResistance": "failure",
-    "mergedSupportResistance": "skipped",
     "availableRows": 221,
     "marketRows": 215,
     "cacheRows": 221,
-    "lastSourceUpdate": "2026-08-13T20:15:34.275Z",
+    "lastSourceUpdate": "2026-08-13T20:26:52.437Z",
     "sourceAgeMinutes": 2.5,
     "stale": false
   },
