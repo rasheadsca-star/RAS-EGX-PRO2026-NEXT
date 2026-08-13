@@ -1,7 +1,8 @@
 /*
-  EGX Pro Hub — V4.2.1 Universe Audit
+  EGX Pro Hub — V4.2.1 Universe Audit + V17 isolated name sanitation
   Safe add-on script. It DOES NOT reset scan-state.json or full-market-cache.json.
-  It reads current config/cache outputs and writes data/symbol-audit.json only.
+  On the isolated V17 branch it also sanitizes obvious HTML/AdSlot contamination
+  in data/market.json before generating data/symbol-audit.json.
 */
 const fs = require('fs');
 const path = require('path');
@@ -45,6 +46,62 @@ function looksLikeSymbol(value) {
   return /^[A-Z]{2,8}(?:\.CA)?$/.test(String(value || '').trim().toUpperCase());
 }
 
+function sanitizeMarketName(value, fallback) {
+  let text = String(value || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/-->/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const marker = /End\s+AdSlot(?:\s+\d+)?/ig;
+  let match;
+  let lastEnd = -1;
+  while ((match = marker.exec(text))) lastEnd = match.index + match[0].length;
+  if (lastEnd >= 0) text = text.slice(lastEnd).trim();
+
+  text = text
+    .replace(/^(?:\[?[0-9,\s]+\]?\s*)+/g, '')
+    .replace(/^(?:AdSlot|Advertisement)\s*\d*\s*/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (text.length < 2 || /^[0-9,\[\]\s]+$/.test(text)) return fallback;
+  return text;
+}
+
+function sanitizeMarketRows(market, generatedAt) {
+  const rows = Array.isArray(market.rows) ? market.rows : [];
+  let changedRows = 0;
+  let pollutedBefore = 0;
+  let pollutedAfter = 0;
+
+  for (const row of rows) {
+    const symbol = String(row?.symbol || '').trim().toUpperCase() || '—';
+    const beforeAr = String(row?.name_ar || '');
+    const beforeEn = String(row?.name_en || '');
+    const pollutedPattern = /End\s+AdSlot|-->|^[0-9,\[\]]{5,}/i;
+    if (pollutedPattern.test(`${beforeAr} ${beforeEn}`)) pollutedBefore += 1;
+
+    const cleanAr = sanitizeMarketName(beforeAr, sanitizeMarketName(beforeEn, symbol));
+    const cleanEn = sanitizeMarketName(beforeEn, cleanAr || symbol);
+    if (cleanAr !== beforeAr || cleanEn !== beforeEn) changedRows += 1;
+    row.name_ar = cleanAr;
+    row.name_en = cleanEn;
+
+    if (pollutedPattern.test(`${row.name_ar} ${row.name_en}`)) pollutedAfter += 1;
+  }
+
+  market.nameSanitization = {
+    schemaVersion: '17.0.0-name-sanitizer',
+    sanitizedAt: generatedAt,
+    rows: rows.length,
+    changedRows,
+    pollutedBefore,
+    pollutedAfter,
+  };
+  return market.nameSanitization;
+}
+
 function normalizeCsvText(text) {
   let clean = String(text || '')
     .replace(/^\uFEFF/, '')
@@ -52,17 +109,12 @@ function normalizeCsvText(text) {
     .replace(/\n+/g, '\n')
     .trim();
 
-  // Some prior generated CSV files were accidentally flattened, e.g.
-  // symbol,name_ar,name_en,aliases COMI,... TMGH,...
-  // Insert a newline before any likely EGX ticker followed by a comma.
   clean = clean.replace(/(aliases)\s+(?=[A-Z]{2,8}(?:\.CA)?,)/i, '$1\n');
   clean = clean.replace(/\s+(?=[A-Z]{2,8}(?:\.CA)?,[^\n]*?,)/g, '\n');
   return clean;
 }
 
 function parseLooseCsvLine(line) {
-  // The project CSV is simple and does not intentionally use quoted commas.
-  // For safety, keep extra commas in aliases rather than losing the row.
   const parts = String(line || '').split(',').map(x => x.trim());
   const symbol = String(parts.shift() || '').trim().toUpperCase();
   if (!looksLikeSymbol(symbol)) return null;
@@ -91,7 +143,6 @@ function readCsvSymbols(file) {
     else malformedLines.push(line.slice(0, 220));
   }
 
-  // Fallback: extract all ticker-like tokens before comma even if a row is malformed.
   const rawSymbols = [];
   const re = /(?:^|\s|\n)([A-Z]{2,8}(?:\.CA)?)\s*,/g;
   let m;
@@ -175,6 +226,9 @@ function main() {
 
   const fullCache = readJson('data/full-market-cache.json', {});
   const market = readJson('data/market.json', {});
+  const nameSanitization = sanitizeMarketRows(market, generatedAt);
+  writeJson('data/market.json', market);
+
   const recs = readJson('data/recommendations.json', {});
   const sourceHealth = readJson('data/source-health.json', {});
   const symbolsJson = readJson('data/symbols.json', {});
@@ -204,8 +258,9 @@ function main() {
   const audit = {
     ok: true,
     generatedAt,
-    mode: 'v4_2_1_universe_repair_audit',
+    mode: 'v17_isolated_universe_repair_audit_with_name_sanitation',
     warning: 'بيانات عامة ومتأخرة من Mubasher Public Pages. هذا التقرير للتدقيق الفني وليس أمر تداول.',
+    nameSanitization,
     summary: {
       configuredFromCsv: csv.rows.length,
       configuredFromWatchlist: watchlistRows.length,
@@ -241,8 +296,9 @@ function main() {
   };
 
   writeJson('data/symbol-audit.json', audit);
-  console.log(`symbol-audit.json generated: configured=${audit.summary.totalConfiguredOrDiscovered}, cached=${audit.summary.cachedRows}, missing=${audit.summary.missingFromCache}`);
+  console.log(`symbol-audit.json generated: configured=${audit.summary.totalConfiguredOrDiscovered}, cached=${audit.summary.cachedRows}, missing=${audit.summary.missingFromCache}, sanitized=${nameSanitization.changedRows}, pollutedAfter=${nameSanitization.pollutedAfter}`);
   if (audit.etrs) console.log(`ETRS status: configured=${audit.etrs.configured}, cached=${audit.etrs.cached}, status=${audit.etrs.status}`);
+  if (nameSanitization.pollutedAfter > 0) process.exitCode = 2;
 }
 
 main();
