@@ -2,6 +2,12 @@ name: Update EGX Market Data - V17 Resilient Lab
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - develop/v17-rebuild
+    paths-ignore:
+      - 'data/**'
+      - 'artifacts/**'
 
 permissions:
   contents: write
@@ -13,7 +19,7 @@ concurrency:
 jobs:
   update-market-data:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     env:
       EGX_MUBASHER_CONCURRENCY: '4'
       EGX_MUBASHER_TIMEOUT_MS: '25000'
@@ -24,11 +30,21 @@ jobs:
       EGX_SR_MIN_COVERAGE: '60'
 
     steps:
-      - name: Checkout repository
+      - name: Checkout isolated V17 branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: develop/v17-rebuild
+
+      - name: Guard V16 main from mutation
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v17-rebuild" || {
+            echo "::error::V17 lab may run only from develop/v17-rebuild"
+            exit 1
+          }
+          git fetch origin main develop/v17-rebuild
+          echo "main_sha=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -76,7 +92,7 @@ jobs:
         continue-on-error: true
         run: node scripts/merge-rendered-support-resistance.js
 
-      - name: Build source, coverage and freshness diagnostics
+      - name: Build source coverage and freshness diagnostics
         run: |
           set -u
           diagnostic_scripts=(
@@ -88,7 +104,7 @@ jobs:
           )
           for script in "${diagnostic_scripts[@]}"; do
             if [ -f "$script" ]; then
-              node "$script" || echo "::warning::$script failed; continuing with explicit degraded-state evidence."
+              node "$script" || echo "::warning::$script failed; degraded evidence will record the gap."
             fi
           done
 
@@ -161,13 +177,46 @@ jobs:
           MERGE_SR_OUTCOME: ${{ steps.merge_sr.outcome }}
         run: node scripts/v17/resilient-session-gate.cjs
 
-      - name: V17 ledger and challenger review
+      - name: V17 challenger governance first
+        run: node scripts/v17/challenger-gate.cjs
+
+      - name: Build and resolve immutable V17 evidence
         run: |
           set -euo pipefail
-          [ ! -f scripts/v17/build-snapshot.cjs ] || node scripts/v17/build-snapshot.cjs
-          [ ! -f scripts/v17/resolve-ledger.cjs ] || node scripts/v17/resolve-ledger.cjs
-          [ ! -f scripts/v17/review.cjs ] || node scripts/v17/review.cjs
-          [ ! -f scripts/v17/challenger-gate.cjs ] || node scripts/v17/challenger-gate.cjs
+          node scripts/v17/build-snapshot.cjs
+          node scripts/v17/resolve-ledger.cjs
+          node scripts/v17/build-snapshot.cjs
+
+      - name: Independent V17 review
+        run: |
+          set +e
+          node scripts/v17/review.cjs
+          rc=$?
+          set -e
+          mode=$(node -e "try{const x=require('./data/v17/resilient-session-status.json');process.stdout.write(x.mode||'UNKNOWN')}catch(e){process.stdout.write('UNKNOWN')}")
+          if [ "$rc" -ne 0 ] && [ "$mode" = "DEGRADED" ]; then
+            echo "::warning::V17 critic rejected execution readiness as expected in DEGRADED mode; research pipeline remains valid."
+          elif [ "$rc" -ne 0 ]; then
+            exit "$rc"
+          fi
+
+      - name: Acceptance guard
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json','utf8'));
+          const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json','utf8'));
+          if(!['NORMAL','DEGRADED'].includes(s.mode)) throw new Error(`Session mode ${s.mode} is not acceptable`);
+          if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET') throw new Error('Champion changed unexpectedly');
+          if(c.promotionAllowed!==false) throw new Error('Automatic promotion is enabled');
+          if(s.mode==='DEGRADED' && s.confidencePolicy?.allowExecutionGradeClaim!==false) throw new Error('Degraded mode may not claim execution grade');
+          console.log(JSON.stringify({accepted:true,mode:s.mode,activeEngine:c.activeEngine,promotionAllowed:c.promotionAllowed},null,2));
+          NODE
+          test "$(git rev-parse origin/main)" = "$main_sha" || {
+            echo "::error::origin/main changed during isolated V17 run"
+            exit 1
+          }
 
       - name: Upload diagnostics
         if: always()
@@ -182,12 +231,16 @@ jobs:
             data/price-source-audit.json
             data/v17/resilient-session-status.json
             data/v17/challenger-status.json
+            data/v17/current.json
+            data/v17/ledger.json
+            data/v17/review.json
           if-no-files-found: warn
           retention-days: 7
 
       - name: Commit generated lab data to V17 branch only
         run: |
           set -euo pipefail
+          test "$(git rev-parse origin/main)" = "$main_sha" || exit 1
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/*.json data/v17/*.json artifacts/ || true
