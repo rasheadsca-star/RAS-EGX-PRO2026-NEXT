@@ -13,6 +13,9 @@ const files = {
   legacyLive: P('data/stable/v16-live-evidence.json'),
   fetchStatus: P('data/fetch-status.json'),
   market: P('data/market.json'),
+  history50: P('data/history-50.json'),
+  currentResearch: P('data/today-decision-center.json'),
+  resilient: P('data/v17/resilient-session-status.json'),
   researchAudit: P('data/research/v16-v169-target-hit-audit.json'),
   challenger: P('data/v17/challenger-status.json'),
   snapshot: P('data/v17/current.json'),
@@ -148,11 +151,100 @@ function summarizeLedger(ledger) {
   };
 }
 
+function latestHistorySession(history) {
+  const dates = [];
+  for (const rows of Object.values(history?.symbols || {})) {
+    if (!Array.isArray(rows)) continue;
+    for (const row of rows) {
+      const date = String(row?.date || '');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) dates.push(date);
+    }
+  }
+  return dates.sort().at(-1) || null;
+}
+
+function mapChampionRecommendation(row, index) {
+  return {
+    ticker: String(row.ticker || '').trim().toUpperCase(),
+    companyNameAr: row.companyNameAr || row.ticker,
+    rank: index + 1,
+    entryLow: finite(row.entryLow),
+    entryHigh: finite(row.entryHigh),
+    target: finite(row.target1),
+    stop: finite(row.stopLoss),
+    referenceClose: finite(row.close),
+    portfolioWeightPct: finite(row.portfolioWeightPct),
+    basketWeightPct: finite(row.basketInternalWeightPct),
+    holdingSessions: finite(row.holdingSessions, 1),
+    probabilityTop10Pct: finite(row.estimatedTop10ProbabilityPct),
+    rsi14: finite(row.rsi14),
+    volumeRatio20: finite(row.volumeRatio20),
+    hotMomentumRisk: row.hotMomentumRisk === true || finite(row.rsi14, 0) > 80,
+    opportunityState: 'CHAMPION_REFERENCE',
+    executionAllowed: true,
+    monitorOnly: false,
+    state: 'PENDING_OPEN_CONFIRMATION',
+    cashIfNotTriggered: true,
+    executionRules: {
+      cancelIfOpenAbove: finite(row?.morningConfirmation?.cancelIfOpenAbove, finite(row.entryHigh)),
+      cancelIfOpenBelow: finite(row?.morningConfirmation?.cancelIfOpenBelow, finite(row.stopLoss)),
+      observeFirstMinutes: 15,
+      requireOpeningInsideRange: true,
+      requireLiquidityConfirmation: true,
+      chaseForbidden: true,
+    },
+  };
+}
+
+function mapResearchOpportunity(row, index) {
+  return {
+    ticker: String(row.symbol || '').trim().toUpperCase(),
+    companyNameAr: row.name || row.symbol,
+    rank: index + 1,
+    grade: row.grade || 'Watch',
+    entryLow: finite(row.entryFrom),
+    entryHigh: finite(row.entryTo),
+    target: finite(row.target1),
+    target2: finite(row.target2),
+    stop: finite(row.stopLoss),
+    support1: finite(row.support1),
+    resistance1: finite(row.resistance1),
+    referenceClose: finite(row.price),
+    portfolioWeightPct: 0,
+    basketWeightPct: 0,
+    holdingSessions: 1,
+    probabilityTop10Pct: finite(row.targetProbability, finite(row.confidence)),
+    rsi14: null,
+    volumeRatio20: null,
+    hotMomentumRisk: false,
+    opportunityState: row.opportunityState || 'CONDITIONAL_WATCH',
+    executionAllowed: false,
+    monitorOnly: true,
+    provisionalPlan: row.provisionalPlan !== false,
+    srVerified: row.srVerified === true,
+    why: row.why || null,
+    reason: row.reason || null,
+    state: 'RESEARCH_WATCH_ONLY',
+    cashIfNotTriggered: true,
+    executionRules: {
+      cancelIfOpenAbove: finite(row.entryTo),
+      cancelIfOpenBelow: finite(row.stopLoss),
+      observeFirstMinutes: 15,
+      requireOpeningInsideRange: true,
+      requireLiquidityConfirmation: true,
+      chaseForbidden: true,
+    },
+  };
+}
+
 const decision = readJson(files.decision);
 const regime = readJson(files.regime);
 const legacyLive = readJson(files.legacyLive, {});
 const fetchStatus = readJson(files.fetchStatus, {});
 const market = readJson(files.market, {});
+const history50 = readJson(files.history50, {});
+const currentResearch = readJson(files.currentResearch, {});
+const resilient = readJson(files.resilient, {});
 const researchAudit = readJson(files.researchAudit, {});
 const challenger = readJson(files.challenger);
 const now = new Date().toISOString();
@@ -167,76 +259,70 @@ if (challenger.activeEngine !== engineId || challenger.promotionAllowed !== fals
 
 const sourceRecommendations = Array.isArray(decision.recommendations) ? decision.recommendations : [];
 if (sourceRecommendations.length < 3 || sourceRecommendations.length > 5) {
-  throw new Error(`Basket size must be 3–5; received ${sourceRecommendations.length}`);
+  throw new Error(`Champion basket size must be 3–5; received ${sourceRecommendations.length}`);
 }
-
-const recommendations = sourceRecommendations.map((row, index) => ({
-  ticker: String(row.ticker || '').trim().toUpperCase(),
-  companyNameAr: row.companyNameAr || row.ticker,
-  rank: index + 1,
-  entryLow: finite(row.entryLow),
-  entryHigh: finite(row.entryHigh),
-  target: finite(row.target1),
-  stop: finite(row.stopLoss),
-  referenceClose: finite(row.close),
-  portfolioWeightPct: finite(row.portfolioWeightPct),
-  basketWeightPct: finite(row.basketInternalWeightPct),
-  holdingSessions: finite(row.holdingSessions, 1),
-  probabilityTop10Pct: finite(row.estimatedTop10ProbabilityPct),
-  rsi14: finite(row.rsi14),
-  volumeRatio20: finite(row.volumeRatio20),
-  hotMomentumRisk: row.hotMomentumRisk === true || finite(row.rsi14, 0) > 80,
-  state: 'PENDING_OPEN_CONFIRMATION',
-  cashIfNotTriggered: true,
-  executionRules: {
-    cancelIfOpenAbove: finite(row?.morningConfirmation?.cancelIfOpenAbove, finite(row.entryHigh)),
-    cancelIfOpenBelow: finite(row?.morningConfirmation?.cancelIfOpenBelow, finite(row.stopLoss)),
-    observeFirstMinutes: 15,
-    requireOpeningInsideRange: true,
-    requireLiquidityConfirmation: true,
-    chaseForbidden: true,
-  },
-}));
-
-const tickers = recommendations.map(row => row.ticker);
-if (new Set(tickers).size !== tickers.length) throw new Error('Duplicate basket ticker detected.');
-for (const row of recommendations) {
+const championReferenceRecommendations = sourceRecommendations.map(mapChampionRecommendation);
+for (const row of championReferenceRecommendations) {
   if (!row.ticker || ![row.entryLow, row.entryHigh, row.target, row.stop].every(Number.isFinite)) {
-    throw new Error(`Incomplete price plan for ${row.ticker || 'unknown'}`);
+    throw new Error(`Incomplete champion price plan for ${row.ticker || 'unknown'}`);
   }
   if (!(row.stop < row.entryLow && row.entryLow <= row.entryHigh && row.target > row.entryHigh)) {
-    throw new Error(`Invalid price relationship for ${row.ticker}`);
+    throw new Error(`Invalid champion price relationship for ${row.ticker}`);
+  }
+}
+const championAllocationPct = championReferenceRecommendations.reduce((sum, row) => sum + finite(row.portfolioWeightPct, 0), 0);
+if (championAllocationPct > 50.001) throw new Error(`Champion exposure exceeds 50%: ${championAllocationPct}`);
+
+const championSessionDate = decision.sessionDate || decision.expectedLatestSession;
+const championRegimeSession = regime?.metrics?.sessionDate || null;
+const latestMarketSession = latestHistorySession(history50);
+const researchSessionDate = currentResearch.sessionDate || latestMarketSession;
+const currentSourceSession = researchSessionDate || latestMarketSession || null;
+const researchSessionAligned = Boolean(researchSessionDate && latestMarketSession && researchSessionDate === latestMarketSession);
+const championReferenceCurrent = Boolean(championSessionDate && latestMarketSession && championSessionDate === latestMarketSession);
+const championInternalSessionAligned = Boolean(championSessionDate && championSessionDate === championRegimeSession);
+const resilientResearchAllowed = resilient?.confidencePolicy?.allowResearchRanking !== false && resilient?.mode !== 'BLOCKED';
+const resilientExecutionAllowed = resilient?.confidencePolicy?.allowExecutionGradeClaim === true && resilient?.mode === 'NORMAL';
+const researchRows = Array.isArray(currentResearch.rankedOpportunities) ? currentResearch.rankedOpportunities : [];
+const validResearchRows = researchRows.filter(row => row?.symbol && [row.entryFrom, row.entryTo, row.target1, row.stopLoss].every(value => finite(value) !== null));
+const researchReady = Boolean(researchSessionAligned && resilientResearchAllowed && validResearchRows.length >= 3);
+const championExecutionGrade = decision?.priceTruth?.executionGrade === true || fetchStatus.executionGrade === true || fetchStatus.mode === 'v15_precise_public_execution_grade';
+const executionReady = Boolean(championReferenceCurrent && championInternalSessionAligned && championExecutionGrade && resilientExecutionAllowed);
+
+const currentRecommendations = executionReady
+  ? championReferenceRecommendations
+  : validResearchRows.slice(0, 5).map(mapResearchOpportunity);
+for (const row of currentRecommendations) {
+  if (![row.entryLow, row.entryHigh, row.target, row.stop].every(Number.isFinite)) continue;
+  if (!(row.stop < row.entryLow && row.entryLow <= row.entryHigh && row.target > row.entryHigh)) {
+    throw new Error(`Invalid current research price relationship for ${row.ticker}`);
   }
 }
 
-const totalAllocationPct = recommendations.reduce((sum, row) => sum + finite(row.portfolioWeightPct, 0), 0);
-if (totalAllocationPct > 50.001) throw new Error(`Exposure exceeds 50%: ${totalAllocationPct}`);
+const effectiveAllocationPct = executionReady ? championAllocationPct : 0;
+const effectiveCashPct = 100 - effectiveAllocationPct;
 
-const sessionDate = decision.sessionDate || decision.expectedLatestSession;
-const regimeSession = regime?.metrics?.sessionDate;
-const sourceSession = fetchStatus.lastSession || fetchStatus.sessionDate || decision?.priceTruth?.sourceSession || decision?.priceTruth?.sessionDate || sessionDate;
-const sessionAligned = Boolean(sessionDate && sessionDate === regimeSession && sessionDate === sourceSession);
-const executionGrade = decision?.priceTruth?.executionGrade === true || fetchStatus.executionGrade === true || fetchStatus.mode === 'v15_precise_public_execution_grade';
-
-// This payload intentionally preserves the original issued-signal contract. New
-// analytical fields must never alter the hash of an already issued signal.
-const immutablePayload = {
-  sessionDate,
-  engineId,
-  recommendations: recommendations.map(row => ({
-    ticker: row.ticker,
-    entryLow: row.entryLow,
-    entryHigh: row.entryHigh,
-    target: row.target,
-    stop: row.stop,
-    portfolioWeightPct: row.portfolioWeightPct,
-  })),
-};
-const signalId = `${sessionDate}:${engineId}`;
-const signalHash = hash(immutablePayload);
-const existing = ledger.entries.find(entry => entry.signalId === signalId);
-if (existing && existing.signalHash !== signalHash) throw new Error(`Immutable ledger conflict for ${signalId}`);
-if (!existing) ledger.entries.push({ signalId, signalHash, issuedAt: now, ...immutablePayload, status: 'ISSUED_PENDING_NEXT_SESSION' });
+// Preserve the frozen champion signal contract. A stale champion reference is never
+// retroactively issued as a new current signal merely because V17 was rebuilt later.
+if (executionReady) {
+  const immutablePayload = {
+    sessionDate: championSessionDate,
+    engineId,
+    recommendations: championReferenceRecommendations.map(row => ({
+      ticker: row.ticker,
+      entryLow: row.entryLow,
+      entryHigh: row.entryHigh,
+      target: row.target,
+      stop: row.stop,
+      portfolioWeightPct: row.portfolioWeightPct,
+    })),
+  };
+  const signalId = `${championSessionDate}:${engineId}`;
+  const signalHash = hash(immutablePayload);
+  const existing = ledger.entries.find(entry => entry.signalId === signalId);
+  if (existing && existing.signalHash !== signalHash) throw new Error(`Immutable ledger conflict for ${signalId}`);
+  if (!existing) ledger.entries.push({ signalId, signalHash, issuedAt: now, ...immutablePayload, status: 'ISSUED_PENDING_NEXT_SESSION' });
+}
 ledger.updatedAt = now;
 
 const marketRows = Array.isArray(market.rows) ? market.rows : [];
@@ -263,8 +349,9 @@ const liveEvidenceScore = round(clamp(
   100,
 ));
 const dataQualityScore = round(clamp(
-  (sessionAligned ? 30 : 0)
-  + (executionGrade ? 25 : 0)
+  (researchSessionAligned ? 30 : 0)
+  + (resilientResearchAllowed ? 15 : 0)
+  + (resilientExecutionAllowed ? 10 : 0)
   + marketDataQuality.pricedCoveragePct * 0.15
   + marketDataQuality.completeOhlcPct * 0.15
   + marketDataQuality.cleanCompanyNamePct * 0.1,
@@ -272,33 +359,80 @@ const dataQualityScore = round(clamp(
   95,
 ));
 const operationalIntegrityScore = round(clamp(
-  35 + (sessionAligned ? 20 : 0) + 15 + (totalAllocationPct <= 50 ? 15 : 0)
-  + (ledger.entries.some(entry => entry.signalId === signalId) ? 10 : 0)
-  + (challenger.promotionAllowed === false ? 5 : 0),
+  35 + (researchSessionAligned ? 20 : 0) + 15 + (effectiveAllocationPct <= 50 ? 15 : 0)
+  + (challenger.promotionAllowed === false ? 10 : 0)
+  + (!executionReady && effectiveAllocationPct === 0 ? 5 : 0),
   0,
   100,
 ));
 const professionalEvidenceReady = nativeGate.passed === true;
 const legacyStrategy = (Array.isArray(legacyLive.byStrategy) ? legacyLive.byStrategy : []).find(row => row.name === engineId) || null;
 const auditMetrics = researchAudit.basketReturnMetrics || {};
-const hotMomentumCount = recommendations.filter(row => row.hotMomentumRisk).length;
-const status = sessionAligned && executionGrade ? 'READY_FOR_NEXT_SESSION_REVIEW' : 'BLOCKED_STALE_OR_UNVERIFIED_DATA';
+const executionBlockedReasons = [];
+if (!championReferenceCurrent) executionBlockedReasons.push('CHAMPION_REFERENCE_STALE');
+if (!championInternalSessionAligned) executionBlockedReasons.push('CHAMPION_REGIME_SESSION_MISMATCH');
+if (!championExecutionGrade) executionBlockedReasons.push('CHAMPION_NOT_EXECUTION_GRADE');
+if (!resilientExecutionAllowed) executionBlockedReasons.push('CURRENT_SOURCE_NOT_EXECUTION_READY');
+if (finite(currentResearch?.summary?.executionCount, 0) === 0) executionBlockedReasons.push('NO_CURRENT_EXECUTABLE_OPPORTUNITIES');
+
+let status;
+if (executionReady) status = 'READY_FOR_NEXT_SESSION_REVIEW';
+else if (researchReady) status = 'RESEARCH_READY_EXECUTION_BLOCKED';
+else status = 'BLOCKED_STALE_OR_UNVERIFIED_DATA';
+
+const currentSessionDate = researchSessionDate || latestMarketSession || championSessionDate || null;
+const statusAr = status === 'READY_FOR_NEXT_SESSION_REVIEW'
+  ? 'القرار الحالي متزامن مع جلسة السوق واجتاز بوابات التنفيذ، مع بقاء التنفيذ يدويًا ومشروطًا.'
+  : status === 'RESEARCH_READY_EXECUTION_BLOCKED'
+    ? 'مسح السوق الحالي صالح للبحث والمتابعة فقط. لا توجد أوزان استثمارية أو أوامر تنفيذ لأن قرار Champion المرجعي أو مصادر التنفيذ غير مكتملة للجلسة الحالية.'
+    : 'تم إيقاف التوصيات الحالية بسبب نقص حقيقة الجلسة أو جودة البيانات.';
 
 const snapshot = {
-  schemaVersion: '17.0.0-rc3',
+  schemaVersion: '17.0.0-rc4',
   generatedAt: now,
   status,
-  statusAr: status === 'READY_FOR_NEXT_SESSION_REVIEW'
-    ? 'البيانات متسقة والسلة جاهزة للمراجعة قبل الجلسة، وليست أمر شراء آليًا.'
-    : 'تم إيقاف التوصيات بسبب عدم اتساق الجلسة أو عدم اكتمال درجة التنفيذ.',
-  sessionDate,
-  nextSessionPlan: true,
+  statusAr,
+  sessionDate: currentSessionDate,
+  nextSessionPlan: executionReady,
+  recommendationMode: executionReady ? 'CHAMPION_EXECUTION_REVIEW' : 'CURRENT_RESEARCH_WATCH_ONLY',
   engine: {
     id: engineId,
-    version: '17.0-isolated-v16.9-method',
-    labelAr: 'سلة احتمالية متساوية الأوزان — تشغيل V17 معزول',
+    version: '17.0-isolated-v16.9-champion',
+    labelAr: 'V16.9 Champion محفوظ — V17 طبقة بحث ومراقبة معزولة',
     singleProductionEngine: true,
     selectionMethodFrozen: true,
+  },
+  championReference: {
+    sessionDate: championSessionDate,
+    currentForMarketSession: championReferenceCurrent,
+    internallySessionAligned: championInternalSessionAligned,
+    executionGrade: championExecutionGrade,
+    plannedAllocationPct: round(championAllocationPct),
+    recommendations: championReferenceRecommendations,
+    regimeReference: {
+      sessionDate: championRegimeSession,
+      regime: regime.regime || null,
+      labelAr: regime.labelAr || null,
+      score: finite(regime.score),
+      riskMultiplier: finite(regime.riskMultiplier),
+      maxTradeRiskPct: finite(regime.maxTradeRiskPct),
+      guidanceAr: regime.guidanceAr || null,
+    },
+    disclosureAr: championReferenceCurrent
+      ? 'مرجع Champion متزامن مع جلسة السوق الحالية.'
+      : `قرار Champion محفوظ كمرجع تاريخي فقط لأنه يعود إلى ${championSessionDate || 'جلسة غير معلومة'} وليس جلسة السوق الحالية ${currentSessionDate || 'غير معلومة'}.`,
+  },
+  currentResearch: {
+    sessionDate: researchSessionDate,
+    generatedAt: currentResearch.generatedAt || null,
+    researchReady,
+    executionCount: finite(currentResearch?.summary?.executionCount, 0),
+    rankedCount: finite(currentResearch?.summary?.rankedCount, validResearchRows.length),
+    conditionalWatchCount: finite(currentResearch?.summary?.conditionalWatchCount, 0),
+    supportResistanceCoveragePct: finite(currentResearch?.summary?.supportResistanceCoveragePct, 0),
+    mainDecision: currentResearch.mainDecision || null,
+    caution: currentResearch.caution || null,
+    provenance: 'CURRENT_SESSION_RESEARCH_NOT_AUTOMATIC_EXECUTION',
   },
   championChallenger: {
     activeEngine: challenger.activeEngine,
@@ -309,42 +443,47 @@ const snapshot = {
     nextAction: challenger.nextAction || null,
   },
   market: {
-    sessionDate: regimeSession,
-    regime: regime.regime,
-    labelAr: regime.labelAr,
-    score: finite(regime.score),
-    riskMultiplier: finite(regime.riskMultiplier),
-    maxTradeRiskPct: finite(regime.maxTradeRiskPct),
-    guidanceAr: regime.guidanceAr,
-    metrics: regime.metrics || {},
+    sessionDate: currentSessionDate,
+    regime: championReferenceCurrent ? regime.regime : 'UNVERIFIED_CURRENT_REGIME',
+    labelAr: championReferenceCurrent ? regime.labelAr : 'لم يُعاد احتساب حالة السوق الحالية بمحرك V16 المجمد؛ مرجع الحالة القديم معروض منفصلًا.',
+    score: championReferenceCurrent ? finite(regime.score) : null,
+    riskMultiplier: championReferenceCurrent ? finite(regime.riskMultiplier) : null,
+    maxTradeRiskPct: executionReady ? finite(regime.maxTradeRiskPct, 0) : 0,
+    guidanceAr: executionReady
+      ? regime.guidanceAr
+      : 'المتابعة بحثية فقط حتى تتزامن بوابات التنفيذ مع جلسة السوق الحالية.',
+    metrics: championReferenceCurrent ? (regime.metrics || {}) : {},
   },
   readiness: {
     releaseStage: professionalEvidenceReady ? 'PROFESSIONAL_EVIDENCE' : 'CONTROLLED_PILOT',
     professionalEvidenceReady,
-    marketStrengthScore: finite(regime.score),
+    researchReady,
+    executionReady,
+    marketStrengthScore: championReferenceCurrent ? finite(regime.score) : null,
     dataQualityScore,
     liveEvidenceScore,
     operationalIntegrityScore,
-    disclosureAr: professionalEvidenceReady
-      ? 'اكتملت بوابات V17 الأصلية للعينة والزمن.'
-      : 'التطبيق في وضع Pilot مضبوط؛ قوة السوق والاختبار التاريخي لا يساويان دليلًا حيًا خاصًا بـV17.',
+    disclosureAr: executionReady
+      ? 'بوابات الجلسة الحالية تسمح بالمراجعة التنفيذية اليدوية؛ لا توجد أوامر آلية.'
+      : 'قوة البحث الحالية منفصلة عن التنفيذ. أي Champion قديم لا يُعرض كتوصية حالية ولا يحصل على وزن استثماري.',
   },
   portfolioPolicy: {
     maximumTotalAllocationPct: 50,
-    plannedAllocationPct: round(totalAllocationPct),
-    cashReservePct: round(100 - totalAllocationPct),
+    plannedAllocationPct: round(effectiveAllocationPct),
+    cashReservePct: round(effectiveCashPct),
     unfilledMemberPolicy: 'KEEP_CASH',
     automaticOrders: false,
     sameSessionAmbiguityPolicy: 'CONSERVATIVE_STOP',
+    researchWatchAllocationPct: 0,
   },
-  recommendations,
+  recommendations: currentRecommendations,
   decisionWarnings: {
-    hotMomentumCount,
-    allMembersHotMomentum: hotMomentumCount === recommendations.length,
-    openingConfirmationMandatory: true,
-    warningAr: hotMomentumCount
-      ? `${hotMomentumCount} من ${recommendations.length} أسهم تحمل زخمًا ساخنًا؛ لا تنفيذ خارج نطاق الافتتاح ولا مطاردة للسعر.`
-      : 'لا توجد إشارات زخم ساخن في السلة الحالية.',
+    researchOnly: !executionReady,
+    openingConfirmationMandatory: executionReady,
+    executionBlockedReasons,
+    warningAr: executionReady
+      ? 'التنفيذ يظل مشروطًا بالافتتاح والسيولة وعدم مطاردة السعر.'
+      : `مراقبة فقط دون تنفيذ أو أوزان محفظة. أسباب الحظر: ${executionBlockedReasons.join('، ') || 'بوابة التنفيذ غير مكتملة'}.`,
   },
   evidence: {
     nativeV17,
@@ -362,19 +501,28 @@ const snapshot = {
     },
   },
   systemHealth: {
-    sessionAligned,
-    executionGrade,
-    sourceSession,
-    decisionSession: sessionDate,
-    regimeSession,
-    fetchedRows: finite(fetchStatus.marketRows, finite(decision?.priceTruth?.acceptedRows)),
-    sourceName: fetchStatus.sourceName || decision?.priceTruth?.source || null,
-    staleDataBlocked: !sessionAligned,
+    sessionAligned: researchSessionAligned,
+    executionGrade: executionReady,
+    sourceSession: currentSourceSession,
+    decisionSession: currentSessionDate,
+    latestMarketSession,
+    championReferenceSession: championSessionDate,
+    championRegimeSession,
+    championReferenceStale: !championReferenceCurrent,
+    resilientMode: resilient.mode || null,
+    resilientReasons: Array.isArray(resilient.reasons) ? resilient.reasons : [],
+    fetchedRows: finite(fetchStatus.marketRows, marketRows.length),
+    sourceName: fetchStatus.sourceName || market.source || null,
+    staleDataBlocked: !researchSessionAligned,
+    executionBlockedReasons,
     marketDataQuality,
   },
   lineage: {
-    decisionSource: 'data/stable/v16-v169-primary-decision.json',
-    regimeSource: 'data/stable/v16-market-regime.json',
+    championDecisionSource: 'data/stable/v16-v169-primary-decision.json',
+    championRegimeSource: 'data/stable/v16-market-regime.json',
+    currentResearchSource: 'data/today-decision-center.json',
+    currentSessionTruthSource: 'data/history-50.json',
+    resilientSessionGate: 'data/v17/resilient-session-status.json',
     legacyEvidenceSource: 'data/stable/v16-live-evidence.json',
     historicalAuditSource: 'data/research/v16-v169-target-hit-audit.json',
     marketSource: 'data/market.json',
@@ -388,10 +536,15 @@ writeJsonAtomic(files.snapshot, snapshot);
 writeJsonAtomic(files.ledger, ledger);
 console.log(JSON.stringify({
   status,
-  sessionDate,
-  engineId,
-  recommendationCount: recommendations.length,
-  totalAllocationPct,
+  currentSessionDate,
+  latestMarketSession,
+  championSessionDate,
+  championReferenceCurrent,
+  researchReady,
+  executionReady,
+  recommendationMode: snapshot.recommendationMode,
+  recommendationCount: currentRecommendations.length,
+  effectiveAllocationPct,
   readiness: snapshot.readiness,
   marketDataQuality,
   nativeV17,
