@@ -6,25 +6,33 @@ const path = require('path');
 const cheerio = require('cheerio');
 
 const MARKET_PATH = 'data/market.json';
+const HISTORY_PATH = 'data/history-50.json';
 const OUT_PATH = 'data/mubasher-support-resistance-direct.json';
 const REPORT_PATH = 'data/mubasher-support-resistance-direct-report.json';
 
 const CONCURRENCY = Number(process.env.EGX_SR_CONCURRENCY || 8);
 const TIMEOUT_MS = Number(process.env.EGX_SR_TIMEOUT_MS || 25000);
 const MIN_ROWS = Number(process.env.EGX_SR_MIN_ROWS || 80);
+const MIN_COVERAGE_PCT = Number(process.env.EGX_DIRECT_SR_MIN_COVERAGE || 95);
+const MIN_FRESHNESS_PCT = Number(process.env.EGX_DIRECT_SR_MIN_FRESHNESS || 98);
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+function readJsonSafe(file, fallback = {}) {
+  try { return readJson(file); } catch { return fallback; }
 }
 function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(value, null, 2) + '\n');
 }
+function normalizeDigits(value) {
+  const digits = '٠١٢٣٤٥٦٧٨٩';
+  return String(value ?? '').replace(/[٠-٩]/g, d => String(digits.indexOf(d)));
+}
 function num(value) {
   if (value === null || value === undefined || value === '') return null;
-  const digits = '٠١٢٣٤٥٦٧٨٩';
-  const normalized = String(value)
-    .replace(/[٠-٩]/g, d => String(digits.indexOf(d)))
+  const normalized = normalizeDigits(value)
     .replace(/٫/g, '.')
     .replace(/[٬،,\s%]/g, '')
     .replace(/[^\d.+\-eE]/g, '');
@@ -54,6 +62,38 @@ function saneAgainstPrice(row, marketPrice) {
     s1 / marketPrice <= 1.50 &&
     r1 / marketPrice >= 0.60 &&
     r1 / marketPrice <= 2.50;
+}
+function latestHistorySession(history) {
+  const dates = [];
+  for (const rows of Object.values(history?.symbols || {})) {
+    if (!Array.isArray(rows)) continue;
+    for (const row of rows) {
+      const date = String(row?.date || '');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) dates.push(date);
+    }
+  }
+  return dates.sort().at(-1) || null;
+}
+function parseSourceSessionDate(value, year) {
+  const text = normalizeDigits(value).trim();
+  if (!text) return null;
+  const englishMonths = {
+    january: 1, february: 2, march: 3, april: 4, may: 5, june: 6,
+    july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+  };
+  const arabicMonths = {
+    'يناير': 1, 'فبراير': 2, 'مارس': 3, 'أبريل': 4, 'ابريل': 4, 'مايو': 5, 'يونيو': 6,
+    'يوليو': 7, 'أغسطس': 8, 'اغسطس': 8, 'سبتمبر': 9, 'أكتوبر': 10, 'اكتوبر': 10, 'نوفمبر': 11, 'ديسمبر': 12,
+  };
+  const en = text.match(/\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\b/i);
+  const ar = text.match(/(\d{1,2})\s+(يناير|فبراير|مارس|أبريل|ابريل|مايو|يونيو|يوليو|أغسطس|اغسطس|سبتمبر|أكتوبر|اكتوبر|نوفمبر|ديسمبر)/i);
+  const match = en || ar;
+  if (!match) return null;
+  const day = Number(match[1]);
+  const monthKey = String(match[2]).toLowerCase();
+  const month = en ? englishMonths[monthKey] : arabicMonths[match[2]];
+  if (!(day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 2000)) return null;
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 function compactText(html) {
   const $ = cheerio.load(html);
@@ -165,12 +205,14 @@ async function collectOne(row) {
         errors.push(`${url}: levels failed price sanity`);
         continue;
       }
+      const fetchedAt = new Date().toISOString();
       return {
         ok: true,
         row: {
           ...parsed,
+          sourceSessionDate: parseSourceSessionDate(parsed.updatedAtText, new Date(fetchedAt).getUTCFullYear()),
           marketPrice,
-          fetchedAt: new Date().toISOString(),
+          fetchedAt,
         },
       };
     } catch (error) {
@@ -187,9 +229,7 @@ async function mapLimit(items, limit, worker) {
       const index = nextIndex++;
       if (index >= items.length) return;
       results[index] = await worker(items[index], index);
-      if ((index + 1) % 20 === 0) {
-        console.log(`Processed ${index + 1}/${items.length}`);
-      }
+      if ((index + 1) % 20 === 0) console.log(`Processed ${index + 1}/${items.length}`);
     }
   }
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
@@ -198,23 +238,42 @@ async function mapLimit(items, limit, worker) {
 
 (async () => {
   const market = readJson(MARKET_PATH);
+  const history = readJsonSafe(HISTORY_PATH, {});
+  const referenceSessionDate = latestHistorySession(history);
   const marketRows = Array.isArray(market.rows) ? market.rows : [];
   const eligible = marketRows.filter(row => symbol(row.symbol) && priceOf(row) > 0);
 
-  console.log(`Direct Mubasher S/R pages to fetch: ${eligible.length}`);
+  console.log(`Direct Mubasher S/R pages to fetch: ${eligible.length}; reference session: ${referenceSessionDate || 'unknown'}`);
   const results = await mapLimit(eligible, CONCURRENCY, collectOne);
   const rows = results.filter(result => result?.ok).map(result => result.row);
   const failures = results.filter(result => result && !result.ok);
+  const freshRows = referenceSessionDate ? rows.filter(row => row.sourceSessionDate === referenceSessionDate) : [];
+  const staleRows = rows.filter(row => !referenceSessionDate || row.sourceSessionDate !== referenceSessionDate);
+  const coveragePct = eligible.length ? Number((rows.length / eligible.length * 100).toFixed(2)) : 0;
+  const freshnessPct = rows.length ? Number((freshRows.length / rows.length * 100).toFixed(2)) : 0;
+  const executionGrade = Boolean(
+    referenceSessionDate &&
+    rows.length >= MIN_ROWS &&
+    coveragePct >= MIN_COVERAGE_PCT &&
+    freshnessPct >= MIN_FRESHNESS_PCT
+  );
 
   const output = {
-    ok: rows.length >= MIN_ROWS,
+    ok: executionGrade,
+    executionGrade,
     generatedAt: new Date().toISOString(),
     method: 'individual-stock-server-rendered-pages',
     sourcePattern: 'https://english.mubasher.info/markets/EGX/stocks/{SYMBOL}/support-resistance',
+    referenceSessionDate,
     requested: eligible.length,
     count: rows.length,
+    freshCount: freshRows.length,
+    staleCount: staleRows.length,
     minimumRequiredRows: MIN_ROWS,
-    coveragePct: eligible.length ? Number((rows.length / eligible.length * 100).toFixed(2)) : 0,
+    minimumCoveragePct: MIN_COVERAGE_PCT,
+    minimumFreshnessPct: MIN_FRESHNESS_PCT,
+    coveragePct,
+    freshnessPct,
     rows,
   };
   const report = {
@@ -222,14 +281,15 @@ async function mapLimit(items, limit, worker) {
     rows: undefined,
     failureCount: failures.length,
     failures,
+    staleSymbols: staleRows.map(row => ({ symbol: row.symbol, sourceSessionDate: row.sourceSessionDate, updatedAtText: row.updatedAtText })),
   };
 
   writeJson(OUT_PATH, output);
   writeJson(REPORT_PATH, report);
 
-  console.log(`Verified individual S/R pages: ${rows.length}/${eligible.length} (${output.coveragePct}%)`);
-  if (!output.ok) {
-    console.error(`Insufficient verified rows: ${rows.length} < ${MIN_ROWS}`);
+  console.log(`Direct S/R rows: ${rows.length}/${eligible.length} (${coveragePct}% coverage); fresh ${freshRows.length}/${rows.length} (${freshnessPct}%)`);
+  if (!executionGrade) {
+    console.error(`Direct S/R is not execution-grade: rows>=${MIN_ROWS}, coverage>=${MIN_COVERAGE_PCT}%, freshness>=${MIN_FRESHNESS_PCT}% required for ${referenceSessionDate || 'unknown session'}.`);
     process.exit(2);
   }
 })().catch(error => {
