@@ -41,7 +41,7 @@
       else element.innerHTML = element.innerHTML.replace(/V16(?:\.1)?/g, 'V16.3');
     });
     const brand = document.querySelector('.brand > div:last-child');
-    if (brand && !brand.querySelector('.v163-version')) brand.insertAdjacentHTML('beforeend', '<div class="v163-version">V16.2 Evidence + V16.3 Portfolio Intelligence</div>');
+    if (brand && !brand.querySelector('.v163-version')) brand.insertAdjacentHTML('beforeend', '<div class="v163-version">V16.3 Professional Pilot + V16.9 Primary Basket</div>');
   }
   function injectShell() {
     const hero = document.querySelector('#view-dashboard .hero-grid');
@@ -107,7 +107,7 @@
     const u = state.update || {};
     if (!box) return;
     const browser = u.browserTests?.status || 'PENDING';
-    box.innerHTML = `<div class="v163-head"><div><h3>حالة V16.3</h3><p>آخر دورة تحديث ونطاق الاختبارات.</p></div><span class="v163-pill ${u.productInterface === 'EGX_PROFESSIONAL_V16_3' ? 'good' : 'warn'}">${escapeHtml(u.productInterface || 'قيد التحديث')}</span></div>
+    box.innerHTML = `<div class="v163-head"><div><h3>حالة V16.3</h3><p>Professional Pilot: لم يكتمل بعد الحد الأدنى للاعتماد المهني؛ التنفيذ اليدوي والقيود المخفضة إلزاميان.</p></div><span class="v163-pill ${u.productInterface === 'EGX_PROFESSIONAL_V16_3' ? 'good' : 'warn'}">${escapeHtml(u.productInterface || 'قيد التحديث')}</span></div>
       <div class="v163-metrics">${metric('جلسة السوق', u.sessionDate || '—')}${metric('التوصيات', fmt(u.recommendationCount, 0))}${metric('التغطية المالية', fmt(u.fundamentals?.rawCoverage, 0))}${metric('السجل الحي', fmt(u.liveEvidence?.resolvedTrades ?? u.liveResolvedTrades, 0))}</div>
       <div class="v163-browser-test" style="margin-top:13px"><i style="background:${browser === 'PASSED' ? '#48d09b' : '#ffb547'}"></i><span>اختبارات المتصفح: ${escapeHtml(browser)}</span></div>`;
   }
