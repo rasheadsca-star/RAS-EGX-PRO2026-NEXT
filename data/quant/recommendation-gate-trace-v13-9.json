@@ -1,6 +1,6 @@
 {
   "schemaVersion": "13.9.0",
-  "generatedAt": "2026-08-13T15:12:28.691Z",
+  "generatedAt": "2026-08-13T15:14:20.727Z",
   "latestMarketSession": "2026-08-13",
   "drawdownMethod": "compounded_equity_peak_to_trough",
   "productionPolicyUnchanged": true,
@@ -22591,11 +22591,156 @@
       "companyNameEn": "Rakta Paper Manufacturing Company",
       "sector": null,
       "sessionId": "2026-08-13",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 104,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 2,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 105
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 348142
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 1.09
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 4.86
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": -1.82
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "الاتجاه المتوسط صاعد",
+          "pass": false,
+          "detail": null
+        },
+        {
+          "id": "nearSma20",
+          "labelAr": "الاقتراب من متوسط 20",
+          "pass": true,
+          "detail": 0.22
+        },
+        {
+          "id": "touchedZone",
+          "labelAr": "اختبار منطقة الدعم",
+          "pass": true,
+          "detail": -0.35
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "RSI مناسب للارتداد",
+          "pass": true,
+          "detail": 48
+        },
+        {
+          "id": "rsiRecovery",
+          "labelAr": "تحسن RSI",
+          "pass": false,
+          "detail": "48 → 48"
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "سيولة كافية",
+          "pass": true,
+          "detail": 1.09
+        }
+      ],
+      "failedConditions": [
+        "الاتجاه المتوسط صاعد: لم يتحقق",
+        "تحسن RSI: 48 → 48"
+      ],
+      "strategyId": "pullback",
+      "strategyLabelAr": "ارتداد من دعم داخل اتجاه صاعد",
+      "variantId": "wide",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 157,
+        "closedTrades": 148,
+        "cancelledTrades": 9,
+        "wins": 69,
+        "losses": 79,
+        "winRatePct": 46.62,
+        "profitFactor": 1.265,
+        "averageReturnPct": 0.537,
+        "averageR": 0.09,
+        "medianR": -0.097,
+        "maxDrawdownPct": 80.585,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 180.4852,
+        "legacyAdditiveDrawdownPct": 157.065,
+        "sameBarStopFirstCount": 0
+      },
+      "recommendationScore": 46,
+      "rawSignalScore": 44,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": true,
+      "bearishBlock": false,
+      "volatilityBlock": false,
+      "marketRegime": "BALANCED",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 105,
+      "historyConfidence": 75,
+      "price": 22.63,
+      "plan": {
+        "entryLow": 22.4979,
+        "entryHigh": 22.7951,
+        "stopLoss": 21.401,
+        "target1": 24.8885,
+        "target2": 25.885,
+        "riskPct": 5.5,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": 0.444,
+        "return20Pct": -0.527,
+        "relativeStrength20Pct": -1.818,
+        "rsi14": 47.96,
+        "atrPct": 4.865,
+        "volumeRatio20": 1.09,
+        "averageTurnover20Egp": 348142,
+        "sma20": 22.58,
+        "sma50": 22.9042,
+        "support20": 21.25,
+        "resistance20": 24
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "RAYA",
