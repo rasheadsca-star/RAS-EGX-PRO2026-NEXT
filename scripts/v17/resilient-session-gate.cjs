@@ -26,25 +26,35 @@ const fresh = read('data/price-freshness-report.json') || {};
 const audit = read('data/price-source-audit.json') || {};
 const market = read('data/market.json') || {};
 const cache = read('data/full-market-cache.json') || {};
+const directReport = read('data/mubasher-support-resistance-direct-report.json') || {};
+const renderedReport = read('data/mubasher-support-resistance-rendered.json') || {};
 
 const marketRows = Array.isArray(market.rows) ? market.rows.length : Array.isArray(market.data) ? market.data.length : 0;
 const cacheRows = Array.isArray(cache.rows) ? cache.rows.length : 0;
 const availableRows = Math.max(marketRows, cacheRows);
 const last = fresh.lastSourceUpdate || health.lastSuccessAt || health.generatedAt || market.updatedAt || cache.updatedAt || null;
 const sourceAge = n(fresh.sourceAgeMinutes) ?? age(last);
-const primary = process.env.MUBASHER_PRIMARY_OUTCOME || 'unknown';
-const sr = process.env.RENDERED_SR_OUTCOME || 'unknown';
-const merge = process.env.MERGE_SR_OUTCOME || 'unknown';
+const directSr = process.env.DIRECT_SR_OUTCOME || 'unknown';
+const directMerge = process.env.DIRECT_MERGE_OUTCOME || 'unknown';
+const renderedSr = process.env.RENDERED_SR_OUTCOME || 'unknown';
+const renderedMerge = process.env.MERGE_SR_OUTCOME || 'unknown';
 const summary = audit.summary || {};
 const marketCoveragePct = n(summary.marketCoveragePct) ?? n(health.universeCoveragePct) ?? 0;
 const sourceCoveragePct = n(summary.sourceCoveragePct) ?? n(health.coveragePct) ?? marketCoveragePct;
-const stale = sourceAge !== null && sourceAge > 2160;
+const marketSourceStale = sourceAge !== null && sourceAge > 2160;
 const usable = availableRows > 0;
-const priceTruthHealthy = usable && !stale && marketCoveragePct >= 90;
-const researchMinimumHealthy = usable && !stale && marketCoveragePct >= 75;
-const supportResistanceReady = sr === 'success' && merge === 'success';
-const auxiliaryFeedReady = primary === 'success';
-const executionInputsReady = priceTruthHealthy && supportResistanceReady && auxiliaryFeedReady;
+const priceTruthHealthy = usable && !marketSourceStale && marketCoveragePct >= 90;
+const researchMinimumHealthy = usable && !marketSourceStale && marketCoveragePct >= 75;
+
+const directSupportResistanceReady = directSr === 'success' && directMerge === 'success';
+const renderedSupportResistanceReady = renderedSr === 'success' && renderedMerge === 'success';
+const supportResistanceReady = directSupportResistanceReady || renderedSupportResistanceReady;
+const supportResistanceMethod = directSupportResistanceReady
+  ? 'DIRECT_INDIVIDUAL_STOCK_PAGES'
+  : renderedSupportResistanceReady
+    ? 'RENDERED_ANALYSIS_TOOL'
+    : 'NONE_VERIFIED_AT_GLOBAL_THRESHOLD';
+const executionInputsReady = priceTruthHealthy && supportResistanceReady;
 
 let mode = 'NORMAL';
 const reasons = [];
@@ -52,29 +62,25 @@ if (!usable) {
   mode = 'BLOCKED';
   reasons.push('NO_USABLE_MARKET_DATA');
 }
-if (stale) {
+if (marketSourceStale) {
   mode = 'BLOCKED';
-  reasons.push('SOURCE_DATA_STALE');
+  reasons.push('MARKET_SOURCE_DATA_STALE');
 }
-if (usable && !stale && marketCoveragePct < 75) {
+if (usable && !marketSourceStale && marketCoveragePct < 75) {
   mode = 'BLOCKED';
   reasons.push('MARKET_PRICE_COVERAGE_BELOW_RESEARCH_MINIMUM');
-} else if (usable && !stale && marketCoveragePct < 90) {
+} else if (usable && !marketSourceStale && marketCoveragePct < 90) {
   mode = 'DEGRADED';
   reasons.push('MARKET_PRICE_COVERAGE_BELOW_PREFERRED_THRESHOLD');
 }
-if (!auxiliaryFeedReady && mode !== 'BLOCKED') {
-  mode = 'DEGRADED';
-  reasons.push('AUXILIARY_MUBASHER_FEED_UNAVAILABLE');
-}
 if (!supportResistanceReady && mode !== 'BLOCKED') {
   mode = 'DEGRADED';
-  reasons.push('SUPPORT_RESISTANCE_UNAVAILABLE_OR_UNVERIFIED');
+  reasons.push('SUPPORT_RESISTANCE_GLOBAL_THRESHOLD_NOT_MET');
 }
 
 const confidenceCap = mode === 'NORMAL' ? 1 : mode === 'DEGRADED' ? 0.72 : 0;
 const out = {
-  schemaVersion: '17.0.0-resilient-session-gate-2',
+  schemaVersion: '17.0.0-resilient-session-gate-3',
   generatedAt: new Date().toISOString(),
   mode,
   reasons: [...new Set(reasons)],
@@ -83,25 +89,38 @@ const out = {
     researchMinimumHealthy,
     marketCoveragePct,
     sourceCoveragePct,
-    stale,
+    stale: marketSourceStale,
     sourceAgeMinutes: sourceAge,
+    lastSourceUpdate: last,
     sourceName: health.sourceName || market.source || null,
+    contract: 'MANDATORY_MARKET_COLLECTOR_IS_PRICE_TRUTH; NO_ORPHANED_PRIMARY_COMMAND_REQUIRED',
   },
   executionInputs: {
     ready: executionInputsReady,
-    auxiliaryFeedReady,
     supportResistanceReady,
+    supportResistanceMethod,
+    direct: {
+      collectorOutcome: directSr,
+      mergeOutcome: directMerge,
+      sourceRows: n(directReport.count),
+      coveragePct: n(directReport.coveragePct),
+      globalThresholdPassed: directReport.ok === true,
+    },
+    rendered: {
+      collectorOutcome: renderedSr,
+      mergeOutcome: renderedMerge,
+      sourceRows: n(renderedReport.count),
+      coveragePct: n(renderedReport.coveragePct),
+      globalThresholdPassed: renderedReport.ok === true,
+    },
   },
   sourceState: {
-    auxiliaryMubasherFeed: primary,
-    renderedSupportResistance: sr,
-    mergedSupportResistance: merge,
     availableRows,
     marketRows,
     cacheRows,
     lastSourceUpdate: last,
     sourceAgeMinutes: sourceAge,
-    stale,
+    stale: marketSourceStale,
   },
   confidencePolicy: {
     confidenceCap,
