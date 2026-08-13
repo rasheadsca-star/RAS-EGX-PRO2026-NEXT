@@ -63,7 +63,7 @@ function deriveResearchSr(symbol,marketRow,history50,sessionDate){
     freshness:current==='CURRENT_SESSION'?'CURRENT_SESSION':'LATEST_COMPLETED_SESSION',confidence,
     methodology:'CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC',
     provenance:{input:base.provenance,inputSource:base.source,high:h,low:l,close:c},
-    externalValidation:{source:'MUBASHER',state:'UNAVAILABLE_OR_NOT_CURRENT'},
+    externalValidation:{source:'MUBASHER',state:marketRow?.supportResistancePartialOnly===true?'PARTIAL_RESEARCH_EVIDENCE_NOT_EXECUTION_GRADE':'UNAVAILABLE_OR_NOT_CURRENT'},
     pivot:round(pivot),
     levels:{
       support1:level(support1,'SUPPORT_1',base,confidence,current),
@@ -75,20 +75,22 @@ function deriveResearchSr(symbol,marketRow,history50,sessionDate){
   };
 }
 function externalSr(m,sessionDate){
-  if(!validSR(m))return null;
+  if(!validSR(m)||m?.supportResistancePartialOnly===true)return null;
+  const currentRunProof=m?.supportResistanceVerified===true||m?.sources?.mubasherRendered?.currentRunOk===true;
+  if(!currentRunProof)return null;
   const source=m.supportResistanceSource||m.sources?.mubasherRendered?.source||'MUBASHER_EXTERNAL';
   return {
     grade:'VERIFIED_EXTERNAL',source,sessionDate,
-    freshness:'EXTERNAL_CURRENT_RUN_OR_DECLARED',confidence:0.9,
+    freshness:'CURRENT_RUN_VERIFIED',confidence:0.9,
     methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',
-    provenance:{updatedAt:m.supportResistanceUpdatedAt||m.sources?.mubasherRendered?.generatedAt||null},
-    externalValidation:{source:'MUBASHER',state:'VERIFIED'},executionEligible:true,
+    provenance:{updatedAt:m.supportResistanceUpdatedAt||m.sources?.mubasherRendered?.generatedAt||null,currentRunProof:true},
+    externalValidation:{source:'MUBASHER',state:'VERIFIED_CURRENT_RUN'},executionEligible:true,
     pivot:num(first(m.pivot,m.pivotPoint)),
     levels:{
-      support1:{value:num(m.support1),type:'SUPPORT_1',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED'},
-      support2:{value:num(m.support2),type:'SUPPORT_2',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED'},
-      resistance1:{value:num(m.resistance1),type:'RESISTANCE_1',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED'},
-      resistance2:{value:num(m.resistance2),type:'RESISTANCE_2',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED'}
+      support1:{value:num(m.support1),type:'SUPPORT_1',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED_CURRENT_RUN'},
+      support2:{value:num(m.support2),type:'SUPPORT_2',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED_CURRENT_RUN'},
+      resistance1:{value:num(m.resistance1),type:'RESISTANCE_1',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED_CURRENT_RUN'},
+      resistance2:{value:num(m.resistance2),type:'RESISTANCE_2',source,sessionDate,confidence:0.9,methodology:'EXTERNAL_REPORTED_SUPPORT_RESISTANCE',externalValidationState:'VERIFIED_CURRENT_RUN'}
     }
   };
 }
@@ -131,7 +133,7 @@ function main(){
         executionAllowed,monitorOnly:!executionAllowed,
         priceState:r.priceState||null,historySessions:num(r.historySessions)||0,
         why:r.why||r.executionBlockReason||m.exclusionReason||'فرصة مرتبة تحتاج تحققًا قبل التنفيذ.',
-        reason:executionAllowed?'اجتازت بوابة التنفيذ الحالية.':srVerified?'الدعم والمقاومة موثقان خارجيًا، لكن بقية بوابات التنفيذ لم تكتمل.':internal?'تم اشتقاق دعم/مقاومة من OHLC الحقيقي للبحث فقط؛ لا تمنح أهلية تنفيذ.':'لا توجد مستويات دعم ومقاومة قابلة للتدقيق؛ تُعرض للمراقبة فقط.'
+        reason:executionAllowed?'اجتازت بوابة التنفيذ الحالية.':srVerified?'الدعم والمقاومة موثقان خارجيًا في التشغيل الحالي، لكن بقية بوابات التنفيذ لم تكتمل.':internal?'تم اشتقاق دعم/مقاومة من OHLC الحقيقي للبحث فقط؛ لا تمنح أهلية تنفيذ.':'لا توجد مستويات دعم ومقاومة قابلة للتدقيق؛ تُعرض للمراقبة فقط.'
       };
     })
     .sort((a,b)=>(b.opportunityState==='EXECUTABLE')-(a.opportunityState==='EXECUTABLE')||gradeRank(b.grade)-gradeRank(a.grade)||b.confidence-a.confidence||(b.potentialProfitPct||0)-(a.potentialProfitPct||0))
@@ -152,7 +154,7 @@ function main(){
     ok:true,engine:'goal_reconciled_ranked_opportunities_v17_research_sr',generatedAt:NOW,sessionDate,
     sessionTruth:{sessionDate,historySource:'data/history-50.json',historyGeneratedAt:history50.generatedAt||null,marketGeneratedAt:marketObj.generatedAt||marketObj.updatedAt||null,explicitSessionAttached:Boolean(sessionDate)},
     mainDecision,
-    caution:'فرص المتابعة ليست أوامر شراء. مستويات OHLC الداخلية بحثية فقط ولا تمنح أهلية تنفيذ. التنفيذ يتطلب بوابات السعر والسيولة والجودة ومصدر دعم/مقاومة خارجي موثق.',
+    caution:'فرص المتابعة ليست أوامر شراء. مستويات OHLC الداخلية بحثية فقط ولا تمنح أهلية تنفيذ. التنفيذ يتطلب بوابات السعر والسيولة والجودة ومصدر دعم/مقاومة خارجي موثق من التشغيل الحالي.',
     summary:{
       rankedCount:opportunities.length,executionCount:executable.length,conditionalWatchCount:watch.length,blockedCount:blocked.length,
       marketRows:market.length,supportResistanceVerifiedCount:verifiedCount,supportResistanceCoveragePct:srPct,
@@ -160,7 +162,7 @@ function main(){
     },
     rankedOpportunities:opportunities,
     executableOpportunities:executable.slice(0,15),conditionalWatch:watch.slice(0,30),blockedPreview:blocked.slice(0,20),
-    supportResistancePolicy:{externalRequiredForExecution:true,internalOhlcFallbackResearchOnly:true,automaticPromotion:false},
+    supportResistancePolicy:{externalRequiredForExecution:true,currentRunExternalProofRequired:true,partialExternalEvidenceResearchOnly:true,internalOhlcFallbackResearchOnly:true,automaticPromotion:false},
     legacyDecision:{engine:old.engine||null,generatedAt:old.generatedAt||null,sessionDate:old.sessionDate||null,mainDecision:old.mainDecision||null}
   };
   write(p('data/today-decision-center.json'),decision);
