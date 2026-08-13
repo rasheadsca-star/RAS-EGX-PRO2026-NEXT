@@ -12,9 +12,20 @@ const sym=v=>String(v||'').toUpperCase().replace(/\.CA$/,'').replace(/[^A-Z0-9.]
 const clean=s=>String(s||'').replace(/\s+/g,' ').split(/End 1\s*-->/i).pop().replace(/-->/g,'').replace(/^[\d,\[\]\s:'"#]+/,'').trim();
 const validSR=r=>num(r?.support1)>0&&num(r?.resistance1)>0&&num(r.support1)<num(r.resistance1);
 const gradeRank=g=>({P1:5,P2:4,P3:3,Watch:2,Blocked:1}[g]||0);
+function latestHistorySession(history){
+  const dates=[];
+  for(const rows of Object.values(history?.symbols||{})){
+    if(!Array.isArray(rows))continue;
+    for(const row of rows){if(/^\d{4}-\d{2}-\d{2}$/.test(String(row?.date||'')))dates.push(String(row.date));}
+  }
+  return dates.sort().at(-1)||null;
+}
 
 function main(){
-  const market=rowsOf(read(p('data/market.json'),[]));
+  const marketObj=read(p('data/market.json'),{});
+  const market=rowsOf(marketObj);
+  const history50=read(p('data/history-50.json'),{});
+  const sessionDate=latestHistorySession(history50);
   const rankingObj=read(p('data/final-opportunity-ranking.json'),{rows:[]});
   const ranking=rowsOf(rankingObj);
   const old=read(p('data/today-decision-center.json'),{});
@@ -72,7 +83,14 @@ function main(){
       :'لم يتم توليد ترتيب فرص صالح';
 
   const decision={
-    ok:true,engine:'goal_reconciled_ranked_opportunities_v15_3',generatedAt:NOW,
+    ok:true,engine:'goal_reconciled_ranked_opportunities_v15_3',generatedAt:NOW,sessionDate,
+    sessionTruth:{
+      sessionDate,
+      historySource:'data/history-50.json',
+      historyGeneratedAt:history50.generatedAt||null,
+      marketGeneratedAt:marketObj.generatedAt||marketObj.updatedAt||null,
+      explicitSessionAttached:Boolean(sessionDate)
+    },
     mainDecision,
     caution:'فرص المتابعة ليست أوامر شراء. التنفيذ لا يُسمح به إلا عند اجتياز السعر والسيولة والدعم/المقاومة وبوابة الجودة.',
     summary:{
@@ -85,9 +103,9 @@ function main(){
     executableOpportunities:executable.slice(0,15),
     conditionalWatch:watch.slice(0,30),
     blockedPreview:blocked.slice(0,20),
-    legacyDecision:{engine:old.engine||null,generatedAt:old.generatedAt||null,mainDecision:old.mainDecision||null}
+    legacyDecision:{engine:old.engine||null,generatedAt:old.generatedAt||null,sessionDate:old.sessionDate||null,mainDecision:old.mainDecision||null}
   };
   write(p('data/today-decision-center.json'),decision);
-  console.log(mainDecision,decision.summary);
+  console.log(sessionDate,mainDecision,decision.summary);
 }
 main();
