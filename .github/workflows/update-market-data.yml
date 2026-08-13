@@ -1,16 +1,13 @@
-name: Update EGX Market Data
+name: Update EGX Market Data - V17 Resilient Lab
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '20 8 * * 0-4'
-    - cron: '15 12 * * 0-4'
 
 permissions:
   contents: write
 
 concurrency:
-  group: egx-market-data
+  group: egx-market-data-v17-lab
   cancel-in-progress: false
 
 jobs:
@@ -31,6 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: develop/v17-rebuild
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -42,33 +40,69 @@ jobs:
         run: npm ci || npm install
 
       - name: Mandatory market collector
+        id: market_collector
         run: node scripts/fetch-market-data.js
 
-      - name: Mandatory Mubasher primary feeds
+      - name: Mubasher primary feeds - degradable
+        id: mubasher_primary
+        continue-on-error: true
         run: |
           set -euo pipefail
           if [ -f scripts/collect-mubasher-primary-feeds.js ]; then
             node scripts/collect-mubasher-primary-feeds.js
-          else
+          elif npm run | grep -q 'mubasher:primary'; then
             npm run mubasher:primary
+          else
+            echo '::warning::No Mubasher primary command found; continuing in degraded mode.'
+            exit 1
           fi
 
-      - name: Install Playwright Chromium
+      - name: Install Playwright Chromium - optional S/R support
+        id: playwright
+        continue-on-error: true
         run: |
           npm install --no-save --no-package-lock playwright@1.55.0
           npx playwright install --with-deps chromium
 
-      - name: Collect rendered Mubasher support and resistance
+      - name: Collect rendered Mubasher support and resistance - degradable
+        id: rendered_sr
+        if: steps.playwright.outcome == 'success'
+        continue-on-error: true
         run: node scripts/collect-mubasher-support-resistance-rendered.js
 
-      - name: Merge only verified support and resistance
+      - name: Merge verified support and resistance when available
+        id: merge_sr
+        if: steps.rendered_sr.outcome == 'success'
+        continue-on-error: true
         run: node scripts/merge-rendered-support-resistance.js
+
+      - name: Build source, coverage and freshness diagnostics
+        run: |
+          set -u
+          diagnostic_scripts=(
+            scripts/build-price-source-audit.js
+            scripts/build-price-freshness-report.js
+            scripts/build-workflow-source-verification.js
+            scripts/build-session-memory-status.js
+            scripts/build-symbol-audit.js
+          )
+          for script in "${diagnostic_scripts[@]}"; do
+            if [ -f "$script" ]; then
+              node "$script" || echo "::warning::$script failed; continuing with explicit degraded-state evidence."
+            fi
+          done
+
+      - name: Determine V17 resilient session mode
+        env:
+          MUBASHER_PRIMARY_OUTCOME: ${{ steps.mubasher_primary.outcome }}
+          RENDERED_SR_OUTCOME: ${{ steps.rendered_sr.outcome }}
+          MERGE_SR_OUTCOME: ${{ steps.merge_sr.outcome }}
+        run: node scripts/v17/resilient-session-gate.cjs
 
       - name: Optional intelligence builders
         run: |
           set -u
           optional_scripts=(
-            scripts/build-symbol-audit.js
             scripts/build-v52-intelligence.js
             scripts/build-v54-universe-index.js
             scripts/build-v55-sector-investor-flow.js
@@ -80,8 +114,6 @@ jobs:
             scripts/apply-multisource-intelligence-to-ranking.js
             scripts/apply-news-impact-to-recommendations.js
             scripts/build-institutional-score.js
-            scripts/build-price-source-audit.js
-            scripts/build-price-freshness-report.js
             scripts/build-signal-quality-engine.js
             scripts/build-entry-trigger-engine.js
             scripts/build-alert-decision-center.js
@@ -90,8 +122,6 @@ jobs:
             scripts/build-engines-console-report.js
             scripts/build-executive-home-report.js
             scripts/build-workflow-budget-status.js
-            scripts/build-workflow-source-verification.js
-            scripts/build-session-memory-status.js
             scripts/build-sector-completion-report.js
             scripts/build-regression-report.js
             scripts/build-recommendation-outcome-tracker.js
@@ -108,7 +138,7 @@ jobs:
             fi
           done
 
-      - name: Mandatory history and final ranking
+      - name: Mandatory history and research ranking
         run: |
           set -euo pipefail
           [ ! -f scripts/build-history-50-engine.js ] || node scripts/build-history-50-engine.js
@@ -117,34 +147,54 @@ jobs:
           [ ! -f scripts/build-confidence-guard-report.js ] || node scripts/build-confidence-guard-report.js
           [ ! -f scripts/build-daily-decision-brief.js ] || node scripts/build-daily-decision-brief.js
 
-      - name: Rebuild reconciled decision after S/R merge
+      - name: Rebuild reconciled research decision
         run: node scripts/build-goal-integrated-decision.js
 
-      - name: Final strict support resistance verification
+      - name: Final support resistance verification - non-blocking
+        continue-on-error: true
         run: node scripts/verify-final-support-resistance.js
 
-      - name: Upload support resistance diagnostics
+      - name: Refresh resilient session mode after ranking
+        env:
+          MUBASHER_PRIMARY_OUTCOME: ${{ steps.mubasher_primary.outcome }}
+          RENDERED_SR_OUTCOME: ${{ steps.rendered_sr.outcome }}
+          MERGE_SR_OUTCOME: ${{ steps.merge_sr.outcome }}
+        run: node scripts/v17/resilient-session-gate.cjs
+
+      - name: V17 ledger and challenger review
+        run: |
+          set -euo pipefail
+          [ ! -f scripts/v17/build-snapshot.cjs ] || node scripts/v17/build-snapshot.cjs
+          [ ! -f scripts/v17/resolve-ledger.cjs ] || node scripts/v17/resolve-ledger.cjs
+          [ ! -f scripts/v17/review.cjs ] || node scripts/v17/review.cjs
+          [ ! -f scripts/v17/challenger-gate.cjs ] || node scripts/v17/challenger-gate.cjs
+
+      - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mubasher-support-resistance-diagnostics
+          name: v17-resilient-market-diagnostics
           path: |
             artifacts/mubasher-support-resistance/
             data/mubasher-support-resistance-rendered.json
             data/support-resistance-verification.json
+            data/price-freshness-report.json
+            data/price-source-audit.json
+            data/v17/resilient-session-status.json
+            data/v17/challenger-status.json
           if-no-files-found: warn
           retention-days: 7
 
-      - name: Commit generated data
+      - name: Commit generated lab data to V17 branch only
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/*.json VERSION.json package.json package-lock.json || true
+          git add data/*.json data/v17/*.json artifacts/ || true
           if git diff --cached --quiet; then
-            echo "No generated data changes to commit."
+            echo "No generated lab data changes to commit."
           else
-            git commit -m "Update EGX market with verified Mubasher support resistance"
-            git pull --rebase -X ours origin main
-            git push origin main
+            git commit -m "V17 lab: resilient EGX market-data cycle"
+            git pull --rebase -X ours origin develop/v17-rebuild
+            git push origin HEAD:develop/v17-rebuild
           fi
