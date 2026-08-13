@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: egx-market-data-v17-lab
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   update-market-data:
@@ -44,7 +44,10 @@ jobs:
             exit 1
           }
           git fetch origin main develop/v17-rebuild
-          echo "main_sha=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
+          if grep -REn 'git push[^\n]*origin[^\n]*main|git push[^\n]*HEAD:main' .github/workflows/update-market-data.yml scripts/v17/; then
+            echo "::error::V17 lab contains a forbidden push path to main"
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -163,7 +166,7 @@ jobs:
           [ ! -f scripts/build-confidence-guard-report.js ] || node scripts/build-confidence-guard-report.js
           [ ! -f scripts/build-daily-decision-brief.js ] || node scripts/build-daily-decision-brief.js
 
-      - name: Rebuild reconciled research decision
+      - name: Rebuild reconciled research decision with explicit session truth
         run: node scripts/build-goal-integrated-decision.js
 
       - name: Final support resistance verification - non-blocking
@@ -187,18 +190,8 @@ jobs:
           node scripts/v17/resolve-ledger.cjs
           node scripts/v17/build-snapshot.cjs
 
-      - name: Independent V17 review
-        run: |
-          set +e
-          node scripts/v17/review.cjs
-          rc=$?
-          set -e
-          mode=$(node -e "try{const x=require('./data/v17/resilient-session-status.json');process.stdout.write(x.mode||'UNKNOWN')}catch(e){process.stdout.write('UNKNOWN')}")
-          if [ "$rc" -ne 0 ] && [ "$mode" = "DEGRADED" ]; then
-            echo "::warning::V17 critic rejected execution readiness as expected in DEGRADED mode; research pipeline remains valid."
-          elif [ "$rc" -ne 0 ]; then
-            exit "$rc"
-          fi
+      - name: Independent V17 current-session review
+        run: node scripts/v17/review.cjs
 
       - name: Acceptance guard
         run: |
@@ -207,16 +200,21 @@ jobs:
           const fs=require('fs');
           const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json','utf8'));
           const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json','utf8'));
+          const x=JSON.parse(fs.readFileSync('data/v17/current.json','utf8'));
+          const r=JSON.parse(fs.readFileSync('data/v17/review.json','utf8'));
           if(!['NORMAL','DEGRADED'].includes(s.mode)) throw new Error(`Session mode ${s.mode} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET') throw new Error('Champion changed unexpectedly');
           if(c.promotionAllowed!==false) throw new Error('Automatic promotion is enabled');
-          if(s.mode==='DEGRADED' && s.confidencePolicy?.allowExecutionGradeClaim!==false) throw new Error('Degraded mode may not claim execution grade');
-          console.log(JSON.stringify({accepted:true,mode:s.mode,activeEngine:c.activeEngine,promotionAllowed:c.promotionAllowed},null,2));
-          NODE
-          test "$(git rev-parse origin/main)" = "$main_sha" || {
-            echo "::error::origin/main changed during isolated V17 run"
-            exit 1
+          if(r.verdict==='REJECTED') throw new Error('Independent V17 review rejected the build');
+          if(x.sessionDate!==x.systemHealth?.latestMarketSession || x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth is not aligned');
+          if(x.status==='RESEARCH_READY_EXECUTION_BLOCKED'){
+            if(x.systemHealth?.executionGrade!==false) throw new Error('Research-only mode claims execution grade');
+            if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Research-only mode has non-zero allocation');
+            if((x.recommendations||[]).some(v=>Number(v.portfolioWeightPct||0)!==0||v.executionAllowed===true)) throw new Error('Research row leaked execution semantics');
           }
+          if(s.mode==='DEGRADED' && x.status==='READY_FOR_NEXT_SESSION_REVIEW') throw new Error('Degraded source state cannot be execution-ready');
+          console.log(JSON.stringify({accepted:true,sourceMode:s.mode,status:x.status,currentSession:x.sessionDate,championReferenceSession:x.championReference?.sessionDate,plannedAllocationPct:x.portfolioPolicy?.plannedAllocationPct,review:r.verdict},null,2));
+          NODE
 
       - name: Upload diagnostics
         if: always()
@@ -229,6 +227,7 @@ jobs:
             data/support-resistance-verification.json
             data/price-freshness-report.json
             data/price-source-audit.json
+            data/today-decision-center.json
             data/v17/resilient-session-status.json
             data/v17/challenger-status.json
             data/v17/current.json
@@ -240,14 +239,13 @@ jobs:
       - name: Commit generated lab data to V17 branch only
         run: |
           set -euo pipefail
-          test "$(git rev-parse origin/main)" = "$main_sha" || exit 1
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/*.json data/v17/*.json artifacts/ || true
           if git diff --cached --quiet; then
             echo "No generated lab data changes to commit."
           else
-            git commit -m "V17 lab: resilient EGX market-data cycle"
+            git commit -m "V17 lab: current-session resilient EGX cycle"
             git pull --rebase -X ours origin develop/v17-rebuild
             git push origin HEAD:develop/v17-rebuild
           fi
