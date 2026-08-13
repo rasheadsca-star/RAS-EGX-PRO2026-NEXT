@@ -26,6 +26,8 @@ jobs:
       EGX_MUBASHER_REQUEST_DELAY_MS: '120'
       EGX_MUBASHER_MIN_PRICE_COVERAGE: '45'
       EGX_MUBASHER_STALE_OK_HOURS: '36'
+      EGX_SR_CONCURRENCY: '8'
+      EGX_SR_TIMEOUT_MS: '25000'
       EGX_SR_MIN_ROWS: '80'
       EGX_SR_MIN_COVERAGE: '60'
 
@@ -76,6 +78,19 @@ jobs:
             exit 1
           fi
 
+      - name: Collect direct individual-stock Mubasher S/R - degradable
+        id: direct_sr
+        continue-on-error: true
+        run: |
+          npm install --no-save --no-package-lock cheerio@1.0.0
+          node scripts/collect-mubasher-direct-stock-sr.js
+
+      - name: Merge current-run direct S/R when verified
+        id: direct_merge
+        if: steps.direct_sr.outcome == 'success'
+        continue-on-error: true
+        run: node scripts/merge-mubasher-direct-stock-sr.js
+
       - name: Install Playwright Chromium - optional S/R support
         id: playwright
         continue-on-error: true
@@ -89,9 +104,9 @@ jobs:
         continue-on-error: true
         run: node scripts/collect-mubasher-support-resistance-rendered.js
 
-      - name: Merge verified support and resistance when available
+      - name: Merge rendered S/R only when direct source is unavailable
         id: merge_sr
-        if: steps.rendered_sr.outcome == 'success'
+        if: steps.direct_merge.outcome != 'success' && steps.rendered_sr.outcome == 'success'
         continue-on-error: true
         run: node scripts/merge-rendered-support-resistance.js
 
@@ -114,6 +129,8 @@ jobs:
       - name: Determine V17 resilient session mode
         env:
           MUBASHER_PRIMARY_OUTCOME: ${{ steps.mubasher_primary.outcome }}
+          DIRECT_SR_OUTCOME: ${{ steps.direct_sr.outcome }}
+          DIRECT_MERGE_OUTCOME: ${{ steps.direct_merge.outcome }}
           RENDERED_SR_OUTCOME: ${{ steps.rendered_sr.outcome }}
           MERGE_SR_OUTCOME: ${{ steps.merge_sr.outcome }}
         run: node scripts/v17/resilient-session-gate.cjs
@@ -176,6 +193,8 @@ jobs:
       - name: Refresh resilient session mode after ranking
         env:
           MUBASHER_PRIMARY_OUTCOME: ${{ steps.mubasher_primary.outcome }}
+          DIRECT_SR_OUTCOME: ${{ steps.direct_sr.outcome }}
+          DIRECT_MERGE_OUTCOME: ${{ steps.direct_merge.outcome }}
           RENDERED_SR_OUTCOME: ${{ steps.rendered_sr.outcome }}
           MERGE_SR_OUTCOME: ${{ steps.merge_sr.outcome }}
         run: node scripts/v17/resilient-session-gate.cjs
@@ -223,6 +242,8 @@ jobs:
           name: v17-resilient-market-diagnostics
           path: |
             artifacts/mubasher-support-resistance/
+            data/mubasher-support-resistance-direct.json
+            data/mubasher-support-resistance-direct-report.json
             data/mubasher-support-resistance-rendered.json
             data/support-resistance-verification.json
             data/price-freshness-report.json
