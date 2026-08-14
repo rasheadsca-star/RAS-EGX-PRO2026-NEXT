@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "20.0.0-integrated-decision-contract-1",
-  "generatedAt": "2026-08-14T20:15:05.307Z",
+  "schemaVersion": "20.0.0-integrated-decision-contract-2",
+  "generatedAt": "2026-08-14T20:24:54.405Z",
   "branch": "develop/v20-integrated-decision-platform",
   "product": "EGX PRO INTEGRATED DECISION PLATFORM",
   "status": "DEGRADED",
@@ -10,7 +10,8 @@
   "marketStatus": {
     "regime": "UNVERIFIED_CURRENT_REGIME",
     "labelAr": "لم يُعاد احتساب حالة السوق الحالية بمحرك V16 المجمد؛ مرجع الحالة القديم معروض منفصلًا.",
-    "verified": false
+    "verified": false,
+    "marketConfidencePct": 0
   },
   "dataStatus": {
     "status": "DEGRADED",
@@ -46,7 +47,9 @@
       "MUBASHER_RENDERED_VALIDATION"
     ],
     "lastSourceUpdate": "2026-08-14T15:06:12.283Z",
-    "sourceAgeMinutes": 2.6
+    "sourceAgeMinutes": 2.6,
+    "sourceHealthSource": "data/v20/source-health.json",
+    "sourceHealthStatus": "DEGRADED"
   },
   "governance": {
     "activeChampion": "V16_9_EQUAL_WEIGHT_BASKET",
@@ -57,16 +60,35 @@
     "automaticPromotion": false,
     "promotionAllowed": false,
     "immutableV17LedgerSource": "data/v17/ledger.json",
-    "v16EvidencePresent": true
+    "v16EvidencePresent": true,
+    "modelRegistrySource": "data/v20/model-registry.json",
+    "policyRegistrySource": "data/v20/policy-registry.json"
   },
   "portfolio": {
     "riskState": "DEFENSIVE",
+    "constructionMode": "CHAMPION_COMPATIBLE_EQUAL_WEIGHT",
     "maximumTotalAllocationPct": 50,
     "recommendedExposurePct": 0,
     "cashPct": 100,
     "totalPlannedAllocationGuardPassed": true,
     "automaticOrders": false,
-    "transactionCostPolicyPct": 0.6
+    "transactionCostPolicyPct": 0.6,
+    "appliedPositionCount": 0,
+    "note": "Final applied weights are produced by scripts/v20/build-portfolio-risk.cjs. Closed execution gate always remains 100% cash.",
+    "riskStateExposureCapPct": 20,
+    "appliedBudgetPct": 0,
+    "maximumPositions": 4,
+    "maximumSinglePositionPct": 12.5,
+    "adaptiveWeightingProductionAllowed": false,
+    "shadowResearch": {
+      "enabled": true,
+      "researchOnly": true,
+      "weightingMethod": "QUALITY_WEIGHTED_SCORE_X_DATA_CONFIDENCE_X_NET_RR_CAPPED",
+      "exposurePct": 16.4438,
+      "appliedToProductionPortfolio": false,
+      "candidateCount": 4
+    },
+    "unfilledMemberPolicy": "KEEP_CASH"
   },
   "opportunities": [
     {
@@ -74,10 +96,15 @@
       "ticker": "KORA",
       "nameAr": "قرة للطاقة",
       "price": 3.32,
-      "legacyOpportunityScore": 98,
+      "opportunityScore": 98,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 93,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 3.3033,
@@ -87,6 +114,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -105,15 +133,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 3.4,
         "entryHigh": 3.48,
+        "entryReferenceForRiskMath": 3.48,
         "stop": 3.3,
         "target1": 3.53,
         "target2": 3.61,
-        "grossRiskReward": 10.5,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 3.48,
+          "costPerShare": 0.02088,
+          "grossRewardPct": 1.44,
+          "netRewardPct": 0.84,
+          "grossRiskPct": 5.17,
+          "netRiskPct": 5.77,
+          "grossRiskReward": 0.278,
+          "netRiskReward": 0.145,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 3.48,
+          "costPerShare": 0.02088,
+          "grossRewardPct": 3.74,
+          "netRewardPct": 3.14,
+          "grossRiskPct": 5.17,
+          "netRiskPct": 5.77,
+          "grossRiskReward": 0.722,
+          "netRiskReward": 0.543,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 10.5,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 1.6225,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 93% | ربح هدف1 6.3% | عائد متوقع 5.8% | R/R 10.50 | السعر مدقق | تاريخ 13/50",
@@ -122,7 +176,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -130,10 +186,15 @@
       "ticker": "AREH",
       "nameAr": "المجموعة المصرية العقارية",
       "price": 1.51,
-      "legacyOpportunityScore": 96,
+      "opportunityScore": 96,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 92,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 1.4967,
@@ -143,6 +204,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -161,15 +223,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 1.54,
         "entryHigh": 1.57,
+        "entryReferenceForRiskMath": 1.57,
         "stop": 1.49,
         "target1": 1.59,
         "target2": 1.62,
-        "grossRiskReward": 4,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 1.57,
+          "costPerShare": 0.00942,
+          "grossRewardPct": 1.27,
+          "netRewardPct": 0.67,
+          "grossRiskPct": 5.1,
+          "netRiskPct": 5.7,
+          "grossRiskReward": 0.25,
+          "netRiskReward": 0.118,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 1.57,
+          "costPerShare": 0.00942,
+          "grossRewardPct": 3.18,
+          "netRewardPct": 2.58,
+          "grossRiskPct": 5.1,
+          "netRiskPct": 5.7,
+          "grossRiskReward": 0.625,
+          "netRiskReward": 0.454,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 4,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 1.2934,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 92% | ربح هدف1 5.3% | عائد متوقع 4.8% | R/R 4.00 | السعر مدقق | تاريخ 13/50",
@@ -178,7 +266,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -186,10 +276,15 @@
       "ticker": "EAST",
       "nameAr": "الشرقية إيسترن كومباني",
       "price": 36.25,
-      "legacyOpportunityScore": 95,
+      "opportunityScore": 95,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 92,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.2,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 36.0767,
@@ -199,6 +294,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.802,
         "executionEligible": true,
@@ -217,15 +313,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 37.1,
         "entryHigh": 37.41,
+        "entryReferenceForRiskMath": 37.41,
         "stop": 36,
         "target1": 37.79,
         "target2": 38.08,
-        "grossRiskReward": 6.16,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 37.41,
+          "costPerShare": 0.22446,
+          "grossRewardPct": 1.02,
+          "netRewardPct": 0.42,
+          "grossRiskPct": 3.77,
+          "netRiskPct": 4.37,
+          "grossRiskReward": 0.27,
+          "netRiskReward": 0.095,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 37.41,
+          "costPerShare": 0.22446,
+          "grossRewardPct": 1.79,
+          "netRewardPct": 1.19,
+          "grossRiskPct": 3.77,
+          "netRiskPct": 4.37,
+          "grossRiskReward": 0.475,
+          "netRiskReward": 0.273,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 6.16,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 1.0279,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 92% | ربح هدف1 4.2% | عائد متوقع 3.9% | R/R 6.16 | السعر مدقق | تاريخ 14/50",
@@ -234,7 +356,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -242,10 +366,15 @@
       "ticker": "HRHO",
       "nameAr": "إي إف جي القابضة",
       "price": 26.66,
-      "legacyOpportunityScore": 94,
+      "opportunityScore": 94,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 91,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 26.3367,
@@ -255,6 +384,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -274,15 +404,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 26.47,
         "entryHigh": 26.59,
+        "entryReferenceForRiskMath": 26.59,
         "stop": 25.8,
         "target1": 28.17,
         "target2": 29.72,
-        "grossRiskReward": 1.76,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 26.59,
+          "costPerShare": 0.15954,
+          "grossRewardPct": 5.94,
+          "netRewardPct": 5.34,
+          "grossRiskPct": 2.97,
+          "netRiskPct": 3.57,
+          "grossRiskReward": 2,
+          "netRiskReward": 1.496,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 26.59,
+          "costPerShare": 0.15954,
+          "grossRewardPct": 11.77,
+          "netRewardPct": 11.17,
+          "grossRiskPct": 2.97,
+          "netRiskPct": 3.57,
+          "grossRiskReward": 3.962,
+          "netRiskReward": 3.128,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 1.76,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 12.5,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 91% | ربح هدف1 5.7% | عائد متوقع 4.9% | R/R 1.76 | السعر مدقق | تاريخ 14/50",
@@ -291,7 +447,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -299,10 +457,15 @@
       "ticker": "GBCO",
       "nameAr": "جي بي كوربوريشن",
       "price": 31.53,
-      "legacyOpportunityScore": 92,
+      "opportunityScore": 92,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 90,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 31.2033,
@@ -312,6 +475,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -330,15 +494,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 31.65,
         "entryHigh": 32.39,
+        "entryReferenceForRiskMath": 32.39,
         "stop": 30.7,
         "target1": 32.93,
         "target2": 33.41,
-        "grossRiskReward": 1.69,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 32.39,
+          "costPerShare": 0.19434,
+          "grossRewardPct": 1.67,
+          "netRewardPct": 1.07,
+          "grossRiskPct": 5.22,
+          "netRiskPct": 5.82,
+          "grossRiskReward": 0.32,
+          "netRiskReward": 0.183,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 32.39,
+          "costPerShare": 0.19434,
+          "grossRewardPct": 3.15,
+          "netRewardPct": 2.55,
+          "grossRiskPct": 5.22,
+          "netRiskPct": 5.82,
+          "grossRiskReward": 0.604,
+          "netRiskReward": 0.438,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 1.69,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 90% | ربح هدف1 4.4% | عائد متوقع 3.7% | R/R 1.69 | السعر مدقق | تاريخ 14/50",
@@ -347,7 +537,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -355,10 +547,15 @@
       "ticker": "EASB",
       "nameAr": "ثمار للوساطة",
       "price": 7.22,
-      "legacyOpportunityScore": 90,
+      "opportunityScore": 90,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 87,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 7.0467,
@@ -368,6 +565,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -386,15 +584,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 7.43,
         "entryHigh": 7.56,
+        "entryReferenceForRiskMath": 7.56,
         "stop": 6.95,
         "target1": 7.68,
         "target2": 8.01,
-        "grossRiskReward": 1.7,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 7.56,
+          "costPerShare": 0.04536,
+          "grossRewardPct": 1.59,
+          "netRewardPct": 0.99,
+          "grossRiskPct": 8.07,
+          "netRiskPct": 8.67,
+          "grossRiskReward": 0.197,
+          "netRiskReward": 0.114,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 7.56,
+          "costPerShare": 0.04536,
+          "grossRewardPct": 5.95,
+          "netRewardPct": 5.35,
+          "grossRiskPct": 8.07,
+          "netRiskPct": 8.67,
+          "grossRiskReward": 0.738,
+          "netRiskReward": 0.617,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 1.7,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 87% | ربح هدف1 6.4% | عائد متوقع 5.1% | R/R 1.70 | السعر مدقق | تاريخ 14/50",
@@ -403,7 +627,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -411,10 +637,15 @@
       "ticker": "NCCW",
       "nameAr": "النصر للأعمال المدنية",
       "price": 5.98,
-      "legacyOpportunityScore": 89,
+      "opportunityScore": 89,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 87,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 5.9,
@@ -424,6 +655,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -442,15 +674,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 6.07,
         "entryHigh": 6.17,
+        "entryReferenceForRiskMath": 6.17,
         "stop": 5.84,
         "target1": 6.26,
         "target2": 6.37,
-        "grossRiskReward": 2,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 6.17,
+          "costPerShare": 0.03702,
+          "grossRewardPct": 1.46,
+          "netRewardPct": 0.86,
+          "grossRiskPct": 5.35,
+          "netRiskPct": 5.95,
+          "grossRiskReward": 0.273,
+          "netRiskReward": 0.144,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 6.17,
+          "costPerShare": 0.03702,
+          "grossRewardPct": 3.24,
+          "netRewardPct": 2.64,
+          "grossRiskPct": 5.35,
+          "netRiskPct": 5.95,
+          "grossRiskReward": 0.606,
+          "netRiskReward": 0.444,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 2,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 87% | ربح هدف1 4.7% | عائد متوقع 3.8% | R/R 2.00 | السعر مدقق | تاريخ 13/50",
@@ -459,7 +717,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -467,10 +727,15 @@
       "ticker": "OBRI",
       "nameAr": "العبور للاستثمار العقاري",
       "price": 32.7,
-      "legacyOpportunityScore": 92,
+      "opportunityScore": 92,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 85,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.2,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 32.3667,
@@ -480,6 +745,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.802,
         "executionEligible": true,
@@ -498,15 +764,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 33.06,
         "entryHigh": 34.42,
+        "entryReferenceForRiskMath": 34.42,
         "stop": 31.45,
         "target1": 36.51,
         "target2": 38.52,
-        "grossRiskReward": 3.05,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 34.42,
+          "costPerShare": 0.20652,
+          "grossRewardPct": 6.07,
+          "netRewardPct": 5.47,
+          "grossRiskPct": 8.63,
+          "netRiskPct": 9.23,
+          "grossRiskReward": 0.704,
+          "netRiskReward": 0.593,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 34.42,
+          "costPerShare": 0.20652,
+          "grossRewardPct": 11.91,
+          "netRewardPct": 11.31,
+          "grossRiskPct": 8.63,
+          "netRiskPct": 9.23,
+          "grossRiskReward": 1.38,
+          "netRiskReward": 1.226,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 3.05,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 85% | ربح هدف1 11.7% | عائد متوقع 9.3% | R/R 3.05 | السعر مدقق | تاريخ 13/50",
@@ -515,7 +807,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -523,10 +817,15 @@
       "ticker": "EBSC",
       "nameAr": "أصول إي إس بي للوساطة",
       "price": 1.91,
-      "legacyOpportunityScore": 88,
+      "opportunityScore": 88,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 83,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": false,
       "supportResistance": {
         "support1": 1.89,
@@ -536,6 +835,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -554,15 +854,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 1.76,
         "entryHigh": 2.04,
+        "entryReferenceForRiskMath": 2.04,
         "stop": 1.69,
         "target1": 2.19,
         "target2": 2.32,
-        "grossRiskReward": 1.27,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 2.04,
+          "costPerShare": 0.01224,
+          "grossRewardPct": 7.35,
+          "netRewardPct": 6.75,
+          "grossRiskPct": 17.16,
+          "netRiskPct": 17.76,
+          "grossRiskReward": 0.429,
+          "netRiskReward": 0.38,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 2.04,
+          "costPerShare": 0.01224,
+          "grossRewardPct": 13.73,
+          "netRewardPct": 13.13,
+          "grossRiskPct": 17.16,
+          "netRiskPct": 17.76,
+          "grossRiskReward": 0.8,
+          "netRiskReward": 0.739,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 1.27,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 83% | ربح هدف1 14.7% | عائد متوقع 10.2% | R/R 1.27 | السعر مدقق | تاريخ 13/50",
@@ -572,7 +898,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -580,10 +908,15 @@
       "ticker": "EPPK",
       "nameAr": "الأهرام للطباعة والتغليف",
       "price": 13.18,
-      "legacyOpportunityScore": 88,
+      "opportunityScore": 88,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 81,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.2,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": false,
       "supportResistance": {
         "support1": 12.38,
@@ -593,6 +926,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.802,
         "executionEligible": true,
@@ -611,15 +945,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 13.75,
         "entryHigh": 13.76,
+        "entryReferenceForRiskMath": 13.76,
         "stop": 12.91,
         "target1": 14.83,
         "target2": 15.64,
-        "grossRiskReward": 6.11,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 13.76,
+          "costPerShare": 0.08256,
+          "grossRewardPct": 7.78,
+          "netRewardPct": 7.18,
+          "grossRiskPct": 6.18,
+          "netRiskPct": 6.78,
+          "grossRiskReward": 1.259,
+          "netRiskReward": 1.059,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 13.76,
+          "costPerShare": 0.08256,
+          "grossRewardPct": 13.66,
+          "netRewardPct": 13.06,
+          "grossRiskPct": 6.18,
+          "netRiskPct": 6.78,
+          "grossRiskReward": 2.212,
+          "netRiskReward": 1.927,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 6.11,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 81% | ربح هدف1 12.5% | عائد متوقع 9.8% | R/R 6.11 | السعر مدقق | تاريخ 13/50",
@@ -629,7 +989,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -637,10 +999,15 @@
       "ticker": "RAYA",
       "nameAr": "راية القابضة",
       "price": 7.06,
-      "legacyOpportunityScore": 86,
+      "opportunityScore": 86,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 80,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 6.91,
@@ -650,6 +1017,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -668,15 +1036,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 7.55,
         "entryHigh": 7.79,
+        "entryReferenceForRiskMath": 7.79,
         "stop": 6.636,
         "target1": 7.91,
         "target2": 8.15,
-        "grossRiskReward": 2,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 7.79,
+          "costPerShare": 0.04674,
+          "grossRewardPct": 1.54,
+          "netRewardPct": 0.94,
+          "grossRiskPct": 14.81,
+          "netRiskPct": 15.41,
+          "grossRiskReward": 0.104,
+          "netRiskReward": 0.061,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 7.79,
+          "costPerShare": 0.04674,
+          "grossRewardPct": 4.62,
+          "netRewardPct": 4.02,
+          "grossRiskPct": 14.81,
+          "netRiskPct": 15.41,
+          "grossRiskReward": 0.312,
+          "netRiskReward": 0.261,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 2,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 80% | ربح هدف1 12.0% | عائد متوقع 8.4% | R/R 2.00 | السعر مدقق | تاريخ 14/50",
@@ -685,7 +1079,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -693,10 +1089,15 @@
       "ticker": "HDBK",
       "nameAr": "بنك التعمير والإسكان",
       "price": 87.11,
-      "legacyOpportunityScore": 87,
+      "opportunityScore": 87,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 79,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 86.01,
@@ -706,6 +1107,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -724,15 +1126,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 159.22,
         "entryHigh": 164.17,
+        "entryReferenceForRiskMath": 164.17,
         "stop": 81.883,
         "target1": 174.17,
         "target2": 183.75,
-        "grossRiskReward": 16.66,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 164.17,
+          "costPerShare": 0.98502,
+          "grossRewardPct": 6.09,
+          "netRewardPct": 5.49,
+          "grossRiskPct": 50.12,
+          "netRiskPct": 50.72,
+          "grossRiskReward": 0.122,
+          "netRiskReward": 0.108,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 164.17,
+          "costPerShare": 0.98502,
+          "grossRewardPct": 11.93,
+          "netRewardPct": 11.33,
+          "grossRiskPct": 50.12,
+          "netRiskPct": 50.72,
+          "grossRiskReward": 0.238,
+          "netRiskReward": 0.223,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 16.66,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 79% | ربح هدف1 99.9% | عائد متوقع 77.7% | R/R 16.66 | السعر مدقق | تاريخ 14/50",
@@ -741,7 +1169,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -749,10 +1179,15 @@
       "ticker": "MHOT",
       "nameAr": "مصر للفنادق",
       "price": 18.69,
-      "legacyOpportunityScore": 86,
+      "opportunityScore": 86,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 78,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 18.1967,
@@ -762,6 +1197,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -780,15 +1216,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 33.61,
         "entryHigh": 33.96,
+        "entryReferenceForRiskMath": 33.96,
         "stop": 17.569,
         "target1": 34.3,
         "target2": 34.83,
-        "grossRiskReward": 13.93,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 33.96,
+          "costPerShare": 0.20376,
+          "grossRewardPct": 1,
+          "netRewardPct": 0.4,
+          "grossRiskPct": 48.27,
+          "netRiskPct": 48.87,
+          "grossRiskReward": 0.021,
+          "netRiskReward": 0.008,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 33.96,
+          "costPerShare": 0.20376,
+          "grossRewardPct": 2.56,
+          "netRewardPct": 1.96,
+          "grossRiskPct": 48.27,
+          "netRiskPct": 48.87,
+          "grossRiskReward": 0.053,
+          "netRiskReward": 0.04,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 13.93,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 78% | ربح هدف1 83.5% | عائد متوقع 63.8% | R/R 13.93 | السعر مدقق | تاريخ 13/50",
@@ -797,7 +1259,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -805,10 +1269,15 @@
       "ticker": "OCPH",
       "nameAr": "أكتوبر فارما",
       "price": 290,
-      "legacyOpportunityScore": 86,
+      "opportunityScore": 86,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 78,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 274,
@@ -818,6 +1287,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -836,15 +1306,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 347.25,
         "entryHigh": 358.41,
+        "entryReferenceForRiskMath": 358.41,
         "stop": 272.6,
         "target1": 362.03,
         "target2": 371.53,
-        "grossRiskReward": 4.14,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 358.41,
+          "costPerShare": 2.15046,
+          "grossRewardPct": 1.01,
+          "netRewardPct": 0.41,
+          "grossRiskPct": 23.94,
+          "netRiskPct": 24.54,
+          "grossRiskReward": 0.042,
+          "netRiskReward": 0.017,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 358.41,
+          "costPerShare": 2.15046,
+          "grossRewardPct": 3.66,
+          "netRewardPct": 3.06,
+          "grossRiskPct": 23.94,
+          "netRiskPct": 24.54,
+          "grossRiskReward": 0.153,
+          "netRiskReward": 0.125,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 4.14,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 78% | ربح هدف1 24.8% | عائد متوقع 18.1% | R/R 4.14 | السعر مدقق | تاريخ 13/50",
@@ -853,7 +1349,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -861,10 +1359,15 @@
       "ticker": "JUFO",
       "nameAr": "جهينة للصناعات الغذائية",
       "price": 27.26,
-      "legacyOpportunityScore": 83,
+      "opportunityScore": 83,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 78,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 26.3267,
@@ -874,6 +1377,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -892,15 +1396,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 29.41,
         "entryHigh": 29.88,
+        "entryReferenceForRiskMath": 29.88,
         "stop": 25.624,
         "target1": 30.18,
         "target2": 30.64,
-        "grossRiskReward": 1.78,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 29.88,
+          "costPerShare": 0.17928,
+          "grossRewardPct": 1,
+          "netRewardPct": 0.4,
+          "grossRiskPct": 14.24,
+          "netRiskPct": 14.84,
+          "grossRiskReward": 0.07,
+          "netRiskReward": 0.027,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 29.88,
+          "costPerShare": 0.17928,
+          "grossRewardPct": 2.54,
+          "netRewardPct": 1.94,
+          "grossRiskPct": 14.24,
+          "netRiskPct": 14.84,
+          "grossRiskReward": 0.179,
+          "netRiskReward": 0.131,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 1.78,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 78% | ربح هدف1 10.7% | عائد متوقع 7.0% | R/R 1.78 | السعر مدقق | تاريخ 14/50",
@@ -909,7 +1439,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -917,10 +1449,15 @@
       "ticker": "BONY",
       "nameAr": "بنيان للتنمية والتجارة",
       "price": 4.61,
-      "legacyOpportunityScore": 83,
+      "opportunityScore": 83,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 78,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.2,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 4.5733,
@@ -930,6 +1467,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.802,
         "executionEligible": true,
@@ -948,15 +1486,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 4.76,
         "entryHigh": 4.81,
+        "entryReferenceForRiskMath": 4.81,
         "stop": 4.333,
         "target1": 5.1,
         "target2": 5.38,
-        "grossRiskReward": 1.77,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 4.81,
+          "costPerShare": 0.02886,
+          "grossRewardPct": 6.03,
+          "netRewardPct": 5.43,
+          "grossRiskPct": 9.92,
+          "netRiskPct": 10.52,
+          "grossRiskReward": 0.608,
+          "netRiskReward": 0.516,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 4.81,
+          "costPerShare": 0.02886,
+          "grossRewardPct": 11.85,
+          "netRewardPct": 11.25,
+          "grossRiskPct": 9.92,
+          "netRiskPct": 10.52,
+          "grossRiskReward": 1.195,
+          "netRiskReward": 1.07,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 1.77,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 78% | ربح هدف1 10.6% | عائد متوقع 7.0% | R/R 1.77 | السعر مدقق | تاريخ 13/50",
@@ -965,7 +1529,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -973,32 +1539,66 @@
       "ticker": "SAIB",
       "nameAr": "بنك الشركة المصرفية العربية الدولية",
       "price": 2.11,
-      "legacyOpportunityScore": 78,
+      "opportunityScore": 78,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 70,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 82,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": false,
       "supportResistance": null,
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 2.047,
         "entryHigh": 2.099,
+        "entryReferenceForRiskMath": 2.099,
         "stop": 1.983,
         "target1": 3.94,
         "target2": 4.058,
-        "grossRiskReward": 14.41,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 2.099,
+          "costPerShare": 0.012594,
+          "grossRewardPct": 87.71,
+          "netRewardPct": 87.11,
+          "grossRiskPct": 5.53,
+          "netRiskPct": 6.13,
+          "grossRiskReward": 15.871,
+          "netRiskReward": 14.218,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 2.099,
+          "costPerShare": 0.012594,
+          "grossRewardPct": 93.33,
+          "netRewardPct": 92.73,
+          "grossRiskPct": 5.53,
+          "netRiskPct": 6.13,
+          "grossRiskReward": 16.888,
+          "netRiskReward": 15.136,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 14.41,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 70% | ربح هدف1 86.7% | عائد متوقع 58.9% | R/R 14.41 | السعر مدقق | تاريخ 8/50",
         "GLOBAL_EXECUTION_GATE_CLOSED",
+        "MISSING_CRITICAL_SYMBOL_EVIDENCE",
         "LIQUIDITY_NOT_EXECUTION_ELIGIBLE"
       ],
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": null,
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1006,10 +1606,15 @@
       "ticker": "SCTS",
       "nameAr": "قناة السويس لتوطين التكنولوجيا",
       "price": 617.71,
-      "legacyOpportunityScore": 88,
+      "opportunityScore": 88,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 87,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": false,
       "supportResistance": {
         "support1": 615.8233,
@@ -1019,6 +1624,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1037,15 +1643,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 607.82,
         "entryHigh": 632.89,
+        "entryReferenceForRiskMath": 632.89,
         "stop": 545.03,
         "target1": 665,
         "target2": 710,
-        "grossRiskReward": 0.65,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 632.89,
+          "costPerShare": 3.79734,
+          "grossRewardPct": 5.07,
+          "netRewardPct": 4.47,
+          "grossRiskPct": 13.88,
+          "netRiskPct": 14.48,
+          "grossRiskReward": 0.365,
+          "netRiskReward": 0.309,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 632.89,
+          "costPerShare": 3.79734,
+          "grossRewardPct": 12.18,
+          "netRewardPct": 11.58,
+          "grossRiskPct": 13.88,
+          "netRiskPct": 14.48,
+          "grossRiskReward": 0.878,
+          "netRiskReward": 0.8,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.65,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 87% | ربح هدف1 7.7% | عائد متوقع 5.1% | R/R 0.65 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
@@ -1055,7 +1687,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1063,31 +1697,65 @@
       "ticker": "MEGM",
       "nameAr": "الشرق الأوسط لصناعة الزجاج",
       "price": 17.69,
-      "legacyOpportunityScore": 87,
+      "opportunityScore": 87,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 87,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 82,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": null,
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 17.16,
         "entryHigh": 17.602,
+        "entryReferenceForRiskMath": 17.602,
         "stop": 16.629,
         "target1": 18.49,
         "target2": 19.5,
-        "grossRiskReward": 0.75,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 17.602,
+          "costPerShare": 0.105612,
+          "grossRewardPct": 5.04,
+          "netRewardPct": 4.44,
+          "grossRiskPct": 5.53,
+          "netRiskPct": 6.13,
+          "grossRiskReward": 0.913,
+          "netRiskReward": 0.725,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 17.602,
+          "costPerShare": 0.105612,
+          "grossRewardPct": 10.78,
+          "netRewardPct": 10.18,
+          "grossRiskPct": 5.53,
+          "netRiskPct": 6.13,
+          "grossRiskReward": 1.951,
+          "netRiskReward": 1.662,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.75,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 87% | ربح هدف1 4.5% | عائد متوقع 3.2% | R/R 0.75 | السعر مدقق | تاريخ 13/50",
-        "GLOBAL_EXECUTION_GATE_CLOSED"
+        "GLOBAL_EXECUTION_GATE_CLOSED",
+        "MISSING_CRITICAL_SYMBOL_EVIDENCE"
       ],
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": null,
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1095,10 +1763,15 @@
       "ticker": "BIOC",
       "nameAr": "جلاكسو سميثكلاين",
       "price": 521.88,
-      "legacyOpportunityScore": 84,
+      "opportunityScore": 84,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 85,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 468.59,
@@ -1108,6 +1781,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1126,15 +1800,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 506.224,
         "entryHigh": 519.271,
+        "entryReferenceForRiskMath": 519.271,
         "stop": 490.567,
         "target1": 540.146,
         "target2": 556.35,
-        "grossRiskReward": 0.58,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 519.271,
+          "costPerShare": 3.115626,
+          "grossRewardPct": 4.02,
+          "netRewardPct": 3.42,
+          "grossRiskPct": 5.53,
+          "netRiskPct": 6.13,
+          "grossRiskReward": 0.727,
+          "netRiskReward": 0.558,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 519.271,
+          "costPerShare": 3.115626,
+          "grossRewardPct": 7.14,
+          "netRewardPct": 6.54,
+          "grossRiskPct": 5.53,
+          "netRiskPct": 6.13,
+          "grossRiskReward": 1.292,
+          "netRiskReward": 1.067,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.58,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 85% | ربح هدف1 3.5% | عائد متوقع 2.1% | R/R 0.58 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
@@ -1143,7 +1843,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1151,10 +1853,15 @@
       "ticker": "ACAMD",
       "nameAr": "العربية لإدارة وتطوير الأصول",
       "price": 2.24,
-      "legacyOpportunityScore": 80,
+      "opportunityScore": 80,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 83,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 2.22,
@@ -1164,6 +1871,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1182,15 +1890,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 2.21,
         "entryHigh": 2.25,
+        "entryReferenceForRiskMath": 2.25,
         "stop": 2.15,
         "target1": 2.27,
         "target2": 2.31,
-        "grossRiskReward": 0.33,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 2.25,
+          "costPerShare": 0.0135,
+          "grossRewardPct": 0.89,
+          "netRewardPct": 0.29,
+          "grossRiskPct": 4.44,
+          "netRiskPct": 5.04,
+          "grossRiskReward": 0.2,
+          "netRiskReward": 0.057,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 2.25,
+          "costPerShare": 0.0135,
+          "grossRewardPct": 2.67,
+          "netRewardPct": 2.07,
+          "grossRiskPct": 4.44,
+          "netRiskPct": 5.04,
+          "grossRiskReward": 0.6,
+          "netRiskReward": 0.41,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.33,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 83% | ربح هدف1 1.3% | عائد متوقع 0.4% | R/R 0.33 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -1199,7 +1933,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1207,10 +1943,15 @@
       "ticker": "EDFM",
       "nameAr": "مطاحن شرق الدلتا",
       "price": 410.59,
-      "legacyOpportunityScore": 80,
+      "opportunityScore": 80,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 83,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.2,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": false,
       "supportResistance": {
         "support1": 403.06,
@@ -1220,6 +1961,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.802,
         "executionEligible": true,
@@ -1238,15 +1980,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 323.99,
         "entryHigh": 408.537,
+        "entryReferenceForRiskMath": 408.537,
         "stop": 319.13,
         "target1": 424.961,
         "target2": 437.709,
-        "grossRiskReward": 0.16,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 408.537,
+          "costPerShare": 2.451222,
+          "grossRewardPct": 4.02,
+          "netRewardPct": 3.42,
+          "grossRiskPct": 21.88,
+          "netRiskPct": 22.48,
+          "grossRiskReward": 0.184,
+          "netRiskReward": 0.152,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 408.537,
+          "costPerShare": 2.451222,
+          "grossRewardPct": 7.14,
+          "netRewardPct": 6.54,
+          "grossRiskPct": 21.88,
+          "netRiskPct": 22.48,
+          "grossRiskReward": 0.326,
+          "netRiskReward": 0.291,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.16,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 83% | ربح هدف1 3.5% | عائد متوقع -0.9% | R/R 0.16 | السعر مدقق | تاريخ 12/50 | قيود: R/R ضعيف",
@@ -1256,7 +2024,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1264,32 +2034,66 @@
       "ticker": "SEIGA",
       "nameAr": "السعودية المصرية للاستثمار والتمويل",
       "price": 5.41,
-      "legacyOpportunityScore": 81,
+      "opportunityScore": 81,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 82,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": false,
       "supportResistance": null,
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 1.99,
         "entryHigh": 5.46,
+        "entryReferenceForRiskMath": 5.46,
         "stop": 5.085,
         "target1": 5.65,
         "target2": 5.96,
-        "grossRiskReward": 0.74,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 5.46,
+          "costPerShare": 0.03276,
+          "grossRewardPct": 3.48,
+          "netRewardPct": 2.88,
+          "grossRiskPct": 6.87,
+          "netRiskPct": 7.47,
+          "grossRiskReward": 0.507,
+          "netRiskReward": 0.386,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 5.46,
+          "costPerShare": 0.03276,
+          "grossRewardPct": 9.16,
+          "netRewardPct": 8.56,
+          "grossRiskPct": 6.87,
+          "netRiskPct": 7.47,
+          "grossRiskReward": 1.333,
+          "netRiskReward": 1.146,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.74,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 4.4% | عائد متوقع 2.6% | R/R 0.74 | السعر مدقق | تاريخ 13/50",
         "GLOBAL_EXECUTION_GATE_CLOSED",
+        "MISSING_CRITICAL_SYMBOL_EVIDENCE",
         "LIQUIDITY_NOT_EXECUTION_ELIGIBLE"
       ],
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": null,
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1297,10 +2101,15 @@
       "ticker": "ETRS",
       "nameAr": "إيجيترانس",
       "price": 10.91,
-      "legacyOpportunityScore": 81,
+      "opportunityScore": 81,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 10.8333,
@@ -1310,6 +2119,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1328,15 +2138,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 10.39,
         "entryHigh": 10.71,
+        "entryReferenceForRiskMath": 10.71,
         "stop": 10.08,
         "target1": 11.43,
         "target2": 12.15,
-        "grossRiskReward": 0.63,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 10.71,
+          "costPerShare": 0.06426,
+          "grossRewardPct": 6.72,
+          "netRewardPct": 6.12,
+          "grossRiskPct": 5.88,
+          "netRiskPct": 6.48,
+          "grossRiskReward": 1.143,
+          "netRiskReward": 0.945,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 10.71,
+          "costPerShare": 0.06426,
+          "grossRewardPct": 13.45,
+          "netRewardPct": 12.85,
+          "grossRiskPct": 5.88,
+          "netRiskPct": 6.48,
+          "grossRiskReward": 2.286,
+          "netRiskReward": 1.982,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.63,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 4.8% | عائد متوقع 2.5% | R/R 0.63 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
@@ -1345,7 +2181,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1353,10 +2191,15 @@
       "ticker": "EMFD",
       "nameAr": "إعمار مصر",
       "price": 11.75,
-      "legacyOpportunityScore": 81,
+      "opportunityScore": 81,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 11.6767,
@@ -1366,6 +2209,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1384,15 +2228,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 11.53,
         "entryHigh": 11.6,
+        "entryReferenceForRiskMath": 11.6,
         "stop": 11.18,
         "target1": 12.161,
         "target2": 11.82,
-        "grossRiskReward": 0.72,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 11.6,
+          "costPerShare": 0.0696,
+          "grossRewardPct": 4.84,
+          "netRewardPct": 4.24,
+          "grossRiskPct": 3.62,
+          "netRiskPct": 4.22,
+          "grossRiskReward": 1.336,
+          "netRiskReward": 1.004,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 11.6,
+          "costPerShare": 0.0696,
+          "grossRewardPct": 1.9,
+          "netRewardPct": 1.3,
+          "grossRiskPct": 3.62,
+          "netRiskPct": 4.22,
+          "grossRiskReward": 0.524,
+          "netRiskReward": 0.307,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.72,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "WATCH",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 2.0% | R/R 0.72 | السعر مدقق | تاريخ 13/50",
@@ -1401,7 +2271,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1409,10 +2281,15 @@
       "ticker": "FWRY",
       "nameAr": "فوري لتكنولوجيا البنوك والمدفوعات الإلكترونية",
       "price": 19.02,
-      "legacyOpportunityScore": 81,
+      "opportunityScore": 81,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 18.7133,
@@ -1422,6 +2299,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1440,15 +2318,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 18.32,
         "entryHigh": 18.46,
+        "entryReferenceForRiskMath": 18.46,
         "stop": 17.77,
         "target1": 19.686,
         "target2": 20.276,
-        "grossRiskReward": 0.53,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 18.46,
+          "costPerShare": 0.11076,
+          "grossRewardPct": 6.64,
+          "netRewardPct": 6.04,
+          "grossRiskPct": 3.74,
+          "netRiskPct": 4.34,
+          "grossRiskReward": 1.777,
+          "netRiskReward": 1.393,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 18.46,
+          "costPerShare": 0.11076,
+          "grossRewardPct": 9.84,
+          "netRewardPct": 9.24,
+          "grossRiskPct": 3.74,
+          "netRiskPct": 4.34,
+          "grossRiskReward": 2.632,
+          "netRiskReward": 2.13,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.53,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.7% | R/R 0.53 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -1457,7 +2361,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1465,10 +2371,15 @@
       "ticker": "TMGH",
       "nameAr": "مجموعة طلعت مصطفى",
       "price": 97.85,
-      "legacyOpportunityScore": 80,
+      "opportunityScore": 80,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 96.8367,
@@ -1478,6 +2389,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1496,15 +2408,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 93.63,
         "entryHigh": 94.31,
+        "entryReferenceForRiskMath": 94.31,
         "stop": 90.83,
         "target1": 101.275,
         "target2": 104.313,
-        "grossRiskReward": 0.49,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 94.31,
+          "costPerShare": 0.56586,
+          "grossRewardPct": 7.39,
+          "netRewardPct": 6.79,
+          "grossRiskPct": 3.69,
+          "netRiskPct": 4.29,
+          "grossRiskReward": 2.001,
+          "netRiskReward": 1.582,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 94.31,
+          "costPerShare": 0.56586,
+          "grossRewardPct": 10.61,
+          "netRewardPct": 10.01,
+          "grossRiskPct": 3.69,
+          "netRiskPct": 4.29,
+          "grossRiskReward": 2.874,
+          "netRiskReward": 2.333,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.49,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.6% | R/R 0.49 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -1513,7 +2451,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1521,10 +2461,15 @@
       "ticker": "ORAS",
       "nameAr": "أوراسكوم كونستراكشون",
       "price": 743.55,
-      "legacyOpportunityScore": 80,
+      "opportunityScore": 80,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 726.5667,
@@ -1534,6 +2479,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1553,15 +2499,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 710.38,
         "entryHigh": 719.87,
+        "entryReferenceForRiskMath": 719.87,
         "stop": 689.18,
         "target1": 769.574,
         "target2": 792.661,
-        "grossRiskReward": 0.48,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 719.87,
+          "costPerShare": 4.31922,
+          "grossRewardPct": 6.9,
+          "netRewardPct": 6.3,
+          "grossRiskPct": 4.26,
+          "netRiskPct": 4.86,
+          "grossRiskReward": 1.62,
+          "netRiskReward": 1.296,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 719.87,
+          "costPerShare": 4.31922,
+          "grossRewardPct": 10.11,
+          "netRewardPct": 9.51,
+          "grossRiskPct": 4.26,
+          "netRiskPct": 4.86,
+          "grossRiskReward": 2.372,
+          "netRiskReward": 1.956,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.48,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.6% | R/R 0.48 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -1570,7 +2542,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1578,10 +2552,15 @@
       "ticker": "BTFH",
       "nameAr": "بلتون القابضة",
       "price": 3.08,
-      "legacyOpportunityScore": 80,
+      "opportunityScore": 80,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 3.0633,
@@ -1591,6 +2570,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1609,15 +2589,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 2.93,
         "entryHigh": 2.97,
+        "entryReferenceForRiskMath": 2.97,
         "stop": 2.85,
         "target1": 3.188,
         "target2": 3.283,
-        "grossRiskReward": 0.47,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 2.97,
+          "costPerShare": 0.01782,
+          "grossRewardPct": 7.34,
+          "netRewardPct": 6.74,
+          "grossRiskPct": 4.04,
+          "netRiskPct": 4.64,
+          "grossRiskReward": 1.817,
+          "netRiskReward": 1.452,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 2.97,
+          "costPerShare": 0.01782,
+          "grossRewardPct": 10.54,
+          "netRewardPct": 9.94,
+          "grossRiskPct": 4.04,
+          "netRiskPct": 4.64,
+          "grossRiskReward": 2.608,
+          "netRiskReward": 2.142,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.47,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.47 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -1626,7 +2632,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     },
     {
@@ -1634,10 +2642,15 @@
       "ticker": "PHDC",
       "nameAr": "بالم هيلز للتعمير",
       "price": 15.25,
-      "legacyOpportunityScore": 80,
+      "opportunityScore": 80,
+      "scoreProvenance": "LEGACY_FINAL_OPPORTUNITY_RANKING_NOT_CONFIDENCE",
       "legacyTargetProbabilityPct": 82,
-      "dataConfidencePct": 82,
-      "executionConfidencePct": 0,
+      "confidence": {
+        "marketConfidencePct": 0,
+        "dataConfidencePct": 80.4,
+        "modelConfidencePct": null,
+        "executionConfidencePct": 0
+      },
       "liquidityExecutionEligible": true,
       "supportResistance": {
         "support1": 15.16,
@@ -1647,6 +2660,7 @@
         "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
         "source": "INTERNAL_OHLC_PIVOT",
         "sessionDate": "2026-08-13",
+        "sessionAligned": true,
         "freshness": "LATEST_COMPLETED_SESSION",
         "confidence": 0.804,
         "executionEligible": true,
@@ -1665,15 +2679,41 @@
         }
       },
       "tradePlan": {
+        "direction": "LONG",
         "entryLow": 14.5,
         "entryHigh": 14.67,
+        "entryReferenceForRiskMath": 14.67,
         "stop": 14.07,
         "target1": 15.784,
         "target2": 16.257,
-        "grossRiskReward": 0.45,
-        "netRiskReward": null
+        "transactionCostRoundTripPct": 0.6,
+        "target1Metrics": {
+          "entryReference": 14.67,
+          "costPerShare": 0.08802,
+          "grossRewardPct": 7.59,
+          "netRewardPct": 6.99,
+          "grossRiskPct": 4.09,
+          "netRiskPct": 4.69,
+          "grossRiskReward": 1.857,
+          "netRiskReward": 1.491,
+          "valid": true
+        },
+        "target2Metrics": {
+          "entryReference": 14.67,
+          "costPerShare": 0.08802,
+          "grossRewardPct": 10.82,
+          "netRewardPct": 10.22,
+          "grossRiskPct": 4.09,
+          "netRiskPct": 4.69,
+          "grossRiskReward": 2.645,
+          "netRiskReward": 2.179,
+          "valid": true
+        },
+        "legacyGrossRiskReward": 0.45,
+        "netRiskRewardGatingEnabled": false
       },
       "suggestedPositionWeightPct": 0,
+      "shadowPositionWeightPct": 0,
       "status": "AVOID",
       "reasons": [
         "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.45 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -1682,7 +2722,9 @@
       "provenance": {
         "rankingSource": "data/final-opportunity-ranking.json",
         "supportResistanceSource": "data/v17/internal-ohlc-support-resistance.json",
-        "liquiditySource": "data/v17/liquidity-gate.json"
+        "liquiditySource": "data/v17/liquidity-gate.json",
+        "executionGateSource": "data/v17/resilient-session-status.json",
+        "costPolicySource": "data/v20/policy-registry.json"
       }
     }
   ],
@@ -1897,6 +2939,7 @@
     "INTERNAL_SR_NOT_EXECUTION_CANDIDATE",
     "MISSING_SYMBOLS_6",
     "V19_CURRENT_SIGNAL_NOT_ALIGNED_WITH_V17_MARKET_SESSION",
+    "CURRENT_MARKET_REGIME_UNVERIFIED",
     "V18_EXTERNAL_REFERENCE_BROWSER_AUDIT_PENDING"
   ],
   "externalReferences": {
@@ -1911,6 +2954,11 @@
     "v16": "release/v16.9.2-frozen-20260806@2351b2ec2bbcf3e36e992021e26b36845e879ab0",
     "v17": "develop/v17-rebuild@abd76acb3dc0b472e4f8de985aba7a6c45f87c16",
     "v19": "v19-egx-chat-gpt@fb5aafb3e3e4cd908831a7cb98de3f952e356c34",
-    "sourceHash": "11b22a3b4a7c8874083658f552f14312d706802029d1a765fa1d88cb2a29cde8"
+    "dataTruth": {
+      "masterUniverse": "data/v20/master-universe.json",
+      "currentMarketSnapshot": "data/v20/current-market-snapshot.json",
+      "sourceHealth": "data/v20/source-health.json"
+    },
+    "sourceHash": "fd50e545ca78a5baacc455852d0ecf69874af2968060d08dedea90f908dfb3bb"
   }
 }
