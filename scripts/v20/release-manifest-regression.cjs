@@ -16,10 +16,11 @@ const regression = read('data/v20/regression.json');
 const explorer = read('data/v20/market-explorer.json');
 const browser = read('data/v20/browser-smoke.json');
 const operations = read('data/v20/release-operations.json');
+const executionGap = regression.executionReadinessGap;
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
 
-check(manifest.schemaVersion === '20.0.0-release-manifest-1', 'RELEASE_MANIFEST_SCHEMA_DRIFT');
+check(manifest.schemaVersion === '20.0.0-release-manifest-2', 'RELEASE_MANIFEST_SCHEMA_DRIFT');
 check(manifest.branch === 'develop/v20-integrated-decision-platform', 'RELEASE_BRANCH_DRIFT');
 check(manifest.session?.decisionSessionDate === current.sessionDate, 'RELEASE_SESSION_MISMATCH');
 check(manifest.governance?.activeChampion === 'V16_9_EQUAL_WEIGHT_BASKET', 'RELEASE_CHAMPION_DRIFT');
@@ -47,6 +48,22 @@ check(manifest.operations?.v18AuditStatus === 'INACCESSIBLE_NOT_ACCEPTED', 'RELE
 check(operations.releaseSafety?.mainBranchMutationAllowed === false, 'RELEASE_MAIN_MUTATION_POLICY_DRIFT');
 check(operations.releaseSafety?.v16MutationAllowed === false && operations.releaseSafety?.v17MutationAllowed === false && operations.releaseSafety?.v19MutationAllowed === false, 'RELEASE_LEGACY_BRANCH_MUTATION_POLICY_DRIFT');
 
+check(executionGap?.ok === true, 'RELEASE_EXECUTION_GAP_EVIDENCE_MISSING_OR_FAILED');
+check(manifest.executionReadinessGap?.sourceSessionDate === current.sessionDate, 'RELEASE_EXECUTION_GAP_SESSION_MISMATCH');
+check(manifest.executionReadinessGap?.mathematicalThresholdGapOnly === true, 'RELEASE_EXECUTION_GAP_NOT_LABELED_MATHEMATICAL_ONLY');
+check(manifest.executionReadinessGap?.guaranteesExecutionGrade === false, 'RELEASE_EXECUTION_GAP_FALSE_GUARANTEE');
+check(manifest.executionReadinessGap?.requiresFullV17GateRebuildAfterEvidenceChanges === true, 'RELEASE_EXECUTION_GAP_REBUILD_REQUIREMENT_MISSING');
+check(manifest.executionReadinessGap?.evidence === 'data/v20/regression.json#executionReadinessGap', 'RELEASE_EXECUTION_GAP_PROVENANCE_DRIFT');
+check(JSON.stringify(manifest.executionReadinessGap?.gaps) === JSON.stringify(executionGap?.gaps), 'RELEASE_EXECUTION_GAPS_MISMATCH');
+check(JSON.stringify(manifest.executionReadinessGap?.required) === JSON.stringify(executionGap?.required), 'RELEASE_EXECUTION_REQUIRED_COUNTS_MISMATCH');
+check(JSON.stringify(manifest.executionReadinessGap?.current) === JSON.stringify(executionGap?.current), 'RELEASE_EXECUTION_CURRENT_COUNTS_MISMATCH');
+check(JSON.stringify(manifest.executionReadinessGap?.symbols) === JSON.stringify(executionGap?.symbols), 'RELEASE_EXECUTION_GAP_SYMBOLS_MISMATCH');
+check(manifest.executionReadinessGap?.gaps?.trustedCandidateCount === 2, 'RELEASE_TRUSTED_GAP_EXPECTATION_DRIFT');
+check(manifest.executionReadinessGap?.gaps?.trustedFreshCandidateCount === 6, 'RELEASE_FRESH_GAP_EXPECTATION_DRIFT');
+check(manifest.executionReadinessGap?.gaps?.criticalCandidateEquivalentCount === 2, 'RELEASE_CRITICAL_GAP_EXPECTATION_DRIFT');
+check(manifest.executionReadinessGap?.gaps?.sourceConflictCount === 1, 'RELEASE_CONFLICT_GAP_EXPECTATION_DRIFT');
+check(manifest.executionReadinessGap?.gaps?.confidenceGap === 0, 'RELEASE_CONFIDENCE_GAP_EXPECTATION_DRIFT');
+
 if (gate.executionGrade !== true) {
   check(manifest.acceptance?.executionReady === false, 'RELEASE_EXECUTION_READY_WHILE_V17_GATE_CLOSED');
   check(manifest.releaseClaims?.executionReadyClaimAllowed === false, 'RELEASE_EXECUTION_CLAIM_WHILE_V17_GATE_CLOSED');
@@ -67,7 +84,7 @@ check(manifest.performanceAndForward?.researchOutcomesMayBecomeProductionPerform
 check(manifest.performanceAndForward?.pendingReturnMustRemainNull === true, 'RELEASE_PENDING_RETURN_POLICY_DRIFT');
 
 const report = {
-  schemaVersion: '20.0.0-release-manifest-regression-1',
+  schemaVersion: '20.0.0-release-manifest-regression-2',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -75,6 +92,8 @@ const report = {
   checks: {
     releaseClaimsMatchFinalAcceptance: true,
     closedV17GateCannotBeOverstated: true,
+    executionGapMatchesAuthoritativeDerivedEvidence: true,
+    executionGapNeverGuaranteesExecutionGrade: true,
     deploymentCannotBeClaimedWithoutDedicatedTarget: true,
     dailyAutomationCannotBeClaimedWithoutVerifiedSchedule: true,
     v18PerformanceRemainsUnaccepted: true,
