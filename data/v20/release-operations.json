@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "20.0.0-release-operations-1",
+  "auditedAt": "2026-08-15T01:15:00+03:00",
+  "releaseBranch": "develop/v20-integrated-decision-platform",
+  "deployment": {
+    "status": "NOT_DEPLOYED_FROM_V20_RELEASE",
+    "dedicatedEgxV20TargetVerified": false,
+    "productionDeploymentAllowedWithoutDedicatedTarget": false,
+    "connectedVercelAudit": {
+      "status": "NO_EGX_V20_PROJECT_FOUND",
+      "teamId": "team_FXiN7h7HXLs9fsZ0fCCc43FS",
+      "observedProjectFamily": "OPTIMUM_ONLY",
+      "reuseUnrelatedProjectAllowed": false,
+      "note": "The connected Vercel workspace exposed Optimum projects only. V20 must not be deployed into an unrelated Optimum project or production target."
+    }
+  },
+  "automation": {
+    "dailyEndToEndScheduleVerified": false,
+    "v17MarketPipelineSchedulePresentOnV20Audit": false,
+    "defaultBranchModificationAllowed": false,
+    "status": "MANUAL_OR_EXTERNAL_ORCHESTRATION_REQUIRED",
+    "note": "The audited V17 market-data workflow on the V20 branch has workflow_dispatch/push triggers but no schedule. A blind V20 cron would recycle upstream evidence rather than guarantee a fresh V17 market session."
+  },
+  "v18Reference": {
+    "url": "https://egxpro18-r2qgzpdf.manus.space/",
+    "auditStatus": "INACCESSIBLE_NOT_ACCEPTED",
+    "performanceEvidenceAccepted": false,
+    "visualAuditClaimAllowed": false,
+    "note": "External access attempts did not produce an auditable V18 page. V18 remains a UI/reference concept only; performance claims remain excluded."
+  },
+  "releaseSafety": {
+    "mainBranchMutationAllowed": false,
+    "v16MutationAllowed": false,
+    "v17MutationAllowed": false,
+    "v19MutationAllowed": false,
+    "automaticProductionPromotionAllowed": false,
+    "executionReadyMayBeClaimedWithoutV17Gate": false,
+    "deployedMayBeClaimedWithoutVerifiedDedicatedTarget": false
+  }
+}
