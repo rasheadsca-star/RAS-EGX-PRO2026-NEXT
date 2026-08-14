@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "20.0.0-policy-registry-3",
-  "effectiveFrom": "2026-08-14",
+  "schemaVersion": "20.0.0-policy-registry-4",
+  "effectiveFrom": "2026-08-15",
   "status": "CONTROLLED_INTEGRATION",
   "principles": {
     "decisionSupportOnly": true,
@@ -64,6 +64,34 @@
     "productionExecutionGate": false,
     "staleIndicatorPolicy": "HISTORICAL_RESEARCH_CONTEXT_ONLY_NEVER_CURRENT_DECISION",
     "note": "Technical history can enrich explainability but cannot upgrade the authoritative V17 execution gate or silently change the frozen Champion policy."
+  },
+  "dataQuality": {
+    "semanticCompletenessRequired": true,
+    "nonPositiveCurrentPriceTreatedAsMissing": true,
+    "nonPositiveOhlcTreatedAsMissing": true,
+    "ohlcInvariantRequiredForCompleteState": true,
+    "zeroVolumeMayRemainNumericWhenNonNegative": true,
+    "currentPriceMayRemainAvailableWhenOhlcPartial": true,
+    "globalV17CoverageMetricsRemainAuthoritative": true,
+    "rowQualityMayOnlyDowngradeLocalTrust": true,
+    "note": "Row-level semantic quality prevents zero or invalid OHLC values from being counted as complete. It never upgrades or rewrites V17's global gate metrics."
+  },
+  "userPortfolio": {
+    "scope": "USER_OWNED_POSITIONS_ONLY",
+    "storage": "BROWSER_LOCAL_STORAGE_ONLY",
+    "storageKey": "egx-pro-v20-user-portfolio-v1",
+    "serverPersistence": false,
+    "repositoryPersistence": false,
+    "influencesModelPortfolio": false,
+    "influencesOpportunityRanking": false,
+    "influencesChampion": false,
+    "influencesExecutionGate": false,
+    "automaticOrders": false,
+    "automaticBuySellInstructions": false,
+    "valuationRequiresCurrentSessionPrice": true,
+    "stalePriceFallbackAllowed": false,
+    "monitoringOutput": "MONITOR_OR_REVIEW_ONLY",
+    "note": "User holdings are private browser-local inputs for P&L and risk monitoring. They are not a production allocation engine and cannot override V17 execution governance."
   },
   "portfolio": {
     "maximumTotalAllocationPct": 50,

@@ -32,6 +32,14 @@ function finite(value, fallback = null) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
+function positive(value) {
+  const n = finite(value);
+  return n !== null && n > 0 ? n : null;
+}
+function nonNegative(value) {
+  const n = finite(value);
+  return n !== null && n >= 0 ? n : null;
+}
 function round(value, digits = 2) {
   const n = finite(value);
   if (n === null) return null;
@@ -42,17 +50,97 @@ function asciiOnly(value) {
   const s = String(value || '').trim();
   return s ? /^[\x00-\x7F]+$/.test(s) : false;
 }
-function fieldCompleteness(row) {
-  const values = [
-    row?.price ?? row?.last,
-    row?.previousClose,
-    row?.open,
-    row?.high,
-    row?.low,
-    row?.volume,
-    row?.valueTraded ?? row?.turnover,
+function semanticMarketQuality(row) {
+  const issues = [];
+  const raw = {
+    price: row?.price ?? row?.last,
+    previousClose: row?.previousClose,
+    open: row?.open,
+    high: row?.high,
+    low: row?.low,
+    volume: row?.volume,
+    turnover: row?.valueTraded ?? row?.turnover,
+    trades: row?.trades,
+  };
+
+  const normalized = {
+    price: positive(raw.price),
+    previousClose: positive(raw.previousClose),
+    open: positive(raw.open),
+    high: positive(raw.high),
+    low: positive(raw.low),
+    volume: nonNegative(raw.volume),
+    turnover: nonNegative(raw.turnover),
+    trades: nonNegative(raw.trades),
+  };
+
+  for (const field of ['price', 'previousClose', 'open', 'high', 'low']) {
+    if (normalized[field] === null) issues.push(`${field.toUpperCase()}_NON_POSITIVE_OR_MISSING`);
+  }
+  if (normalized.volume === null) issues.push('VOLUME_MISSING_OR_NEGATIVE');
+  if (normalized.turnover === null) issues.push('TURNOVER_MISSING_OR_NEGATIVE');
+  if (normalized.trades === null) issues.push('TRADES_MISSING_OR_NEGATIVE');
+
+  let ohlcValid = false;
+  if (
+    normalized.price !== null &&
+    normalized.open !== null &&
+    normalized.high !== null &&
+    normalized.low !== null
+  ) {
+    ohlcValid = (
+      normalized.high >= normalized.low &&
+      normalized.high >= normalized.open &&
+      normalized.high >= normalized.price &&
+      normalized.low <= normalized.open &&
+      normalized.low <= normalized.price
+    );
+    if (!ohlcValid) {
+      issues.push('OHLC_INVARIANT_FAILED');
+      normalized.open = null;
+      normalized.high = null;
+      normalized.low = null;
+    }
+  } else {
+    issues.push('OHLC_INCOMPLETE');
+  }
+
+  if (normalized.volume === 0 && normalized.turnover !== null && normalized.turnover > 0) {
+    issues.push('ZERO_VOLUME_WITH_POSITIVE_TURNOVER');
+  }
+  if (normalized.turnover === 0 && normalized.volume !== null && normalized.volume > 0) {
+    issues.push('ZERO_TURNOVER_WITH_POSITIVE_VOLUME');
+  }
+
+  const critical = [
+    normalized.price,
+    normalized.previousClose,
+    normalized.open,
+    normalized.high,
+    normalized.low,
+    normalized.volume,
+    normalized.turnover,
   ];
-  return round((values.filter(v => finite(v) !== null).length / values.length) * 100, 1);
+  const criticalFieldCompletenessPct = round(
+    (critical.filter(value => value !== null).length / critical.length) * 100,
+    1
+  );
+
+  const dataQualityState = normalized.price === null
+    ? 'CURRENT_PRICE_UNAVAILABLE'
+    : ohlcValid && criticalFieldCompletenessPct >= 85
+      ? 'COMPLETE_FOR_CURRENT_SCOPE'
+      : criticalFieldCompletenessPct >= 50
+        ? 'PARTIAL'
+        : 'INSUFFICIENT_CURRENT_FIELDS';
+
+  return {
+    normalized,
+    ohlcValid,
+    criticalFieldCompletenessPct,
+    dataQualityState,
+    dataQualityIssues: [...new Set(issues)],
+  };
 }
 
 const market = read('data/market.json');
@@ -104,7 +192,7 @@ const snapshotRows = marketRows.map(row => {
   const ticker = symbolOf(row.symbol || row.ticker);
   const sr = srMap.get(ticker) || null;
   const liquidityRow = liquidityMap.get(ticker) || null;
-  const completenessPct = fieldCompleteness(row);
+  const quality = semanticMarketQuality(row);
   const rawAr = row.name_ar || rankMap.get(ticker)?.name || null;
   return {
     ticker,
@@ -112,14 +200,14 @@ const snapshotRows = marketRows.map(row => {
     nameEn: row.name_en || null,
     nameArVerified: Boolean(rawAr) && !asciiOnly(rawAr),
     sessionDate,
-    price: finite(row.price ?? row.last),
-    previousClose: finite(row.previousClose),
-    open: finite(row.open),
-    high: finite(row.high),
-    low: finite(row.low),
-    volume: finite(row.volume),
-    turnover: finite(row.valueTraded ?? row.turnover),
-    trades: finite(row.trades),
+    price: quality.normalized.price,
+    previousClose: quality.normalized.previousClose,
+    open: quality.normalized.open,
+    high: quality.normalized.high,
+    low: quality.normalized.low,
+    volume: quality.normalized.volume,
+    turnover: quality.normalized.turnover,
+    trades: quality.normalized.trades,
     change: finite(row.change),
     changePct: finite(row.changePct),
     sourceTimestamp: row.updatedAt || market.updatedAt || market.generatedAt || null,
@@ -127,8 +215,11 @@ const snapshotRows = marketRows.map(row => {
     sourceUrl: row.sourceUrl || null,
     provenance: 'data/market.json',
     sessionAligned,
-    criticalFieldCompletenessPct: completenessPct,
-    dataQualityState: completenessPct >= 85 ? 'COMPLETE_FOR_CURRENT_SCOPE' : 'PARTIAL',
+    criticalFieldCompletenessPct: quality.criticalFieldCompletenessPct,
+    dataQualityState: quality.dataQualityState,
+    dataQualityIssues: quality.dataQualityIssues,
+    ohlcValid: quality.ohlcValid,
+    semanticCompleteness: true,
     liquidityExecutionEligible: executionEligibleSymbols.has(ticker) || liquidityRow?.executionLiquidityOk === true,
     supportResistanceAvailable: Boolean(sr),
     supportResistanceExecutionEligible: sr?.executionEligible === true,
@@ -136,8 +227,22 @@ const snapshotRows = marketRows.map(row => {
   };
 });
 
+const qualitySummary = {
+  semanticCompleteness: true,
+  completeRows: snapshotRows.filter(row => row.dataQualityState === 'COMPLETE_FOR_CURRENT_SCOPE').length,
+  partialRows: snapshotRows.filter(row => row.dataQualityState === 'PARTIAL').length,
+  insufficientRows: snapshotRows.filter(row => row.dataQualityState === 'INSUFFICIENT_CURRENT_FIELDS').length,
+  currentPriceUnavailableRows: snapshotRows.filter(row => row.dataQualityState === 'CURRENT_PRICE_UNAVAILABLE').length,
+  ohlcValidRows: snapshotRows.filter(row => row.ohlcValid === true).length,
+  ohlcInvalidOrIncompleteRows: snapshotRows.filter(row => row.ohlcValid !== true).length,
+  rowsWithQualityIssues: snapshotRows.filter(row => (row.dataQualityIssues || []).length > 0).length,
+  nonPositiveOhlcExposedAsNumeric: snapshotRows.filter(row =>
+    ['open', 'high', 'low'].some(field => row[field] !== null && !(Number(row[field]) > 0))
+  ).length,
+};
+
 const sourceHealth = {
-  schemaVersion: '20.0.0-source-health-1',
+  schemaVersion: '20.0.0-source-health-2',
   generatedAt: new Date().toISOString(),
   sessionDate,
   status: gate?.status || 'BLOCKED',
@@ -153,6 +258,7 @@ const sourceHealth = {
   sourcesUsed: gate?.sourcesUsed || [],
   sourceConflicts: gate?.sourceConflicts || [],
   missingSymbols: gate?.missingSymbols || [],
+  semanticRowQuality: qualitySummary,
   liquidityGate: {
     passed: liquidity?.gatePassed === true || gate?.liquidity?.gatePassed === true,
     sessionAligned: liquidity?.sessionAligned === true || gate?.liquidity?.sessionAligned === true,
@@ -184,15 +290,17 @@ const masterUniverse = {
 };
 
 const currentSnapshot = {
-  schemaVersion: '20.0.0-current-market-snapshot-1',
+  schemaVersion: '20.0.0-current-market-snapshot-2',
   generatedAt: new Date().toISOString(),
   sessionDate,
   sessionAligned,
   decisionSupportOnly: true,
+  semanticQuality: qualitySummary,
   sourceTruth: {
     authoritativeGate: 'data/v17/resilient-session-status.json',
     currentPriceSource: 'data/market.json',
     v20DoesNotUpgradeExecutionGrade: true,
+    globalCoverageMetricsRemainAuthoritativeFromV17: true,
   },
   globalQuality: {
     status: gate?.status || 'BLOCKED',
@@ -216,4 +324,5 @@ console.log(JSON.stringify({
   sourceHealthStatus: sourceHealth.status,
   executionGrade: sourceHealth.executionGrade,
   sourceConflicts: sourceHealth.sourceConflicts.length,
+  semanticQuality: qualitySummary,
 }, null, 2));

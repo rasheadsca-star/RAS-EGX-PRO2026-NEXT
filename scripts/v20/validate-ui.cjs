@@ -9,8 +9,12 @@ const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 const json = rel => JSON.parse(read(rel));
 const html = read('v20/index.html');
 const css = read('v20/styles.css');
+const portfolioCss = read('v20/portfolio.css');
 const js = read('v20/app.js');
+const portfolioJs = read('v20/portfolio.js');
+const portfolioCore = read('v20/portfolio-core.js');
 const explorer = json('data/v20/market-explorer.json');
+const policy = json('data/v20/policy-registry.json');
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
 
@@ -38,18 +42,46 @@ check(js.includes('NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE'), 'TECHNICAL_SCOPE_
 check(js.includes('لا يتم عرض سعر قديم كأنه حالي'), 'STALE_PRICE_UI_WARNING_MISSING');
 check(js.includes('سهم من السوق الكامل — ليس توصية حالية'), 'MARKET_ONLY_NOT_RECOMMENDATION_UI_MISSING');
 check(js.includes('marketPageSize: 25'), 'MARKET_PAGINATION_SIZE_POLICY_MISSING');
+
+for (const id of [
+  'portfolioForm','portfolioTicker','portfolioBuyPrice','portfolioQuantity','portfolioRows','portfolioCards',
+  'portfolioCost','portfolioValue','portfolioPnl','portfolioCoverage','portfolioGateNote'
+]) check(html.includes(`id="${id}"`), `PORTFOLIO_UI_MISSING_${id.toUpperCase()}`);
+
+check(html.includes('src="./portfolio-core.js"'), 'PORTFOLIO_CORE_SCRIPT_NOT_LOADED');
+check(html.includes('src="./portfolio.js"'), 'PORTFOLIO_UI_SCRIPT_NOT_LOADED');
+check(html.includes('href="./portfolio.css"'), 'PORTFOLIO_CSS_NOT_LOADED');
+check(portfolioCore.includes('egx-pro-v20-user-portfolio-v1'), 'PORTFOLIO_STORAGE_KEY_MISSING');
+check(portfolioCore.includes('row?.currentSessionAvailable !== true'), 'PORTFOLIO_CURRENT_SESSION_PRICE_GUARD_MISSING');
+check(portfolioCore.includes('automaticBuySellInstruction: null'), 'PORTFOLIO_NO_AUTOMATIC_BUY_SELL_CONTRACT_MISSING');
+check(portfolioCore.includes('executionGateOverridden: false'), 'PORTFOLIO_EXECUTION_GATE_SEPARATION_MISSING');
+check(portfolioJs.includes('localStorage.getItem(core.STORAGE_KEY)'), 'PORTFOLIO_LOCAL_STORAGE_READ_MISSING');
+check(portfolioJs.includes('localStorage.setItem(core.STORAGE_KEY'), 'PORTFOLIO_LOCAL_STORAGE_WRITE_MISSING');
+check(portfolioJs.includes("json('../data/v20/market-explorer.json')"), 'PORTFOLIO_MARKET_EXPLORER_NOT_WIRED');
+check(portfolioJs.includes("json('../data/v20/current.json')"), 'PORTFOLIO_EXECUTION_STATUS_NOT_WIRED');
+check(portfolioJs.includes('لا تنشئ أوامر شراء/بيع'), 'PORTFOLIO_NO_ORDER_UI_WARNING_MISSING');
+check(!/fetch\([^)]*,\s*\{[^}]*method\s*:\s*['"]POST['"]/is.test(portfolioJs), 'PORTFOLIO_SERVER_POST_DETECTED');
+
 check(css.includes('@media(max-width:1024px)'), 'RESPONSIVE_1024_MISSING');
 check(css.includes('@media(max-width:768px)'), 'RESPONSIVE_768_MISSING');
 check(css.includes('@media(max-width:430px)'), 'RESPONSIVE_430_MISSING');
 check(css.includes('@media(max-width:390px)'), 'RESPONSIVE_390_MISSING');
 check(css.includes('prefers-reduced-motion'), 'REDUCED_MOTION_MISSING');
+check(portfolioCss.includes('@media(max-width:1024px)'), 'PORTFOLIO_RESPONSIVE_1024_MISSING');
+check(portfolioCss.includes('@media(max-width:768px)'), 'PORTFOLIO_RESPONSIVE_768_MISSING');
+check(portfolioCss.includes('@media(max-width:430px)'), 'PORTFOLIO_RESPONSIVE_430_MISSING');
+check(portfolioCss.includes('@media(max-width:390px)'), 'PORTFOLIO_RESPONSIVE_390_MISSING');
 check(html.includes('aria-live="polite"'), 'ARIA_LIVE_STATUS_MISSING');
 check(html.includes('class="skip-link"'), 'SKIP_LINK_MISSING');
 check(explorer.policy?.fullMarketSearch === true, 'EXPLORER_FULL_MARKET_POLICY_NOT_ACTIVE');
 check(explorer.policy?.marketOnlyIsRecommendation === false, 'EXPLORER_MARKET_ONLY_POLICY_DRIFT');
+check(explorer.policy?.semanticRowQualityPropagated === true, 'SEMANTIC_ROW_QUALITY_NOT_PROPAGATED');
+check(policy.userPortfolio?.storage === 'BROWSER_LOCAL_STORAGE_ONLY', 'PORTFOLIO_LOCAL_ONLY_POLICY_NOT_ACTIVE');
+check(policy.userPortfolio?.influencesExecutionGate === false, 'PORTFOLIO_EXECUTION_GATE_POLICY_DRIFT');
+check(policy.userPortfolio?.automaticOrders === false, 'PORTFOLIO_AUTO_ORDER_POLICY_DRIFT');
 
 const report = {
-  schemaVersion: '20.0.0-ui-validation-2',
+  schemaVersion: '20.0.0-ui-validation-3',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -64,7 +96,12 @@ const report = {
     marketOnlyNotRecommendation: true,
     noStalePricePresentedAsCurrent: true,
     technicalReadinessStateVisible: true,
+    semanticDataQualityVisibleToExplorer: true,
     paginationPageSize: 25,
+    userPortfolioLocalOnly: true,
+    userPortfolioCurrentSessionValuationOnly: true,
+    userPortfolioNoAutomaticOrders: true,
+    userPortfolioExecutionGateSeparated: true,
     sourceHealthVisible: true,
     responsiveBreakpoints: [1024, 768, 430, 390],
     reducedMotionSupport: true,

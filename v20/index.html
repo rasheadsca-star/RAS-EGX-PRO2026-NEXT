@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#07111f">
   <title>EGX PRO V20 — منصة قرار استثماري متكاملة</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./portfolio.css">
 </head>
 <body>
   <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
@@ -168,6 +169,59 @@
         </div>
       </section>
 
+      <section class="panel portfolio-panel" aria-labelledby="portfolioTitle">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">مراكزك المملوكة</span>
+            <h2 id="portfolioTitle">محفظتي</h2>
+            <p>متابعة P&amp;L للمراكز التي تملكها فعليًا. لا تغيّر هذه البيانات ترتيب V20 أو Champion أو بوابة التنفيذ.</p>
+          </div>
+        </div>
+
+        <div class="portfolio-disclaimer">
+          <strong>بيانات المحفظة تبقى على هذا الجهاز فقط.</strong>
+          <span id="portfolioGateNote">جاري قراءة حالة بوابة التنفيذ…</span>
+        </div>
+
+        <div class="portfolio-summary" aria-label="ملخص محفظتي">
+          <div><span>إجمالي التكلفة</span><strong id="portfolioCost">—</strong><small>متوسط الشراء × الكمية</small></div>
+          <div><span>القيمة الحالية المسعّرة</span><strong id="portfolioValue">—</strong><small>بسعر الجلسة الحالية فقط</small></div>
+          <div><span>P&amp;L للمراكز المسعّرة</span><strong id="portfolioPnl">—</strong><small>لا يُستخدم سعر قديم عند غياب سعر حالي</small></div>
+          <div><span>تغطية التسعير</span><strong id="portfolioCoverage">—</strong><small>مراكز بسعر حالي / إجمالي المراكز</small></div>
+        </div>
+
+        <form id="portfolioForm" class="portfolio-form" autocomplete="off">
+          <label>
+            <span>كود السهم</span>
+            <input id="portfolioTicker" list="portfolioSymbols" inputmode="text" maxlength="12" placeholder="مثال COMI" required>
+          </label>
+          <label>
+            <span>متوسط سعر الشراء</span>
+            <input id="portfolioBuyPrice" type="number" min="0.0001" step="0.0001" placeholder="0.0000" required>
+          </label>
+          <label>
+            <span>الكمية</span>
+            <input id="portfolioQuantity" type="number" min="0.0001" step="0.0001" placeholder="0" required>
+          </label>
+          <button class="portfolio-add" type="submit">إضافة / تحديث</button>
+          <datalist id="portfolioSymbols"></datalist>
+        </form>
+
+        <div id="portfolioMessage" class="portfolio-message hidden" aria-live="polite"></div>
+        <div id="portfolioLoading" class="loading-state"><div class="skeleton"></div><div class="skeleton"></div></div>
+        <div id="portfolioError" class="state-message hidden" role="alert"></div>
+        <div id="portfolioContent" class="hidden">
+          <div id="portfolioEmpty" class="state-message">لم تضف أي مركز بعد.</div>
+          <div id="portfolioTableWrap" class="table-wrap portfolio-table-wrap hidden">
+            <table class="portfolio-table">
+              <thead><tr><th>السهم</th><th>متوسط الشراء</th><th>الكمية</th><th>التكلفة</th><th>السعر الحالي</th><th>القيمة الحالية</th><th>P&amp;L</th><th>P&amp;L %</th><th>الوزن</th><th>المتابعة</th><th>تنبيهات المخاطر</th><th></th></tr></thead>
+              <tbody id="portfolioRows"></tbody>
+            </table>
+          </div>
+          <div id="portfolioCards" class="portfolio-cards hidden"></div>
+        </div>
+      </section>
+
       <section class="two-col">
         <article class="panel">
           <div class="panel-header compact"><div><span class="eyebrow">صحة المصادر</span><h2>Data Truth</h2></div></div>
@@ -190,6 +244,8 @@
   </dialog>
 
   <noscript><div class="noscript">تحتاج هذه الصفحة إلى JavaScript لعرض بيانات V20.</div></noscript>
+  <script src="./portfolio-core.js" defer></script>
   <script src="./app.js" defer></script>
+  <script src="./portfolio.js" defer></script>
 </body>
 </html>

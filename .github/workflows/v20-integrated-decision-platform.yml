@@ -48,6 +48,7 @@ jobs:
       - name: Static validation
         run: |
           node --check scripts/v20/build-data-truth.cjs
+          node --check scripts/v20/data-quality-regression.cjs
           node --check scripts/v20/build-integrated-decision-snapshot.cjs
           node --check scripts/v20/enrich-risk-reward.cjs
           node --check scripts/v20/validate-trade-plans.cjs
@@ -57,17 +58,23 @@ jobs:
           node --check scripts/v20/build-stock-profiles.cjs
           node --check scripts/v20/build-market-explorer.cjs
           node --check scripts/v20/market-explorer-regression.cjs
+          node --check scripts/v20/user-portfolio-regression.cjs
           node --check scripts/v20/archive-signal.cjs
           node --check scripts/v20/regression.cjs
           node --check scripts/v20/trade-plan-regression.cjs
           node --check scripts/v20/phase3-regression.cjs
           node --check scripts/v20/validate-ui.cjs
           node --check v20/app.js
+          node --check v20/portfolio-core.js
+          node --check v20/portfolio.js
           node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('data/v20/model-registry.json','utf8'))"
 
       - name: Build V20 data truth layer
         run: node scripts/v20/build-data-truth.cjs
+
+      - name: Run semantic data-quality regression
+        run: node scripts/v20/data-quality-regression.cjs
 
       - name: Build integrated decision snapshot
         run: node scripts/v20/build-integrated-decision-snapshot.cjs
@@ -100,6 +107,9 @@ jobs:
       - name: Run Market Explorer regression
         run: node scripts/v20/market-explorer-regression.cjs
 
+      - name: Run user portfolio regression
+        run: node scripts/v20/user-portfolio-regression.cjs
+
       - name: Archive immutable daily signal and forward horizons
         run: node scripts/v20/archive-signal.cjs
 
@@ -124,6 +134,8 @@ jobs:
           const tpa=require('./data/v20/trade-plan-audit.json');
           const r3=require('./data/v20/phase3-regression.json');
           const ui=require('./data/v20/ui-validation.json');
+          const dq=require('./data/v20/data-quality-regression.json');
+          const upr=require('./data/v20/user-portfolio-regression.json');
           const rr=require('./data/v20/risk-reward-audit.json');
           const profiles=require('./data/v20/stock-profiles.json');
           const th=require('./data/v20/technical-history.json');
@@ -132,18 +144,30 @@ jobs:
           const treg=require('./data/v20/technical-history-regression.json');
           const mx=require('./data/v20/market-explorer.json');
           const mxr=require('./data/v20/market-explorer-regression.json');
+          const snapshot=require('./data/v20/current-market-snapshot.json');
           const universe=require('./data/v20/master-universe.json');
           const archive=require('./data/v20/signal-archive/index.json');
           const forward=require('./data/v20/forward-evaluation.json');
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
-          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true||mxr.ok!==true) process.exit(1);
+          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||upr.ok!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.enabled!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.actionableRequiresCurrentPriceInsideEntryRange!==true) process.exit(1);
           if(policy.technicalHistory?.missingOhlcSynthesisAllowed!==false) process.exit(1);
           if(policy.technicalHistory?.futureRowsAllowed!==false) process.exit(1);
           if(policy.technicalHistory?.pointInTimeCutoffRequired!==true) process.exit(1);
           if(policy.technicalHistory?.productionExecutionGate!==false) process.exit(1);
+          if(policy.dataQuality?.semanticCompletenessRequired!==true) process.exit(1);
+          if(policy.dataQuality?.nonPositiveOhlcTreatedAsMissing!==true) process.exit(1);
+          if(policy.dataQuality?.ohlcInvariantRequiredForCompleteState!==true) process.exit(1);
+          if(policy.userPortfolio?.storage!=='BROWSER_LOCAL_STORAGE_ONLY') process.exit(1);
+          if(policy.userPortfolio?.serverPersistence!==false||policy.userPortfolio?.repositoryPersistence!==false) process.exit(1);
+          if(policy.userPortfolio?.influencesModelPortfolio!==false||policy.userPortfolio?.influencesExecutionGate!==false) process.exit(1);
+          if(policy.userPortfolio?.automaticOrders!==false||policy.userPortfolio?.automaticBuySellInstructions!==false) process.exit(1);
+          if(policy.userPortfolio?.valuationRequiresCurrentSessionPrice!==true||policy.userPortfolio?.stalePriceFallbackAllowed!==false) process.exit(1);
+          if(snapshot.semanticQuality?.semanticCompleteness!==true) process.exit(1);
+          if((snapshot.rows||[]).some(row=>['open','high','low'].some(k=>row[k]!==null && !(Number(row[k])>0)))) process.exit(1);
+          if((snapshot.rows||[]).some(row=>row.dataQualityState==='COMPLETE_FOR_CURRENT_SCOPE' && row.ohlcValid!==true)) process.exit(1);
           if(th.provenancePolicy?.missingOhlcMayBeSynthesized!==false) process.exit(1);
           if(th.provenancePolicy?.futureRowsAllowed!==false) process.exit(1);
           if(ti.indicatorMethodology?.pointInTime!==true) process.exit(1);
@@ -151,10 +175,12 @@ jobs:
           if((ti.symbols||[]).some(s=>s.usedForCurrentDecision===true && s.currentTechnicalReady!==true)) process.exit(1);
           if((ti.symbols||[]).some(s=>s.currentTechnicalReady===true && s.asOfSession!==x.sessionDate)) process.exit(1);
           if(mx.policy?.fullMarketSearch!==true||mx.policy?.marketOnlyIsRecommendation!==false) process.exit(1);
+          if(mx.policy?.semanticRowQualityPropagated!==true) process.exit(1);
           if(mx.summary?.universeCount!==universe.count||(mx.rows||[]).length!==universe.count) process.exit(1);
           if((mx.rows||[]).some(row=>row.currentSessionAvailable!==true && row.price!==null)) process.exit(1);
           if((mx.rows||[]).some(row=>row.decision?.scope==='MARKET_ONLY' && row.decision?.status!==null)) process.exit(1);
           if((mx.rows||[]).some(row=>row.technical?.usedForCurrentDecision===true && row.technical?.state!=='CURRENT_READY')) process.exit(1);
+          if((mx.rows||[]).some(row=>row.currentSessionAvailable===true && row.semanticCompleteness!==true)) process.exit(1);
           if(tpa.policy?.causeDiagnosisClaimed!==false) process.exit(1);
           if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
           if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
@@ -186,6 +212,7 @@ jobs:
             data/v20/master-universe.json \
             data/v20/current-market-snapshot.json \
             data/v20/source-health.json \
+            data/v20/data-quality-regression.json \
             data/v20/portfolio-risk.json \
             data/v20/risk-reward-audit.json \
             data/v20/trade-plan-audit.json \
@@ -196,11 +223,12 @@ jobs:
             data/v20/technical-history-regression.json \
             data/v20/market-explorer.json \
             data/v20/market-explorer-regression.json \
+            data/v20/user-portfolio-regression.json \
             data/v20/stock-profiles.json \
             data/v20/phase3-regression.json \
             data/v20/ui-validation.json \
             data/v20/forward-evaluation.json \
             data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 Market Explorer evidence"
+          git commit -m "Update V20 semantic quality and user portfolio evidence"
           git push origin HEAD:develop/v20-integrated-decision-platform

@@ -51,7 +51,8 @@ const rows = (universe.rows || []).map(base => {
     m &&
     m.sessionAligned === true &&
     m.sessionDate === sessionDate &&
-    finite(m.price) !== null
+    finite(m.price) !== null &&
+    Number(m.price) > 0
   );
   const marketDataState = !m
     ? 'CURRENT_SESSION_DATA_UNAVAILABLE'
@@ -114,6 +115,9 @@ const rows = (universe.rows || []).map(base => {
     changePct: currentSessionAvailable ? finite(m.changePct) : null,
     dataQualityState: m?.dataQualityState || 'CURRENT_DATA_UNAVAILABLE',
     criticalFieldCompletenessPct: currentSessionAvailable ? round(m.criticalFieldCompletenessPct, 1) : null,
+    dataQualityIssues: currentSessionAvailable && Array.isArray(m?.dataQualityIssues) ? m.dataQualityIssues : [],
+    ohlcValid: currentSessionAvailable ? m?.ohlcValid === true : false,
+    semanticCompleteness: m?.semanticCompleteness === true,
     liquidityExecutionEligible: m?.liquidityExecutionEligible === true,
     supportResistanceAvailable: m?.supportResistanceAvailable === true,
     supportResistanceExecutionEligible: m?.supportResistanceExecutionEligible === true,
@@ -155,9 +159,11 @@ const opportunityCount = rows.filter(row => row.decision.scope === 'CURRENT_OPPO
 const currentTechnicalReadyCount = rows.filter(row => row.technical.state === 'CURRENT_READY').length;
 const historicalTechnicalOnlyCount = rows.filter(row => row.technical.state === 'HISTORICAL_CONTEXT_ONLY').length;
 const technicalNotEvaluatedCount = rows.filter(row => row.technical.state === 'NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE').length;
+const completeCurrentRows = rows.filter(row => row.currentSessionAvailable && row.dataQualityState === 'COMPLETE_FOR_CURRENT_SCOPE').length;
+const partialCurrentRows = rows.filter(row => row.currentSessionAvailable && row.dataQualityState !== 'COMPLETE_FOR_CURRENT_SCOPE').length;
 
 const out = {
-  schemaVersion: '20.0.0-market-explorer-1',
+  schemaVersion: '20.0.0-market-explorer-2',
   generatedAt: new Date().toISOString(),
   sessionDate,
   decisionSupportOnly: true,
@@ -169,6 +175,7 @@ const out = {
     marketOnlyIsRecommendation: false,
     technicalCurrentRequiresTrustedPointInTimeReadiness: true,
     nonEvaluatedTechnicalMeansUnavailable: false,
+    semanticRowQualityPropagated: true,
     paginationRecommended: true,
   },
   summary: {
@@ -176,6 +183,8 @@ const out = {
     currentSnapshotCount,
     currentSessionCoveragePct: rows.length ? round(currentSnapshotCount / rows.length * 100, 2) : 0,
     currentSessionDataUnavailableCount: rows.length - currentSnapshotCount,
+    completeCurrentRows,
+    partialCurrentRows,
     opportunityCount,
     marketOnlyCount,
     currentTechnicalReadyCount,
@@ -199,6 +208,9 @@ if (rows.some(row => row.marketDataState !== 'CURRENT_SESSION_AVAILABLE' && row.
 }
 if (rows.some(row => row.decision.scope === 'MARKET_ONLY' && row.decision.status !== null)) {
   throw new Error('Market-only row was assigned a recommendation status');
+}
+if (rows.some(row => row.currentSessionAvailable && row.semanticCompleteness !== true)) {
+  throw new Error('Market Explorer current row missing semantic completeness marker');
 }
 
 write('data/v20/market-explorer.json', out);
