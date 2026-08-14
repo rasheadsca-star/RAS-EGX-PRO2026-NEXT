@@ -87,16 +87,20 @@ jobs:
         run: node scripts/build-goal-integrated-decision.js
       - name: V17 challenger governance first
         run: node scripts/v17/challenger-gate.cjs
-      - name: Build and resolve immutable V17 evidence
+      - name: Build resolve and enrich immutable V17 evidence
         run: |
           set -euo pipefail
           node scripts/v17/build-snapshot.cjs
           node scripts/v17/resolve-ledger.cjs
           node scripts/v17/build-snapshot.cjs
+          node scripts/v17/enrich-snapshot.cjs
+          node scripts/v17/snapshot-provenance-guard.cjs
       - name: Independent V17 current-session review
         run: node scripts/v17/review.cjs
       - name: V17 native regression contract
         run: node scripts/v17/regression.cjs
+      - name: Snapshot provenance guard after regression
+        run: node scripts/v17/snapshot-provenance-guard.cjs
       - name: Acceptance guard
         run: |
           set -euo pipefail
@@ -107,11 +111,13 @@ jobs:
           if(r.verdict==='REJECTED') throw new Error('Independent review rejected build');
           if(q.ok!==true||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression failed: ${(q.failed||[]).join(', ')}`);
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth not aligned');
+          if(x.enrichment?.immutableSignalHashTouched!==false) throw new Error('Snapshot provenance enrichment touched immutable signal contract');
+          if(x.currentResearch?.liquidity?.provenance!=='data/v17/liquidity-gate.json') throw new Error('Canonical liquidity provenance missing from snapshot');
           if(s.executionGrade===true && l.gatePassed!==true) throw new Error('Execution grade without current-run liquidity gate');
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Non-execution status has allocation'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,review:r.verdict,regression:q.ok},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,review:r.verdict,regression:q.ok,snapshotProvenance:true},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
