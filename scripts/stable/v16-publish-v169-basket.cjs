@@ -28,6 +28,17 @@ function writeJsonAtomic(filePath, value) {
   fs.renameSync(tempPath, filePath);
 }
 
+function cairoTimestamp(iso) {
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).format(new Date(iso)).replace(',', '');
+  } catch {
+    return null;
+  }
+}
+
 const report = readJson(reportPath);
 if (!report.schemaVersion) {
   throw new Error('Missing V16.9 basket report; refusing to overwrite application decision.');
@@ -93,11 +104,15 @@ const recommendations = approved
 
 const metrics = report.blockedWalkForwardMetrics || {};
 const blockedBySessionTruth = report.productionEligible === true && sourceBasket.length >= 3 && !sourceSessionReady;
+const generatedAt = new Date().toISOString();
+const sourceEvidenceCoveragePct = Number(priceTruth?.source?.sourceSessionEvidenceCoveragePct || 0);
+
 const output = {
   ...previous,
   schemaVersion: '16.9.2-session-bound-production-basket-pilot',
-  generatedAt: new Date().toISOString(),
+  generatedAt,
   sessionDate: report.currentSignalDate,
+  expectedLatestSession: expectedSession,
   mode: 'EQUAL_WEIGHT_BASKET_PILOT',
   practicalReady: approved,
   professionalEvidenceReady: false,
@@ -136,6 +151,43 @@ const output = {
   },
   validatedModels: report.productionEligible === true ? ['V16_9_EQUAL_WEIGHT_BASKET'] : [],
   recommendations,
+  marketScan: {
+    ...(previous.marketScan || {}),
+    latestDate: expectedSession,
+    expectedLatestSession: expectedSession,
+    verifiedSessionDataRows: fingerprint.rows,
+    verifiedSessionDataHash: fingerprint.hash,
+    sourceSessionEvidenceCoveragePct,
+  },
+  priceTruth: {
+    ready: priceTruth?.ready === true,
+    fetchOk: priceTruth?.source?.realFetch === true,
+    realFetch: priceTruth?.source?.realFetch === true,
+    executionGrade: priceTruth?.executionGrade === true,
+    fetchMode: priceTruth?.acceptanceMode || null,
+    fetchGeneratedAt: priceTruth?.generatedAt || null,
+    sessionCurrent: report.currentSignalDate === expectedSession,
+    recommendationPricesTrusted: sourceSessionReady,
+    originalRecommendationCount: sourceBasket.length,
+    trustedRecommendationCount: sourceSessionReady ? sourceBasket.length : 0,
+    sourceSessionEvidenceCoveragePct,
+    sourceSessionDataRows: fingerprint.rows,
+    sourceSessionDataHash: fingerprint.hash,
+  },
+  freshness: {
+    checkedAt: generatedAt,
+    checkedAtCairo: cairoTimestamp(generatedAt),
+    expectedSession,
+    decisionSession: report.currentSignalDate,
+    priceSession: expectedSession,
+    sourceSession: fingerprint.sessionDate,
+    isFresh: sourceSessionReady,
+    currentSessionReady: sourceSessionReady,
+    displayMode: sourceSessionReady ? 'CURRENT_VERIFIED_SESSION' : 'SOURCE_SESSION_BLOCKED',
+    reasonCodes: sourceSessionReady ? [] : ['SOURCE_SESSION_NOT_EXECUTION_GRADE'],
+  },
+  recommendationsCurrent: sourceSessionReady,
+  currentSessionReady: sourceSessionReady,
   basketPlan: {
     engine: report.schemaVersion,
     passed: approved,
@@ -144,7 +196,7 @@ const output = {
     sourceSessionReady,
     sourceSessionDataHash: fingerprint.hash,
     sourceSessionDataRows: fingerprint.rows,
-    sourceSessionEvidenceCoveragePct: Number(priceTruth?.source?.sourceSessionEvidenceCoveragePct || 0),
+    sourceSessionEvidenceCoveragePct,
     sourcePriceTruthGeneratedAt: priceTruth?.generatedAt || null,
     basketSize: sourceBasket.length,
     totalAllocationPct: approved ? PILOT_ALLOCATION_PCT : 0,
@@ -169,6 +221,7 @@ writeJsonAtomic(legacyDecisionPath, output);
 console.log(JSON.stringify({
   status: output.status,
   sessionDate: output.sessionDate,
+  expectedLatestSession: output.expectedLatestSession,
   sourceSessionReady,
   sourceSessionDataHash: fingerprint.hash,
   sourceSessionDataRows: fingerprint.rows,
