@@ -92,6 +92,8 @@ jobs:
           node --check scripts/v17/resolve-ledger.cjs
           node --check scripts/v17/challenger-gate.cjs
           node --check scripts/v17/build-snapshot.cjs
+          node --check scripts/v17/enrich-snapshot.cjs
+          node --check scripts/v17/snapshot-provenance-guard.cjs
           node --check scripts/v17/review.cjs
           node --check scripts/v17/regression.cjs
           node --check preview-v17/app/app.js
@@ -111,14 +113,21 @@ jobs:
       - name: Run champion challenger governance gate
         run: node scripts/v17/challenger-gate.cjs
 
-      - name: Build canonical V17 snapshot
-        run: node scripts/v17/build-snapshot.cjs
+      - name: Build and enrich canonical V17 snapshot
+        run: |
+          set -euo pipefail
+          node scripts/v17/build-snapshot.cjs
+          node scripts/v17/enrich-snapshot.cjs
+          node scripts/v17/snapshot-provenance-guard.cjs
 
       - name: Independent current-session critic
         run: node scripts/v17/review.cjs
 
       - name: V17 native regression contract
         run: node scripts/v17/regression.cjs
+
+      - name: Snapshot provenance guard after regression
+        run: node scripts/v17/snapshot-provenance-guard.cjs
 
       - name: Browser-facing smoke checks
         run: |
@@ -129,7 +138,7 @@ jobs:
           sleep 2
           curl --fail --silent http://127.0.0.1:4173/preview-v17/app/index.html | grep -q "EGX Pro V17"
           curl --fail --silent http://127.0.0.1:4173/preview-v17/app/confidence-governance.js | grep -q "confidenceCapPct"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);const allowed=['READY_FOR_NEXT_SESSION_REVIEW','RESEARCH_READY_EXECUTION_BLOCKED'];if(!allowed.includes(x.status))process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);if(x.championChallenger.activeEngine!==x.engine.id||x.championChallenger.promotionAllowed!==false)process.exit(1);if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate)process.exit(1);if(x.status==='RESEARCH_READY_EXECUTION_BLOCKED'){if(x.systemHealth?.executionGrade!==false)process.exit(1);if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0)process.exit(1);if((x.recommendations||[]).some(r=>Number(r.portfolioWeightPct||0)!==0||r.executionAllowed===true))process.exit(1);}})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);const allowed=['READY_FOR_NEXT_SESSION_REVIEW','RESEARCH_READY_EXECUTION_BLOCKED'];if(!allowed.includes(x.status))process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);if(x.championChallenger.activeEngine!==x.engine.id||x.championChallenger.promotionAllowed!==false)process.exit(1);if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate)process.exit(1);if(x.enrichment?.immutableSignalHashTouched!==false||x.currentResearch?.liquidity?.provenance!=='data/v17/liquidity-gate.json')process.exit(1);if(x.status==='RESEARCH_READY_EXECUTION_BLOCKED'){if(x.systemHealth?.executionGrade!==false)process.exit(1);if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0)process.exit(1);if((x.recommendations||[]).some(r=>Number(r.portfolioWeightPct||0)!==0||r.executionAllowed===true||!r.liquidity||!r.supportResistanceEvidence||!r.executionProvenance))process.exit(1);}})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/liquidity-gate.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.engine!=='v17_wrapper_of_v11_1_liquidity_gate')process.exit(1);if(x.thresholds?.intradayMinCurrentTurnover!==5000000||x.thresholds?.intradayMinAvg20Turnover!==2000000||x.thresholds?.executionMinLiquidityScore!==65)process.exit(1);if(x.policy?.perSymbolExecutionLiquidityRequired!==true||x.policy?.currentSessionExcludedFromHistoricalAverage!==true)process.exit(1);})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/challenger-status.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||x.promotionAllowed!==false)process.exit(1);})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.verdict==='REJECTED'||x.counts.CRITICAL||x.counts.MAJOR)process.exit(1);})"
