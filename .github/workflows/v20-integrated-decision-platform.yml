@@ -28,15 +28,15 @@ jobs:
     steps:
       - name: Checkout V20 integration branch
         uses: actions/checkout@v6
-        with: {fetch-depth: 0}
+        with: {fetch-depth: 1}
 
       - name: Enforce integration branch isolation
         shell: bash
         run: |
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
-          git fetch origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
-          changed="$(git diff --name-only origin/v19-egx-chat-gpt...HEAD)"
+          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|\.github/workflows/v20-integrated-decision-platform\.yml$)' || true)"
           test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
 
