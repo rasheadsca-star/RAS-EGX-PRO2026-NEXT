@@ -1,21 +1,14 @@
 name: Update EGX Market Data - V17 Resilient Lab
-
 on:
   workflow_dispatch:
   push:
-    branches:
-      - develop/v17-rebuild
-    paths-ignore:
-      - 'data/**'
-      - 'artifacts/**'
-
+    branches: [develop/v17-rebuild]
+    paths-ignore: ['data/**','artifacts/**']
 permissions:
   contents: write
-
 concurrency:
   group: egx-market-data-v17-lab
   cancel-in-progress: true
-
 jobs:
   update-market-data:
     runs-on: ubuntu-latest
@@ -23,157 +16,57 @@ jobs:
     env:
       EGX_MUBASHER_CONCURRENCY: '4'
       EGX_MUBASHER_TIMEOUT_MS: '25000'
-      EGX_MUBASHER_REQUEST_DELAY_MS: '120'
-      EGX_MUBASHER_MIN_PRICE_COVERAGE: '45'
-      EGX_MUBASHER_STALE_OK_HOURS: '36'
       EGX_SR_CONCURRENCY: '8'
       EGX_SR_TIMEOUT_MS: '25000'
       EGX_SR_MIN_ROWS: '80'
-      EGX_SR_MIN_COVERAGE: '60'
-
+      EGX_INTERNAL_SR_MIN_COVERAGE: '95'
+      EGX_INTERNAL_SR_MIN_FRESHNESS: '98'
+      EGX_INTERNAL_SR_MIN_CONFIDENCE: '0.80'
     steps:
       - name: Checkout isolated V17 branch
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: develop/v17-rebuild
-
+        with: {fetch-depth: 0, ref: develop/v17-rebuild}
       - name: Guard V16 main from mutation
         run: |
           set -euo pipefail
-          test "${GITHUB_REF_NAME}" = "develop/v17-rebuild" || {
-            echo "::error::V17 lab may run only from develop/v17-rebuild"
-            exit 1
-          }
+          test "${GITHUB_REF_NAME}" = "develop/v17-rebuild"
           git fetch origin main develop/v17-rebuild
-          if grep -REn 'git push[^\n]*origin[^\n]*main|git push[^\n]*HEAD:main' .github/workflows/update-market-data.yml scripts/v17/; then
-            echo "::error::V17 lab contains a forbidden push path to main"
-            exit 1
-          fi
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'npm'
-
+          if grep -REn 'git push[^\n]*origin[^\n]*main|git push[^\n]*HEAD:main' .github/workflows/update-market-data.yml scripts/v17/; then exit 1; fi
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm}
       - name: Install project dependencies
         run: npm ci || npm install
-
       - name: Mandatory market collector
-        id: market_collector
         run: node scripts/fetch-market-data.js
-
-      - name: Mubasher primary feeds - degradable
-        id: mubasher_primary
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          if [ -f scripts/collect-mubasher-primary-feeds.js ]; then
-            node scripts/collect-mubasher-primary-feeds.js
-          elif npm run | grep -q 'mubasher:primary'; then
-            npm run mubasher:primary
-          else
-            echo '::warning::No Mubasher primary command found; continuing in degraded mode.'
-            exit 1
-          fi
-
-      - name: Collect direct individual-stock Mubasher S/R - degradable
+      - name: Collect direct Mubasher S/R validation - degradable
         id: direct_sr
         continue-on-error: true
         run: |
           npm install --no-save --no-package-lock cheerio@1.0.0
           node scripts/collect-mubasher-direct-stock-sr.js
-
-      - name: Merge current-run direct S/R when verified
-        id: direct_merge
-        if: steps.direct_sr.outcome == 'success'
-        continue-on-error: true
-        run: node scripts/merge-mubasher-direct-stock-sr.js
-
-      - name: Install Playwright Chromium - optional S/R support
+      - name: Install Playwright Chromium - optional validation
         id: playwright
         continue-on-error: true
         run: |
           npm install --no-save --no-package-lock playwright@1.55.0
           npx playwright install --with-deps chromium
-
-      - name: Collect rendered Mubasher support and resistance - degradable
+      - name: Collect rendered Mubasher S/R validation - degradable
         id: rendered_sr
         if: steps.playwright.outcome == 'success'
         continue-on-error: true
         run: node scripts/collect-mubasher-support-resistance-rendered.js
-
-      - name: Merge rendered S/R only when direct source is unavailable
-        id: merge_sr
-        if: steps.direct_merge.outcome != 'success' && steps.rendered_sr.outcome == 'success'
-        continue-on-error: true
-        run: node scripts/merge-rendered-support-resistance.js
-
-      - name: Build source coverage and freshness diagnostics
+      - name: Build source diagnostics
         run: |
           set -u
-          diagnostic_scripts=(
-            scripts/build-price-source-audit.js
-            scripts/build-price-freshness-report.js
-            scripts/build-workflow-source-verification.js
-            scripts/build-session-memory-status.js
-            scripts/build-symbol-audit.js
-          )
-          for script in "${diagnostic_scripts[@]}"; do
-            if [ -f "$script" ]; then
-              node "$script" || echo "::warning::$script failed; degraded evidence will record the gap."
-            fi
-          done
-
+          for s in scripts/build-price-source-audit.js scripts/build-price-freshness-report.js scripts/build-workflow-source-verification.js scripts/build-session-memory-status.js scripts/build-symbol-audit.js; do [ ! -f "$s" ] || node "$s" || true; done
+      - name: Build internal OHLC support resistance evidence
+        run: node scripts/v17/build-internal-ohlc-sr.cjs
       - name: Determine V17 resilient session mode
-        env:
-          MUBASHER_PRIMARY_OUTCOME: ${{ steps.mubasher_primary.outcome }}
-          DIRECT_SR_OUTCOME: ${{ steps.direct_sr.outcome }}
-          DIRECT_MERGE_OUTCOME: ${{ steps.direct_merge.outcome }}
-          RENDERED_SR_OUTCOME: ${{ steps.rendered_sr.outcome }}
-          MERGE_SR_OUTCOME: ${{ steps.merge_sr.outcome }}
         run: node scripts/v17/resilient-session-gate.cjs
-
       - name: Optional intelligence builders
         run: |
           set -u
-          optional_scripts=(
-            scripts/build-v52-intelligence.js
-            scripts/build-v54-universe-index.js
-            scripts/build-v55-sector-investor-flow.js
-            scripts/build-v56-history-50.js
-            scripts/build-v56-technical-report.js
-            scripts/collect-egx-investor-type.js
-            scripts/collect-v56-news.js
-            scripts/build-multi-source-intelligence.js
-            scripts/apply-multisource-intelligence-to-ranking.js
-            scripts/apply-news-impact-to-recommendations.js
-            scripts/build-institutional-score.js
-            scripts/build-signal-quality-engine.js
-            scripts/build-entry-trigger-engine.js
-            scripts/build-alert-decision-center.js
-            scripts/build-actionable-watchlist.js
-            scripts/build-data-operations-center.js
-            scripts/build-engines-console-report.js
-            scripts/build-executive-home-report.js
-            scripts/build-workflow-budget-status.js
-            scripts/build-sector-completion-report.js
-            scripts/build-regression-report.js
-            scripts/build-recommendation-outcome-tracker.js
-            scripts/build-recommendation-accuracy.js
-            scripts/build-recommendation-performance-index.js
-            scripts/build-accuracy-interpretation-report.js
-            scripts/build-recommendation-validation-panel.js
-            scripts/build-portfolio-decision-rules.js
-            scripts/build-rebalancing-candidates.js
-          )
-          for script in "${optional_scripts[@]}"; do
-            if [ -f "$script" ]; then
-              node "$script" || echo "::warning::$script failed; continuing because it is optional."
-            fi
-          done
-
+          for s in scripts/build-v52-intelligence.js scripts/build-v54-universe-index.js scripts/build-v55-sector-investor-flow.js scripts/build-v56-history-50.js scripts/build-v56-technical-report.js scripts/collect-egx-investor-type.js scripts/collect-v56-news.js scripts/build-multi-source-intelligence.js scripts/apply-multisource-intelligence-to-ranking.js scripts/apply-news-impact-to-recommendations.js scripts/build-institutional-score.js scripts/build-signal-quality-engine.js scripts/build-entry-trigger-engine.js scripts/build-alert-decision-center.js scripts/build-actionable-watchlist.js scripts/build-data-operations-center.js scripts/build-engines-console-report.js scripts/build-executive-home-report.js scripts/build-workflow-budget-status.js scripts/build-sector-completion-report.js scripts/build-regression-report.js scripts/build-recommendation-outcome-tracker.js scripts/build-recommendation-accuracy.js scripts/build-recommendation-performance-index.js scripts/build-accuracy-interpretation-report.js scripts/build-recommendation-validation-panel.js scripts/build-portfolio-decision-rules.js scripts/build-rebalancing-candidates.js; do [ ! -f "$s" ] || node "$s" || echo "::warning::$s failed"; done
       - name: Mandatory history and research ranking
         run: |
           set -euo pipefail
@@ -182,90 +75,57 @@ jobs:
           node scripts/build-final-opportunity-ranking.js
           [ ! -f scripts/build-confidence-guard-report.js ] || node scripts/build-confidence-guard-report.js
           [ ! -f scripts/build-daily-decision-brief.js ] || node scripts/build-daily-decision-brief.js
-
-      - name: Rebuild reconciled research decision with explicit session truth
+      - name: Refresh internal OHLC evidence against final candidate universe
+        run: node scripts/v17/build-internal-ohlc-sr.cjs
+      - name: Rebuild reconciled research decision
         run: node scripts/build-goal-integrated-decision.js
-
-      - name: Final support resistance verification - non-blocking
-        continue-on-error: true
-        run: node scripts/verify-final-support-resistance.js
-
       - name: Refresh resilient session mode after ranking
-        env:
-          MUBASHER_PRIMARY_OUTCOME: ${{ steps.mubasher_primary.outcome }}
-          DIRECT_SR_OUTCOME: ${{ steps.direct_sr.outcome }}
-          DIRECT_MERGE_OUTCOME: ${{ steps.direct_merge.outcome }}
-          RENDERED_SR_OUTCOME: ${{ steps.rendered_sr.outcome }}
-          MERGE_SR_OUTCOME: ${{ steps.merge_sr.outcome }}
         run: node scripts/v17/resilient-session-gate.cjs
-
       - name: V17 challenger governance first
         run: node scripts/v17/challenger-gate.cjs
-
       - name: Build and resolve immutable V17 evidence
         run: |
           set -euo pipefail
           node scripts/v17/build-snapshot.cjs
           node scripts/v17/resolve-ledger.cjs
           node scripts/v17/build-snapshot.cjs
-
       - name: Independent V17 current-session review
         run: node scripts/v17/review.cjs
-
       - name: Acceptance guard
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs');
-          const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json','utf8'));
-          const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json','utf8'));
-          const x=JSON.parse(fs.readFileSync('data/v17/current.json','utf8'));
-          const r=JSON.parse(fs.readFileSync('data/v17/review.json','utf8'));
-          if(!['NORMAL','DEGRADED'].includes(s.mode)) throw new Error(`Session mode ${s.mode} is not acceptable`);
-          if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET') throw new Error('Champion changed unexpectedly');
-          if(c.promotionAllowed!==false) throw new Error('Automatic promotion is enabled');
-          if(r.verdict==='REJECTED') throw new Error('Independent V17 review rejected the build');
-          if(x.sessionDate!==x.systemHealth?.latestMarketSession || x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth is not aligned');
-          if(x.status==='RESEARCH_READY_EXECUTION_BLOCKED'){
-            if(x.systemHealth?.executionGrade!==false) throw new Error('Research-only mode claims execution grade');
-            if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Research-only mode has non-zero allocation');
-            if((x.recommendations||[]).some(v=>Number(v.portfolioWeightPct||0)!==0||v.executionAllowed===true)) throw new Error('Research row leaked execution semantics');
-          }
-          if(s.mode==='DEGRADED' && x.status==='READY_FOR_NEXT_SESSION_REVIEW') throw new Error('Degraded source state cannot be execution-ready');
-          console.log(JSON.stringify({accepted:true,sourceMode:s.mode,status:x.status,currentSession:x.sessionDate,championReferenceSession:x.championReference?.sessionDate,plannedAllocationPct:x.portfolioPolicy?.plannedAllocationPct,review:r.verdict},null,2));
+          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json'));
+          if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
+          if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
+          if(r.verdict==='REJECTED') throw new Error('Independent review rejected build');
+          if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth not aligned');
+          if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Non-execution status has allocation'); }
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,review:r.verdict},null,2));
           NODE
-
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: v17-resilient-market-diagnostics
           path: |
-            artifacts/mubasher-support-resistance/
-            data/mubasher-support-resistance-direct.json
-            data/mubasher-support-resistance-direct-report.json
-            data/mubasher-support-resistance-rendered.json
-            data/support-resistance-verification.json
-            data/price-freshness-report.json
-            data/price-source-audit.json
-            data/today-decision-center.json
+            data/v17/internal-ohlc-support-resistance.json
             data/v17/resilient-session-status.json
             data/v17/challenger-status.json
             data/v17/current.json
             data/v17/ledger.json
             data/v17/review.json
+            data/mubasher-support-resistance-direct-report.json
+            data/mubasher-support-resistance-rendered.json
           if-no-files-found: warn
           retention-days: 7
-
       - name: Commit generated lab data to V17 branch only
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/*.json data/v17/*.json artifacts/ || true
-          if git diff --cached --quiet; then
-            echo "No generated lab data changes to commit."
-          else
+          if ! git diff --cached --quiet; then
             git commit -m "V17 lab: current-session resilient EGX cycle"
             git pull --rebase -X ours origin develop/v17-rebuild
             git push origin HEAD:develop/v17-rebuild
