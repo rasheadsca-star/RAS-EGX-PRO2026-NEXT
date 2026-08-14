@@ -1,0 +1,1273 @@
+{
+  "schemaVersion": "19.0.0-native-challenger-1",
+  "engineId": "V19_CHAT_GPT_NATIVE_CHALLENGER",
+  "generatedAt": "2026-08-14T17:21:17.450321+00:00",
+  "status": "SHADOW_RESEARCH_ONLY",
+  "isolation": {
+    "branch": "v19-egx-chat-gpt",
+    "writesOnlyUnder": [
+      "scripts/v19",
+      "data/v19",
+      "docs/v19",
+      ".github/workflows/v19-egx-chat-gpt.yml"
+    ],
+    "v16Untouched": true,
+    "v17Untouched": true
+  },
+  "methodology": {
+    "goal": "Quality-adjusted executable opportunity ranking, not probability-only ranking.",
+    "probabilityModels": [
+      "P_TOP10_NEXT_SESSION",
+      "P_NET_POSITIVE_AFTER_COST",
+      "P_LARGE_LOSS"
+    ],
+    "opportunityScore": "GEOMETRIC_MEAN(P_TOP10,P_NET_POSITIVE,1-P_LARGE_LOSS)",
+    "factorModes": [
+      "CORE",
+      "LIQ_SR",
+      "FULL"
+    ],
+    "supportResistance": "CLASSIC_PIVOT_FROM_SIGNAL_SESSION_OHLC",
+    "execution": "OPEN_MUST_BE_INSIDE_ENTRY_RANGE; SAME_SESSION_TARGET_AND_STOP_IS_STOP; NO_INTRADAY_SEQUENCE_INVENTED",
+    "portfolio": "Equal-weight slots; unfilled/noneligible slots remain cash; size chosen from prior validation only.",
+    "transactionCostPct": 0.6,
+    "automaticPromotion": false
+  },
+  "coverage": {
+    "usableTickerHistories": 196,
+    "marketDates": 58,
+    "labeledSignalSessions": 54,
+    "developmentSessions": 34,
+    "independentHoldoutSessions": 20
+  },
+  "ablation": {
+    "CORE": {
+      "featureMode": "CORE",
+      "developmentTop4Metrics": {
+        "sessions": 14,
+        "averageNetReturnPct": -0.3312,
+        "medianNetReturnPct": 0.0,
+        "sessionWinRatePct": 28.571,
+        "profitFactor": 0.305,
+        "compoundedNetReturnPct": -4.589,
+        "maximumDrawdownPct": -4.712,
+        "bestSessionPct": 0.659,
+        "worstSessionPct": -1.938
+      },
+      "developmentSessions": 14
+    },
+    "LIQ_SR": {
+      "featureMode": "LIQ_SR",
+      "developmentTop4Metrics": {
+        "sessions": 14,
+        "averageNetReturnPct": -0.3312,
+        "medianNetReturnPct": 0.0,
+        "sessionWinRatePct": 28.571,
+        "profitFactor": 0.305,
+        "compoundedNetReturnPct": -4.589,
+        "maximumDrawdownPct": -4.712,
+        "bestSessionPct": 0.659,
+        "worstSessionPct": -1.938
+      },
+      "developmentSessions": 14
+    },
+    "FULL": {
+      "featureMode": "FULL",
+      "developmentTop4Metrics": {
+        "sessions": 14,
+        "averageNetReturnPct": -0.3312,
+        "medianNetReturnPct": 0.0,
+        "sessionWinRatePct": 28.571,
+        "profitFactor": 0.305,
+        "compoundedNetReturnPct": -4.589,
+        "maximumDrawdownPct": -4.712,
+        "bestSessionPct": 0.659,
+        "worstSessionPct": -1.938
+      },
+      "developmentSessions": 14
+    }
+  },
+  "developmentBlockedWalkForward": {
+    "metrics": {
+      "sessions": 6,
+      "averageNetReturnPct": 0.0201,
+      "medianNetReturnPct": 0.2995,
+      "sessionWinRatePct": 66.667,
+      "profitFactor": 1.08,
+      "compoundedNetReturnPct": 0.107,
+      "maximumDrawdownPct": -1.407,
+      "bestSessionPct": 0.527,
+      "worstSessionPct": -1.407
+    },
+    "basketSizeUsage": {
+      "3": 0,
+      "4": 0,
+      "5": 6
+    },
+    "recentSessions": [
+      {
+        "signalDate": "2026-06-29",
+        "outcomeDate": "2026-06-30",
+        "basketSize": 5,
+        "tickers": [
+          "OLFI",
+          "IFAP"
+        ],
+        "netReturnPct": 0.3349,
+        "validationMetrics": {
+          "sessions": 8,
+          "averageNetReturnPct": -0.4788,
+          "medianNetReturnPct": -0.18,
+          "sessionWinRatePct": 0.0,
+          "profitFactor": 0.0,
+          "compoundedNetReturnPct": -3.782,
+          "maximumDrawdownPct": -3.782,
+          "bestSessionPct": 0.0,
+          "worstSessionPct": -1.551
+        }
+      },
+      {
+        "signalDate": "2026-06-30",
+        "outcomeDate": "2026-07-01",
+        "basketSize": 5,
+        "tickers": [
+          "ADRI",
+          "PHAR",
+          "NHPS"
+        ],
+        "netReturnPct": 0.4989,
+        "validationMetrics": {
+          "sessions": 8,
+          "averageNetReturnPct": -0.4788,
+          "medianNetReturnPct": -0.18,
+          "sessionWinRatePct": 0.0,
+          "profitFactor": 0.0,
+          "compoundedNetReturnPct": -3.782,
+          "maximumDrawdownPct": -3.782,
+          "bestSessionPct": 0.0,
+          "worstSessionPct": -1.551
+        }
+      },
+      {
+        "signalDate": "2026-07-01",
+        "outcomeDate": "2026-07-05",
+        "basketSize": 5,
+        "tickers": [
+          "SCTS"
+        ],
+        "netReturnPct": 0.5274,
+        "validationMetrics": {
+          "sessions": 8,
+          "averageNetReturnPct": -0.4788,
+          "medianNetReturnPct": -0.18,
+          "sessionWinRatePct": 0.0,
+          "profitFactor": 0.0,
+          "compoundedNetReturnPct": -3.782,
+          "maximumDrawdownPct": -3.782,
+          "bestSessionPct": 0.0,
+          "worstSessionPct": -1.551
+        }
+      },
+      {
+        "signalDate": "2026-07-05",
+        "outcomeDate": "2026-07-06",
+        "basketSize": 5,
+        "tickers": [
+          "AFMC"
+        ],
+        "netReturnPct": -0.0978,
+        "validationMetrics": {
+          "sessions": 8,
+          "averageNetReturnPct": -0.4788,
+          "medianNetReturnPct": -0.18,
+          "sessionWinRatePct": 0.0,
+          "profitFactor": 0.0,
+          "compoundedNetReturnPct": -3.782,
+          "maximumDrawdownPct": -3.782,
+          "bestSessionPct": 0.0,
+          "worstSessionPct": -1.551
+        }
+      },
+      {
+        "signalDate": "2026-07-06",
+        "outcomeDate": "2026-07-07",
+        "basketSize": 5,
+        "tickers": [
+          "PRDC",
+          "SMFR"
+        ],
+        "netReturnPct": 0.2642,
+        "validationMetrics": {
+          "sessions": 8,
+          "averageNetReturnPct": -0.4788,
+          "medianNetReturnPct": -0.18,
+          "sessionWinRatePct": 0.0,
+          "profitFactor": 0.0,
+          "compoundedNetReturnPct": -3.782,
+          "maximumDrawdownPct": -3.782,
+          "bestSessionPct": 0.0,
+          "worstSessionPct": -1.551
+        }
+      },
+      {
+        "signalDate": "2026-07-07",
+        "outcomeDate": "2026-07-08",
+        "basketSize": 5,
+        "tickers": [
+          "WKOL",
+          "CEFM",
+          "MEPA"
+        ],
+        "netReturnPct": -1.4071,
+        "validationMetrics": {
+          "sessions": 8,
+          "averageNetReturnPct": -0.0575,
+          "medianNetReturnPct": 0.1321,
+          "sessionWinRatePct": 50.0,
+          "profitFactor": 0.779,
+          "compoundedNetReturnPct": -0.476,
+          "maximumDrawdownPct": -1.981,
+          "bestSessionPct": 0.527,
+          "worstSessionPct": -1.551
+        }
+      }
+    ]
+  },
+  "independentHoldout": {
+    "frozen": true,
+    "labelsNeverUsedForRefit": true,
+    "sessions": 20,
+    "basketSize": 5,
+    "selectionEvidence": {
+      "sessions": 8,
+      "averageNetReturnPct": -0.0396,
+      "medianNetReturnPct": 0.1321,
+      "sessionWinRatePct": 50.0,
+      "profitFactor": 0.837,
+      "compoundedNetReturnPct": -0.331,
+      "maximumDrawdownPct": -1.407,
+      "bestSessionPct": 0.527,
+      "worstSessionPct": -1.407
+    },
+    "metrics": {
+      "sessions": 20,
+      "averageNetReturnPct": -0.0848,
+      "medianNetReturnPct": 0.0,
+      "sessionWinRatePct": 30.0,
+      "profitFactor": 0.622,
+      "compoundedNetReturnPct": -1.703,
+      "maximumDrawdownPct": -3.552,
+      "bestSessionPct": 0.662,
+      "worstSessionPct": -0.849
+    },
+    "results": [
+      {
+        "signalDate": "2026-07-08",
+        "outcomeDate": "2026-07-09",
+        "basketSize": 5,
+        "tickers": [],
+        "netReturnPct": 0,
+        "members": []
+      },
+      {
+        "signalDate": "2026-07-09",
+        "outcomeDate": "2026-07-12",
+        "basketSize": 5,
+        "tickers": [
+          "HELI",
+          "UEFM",
+          "GSSC",
+          "INFI"
+        ],
+        "netReturnPct": 0.4774,
+        "members": [
+          {
+            "ticker": "HELI",
+            "entered": true,
+            "state": "TARGET_TOUCHED",
+            "entryPrice": 7.33,
+            "exitPrice": 7.5657,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 3.2161,
+            "netReturnPct": 2.6161
+          },
+          {
+            "ticker": "UEFM",
+            "entered": true,
+            "state": "STOP_TOUCHED",
+            "entryPrice": 518.06,
+            "exitPrice": 507.1247,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -2.1108,
+            "netReturnPct": -2.7108
+          },
+          {
+            "ticker": "GSSC",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 257.0,
+            "exitPrice": 258.77,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 0.6887,
+            "netReturnPct": 0.0887
+          },
+          {
+            "ticker": "INFI",
+            "entered": true,
+            "state": "TARGET_TOUCHED",
+            "entryPrice": 98.04,
+            "exitPrice": 100.9744,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 2.9931,
+            "netReturnPct": 2.3931
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-12",
+        "outcomeDate": "2026-07-13",
+        "basketSize": 5,
+        "tickers": [
+          "AREH",
+          "ENGC"
+        ],
+        "netReturnPct": -0.8491,
+        "members": [
+          {
+            "ticker": "AREH",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 1.71,
+            "exitPrice": 1.71,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 0.0,
+            "netReturnPct": -0.6
+          },
+          {
+            "ticker": "ENGC",
+            "entered": true,
+            "state": "STOP_TOUCHED",
+            "entryPrice": 42.61,
+            "exitPrice": 41.3123,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -3.0455,
+            "netReturnPct": -3.6455
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-13",
+        "outcomeDate": "2026-07-14",
+        "basketSize": 5,
+        "tickers": [],
+        "netReturnPct": 0,
+        "members": []
+      },
+      {
+        "signalDate": "2026-07-14",
+        "outcomeDate": "2026-07-15",
+        "basketSize": 5,
+        "tickers": [
+          "ELKA"
+        ],
+        "netReturnPct": 0.0,
+        "members": [
+          {
+            "ticker": "ELKA",
+            "entered": false,
+            "state": "NOT_ENTERED_OPEN_OUTSIDE_RANGE",
+            "netReturnPct": 0
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-15",
+        "outcomeDate": "2026-07-16",
+        "basketSize": 5,
+        "tickers": [
+          "GBCO"
+        ],
+        "netReturnPct": -0.6384,
+        "members": [
+          {
+            "ticker": "GBCO",
+            "entered": true,
+            "state": "STOP_TOUCHED",
+            "entryPrice": 33.28,
+            "exitPrice": 32.4174,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -2.5921,
+            "netReturnPct": -3.1921
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-16",
+        "outcomeDate": "2026-07-19",
+        "basketSize": 5,
+        "tickers": [
+          "ASPI"
+        ],
+        "netReturnPct": -0.5691,
+        "members": [
+          {
+            "ticker": "ASPI",
+            "entered": true,
+            "state": "STOP_TOUCHED",
+            "entryPrice": 0.35,
+            "exitPrice": 0.3421,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -2.2456,
+            "netReturnPct": -2.8456
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-19",
+        "outcomeDate": "2026-07-20",
+        "basketSize": 5,
+        "tickers": [
+          "GSSC"
+        ],
+        "netReturnPct": -0.442,
+        "members": [
+          {
+            "ticker": "GSSC",
+            "entered": true,
+            "state": "STOP_TOUCHED",
+            "entryPrice": 276.99,
+            "exitPrice": 272.5305,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -1.61,
+            "netReturnPct": -2.21
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-20",
+        "outcomeDate": "2026-07-21",
+        "basketSize": 5,
+        "tickers": [
+          "ADCI"
+        ],
+        "netReturnPct": 0.5104,
+        "members": [
+          {
+            "ticker": "ADCI",
+            "entered": true,
+            "state": "TARGET_TOUCHED",
+            "entryPrice": 252.0,
+            "exitPrice": 259.9436,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 3.1522,
+            "netReturnPct": 2.5522
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-21",
+        "outcomeDate": "2026-07-22",
+        "basketSize": 5,
+        "tickers": [
+          "EASB"
+        ],
+        "netReturnPct": -0.8307,
+        "members": [
+          {
+            "ticker": "EASB",
+            "entered": true,
+            "state": "STOP_TOUCHED",
+            "entryPrice": 8.14,
+            "exitPrice": 7.8508,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -3.5534,
+            "netReturnPct": -4.1534
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-22",
+        "outcomeDate": "2026-07-23",
+        "basketSize": 5,
+        "tickers": [],
+        "netReturnPct": 0,
+        "members": []
+      },
+      {
+        "signalDate": "2026-07-23",
+        "outcomeDate": "2026-07-26",
+        "basketSize": 5,
+        "tickers": [],
+        "netReturnPct": 0,
+        "members": []
+      },
+      {
+        "signalDate": "2026-07-26",
+        "outcomeDate": "2026-07-27",
+        "basketSize": 5,
+        "tickers": [
+          "RMDA"
+        ],
+        "netReturnPct": 0.1894,
+        "members": [
+          {
+            "ticker": "RMDA",
+            "entered": true,
+            "state": "TARGET_TOUCHED",
+            "entryPrice": 5.11,
+            "exitPrice": 5.189,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 1.5469,
+            "netReturnPct": 0.9469
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-27",
+        "outcomeDate": "2026-07-28",
+        "basketSize": 5,
+        "tickers": [],
+        "netReturnPct": 0,
+        "members": []
+      },
+      {
+        "signalDate": "2026-07-28",
+        "outcomeDate": "2026-07-29",
+        "basketSize": 5,
+        "tickers": [
+          "SPMD",
+          "ZEOT",
+          "EGAS"
+        ],
+        "netReturnPct": -0.8107,
+        "members": [
+          {
+            "ticker": "SPMD",
+            "entered": false,
+            "state": "NOT_ENTERED_OPEN_OUTSIDE_RANGE",
+            "netReturnPct": 0
+          },
+          {
+            "ticker": "ZEOT",
+            "entered": true,
+            "state": "STOP_TOUCHED",
+            "entryPrice": 12.19,
+            "exitPrice": 11.9281,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -2.1481,
+            "netReturnPct": -2.7481
+          },
+          {
+            "ticker": "EGAS",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 52.46,
+            "exitPrice": 52.09,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -0.7053,
+            "netReturnPct": -1.3053
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-29",
+        "outcomeDate": "2026-07-30",
+        "basketSize": 5,
+        "tickers": [
+          "CEFM"
+        ],
+        "netReturnPct": -0.1599,
+        "members": [
+          {
+            "ticker": "CEFM",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 135.35,
+            "exitPrice": 135.08,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -0.1995,
+            "netReturnPct": -0.7995
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-07-30",
+        "outcomeDate": "2026-08-02",
+        "basketSize": 5,
+        "tickers": [
+          "AXPH"
+        ],
+        "netReturnPct": 0.4964,
+        "members": [
+          {
+            "ticker": "AXPH",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 1209.64,
+            "exitPrice": 1246.92,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 3.0819,
+            "netReturnPct": 2.4819
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-08-02",
+        "outcomeDate": "2026-08-03",
+        "basketSize": 5,
+        "tickers": [
+          "ATLC",
+          "SPMD",
+          "CICH"
+        ],
+        "netReturnPct": 0.6621,
+        "members": [
+          {
+            "ticker": "ATLC",
+            "entered": false,
+            "state": "NOT_ENTERED_OPEN_OUTSIDE_RANGE",
+            "netReturnPct": 0
+          },
+          {
+            "ticker": "SPMD",
+            "entered": true,
+            "state": "TARGET_TOUCHED",
+            "entryPrice": 0.47,
+            "exitPrice": 0.4826,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 2.6849,
+            "netReturnPct": 2.0849
+          },
+          {
+            "ticker": "CICH",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 12.6,
+            "exitPrice": 12.83,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 1.8254,
+            "netReturnPct": 1.2254
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-08-03",
+        "outcomeDate": "2026-08-04",
+        "basketSize": 5,
+        "tickers": [
+          "MICH",
+          "DOMT",
+          "AREH"
+        ],
+        "netReturnPct": 0.4544,
+        "members": [
+          {
+            "ticker": "MICH",
+            "entered": false,
+            "state": "NOT_ENTERED_OPEN_OUTSIDE_RANGE",
+            "netReturnPct": 0
+          },
+          {
+            "ticker": "DOMT",
+            "entered": true,
+            "state": "TARGET_TOUCHED",
+            "entryPrice": 28.0,
+            "exitPrice": 28.8042,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 2.8721,
+            "netReturnPct": 2.2721
+          },
+          {
+            "ticker": "AREH",
+            "entered": false,
+            "state": "NOT_ENTERED_OPEN_OUTSIDE_RANGE",
+            "netReturnPct": 0
+          }
+        ]
+      },
+      {
+        "signalDate": "2026-08-04",
+        "outcomeDate": "2026-08-05",
+        "basketSize": 5,
+        "tickers": [
+          "MTIE",
+          "ALUM",
+          "IFAP",
+          "ISPH"
+        ],
+        "netReturnPct": -0.1856,
+        "members": [
+          {
+            "ticker": "MTIE",
+            "entered": false,
+            "state": "NOT_ENTERED_OPEN_OUTSIDE_RANGE",
+            "netReturnPct": 0
+          },
+          {
+            "ticker": "ALUM",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 24.19,
+            "exitPrice": 24.69,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": 2.067,
+            "netReturnPct": 1.467
+          },
+          {
+            "ticker": "IFAP",
+            "entered": false,
+            "state": "NOT_ENTERED_OPEN_OUTSIDE_RANGE",
+            "netReturnPct": 0
+          },
+          {
+            "ticker": "ISPH",
+            "entered": true,
+            "state": "CLOSED_AT_SESSION_END",
+            "entryPrice": 13.37,
+            "exitPrice": 13.13,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameSession": false,
+            "grossReturnPct": -1.7951,
+            "netReturnPct": -2.3951
+          }
+        ]
+      }
+    ]
+  },
+  "championReference": {
+    "engineId": "V16_9_EQUAL_WEIGHT_BASKET",
+    "metrics": {
+      "sessions": 29,
+      "averageNetReturnPct": 0.9751,
+      "medianNetReturnPct": 0.1661,
+      "sessionWinRatePct": 55.172,
+      "profitFactor": 1.929,
+      "compoundedNetReturnPct": 29.15,
+      "maximumDrawdownPct": -11.089,
+      "bestSessionPct": 12.165,
+      "worstSessionPct": -7.078,
+      "averageTop10Hits": 0.793
+    },
+    "averageNetReturnImprovementPctPoints": -1.0599
+  },
+  "current": {
+    "signalDate": "2026-08-05",
+    "mode": "SHADOW_RESEARCH_ONLY",
+    "executionAllowed": false,
+    "candidates": [
+      {
+        "rank": 1,
+        "ticker": "MOIN",
+        "companyNameAr": "المهندس للتأمين",
+        "opportunityScore": 30.548,
+        "probabilityTop10Pct": 11.759,
+        "probabilityNetPositivePct": 29.32,
+        "probabilityLargeLossPct": 17.32,
+        "executionEligible": false,
+        "executionQualityScore": 62.5,
+        "entryLow": 34.8446,
+        "entryHigh": 35.0777,
+        "stop": 33.8046,
+        "target": 37.4423,
+        "riskReward": 1.86,
+        "close": 35.0,
+        "rsi14": 94.7,
+        "relativeStrength20Pct": 33.63,
+        "volumeRatio20": 38.15,
+        "averageTurnover20Egp": 11725761.0,
+        "support": 33.96,
+        "resistance": 37.52,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": false,
+          "ret20": true,
+          "breakout": false,
+          "targetAboveEntry": true,
+          "rr115": true
+        }
+      },
+      {
+        "rank": 2,
+        "ticker": "GGCC",
+        "companyNameAr": "الجيزة العامة للمقاولات",
+        "opportunityScore": 30.512,
+        "probabilityTop10Pct": 11.866,
+        "probabilityNetPositivePct": 28.721,
+        "probabilityLargeLossPct": 16.645,
+        "executionEligible": false,
+        "executionQualityScore": 37.5,
+        "entryLow": 1.1222,
+        "entryHigh": 1.1339,
+        "stop": 1.0789,
+        "target": 1.1794,
+        "riskReward": 0.83,
+        "close": 1.13,
+        "rsi14": 85.4,
+        "relativeStrength20Pct": 102.92,
+        "volumeRatio20": 1.37,
+        "averageTurnover20Egp": 41497646.0,
+        "support": 1.0867,
+        "resistance": 1.1833,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": false,
+          "ret20": false,
+          "breakout": false,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 3,
+        "ticker": "AMER",
+        "companyNameAr": "عامر جروب",
+        "opportunityScore": 30.467,
+        "probabilityTop10Pct": 11.76,
+        "probabilityNetPositivePct": 28.764,
+        "probabilityLargeLossPct": 16.394,
+        "executionEligible": false,
+        "executionQualityScore": 50.0,
+        "entryLow": 6.0646,
+        "entryHigh": 6.1177,
+        "stop": 5.8697,
+        "target": 6.259,
+        "riskReward": 0.57,
+        "close": 6.1,
+        "rsi14": 93.5,
+        "relativeStrength20Pct": 142.83,
+        "volumeRatio20": 0.98,
+        "averageTurnover20Egp": 97655486.0,
+        "support": 5.9233,
+        "resistance": 6.2767,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": true,
+          "ret20": false,
+          "breakout": false,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 4,
+        "ticker": "ORWE",
+        "companyNameAr": "النساجون الشرقيون",
+        "opportunityScore": 30.287,
+        "probabilityTop10Pct": 11.183,
+        "probabilityNetPositivePct": 29.732,
+        "probabilityLargeLossPct": 16.44,
+        "executionEligible": false,
+        "executionQualityScore": 62.5,
+        "entryLow": 26.2585,
+        "entryHigh": 26.3357,
+        "stop": 25.6663,
+        "target": 27.0043,
+        "riskReward": 1.0,
+        "close": 26.31,
+        "rsi14": 85.7,
+        "relativeStrength20Pct": 7.49,
+        "volumeRatio20": 10.83,
+        "averageTurnover20Egp": 56965168.0,
+        "support": 25.59,
+        "resistance": 27.03,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": true,
+          "ret20": true,
+          "breakout": false,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 5,
+        "ticker": "AFMC",
+        "companyNameAr": "مطاحن ومخابز الإسكندرية",
+        "opportunityScore": 29.822,
+        "probabilityTop10Pct": 11.243,
+        "probabilityNetPositivePct": 28.292,
+        "probabilityLargeLossPct": 16.622,
+        "executionEligible": false,
+        "executionQualityScore": 62.5,
+        "entryLow": 229.5251,
+        "entryHigh": 233.2374,
+        "stop": 215.9134,
+        "target": 253.0792,
+        "riskReward": 1.15,
+        "close": 232.0,
+        "rsi14": 81.5,
+        "relativeStrength20Pct": 222.47,
+        "volumeRatio20": 2.7,
+        "averageTurnover20Egp": 107193063.0,
+        "support": 227.6833,
+        "resistance": 254.3167,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": true,
+          "ret5": false,
+          "ret20": false,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 6,
+        "ticker": "CSAG",
+        "companyNameAr": "القناة للتوكيلات الملاحية",
+        "opportunityScore": 29.577,
+        "probabilityTop10Pct": 10.547,
+        "probabilityNetPositivePct": 29.227,
+        "probabilityLargeLossPct": 16.059,
+        "executionEligible": false,
+        "executionQualityScore": 87.5,
+        "entryLow": 36.2074,
+        "entryHigh": 36.3463,
+        "stop": 35.5974,
+        "target": 36.9637,
+        "riskReward": 0.82,
+        "close": 36.3,
+        "rsi14": 64.0,
+        "relativeStrength20Pct": 2.8,
+        "volumeRatio20": 4.03,
+        "averageTurnover20Egp": 19026600.0,
+        "support": 35.69,
+        "resistance": 37.01,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": true,
+          "ret5": true,
+          "ret20": true,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 7,
+        "ticker": "ADPC",
+        "companyNameAr": "العربية لمنتجات الألبان آراب ديري",
+        "opportunityScore": 29.529,
+        "probabilityTop10Pct": 10.662,
+        "probabilityNetPositivePct": 28.723,
+        "probabilityLargeLossPct": 15.925,
+        "executionEligible": false,
+        "executionQualityScore": 87.5,
+        "entryLow": 4.2147,
+        "entryHigh": 4.2376,
+        "stop": 4.1306,
+        "target": 4.299,
+        "riskReward": 0.57,
+        "close": 4.23,
+        "rsi14": 71.5,
+        "relativeStrength20Pct": 15.23,
+        "volumeRatio20": 1.8,
+        "averageTurnover20Egp": 36471044.0,
+        "support": 4.1533,
+        "resistance": 4.3067,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": true,
+          "ret5": true,
+          "ret20": true,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 8,
+        "ticker": "NIPH",
+        "companyNameAr": "النيل للأدوية",
+        "opportunityScore": 29.511,
+        "probabilityTop10Pct": 10.743,
+        "probabilityNetPositivePct": 28.183,
+        "probabilityLargeLossPct": 15.115,
+        "executionEligible": false,
+        "executionQualityScore": 87.5,
+        "entryLow": 269.5436,
+        "entryHigh": 272.0432,
+        "stop": 260.3782,
+        "target": 273.1135,
+        "riskReward": 0.09,
+        "close": 271.21,
+        "rsi14": 80.9,
+        "relativeStrength20Pct": 55.05,
+        "volumeRatio20": 0.91,
+        "averageTurnover20Egp": 142784264.0,
+        "support": 268.4733,
+        "resistance": 273.9467,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": true,
+          "ret5": true,
+          "ret20": true,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 9,
+        "ticker": "OFH",
+        "companyNameAr": "أو بي المالية القابضة",
+        "opportunityScore": 29.459,
+        "probabilityTop10Pct": 10.575,
+        "probabilityNetPositivePct": 28.469,
+        "probabilityLargeLossPct": 15.077,
+        "executionEligible": false,
+        "executionQualityScore": 75.0,
+        "entryLow": 0.7973,
+        "entryHigh": 0.8014,
+        "stop": 0.7822,
+        "target": 0.812,
+        "riskReward": 0.55,
+        "close": 0.8,
+        "rsi14": 94.1,
+        "relativeStrength20Pct": 25.31,
+        "volumeRatio20": 1.7,
+        "averageTurnover20Egp": 71778994.0,
+        "support": 0.7867,
+        "resistance": 0.8133,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": true,
+          "ret20": true,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 10,
+        "ticker": "MICH",
+        "companyNameAr": "مصر لصناعة الكيماويات",
+        "opportunityScore": 29.419,
+        "probabilityTop10Pct": 10.796,
+        "probabilityNetPositivePct": 27.942,
+        "probabilityLargeLossPct": 15.594,
+        "executionEligible": false,
+        "executionQualityScore": 75.0,
+        "entryLow": 49.8527,
+        "entryHigh": 50.1336,
+        "stop": 48.8226,
+        "target": 51.453,
+        "riskReward": 1.01,
+        "close": 50.04,
+        "rsi14": 88.8,
+        "relativeStrength20Pct": 21.4,
+        "volumeRatio20": 1.7,
+        "averageTurnover20Egp": 28785329.0,
+        "support": 49.8333,
+        "resistance": 51.5467,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": true,
+          "ret20": true,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 11,
+        "ticker": "MTIE",
+        "companyNameAr": "إم إم جروب",
+        "opportunityScore": 29.308,
+        "probabilityTop10Pct": 10.325,
+        "probabilityNetPositivePct": 28.629,
+        "probabilityLargeLossPct": 14.834,
+        "executionEligible": false,
+        "executionQualityScore": 75.0,
+        "entryLow": 10.6863,
+        "entryHigh": 10.7219,
+        "stop": 10.5496,
+        "target": 10.8348,
+        "riskReward": 0.66,
+        "close": 10.71,
+        "rsi14": 82.3,
+        "relativeStrength20Pct": 4.26,
+        "volumeRatio20": 3.42,
+        "averageTurnover20Egp": 31465488.0,
+        "support": 10.5733,
+        "resistance": 10.8467,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": true,
+          "ret20": true,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      },
+      {
+        "rank": 12,
+        "ticker": "AFDI",
+        "companyNameAr": "الأهلي للتنمية والاستثمار",
+        "opportunityScore": 29.18,
+        "probabilityTop10Pct": 10.474,
+        "probabilityNetPositivePct": 27.851,
+        "probabilityLargeLossPct": 14.83,
+        "executionEligible": false,
+        "executionQualityScore": 75.0,
+        "entryLow": 60.7276,
+        "entryHigh": 61.1362,
+        "stop": 59.2297,
+        "target": 62.1472,
+        "riskReward": 0.53,
+        "close": 61.0,
+        "rsi14": 93.3,
+        "relativeStrength20Pct": 27.38,
+        "volumeRatio20": 1.08,
+        "averageTurnover20Egp": 22976684.0,
+        "support": 60.2167,
+        "resistance": 62.2833,
+        "regime": {
+          "marketRet5Pct": 2.25,
+          "marketRet20Pct": 10.28,
+          "breadthPositivePct": 62.6
+        },
+        "ruleChecks": {
+          "turnover": true,
+          "volume": true,
+          "rsi": false,
+          "ret5": true,
+          "ret20": true,
+          "breakout": true,
+          "targetAboveEntry": true,
+          "rr115": false
+        }
+      }
+    ]
+  },
+  "recordedReplaySummary": {
+    "sessionsRequested": 2,
+    "sessionsReplayed": 1,
+    "sources": [
+      "V16_EXACT_METHOD_LIVE",
+      "V17_NATIVE_LEDGER",
+      "V17_TRACK_EXACT_METHOD_REFERENCE",
+      "V17_TRACK_NATIVE_REFERENCE"
+    ],
+    "disclosure": "Recorded V16/V17 dates replayed as-of-date; research evidence only."
+  },
+  "promotion": {
+    "automaticPromotion": false,
+    "promotionAllowed": false,
+    "reason": "Separate challenger gate and explicit release review required."
+  }
+}
