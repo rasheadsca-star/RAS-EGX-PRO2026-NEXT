@@ -95,13 +95,14 @@ jobs:
         run: node scripts/build-goal-integrated-decision.js
       - name: V17 challenger governance first
         run: node scripts/v17/challenger-gate.cjs
-      - name: Build resolve and enrich immutable V17 evidence
+      - name: Build resolve finalize and enrich immutable V17 evidence
         run: |
           set -euo pipefail
           node scripts/v17/build-snapshot.cjs
           node scripts/v17/resolve-ledger.cjs
           node scripts/v17/build-snapshot.cjs
           node scripts/v17/enrich-snapshot.cjs
+          node scripts/v17/finalize-snapshot.cjs
           node scripts/v17/snapshot-provenance-guard.cjs
       - name: Independent V17 current-session review
         run: node scripts/v17/review.cjs
@@ -109,24 +110,27 @@ jobs:
         run: node scripts/v17/regression.cjs
       - name: Snapshot provenance guard after regression
         run: node scripts/v17/snapshot-provenance-guard.cjs
+      - name: Destructive adversarial critic
+        run: node scripts/v17/destructive-critic.cjs
       - name: Acceptance guard
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json'));
+          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json')); const z=JSON.parse(fs.readFileSync('data/v17/destructive-critic.json'));
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.verdict==='REJECTED') throw new Error('Independent review rejected build');
           if(q.ok!==true||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression failed: ${(q.failed||[]).join(', ')}`);
+          if(z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0) throw new Error(`Destructive critic found ${z.totalFindings} findings`);
           if(g?.policy?.doesNotChangeExecutionEligibility!==true||g?.policy?.gateThresholdsUnchanged!==true) throw new Error('S/R diagnostic attempted to change execution policy');
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth not aligned');
-          if(x.enrichment?.immutableSignalHashTouched!==false) throw new Error('Snapshot provenance enrichment touched immutable signal contract');
+          if(x.enrichment?.immutableSignalHashTouched!==false||x.finalization?.immutableSignalHashTouched!==false) throw new Error('Snapshot processing touched immutable signal contract');
           if(x.currentResearch?.liquidity?.provenance!=='data/v17/liquidity-gate.json') throw new Error('Canonical liquidity provenance missing from snapshot');
           if(s.executionGrade===true && (l.gatePassed!==true||t.executionSafe!==true||h.applied!==true)) throw new Error('Execution grade without verified source session/history repair/liquidity gate');
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Non-execution status has allocation'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,srGapSummary:g.summary,review:r.verdict,regression:q.ok,snapshotProvenance:true},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,srGapSummary:g.summary,review:r.verdict,regression:q.ok,destructiveCritic:z.verdict,snapshotProvenance:true},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
@@ -145,6 +149,7 @@ jobs:
             data/v17/ledger.json
             data/v17/review.json
             data/v17/regression.json
+            data/v17/destructive-critic.json
             data/mubasher-support-resistance-direct-report.json
             data/mubasher-support-resistance-rendered.json
           if-no-files-found: warn
