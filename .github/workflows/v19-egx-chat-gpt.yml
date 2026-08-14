@@ -24,7 +24,7 @@ concurrency:
 jobs:
   v19-research:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - name: Checkout isolated V19 branch
         uses: actions/checkout@v6
@@ -58,11 +58,13 @@ jobs:
       - name: Static validation
         run: |
           set -euo pipefail
-          python -m py_compile scripts/v19/native-challenger.py scripts/v19/native-challenger-v2.py
+          python -m py_compile scripts/v19/native-challenger.py scripts/v19/native-challenger-v2.py scripts/v19/native-challenger-v3.py
           node --check scripts/v19/challenger-gate.cjs
           node --check scripts/v19/regression.cjs
           node --check scripts/v19/challenger-gate-v2.cjs
           node --check scripts/v19/regression-v2.cjs
+          node --check scripts/v19/challenger-gate-v3.cjs
+          node --check scripts/v19/regression-v3.cjs
 
       - name: Build V19 v1 historical reference
         run: python scripts/v19/native-challenger.py
@@ -75,21 +77,27 @@ jobs:
       - name: Build V19 v2 fair-alpha challenger
         run: python scripts/v19/native-challenger-v2.py
 
-      - name: Run V19 v2 champion challenger gate
-        run: node scripts/v19/challenger-gate-v2.cjs
+      - name: Run V19 v2 governance
+        run: |
+          node scripts/v19/challenger-gate-v2.cjs
+          node scripts/v19/regression-v2.cjs
 
-      - name: Run V19 v2 regression and leakage guards
-        run: node scripts/v19/regression-v2.cjs
+      - name: Build V19 v3 adaptive expert challenger
+        run: python scripts/v19/native-challenger-v3.py
+
+      - name: Run V19 v3 governance
+        run: |
+          node scripts/v19/challenger-gate-v3.cjs
+          node scripts/v19/regression-v3.cjs
 
       - name: Verify generated evidence
         run: |
           set -euo pipefail
-          test -s data/v19/native-challenger.json
-          test -s data/v19/native-challenger-v2.json
-          test -s data/v19/challenger-status-v2.json
-          test -s data/v19/regression-v2.json
-          node -e "const x=require('./data/v19/regression-v2.json');if(x.ok!==true||x.failedCount!==0)process.exit(1)"
-          node -e "const x=require('./data/v19/native-challenger-v2.json');if(x.status!=='SHADOW_RESEARCH_ONLY'||x.current.executionAllowed!==false||x.promotion.automaticPromotion!==false)process.exit(1)"
+          test -s data/v19/native-challenger-v3.json
+          test -s data/v19/challenger-status-v3.json
+          test -s data/v19/regression-v3.json
+          node -e "const x=require('./data/v19/regression-v3.json');if(x.ok!==true||x.failedCount!==0)process.exit(1)"
+          node -e "const x=require('./data/v19/native-challenger-v3.json');if(x.status!=='SHADOW_RESEARCH_ONLY'||x.current.executionAllowed!==false||x.promotion.automaticPromotion!==false)process.exit(1)"
 
       - name: Persist V19 evidence on V19 branch only
         shell: bash
@@ -97,7 +105,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v19/native-challenger.json data/v19/recorded-session-replay.json data/v19/challenger-status.json data/v19/regression.json data/v19/native-challenger-v2.json data/v19/challenger-status-v2.json data/v19/regression-v2.json
+          git add data/v19/native-challenger.json data/v19/recorded-session-replay.json data/v19/challenger-status.json data/v19/regression.json data/v19/native-challenger-v2.json data/v19/challenger-status-v2.json data/v19/regression-v2.json data/v19/native-challenger-v3.json data/v19/challenger-status-v3.json data/v19/regression-v3.json
           if git diff --cached --quiet; then
             echo "No V19 evidence changes to persist"
             exit 0
