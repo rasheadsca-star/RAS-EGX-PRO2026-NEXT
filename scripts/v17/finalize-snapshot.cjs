@@ -15,9 +15,13 @@ if(executionGrade&&(!verifiedSession||current.sessionDate!==verifiedSession||rep
 let staleChampionRowsNeutralized=0;
 if(current?.championReference?.currentForMarketSession===false&&Array.isArray(current.championReference.recommendations)){
   current.championReference.recommendations=current.championReference.recommendations.map(row=>{
-    if(row.executionAllowed===true||row.monitorOnly===false||row.state==='PENDING_OPEN_CONFIRMATION')staleChampionRowsNeutralized++;
-    return {...row,historicalPortfolioWeightPct:finite(row.historicalPortfolioWeightPct,row.portfolioWeightPct),executionAllowed:false,monitorOnly:true,state:'HISTORICAL_REFERENCE_ONLY',currentSessionWeightPct:0};
+    const historicalPortfolioWeightPct=finite(row.historicalPortfolioWeightPct,row.portfolioWeightPct);
+    const historicalBasketWeightPct=finite(row.historicalBasketWeightPct,row.basketWeightPct);
+    if(row.executionAllowed===true||row.monitorOnly===false||row.state==='PENDING_OPEN_CONFIRMATION'||finite(row.portfolioWeightPct)!==0||finite(row.basketWeightPct)!==0)staleChampionRowsNeutralized++;
+    return {...row,historicalPortfolioWeightPct,historicalBasketWeightPct,portfolioWeightPct:0,basketWeightPct:0,executionAllowed:false,monitorOnly:true,state:'HISTORICAL_REFERENCE_ONLY',currentSessionWeightPct:0};
   });
+  current.championReference.historicalPlannedAllocationPct=finite(current.championReference.historicalPlannedAllocationPct,current.championReference.plannedAllocationPct);
+  current.championReference.plannedAllocationPct=0;
   current.championReference.executionAllowedForCurrentSession=false;
 }
 if(!executionGrade&&Array.isArray(current.recommendations)){
@@ -25,6 +29,6 @@ if(!executionGrade&&Array.isArray(current.recommendations)){
   current.portfolioPolicy={...(current.portfolioPolicy||{}),plannedAllocationPct:0,cashReservePct:100,researchWatchAllocationPct:0,automaticOrders:false};
 }
 current.sessionTruth={canonicalSource:'data/v17/market-session-truth.json',verifiedSessionDate:verifiedSession,priceSourceVerified:truth.priceSourceVerified===true,calendarValid:truth.calendarValid===true,executionSafe:truth.executionSafe===true,historyRepairApplied:repair.applied===true,historyRepairSource:'data/v17/session-history-repair.json',internalSrSession:internal.referenceSessionDate||null,liquiditySession:liquidity.referenceSessionDate||null,resilientSessionAligned:resilient.sessionAligned===true};
-current.finalization={engine:'V17_SNAPSHOT_SAFETY_FINALIZER',generatedAt:new Date().toISOString(),staleChampionRowsNeutralized,immutableSignalHashTouched:false,ledgerTouched:false};
+current.finalization={engine:'V17_SNAPSHOT_SAFETY_FINALIZER',generatedAt:new Date().toISOString(),staleChampionRowsNeutralized,staleChampionCurrentWeightsZeroed:true,immutableSignalHashTouched:false,ledgerTouched:false};
 write('data/v17/current.json',current);
-console.log(JSON.stringify({sessionDate:current.sessionDate,verifiedSession,executionGrade,staleChampionRowsNeutralized,plannedAllocationPct:current.portfolioPolicy?.plannedAllocationPct},null,2));
+console.log(JSON.stringify({sessionDate:current.sessionDate,verifiedSession,executionGrade,staleChampionRowsNeutralized,plannedAllocationPct:current.portfolioPolicy?.plannedAllocationPct,championCurrentAllocationPct:current.championReference?.plannedAllocationPct},null,2));
