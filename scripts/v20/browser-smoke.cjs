@@ -90,7 +90,10 @@ class Cdp {
   }
   async eval(expression) {
     const r = await this.send('Runtime.evaluate', {expression, returnByValue:true, awaitPromise:true, userGesture:true});
-    if (r.exceptionDetails) throw new Error(r.exceptionDetails.text || 'Runtime.evaluate failed');
+    if (r.exceptionDetails) {
+      const detail = r.exceptionDetails.exception?.description || r.exceptionDetails.text || 'Runtime.evaluate failed';
+      throw new Error(detail);
+    }
     return r.result?.value;
   }
   async navigate(url) {
@@ -139,7 +142,7 @@ async function main() {
     check('uncalibratedDisclosureVisible', await cdp.eval("document.querySelector('#stockDialogBody')?.innerText?.includes('غير مُعايرة')"));
     check('modelConfidenceNotDerivedDisclosureVisible', await cdp.eval("document.querySelector('#stockDialogBody')?.innerText?.includes('لا يتم اشتقاق Model Confidence')"));
     check('decisionComponentsRendered', await cdp.eval("document.querySelectorAll('#stockDialogBody .decision-component').length === 7"));
-    check('stockWorkbenchNoHorizontalOverflow1440', await cdp.eval('document.querySelector("#stockDialog .dialog-card").scrollWidth <= document.querySelector("#stockDialog .dialog-card").clientWidth + 1'));
+    check('stockWorkbenchNoHorizontalOverflow1440', await cdp.eval('document.querySelector("#stockDialog").scrollWidth <= document.querySelector("#stockDialog").clientWidth + 1'));
     screenshots.push({name:'opportunity-1440',...(await cdp.screenshot(path.join(shotDir,'opportunity-1440.png')))});
     await cdp.eval("document.querySelector('#closeDialog')?.click()"); await sleep(80);
 
@@ -161,7 +164,7 @@ async function main() {
       await cdp.viewport(width,height); await cdp.navigate(`${base}/v20/index.html`); const ready=await cdp.waitFor("document.querySelectorAll('#opportunityRows tr').length > 0",10000);
       const overflow = ready ? await cdp.eval('document.documentElement.scrollWidth > window.innerWidth + 1') : true;
       let dialogOverflow = null;
-      if (ready && width <= 430) { await cdp.eval("document.querySelector('#opportunityRows tr')?.click()"); await sleep(100); dialogOverflow = await cdp.eval('document.querySelector("#stockDialog .dialog-card").scrollWidth > document.querySelector("#stockDialog .dialog-card").clientWidth + 1'); }
+      if (ready && width <= 430) { await cdp.eval("document.querySelector('#opportunityRows tr')?.click()"); await sleep(100); dialogOverflow = await cdp.eval('document.querySelector("#stockDialog").scrollWidth > document.querySelector("#stockDialog").clientWidth + 1'); }
       const screen = await cdp.screenshot(path.join(shotDir,`index-${width}.png`)); screenshots.push({name:`index-${width}`,...screen}); viewportResults.push({width,height,ready,horizontalOverflow:overflow,dialogHorizontalOverflow:dialogOverflow,screenshotSha256:screen.sha256,screenshotBytes:screen.bytes});
       check(`responsive_${width}_noPageOverflow`, ready && overflow === false); if (width <= 430) check(`responsive_${width}_noDialogOverflow`, dialogOverflow === false);
     }
