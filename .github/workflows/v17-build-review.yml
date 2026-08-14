@@ -23,7 +23,7 @@ on:
     paths: ["preview-v17/**","scripts/v17/**","docs/v17/**","data/v17/**",".github/workflows/v17-build-review.yml"]
 
 permissions:
-  contents: write
+  contents: read
 concurrency:
   group: egx-v17-isolated-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
@@ -32,20 +32,15 @@ jobs:
   build-review:
     runs-on: ubuntu-latest
     timeout-minutes: 24
-    env:
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout isolated V17 candidate
         uses: actions/checkout@v6
         with: {fetch-depth: 0}
 
-      - name: Enforce V17 isolation
+      - name: Enforce V17 isolation and read-only review
         run: |
           set -euo pipefail
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then test "${GITHUB_REF_NAME}" = "develop/v17-rebuild"; fi
-          pattern='git push[[:space:]].*(origin[[:space:]]+main|HEAD:main)'
-          violations="$(grep -REn "$pattern" scripts/v17/ .github/workflows/v17-build-review.yml | grep -v 'pattern=' | grep -v 'dangerousPushLines' || true)"
-          test -z "$violations" || { echo "$violations"; exit 1; }
           ! grep -En 'uses:[[:space:]]+actions/deploy-pages' .github/workflows/v17-build-review.yml
 
       - name: Prove protected V16 application files are unchanged
@@ -74,23 +69,23 @@ jobs:
             scripts/v17/resilient-session-gate.cjs scripts/v17/resolve-ledger.cjs \
             scripts/v17/challenger-gate.cjs scripts/v17/build-snapshot.cjs \
             scripts/v17/enrich-snapshot.cjs scripts/v17/finalize-snapshot.cjs \
-            scripts/v17/snapshot-provenance-guard.cjs scripts/v17/review.cjs \
-            scripts/v17/review-v5.cjs scripts/v17/regression.cjs scripts/v17/regression-v3.cjs scripts/v17/regression-v4.cjs \
-            scripts/v17/browser-runtime-critic.cjs scripts/v17/destructive-critic-v2.cjs \
-            scripts/v17/destructive-critic-v3.cjs scripts/v17/destructive-critic-v4.cjs; do node --check "$s"; done
+            scripts/v17/snapshot-provenance-guard.cjs scripts/v17/review.cjs scripts/v17/review-v5.cjs \
+            scripts/v17/regression.cjs scripts/v17/regression-v3.cjs scripts/v17/regression-v4.cjs scripts/v17/regression-v5.cjs \
+            scripts/v17/browser-runtime-critic.cjs scripts/v17/destructive-critic-v2.cjs scripts/v17/destructive-critic-v3.cjs \
+            scripts/v17/destructive-critic-v4.cjs scripts/v17/destructive-critic-v5.cjs; do node --check "$s"; done
           node --check preview-v17/app/app.js
           node --check preview-v17/app/confidence-governance.js
           test -s preview-v17/app/index.html && test -s preview-v17/app/styles.css
           if grep -R "v15-practical-decision.json\|v15-update-status.json\|decision-source.js\|adaptive-daily-recommendations.json\|v13-5-adaptive\|adaptive-recommendations.html" preview-v17/app; then exit 1; fi
           grep -q "data/v17/current.json" preview-v17/app/app.js
 
-      - name: Resolve prior V17 signals conservatively
+      - name: Resolve prior V17 signals conservatively in workspace only
         run: node scripts/v17/resolve-ledger.cjs
 
-      - name: Run champion challenger governance gate
+      - name: Run champion challenger governance gate in workspace only
         run: node scripts/v17/challenger-gate.cjs
 
-      - name: Build enrich and finalize canonical V17 snapshot
+      - name: Build enrich and finalize canonical-shape snapshot in workspace only
         run: |
           set -euo pipefail
           node scripts/v17/build-snapshot.cjs
@@ -104,14 +99,14 @@ jobs:
       - name: Independent current-session review V5
         run: node scripts/v17/review-v5.cjs
 
-      - name: V17 native regression contract V4
-        run: node scripts/v17/regression-v4.cjs
+      - name: V17 native regression contract V5
+        run: node scripts/v17/regression-v5.cjs
 
       - name: Snapshot provenance guard after regression
         run: node scripts/v17/snapshot-provenance-guard.cjs
 
-      - name: Destructive adversarial critic V4
-        run: node scripts/v17/destructive-critic-v4.cjs
+      - name: Destructive adversarial critic V5
+        run: node scripts/v17/destructive-critic-v5.cjs
 
       - name: Browser-facing zero-tolerance contract checks
         run: |
@@ -122,22 +117,10 @@ jobs:
           curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(!['READY_FOR_NEXT_SESSION_REVIEW','RESEARCH_READY_EXECUTION_BLOCKED'].includes(x.status))process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET'||x.championChallenger.promotionAllowed!==false)process.exit(1);if(x.sessionDate!==x.sessionTruth?.verifiedSessionDate)process.exit(1);if(x.finalization?.staleChampionCurrentWeightsZeroed!==true)process.exit(1);if(x.championReference?.currentForMarketSession===false&&(Number(x.championReference?.plannedAllocationPct||0)!==0||(x.championReference?.recommendations||[]).some(r=>Number(r.portfolioWeightPct||0)!==0||Number(r.basketWeightPct||0)!==0||r.executionAllowed===true||r.monitorOnly!==true)))process.exit(1);})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/browser-runtime-critic.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.schemaVersion!=='17.0.0-browser-runtime-critic-1'||x.verdict!=='NO_COMMENTS'||Number(x.totalFindings||0)!==0)process.exit(1);})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.schemaVersion!=='17.0.0-review-5'||x.verdict!=='NO_COMMENTS'||Object.values(x.counts||{}).some(Number))process.exit(1);})"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/regression.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.schemaVersion!=='17.0.0-regression-4'||x.ok!==true||Number(x.failedCount||0)!==0)process.exit(1);})"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/destructive-critic.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.schemaVersion!=='17.0.0-destructive-critic-4'||x.verdict!=='NO_COMMENTS'||Number(x.totalFindings||0)!==0)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/regression.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.schemaVersion!=='17.0.0-regression-5'||x.ok!==true||Number(x.failedCount||0)!==0)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/destructive-critic.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.schemaVersion!=='17.0.0-destructive-critic-5'||x.verdict!=='NO_COMMENTS'||Number(x.totalFindings||0)!==0)process.exit(1);})"
 
-      - name: Commit V17 evidence to isolated active branch
-        if: github.event_name != 'pull_request'
+      - name: Verify review stayed read-only
         run: |
           set -euo pipefail
-          test "$BRANCH_NAME" = "develop/v17-rebuild"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v17/current.json data/v17/ledger.json data/v17/challenger-status.json data/v17/review.json data/v17/regression.json data/v17/browser-runtime-critic.json data/v17/destructive-critic.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Build review V17 zero-comment runtime evidence"
-            for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin "$BRANCH_NAME" && git push origin "HEAD:$BRANCH_NAME"; then break; fi
-              [ "$attempt" = "3" ] && exit 1
-              sleep $((attempt * 6))
-            done
-          fi
+          echo "Build Review intentionally does not commit or push canonical V17 evidence."
