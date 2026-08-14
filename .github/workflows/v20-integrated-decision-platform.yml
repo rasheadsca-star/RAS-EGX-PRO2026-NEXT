@@ -56,6 +56,8 @@ jobs:
           node --check scripts/v20/data-quality-regression.cjs
           node --check scripts/v20/build-sector-provenance-audit.cjs
           node --check scripts/v20/sector-provenance-regression.cjs
+          node --check scripts/v20/build-performance-evidence-registry.cjs
+          node --check scripts/v20/performance-evidence-regression.cjs
           node --check scripts/v20/build-integrated-decision-snapshot.cjs
           node --check scripts/v20/enrich-risk-reward.cjs
           node --check scripts/v20/validate-trade-plans.cjs
@@ -129,6 +131,12 @@ jobs:
       - name: Archive immutable daily signal and forward horizons
         run: node scripts/v20/archive-signal.cjs
 
+      - name: Build separated performance evidence registry
+        run: node scripts/v20/build-performance-evidence-registry.cjs
+
+      - name: Run performance evidence regression
+        run: node scripts/v20/performance-evidence-regression.cjs
+
       - name: Run governance and risk regression suite
         run: node scripts/v20/regression.cjs
 
@@ -154,6 +162,8 @@ jobs:
           const ns=require('./data/v20/null-semantics-regression.json');
           const sector=require('./data/v20/sector-provenance-audit.json');
           const sectorReg=require('./data/v20/sector-provenance-regression.json');
+          const perf=require('./data/v20/performance-evidence-registry.json');
+          const perfReg=require('./data/v20/performance-evidence-regression.json');
           const upr=require('./data/v20/user-portfolio-regression.json');
           const rr=require('./data/v20/risk-reward-audit.json');
           const profiles=require('./data/v20/stock-profiles.json');
@@ -169,7 +179,7 @@ jobs:
           const forward=require('./data/v20/forward-evaluation.json');
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
-          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||sectorReg.ok!==true||upr.ok!==true) process.exit(1);
+          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||sectorReg.ok!==true||perfReg.ok!==true||upr.ok!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.enabled!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.actionableRequiresCurrentPriceInsideEntryRange!==true) process.exit(1);
           if(policy.technicalHistory?.missingOhlcSynthesisAllowed!==false) process.exit(1);
@@ -186,6 +196,19 @@ jobs:
           if((sector.rows||[]).some(s=>s.acceptedForProduction===true||s.productionSector!==null)) process.exit(1);
           if((profiles.profiles||[]).some(p=>p.sectorContext?.sector!==null)) process.exit(1);
           if(p.sectorConcentrationApplied===true||p.productionSectorConcentrationEnabled===true) process.exit(1);
+          if(perf.policy?.singleHeadlinePerformanceMetricAllowed!==false) process.exit(1);
+          if(perf.policy?.crossEvidenceAggregationAllowed!==false) process.exit(1);
+          if(perf.policy?.historicalAndForwardEvidenceMustRemainSeparate!==true) process.exit(1);
+          if(perf.policy?.developmentAndHoldoutEvidenceMustRemainSeparate!==true) process.exit(1);
+          if(perf.policy?.reusedBenchmarkCanPromoteChallenger!==false) process.exit(1);
+          if(perf.policy?.pendingForwardReturnMustRemainNull!==true) process.exit(1);
+          if(perf.policy?.v18PerformanceAccepted!==false) process.exit(1);
+          if(perf.summary?.v19AutomaticPromotion!==false||perf.summary?.v19PromotionAllowed!==false) process.exit(1);
+          const v19bench=(perf.entries||[]).find(e=>e.evidenceId==='V19_V6_REUSED_BENCHMARK');
+          if(!v19bench||v19bench.promotionEligible!==false||v19bench.independence?.freshIndependentEvidence!==false) process.exit(1);
+          const v19dev=(perf.entries||[]).find(e=>e.evidenceId==='V19_V6_DEVELOPMENT_OOS');
+          if(!v19dev||v19dev.evidenceClass!=='DEVELOPMENT_OOS'||v19dev.independence?.freshIndependentEvidence!==false) process.exit(1);
+          if((forward.evaluations||[]).some(e=>e.status==='PENDING'&&(e.portfolioReturnGrossPct!==null||e.portfolioReturnNetPct!==null))) process.exit(1);
           if(policy.userPortfolio?.storage!=='BROWSER_LOCAL_STORAGE_ONLY') process.exit(1);
           if(policy.userPortfolio?.serverPersistence!==false||policy.userPortfolio?.repositoryPersistence!==false) process.exit(1);
           if(policy.userPortfolio?.influencesModelPortfolio!==false||policy.userPortfolio?.influencesExecutionGate!==false) process.exit(1);
@@ -256,6 +279,8 @@ jobs:
             data/v20/null-semantics-regression.json \
             data/v20/sector-provenance-audit.json \
             data/v20/sector-provenance-regression.json \
+            data/v20/performance-evidence-registry.json \
+            data/v20/performance-evidence-regression.json \
             data/v20/portfolio-risk.json \
             data/v20/risk-reward-audit.json \
             data/v20/trade-plan-audit.json \
@@ -273,5 +298,5 @@ jobs:
             data/v20/forward-evaluation.json \
             data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 sector provenance evidence"
+          git commit -m "Update V20 separated performance evidence"
           git push origin HEAD:develop/v20-integrated-decision-platform
