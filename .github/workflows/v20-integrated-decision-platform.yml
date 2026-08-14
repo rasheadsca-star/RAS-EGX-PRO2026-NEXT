@@ -77,11 +77,13 @@ jobs:
           node --check scripts/v20/trade-plan-regression.cjs
           node --check scripts/v20/phase3-regression.cjs
           node --check scripts/v20/validate-ui.cjs
+          node --check scripts/v20/browser-smoke.cjs
           node --check v20/app.js
           node --check v20/portfolio-core.js
           node --check v20/portfolio.js
           node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('data/v20/model-registry.json','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync('data/v20/decision-intelligence-policy.json','utf8'))"
 
       - name: Build V20 data truth layer
         run: node scripts/v20/build-data-truth.cjs
@@ -153,6 +155,9 @@ jobs:
       - name: Validate V20 UI contract
         run: node scripts/v20/validate-ui.cjs
 
+      - name: Run Chromium browser smoke acceptance
+        run: node scripts/v20/browser-smoke.cjs
+
       - name: Acceptance guard
         run: |
           node - <<'NODE'
@@ -163,6 +168,7 @@ jobs:
           const tpa=require('./data/v20/trade-plan-audit.json');
           const r3=require('./data/v20/phase3-regression.json');
           const ui=require('./data/v20/ui-validation.json');
+          const browser=require('./data/v20/browser-smoke.json');
           const dq=require('./data/v20/data-quality-regression.json');
           const ns=require('./data/v20/null-semantics-regression.json');
           const sector=require('./data/v20/sector-provenance-audit.json');
@@ -184,7 +190,15 @@ jobs:
           const forward=require('./data/v20/forward-evaluation.json');
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
-          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||sectorReg.ok!==true||perfReg.ok!==true||upr.ok!==true) process.exit(1);
+          const decisionPolicy=require('./data/v20/decision-intelligence-policy.json');
+          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||browser.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||sectorReg.ok!==true||perfReg.ok!==true||upr.ok!==true) process.exit(1);
+          if(browser.schemaVersion!=='20.0.0-browser-smoke-1'||browser.sessionDate!==x.sessionDate) process.exit(1);
+          for(const key of ['indexLoadedWithOpportunities','executionBadgeRendered','researchScoreHeaderRendered','decisionSeparationVisible','researchScoreVisibleForOpportunity','decisionComponentsRendered','marketOnlyNoResearchScoreDisclosure','marketOnlyNoFakeScoreScopeDisclosure','marketOnlyResearchScoreWidgetAbsent','healthPageLoaded','performancePageLoaded','performanceNoHeadlineReturnWidget','noRuntimeOrConsoleErrors']) if(browser.checks?.[key]?.ok!==true) process.exit(1);
+          if((browser.viewportResults||[]).length!==5||(browser.viewportResults||[]).some(v=>v.ready!==true||v.horizontalOverflow!==false||((v.width<=430)&&v.dialogHorizontalOverflow!==false))) process.exit(1);
+          if((browser.consoleErrors||[]).length!==0) process.exit(1);
+          if(decisionPolicy.status!=='SHADOW_RESEARCH_ONLY_UNCALIBRATED'||decisionPolicy.scoreIsConfidence!==false||decisionPolicy.scoreCanOpenExecutionGate!==false||decisionPolicy.scoreCanDriveProductionAllocation!==false||decisionPolicy.scoreCanChangeChampion!==false||decisionPolicy.scoreCanTriggerAutomaticPromotion!==false||decisionPolicy.modelConfidenceMayBeInferredFromScore!==false) process.exit(1);
+          if(profiles.decisionIntelligenceSummary?.usedForExecutionGate!==false||profiles.decisionIntelligenceSummary?.usedForProductionAllocation!==false||profiles.decisionIntelligenceSummary?.usedForChampionSelection!==false) process.exit(1);
+          if((profiles.profiles||[]).some(pr=>pr.decisionIntelligence?.scoreIsConfidence!==false||pr.decisionIntelligence?.execution?.scoreMayOpenExecutionGate!==false||pr.decisionIntelligence?.execution?.scoreMayCreateActionableStatus!==false)) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.enabled!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.actionableRequiresCurrentPriceInsideEntryRange!==true) process.exit(1);
           if(policy.technicalHistory?.missingOhlcSynthesisAllowed!==false) process.exit(1);
@@ -199,7 +213,7 @@ jobs:
           if(sp.nameOrTickerInferenceAllowedForProduction!==false||sp.seedMapAllowedForProduction!==false) process.exit(1);
           if(sector.summary?.productionVerifiedCount!==0||sector.summary?.productionSectorConcentrationEnabled!==false) process.exit(1);
           if((sector.rows||[]).some(s=>s.acceptedForProduction===true||s.productionSector!==null)) process.exit(1);
-          if((profiles.profiles||[]).some(p=>p.sectorContext?.sector!==null)) process.exit(1);
+          if((profiles.profiles||[]).some(pr=>pr.sectorContext?.sector!==null)) process.exit(1);
           if(p.sectorConcentrationApplied===true||p.productionSectorConcentrationEnabled===true) process.exit(1);
           if(perf.policy?.singleHeadlinePerformanceMetricAllowed!==false) process.exit(1);
           if(perf.policy?.crossEvidenceAggregationAllowed!==false) process.exit(1);
@@ -270,7 +284,7 @@ jobs:
           if(rr.legacyMetricPolicy!=='AUDIT_ONLY_REFERENCE_UNVERIFIED') process.exit(1);
           if(x.opportunities.some(o=>o.riskReward?.legacyIsPrimary!==false)) process.exit(1);
           if(profiles.technicalIndicatorPolicy!=='POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION') process.exit(1);
-          if((profiles.profiles||[]).some(p=>p.technicalAnalysis?.usedForCurrentDecision===true && p.technicalAnalysis?.currentTechnicalReady!==true)) process.exit(1);
+          if((profiles.profiles||[]).some(pr=>pr.technicalAnalysis?.usedForCurrentDecision===true && pr.technicalAnalysis?.currentTechnicalReady!==true)) process.exit(1);
           if(!archive.count||!Array.isArray(forward.evaluations)) process.exit(1);
           NODE
 
@@ -318,6 +332,7 @@ jobs:
             data/v20/stock-profiles.json \
             data/v20/phase3-regression.json \
             data/v20/ui-validation.json \
+            data/v20/browser-smoke.json \
             data/v20/forward-evaluation.json \
             data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
