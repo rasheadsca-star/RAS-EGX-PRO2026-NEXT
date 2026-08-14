@@ -21,7 +21,7 @@ concurrency:
 jobs:
   v19-research:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout isolated V19 branch
         uses: actions/checkout@v6
@@ -51,34 +51,34 @@ jobs:
       - name: Static validation
         run: |
           set -euo pipefail
-          python -m py_compile scripts/v19/native-challenger-v2.py scripts/v19/native-challenger-v4.py
-          node --check scripts/v19/challenger-gate-v4.cjs
-          node --check scripts/v19/regression-v4.cjs
+          python -m py_compile scripts/v19/native-challenger-v2.py scripts/v19/native-challenger-v5.py
+          node --check scripts/v19/challenger-gate-v5.cjs
+          node --check scripts/v19/regression-v5.cjs
 
-      - name: Build V19 v4 risk-veto portfolio challenger
-        run: python scripts/v19/native-challenger-v4.py
+      - name: Build V19 v5 defensive-rescue challenger
+        run: python scripts/v19/native-challenger-v5.py
 
-      - name: Run V19 v4 governance
+      - name: Run V19 v5 governance
         run: |
-          node scripts/v19/challenger-gate-v4.cjs
-          node scripts/v19/regression-v4.cjs
+          node scripts/v19/challenger-gate-v5.cjs
+          node scripts/v19/regression-v5.cjs
 
       - name: Verify generated evidence
         run: |
           set -euo pipefail
-          test -s data/v19/native-challenger-v4.json
-          test -s data/v19/challenger-status-v4.json
-          test -s data/v19/regression-v4.json
-          node -e "const x=require('./data/v19/regression-v4.json');if(x.ok!==true||x.failedCount!==0)process.exit(1)"
-          node -e "const x=require('./data/v19/native-challenger-v4.json');if(x.status!=='SHADOW_RESEARCH_ONLY'||x.current.executionAllowed!==false||x.promotion.automaticPromotion!==false)process.exit(1)"
+          test -s data/v19/native-challenger-v5.json
+          test -s data/v19/challenger-status-v5.json
+          test -s data/v19/regression-v5.json
+          node -e "const x=require('./data/v19/regression-v5.json');if(x.ok!==true||x.failedCount!==0)process.exit(1)"
+          node -e "const x=require('./data/v19/native-challenger-v5.json');if(x.status!=='SHADOW_RESEARCH_ONLY'||x.current.executionAllowed!==false||x.promotion.automaticPromotion!==false)process.exit(1)"
 
-      - name: Persist V19 v4 evidence only
+      - name: Persist V19 v5 evidence only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v19/native-challenger-v4.json data/v19/challenger-status-v4.json data/v19/regression-v4.json
+          git add data/v19/native-challenger-v5.json data/v19/challenger-status-v5.json data/v19/regression-v5.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V19 v4 research evidence"
+          git commit -m "Update V19 v5 research evidence"
           git push origin HEAD:v19-egx-chat-gpt
