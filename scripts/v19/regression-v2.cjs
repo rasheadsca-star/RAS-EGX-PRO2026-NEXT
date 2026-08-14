@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs');const path=require('path');const root=path.resolve(process.env.GITHUB_WORKSPACE||'.');
+const n=JSON.parse(fs.readFileSync(path.join(root,'data/v19/native-challenger-v2.json'),'utf8'));const g=JSON.parse(fs.readFileSync(path.join(root,'data/v19/challenger-status-v2.json'),'utf8'));
+const failures=[];const check=(ok,msg)=>{if(!ok)failures.push(msg)};const f=x=>Number(x);
+check(n.engineId==='V19_CHAT_GPT_NATIVE_CHALLENGER_V2','engine identity');check(n.status==='SHADOW_RESEARCH_ONLY','shadow status');check(n.current?.executionAllowed===false,'execution must remain disabled');check(n.promotion?.automaticPromotion===false,'automatic promotion forbidden');check(n.isolation?.v16Untouched===true&&n.isolation?.v17Untouched===true,'isolation flags');check(n.independentHoldout?.frozen===true&&n.independentHoldout?.labelsNeverUsedForRefit===true,'holdout leakage guard');check(f(n.coverage?.holdoutSessions)>=20,'holdout sample');check(Array.isArray(n.development?.leaderboard)&&n.development.leaderboard.length>=6,'development recipe evidence');check(g.promotionAllowed===false&&g.automaticPromotion===false,'gate cannot auto promote');
+const out={schemaVersion:'19.1.0-regression-v2',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures};fs.writeFileSync(path.join(root,'data/v19/regression-v2.json'),JSON.stringify(out,null,2)+'\n');console.log(JSON.stringify(out,null,2));if(failures.length)process.exit(1);
