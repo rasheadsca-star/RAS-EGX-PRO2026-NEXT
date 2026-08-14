@@ -1,0 +1,33 @@
+(() => {
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+  const num=(v,d=2)=>v===null||v===undefined||v===''?'—':Number(v).toLocaleString('ar-EG',{maximumFractionDigits:d});
+  const pct=v=>v===null||v===undefined?'—':`${num(v,2)}%`;
+  const load=async(url,optional=false)=>{try{const r=await fetch(url,{cache:'no-store'});if(!r.ok){if(optional)return null;throw new Error(`${url}: HTTP ${r.status}`)}return r.json()}catch(e){if(optional)return null;throw e}};
+  const required=(total,p)=>Math.ceil(Number(total)*Number(p)/100-1e-9);
+  function historyAssessment(doc,session){
+    if(!doc)return {state:'NO_HISTORY_FILE',rows:0,last:null,verified:false,current:false,validOhlc:0,source:null};
+    const rows=Array.isArray(doc.sessions)?doc.sessions:[];const valid=rows.filter(r=>Number(r.open)>0&&Number(r.high)>0&&Number(r.low)>0&&Number(r.close)>0&&Number(r.high)>=Math.max(Number(r.open),Number(r.close),Number(r.low))&&Number(r.low)<=Math.min(Number(r.open),Number(r.close),Number(r.high)));
+    const last=rows.map(r=>r.date).filter(Boolean).sort().at(-1)||null;
+    return {state:doc.symbolVerified===true&&valid.length?'VERIFIED_HISTORY_PRESENT':'HISTORY_PRESENT_NOT_FULLY_VERIFIED',rows:rows.length,last,verified:doc.symbolVerified===true,current:last===session,validOhlc:valid.length,source:doc.primarySource||doc.symbolVerification?.provider||null};
+  }
+  function blockerText(code){return ({NO_MATCHING_CURRENT_HISTORY:'لا يوجد history موثوق مطابق للجلسة الحالية',INSUFFICIENT_HISTORY_ROWS:'عدد الجلسات غير كافٍ',SYMBOL_IDENTITY_NOT_VERIFIED:'هوية الرمز غير متحققة',SOURCE_SESSION_NOT_CURRENT:'جلسة المصدر غير حالية',SESSION_MISMATCH:'الجلسة غير متطابقة',LOW_CONFIDENCE:'الثقة دون الحد',NO_TRUSTED_PROVENANCE:'provenance غير موثوق'}[code]||code);}
+  function symbolCard(symbol,srRow,marketRow,hist){
+    const blockers=Array.isArray(srRow?.blockers)?srRow.blockers:[];const tone=srRow?.trustedProvenance===true&&srRow?.levelSessionDate===marketRow?.sessionDate?'good':hist?.verified?'warn':'bad';
+    return `<article class="symbol-card ${tone}"><div class="symbol-head"><div><strong>${esc(symbol)}</strong><small>${esc(marketRow?.nameAr||marketRow?.nameEn||'—')}</small></div><span>${esc(srRow?.trustedProvenance===true?'Trusted row exists':'Missing trusted row')}</span></div><div class="facts"><div><span>سعر الجلسة</span><strong>${marketRow?.currentSessionAvailable?num(marketRow.price,4):'غير متاح'}</strong><small>${esc(marketRow?.sessionDate||'—')}</small></div><div><span>History</span><strong>${hist?esc(hist.state):'—'}</strong><small>${hist?`${hist.rows} rows • آخر ${esc(hist.last||'—')}`:'—'}</small></div><div><span>Identity</span><strong>${hist?.verified?'Verified':'غير متحقق/غير متاح'}</strong><small>${esc(hist?.source||'—')}</small></div><div><span>Current OHLC</span><strong>${hist?.current?'جلسة حالية':'غير حالي'}</strong><small>valid OHLC ${hist?.validOhlc??0}</small></div><div><span>S/R session</span><strong>${esc(srRow?.levelSessionDate||'—')}</strong><small>confidence ${num(srRow?.confidence,3)}</small></div><div><span>Provenance</span><strong>${srRow?.trustedProvenance===true?'Trusted':'Not trusted'}</strong><small>${esc(srRow?.source||srRow?.methodology||'—')}</small></div></div><div class="blockers"><b>Current blockers</b>${blockers.length?blockers.map(x=>`<span>${esc(blockerText(x))}</span>`).join(''):'<span>لا توجد blockers مسجلة على الصف؛ راجع سبب missing candidate في aggregate evidence.</span>'}</div><p>أولوية التشخيص: ${hist?.verified&&hist?.current?'التاريخ الحالي متاح — راجع شروط S/R/provenance وإعادة البناء.':hist?.verified?'التاريخ موثوق لكنه غير متزامن — يحتاج refresh للجلسة الحالية.':'ابدأ بإثبات هوية/تاريخ OHLC موثوق قبل S/R.'}</p></article>`;
+  }
+  async function init(){try{
+    const [gate,sr,market]=await Promise.all([load('../data/v17/resilient-session-status.json'),load('../data/v17/internal-ohlc-support-resistance.json'),load('../data/v20/market-explorer.json')]);
+    const session=gate.priceTruth?.verifiedSessionDate;$('session').textContent=`جلسة ${session||'—'}`;const missing=Array.isArray(sr.missingCandidateSymbols)?sr.missingCandidateSymbols:(gate.missingSymbols||[]);$('missingCount').textContent=String(missing.length);
+    const total=Number(sr.candidateUniverseCount||0);const t=sr.thresholds||{};const reqTrusted=required(total,t.minimumCandidateCoveragePct||95),reqFresh=required(total,t.minimumCandidateFreshnessPct||98),reqCritical=required(total,t.minimumCandidateCriticalFieldsPct||95);const criticalCurrent=Math.round(total*Number(sr.criticalFieldsPct||0)/100);
+    const gapTrusted=Math.max(0,reqTrusted-Number(sr.candidateTrustedCount||0)),gapFresh=Math.max(0,reqFresh-Number(sr.candidateTrustedFreshCount||0)),gapCritical=Math.max(0,reqCritical-criticalCurrent),conflicts=Array.isArray(sr.sourceConflicts)?sr.sourceConflicts:[];
+    $('coverageGap').textContent=`+${gapTrusted}`;$('coverageText').textContent=`${sr.candidateTrustedCount}/${total} → مطلوب ${reqTrusted}`;$('freshGap').textContent=`+${gapFresh}`;$('freshText').textContent=`${sr.candidateTrustedFreshCount}/${total} → مطلوب ${reqFresh}`;$('criticalGap').textContent=`+${gapCritical}`;$('criticalText').textContent=`≈${criticalCurrent}/${total} → مطلوب ${reqCritical}`;$('conflictGap').textContent=`${conflicts.length}→0`;$('conflictText').textContent=conflicts.map(x=>x.symbol).filter(Boolean).join('، ')||'لا يوجد';
+    const marketMap=new Map((market.rows||[]).map(x=>[x.ticker,x]));const srMap=new Map((sr.rows||[]).map(x=>[x.ticker,x]));
+    const assessments=await Promise.all(missing.map(async symbol=>{const doc=await load(`../data/history/${encodeURIComponent(symbol)}.json`,true);return {symbol,hist:historyAssessment(doc,session)}}));
+    $('symbolCards').innerHTML=assessments.map(({symbol,hist})=>symbolCard(symbol,srMap.get(symbol),marketMap.get(symbol),hist)).join('')||'<div class="empty">لا توجد missing candidates.</div>';
+    $('conflicts').innerHTML=conflicts.map(c=>`<article class="conflict-card"><strong>${esc(c.symbol||'—')}</strong><span>${esc(c.source||'—')} • ${esc(c.state||'—')}</span><small>maxDiff ${pct(c.maxDiffPct)} • المطلوب إزالة التعارض الحرج قبل executionCandidateReady</small></article>`).join('')||'<div class="empty">لا توجد تعارضات حرجة.</div>';
+    $('loading').classList.add('hidden');
+  }catch(error){$('loading').classList.add('hidden');$('error').classList.remove('hidden');$('error').textContent=`تعذر تحميل Remediation Audit: ${error.message}`;}}
+  init();
+})();
