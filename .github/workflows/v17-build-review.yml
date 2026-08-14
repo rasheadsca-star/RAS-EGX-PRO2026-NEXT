@@ -36,7 +36,7 @@ jobs:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout isolated V17 candidate
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: {fetch-depth: 0}
 
       - name: Enforce V17 isolation
@@ -57,7 +57,7 @@ jobs:
           test -z "$violations" || { echo "$violations"; exit 1; }
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with: {node-version: "22"}
 
       - name: Install browser runtime critic tooling
