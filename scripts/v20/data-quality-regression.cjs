@@ -9,7 +9,11 @@ const P = rel => path.join(root, rel);
 const read = (rel, fallback = {}) => {
   try { return JSON.parse(fs.readFileSync(P(rel), 'utf8')); } catch { return fallback; }
 };
-const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const finite = value => {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
 const symbolOf = value => String(value || '').trim().toUpperCase().replace(/\.CA$/, '').replace(/[^A-Z0-9.]/g, '');
 
 const rawMarket = read('data/market.json');
@@ -85,12 +89,13 @@ check(Number(summary.completeRows || 0) === completeCount, 'COMPLETE_ROW_SUMMARY
 check(rawZeroOhlcCount === sanitizedZeroOhlcCount, 'NOT_ALL_RAW_ZERO_OHLC_SANITIZED');
 
 const report = {
-  schemaVersion: '20.0.0-data-quality-regression-1',
+  schemaVersion: '20.0.0-data-quality-regression-2',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
   failures,
   checks: {
+    nullIsMissingNotNumericZero: true,
     semanticCompletenessEnabled: true,
     nonPositiveOhlcNeverExposedAsValidNumeric: true,
     ohlcInvariantRequiredForCompleteState: true,
