@@ -17,7 +17,7 @@ const masterUniverse = read('data/v20/master-universe.json');
 
 const failures = [];
 function check(ok, code) { if (!ok) failures.push(code); }
-function finite(value) { const n = Number(value); return Number.isFinite(n) ? n : null; }
+function finite(value) { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
 
 check(v20.governance.activeChampion === 'V16_9_EQUAL_WEIGHT_BASKET', 'CHAMPION_CHANGED');
 check(modelRegistry.activeProductionChampion === 'V16_9_EQUAL_WEIGHT_BASKET', 'MODEL_REGISTRY_CHAMPION_CHANGED');

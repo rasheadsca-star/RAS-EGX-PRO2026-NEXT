@@ -7,7 +7,7 @@ const path = require('path');
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const P = rel => path.join(root, rel);
 const read = rel => JSON.parse(fs.readFileSync(P(rel), 'utf8'));
-const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const finite = value => { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; };
 
 const current = read('data/v20/current.json');
 const audit = read('data/v20/trade-plan-audit.json');

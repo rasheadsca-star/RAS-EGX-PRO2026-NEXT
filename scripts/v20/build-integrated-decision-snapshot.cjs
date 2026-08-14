@@ -28,6 +28,7 @@ function symbolOf(value) {
   return String(value || '').trim().toUpperCase().replace(/\.CA$/, '').replace(/[^A-Z0-9.]/g, '');
 }
 function finite(value, fallback = null) {
+  if (value === null || value === undefined || value === '') return fallback;
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }

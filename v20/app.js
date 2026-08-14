@@ -9,10 +9,12 @@
   };
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-  const num = (value, digits = 2) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';
-  const pct = value => Number.isFinite(Number(value)) ? `${num(value, 1)}%` : '—';
-  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';
-  const rr = value => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '—';
+  const isMissing = value => value === null || value === undefined || value === '';
+  const numeric = value => { if (isMissing(value)) return null; const n = Number(value); return Number.isFinite(n) ? n : null; };
+  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };
+  const pct = value => numeric(value) === null ? '—' : `${num(value, 1)}%`;
+  const money = value => numeric(value) === null ? '—' : num(value, 4);
+  const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };
   const statusAr = value => ({ACTIONABLE:'قابل للتنفيذ',WATCH:'مراقبة',WAIT:'انتظار',AVOID:'تجنب'}[value] || value || '—');
   const riskAr = value => ({NORMAL:'طبيعي',CAUTIOUS:'حذر',DEFENSIVE:'دفاعي',CASH_PRESERVATION:'حماية السيولة'}[value] || value || '—');
   const technicalAr = value => ({

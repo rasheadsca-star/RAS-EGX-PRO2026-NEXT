@@ -8,11 +8,10 @@
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({
     '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'
   }[ch]));
-  const num = (value, digits = 2) => Number.isFinite(Number(value))
-    ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits })
-    : '—';
-  const pct = value => Number.isFinite(Number(value)) ? `${num(value, 1)}%` : '—';
-  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';
+  const numeric = value => { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; };
+  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };
+  const pct = value => numeric(value) === null ? '—' : `${num(value, 1)}%`;
+  const money = value => numeric(value) === null ? '—' : num(value, 4);
 
   const riskAr = code => ({
     NO_CURRENT_SESSION_PRICE:'لا يوجد سعر موثوق للجلسة الحالية',
