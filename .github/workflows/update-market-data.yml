@@ -79,6 +79,8 @@ jobs:
           [ ! -f scripts/build-daily-decision-brief.js ] || node scripts/build-daily-decision-brief.js
       - name: Refresh internal OHLC evidence against final candidate universe
         run: node scripts/v17/build-internal-ohlc-sr.cjs
+      - name: Audit S/R history gaps without changing eligibility
+        run: node scripts/v17/audit-sr-history-gaps.cjs
       - name: Refresh liquidity evidence against final candidate universe
         run: node scripts/v17/build-liquidity-gate.cjs
       - name: Refresh resilient session mode after ranking
@@ -105,11 +107,12 @@ jobs:
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json'));
+          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json'));
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.verdict==='REJECTED') throw new Error('Independent review rejected build');
           if(q.ok!==true||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression failed: ${(q.failed||[]).join(', ')}`);
+          if(g?.policy?.doesNotChangeExecutionEligibility!==true||g?.policy?.gateThresholdsUnchanged!==true) throw new Error('S/R diagnostic attempted to change execution policy');
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth not aligned');
           if(x.enrichment?.immutableSignalHashTouched!==false) throw new Error('Snapshot provenance enrichment touched immutable signal contract');
           if(x.currentResearch?.liquidity?.provenance!=='data/v17/liquidity-gate.json') throw new Error('Canonical liquidity provenance missing from snapshot');
@@ -117,7 +120,7 @@ jobs:
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Non-execution status has allocation'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,review:r.verdict,regression:q.ok,snapshotProvenance:true},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,srGapSummary:g.summary,review:r.verdict,regression:q.ok,snapshotProvenance:true},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
@@ -126,6 +129,7 @@ jobs:
           name: v17-resilient-market-diagnostics
           path: |
             data/v17/internal-ohlc-support-resistance.json
+            data/v17/sr-history-gap-diagnostics.json
             data/v17/liquidity-gate.json
             data/v17/resilient-session-status.json
             data/v17/challenger-status.json
