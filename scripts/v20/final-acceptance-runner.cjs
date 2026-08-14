@@ -32,21 +32,15 @@ require('./release-manifest-regression.cjs');
 const releaseManifest = JSON.parse(fs.readFileSync(P('data/v20/release-manifest.json'), 'utf8'));
 const releaseRegression = JSON.parse(fs.readFileSync(P('data/v20/release-manifest-regression.json'), 'utf8'));
 regression = JSON.parse(fs.readFileSync(P('data/v20/regression.json'), 'utf8'));
-regression.releaseManifest = {
-  schemaVersion: releaseManifest.schemaVersion,
-  releaseClassification: releaseManifest.releaseClassification,
-  validatedSourceCommit: releaseManifest.validatedSourceCommit,
-  validationRun: releaseManifest.validationRun,
-  researchReadyClaimAllowed: releaseManifest.releaseClaims?.researchReadyClaimAllowed === true,
-  executionReadyClaimAllowed: releaseManifest.releaseClaims?.executionReadyClaimAllowed === true,
-  deployedClaimAllowed: releaseManifest.releaseClaims?.deployedClaimAllowed === true,
-  marketTrendContextCoveragePct: releaseManifest.marketCoverage?.verifiedMarketTrendContextCoveragePct ?? null,
-  fullTechnicalCoverageOfUniversePct: releaseManifest.marketCoverage?.fullTechnicalCoverageOfUniversePct ?? null,
-  operationalDeploymentStatus: releaseManifest.operations?.deploymentStatus || null,
-  operationalAutomationStatus: releaseManifest.operations?.automationStatus || null,
-  releaseRegressionOk: releaseRegression.ok === true,
-  detailedManifest: 'data/v20/release-manifest.json',
-  detailedRegression: 'data/v20/release-manifest-regression.json',
+regression.releaseManifest = releaseManifest;
+regression.releaseManifestRegression = releaseRegression;
+regression.releaseManifestMirror = {
+  authoritativeRuntimeBuilder: 'scripts/v20/build-release-manifest.cjs',
+  authoritativeRuntimeRegression: 'scripts/v20/release-manifest-regression.cjs',
+  transientDetailedManifest: 'data/v20/release-manifest.json',
+  transientDetailedRegression: 'data/v20/release-manifest-regression.json',
+  persistedManifest: 'data/v20/regression.json#releaseManifest',
+  persistedRegression: 'data/v20/regression.json#releaseManifestRegression',
   generatedInSameMainRun: true,
 };
 fs.writeFileSync(P('data/v20/regression.json'), `${JSON.stringify(regression, null, 2)}\n`, 'utf8');
@@ -61,5 +55,6 @@ console.log(JSON.stringify({
   releaseRegressionOk: releaseRegression.ok === true,
   deployedClaimAllowed: releaseManifest.releaseClaims?.deployedClaimAllowed === true,
   persistedAcceptanceMirror: 'data/v20/regression.json#finalAcceptance',
-  persistedReleaseMirror: 'data/v20/regression.json#releaseManifest',
+  persistedReleaseManifest: 'data/v20/regression.json#releaseManifest',
+  persistedReleaseRegression: 'data/v20/regression.json#releaseManifestRegression',
 }, null, 2));
