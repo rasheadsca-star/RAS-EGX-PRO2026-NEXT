@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+import json, os, runpy
+from datetime import datetime, timezone
+from pathlib import Path
+ROOT=Path(os.getenv('GITHUB_WORKSPACE') or '.').resolve();V4=runpy.run_path(str(ROOT/'scripts/v19/native-challenger-v4.py'),run_name='v19_v6_base');V2=runpy.run_path(str(ROOT/'scripts/v19/native-challenger-v2.py'),run_name='v19_v6_v2')
+OUT=ROOT/'data/v19/native-challenger-v6.json';ENGINE='V19_CHAT_GPT_NATIVE_CHALLENGER_V6';CHAMPION='V16_9_EQUAL_WEIGHT_BASKET';BASE_POLICY='S0.00|R0|A8|INV_VOL|N3';TW=V4['TW'];HOLDOUT=V4['HOLDOUT']
+build_rows=V4['build_rows'];apply_policy=V4['apply_policy'];aggregate=V4['aggregate'];init_models=V4['init_models'];update_models=V4['update_models'];score_session=V4['score_session'];rd=V4['rd'];wr=V4['wr'];rv=V4['rv'];finite=V4['finite'];compact=V2['compact_candidate']
+RISK_PROFILE={0:1.00,1:0.65,2:0.40,3:0.25}
+
+def exposure_for(streak):return RISK_PROFILE.get(min(int(streak),3),0.25)
+def advance(streak,ret):return streak+1 if ret<0 else 0
+
+def main():
+ hs,bd,dates,rb=build_rows();signals=sorted(rb);cut=len(signals)-HOLDOUT;dev=signals[:cut];hold=signals[cut:];warm=[r for d in dev[:TW] for r in rb[d]];n=len(warm[0]['x']);models=init_models(n,warm);seen=list(warm);streak=0;dev_results=[]
+ for day in dev[TW:]:
+  sess=rb[day];ranked=score_session(sess,models,seen,'TOP10_BASELINE');raw,tt,ww=apply_policy(ranked,BASE_POLICY);exp=exposure_for(streak);scaled=rv(raw*exp,4);dev_results.append({'signalDate':day,'outcomeDate':sess[0]['outcomeDate'],'rawNetReturnPct':raw,'exposurePct':rv(exp*100,1),'netReturnPct':scaled,'tickers':tt,'baseWeightsPct':ww});streak=advance(streak,raw);models=update_models(models,sess);seen.extend(sess)
+ dev_metrics=aggregate([x['netReturnPct'] for x in dev_results]);pre=[r for d in dev for r in rb[d]];frozen=init_models(n,pre);hold_results=[]
+ for day in hold:
+  sess=rb[day];ranked=score_session(sess,frozen,pre,'TOP10_BASELINE');raw,tt,ww=apply_policy(ranked,BASE_POLICY);exp=exposure_for(streak);scaled=rv(raw*exp,4);hold_results.append({'signalDate':day,'outcomeDate':sess[0]['outcomeDate'],'rawNetReturnPct':raw,'exposurePct':rv(exp*100,1),'netReturnPct':scaled,'tickers':tt,'baseWeightsPct':ww,'effectivePortfolioWeightsPct':[rv(x*exp,2) for x in ww]});streak=advance(streak,raw)
+ hm=aggregate([x['netReturnPct'] for x in hold_results]);rawm=aggregate([x['rawNetReturnPct'] for x in hold_results]);baseline_policy='S0.00|R0|A0|EQUAL|N4';base_results=[]
+ for day in hold:
+  ranked=score_session(rb[day],frozen,pre,'TOP10_BASELINE');br,bt,bw=apply_policy(ranked,baseline_policy);base_results.append({'signalDate':day,'outcomeDate':rb[day][0]['outcomeDate'],'netReturnPct':br,'tickers':bt,'weightsPct':bw})
+ bm=aggregate([x['netReturnPct'] for x in base_results]);champ=rd(ROOT/'data/research/v16-v169-basket-engine.json',{}).get('blockedWalkForwardMetrics',{});alltrain=[r for d in signals for r in rb[d]];final=init_models(n,alltrain);latest=dates[-1];curr=[]
+ for z in bd[latest]:curr.append({'signalDate':latest,'outcomeDate':None,'ticker':z['ticker'],'name':z['name'],'feature':z,'nextReturn':0,'x':V2['vector'](z),'yTop3':0,'yTop5':0,'yTop10':0,'yPositive':0,'yLargeLoss':0})
+ ranked=score_session(curr,final,alltrain,'TOP10_BASELINE');_,ct,cw=apply_policy(ranked,BASE_POLICY);exp=exposure_for(streak);candidates=[]
+ for i,r in enumerate(ranked[:15],1):
+  c=compact(r,i);c['selectedByV6']=r['ticker'] in ct;c['baseBasketWeightPct']=cw[ct.index(r['ticker'])] if r['ticker'] in ct else 0;c['effectivePortfolioWeightPct']=rv(c['baseBasketWeightPct']*exp,2);candidates.append(c)
+ report={'schemaVersion':'19.5.0-native-challenger-v6','engineId':ENGINE,'generatedAt':datetime.now(timezone.utc).isoformat(),'status':'SHADOW_RESEARCH_ONLY','isolation':{'branch':os.getenv('GITHUB_REF_NAME') or 'v19-egx-chat-gpt','v16Untouched':True,'v17Untouched':True},'methodology':{'ranking':'V19 TOP10 probability ranking with ATR<=8 candidate preference and inverse-volatility weighting across 3 names.','basePolicy':BASE_POLICY,'riskBudgetOverlay':'Portfolio exposure is 100% normally, 65% after one losing session, 40% after two consecutive losing sessions, and 25% after three or more; reset to 100% after a positive session.','causality':'Exposure for each session depends only on previously resolved V19 session outcomes.','benchmarkInformedArchitecture':True,'postHocDiagnosticInfluencedBasePolicy':True,'countsAsFreshIndependentEvidence':False,'transactionCostPct':V2['COST'],'automaticPromotion':False},'coverage':{'usableTickerHistories':len(hs),'labeledSignalSessions':len(signals),'developmentOosSessions':len(dev_results),'holdoutSessions':len(hold)},'development':{'metrics':dev_metrics,'results':dev_results[-25:]},'holdoutBenchmark':{'reusedAfterPriorIterations':True,'countsAsFreshIndependentHoldout':False,'rawBasePolicyMetrics':rawm,'riskBudgetMetrics':hm,'results':hold_results,'internalTop10EqualWeight4':{'metrics':bm,'results':base_results}},'championReference':{'engineId':CHAMPION,'publishedBlockedWalkForwardMetrics':champ,'v17ProductionReference':'V17 currently governs V16_9_EQUAL_WEIGHT_BASKET','averageVsChampionPp':rv(finite(hm['averageNetReturnPct'],0)-finite(champ.get('averageNetReturnPct'),0),4),'averageVsInternalTop10Pp':rv(finite(hm['averageNetReturnPct'],0)-finite(bm['averageNetReturnPct'],0),4)},'current':{'signalDate':latest,'mode':'SHADOW_RESEARCH_ONLY','executionAllowed':False,'basePolicy':BASE_POLICY,'priorLossStreak':streak,'portfolioExposurePct':rv(exp*100,1),'selectedTickers':ct,'baseWeightsPct':cw,'candidates':candidates},'promotion':{'automaticPromotion':False,'promotionAllowed':False,'freshIndependentEvidenceRequired':True,'reason':'V6 architecture was informed by an already-seen benchmark diagnostic; benchmark dominance cannot be treated as fresh validation.'}}
+ wr(OUT,report);print(json.dumps({'engineId':ENGINE,'development':dev_metrics,'rawHoldout':rawm,'riskBudgetHoldout':hm,'baseline':bm,'vsChampionPp':report['championReference']['averageVsChampionPp'],'currentExposurePct':report['current']['portfolioExposurePct'],'currentTickers':ct},ensure_ascii=False,indent=2))
+if __name__=='__main__':main()
