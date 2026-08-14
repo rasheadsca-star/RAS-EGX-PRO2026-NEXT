@@ -1,19 +1,21 @@
 {
   "ok": true,
-  "engine": "goal_reconciled_ranked_opportunities_v17_internal_sr",
-  "generatedAt": "2026-08-14T09:35:56.754Z",
+  "engine": "goal_reconciled_ranked_opportunities_v17_internal_sr_liquidity_gated",
+  "generatedAt": "2026-08-14T09:48:49.624Z",
   "sessionDate": "2026-08-14",
   "sessionTruth": {
     "sessionDate": "2026-08-14",
     "historySource": "data/history-50.json",
-    "historyGeneratedAt": "2026-08-14T09:35:25.714Z",
-    "marketGeneratedAt": "2026-08-14T09:32:39.954Z",
+    "historyGeneratedAt": "2026-08-14T09:48:09.509Z",
+    "marketGeneratedAt": "2026-08-14T09:45:21.520Z",
     "explicitSessionAttached": true,
     "completedOhlcSession": "2026-08-13",
-    "currentSessionCompletionConfirmed": false
+    "currentSessionCompletionConfirmed": false,
+    "resilientStatus": "DEGRADED",
+    "executionGrade": false
   },
   "mainDecision": "توجد 80 فرصة مرتبة للمتابعة، ولا توجد توصية تنفيذية آمنة الآن",
-  "caution": "فرص المتابعة ليست أوامر شراء. S/R الأساسي مشتق داخليًا من OHLC لجلسة مكتملة مع provenance/freshness/confidence؛ Mubasher مصدر تحقق ومقارنة وليس اعتمادًا صلبًا. التنفيذ لا يُسمح به إلا إذا اجتازت بوابات الجلسة والجودة والسيولة والتغطية والتعارضات.",
+  "caution": "فرص المتابعة ليست أوامر شراء. S/R الأساسي مشتق داخليًا من OHLC لجلسة مكتملة؛ والسيولة تستخدم قواعد V11.1 المجمدة على بيانات التشغيل الحالي. لا يصبح أي سهم EXECUTABLE إلا مع Execution Grade نهائي + S/R مؤهل + سيولة تنفيذية للسهم.",
   "summary": {
     "rankedCount": 80,
     "executionCount": 0,
@@ -27,7 +29,12 @@
     "supportResistanceExecutionCandidateCount": 0,
     "internalCoveragePct": 91.25,
     "internalFreshnessPct": 71.25,
-    "internalCriticalFieldsPct": 91.25
+    "internalCriticalFieldsPct": 91.25,
+    "liquidityEvidenceCount": 77,
+    "liquidityEvidenceCoveragePct": 96.25,
+    "liquidityExecutionOkCount": 67,
+    "liquidityGatePassed": true,
+    "finalExecutionGrade": false
   },
   "rankedOpportunities": [
     {
@@ -133,6 +140,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 56592552,
+        "avg20Turnover": 449649883,
+        "currentVolume": 17021975,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 93,
       "finalScore": 98,
@@ -144,7 +167,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 93% | ربح هدف1 6.3% | عائد متوقع 5.8% | R/R 10.50 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 2,
@@ -249,6 +272,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 11057310,
+        "avg20Turnover": 22537643,
+        "currentVolume": 7323513,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 92,
       "finalScore": 96,
@@ -260,7 +299,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 92% | ربح هدف1 5.3% | عائد متوقع 4.8% | R/R 4.00 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 3,
@@ -365,6 +404,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 35195116,
+        "avg20Turnover": 35623271,
+        "currentVolume": 966862,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 92,
       "finalScore": 95,
@@ -376,7 +431,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 92% | ربح هدف1 4.2% | عائد متوقع 3.9% | R/R 6.16 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 4,
@@ -482,6 +537,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 122057880,
+        "avg20Turnover": 72535687,
+        "currentVolume": 4534455,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 91,
       "finalScore": 94,
@@ -493,7 +564,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 91% | ربح هدف1 5.7% | عائد متوقع 4.9% | R/R 1.76 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 5,
@@ -598,6 +669,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 23459548,
+        "avg20Turnover": 34292358,
+        "currentVolume": 736900,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 90,
       "finalScore": 92,
@@ -609,7 +696,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 90% | ربح هدف1 4.4% | عائد متوقع 3.7% | R/R 1.69 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 6,
@@ -714,6 +801,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 9432538,
+        "avg20Turnover": 19401184,
+        "currentVolume": 1282832,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 90,
@@ -725,7 +828,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 87% | ربح هدف1 6.4% | عائد متوقع 5.1% | R/R 1.70 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 7,
@@ -830,6 +933,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 17247774,
+        "avg20Turnover": 11951701,
+        "currentVolume": 2868158,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 89,
@@ -841,7 +960,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 87% | ربح هدف1 4.7% | عائد متوقع 3.8% | R/R 2.00 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 8,
@@ -946,6 +1065,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 15463038,
+        "avg20Turnover": 73831968,
+        "currentVolume": 473007,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 85,
       "finalScore": 92,
@@ -957,7 +1092,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 85% | ربح هدف1 11.7% | عائد متوقع 9.3% | R/R 3.05 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 9,
@@ -1062,6 +1197,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "CONDITIONAL_OK",
+        "score": 63,
+        "currentTurnover": 1879553,
+        "avg20Turnover": 17926734,
+        "currentVolume": 978885,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 83,
       "finalScore": 88,
@@ -1073,7 +1224,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 83% | ربح هدف1 14.7% | عائد متوقع 10.2% | R/R 1.27 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 10,
@@ -1178,6 +1329,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 13,
+        "currentTurnover": 306201,
+        "avg20Turnover": 610090,
+        "currentVolume": 23242,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 81,
       "finalScore": 88,
@@ -1189,7 +1356,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 81% | ربح هدف1 12.5% | عائد متوقع 9.8% | R/R 6.11 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 11,
@@ -1294,6 +1461,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 109563224,
+        "avg20Turnover": 89210663,
+        "currentVolume": 15441436,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 80,
       "finalScore": 86,
@@ -1305,7 +1488,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 80% | ربح هدف1 12.0% | عائد متوقع 8.4% | R/R 2.00 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 12,
@@ -1410,6 +1593,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 38223096,
+        "avg20Turnover": 34324340,
+        "currentVolume": 439508,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 79,
       "finalScore": 87,
@@ -1421,7 +1620,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 79% | ربح هدف1 99.9% | عائد متوقع 77.7% | R/R 16.66 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 13,
@@ -1526,6 +1725,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 17830824,
+        "avg20Turnover": 14917552,
+        "currentVolume": 923961,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 86,
@@ -1537,7 +1752,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 83.5% | عائد متوقع 63.8% | R/R 13.93 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 14,
@@ -1642,6 +1857,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 43207064,
+        "avg20Turnover": 9723171,
+        "currentVolume": 147835,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 86,
@@ -1653,7 +1884,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 24.8% | عائد متوقع 18.1% | R/R 4.14 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 15,
@@ -1758,6 +1989,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 69945200,
+        "avg20Turnover": 12264348,
+        "currentVolume": 2554632,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 83,
@@ -1769,7 +2016,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 10.7% | عائد متوقع 7.0% | R/R 1.78 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 16,
@@ -1874,6 +2121,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 31750864,
+        "avg20Turnover": 31198753,
+        "currentVolume": 6839527,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 83,
@@ -1885,7 +2148,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 10.6% | عائد متوقع 7.0% | R/R 1.77 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 17,
@@ -1907,6 +2170,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 0,
+        "currentTurnover": 7058,
+        "avg20Turnover": 7058,
+        "currentVolume": 57,
+        "historicalSessionsUsed": 7,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 70,
       "finalScore": 78,
@@ -1918,7 +2197,7 @@
       "priceState": "ok",
       "historySessions": 8,
       "why": "احتمال الهدف 70% | ربح هدف1 86.7% | عائد متوقع 58.9% | R/R 14.41 | السعر مدقق | تاريخ 8/50",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 18,
@@ -2023,6 +2302,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "CONDITIONAL_OK",
+        "score": 70,
+        "currentTurnover": 2871122,
+        "avg20Turnover": 12278178,
+        "currentVolume": 4647,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 88,
@@ -2034,7 +2329,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 87% | ربح هدف1 7.7% | عائد متوقع 5.1% | R/R 0.65 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 19,
@@ -2056,6 +2351,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 24849202,
+        "avg20Turnover": 24849202,
+        "currentVolume": 1404559,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 87,
@@ -2067,7 +2378,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 87% | ربح هدف1 4.5% | عائد متوقع 3.2% | R/R 0.75 | السعر مدقق | تاريخ 13/50",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 20,
@@ -2172,6 +2483,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 112206280,
+        "avg20Turnover": 3290371,
+        "currentVolume": 212785,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 85,
       "finalScore": 84,
@@ -2183,7 +2510,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 85% | ربح هدف1 3.5% | عائد متوقع 2.1% | R/R 0.58 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 21,
@@ -2205,6 +2532,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 28,
+        "currentTurnover": 515917,
+        "avg20Turnover": 1390200,
+        "currentVolume": 1249,
+        "historicalSessionsUsed": 11,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 83,
       "finalScore": 80,
@@ -2216,7 +2559,7 @@
       "priceState": "ok",
       "historySessions": 12,
       "why": "احتمال الهدف 83% | ربح هدف1 3.5% | عائد متوقع -0.9% | R/R 0.16 | السعر مدقق | تاريخ 12/50 | قيود: R/R ضعيف",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 22,
@@ -2321,6 +2664,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 30146108,
+        "avg20Turnover": 57143870,
+        "currentVolume": 13451764,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 83,
       "finalScore": 80,
@@ -2332,7 +2691,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 83% | ربح هدف1 1.3% | عائد متوقع 0.4% | R/R 0.33 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 23,
@@ -2437,6 +2796,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 41405436,
+        "avg20Turnover": 79011536,
+        "currentVolume": 3792182,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -2448,7 +2823,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 4.8% | عائد متوقع 2.5% | R/R 0.63 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 24,
@@ -2470,6 +2845,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 0,
+        "currentTurnover": 3924,
+        "avg20Turnover": 3924,
+        "currentVolume": 157,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -2481,7 +2872,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 4.4% | عائد متوقع 2.6% | R/R 0.74 | السعر مدقق | تاريخ 13/50",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 25,
@@ -2586,6 +2977,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 12834261,
+        "avg20Turnover": 162529385,
+        "currentVolume": 1019888,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -2597,7 +3004,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 4.3% | عائد متوقع 1.0% | R/R 0.31 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 26,
@@ -2702,6 +3109,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 77343256,
+        "avg20Turnover": 236562823,
+        "currentVolume": 25028872,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -2713,7 +3136,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.47 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 27,
@@ -2818,6 +3241,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 46635240,
+        "avg20Turnover": 70257695,
+        "currentVolume": 3939074,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -2829,7 +3268,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 2.0% | R/R 0.72 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 28,
@@ -2934,6 +3373,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 125534736,
+        "avg20Turnover": 105615977,
+        "currentVolume": 6595710,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -2945,7 +3400,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.7% | R/R 0.53 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 29,
@@ -3050,6 +3505,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 286441216,
+        "avg20Turnover": 231528629,
+        "currentVolume": 2930666,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -3061,7 +3532,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.6% | R/R 0.49 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 30,
@@ -3167,6 +3638,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 295101792,
+        "avg20Turnover": 185675202,
+        "currentVolume": 396324,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -3178,7 +3665,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.6% | R/R 0.48 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 31,
@@ -3283,6 +3770,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 59238196,
+        "avg20Turnover": 191878660,
+        "currentVolume": 3881507,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -3294,7 +3797,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.45 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 32,
@@ -3400,6 +3903,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 38398064,
+        "avg20Turnover": 124534624,
+        "currentVolume": 4008730,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -3411,7 +3930,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 3.1% | عائد متوقع 1.2% | R/R 0.41 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 33,
@@ -3516,6 +4035,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "CONDITIONAL_OK",
+        "score": 51,
+        "currentTurnover": 2353495,
+        "avg20Turnover": 1955336,
+        "currentVolume": 622709,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -3527,7 +4062,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 2.7% | عائد متوقع 1.4% | R/R 0.63 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 34,
@@ -3632,6 +4167,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 9899479,
+        "avg20Turnover": 9928844,
+        "currentVolume": 6989447,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 78,
@@ -3643,7 +4194,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 0.7% | عائد متوقع -0.4% | R/R 0.13 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 35,
@@ -3748,6 +4299,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "CONDITIONAL_OK",
+        "score": 81,
+        "currentTurnover": 4432114,
+        "avg20Turnover": 14185196,
+        "currentVolume": 88811,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 81,
       "finalScore": 80,
@@ -3759,7 +4326,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 81% | ربح هدف1 4.7% | عائد متوقع 2.2% | R/R 0.56 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 36,
@@ -3865,6 +4432,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 20922374,
+        "avg20Turnover": 60172481,
+        "currentVolume": 624923,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 81,
       "finalScore": 80,
@@ -3876,7 +4459,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 81% | ربح هدف1 4.5% | عائد متوقع 1.8% | R/R 0.47 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 37,
@@ -3981,6 +4564,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 21593270,
+        "avg20Turnover": 25584640,
+        "currentVolume": 4366472,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 81,
       "finalScore": 79,
@@ -3992,7 +4591,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 81% | ربح هدف1 3.5% | عائد متوقع 1.4% | R/R 0.48 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 38,
@@ -4097,6 +4696,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 87770400,
+        "avg20Turnover": 72154381,
+        "currentVolume": 11499267,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 81,
       "finalScore": 79,
@@ -4108,7 +4723,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 81% | ربح هدف1 3.5% | عائد متوقع 1.3% | R/R 0.44 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 39,
@@ -4130,6 +4745,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 50,
+        "currentTurnover": 0,
+        "avg20Turnover": 7850682,
+        "currentVolume": 0,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": false,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 80,
       "finalScore": 79,
@@ -4141,7 +4772,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 80% | ربح هدف1 4.5% | عائد متوقع 2.2% | R/R 0.64 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 40,
@@ -4246,6 +4877,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 70867960,
+        "avg20Turnover": 4823392,
+        "currentVolume": 294238,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 79,
       "finalScore": 78,
@@ -4257,7 +4904,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 79% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.58 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 41,
@@ -4362,6 +5009,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 56171288,
+        "avg20Turnover": 30345469,
+        "currentVolume": 3357623,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 76,
@@ -4373,7 +5036,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع 1.1% | R/R 0.47 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 42,
@@ -4478,6 +5141,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 147265456,
+        "avg20Turnover": 331859836,
+        "currentVolume": 1057854,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 76,
@@ -4489,7 +5168,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع 0.2% | R/R 0.31 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 43,
@@ -4594,6 +5273,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 30987374,
+        "avg20Turnover": 67880223,
+        "currentVolume": 1641753,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 75,
@@ -4605,7 +5300,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع 0.0% | R/R 0.28 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 44,
@@ -4710,6 +5405,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 144680176,
+        "avg20Turnover": 95519667,
+        "currentVolume": 3386325,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 75,
@@ -4721,7 +5432,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -0.4% | R/R 0.25 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 45,
@@ -4827,6 +5538,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 226852448,
+        "avg20Turnover": 126242682,
+        "currentVolume": 2936396,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 75,
@@ -4838,7 +5565,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -0.8% | R/R 0.22 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 46,
@@ -4943,6 +5670,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 345650112,
+        "avg20Turnover": 724792998,
+        "currentVolume": 65032157,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 75,
@@ -4954,7 +5697,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -0.2% | R/R 0.26 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 47,
@@ -5059,6 +5802,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 23763370,
+        "avg20Turnover": 18565000,
+        "currentVolume": 17707646,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -5070,7 +5829,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -0.0% | R/R 0.29 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 48,
@@ -5175,6 +5934,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 31319736,
+        "avg20Turnover": 24485994,
+        "currentVolume": 1009667,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -5186,7 +5961,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -0.0% | R/R 0.30 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 49,
@@ -5291,6 +6066,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 49588144,
+        "avg20Turnover": 31951074,
+        "currentVolume": 753273,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -5302,7 +6093,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -0.4% | R/R 0.26 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 50,
@@ -5407,6 +6198,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 512471616,
+        "avg20Turnover": 28856531,
+        "currentVolume": 21279099,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -5418,7 +6225,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -0.5% | R/R 0.25 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 51,
@@ -5524,6 +6331,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 213179072,
+        "avg20Turnover": 75651267,
+        "currentVolume": 5403868,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -5535,7 +6358,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -0.7% | R/R 0.24 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 52,
@@ -5641,6 +6464,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 18384556,
+        "avg20Turnover": 17311324,
+        "currentVolume": 6675184,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -5652,7 +6491,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -0.3% | R/R 0.27 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 53,
@@ -5757,6 +6596,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 23619692,
+        "avg20Turnover": 3263944,
+        "currentVolume": 472607,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 74,
@@ -5768,7 +6623,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع 0.4% | R/R 0.37 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 54,
@@ -5873,6 +6728,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 42794956,
+        "avg20Turnover": 7969491,
+        "currentVolume": 4109634,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 74,
@@ -5884,7 +6755,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع 0.2% | R/R 0.35 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 55,
@@ -5989,6 +6860,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 10312066,
+        "avg20Turnover": 4130731,
+        "currentVolume": 1846661,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 74,
@@ -6000,7 +6887,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع -0.0% | R/R 0.31 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 56,
@@ -6105,6 +6992,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 33099780,
+        "avg20Turnover": 4016442,
+        "currentVolume": 1114783,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 73,
@@ -6116,7 +7019,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع -0.1% | R/R 0.31 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 57,
@@ -6221,6 +7124,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 13301047,
+        "avg20Turnover": 3644294,
+        "currentVolume": 161982,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 73,
@@ -6232,7 +7151,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع -0.5% | R/R 0.27 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 58,
@@ -6338,6 +7257,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 11406148,
+        "avg20Turnover": 3792017,
+        "currentVolume": 283734,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 73,
@@ -6349,7 +7284,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع -0.8% | R/R 0.25 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 59,
@@ -6454,6 +7389,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 25219244,
+        "avg20Turnover": 4781055,
+        "currentVolume": 1076211,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 73,
@@ -6465,7 +7416,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع -0.8% | R/R 0.24 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 60,
@@ -6570,6 +7521,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 7675955,
+        "avg20Turnover": 8111127,
+        "currentVolume": 1057904,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 74,
@@ -6581,7 +7548,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع 0.4% | R/R 0.37 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 61,
@@ -6686,6 +7653,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "CONDITIONAL_OK",
+        "score": 46,
+        "currentTurnover": 2559281,
+        "avg20Turnover": 1623014,
+        "currentVolume": 964123,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 74,
@@ -6697,7 +7680,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع 0.6% | R/R 0.42 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 62,
@@ -6803,6 +7786,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 8086997,
+        "avg20Turnover": 8499693,
+        "currentVolume": 3258922,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 73,
@@ -6814,7 +7813,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 76% | ربح هدف1 3.5% | عائد متوقع -0.2% | R/R 0.29 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 63,
@@ -6919,6 +7918,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 18793398,
+        "avg20Turnover": 3931699,
+        "currentVolume": 777205,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 73,
@@ -6930,7 +7945,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 76% | ربح هدف1 2.2% | عائد متوقع 0.1% | R/R 0.34 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 64,
@@ -7035,6 +8050,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 43559424,
+        "avg20Turnover": 11669653,
+        "currentVolume": 20053612,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 76,
       "finalScore": 72,
@@ -7046,7 +8077,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 76% | ربح هدف1 1.4% | عائد متوقع -0.7% | R/R 0.19 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 65,
@@ -7068,6 +8099,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 19,
+        "currentTurnover": 0,
+        "avg20Turnover": 1091640,
+        "currentVolume": 0,
+        "historicalSessionsUsed": 7,
+        "evidenceAvailable": false,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 75,
       "finalScore": 73,
@@ -7079,7 +8126,7 @@
       "priceState": "stale",
       "historySessions": 8,
       "why": "احتمال الهدف 75% | ربح هدف1 3.5% | عائد متوقع 0.4% | R/R 0.40 | السعر قديم | تاريخ 8/50 | قيود: سعر قديم، R/R ضعيف",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 66,
@@ -7184,6 +8231,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 17090446,
+        "avg20Turnover": 2007864,
+        "currentVolume": 1137856,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 75,
       "finalScore": 72,
@@ -7195,7 +8258,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 75% | ربح هدف1 3.5% | عائد متوقع -0.6% | R/R 0.27 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 67,
@@ -7300,6 +8363,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 15,
+        "currentTurnover": 847075,
+        "avg20Turnover": 493178,
+        "currentVolume": 97088,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 75,
       "finalScore": 72,
@@ -7311,7 +8390,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 75% | ربح هدف1 1.8% | عائد متوقع -0.7% | R/R 0.22 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 68,
@@ -7333,6 +8412,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 7,
+        "currentTurnover": 0,
+        "avg20Turnover": 421106,
+        "currentVolume": 0,
+        "historicalSessionsUsed": 8,
+        "evidenceAvailable": false,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 72,
       "finalScore": 69,
@@ -7344,7 +8439,7 @@
       "priceState": "stale",
       "historySessions": 9,
       "why": "احتمال الهدف 72% | ربح هدف1 1.9% | عائد متوقع -0.5% | R/R 0.29 | السعر قديم | تاريخ 9/50 | قيود: سعر قديم، R/R ضعيف",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 69,
@@ -7449,6 +8544,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 42629528,
+        "avg20Turnover": 99597419,
+        "currentVolume": 1276050,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 75,
@@ -7460,7 +8571,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -1.3% | R/R 0.19 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 70,
@@ -7565,6 +8676,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 155240224,
+        "avg20Turnover": 124181979,
+        "currentVolume": 20112709,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 75,
@@ -7576,7 +8703,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -1.4% | R/R 0.18 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 71,
@@ -7681,6 +8808,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 152117072,
+        "avg20Turnover": 119658086,
+        "currentVolume": 13869264,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 75,
@@ -7692,7 +8835,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -1.7% | R/R 0.17 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 72,
@@ -7797,6 +8940,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 42674268,
+        "avg20Turnover": 106815203,
+        "currentVolume": 23974154,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 74,
@@ -7808,7 +8967,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -4.2% | R/R 0.11 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 73,
@@ -7913,6 +9072,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 141356768,
+        "avg20Turnover": 105895027,
+        "currentVolume": 3969792,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 74,
@@ -7924,7 +9099,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -4.3% | R/R 0.11 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 74,
@@ -8029,6 +9204,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 239588480,
+        "avg20Turnover": 109827759,
+        "currentVolume": 623955,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 73,
@@ -8040,7 +9231,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -6.0% | R/R 0.09 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 75,
@@ -8145,6 +9336,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 228619088,
+        "avg20Turnover": 216746673,
+        "currentVolume": 1736128,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 73,
@@ -8156,7 +9363,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -6.4% | R/R 0.08 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 76,
@@ -8261,6 +9468,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 54909260,
+        "avg20Turnover": 136314168,
+        "currentVolume": 177594,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 72,
@@ -8272,7 +9495,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -8.0% | R/R 0.07 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 77,
@@ -8377,6 +9600,22 @@
         "executionEligible": false
       },
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 757302592,
+        "avg20Turnover": 252645603,
+        "currentVolume": 1889075,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 72,
@@ -8388,7 +9627,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 3.5% | عائد متوقع -10.9% | R/R 0.06 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 78,
@@ -8493,6 +9732,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 80495912,
+        "avg20Turnover": 40709905,
+        "currentVolume": 36589852,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -8504,7 +9759,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -1.8% | R/R 0.18 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 79,
@@ -8609,6 +9864,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 48357664,
+        "avg20Turnover": 22525591,
+        "currentVolume": 22551416,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 73,
@@ -8620,7 +9891,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -2.3% | R/R 0.16 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 80,
@@ -8725,6 +9996,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 54370216,
+        "avg20Turnover": 34638959,
+        "currentVolume": 4977915,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 77,
       "finalScore": 74,
@@ -8736,7 +10023,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 77% | ربح هدف1 3.5% | عائد متوقع -1.1% | R/R 0.21 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     }
   ],
   "executableOpportunities": [],
@@ -8844,6 +10131,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 56592552,
+        "avg20Turnover": 449649883,
+        "currentVolume": 17021975,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 93,
       "finalScore": 98,
@@ -8855,7 +10158,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 93% | ربح هدف1 6.3% | عائد متوقع 5.8% | R/R 10.50 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 2,
@@ -8960,6 +10263,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 11057310,
+        "avg20Turnover": 22537643,
+        "currentVolume": 7323513,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 92,
       "finalScore": 96,
@@ -8971,7 +10290,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 92% | ربح هدف1 5.3% | عائد متوقع 4.8% | R/R 4.00 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 3,
@@ -9076,6 +10395,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 35195116,
+        "avg20Turnover": 35623271,
+        "currentVolume": 966862,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 92,
       "finalScore": 95,
@@ -9087,7 +10422,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 92% | ربح هدف1 4.2% | عائد متوقع 3.9% | R/R 6.16 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 4,
@@ -9193,6 +10528,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 122057880,
+        "avg20Turnover": 72535687,
+        "currentVolume": 4534455,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 91,
       "finalScore": 94,
@@ -9204,7 +10555,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 91% | ربح هدف1 5.7% | عائد متوقع 4.9% | R/R 1.76 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 5,
@@ -9309,6 +10660,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 23459548,
+        "avg20Turnover": 34292358,
+        "currentVolume": 736900,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 90,
       "finalScore": 92,
@@ -9320,7 +10687,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 90% | ربح هدف1 4.4% | عائد متوقع 3.7% | R/R 1.69 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 6,
@@ -9425,6 +10792,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 9432538,
+        "avg20Turnover": 19401184,
+        "currentVolume": 1282832,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 90,
@@ -9436,7 +10819,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 87% | ربح هدف1 6.4% | عائد متوقع 5.1% | R/R 1.70 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 7,
@@ -9541,6 +10924,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 17247774,
+        "avg20Turnover": 11951701,
+        "currentVolume": 2868158,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 89,
@@ -9552,7 +10951,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 87% | ربح هدف1 4.7% | عائد متوقع 3.8% | R/R 2.00 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 8,
@@ -9657,6 +11056,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 15463038,
+        "avg20Turnover": 73831968,
+        "currentVolume": 473007,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 85,
       "finalScore": 92,
@@ -9668,7 +11083,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 85% | ربح هدف1 11.7% | عائد متوقع 9.3% | R/R 3.05 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 9,
@@ -9773,6 +11188,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "CONDITIONAL_OK",
+        "score": 63,
+        "currentTurnover": 1879553,
+        "avg20Turnover": 17926734,
+        "currentVolume": 978885,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 83,
       "finalScore": 88,
@@ -9784,7 +11215,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 83% | ربح هدف1 14.7% | عائد متوقع 10.2% | R/R 1.27 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 10,
@@ -9889,6 +11320,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 13,
+        "currentTurnover": 306201,
+        "avg20Turnover": 610090,
+        "currentVolume": 23242,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 81,
       "finalScore": 88,
@@ -9900,7 +11347,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 81% | ربح هدف1 12.5% | عائد متوقع 9.8% | R/R 6.11 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 11,
@@ -10005,6 +11452,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 109563224,
+        "avg20Turnover": 89210663,
+        "currentVolume": 15441436,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 80,
       "finalScore": 86,
@@ -10016,7 +11479,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 80% | ربح هدف1 12.0% | عائد متوقع 8.4% | R/R 2.00 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 12,
@@ -10121,6 +11584,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 38223096,
+        "avg20Turnover": 34324340,
+        "currentVolume": 439508,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 79,
       "finalScore": 87,
@@ -10132,7 +11611,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 79% | ربح هدف1 99.9% | عائد متوقع 77.7% | R/R 16.66 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 13,
@@ -10237,6 +11716,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 17830824,
+        "avg20Turnover": 14917552,
+        "currentVolume": 923961,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 86,
@@ -10248,7 +11743,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 83.5% | عائد متوقع 63.8% | R/R 13.93 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 14,
@@ -10353,6 +11848,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 43207064,
+        "avg20Turnover": 9723171,
+        "currentVolume": 147835,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 86,
@@ -10364,7 +11875,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 24.8% | عائد متوقع 18.1% | R/R 4.14 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 15,
@@ -10469,6 +11980,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 69945200,
+        "avg20Turnover": 12264348,
+        "currentVolume": 2554632,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 83,
@@ -10480,7 +12007,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 78% | ربح هدف1 10.7% | عائد متوقع 7.0% | R/R 1.78 | السعر مدقق | تاريخ 14/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 16,
@@ -10585,6 +12112,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 31750864,
+        "avg20Turnover": 31198753,
+        "currentVolume": 6839527,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 78,
       "finalScore": 83,
@@ -10596,7 +12139,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 78% | ربح هدف1 10.6% | عائد متوقع 7.0% | R/R 1.77 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 17,
@@ -10618,6 +12161,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 0,
+        "currentTurnover": 7058,
+        "avg20Turnover": 7058,
+        "currentVolume": 57,
+        "historicalSessionsUsed": 7,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 70,
       "finalScore": 78,
@@ -10629,7 +12188,7 @@
       "priceState": "ok",
       "historySessions": 8,
       "why": "احتمال الهدف 70% | ربح هدف1 86.7% | عائد متوقع 58.9% | R/R 14.41 | السعر مدقق | تاريخ 8/50",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 18,
@@ -10734,6 +12293,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "CONDITIONAL_OK",
+        "score": 70,
+        "currentTurnover": 2871122,
+        "avg20Turnover": 12278178,
+        "currentVolume": 4647,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 88,
@@ -10745,7 +12320,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 87% | ربح هدف1 7.7% | عائد متوقع 5.1% | R/R 0.65 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-07-02؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 19,
@@ -10767,6 +12342,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 24849202,
+        "avg20Turnover": 24849202,
+        "currentVolume": 1404559,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 87,
       "finalScore": 87,
@@ -10778,7 +12369,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 87% | ربح هدف1 4.5% | عائد متوقع 3.2% | R/R 0.75 | السعر مدقق | تاريخ 13/50",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 20,
@@ -10883,6 +12474,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 112206280,
+        "avg20Turnover": 3290371,
+        "currentVolume": 212785,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 85,
       "finalScore": 84,
@@ -10894,7 +12501,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 85% | ربح هدف1 3.5% | عائد متوقع 2.1% | R/R 0.58 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 21,
@@ -10916,6 +12523,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 28,
+        "currentTurnover": 515917,
+        "avg20Turnover": 1390200,
+        "currentVolume": 1249,
+        "historicalSessionsUsed": 11,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 83,
       "finalScore": 80,
@@ -10927,7 +12550,7 @@
       "priceState": "ok",
       "historySessions": 12,
       "why": "احتمال الهدف 83% | ربح هدف1 3.5% | عائد متوقع -0.9% | R/R 0.16 | السعر مدقق | تاريخ 12/50 | قيود: R/R ضعيف",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 22,
@@ -11032,6 +12655,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 30146108,
+        "avg20Turnover": 57143870,
+        "currentVolume": 13451764,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 83,
       "finalScore": 80,
@@ -11043,7 +12682,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 83% | ربح هدف1 1.3% | عائد متوقع 0.4% | R/R 0.33 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 23,
@@ -11148,6 +12787,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 41405436,
+        "avg20Turnover": 79011536,
+        "currentVolume": 3792182,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -11159,7 +12814,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 4.8% | عائد متوقع 2.5% | R/R 0.63 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 24,
@@ -11181,6 +12836,22 @@
       "pivot": null,
       "supportResistance": null,
       "srVerified": false,
+      "liquidity": {
+        "decision": "WATCH_ONLY",
+        "score": 0,
+        "currentTurnover": 3924,
+        "avg20Turnover": 3924,
+        "currentVolume": 157,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": false,
+        "conditionalLiquidityOk": false,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -11192,7 +12863,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 4.4% | عائد متوقع 2.6% | R/R 0.74 | السعر مدقق | تاريخ 13/50",
-      "reason": "لا توجد مستويات دعم ومقاومة داخلية قابلة للتدقيق؛ تُعرض للمراقبة فقط."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 25,
@@ -11297,6 +12968,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 12834261,
+        "avg20Turnover": 162529385,
+        "currentVolume": 1019888,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -11308,7 +12995,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 4.3% | عائد متوقع 1.0% | R/R 0.31 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 26,
@@ -11413,6 +13100,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 77343256,
+        "avg20Turnover": 236562823,
+        "currentVolume": 25028872,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -11424,7 +13127,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.47 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 27,
@@ -11529,6 +13232,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 46635240,
+        "avg20Turnover": 70257695,
+        "currentVolume": 3939074,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -11540,7 +13259,7 @@
       "priceState": "ok",
       "historySessions": 13,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 2.0% | R/R 0.72 | السعر مدقق | تاريخ 13/50",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 28,
@@ -11645,6 +13364,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 125534736,
+        "avg20Turnover": 105615977,
+        "currentVolume": 6595710,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 81,
@@ -11656,7 +13391,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.7% | R/R 0.53 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 29,
@@ -11761,6 +13496,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 286441216,
+        "avg20Turnover": 231528629,
+        "currentVolume": 2930666,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -11772,7 +13523,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.6% | R/R 0.49 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     },
     {
       "rank": 30,
@@ -11878,6 +13629,22 @@
         "executionEligible": false
       },
       "srVerified": true,
+      "liquidity": {
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 295101792,
+        "avg20Turnover": 185675202,
+        "currentVolume": 396324,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
       "provisionalPlan": true,
       "confidence": 82,
       "finalScore": 80,
@@ -11889,7 +13656,7 @@
       "priceState": "ok",
       "historySessions": 14,
       "why": "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.6% | R/R 0.48 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
-      "reason": "دعم/مقاومة داخلي موثق من جلسة مكتملة 2026-08-13؛ المتابعة بحثية حتى تكتمل بوابات التنفيذ."
+      "reason": "المتابعة بحثية لأن بوابة الجلسة النهائية ليست Execution Grade."
     }
   ],
   "blockedPreview": [],
@@ -11901,9 +13668,24 @@
     "criticalSourceConflictBlocksExecution": true,
     "automaticPromotion": false
   },
+  "liquidityPolicy": {
+    "engine": "v17_wrapper_of_v11_1_liquidity_gate",
+    "rulesSource": "scripts/build-v111-liquidity-gate.js",
+    "currentRunEvidenceRequiredForExecution": true,
+    "perSymbolExecutionLiquidityRequired": true,
+    "thresholds": {
+      "intradayMinCurrentTurnover": 5000000,
+      "intradayMinAvg20Turnover": 2000000,
+      "shortTermMinTurnover": 1000000,
+      "executionMinLiquidityScore": 65,
+      "conditionalMinLiquidityScore": 45,
+      "minimumCandidateEvidenceCoveragePct": 95
+    },
+    "gatePassed": true
+  },
   "legacyDecision": {
     "engine": "goal_reconciled_ranked_opportunities_v17_internal_sr",
-    "generatedAt": "2026-08-14T09:11:06.208Z",
+    "generatedAt": "2026-08-14T09:35:56.754Z",
     "sessionDate": "2026-08-14",
     "mainDecision": "توجد 80 فرصة مرتبة للمتابعة، ولا توجد توصية تنفيذية آمنة الآن"
   }

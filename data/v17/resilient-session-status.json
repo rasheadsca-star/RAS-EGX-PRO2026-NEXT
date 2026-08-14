@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "17.0.0-resilient-session-gate-4",
-  "generatedAt": "2026-08-14T09:35:56.839Z",
+  "schemaVersion": "17.0.0-resilient-session-gate-5",
+  "generatedAt": "2026-08-14T09:48:49.576Z",
   "status": "DEGRADED",
   "mode": "DEGRADED",
   "reasons": [
@@ -17,6 +17,7 @@
   "sourcesUsed": [
     "MANDATORY_MARKET_COLLECTOR",
     "INTERNAL_OHLC_PIVOT",
+    "V11_1_LIQUIDITY_RULES_V17_CURRENT_RUN",
     "MUBASHER_DIRECT_VALIDATION",
     "MUBASHER_RENDERED_VALIDATION"
   ],
@@ -95,7 +96,7 @@
     "sourceCoveragePct": 100,
     "stale": false,
     "sourceAgeMinutes": 2.8,
-    "lastSourceUpdate": "2026-08-14T09:32:39.954Z",
+    "lastSourceUpdate": "2026-08-14T09:45:21.520Z",
     "sourceName": "mubasher_symbol_pages_precise_enriched",
     "contract": "MANDATORY_MARKET_COLLECTOR_IS_PRICE_TRUTH"
   },
@@ -113,13 +114,31 @@
       "referenceSessionDate": "2026-08-14",
       "sessionCompletionConfirmed": false
     },
+    "liquidity": {
+      "gatePassed": true,
+      "sessionAligned": true,
+      "referenceSessionDate": "2026-08-14",
+      "candidateUniverseCount": 80,
+      "candidateEvidenceCoveragePct": 96.25,
+      "candidateExecutionOkCount": 66,
+      "candidateExecutionOkPct": 82.5,
+      "thresholds": {
+        "intradayMinCurrentTurnover": 5000000,
+        "intradayMinAvg20Turnover": 2000000,
+        "shortTermMinTurnover": 1000000,
+        "executionMinLiquidityScore": 65,
+        "conditionalMinLiquidityScore": 45,
+        "minimumCandidateEvidenceCoveragePct": 95
+      },
+      "engine": "v17_wrapper_of_v11_1_liquidity_gate"
+    },
     "liquidityGatePassed": true
   },
   "sourceState": {
     "availableRows": 221,
     "marketRows": 215,
     "cacheRows": 221,
-    "lastSourceUpdate": "2026-08-14T09:32:39.954Z",
+    "lastSourceUpdate": "2026-08-14T09:45:21.520Z",
     "sourceAgeMinutes": 2.8,
     "stale": false
   },
