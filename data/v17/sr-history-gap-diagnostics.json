@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "17.0.0-sr-history-gap-diagnostics-1",
-  "generatedAt": "2026-08-14T10:08:34.033Z",
+  "schemaVersion": "17.0.0-sr-history-gap-diagnostics-2",
+  "generatedAt": "2026-08-14T10:15:46.556Z",
   "referenceSessionDate": "2026-08-14",
   "levelSessionDate": "2026-08-13",
   "candidateUniverseCount": 80,
@@ -8,6 +8,10 @@
     "freshInternalCount": 57,
     "staleInternalCount": 16,
     "missingInternalCount": 7,
+    "trustedMissingRecoveryCount": 2,
+    "trustedStaleRecoveryCount": 0,
+    "researchOnlyMissingRecoveryCount": 2,
+    "researchOnlyStaleRecoveryCount": 16,
     "trustedRecoveryAvailableCount": 59,
     "researchOnlyRecoveryAvailableCount": 76,
     "byDiagnosis": {
@@ -24,13 +28,24 @@
     "v56CurrentImportExpressionDetected": true,
     "finding": "V56_HISTORY_50_DOES_NOT_IMPORT_SESSIONS_BY_SYMBOL_SCHEMA"
   },
+  "sourceContractAudit": {
+    "publicAutomatedHistoricalBackfillTrusted": true,
+    "source": "scripts/build-v113-historical-backfill-engine.js",
+    "acceptedTrustedQualityClasses": [
+      "OFFICIALLY_VERIFIED",
+      "WORKFLOW_MARKET_SNAPSHOT",
+      "PUBLIC_VALIDATED_HISTORICAL_BACKFILL",
+      "LICENSED_VALIDATED_HISTORICAL_BACKFILL"
+    ]
+  },
   "policy": {
     "diagnosticOnly": true,
     "doesNotChangeExecutionEligibility": true,
     "derivedOhlcCannotRepairExecutionFreshness": true,
     "recoveredCommitDateRowsCannotRepairExecutionFreshness": true,
     "seedOrSingleSourceRowsCannotRepairExecutionFreshness": true,
-    "officiallyVerifiedOrWorkflowMarketSnapshotRequiredForTrustedRecovery": true,
+    "publicValidatedBackfillMayRepairOnlyExactCompletedSession": true,
+    "officiallyVerifiedOrValidatedRealPublicOhlcRequiredForTrustedRecovery": true,
     "gateThresholdsUnchanged": true
   },
   "missingSymbols": [
@@ -59,6 +74,487 @@
     "ELKA",
     "MPCI",
     "NIPH"
+  ],
+  "trustedMissingRecoveries": [
+    {
+      "symbol": "ARVA",
+      "diagnosis": "MISSING_INTERNAL_SR_TRUSTED_COMPLETED_OHLC_AVAILABLE_ELSEWHERE",
+      "currentInternalSession": null,
+      "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 10.7,
+        "high": 11.11,
+        "low": 10.7,
+        "close": 11.03,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 11.03,
+        "high": 11.052059999999999,
+        "low": 10.48898,
+        "close": 11.03,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "RAKT",
+      "diagnosis": "MISSING_INTERNAL_SR_TRUSTED_COMPLETED_OHLC_AVAILABLE_ELSEWHERE",
+      "currentInternalSession": null,
+      "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 23.02,
+        "high": 23.99,
+        "low": 22.5,
+        "close": 22.63,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
+      "researchOnlyRecoveryOrigin": null,
+      "researchOnlyRecoveryPoint": null
+    }
+  ],
+  "trustedStaleRecoveries": [],
+  "researchOnlyMissingRecoveries": [
+    {
+      "symbol": "MEGM",
+      "diagnosis": "MISSING_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": null,
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 17.69,
+        "high": 17.72538,
+        "low": 17.65462,
+        "close": 17.69,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "SEIGA",
+      "diagnosis": "MISSING_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": null,
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 5.41,
+        "high": 5.42082,
+        "low": 5.39918,
+        "close": 5.41,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    }
+  ],
+  "researchOnlyStaleRecoveries": [
+    {
+      "symbol": "SCTS",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 626.62,
+        "high": 666.33,
+        "low": 557.89198,
+        "close": 626.62,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "MASR",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 7.4,
+        "high": 7.504980000000001,
+        "low": 7.19558,
+        "close": 7.4,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "CCAP",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 5.04,
+        "high": 5.05008,
+        "low": 4.7005799999999995,
+        "close": 5.04,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "ABUK",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 67.94,
+        "high": 68.1861,
+        "low": 66.96579999999999,
+        "close": 67.94,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "PRMH",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.57,
+        "high": 2.5751399999999998,
+        "low": 2.4451,
+        "close": 2.57,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "OLFI",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 22.29,
+        "high": 22.625159999999997,
+        "low": 22.075760000000002,
+        "close": 22.29,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "MFPC",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 35.72,
+        "high": 35.79144,
+        "low": 34.880100000000006,
+        "close": 35.72,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "MENA",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 6.89,
+        "high": 6.953880000000001,
+        "low": 6.70656,
+        "close": 6.89,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "SUGR",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 46.92,
+        "high": 47.07396,
+        "low": 45.67846,
+        "close": 46.92,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "FAIT",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 36.98,
+        "high": 37.80546,
+        "low": 35.818220000000004,
+        "close": 36.98,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "SAUD",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 21.09,
+        "high": 21.38268,
+        "low": 20.6087,
+        "close": 21.09,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "UBEE",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 13.47,
+        "high": 13.49694,
+        "low": 13.2235,
+        "close": 13.47,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "APSW",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 8.48,
+        "high": 8.49696,
+        "low": 8.14368,
+        "close": 8.48,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "ELKA",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.36,
+        "high": 1.38276,
+        "low": 1.23752,
+        "close": 1.36,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "MPCI",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 246,
+        "high": 246.492,
+        "low": 234.88928,
+        "close": 246,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    },
+    {
+      "symbol": "NIPH",
+      "diagnosis": "STALE_INTERNAL_SR_ONLY_UNVERIFIED_OR_DERIVED_COMPLETED_OHLC_AVAILABLE",
+      "currentInternalSession": "2026-07-02",
+      "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 180.06,
+        "high": 180.42012,
+        "low": 161.38658,
+        "close": 180.06,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
+    }
   ],
   "rows": [
     {
@@ -144,8 +640,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 3.33,
+        "high": 3.35,
+        "low": 3.32,
+        "close": 3.32,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 3.45,
+        "high": 3.53706,
+        "low": 3.37324,
+        "close": 3.45,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "AREH",
@@ -244,8 +770,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.51,
+        "high": 1.54,
+        "low": 1.49,
+        "close": 1.51,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.56,
+        "high": 1.59318,
+        "low": 1.52694,
+        "close": 1.56,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EAST",
@@ -344,8 +900,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 36.2,
+        "high": 36.54,
+        "low": 36.2,
+        "close": 36.43,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 37.26,
+        "high": 37.86558,
+        "low": 36.846160000000005,
+        "close": 37.26,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "HRHO",
@@ -444,8 +1030,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 27.25,
+        "high": 27.6,
+        "low": 27.06,
+        "close": 27.12,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 26.96,
+        "high": 27.013920000000002,
+        "low": 26.40708,
+        "close": 26.96,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "GBCO",
@@ -544,8 +1160,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 32,
+        "high": 32.42,
+        "low": 31.77,
+        "close": 31.97,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 32.07,
+        "high": 32.99586,
+        "low": 31.42702,
+        "close": 32.07,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EASB",
@@ -644,8 +1290,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 7.19,
+        "high": 7.35,
+        "low": 7.05,
+        "close": 7.22,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 7.54,
+        "high": 7.69536,
+        "low": 7.11574,
+        "close": 7.54,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "NCCW",
@@ -744,8 +1420,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 5.91,
+        "high": 5.99,
+        "low": 5.82,
+        "close": 5.96,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 6.16,
+        "high": 6.27252,
+        "low": 5.97802,
+        "close": 6.16,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "OBRI",
@@ -844,8 +1550,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 32.9,
+        "high": 33.34,
+        "low": 32.5,
+        "close": 32.69,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 34.94,
+        "high": 35.009879999999995,
+        "low": 32.195479999999996,
+        "close": 34.94,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EBSC",
@@ -944,8 +1680,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.92,
+        "high": 1.96,
+        "low": 1.91,
+        "close": 1.92,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.1,
+        "high": 2.1042,
+        "low": 2.0958,
+        "close": 2.1,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EPPK",
@@ -1044,8 +1810,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 13.25,
+        "high": 13.64,
+        "low": 12.62,
+        "close": 12.77,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 14.19,
+        "high": 14.21838,
+        "low": 13.21352,
+        "close": 14.19,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "RAYA",
@@ -1144,8 +1940,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 7.25,
+        "high": 7.38,
+        "low": 7.13,
+        "close": 7.17,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 7.67,
+        "high": 7.92582,
+        "low": 7.26544,
+        "close": 7.67,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "HDBK",
@@ -1244,8 +2070,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 85,
+        "high": 86.45,
+        "low": 84.36,
+        "close": 86.22,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 166.67,
+        "high": 167.00333999999998,
+        "low": 155.32871999999998,
+        "close": 166.67,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "MHOT",
@@ -1344,8 +2200,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 20.71,
+        "high": 21.4,
+        "low": 19,
+        "close": 19.22,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 33.98,
+        "high": 34.3686,
+        "low": 33.37312,
+        "close": 33.98,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "OCPH",
@@ -1444,8 +2330,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 310,
+        "high": 310,
+        "low": 292,
+        "close": 295,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 356.52,
+        "high": 362.75406,
+        "low": 344.82896,
+        "close": 356.52,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "JUFO",
@@ -1544,8 +2460,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 26.6,
+        "high": 27.1,
+        "low": 26.07,
+        "close": 26.97,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 29.99,
+        "high": 30.24036,
+        "low": 29.20148,
+        "close": 29.99,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "BONY",
@@ -1630,8 +2576,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 4.6,
+        "high": 4.71,
+        "low": 4.58,
+        "close": 4.69,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 4.88,
+        "high": 4.88976,
+        "low": 4.720540000000001,
+        "close": 4.88,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "SAIB",
@@ -1696,8 +2672,10 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": false,
-      "researchOnlyRecoveryOrigin": null
+      "researchOnlyRecoveryOrigin": null,
+      "researchOnlyRecoveryPoint": null
     },
     {
       "symbol": "SCTS",
@@ -1796,8 +2774,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 626.62,
+        "high": 666.33,
+        "low": 557.89198,
+        "close": 626.62,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "MEGM",
@@ -1862,8 +2856,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 17.69,
+        "high": 17.72538,
+        "low": 17.65462,
+        "close": 17.69,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "BIOC",
@@ -1962,8 +2972,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 550,
+        "high": 560,
+        "low": 440,
+        "close": 507.65,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 71.48,
+        "high": 71.62296,
+        "low": 68.02368,
+        "close": 71.48,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ACAMD",
@@ -2062,8 +3102,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.28,
+        "high": 2.3,
+        "low": 2.25,
+        "close": 2.25,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.25,
+        "high": 2.27454,
+        "low": 2.1956,
+        "close": 2.25,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EDFM",
@@ -2142,8 +3212,10 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": false,
-      "researchOnlyRecoveryOrigin": null
+      "researchOnlyRecoveryOrigin": null,
+      "researchOnlyRecoveryPoint": null
     },
     {
       "symbol": "SEIGA",
@@ -2208,8 +3280,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 5.41,
+        "high": 5.42082,
+        "low": 5.39918,
+        "close": 5.41,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ETRS",
@@ -2308,8 +3396,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 10.7,
+        "high": 10.9,
+        "low": 10.64,
+        "close": 10.83,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 10.6,
+        "high": 11.45286,
+        "low": 10.31932,
+        "close": 10.6,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EMFD",
@@ -2408,8 +3526,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 11.9,
+        "high": 12,
+        "low": 11.76,
+        "close": 11.84,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 11.56,
+        "high": 11.743440000000001,
+        "low": 11.44706,
+        "close": 11.56,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "FWRY",
@@ -2508,8 +3656,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 18.81,
+        "high": 19.04,
+        "low": 18.7,
+        "close": 18.89,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 18.37,
+        "high": 18.687299999999997,
+        "low": 18.19354,
+        "close": 18.37,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "TMGH",
@@ -2608,8 +3786,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 97.9,
+        "high": 98.4,
+        "low": 97.01,
+        "close": 98.36,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 94.97,
+        "high": 95.45052000000001,
+        "low": 92.97368,
+        "close": 94.97,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ORAS",
@@ -2694,8 +3902,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 716,
+        "high": 729,
+        "low": 713,
+        "close": 725.95,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 720.42,
+        "high": 732.2916600000001,
+        "low": 705.4363000000001,
+        "close": 720.42,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "BTFH",
@@ -2794,8 +4032,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 3.09,
+        "high": 3.12,
+        "low": 3.08,
+        "close": 3.08,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.97,
+        "high": 3.0060000000000002,
+        "low": 2.91416,
+        "close": 2.97,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "PHDC",
@@ -2894,8 +4162,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 15.48,
+        "high": 15.6,
+        "low": 15.14,
+        "close": 15.22,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 14.58,
+        "high": 14.84964,
+        "low": 14.40114,
+        "close": 14.58,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "RTVC",
@@ -2994,8 +4292,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 3.8,
+        "high": 3.84,
+        "low": 3.76,
+        "close": 3.76,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 3.79,
+        "high": 3.86772,
+        "low": 3.68262,
+        "close": 3.79,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ISMQ",
@@ -3094,8 +4422,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 9.85,
+        "high": 9.97,
+        "low": 9.67,
+        "close": 9.67,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 9.34,
+        "high": 9.35868,
+        "low": 8.96204,
+        "close": 9.34,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "RUBX",
@@ -3194,8 +4552,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 12.27,
+        "high": 12.84,
+        "low": 12.2,
+        "close": 12.52,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 12.35,
+        "high": 12.374699999999999,
+        "low": 10.91812,
+        "close": 12.35,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "GGRN",
@@ -3280,8 +4668,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.45,
+        "high": 1.46,
+        "low": 1.25,
+        "close": 1.41,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.41,
+        "high": 1.4228399999999999,
+        "low": 1.35728,
+        "close": 1.41,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "MFSC",
@@ -3380,8 +4798,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 48.97,
+        "high": 53,
+        "low": 48.06,
+        "close": 50.15,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 49.48,
+        "high": 49.578959999999995,
+        "low": 46.31717999999999,
+        "close": 49.48,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "PRCL",
@@ -3480,8 +4928,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 34.95,
+        "high": 35.35,
+        "low": 34.27,
+        "close": 34.84,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 33,
+        "high": 33.066,
+        "low": 30.4889,
+        "close": 33,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "CNFN",
@@ -3580,8 +5058,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 4.94,
+        "high": 5,
+        "low": 4.91,
+        "close": 4.97,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 4.76,
+        "high": 4.79958,
+        "low": 4.67064,
+        "close": 4.76,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "MASR",
@@ -3680,8 +5188,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 7.4,
+        "high": 7.504980000000001,
+        "low": 7.19558,
+        "close": 7.4,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ARVA",
@@ -3770,8 +5294,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 10.7,
+        "high": 11.11,
+        "low": 10.7,
+        "close": 11.03,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 11.03,
+        "high": 11.052059999999999,
+        "low": 10.48898,
+        "close": 11.03,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "AFMC",
@@ -3870,8 +5424,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 255,
+        "high": 300,
+        "low": 245.1,
+        "close": 246.66,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 69.44,
+        "high": 70.68108000000001,
+        "low": 68.00372,
+        "close": 69.44,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "SKPC",
@@ -3970,8 +5554,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 16.57,
+        "high": 16.93,
+        "low": 16.5,
+        "close": 16.66,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 15.88,
+        "high": 16.011960000000002,
+        "low": 15.748439999999999,
+        "close": 15.88,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "COMI",
@@ -4070,8 +5684,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 139,
+        "high": 139.99,
+        "low": 138.3,
+        "close": 138.48,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 127.4,
+        "high": 129.58866,
+        "low": 126.02744,
+        "close": 127.4,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EGTS",
@@ -4170,8 +5814,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 19.25,
+        "high": 20.75,
+        "low": 18.93,
+        "close": 19,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 17.7,
+        "high": 17.91576,
+        "low": 16.846239999999998,
+        "close": 17.7,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "CCAP",
@@ -4270,8 +5944,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 5.04,
+        "high": 5.05008,
+        "low": 4.7005799999999995,
+        "close": 5.04,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ORHD",
@@ -4370,8 +6060,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 42.3,
+        "high": 42.83,
+        "low": 41.42,
+        "close": 41.87,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 38.25,
+        "high": 38.79744,
+        "low": 37.71442,
+        "close": 38.25,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ABUK",
@@ -4470,8 +6190,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 67.94,
+        "high": 68.1861,
+        "low": 66.96579999999999,
+        "close": 67.94,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "VLMRA",
@@ -4556,8 +6292,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 30.6,
+        "high": 31.36,
+        "low": 30.5,
+        "close": 30.7,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 28.2,
+        "high": 28.87764,
+        "low": 27.90408,
+        "close": 28.2,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "CERA",
@@ -4656,8 +6422,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.33,
+        "high": 1.34,
+        "low": 1.32,
+        "close": 1.32,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.22,
+        "high": 1.2324599999999999,
+        "low": 1.1976,
+        "close": 1.22,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "PRMH",
@@ -4756,8 +6552,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.57,
+        "high": 2.5751399999999998,
+        "low": 2.4451,
+        "close": 2.57,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ASCM",
@@ -4856,8 +6668,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 66.31,
+        "high": 69.34,
+        "low": 65.28,
+        "close": 65.36,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 59.26,
+        "high": 60.74124,
+        "low": 57.724320000000006,
+        "close": 59.26,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "OLFI",
@@ -4956,8 +6798,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 22.29,
+        "high": 22.625159999999997,
+        "low": 22.075760000000002,
+        "close": 22.29,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "MFPC",
@@ -5056,8 +6914,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 35.72,
+        "high": 35.79144,
+        "low": 34.880100000000006,
+        "close": 35.72,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "DGTZ",
@@ -5142,8 +7016,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.69,
+        "high": 2.73,
+        "low": 2.65,
+        "close": 2.67,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.51,
+        "high": 2.5350599999999996,
+        "low": 2.47504,
+        "close": 2.51,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "MENA",
@@ -5242,8 +7146,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 6.89,
+        "high": 6.953880000000001,
+        "low": 6.70656,
+        "close": 6.89,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "SUGR",
@@ -5342,8 +7262,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 46.92,
+        "high": 47.07396,
+        "low": 45.67846,
+        "close": 46.92,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "RACC",
@@ -5442,8 +7378,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 10.14,
+        "high": 10.28,
+        "low": 10.07,
+        "close": 10.23,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 9.85,
+        "high": 9.8697,
+        "low": 9.56084,
+        "close": 9.85,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "CIEB",
@@ -5542,8 +7508,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 24.25,
+        "high": 24.45,
+        "low": 24.08,
+        "close": 24.1,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 23.92,
+        "high": 23.967840000000002,
+        "low": 23.39312,
+        "close": 23.92,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ATLC",
@@ -5642,8 +7638,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 5.73,
+        "high": 5.95,
+        "low": 5.53,
+        "close": 5.58,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 5.27,
+        "high": 5.450880000000001,
+        "low": 5.06984,
+        "close": 5.27,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "DOMT",
@@ -5742,8 +7768,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 28,
+        "high": 29.38,
+        "low": 27.9,
+        "close": 28.87,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 27.23,
+        "high": 27.28446,
+        "low": 26.53682,
+        "close": 27.23,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "CCRS",
@@ -5842,8 +7898,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.54,
+        "high": 2.59,
+        "low": 2.51,
+        "close": 2.52,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.32,
+        "high": 2.32464,
+        "low": 2.1956,
+        "close": 2.32,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "FERC",
@@ -5942,8 +8028,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 82.2,
+        "high": 84.88,
+        "low": 81.1,
+        "close": 81.11,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 73.55,
+        "high": 74.148,
+        "low": 72.91388,
+        "close": 73.55,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ELEC",
@@ -6042,8 +8158,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.16,
+        "high": 2.18,
+        "low": 2.16,
+        "close": 2.17,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 2.1,
+        "high": 2.1042,
+        "low": 2.0458999999999996,
+        "close": 2.1,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "FAIT",
@@ -6142,8 +8288,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 36.98,
+        "high": 37.80546,
+        "low": 35.818220000000004,
+        "close": 36.98,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "SAUD",
@@ -6242,8 +8404,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 21.09,
+        "high": 21.38268,
+        "low": 20.6087,
+        "close": 21.09,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ELNA",
@@ -6304,8 +8482,10 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": false,
-      "researchOnlyRecoveryOrigin": null
+      "researchOnlyRecoveryOrigin": null,
+      "researchOnlyRecoveryPoint": null
     },
     {
       "symbol": "UBEE",
@@ -6390,8 +8570,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 13.47,
+        "high": 13.49694,
+        "low": 13.2235,
+        "close": 13.47,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "APSW",
@@ -6490,8 +8686,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 8.48,
+        "high": 8.49696,
+        "low": 8.14368,
+        "close": 8.48,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "RAKT",
@@ -6566,8 +8778,24 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 23.02,
+        "high": 23.99,
+        "low": 22.5,
+        "close": 22.63,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": false,
-      "researchOnlyRecoveryOrigin": null
+      "researchOnlyRecoveryOrigin": null,
+      "researchOnlyRecoveryPoint": null
     },
     {
       "symbol": "LCSW",
@@ -6666,8 +8894,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 35,
+        "high": 36.5,
+        "low": 33.8,
+        "close": 34.25,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 28.25,
+        "high": 28.57704,
+        "low": 27.315260000000002,
+        "close": 28.25,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ZMID",
@@ -6766,8 +9024,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 7.65,
+        "high": 7.77,
+        "low": 7.5,
+        "close": 7.67,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 6.49,
+        "high": 6.6633000000000004,
+        "low": 6.31734,
+        "close": 6.49,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "SVCE",
@@ -6866,8 +9154,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 11.26,
+        "high": 12.85,
+        "low": 10.68,
+        "close": 10.77,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 9.63,
+        "high": 9.64926,
+        "low": 8.842279999999999,
+        "close": 9.63,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ELKA",
@@ -6966,8 +9284,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1.36,
+        "high": 1.38276,
+        "low": 1.23752,
+        "close": 1.36,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "OCDI",
@@ -7066,8 +9400,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 34.4,
+        "high": 34.99,
+        "low": 33.07,
+        "close": 34.88,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 25.36,
+        "high": 25.410719999999998,
+        "low": 24.421059999999997,
+        "close": 25.36,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "MPCI",
@@ -7166,8 +9530,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 246,
+        "high": 246.492,
+        "low": 234.88928,
+        "close": 246,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "GTWL",
@@ -7266,8 +9646,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 128,
+        "high": 129.98,
+        "low": 121.55,
+        "close": 124.65,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 89.74,
+        "high": 92.36436,
+        "low": 80.06954,
+        "close": 89.74,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "DTPP",
@@ -7366,8 +9776,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 311,
+        "high": 340,
+        "low": 303,
+        "close": 317.52,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 199.26,
+        "high": 199.65851999999998,
+        "low": 198.86148,
+        "close": 199.26,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "NIPH",
@@ -7466,8 +9906,24 @@
       },
       "trustedRecoveryAvailable": false,
       "trustedRecoveryOrigin": null,
+      "trustedRecoveryPoint": null,
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 180.06,
+        "high": 180.42012,
+        "low": 161.38658,
+        "close": 180.06,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "ATQA",
@@ -7566,8 +10022,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 10.97,
+        "high": 11.1,
+        "low": 10.74,
+        "close": 10.95,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 9.47,
+        "high": 9.57912,
+        "low": 9.31134,
+        "close": 9.47,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "AXPH",
@@ -7666,8 +10152,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1343.56,
+        "high": 1360,
+        "low": 1281,
+        "close": 1330.1,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 1212.35,
+        "high": 1214.7747,
+        "low": 1109.84586,
+        "close": 1212.35,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     },
     {
       "symbol": "EXPA",
@@ -7766,8 +10282,38 @@
       },
       "trustedRecoveryAvailable": true,
       "trustedRecoveryOrigin": "history-50",
+      "trustedRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 20.99,
+        "high": 21.2,
+        "low": 20.55,
+        "close": 20.8,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history-50",
+          "class": "WORKFLOW_MARKET_SNAPSHOT",
+          "executionSafe": true,
+          "sourceQuality": "workflow-market-snapshot"
+        }
+      },
       "researchOnlyRecoveryAvailable": true,
-      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol"
+      "researchOnlyRecoveryOrigin": "history.json:sessionsBySymbol",
+      "researchOnlyRecoveryPoint": {
+        "date": "2026-08-13",
+        "open": 18.33,
+        "high": 18.36666,
+        "low": 18.08376,
+        "close": 18.33,
+        "validOhlc": true,
+        "validRange": true,
+        "quality": {
+          "origin": "history.json:sessionsBySymbol",
+          "class": "DERIVED_OHLC_NOT_EXECUTION_SAFE",
+          "executionSafe": false,
+          "sourceQuality": "snapshot_ohlc_derived_from_public_market_data"
+        }
+      }
     }
   ]
 }
