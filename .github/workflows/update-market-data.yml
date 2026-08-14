@@ -24,7 +24,7 @@ jobs:
       EGX_INTERNAL_SR_MIN_CONFIDENCE: '0.80'
     steps:
       - name: Checkout isolated V17 branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with: {fetch-depth: 0, ref: develop/v17-rebuild}
       - name: Guard V16 main from mutation
         run: |
@@ -34,7 +34,7 @@ jobs:
           pattern='git push[[:space:]].*(origin[[:space:]]+main|HEAD:main)'
           violations="$(grep -REn "$pattern" .github/workflows/update-market-data.yml scripts/v17/ | grep -v 'pattern=' | grep -v 'dangerousPushLines' || true)"
           test -z "$violations" || { echo "$violations"; exit 1; }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: {node-version: 22, cache: npm}
       - name: Install project dependencies
         run: npm ci || npm install
@@ -144,7 +144,7 @@ jobs:
           NODE
       - name: Upload diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: v17-resilient-market-diagnostics
           path: |
