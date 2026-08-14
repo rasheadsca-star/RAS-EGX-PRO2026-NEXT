@@ -1,8 +1,8 @@
 'use strict';
 (() => {
   const VERSION = '16.3.3';
-  const ASSET_BUILD = '16.3.3-session-truth-20260814';
-  const SW_BUILD = 'V16.3.3-V169-SESSION-TRUTH-20260814';
+  const ASSET_BUILD = '16.3.3-session-truth-20260814-r2';
+  const SW_BUILD = 'V16.3.3-V169-SESSION-TRUTH-20260814-R2';
   const head = document.head || document.documentElement;
 
   document.documentElement.dataset.egxVersion = VERSION;
@@ -63,6 +63,7 @@
     await loadScript('v16-3.js', 'v163');
     await loadScript('recommendation-freshness.js', 'recommendationFreshness');
     await loadScript('v16-9-basket-overlay.js', 'v169BasketOverlay');
+    await loadScript('session-truth-ui.js', 'sessionTruthUi');
     openRequestedView();
   };
 
