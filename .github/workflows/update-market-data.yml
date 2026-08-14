@@ -113,12 +113,12 @@ jobs:
           node scripts/v17/browser-runtime-critic.cjs
       - name: Independent V17 current-session review V5
         run: node scripts/v17/review-v5.cjs
-      - name: V17 native regression contract V4
-        run: node scripts/v17/regression-v4.cjs
+      - name: V17 native regression contract V5
+        run: node scripts/v17/regression-v5.cjs
       - name: Snapshot provenance guard after regression
         run: node scripts/v17/snapshot-provenance-guard.cjs
-      - name: Destructive adversarial critic V4
-        run: node scripts/v17/destructive-critic-v4.cjs
+      - name: Destructive adversarial critic V5
+        run: node scripts/v17/destructive-critic-v5.cjs
       - name: Acceptance guard
         run: |
           set -euo pipefail
@@ -127,9 +127,10 @@ jobs:
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.schemaVersion!=='17.0.0-review-5'||r.verdict!=='NO_COMMENTS'||Object.values(r.counts||{}).some(Number)) throw new Error('Independent review V5 is not NO_COMMENTS');
-          if(q.schemaVersion!=='17.0.0-regression-4'||q.ok!==true||Number(q.failedCount||0)!==0||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression V4 failed: ${(q.failed||[]).join(', ')}`);
+          if(q.schemaVersion!=='17.0.0-regression-5'||q.ok!==true||Number(q.failedCount||0)!==0||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression V5 failed: ${(q.failed||[]).join(', ')}`);
           if(b.schemaVersion!=='17.0.0-browser-runtime-critic-1'||b.verdict!=='NO_COMMENTS'||Number(b.totalFindings||0)!==0||Object.values(b.counts||{}).some(Number)) throw new Error(`Browser runtime critic found ${b.totalFindings} findings`);
-          if(z.schemaVersion!=='17.0.0-destructive-critic-4'||z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0||Object.values(z.counts||{}).some(Number)) throw new Error(`Destructive critic V4 found ${z.totalFindings} findings`);
+          if(z.schemaVersion!=='17.0.0-destructive-critic-5'||z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0||Object.values(z.counts||{}).some(Number)) throw new Error(`Destructive critic V5 found ${z.totalFindings} findings`);
+          if(z.publicationArchitecture?.buildReviewReadOnly!==true||z.publicationArchitecture?.marketCanonicalPublisher!==true) throw new Error('Canonical publisher architecture is not safe');
           if(g?.policy?.doesNotChangeExecutionEligibility!==true||g?.policy?.gateThresholdsUnchanged!==true) throw new Error('S/R diagnostic attempted to change execution policy');
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate||x.sessionDate!==t.selectedSessionDate) throw new Error('Current session truth not aligned');
           if(x.enrichment?.immutableSignalHashTouched!==false||x.finalization?.immutableSignalHashTouched!==false||x.finalization?.ledgerTouched!==false) throw new Error('Snapshot processing touched immutable signal contract');
@@ -140,7 +141,7 @@ jobs:
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0||Number(x.portfolioPolicy?.cashReservePct||0)!==100) throw new Error('Non-execution status has exposure'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,review:r.verdict,regression:q.ok,browserRuntime:b.verdict,destructiveCritic:z.verdict},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,review:r.verdict,regression:q.ok,browserRuntime:b.verdict,destructiveCritic:z.verdict,buildReviewReadOnly:z.publicationArchitecture?.buildReviewReadOnly,marketCanonicalPublisher:z.publicationArchitecture?.marketCanonicalPublisher},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
@@ -165,14 +166,14 @@ jobs:
             data/mubasher-support-resistance-rendered.json
           if-no-files-found: warn
           retention-days: 7
-      - name: Commit generated lab data to V17 branch only
+      - name: Commit canonical generated lab data to V17 branch only
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/*.json data/v17/*.json artifacts/ || true
           if ! git diff --cached --quiet; then
-            git commit -m "V17 lab: current-session resilient EGX cycle"
+            git commit -m "V17 lab: canonical current-session resilient EGX cycle"
             git pull --rebase -X ours origin develop/v17-rebuild
             git push origin HEAD:develop/v17-rebuild
           fi
