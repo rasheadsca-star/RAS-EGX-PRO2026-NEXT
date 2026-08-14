@@ -41,12 +41,17 @@ jobs:
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$)' || true)"
           test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
 
+      - name: Apply null semantics hardening
+        run: node scripts/v20/apply-null-semantics-hardening.cjs
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with: {node-version: "22"}
 
       - name: Static validation
         run: |
+          node --check scripts/v20/apply-null-semantics-hardening.cjs
+          node --check scripts/v20/null-semantics-regression.cjs
           node --check scripts/v20/build-data-truth.cjs
           node --check scripts/v20/data-quality-regression.cjs
           node --check scripts/v20/build-integrated-decision-snapshot.cjs
@@ -107,6 +112,9 @@ jobs:
       - name: Run Market Explorer regression
         run: node scripts/v20/market-explorer-regression.cjs
 
+      - name: Run null semantics regression
+        run: node scripts/v20/null-semantics-regression.cjs
+
       - name: Run user portfolio regression
         run: node scripts/v20/user-portfolio-regression.cjs
 
@@ -135,6 +143,7 @@ jobs:
           const r3=require('./data/v20/phase3-regression.json');
           const ui=require('./data/v20/ui-validation.json');
           const dq=require('./data/v20/data-quality-regression.json');
+          const ns=require('./data/v20/null-semantics-regression.json');
           const upr=require('./data/v20/user-portfolio-regression.json');
           const rr=require('./data/v20/risk-reward-audit.json');
           const profiles=require('./data/v20/stock-profiles.json');
@@ -150,7 +159,7 @@ jobs:
           const forward=require('./data/v20/forward-evaluation.json');
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
-          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||upr.ok!==true) process.exit(1);
+          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||upr.ok!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.enabled!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.actionableRequiresCurrentPriceInsideEntryRange!==true) process.exit(1);
           if(policy.technicalHistory?.missingOhlcSynthesisAllowed!==false) process.exit(1);
@@ -181,6 +190,7 @@ jobs:
           if((mx.rows||[]).some(row=>row.decision?.scope==='MARKET_ONLY' && row.decision?.status!==null)) process.exit(1);
           if((mx.rows||[]).some(row=>row.technical?.usedForCurrentDecision===true && row.technical?.state!=='CURRENT_READY')) process.exit(1);
           if((mx.rows||[]).some(row=>row.currentSessionAvailable===true && row.semanticCompleteness!==true)) process.exit(1);
+          if((mx.rows||[]).some(row=>['previousClose','open','high','low','volume','turnover','trades'].some(k=>row[k]===0 && (row.dataQualityIssues||[]).some(issue=>issue.includes(k.toUpperCase())||issue.startsWith(k.toUpperCase()))))) process.exit(1);
           if(tpa.policy?.causeDiagnosisClaimed!==false) process.exit(1);
           if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
           if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
@@ -201,18 +211,32 @@ jobs:
           if(!archive.count||!Array.isArray(forward.evaluations)) process.exit(1);
           NODE
 
-      - name: Persist V20 evidence only
+      - name: Persist V20 evidence and hardened sources only
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
+            scripts/v20/build-data-truth.cjs \
+            scripts/v20/build-integrated-decision-snapshot.cjs \
+            scripts/v20/build-market-explorer.cjs \
+            scripts/v20/build-portfolio-risk.cjs \
+            scripts/v20/build-stock-profiles.cjs \
+            scripts/v20/build-trusted-technical-history.cjs \
+            scripts/v20/enrich-risk-reward.cjs \
+            scripts/v20/validate-trade-plans.cjs \
+            scripts/v20/regression.cjs \
+            scripts/v20/trade-plan-regression.cjs \
+            v20/app.js \
+            v20/portfolio-core.js \
+            v20/portfolio.js \
             data/v20/current.json \
             data/v20/regression.json \
             data/v20/master-universe.json \
             data/v20/current-market-snapshot.json \
             data/v20/source-health.json \
             data/v20/data-quality-regression.json \
+            data/v20/null-semantics-regression.json \
             data/v20/portfolio-risk.json \
             data/v20/risk-reward-audit.json \
             data/v20/trade-plan-audit.json \
@@ -230,5 +254,5 @@ jobs:
             data/v20/forward-evaluation.json \
             data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 semantic quality and user portfolio evidence"
+          git commit -m "Harden V20 null semantics and preserve evidence"
           git push origin HEAD:develop/v20-integrated-decision-platform
