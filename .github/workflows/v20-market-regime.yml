@@ -57,6 +57,8 @@ jobs:
           node --check scripts/v20/market-regime-regression.cjs
           node --check scripts/v20/market-regime-unit.cjs
           node --check scripts/v20/build-integrated-decision-snapshot.cjs
+          node --check scripts/v20/validate-ui.cjs
+          node --check v20/app.js
           node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
 
       - name: Run market regime unit tests
@@ -81,6 +83,9 @@ jobs:
       - name: Rebuild integrated decision snapshot with regime evidence
         run: node scripts/v20/build-integrated-decision-snapshot.cjs
 
+      - name: Validate market regime UI contract
+        run: node scripts/v20/validate-ui.cjs
+
       - name: Acceptance guard
         run: |
           node - <<'NODE'
@@ -88,8 +93,11 @@ jobs:
           const reg=require('./data/v20/market-regime-regression.json');
           const x=require('./data/v20/current.json');
           const policy=require('./data/v20/policy-registry.json');
+          const ui=require('./data/v20/ui-validation.json');
           const gate=require('./data/v17/resilient-session-status.json');
-          if(reg.ok!==true) process.exit(1);
+          if(reg.ok!==true||ui.ok!==true) process.exit(1);
+          if(ui.checks?.marketRegimeVisible!==true||ui.checks?.marketRegimeExecutionGateSeparated!==true) process.exit(1);
+          if(ui.checks?.marketRegimeSectorInferenceExcluded!==true||ui.checks?.marketRegimeBreadthConflictDisclosure!==true) process.exit(1);
           if(policy.marketRegime?.minimumVerifiedParticipationPct!==60) process.exit(1);
           if(policy.marketRegime?.futureRowsAllowed!==false||policy.marketRegime?.missingOhlcSynthesisAllowed!==false) process.exit(1);
           if(policy.marketRegime?.sectorInputsAllowed!==false) process.exit(1);
@@ -121,13 +129,18 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             scripts/v20/build-integrated-decision-snapshot.cjs \
+            scripts/v20/validate-ui.cjs \
             data/v20/policy-registry.json \
             data/v20/market-regime.json \
-            data/v20/market-regime-regression.json
+            data/v20/market-regime-regression.json \
+            data/v20/ui-validation.json \
+            v20/index.html \
+            v20/app.js \
+            v20/styles.css
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 current market regime evidence"
+          git commit -m "Update V20 current market regime evidence and UI"
           # Builders above intentionally regenerate additional V20 evidence for validation.
-          # Discard those unstaged outputs before rebasing; only the four audited Phase 8 files belong in this commit.
+          # Discard those unstaged outputs before rebasing; only the audited Phase 8 files belong in this commit.
           git reset --hard HEAD
           git fetch origin develop/v20-integrated-decision-platform
           git rebase origin/develop/v20-integrated-decision-platform
