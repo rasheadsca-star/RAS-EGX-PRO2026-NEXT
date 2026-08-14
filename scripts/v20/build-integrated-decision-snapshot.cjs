@@ -97,6 +97,7 @@ const market = read('data/market.json');
 const policy = read('data/v20/policy-registry.json');
 const modelRegistry = read('data/v20/model-registry.json');
 const sourceHealth = read('data/v20/source-health.json');
+const currentMarketRegime = read('data/v20/market-regime.json');
 
 const CHAMPION = 'V16_9_EQUAL_WEIGHT_BASKET';
 if (v17?.engine?.id && v17.engine.id !== CHAMPION) throw new Error(`Champion invariant failed: ${v17.engine.id}`);
@@ -118,8 +119,9 @@ const maximumTotalAllocationPct = clamp(
   100,
 );
 
-const marketRegime = v17?.market?.regime || 'UNVERIFIED_CURRENT_REGIME';
-const marketVerified = !String(marketRegime).startsWith('UNVERIFIED');
+const marketRegimeSessionAligned = currentMarketRegime?.asOfSessionDate === sessionDate;
+const marketVerified = currentMarketRegime?.verified === true && marketRegimeSessionAligned;
+const marketRegime = marketVerified ? currentMarketRegime.regime : 'UNVERIFIED_CURRENT_REGIME';
 const portfolioRiskState = gateStatus === 'BLOCKED'
   ? 'CASH_PRESERVATION'
   : !executionReady
@@ -141,9 +143,7 @@ const systemDataQualityPct = clamp(v17?.readiness?.dataQualityScore ?? 100, 0, 1
 const gateCoveragePct = clamp(gate?.coveragePct ?? 0, 0, 100);
 const gateFreshnessPct = clamp(gate?.freshnessPct ?? 0, 0, 100);
 const gateCriticalFieldsPct = clamp(gate?.criticalFieldsPct ?? 0, 0, 100);
-const marketConfidencePct = marketVerified
-  ? round(Math.min(gateCoveragePct, gateFreshnessPct, gateCriticalFieldsPct), 1)
-  : 0;
+const marketConfidencePct = marketVerified ? clamp(currentMarketRegime?.marketConfidencePct ?? 0, 0, 100) : 0;
 
 const srMap = new Map(rowsOf(internalSr).map(row => [symbolOf(row.symbol), row]).filter(([s]) => s));
 const liquidSet = new Set((liquidity?.executionEligibleSymbols || []).map(symbolOf).filter(Boolean));
@@ -279,6 +279,8 @@ const warnings = [
   ...(gate?.missingSymbols?.length ? [`MISSING_SYMBOLS_${gate.missingSymbols.length}`] : []),
   ...(!v19SameSession ? ['V19_CURRENT_SIGNAL_NOT_ALIGNED_WITH_V17_MARKET_SESSION'] : []),
   ...(!marketVerified ? ['CURRENT_MARKET_REGIME_UNVERIFIED'] : []),
+  ...(currentMarketRegime?.asOfSessionDate && !marketRegimeSessionAligned ? ['MARKET_REGIME_EVIDENCE_SESSION_MISMATCH'] : []),
+  ...((currentMarketRegime?.warnings || []).map(w => `MARKET_REGIME_${w}`)),
   'V18_EXTERNAL_REFERENCE_BROWSER_AUDIT_PENDING',
 ];
 
@@ -293,9 +295,17 @@ const out = {
   executionStatus: executionReady ? 'EXECUTION_GRADE' : researchReady ? 'RESEARCH_ONLY' : 'BLOCKED',
   marketStatus: {
     regime: marketRegime,
-    labelAr: v17?.market?.labelAr || null,
+    labelAr: marketVerified ? (currentMarketRegime?.labelAr || null) : 'حالة السوق الحالية غير متحققة بتغطية تاريخية متزامنة كافية',
     verified: marketVerified,
     marketConfidencePct,
+    evidenceCoveragePct: finite(currentMarketRegime?.metrics?.participationPct),
+    classificationScore: finite(currentMarketRegime?.classificationScore),
+    diagnosticRegime: currentMarketRegime?.diagnosticRegime || null,
+    volatilityOverlay: currentMarketRegime?.volatilityOverlay || null,
+    evidenceSessionAligned: marketRegimeSessionAligned,
+    evidenceSource: 'data/v20/market-regime.json',
+    productionRiskBudgetInfluence: false,
+    executionGateInfluence: false,
   },
   dataStatus: {
     status: gateStatus,
@@ -363,6 +373,7 @@ const out = {
       masterUniverse: 'data/v20/master-universe.json',
       currentMarketSnapshot: 'data/v20/current-market-snapshot.json',
       sourceHealth: 'data/v20/source-health.json',
+      marketRegime: 'data/v20/market-regime.json',
     },
     sourceHash: sha({
       v17GeneratedAt: v17?.generatedAt || null,
@@ -370,6 +381,8 @@ const out = {
       v19GeneratedAt: v19?.generatedAt || null,
       rankingGeneratedAt: ranking?.generatedAt || null,
       sourceHealthGeneratedAt: sourceHealth?.generatedAt || null,
+      marketRegimeGeneratedAt: currentMarketRegime?.generatedAt || null,
+      marketRegimeAsOfSessionDate: currentMarketRegime?.asOfSessionDate || null,
       policySchema: policy?.schemaVersion || null,
       modelRegistrySchema: modelRegistry?.schemaVersion || null,
     }),
