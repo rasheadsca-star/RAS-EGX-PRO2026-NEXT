@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "17.0.0-resilient-session-gate-5",
-  "generatedAt": "2026-08-14T10:15:46.683Z",
+  "schemaVersion": "17.0.0-resilient-session-gate-6",
+  "generatedAt": "2026-08-14T10:42:33.246Z",
   "status": "DEGRADED",
   "mode": "DEGRADED",
   "reasons": [
@@ -11,11 +11,12 @@
     "INTERNAL_SR_NOT_EXECUTION_CANDIDATE"
   ],
   "sessionAligned": true,
-  "coveragePct": 91.25,
-  "freshnessPct": 71.25,
-  "criticalFieldsPct": 91.25,
+  "coveragePct": 92.5,
+  "freshnessPct": 91.25,
+  "criticalFieldsPct": 92.5,
   "sourcesUsed": [
     "MANDATORY_MARKET_COLLECTOR",
+    "VERIFIED_PRICE_SOURCE_SESSION",
     "INTERNAL_OHLC_PIVOT",
     "V11_1_LIQUIDITY_RULES_V17_CURRENT_RUN",
     "MUBASHER_DIRECT_VALIDATION",
@@ -23,101 +24,61 @@
   ],
   "sourceConflicts": [
     {
-      "symbol": "NIPH",
+      "symbol": "AFMC",
       "source": "MUBASHER_DIRECT",
       "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 80.58,
-      "critical": true
-    },
-    {
-      "symbol": "MPCI",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 45.81,
-      "critical": true
-    },
-    {
-      "symbol": "ABUK",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 10.17,
-      "critical": true
-    },
-    {
-      "symbol": "ABUK",
-      "source": "MUBASHER_RENDERED",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 10.16,
-      "critical": true
-    },
-    {
-      "symbol": "PRMH",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 13.62,
-      "critical": true
-    },
-    {
-      "symbol": "PRMH",
-      "source": "MUBASHER_RENDERED",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 13.62,
-      "critical": true
-    },
-    {
-      "symbol": "ELKA",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 26.96,
-      "critical": true
-    },
-    {
-      "symbol": "OLFI",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 16.1,
+      "maxDiffPct": 13.67,
       "critical": true
     }
   ],
   "missingSymbols": [
     "SAIB",
     "MEGM",
-    "EDFM",
     "SEIGA",
-    "ARVA",
-    "ELNA",
-    "RAKT"
+    "ABUK",
+    "MFPC",
+    "ELNA"
   ],
   "executionGrade": false,
   "priceTruth": {
     "healthy": true,
     "researchMinimumHealthy": true,
+    "sourceSessionVerified": true,
+    "verifiedSessionDate": "2026-08-13",
     "marketCoveragePct": 96,
     "sourceCoveragePct": 100,
     "stale": false,
-    "sourceAgeMinutes": 3,
-    "lastSourceUpdate": "2026-08-14T10:12:13.739Z",
+    "sourceAgeMinutes": 2.9,
+    "lastSourceUpdate": "2026-08-14T10:39:10.357Z",
     "sourceName": "mubasher_symbol_pages_precise_enriched",
-    "contract": "MANDATORY_MARKET_COLLECTOR_IS_PRICE_TRUTH"
+    "sessionTruthSource": "data/v17/market-session-truth.json",
+    "contract": "MANDATORY_MARKET_COLLECTOR_IS_PRICE_TRUTH_AND_SESSION_MUST_BE_SOURCE_VERIFIED_FOR_EXECUTION"
   },
   "executionInputs": {
     "ready": false,
+    "sourceSession": {
+      "verified": true,
+      "sessionDate": "2026-08-13",
+      "externalValidationConflict": false
+    },
     "supportResistanceReady": true,
     "supportResistanceMethod": "INTERNAL_OHLC_PIVOT_WITH_MUBASHER_VALIDATION",
     "internal": {
       "researchReady": true,
       "executionCandidateReady": false,
-      "coveragePct": 91.25,
-      "freshnessPct": 71.25,
-      "criticalFieldsPct": 91.25,
-      "averageFreshConfidence": 0.806,
-      "referenceSessionDate": "2026-08-14",
-      "sessionCompletionConfirmed": false
+      "sourceSessionVerified": true,
+      "coveragePct": 92.5,
+      "freshnessPct": 91.25,
+      "criticalFieldsPct": 92.5,
+      "averageFreshConfidence": 0.803,
+      "referenceSessionDate": "2026-08-13",
+      "sessionCompletionConfirmed": true
     },
     "liquidity": {
       "gatePassed": true,
+      "sourceSessionVerified": true,
       "sessionAligned": true,
-      "referenceSessionDate": "2026-08-14",
+      "referenceSessionDate": "2026-08-13",
       "candidateUniverseCount": 80,
       "candidateEvidenceCoveragePct": 96.25,
       "candidateExecutionOkCount": 66,
@@ -138,8 +99,8 @@
     "availableRows": 221,
     "marketRows": 215,
     "cacheRows": 221,
-    "lastSourceUpdate": "2026-08-14T10:12:13.739Z",
-    "sourceAgeMinutes": 3,
+    "lastSourceUpdate": "2026-08-14T10:39:10.357Z",
+    "sourceAgeMinutes": 2.9,
     "stale": false
   },
   "confidencePolicy": {
@@ -153,6 +114,7 @@
   "readiness": {
     "researchReady": true,
     "priceTruthHealthy": true,
+    "sourceSessionVerified": true,
     "executionReady": false
   },
   "sourceAuditSummary": {
