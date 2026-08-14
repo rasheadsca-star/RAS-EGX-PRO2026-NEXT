@@ -31,8 +31,6 @@ function staticServer() {
       const u = new URL(req.url, 'http://127.0.0.1');
       let rel = decodeURIComponent(u.pathname).replace(/^\/+/, '');
       if (!rel) rel = 'v20/index.html';
-      // Chrome requests /favicon.ico automatically even when the application does not declare one.
-      // Treat that browser-generated request explicitly so every other 404 remains a hard signal.
       if (rel === 'favicon.ico') { res.writeHead(204, {'cache-control':'no-store'}); return res.end(); }
       if (rel.includes('..')) { res.writeHead(403); return res.end('Forbidden'); }
       let file = P(rel);
@@ -193,7 +191,13 @@ async function main() {
       sessionDate:readJson('data/v20/current.json').sessionDate, checks, viewportResults, screenshots,
       consoleErrors, limitations:['RUNTIME_AND_LAYOUT_OVERFLOW_ACCEPTANCE_NOT_HUMAN_PIXEL_REVIEW','SCREENSHOTS_CAPTURED_ON_RUNNER_AND_RECORDED_BY_HASH_ONLY'],
     };
-    fs.writeFileSync(P('data/v20/browser-smoke.json'),`${JSON.stringify(report,null,2)}\n`,'utf8'); console.log(JSON.stringify(report,null,2)); if(!report.ok)process.exitCode=1;
+    fs.writeFileSync(P('data/v20/browser-smoke.json'),`${JSON.stringify(report,null,2)}\n`,'utf8');
+    console.log(JSON.stringify(report,null,2));
+    if (!report.ok) {
+      process.exitCode=1;
+    } else {
+      require('./final-acceptance-runner.cjs');
+    }
   } finally {
     try { cdp?.close(); } catch {} try { chromeProc.kill('SIGTERM'); } catch {} await new Promise(resolve => server.close(resolve)); try { fs.rmSync(profileDir,{recursive:true,force:true}); } catch {}
     if (chromeProc.exitCode && chromeProc.exitCode !== 0 && !fs.existsSync(P('data/v20/browser-smoke.json'))) console.error(chromeStderr.slice(-4000));
