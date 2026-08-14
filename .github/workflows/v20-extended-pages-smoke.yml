@@ -1,0 +1,63 @@
+name: V20 Extended Research Pages Browser Acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - ".github/workflows/v20-extended-pages-smoke.yml"
+      - "scripts/v20/extended-pages-smoke.cjs"
+      - "v20/backtest.*"
+      - "v20/history.*"
+      - "v20/remediation.*"
+      - "v20/top5.*"
+      - "data/v20/**"
+      - "data/v17/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: egx-v20-extended-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout V20 branch
+        uses: actions/checkout@v6
+        with: {fetch-depth: 1}
+      - name: Enforce isolated V20 scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
+          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-extended-pages-smoke\.yml$)' || true)"
+          test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with: {node-version: "22"}
+      - name: Static syntax validation
+        run: |
+          node --check scripts/v20/extended-pages-smoke.cjs
+          node --check v20/backtest.js
+          node --check v20/history.js
+          node --check v20/remediation.js
+          node --check v20/top5.js
+          node --check scripts/v20/build-backtest-readiness.cjs
+          node --check scripts/v20/backtest-readiness-regression.cjs
+          node --check scripts/v20/execution-gap-regression.cjs
+      - name: Run real Chrome acceptance for extended pages
+        run: node scripts/v20/extended-pages-smoke.cjs
+      - name: Acceptance
+        run: |
+          node - <<'NODE'
+          const r=require('./data/v20/extended-pages-smoke.json');
+          if(r.ok!==true||r.failedCount!==0||(r.consoleErrors||[]).length!==0) process.exit(1);
+          if((r.pages||[]).length!==4||(r.viewportResults||[]).length!==8) process.exit(1);
+          if((r.viewportResults||[]).some(v=>v.ready!==true||v.horizontalOverflow!==false)) process.exit(1);
+          NODE
