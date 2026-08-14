@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-regression-2",
-  "generatedAt": "2026-08-14T22:57:55.014Z",
+  "generatedAt": "2026-08-14T23:02:23.045Z",
   "ok": true,
   "failedCount": 0,
   "failures": [],
@@ -14,5 +14,228 @@
     "localExecutionCannotOverrideGlobalGate": true,
     "shadowWeightingSeparatedFromProduction": true,
     "dataTruthSessionChecked": true
+  },
+  "finalAcceptance": {
+    "schemaVersion": "20.0.0-final-acceptance-1",
+    "generatedAt": "2026-08-14T23:02:39.732Z",
+    "sessionDate": "2026-08-13",
+    "independentCritic": true,
+    "finalStatus": "RESEARCH_PLATFORM_READY_EXECUTION_NOT_READY",
+    "researchPlatformReady": true,
+    "executionReady": false,
+    "decisionSupportOnly": true,
+    "activeChampion": "V16_9_EQUAL_WEIGHT_BASKET",
+    "executionStatus": "RESEARCH_ONLY",
+    "appliedExposurePct": 0,
+    "cashPct": 100,
+    "validatorSummary": {
+      "total": 14,
+      "passed": 14,
+      "failed": 0,
+      "failedValidators": []
+    },
+    "acceptanceMatrix": {
+      "repositoryIsolation": {
+        "state": "PASS",
+        "evidence": "Main V20 workflow isolation guard"
+      },
+      "governance": {
+        "state": "PASS",
+        "evidence": "V16 Champion preserved; no automatic promotion"
+      },
+      "dataTruthForResearch": {
+        "state": "PASS",
+        "evidence": "V17 researchReady=true; sessionAligned=true"
+      },
+      "executionGrade": {
+        "state": "BLOCKED",
+        "evidence": "V17 executionGrade=false; V20 executionStatus=RESEARCH_ONLY"
+      },
+      "costAwareRiskReward": {
+        "state": "PASS",
+        "evidence": "Legacy R/R audit-only"
+      },
+      "tradePlanAlignment": {
+        "state": "PASS",
+        "evidence": "Current price / entry-zone fail-closed policy"
+      },
+      "pointInTimeTechnical": {
+        "state": "PASS_WITH_PARTIAL_COVERAGE",
+        "evidence": "21/30 current-ready"
+      },
+      "decisionIntelligence": {
+        "state": "PASS_RESEARCH_ONLY",
+        "evidence": "Score/Confidence/Execution separated; uncalibrated research score"
+      },
+      "sectorRisk": {
+        "state": "BLOCKED_BY_PROVENANCE",
+        "evidence": "productionVerified=0"
+      },
+      "performanceEvidence": {
+        "state": "PASS_SEPARATED",
+        "evidence": "FORWARD_EVIDENCE_PENDING"
+      },
+      "forwardEvidence": {
+        "state": "PASS_PENDING_OUTCOMES",
+        "evidence": "resolved=0, pending=10"
+      },
+      "browserRuntime": {
+        "state": "PASS",
+        "evidence": "Chrome/151.0.7922.108; 5 responsive viewports; consoleErrors=0"
+      },
+      "uiContract": {
+        "state": "PASS",
+        "evidence": "20.0.0-ui-validation-7; failed=0"
+      },
+      "userPortfolio": {
+        "state": "PASS_LOCAL_ONLY",
+        "evidence": "localStorage only; current-session valuation; no automatic orders"
+      }
+    },
+    "criticSummary": {
+      "criticalFindingCount": 0,
+      "researchBlockerCount": 0,
+      "productionBlockerCount": 5,
+      "limitationCount": 9
+    },
+    "criticFindings": [
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "INTERNAL_SR_COVERAGE_BELOW_95",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "INTERNAL_SR_FRESHNESS_BELOW_98",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "CRITICAL_FIELDS_BELOW_95",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "CRITICAL_SOURCE_CONFLICT",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "INTERNAL_SR_NOT_EXECUTION_CANDIDATE",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      }
+    ],
+    "productionBlockers": [
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "INTERNAL_SR_COVERAGE_BELOW_95",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "INTERNAL_SR_FRESHNESS_BELOW_98",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "CRITICAL_FIELDS_BELOW_95",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "CRITICAL_SOURCE_CONFLICT",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      },
+      {
+        "severity": "PRODUCTION_BLOCKER",
+        "code": "INTERNAL_SR_NOT_EXECUTION_CANDIDATE",
+        "source": "data/v17/resilient-session-status.json",
+        "blocksResearchPlatform": false,
+        "blocksExecutionGrade": true
+      }
+    ],
+    "limitations": [
+      {
+        "code": "PRODUCTION_SECTOR_CLASSIFICATION_UNAVAILABLE",
+        "detail": "0/227 production-verified sectors; sector concentration remains disabled.",
+        "source": "data/v20/sector-provenance-audit.json"
+      },
+      {
+        "code": "FORWARD_OUTCOMES_PENDING",
+        "detail": "10 forward evaluations pending; no pending return is interpreted as zero.",
+        "source": "data/v20/forward-evaluation.json"
+      },
+      {
+        "code": "CURRENT_TECHNICAL_COVERAGE_PARTIAL",
+        "detail": "21/30 opportunity symbols current-technical-ready (70%).",
+        "source": "data/v20/technical-history-status.json"
+      },
+      {
+        "code": "FULL_MARKET_TECHNICAL_COVERAGE_PARTIAL",
+        "detail": "Current technical evidence covers 9.25% of the full market universe; MARKET_ONLY rows are not assigned fabricated technical decision scores.",
+        "source": "data/v20/market-explorer.json"
+      },
+      {
+        "code": "V18_PERFORMANCE_NOT_AUDITED_OR_ACCEPTED",
+        "detail": "V18 performance claims remain excluded from accepted evidence until a reproducible audit is completed.",
+        "source": "data/v20/performance-evidence-registry.json"
+      },
+      {
+        "code": "HUMAN_PIXEL_REVIEW_NOT_COMPLETED",
+        "detail": "Real Chrome runtime and overflow acceptance passed; screenshot hashes were recorded, but no human pixel-level design review is claimed.",
+        "source": "data/v20/browser-smoke.json"
+      },
+      {
+        "code": "LEGACY_RR_MISMATCHES_REMAIN_AUDIT_ONLY",
+        "detail": "20/30 legacy R/R rows materially mismatch conservative current methodology; legacy R/R remains audit-only.",
+        "source": "data/v20/risk-reward-audit.json"
+      },
+      {
+        "code": "PARTIAL_CURRENT_MARKET_ROWS_EXIST",
+        "detail": "33 current-session market rows are semantically partial; they are not mislabeled complete.",
+        "source": "data/v20/source-health.json"
+      },
+      {
+        "code": "BULLISH_REGIME_WITH_WEAK_DAILY_BREADTH",
+        "detail": "Verified BULLISH regime coexists with weaker same-session advance/decline breadth; UI discloses this conflict and regime does not open execution.",
+        "source": "data/v20/market-regime.json"
+      }
+    ],
+    "invariants": {
+      "v17ExecutionAuthorityPreserved": true,
+      "closedGateHasZeroActionable": true,
+      "closedGateHasZeroProductionExposure": true,
+      "championProtected": true,
+      "automaticPromotionDisabled": true,
+      "scoreConfidenceExecutionSeparated": true,
+      "researchPerformanceNotProduction": true,
+      "pendingReturnsRemainNull": true,
+      "browserAcceptanceRealRuntime": true
+    },
+    "finalStatement": "V20 is accepted as a research and investment-decision-support platform. Execution Grade is explicitly not accepted because authoritative V17 production blockers remain."
+  },
+  "finalAcceptanceMirror": {
+    "authoritativeRuntimeSource": "scripts/v20/final-acceptance.cjs",
+    "detailedSidecar": "data/v20/final-acceptance.json",
+    "persistedInMainEvidence": "data/v20/regression.json#finalAcceptance",
+    "generatedInSameMainRun": true
   }
 }
