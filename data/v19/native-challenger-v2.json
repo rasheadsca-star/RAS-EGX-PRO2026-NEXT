@@ -1,0 +1,3377 @@
+{
+  "schemaVersion": "19.1.0-native-challenger-v2",
+  "engineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V2",
+  "generatedAt": "2026-08-14T19:29:57.922928+00:00",
+  "status": "SHADOW_RESEARCH_ONLY",
+  "isolation": {
+    "branch": "v19-egx-chat-gpt",
+    "v16Untouched": true,
+    "v17Untouched": true
+  },
+  "methodology": {
+    "ranking": "Cross-sectional ensemble of P(Top3), P(Top5), P(Top10), P(net-positive), P(large-loss), and robust expected-return regression.",
+    "featureWarmupSessions": 22,
+    "parameterSelection": "Recipe and basket size selected only from development walk-forward sessions.",
+    "holdout": "Final 20 sessions frozen; no refit on holdout labels.",
+    "fairAlphaComparison": "Selection alpha is measured exactly like V16 research: next-session close-to-close equal-weight return minus 0.60% cost.",
+    "executionLayer": "Entry/stop/target and quality gates are reported separately and do not zero-out alpha backtest returns.",
+    "automaticPromotion": false
+  },
+  "coverage": {
+    "usableTickerHistories": 196,
+    "marketDates": 98,
+    "labeledSignalSessions": 93,
+    "developmentSessions": 73,
+    "developmentOosSessions": 58,
+    "holdoutSessions": 20
+  },
+  "development": {
+    "selectedRecipe": "TOP10_BASELINE",
+    "selectedBasketSize": 4,
+    "selectedMetrics": {
+      "sessions": 58,
+      "averageNetReturnPct": -0.1177,
+      "medianNetReturnPct": -0.2731,
+      "sessionWinRatePct": 43.103,
+      "profitFactor": 0.873,
+      "compoundedNetReturnPct": -8.142,
+      "maximumDrawdownPct": -22.046,
+      "volatilityPct": 2.4062,
+      "bestSessionPct": 8.811,
+      "worstSessionPct": -5.005
+    },
+    "selectionObjective": -0.397424,
+    "leaderboard": [
+      {
+        "recipe": "TOP10_BASELINE",
+        "basketSize": 4,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.1177,
+          "medianNetReturnPct": -0.2731,
+          "sessionWinRatePct": 43.103,
+          "profitFactor": 0.873,
+          "compoundedNetReturnPct": -8.142,
+          "maximumDrawdownPct": -22.046,
+          "volatilityPct": 2.4062,
+          "bestSessionPct": 8.811,
+          "worstSessionPct": -5.005
+        },
+        "selectionObjective": -0.397424
+      },
+      {
+        "recipe": "CONCENTRATED_ALPHA",
+        "basketSize": 4,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.189,
+          "medianNetReturnPct": -0.3936,
+          "sessionWinRatePct": 43.103,
+          "profitFactor": 0.713,
+          "compoundedNetReturnPct": -10.993,
+          "maximumDrawdownPct": -17.975,
+          "volatilityPct": 1.5216,
+          "bestSessionPct": 4.599,
+          "worstSessionPct": -4.673
+        },
+        "selectionObjective": -0.463129
+      },
+      {
+        "recipe": "BALANCED_ALPHA",
+        "basketSize": 3,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2009,
+          "medianNetReturnPct": -0.35,
+          "sessionWinRatePct": 39.655,
+          "profitFactor": 0.743,
+          "compoundedNetReturnPct": -11.834,
+          "maximumDrawdownPct": -20.256,
+          "volatilityPct": 1.7924,
+          "bestSessionPct": 4.809,
+          "worstSessionPct": -5.315
+        },
+        "selectionObjective": -0.501367
+      },
+      {
+        "recipe": "RISK_ADJUSTED",
+        "basketSize": 4,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2006,
+          "medianNetReturnPct": -0.3936,
+          "sessionWinRatePct": 39.655,
+          "profitFactor": 0.695,
+          "compoundedNetReturnPct": -11.586,
+          "maximumDrawdownPct": -19.994,
+          "volatilityPct": 1.5166,
+          "bestSessionPct": 4.599,
+          "worstSessionPct": -4.673
+        },
+        "selectionObjective": -0.508278
+      },
+      {
+        "recipe": "BALANCED_ALPHA",
+        "basketSize": 5,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2522,
+          "medianNetReturnPct": -0.1402,
+          "sessionWinRatePct": 43.103,
+          "profitFactor": 0.587,
+          "compoundedNetReturnPct": -14.113,
+          "maximumDrawdownPct": -19.555,
+          "volatilityPct": 1.3902,
+          "bestSessionPct": 3.692,
+          "worstSessionPct": -4.279
+        },
+        "selectionObjective": -0.515671
+      },
+      {
+        "recipe": "BALANCED_ALPHA",
+        "basketSize": 4,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2445,
+          "medianNetReturnPct": -0.2012,
+          "sessionWinRatePct": 44.828,
+          "profitFactor": 0.663,
+          "compoundedNetReturnPct": -13.946,
+          "maximumDrawdownPct": -21.855,
+          "volatilityPct": 1.6784,
+          "bestSessionPct": 4.599,
+          "worstSessionPct": -4.827
+        },
+        "selectionObjective": -0.516235
+      },
+      {
+        "recipe": "CONCENTRATED_ALPHA",
+        "basketSize": 5,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2611,
+          "medianNetReturnPct": -0.1918,
+          "sessionWinRatePct": 43.103,
+          "profitFactor": 0.567,
+          "compoundedNetReturnPct": -14.491,
+          "maximumDrawdownPct": -18.65,
+          "volatilityPct": 1.2956,
+          "bestSessionPct": 3.692,
+          "worstSessionPct": -4.279
+        },
+        "selectionObjective": -0.523982
+      },
+      {
+        "recipe": "FOCUS5",
+        "basketSize": 4,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2067,
+          "medianNetReturnPct": -0.4393,
+          "sessionWinRatePct": 39.655,
+          "profitFactor": 0.774,
+          "compoundedNetReturnPct": -12.646,
+          "maximumDrawdownPct": -24.944,
+          "volatilityPct": 2.2989,
+          "bestSessionPct": 8.811,
+          "worstSessionPct": -5.005
+        },
+        "selectionObjective": -0.532454
+      },
+      {
+        "recipe": "CONCENTRATED_ALPHA",
+        "basketSize": 3,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.226,
+          "medianNetReturnPct": -0.35,
+          "sessionWinRatePct": 36.207,
+          "profitFactor": 0.694,
+          "compoundedNetReturnPct": -13.028,
+          "maximumDrawdownPct": -20.51,
+          "volatilityPct": 1.6985,
+          "bestSessionPct": 4.856,
+          "worstSessionPct": -5.315
+        },
+        "selectionObjective": -0.537719
+      },
+      {
+        "recipe": "RISK_ADJUSTED",
+        "basketSize": 3,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2555,
+          "medianNetReturnPct": -0.4827,
+          "sessionWinRatePct": 36.207,
+          "profitFactor": 0.661,
+          "compoundedNetReturnPct": -14.509,
+          "maximumDrawdownPct": -22.092,
+          "volatilityPct": 1.7,
+          "bestSessionPct": 4.856,
+          "worstSessionPct": -5.315
+        },
+        "selectionObjective": -0.596016
+      },
+      {
+        "recipe": "TOP10_BASELINE",
+        "basketSize": 3,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2629,
+          "medianNetReturnPct": -0.5353,
+          "sessionWinRatePct": 39.655,
+          "profitFactor": 0.756,
+          "compoundedNetReturnPct": -15.794,
+          "maximumDrawdownPct": -28.832,
+          "volatilityPct": 2.5792,
+          "bestSessionPct": 6.2,
+          "worstSessionPct": -5.414
+        },
+        "selectionObjective": -0.615649
+      },
+      {
+        "recipe": "FOCUS5",
+        "basketSize": 3,
+        "metrics": {
+          "sessions": 58,
+          "averageNetReturnPct": -0.2922,
+          "medianNetReturnPct": -0.4293,
+          "sessionWinRatePct": 37.931,
+          "profitFactor": 0.719,
+          "compoundedNetReturnPct": -17.025,
+          "maximumDrawdownPct": -30.737,
+          "volatilityPct": 2.4161,
+          "bestSessionPct": 6.2,
+          "worstSessionPct": -5.414
+        },
+        "selectionObjective": -0.630051
+      }
+    ],
+    "recentSessions": [
+      {
+        "signalDate": "2026-06-21",
+        "outcomeDate": "2026-06-22",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -0.6,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "MAAL"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.6,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "MAAL",
+                "LUTS"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "MAAL",
+                "LUTS",
+                "AJWA"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -0.6,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "LUTS"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.6,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "LUTS",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "LUTS",
+                "MAAL",
+                "PHTV"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -0.6693,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.652,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "GMCI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6416,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "GMCI",
+                "CIEB"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -0.6693,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.652,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "GMCI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6416,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "GMCI",
+                "MAAL"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.6693,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.652,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "GMCI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6416,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "GMCI",
+                "MAAL"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.6693,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.652,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6416,
+              "tickers": [
+                "MOIL",
+                "CPCI",
+                "AIFI",
+                "MAAL",
+                "ICID"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-06-22",
+        "outcomeDate": "2026-06-23",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -5.4139,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "ETRS"
+              ]
+            },
+            "4": {
+              "netReturnPct": -5.0051,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "ETRS",
+                "ICID"
+              ]
+            },
+            "5": {
+              "netReturnPct": -6.4502,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "ETRS",
+                "ICID",
+                "PRDC"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -5.4139,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "ETRS"
+              ]
+            },
+            "4": {
+              "netReturnPct": -5.0051,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "ETRS",
+                "ICID"
+              ]
+            },
+            "5": {
+              "netReturnPct": -5.4489,
+              "tickers": [
+                "EASB",
+                "ZEOT",
+                "ETRS",
+                "ICID",
+                "LUTS"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -4.0273,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC"
+              ]
+            },
+            "4": {
+              "netReturnPct": -3.5399,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "AIFI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.2364,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "AIFI",
+                "ADCI"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -4.0273,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC"
+              ]
+            },
+            "4": {
+              "netReturnPct": -3.5399,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "AIFI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.7578,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "AIFI",
+                "NAHO"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -4.0273,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.9278,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "NAHO"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.7578,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "NAHO",
+                "AIFI"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -4.0273,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC"
+              ]
+            },
+            "4": {
+              "netReturnPct": -4.8265,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "LUTS"
+              ]
+            },
+            "5": {
+              "netReturnPct": -4.2768,
+              "tickers": [
+                "ECAP",
+                "UNIP",
+                "ENGC",
+                "LUTS",
+                "AIFI"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-06-23",
+        "outcomeDate": "2026-06-24",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -0.8934,
+              "tickers": [
+                "CNFN",
+                "MPRC",
+                "GBCO"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.0606,
+              "tickers": [
+                "CNFN",
+                "MPRC",
+                "GBCO",
+                "MHOT"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.1588,
+              "tickers": [
+                "CNFN",
+                "MPRC",
+                "GBCO",
+                "MHOT",
+                "ZEOT"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -0.8934,
+              "tickers": [
+                "CNFN",
+                "MPRC",
+                "GBCO"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.8656,
+              "tickers": [
+                "CNFN",
+                "MPRC",
+                "GBCO",
+                "DOMT"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.2129,
+              "tickers": [
+                "CNFN",
+                "MPRC",
+                "GBCO",
+                "DOMT",
+                "MPCI"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -0.3653,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.7933,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI",
+                "CIEB"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.947,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI",
+                "CIEB",
+                "NAHO"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -0.3653,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.7933,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI",
+                "CIEB"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.947,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI",
+                "CIEB",
+                "NAHO"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.3653,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.6644,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI",
+                "NAHO"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.947,
+              "tickers": [
+                "MOIL",
+                "GBCO",
+                "AIFI",
+                "NAHO",
+                "CIEB"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.3653,
+              "tickers": [
+                "GBCO",
+                "MOIL",
+                "AIFI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.7933,
+              "tickers": [
+                "GBCO",
+                "MOIL",
+                "AIFI",
+                "CIEB"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.7911,
+              "tickers": [
+                "GBCO",
+                "MOIL",
+                "AIFI",
+                "CIEB",
+                "DOMT"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-06-24",
+        "outcomeDate": "2026-06-25",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -0.239,
+              "tickers": [
+                "MAAL",
+                "ROTO",
+                "EASB"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.3054,
+              "tickers": [
+                "MAAL",
+                "ROTO",
+                "EASB",
+                "GBCO"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.2862,
+              "tickers": [
+                "MAAL",
+                "ROTO",
+                "EASB",
+                "GBCO",
+                "MPRC"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -1.3117,
+              "tickers": [
+                "MAAL",
+                "ISMQ",
+                "GBCO"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.3206,
+              "tickers": [
+                "MAAL",
+                "ISMQ",
+                "GBCO",
+                "MPRC"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.1015,
+              "tickers": [
+                "MAAL",
+                "ISMQ",
+                "GBCO",
+                "MPRC",
+                "EASB"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -1.2296,
+              "tickers": [
+                "CPCI",
+                "MOIL",
+                "UEFM"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.6972,
+              "tickers": [
+                "CPCI",
+                "MOIL",
+                "UEFM",
+                "AIFI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6732,
+              "tickers": [
+                "CPCI",
+                "MOIL",
+                "UEFM",
+                "AIFI",
+                "PHAR"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -1.2296,
+              "tickers": [
+                "CPCI",
+                "UEFM",
+                "MOIL"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.6972,
+              "tickers": [
+                "CPCI",
+                "UEFM",
+                "MOIL",
+                "AIFI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6732,
+              "tickers": [
+                "CPCI",
+                "UEFM",
+                "MOIL",
+                "AIFI",
+                "PHAR"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -1.2296,
+              "tickers": [
+                "CPCI",
+                "MOIL",
+                "UEFM"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.6972,
+              "tickers": [
+                "CPCI",
+                "MOIL",
+                "UEFM",
+                "AIFI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6732,
+              "tickers": [
+                "CPCI",
+                "MOIL",
+                "UEFM",
+                "AIFI",
+                "PHAR"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -1.2296,
+              "tickers": [
+                "CPCI",
+                "UEFM",
+                "MOIL"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.6972,
+              "tickers": [
+                "CPCI",
+                "UEFM",
+                "MOIL",
+                "AIFI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6732,
+              "tickers": [
+                "CPCI",
+                "UEFM",
+                "MOIL",
+                "AIFI",
+                "PHAR"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-06-25",
+        "outcomeDate": "2026-06-28",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -0.606,
+              "tickers": [
+                "PRCL",
+                "MAAL",
+                "MPRC"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.454,
+              "tickers": [
+                "PRCL",
+                "MAAL",
+                "MPRC",
+                "EASB"
+              ]
+            },
+            "5": {
+              "netReturnPct": -3.1576,
+              "tickers": [
+                "PRCL",
+                "MAAL",
+                "MPRC",
+                "EASB",
+                "ROTO"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -0.606,
+              "tickers": [
+                "PRCL",
+                "MPRC",
+                "MAAL"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.454,
+              "tickers": [
+                "PRCL",
+                "MPRC",
+                "MAAL",
+                "EASB"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.605,
+              "tickers": [
+                "PRCL",
+                "MPRC",
+                "MAAL",
+                "EASB",
+                "EGBE"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -1.4748,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.1131,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.2028,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL",
+                "NAHO"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -1.4748,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.1131,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.9628,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL",
+                "ATLC"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -1.4748,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.1131,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.2028,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL",
+                "NAHO"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -1.4748,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.1131,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.1875,
+              "tickers": [
+                "EGBE",
+                "AIFI",
+                "EPPK",
+                "MAAL",
+                "MPRC"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-06-28",
+        "outcomeDate": "2026-06-29",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": 6.1862,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "OCDI"
+              ]
+            },
+            "4": {
+              "netReturnPct": 4.7741,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "OCDI",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": 3.4387,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "OCDI",
+                "MAAL",
+                "AJWA"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": 6.1862,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "OCDI"
+              ]
+            },
+            "4": {
+              "netReturnPct": 4.6552,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "OCDI",
+                "ISMQ"
+              ]
+            },
+            "5": {
+              "netReturnPct": 3.3435,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "OCDI",
+                "ISMQ",
+                "AJWA"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -0.3347,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.5759,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "SPIN"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.5807,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "SPIN",
+                "GMCI"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -0.3347,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": 4.5989,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "GTWL"
+              ]
+            },
+            "5": {
+              "netReturnPct": 3.4193,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "GTWL",
+                "SPIN"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.3347,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": 4.5989,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "GTWL"
+              ]
+            },
+            "5": {
+              "netReturnPct": 3.6916,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "GTWL",
+                "ISMQ"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.3347,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": 4.5989,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "GTWL"
+              ]
+            },
+            "5": {
+              "netReturnPct": 3.6916,
+              "tickers": [
+                "ADCI",
+                "AJWA",
+                "EPPK",
+                "GTWL",
+                "ISMQ"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-06-29",
+        "outcomeDate": "2026-06-30",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": 0.088,
+              "tickers": [
+                "PHTV",
+                "PRCL",
+                "MAAL"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.9936,
+              "tickers": [
+                "PHTV",
+                "PRCL",
+                "MAAL",
+                "GGCC"
+              ]
+            },
+            "5": {
+              "netReturnPct": 1.3108,
+              "tickers": [
+                "PHTV",
+                "PRCL",
+                "MAAL",
+                "GGCC",
+                "GBCO"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": 1.056,
+              "tickers": [
+                "PHTV",
+                "GGCC",
+                "PRCL"
+              ]
+            },
+            "4": {
+              "netReturnPct": 1.4369,
+              "tickers": [
+                "PHTV",
+                "GGCC",
+                "PRCL",
+                "GBCO"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.7596,
+              "tickers": [
+                "PHTV",
+                "GGCC",
+                "PRCL",
+                "GBCO",
+                "ADCI"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": 0.5907,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "EPPK"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.3768,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "EPPK",
+                "DOMT"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.0885,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "EPPK",
+                "DOMT",
+                "ADCI"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -0.9349,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.3768,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT",
+                "EPPK"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.0885,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT",
+                "EPPK",
+                "ADCI"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.9349,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.3768,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT",
+                "EPPK"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.0885,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT",
+                "EPPK",
+                "ADCI"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.9349,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.3768,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT",
+                "EPPK"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.0885,
+              "tickers": [
+                "NAHO",
+                "GMCI",
+                "DOMT",
+                "EPPK",
+                "ADCI"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-06-30",
+        "outcomeDate": "2026-07-01",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -1.6782,
+              "tickers": [
+                "PHTV",
+                "GGCC",
+                "ICID"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.8247,
+              "tickers": [
+                "PHTV",
+                "GGCC",
+                "ICID",
+                "GBCO"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.4688,
+              "tickers": [
+                "PHTV",
+                "GGCC",
+                "ICID",
+                "GBCO",
+                "MAAL"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -2.3704,
+              "tickers": [
+                "GGCC",
+                "ICID",
+                "GBCO"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.8247,
+              "tickers": [
+                "GGCC",
+                "ICID",
+                "GBCO",
+                "PHTV"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.1439,
+              "tickers": [
+                "GGCC",
+                "ICID",
+                "GBCO",
+                "PHTV",
+                "OCDI"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": 1.1886,
+              "tickers": [
+                "AXPH",
+                "ENGC",
+                "ARAB"
+              ]
+            },
+            "4": {
+              "netReturnPct": 1.0012,
+              "tickers": [
+                "AXPH",
+                "ENGC",
+                "ARAB",
+                "DOMT"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.6809,
+              "tickers": [
+                "AXPH",
+                "ENGC",
+                "ARAB",
+                "DOMT",
+                "EDFM"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": 1.1886,
+              "tickers": [
+                "ENGC",
+                "AXPH",
+                "ARAB"
+              ]
+            },
+            "4": {
+              "netReturnPct": 1.0012,
+              "tickers": [
+                "ENGC",
+                "AXPH",
+                "ARAB",
+                "DOMT"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.6181,
+              "tickers": [
+                "ENGC",
+                "AXPH",
+                "ARAB",
+                "DOMT",
+                "KABO"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": 1.1886,
+              "tickers": [
+                "AXPH",
+                "ENGC",
+                "ARAB"
+              ]
+            },
+            "4": {
+              "netReturnPct": 1.0012,
+              "tickers": [
+                "AXPH",
+                "ENGC",
+                "ARAB",
+                "DOMT"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.6181,
+              "tickers": [
+                "AXPH",
+                "ENGC",
+                "ARAB",
+                "DOMT",
+                "KABO"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": 2.2307,
+              "tickers": [
+                "ENGC",
+                "AXPH",
+                "GGCC"
+              ]
+            },
+            "4": {
+              "netReturnPct": 2.0678,
+              "tickers": [
+                "ENGC",
+                "AXPH",
+                "GGCC",
+                "OCDI"
+              ]
+            },
+            "5": {
+              "netReturnPct": 1.7421,
+              "tickers": [
+                "ENGC",
+                "AXPH",
+                "GGCC",
+                "OCDI",
+                "DOMT"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-07-01",
+        "outcomeDate": "2026-07-05",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -0.6765,
+              "tickers": [
+                "GTWL",
+                "PHTV",
+                "ICID"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.4698,
+              "tickers": [
+                "GTWL",
+                "PHTV",
+                "ICID",
+                "OCDI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6049,
+              "tickers": [
+                "GTWL",
+                "PHTV",
+                "ICID",
+                "OCDI",
+                "AMES"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -0.3846,
+              "tickers": [
+                "GTWL",
+                "PHTV",
+                "OCDI"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.5748,
+              "tickers": [
+                "GTWL",
+                "PHTV",
+                "OCDI",
+                "AMES"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.8232,
+              "tickers": [
+                "GTWL",
+                "PHTV",
+                "OCDI",
+                "AMES",
+                "MPRC"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": 1.1371,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.8247,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL",
+                "MIPH"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.3505,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL",
+                "MIPH",
+                "FAIT"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": 1.1371,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.4662,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL",
+                "FAIT"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.0565,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL",
+                "FAIT",
+                "PHTV"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": 1.1371,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "MOIL"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.4662,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "MOIL",
+                "FAIT"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.3505,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "MOIL",
+                "FAIT",
+                "MIPH"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": 1.1371,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.316,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL",
+                "PHTV"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.0565,
+              "tickers": [
+                "EGBE",
+                "NAHO",
+                "MOIL",
+                "PHTV",
+                "FAIT"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-07-05",
+        "outcomeDate": "2026-07-06",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -2.2345,
+              "tickers": [
+                "GTWL",
+                "ICID",
+                "PHTV"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.0253,
+              "tickers": [
+                "GTWL",
+                "ICID",
+                "PHTV",
+                "AMES"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.7697,
+              "tickers": [
+                "GTWL",
+                "ICID",
+                "PHTV",
+                "AMES",
+                "PRCL"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": -0.4739,
+              "tickers": [
+                "GTWL",
+                "EPPK",
+                "PRCL"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.2646,
+              "tickers": [
+                "GTWL",
+                "EPPK",
+                "PRCL",
+                "ELSH"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.1568,
+              "tickers": [
+                "GTWL",
+                "EPPK",
+                "PRCL",
+                "ELSH",
+                "ICID"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -0.2484,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.2958,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "ENGC"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.4676,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "ENGC",
+                "PHTV"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -0.2484,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.8509,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "EPPK"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.4498,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "EPPK",
+                "PHTV"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.2484,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.8509,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "EPPK"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.2839,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "EPPK",
+                "GTWL"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -0.2484,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.8509,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "EPPK"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.2839,
+              "tickers": [
+                "NAHO",
+                "EGBE",
+                "ICID",
+                "EPPK",
+                "GTWL"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-07-06",
+        "outcomeDate": "2026-07-07",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": 6.0264,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "ELKA"
+              ]
+            },
+            "4": {
+              "netReturnPct": 3.8038,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "ELKA",
+                "GGCC"
+              ]
+            },
+            "5": {
+              "netReturnPct": 2.7128,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "ELKA",
+                "GGCC",
+                "EPPK"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": 3.8078,
+              "tickers": [
+                "GTWL",
+                "EPPK",
+                "ELKA"
+              ]
+            },
+            "4": {
+              "netReturnPct": 2.1398,
+              "tickers": [
+                "GTWL",
+                "EPPK",
+                "ELKA",
+                "GGCC"
+              ]
+            },
+            "5": {
+              "netReturnPct": 1.7099,
+              "tickers": [
+                "GTWL",
+                "EPPK",
+                "ELKA",
+                "GGCC",
+                "OCDI"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -2.1685,
+              "tickers": [
+                "ICID",
+                "AJWA",
+                "PHTV"
+              ]
+            },
+            "4": {
+              "netReturnPct": -1.7764,
+              "tickers": [
+                "ICID",
+                "AJWA",
+                "PHTV",
+                "OIH"
+              ]
+            },
+            "5": {
+              "netReturnPct": -1.7514,
+              "tickers": [
+                "ICID",
+                "AJWA",
+                "PHTV",
+                "OIH",
+                "EPPK"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": -2.3666,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "AJWA"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.0392,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "AJWA",
+                "PHTV"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.2883,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "AJWA",
+                "PHTV",
+                "ELKA"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": -2.3666,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "AJWA"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.5961,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "AJWA",
+                "ELKA"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.2883,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "AJWA",
+                "ELKA",
+                "PHTV"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": -2.6409,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "ELKA"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.2449,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "ELKA",
+                "PHTV"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.2883,
+              "tickers": [
+                "ICID",
+                "EPPK",
+                "ELKA",
+                "PHTV",
+                "AJWA"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "signalDate": "2026-07-07",
+        "outcomeDate": "2026-07-08",
+        "recipes": {
+          "TOP10_BASELINE": {
+            "3": {
+              "netReturnPct": -0.4705,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "RUBX"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.945,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "RUBX",
+                "GGCC"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.7881,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "RUBX",
+                "GGCC",
+                "MAAL"
+              ]
+            }
+          },
+          "FOCUS5": {
+            "3": {
+              "netReturnPct": 0.1661,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "MAAL"
+              ]
+            },
+            "4": {
+              "netReturnPct": 1.4225,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "MAAL",
+                "GGCC"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.7881,
+              "tickers": [
+                "GTWL",
+                "PRCL",
+                "MAAL",
+                "GGCC",
+                "RUBX"
+              ]
+            }
+          },
+          "RETURN_BLEND": {
+            "3": {
+              "netReturnPct": -2.5493,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "SAUD"
+              ]
+            },
+            "4": {
+              "netReturnPct": -2.0821,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "SAUD",
+                "CPCI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -2.2885,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "SAUD",
+                "CPCI",
+                "EASB"
+              ]
+            }
+          },
+          "RISK_ADJUSTED": {
+            "3": {
+              "netReturnPct": 0.2257,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.0009,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC",
+                "CPCI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6274,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC",
+                "CPCI",
+                "SAUD"
+              ]
+            }
+          },
+          "CONCENTRATED_ALPHA": {
+            "3": {
+              "netReturnPct": 0.2257,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC"
+              ]
+            },
+            "4": {
+              "netReturnPct": -0.0009,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC",
+                "CPCI"
+              ]
+            },
+            "5": {
+              "netReturnPct": -0.6274,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC",
+                "CPCI",
+                "SAUD"
+              ]
+            }
+          },
+          "BALANCED_ALPHA": {
+            "3": {
+              "netReturnPct": 0.2257,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC"
+              ]
+            },
+            "4": {
+              "netReturnPct": 0.2094,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC",
+                "MAAL"
+              ]
+            },
+            "5": {
+              "netReturnPct": 0.0314,
+              "tickers": [
+                "MOIL",
+                "PRDC",
+                "GGCC",
+                "MAAL",
+                "CPCI"
+              ]
+            }
+          }
+        }
+      }
+    ]
+  },
+  "independentHoldout": {
+    "frozen": true,
+    "labelsNeverUsedForRefit": true,
+    "recipe": "TOP10_BASELINE",
+    "basketSize": 4,
+    "metrics": {
+      "sessions": 20,
+      "averageNetReturnPct": 1.4505,
+      "medianNetReturnPct": 0.282,
+      "sessionWinRatePct": 55.0,
+      "profitFactor": 2.15,
+      "compoundedNetReturnPct": 29.836,
+      "maximumDrawdownPct": -13.558,
+      "volatilityPct": 5.3143,
+      "bestSessionPct": 11.918,
+      "worstSessionPct": -7.242
+    },
+    "results": [
+      {
+        "signalDate": "2026-07-08",
+        "outcomeDate": "2026-07-09",
+        "netReturnPct": 4.0794,
+        "tickers": [
+          "SEIG",
+          "AMES",
+          "GTWL",
+          "GGCC"
+        ]
+      },
+      {
+        "signalDate": "2026-07-09",
+        "outcomeDate": "2026-07-12",
+        "netReturnPct": 1.4764,
+        "tickers": [
+          "GTWL",
+          "UNIT",
+          "DTPP",
+          "AMES"
+        ]
+      },
+      {
+        "signalDate": "2026-07-12",
+        "outcomeDate": "2026-07-13",
+        "netReturnPct": 3.5137,
+        "tickers": [
+          "AMES",
+          "GTWL",
+          "DTPP",
+          "UNIT"
+        ]
+      },
+      {
+        "signalDate": "2026-07-13",
+        "outcomeDate": "2026-07-14",
+        "netReturnPct": 0.6026,
+        "tickers": [
+          "GTWL",
+          "NHPS",
+          "MAAL",
+          "ELKA"
+        ]
+      },
+      {
+        "signalDate": "2026-07-14",
+        "outcomeDate": "2026-07-15",
+        "netReturnPct": -1.1779,
+        "tickers": [
+          "UEGC",
+          "CAED",
+          "ELKA",
+          "GGCC"
+        ]
+      },
+      {
+        "signalDate": "2026-07-15",
+        "outcomeDate": "2026-07-16",
+        "netReturnPct": 6.9622,
+        "tickers": [
+          "NHPS",
+          "CAED",
+          "ELKA",
+          "CPCI"
+        ]
+      },
+      {
+        "signalDate": "2026-07-16",
+        "outcomeDate": "2026-07-19",
+        "netReturnPct": 11.2944,
+        "tickers": [
+          "GGCC",
+          "CAED",
+          "AMES",
+          "ELKA"
+        ]
+      },
+      {
+        "signalDate": "2026-07-19",
+        "outcomeDate": "2026-07-20",
+        "netReturnPct": -5.8285,
+        "tickers": [
+          "CAED",
+          "ELKA",
+          "NINH",
+          "AMES"
+        ]
+      },
+      {
+        "signalDate": "2026-07-20",
+        "outcomeDate": "2026-07-21",
+        "netReturnPct": -4.176,
+        "tickers": [
+          "UEGC",
+          "BIOC",
+          "LCSW",
+          "CAED"
+        ]
+      },
+      {
+        "signalDate": "2026-07-21",
+        "outcomeDate": "2026-07-22",
+        "netReturnPct": -2.2945,
+        "tickers": [
+          "UNIP",
+          "KABO",
+          "MEPA",
+          "GRCA"
+        ]
+      },
+      {
+        "signalDate": "2026-07-22",
+        "outcomeDate": "2026-07-23",
+        "netReturnPct": -1.249,
+        "tickers": [
+          "GGCC",
+          "AMER",
+          "CAED",
+          "KABO"
+        ]
+      },
+      {
+        "signalDate": "2026-07-23",
+        "outcomeDate": "2026-07-26",
+        "netReturnPct": -0.0783,
+        "tickers": [
+          "GGCC",
+          "AMER",
+          "CAED",
+          "OCPH"
+        ]
+      },
+      {
+        "signalDate": "2026-07-26",
+        "outcomeDate": "2026-07-27",
+        "netReturnPct": -0.64,
+        "tickers": [
+          "GGCC",
+          "NIPH",
+          "AMER",
+          "KWIN"
+        ]
+      },
+      {
+        "signalDate": "2026-07-27",
+        "outcomeDate": "2026-07-28",
+        "netReturnPct": 0.441,
+        "tickers": [
+          "ASPI",
+          "AMER",
+          "MOIL",
+          "MPCI"
+        ]
+      },
+      {
+        "signalDate": "2026-07-28",
+        "outcomeDate": "2026-07-29",
+        "netReturnPct": 0.123,
+        "tickers": [
+          "AMER",
+          "ASPI",
+          "AMES",
+          "SDTI"
+        ]
+      },
+      {
+        "signalDate": "2026-07-29",
+        "outcomeDate": "2026-07-30",
+        "netReturnPct": 2.3048,
+        "tickers": [
+          "AFMC",
+          "MILS",
+          "SDTI",
+          "AMER"
+        ]
+      },
+      {
+        "signalDate": "2026-07-30",
+        "outcomeDate": "2026-08-02",
+        "netReturnPct": 11.9175,
+        "tickers": [
+          "AFMC",
+          "AALR",
+          "PHAR",
+          "MOIL"
+        ]
+      },
+      {
+        "signalDate": "2026-08-02",
+        "outcomeDate": "2026-08-03",
+        "netReturnPct": -2.5443,
+        "tickers": [
+          "AFMC",
+          "PHAR",
+          "AALR",
+          "EGSA"
+        ]
+      },
+      {
+        "signalDate": "2026-08-03",
+        "outcomeDate": "2026-08-04",
+        "netReturnPct": -7.2417,
+        "tickers": [
+          "PHAR",
+          "NIPH",
+          "SIPC",
+          "MPCI"
+        ]
+      },
+      {
+        "signalDate": "2026-08-04",
+        "outcomeDate": "2026-08-05",
+        "netReturnPct": 11.5258,
+        "tickers": [
+          "AFMC",
+          "MOIN",
+          "AMER",
+          "GGCC"
+        ]
+      }
+    ],
+    "internalTop10BaselineSameWindow": {
+      "metrics": {
+        "sessions": 20,
+        "averageNetReturnPct": 1.4505,
+        "medianNetReturnPct": 0.282,
+        "sessionWinRatePct": 55.0,
+        "profitFactor": 2.15,
+        "compoundedNetReturnPct": 29.836,
+        "maximumDrawdownPct": -13.558,
+        "volatilityPct": 5.3143,
+        "bestSessionPct": 11.918,
+        "worstSessionPct": -7.242
+      },
+      "results": [
+        {
+          "signalDate": "2026-07-08",
+          "outcomeDate": "2026-07-09",
+          "netReturnPct": 4.0794,
+          "tickers": [
+            "SEIG",
+            "AMES",
+            "GTWL",
+            "GGCC"
+          ]
+        },
+        {
+          "signalDate": "2026-07-09",
+          "outcomeDate": "2026-07-12",
+          "netReturnPct": 1.4764,
+          "tickers": [
+            "GTWL",
+            "UNIT",
+            "DTPP",
+            "AMES"
+          ]
+        },
+        {
+          "signalDate": "2026-07-12",
+          "outcomeDate": "2026-07-13",
+          "netReturnPct": 3.5137,
+          "tickers": [
+            "AMES",
+            "GTWL",
+            "DTPP",
+            "UNIT"
+          ]
+        },
+        {
+          "signalDate": "2026-07-13",
+          "outcomeDate": "2026-07-14",
+          "netReturnPct": 0.6026,
+          "tickers": [
+            "GTWL",
+            "NHPS",
+            "MAAL",
+            "ELKA"
+          ]
+        },
+        {
+          "signalDate": "2026-07-14",
+          "outcomeDate": "2026-07-15",
+          "netReturnPct": -1.1779,
+          "tickers": [
+            "UEGC",
+            "CAED",
+            "ELKA",
+            "GGCC"
+          ]
+        },
+        {
+          "signalDate": "2026-07-15",
+          "outcomeDate": "2026-07-16",
+          "netReturnPct": 6.9622,
+          "tickers": [
+            "NHPS",
+            "CAED",
+            "ELKA",
+            "CPCI"
+          ]
+        },
+        {
+          "signalDate": "2026-07-16",
+          "outcomeDate": "2026-07-19",
+          "netReturnPct": 11.2944,
+          "tickers": [
+            "GGCC",
+            "CAED",
+            "AMES",
+            "ELKA"
+          ]
+        },
+        {
+          "signalDate": "2026-07-19",
+          "outcomeDate": "2026-07-20",
+          "netReturnPct": -5.8285,
+          "tickers": [
+            "CAED",
+            "ELKA",
+            "NINH",
+            "AMES"
+          ]
+        },
+        {
+          "signalDate": "2026-07-20",
+          "outcomeDate": "2026-07-21",
+          "netReturnPct": -4.176,
+          "tickers": [
+            "UEGC",
+            "BIOC",
+            "LCSW",
+            "CAED"
+          ]
+        },
+        {
+          "signalDate": "2026-07-21",
+          "outcomeDate": "2026-07-22",
+          "netReturnPct": -2.2945,
+          "tickers": [
+            "UNIP",
+            "KABO",
+            "MEPA",
+            "GRCA"
+          ]
+        },
+        {
+          "signalDate": "2026-07-22",
+          "outcomeDate": "2026-07-23",
+          "netReturnPct": -1.249,
+          "tickers": [
+            "GGCC",
+            "AMER",
+            "CAED",
+            "KABO"
+          ]
+        },
+        {
+          "signalDate": "2026-07-23",
+          "outcomeDate": "2026-07-26",
+          "netReturnPct": -0.0783,
+          "tickers": [
+            "GGCC",
+            "AMER",
+            "CAED",
+            "OCPH"
+          ]
+        },
+        {
+          "signalDate": "2026-07-26",
+          "outcomeDate": "2026-07-27",
+          "netReturnPct": -0.64,
+          "tickers": [
+            "GGCC",
+            "NIPH",
+            "AMER",
+            "KWIN"
+          ]
+        },
+        {
+          "signalDate": "2026-07-27",
+          "outcomeDate": "2026-07-28",
+          "netReturnPct": 0.441,
+          "tickers": [
+            "ASPI",
+            "AMER",
+            "MOIL",
+            "MPCI"
+          ]
+        },
+        {
+          "signalDate": "2026-07-28",
+          "outcomeDate": "2026-07-29",
+          "netReturnPct": 0.123,
+          "tickers": [
+            "AMER",
+            "ASPI",
+            "AMES",
+            "SDTI"
+          ]
+        },
+        {
+          "signalDate": "2026-07-29",
+          "outcomeDate": "2026-07-30",
+          "netReturnPct": 2.3048,
+          "tickers": [
+            "AFMC",
+            "MILS",
+            "SDTI",
+            "AMER"
+          ]
+        },
+        {
+          "signalDate": "2026-07-30",
+          "outcomeDate": "2026-08-02",
+          "netReturnPct": 11.9175,
+          "tickers": [
+            "AFMC",
+            "AALR",
+            "PHAR",
+            "MOIL"
+          ]
+        },
+        {
+          "signalDate": "2026-08-02",
+          "outcomeDate": "2026-08-03",
+          "netReturnPct": -2.5443,
+          "tickers": [
+            "AFMC",
+            "PHAR",
+            "AALR",
+            "EGSA"
+          ]
+        },
+        {
+          "signalDate": "2026-08-03",
+          "outcomeDate": "2026-08-04",
+          "netReturnPct": -7.2417,
+          "tickers": [
+            "PHAR",
+            "NIPH",
+            "SIPC",
+            "MPCI"
+          ]
+        },
+        {
+          "signalDate": "2026-08-04",
+          "outcomeDate": "2026-08-05",
+          "netReturnPct": 11.5258,
+          "tickers": [
+            "AFMC",
+            "MOIN",
+            "AMER",
+            "GGCC"
+          ]
+        }
+      ]
+    }
+  },
+  "championReference": {
+    "engineId": "V16_9_EQUAL_WEIGHT_BASKET",
+    "publishedBlockedWalkForwardMetrics": {
+      "sessions": 29,
+      "averageNetReturnPct": 0.9751,
+      "medianNetReturnPct": 0.1661,
+      "sessionWinRatePct": 55.172,
+      "profitFactor": 1.929,
+      "compoundedNetReturnPct": 29.15,
+      "maximumDrawdownPct": -11.089,
+      "bestSessionPct": 12.165,
+      "worstSessionPct": -7.078,
+      "averageTop10Hits": 0.793
+    },
+    "v17ProductionReference": "V17 governance still references V16_9_EQUAL_WEIGHT_BASKET as champion.",
+    "holdoutAverageVsPublishedChampionPp": 0.4754,
+    "holdoutAverageVsInternalTop10BaselinePp": 0.0
+  },
+  "current": {
+    "signalDate": "2026-08-05",
+    "mode": "SHADOW_RESEARCH_ONLY",
+    "executionAllowed": false,
+    "selectedRecipe": "TOP10_BASELINE",
+    "basketSize": 4,
+    "candidates": [
+      {
+        "rank": 1,
+        "ticker": "AMER",
+        "companyNameAr": "عامر جروب",
+        "v19AlphaScore": 100.0,
+        "pTop3Pct": 5.746,
+        "pTop5Pct": 8.208,
+        "pTop10Pct": 12.373,
+        "pNetPositivePct": 28.124,
+        "pLargeLossPct": 16.838,
+        "expectedReturnModelScore": 0.01,
+        "close": 6.1,
+        "rsi14": 93.5,
+        "ret5Pct": 29.51,
+        "ret20Pct": 153.11,
+        "relativeStrength20Pct": 142.83,
+        "volumeRatio20": 0.98,
+        "averageTurnover20Egp": 97655486.0,
+        "support": 5.9233,
+        "resistance": 6.2767,
+        "executionPlan": {
+          "entryLow": 6.0717,
+          "entryHigh": 6.1283,
+          "stop": 5.8697,
+          "target": 6.4646,
+          "riskReward": 1.3,
+          "executionQualityPct": 83.3,
+          "executionEligible": false,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": false,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 2,
+        "ticker": "MOIN",
+        "companyNameAr": "المهندس للتأمين",
+        "v19AlphaScore": 99.448,
+        "pTop3Pct": 6.043,
+        "pTop5Pct": 8.431,
+        "pTop10Pct": 12.37,
+        "pNetPositivePct": 28.061,
+        "pLargeLossPct": 17.208,
+        "expectedReturnModelScore": 0.0078,
+        "close": 35.0,
+        "rsi14": 94.7,
+        "ret5Pct": 48.31,
+        "ret20Pct": 43.91,
+        "relativeStrength20Pct": 33.63,
+        "volumeRatio20": 38.15,
+        "averageTurnover20Egp": 11725761.0,
+        "support": 33.96,
+        "resistance": 37.52,
+        "executionPlan": {
+          "entryLow": 34.8757,
+          "entryHigh": 35.1243,
+          "stop": 33.8046,
+          "target": 37.4423,
+          "riskReward": 1.76,
+          "executionQualityPct": 83.3,
+          "executionEligible": false,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": false,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 3,
+        "ticker": "GGCC",
+        "companyNameAr": "الجيزة العامة للمقاولات",
+        "v19AlphaScore": 98.895,
+        "pTop3Pct": 5.629,
+        "pTop5Pct": 8.084,
+        "pTop10Pct": 12.25,
+        "pNetPositivePct": 27.974,
+        "pLargeLossPct": 16.783,
+        "expectedReturnModelScore": 0.0089,
+        "close": 1.13,
+        "rsi14": 85.4,
+        "ret5Pct": 34.52,
+        "ret20Pct": 113.21,
+        "relativeStrength20Pct": 102.92,
+        "volumeRatio20": 1.37,
+        "averageTurnover20Egp": 41497646.0,
+        "support": 1.0867,
+        "resistance": 1.1833,
+        "executionPlan": {
+          "entryLow": 1.1238,
+          "entryHigh": 1.1362,
+          "stop": 1.0789,
+          "target": 1.2108,
+          "riskReward": 1.3,
+          "executionQualityPct": 100.0,
+          "executionEligible": true,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": true,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 4,
+        "ticker": "AFMC",
+        "companyNameAr": "مطاحن ومخابز الإسكندرية",
+        "v19AlphaScore": 98.343,
+        "pTop3Pct": 4.726,
+        "pTop5Pct": 7.349,
+        "pTop10Pct": 11.919,
+        "pNetPositivePct": 27.575,
+        "pLargeLossPct": 16.981,
+        "expectedReturnModelScore": 0.0017,
+        "close": 232.0,
+        "rsi14": 81.5,
+        "ret5Pct": 50.66,
+        "ret20Pct": 232.76,
+        "relativeStrength20Pct": 222.47,
+        "volumeRatio20": 2.7,
+        "averageTurnover20Egp": 107193063.0,
+        "support": 227.6833,
+        "resistance": 254.3167,
+        "executionPlan": {
+          "entryLow": 230.0201,
+          "entryHigh": 233.9799,
+          "stop": 215.9134,
+          "target": 257.4663,
+          "riskReward": 1.3,
+          "executionQualityPct": 100.0,
+          "executionEligible": true,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": true,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 5,
+        "ticker": "LUTS",
+        "companyNameAr": "لوتس للتنمية والاستثمار الزراعي",
+        "v19AlphaScore": 97.79,
+        "pTop3Pct": 4.889,
+        "pTop5Pct": 6.609,
+        "pTop10Pct": 10.462,
+        "pNetPositivePct": 27.068,
+        "pLargeLossPct": 14.589,
+        "expectedReturnModelScore": 0.0067,
+        "close": 0.75,
+        "rsi14": 50.3,
+        "ret5Pct": 32.74,
+        "ret20Pct": -0.4,
+        "relativeStrength20Pct": -10.68,
+        "volumeRatio20": 5.87,
+        "averageTurnover20Egp": 33416620.0,
+        "support": 0.7067,
+        "resistance": 0.7933,
+        "executionPlan": {
+          "entryLow": 0.7467,
+          "entryHigh": 0.7533,
+          "stop": 0.7047,
+          "target": 0.8164,
+          "riskReward": 1.3,
+          "executionQualityPct": 100.0,
+          "executionEligible": true,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": true,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 6,
+        "ticker": "NIPH",
+        "companyNameAr": "النيل للأدوية",
+        "v19AlphaScore": 97.238,
+        "pTop3Pct": 4.516,
+        "pTop5Pct": 6.249,
+        "pTop10Pct": 10.398,
+        "pNetPositivePct": 27.219,
+        "pLargeLossPct": 14.22,
+        "expectedReturnModelScore": 0.0068,
+        "close": 271.21,
+        "rsi14": 80.9,
+        "ret5Pct": 20.54,
+        "ret20Pct": 65.33,
+        "relativeStrength20Pct": 55.05,
+        "volumeRatio20": 0.91,
+        "averageTurnover20Egp": 142784264.0,
+        "support": 268.4733,
+        "resistance": 273.9467,
+        "executionPlan": {
+          "entryLow": 269.8769,
+          "entryHigh": 272.5431,
+          "stop": 260.3782,
+          "target": 288.3576,
+          "riskReward": 1.3,
+          "executionQualityPct": 100.0,
+          "executionEligible": true,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": true,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 7,
+        "ticker": "ORWE",
+        "companyNameAr": "النساجون الشرقيون",
+        "v19AlphaScore": 96.685,
+        "pTop3Pct": 5.217,
+        "pTop5Pct": 6.6,
+        "pTop10Pct": 10.337,
+        "pNetPositivePct": 27.452,
+        "pLargeLossPct": 14.087,
+        "expectedReturnModelScore": 0.0106,
+        "close": 26.31,
+        "rsi14": 85.7,
+        "ret5Pct": 14.89,
+        "ret20Pct": 17.77,
+        "relativeStrength20Pct": 7.49,
+        "volumeRatio20": 10.83,
+        "averageTurnover20Egp": 56965168.0,
+        "support": 25.59,
+        "resistance": 27.03,
+        "executionPlan": {
+          "entryLow": 26.2688,
+          "entryHigh": 26.3512,
+          "stop": 25.7435,
+          "target": 27.1412,
+          "riskReward": 1.3,
+          "executionQualityPct": 100.0,
+          "executionEligible": true,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": true,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 8,
+        "ticker": "SDTI",
+        "companyNameAr": "شرم دريمز",
+        "v19AlphaScore": 96.133,
+        "pTop3Pct": 4.414,
+        "pTop5Pct": 6.109,
+        "pTop10Pct": 10.214,
+        "pNetPositivePct": 26.793,
+        "pLargeLossPct": 14.479,
+        "expectedReturnModelScore": 0.0021,
+        "close": 68.3,
+        "rsi14": 89.4,
+        "ret5Pct": 20.88,
+        "ret20Pct": 47.07,
+        "relativeStrength20Pct": 36.79,
+        "volumeRatio20": 2.21,
+        "averageTurnover20Egp": 25001105.0,
+        "support": 67.7333,
+        "resistance": 72.4667,
+        "executionPlan": {
+          "entryLow": 67.9711,
+          "entryHigh": 68.6289,
+          "stop": 65.628,
+          "target": 72.5299,
+          "riskReward": 1.3,
+          "executionQualityPct": 83.3,
+          "executionEligible": false,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": false,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 9,
+        "ticker": "MICH",
+        "companyNameAr": "مصر لصناعة الكيماويات",
+        "v19AlphaScore": 95.58,
+        "pTop3Pct": 4.686,
+        "pTop5Pct": 6.213,
+        "pTop10Pct": 10.197,
+        "pNetPositivePct": 26.984,
+        "pLargeLossPct": 14.187,
+        "expectedReturnModelScore": 0.0046,
+        "close": 50.04,
+        "rsi14": 88.8,
+        "ret5Pct": 22.35,
+        "ret20Pct": 31.68,
+        "relativeStrength20Pct": 21.4,
+        "volumeRatio20": 1.7,
+        "averageTurnover20Egp": 28785329.0,
+        "support": 49.8333,
+        "resistance": 51.5467,
+        "executionPlan": {
+          "entryLow": 49.8902,
+          "entryHigh": 50.1898,
+          "stop": 48.8226,
+          "target": 51.9672,
+          "riskReward": 1.3,
+          "executionQualityPct": 83.3,
+          "executionEligible": false,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": false,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 10,
+        "ticker": "AFDI",
+        "companyNameAr": "الأهلي للتنمية والاستثمار",
+        "v19AlphaScore": 95.028,
+        "pTop3Pct": 4.784,
+        "pTop5Pct": 6.248,
+        "pTop10Pct": 10.196,
+        "pNetPositivePct": 27.163,
+        "pLargeLossPct": 13.883,
+        "expectedReturnModelScore": 0.0078,
+        "close": 61.0,
+        "rsi14": 93.3,
+        "ret5Pct": 20.32,
+        "ret20Pct": 37.67,
+        "relativeStrength20Pct": 27.38,
+        "volumeRatio20": 1.08,
+        "averageTurnover20Egp": 22976684.0,
+        "support": 60.2167,
+        "resistance": 62.2833,
+        "executionPlan": {
+          "entryLow": 60.7821,
+          "entryHigh": 61.2179,
+          "stop": 59.2297,
+          "target": 63.8026,
+          "riskReward": 1.3,
+          "executionQualityPct": 83.3,
+          "executionEligible": false,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": false,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 11,
+        "ticker": "OFH",
+        "companyNameAr": "أو بي المالية القابضة",
+        "v19AlphaScore": 94.475,
+        "pTop3Pct": 4.95,
+        "pTop5Pct": 6.337,
+        "pTop10Pct": 10.192,
+        "pNetPositivePct": 27.366,
+        "pLargeLossPct": 13.767,
+        "expectedReturnModelScore": 0.0106,
+        "close": 0.8,
+        "rsi14": 94.1,
+        "ret5Pct": 11.89,
+        "ret20Pct": 35.59,
+        "relativeStrength20Pct": 25.31,
+        "volumeRatio20": 1.7,
+        "averageTurnover20Egp": 71778994.0,
+        "support": 0.7867,
+        "resistance": 0.8133,
+        "executionPlan": {
+          "entryLow": 0.7978,
+          "entryHigh": 0.8022,
+          "stop": 0.7822,
+          "target": 0.8282,
+          "riskReward": 1.3,
+          "executionQualityPct": 83.3,
+          "executionEligible": false,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": false,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      },
+      {
+        "rank": 12,
+        "ticker": "AALR",
+        "companyNameAr": "العامة لاستصلاح الأراضي والتنمية والتعمير",
+        "v19AlphaScore": 93.923,
+        "pTop3Pct": 4.513,
+        "pTop5Pct": 6.09,
+        "pTop10Pct": 10.103,
+        "pNetPositivePct": 26.923,
+        "pLargeLossPct": 14.166,
+        "expectedReturnModelScore": 0.0045,
+        "close": 303.06,
+        "rsi14": 75.0,
+        "ret5Pct": 25.76,
+        "ret20Pct": 50.69,
+        "relativeStrength20Pct": 40.41,
+        "volumeRatio20": 1.9,
+        "averageTurnover20Egp": 37631207.0,
+        "support": 296.3533,
+        "resistance": 318.7067,
+        "executionPlan": {
+          "entryLow": 301.5281,
+          "entryHigh": 304.5919,
+          "stop": 290.6134,
+          "target": 322.7639,
+          "riskReward": 1.3,
+          "executionQualityPct": 100.0,
+          "executionEligible": true,
+          "ruleChecks": {
+            "turnover": true,
+            "volume": true,
+            "rsi": true,
+            "gapRisk": true,
+            "targetAboveEntry": true,
+            "riskReward": true
+          }
+        }
+      }
+    ]
+  },
+  "promotion": {
+    "automaticPromotion": false,
+    "promotionAllowed": false,
+    "reason": "Separate V19 v2 challenger gate decides evidence status; explicit review remains mandatory."
+  }
+}
