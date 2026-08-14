@@ -33,7 +33,9 @@ const profiles = read('data/v20/stock-profiles.json');
 const rr = read('data/v20/risk-reward-audit.json');
 const operations = read('data/v20/release-operations.json');
 const finalAcceptance = regression.finalAcceptance;
+const executionGap = regression.executionReadinessGap;
 if (!finalAcceptance) throw new Error('Final acceptance mirror missing from regression evidence');
+if (!executionGap || executionGap.ok !== true) throw new Error('Execution readiness gap evidence missing or failed');
 
 const releaseClassification = finalAcceptance.researchPlatformReady === true && finalAcceptance.executionReady === false
   ? 'RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED'
@@ -42,7 +44,7 @@ const releaseClassification = finalAcceptance.researchPlatformReady === true && 
     : 'NOT_RELEASE_READY';
 
 const manifest = {
-  schemaVersion: '20.0.0-release-manifest-1',
+  schemaVersion: '20.0.0-release-manifest-2',
   generatedAt: new Date().toISOString(),
   releaseClassification,
   product: 'EGX PRO V20 — Integrated Investment Decision Platform',
@@ -78,6 +80,19 @@ const manifest = {
     productionBlockerCount: finalAcceptance.criticSummary?.productionBlockerCount ?? null,
     productionBlockers: finalAcceptance.productionBlockers || [],
     limitations: finalAcceptance.limitations || [],
+  },
+  executionReadinessGap: {
+    sourceSessionDate: executionGap.sessionDate,
+    current: executionGap.current,
+    required: executionGap.required,
+    gaps: executionGap.gaps,
+    symbols: executionGap.symbols,
+    thresholds: executionGap.thresholds,
+    mathematicalThresholdGapOnly: executionGap.interpretation?.mathematicalThresholdGapOnly === true,
+    guaranteesExecutionGrade: executionGap.interpretation?.guaranteesExecutionGrade === true,
+    requiresFullV17GateRebuildAfterEvidenceChanges: executionGap.interpretation?.requiresFullV17GateRebuildAfterEvidenceChanges === true,
+    note: executionGap.interpretation?.note || null,
+    evidence: 'data/v20/regression.json#executionReadinessGap',
   },
   marketCoverage: {
     universeCount: explorer.summary?.universeCount || 0,
@@ -148,6 +163,7 @@ const manifest = {
   evidenceIndex: {
     current: 'data/v20/current.json',
     finalAcceptance: 'data/v20/regression.json#finalAcceptance',
+    executionReadinessGap: 'data/v20/regression.json#executionReadinessGap',
     browser: 'data/v20/browser-smoke.json',
     marketExplorer: 'data/v20/market-explorer.json',
     sourceHealth: 'data/v20/source-health.json',
@@ -165,6 +181,8 @@ console.log(JSON.stringify({
   finalStatus: manifest.acceptance.finalStatus,
   researchReady: manifest.releaseClaims.researchReadyClaimAllowed,
   executionReadyClaimAllowed: manifest.releaseClaims.executionReadyClaimAllowed,
+  executionGaps: manifest.executionReadinessGap.gaps,
+  guaranteesExecutionGrade: manifest.executionReadinessGap.guaranteesExecutionGrade,
   deployedClaimAllowed: manifest.releaseClaims.deployedClaimAllowed,
   marketTrendContextCoveragePct: manifest.marketCoverage.verifiedMarketTrendContextCoveragePct,
   validatedSourceCommit: manifest.validatedSourceCommit,
