@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "17.0.0-destructive-critic-3",
-  "generatedAt": "2026-08-14T10:55:41.462Z",
-  "critic": "V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V3",
+  "schemaVersion": "17.0.0-destructive-critic-4",
+  "generatedAt": "2026-08-14T11:09:56.842Z",
+  "critic": "V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V4",
   "verdict": "NO_COMMENTS",
   "counts": {
     "CRITICAL": 0,
@@ -12,11 +12,38 @@
   "totalFindings": 0,
   "findings": [],
   "baseCritic": {
-    "schemaVersion": "17.0.0-destructive-critic-2",
-    "verdict": "COMMENTS_FOUND",
-    "totalFindings": 1,
-    "ignoredSupersededWiringFindings": [
-      "CRITIC_V2_NOT_IN_WORKFLOW"
+    "schemaVersion": "17.0.0-destructive-critic-3",
+    "verdict": "NO_COMMENTS",
+    "totalFindings": 0,
+    "ignoredSupersededWiringFindings": []
+  },
+  "browserRuntime": {
+    "schemaVersion": "17.0.0-browser-runtime-critic-1",
+    "verdict": "NO_COMMENTS",
+    "totalFindings": 0,
+    "checks": [
+      {
+        "label": "desktop",
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "consoleErrors": 0,
+        "pageErrors": 0,
+        "failedRequests": 0,
+        "badResponses": 0
+      },
+      {
+        "label": "mobile",
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "consoleErrors": 0,
+        "pageErrors": 0,
+        "failedRequests": 0,
+        "badResponses": 0
+      }
     ]
   },
   "coverage": {
@@ -36,7 +63,13 @@
     "historicalAllocationSemantics": true,
     "finalizerAttestation": true,
     "dualWorkflowCriticEnforcement": true,
-    "criticVersionSupersessionHandledExplicitly": true
+    "criticVersionSupersessionHandledExplicitly": true,
+    "realChromiumJavascriptRuntime": true,
+    "desktopRuntime": true,
+    "mobileRuntime": true,
+    "consoleAndPageErrors": true,
+    "networkRuntimeFailures": true,
+    "navigationAndSearch": true
   },
-  "rule": "Critic V3 is additive. Only the obsolete V2 direct-wiring finding may be superseded when V3 is mandatory; every substantive V2 finding remains blocking."
+  "rule": "Critic V4 is additive. Every substantive V3 finding and every Chromium runtime finding is blocking; only obsolete V3 direct-wiring findings may be superseded by mandatory V4 wiring."
 }

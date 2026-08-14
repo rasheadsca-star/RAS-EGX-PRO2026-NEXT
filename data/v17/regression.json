@@ -1,10 +1,10 @@
 {
-  "schemaVersion": "17.0.0-regression-3",
-  "generatedAt": "2026-08-14T10:55:41.292Z",
-  "contract": "V17_CANONICAL_RUNTIME_SESSION_TRUTH_FINALIZATION_AND_GOVERNANCE",
+  "schemaVersion": "17.0.0-regression-4",
+  "generatedAt": "2026-08-14T11:09:56.660Z",
+  "contract": "V17_CANONICAL_RUNTIME_SESSION_TRUTH_BROWSER_CRITIC_AND_GOVERNANCE",
   "ok": true,
-  "total": 119,
-  "passed": 119,
+  "total": 130,
+  "passed": 130,
   "failedCount": 0,
   "criticalFailedCount": 0,
   "failed": [],
@@ -679,13 +679,13 @@
       "name": "workflow:market:regression-v3",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "regression-v3.cjs"
+      "message": "Superseded by mandatory V4 wiring; original check was: regression-v3.cjs"
     },
     {
       "name": "workflow:market:critic-v3",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "destructive-critic-v3.cjs"
+      "message": "Superseded by mandatory V4 wiring; original check was: destructive-critic-v3.cjs"
     },
     {
       "name": "workflow:market:finalizer",
@@ -722,12 +722,83 @@
       "ok": true,
       "severity": "CRITICAL",
       "message": "finalize-snapshot.cjs"
+    },
+    {
+      "name": "browser-runtime:report-present",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "data/v17/browser-runtime-critic.json"
+    },
+    {
+      "name": "browser-runtime:zero-comments",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "schema=17.0.0-browser-runtime-critic-1; verdict=NO_COMMENTS; findings=0"
+    },
+    {
+      "name": "browser-runtime:desktop-mobile",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "desktop and mobile Chromium checks required"
+    },
+    {
+      "name": "workflow:market:browser-runtime",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "market workflow runs real Chromium critic"
+    },
+    {
+      "name": "workflow:build:browser-runtime",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "build review runs real Chromium critic"
+    },
+    {
+      "name": "workflow:market:regression-v4",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "market workflow runs regression v4"
+    },
+    {
+      "name": "workflow:build:regression-v4",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "build review runs regression v4"
+    },
+    {
+      "name": "workflow:market:critic-v4",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "market workflow runs destructive critic v4"
+    },
+    {
+      "name": "workflow:build:critic-v4",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "build review runs destructive critic v4"
+    },
+    {
+      "name": "review:v5-still-clean",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "schema=17.0.0-review-5; verdict=NO_COMMENTS"
+    },
+    {
+      "name": "snapshot:finalized-current-semantics",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "snapshot finalization remains immutable and historical weights are neutralized"
     }
   ],
   "baseRegression": {
-    "schemaVersion": "17.0.0-regression-2",
-    "total": 92,
-    "passed": 92,
-    "failedCount": 0
-  }
+    "schemaVersion": "17.0.0-regression-3",
+    "total": 119,
+    "passed": 117,
+    "failedCount": 2,
+    "supersededFailedChecks": [
+      "workflow:market:critic-v3",
+      "workflow:market:regression-v3"
+    ]
+  },
+  "rule": "Regression V4 is additive. Only obsolete V3 workflow-wiring checks may be superseded by mandatory V4 wiring; every substantive V3 failure remains blocking."
 }
