@@ -1,0 +1,78 @@
+name: EGX Integrated Decision Platform Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - "scripts/v20/**"
+      - "docs/v20/**"
+      - "data/v20/**"
+      - ".github/workflows/v20-integrated-decision-platform.yml"
+      - "data/v17/**"
+      - "data/v19/**"
+      - "data/final-opportunity-ranking.json"
+      - "data/research/v16-v169-basket-engine.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-v20-integrated-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-integrated-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout V20 integration branch
+        uses: actions/checkout@v6
+        with: {fetch-depth: 0}
+
+      - name: Enforce integration branch isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
+          git fetch origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          changed="$(git diff --name-only origin/v19-egx-chat-gpt...HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|\.github/workflows/v20-integrated-decision-platform\.yml$)' || true)"
+          test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with: {node-version: "22"}
+
+      - name: Static validation
+        run: |
+          node --check scripts/v20/build-integrated-decision-snapshot.cjs
+          node --check scripts/v20/regression.cjs
+
+      - name: Build integrated decision snapshot
+        run: node scripts/v20/build-integrated-decision-snapshot.cjs
+
+      - name: Run governance regression suite
+        run: node scripts/v20/regression.cjs
+
+      - name: Acceptance guard
+        run: |
+          node - <<'NODE'
+          const x=require('./data/v20/current.json');
+          const r=require('./data/v20/regression.json');
+          if(r.ok!==true) process.exit(1);
+          if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
+          if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
+          if(x.executionStatus!=='EXECUTION_GRADE' && x.opportunities.some(o=>o.status==='ACTIONABLE')) process.exit(1);
+          if(x.executionStatus!=='EXECUTION_GRADE' && x.portfolio.recommendedExposurePct!==0) process.exit(1);
+          NODE
+
+      - name: Persist V20 evidence only
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v20/current.json data/v20/regression.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Update V20 integrated decision evidence"
+          git push origin HEAD:develop/v20-integrated-decision-platform
