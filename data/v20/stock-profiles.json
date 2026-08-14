@@ -1,11 +1,27 @@
 {
-  "schemaVersion": "20.0.0-stock-profiles-1",
-  "generatedAt": "2026-08-14T20:39:16.011Z",
+  "schemaVersion": "20.0.0-stock-profiles-2",
+  "generatedAt": "2026-08-14T20:54:27.200Z",
   "sessionDate": "2026-08-13",
   "decisionSupportOnly": true,
   "executionStatus": "RESEARCH_ONLY",
   "profileCount": 30,
-  "technicalIndicatorPolicy": "NO_INDICATOR_WITHOUT_VERIFIED_POINT_IN_TIME_DAILY_OHLC_HISTORY",
+  "technicalIndicatorPolicy": "POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION",
+  "technicalHistoryStatus": {
+    "schemaVersion": "20.0.0-technical-history-status-1",
+    "generatedAt": "2026-08-14T20:54:27.040Z",
+    "asOfSessionDate": "2026-08-13",
+    "requestedSymbols": 30,
+    "historicalIndicatorReadyCount": 27,
+    "currentTechnicalReadyCount": 21,
+    "sessionAlignedCount": 24,
+    "priceReconciledCount": 24,
+    "unavailableCount": 2,
+    "rejectedCount": 0,
+    "currentTechnicalCoveragePct": 70,
+    "historicalIndicatorCoveragePct": 90,
+    "currentTechnicalGate": "PARTIAL_OR_STALE_RESEARCH_ONLY",
+    "note": "Historical indicator availability never upgrades the authoritative V17 execution gate. Stale or price-unreconciled indicators are research context only."
+  },
   "sectorPolicy": "NO_INFERENCE_WITHOUT_VERIFIED_CLASSIFICATION_SOURCE",
   "profiles": [
     {
@@ -173,20 +189,38 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
+        "status": "INSUFFICIENT_TRUSTED_HISTORY",
+        "historicalIndicatorReady": false,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": null,
+        "source": null,
+        "sourceKind": null,
+        "rowsUsed": 0,
+        "sessionAligned": false,
+        "priceReconciled": false,
+        "currentPriceDifferencePct": 0,
         "sma20": null,
+        "sma50": null,
         "ema20": null,
         "rsi14": null,
         "macd": null,
         "macdSignal": null,
+        "macdHistogram": null,
         "atr14": null,
-        "momentum5": null,
+        "momentum5Pct": null,
+        "momentum10Pct": null,
+        "momentum20Pct": null,
         "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "readiness": {},
+        "blockers": [
+          "NO_ACCEPTABLE_HISTORY_DOCUMENT"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -201,13 +235,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/KORA/",
@@ -369,7 +405,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 92% | ربح هدف1 5.3% | عائد متوقع 4.8% | R/R 4.00 | السعر مدقق | تاريخ 13/50",
@@ -379,20 +416,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.6623,
+        "sma20": 1.5275,
+        "sma50": 1.505,
+        "ema20": 1.5287,
+        "rsi14": 47.16,
+        "macd": 0.0009,
+        "macdSignal": 0.006,
+        "macdHistogram": -0.0051,
+        "atr14": 0.0635,
+        "momentum5Pct": -3.23,
+        "momentum10Pct": 4.17,
+        "momentum20Pct": -12.28,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -407,13 +471,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/AREH/",
@@ -585,20 +651,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.0276,
+        "sma20": 36.579,
+        "sma50": 37.7234,
+        "ema20": 36.7309,
+        "rsi14": 42.58,
+        "macd": -0.4129,
+        "macdSignal": -0.4513,
+        "macdHistogram": 0.0384,
+        "atr14": 0.6066,
+        "momentum5Pct": 0.42,
+        "momentum10Pct": -0.3,
+        "momentum20Pct": -3.82,
+        "trend": "BEARISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -613,13 +706,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EAST/",
@@ -780,7 +875,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 91% | ربح هدف1 5.7% | عائد متوقع 4.9% | R/R 1.76 | السعر مدقق | تاريخ 14/50",
@@ -789,20 +885,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 26.8675,
+        "sma50": 26.9186,
+        "ema20": 26.9711,
+        "rsi14": 45.31,
+        "macd": 0.056,
+        "macdSignal": 0.0206,
+        "macdHistogram": 0.0353,
+        "atr14": 0.4991,
+        "momentum5Pct": -2.81,
+        "momentum10Pct": -0.56,
+        "momentum20Pct": -0.41,
+        "trend": "BEARISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -817,13 +940,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/HRHO/",
@@ -985,7 +1110,9 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 90% | ربح هدف1 4.4% | عائد متوقع 3.7% | R/R 1.69 | السعر مدقق | تاريخ 14/50",
@@ -995,20 +1122,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.0951,
+        "sma20": 31.4505,
+        "sma50": 29.711,
+        "ema20": 31.1873,
+        "rsi14": 53.72,
+        "macd": 0.3571,
+        "macdSignal": 0.425,
+        "macdHistogram": -0.068,
+        "atr14": 1.0745,
+        "momentum5Pct": 2.87,
+        "momentum10Pct": 3.96,
+        "momentum20Pct": 3.72,
+        "trend": "BULLISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -1023,13 +1177,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/GBCO/",
@@ -1191,7 +1347,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 87% | ربح هدف1 6.4% | عائد متوقع 5.1% | R/R 1.70 | السعر مدقق | تاريخ 14/50",
@@ -1201,20 +1358,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 7.362,
+        "sma50": 6.9092,
+        "ema20": 7.2428,
+        "rsi14": 51.29,
+        "macd": 0.0445,
+        "macdSignal": 0.1077,
+        "macdHistogram": -0.0631,
+        "atr14": 0.3819,
+        "momentum5Pct": 0.98,
+        "momentum10Pct": 0.42,
+        "momentum20Pct": 1.98,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -1229,13 +1413,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EASB/",
@@ -1397,7 +1583,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 87% | ربح هدف1 4.7% | عائد متوقع 3.8% | R/R 2.00 | السعر مدقق | تاريخ 13/50",
@@ -1407,20 +1594,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.1672,
+        "sma20": 6.281,
+        "sma50": 6.0726,
+        "ema20": 6.1643,
+        "rsi14": 46.02,
+        "macd": -0.0379,
+        "macdSignal": 0.0164,
+        "macdHistogram": -0.0542,
+        "atr14": 0.2786,
+        "momentum5Pct": 0.96,
+        "momentum10Pct": -12.94,
+        "momentum20Pct": -1.16,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -1435,13 +1649,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/NCCW/",
@@ -1613,20 +1829,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 33.745,
+        "sma50": 34.5688,
+        "ema20": 33.3127,
+        "rsi14": 43.54,
+        "macd": -0.7843,
+        "macdSignal": -0.7556,
+        "macdHistogram": -0.0286,
+        "atr14": 1.1874,
+        "momentum5Pct": 3.35,
+        "momentum10Pct": -3.54,
+        "momentum20Pct": -9.09,
+        "trend": "BEARISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -1641,13 +1884,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/OBRI/",
@@ -1807,7 +2052,9 @@
           "HIGH_LEGACY_OPPORTUNITY_SCORE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 83% | ربح هدف1 14.7% | عائد متوقع 10.2% | R/R 1.27 | السعر مدقق | تاريخ 13/50",
@@ -1817,20 +2064,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "RESEARCH_WATCH_NOT_EXECUTION"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 1.9085,
+        "sma50": 1.8774,
+        "ema20": 1.9149,
+        "rsi14": 50.46,
+        "macd": 0.0143,
+        "macdSignal": 0.0156,
+        "macdHistogram": -0.0012,
+        "atr14": 0.0725,
+        "momentum5Pct": 0,
+        "momentum10Pct": 0,
+        "momentum20Pct": -1.04,
+        "trend": "BULLISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -1845,13 +2119,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EBSC/",
@@ -2023,20 +2299,49 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "HISTORICAL_CONTEXT_ONLY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": "2026-08-12",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": false,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 3.1108,
+        "sma20": 14.5425,
+        "sma50": 13.5066,
+        "ema20": 14.1431,
+        "rsi14": 33.67,
+        "macd": -0.0635,
+        "macdSignal": 0.241,
+        "macdHistogram": -0.3045,
+        "atr14": 0.6901,
+        "momentum5Pct": -12.65,
+        "momentum10Pct": -15.26,
+        "momentum20Pct": -10.64,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [
+          "HISTORY_LAST_SESSION_NOT_ALIGNED_WITH_CURRENT_SESSION"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -2051,13 +2356,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EPPK/",
@@ -2230,20 +2537,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.1416,
+        "sma20": 7.515,
+        "sma50": 7.4438,
+        "ema20": 7.4241,
+        "rsi14": 37.3,
+        "macd": -0.0569,
+        "macdSignal": 0.0108,
+        "macdHistogram": -0.0676,
+        "atr14": 0.2335,
+        "momentum5Pct": -4.72,
+        "momentum10Pct": -5.73,
+        "momentum20Pct": -11.62,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -2258,13 +2592,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/RAYA/",
@@ -2438,20 +2774,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.3903,
+        "sma20": 82.8635,
+        "sma50": 110.8489,
+        "ema20": 87.9632,
+        "rsi14": 40.96,
+        "macd": -5.7531,
+        "macdSignal": -8.361,
+        "macdHistogram": 2.6078,
+        "atr14": 2.9968,
+        "momentum5Pct": 3.15,
+        "momentum10Pct": 5.36,
+        "momentum20Pct": 10,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -2466,13 +2829,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/HDBK/",
@@ -2634,7 +2999,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 78% | ربح هدف1 83.5% | عائد متوقع 63.8% | R/R 13.93 | السعر مدقق | تاريخ 13/50",
@@ -2646,20 +3012,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 16.8225,
+        "sma50": 23.3598,
+        "ema20": 18.0911,
+        "rsi14": 48.62,
+        "macd": -1.2673,
+        "macdSignal": -1.9665,
+        "macdHistogram": 0.6992,
+        "atr14": 1.1358,
+        "momentum5Pct": 11.18,
+        "momentum10Pct": 13.62,
+        "momentum20Pct": 10.99,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -2674,13 +3067,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MHOT/",
@@ -2842,7 +3237,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 78% | ربح هدف1 24.8% | عائد متوقع 18.1% | R/R 4.14 | السعر مدقق | تاريخ 13/50",
@@ -2854,20 +3250,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 308.2052,
+        "sma50": 334.3401,
+        "ema20": 294.2745,
+        "rsi14": 46.94,
+        "macd": -21.53,
+        "macdSignal": -23.4378,
+        "macdHistogram": 1.9079,
+        "atr14": 28.0047,
+        "momentum5Pct": 21.46,
+        "momentum10Pct": 25.06,
+        "momentum20Pct": -17.75,
+        "trend": "BEARISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -2882,13 +3305,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/OCPH/",
@@ -3061,20 +3486,49 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "HISTORICAL_CONTEXT_ONLY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": "2026-08-12",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": false,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.9538,
+        "sma20": 27.9379,
+        "sma50": 28.8622,
+        "ema20": 27.4514,
+        "rsi14": 45.37,
+        "macd": -0.9271,
+        "macdSignal": -0.8973,
+        "macdHistogram": -0.0298,
+        "atr14": 1.1204,
+        "momentum5Pct": 0.6,
+        "momentum10Pct": -6.57,
+        "momentum20Pct": -9.91,
+        "trend": "BEARISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [
+          "HISTORY_LAST_SESSION_NOT_ALIGNED_WITH_CURRENT_SESSION"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -3089,13 +3543,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/JUFO/",
@@ -3267,20 +3723,38 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
+        "status": "INSUFFICIENT_TRUSTED_HISTORY",
+        "historicalIndicatorReady": false,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": null,
+        "source": null,
+        "sourceKind": null,
+        "rowsUsed": 0,
+        "sessionAligned": false,
+        "priceReconciled": false,
+        "currentPriceDifferencePct": 0,
         "sma20": null,
+        "sma50": null,
         "ema20": null,
         "rsi14": null,
         "macd": null,
         "macdSignal": null,
+        "macdHistogram": null,
         "atr14": null,
-        "momentum5": null,
+        "momentum5Pct": null,
+        "momentum10Pct": null,
+        "momentum20Pct": null,
         "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "readiness": {},
+        "blockers": [
+          "NO_ACCEPTABLE_HISTORY_DOCUMENT"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -3295,13 +3769,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/BONY/",
@@ -3443,20 +3919,52 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
+        "status": "INSUFFICIENT_TRUSTED_HISTORY",
+        "historicalIndicatorReady": false,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": "2026-07-06",
+        "source": "mixed_history_with_starta_targeted_repair",
+        "sourceKind": "CACHED_VERIFIED_HISTORY_DOCUMENT",
+        "rowsUsed": 4,
+        "sessionAligned": false,
+        "priceReconciled": false,
+        "currentPriceDifferencePct": 19.9052,
+        "sma20": 0,
+        "sma50": 0,
+        "ema20": 0,
+        "rsi14": 0,
+        "macd": 0,
+        "macdSignal": 0,
+        "macdHistogram": 0,
+        "atr14": 0,
+        "momentum5Pct": 0,
+        "momentum10Pct": 0,
+        "momentum20Pct": 0,
         "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "readiness": {
+          "sma20": false,
+          "sma50": false,
+          "ema20": false,
+          "rsi14": false,
+          "macd": false,
+          "macdSignal": false,
+          "atr14": false,
+          "momentum5": false,
+          "momentum10": false,
+          "momentum20": false
+        },
+        "blockers": [
+          "HISTORY_LAST_SESSION_NOT_ALIGNED_WITH_CURRENT_SESSION",
+          "LATEST_HISTORY_CLOSE_NOT_RECONCILED_WITH_CURRENT_MARKET_PRICE",
+          "INSUFFICIENT_ROWS_FOR_SMA50",
+          "INSUFFICIENT_ROWS_FOR_MACD_SIGNAL"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -3471,13 +3979,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SAIB/",
@@ -3636,7 +4146,8 @@
           "HIGH_LEGACY_OPPORTUNITY_SCORE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 87% | ربح هدف1 7.7% | عائد متوقع 5.1% | R/R 0.65 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
@@ -3645,20 +4156,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 610.793,
+        "sma50": 612.8914,
+        "ema20": 609.4884,
+        "rsi14": 57.09,
+        "macd": 3.4862,
+        "macdSignal": 3.5601,
+        "macdHistogram": -0.0738,
+        "atr14": 13.2285,
+        "momentum5Pct": 1.76,
+        "momentum10Pct": 0.87,
+        "momentum20Pct": -0.58,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -3673,13 +4211,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SCTS/",
@@ -3822,20 +4362,49 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "HISTORICAL_CONTEXT_ONLY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": false,
+        "currentPriceDifferencePct": 29.1125,
+        "sma20": 12.54,
+        "sma50": 12.54,
+        "ema20": 12.54,
+        "rsi14": 50,
+        "macd": 0,
+        "macdSignal": 0,
+        "macdHistogram": 0,
+        "atr14": 0,
+        "momentum5Pct": 0,
+        "momentum10Pct": 0,
+        "momentum20Pct": 0,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [
+          "LATEST_HISTORY_CLOSE_NOT_RECONCILED_WITH_CURRENT_MARKET_PRICE"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -3850,13 +4419,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
@@ -4016,7 +4587,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH"
         ],
         "blockers": [
           "احتمال الهدف 85% | ربح هدف1 3.5% | عائد متوقع 2.1% | R/R 0.58 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
@@ -4025,20 +4597,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.1667,
+        "sma20": 221.7125,
+        "sma50": 132.2292,
+        "ema20": 278.2636,
+        "rsi14": 86.51,
+        "macd": 106.535,
+        "macdSignal": 71.3104,
+        "macdHistogram": 35.2247,
+        "atr14": 47.9718,
+        "momentum5Pct": 31,
+        "momentum10Pct": 370.65,
+        "momentum20Pct": 664.28,
+        "trend": "BULLISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -4053,13 +4652,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/BIOC/",
@@ -4227,20 +4828,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 2.3465,
+        "sma50": 2.3082,
+        "ema20": 2.327,
+        "rsi14": 38.66,
+        "macd": -0.0003,
+        "macdSignal": 0.0188,
+        "macdHistogram": -0.0191,
+        "atr14": 0.0653,
+        "momentum5Pct": -5.08,
+        "momentum10Pct": -5.88,
+        "momentum20Pct": -4.27,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -4255,13 +4883,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ACAMD/",
@@ -4420,7 +5050,8 @@
           "HIGH_LEGACY_OPPORTUNITY_SCORE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH"
         ],
         "blockers": [
           "احتمال الهدف 83% | ربح هدف1 3.5% | عائد متوقع -0.9% | R/R 0.16 | السعر مدقق | تاريخ 12/50 | قيود: R/R ضعيف",
@@ -4431,20 +5062,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 381.59,
+        "sma50": 352.1736,
+        "ema20": 382.2537,
+        "rsi14": 77.48,
+        "macd": 15.7935,
+        "macdSignal": 14.811,
+        "macdHistogram": 0.9825,
+        "atr14": 15.6679,
+        "momentum5Pct": 3.38,
+        "momentum10Pct": 9.69,
+        "momentum20Pct": 23.29,
+        "trend": "BULLISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -4459,13 +5117,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EDFM/",
@@ -4608,20 +5268,49 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "HISTORICAL_CONTEXT_ONLY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": false,
+        "currentPriceDifferencePct": 1069.8706,
+        "sma20": 63.29,
+        "sma50": 63.29,
+        "ema20": 63.29,
+        "rsi14": 50,
+        "macd": 0,
+        "macdSignal": 0,
+        "macdHistogram": 0,
+        "atr14": 0,
+        "momentum5Pct": 0,
+        "momentum10Pct": 0,
+        "momentum20Pct": 0,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [
+          "LATEST_HISTORY_CLOSE_NOT_RECONCILED_WITH_CURRENT_MARKET_PRICE"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -4636,13 +5325,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
@@ -4802,7 +5493,9 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 82% | ربح هدف1 4.8% | عائد متوقع 2.5% | R/R 0.63 | السعر مدقق | تاريخ 13/50 | قيود: R/R ضعيف",
@@ -4811,20 +5504,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 10.725,
+        "sma50": 10.0044,
+        "ema20": 10.6306,
+        "rsi14": 64.42,
+        "macd": 0.1565,
+        "macdSignal": 0.1995,
+        "macdHistogram": -0.043,
+        "atr14": 0.2207,
+        "momentum5Pct": 3.71,
+        "momentum10Pct": 2.15,
+        "momentum20Pct": 1.11,
+        "trend": "BULLISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -4839,13 +5559,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ETRS/",
@@ -5005,7 +5727,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 2.0% | R/R 0.72 | السعر مدقق | تاريخ 13/50",
@@ -5014,20 +5737,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "WAIT_FOR_REQUIRED_CONDITIONS"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.0851,
+        "sma20": 11.741,
+        "sma50": 11.574,
+        "ema20": 11.7327,
+        "rsi14": 51.38,
+        "macd": 0.0578,
+        "macdSignal": 0.0637,
+        "macdHistogram": -0.0059,
+        "atr14": 0.2739,
+        "momentum5Pct": -1.26,
+        "momentum10Pct": 0.77,
+        "momentum20Pct": 1.38,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -5042,13 +5792,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EMFD/",
@@ -5219,20 +5971,49 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "HISTORICAL_CONTEXT_ONLY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": "2026-08-12",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": false,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.7361,
+        "sma20": 18.9795,
+        "sma50": 19.2796,
+        "ema20": 19.021,
+        "rsi14": 47.35,
+        "macd": -0.021,
+        "macdSignal": -0.0296,
+        "macdHistogram": 0.0086,
+        "atr14": 0.4355,
+        "momentum5Pct": -1.1,
+        "momentum10Pct": -0.21,
+        "momentum20Pct": 2.89,
+        "trend": "BEARISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [
+          "HISTORY_LAST_SESSION_NOT_ALIGNED_WITH_CURRENT_SESSION"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -5247,13 +6028,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/FWRY/",
@@ -5414,7 +6197,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.6% | R/R 0.49 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -5424,20 +6208,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.0511,
+        "sma20": 98.0055,
+        "sma50": 96.74,
+        "ema20": 97.826,
+        "rsi14": 51.58,
+        "macd": 0.7159,
+        "macdSignal": 0.9361,
+        "macdHistogram": -0.2202,
+        "atr14": 2.1773,
+        "momentum5Pct": -0.71,
+        "momentum10Pct": -1.01,
+        "momentum20Pct": 4.49,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -5452,13 +6263,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/TMGH/",
@@ -5630,20 +6443,49 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": false,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "HISTORICAL_CONTEXT_ONLY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": false,
+        "usedForCurrentDecision": false,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": false,
+        "currentPriceDifferencePct": 90.4445,
+        "sma20": 71.05,
+        "sma50": 71.05,
+        "ema20": 71.05,
+        "rsi14": 50,
+        "macd": 0,
+        "macdSignal": 0,
+        "macdHistogram": 0,
+        "atr14": 0,
+        "momentum5Pct": 0,
+        "momentum10Pct": 0,
+        "momentum20Pct": 0,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [
+          "LATEST_HISTORY_CLOSE_NOT_RECONCILED_WITH_CURRENT_MARKET_PRICE"
+        ],
+        "note": "Values may be shown as historical research context, but stale or unreconciled indicators are not used as current-decision evidence."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -5658,13 +6500,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ORAS/",
@@ -5825,7 +6669,8 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.47 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -5835,20 +6680,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0,
+        "sma20": 3.1045,
+        "sma50": 3.0692,
+        "ema20": 3.1007,
+        "rsi14": 48.36,
+        "macd": 0.0164,
+        "macdSignal": 0.0208,
+        "macdHistogram": -0.0045,
+        "atr14": 0.0647,
+        "momentum5Pct": -2.84,
+        "momentum10Pct": -0.96,
+        "momentum20Pct": 0.65,
+        "trend": "MIXED",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -5863,13 +6735,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/BTFH/",
@@ -6030,7 +6904,9 @@
           "LIQUIDITY_GATE_ELIGIBLE",
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
-          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS"
+          "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH",
+          "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
           "احتمال الهدف 82% | ربح هدف1 3.5% | عائد متوقع 1.5% | R/R 0.45 | السعر مدقق | تاريخ 14/50 | قيود: R/R ضعيف",
@@ -6040,20 +6916,47 @@
           "MARKET_REGIME_NOT_VERIFIED",
           "GLOBAL_EXECUTION_NOT_GRADE"
         ],
+        "technicalEvidenceUsed": true,
         "summaryState": "DO_NOT_TREAT_AS_CURRENT_EXECUTION_CANDIDATE"
       },
       "technicalAnalysis": {
-        "status": "VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET",
-        "calculatedFromCurrentSnapshotOnly": false,
-        "sma20": null,
-        "ema20": null,
-        "rsi14": null,
-        "macd": null,
-        "macdSignal": null,
-        "atr14": null,
-        "momentum5": null,
-        "trend": null,
-        "note": "V20 does not fabricate technical indicators from a single current-session snapshot. A verified point-in-time OHLC history adapter is required before these fields can be populated."
+        "status": "CURRENT_POINT_IN_TIME_READY",
+        "historicalIndicatorReady": true,
+        "currentTechnicalReady": true,
+        "usedForCurrentDecision": true,
+        "asOfSession": "2026-08-13",
+        "source": "yahoo",
+        "sourceKind": "LIVE_YAHOO_REFRESH",
+        "rowsUsed": 100,
+        "sessionAligned": true,
+        "priceReconciled": true,
+        "currentPriceDifferencePct": 0.2623,
+        "sma20": 15.0135,
+        "sma50": 15.0084,
+        "ema20": 15.0763,
+        "rsi14": 56.47,
+        "macd": 0.1658,
+        "macdSignal": 0.1407,
+        "macdHistogram": 0.025,
+        "atr14": 0.373,
+        "momentum5Pct": -0.97,
+        "momentum10Pct": 3.87,
+        "momentum20Pct": 3.45,
+        "trend": "BULLISH",
+        "readiness": {
+          "sma20": true,
+          "sma50": true,
+          "ema20": true,
+          "rsi14": true,
+          "macd": true,
+          "macdSignal": true,
+          "atr14": true,
+          "momentum5": true,
+          "momentum10": true,
+          "momentum20": true
+        },
+        "blockers": [],
+        "note": "Indicators are calculated only from trusted OHLC rows at or before the V20 session date and passed session/price reconciliation."
       },
       "marketRegimeCompatibility": {
         "regime": "UNVERIFIED_CURRENT_REGIME",
@@ -6068,13 +6971,15 @@
       "historicalCalibration": {
         "status": "NOT_ATTACHED_TO_CURRENT_PROFILE",
         "forwardPaperEvidenceAvailable": false,
-        "note": "Historical model evidence, walk-forward evidence and current forward tracking must remain separate layers."
+        "note": "Historical model evidence, walk-forward evidence and current forward tracking remain separate layers."
       },
       "provenance": {
         "currentDecision": "data/v20/current.json",
         "marketSnapshot": "data/v20/current-market-snapshot.json",
         "sourceHealth": "data/v20/source-health.json",
         "riskRewardAudit": "data/v20/risk-reward-audit.json",
+        "technicalHistory": "data/v20/technical-history.json",
+        "technicalIndicators": "data/v20/technical-indicators.json",
         "sourceTimestamp": "2026-08-14T15:06:12.283Z",
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/PHDC/",
