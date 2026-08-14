@@ -2,11 +2,15 @@ name: EGX V16.9 Basket Engine
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["EGX V16.3.3 Immediate Market Rescan and Deploy"]
+    types: [completed]
   pull_request:
     paths:
       - "scripts/research/v16-v169-basket-engine.py"
       - "scripts/research/v16-v169-target-hit-audit.py"
       - "scripts/stable/v16-publish-v169-basket.cjs"
+      - "scripts/stable/v16-session-data-fingerprint.cjs"
       - "scripts/stable/v16-v169-live-evaluation.py"
       - "data/stable/v16-v169-release-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
@@ -15,6 +19,7 @@ on:
       - "scripts/research/v16-v169-basket-engine.py"
       - "scripts/research/v16-v169-target-hit-audit.py"
       - "scripts/stable/v16-publish-v169-basket.cjs"
+      - "scripts/stable/v16-session-data-fingerprint.cjs"
       - "scripts/stable/v16-v169-live-evaluation.py"
       - "data/stable/v16-v169-release-lock.json"
       - "data/market.json"
@@ -24,7 +29,7 @@ on:
       - "data/stable/v16-v169-primary-decision.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
   schedule:
-    # Reassert V16.9 after post-close scanners without creating duplicate commits.
+    # Safety re-check. The fingerprint prevents duplicate same-data publications.
     - cron: "*/15 13-20 * * 0-4"
 
 permissions:
@@ -38,21 +43,39 @@ concurrency:
 
 jobs:
   validate:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout source
+      - name: Checkout latest source and scan evidence
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fingerprint verified market session
+        id: fingerprint
+        run: node scripts/stable/v16-session-data-fingerprint.cjs
+
       - name: Decide whether publication is required
         id: need
         shell: bash
+        env:
+          SESSION_DATA_DATE: ${{ steps.fingerprint.outputs.session_date }}
+          SESSION_DATA_HASH: ${{ steps.fingerprint.outputs.session_data_hash }}
+          SESSION_DATA_ROWS: ${{ steps.fingerprint.outputs.session_data_rows }}
+          SESSION_MINIMUM_ROWS: ${{ steps.fingerprint.outputs.minimum_rows }}
+          SESSION_PRICE_TRUTH_READY: ${{ steps.fingerprint.outputs.price_truth_ready }}
+          SESSION_EXECUTION_GRADE: ${{ steps.fingerprint.outputs.execution_grade }}
+          SESSION_SUFFICIENT_ROWS: ${{ steps.fingerprint.outputs.sufficient_rows }}
         run: |
           python - <<'PY'
           import json
@@ -74,6 +97,12 @@ jobs:
           target_audit_exists = Path('data/research/v16-v169-target-hit-audit.json').exists()
 
           expected = price.get('expectedSession') or research.get('currentSignalDate')
+          current_hash = os.environ.get('SESSION_DATA_HASH') or None
+          current_hash_rows = int(os.environ.get('SESSION_DATA_ROWS') or 0)
+          current_hash_date = os.environ.get('SESSION_DATA_DATE') or None
+          minimum_rows = int(os.environ.get('SESSION_MINIMUM_ROWS') or price.get('minimumExecutionRows') or 80)
+          published_hash = ((primary.get('basketPlan') or {}).get('sourceSessionDataHash'))
+
           legacy_model = ((legacy.get('selectedModel') or {}).get('id'))
           primary_model = ((primary.get('selectedModel') or {}).get('id'))
           research_aligned = bool(expected) and research.get('currentSignalDate') == expected
@@ -85,28 +114,49 @@ jobs:
               primary_model == 'V16_9_EQUAL_WEIGHT_BASKET'
               and primary.get('sessionDate') == expected
           )
-          forced = event in {'workflow_dispatch', 'pull_request'} or actor != 'github-actions[bot]'
-          should_run = forced or not (
+
+          price_ready = bool(
+              price.get('ready') is True
+              and price.get('executionGrade') is True
+              and current_hash
+              and current_hash_date == expected
+              and current_hash_rows >= minimum_rows
+          )
+          data_changed = bool(price_ready and current_hash != published_hash)
+          structurally_current = bool(
               research_aligned
               and primary_aligned
               and legacy_aligned
               and target_audit_exists
           )
 
+          # PRs may always exercise the frozen engine without publishing. A user
+          # push/manual run may publish only when the verified session is ready.
+          research_only_forced = event == 'pull_request'
+          publication_forced = event == 'workflow_dispatch' or (event == 'push' and actor != 'github-actions[bot]')
+          should_run = research_only_forced or bool(
+              price_ready and (publication_forced or data_changed or not structurally_current)
+          )
+
           print({
               'event': event,
               'actor': actor,
               'expectedSession': expected,
+              'verifiedSessionDate': current_hash_date,
+              'verifiedSessionRows': current_hash_rows,
+              'minimumRows': minimum_rows,
+              'priceReady': price_ready,
+              'sessionDataHash': current_hash,
+              'publishedSessionDataHash': published_hash,
+              'sessionDataChanged': data_changed,
               'legacySession': legacy.get('sessionDate'),
               'primarySession': primary.get('sessionDate'),
               'researchSignalDate': research.get('currentSignalDate'),
-              'legacyModel': legacy_model,
-              'primaryModel': primary_model,
               'researchAligned': research_aligned,
               'legacyAligned': legacy_aligned,
               'primaryAligned': primary_aligned,
               'targetAuditExists': target_audit_exists,
-              'forced': forced,
+              'publicationForced': publication_forced,
               'run': should_run,
           })
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
@@ -119,18 +169,13 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Setup Node
-        if: steps.need.outputs.run == 'true'
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
       - name: Validate frozen release source
         if: steps.need.outputs.run == 'true'
         run: |
           python -m py_compile scripts/research/v16-v169-basket-engine.py
           python -m py_compile scripts/research/v16-v169-target-hit-audit.py
           python -m py_compile scripts/stable/v16-v169-live-evaluation.py
+          node --check scripts/stable/v16-session-data-fingerprint.cjs
           node --check scripts/stable/v16-publish-v169-basket.cjs
 
       - name: Run frozen V16.9 basket engine
@@ -141,7 +186,7 @@ jobs:
         if: steps.need.outputs.run == 'true'
         run: python scripts/research/v16-v169-target-hit-audit.py
 
-      - name: Publish isolated V16.9 primary decision
+      - name: Publish session-bound V16.9 primary decision
         if: steps.need.outputs.run == 'true' && github.event_name != 'pull_request'
         run: node scripts/stable/v16-publish-v169-basket.cjs
 
@@ -207,11 +252,15 @@ jobs:
           report = json.loads(Path('data/research/v16-v169-basket-engine.json').read_text(encoding='utf-8'))
           audit = json.loads(Path('data/research/v16-v169-target-hit-audit.json').read_text(encoding='utf-8'))
           decision = json.loads(Path('data/stable/v16-v169-primary-decision.json').read_text(encoding='utf-8'))
+          plan = decision.get('basketPlan') or {}
           print({
               'signalDate': report.get('currentSignalDate'),
               'decisionModel': (decision.get('selectedModel') or {}).get('id'),
               'basketSize': report.get('currentBasketSize'),
               'tickers': [row.get('ticker') for row in report.get('currentBasket', [])],
+              'sourceSessionReady': plan.get('sourceSessionReady'),
+              'sourceSessionDataRows': plan.get('sourceSessionDataRows'),
+              'sourceSessionDataHash': plan.get('sourceSessionDataHash'),
               'targetTouchRateOfExecutablePct': audit.get('targetTouchRateOfExecutablePct'),
               'conservativeTargetHitRateOfExecutablePct': audit.get('conservativeTargetHitRateOfExecutablePct'),
               'positiveBasketSessionPct': audit.get('positiveBasketSessionPct'),
