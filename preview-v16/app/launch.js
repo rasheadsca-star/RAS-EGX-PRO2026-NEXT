@@ -1,7 +1,8 @@
 'use strict';
 (() => {
   const VERSION = '16.3.3';
-  const SW_BUILD = 'V16.3.3-V169-BASKET-OVERLAY-20260805';
+  const ASSET_BUILD = '16.3.3-session-truth-20260814';
+  const SW_BUILD = 'V16.3.3-V169-SESSION-TRUTH-20260814';
   const head = document.head || document.documentElement;
 
   document.documentElement.dataset.egxVersion = VERSION;
@@ -26,7 +27,7 @@
   if (!document.querySelector('link[data-v163]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = `v16-3.css?v=${VERSION}`;
+    link.href = `v16-3.css?v=${ASSET_BUILD}`;
     link.dataset.v163 = 'true';
     head.appendChild(link);
   }
@@ -40,7 +41,7 @@
         return;
       }
       const script = document.createElement('script');
-      script.src = `${src}?v=${VERSION}`;
+      script.src = `${src}?v=${ASSET_BUILD}`;
       script.defer = true;
       script.dataset[datasetKey] = 'true';
       script.onload = resolve;
