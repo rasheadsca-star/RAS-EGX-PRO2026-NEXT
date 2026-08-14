@@ -13,7 +13,7 @@ const P = rel => path.join(root, rel);
 require('./final-acceptance.cjs');
 
 const finalAcceptance = JSON.parse(fs.readFileSync(P('data/v20/final-acceptance.json'), 'utf8'));
-const regression = JSON.parse(fs.readFileSync(P('data/v20/regression.json'), 'utf8'));
+let regression = JSON.parse(fs.readFileSync(P('data/v20/regression.json'), 'utf8'));
 regression.finalAcceptance = finalAcceptance;
 regression.finalAcceptanceMirror = {
   authoritativeRuntimeSource: 'scripts/v20/final-acceptance.cjs',
@@ -22,11 +22,44 @@ regression.finalAcceptanceMirror = {
   generatedInSameMainRun: true,
 };
 fs.writeFileSync(P('data/v20/regression.json'), `${JSON.stringify(regression, null, 2)}\n`, 'utf8');
+
+// The release manifest is generated only after the independent critic has produced
+// and persisted its verdict into main regression evidence. The manifest regression
+// prevents research readiness from being mislabeled execution-ready or deployed.
+require('./build-release-manifest.cjs');
+require('./release-manifest-regression.cjs');
+
+const releaseManifest = JSON.parse(fs.readFileSync(P('data/v20/release-manifest.json'), 'utf8'));
+const releaseRegression = JSON.parse(fs.readFileSync(P('data/v20/release-manifest-regression.json'), 'utf8'));
+regression = JSON.parse(fs.readFileSync(P('data/v20/regression.json'), 'utf8'));
+regression.releaseManifest = {
+  schemaVersion: releaseManifest.schemaVersion,
+  releaseClassification: releaseManifest.releaseClassification,
+  validatedSourceCommit: releaseManifest.validatedSourceCommit,
+  validationRun: releaseManifest.validationRun,
+  researchReadyClaimAllowed: releaseManifest.releaseClaims?.researchReadyClaimAllowed === true,
+  executionReadyClaimAllowed: releaseManifest.releaseClaims?.executionReadyClaimAllowed === true,
+  deployedClaimAllowed: releaseManifest.releaseClaims?.deployedClaimAllowed === true,
+  marketTrendContextCoveragePct: releaseManifest.marketCoverage?.verifiedMarketTrendContextCoveragePct ?? null,
+  fullTechnicalCoverageOfUniversePct: releaseManifest.marketCoverage?.fullTechnicalCoverageOfUniversePct ?? null,
+  operationalDeploymentStatus: releaseManifest.operations?.deploymentStatus || null,
+  operationalAutomationStatus: releaseManifest.operations?.automationStatus || null,
+  releaseRegressionOk: releaseRegression.ok === true,
+  detailedManifest: 'data/v20/release-manifest.json',
+  detailedRegression: 'data/v20/release-manifest-regression.json',
+  generatedInSameMainRun: true,
+};
+fs.writeFileSync(P('data/v20/regression.json'), `${JSON.stringify(regression, null, 2)}\n`, 'utf8');
+
 console.log(JSON.stringify({
   finalStatus: finalAcceptance.finalStatus,
   researchPlatformReady: finalAcceptance.researchPlatformReady,
   executionReady: finalAcceptance.executionReady,
   productionBlockerCount: finalAcceptance.criticSummary?.productionBlockerCount ?? null,
   criticalFindingCount: finalAcceptance.criticSummary?.criticalFindingCount ?? null,
-  persistedMirror: 'data/v20/regression.json#finalAcceptance',
+  releaseClassification: releaseManifest.releaseClassification,
+  releaseRegressionOk: releaseRegression.ok === true,
+  deployedClaimAllowed: releaseManifest.releaseClaims?.deployedClaimAllowed === true,
+  persistedAcceptanceMirror: 'data/v20/regression.json#finalAcceptance',
+  persistedReleaseMirror: 'data/v20/regression.json#releaseManifest',
 }, null, 2));
