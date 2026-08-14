@@ -4,7 +4,11 @@
   const TRACK_URL = '../../data/v17/recommendation-track-record.json';
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '—').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
-  const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+  const finite = value => {
+    if (value === null || value === undefined || value === '') return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  };
   const fmt = (value, digits = 2) => finite(value) === null ? '—' : Number(value).toLocaleString('en-GB', { maximumFractionDigits: digits });
   const pct = (value, digits = 2) => finite(value) === null ? '—' : `${fmt(value, digits)}%`;
 
