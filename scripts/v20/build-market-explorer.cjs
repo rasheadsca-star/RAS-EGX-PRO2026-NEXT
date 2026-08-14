@@ -37,17 +37,20 @@ const current = read('data/v20/current.json', { opportunities: [] });
 const profiles = read('data/v20/stock-profiles.json', { profiles: [] });
 const techStatus = read('data/v20/technical-history-status.json', {});
 const sourceHealth = read('data/v20/source-health.json', {});
+const marketRegime = read('data/v20/market-regime.json', { symbols: [] });
 
 const sessionDate = current.sessionDate || market.sessionDate || universe.sessionDate || null;
 const marketMap = new Map((market.rows || []).map(row => [row.ticker, row]));
 const opportunityMap = new Map((current.opportunities || []).map(row => [row.ticker, row]));
 const profileMap = new Map((profiles.profiles || []).map(row => [row.ticker, row]));
+const regimeSymbolMap = new Map((marketRegime.symbols || []).map(row => [row.ticker, row]));
 
 const rows = (universe.rows || []).map(base => {
   const m = marketMap.get(base.ticker) || null;
   const opportunity = opportunityMap.get(base.ticker) || null;
   const profile = profileMap.get(base.ticker) || null;
   const ta = profile?.technicalAnalysis || null;
+  const regimeSymbol = regimeSymbolMap.get(base.ticker) || null;
   const currentSessionAvailable = Boolean(
     m &&
     m.sessionAligned === true &&
@@ -96,6 +99,47 @@ const rows = (universe.rows || []).map(base => {
     throw new Error(`${base.ticker}: CURRENT_READY technical session mismatch`);
   }
 
+  const trendContextAvailable = Boolean(
+    regimeSymbol &&
+    regimeSymbol.eligibleForVerifiedRegime === true &&
+    marketRegime.verified === true &&
+    marketRegime.asOfSessionDate === sessionDate &&
+    regimeSymbol.lastSession === sessionDate &&
+    regimeSymbol.currentSnapshotSemanticComplete === true &&
+    regimeSymbol.currentSnapshotSessionAligned === true &&
+    regimeSymbol.sessionAligned === true &&
+    regimeSymbol.priceReconciled === true &&
+    regimeSymbol.sourceConflict !== true &&
+    regimeSymbol.stats
+  );
+  const stats = trendContextAvailable ? regimeSymbol.stats : null;
+  const marketTrendContext = {
+    state: trendContextAvailable ? 'CURRENT_VERIFIED_TREND_CONTEXT' : 'UNAVAILABLE_OR_NOT_VERIFIED',
+    available: trendContextAvailable,
+    fullTechnicalIndicatorSet: false,
+    usedForDecisionScore: false,
+    usedForExecutionGate: false,
+    usedForRecommendationStatus: false,
+    asOfSession: trendContextAvailable ? regimeSymbol.lastSession : null,
+    source: trendContextAvailable ? regimeSymbol.source : null,
+    sourceKind: trendContextAvailable ? regimeSymbol.sourceKind : null,
+    rowsUsed: trendContextAvailable ? Number(regimeSymbol.rowsAccepted || 0) : 0,
+    close: finite(stats?.close),
+    return1Pct: finite(stats?.return1Pct),
+    return5Pct: finite(stats?.return5Pct),
+    return20Pct: finite(stats?.return20Pct),
+    sma20: finite(stats?.sma20),
+    sma50: finite(stats?.sma50),
+    aboveSma20: trendContextAvailable ? stats?.aboveSma20 === true : null,
+    aboveSma50: trendContextAvailable ? stats?.aboveSma50 === true : null,
+    volatility20AnnualizedPct: finite(stats?.volatility20AnnualizedPct),
+    relativeVolume20: finite(stats?.relativeVolume20),
+    currentPriceDifferencePct: trendContextAvailable ? finite(regimeSymbol.currentPriceDifferencePct) : null,
+    blockers: trendContextAvailable ? [] : (Array.isArray(regimeSymbol?.blockers) ? regimeSymbol.blockers : ['MARKET_TREND_CONTEXT_NOT_AVAILABLE']),
+    provenance: trendContextAvailable ? 'data/v20/market-regime.json' : null,
+    decisionUse: 'MARKET_CONTEXT_ONLY_NOT_RESEARCH_SCORE_OR_EXECUTION_PERMISSION',
+  };
+
   return {
     ticker: base.ticker,
     nameAr: base.nameAr || m?.nameAr || null,
@@ -141,6 +185,7 @@ const rows = (universe.rows || []).map(base => {
       executionConfidencePct: null,
     },
     technical,
+    marketTrendContext,
     provenance: {
       currentPriceSource: currentSessionAvailable ? (m.source || null) : null,
       currentPriceSourceUrl: currentSessionAvailable ? (m.sourceUrl || null) : null,
@@ -149,6 +194,7 @@ const rows = (universe.rows || []).map(base => {
       masterUniverse: 'data/v20/master-universe.json',
       currentMarketSnapshot: 'data/v20/current-market-snapshot.json',
       technicalIndicators: ta ? 'data/v20/technical-indicators.json' : null,
+      marketTrendContext: trendContextAvailable ? 'data/v20/market-regime.json' : null,
     },
     searchText: `${text(base.ticker)} ${text(base.nameAr || m?.nameAr)} ${text(base.nameEn || m?.nameEn)}`.toLocaleLowerCase('ar'),
   };
@@ -160,11 +206,13 @@ const opportunityCount = rows.filter(row => row.decision.scope === 'CURRENT_OPPO
 const currentTechnicalReadyCount = rows.filter(row => row.technical.state === 'CURRENT_READY').length;
 const historicalTechnicalOnlyCount = rows.filter(row => row.technical.state === 'HISTORICAL_CONTEXT_ONLY').length;
 const technicalNotEvaluatedCount = rows.filter(row => row.technical.state === 'NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE').length;
+const marketTrendContextReadyCount = rows.filter(row => row.marketTrendContext.available === true).length;
+const marketOnlyTrendContextReadyCount = rows.filter(row => row.decision.scope === 'MARKET_ONLY' && row.marketTrendContext.available === true).length;
 const completeCurrentRows = rows.filter(row => row.currentSessionAvailable && row.dataQualityState === 'COMPLETE_FOR_CURRENT_SCOPE').length;
 const partialCurrentRows = rows.filter(row => row.currentSessionAvailable && row.dataQualityState !== 'COMPLETE_FOR_CURRENT_SCOPE').length;
 
 const out = {
-  schemaVersion: '20.0.0-market-explorer-2',
+  schemaVersion: '20.0.0-market-explorer-3',
   generatedAt: new Date().toISOString(),
   sessionDate,
   decisionSupportOnly: true,
@@ -176,6 +224,9 @@ const out = {
     marketOnlyIsRecommendation: false,
     technicalCurrentRequiresTrustedPointInTimeReadiness: true,
     nonEvaluatedTechnicalMeansUnavailable: false,
+    marketTrendContextIsNotFullTechnicalSet: true,
+    marketTrendContextMayCreateRecommendationOrScore: false,
+    marketTrendContextExecutionInfluence: false,
     semanticRowQualityPropagated: true,
     paginationRecommended: true,
   },
@@ -193,6 +244,9 @@ const out = {
     technicalNotEvaluatedCount,
     technicalCurrentCoverageOfUniversePct: rows.length ? round(currentTechnicalReadyCount / rows.length * 100, 2) : 0,
     technicalCurrentCoverageOfOpportunityUniversePct: finite(techStatus.currentTechnicalCoveragePct),
+    marketTrendContextReadyCount,
+    marketTrendContextCoverageOfUniversePct: rows.length ? round(marketTrendContextReadyCount / rows.length * 100, 2) : 0,
+    marketOnlyTrendContextReadyCount,
     sourceStatus: sourceHealth.status || null,
   },
   rows,
@@ -212,6 +266,12 @@ if (rows.some(row => row.decision.scope === 'MARKET_ONLY' && row.decision.status
 }
 if (rows.some(row => row.currentSessionAvailable && row.semanticCompleteness !== true)) {
   throw new Error('Market Explorer current row missing semantic completeness marker');
+}
+if (rows.some(row => row.marketTrendContext.available === true && row.marketTrendContext.asOfSession !== sessionDate)) {
+  throw new Error('Market trend context contains non-current session evidence');
+}
+if (rows.some(row => row.marketTrendContext.usedForDecisionScore === true || row.marketTrendContext.usedForExecutionGate === true || row.marketTrendContext.usedForRecommendationStatus === true)) {
+  throw new Error('Market trend context leaked into decision or execution semantics');
 }
 
 write('data/v20/market-explorer.json', out);
