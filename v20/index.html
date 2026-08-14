@@ -53,8 +53,8 @@
           </div>
           <div class="filters" role="search">
             <label class="search-box">
-              <span class="sr-only">بحث</span>
-              <input id="searchInput" type="search" placeholder="ابحث بالكود أو الاسم…" autocomplete="off">
+              <span class="sr-only">بحث في الفرص</span>
+              <input id="searchInput" type="search" placeholder="ابحث في الفرص بالكود أو الاسم…" autocomplete="off">
             </label>
             <label>
               <span class="sr-only">الحالة</span>
@@ -82,6 +82,90 @@
           </table>
         </div>
         <div id="mobileCards" class="mobile-cards hidden"></div>
+      </section>
+
+      <section class="panel market-explorer-panel" aria-labelledby="marketExplorerTitle">
+        <div class="panel-header market-header">
+          <div>
+            <span class="eyebrow">السوق الكامل</span>
+            <h2 id="marketExplorerTitle">Market Explorer</h2>
+            <p>البحث يشمل السوق الكامل. عبارة «سوق فقط» تعني أن السهم ليس توصية ضمن قائمة الفرص الحالية.</p>
+          </div>
+          <div class="market-summary" aria-label="ملخص تغطية السوق">
+            <div><span>Universe</span><strong id="marketUniverseCount">—</strong></div>
+            <div><span>جلسة حالية</span><strong id="marketCurrentCount">—</strong><small id="marketCurrentCoverage">—</small></div>
+            <div><span>فني موثوق</span><strong id="marketTechnicalCurrent">—</strong><small id="marketTechnicalCoverage">—</small></div>
+          </div>
+        </div>
+
+        <div class="market-filters" role="search" aria-label="بحث وتصفية السوق الكامل">
+          <label class="market-search">
+            <span>بحث السوق</span>
+            <input id="marketSearchInput" type="search" placeholder="الكود، الاسم العربي أو الإنجليزي…" autocomplete="off">
+          </label>
+          <label>
+            <span>بيانات الجلسة</span>
+            <select id="marketAvailabilityFilter">
+              <option value="ALL">الكل</option>
+              <option value="CURRENT">جلسة حالية متاحة</option>
+              <option value="NO_CURRENT_DATA">لا توجد بيانات جلسة حالية</option>
+            </select>
+          </label>
+          <label>
+            <span>السيولة</span>
+            <select id="marketLiquidityFilter">
+              <option value="ALL">الكل</option>
+              <option value="ELIGIBLE">مؤهل</option>
+              <option value="NOT_ELIGIBLE">غير مؤهل</option>
+            </select>
+          </label>
+          <label>
+            <span>الحالة الفنية</span>
+            <select id="marketTechnicalFilter">
+              <option value="ALL">الكل</option>
+              <option value="CURRENT_READY">حالي موثوق</option>
+              <option value="HISTORICAL_CONTEXT_ONLY">تاريخي فقط</option>
+              <option value="INSUFFICIENT_TRUSTED_HISTORY">تاريخ غير كافٍ</option>
+              <option value="UNAVAILABLE">غير متاح</option>
+              <option value="NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE">لم يُقيّم في النطاق الحالي</option>
+            </select>
+          </label>
+          <label>
+            <span>الترتيب</span>
+            <select id="marketSort">
+              <option value="TURNOVER_DESC">قيمة التداول — الأعلى</option>
+              <option value="CHANGE_DESC">التغير — الأعلى</option>
+              <option value="CHANGE_ASC">التغير — الأقل</option>
+              <option value="DATA_QUALITY_DESC">جودة البيانات</option>
+              <option value="TICKER_ASC">الكود A–Z</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="marketLoadingState" class="loading-state">
+          <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+        </div>
+        <div id="marketErrorState" class="state-message hidden" role="alert"></div>
+        <div id="marketEmptyState" class="state-message hidden">لا توجد أسهم تطابق الفلاتر الحالية.</div>
+
+        <div id="marketExplorerContent" class="hidden">
+          <div class="market-result-bar">
+            <strong id="marketResultCount">—</strong>
+            <span>لا يتم استخدام سعر قديم كأنه سعر الجلسة الحالية.</span>
+          </div>
+          <div id="marketTableWrap" class="table-wrap">
+            <table class="market-table">
+              <thead><tr><th>السهم</th><th>النطاق</th><th>السعر</th><th>التغير</th><th>قيمة التداول</th><th>السيولة</th><th>فني</th><th>جودة البيانات</th><th>الجلسة</th></tr></thead>
+              <tbody id="marketRows"></tbody>
+            </table>
+          </div>
+          <div id="marketCards" class="mobile-cards"></div>
+          <nav class="pagination" aria-label="صفحات Market Explorer">
+            <button id="marketPrev" type="button">السابق</button>
+            <span id="marketPageInfo" aria-live="polite">—</span>
+            <button id="marketNext" type="button">التالي</button>
+          </nav>
+        </div>
       </section>
 
       <section class="two-col">
