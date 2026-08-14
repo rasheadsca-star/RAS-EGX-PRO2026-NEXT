@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-policy-registry-6",
+  "schemaVersion": "20.0.0-policy-registry-7",
   "effectiveFrom": "2026-08-15",
   "status": "CONTROLLED_INTEGRATION",
   "principles": {
@@ -216,5 +216,37 @@
     "executionGateInfluence": false,
     "decisionUse": "CURRENT_MARKET_CONTEXT_OR_RESEARCH_DIAGNOSTIC_ONLY",
     "note": "V20 reuses the frozen V16 breadth/trend/volatility methodology as a reference, but current regime status requires at least 60% full-universe participation with same-session trusted history and current-price reconciliation. A stale V16 regime is never promoted to current evidence."
+  },
+  "forwardEvaluation": {
+    "horizonsSessions": [
+      1,
+      3,
+      5,
+      10,
+      20
+    ],
+    "immutableArchiveMutationAllowed": false,
+    "appliedPortfolioAndResearchSeparated": true,
+    "legacyPortfolioReturnFieldsMeaning": "APPLIED_PORTFOLIO_ONLY",
+    "pendingReturnMustRemainNull": true,
+    "marketSessionCalendar": "MULTI_SYMBOL_TRUSTED_OHLC_DATE_CONSENSUS",
+    "calendarConsensusPct": 50,
+    "calendarMinimumVotes": 5,
+    "calendarAssumedWeekdaysAllowed": false,
+    "entryPolicy": "FIRST_CONSENSUS_MARKET_SESSION_OPEN_ONLY_WITHIN_ISSUED_ENTRY_RANGE",
+    "delayedEntryAfterFirstSessionAllowed": false,
+    "sameSessionTargetStopAmbiguity": "TREAT_AS_STOP",
+    "gapBelowStopPolicy": "EXIT_AT_ACTUAL_OPEN_IF_WORSE_THAN_STOP",
+    "gapAboveTargetPolicy": "CREDIT_CAPPED_AT_TARGET1",
+    "horizonClosePolicy": "CLOSE_AT_HORIZON_SESSION_CLOSE_IF_NO_PRIOR_EXIT",
+    "roundTripTransactionCostPct": 0.6,
+    "avoidStatusResearchEvaluationAllowed": false,
+    "hardReviewOrInvalidPlanResearchEvaluationAllowed": false,
+    "futureRowsAllowed": false,
+    "syntheticOhlcAllowed": false,
+    "researchOutcomeMayBecomeProductionPerformance": false,
+    "productionExecutionGateInfluence": false,
+    "automaticPromotionInfluence": false,
+    "note": "Forward horizons resolve only after actual trusted post-signal market sessions exist. Applied portfolio performance is kept separate from research opportunity diagnostics. A zero-exposure issued portfolio remains cash and research returns never become production returns."
   }
 }
