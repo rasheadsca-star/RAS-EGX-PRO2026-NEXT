@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-policy-registry-4",
+  "schemaVersion": "20.0.0-policy-registry-5",
   "effectiveFrom": "2026-08-15",
   "status": "CONTROLLED_INTEGRATION",
   "principles": {
@@ -109,9 +109,31 @@
     "closedExecutionGateExposurePct": 0,
     "unfilledMemberPolicy": "KEEP_CASH",
     "sectorConcentrationPolicy": {
+      "enabled": false,
       "enforcedWhenVerifiedSectorDataAvailable": true,
+      "status": "BLOCKED_UNTIL_VERIFIED_PROVENANCE",
       "currentFallback": "DO_NOT_INVENT_SECTOR_CLASSIFICATION",
-      "status": "DATA_DEPENDENT"
+      "acceptedProductionProvenance": ["VERIFIED_AUTHORITATIVE_EXPLICIT"],
+      "rejectedProductionProvenance": [
+        "UPSTREAM_EXPLICIT_UNVERIFIED",
+        "UNVERIFIED_SEED_MAP",
+        "LEGACY_MIXED_REPORT",
+        "NAME_INFERENCE",
+        "UNCLASSIFIED"
+      ],
+      "nameOrTickerInferenceAllowedForProduction": false,
+      "seedMapAllowedForProduction": false,
+      "legacyMixedReportAllowedForProduction": false,
+      "explicitFieldWithoutAuthoritativeRegistryAllowedForProduction": false,
+      "coverageThresholdPct": null,
+      "coverageThresholdStatus": "NOT_FORMALLY_APPROVED",
+      "enablementRequires": [
+        "AUTHORITATIVE_SECTOR_SOURCE_REGISTRY_ENTRY",
+        "PER_SYMBOL_PROVENANCE",
+        "NO_NAME_OR_TICKER_INFERENCE",
+        "FORMALLY_APPROVED_COVERAGE_THRESHOLD"
+      ],
+      "note": "Sector concentration remains disabled until sector classification has authoritative per-symbol provenance. Seed maps, inferred sectors and legacy mixed reports are research context only."
     }
   },
   "tradePlan": {
