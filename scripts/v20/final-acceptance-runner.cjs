@@ -23,9 +23,24 @@ regression.finalAcceptanceMirror = {
 };
 fs.writeFileSync(P('data/v20/regression.json'), `${JSON.stringify(regression, null, 2)}\n`, 'utf8');
 
-// The release manifest is generated only after the independent critic has produced
-// and persisted its verdict into main regression evidence. The manifest regression
-// prevents research readiness from being mislabeled execution-ready or deployed.
+// Execution readiness gap is derived read-only from the authoritative V17 gate and
+// internal S/R evidence. It is a necessary-gap diagnostic, never an execution grant.
+require('./execution-gap-regression.cjs');
+const executionGap = JSON.parse(fs.readFileSync(P('data/v20/execution-gap-regression.json'), 'utf8'));
+if (executionGap.ok !== true) process.exitCode = 1;
+regression = JSON.parse(fs.readFileSync(P('data/v20/regression.json'), 'utf8'));
+regression.executionReadinessGap = executionGap;
+regression.executionReadinessGapMirror = {
+  authoritativeRuntimeSource: 'scripts/v20/execution-gap-regression.cjs',
+  transientDetailedSidecar: 'data/v20/execution-gap-regression.json',
+  persistedInMainEvidence: 'data/v20/regression.json#executionReadinessGap',
+  generatedInSameMainRun: true,
+  guaranteesExecutionGrade: false,
+};
+fs.writeFileSync(P('data/v20/regression.json'), `${JSON.stringify(regression, null, 2)}\n`, 'utf8');
+
+// The release manifest is generated only after the independent critic and the
+// execution-gap diagnostic are persisted into main regression evidence.
 require('./build-release-manifest.cjs');
 require('./release-manifest-regression.cjs');
 
@@ -51,10 +66,13 @@ console.log(JSON.stringify({
   executionReady: finalAcceptance.executionReady,
   productionBlockerCount: finalAcceptance.criticSummary?.productionBlockerCount ?? null,
   criticalFindingCount: finalAcceptance.criticSummary?.criticalFindingCount ?? null,
+  executionGap: executionGap.gaps,
+  executionGapGuaranteesExecutionGrade: executionGap.interpretation?.guaranteesExecutionGrade === true,
   releaseClassification: releaseManifest.releaseClassification,
   releaseRegressionOk: releaseRegression.ok === true,
   deployedClaimAllowed: releaseManifest.releaseClaims?.deployedClaimAllowed === true,
   persistedAcceptanceMirror: 'data/v20/regression.json#finalAcceptance',
+  persistedExecutionGap: 'data/v20/regression.json#executionReadinessGap',
   persistedReleaseManifest: 'data/v20/regression.json#releaseManifest',
   persistedReleaseRegression: 'data/v20/regression.json#releaseManifestRegression',
 }, null, 2));
