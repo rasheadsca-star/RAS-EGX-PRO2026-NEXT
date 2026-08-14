@@ -41,3 +41,6 @@ require('./build-recommendation-track-record.cjs');
 // Null-safe normalization is deliberately separate so unresolved rows can never
 // be misrepresented as 0% outcomes or inflate resolved/evaluated sample counts.
 require('./normalize-recommendation-track-record.cjs');
+// Preserve the current UI summary contract after normalization while keeping
+// the normalized field names as the canonical analytical contract.
+require('./track-record-ui-compat.cjs');
