@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>EGX PRO V20 — منصة قرار استثماري متكاملة</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">انتقل إلى المحتوى</a>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="EGX PRO V20">
+        <span class="brand-mark">EGX</span>
+        <span><b>PRO V20</b><small>Integrated Decision Platform</small></span>
+      </div>
+      <div class="topbar-actions">
+        <span id="sessionBadge" class="session-badge">جلسة —</span>
+        <span id="executionBadge" class="status-pill status-neutral">جاري التحقق</span>
+      </div>
+    </header>
+
+    <main id="main" class="main-content">
+      <section id="gateBanner" class="gate-banner" aria-live="polite">
+        <div>
+          <span class="eyebrow">حالة القرار الآن</span>
+          <h1 id="gateTitle">تحميل حالة المنصة…</h1>
+          <p id="gateText">يتم التحقق من بوابة التنفيذ، جودة البيانات، وتزامن الجلسة.</p>
+        </div>
+        <div class="gate-side">
+          <span>التعرض المطبق</span>
+          <strong id="gateExposure">—</strong>
+          <small id="gateCash">النقد —</small>
+        </div>
+      </section>
+
+      <section class="metrics-grid" aria-label="مؤشرات جودة القرار">
+        <article class="metric-card"><span>تغطية البيانات</span><strong id="coverage">—</strong><small>Coverage</small></article>
+        <article class="metric-card"><span>حداثة البيانات</span><strong id="freshness">—</strong><small>Freshness</small></article>
+        <article class="metric-card"><span>الحقول الحرجة</span><strong id="criticalFields">—</strong><small>Critical fields</small></article>
+        <article class="metric-card"><span>حالة المخاطر</span><strong id="riskState">—</strong><small>Portfolio risk</small></article>
+      </section>
+
+      <section id="rrAuditBanner" class="audit-banner hidden" aria-live="polite"></section>
+
+      <section class="panel opportunities-panel">
+        <div class="panel-header">
+          <div>
+            <span class="eyebrow">فرص السوق</span>
+            <h2>الترتيب الحالي</h2>
+            <p>صافي R/R بعد التكلفة هو المقياس الأساسي. أي R/R قديم يظهر للمراجعة فقط.</p>
+          </div>
+          <div class="filters" role="search">
+            <label class="search-box">
+              <span class="sr-only">بحث</span>
+              <input id="searchInput" type="search" placeholder="ابحث بالكود أو الاسم…" autocomplete="off">
+            </label>
+            <label>
+              <span class="sr-only">الحالة</span>
+              <select id="statusFilter">
+                <option value="ALL">كل الحالات</option>
+                <option value="ACTIONABLE">قابل للتنفيذ</option>
+                <option value="WATCH">مراقبة</option>
+                <option value="WAIT">انتظار</option>
+                <option value="AVOID">تجنب</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div id="loadingState" class="loading-state">
+          <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+        </div>
+        <div id="errorState" class="state-message hidden" role="alert"></div>
+        <div id="emptyState" class="state-message hidden">لا توجد نتائج مطابقة.</div>
+
+        <div id="opportunityTableWrap" class="table-wrap hidden">
+          <table>
+            <thead><tr><th>#</th><th>السهم</th><th>الحالة</th><th>السعر</th><th>النتيجة</th><th>Net R/R T1</th><th>ثقة البيانات</th><th>الدخول</th><th>وقف</th><th>هدف 1</th></tr></thead>
+            <tbody id="opportunityRows"></tbody>
+          </table>
+        </div>
+        <div id="mobileCards" class="mobile-cards hidden"></div>
+      </section>
+
+      <section class="two-col">
+        <article class="panel">
+          <div class="panel-header compact"><div><span class="eyebrow">صحة المصادر</span><h2>Data Truth</h2></div></div>
+          <div id="sourceHealth" class="detail-list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-header compact"><div><span class="eyebrow">الحوكمة</span><h2>Champion / Challenger</h2></div></div>
+          <div id="governance" class="detail-list"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="stockDialog" class="stock-dialog" aria-labelledby="stockDialogTitle">
+    <div class="dialog-head">
+      <div><span id="stockDialogTicker" class="ticker-chip"></span><h2 id="stockDialogTitle">تفاصيل السهم</h2></div>
+      <button id="closeDialog" class="icon-button" type="button" aria-label="إغلاق">×</button>
+    </div>
+    <div id="stockDialogBody" class="dialog-body"></div>
+  </dialog>
+
+  <noscript><div class="noscript">تحتاج هذه الصفحة إلى JavaScript لعرض بيانات V20.</div></noscript>
+  <script src="./app.js" defer></script>
+</body>
+</html>

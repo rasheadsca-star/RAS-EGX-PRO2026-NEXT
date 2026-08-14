@@ -8,6 +8,7 @@ on:
       - "scripts/v20/**"
       - "docs/v20/**"
       - "data/v20/**"
+      - "v20/**"
       - ".github/workflows/v20-integrated-decision-platform.yml"
       - "data/v17/**"
       - "data/v19/**"
@@ -37,7 +38,7 @@ jobs:
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
           git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
           changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
-          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|\.github/workflows/v20-integrated-decision-platform\.yml$)' || true)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$)' || true)"
           test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
 
       - name: Setup Node
@@ -48,8 +49,14 @@ jobs:
         run: |
           node --check scripts/v20/build-data-truth.cjs
           node --check scripts/v20/build-integrated-decision-snapshot.cjs
+          node --check scripts/v20/enrich-risk-reward.cjs
           node --check scripts/v20/build-portfolio-risk.cjs
+          node --check scripts/v20/build-stock-profiles.cjs
+          node --check scripts/v20/archive-signal.cjs
           node --check scripts/v20/regression.cjs
+          node --check scripts/v20/phase3-regression.cjs
+          node --check scripts/v20/validate-ui.cjs
+          node --check v20/app.js
           node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('data/v20/model-registry.json','utf8'))"
 
@@ -59,20 +66,41 @@ jobs:
       - name: Build integrated decision snapshot
         run: node scripts/v20/build-integrated-decision-snapshot.cjs
 
+      - name: Enrich conservative cost-aware risk reward
+        run: node scripts/v20/enrich-risk-reward.cjs
+
       - name: Build portfolio risk plan
         run: node scripts/v20/build-portfolio-risk.cjs
 
+      - name: Build stock analytical profiles
+        run: node scripts/v20/build-stock-profiles.cjs
+
+      - name: Archive immutable daily signal and forward horizons
+        run: node scripts/v20/archive-signal.cjs
+
       - name: Run governance and risk regression suite
         run: node scripts/v20/regression.cjs
+
+      - name: Run Phase 3 truth and archive regression
+        run: node scripts/v20/phase3-regression.cjs
+
+      - name: Validate V20 UI contract
+        run: node scripts/v20/validate-ui.cjs
 
       - name: Acceptance guard
         run: |
           node - <<'NODE'
           const x=require('./data/v20/current.json');
           const r=require('./data/v20/regression.json');
+          const r3=require('./data/v20/phase3-regression.json');
+          const ui=require('./data/v20/ui-validation.json');
+          const rr=require('./data/v20/risk-reward-audit.json');
+          const profiles=require('./data/v20/stock-profiles.json');
+          const archive=require('./data/v20/signal-archive/index.json');
+          const forward=require('./data/v20/forward-evaluation.json');
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
-          if(r.ok!==true) process.exit(1);
+          if(r.ok!==true||r3.ok!==true||ui.ok!==true) process.exit(1);
           if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
           if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
           if(x.executionStatus!=='EXECUTION_GRADE' && x.opportunities.some(o=>o.status==='ACTIONABLE')) process.exit(1);
@@ -81,6 +109,11 @@ jobs:
           if(x.portfolio.recommendedExposurePct>policy.portfolio.maximumTotalAllocationPct) process.exit(1);
           if(x.portfolio.shadowResearch?.appliedToProductionPortfolio!==false) process.exit(1);
           if(x.opportunities.some(o=>Number(o.suggestedPositionWeightPct||0)>policy.portfolio.maximumSinglePositionPct)) process.exit(1);
+          if(x.riskRewardPolicy?.primaryMetric!=='CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS') process.exit(1);
+          if(rr.legacyMetricPolicy!=='AUDIT_ONLY_REFERENCE_UNVERIFIED') process.exit(1);
+          if(x.opportunities.some(o=>o.riskReward?.legacyIsPrimary!==false)) process.exit(1);
+          if(profiles.technicalIndicatorPolicy!=='NO_INDICATOR_WITHOUT_VERIFIED_POINT_IN_TIME_DAILY_OHLC_HISTORY') process.exit(1);
+          if(!archive.count||!Array.isArray(forward.evaluations)) process.exit(1);
           NODE
 
       - name: Persist V20 evidence only
@@ -94,7 +127,13 @@ jobs:
             data/v20/master-universe.json \
             data/v20/current-market-snapshot.json \
             data/v20/source-health.json \
-            data/v20/portfolio-risk.json
+            data/v20/portfolio-risk.json \
+            data/v20/risk-reward-audit.json \
+            data/v20/stock-profiles.json \
+            data/v20/phase3-regression.json \
+            data/v20/ui-validation.json \
+            data/v20/forward-evaluation.json \
+            data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 data truth and risk evidence"
+          git commit -m "Update V20 analytical and immutable signal evidence"
           git push origin HEAD:develop/v20-integrated-decision-platform

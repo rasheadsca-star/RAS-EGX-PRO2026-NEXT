@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
+const P = rel => path.join(root, rel);
+const read = rel => JSON.parse(fs.readFileSync(P(rel), 'utf8'));
+const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const sha = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+
+const current = read('data/v20/current.json');
+const audit = read('data/v20/risk-reward-audit.json');
+const profiles = read('data/v20/stock-profiles.json');
+const archiveIndex = read('data/v20/signal-archive/index.json');
+const forward = read('data/v20/forward-evaluation.json');
+
+const failures = [];
+const check = (ok, code) => { if (!ok) failures.push(code); };
+
+check(current.riskRewardPolicy?.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS', 'PRIMARY_RR_POLICY_NOT_NET_COST_AWARE');
+check(audit.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS', 'AUDIT_PRIMARY_RR_POLICY_DRIFT');
+check(audit.legacyMetricPolicy === 'AUDIT_ONLY_REFERENCE_UNVERIFIED', 'LEGACY_RR_NOT_AUDIT_ONLY');
+check(audit.methodology?.exactLegacyFormulaClaimed === false, 'UNVERIFIED_LEGACY_RR_FORMULA_CLAIMED');
+check(profiles.profileCount === (current.opportunities || []).length, 'PROFILE_COUNT_MISMATCH');
+check(profiles.technicalIndicatorPolicy === 'NO_INDICATOR_WITHOUT_VERIFIED_POINT_IN_TIME_DAILY_OHLC_HISTORY', 'TECHNICAL_INDICATOR_POLICY_DRIFT');
+
+for (const row of current.opportunities || []) {
+  const rr = row.riskReward || {};
+  const t1Net = finite(row.tradePlan?.target1Metrics?.netRiskReward);
+  const primary = finite(rr.primaryTarget1NetRiskReward);
+  check(rr.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS', `PRIMARY_RR_NOT_CONSERVATIVE_NET_${row.ticker}`);
+  check(rr.legacyIsPrimary === false, `LEGACY_RR_PRIMARY_${row.ticker}`);
+  check(primary === t1Net, `PRIMARY_NET_RR_MISMATCH_${row.ticker}`);
+  if (finite(rr.legacyRiskReward) !== null) check(rr.legacyReference === 'UNVERIFIED_PRICE_REFERENCE', `LEGACY_REFERENCE_NOT_UNVERIFIED_${row.ticker}`);
+  if (rr.materialMismatch === true) check((rr.auditReasons || []).includes('LEGACY_RR_MATERIAL_MISMATCH_VS_CONSERVATIVE_ENTRY_HIGH_REFERENCE'), `MISMATCH_NOT_EXPLICIT_${row.ticker}`);
+}
+
+for (const profile of profiles.profiles || []) {
+  check(profile.opportunity?.scoreIsConfidence === false, `SCORE_CONFIDENCE_MIXED_${profile.ticker}`);
+  check(profile.confidence?.dimensionsAreIndependent === true, `CONFIDENCE_DIMENSIONS_MIXED_${profile.ticker}`);
+  check(profile.technicalAnalysis?.status === 'VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET', `TECHNICAL_STATUS_UNEXPECTED_${profile.ticker}`);
+  for (const field of ['sma20', 'ema20', 'rsi14', 'macd', 'macdSignal', 'atr14', 'momentum5', 'trend']) {
+    check(profile.technicalAnalysis?.[field] === null, `FABRICATED_TECHNICAL_FIELD_${profile.ticker}_${field}`);
+  }
+  check(profile.sectorContext?.sector === null, `UNVERIFIED_SECTOR_INFERRED_${profile.ticker}`);
+}
+
+const immutableCore = {
+  schemaVersion: '20.0.0-immutable-signal-core-1',
+  sessionDate: current.sessionDate,
+  activeChampion: current.governance?.activeChampion || null,
+  executionStatus: current.executionStatus,
+  decisionSupportOnly: current.decisionSupportOnly === true,
+  portfolio: {
+    riskState: current.portfolio?.riskState || null,
+    recommendedExposurePct: finite(current.portfolio?.recommendedExposurePct) || 0,
+    cashPct: finite(current.portfolio?.cashPct) || 100,
+  },
+  opportunities: (current.opportunities || []).map(row => ({
+    ticker: row.ticker,
+    status: row.status,
+    entryLow: finite(row.tradePlan?.entryLow),
+    entryHigh: finite(row.tradePlan?.entryHigh),
+    stop: finite(row.tradePlan?.stop),
+    target1: finite(row.tradePlan?.target1),
+    target2: finite(row.tradePlan?.target2),
+    positionWeightPct: finite(row.suggestedPositionWeightPct) || 0,
+  })),
+};
+const expectedHash = sha(immutableCore);
+const archiveEntry = (archiveIndex.entries || []).find(entry => entry.immutableSignalHash === expectedHash);
+check(Boolean(archiveEntry), 'CURRENT_SIGNAL_NOT_ARCHIVED');
+if (archiveEntry) {
+  const archived = read(archiveEntry.file);
+  check(archived.immutableSignalHash === expectedHash, 'ARCHIVE_HASH_MISMATCH');
+  check(JSON.stringify(archived.immutableCore) === JSON.stringify(immutableCore), 'ARCHIVE_CORE_MISMATCH');
+}
+
+const currentForward = (forward.evaluations || []).filter(x => x.immutableSignalHash === expectedHash);
+for (const horizon of [1, 3, 5, 10, 20]) {
+  const item = currentForward.find(x => x.horizonSessions === horizon);
+  check(Boolean(item), `MISSING_FORWARD_HORIZON_${horizon}`);
+  if (item) {
+    check(['PENDING', 'RESOLVED', 'AMBIGUOUS'].includes(item.status), `INVALID_FORWARD_STATUS_${horizon}`);
+    if (item.status === 'PENDING') {
+      check(item.portfolioReturnGrossPct === null && item.portfolioReturnNetPct === null, `FABRICATED_PENDING_FORWARD_RETURN_${horizon}`);
+    }
+  }
+}
+
+const report = {
+  schemaVersion: '20.0.0-phase3-regression-1',
+  generatedAt: new Date().toISOString(),
+  ok: failures.length === 0,
+  failedCount: failures.length,
+  failures,
+  checks: {
+    conservativeNetRiskRewardPrimary: true,
+    legacyRiskRewardAuditOnly: true,
+    noFabricatedTechnicalIndicators: true,
+    scoreConfidenceSeparated: true,
+    immutableSignalArchive: true,
+    forwardHorizonsSeparated: true,
+  },
+};
+
+fs.writeFileSync(P('data/v20/phase3-regression.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+console.log(JSON.stringify(report, null, 2));
+if (!report.ok) process.exitCode = 1;
