@@ -165,7 +165,7 @@
 
   function renderMarketSummary() {
     const s = state.marketExplorer?.summary || {}; $('marketUniverseCount').textContent = num(s.universeCount, 0); $('marketCurrentCount').textContent = `${num(s.currentSnapshotCount, 0)} / ${num(s.universeCount, 0)}`;
-    $('marketCurrentCoverage').textContent = pct(s.currentSessionCoveragePct); $('marketTechnicalCurrent').textContent = `${num(s.currentTechnicalReadyCount, 0)} حالي`; $('marketTechnicalCoverage').textContent = `${pct(s.technicalCurrentCoverageOfOpportunityUniversePct)} من نطاق الفرص`;
+    $('marketCurrentCoverage').textContent = pct(s.currentSessionCoveragePct); $('marketTechnicalCurrent').textContent = `${num(s.currentTechnicalReadyCount, 0)} Full Technical`; $('marketTechnicalCoverage').textContent = `${pct(s.technicalCurrentCoverageOfOpportunityUniversePct)} من الفرص • سياق اتجاه موثوق ${pct(s.marketTrendContextCoverageOfUniversePct)} من السوق`;
   }
 
   function marketFilteredRows() {
@@ -176,7 +176,14 @@
     const value = row => ({TURNOVER_DESC:Number(row.turnover ?? -Infinity),CHANGE_DESC:Number(row.changePct ?? -Infinity),CHANGE_ASC:Number(row.changePct ?? Infinity),TICKER_ASC:String(row.ticker || ''),DATA_QUALITY_DESC:Number(row.criticalFieldCompletenessPct ?? -Infinity)}[state.marketSort]);
     return rows.sort((a,b) => { if (state.marketSort === 'TICKER_ASC') return value(a).localeCompare(value(b),'en'); if (state.marketSort === 'CHANGE_ASC') return value(a)-value(b); return value(b)-value(a); });
   }
-  function technicalTag(row) { const value = row.technical?.state; const klass = value === 'CURRENT_READY' ? 'tech-current' : value === 'HISTORICAL_CONTEXT_ONLY' ? 'tech-historical' : value === 'NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE' ? 'tech-not-evaluated' : 'tech-unavailable'; return `<span class="technical-tag ${klass}">${esc(technicalAr(value))}</span>`; }
+  function technicalTag(row) {
+    const value = row.technical?.state;
+    if (value === 'NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE' && row.marketTrendContext?.available === true) {
+      return '<span class="technical-tag tech-historical">سياق اتجاه حالي موثوق</span>';
+    }
+    const klass = value === 'CURRENT_READY' ? 'tech-current' : value === 'HISTORICAL_CONTEXT_ONLY' ? 'tech-historical' : value === 'NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE' ? 'tech-not-evaluated' : 'tech-unavailable';
+    return `<span class="technical-tag ${klass}">${esc(technicalAr(value))}</span>`;
+  }
 
   function renderMarketExplorer() {
     const rows = marketFilteredRows(); const pageCount = Math.max(1, Math.ceil(rows.length / state.marketPageSize)); state.marketPage = Math.min(Math.max(1,state.marketPage),pageCount); const start = (state.marketPage-1)*state.marketPageSize; const pageRows = rows.slice(start,start+state.marketPageSize);
