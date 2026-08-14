@@ -9,11 +9,18 @@ const marketWorkflow=text('.github/workflows/update-market-data.yml'),buildWorkf
 const marketV5=marketWorkflow.includes('destructive-critic-v5.cjs'),buildV5=buildWorkflow.includes('destructive-critic-v5.cjs');
 const base=cp.spawnSync(process.execPath,[P('scripts/v17/destructive-critic-v4.cjs')],{cwd:root,encoding:'utf8'}),baseReport=read(OUT,{findings:[{severity:'CRITICAL',code:'CRITIC_V4_NO_REPORT',message:'Critic V4 produced no report'}]});
 const inherited=Array.isArray(baseReport.findings)?baseReport.findings:[];
-const obsolete=new Set(['CRITIC_V4_NOT_MANDATORY']);
-const ignored=inherited.filter(f=>obsolete.has(f?.code)&&((f.location==='market'&&marketV5)||(f.location==='build-review'&&buildV5)));
-const findings=inherited.filter(f=>!ignored.includes(f));
+const obsoleteMarketCodes=new Set(['CRITIC_V2_NOT_IN_WORKFLOW','CRITIC_V3_NOT_MANDATORY_MARKET','CRITIC_V4_NOT_MANDATORY']);
+const obsoleteBuildCodes=new Set(['CRITIC_V3_NOT_MANDATORY_BUILD_REVIEW','CRITIC_V4_NOT_MANDATORY']);
+const isSupersededWiring=f=>{
+  const code=String(f?.code||''),location=String(f?.location||'');
+  if(marketV5&&obsoleteMarketCodes.has(code)&&(location==='workflow'||location==='market'||location==='update-market-data'||!location))return true;
+  if(buildV5&&obsoleteBuildCodes.has(code)&&(location==='v17-build-review'||location==='build-review'||location==='workflow'||!location))return true;
+  return false;
+};
+const ignored=inherited.filter(isSupersededWiring);
+const findings=inherited.filter(f=>!isSupersededWiring(f));
 const add=(severity,code,message,location=null)=>findings.push({severity,code,message:String(message||''),location});
-if(base.status!==0&&inherited.length-ignored.length===0&&ignored.length===0)add('CRITICAL','CRITIC_V4_PROCESS_FAILURE',`exit=${base.status}; ${base.stderr||base.stdout||''}`.slice(0,500),'critic-v4');
+if(base.status!==0&&findings.length===0&&ignored.length===0)add('CRITICAL','CRITIC_V4_PROCESS_FAILURE',`exit=${base.status}; ${base.stderr||base.stdout||''}`.slice(0,500),'critic-v4');
 
 const buildPermissionsWrite=/permissions:\s*[\s\S]{0,160}?contents:\s*write\b/m.test(buildWorkflow);
 const buildPushLines=executableGitLines(buildWorkflow,'push');
@@ -38,5 +45,5 @@ if(decisionTime&&currentResearchTime&&Math.abs(currentResearchTime-decisionTime)
 if(!marketV5)add('MAJOR','CRITIC_V5_NOT_MANDATORY_MARKET','market workflow does not run Critic V5','update-market-data');
 if(!buildV5)add('MAJOR','CRITIC_V5_NOT_MANDATORY_BUILD','build review does not run Critic V5','v17-build-review');
 const counts=findings.reduce((a,f)=>(a[f.severity]=(a[f.severity]||0)+1,a),{CRITICAL:0,MAJOR:0,MINOR:0,INFO:0});
-const report={schemaVersion:'17.0.0-destructive-critic-5',generatedAt:new Date().toISOString(),critic:'V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V5',verdict:findings.length===0?'NO_COMMENTS':'COMMENTS_FOUND',counts,totalFindings:findings.length,findings,baseCritic:{schemaVersion:baseReport.schemaVersion||null,verdict:baseReport.verdict||null,totalFindings:Number(baseReport.totalFindings||0),ignoredSupersededWiringFindings:ignored.map(f=>({code:f.code,location:f.location}))},publicationArchitecture:{buildReviewReadOnly:!buildPermissionsWrite&&!buildPushLines.length&&!buildCommitLines.length&&!buildHasCanonicalCommitStep,buildPushLines,buildCommitLines,marketCanonicalPublisher:marketPushes.some(line=>/HEAD:develop\/v17-rebuild/.test(line)),marketPushes},coverage:{...(baseReport.coverage||{}),canonicalPublisherRace:true,buildReviewReadOnly:true,marketSolePublisher:true,publishedEvidenceFreshness:true,guardPatternFalsePositiveExcluded:true},rule:'Critic V5 is additive. Build Review must be read-only and Market Workflow must be the sole canonical data publisher. Guard/search text is not treated as an executable git command. Only obsolete lower-version wiring findings may be superseded; all substantive findings remain blocking.'};
+const report={schemaVersion:'17.0.0-destructive-critic-5',generatedAt:new Date().toISOString(),critic:'V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V5',verdict:findings.length===0?'NO_COMMENTS':'COMMENTS_FOUND',counts,totalFindings:findings.length,findings,baseCritic:{schemaVersion:baseReport.schemaVersion||null,verdict:baseReport.verdict||null,totalFindings:Number(baseReport.totalFindings||0),ignoredSupersededWiringFindings:ignored.map(f=>({code:f.code,location:f.location}))},publicationArchitecture:{buildReviewReadOnly:!buildPermissionsWrite&&!buildPushLines.length&&!buildCommitLines.length&&!buildHasCanonicalCommitStep,buildPushLines,buildCommitLines,marketCanonicalPublisher:marketPushes.some(line=>/HEAD:develop\/v17-rebuild/.test(line)),marketPushes},coverage:{...(baseReport.coverage||{}),canonicalPublisherRace:true,buildReviewReadOnly:true,marketSolePublisher:true,publishedEvidenceFreshness:true,guardPatternFalsePositiveExcluded:true,lowerCriticVersionWiringSupersession:true},rule:'Critic V5 is additive. Build Review must be read-only and Market Workflow must be the sole canonical data publisher. Guard/search text is not treated as an executable git command. Only lower-critic direct-wiring findings may be superseded when V5 is mandatory; all substantive lower-critic findings remain blocking.'};
 write(OUT,report);console.log(JSON.stringify(report,null,2));if(findings.length)process.exitCode=2;
