@@ -31,7 +31,9 @@ jobs:
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v17-rebuild"
           git fetch origin main develop/v17-rebuild
-          if grep -REn 'git push[^\n]*origin[^\n]*main|git push[^\n]*HEAD:main' .github/workflows/update-market-data.yml scripts/v17/; then exit 1; fi
+          pattern='git push[[:space:]].*(origin[[:space:]]+main|HEAD:main)'
+          violations="$(grep -REn "$pattern" .github/workflows/update-market-data.yml scripts/v17/ | grep -v 'pattern=' | grep -v 'dangerousPushLines' || true)"
+          test -z "$violations" || { echo "$violations"; exit 1; }
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm}
       - name: Install project dependencies
@@ -52,7 +54,7 @@ jobs:
         id: playwright
         continue-on-error: true
         run: |
-          npm install --no-save --no-package-lock playwright@1.55.0
+          npm install --no-save --no-package-lock playwright@1.62.0
           npx playwright install --with-deps chromium
       - name: Collect rendered Mubasher S/R validation - degradable
         id: rendered_sr
@@ -110,8 +112,8 @@ jobs:
         run: node scripts/v17/regression.cjs
       - name: Snapshot provenance guard after regression
         run: node scripts/v17/snapshot-provenance-guard.cjs
-      - name: Destructive adversarial critic
-        run: node scripts/v17/destructive-critic.cjs
+      - name: Destructive adversarial critic V2
+        run: node scripts/v17/destructive-critic-v2.cjs
       - name: Acceptance guard
         run: |
           set -euo pipefail
@@ -119,15 +121,15 @@ jobs:
           const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json')); const z=JSON.parse(fs.readFileSync('data/v17/destructive-critic.json'));
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
-          if(r.verdict==='REJECTED') throw new Error('Independent review rejected build');
-          if(q.ok!==true||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression failed: ${(q.failed||[]).join(', ')}`);
+          if(r.verdict!=='NO_COMMENTS'||Object.values(r.counts||{}).some(Number)) throw new Error('Independent review is not NO_COMMENTS');
+          if(q.ok!==true||Number(q.failedCount||0)!==0||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression failed: ${(q.failed||[]).join(', ')}`);
           if(z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0) throw new Error(`Destructive critic found ${z.totalFindings} findings`);
           if(g?.policy?.doesNotChangeExecutionEligibility!==true||g?.policy?.gateThresholdsUnchanged!==true) throw new Error('S/R diagnostic attempted to change execution policy');
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth not aligned');
-          if(x.enrichment?.immutableSignalHashTouched!==false||x.finalization?.immutableSignalHashTouched!==false) throw new Error('Snapshot processing touched immutable signal contract');
+          if(x.enrichment?.immutableSignalHashTouched!==false||x.finalization?.immutableSignalHashTouched!==false||x.finalization?.ledgerTouched!==false) throw new Error('Snapshot processing touched immutable signal contract');
           if(x.currentResearch?.liquidity?.provenance!=='data/v17/liquidity-gate.json') throw new Error('Canonical liquidity provenance missing from snapshot');
           if(s.executionGrade===true && (l.gatePassed!==true||t.executionSafe!==true||h.applied!==true)) throw new Error('Execution grade without verified source session/history repair/liquidity gate');
-          if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Non-execution status has allocation'); }
+          if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0||Number(x.portfolioPolicy?.cashReservePct||0)!==100) throw new Error('Non-execution status has exposure'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
           console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,srGapSummary:g.summary,review:r.verdict,regression:q.ok,destructiveCritic:z.verdict,snapshotProvenance:true},null,2));
