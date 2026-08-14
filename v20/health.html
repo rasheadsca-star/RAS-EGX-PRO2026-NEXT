@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>EGX PRO V20 — Decision & Source Health Center</title>
+  <link rel="stylesheet" href="./health.css">
+</head>
+<body>
+  <a class="skip-link" href="#healthMain">انتقل إلى المحتوى</a>
+  <div class="health-shell">
+    <header class="health-topbar">
+      <a class="health-brand" href="./index.html" aria-label="العودة إلى EGX PRO V20">
+        <span class="health-brand-mark">EGX</span>
+        <span><b>PRO V20</b><small>Decision & Source Health Center</small></span>
+      </a>
+      <nav class="health-nav" aria-label="التنقل">
+        <a href="./index.html">المنصة</a>
+        <a href="./performance.html">سجل الأداء</a>
+      </nav>
+    </header>
+
+    <main id="healthMain" class="health-main">
+      <section class="health-hero" aria-live="polite">
+        <div>
+          <span class="eyebrow">قرار التنفيذ وصحة الأدلة</span>
+          <h1 id="healthTitle">جاري التحقق من المنصة…</h1>
+          <p id="healthSubtitle">تعرض هذه الصفحة الأسباب والمصادر كما هي مسجلة في الأدلة الحالية، بدون إنشاء أسباب بديلة أو تجاوز بوابة V17.</p>
+        </div>
+        <div class="hero-status">
+          <span id="healthSession">جلسة —</span>
+          <strong id="healthExecution">—</strong>
+          <small id="healthDataState">—</small>
+        </div>
+      </section>
+
+      <section class="health-kpis" aria-label="ملخص صحة القرار">
+        <article><span>تغطية V17</span><strong id="healthCoverage">—</strong><small>Execution evidence coverage</small></article>
+        <article><span>حداثة V17</span><strong id="healthFreshness">—</strong><small>Freshness</small></article>
+        <article><span>الحقول الحرجة</span><strong id="healthCritical">—</strong><small>Critical fields</small></article>
+        <article><span>عمر المصدر</span><strong id="healthSourceAge">—</strong><small id="healthLastUpdate">—</small></article>
+      </section>
+
+      <section class="health-panel blockers-panel" aria-labelledby="blockersTitle">
+        <div class="panel-heading">
+          <div><span class="eyebrow">بوابة V17 — authoritative</span><h2 id="blockersTitle">لماذا التنفيذ مغلق الآن؟</h2></div>
+          <span id="blockerCount" class="health-pill pill-bad">—</span>
+        </div>
+        <p class="panel-note">تظهر هنا فقط الأسباب المسجلة حرفيًا داخل <code>data/v17/resilient-session-status.json → reasons</code>. السياقات البحثية الأخرى لا تُعامل كأسباب تنفيذ من تلقاء نفسها.</p>
+        <div id="blockerGrid" class="blocker-grid"></div>
+      </section>
+
+      <section class="health-panel" aria-labelledby="readinessTitle">
+        <div class="panel-heading"><div><span class="eyebrow">Readiness Matrix</span><h2 id="readinessTitle">ما الذي يعمل وما الذي لا يزال يمنع التنفيذ؟</h2></div></div>
+        <div id="readinessGrid" class="readiness-grid"></div>
+      </section>
+
+      <section class="health-two-col">
+        <article class="health-panel" aria-labelledby="conflictsTitle">
+          <div class="panel-heading"><div><span class="eyebrow">Source Conflicts</span><h2 id="conflictsTitle">تعارضات المصادر الحرجة</h2></div><span id="conflictCount" class="health-pill">—</span></div>
+          <div id="conflictList" class="stack-list"></div>
+        </article>
+        <article class="health-panel" aria-labelledby="missingTitle">
+          <div class="panel-heading"><div><span class="eyebrow">Missing Evidence</span><h2 id="missingTitle">رموز ينقصها دليل حرج</h2></div><span id="missingCount" class="health-pill">—</span></div>
+          <div id="missingSymbols" class="symbol-chips"></div>
+        </article>
+      </section>
+
+      <section class="health-panel" aria-labelledby="qualityTitle">
+        <div class="panel-heading"><div><span class="eyebrow">Data Truth</span><h2 id="qualityTitle">جودة البيانات عبر الطبقات</h2></div></div>
+        <div id="qualityGrid" class="quality-grid"></div>
+      </section>
+
+      <section class="health-two-col">
+        <article class="health-panel" aria-labelledby="marketContextTitle">
+          <div class="panel-heading"><div><span class="eyebrow">Market Context</span><h2 id="marketContextTitle">حالة السوق</h2></div><span id="healthRegimeBadge" class="health-pill">—</span></div>
+          <div id="marketContext" class="detail-list"></div>
+          <p class="context-warning">Market Regime سياق تحليلي فقط؛ لا يفتح Execution Grade ولا يغيّر أوزان الإنتاج تلقائيًا.</p>
+        </article>
+        <article class="health-panel" aria-labelledby="forwardTitle">
+          <div class="panel-heading"><div><span class="eyebrow">Forward Evidence</span><h2 id="forwardTitle">تتبع النتائج المستقبلية</h2></div><span id="forwardBadge" class="health-pill">—</span></div>
+          <div id="forwardContext" class="detail-list"></div>
+          <p class="context-warning">عائد Research منفصل عن Applied Portfolio. أي Horizon غير مكتمل يظل Pending بعائد null.</p>
+        </article>
+      </section>
+
+      <section class="health-panel" aria-labelledby="provenanceTitle">
+        <div class="panel-heading"><div><span class="eyebrow">Provenance</span><h2 id="provenanceTitle">مصادر الأدلة المستخدمة في هذه الصفحة</h2></div></div>
+        <div id="provenanceList" class="provenance-list"></div>
+      </section>
+
+      <div id="healthError" class="health-error hidden" role="alert"></div>
+    </main>
+  </div>
+  <noscript><div class="noscript">تحتاج الصفحة إلى JavaScript لقراءة أدلة V20 الحالية.</div></noscript>
+  <script src="./health.js" defer></script>
+</body>
+</html>

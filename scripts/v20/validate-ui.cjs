@@ -16,11 +16,19 @@ const portfolioCore = read('v20/portfolio-core.js');
 const performanceHtml = read('v20/performance.html');
 const performanceCss = read('v20/performance.css');
 const performanceJs = read('v20/performance.js');
+const healthHtml = read('v20/health.html');
+const healthCss = read('v20/health.css');
+const healthJs = read('v20/health.js');
 const explorer = json('data/v20/market-explorer.json');
 const performance = json('data/v20/performance-evidence-registry.json');
 const policy = json('data/v20/policy-registry.json');
 const current = json('data/v20/current.json');
 const marketRegime = json('data/v20/market-regime.json');
+const sourceHealth = json('data/v20/source-health.json');
+const gate = json('data/v17/resilient-session-status.json');
+const technical = json('data/v20/technical-history-status.json');
+const sector = json('data/v20/sector-provenance-audit.json');
+const forward = json('data/v20/forward-evaluation.json');
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
 
@@ -99,6 +107,57 @@ check(performance.policy?.historicalAndForwardEvidenceMustRemainSeparate === tru
 check(performance.policy?.reusedBenchmarkCanPromoteChallenger === false, 'PERFORMANCE_REGISTRY_PROMOTION_POLICY_DRIFT');
 check(performance.policy?.pendingForwardReturnMustRemainNull === true, 'PERFORMANCE_REGISTRY_PENDING_NULL_POLICY_DRIFT');
 check(performance.policy?.v18PerformanceAccepted === false, 'PERFORMANCE_REGISTRY_V18_POLICY_DRIFT');
+
+check(/<html\s+lang="ar"\s+dir="rtl">/i.test(healthHtml), 'HEALTH_ARABIC_RTL_MISSING');
+check(/meta\s+name="viewport"/i.test(healthHtml), 'HEALTH_VIEWPORT_MISSING');
+for (const id of [
+  'healthMain','healthTitle','healthSession','healthExecution','healthDataState','healthCoverage','healthFreshness','healthCritical','healthSourceAge',
+  'blockerCount','blockerGrid','readinessGrid','conflictCount','conflictList','missingCount','missingSymbols','qualityGrid','healthRegimeBadge',
+  'marketContext','forwardBadge','forwardContext','provenanceList','healthError'
+]) check(healthHtml.includes(`id="${id}"`), `HEALTH_UI_MISSING_${id.toUpperCase()}`);
+check(healthHtml.includes('href="./index.html"'), 'HEALTH_BACK_TO_PLATFORM_LINK_MISSING');
+check(healthHtml.includes('href="./performance.html"'), 'HEALTH_PERFORMANCE_LINK_MISSING');
+check(healthHtml.includes('src="./health.js"'), 'HEALTH_SCRIPT_NOT_LOADED');
+check(healthHtml.includes('href="./health.css"'), 'HEALTH_CSS_NOT_LOADED');
+check(healthHtml.includes('تظهر هنا فقط الأسباب المسجلة حرفيًا'), 'HEALTH_AUTHORITATIVE_BLOCKER_COPY_MISSING');
+for (const source of [
+  "loadJson('../data/v20/current.json')",
+  "loadJson('../data/v20/source-health.json')",
+  "loadJson('../data/v17/resilient-session-status.json')",
+  "loadJson('../data/v20/technical-history-status.json')",
+  "loadJson('../data/v20/sector-provenance-audit.json')",
+  "loadJson('../data/v20/market-regime.json')",
+  "loadJson('../data/v20/forward-evaluation.json')"
+]) check(healthJs.includes(source), `HEALTH_SOURCE_NOT_WIRED_${source.replace(/[^A-Z0-9]/gi,'_').toUpperCase()}`);
+check(healthJs.includes('const reasons = Array.isArray(gate.reasons) ? gate.reasons : []'), 'HEALTH_BLOCKERS_NOT_FROM_V17_REASONS');
+check(!healthJs.includes('current.warnings'), 'HEALTH_CURRENT_WARNINGS_MISUSED_AS_BLOCKERS');
+check(healthJs.includes('sourceHealth.sourceConflicts'), 'HEALTH_SOURCE_CONFLICTS_NOT_RENDERED');
+check(healthJs.includes('sourceHealth.missingSymbols'), 'HEALTH_MISSING_SYMBOLS_NOT_RENDERED');
+check(healthJs.includes('technical.currentTechnicalReadyCount'), 'HEALTH_TECHNICAL_STATUS_NOT_RENDERED');
+check(healthJs.includes('sector.summary?.productionVerifiedCount'), 'HEALTH_SECTOR_PROVENANCE_NOT_RENDERED');
+check(healthJs.includes('regime.methodology?.executionGateInfluence'), 'HEALTH_REGIME_EXECUTION_SEPARATION_NOT_RENDERED');
+check(healthJs.includes('forward.evaluationRegression?.ok'), 'HEALTH_FORWARD_REGRESSION_NOT_RENDERED');
+check(healthJs.includes('Research → Production') && healthJs.includes('ممنوع'), 'HEALTH_RESEARCH_PRODUCTION_SEPARATION_NOT_VISIBLE');
+check(!/fetch\([^)]*,\s*\{[^}]*method\s*:\s*['"]POST['"]/is.test(healthJs), 'HEALTH_WRITE_REQUEST_DETECTED');
+try { new Function(healthJs); } catch { failures.push('HEALTH_JS_SYNTAX_INVALID'); }
+
+check(sourceHealth.sessionDate === current.sessionDate, 'HEALTH_SOURCE_SESSION_MISMATCH');
+check(gate.priceTruth?.verifiedSessionDate === current.sessionDate, 'HEALTH_GATE_PRICE_SESSION_MISMATCH');
+check(sourceHealth.executionGrade === gate.executionGrade, 'HEALTH_EXECUTION_GRADE_SOURCE_MISMATCH');
+check(gate.executionGrade === true || current.executionStatus !== 'EXECUTION_GRADE', 'HEALTH_CURRENT_EXECUTION_OVERRIDES_GATE');
+check(Array.isArray(gate.reasons), 'HEALTH_GATE_REASONS_NOT_ARRAY');
+check(technical.asOfSessionDate === current.sessionDate, 'HEALTH_TECHNICAL_SESSION_MISMATCH');
+check(sector.summary?.productionVerifiedCount === 0, 'HEALTH_SECTOR_PRODUCTION_PROVENANCE_UNEXPECTED');
+check(sector.summary?.productionSectorConcentrationEnabled === false, 'HEALTH_SECTOR_CONCENTRATION_POLICY_DRIFT');
+check(marketRegime.asOfSessionDate === current.sessionDate, 'HEALTH_MARKET_REGIME_SESSION_MISMATCH');
+check(marketRegime.methodology?.executionGateInfluence === false, 'HEALTH_MARKET_REGIME_EXECUTION_INFLUENCE_DRIFT');
+check(marketRegime.methodology?.productionRiskBudgetInfluence === false, 'HEALTH_MARKET_REGIME_RISK_INFLUENCE_DRIFT');
+check(forward.asOfSessionDate === current.sessionDate, 'HEALTH_FORWARD_SESSION_MISMATCH');
+check(forward.authoritativeEvidence?.selfContainedStatus === true, 'HEALTH_FORWARD_SELF_CONTAINED_STATUS_MISSING');
+check(forward.authoritativeEvidence?.selfContainedRegression === true, 'HEALTH_FORWARD_SELF_CONTAINED_REGRESSION_MISSING');
+check(forward.evaluationRegression?.ok === true, 'HEALTH_FORWARD_REGRESSION_FAILED');
+check(forward.authoritativeEvidence?.derivedSidecarsAreAuthoritative === false, 'HEALTH_FORWARD_SIDECAR_AUTHORITY_DRIFT');
+
 check(css.includes('.market-regime-panel{'), 'MARKET_REGIME_STYLES_MISSING');
 check(marketRegime.asOfSessionDate === current.sessionDate, 'MARKET_REGIME_UI_SESSION_MISMATCH');
 check(marketRegime.methodology?.sectorInputsUsed === false, 'MARKET_REGIME_UI_SECTOR_INFERENCE_LEAK');
@@ -124,10 +183,17 @@ check(performanceCss.includes('@media(max-width:1024px)'), 'PERFORMANCE_RESPONSI
 check(performanceCss.includes('@media(max-width:768px)'), 'PERFORMANCE_RESPONSIVE_768_MISSING');
 check(performanceCss.includes('@media(max-width:430px)'), 'PERFORMANCE_RESPONSIVE_430_MISSING');
 check(performanceCss.includes('@media(max-width:390px)'), 'PERFORMANCE_RESPONSIVE_390_MISSING');
+check(healthCss.includes('@media(max-width:1024px)'), 'HEALTH_RESPONSIVE_1024_MISSING');
+check(healthCss.includes('@media(max-width:768px)'), 'HEALTH_RESPONSIVE_768_MISSING');
+check(healthCss.includes('@media(max-width:430px)'), 'HEALTH_RESPONSIVE_430_MISSING');
+check(healthCss.includes('@media(max-width:390px)'), 'HEALTH_RESPONSIVE_390_MISSING');
+check(healthCss.includes('prefers-reduced-motion'), 'HEALTH_REDUCED_MOTION_MISSING');
 check(html.includes('aria-live="polite"'), 'ARIA_LIVE_STATUS_MISSING');
 check(performanceHtml.includes('aria-live="polite"'), 'PERFORMANCE_ARIA_LIVE_MISSING');
+check(healthHtml.includes('aria-live="polite"'), 'HEALTH_ARIA_LIVE_MISSING');
 check(html.includes('class="skip-link"'), 'SKIP_LINK_MISSING');
 check(performanceHtml.includes('class="skip-link"'), 'PERFORMANCE_SKIP_LINK_MISSING');
+check(healthHtml.includes('class="skip-link"'), 'HEALTH_SKIP_LINK_MISSING');
 check(explorer.policy?.fullMarketSearch === true, 'EXPLORER_FULL_MARKET_POLICY_NOT_ACTIVE');
 check(explorer.policy?.marketOnlyIsRecommendation === false, 'EXPLORER_MARKET_ONLY_POLICY_DRIFT');
 check(explorer.policy?.semanticRowQualityPropagated === true, 'SEMANTIC_ROW_QUALITY_NOT_PROPAGATED');
@@ -136,7 +202,7 @@ check(policy.userPortfolio?.influencesExecutionGate === false, 'PORTFOLIO_EXECUT
 check(policy.userPortfolio?.automaticOrders === false, 'PORTFOLIO_AUTO_ORDER_POLICY_DRIFT');
 
 const report = {
-  schemaVersion: '20.0.0-ui-validation-5',
+  schemaVersion: '20.0.0-ui-validation-6',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -168,6 +234,14 @@ const report = {
     marketRegimeSectorInferenceExcluded: true,
     marketRegimeBreadthConflictDisclosure: true,
     sourceHealthVisible: true,
+    decisionHealthCenterSeparated: true,
+    decisionHealthBlockersAuthoritativeV17Only: true,
+    decisionHealthContextSeparatedFromBlockers: true,
+    decisionHealthReadOnly: true,
+    decisionHealthSourceConflictsVisible: true,
+    decisionHealthMissingEvidenceVisible: true,
+    decisionHealthForwardEmbeddedEvidenceVisible: true,
+    decisionHealthSectorProvenanceVisible: true,
     responsiveBreakpoints: [1024, 768, 430, 390],
     reducedMotionSupport: true,
     accessibilityBasics: true
