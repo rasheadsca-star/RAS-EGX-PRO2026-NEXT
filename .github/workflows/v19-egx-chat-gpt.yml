@@ -38,18 +38,31 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v6
         with: {python-version: "3.12"}
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with: {node-version: "22"}
       - name: Static validation
-        run: python -m py_compile scripts/v19/native-challenger-v2.py scripts/v19/native-challenger-v4.py scripts/v19/v4-policy-diagnostic.py
-      - name: Run diagnostic only
-        run: python scripts/v19/v4-policy-diagnostic.py
-      - name: Verify disclosure
-        run: node -e "const x=require('./data/v19/v4-policy-diagnostic.json');if(x.postHocHoldoutInspection!==true||x.countsAsIndependentEvidence!==false)process.exit(1)"
-      - name: Persist diagnostic only
+        run: |
+          python -m py_compile scripts/v19/native-challenger-v2.py scripts/v19/native-challenger-v4.py scripts/v19/native-challenger-v6.py
+          node --check scripts/v19/challenger-gate-v6.cjs
+          node --check scripts/v19/regression-v6.cjs
+      - name: Build V19 v6 risk budget challenger
+        run: python scripts/v19/native-challenger-v6.py
+      - name: Run V19 v6 strict benchmark gate
+        run: |
+          node scripts/v19/challenger-gate-v6.cjs
+          node scripts/v19/regression-v6.cjs
+      - name: Verify governance locks
+        run: |
+          node -e "const x=require('./data/v19/native-challenger-v6.json');if(x.status!=='SHADOW_RESEARCH_ONLY'||x.current.executionAllowed!==false||x.promotion.automaticPromotion!==false)process.exit(1)"
+          node -e "const x=require('./data/v19/challenger-status-v6.json');if(x.promotionAllowed!==false||x.freshIndependentEvidenceRequired!==true)process.exit(1)"
+          node -e "const x=require('./data/v19/regression-v6.json');if(x.ok!==true||x.failedCount!==0)process.exit(1)"
+      - name: Persist V19 v6 evidence only
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v19/v4-policy-diagnostic.json
+          git add data/v19/native-challenger-v6.json data/v19/challenger-status-v6.json data/v19/regression-v6.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V19 post-hoc policy diagnostic"
+          git commit -m "Update V19 v6 research evidence"
           git push origin HEAD:v19-egx-chat-gpt
