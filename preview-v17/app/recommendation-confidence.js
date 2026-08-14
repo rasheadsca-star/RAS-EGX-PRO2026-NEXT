@@ -39,8 +39,7 @@
     ];
     const passed = checks.filter(([, ok]) => ok).length;
     const failed = checks.filter(([, ok]) => !ok).map(([label]) => label);
-    const eligible = failed.length === 0;
-    if (eligible) {
+    if (failed.length === 0) {
       return {
         tone: 'good',
         label: 'مؤهل مشروط',
@@ -83,6 +82,7 @@
       const researchDetail = research.capped
         ? `الدرجة الخام ${fmt(research.raw, 1)}/100، وتم خفض العرض إلى ${fmt(research.displayed, 1)}/100 بسبب سقف جودة المصدر ${fmt(research.cap, 0)}/100.`
         : 'درجة ترتيب بحثي للمقارنة بين الفرص؛ ليست احتمال نجاح أو نسبة ربح.';
+      const signature = JSON.stringify([research.raw, research.cap, research.displayed, research.capped, execution.tone, execution.label, execution.detail]);
 
       let block = card.querySelector('.recommendation-confidence');
       if (!block) {
@@ -92,6 +92,9 @@
         if (prices) prices.insertAdjacentElement('afterend', block);
         else card.appendChild(block);
       }
+      if (block.dataset.signature === signature) return;
+
+      block.dataset.signature = signature;
       block.dataset.researchRaw = research.raw === null ? '' : String(research.raw);
       block.dataset.researchDisplayed = research.displayed === null ? '' : String(research.displayed);
       block.dataset.executionEligible = execution.tone === 'good' ? 'true' : 'false';
@@ -110,7 +113,9 @@
     });
 
     const legend = document.querySelector('.recommendation-panel .legend');
-    if (legend) legend.innerHTML = '<span><i class="dot good"></i>Research Score = ترتيب بحثي</span><span><i class="dot warn"></i>Execution Confidence = بوابات التنفيذ</span>';
+    if (legend && !legend.textContent.includes('Research Score')) {
+      legend.innerHTML = '<span><i class="dot good"></i>Research Score = ترتيب بحثي</span><span><i class="dot warn"></i>Execution Confidence = بوابات التنفيذ</span>';
+    }
     const subtitle = document.getElementById('engineSubtitle');
     const cap = finite(status?.confidencePolicy?.confidenceCapPct);
     if (subtitle && cap !== null && !subtitle.textContent.includes('Research Score')) {
