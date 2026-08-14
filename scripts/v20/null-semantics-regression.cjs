@@ -82,10 +82,11 @@ for (const [ticker, src] of byTechnical.entries()) {
 const archiveText = readText('scripts/v20/archive-signal.cjs');
 const phase3Text = readText('scripts/v20/phase3-regression.cjs');
 check(archiveText.includes('const n = Number(value);'), 'IMMUTABLE_ARCHIVE_COMPATIBILITY_SEMANTICS_CHANGED');
-check(phase3Text.includes('const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;'), 'PHASE3_ARCHIVE_HASH_COMPATIBILITY_CHANGED');
+check(phase3Text.includes('const archiveFinite = value => {') && phase3Text.includes('entryLow: archiveFinite(row.tradePlan?.entryLow)') && phase3Text.includes('positionWeightPct: archiveFinite(row.suggestedPositionWeightPct) || 0'), 'PHASE3_ARCHIVE_HASH_COMPATIBILITY_CHANGED');
+check(phase3Text.includes("if (value === null || value === undefined || value === '') return null;"), 'PHASE3_NEW_ANALYTICS_NULL_GUARD_MISSING');
 
 const report = {
-  schemaVersion: '20.0.0-null-semantics-regression-2',
+  schemaVersion: '20.0.0-null-semantics-regression-3',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -97,6 +98,7 @@ const report = {
     technicalIndicatorNestedShapeRespected: true,
     technicalNullsNotFabricatedAsZero: true,
     immutableArchiveHashCompatibilityPreserved: true,
+    newPhase3AnalyticsUseNullSafeFinite: true,
   },
   evidence: {
     comparedCurrentRows,
