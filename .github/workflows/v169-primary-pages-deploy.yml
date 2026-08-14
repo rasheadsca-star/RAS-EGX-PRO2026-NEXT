@@ -9,6 +9,8 @@ on:
       - "service-worker.js"
       - "preview-v16/app/v169.html"
       - "preview-v16/app/decision-source.js"
+      - "preview-v16/app/launch.js"
+      - "preview-v16/app/v16-9-basket-overlay.js"
       - "data/stable/v16-v169-primary-decision.json"
       - ".github/workflows/v169-primary-pages-deploy.yml"
 
@@ -40,11 +42,15 @@ jobs:
           set -euo pipefail
           node --check service-worker.js
           node --check preview-v16/app/decision-source.js
+          node --check preview-v16/app/launch.js
+          node --check preview-v16/app/v16-9-basket-overlay.js
           test -s preview-v16/app/v169.html
           test -s data/stable/v16-v169-primary-decision.json
+          test -s data/stable/v15-price-truth.json
           node - <<'NODE'
           const fs = require('fs');
           const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
+          const priceTruth = JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json', 'utf8'));
           const model = decision?.selectedModel?.id;
           const tickers = (decision.recommendations || []).map(row => row.ticker);
           if (model !== 'V16_9_EQUAL_WEIGHT_BASKET') {
@@ -53,7 +59,15 @@ jobs:
           if (tickers.length < 3) {
             throw new Error('Protected V16.9 basket is empty.');
           }
-          console.log({ model, sessionDate: decision.sessionDate, tickers });
+          const recommendationSession = decision.sessionDate || null;
+          const marketSession = priceTruth.expectedSession || null;
+          console.log({
+            model,
+            recommendationSession,
+            marketSession,
+            sessionAligned: Boolean(recommendationSession && marketSession && recommendationSession === marketSession),
+            tickers,
+          });
           NODE
 
       - name: Configure GitHub Pages
@@ -77,7 +91,7 @@ jobs:
           const fs = require('fs');
           const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
           const output = {
-            schemaVersion: '16.9.1-protected-pages',
+            schemaVersion: '16.9.2-session-truth-pages',
             generatedAt: new Date().toISOString(),
             status: 'DEPLOYED',
             deployedUrl: process.env.DEPLOYED_URL || null,
