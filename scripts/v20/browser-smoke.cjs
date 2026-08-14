@@ -31,6 +31,9 @@ function staticServer() {
       const u = new URL(req.url, 'http://127.0.0.1');
       let rel = decodeURIComponent(u.pathname).replace(/^\/+/, '');
       if (!rel) rel = 'v20/index.html';
+      // Chrome requests /favicon.ico automatically even when the application does not declare one.
+      // Treat that browser-generated request explicitly so every other 404 remains a hard signal.
+      if (rel === 'favicon.ico') { res.writeHead(204, {'cache-control':'no-store'}); return res.end(); }
       if (rel.includes('..')) { res.writeHead(403); return res.end('Forbidden'); }
       let file = P(rel);
       if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
@@ -75,7 +78,8 @@ class Cdp {
       if (msg.method === 'Runtime.exceptionThrown') this.consoleErrors.push({type:'exception', text:msg.params?.exceptionDetails?.text || 'Runtime exception'});
       if (msg.method === 'Runtime.consoleAPICalled' && msg.params?.type === 'error') this.consoleErrors.push({type:'console.error', text:(msg.params.args||[]).map(x=>x.value ?? x.description ?? '').join(' ')});
       if (msg.method === 'Log.entryAdded' && msg.params?.entry?.level === 'error') {
-        const text = msg.params.entry.text || ''; if (!/favicon\.ico/i.test(text)) this.consoleErrors.push({type:'log.error', text});
+        const entry = msg.params.entry; const text = entry.text || ''; const url = entry.url || '';
+        if (!/favicon\.ico/i.test(`${url} ${text}`)) this.consoleErrors.push({type:'log.error', text, url});
       }
     });
   }
@@ -181,7 +185,7 @@ async function main() {
     check('performanceNoHorizontalOverflow', await cdp.eval('document.documentElement.scrollWidth <= window.innerWidth + 1'));
     screenshots.push({name:'performance-1024',...(await cdp.screenshot(path.join(shotDir,'performance-1024.png')))});
 
-    const consoleErrors = cdp.consoleErrors.filter(e => !/favicon\.ico/i.test(e.text || ''));
+    const consoleErrors = cdp.consoleErrors.filter(e => !/favicon\.ico/i.test(`${e.url || ''} ${e.text || ''}`));
     check('noRuntimeOrConsoleErrors', consoleErrors.length === 0, consoleErrors);
     const report = {
       schemaVersion:'20.0.0-browser-smoke-1', generatedAt:new Date().toISOString(), ok:failures.length===0, failedCount:failures.length, failures,
