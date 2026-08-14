@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { execFileSync } = require('child_process');
 
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const P = rel => path.join(root, rel);
@@ -170,11 +171,46 @@ forward.updatedAt = new Date().toISOString();
 forward.evaluations.sort((a, b) => `${a.sessionDate}:${a.immutableSignalHash}:${a.horizonSessions}`.localeCompare(`${b.sessionDate}:${b.immutableSignalHash}:${b.horizonSessions}`));
 write(forwardRel, forward);
 
+const forwardIntegrationAvailable = [
+  'scripts/v20/forward-evaluation-unit.cjs',
+  'scripts/v20/resolve-forward-evaluation.cjs',
+  'scripts/v20/forward-evaluation-regression.cjs',
+].every(rel => fs.existsSync(P(rel)));
+let forwardResolution = null;
+if (forwardIntegrationAvailable && String(process.env.V20_SKIP_FORWARD_RESOLUTION || '').toLowerCase() !== 'true') {
+  const env = {
+    ...process.env,
+    V20_FORWARD_NETWORK_REFRESH: process.env.V20_FORWARD_NETWORK_REFRESH || 'true',
+    V20_FORWARD_CONCURRENCY: process.env.V20_FORWARD_CONCURRENCY || '6',
+    V20_FORWARD_FETCH_RANGE: process.env.V20_FORWARD_FETCH_RANGE || '3mo',
+    V20_FORWARD_CALENDAR_CONSENSUS_PCT: process.env.V20_FORWARD_CALENDAR_CONSENSUS_PCT || '50',
+    V20_FORWARD_CALENDAR_MIN_VOTES: process.env.V20_FORWARD_CALENDAR_MIN_VOTES || '5',
+    V20_FORWARD_TRANSACTION_COST_PCT: process.env.V20_FORWARD_TRANSACTION_COST_PCT || '0.6',
+  };
+  execFileSync(process.execPath, [P('scripts/v20/forward-evaluation-unit.cjs')], { cwd: root, env, stdio: 'inherit' });
+  execFileSync(process.execPath, [P('scripts/v20/resolve-forward-evaluation.cjs')], { cwd: root, env, stdio: 'inherit' });
+  execFileSync(process.execPath, [P('scripts/v20/forward-evaluation-regression.cjs')], { cwd: root, env, stdio: 'inherit' });
+  const status = read('data/v20/forward-resolution-status.json', {});
+  const regression = read('data/v20/forward-evaluation-regression.json', {});
+  if (regression.ok !== true) throw new Error('Forward evaluation regression failed inside archive cycle');
+  forwardResolution = {
+    schemaVersion: status.schemaVersion || null,
+    asOfSessionDate: status.asOfSessionDate || current.sessionDate,
+    evaluationCount: status.evaluationCount || 0,
+    resolvedCount: status.resolvedCount || 0,
+    pendingCount: status.pendingCount || 0,
+    fabricatedSameSessionResolutionCount: regression.evidence?.fabricatedSameSessionResolutionCount || 0,
+  };
+}
+
+const finalForward = read(forwardRel, forward);
 console.log(JSON.stringify({
   sessionDate: current.sessionDate,
   immutableSignalHash,
   archiveFile: archiveRel,
   archiveState,
   archiveCount: index.count,
-  pendingForwardEvaluationsForSignal: forward.evaluations.filter(x => x.immutableSignalHash === immutableSignalHash && x.status === 'PENDING').length,
+  pendingForwardEvaluationsForSignal: (finalForward.evaluations || []).filter(x => x.immutableSignalHash === immutableSignalHash && x.status === 'PENDING').length,
+  forwardResolverIntegrated: forwardIntegrationAvailable,
+  forwardResolution,
 }, null, 2));
