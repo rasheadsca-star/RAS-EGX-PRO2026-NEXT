@@ -1,0 +1,63 @@
+name: V20 S/R Shadow Remediation Lab
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - ".github/workflows/v20-sr-shadow-remediation.yml"
+      - "scripts/v20/build-sr-shadow-remediation.cjs"
+      - "scripts/v20/sr-shadow-remediation-regression.cjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-v20-sr-shadow-remediation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shadow-remediation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with: {fetch-depth: 1}
+      - name: Enforce V20 isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
+          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-full-market-technical\.yml$|\.github/workflows/v20-sr-shadow-remediation\.yml$)' || true)"
+          test -z "$violations" || { echo "$violations"; exit 1; }
+      - uses: actions/setup-node@v6
+        with: {node-version: "22"}
+      - name: Validate shadow lab
+        run: |
+          node --check scripts/v20/build-sr-shadow-remediation.cjs
+          node --check scripts/v20/sr-shadow-remediation-regression.cjs
+      - name: Run shadow remediation with actual V17 builder
+        run: node scripts/v20/build-sr-shadow-remediation.cjs
+      - name: Validate shadow evidence
+        run: node scripts/v20/sr-shadow-remediation-regression.cjs
+      - name: Acceptance
+        run: |
+          node - <<'NODE'
+          const x=require('./data/v20/sr-shadow-remediation.json'); const r=require('./data/v20/sr-shadow-remediation-regression.json');
+          if(r.ok!==true||x.automaticV17MutationAllowed!==false||x.appliedToExecutionGate!==false||x.guaranteesExecutionGrade!==false) process.exit(1);
+          if(x.restoration?.historyFilesRestored!==true||x.restoration?.v17InternalSrRestored!==true||x.restoration?.persistedV17Mutation!==false) process.exit(1);
+          NODE
+      - name: Persist shadow evidence only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v20/sr-shadow-remediation.json data/v20/sr-shadow-remediation-regression.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update V20 shadow S/R remediation evidence"
+          git fetch origin develop/v20-integrated-decision-platform
+          git rebase origin/develop/v20-integrated-decision-platform
+          git push origin HEAD:develop/v20-integrated-decision-platform
