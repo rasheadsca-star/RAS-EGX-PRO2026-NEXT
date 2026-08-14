@@ -43,7 +43,7 @@ function validOhlc(row) {
   const h = n(row?.high), l = n(row?.low), c = n(row?.close ?? row?.price ?? row?.last);
   return h !== null && l !== null && c !== null && h > 0 && l > 0 && c > 0 && h >= l;
 }
-function validRange(row) { return valiohlc(row) && n(row.high) > n(row.low); }
+function validRange(row) { return validOhlc(row) && n(row.high) > n(row.low); }
 function validSr(row) {
   return n(row?.support1) > 0 && n(row?.resistance1) > 0 && n(row.support1) < n(row.resistance1);
 }
@@ -94,8 +94,8 @@ function chooseBase(symbol, marketRow, history, referenceSessionDate, completion
   const hist = historyRows(history, symbol);
   if (completionConfirmed && validRange(marketRow)) {
     return {
-      date: referenceSessionDate, open: n(marketRow.open), high: n(marketRow.high), low: n(marketRow.low),
-      close: priceOf(marketRow), source: marketRow.source || 'market-current-session', provenance: 'data/market.json',
+      date: referenceSessionDate, open: n(marketRow.open), high: n(marketRow.high), low: n(marketRow.low), close: priceOf(marketRow),
+      source: marketRow.source || 'market-current-session', provenance: 'data/market.json',
       historySessions: hist.length, currentSession: true,
     };
   }
@@ -216,7 +216,7 @@ const marketCoveragePct = eligible.length ? round(rows.length / eligible.length 
 const marketFreshnessPct = eligible.length ? round(freshRows.length / eligible.length * 100, 2) : 0;
 const averageFreshConfidence = avg(candidateFreshRows.map(row => Number(row.confidence || 0)));
 const minCoverage = Number(process.env.EGX_INTERNAL_SR_MIN_COVERAGE || 95);
-const minFreshness = Number(process.env.EGX_INTERAN_SR_MIN_FRESHNESS || 98);
+const minFreshness = Number(process.env.EGX_INTERNAL_SR_MIN_FRESHNESS || 98);
 const minConfidence = Number(process.env.EGX_INTERNAL_SR_MIN_CONFIDENCE || 0.80);
 const researchMinCoverage = Number(process.env.EGX_INTERNAL_SR_RESEARCH_MIN_COVERAGE || 60);
 const executionCandidateReady = Boolean(
