@@ -13,6 +13,12 @@ const finite = value => {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 };
+// Immutable archive compatibility only: issued hashes were created with this legacy numeric coercion.
+// Never reuse this helper for new analytics; changing it would change historical signal hashes.
+const archiveFinite = value => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
 const sha = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 const current = read('data/v20/current.json');
@@ -136,18 +142,18 @@ const immutableCore = {
   decisionSupportOnly: current.decisionSupportOnly === true,
   portfolio: {
     riskState: current.portfolio?.riskState || null,
-    recommendedExposurePct: finite(current.portfolio?.recommendedExposurePct) || 0,
-    cashPct: finite(current.portfolio?.cashPct) || 100,
+    recommendedExposurePct: archiveFinite(current.portfolio?.recommendedExposurePct) || 0,
+    cashPct: archiveFinite(current.portfolio?.cashPct) || 100,
   },
   opportunities: (current.opportunities || []).map(row => ({
     ticker: row.ticker,
     status: row.status,
-    entryLow: finite(row.tradePlan?.entryLow),
-    entryHigh: finite(row.tradePlan?.entryHigh),
-    stop: finite(row.tradePlan?.stop),
-    target1: finite(row.tradePlan?.target1),
-    target2: finite(row.tradePlan?.target2),
-    positionWeightPct: finite(row.suggestedPositionWeightPct) || 0,
+    entryLow: archiveFinite(row.tradePlan?.entryLow),
+    entryHigh: archiveFinite(row.tradePlan?.entryHigh),
+    stop: archiveFinite(row.tradePlan?.stop),
+    target1: archiveFinite(row.tradePlan?.target1),
+    target2: archiveFinite(row.tradePlan?.target2),
+    positionWeightPct: archiveFinite(row.suggestedPositionWeightPct) || 0,
   })),
 };
 const expectedHash = sha(immutableCore);
@@ -225,6 +231,7 @@ const report = {
     decisionIntelligenceExecutionPermissionSeparated: true,
     decisionIntelligenceChampionGovernancePreserved: true,
     immutableSignalArchive: true,
+    immutableSignalArchiveLegacyNumericSemanticsPreserved: true,
     forwardHorizonsSeparated: true,
     forwardEvidenceSelfContained: true,
     forwardDerivedSidecarsNonAuthoritative: true,
