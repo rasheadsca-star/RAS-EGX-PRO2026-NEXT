@@ -2,7 +2,7 @@
   'use strict';
 
   const state = {
-    current: null, sourceHealth: null, profiles: null, rrAudit: null, portfolioRisk: null, marketExplorer: null,
+    current: null, sourceHealth: null, profiles: null, rrAudit: null, portfolioRisk: null, marketExplorer: null, marketRegime: null,
     query: '', status: 'ALL',
     marketQuery: '', marketAvailability: 'ALL', marketLiquidity: 'ALL', marketTechnical: 'ALL',
     marketSort: 'TURNOVER_DESC', marketPage: 1, marketPageSize: 25
@@ -17,6 +17,7 @@
   const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };
   const statusAr = value => ({ACTIONABLE:'قابل للتنفيذ',WATCH:'مراقبة',WAIT:'انتظار',AVOID:'تجنب'}[value] || value || '—');
   const riskAr = value => ({NORMAL:'طبيعي',CAUTIOUS:'حذر',DEFENSIVE:'دفاعي',CASH_PRESERVATION:'حماية السيولة'}[value] || value || '—');
+  const marketRegimeAr = value => ({BULLISH:'صاعد',NEUTRAL:'محايد',BEARISH:'هابط / دفاعي',UNVERIFIED_CURRENT_REGIME:'غير متحقق'}[value] || value || '—');
   const technicalAr = value => ({
     CURRENT_READY:'فني حالي موثوق',
     HISTORICAL_CONTEXT_ONLY:'سياق تاريخي فقط',
@@ -61,16 +62,17 @@
 
   async function load() {
     try {
-      const [current, sourceHealth, profiles, rrAudit, portfolioRisk, marketExplorer] = await Promise.all([
+      const [current, sourceHealth, profiles, rrAudit, portfolioRisk, marketExplorer, marketRegime] = await Promise.all([
         json('../data/v20/current.json'),
         json('../data/v20/source-health.json'),
         json('../data/v20/stock-profiles.json'),
         json('../data/v20/risk-reward-audit.json'),
         json('../data/v20/portfolio-risk.json'),
-        json('../data/v20/market-explorer.json')
+        json('../data/v20/market-explorer.json'),
+        json('../data/v20/market-regime.json')
       ]);
-      Object.assign(state, { current, sourceHealth, profiles, rrAudit, portfolioRisk, marketExplorer });
-      renderHeader(); renderMetrics(); renderAudit(); renderOpportunities(); renderMarketSummary(); renderMarketExplorer(); renderSourceHealth(); renderGovernance();
+      Object.assign(state, { current, sourceHealth, profiles, rrAudit, portfolioRisk, marketExplorer, marketRegime });
+      renderHeader(); renderMetrics(); renderMarketRegime(); renderAudit(); renderOpportunities(); renderMarketSummary(); renderMarketExplorer(); renderSourceHealth(); renderGovernance();
       $('loadingState').classList.add('hidden');
       $('opportunityTableWrap').classList.remove('hidden');
       $('mobileCards').classList.remove('hidden');
@@ -108,6 +110,41 @@
     $('freshness').textContent = pct(c.dataStatus?.freshnessPct);
     $('criticalFields').textContent = pct(c.dataStatus?.criticalFieldsPct);
     $('riskState').textContent = riskAr(c.portfolio?.riskState);
+  }
+
+  function renderMarketRegime() {
+    const mr = state.marketRegime || {};
+    const current = state.current || {};
+    const metrics = mr.metrics || {};
+    const verified = mr.verified === true && mr.asOfSessionDate === current.sessionDate;
+    const regime = verified ? mr.regime : 'UNVERIFIED_CURRENT_REGIME';
+    const badge = $('marketRegimeBadge');
+    badge.textContent = verified ? marketRegimeAr(regime) : 'غير متحقق';
+    badge.className = `status-pill ${verified ? (regime === 'BULLISH' ? 'status-good' : regime === 'NEUTRAL' ? 'status-warn' : 'status-bad') : 'status-neutral'}`;
+    $('marketRegimeTitle').textContent = marketRegimeAr(regime);
+    $('marketRegimeDescription').textContent = verified ? (mr.labelAr || 'حالة سوق موثقة من الدليل الحالي') : 'التغطية أو تزامن الجلسة غير كافيين لتثبيت حالة سوق حالية.';
+    $('marketRegimeCoverage').textContent = pct(metrics.participationPct);
+    $('marketRegimeAnalyzed').textContent = `${num(metrics.analyzedCount, 0)} من ${num(metrics.universeCount, 0)} سهم`;
+    $('marketRegimeConfidence').textContent = pct(verified ? mr.marketConfidencePct : 0);
+    $('marketRegimeScore').textContent = num(mr.classificationScore, 0);
+    $('marketRegimeBreadth').textContent = `${num(metrics.advances, 0)} صاعد / ${num(metrics.declines, 0)} هابط`;
+    $('marketRegimeAdRatio').textContent = `A/D ${num(metrics.advanceDeclineRatio, 2)} • صعود ${pct(metrics.advancePct)}`;
+    $('marketRegimeSma20').textContent = pct(metrics.aboveSma20Pct);
+    $('marketRegimeSma50').textContent = pct(metrics.aboveSma50Pct);
+    $('marketRegimeMomentum5').textContent = pct(metrics.medianReturn5Pct);
+    $('marketRegimeMomentum20').textContent = pct(metrics.medianReturn20Pct);
+    $('marketRegimeVolatility').textContent = pct(metrics.volatility20AnnualizedPct);
+    $('marketRegimeVolatilityOverlay').textContent = mr.volatilityOverlay === 'HIGH_VOLATILITY' ? 'تقلب مرتفع استثنائي' : 'تقلب دون حد الاستثناء';
+
+    const warning = $('marketRegimeWarning');
+    const dailyBreadthWeak = numeric(metrics.advances) !== null && numeric(metrics.declines) !== null && Number(metrics.advances) < Number(metrics.declines);
+    const gateClosed = current.executionStatus !== 'EXECUTION_GRADE';
+    const notes = [];
+    if (dailyBreadthWeak) notes.push('اتساع جلسة اليوم سلبي رغم قوة الاتجاه والزخم المتوسط/الأطول؛ لا تُقرأ BULLISH كإشارة شراء فورية.');
+    if (gateClosed) notes.push('بوابة V17 لم تمنح Execution Grade، لذلك لا يوجد تنفيذ أو تعرض مطبق.');
+    notes.push('حالة السوق سياق تحليلي فقط — لا تفتح بوابة التنفيذ ولا تغيّر أوزان الإنتاج تلقائيًا.');
+    warning.textContent = notes.join(' ');
+    warning.classList.toggle('regime-warning-strong', dailyBreadthWeak || gateClosed);
   }
 
   function renderAudit() {

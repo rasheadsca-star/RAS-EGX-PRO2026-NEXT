@@ -19,6 +19,8 @@ const performanceJs = read('v20/performance.js');
 const explorer = json('data/v20/market-explorer.json');
 const performance = json('data/v20/performance-evidence-registry.json');
 const policy = json('data/v20/policy-registry.json');
+const current = json('data/v20/current.json');
+const marketRegime = json('data/v20/market-regime.json');
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
 
@@ -33,6 +35,7 @@ check(html.includes('id="marketLiquidityFilter"'), 'MARKET_LIQUIDITY_FILTER_MISS
 check(html.includes('id="marketTechnicalFilter"'), 'MARKET_TECHNICAL_FILTER_MISSING');
 check(html.includes('id="marketSort"'), 'MARKET_SORT_MISSING');
 check(html.includes('id="marketPrev"') && html.includes('id="marketNext"'), 'MARKET_PAGINATION_MISSING');
+for (const id of ['marketRegimePanel','marketRegimeBadge','marketRegimeTitle','marketRegimeCoverage','marketRegimeConfidence','marketRegimeScore','marketRegimeBreadth','marketRegimeSma20','marketRegimeSma50','marketRegimeMomentum5','marketRegimeMomentum20','marketRegimeVolatility','marketRegimeWarning']) check(html.includes(`id="${id}"`), `MARKET_REGIME_UI_MISSING_${id.toUpperCase()}`);
 check(html.includes('id="stockDialog"'), 'STOCK_DETAIL_DIALOG_MISSING');
 check(html.includes('Net R/R T1'), 'NET_RR_COLUMN_MISSING');
 check(js.includes('riskReward?.primaryTarget1NetRiskReward'), 'UI_NOT_USING_PRIMARY_NET_RR');
@@ -42,6 +45,10 @@ check(js.includes("json('../data/v20/source-health.json')"), 'SOURCE_HEALTH_NOT_
 check(js.includes("json('../data/v20/stock-profiles.json')"), 'STOCK_PROFILES_NOT_WIRED');
 check(js.includes("json('../data/v20/risk-reward-audit.json')"), 'RR_AUDIT_NOT_WIRED');
 check(js.includes("json('../data/v20/market-explorer.json')"), 'MARKET_EXPLORER_NOT_WIRED');
+check(js.includes("json('../data/v20/market-regime.json')"), 'MARKET_REGIME_NOT_WIRED');
+check(js.includes('function renderMarketRegime()'), 'MARKET_REGIME_RENDERER_MISSING');
+check(js.includes('لا تفتح بوابة التنفيذ ولا تغيّر أوزان الإنتاج تلقائيًا'), 'MARKET_REGIME_EXECUTION_SEPARATION_COPY_MISSING');
+check(js.includes('اتساع جلسة اليوم سلبي'), 'MARKET_REGIME_BREADTH_CONFLICT_DISCLOSURE_MISSING');
 check(js.includes('NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE'), 'TECHNICAL_SCOPE_STATE_NOT_RENDERED');
 check(js.includes('لا يتم عرض سعر قديم كأنه حالي'), 'STALE_PRICE_UI_WARNING_MISSING');
 check(js.includes('سهم من السوق الكامل — ليس توصية حالية'), 'MARKET_ONLY_NOT_RECOMMENDATION_UI_MISSING');
@@ -92,6 +99,17 @@ check(performance.policy?.historicalAndForwardEvidenceMustRemainSeparate === tru
 check(performance.policy?.reusedBenchmarkCanPromoteChallenger === false, 'PERFORMANCE_REGISTRY_PROMOTION_POLICY_DRIFT');
 check(performance.policy?.pendingForwardReturnMustRemainNull === true, 'PERFORMANCE_REGISTRY_PENDING_NULL_POLICY_DRIFT');
 check(performance.policy?.v18PerformanceAccepted === false, 'PERFORMANCE_REGISTRY_V18_POLICY_DRIFT');
+check(css.includes('.market-regime-panel{'), 'MARKET_REGIME_STYLES_MISSING');
+check(marketRegime.asOfSessionDate === current.sessionDate, 'MARKET_REGIME_UI_SESSION_MISMATCH');
+check(marketRegime.methodology?.sectorInputsUsed === false, 'MARKET_REGIME_UI_SECTOR_INFERENCE_LEAK');
+check(marketRegime.methodology?.productionRiskBudgetInfluence === false, 'MARKET_REGIME_UI_RISK_INFLUENCE_DRIFT');
+check(marketRegime.methodology?.executionGateInfluence === false, 'MARKET_REGIME_UI_EXECUTION_INFLUENCE_DRIFT');
+if (marketRegime.verified === true) {
+  check(current.marketStatus?.verified === true, 'CURRENT_MARKET_STATUS_NOT_VERIFIED_WITH_VERIFIED_EVIDENCE');
+  check(current.marketStatus?.regime === marketRegime.regime, 'CURRENT_MARKET_STATUS_REGIME_MISMATCH');
+} else {
+  check(current.marketStatus?.verified === false, 'CURRENT_MARKET_STATUS_VERIFIED_WITH_UNVERIFIED_EVIDENCE');
+}
 
 check(css.includes('@media(max-width:1024px)'), 'RESPONSIVE_1024_MISSING');
 check(css.includes('@media(max-width:768px)'), 'RESPONSIVE_768_MISSING');
@@ -118,7 +136,7 @@ check(policy.userPortfolio?.influencesExecutionGate === false, 'PORTFOLIO_EXECUT
 check(policy.userPortfolio?.automaticOrders === false, 'PORTFOLIO_AUTO_ORDER_POLICY_DRIFT');
 
 const report = {
-  schemaVersion: '20.0.0-ui-validation-4',
+  schemaVersion: '20.0.0-ui-validation-5',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -144,6 +162,11 @@ const report = {
     performanceReusedBenchmarkWarningVisible: true,
     performancePendingForwardNoReturn: true,
     performanceV18Unaccepted: true,
+    marketRegimeVisible: true,
+    marketRegimeEvidenceSessionAligned: marketRegime.asOfSessionDate === current.sessionDate,
+    marketRegimeExecutionGateSeparated: true,
+    marketRegimeSectorInferenceExcluded: true,
+    marketRegimeBreadthConflictDisclosure: true,
     sourceHealthVisible: true,
     responsiveBreakpoints: [1024, 768, 430, 390],
     reducedMotionSupport: true,
