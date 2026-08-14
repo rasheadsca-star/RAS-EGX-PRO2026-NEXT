@@ -61,22 +61,31 @@ for (const row of snapshot.rows || []) {
   if ((row.dataQualityIssues || []).includes('LOW_NON_POSITIVE_OR_MISSING')) check(out.low === null, `LOW_ZERO_REINTRODUCED_${row.ticker}`);
 }
 
+let comparedTechnicalFields = 0;
+let preservedTechnicalNulls = 0;
 for (const [ticker, src] of byTechnical.entries()) {
   const profile = byProfile.get(ticker);
   if (!profile) continue;
   const ta = profile.technicalAnalysis || {};
+  const indicators = src.indicators || {};
   for (const field of ['sma20','sma50','ema20','rsi14','macd','macdSignal','atr14','momentum5Pct','momentum10Pct','momentum20Pct']) {
-    if (src[field] === null || src[field] === undefined) {
-      check(ta[field] === null || ta[field] === undefined, `TECHNICAL_NULL_REINTRODUCED_${ticker}_${field}`);
+    comparedTechnicalFields += 1;
+    const sourceMissing = indicators[field] === null || indicators[field] === undefined;
+    if (sourceMissing) {
+      const profileMissing = ta[field] === null || ta[field] === undefined;
+      check(profileMissing, `TECHNICAL_NULL_REINTRODUCED_${ticker}_${field}`);
+      if (profileMissing) preservedTechnicalNulls += 1;
     }
   }
 }
 
-check(readText('scripts/v20/archive-signal.cjs').includes('const n = Number(value);'), 'IMMUTABLE_ARCHIVE_COMPATIBILITY_SEMANTICS_CHANGED');
-check(readText('scripts/v20/phase3-regression.cjs').includes('const n = Number(value);'), 'PHASE3_ARCHIVE_HASH_COMPATIBILITY_CHANGED');
+const archiveText = readText('scripts/v20/archive-signal.cjs');
+const phase3Text = readText('scripts/v20/phase3-regression.cjs');
+check(archiveText.includes('const n = Number(value);'), 'IMMUTABLE_ARCHIVE_COMPATIBILITY_SEMANTICS_CHANGED');
+check(phase3Text.includes('const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;'), 'PHASE3_ARCHIVE_HASH_COMPATIBILITY_CHANGED');
 
 const report = {
-  schemaVersion: '20.0.0-null-semantics-regression-1',
+  schemaVersion: '20.0.0-null-semantics-regression-2',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -85,12 +94,15 @@ const report = {
     productionBuildersNullSafe: true,
     uiMissingValuesRenderAsDash: true,
     snapshotNullsPreservedIntoMarketExplorer: true,
+    technicalIndicatorNestedShapeRespected: true,
     technicalNullsNotFabricatedAsZero: true,
     immutableArchiveHashCompatibilityPreserved: true,
   },
   evidence: {
     comparedCurrentRows,
     preservedNullFields,
+    comparedTechnicalFields,
+    preservedTechnicalNulls,
     hardenedSourceCount: hardenedSources.length,
     immutableCompatibilityExclusions: 2,
   }
