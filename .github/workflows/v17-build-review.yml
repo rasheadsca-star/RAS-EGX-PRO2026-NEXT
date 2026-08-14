@@ -57,8 +57,12 @@ jobs:
               exit 1
             }
           fi
-          if grep -REn 'git push[^\n]*origin[^\n]*main|git push[^\n]*HEAD:main|deploy-pages' .github/workflows/v17-build-review.yml scripts/v17/; then
+          if grep -REn 'git push[^\n]*origin[^\n]*main|git push[^\n]*HEAD:main|deploy-pages' scripts/v17/; then
             echo "::error::Forbidden V17 path to main/deployment detected"
+            exit 1
+          fi
+          if grep -En 'uses:[[:space:]]+actions/deploy-pages|git push[^\n]*HEAD:main|git push[^\n]*origin[^\n]*main' .github/workflows/v17-build-review.yml | grep -v 'if grep -En' | grep -v 'Forbidden V17 path'; then
+            echo "::error::Forbidden V17 workflow path to main/deployment detected"
             exit 1
           fi
 
@@ -82,6 +86,7 @@ jobs:
       - name: Static validation
         run: |
           set -euo pipefail
+          node --check scripts/v17/build-internal-ohlc-sr.cjs
           node --check scripts/v17/resilient-session-gate.cjs
           node --check scripts/v17/resolve-ledger.cjs
           node --check scripts/v17/challenger-gate.cjs
