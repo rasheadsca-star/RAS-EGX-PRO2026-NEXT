@@ -1,6 +1,6 @@
 {
   "schemaVersion": "17.0.0-rc4",
-  "generatedAt": "2026-08-14T09:59:00.221Z",
+  "generatedAt": "2026-08-14T10:00:03.488Z",
   "status": "RESEARCH_READY_EXECUTION_BLOCKED",
   "statusAr": "مسح السوق الحالي صالح للبحث والمتابعة فقط. لا توجد أوزان استثمارية أو أوامر تنفيذ لأن قرار Champion المرجعي أو مصادر التنفيذ غير مكتملة للجلسة الحالية.",
   "sessionDate": "2026-08-14",
@@ -162,7 +162,31 @@
     "supportResistanceCoveragePct": 91.25,
     "mainDecision": "توجد 80 فرصة مرتبة للمتابعة، ولا توجد توصية تنفيذية آمنة الآن",
     "caution": "فرص المتابعة ليست أوامر شراء. S/R الأساسي مشتق داخليًا من OHLC لجلسة مكتملة؛ والسيولة تستخدم قواعد V11.1 المجمدة على بيانات التشغيل الحالي. لا يصبح أي سهم EXECUTABLE إلا مع Execution Grade نهائي + S/R مؤهل + سيولة تنفيذية للسهم.",
-    "provenance": "CURRENT_SESSION_RESEARCH_NOT_AUTOMATIC_EXECUTION"
+    "provenance": "CURRENT_SESSION_RESEARCH_NOT_AUTOMATIC_EXECUTION",
+    "completedOhlcSession": "2026-08-13",
+    "currentSessionCompletionConfirmed": false,
+    "finalResilientStatus": "DEGRADED",
+    "finalExecutionGrade": false,
+    "liquidity": {
+      "engine": "v17_wrapper_of_v11_1_liquidity_gate",
+      "gatePassed": true,
+      "sessionAligned": true,
+      "referenceSessionDate": "2026-08-14",
+      "candidateUniverseCount": 80,
+      "candidateEvidenceCoveragePct": 96.25,
+      "candidateExecutionOkCount": 66,
+      "candidateExecutionOkPct": 82.5,
+      "thresholds": {
+        "intradayMinCurrentTurnover": 5000000,
+        "intradayMinAvg20Turnover": 2000000,
+        "shortTermMinTurnover": 1000000,
+        "executionMinLiquidityScore": 65,
+        "conditionalMinLiquidityScore": 45,
+        "minimumCandidateEvidenceCoveragePct": 95
+      },
+      "rulesSource": "scripts/build-v111-liquidity-gate.js",
+      "provenance": "data/v17/liquidity-gate.json"
+    }
   },
   "championChallenger": {
     "activeEngine": "V16_9_EQUAL_WEIGHT_BASKET",
@@ -239,6 +263,63 @@
         "requireOpeningInsideRange": true,
         "requireLiquidityConfirmation": true,
         "chaseForbidden": true
+      },
+      "liquidity": {
+        "candidate": true,
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 56592552,
+        "avg20Turnover": 449649883,
+        "currentVolume": 17021975,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
+      "supportResistanceEvidence": {
+        "source": "INTERNAL_OHLC_PIVOT",
+        "sessionDate": "2026-08-13",
+        "researchSessionDate": "2026-08-14",
+        "freshness": "LATEST_COMPLETED_SESSION",
+        "confidence": 0.806,
+        "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+        "provenance": {
+          "input": "data/history-50.json",
+          "inputSource": "workflow-market-snapshot",
+          "open": 3.33,
+          "high": 3.35,
+          "low": 3.32,
+          "close": 3.32,
+          "historySessions": 3
+        },
+        "externalValidation": {
+          "direct": {
+            "source": "MUBASHER_DIRECT",
+            "state": "CURRENT_MATCH",
+            "maxDiffPct": 0.3,
+            "critical": false
+          },
+          "rendered": {
+            "source": "MUBASHER_RENDERED",
+            "state": "UNAVAILABLE",
+            "critical": false
+          }
+        },
+        "executionEligible": false
+      },
+      "executionProvenance": {
+        "sessionExecutionGrade": false,
+        "finalResilientStatus": "DEGRADED",
+        "liquidityGatePassed": true,
+        "internalSrExecutionEligible": false,
+        "perSymbolLiquidityExecutionOk": true,
+        "executionAllowed": false,
+        "source": "data/today-decision-center.json"
       }
     },
     {
@@ -277,6 +358,63 @@
         "requireOpeningInsideRange": true,
         "requireLiquidityConfirmation": true,
         "chaseForbidden": true
+      },
+      "liquidity": {
+        "candidate": true,
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 11057310,
+        "avg20Turnover": 22537643,
+        "currentVolume": 7323513,
+        "historicalSessionsUsed": 14,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
+      "supportResistanceEvidence": {
+        "source": "INTERNAL_OHLC_PIVOT",
+        "sessionDate": "2026-08-13",
+        "researchSessionDate": "2026-08-14",
+        "freshness": "LATEST_COMPLETED_SESSION",
+        "confidence": 0.806,
+        "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+        "provenance": {
+          "input": "data/history-50.json",
+          "inputSource": "workflow-market-snapshot",
+          "open": 1.51,
+          "high": 1.54,
+          "low": 1.49,
+          "close": 1.51,
+          "historySessions": 3
+        },
+        "externalValidation": {
+          "direct": {
+            "source": "MUBASHER_DIRECT",
+            "state": "CURRENT_MATCH",
+            "maxDiffPct": 0.22,
+            "critical": false
+          },
+          "rendered": {
+            "source": "MUBASHER_RENDERED",
+            "state": "UNAVAILABLE",
+            "critical": false
+          }
+        },
+        "executionEligible": false
+      },
+      "executionProvenance": {
+        "sessionExecutionGrade": false,
+        "finalResilientStatus": "DEGRADED",
+        "liquidityGatePassed": true,
+        "internalSrExecutionEligible": false,
+        "perSymbolLiquidityExecutionOk": true,
+        "executionAllowed": false,
+        "source": "data/today-decision-center.json"
       }
     },
     {
@@ -315,6 +453,63 @@
         "requireOpeningInsideRange": true,
         "requireLiquidityConfirmation": true,
         "chaseForbidden": true
+      },
+      "liquidity": {
+        "candidate": true,
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 35195116,
+        "avg20Turnover": 35623271,
+        "currentVolume": 966862,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
+      "supportResistanceEvidence": {
+        "source": "INTERNAL_OHLC_PIVOT",
+        "sessionDate": "2026-08-13",
+        "researchSessionDate": "2026-08-14",
+        "freshness": "LATEST_COMPLETED_SESSION",
+        "confidence": 0.806,
+        "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+        "provenance": {
+          "input": "data/history-50.json",
+          "inputSource": "workflow-market-snapshot",
+          "open": 36.2,
+          "high": 36.54,
+          "low": 36.2,
+          "close": 36.43,
+          "historySessions": 3
+        },
+        "externalValidation": {
+          "direct": {
+            "source": "MUBASHER_DIRECT",
+            "state": "CURRENT_MATCH",
+            "maxDiffPct": 0.25,
+            "critical": false
+          },
+          "rendered": {
+            "source": "MUBASHER_RENDERED",
+            "state": "UNAVAILABLE",
+            "critical": false
+          }
+        },
+        "executionEligible": false
+      },
+      "executionProvenance": {
+        "sessionExecutionGrade": false,
+        "finalResilientStatus": "DEGRADED",
+        "liquidityGatePassed": true,
+        "internalSrExecutionEligible": false,
+        "perSymbolLiquidityExecutionOk": true,
+        "executionAllowed": false,
+        "source": "data/today-decision-center.json"
       }
     },
     {
@@ -353,6 +548,64 @@
         "requireOpeningInsideRange": true,
         "requireLiquidityConfirmation": true,
         "chaseForbidden": true
+      },
+      "liquidity": {
+        "candidate": true,
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 122057880,
+        "avg20Turnover": 72535687,
+        "currentVolume": 4534455,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
+      "supportResistanceEvidence": {
+        "source": "INTERNAL_OHLC_PIVOT",
+        "sessionDate": "2026-08-13",
+        "researchSessionDate": "2026-08-14",
+        "freshness": "LATEST_COMPLETED_SESSION",
+        "confidence": 0.806,
+        "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+        "provenance": {
+          "input": "data/history-50.json",
+          "inputSource": "workflow-market-snapshot",
+          "open": 27.25,
+          "high": 27.6,
+          "low": 27.06,
+          "close": 27.12,
+          "historySessions": 3
+        },
+        "externalValidation": {
+          "direct": {
+            "source": "MUBASHER_DIRECT",
+            "state": "CURRENT_MATCH",
+            "maxDiffPct": 0.33,
+            "critical": false
+          },
+          "rendered": {
+            "source": "MUBASHER_RENDERED",
+            "state": "CURRENT_MATCH",
+            "maxDiffPct": 0.32,
+            "critical": false
+          }
+        },
+        "executionEligible": false
+      },
+      "executionProvenance": {
+        "sessionExecutionGrade": false,
+        "finalResilientStatus": "DEGRADED",
+        "liquidityGatePassed": true,
+        "internalSrExecutionEligible": false,
+        "perSymbolLiquidityExecutionOk": true,
+        "executionAllowed": false,
+        "source": "data/today-decision-center.json"
       }
     },
     {
@@ -391,6 +644,63 @@
         "requireOpeningInsideRange": true,
         "requireLiquidityConfirmation": true,
         "chaseForbidden": true
+      },
+      "liquidity": {
+        "candidate": true,
+        "decision": "EXECUTION_OK",
+        "score": 85,
+        "currentTurnover": 23459548,
+        "avg20Turnover": 34292358,
+        "currentVolume": 736900,
+        "historicalSessionsUsed": 15,
+        "evidenceAvailable": true,
+        "executionLiquidityOk": true,
+        "conditionalLiquidityOk": true,
+        "provenance": {
+          "current": "data/market.json",
+          "historical": "data/history.json",
+          "historicalPolicy": "LAST_UP_TO_20_SESSIONS_STRICTLY_BEFORE_REFERENCE_SESSION"
+        }
+      },
+      "supportResistanceEvidence": {
+        "source": "INTERNAL_OHLC_PIVOT",
+        "sessionDate": "2026-08-13",
+        "researchSessionDate": "2026-08-14",
+        "freshness": "LATEST_COMPLETED_SESSION",
+        "confidence": 0.806,
+        "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+        "provenance": {
+          "input": "data/history-50.json",
+          "inputSource": "workflow-market-snapshot",
+          "open": 32,
+          "high": 32.42,
+          "low": 31.77,
+          "close": 31.97,
+          "historySessions": 3
+        },
+        "externalValidation": {
+          "direct": {
+            "source": "MUBASHER_DIRECT",
+            "state": "CURRENT_MATCH",
+            "maxDiffPct": 0.48,
+            "critical": false
+          },
+          "rendered": {
+            "source": "MUBASHER_RENDERED",
+            "state": "UNAVAILABLE",
+            "critical": false
+          }
+        },
+        "executionEligible": false
+      },
+      "executionProvenance": {
+        "sessionExecutionGrade": false,
+        "finalResilientStatus": "DEGRADED",
+        "liquidityGatePassed": true,
+        "internalSrExecutionEligible": false,
+        "perSymbolLiquidityExecutionOk": true,
+        "executionAllowed": false,
+        "source": "data/today-decision-center.json"
       }
     }
   ],
@@ -503,6 +813,33 @@
       "pricedCoveragePct": 100,
       "completeOhlcPct": 84.65,
       "cleanCompanyNamePct": 100
+    },
+    "liquidity": {
+      "gatePassed": true,
+      "sessionAligned": true,
+      "referenceSessionDate": "2026-08-14",
+      "candidateUniverseCount": 80,
+      "candidateEvidenceCoveragePct": 96.25,
+      "candidateExecutionOkCount": 66,
+      "candidateExecutionOkPct": 82.5,
+      "thresholds": {
+        "intradayMinCurrentTurnover": 5000000,
+        "intradayMinAvg20Turnover": 2000000,
+        "shortTermMinTurnover": 1000000,
+        "executionMinLiquidityScore": 65,
+        "conditionalMinLiquidityScore": 45,
+        "minimumCandidateEvidenceCoveragePct": 95
+      },
+      "engine": "v17_wrapper_of_v11_1_liquidity_gate"
+    },
+    "liquidityGatePassed": true,
+    "supportResistance": {
+      "coveragePct": 91.25,
+      "freshnessPct": 71.25,
+      "criticalFieldsPct": 91.25,
+      "sourceConflictCount": 8,
+      "missingSymbolCount": 7,
+      "executionCandidateReady": false
     }
   },
   "lineage": {
@@ -516,6 +853,15 @@
     "marketSource": "data/market.json",
     "nativeLedger": "data/v17/ledger.json",
     "challengerGateSource": "data/v17/challenger-status.json",
-    "canonicalPath": "data/v17/current.json"
+    "canonicalPath": "data/v17/current.json",
+    "liquidityGateSource": "data/v17/liquidity-gate.json",
+    "currentResearchDecisionSource": "data/today-decision-center.json"
+  },
+  "enrichment": {
+    "schemaVersion": "17.0.0-snapshot-enrichment-1",
+    "generatedAt": "2026-08-14T10:00:03.525Z",
+    "enrichedRecommendations": 5,
+    "immutableSignalHashTouched": false,
+    "scope": "DISPLAY_AND_PROVENANCE_ONLY"
   }
 }
