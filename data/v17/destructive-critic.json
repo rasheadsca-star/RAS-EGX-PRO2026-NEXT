@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "17.0.0-destructive-critic-4",
-  "generatedAt": "2026-08-14T11:09:56.842Z",
-  "critic": "V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V4",
+  "schemaVersion": "17.0.0-destructive-critic-5",
+  "generatedAt": "2026-08-14T11:28:37.368Z",
+  "critic": "V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V5",
   "verdict": "NO_COMMENTS",
   "counts": {
     "CRITICAL": 0,
@@ -12,38 +12,31 @@
   "totalFindings": 0,
   "findings": [],
   "baseCritic": {
-    "schemaVersion": "17.0.0-destructive-critic-3",
-    "verdict": "NO_COMMENTS",
-    "totalFindings": 0,
-    "ignoredSupersededWiringFindings": []
-  },
-  "browserRuntime": {
-    "schemaVersion": "17.0.0-browser-runtime-critic-1",
-    "verdict": "NO_COMMENTS",
-    "totalFindings": 0,
-    "checks": [
+    "schemaVersion": "17.0.0-destructive-critic-4",
+    "verdict": "COMMENTS_FOUND",
+    "totalFindings": 3,
+    "ignoredSupersededWiringFindings": [
       {
-        "label": "desktop",
-        "viewport": {
-          "width": 1440,
-          "height": 900
-        },
-        "consoleErrors": 0,
-        "pageErrors": 0,
-        "failedRequests": 0,
-        "badResponses": 0
+        "code": "CRITIC_V2_NOT_IN_WORKFLOW",
+        "location": "workflow"
       },
       {
-        "label": "mobile",
-        "viewport": {
-          "width": 390,
-          "height": 844
-        },
-        "consoleErrors": 0,
-        "pageErrors": 0,
-        "failedRequests": 0,
-        "badResponses": 0
+        "code": "CRITIC_V3_NOT_MANDATORY_MARKET",
+        "location": "workflow"
+      },
+      {
+        "code": "CRITIC_V4_NOT_MANDATORY",
+        "location": "market"
       }
+    ]
+  },
+  "publicationArchitecture": {
+    "buildReviewReadOnly": true,
+    "buildPushLines": [],
+    "buildCommitLines": [],
+    "marketCanonicalPublisher": true,
+    "marketPushes": [
+      "git push origin HEAD:develop/v17-rebuild"
     ]
   },
   "coverage": {
@@ -69,7 +62,13 @@
     "mobileRuntime": true,
     "consoleAndPageErrors": true,
     "networkRuntimeFailures": true,
-    "navigationAndSearch": true
+    "navigationAndSearch": true,
+    "canonicalPublisherRace": true,
+    "buildReviewReadOnly": true,
+    "marketSolePublisher": true,
+    "publishedEvidenceFreshness": true,
+    "guardPatternFalsePositiveExcluded": true,
+    "lowerCriticVersionWiringSupersession": true
   },
-  "rule": "Critic V4 is additive. Every substantive V3 finding and every Chromium runtime finding is blocking; only obsolete V3 direct-wiring findings may be superseded by mandatory V4 wiring."
+  "rule": "Critic V5 is additive. Build Review must be read-only and Market Workflow must be the sole canonical data publisher. Guard/search text is not treated as an executable git command. Only lower-critic direct-wiring findings may be superseded when V5 is mandatory; all substantive lower-critic findings remain blocking."
 }

@@ -1,10 +1,10 @@
 {
-  "schemaVersion": "17.0.0-regression-4",
-  "generatedAt": "2026-08-14T11:09:56.660Z",
-  "contract": "V17_CANONICAL_RUNTIME_SESSION_TRUTH_BROWSER_CRITIC_AND_GOVERNANCE",
+  "schemaVersion": "17.0.0-regression-5",
+  "generatedAt": "2026-08-14T11:28:37.148Z",
+  "contract": "V17_CANONICAL_RUNTIME_AND_SINGLE_PUBLISHER_STABILITY",
   "ok": true,
-  "total": 130,
-  "passed": 130,
+  "total": 142,
+  "passed": 142,
   "failedCount": 0,
   "criticalFailedCount": 0,
   "failed": [],
@@ -679,13 +679,13 @@
       "name": "workflow:market:regression-v3",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "Superseded by mandatory V4 wiring; original check was: regression-v3.cjs"
+      "message": "Superseded only at workflow-wiring level by mandatory V5; original: regression-v3.cjs"
     },
     {
       "name": "workflow:market:critic-v3",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "Superseded by mandatory V4 wiring; original check was: destructive-critic-v3.cjs"
+      "message": "Superseded only at workflow-wiring level by mandatory V5; original: destructive-critic-v3.cjs"
     },
     {
       "name": "workflow:market:finalizer",
@@ -757,7 +757,7 @@
       "name": "workflow:market:regression-v4",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "market workflow runs regression v4"
+      "message": "Superseded only at workflow-wiring level by mandatory V5; original: market workflow runs regression v4"
     },
     {
       "name": "workflow:build:regression-v4",
@@ -769,7 +769,7 @@
       "name": "workflow:market:critic-v4",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "market workflow runs destructive critic v4"
+      "message": "Superseded only at workflow-wiring level by mandatory V5; original: market workflow runs destructive critic v4"
     },
     {
       "name": "workflow:build:critic-v4",
@@ -788,17 +788,95 @@
       "ok": true,
       "severity": "CRITICAL",
       "message": "snapshot finalization remains immutable and historical weights are neutralized"
+    },
+    {
+      "name": "publication:build-review-read-only",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "write=false; push=; commit=; canonical=false"
+    },
+    {
+      "name": "publication:market-sole-v17-publisher",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "git push origin HEAD:develop/v17-rebuild"
+    },
+    {
+      "name": "publication:market-write-permission",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "market contents write required"
+    },
+    {
+      "name": "workflow:market:regression-v5",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "market workflow regression v5"
+    },
+    {
+      "name": "workflow:build:regression-v5",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "build workflow regression v5"
+    },
+    {
+      "name": "workflow:market:critic-v5",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "market workflow critic v5"
+    },
+    {
+      "name": "workflow:build:critic-v5",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "build workflow critic v5"
+    },
+    {
+      "name": "publication:dual-workflow-v5-coherent",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "fingerprint=0a5be7362c27b34af2b7988a2e621f20f229c1c8d8cb77eb0fbb10d69410dcfb"
+    },
+    {
+      "name": "actions:current-runtime-contract",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "current GitHub Actions runtime contract"
+    },
+    {
+      "name": "runtime:browser-still-clean",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "real Chromium remains clean"
+    },
+    {
+      "name": "review:v5-still-clean",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "review v5 remains clean"
+    },
+    {
+      "name": "snapshot:verified-session-still-canonical",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "current=2026-08-13; truth=2026-08-13"
     }
   ],
+  "releaseWiring": {
+    "coherentV5": true,
+    "fingerprint": "0a5be7362c27b34af2b7988a2e621f20f229c1c8d8cb77eb0fbb10d69410dcfb"
+  },
   "baseRegression": {
-    "schemaVersion": "17.0.0-regression-3",
-    "total": 119,
-    "passed": 117,
-    "failedCount": 2,
+    "schemaVersion": "17.0.0-regression-4",
+    "total": 130,
+    "passed": 126,
+    "failedCount": 4,
     "supersededFailedChecks": [
+      "workflow:market:regression-v3",
+      "workflow:market:regression-v4",
       "workflow:market:critic-v3",
-      "workflow:market:regression-v3"
+      "workflow:market:critic-v4"
     ]
   },
-  "rule": "Regression V4 is additive. Only obsolete V3 workflow-wiring checks may be superseded by mandatory V4 wiring; every substantive V3 failure remains blocking."
+  "rule": "Regression V5 is additive. Only lower-version workflow-wiring checks (V3/V4 critic/regression invocation names) may be superseded by mandatory V5 wiring. All substantive lower-version tests remain unchanged and blocking. Build Review must remain read-only; Market Workflow is the sole canonical publisher; both workflows must enforce the same V5 contract and current Actions runtimes."
 }
