@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-14T16:07:21.231Z",
+  "generatedAt": "2026-08-14T16:10:34.257Z",
   "application": "EGX Pro Professional V16.3",
   "scope": {
     "type": "TECHNICAL_ANALYSIS_ONLY",
@@ -12,25 +12,25 @@
   "acceptance": "REJECTED_BLOCKING_TECHNICAL_FINDINGS",
   "acceptanceCriteria": {
     "exactlyTwentyCycles": true,
-    "zeroCritical": true,
+    "zeroCritical": false,
     "zeroHigh": false,
     "pilotScopeEnforced": true
   },
   "summary": {
     "totalChecks": 41,
-    "closedChecks": 40,
-    "openChecks": 1,
-    "blockingFindings": 1,
+    "closedChecks": 37,
+    "openChecks": 4,
+    "blockingFindings": 4,
     "severity": {
       "CRITICAL": {
         "total": 11,
-        "open": 0,
-        "closed": 11
+        "open": 1,
+        "closed": 10
       },
       "HIGH": {
         "total": 26,
-        "open": 1,
-        "closed": 25
+        "open": 3,
+        "closed": 23
       },
       "MEDIUM": {
         "total": 4,
@@ -58,9 +58,9 @@
           "id": "T01-1",
           "severity": "CRITICAL",
           "title": "بوابة الأسعار جاهزة للتنفيذ",
-          "status": "CLOSED",
-          "evidence": "ready=true; executionGrade=true; accepted=210",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "ready=false; executionGrade=false; accepted=0",
+          "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
         },
         {
           "id": "T01-2",
@@ -181,9 +181,9 @@
           "id": "T06-2",
           "severity": "HIGH",
           "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
-          "status": "CLOSED",
-          "evidence": "acceptedRows=210",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "acceptedRows=0",
+          "remediation": "حجب المسح عند ضعف التغطية."
         }
       ]
     },
@@ -511,24 +511,30 @@
           "id": "T20-3",
           "severity": "HIGH",
           "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
-          "status": "CLOSED",
-          "evidence": "recs=5; source=true; plans=true",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "recs=5; source=false; plans=true",
+          "remediation": "حجب الإصدار الفني وإعادة البناء."
         }
       ]
     }
   ],
   "openFindings": [
     {
-      "id": "T19-1",
-      "severity": "HIGH",
-      "title": "اختبارات متصفح حقيقية ناجحة",
+      "id": "T01-1",
+      "severity": "CRITICAL",
+      "title": "بوابة الأسعار جاهزة للتنفيذ",
       "status": "OPEN",
-      "evidence": "status=FAILED; tests=0; realBrowser=true",
-      "remediation": "تشغيل Playwright وإصلاح الرحلة."
-    }
-  ],
-  "blockingFindings": [
+      "evidence": "ready=false; executionGrade=false; accepted=0",
+      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
+    },
+    {
+      "id": "T06-2",
+      "severity": "HIGH",
+      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
+      "status": "OPEN",
+      "evidence": "acceptedRows=0",
+      "remediation": "حجب المسح عند ضعف التغطية."
+    },
     {
       "id": "T19-1",
       "severity": "HIGH",
@@ -536,6 +542,48 @@
       "status": "OPEN",
       "evidence": "status=FAILED; tests=0; realBrowser=true",
       "remediation": "تشغيل Playwright وإصلاح الرحلة."
+    },
+    {
+      "id": "T20-3",
+      "severity": "HIGH",
+      "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
+      "status": "OPEN",
+      "evidence": "recs=5; source=false; plans=true",
+      "remediation": "حجب الإصدار الفني وإعادة البناء."
+    }
+  ],
+  "blockingFindings": [
+    {
+      "id": "T01-1",
+      "severity": "CRITICAL",
+      "title": "بوابة الأسعار جاهزة للتنفيذ",
+      "status": "OPEN",
+      "evidence": "ready=false; executionGrade=false; accepted=0",
+      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
+    },
+    {
+      "id": "T06-2",
+      "severity": "HIGH",
+      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
+      "status": "OPEN",
+      "evidence": "acceptedRows=0",
+      "remediation": "حجب المسح عند ضعف التغطية."
+    },
+    {
+      "id": "T19-1",
+      "severity": "HIGH",
+      "title": "اختبارات متصفح حقيقية ناجحة",
+      "status": "OPEN",
+      "evidence": "status=FAILED; tests=0; realBrowser=true",
+      "remediation": "تشغيل Playwright وإصلاح الرحلة."
+    },
+    {
+      "id": "T20-3",
+      "severity": "HIGH",
+      "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
+      "status": "OPEN",
+      "evidence": "recs=5; source=false; plans=true",
+      "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
   "finalReceiverDecisionAr": "مرفوض فنيًا حتى إغلاق الملاحظات الحرجة والعالية."
