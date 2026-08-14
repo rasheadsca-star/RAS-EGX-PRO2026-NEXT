@@ -113,8 +113,8 @@ jobs:
           node scripts/v17/browser-runtime-critic.cjs
       - name: Independent V17 current-session review V5
         run: node scripts/v17/review-v5.cjs
-      - name: V17 native regression contract V3
-        run: node scripts/v17/regression-v3.cjs
+      - name: V17 native regression contract V4
+        run: node scripts/v17/regression-v4.cjs
       - name: Snapshot provenance guard after regression
         run: node scripts/v17/snapshot-provenance-guard.cjs
       - name: Destructive adversarial critic V4
@@ -127,7 +127,7 @@ jobs:
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.schemaVersion!=='17.0.0-review-5'||r.verdict!=='NO_COMMENTS'||Object.values(r.counts||{}).some(Number)) throw new Error('Independent review V5 is not NO_COMMENTS');
-          if(q.schemaVersion!=='17.0.0-regression-3'||q.ok!==true||Number(q.failedCount||0)!==0||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression V3 failed: ${(q.failed||[]).join(', ')}`);
+          if(q.schemaVersion!=='17.0.0-regression-4'||q.ok!==true||Number(q.failedCount||0)!==0||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression V4 failed: ${(q.failed||[]).join(', ')}`);
           if(b.schemaVersion!=='17.0.0-browser-runtime-critic-1'||b.verdict!=='NO_COMMENTS'||Number(b.totalFindings||0)!==0||Object.values(b.counts||{}).some(Number)) throw new Error(`Browser runtime critic found ${b.totalFindings} findings`);
           if(z.schemaVersion!=='17.0.0-destructive-critic-4'||z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0||Object.values(z.counts||{}).some(Number)) throw new Error(`Destructive critic V4 found ${z.totalFindings} findings`);
           if(g?.policy?.doesNotChangeExecutionEligibility!==true||g?.policy?.gateThresholdsUnchanged!==true) throw new Error('S/R diagnostic attempted to change execution policy');
