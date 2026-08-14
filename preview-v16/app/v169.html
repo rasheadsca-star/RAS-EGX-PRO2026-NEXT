@@ -18,18 +18,19 @@
 <body>
   <main class="loader">
     <h2>جارٍ تحميل محرك V16.9.2…</h2>
-    <p>يتم ربط التوصيات وحالة جلسة السوق بملف V16.9 المعزول.</p>
+    <p>يتم ربط التوصيات بحقيقة جلسة السوق، مع فصل وقت تشغيل المسح عن جلسة التوصية.</p>
   </main>
   <script>
   (async()=>{
+    const BUILD='16.9.2-session-truth-20260814';
     const response=await fetch(`index.html?source=v16.9.2&t=${Date.now()}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
     const marker='<script src="app.js?v=16.1.0"><\/script>';
-    const replacement='<script src="decision-source.js?v=16.9.2"><\/script><script src="app.js?v=16.9.2"><\/script>';
+    const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script>`;
     html=html.replace(marker,replacement)
       .replaceAll('V16.1','V16.9.2')
-      .replaceAll('v=16.1.0','v=16.9.2');
+      .replaceAll('v=16.1.0',`v=${BUILD}`);
     document.open();
     document.write(html);
     document.close();
