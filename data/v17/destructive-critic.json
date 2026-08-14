@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "17.0.0-destructive-critic-2",
-  "generatedAt": "2026-08-14T10:42:33.851Z",
-  "critic": "V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V2",
+  "schemaVersion": "17.0.0-destructive-critic-3",
+  "generatedAt": "2026-08-14T10:48:28.389Z",
+  "critic": "V17_DESTRUCTIVE_ADVERSARIAL_REVIEWER_V3",
   "verdict": "NO_COMMENTS",
   "counts": {
     "CRITICAL": 0,
@@ -11,6 +11,14 @@
   },
   "totalFindings": 0,
   "findings": [],
+  "baseCritic": {
+    "schemaVersion": "17.0.0-destructive-critic-2",
+    "verdict": "COMMENTS_FOUND",
+    "totalFindings": 1,
+    "ignoredSupersededWiringFindings": [
+      "CRITIC_V2_NOT_IN_WORKFLOW"
+    ]
+  },
   "coverage": {
     "sessionTruth": true,
     "historyTemporalIntegrity": true,
@@ -24,7 +32,11 @@
     "championChallenger": true,
     "runtimeIsolation": true,
     "workflowIsolation": true,
-    "independentReviewZeroTolerance": true
+    "independentReviewZeroTolerance": true,
+    "historicalAllocationSemantics": true,
+    "finalizerAttestation": true,
+    "dualWorkflowCriticEnforcement": true,
+    "criticVersionSupersessionHandledExplicitly": true
   },
-  "rule": "NO_COMMENTS requires zero findings of every severity. Critic guard-line false positives are explicitly excluded."
+  "rule": "Critic V3 is additive. Only the obsolete V2 direct-wiring finding may be superseded when V3 is mandatory; every substantive V2 finding remains blocking."
 }

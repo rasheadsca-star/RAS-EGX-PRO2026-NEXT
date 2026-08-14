@@ -1,10 +1,10 @@
 {
-  "schemaVersion": "17.0.0-regression-2",
-  "generatedAt": "2026-08-14T10:47:38.336Z",
-  "contract": "V17_CANONICAL_RUNTIME_GOVERNANCE_AND_LIQUIDITY",
+  "schemaVersion": "17.0.0-regression-3",
+  "generatedAt": "2026-08-14T10:48:28.231Z",
+  "contract": "V17_CANONICAL_RUNTIME_SESSION_TRUTH_FINALIZATION_AND_GOVERNANCE",
   "ok": true,
-  "total": 92,
-  "passed": 92,
+  "total": 119,
+  "passed": 119,
   "failedCount": 0,
   "criticalFailedCount": 0,
   "failed": [],
@@ -560,21 +560,174 @@
       "ok": true,
       "severity": "CRITICAL",
       "message": "critical=0; major=0"
+    },
+    {
+      "name": "file:scripts/v17/market-session-truth.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:scripts/v17/repair-session-history.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:scripts/v17/finalize-snapshot.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:scripts/v17/review-v5.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:scripts/v17/regression-v3.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:scripts/v17/destructive-critic-v3.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:data/v17/market-session-truth.json",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:data/v17/session-history-repair.json",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "session-truth:verified-source-session",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "session=2026-08-13; verified=true"
+    },
+    {
+      "name": "session-truth:validation-not-hard-dependency",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "Mubasher S/R validation cannot define price session truth"
+    },
+    {
+      "name": "session-truth:canonical-chain",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "snapshot=2026-08-13; sr=2026-08-13; liq=2026-08-13; history=2026-08-13; expected=2026-08-13"
+    },
+    {
+      "name": "history-repair:applied",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "applied=true; date=2026-08-13"
+    },
+    {
+      "name": "history-repair:no-weekend-or-future-rows",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "clean temporal history"
+    },
+    {
+      "name": "snapshot-finalizer:immutable",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "finalizer did not touch immutable state"
+    },
+    {
+      "name": "snapshot-finalizer:historical-weights-zeroed",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "championCurrentAllocation=0"
+    },
+    {
+      "name": "execution:verified-session-required",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "execution grade requires verified session"
+    },
+    {
+      "name": "execution:liquidity-and-sr-required",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "execution grade requires liquidity + internal SR + alignment"
+    },
+    {
+      "name": "review:v5-clean",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "schema=17.0.0-review-5; verdict=NO_COMMENTS"
+    },
+    {
+      "name": "workflow:market:review-v5",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "review-v5.cjs"
+    },
+    {
+      "name": "workflow:market:regression-v3",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "regression-v3.cjs"
+    },
+    {
+      "name": "workflow:market:critic-v3",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "destructive-critic-v3.cjs"
+    },
+    {
+      "name": "workflow:market:finalizer",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "finalize-snapshot.cjs"
+    },
+    {
+      "name": "workflow:market:playwright-current",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "playwright@1.62.0"
+    },
+    {
+      "name": "workflow:build:review-v5",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "review-v5.cjs"
+    },
+    {
+      "name": "workflow:build:regression-v3",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "regression-v3.cjs"
+    },
+    {
+      "name": "workflow:build:critic-v3",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "destructive-critic-v3.cjs"
+    },
+    {
+      "name": "workflow:build:finalizer",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "finalize-snapshot.cjs"
     }
   ],
-  "legacyRegression": {
-    "path": "data/app-regression-report.json",
-    "contract": "V8.1.3_LEGACY_ROOT_INDEX",
-    "usedForV17Acceptance": false,
-    "reason": "Legacy report asserts V8 root index routes/markers and is not the V17 preview application contract."
-  },
-  "invariants": {
-    "protectedChampion": "V16_9_EQUAL_WEIGHT_BASKET",
-    "automaticPromotionForbidden": true,
-    "maximumTotalAllocationPct": 50,
-    "sameSessionAmbiguityPolicy": "CONSERVATIVE_STOP",
-    "adaptiveLegacyRuntimeForbidden": true,
-    "mubasherRole": "VALIDATION_COMPARISON_NOT_HARD_DEPENDENCY",
-    "liquidityRules": "V11_1_FROZEN_CURRENT_RUN_PER_SYMBOL"
+  "baseRegression": {
+    "schemaVersion": "17.0.0-regression-2",
+    "total": 92,
+    "passed": 92,
+    "failedCount": 0
   }
 }
