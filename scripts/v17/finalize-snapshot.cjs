@@ -38,3 +38,6 @@ console.log(JSON.stringify({sessionDate:current.sessionDate,verifiedSession,exec
 // evaluate already-recorded signals, but must never rewrite signal hashes or
 // count historical/backfilled rows as native V17 live evidence.
 require('./build-recommendation-track-record.cjs');
+// Null-safe normalization is deliberately separate so unresolved rows can never
+// be misrepresented as 0% outcomes or inflate resolved/evaluated sample counts.
+require('./normalize-recommendation-track-record.cjs');
