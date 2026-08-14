@@ -68,12 +68,18 @@ results.push(replaceExact(
   `  const numeric = value => { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);`
 ));
 
+// Phase 15 UI integration is intentionally idempotent and only changes presentation of
+// already-verified Market Regime context. It does not alter technical readiness, scores,
+// recommendation status, or execution semantics.
+require('./apply-market-trend-context-ui.cjs');
+
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-2',
+  schemaVersion: '20.0.0-null-semantics-hardening-3',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
+  marketTrendContextUiIntegration: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
     'scripts/v20/phase3-regression.cjs'
