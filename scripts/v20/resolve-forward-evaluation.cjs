@@ -180,10 +180,17 @@ async function main() {
   }
 
   const out = {
-    schemaVersion: '20.0.0-forward-evaluation-2',
+    schemaVersion: '20.0.0-forward-evaluation-3',
     horizonsSessions: [1,3,5,10,20],
     updatedAt: new Date().toISOString(),
     asOfSessionDate: asOfDate,
+    authoritativeEvidence: {
+      file: 'data/v20/forward-evaluation.json',
+      selfContainedStatus: true,
+      selfContainedRegression: true,
+      derivedSidecarsAreAuthoritative: false,
+      derivedSidecars: ['data/v20/forward-resolution-status.json','data/v20/forward-evaluation-regression.json'],
+    },
     resolutionPolicy: {
       immutableSignalArchiveMutationAllowed: false,
       appliedPortfolioAndResearchSeparated: true,
@@ -213,11 +220,13 @@ async function main() {
       unavailableTickers: historyResults.filter(row => !row.ok).map(row => ({ ticker: row.ticker, blockers: row.blockers, attempts: row.attempts })),
       futureRowsRejected: historyResults.reduce((sum,row) => sum + Number(row.futureRowsRejected || 0), 0),
     },
+    resolutionStatus: null,
+    evaluationRegression: null,
     evaluations,
   };
-  write('data/v20/forward-evaluation.json', out);
+
   const report = {
-    schemaVersion: '20.0.0-forward-resolution-status-1',
+    schemaVersion: '20.0.0-forward-resolution-status-2',
     generatedAt: new Date().toISOString(),
     asOfSessionDate: asOfDate,
     signalCount: new Set(evaluations.map(row => row.immutableSignalHash)).size,
@@ -229,7 +238,9 @@ async function main() {
     researchAmbiguousCount: evaluations.reduce((sum,row) => sum + Number(row.researchEvaluation?.ambiguousCount || 0), 0),
     acceptedFutureSessionsBySignalDate: out.calendarEvidence.map(row => ({ signalDate: row.signalDate, sessions: row.acceptedSessions })),
   };
-  write('data/v20/forward-resolution-status.json', report);
+  out.resolutionStatus = report;
+  write('data/v20/forward-evaluation.json', out);
+  write('data/v20/forward-resolution-status.json', { ...report, derivedSidecar: true, authoritativeSource: 'data/v20/forward-evaluation.json#resolutionStatus' });
   console.log(JSON.stringify(report, null, 2));
 }
 

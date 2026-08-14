@@ -7,17 +7,30 @@ const crypto = require('crypto');
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const P = rel => path.join(root, rel);
 const read = rel => JSON.parse(fs.readFileSync(P(rel), 'utf8'));
+const write = (rel, value) => {
+  const file = P(rel);
+  const tmp = `${file}.tmp-${process.pid}`;
+  fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  JSON.parse(fs.readFileSync(tmp, 'utf8'));
+  fs.renameSync(tmp, file);
+};
 const sha = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const forward = read('data/v20/forward-evaluation.json');
-const status = read('data/v20/forward-resolution-status.json');
+const status = forward.resolutionStatus || {};
 const index = read('data/v20/signal-archive/index.json');
 const current = read('data/v20/current.json');
 const policy = read('data/v20/policy-registry.json');
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
 
-check(forward.schemaVersion === '20.0.0-forward-evaluation-2', 'FORWARD_SCHEMA_NOT_V2');
+check(forward.schemaVersion === '20.0.0-forward-evaluation-3', 'FORWARD_SCHEMA_NOT_V3');
 check(forward.asOfSessionDate === current.sessionDate, 'FORWARD_AS_OF_NOT_CURRENT_SESSION');
+check(forward.authoritativeEvidence?.file === 'data/v20/forward-evaluation.json', 'AUTHORITATIVE_FILE_CONTRACT_MISSING');
+check(forward.authoritativeEvidence?.selfContainedStatus === true, 'SELF_CONTAINED_STATUS_MISSING');
+check(forward.authoritativeEvidence?.selfContainedRegression === true, 'SELF_CONTAINED_REGRESSION_MISSING');
+check(forward.authoritativeEvidence?.derivedSidecarsAreAuthoritative === false, 'DERIVED_SIDECAR_MARKED_AUTHORITATIVE');
+check(status.schemaVersion === '20.0.0-forward-resolution-status-2', 'EMBEDDED_STATUS_SCHEMA_DRIFT');
+check(status.asOfSessionDate === forward.asOfSessionDate, 'EMBEDDED_STATUS_ASOF_MISMATCH');
 check(forward.resolutionPolicy?.immutableSignalArchiveMutationAllowed === false, 'ARCHIVE_MUTATION_POLICY_DRIFT');
 check(forward.resolutionPolicy?.appliedPortfolioAndResearchSeparated === true, 'APPLIED_RESEARCH_SEPARATION_MISSING');
 check(forward.resolutionPolicy?.legacyPortfolioReturnFieldsMeaning === 'APPLIED_PORTFOLIO_ONLY', 'LEGACY_RETURN_MEANING_DRIFT');
@@ -74,30 +87,37 @@ for (const ev of forward.evaluations || []) {
   } else check(false, `UNKNOWN_FORWARD_STATUS_${ev.status}`);
 }
 
-// On an as-of session equal to the signal session, no future trading horizon may resolve.
 for (const ev of forward.evaluations || []) {
   if (ev.sessionDate === forward.asOfSessionDate) check(ev.status === 'PENDING', `SAME_SESSION_FORWARD_FABRICATED_${ev.horizonSessions}`);
 }
-check(status.evaluationCount === (forward.evaluations || []).length, 'STATUS_EVALUATION_COUNT_MISMATCH');
-check(status.resolvedCount === (forward.evaluations || []).filter(x => x.status === 'RESOLVED').length, 'STATUS_RESOLVED_COUNT_MISMATCH');
-check(status.pendingCount === (forward.evaluations || []).filter(x => x.status === 'PENDING').length, 'STATUS_PENDING_COUNT_MISMATCH');
+const evaluations = forward.evaluations || [];
+check(status.evaluationCount === evaluations.length, 'STATUS_EVALUATION_COUNT_MISMATCH');
+check(status.signalCount === new Set(evaluations.map(x => x.immutableSignalHash)).size, 'STATUS_SIGNAL_COUNT_MISMATCH');
+check(status.resolvedCount === evaluations.filter(x => x.status === 'RESOLVED').length, 'STATUS_RESOLVED_COUNT_MISMATCH');
+check(status.pendingCount === evaluations.filter(x => x.status === 'PENDING').length, 'STATUS_PENDING_COUNT_MISMATCH');
+check(status.researchAmbiguousCount === evaluations.reduce((sum,row) => sum + Number(row.researchEvaluation?.ambiguousCount || 0), 0), 'STATUS_AMBIGUOUS_COUNT_MISMATCH');
 
 const report = {
-  schemaVersion: '20.0.0-forward-evaluation-regression-1',
+  schemaVersion: '20.0.0-forward-evaluation-regression-2',
   generatedAt: new Date().toISOString(),
+  asOfSessionDate: forward.asOfSessionDate,
+  authoritativeFile: 'data/v20/forward-evaluation.json',
   ok: failures.length === 0,
   failedCount: failures.length,
   failures,
   evidence: {
-    asOfSessionDate: forward.asOfSessionDate,
-    signalCount: new Set((forward.evaluations || []).map(x => x.immutableSignalHash)).size,
-    evaluationCount: (forward.evaluations || []).length,
-    resolvedCount: (forward.evaluations || []).filter(x => x.status === 'RESOLVED').length,
-    pendingCount: (forward.evaluations || []).filter(x => x.status === 'PENDING').length,
+    signalCount: new Set(evaluations.map(x => x.immutableSignalHash)).size,
+    evaluationCount: evaluations.length,
+    resolvedCount: evaluations.filter(x => x.status === 'RESOLVED').length,
+    pendingCount: evaluations.filter(x => x.status === 'PENDING').length,
     immutableArchiveCount: (index.entries || []).length,
-    fabricatedSameSessionResolutionCount: (forward.evaluations || []).filter(x => x.sessionDate === forward.asOfSessionDate && x.status !== 'PENDING').length,
+    fabricatedSameSessionResolutionCount: evaluations.filter(x => x.sessionDate === forward.asOfSessionDate && x.status !== 'PENDING').length,
+    embeddedStatusMatchesEvaluations: failures.every(x => !String(x).startsWith('STATUS_')),
   },
 };
-fs.writeFileSync(P('data/v20/forward-evaluation-regression.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+forward.evaluationRegression = report;
+forward.updatedAt = new Date().toISOString();
+write('data/v20/forward-evaluation.json', forward);
+write('data/v20/forward-evaluation-regression.json', { ...report, derivedSidecar: true, authoritativeSource: 'data/v20/forward-evaluation.json#evaluationRegression' });
 console.log(JSON.stringify(report, null, 2));
 if (!report.ok) process.exitCode = 1;

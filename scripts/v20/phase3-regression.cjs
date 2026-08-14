@@ -84,20 +84,47 @@ if (archiveEntry) {
   check(JSON.stringify(archived.immutableCore) === JSON.stringify(immutableCore), 'ARCHIVE_CORE_MISMATCH');
 }
 
-const currentForward = (forward.evaluations || []).filter(x => x.immutableSignalHash === expectedHash);
+check(forward.schemaVersion === '20.0.0-forward-evaluation-3', 'FORWARD_AUTHORITATIVE_SCHEMA_NOT_V3');
+check(forward.asOfSessionDate === current.sessionDate, 'FORWARD_AUTHORITATIVE_ASOF_MISMATCH');
+check(forward.authoritativeEvidence?.file === 'data/v20/forward-evaluation.json', 'FORWARD_AUTHORITATIVE_FILE_NOT_DECLARED');
+check(forward.authoritativeEvidence?.selfContainedStatus === true, 'FORWARD_EMBEDDED_STATUS_NOT_REQUIRED');
+check(forward.authoritativeEvidence?.selfContainedRegression === true, 'FORWARD_EMBEDDED_REGRESSION_NOT_REQUIRED');
+check(forward.authoritativeEvidence?.derivedSidecarsAreAuthoritative === false, 'FORWARD_SIDECARS_MISTAKENLY_AUTHORITATIVE');
+check(forward.resolutionStatus?.schemaVersion === '20.0.0-forward-resolution-status-2', 'FORWARD_EMBEDDED_STATUS_MISSING');
+check(forward.resolutionStatus?.asOfSessionDate === forward.asOfSessionDate, 'FORWARD_STATUS_ASOF_MISMATCH');
+check(forward.evaluationRegression?.schemaVersion === '20.0.0-forward-evaluation-regression-2', 'FORWARD_EMBEDDED_REGRESSION_MISSING');
+check(forward.evaluationRegression?.ok === true, 'FORWARD_EMBEDDED_REGRESSION_FAILED');
+check(forward.evaluationRegression?.authoritativeFile === 'data/v20/forward-evaluation.json', 'FORWARD_REGRESSION_AUTHORITY_DRIFT');
+check(forward.evaluationRegression?.evidence?.fabricatedSameSessionResolutionCount === 0, 'FORWARD_SAME_SESSION_FABRICATION_DETECTED');
+
+const evaluations = forward.evaluations || [];
+check(forward.resolutionStatus?.evaluationCount === evaluations.length, 'FORWARD_STATUS_COUNT_MISMATCH');
+check(forward.resolutionStatus?.resolvedCount === evaluations.filter(x => x.status === 'RESOLVED').length, 'FORWARD_STATUS_RESOLVED_MISMATCH');
+check(forward.resolutionStatus?.pendingCount === evaluations.filter(x => x.status === 'PENDING').length, 'FORWARD_STATUS_PENDING_MISMATCH');
+check(forward.evaluationRegression?.evidence?.evaluationCount === evaluations.length, 'FORWARD_REGRESSION_COUNT_MISMATCH');
+check(forward.evaluationRegression?.evidence?.resolvedCount === evaluations.filter(x => x.status === 'RESOLVED').length, 'FORWARD_REGRESSION_RESOLVED_MISMATCH');
+check(forward.evaluationRegression?.evidence?.pendingCount === evaluations.filter(x => x.status === 'PENDING').length, 'FORWARD_REGRESSION_PENDING_MISMATCH');
+
+const currentForward = evaluations.filter(x => x.immutableSignalHash === expectedHash);
 for (const horizon of [1, 3, 5, 10, 20]) {
   const item = currentForward.find(x => x.horizonSessions === horizon);
   check(Boolean(item), `MISSING_FORWARD_HORIZON_${horizon}`);
   if (item) {
-    check(['PENDING', 'RESOLVED', 'AMBIGUOUS'].includes(item.status), `INVALID_FORWARD_STATUS_${horizon}`);
+    check(['PENDING', 'RESOLVED'].includes(item.status), `INVALID_FORWARD_STATUS_${horizon}`);
     if (item.status === 'PENDING') {
+      check(item.evaluationSessionDate === null, `FABRICATED_PENDING_FORWARD_DATE_${horizon}`);
       check(item.portfolioReturnGrossPct === null && item.portfolioReturnNetPct === null, `FABRICATED_PENDING_FORWARD_RETURN_${horizon}`);
+      check(item.appliedPortfolio?.grossReturnPct === null && item.appliedPortfolio?.netReturnPct === null, `FABRICATED_PENDING_APPLIED_RETURN_${horizon}`);
+      check(item.researchEvaluation?.equalWeightIssuedGrossReturnPct === null && item.researchEvaluation?.equalWeightIssuedNetReturnPct === null, `FABRICATED_PENDING_RESEARCH_RETURN_${horizon}`);
+    } else {
+      check(item.researchEvaluation?.appliedToProduction === false, `RESEARCH_FORWARD_APPLIED_TO_PRODUCTION_${horizon}`);
+      check(item.portfolioReturnNetPct === item.appliedPortfolio?.netReturnPct, `FORWARD_APPLIED_RETURN_SEMANTICS_DRIFT_${horizon}`);
     }
   }
 }
 
 const report = {
-  schemaVersion: '20.0.0-phase3-regression-2',
+  schemaVersion: '20.0.0-phase3-regression-3',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -110,6 +137,10 @@ const report = {
     scoreConfidenceSeparated: true,
     immutableSignalArchive: true,
     forwardHorizonsSeparated: true,
+    forwardEvidenceSelfContained: true,
+    forwardDerivedSidecarsNonAuthoritative: true,
+    forwardSameSessionFabricationBlocked: true,
+    forwardResearchProductionSeparation: true,
   },
 };
 

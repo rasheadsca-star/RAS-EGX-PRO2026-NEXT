@@ -42,6 +42,28 @@ The consensus rule is a data-quality guard, not an alpha parameter.
 
 The resolver verifies each archive by recomputing `sha256(JSON.stringify(immutableCore))` and matching it to `immutableSignalHash`. It never edits files under `data/v20/signal-archive/`.
 
+## Permanent integration
+
+Phase 9 is integrated into the existing V20 archive cycle rather than a separate long-lived workflow. `scripts/v20/archive-signal.cjs` performs the immutable archive step and then runs, in order:
+
+1. `forward-evaluation-unit.cjs`
+2. `resolve-forward-evaluation.cjs`
+3. `forward-evaluation-regression.cjs`
+
+The main V20 workflow then rebuilds the separated Performance Evidence Registry from that freshly resolved forward evidence. A temporary Phase 9 workflow was used during rollout and was removed after the archive-cycle integration passed the normal V20 main pipeline.
+
+## Self-contained authoritative evidence
+
+`data/v20/forward-evaluation.json` is the **single authoritative persisted forward-evidence file**. Schema v3 embeds:
+
+- `resolutionStatus` — counts and accepted-session status produced by the resolver in the same cycle.
+- `evaluationRegression` — the leakage/immutability/return-semantics regression produced immediately after resolution.
+- `authoritativeEvidence` — explicitly declares the main file authoritative and marks sidecars non-authoritative.
+
+`data/v20/forward-resolution-status.json` and `data/v20/forward-evaluation-regression.json` remain optional derived/debug sidecars. They may be regenerated in CI and are never used as the persisted source of truth. This prevents stale sidecars from disagreeing with the latest `forward-evaluation.json` saved by the main workflow.
+
+`phase3-regression.cjs` independently requires the embedded status/regression, verifies their counts against the evaluation rows, confirms zero same-session fabrication, and rechecks immutable signal hashes. A main run therefore cannot pass merely because an old sidecar says the forward evidence was valid.
+
 ## Current 2026-08-13 signals
 
 Both archived signal revisions have:
@@ -53,16 +75,25 @@ Both archived signal revisions have:
 
 Therefore the real applied production portfolio is cash, not a research basket. At the current V20 as-of session (`2026-08-13`) there is not yet a trusted post-signal market session, so all ten 1/3/5/10/20 horizon records must remain `PENDING` with null returns.
 
+The last verified resolver cycle had 30 requested opportunity tickers, 28 trusted histories, 27 live Yahoo refreshes and one cached verified fallback. `KORA` and `BONY` had no acceptable Yahoo history. The consensus calendar correctly accepted **zero** sessions after `2026-08-13`, so no forward return was manufactured.
+
 ## Outputs
 
 - `scripts/v20/forward-evaluation-core.cjs`
 - `scripts/v20/resolve-forward-evaluation.cjs`
 - `scripts/v20/forward-evaluation-unit.cjs`
 - `scripts/v20/forward-evaluation-regression.cjs`
-- `scripts/v20/apply-forward-evaluation-integration.cjs`
-- `data/v20/forward-evaluation.json` schema v2
-- `data/v20/forward-resolution-status.json`
-- `data/v20/forward-evaluation-regression.json`
-- `.github/workflows/v20-forward-evaluation.yml`
+- permanent integration in `scripts/v20/archive-signal.cjs`
+- `data/v20/forward-evaluation.json` schema v3 — authoritative/self-contained
+- `data/v20/forward-resolution-status.json` — derived sidecar only
+- `data/v20/forward-evaluation-regression.json` — derived sidecar only
+- `scripts/v20/phase3-regression.cjs` — independent embedded-evidence acceptance
 
-The dedicated workflow validates/persists the contract and patches the main V20 workflow so normal integrated validation runs the resolver after immutable signal issuance and before the separated performance registry is rebuilt.
+## Governance invariants
+
+- V16 remains `V16_9_EQUAL_WEIGHT_BASKET`.
+- V19 remains shadow research with no automatic promotion.
+- V17 remains the execution authority.
+- Research forward returns never become production performance.
+- Pending horizons never receive zero or fabricated returns merely because the calendar date has passed.
+- No automatic order is created by forward resolution.
