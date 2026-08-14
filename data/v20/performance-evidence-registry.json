@@ -1,0 +1,244 @@
+{
+  "schemaVersion": "20.0.0-performance-evidence-registry-1",
+  "generatedAt": "2026-08-14T21:43:00.399Z",
+  "decisionSupportOnly": true,
+  "policy": {
+    "singleHeadlinePerformanceMetricAllowed": false,
+    "crossEvidenceAggregationAllowed": false,
+    "historicalAndForwardEvidenceMustRemainSeparate": true,
+    "developmentAndHoldoutEvidenceMustRemainSeparate": true,
+    "reusedBenchmarkCanPromoteChallenger": false,
+    "pendingForwardReturnMustRemainNull": true,
+    "v18PerformanceAccepted": false
+  },
+  "summary": {
+    "evidenceEntryCount": 7,
+    "activeChampion": "V16_9_EQUAL_WEIGHT_BASKET",
+    "v19AutomaticPromotion": false,
+    "v19PromotionAllowed": false,
+    "v19FreshIndependentEvidenceRequired": true,
+    "v19DevelopmentAverageNetReturnPct": -0.2242,
+    "v19ReusedBenchmarkAverageNetReturnPct": 2.0925,
+    "forwardResolvedCount": 0,
+    "forwardPendingCount": 10,
+    "forwardAmbiguousCount": 0,
+    "status": "FORWARD_EVIDENCE_PENDING"
+  },
+  "entries": [
+    {
+      "evidenceId": "V16_FIXED_BASKET_3",
+      "model": "V16_9_EQUAL_WEIGHT_BASKET",
+      "role": "ACTIVE_CHAMPION_REFERENCE",
+      "evidenceClass": "HISTORICAL_BACKTEST",
+      "source": "data/research/v16-v169-basket-engine.json",
+      "sourceSection": "fixedBasketMetrics.3",
+      "metrics": {
+        "sessions": 37,
+        "averageNetReturnPct": 0.7845,
+        "medianNetReturnPct": -0.6,
+        "sessionWinRatePct": 43.243,
+        "profitFactor": 1.637,
+        "compoundedNetReturnPct": 28.878,
+        "maximumDrawdownPct": -10.877,
+        "volatilityPct": null,
+        "bestSessionPct": 13.963,
+        "worstSessionPct": -7.078
+      },
+      "independence": {
+        "freshIndependentEvidence": null,
+        "status": "NOT_ESTABLISHED_BY_SOURCE"
+      },
+      "decisionUse": "REFERENCE_ONLY_NOT_COMBINED_WITH_FORWARD_RESULTS",
+      "caveats": [
+        "Fixed basket historical metrics are not merged with walk-forward or live-forward evidence."
+      ]
+    },
+    {
+      "evidenceId": "V16_FIXED_BASKET_4",
+      "model": "V16_9_EQUAL_WEIGHT_BASKET",
+      "role": "ACTIVE_CHAMPION_REFERENCE",
+      "evidenceClass": "HISTORICAL_BACKTEST",
+      "source": "data/research/v16-v169-basket-engine.json",
+      "sourceSection": "fixedBasketMetrics.4",
+      "metrics": {
+        "sessions": 37,
+        "averageNetReturnPct": 0.9113,
+        "medianNetReturnPct": -0.6,
+        "sessionWinRatePct": 48.649,
+        "profitFactor": 1.855,
+        "compoundedNetReturnPct": 35.333,
+        "maximumDrawdownPct": -11.033,
+        "volatilityPct": null,
+        "bestSessionPct": 12.165,
+        "worstSessionPct": -7.939
+      },
+      "independence": {
+        "freshIndependentEvidence": null,
+        "status": "NOT_ESTABLISHED_BY_SOURCE"
+      },
+      "decisionUse": "REFERENCE_ONLY_NOT_COMBINED_WITH_FORWARD_RESULTS",
+      "caveats": [
+        "Fixed basket historical metrics are not merged with walk-forward or live-forward evidence."
+      ]
+    },
+    {
+      "evidenceId": "V16_FIXED_BASKET_5",
+      "model": "V16_9_EQUAL_WEIGHT_BASKET",
+      "role": "ACTIVE_CHAMPION_REFERENCE",
+      "evidenceClass": "HISTORICAL_BACKTEST",
+      "source": "data/research/v16-v169-basket-engine.json",
+      "sourceSection": "fixedBasketMetrics.5",
+      "metrics": {
+        "sessions": 37,
+        "averageNetReturnPct": 0.7793,
+        "medianNetReturnPct": -0.3636,
+        "sessionWinRatePct": 45.946,
+        "profitFactor": 1.794,
+        "compoundedNetReturnPct": 29.801,
+        "maximumDrawdownPct": -9.773,
+        "volatilityPct": null,
+        "bestSessionPct": 10.573,
+        "worstSessionPct": -7.549
+      },
+      "independence": {
+        "freshIndependentEvidence": null,
+        "status": "NOT_ESTABLISHED_BY_SOURCE"
+      },
+      "decisionUse": "REFERENCE_ONLY_NOT_COMBINED_WITH_FORWARD_RESULTS",
+      "caveats": [
+        "Fixed basket historical metrics are not merged with walk-forward or live-forward evidence."
+      ]
+    },
+    {
+      "evidenceId": "V16_BLOCKED_WALK_FORWARD",
+      "model": "V16_9_EQUAL_WEIGHT_BASKET",
+      "role": "ACTIVE_CHAMPION_REFERENCE",
+      "evidenceClass": "WALK_FORWARD_INTERNAL",
+      "source": "data/research/v16-v169-basket-engine.json",
+      "sourceSection": "blockedWalkForwardMetrics",
+      "metrics": {
+        "sessions": 29,
+        "averageNetReturnPct": 0.9751,
+        "medianNetReturnPct": 0.1661,
+        "sessionWinRatePct": 55.172,
+        "profitFactor": 1.929,
+        "compoundedNetReturnPct": 29.15,
+        "maximumDrawdownPct": -11.089,
+        "volatilityPct": null,
+        "bestSessionPct": 12.165,
+        "worstSessionPct": -7.078
+      },
+      "independence": {
+        "freshIndependentEvidence": null,
+        "status": "INTERNAL_WALK_FORWARD_SOURCE_DOES_NOT_CLAIM_FRESH_EXTERNAL_HOLDOUT"
+      },
+      "decisionUse": "CHAMPION_REFERENCE",
+      "caveats": [
+        "Kept separate from fixed-basket metrics and from V20 forward tracking."
+      ]
+    },
+    {
+      "evidenceId": "V19_V6_DEVELOPMENT_OOS",
+      "model": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6",
+      "role": "SHADOW_CHALLENGER",
+      "evidenceClass": "DEVELOPMENT_OOS",
+      "source": "data/v19/native-challenger-v6.json",
+      "sourceSection": "development.metrics",
+      "metrics": {
+        "sessions": 58,
+        "averageNetReturnPct": -0.2242,
+        "medianNetReturnPct": -0.2142,
+        "sessionWinRatePct": 39.655,
+        "profitFactor": 0.669,
+        "compoundedNetReturnPct": -12.947,
+        "maximumDrawdownPct": -17.775,
+        "volatilityPct": 1.7136,
+        "bestSessionPct": 6.319,
+        "worstSessionPct": -4.763
+      },
+      "independence": {
+        "freshIndependentEvidence": false,
+        "status": "NOT_FRESH_INDEPENDENT"
+      },
+      "decisionUse": "RESEARCH_DIAGNOSTIC_ONLY",
+      "caveats": [
+        "Development OOS evidence is reported even when weaker than the reused benchmark.",
+        "Base policy was influenced by post-hoc diagnostics."
+      ]
+    },
+    {
+      "evidenceId": "V19_V6_REUSED_BENCHMARK",
+      "model": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6",
+      "role": "SHADOW_CHALLENGER",
+      "evidenceClass": "REUSED_BENCHMARK_NOT_INDEPENDENT",
+      "source": "data/v19/v6-research-champion-lock.json",
+      "sourceSection": "benchmarkResult",
+      "metrics": {
+        "sessions": 20,
+        "averageNetReturnPct": 2.0925,
+        "medianNetReturnPct": 0.8094,
+        "sessionWinRatePct": 70,
+        "profitFactor": 3.39,
+        "compoundedNetReturnPct": 47.054,
+        "maximumDrawdownPct": -9.188,
+        "volatilityPct": 5.5434,
+        "bestSessionPct": 16.565,
+        "worstSessionPct": -7.241
+      },
+      "independence": {
+        "freshIndependentEvidence": false,
+        "status": "EXPLICITLY_NOT_FRESH_INDEPENDENT",
+        "benchmarkInformedArchitecture": true
+      },
+      "decisionUse": "RESEARCH_LOCK_REFERENCE_NOT_PROMOTION_EVIDENCE",
+      "promotionEligible": false,
+      "caveats": [
+        "The 20-session benchmark was reused during V19 iteration and is not fresh independent evidence.",
+        "V6 architecture was informed by post-hoc diagnostic analysis of that benchmark.",
+        "Current trusted per-symbol history used by V19 ends before the V17 2026-08-13 research session; synthetic reconstructed OHLC is not accepted as fresh V19 evidence."
+      ]
+    },
+    {
+      "evidenceId": "V20_LIVE_FORWARD_TRACKING",
+      "model": "V16_9_EQUAL_WEIGHT_BASKET",
+      "role": "CURRENT_FORWARD_EVIDENCE",
+      "evidenceClass": "LIVE_FORWARD",
+      "source": "data/v20/forward-evaluation.json",
+      "sourceSection": "evaluations",
+      "metrics": null,
+      "forwardState": {
+        "signalCount": 2,
+        "evaluationCount": 10,
+        "resolvedCount": 0,
+        "ambiguousCount": 0,
+        "pendingCount": 10,
+        "statusCounts": {
+          "PENDING": 10
+        },
+        "horizonsSessions": [
+          1,
+          3,
+          5,
+          10,
+          20
+        ]
+      },
+      "independence": {
+        "freshIndependentEvidence": true,
+        "status": "POINT_IN_TIME_FORWARD_TRACKING"
+      },
+      "decisionUse": "PENDING_NO_RETURN_METRIC_YET",
+      "caveats": [
+        "Pending horizons have null returns and are never converted to zero.",
+        "Multiple horizons and signal revisions are not averaged into a single headline performance number."
+      ]
+    }
+  ],
+  "externalReferences": {
+    "v18": {
+      "acceptedForPerformanceClaims": false,
+      "status": "NOT_INGESTED_OR_AUDITED_IN_V20",
+      "reason": "V20 does not accept external V18 performance claims without a reconciled evidence definition and auditable source artifact."
+    }
+  }
+}
