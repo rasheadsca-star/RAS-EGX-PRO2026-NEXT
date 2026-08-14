@@ -40,25 +40,51 @@
     ]);
 
     const recommendations = Array.isArray(primary.recommendations) ? primary.recommendations : [];
-    const sessionDate = primary.sessionDate || legacy.recommendationSessionDate || legacy.sessionDate || null;
-    const generatedAt = primary.generatedAt || legacy.generatedAt || null;
+
+    // Keep four different truths separate:
+    // 1) wall-clock scanner run time, 2) latest completed market session,
+    // 3) recommendation signal session, 4) recommendation build time.
+    // A post-close build can cross midnight in Cairo without creating a new EGX session.
+    const actualScanAt = legacy.lastAutomaticScanAt || legacy.generatedAt || null;
+    const statusGeneratedAt = legacy.generatedAt || actualScanAt || null;
+    const marketSessionDate = legacy.expectedLatestSession || legacy.sessionDate || primary.sessionDate || null;
+    const recommendationSessionDate = primary.sessionDate || legacy.recommendationSessionDate || marketSessionDate || null;
+    const recommendationGeneratedAt = primary.generatedAt || legacy.recommendationGeneratedAt || null;
+    const recommendationSessionAligned = Boolean(
+      marketSessionDate &&
+      recommendationSessionDate &&
+      marketSessionDate === recommendationSessionDate
+    );
 
     const merged = {
       ...legacy,
-      schemaVersion: '16.9.2-protected-status',
-      generatedAt,
-      lastAutomaticScanAt: generatedAt,
+      schemaVersion: '16.9.2-session-truth-status',
+      generatedAt: statusGeneratedAt,
+      lastAutomaticScanAt: actualScanAt,
       productInterface: 'EGX_PROFESSIONAL_V16_9_2',
-      sessionDate,
-      expectedLatestSession: sessionDate,
-      recommendationSessionDate: sessionDate,
-      recommendationGeneratedAt: generatedAt,
-      recommendationsReady: primary.practicalReady === true && recommendations.length > 0,
+      sessionDate: marketSessionDate,
+      expectedLatestSession: marketSessionDate,
+      marketSessionDate,
+      recommendationSessionDate,
+      recommendationGeneratedAt,
+      recommendationSessionAligned,
+      recommendationsReady:
+        recommendationSessionAligned &&
+        primary.practicalReady === true &&
+        recommendations.length > 0,
       recommendationCount: recommendations.length,
       recommendationTickers: recommendations.map(row => row.ticker),
       productionEngine: primary.selectedModel?.id || 'V16_9_EQUAL_WEIGHT_BASKET',
       primaryTickers: recommendations.map(row => row.ticker),
       protectedDecisionPath: 'data/stable/v16-v169-primary-decision.json',
+      sessionTruth: {
+        scannerRunAt: actualScanAt,
+        statusGeneratedAt,
+        latestCompletedMarketSession: marketSessionDate,
+        recommendationSignalSession: recommendationSessionDate,
+        recommendationBuiltAt: recommendationGeneratedAt,
+        aligned: recommendationSessionAligned,
+      },
     };
 
     return new Response(`${JSON.stringify(merged, null, 2)}\n`, {
