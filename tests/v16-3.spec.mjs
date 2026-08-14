@@ -19,21 +19,60 @@ async function openApp(page, view = 'dashboard') {
   return errors;
 }
 
-test('dashboard loads V16.3 market regime, recommendations and release status', async ({ page }) => {
+test('dashboard loads V16.3 market regime, session-safe V16.9 basket and release status', async ({ page }) => {
   const errors = await openApp(page);
 
   await expect(page.locator('#marketRegimeCard')).toBeVisible();
   await expect(page.locator('#marketRegimeCard')).toContainText('محرك حالة السوق');
 
-  // V16.9 is now the primary recommendation surface.
-  // The legacy #recommendationGrid remains in the DOM but is intentionally hidden.
+  // V16.9 remains the primary recommendation surface. The title now describes
+  // the signal as a plan for the next trading session rather than implying that
+  // the wall-clock scan date is itself a market session.
   const primaryBasket = page.locator('#v169BasketPanel');
   await expect(primaryBasket).toBeVisible({ timeout: 15_000 });
-  await expect(primaryBasket).toContainText('سلة V16.9 الحالية');
+  await expect(primaryBasket).toContainText(/سلة V16\.9 (للجلسة التالية|مرجعية)/);
 
   const primaryCards = primaryBasket.locator('.v169-card');
   await expect(primaryCards.first()).toBeVisible();
   expect(await primaryCards.count()).toBeGreaterThan(0);
+
+  const truth = await page.evaluate(async () => {
+    const [decision, priceTruth] = await Promise.all([
+      fetch(`../../data/stable/v16-v169-primary-decision.json?v=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()),
+      fetch(`../../data/stable/v15-price-truth.json?v=${Date.now()}`, { cache: 'no-store' }).then(r => r.json()),
+    ]);
+    return {
+      recommendationSession: decision.sessionDate || null,
+      marketSession: priceTruth.expectedSession || null,
+      executionGrade: priceTruth.executionGrade === true,
+      practicalReady: decision.practicalReady === true,
+      recommendationCount: Array.isArray(decision.recommendations) ? decision.recommendations.length : 0,
+    };
+  });
+
+  const expectedAligned = Boolean(
+    truth.recommendationSession &&
+    truth.marketSession &&
+    truth.recommendationSession === truth.marketSession,
+  );
+  const expectedExecutionEligible = Boolean(
+    expectedAligned &&
+    truth.executionGrade &&
+    truth.practicalReady &&
+    truth.recommendationCount > 0,
+  );
+
+  await expect(primaryBasket).toHaveAttribute('data-session-aligned', String(expectedAligned));
+  await expect(primaryBasket).toHaveAttribute('data-execution-eligible', String(expectedExecutionEligible));
+
+  if (expectedExecutionEligible) {
+    await expect(primaryBasket).toContainText('تأكيد الافتتاح مطلوب');
+  } else if (expectedAligned) {
+    await expect(primaryBasket).toContainText('التنفيذ مغلق');
+    await expect(primaryBasket).toContainText('0% تنفيذ');
+  } else {
+    await expect(primaryBasket).toContainText('اختلاف جلسة');
+  }
 
   await expect(page.locator('#releaseStatusCard')).toContainText('V16.3');
   await expect(page.locator('html')).toHaveAttribute('data-egx-version', '16.3');
