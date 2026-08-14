@@ -1,0 +1,96 @@
+name: EGX V19 CHAT GPT Isolated Research
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [v19-egx-chat-gpt]
+    paths:
+      - "scripts/v19/**"
+      - "docs/v19/**"
+      - "data/history/**"
+      - "data/stable/v16-v169-live-evaluation.json"
+      - "data/research/v16-v169-basket-engine.json"
+      - "data/v17/ledger.json"
+      - "data/v17/recommendation-track-record.json"
+      - ".github/workflows/v19-egx-chat-gpt.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-v19-chat-gpt-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  v19-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout isolated V19 branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Enforce V19 isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "v19-egx-chat-gpt"
+          git fetch origin develop/v17-rebuild:refs/remotes/origin/develop/v17-rebuild
+          changed="$(git diff --name-only origin/develop/v17-rebuild...HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v19/|docs/v19/|data/v19/|\.github/workflows/v19-egx-chat-gpt\.yml$)' || true)"
+          if [ -n "$violations" ]; then
+            echo "V19 isolation violation:"
+            echo "$violations"
+            exit 1
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Static validation
+        run: |
+          set -euo pipefail
+          python -m py_compile scripts/v19/native-challenger.py
+          node --check scripts/v19/challenger-gate.cjs
+          node --check scripts/v19/regression.cjs
+
+      - name: Build V19 native challenger and retroactive V16 V17 replay
+        run: python scripts/v19/native-challenger.py
+
+      - name: Run V19 champion challenger gate
+        run: node scripts/v19/challenger-gate.cjs
+
+      - name: Run V19 regression and leakage guards
+        run: node scripts/v19/regression.cjs
+
+      - name: Verify generated evidence
+        run: |
+          set -euo pipefail
+          test -s data/v19/native-challenger.json
+          test -s data/v19/recorded-session-replay.json
+          test -s data/v19/challenger-status.json
+          test -s data/v19/regression.json
+          node -e "const x=require('./data/v19/regression.json');if(x.ok!==true||x.failedCount!==0)process.exit(1)"
+          node -e "const x=require('./data/v19/native-challenger.json');if(x.status!=='SHADOW_RESEARCH_ONLY'||x.current.executionAllowed!==false||x.promotion.automaticPromotion!==false)process.exit(1)"
+
+      - name: Persist V19 evidence on V19 branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v19/native-challenger.json data/v19/recorded-session-replay.json data/v19/challenger-status.json data/v19/regression.json
+          if git diff --cached --quiet; then
+            echo "No V19 evidence changes to persist"
+            exit 0
+          fi
+          git commit -m "Update V19 isolated research evidence"
+          git push origin HEAD:v19-egx-chat-gpt
