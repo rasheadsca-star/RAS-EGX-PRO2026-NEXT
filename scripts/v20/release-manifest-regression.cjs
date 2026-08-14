@@ -19,6 +19,7 @@ const operations = read('data/v20/release-operations.json');
 const executionGap = regression.executionReadinessGap;
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
+const finiteNonNegative = value => Number.isFinite(Number(value)) && Number(value) >= 0;
 
 check(manifest.schemaVersion === '20.0.0-release-manifest-2', 'RELEASE_MANIFEST_SCHEMA_DRIFT');
 check(manifest.branch === 'develop/v20-integrated-decision-platform', 'RELEASE_BRANCH_DRIFT');
@@ -58,11 +59,10 @@ check(JSON.stringify(manifest.executionReadinessGap?.gaps) === JSON.stringify(ex
 check(JSON.stringify(manifest.executionReadinessGap?.required) === JSON.stringify(executionGap?.required), 'RELEASE_EXECUTION_REQUIRED_COUNTS_MISMATCH');
 check(JSON.stringify(manifest.executionReadinessGap?.current) === JSON.stringify(executionGap?.current), 'RELEASE_EXECUTION_CURRENT_COUNTS_MISMATCH');
 check(JSON.stringify(manifest.executionReadinessGap?.symbols) === JSON.stringify(executionGap?.symbols), 'RELEASE_EXECUTION_GAP_SYMBOLS_MISMATCH');
-check(manifest.executionReadinessGap?.gaps?.trustedCandidateCount === 2, 'RELEASE_TRUSTED_GAP_EXPECTATION_DRIFT');
-check(manifest.executionReadinessGap?.gaps?.trustedFreshCandidateCount === 6, 'RELEASE_FRESH_GAP_EXPECTATION_DRIFT');
-check(manifest.executionReadinessGap?.gaps?.criticalCandidateEquivalentCount === 2, 'RELEASE_CRITICAL_GAP_EXPECTATION_DRIFT');
-check(manifest.executionReadinessGap?.gaps?.sourceConflictCount === 1, 'RELEASE_CONFLICT_GAP_EXPECTATION_DRIFT');
-check(manifest.executionReadinessGap?.gaps?.confidenceGap === 0, 'RELEASE_CONFIDENCE_GAP_EXPECTATION_DRIFT');
+for (const [key, value] of Object.entries(manifest.executionReadinessGap?.gaps || {})) check(finiteNonNegative(value), `RELEASE_EXECUTION_GAP_INVALID_${key.toUpperCase()}`);
+check(Number(manifest.executionReadinessGap?.required?.trustedCandidateCount || 0) <= Number(manifest.executionReadinessGap?.current?.candidateUniverseCount || 0), 'RELEASE_REQUIRED_TRUSTED_EXCEEDS_UNIVERSE');
+check(Number(manifest.executionReadinessGap?.required?.trustedFreshCandidateCount || 0) <= Number(manifest.executionReadinessGap?.current?.candidateUniverseCount || 0), 'RELEASE_REQUIRED_FRESH_EXCEEDS_UNIVERSE');
+check(Number(manifest.executionReadinessGap?.required?.criticalCandidateEquivalentCount || 0) <= Number(manifest.executionReadinessGap?.current?.candidateUniverseCount || 0), 'RELEASE_REQUIRED_CRITICAL_EXCEEDS_UNIVERSE');
 
 if (gate.executionGrade !== true) {
   check(manifest.acceptance?.executionReady === false, 'RELEASE_EXECUTION_READY_WHILE_V17_GATE_CLOSED');
@@ -93,6 +93,7 @@ const report = {
     releaseClaimsMatchFinalAcceptance: true,
     closedV17GateCannotBeOverstated: true,
     executionGapMatchesAuthoritativeDerivedEvidence: true,
+    executionGapIsSessionDynamic: true,
     executionGapNeverGuaranteesExecutionGrade: true,
     deploymentCannotBeClaimedWithoutDedicatedTarget: true,
     dailyAutomationCannotBeClaimedWithoutVerifiedSchedule: true,
