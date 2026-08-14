@@ -44,6 +44,10 @@ jobs:
         run: |
           npm install --no-save --no-package-lock cheerio@1.0.0
           node scripts/collect-mubasher-direct-stock-sr.js
+      - name: Verify V17 price-source trading session
+        run: node scripts/v17/market-session-truth.cjs
+      - name: Repair generated history to verified trading session
+        run: node scripts/v17/repair-session-history.cjs
       - name: Install Playwright Chromium - optional validation
         id: playwright
         continue-on-error: true
@@ -69,6 +73,8 @@ jobs:
         run: |
           set -u
           for s in scripts/build-v52-intelligence.js scripts/build-v54-universe-index.js scripts/build-v55-sector-investor-flow.js scripts/build-v56-history-50.js scripts/build-v56-technical-report.js scripts/collect-egx-investor-type.js scripts/collect-v56-news.js scripts/build-multi-source-intelligence.js scripts/apply-multisource-intelligence-to-ranking.js scripts/apply-news-impact-to-recommendations.js scripts/build-institutional-score.js scripts/build-signal-quality-engine.js scripts/build-entry-trigger-engine.js scripts/build-alert-decision-center.js scripts/build-actionable-watchlist.js scripts/build-data-operations-center.js scripts/build-engines-console-report.js scripts/build-executive-home-report.js scripts/build-workflow-budget-status.js scripts/build-sector-completion-report.js scripts/build-recommendation-outcome-tracker.js scripts/build-recommendation-accuracy.js scripts/build-recommendation-performance-index.js scripts/build-accuracy-interpretation-report.js scripts/build-recommendation-validation-panel.js scripts/build-portfolio-decision-rules.js scripts/build-rebalancing-candidates.js; do [ ! -f "$s" ] || node "$s" || echo "::warning::$s failed"; done
+      - name: Reapply verified session after legacy optional builders
+        run: node scripts/v17/repair-session-history.cjs
       - name: Mandatory history and research ranking
         run: |
           set -euo pipefail
@@ -107,7 +113,7 @@ jobs:
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json'));
+          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json'));
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.verdict==='REJECTED') throw new Error('Independent review rejected build');
@@ -116,11 +122,11 @@ jobs:
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth not aligned');
           if(x.enrichment?.immutableSignalHashTouched!==false) throw new Error('Snapshot provenance enrichment touched immutable signal contract');
           if(x.currentResearch?.liquidity?.provenance!=='data/v17/liquidity-gate.json') throw new Error('Canonical liquidity provenance missing from snapshot');
-          if(s.executionGrade===true && l.gatePassed!==true) throw new Error('Execution grade without current-run liquidity gate');
+          if(s.executionGrade===true && (l.gatePassed!==true||t.executionSafe!==true||h.applied!==true)) throw new Error('Execution grade without verified source session/history repair/liquidity gate');
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Non-execution status has allocation'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,srGapSummary:g.summary,review:r.verdict,regression:q.ok,snapshotProvenance:true},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,srGapSummary:g.summary,review:r.verdict,regression:q.ok,snapshotProvenance:true},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
@@ -128,6 +134,8 @@ jobs:
         with:
           name: v17-resilient-market-diagnostics
           path: |
+            data/v17/market-session-truth.json
+            data/v17/session-history-repair.json
             data/v17/internal-ohlc-support-resistance.json
             data/v17/sr-history-gap-diagnostics.json
             data/v17/liquidity-gate.json
