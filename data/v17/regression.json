@@ -1,10 +1,10 @@
 {
-  "schemaVersion": "17.0.0-regression-1",
-  "generatedAt": "2026-08-14T09:48:49.918Z",
-  "contract": "V17_CANONICAL_RUNTIME_AND_GOVERNANCE",
+  "schemaVersion": "17.0.0-regression-2",
+  "generatedAt": "2026-08-14T09:51:24.685Z",
+  "contract": "V17_CANONICAL_RUNTIME_GOVERNANCE_AND_LIQUIDITY",
   "ok": true,
-  "total": 69,
-  "passed": 69,
+  "total": 93,
+  "passed": 93,
   "failedCount": 0,
   "criticalFailedCount": 0,
   "failed": [],
@@ -58,6 +58,18 @@
       "message": "exists"
     },
     {
+      "name": "file:scripts/v17/build-internal-ohlc-sr.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:scripts/v17/build-liquidity-gate.cjs",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
       "name": "file:data/v17/current.json",
       "ok": true,
       "severity": "CRITICAL",
@@ -89,6 +101,18 @@
     },
     {
       "name": "file:data/v17/internal-ohlc-support-resistance.json",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:data/v17/liquidity-gate.json",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "exists"
+    },
+    {
+      "name": "file:data/today-decision-center.json",
       "ok": true,
       "severity": "CRITICAL",
       "message": "exists"
@@ -199,49 +223,49 @@
       "name": "ui:confidence-governance",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "confidence governance is loaded"
+      "message": "confidence governance loaded"
     },
     {
       "name": "runtime:forbidden:v15-practical-decision.json",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "legacy/adaptive runtime reference v15-practical-decision.json must not enter V17"
+      "message": "legacy/adaptive runtime reference v15-practical-decision.json forbidden"
     },
     {
       "name": "runtime:forbidden:v15-update-status.json",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "legacy/adaptive runtime reference v15-update-status.json must not enter V17"
+      "message": "legacy/adaptive runtime reference v15-update-status.json forbidden"
     },
     {
       "name": "runtime:forbidden:decision-source.js",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "legacy/adaptive runtime reference decision-source.js must not enter V17"
+      "message": "legacy/adaptive runtime reference decision-source.js forbidden"
     },
     {
       "name": "runtime:forbidden:adaptive-daily-recommendations.json",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "legacy/adaptive runtime reference adaptive-daily-recommendations.json must not enter V17"
+      "message": "legacy/adaptive runtime reference adaptive-daily-recommendations.json forbidden"
     },
     {
       "name": "runtime:forbidden:data/quant/adaptive",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "legacy/adaptive runtime reference data/quant/adaptive must not enter V17"
+      "message": "legacy/adaptive runtime reference data/quant/adaptive forbidden"
     },
     {
       "name": "runtime:forbidden:v13-5-adaptive",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "legacy/adaptive runtime reference v13-5-adaptive must not enter V17"
+      "message": "legacy/adaptive runtime reference v13-5-adaptive forbidden"
     },
     {
       "name": "runtime:forbidden:adaptive-recommendations.html",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "legacy/adaptive runtime reference adaptive-recommendations.html must not enter V17"
+      "message": "legacy/adaptive runtime reference adaptive-recommendations.html forbidden"
     },
     {
       "name": "snapshot:status",
@@ -364,6 +388,126 @@
       "message": "203 internal rows"
     },
     {
+      "name": "liquidity:engine",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "engine=v17_wrapper_of_v11_1_liquidity_gate"
+    },
+    {
+      "name": "liquidity:rules-lineage",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "frozen V11.1 rules lineage"
+    },
+    {
+      "name": "liquidity:stale-price-truth-excluded",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "stale price truth layer excluded"
+    },
+    {
+      "name": "liquidity:threshold-current-turnover",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "actual=5000000"
+    },
+    {
+      "name": "liquidity:threshold-avg20-turnover",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "actual=2000000"
+    },
+    {
+      "name": "liquidity:threshold-short-term",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "actual=1000000"
+    },
+    {
+      "name": "liquidity:threshold-execution-score",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "actual=65"
+    },
+    {
+      "name": "liquidity:threshold-conditional-score",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "actual=45"
+    },
+    {
+      "name": "liquidity:no-retuning-source",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "V11.1 thresholds frozen in source"
+    },
+    {
+      "name": "liquidity:session-aligned",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "liquidity=2026-08-14; current=2026-08-14"
+    },
+    {
+      "name": "liquidity:evidence-coverage",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "coverage=96.25"
+    },
+    {
+      "name": "liquidity:history-completed-only",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "historical average excludes current session"
+    },
+    {
+      "name": "liquidity:per-symbol-required",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "per-symbol liquidity required"
+    },
+    {
+      "name": "liquidity:row-consistency",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "218 rows checked"
+    },
+    {
+      "name": "liquidity:candidate-count",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "rows=80; declared=80"
+    },
+    {
+      "name": "liquidity:execution-count",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "derived=66; declared=66"
+    },
+    {
+      "name": "liquidity:resilient-wiring",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "resilient gate consumes canonical liquidity evidence"
+    },
+    {
+      "name": "liquidity:decision-session-grade",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "0 executable rows"
+    },
+    {
+      "name": "liquidity:decision-per-symbol",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "0 executable rows checked"
+    },
+    {
+      "name": "liquidity:decision-gate-policy",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "decision center declares current-run per-symbol liquidity contract"
+    },
+    {
       "name": "ledger:immutable-signal-hash",
       "ok": true,
       "severity": "CRITICAL",
@@ -391,7 +535,7 @@
       "name": "recommendations:total-allocation-guard",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "recommendation total=0"
+      "message": "recommendation total <= 50%"
     },
     {
       "name": "governance:active-champion",
@@ -436,6 +580,7 @@
     "maximumTotalAllocationPct": 50,
     "sameSessionAmbiguityPolicy": "CONSERVATIVE_STOP",
     "adaptiveLegacyRuntimeForbidden": true,
-    "mubasherRole": "VALIDATION_COMPARISON_NOT_HARD_DEPENDENCY"
+    "mubasherRole": "VALIDATION_COMPARISON_NOT_HARD_DEPENDENCY",
+    "liquidityRules": "V11_1_FROZEN_CURRENT_RUN_PER_SYMBOL"
   }
 }
