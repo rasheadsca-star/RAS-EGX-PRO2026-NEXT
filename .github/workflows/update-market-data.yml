@@ -66,7 +66,7 @@ jobs:
       - name: Optional intelligence builders
         run: |
           set -u
-          for s in scripts/build-v52-intelligence.js scripts/build-v54-universe-index.js scripts/build-v55-sector-investor-flow.js scripts/build-v56-history-50.js scripts/build-v56-technical-report.js scripts/collect-egx-investor-type.js scripts/collect-v56-news.js scripts/build-multi-source-intelligence.js scripts/apply-multisource-intelligence-to-ranking.js scripts/apply-news-impact-to-recommendations.js scripts/build-institutional-score.js scripts/build-signal-quality-engine.js scripts/build-entry-trigger-engine.js scripts/build-alert-decision-center.js scripts/build-actionable-watchlist.js scripts/build-data-operations-center.js scripts/build-engines-console-report.js scripts/build-executive-home-report.js scripts/build-workflow-budget-status.js scripts/build-sector-completion-report.js scripts/build-regression-report.js scripts/build-recommendation-outcome-tracker.js scripts/build-recommendation-accuracy.js scripts/build-recommendation-performance-index.js scripts/build-accuracy-interpretation-report.js scripts/build-recommendation-validation-panel.js scripts/build-portfolio-decision-rules.js scripts/build-rebalancing-candidates.js; do [ ! -f "$s" ] || node "$s" || echo "::warning::$s failed"; done
+          for s in scripts/build-v52-intelligence.js scripts/build-v54-universe-index.js scripts/build-v55-sector-investor-flow.js scripts/build-v56-history-50.js scripts/build-v56-technical-report.js scripts/collect-egx-investor-type.js scripts/collect-v56-news.js scripts/build-multi-source-intelligence.js scripts/apply-multisource-intelligence-to-ranking.js scripts/apply-news-impact-to-recommendations.js scripts/build-institutional-score.js scripts/build-signal-quality-engine.js scripts/build-entry-trigger-engine.js scripts/build-alert-decision-center.js scripts/build-actionable-watchlist.js scripts/build-data-operations-center.js scripts/build-engines-console-report.js scripts/build-executive-home-report.js scripts/build-workflow-budget-status.js scripts/build-sector-completion-report.js scripts/build-recommendation-outcome-tracker.js scripts/build-recommendation-accuracy.js scripts/build-recommendation-performance-index.js scripts/build-accuracy-interpretation-report.js scripts/build-recommendation-validation-panel.js scripts/build-portfolio-decision-rules.js scripts/build-rebalancing-candidates.js; do [ ! -f "$s" ] || node "$s" || echo "::warning::$s failed"; done
       - name: Mandatory history and research ranking
         run: |
           set -euo pipefail
@@ -91,17 +91,20 @@ jobs:
           node scripts/v17/build-snapshot.cjs
       - name: Independent V17 current-session review
         run: node scripts/v17/review.cjs
+      - name: V17 native regression contract
+        run: node scripts/v17/regression.cjs
       - name: Acceptance guard
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json'));
+          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json'));
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.verdict==='REJECTED') throw new Error('Independent review rejected build');
+          if(q.ok!==true||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression failed: ${(q.failed||[]).join(', ')}`);
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate) throw new Error('Current session truth not aligned');
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0) throw new Error('Non-execution status has allocation'); }
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,review:r.verdict},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,review:r.verdict,regression:q.ok},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
@@ -115,6 +118,7 @@ jobs:
             data/v17/current.json
             data/v17/ledger.json
             data/v17/review.json
+            data/v17/regression.json
             data/mubasher-support-resistance-direct-report.json
             data/mubasher-support-resistance-rendered.json
           if-no-files-found: warn
