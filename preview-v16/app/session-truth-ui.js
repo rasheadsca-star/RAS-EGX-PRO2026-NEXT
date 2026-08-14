@@ -34,7 +34,7 @@
     }).format(date);
   }
 
-  function ensureReleaseNote({ marketSession, recommendationSession, targetSession, aligned }) {
+  function ensureReleaseNote({ marketSession, recommendationSession, targetSession, aligned, executionEligible }) {
     const release = document.getElementById('releaseStatusCard');
     if (!release) return false;
     let note = document.getElementById('v16SessionTruthNote');
@@ -45,11 +45,23 @@
       note.style.marginTop = '12px';
       release.appendChild(note);
     }
-    note.style.borderColor = aligned ? '#2d7358' : '#a94444';
-    note.style.background = aligned ? '#0d3028' : '#3a171b';
-    note.innerHTML = aligned
-      ? `جلسة السوق والسلة متزامنتان: <b>${marketSession || '—'}</b> → الجلسة التالية <b>${targetSession || '—'}</b>.`
-      : `تنبيه جلسة: آخر سوق موثق <b>${marketSession || '—'}</b> بينما السلة <b>${recommendationSession || '—'}</b>. السلة مرجع فقط حتى إعادة البناء.`;
+
+    if (!aligned) {
+      note.style.borderColor = '#a94444';
+      note.style.background = '#3a171b';
+      note.style.color = '#ffe5e5';
+      note.innerHTML = `تنبيه جلسة: آخر سوق موثق <b>${marketSession || '—'}</b> بينما السلة <b>${recommendationSession || '—'}</b>. السلة مرجع فقط حتى إعادة البناء.`;
+    } else if (!executionEligible) {
+      note.style.borderColor = '#8c692d';
+      note.style.background = '#332713';
+      note.style.color = '#ffe6ad';
+      note.innerHTML = `جلسة السوق والسلة متزامنتان: <b>${marketSession || '—'}</b> → الجلسة التالية <b>${targetSession || '—'}</b>. لكن التنفيذ مغلق حاليًا حتى تعود بوابة <b>Execution Grade</b>؛ التعرض التنفيذي 0%.`;
+    } else {
+      note.style.borderColor = '#2d7358';
+      note.style.background = '#0d3028';
+      note.style.color = '#dffff1';
+      note.innerHTML = `جلسة السوق والسلة متزامنتان: <b>${marketSession || '—'}</b> → الجلسة التالية <b>${targetSession || '—'}</b>. بوابة المصدر التنفيذية مفتوحة مع بقاء تأكيد الافتتاح إلزاميًا.`;
+    }
     return true;
   }
 
@@ -59,21 +71,28 @@
     const recommendationSession = decision?.sessionDate || update?.recommendationSessionDate || null;
     const targetSession = nextEgxTradingSession(recommendationSession);
     const aligned = Boolean(marketSession && recommendationSession && marketSession === recommendationSession);
+    const executionGrade = priceTruth?.executionGrade === true;
+    const executionEligible = Boolean(aligned && executionGrade && decision?.practicalReady === true && Array.isArray(decision?.recommendations) && decision.recommendations.length > 0);
 
     const lastUpdate = document.getElementById('lastUpdate');
     if (lastUpdate) {
-      lastUpdate.textContent = `آخر تشغيل للمسح: ${formatCairo(scanAt)} · جلسة السوق: ${marketSession || '—'}`;
-      lastUpdate.title = aligned
-        ? `السلة مبنية على جلسة ${recommendationSession} ومخصصة للجلسة التالية ${targetSession || '—'}. وقت تشغيل المسح لا يعني وجود جلسة تداول جديدة.`
-        : `جلسة السلة ${recommendationSession || '—'} لا تطابق آخر جلسة سوق موثقة ${marketSession || '—'}.`;
+      const gradeLabel = executionEligible ? 'تنفيذ مشروط متاح' : 'التنفيذ مغلق';
+      lastUpdate.textContent = `آخر تشغيل للمسح: ${formatCairo(scanAt)} · جلسة السوق: ${marketSession || '—'} · ${gradeLabel}`;
+      lastUpdate.title = !aligned
+        ? `جلسة السلة ${recommendationSession || '—'} لا تطابق آخر جلسة سوق موثقة ${marketSession || '—'}.`
+        : executionEligible
+          ? `السلة مبنية على جلسة ${recommendationSession} ومخصصة للجلسة التالية ${targetSession || '—'}. وقت تشغيل المسح لا يعني وجود جلسة تداول جديدة.`
+          : `السلة مبنية على جلسة ${recommendationSession} ومخصصة للجلسة التالية ${targetSession || '—'}، لكن آخر تحقق للمصدر لم يحقق Execution Grade.`;
       lastUpdate.dataset.marketSession = marketSession || '';
       lastUpdate.dataset.recommendationSession = recommendationSession || '';
       lastUpdate.dataset.sessionAligned = String(aligned);
+      lastUpdate.dataset.executionGrade = String(executionGrade);
+      lastUpdate.dataset.executionEligible = String(executionEligible);
     }
 
     let tries = 0;
     const syncRelease = () => {
-      if (ensureReleaseNote({ marketSession, recommendationSession, targetSession, aligned })) return;
+      if (ensureReleaseNote({ marketSession, recommendationSession, targetSession, aligned, executionEligible })) return;
       if (tries++ < 40) setTimeout(syncRelease, 200);
     };
     syncRelease();
