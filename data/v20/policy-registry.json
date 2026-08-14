@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-policy-registry-2",
+  "schemaVersion": "20.0.0-policy-registry-3",
   "effectiveFrom": "2026-08-14",
   "status": "CONTROLLED_INTEGRATION",
   "principles": {
@@ -35,6 +35,35 @@
     "gatingEnabled": false,
     "gatingStatus": "PENDING_INDEPENDENT_CALIBRATION",
     "note": "Net R/R is displayed and regression-tested but does not silently alter the frozen Champion selection policy."
+  },
+  "technicalHistory": {
+    "scope": "V20_CURRENT_OPPORTUNITY_UNIVERSE",
+    "approvedPrimarySources": ["yahoo", "starta_ohlc_api"],
+    "networkRefreshPreferred": true,
+    "cachedHistoryFallbackAllowed": true,
+    "missingOhlcSynthesisAllowed": false,
+    "derivedSnapshotHistoryAllowed": false,
+    "gitCommitDateAsMarketSessionAllowed": false,
+    "futureRowsAllowed": false,
+    "pointInTimeCutoffRequired": true,
+    "currentReadiness": {
+      "requiresLastHistorySessionEqualsV20Session": true,
+      "requiresCurrentPriceReconciliation": true,
+      "maximumCurrentPriceDifferencePct": 5,
+      "requiresSma50Ready": true,
+      "requiresMacdSignalReady": true
+    },
+    "indicatorMethodology": {
+      "sma": "trusted closes only",
+      "ema": "SMA seed then standard EMA multiplier",
+      "rsi14": "Wilder smoothing",
+      "atr14": "Wilder true range using trusted OHLC and prior close",
+      "macd": "EMA12 minus EMA26 with EMA9 signal",
+      "momentumHorizonsSessions": [5, 10, 20]
+    },
+    "productionExecutionGate": false,
+    "staleIndicatorPolicy": "HISTORICAL_RESEARCH_CONTEXT_ONLY_NEVER_CURRENT_DECISION",
+    "note": "Technical history can enrich explainability but cannot upgrade the authoritative V17 execution gate or silently change the frozen Champion policy."
   },
   "portfolio": {
     "maximumTotalAllocationPct": 50,

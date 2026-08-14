@@ -52,6 +52,8 @@ jobs:
           node --check scripts/v20/enrich-risk-reward.cjs
           node --check scripts/v20/validate-trade-plans.cjs
           node --check scripts/v20/build-portfolio-risk.cjs
+          node --check scripts/v20/build-trusted-technical-history.cjs
+          node --check scripts/v20/technical-history-regression.cjs
           node --check scripts/v20/build-stock-profiles.cjs
           node --check scripts/v20/archive-signal.cjs
           node --check scripts/v20/regression.cjs
@@ -76,6 +78,16 @@ jobs:
 
       - name: Build portfolio risk plan
         run: node scripts/v20/build-portfolio-risk.cjs
+
+      - name: Build trusted point-in-time technical history
+        env:
+          V20_HISTORY_NETWORK_REFRESH: "true"
+          V20_HISTORY_CONCURRENCY: "4"
+          V20_HISTORY_CURRENT_PRICE_TOLERANCE_PCT: "5"
+        run: node scripts/v20/build-trusted-technical-history.cjs
+
+      - name: Run technical history and leakage regression
+        run: node scripts/v20/technical-history-regression.cjs
 
       - name: Build stock analytical profiles
         run: node scripts/v20/build-stock-profiles.cjs
@@ -106,13 +118,27 @@ jobs:
           const ui=require('./data/v20/ui-validation.json');
           const rr=require('./data/v20/risk-reward-audit.json');
           const profiles=require('./data/v20/stock-profiles.json');
+          const th=require('./data/v20/technical-history.json');
+          const ti=require('./data/v20/technical-indicators.json');
+          const ts=require('./data/v20/technical-history-status.json');
+          const treg=require('./data/v20/technical-history-regression.json');
           const archive=require('./data/v20/signal-archive/index.json');
           const forward=require('./data/v20/forward-evaluation.json');
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
-          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true) process.exit(1);
+          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||treg.ok!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.enabled!==true) process.exit(1);
           if(policy.tradePlan?.currentPriceAlignment?.actionableRequiresCurrentPriceInsideEntryRange!==true) process.exit(1);
+          if(policy.technicalHistory?.missingOhlcSynthesisAllowed!==false) process.exit(1);
+          if(policy.technicalHistory?.futureRowsAllowed!==false) process.exit(1);
+          if(policy.technicalHistory?.pointInTimeCutoffRequired!==true) process.exit(1);
+          if(policy.technicalHistory?.productionExecutionGate!==false) process.exit(1);
+          if(th.provenancePolicy?.missingOhlcMayBeSynthesized!==false) process.exit(1);
+          if(th.provenancePolicy?.futureRowsAllowed!==false) process.exit(1);
+          if(ti.indicatorMethodology?.pointInTime!==true) process.exit(1);
+          if(ts.asOfSessionDate!==x.sessionDate) process.exit(1);
+          if((ti.symbols||[]).some(s=>s.usedForCurrentDecision===true && s.currentTechnicalReady!==true)) process.exit(1);
+          if((ti.symbols||[]).some(s=>s.currentTechnicalReady===true && s.asOfSession!==x.sessionDate)) process.exit(1);
           if(tpa.policy?.causeDiagnosisClaimed!==false) process.exit(1);
           if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
           if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
@@ -128,7 +154,8 @@ jobs:
           if(x.riskRewardPolicy?.primaryMetric!=='CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS') process.exit(1);
           if(rr.legacyMetricPolicy!=='AUDIT_ONLY_REFERENCE_UNVERIFIED') process.exit(1);
           if(x.opportunities.some(o=>o.riskReward?.legacyIsPrimary!==false)) process.exit(1);
-          if(profiles.technicalIndicatorPolicy!=='NO_INDICATOR_WITHOUT_VERIFIED_POINT_IN_TIME_DAILY_OHLC_HISTORY') process.exit(1);
+          if(profiles.technicalIndicatorPolicy!=='POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION') process.exit(1);
+          if((profiles.profiles||[]).some(p=>p.technicalAnalysis?.usedForCurrentDecision===true && p.technicalAnalysis?.currentTechnicalReady!==true)) process.exit(1);
           if(!archive.count||!Array.isArray(forward.evaluations)) process.exit(1);
           NODE
 
@@ -147,11 +174,15 @@ jobs:
             data/v20/risk-reward-audit.json \
             data/v20/trade-plan-audit.json \
             data/v20/trade-plan-regression.json \
+            data/v20/technical-history.json \
+            data/v20/technical-indicators.json \
+            data/v20/technical-history-status.json \
+            data/v20/technical-history-regression.json \
             data/v20/stock-profiles.json \
             data/v20/phase3-regression.json \
             data/v20/ui-validation.json \
             data/v20/forward-evaluation.json \
             data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 trade-plan alignment evidence"
+          git commit -m "Update V20 trusted technical history evidence"
           git push origin HEAD:develop/v20-integrated-decision-platform

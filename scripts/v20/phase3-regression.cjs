@@ -25,7 +25,7 @@ check(audit.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS', 'AUD
 check(audit.legacyMetricPolicy === 'AUDIT_ONLY_REFERENCE_UNVERIFIED', 'LEGACY_RR_NOT_AUDIT_ONLY');
 check(audit.methodology?.exactLegacyFormulaClaimed === false, 'UNVERIFIED_LEGACY_RR_FORMULA_CLAIMED');
 check(profiles.profileCount === (current.opportunities || []).length, 'PROFILE_COUNT_MISMATCH');
-check(profiles.technicalIndicatorPolicy === 'NO_INDICATOR_WITHOUT_VERIFIED_POINT_IN_TIME_DAILY_OHLC_HISTORY', 'TECHNICAL_INDICATOR_POLICY_DRIFT');
+check(profiles.technicalIndicatorPolicy === 'POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION', 'TECHNICAL_INDICATOR_POLICY_DRIFT');
 
 for (const row of current.opportunities || []) {
   const rr = row.riskReward || {};
@@ -41,9 +41,14 @@ for (const row of current.opportunities || []) {
 for (const profile of profiles.profiles || []) {
   check(profile.opportunity?.scoreIsConfidence === false, `SCORE_CONFIDENCE_MIXED_${profile.ticker}`);
   check(profile.confidence?.dimensionsAreIndependent === true, `CONFIDENCE_DIMENSIONS_MIXED_${profile.ticker}`);
-  check(profile.technicalAnalysis?.status === 'VERIFIED_DAILY_OHLC_HISTORY_NOT_WIRED_TO_V20_PROFILE_YET', `TECHNICAL_STATUS_UNEXPECTED_${profile.ticker}`);
-  for (const field of ['sma20', 'ema20', 'rsi14', 'macd', 'macdSignal', 'atr14', 'momentum5', 'trend']) {
-    check(profile.technicalAnalysis?.[field] === null, `FABRICATED_TECHNICAL_FIELD_${profile.ticker}_${field}`);
+  check(['CURRENT_POINT_IN_TIME_READY','HISTORICAL_CONTEXT_ONLY','INSUFFICIENT_TRUSTED_HISTORY','UNAVAILABLE'].includes(profile.technicalAnalysis?.status), `TECHNICAL_STATUS_UNEXPECTED_${profile.ticker}`);
+  if (profile.technicalAnalysis?.usedForCurrentDecision === true) {
+    check(profile.technicalAnalysis?.currentTechnicalReady === true, `UNREADY_TECHNICAL_USED_FOR_CURRENT_DECISION_${profile.ticker}`);
+    check(profile.technicalAnalysis?.asOfSession === current.sessionDate, `TECHNICAL_ASOF_SESSION_MISMATCH_${profile.ticker}`);
+    check(profile.whyThisStock?.technicalEvidenceUsed === true, `TECHNICAL_USAGE_NOT_DISCLOSED_${profile.ticker}`);
+  } else {
+    check(profile.whyThisStock?.technicalEvidenceUsed !== true, `STALE_TECHNICAL_STRENGTH_LEAK_${profile.ticker}`);
+    check(!(profile.whyThisStock?.strengths || []).some(x => String(x).startsWith('CURRENT_TRUSTED_TECHNICAL_') || String(x).startsWith('CURRENT_RSI_')), `STALE_TECHNICAL_STRENGTH_${profile.ticker}`);
   }
   check(profile.sectorContext?.sector === null, `UNVERIFIED_SECTOR_INFERRED_${profile.ticker}`);
 }
@@ -92,7 +97,7 @@ for (const horizon of [1, 3, 5, 10, 20]) {
 }
 
 const report = {
-  schemaVersion: '20.0.0-phase3-regression-1',
+  schemaVersion: '20.0.0-phase3-regression-2',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -100,7 +105,8 @@ const report = {
   checks: {
     conservativeNetRiskRewardPrimary: true,
     legacyRiskRewardAuditOnly: true,
-    noFabricatedTechnicalIndicators: true,
+    technicalIndicatorsRequirePointInTimeTrust: true,
+    staleTechnicalCannotDriveCurrentDecision: true,
     scoreConfidenceSeparated: true,
     immutableSignalArchive: true,
     forwardHorizonsSeparated: true,
