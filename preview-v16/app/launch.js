@@ -1,8 +1,8 @@
 'use strict';
 (() => {
   const VERSION = '16.3.3';
-  const ASSET_BUILD = '16.3.3-session-truth-20260814-r2';
-  const SW_BUILD = 'V16.3.3-V169-SESSION-TRUTH-20260814-R2';
+  const ASSET_BUILD = '16.3.3-session-truth-20260814-r3';
+  const SW_BUILD = 'V16.3.3-V169-SESSION-TRUTH-20260814-R3';
   const head = document.head || document.documentElement;
 
   document.documentElement.dataset.egxVersion = VERSION;
