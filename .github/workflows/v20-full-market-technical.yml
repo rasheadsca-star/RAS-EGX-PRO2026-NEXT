@@ -1,0 +1,72 @@
+name: V20 Full Market Technical Refresh
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - ".github/workflows/v20-full-market-technical.yml"
+      - "scripts/v20/build-full-market-technical.cjs"
+      - "scripts/v20/full-market-technical-regression.cjs"
+      - "data/v20/master-universe.json"
+      - "data/v20/current-market-snapshot.json"
+      - "data/v20/current.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-v20-full-market-technical-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh-full-market-technical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with: {fetch-depth: 1}
+      - name: Enforce V20 isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
+          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-full-market-technical\.yml$)' || true)"
+          test -z "$violations" || { echo "$violations"; exit 1; }
+      - uses: actions/setup-node@v6
+        with: {node-version: "22"}
+      - name: Validate builder
+        run: |
+          node --check scripts/v20/build-full-market-technical.cjs
+          node --check scripts/v20/full-market-technical-regression.cjs
+      - name: Build trusted full-market technical evidence
+        env:
+          V20_FULL_TECH_NETWORK_REFRESH: "true"
+          V20_FULL_TECH_CONCURRENCY: "6"
+          V20_FULL_TECH_RANGE: "6mo"
+          V20_FULL_TECH_PRICE_TOLERANCE_PCT: "5"
+        run: node scripts/v20/build-full-market-technical.cjs
+      - name: Run full-market technical regression
+        run: node scripts/v20/full-market-technical-regression.cjs
+      - name: Acceptance
+        run: |
+          node - <<'NODE'
+          const x=require('./data/v20/full-market-technical.json');
+          const r=require('./data/v20/full-market-technical-regression.json');
+          if(r.ok!==true||x.policy?.usedForDecisionScore!==false||x.policy?.usedForExecutionGate!==false||x.policy?.usedForProductionAllocation!==false) process.exit(1);
+          if((x.symbols||[]).some(s=>s.currentReady===true&&(s.asOfSession!==x.asOfSessionDate||s.identityVerified!==true))) process.exit(1);
+          NODE
+      - name: Persist full-market technical evidence only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v20/full-market-technical.json data/v20/full-market-technical-regression.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update V20 full-market technical evidence"
+          git fetch origin develop/v20-integrated-decision-platform
+          git rebase origin/develop/v20-integrated-decision-platform
+          git push origin HEAD:develop/v20-integrated-decision-platform
