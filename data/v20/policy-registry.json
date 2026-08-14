@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-policy-registry-1",
+  "schemaVersion": "20.0.0-policy-registry-2",
   "effectiveFrom": "2026-08-14",
   "status": "CONTROLLED_INTEGRATION",
   "principles": {
@@ -62,7 +62,23 @@
     "entryReferenceForRiskMath": "ENTRY_HIGH",
     "sameDailyCandleTargetStopAmbiguity": "CONSERVATIVE_STOP_OR_AMBIGUOUS_IF_EXISTING_LEDGER_SUPPORTS_IT",
     "chaseForbidden": true,
-    "nextOpenExecutionAssumptionAllowedOnlyWhenExplicitlyBacktested": true
+    "nextOpenExecutionAssumptionAllowedOnlyWhenExplicitlyBacktested": true,
+    "currentPriceAlignment": {
+      "enabled": true,
+      "warningDistancePct": 5,
+      "hardReviewDistancePct": 20,
+      "distanceFormula": "ABS(entryMidpoint-currentPrice)/currentPrice*100",
+      "actionableRequiresCurrentPriceInsideEntryRange": true,
+      "aboveEntryRangeAction": "FORCE_WAIT_DO_NOT_CHASE",
+      "belowEntryRangeAction": "FORCE_WAIT_UNTIL_ENTRY_ZONE",
+      "hardReviewAction": "FORCE_WAIT_REQUIRE_PLAN_REBUILD",
+      "hardReviewCause": "PRICE_SCALE_OR_STALENESS_UNVERIFIED",
+      "relationshipRequirements": {
+        "long": "stop < entryLow <= entryHigh < target1"
+      },
+      "calibrationStatus": "OPERATIONAL_SANITY_GUARD_NOT_MODEL_EDGE_CALIBRATION",
+      "note": "The 5% warning and 20% hard-review thresholds are defensive operational sanity checks. They do not claim model calibration and do not diagnose corporate actions, stale data, or price-scale changes without source evidence."
+    }
   },
   "confidence": {
     "dimensions": [

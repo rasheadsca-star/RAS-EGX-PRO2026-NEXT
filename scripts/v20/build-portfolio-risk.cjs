@@ -51,10 +51,14 @@ const appliedBudgetPct = globalExecutionOpen ? Math.min(maxTotal, stateCap) : 0;
 
 function validActionable(row) {
   const t1 = row?.tradePlan?.target1Metrics || {};
+  const alignment = row?.tradePlan?.alignment || {};
   return row?.status === 'ACTIONABLE'
     && row?.liquidityExecutionEligible === true
     && row?.supportResistance?.executionEligible === true
     && row?.supportResistance?.sessionAligned === true
+    && alignment?.eligibleForActionable === true
+    && alignment?.state === 'IN_ENTRY_RANGE'
+    && alignment?.relationshipValid === true
     && Number.isFinite(Number(row?.tradePlan?.entryLow))
     && Number.isFinite(Number(row?.tradePlan?.entryHigh))
     && Number.isFinite(Number(row?.tradePlan?.stop))
@@ -71,10 +75,12 @@ const appliedWeightByTicker = new Map(actionable.map(row => [row.ticker, round(a
 const shadowCandidates = (current.opportunities || [])
   .filter(row => {
     const rr = finite(row?.tradePlan?.target1Metrics?.netRiskReward);
+    const alignment = row?.tradePlan?.alignment || {};
     return ['WATCH', 'ACTIONABLE'].includes(row?.status)
       && row?.liquidityExecutionEligible === true
       && row?.supportResistance
       && row?.supportResistance?.sessionAligned === true
+      && alignment?.eligibleForActionable === true
       && rr !== null
       && rr > 0;
   })
@@ -123,16 +129,17 @@ current.portfolio = {
   shadowResearch: {
     enabled: p.adaptiveWeightingShadowResearchAllowed === true,
     researchOnly: true,
-    weightingMethod: 'QUALITY_WEIGHTED_SCORE_X_DATA_CONFIDENCE_X_NET_RR_CAPPED',
+    weightingMethod: 'QUALITY_WEIGHTED_SCORE_X_DATA_CONFIDENCE_X_NET_RR_CAPPED_AFTER_TRADE_PLAN_ALIGNMENT',
     exposurePct: shadowExposurePct,
     appliedToProductionPortfolio: false,
     candidateCount: shadowCandidates.length,
+    requiresCurrentPriceInsideEntryRange: true,
   },
   unfilledMemberPolicy: p.unfilledMemberPolicy || 'KEEP_CASH',
 };
 
 const report = {
-  schemaVersion: '20.0.0-portfolio-risk-1',
+  schemaVersion: '20.0.0-portfolio-risk-2',
   generatedAt: new Date().toISOString(),
   sessionDate: current.sessionDate,
   executionStatus: current.executionStatus,
@@ -150,11 +157,13 @@ const report = {
     positionWeightPct: appliedWeightByTicker.get(row.ticker) || 0,
     status: row.status,
     netRiskReward: finite(row?.tradePlan?.target1Metrics?.netRiskReward),
+    tradePlanAlignmentState: row?.tradePlan?.alignment?.state || null,
   })),
   shadowResearchPlan: {
     researchOnly: true,
     notExecutionAdvice: true,
     weightingMethod: current.portfolio.shadowResearch.weightingMethod,
+    requiresCurrentPriceInsideEntryRange: true,
     exposurePct: shadowExposurePct,
     positions: shadowCandidates.map(row => ({
       ticker: row.ticker,
@@ -163,11 +172,13 @@ const report = {
       opportunityScore: finite(row.opportunityScore),
       dataConfidencePct: finite(row?.confidence?.dataConfidencePct),
       netRiskReward: finite(row?.tradePlan?.target1Metrics?.netRiskReward),
+      tradePlanAlignmentState: row?.tradePlan?.alignment?.state || null,
     })),
   },
   invariants: {
     v17FinalGateAuthoritative: true,
     closedGateMeansZeroAppliedExposure: !globalExecutionOpen ? recommendedExposurePct === 0 : true,
+    actionableRequiresTradePlanAlignment: true,
     automaticOrders: false,
     automaticPromotion: false,
     adaptiveProductionWeighting: false,

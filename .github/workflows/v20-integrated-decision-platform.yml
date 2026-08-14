@@ -50,10 +50,12 @@ jobs:
           node --check scripts/v20/build-data-truth.cjs
           node --check scripts/v20/build-integrated-decision-snapshot.cjs
           node --check scripts/v20/enrich-risk-reward.cjs
+          node --check scripts/v20/validate-trade-plans.cjs
           node --check scripts/v20/build-portfolio-risk.cjs
           node --check scripts/v20/build-stock-profiles.cjs
           node --check scripts/v20/archive-signal.cjs
           node --check scripts/v20/regression.cjs
+          node --check scripts/v20/trade-plan-regression.cjs
           node --check scripts/v20/phase3-regression.cjs
           node --check scripts/v20/validate-ui.cjs
           node --check v20/app.js
@@ -69,6 +71,9 @@ jobs:
       - name: Enrich conservative cost-aware risk reward
         run: node scripts/v20/enrich-risk-reward.cjs
 
+      - name: Validate trade plan current-price alignment
+        run: node scripts/v20/validate-trade-plans.cjs
+
       - name: Build portfolio risk plan
         run: node scripts/v20/build-portfolio-risk.cjs
 
@@ -81,6 +86,9 @@ jobs:
       - name: Run governance and risk regression suite
         run: node scripts/v20/regression.cjs
 
+      - name: Run trade-plan alignment regression
+        run: node scripts/v20/trade-plan-regression.cjs
+
       - name: Run Phase 3 truth and archive regression
         run: node scripts/v20/phase3-regression.cjs
 
@@ -92,6 +100,8 @@ jobs:
           node - <<'NODE'
           const x=require('./data/v20/current.json');
           const r=require('./data/v20/regression.json');
+          const tr=require('./data/v20/trade-plan-regression.json');
+          const tpa=require('./data/v20/trade-plan-audit.json');
           const r3=require('./data/v20/phase3-regression.json');
           const ui=require('./data/v20/ui-validation.json');
           const rr=require('./data/v20/risk-reward-audit.json');
@@ -100,12 +110,18 @@ jobs:
           const forward=require('./data/v20/forward-evaluation.json');
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
-          if(r.ok!==true||r3.ok!==true||ui.ok!==true) process.exit(1);
+          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true) process.exit(1);
+          if(policy.tradePlan?.currentPriceAlignment?.enabled!==true) process.exit(1);
+          if(policy.tradePlan?.currentPriceAlignment?.actionableRequiresCurrentPriceInsideEntryRange!==true) process.exit(1);
+          if(tpa.policy?.causeDiagnosisClaimed!==false) process.exit(1);
           if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
           if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
           if(x.executionStatus!=='EXECUTION_GRADE' && x.opportunities.some(o=>o.status==='ACTIONABLE')) process.exit(1);
           if(x.executionStatus!=='EXECUTION_GRADE' && x.portfolio.recommendedExposurePct!==0) process.exit(1);
           if(x.executionStatus!=='EXECUTION_GRADE' && p.appliedPositions.length!==0) process.exit(1);
+          if(x.opportunities.some(o=>o.status==='ACTIONABLE' && o.tradePlan?.alignment?.eligibleForActionable!==true)) process.exit(1);
+          if(x.opportunities.some(o=>o.status==='ACTIONABLE' && o.tradePlan?.alignment?.state!=='IN_ENTRY_RANGE')) process.exit(1);
+          if(x.opportunities.some(o=>o.tradePlan?.alignment?.state==='REBUILD_REQUIRED' && !['WAIT','AVOID'].includes(o.status))) process.exit(1);
           if(x.portfolio.recommendedExposurePct>policy.portfolio.maximumTotalAllocationPct) process.exit(1);
           if(x.portfolio.shadowResearch?.appliedToProductionPortfolio!==false) process.exit(1);
           if(x.opportunities.some(o=>Number(o.suggestedPositionWeightPct||0)>policy.portfolio.maximumSinglePositionPct)) process.exit(1);
@@ -129,11 +145,13 @@ jobs:
             data/v20/source-health.json \
             data/v20/portfolio-risk.json \
             data/v20/risk-reward-audit.json \
+            data/v20/trade-plan-audit.json \
+            data/v20/trade-plan-regression.json \
             data/v20/stock-profiles.json \
             data/v20/phase3-regression.json \
             data/v20/ui-validation.json \
             data/v20/forward-evaluation.json \
             data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 analytical and immutable signal evidence"
+          git commit -m "Update V20 trade-plan alignment evidence"
           git push origin HEAD:develop/v20-integrated-decision-platform
