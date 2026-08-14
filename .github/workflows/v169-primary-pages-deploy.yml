@@ -7,10 +7,7 @@ on:
       - "index.html"
       - "manifest.json"
       - "service-worker.js"
-      - "preview-v16/app/v169.html"
-      - "preview-v16/app/decision-source.js"
-      - "preview-v16/app/launch.js"
-      - "preview-v16/app/v16-9-basket-overlay.js"
+      - "preview-v16/app/**"
       - "data/stable/v16-v169-primary-decision.json"
       - ".github/workflows/v169-primary-pages-deploy.yml"
 
@@ -44,6 +41,7 @@ jobs:
           node --check preview-v16/app/decision-source.js
           node --check preview-v16/app/launch.js
           node --check preview-v16/app/v16-9-basket-overlay.js
+          node --check preview-v16/app/session-truth-ui.js
           test -s preview-v16/app/v169.html
           test -s data/stable/v16-v169-primary-decision.json
           test -s data/stable/v15-price-truth.json
