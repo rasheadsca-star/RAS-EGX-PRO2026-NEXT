@@ -32,3 +32,9 @@ current.sessionTruth={canonicalSource:'data/v17/market-session-truth.json',verif
 current.finalization={engine:'V17_SNAPSHOT_SAFETY_FINALIZER',generatedAt:new Date().toISOString(),staleChampionRowsNeutralized,staleChampionCurrentWeightsZeroed:true,immutableSignalHashTouched:false,ledgerTouched:false};
 write('data/v17/current.json',current);
 console.log(JSON.stringify({sessionDate:current.sessionDate,verifiedSession,executionGrade,staleChampionRowsNeutralized,plannedAllocationPct:current.portfolioPolicy?.plannedAllocationPct,championCurrentAllocationPct:current.championReference?.plannedAllocationPct},null,2));
+
+// Build a read-only audit surface after the canonical snapshot is finalized.
+// This file is intentionally separate from the immutable signal ledger: it may
+// evaluate already-recorded signals, but must never rewrite signal hashes or
+// count historical/backfilled rows as native V17 live evidence.
+require('./build-recommendation-track-record.cjs');
