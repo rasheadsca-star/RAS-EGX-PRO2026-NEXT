@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "20.0.0-decision-intelligence-policy-1",
+  "effectiveFrom": "2026-08-15",
+  "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
+  "scoreName": "V20_RESEARCH_DECISION_SCORE",
+  "scoreIsConfidence": false,
+  "scoreCanOpenExecutionGate": false,
+  "scoreCanCreateActionableStatus": false,
+  "scoreCanDriveProductionAllocation": false,
+  "scoreCanChangeChampion": false,
+  "scoreCanTriggerAutomaticPromotion": false,
+  "modelConfidenceMayBeInferredFromScore": false,
+  "rankingMayReplaceProductionChampionRanking": false,
+  "componentWeightsPct": {
+    "legacyOpportunity": 25,
+    "dataEvidence": 20,
+    "liquidity": 15,
+    "supportResistance": 10,
+    "netRiskReward": 15,
+    "tradePlanAlignment": 10,
+    "currentTechnical": 5
+  },
+  "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
+  "minimumEvidenceCoverageForTierPct": 70,
+  "tierThresholds": {
+    "RESEARCH_A": 80,
+    "RESEARCH_B": 65,
+    "RESEARCH_C": 50
+  },
+  "tierExecutionMeaning": "NONE",
+  "defensiveCaps": {
+    "invalidOrRebuildRequiredTradePlanMaxScore": 39,
+    "criticalSourceConflictMaxScore": 35,
+    "missingCriticalEvidenceMaxScore": 50,
+    "aboveEntryRangeDoNotChaseMaxScore": 55
+  },
+  "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
+  "note": "Weights and tier thresholds are transparent research heuristics for explainability and shadow ranking only. They do not claim calibrated alpha, probability, confidence, or execution permission."
+}
