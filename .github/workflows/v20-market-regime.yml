@@ -1,0 +1,131 @@
+name: V20 Current Market Regime Evidence
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - ".github/workflows/v20-market-regime.yml"
+      - "scripts/v20/build-market-regime.cjs"
+      - "scripts/v20/market-regime-regression.cjs"
+      - "scripts/v20/apply-market-regime-integration.cjs"
+      - "data/market.json"
+      - "data/symbol-map.json"
+      - "data/final-opportunity-ranking.json"
+      - "data/v17/current.json"
+      - "data/v17/resilient-session-status.json"
+      - "data/v17/internal-ohlc-support-resistance.json"
+      - "data/v17/liquidity-gate.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-v20-market-regime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-current-market-regime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout V20 integration branch
+        uses: actions/checkout@v6
+        with: {fetch-depth: 1}
+
+      - name: Enforce V20 isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
+          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$)' || true)"
+          test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with: {node-version: "22"}
+
+      - name: Apply market regime integration contract
+        run: node scripts/v20/apply-market-regime-integration.cjs
+
+      - name: Static validation
+        run: |
+          node --check scripts/v20/apply-market-regime-integration.cjs
+          node --check scripts/v20/build-market-regime.cjs
+          node --check scripts/v20/market-regime-regression.cjs
+          node --check scripts/v20/market-regime-unit.cjs
+          node --check scripts/v20/build-integrated-decision-snapshot.cjs
+          node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
+
+      - name: Run market regime unit tests
+        run: node scripts/v20/market-regime-unit.cjs
+
+      - name: Rebuild V20 data truth inputs
+        run: node scripts/v20/build-data-truth.cjs
+
+      - name: Build current full-market regime evidence
+        env:
+          V20_REGIME_NETWORK_REFRESH: "true"
+          V20_REGIME_CONCURRENCY: "6"
+          V20_REGIME_MIN_PARTICIPATION_PCT: "60"
+          V20_REGIME_PRICE_TOLERANCE_PCT: "5"
+          V20_REGIME_MIN_TRUSTED_SESSIONS: "50"
+          V20_REGIME_FETCH_RANGE: "6mo"
+        run: node scripts/v20/build-market-regime.cjs
+
+      - name: Run market regime leakage and provenance regression
+        run: node scripts/v20/market-regime-regression.cjs
+
+      - name: Rebuild integrated decision snapshot with regime evidence
+        run: node scripts/v20/build-integrated-decision-snapshot.cjs
+
+      - name: Acceptance guard
+        run: |
+          node - <<'NODE'
+          const regime=require('./data/v20/market-regime.json');
+          const reg=require('./data/v20/market-regime-regression.json');
+          const x=require('./data/v20/current.json');
+          const policy=require('./data/v20/policy-registry.json');
+          const gate=require('./data/v17/resilient-session-status.json');
+          if(reg.ok!==true) process.exit(1);
+          if(policy.marketRegime?.minimumVerifiedParticipationPct!==60) process.exit(1);
+          if(policy.marketRegime?.futureRowsAllowed!==false||policy.marketRegime?.missingOhlcSynthesisAllowed!==false) process.exit(1);
+          if(policy.marketRegime?.sectorInputsAllowed!==false) process.exit(1);
+          if(policy.marketRegime?.staleV16RegimeMayBePromotedToCurrent!==false) process.exit(1);
+          if(policy.marketRegime?.productionRiskBudgetInfluence!==false||policy.marketRegime?.executionGateInfluence!==false) process.exit(1);
+          if(regime.asOfSessionDate!==x.sessionDate) process.exit(1);
+          if(regime.verified===true){
+            if(!['BULLISH','NEUTRAL','BEARISH'].includes(regime.regime)) process.exit(1);
+            if(x.marketStatus?.verified!==true||x.marketStatus?.regime!==regime.regime) process.exit(1);
+            if(x.marketStatus?.marketConfidencePct!==regime.marketConfidencePct) process.exit(1);
+          } else {
+            if(regime.regime!=='UNVERIFIED_CURRENT_REGIME') process.exit(1);
+            if(x.marketStatus?.verified!==false||x.marketStatus?.regime!=='UNVERIFIED_CURRENT_REGIME') process.exit(1);
+            if(Number(x.marketStatus?.marketConfidencePct)!==0) process.exit(1);
+          }
+          if(x.marketStatus?.productionRiskBudgetInfluence!==false||x.marketStatus?.executionGateInfluence!==false) process.exit(1);
+          if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
+          if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
+          if(gate.executionGrade!==true && x.executionStatus==='EXECUTION_GRADE') process.exit(1);
+          if(gate.executionGrade!==true && x.opportunities.some(o=>o.status==='ACTIONABLE')) process.exit(1);
+          if(gate.executionGrade!==true && x.portfolio.recommendedExposurePct!==0) process.exit(1);
+          NODE
+
+      - name: Persist Phase 8 regime evidence and integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            scripts/v20/build-integrated-decision-snapshot.cjs \
+            data/v20/policy-registry.json \
+            data/v20/market-regime.json \
+            data/v20/market-regime-regression.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Update V20 current market regime evidence"
+          git fetch origin develop/v20-integrated-decision-platform
+          git rebase origin/develop/v20-integrated-decision-platform
+          git push origin HEAD:develop/v20-integrated-decision-platform
