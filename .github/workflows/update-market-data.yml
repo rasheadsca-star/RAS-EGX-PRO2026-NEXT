@@ -106,24 +106,30 @@ jobs:
           node scripts/v17/enrich-snapshot.cjs
           node scripts/v17/finalize-snapshot.cjs
           node scripts/v17/snapshot-provenance-guard.cjs
+      - name: Real Chromium runtime critic
+        run: |
+          set -euo pipefail
+          test "${{ steps.playwright.outcome }}" = "success" || { echo "Playwright tooling unavailable"; exit 1; }
+          node scripts/v17/browser-runtime-critic.cjs
       - name: Independent V17 current-session review V5
         run: node scripts/v17/review-v5.cjs
       - name: V17 native regression contract V3
         run: node scripts/v17/regression-v3.cjs
       - name: Snapshot provenance guard after regression
         run: node scripts/v17/snapshot-provenance-guard.cjs
-      - name: Destructive adversarial critic V3
-        run: node scripts/v17/destructive-critic-v3.cjs
+      - name: Destructive adversarial critic V4
+        run: node scripts/v17/destructive-critic-v4.cjs
       - name: Acceptance guard
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json')); const z=JSON.parse(fs.readFileSync('data/v17/destructive-critic.json'));
+          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json')); const b=JSON.parse(fs.readFileSync('data/v17/browser-runtime-critic.json')); const z=JSON.parse(fs.readFileSync('data/v17/destructive-critic.json'));
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.schemaVersion!=='17.0.0-review-5'||r.verdict!=='NO_COMMENTS'||Object.values(r.counts||{}).some(Number)) throw new Error('Independent review V5 is not NO_COMMENTS');
           if(q.schemaVersion!=='17.0.0-regression-3'||q.ok!==true||Number(q.failedCount||0)!==0||Number(q.criticalFailedCount||0)!==0) throw new Error(`V17 regression V3 failed: ${(q.failed||[]).join(', ')}`);
-          if(z.schemaVersion!=='17.0.0-destructive-critic-3'||z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0) throw new Error(`Destructive critic V3 found ${z.totalFindings} findings`);
+          if(b.schemaVersion!=='17.0.0-browser-runtime-critic-1'||b.verdict!=='NO_COMMENTS'||Number(b.totalFindings||0)!==0||Object.values(b.counts||{}).some(Number)) throw new Error(`Browser runtime critic found ${b.totalFindings} findings`);
+          if(z.schemaVersion!=='17.0.0-destructive-critic-4'||z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0||Object.values(z.counts||{}).some(Number)) throw new Error(`Destructive critic V4 found ${z.totalFindings} findings`);
           if(g?.policy?.doesNotChangeExecutionEligibility!==true||g?.policy?.gateThresholdsUnchanged!==true) throw new Error('S/R diagnostic attempted to change execution policy');
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate||x.sessionDate!==t.selectedSessionDate) throw new Error('Current session truth not aligned');
           if(x.enrichment?.immutableSignalHashTouched!==false||x.finalization?.immutableSignalHashTouched!==false||x.finalization?.ledgerTouched!==false) throw new Error('Snapshot processing touched immutable signal contract');
@@ -134,7 +140,7 @@ jobs:
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0||Number(x.portfolioPolicy?.cashReservePct||0)!==100) throw new Error('Non-execution status has exposure'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,liquidityEvidenceCoveragePct:l.candidateEvidenceCoveragePct,liquidityExecutionOkCount:l.candidateExecutionOkCount,srGapSummary:g.summary,review:r.verdict,regression:q.ok,destructiveCritic:z.verdict,snapshotProvenance:true},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,review:r.verdict,regression:q.ok,browserRuntime:b.verdict,destructiveCritic:z.verdict},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
@@ -153,6 +159,7 @@ jobs:
             data/v17/ledger.json
             data/v17/review.json
             data/v17/regression.json
+            data/v17/browser-runtime-critic.json
             data/v17/destructive-critic.json
             data/mubasher-support-resistance-direct-report.json
             data/mubasher-support-resistance-rendered.json
