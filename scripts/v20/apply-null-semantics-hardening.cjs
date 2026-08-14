@@ -30,7 +30,6 @@ for (const rel of [
   'scripts/v20/build-trusted-technical-history.cjs',
   'scripts/v20/enrich-risk-reward.cjs',
   'scripts/v20/validate-trade-plans.cjs',
-  'v20/portfolio-core.js',
 ]) results.push(replaceExact(rel, unsafeSimple, safeSimple));
 
 for (const rel of [
@@ -38,6 +37,12 @@ for (const rel of [
   'scripts/v20/build-integrated-decision-snapshot.cjs',
   'scripts/v20/build-portfolio-risk.cjs',
 ]) results.push(replaceExact(rel, unsafeFallback, safeFallback));
+
+results.push(replaceExact(
+  'v20/portfolio-core.js',
+  `  function finite(value) {\n    const n = Number(value);\n    return Number.isFinite(n) ? n : null;\n  }`,
+  `  function finite(value) {\n    if (value === null || value === undefined || value === '') return null;\n    const n = Number(value);\n    return Number.isFinite(n) ? n : null;\n  }`
+));
 
 results.push(replaceExact(
   'scripts/v20/regression.cjs',
@@ -66,7 +71,7 @@ results.push(replaceExact(
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-1',
+  schemaVersion: '20.0.0-null-semantics-hardening-2',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   immutableCompatibilityExclusions: [
