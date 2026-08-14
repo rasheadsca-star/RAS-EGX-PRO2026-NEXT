@@ -13,7 +13,11 @@ const portfolioCss = read('v20/portfolio.css');
 const js = read('v20/app.js');
 const portfolioJs = read('v20/portfolio.js');
 const portfolioCore = read('v20/portfolio-core.js');
+const performanceHtml = read('v20/performance.html');
+const performanceCss = read('v20/performance.css');
+const performanceJs = read('v20/performance.js');
 const explorer = json('data/v20/market-explorer.json');
+const performance = json('data/v20/performance-evidence-registry.json');
 const policy = json('data/v20/policy-registry.json');
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
@@ -62,6 +66,33 @@ check(portfolioJs.includes("json('../data/v20/current.json')"), 'PORTFOLIO_EXECU
 check(portfolioJs.includes('لا تنشئ أوامر شراء/بيع'), 'PORTFOLIO_NO_ORDER_UI_WARNING_MISSING');
 check(!/fetch\([^)]*,\s*\{[^}]*method\s*:\s*['"]POST['"]/is.test(portfolioJs), 'PORTFOLIO_SERVER_POST_DETECTED');
 
+check(/<html\s+lang="ar"\s+dir="rtl">/i.test(performanceHtml), 'PERFORMANCE_ARABIC_RTL_MISSING');
+check(/meta\s+name="viewport"/i.test(performanceHtml), 'PERFORMANCE_VIEWPORT_MISSING');
+for (const id of ['performanceEvidenceCount','performanceForwardState','performancePolicyNote','performanceGrid','performanceV18Note','performanceContent']) {
+  check(performanceHtml.includes(`id="${id}"`), `PERFORMANCE_UI_MISSING_${id.toUpperCase()}`);
+}
+check(performanceHtml.includes('href="./index.html"'), 'PERFORMANCE_BACK_TO_PLATFORM_LINK_MISSING');
+check(performanceHtml.includes('src="./performance.js"'), 'PERFORMANCE_SCRIPT_NOT_LOADED');
+check(performanceHtml.includes('href="./performance.css"'), 'PERFORMANCE_CSS_NOT_LOADED');
+check(performanceHtml.includes('لا يتم دمج الاختبار التاريخي'), 'PERFORMANCE_SEPARATION_COPY_MISSING');
+check(!performanceHtml.includes('id="performanceHeadlineReturn"'), 'PERFORMANCE_HEADLINE_RETURN_UI_PRESENT');
+check(performanceJs.includes("loadJson('../data/v20/performance-evidence-registry.json')"), 'PERFORMANCE_REGISTRY_NOT_WIRED');
+check(performanceJs.includes("registry.policy?.singleHeadlinePerformanceMetricAllowed !== false"), 'PERFORMANCE_POLICY_RUNTIME_GUARD_MISSING');
+check(performanceJs.includes('REUSED_BENCHMARK_NOT_INDEPENDENT'), 'REUSED_BENCHMARK_WARNING_NOT_RENDERED');
+check(performanceJs.includes('DEVELOPMENT_OOS'), 'DEVELOPMENT_EVIDENCE_NOT_RENDERED');
+check(performanceJs.includes('LIVE_FORWARD'), 'LIVE_FORWARD_NOT_RENDERED');
+check(performanceJs.includes('غير صالح كدليل ترقية'), 'REUSED_BENCHMARK_PROMOTION_WARNING_MISSING');
+check(performanceJs.includes('لا يوجد عائد محسوم بعد'), 'PENDING_FORWARD_NO_RETURN_COPY_MISSING');
+check(!performanceJs.includes('v19DevelopmentAverageNetReturnPct'), 'PERFORMANCE_UI_USES_SUMMARY_DEVELOPMENT_RETURN');
+check(!performanceJs.includes('v19ReusedBenchmarkAverageNetReturnPct'), 'PERFORMANCE_UI_USES_SUMMARY_BENCHMARK_RETURN');
+try { new Function(performanceJs); } catch { failures.push('PERFORMANCE_JS_SYNTAX_INVALID'); }
+check(performance.policy?.singleHeadlinePerformanceMetricAllowed === false, 'PERFORMANCE_REGISTRY_HEADLINE_POLICY_DRIFT');
+check(performance.policy?.crossEvidenceAggregationAllowed === false, 'PERFORMANCE_REGISTRY_AGGREGATION_POLICY_DRIFT');
+check(performance.policy?.historicalAndForwardEvidenceMustRemainSeparate === true, 'PERFORMANCE_REGISTRY_FORWARD_SEPARATION_DRIFT');
+check(performance.policy?.reusedBenchmarkCanPromoteChallenger === false, 'PERFORMANCE_REGISTRY_PROMOTION_POLICY_DRIFT');
+check(performance.policy?.pendingForwardReturnMustRemainNull === true, 'PERFORMANCE_REGISTRY_PENDING_NULL_POLICY_DRIFT');
+check(performance.policy?.v18PerformanceAccepted === false, 'PERFORMANCE_REGISTRY_V18_POLICY_DRIFT');
+
 check(css.includes('@media(max-width:1024px)'), 'RESPONSIVE_1024_MISSING');
 check(css.includes('@media(max-width:768px)'), 'RESPONSIVE_768_MISSING');
 check(css.includes('@media(max-width:430px)'), 'RESPONSIVE_430_MISSING');
@@ -71,8 +102,14 @@ check(portfolioCss.includes('@media(max-width:1024px)'), 'PORTFOLIO_RESPONSIVE_1
 check(portfolioCss.includes('@media(max-width:768px)'), 'PORTFOLIO_RESPONSIVE_768_MISSING');
 check(portfolioCss.includes('@media(max-width:430px)'), 'PORTFOLIO_RESPONSIVE_430_MISSING');
 check(portfolioCss.includes('@media(max-width:390px)'), 'PORTFOLIO_RESPONSIVE_390_MISSING');
+check(performanceCss.includes('@media(max-width:1024px)'), 'PERFORMANCE_RESPONSIVE_1024_MISSING');
+check(performanceCss.includes('@media(max-width:768px)'), 'PERFORMANCE_RESPONSIVE_768_MISSING');
+check(performanceCss.includes('@media(max-width:430px)'), 'PERFORMANCE_RESPONSIVE_430_MISSING');
+check(performanceCss.includes('@media(max-width:390px)'), 'PERFORMANCE_RESPONSIVE_390_MISSING');
 check(html.includes('aria-live="polite"'), 'ARIA_LIVE_STATUS_MISSING');
+check(performanceHtml.includes('aria-live="polite"'), 'PERFORMANCE_ARIA_LIVE_MISSING');
 check(html.includes('class="skip-link"'), 'SKIP_LINK_MISSING');
+check(performanceHtml.includes('class="skip-link"'), 'PERFORMANCE_SKIP_LINK_MISSING');
 check(explorer.policy?.fullMarketSearch === true, 'EXPLORER_FULL_MARKET_POLICY_NOT_ACTIVE');
 check(explorer.policy?.marketOnlyIsRecommendation === false, 'EXPLORER_MARKET_ONLY_POLICY_DRIFT');
 check(explorer.policy?.semanticRowQualityPropagated === true, 'SEMANTIC_ROW_QUALITY_NOT_PROPAGATED');
@@ -81,7 +118,7 @@ check(policy.userPortfolio?.influencesExecutionGate === false, 'PORTFOLIO_EXECUT
 check(policy.userPortfolio?.automaticOrders === false, 'PORTFOLIO_AUTO_ORDER_POLICY_DRIFT');
 
 const report = {
-  schemaVersion: '20.0.0-ui-validation-3',
+  schemaVersion: '20.0.0-ui-validation-4',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -102,6 +139,11 @@ const report = {
     userPortfolioCurrentSessionValuationOnly: true,
     userPortfolioNoAutomaticOrders: true,
     userPortfolioExecutionGateSeparated: true,
+    performanceEvidencePageSeparated: true,
+    performanceNoHeadlineAggregation: true,
+    performanceReusedBenchmarkWarningVisible: true,
+    performancePendingForwardNoReturn: true,
+    performanceV18Unaccepted: true,
     sourceHealthVisible: true,
     responsiveBreakpoints: [1024, 768, 430, 390],
     reducedMotionSupport: true,
