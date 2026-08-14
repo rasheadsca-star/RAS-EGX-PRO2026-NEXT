@@ -41,21 +41,18 @@ function datedRows(rows) {
     .filter(row => /^\d{4}-\d{2}-\d{2}$/.test(String(row?.date || '')))
     .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
 }
-function latest(rows, predicate=()=>true) {
-  return datedRows(rows).filter(predicate).at(-1) || null;
-}
-function onDate(rows, date) {
-  return datedRows(rows).find(row => String(row.date) === date) || null;
-}
-function sourceQuality(row) {
-  return String(row?.sourceQuality || row?.source || row?.primarySource || '').trim() || null;
-}
+function latest(rows, predicate=()=>true) { return datedRows(rows).filter(predicate).at(-1) || null; }
+function onDate(rows, date) { return datedRows(rows).find(row => String(row.date) === date) || null; }
+function sourceQuality(row) { return String(row?.sourceQuality || row?.source || row?.primarySource || '').trim() || null; }
 function classifyQuality(row, origin) {
   if (!row) return { origin, class: 'NONE', executionSafe: false };
   const q = sourceQuality(row) || '';
   const official = row.officialVerified === true || row?.confidence?.officialVerified === true;
   if (official) return { origin, class: 'OFFICIALLY_VERIFIED', executionSafe: true, sourceQuality: q || null };
   if (/workflow-market-snapshot/i.test(q)) return { origin, class: 'WORKFLOW_MARKET_SNAPSHOT', executionSafe: true, sourceQuality: q };
+  // V11.3 parses/validates real public or licensed historical OHLCV and explicitly never fabricates missing sessions.
+  if (/public_automated_historical_backfill/i.test(q)) return { origin, class: 'PUBLIC_VALIDATED_HISTORICAL_BACKFILL', executionSafe: true, sourceQuality: q };
+  if (/optional_licensed|licensed.*histor/i.test(q)) return { origin, class: 'LICENSED_VALIDATED_HISTORICAL_BACKFILL', executionSafe: true, sourceQuality: q };
   if (/mubasher-historical-best-effort/i.test(q)) return { origin, class: 'EXTERNAL_BEST_EFFORT_UNVERIFIED', executionSafe: false, sourceQuality: q };
   if (/snapshot_ohlc_derived|derived_from_public_market_data/i.test(q)) return { origin, class: 'DERIVED_OHLC_NOT_EXECUTION_SAFE', executionSafe: false, sourceQuality: q };
   if (/recovered_from_repository_snapshot|git_commit_date/i.test(q)) return { origin, class: 'RECOVERED_DATE_NOT_EXECUTION_SAFE', executionSafe: false, sourceQuality: q };
@@ -71,9 +68,7 @@ function summarizePoint(row, origin) {
     quality: classifyQuality(row, origin),
   };
 }
-function perSymbolHistory(symbol) {
-  return read(`data/history/${symbol}.json`, null);
-}
+function perSymbolHistory(symbol) { return read(`data/history/${symbol}.json`, null); }
 
 const internal = read('data/v17/internal-ohlc-support-resistance.json');
 const history50 = read('data/history-50.json', { symbols: {} });
@@ -81,6 +76,7 @@ const legacyHistory = read('data/history.json', { sessionsBySymbol: {} });
 const market = read('data/market.json', { rows: [] });
 const ranking = read('data/final-opportunity-ranking.json', { rows: [] });
 const v56Source = text('scripts/build-v56-history-50.js');
+const v113Source = text('scripts/build-v113-historical-backfill-engine.js');
 
 const candidateSymbols = Array.isArray(internal.candidateSymbols) && internal.candidateSymbols.length
   ? internal.candidateSymbols.map(sym).filter(Boolean)
@@ -138,10 +134,7 @@ for (const symbol of candidateSymbols) {
       source: sr.source || null,
       executionEligible: sr.executionEligible === true,
     } : null,
-    marketCurrent: marketRow ? {
-      validOhlc: validOhlc(marketRow), validRange: validRange(marketRow),
-      source: marketRow.source || market.source || null,
-    } : null,
+    marketCurrent: marketRow ? { validOhlc: validOhlc(marketRow), validRange: validRange(marketRow), source: marketRow.source || market.source || null } : null,
     levelSessionEvidence: {
       history50: summarizePoint(h50OnLevel, 'history-50'),
       legacyHistory: summarizePoint(legacyOnLevel, 'history.json:sessionsBySymbol'),
@@ -154,8 +147,10 @@ for (const symbol of candidateSymbols) {
     },
     trustedRecoveryAvailable: Boolean(trustedRecovery),
     trustedRecoveryOrigin: trustedRecovery?.origin || null,
+    trustedRecoveryPoint: trustedRecovery ? summarizePoint(trustedRecovery.row, trustedRecovery.origin) : null,
     researchOnlyRecoveryAvailable: Boolean(researchRecovery),
     researchOnlyRecoveryOrigin: researchRecovery?.origin || null,
+    researchOnlyRecoveryPoint: researchRecovery ? summarizePoint(researchRecovery.row, researchRecovery.origin) : null,
   });
 }
 
@@ -164,9 +159,22 @@ const byDiagnosis = diagnostics.reduce((acc,row)=>{acc[row.diagnosis]=(acc[row.d
 const missingRows = diagnostics.filter(row => !row.internal);
 const staleRows = diagnostics.filter(row => row.internal && row.internal.sessionDate !== levelSessionDate);
 const freshRows = diagnostics.filter(row => row.internal && row.internal.sessionDate === levelSessionDate);
+const compactRecovery = row => ({
+  symbol: row.symbol,
+  diagnosis: row.diagnosis,
+  currentInternalSession: row.internal?.sessionDate || null,
+  trustedRecoveryOrigin: row.trustedRecoveryOrigin,
+  trustedRecoveryPoint: row.trustedRecoveryPoint,
+  researchOnlyRecoveryOrigin: row.researchOnlyRecoveryOrigin,
+  researchOnlyRecoveryPoint: row.researchOnlyRecoveryPoint,
+});
+const trustedMissingRecoveries = missingRows.filter(row => row.trustedRecoveryAvailable).map(compactRecovery);
+const trustedStaleRecoveries = staleRows.filter(row => row.trustedRecoveryAvailable).map(compactRecovery);
+const researchOnlyMissingRecoveries = missingRows.filter(row => !row.trustedRecoveryAvailable && row.researchOnlyRecoveryAvailable).map(compactRecovery);
+const researchOnlyStaleRecoveries = staleRows.filter(row => !row.trustedRecoveryAvailable && row.researchOnlyRecoveryAvailable).map(compactRecovery);
 
 const output = {
-  schemaVersion: '17.0.0-sr-history-gap-diagnostics-1',
+  schemaVersion: '17.0.0-sr-history-gap-diagnostics-2',
   generatedAt: new Date().toISOString(),
   referenceSessionDate,
   levelSessionDate,
@@ -175,6 +183,10 @@ const output = {
     freshInternalCount: freshRows.length,
     staleInternalCount: staleRows.length,
     missingInternalCount: missingRows.length,
+    trustedMissingRecoveryCount: trustedMissingRecoveries.length,
+    trustedStaleRecoveryCount: trustedStaleRecoveries.length,
+    researchOnlyMissingRecoveryCount: researchOnlyMissingRecoveries.length,
+    researchOnlyStaleRecoveryCount: researchOnlyStaleRecoveries.length,
     trustedRecoveryAvailableCount: counts('trustedRecoveryAvailable'),
     researchOnlyRecoveryAvailableCount: counts('researchOnlyRecoveryAvailable'),
     byDiagnosis,
@@ -187,17 +199,27 @@ const output = {
       ? 'V56_HISTORY_50_DOES_NOT_IMPORT_SESSIONS_BY_SYMBOL_SCHEMA'
       : 'NO_SCHEMA_IMPORT_MISMATCH_DETECTED',
   },
+  sourceContractAudit: {
+    publicAutomatedHistoricalBackfillTrusted: /Never fabricates missing sessions/i.test(v113Source) && /public_automated_historical_backfill/.test(v113Source) && /validSession/.test(v113Source),
+    source: 'scripts/build-v113-historical-backfill-engine.js',
+    acceptedTrustedQualityClasses: ['OFFICIALLY_VERIFIED','WORKFLOW_MARKET_SNAPSHOT','PUBLIC_VALIDATED_HISTORICAL_BACKFILL','LICENSED_VALIDATED_HISTORICAL_BACKFILL'],
+  },
   policy: {
     diagnosticOnly: true,
     doesNotChangeExecutionEligibility: true,
     derivedOhlcCannotRepairExecutionFreshness: true,
     recoveredCommitDateRowsCannotRepairExecutionFreshness: true,
     seedOrSingleSourceRowsCannotRepairExecutionFreshness: true,
-    officiallyVerifiedOrWorkflowMarketSnapshotRequiredForTrustedRecovery: true,
+    publicValidatedBackfillMayRepairOnlyExactCompletedSession: true,
+    officiallyVerifiedOrValidatedRealPublicOhlcRequiredForTrustedRecovery: true,
     gateThresholdsUnchanged: true,
   },
   missingSymbols: missingRows.map(row => row.symbol),
   staleSymbols: staleRows.map(row => row.symbol),
+  trustedMissingRecoveries,
+  trustedStaleRecoveries,
+  researchOnlyMissingRecoveries,
+  researchOnlyStaleRecoveries,
   rows: diagnostics,
 };
 
@@ -207,5 +229,8 @@ console.log(JSON.stringify({
   levelSessionDate,
   candidateUniverse: candidateSymbols.length,
   ...output.summary,
+  trustedMissingRecoveries,
+  trustedStaleRecoveries,
   schemaAudit: output.schemaAudit,
+  sourceContractAudit: output.sourceContractAudit,
 }, null, 2));
