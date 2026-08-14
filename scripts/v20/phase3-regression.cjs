@@ -8,12 +8,17 @@ const crypto = require('crypto');
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const P = rel => path.join(root, rel);
 const read = rel => JSON.parse(fs.readFileSync(P(rel), 'utf8'));
-const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
+const finite = value => {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
 const sha = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 const current = read('data/v20/current.json');
 const audit = read('data/v20/risk-reward-audit.json');
 const profiles = read('data/v20/stock-profiles.json');
+const decisionPolicy = read('data/v20/decision-intelligence-policy.json');
 const archiveIndex = read('data/v20/signal-archive/index.json');
 const forward = read('data/v20/forward-evaluation.json');
 
@@ -24,8 +29,28 @@ check(current.riskRewardPolicy?.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROU
 check(audit.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS', 'AUDIT_PRIMARY_RR_POLICY_DRIFT');
 check(audit.legacyMetricPolicy === 'AUDIT_ONLY_REFERENCE_UNVERIFIED', 'LEGACY_RR_NOT_AUDIT_ONLY');
 check(audit.methodology?.exactLegacyFormulaClaimed === false, 'UNVERIFIED_LEGACY_RR_FORMULA_CLAIMED');
+check(profiles.schemaVersion === '20.0.0-stock-profiles-3', 'STOCK_PROFILES_SCHEMA_NOT_V3');
 check(profiles.profileCount === (current.opportunities || []).length, 'PROFILE_COUNT_MISMATCH');
 check(profiles.technicalIndicatorPolicy === 'POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION', 'TECHNICAL_INDICATOR_POLICY_DRIFT');
+
+check(decisionPolicy.status === 'SHADOW_RESEARCH_ONLY_UNCALIBRATED', 'DECISION_POLICY_NOT_SHADOW_RESEARCH');
+check(decisionPolicy.scoreIsConfidence === false, 'DECISION_POLICY_SCORE_CONFIDENCE_MIX');
+check(decisionPolicy.scoreCanOpenExecutionGate === false, 'DECISION_POLICY_EXECUTION_GATE_LEAK');
+check(decisionPolicy.scoreCanCreateActionableStatus === false, 'DECISION_POLICY_ACTIONABLE_LEAK');
+check(decisionPolicy.scoreCanDriveProductionAllocation === false, 'DECISION_POLICY_ALLOCATION_LEAK');
+check(decisionPolicy.scoreCanChangeChampion === false, 'DECISION_POLICY_CHAMPION_LEAK');
+check(decisionPolicy.scoreCanTriggerAutomaticPromotion === false, 'DECISION_POLICY_PROMOTION_LEAK');
+check(decisionPolicy.modelConfidenceMayBeInferredFromScore === false, 'DECISION_POLICY_MODEL_CONFIDENCE_INFERENCE');
+check(decisionPolicy.rankingMayReplaceProductionChampionRanking === false, 'DECISION_POLICY_PRODUCTION_RANKING_REPLACEMENT');
+const decisionKeys = ['legacyOpportunity','dataEvidence','liquidity','supportResistance','netRiskReward','tradePlanAlignment','currentTechnical'];
+check(decisionKeys.reduce((sum, key) => sum + Number(decisionPolicy.componentWeightsPct?.[key] || 0), 0) === 100, 'DECISION_POLICY_WEIGHTS_NOT_100');
+check(profiles.decisionIntelligencePolicy?.schemaVersion === decisionPolicy.schemaVersion, 'DECISION_POLICY_NOT_EMBEDDED_IN_PROFILES');
+check(profiles.decisionIntelligenceSummary?.status === 'SHADOW_RESEARCH_ONLY_UNCALIBRATED', 'DECISION_SUMMARY_NOT_RESEARCH_ONLY');
+check(profiles.decisionIntelligenceSummary?.scoreIsConfidence === false, 'DECISION_SUMMARY_SCORE_CONFIDENCE_MIX');
+check(profiles.decisionIntelligenceSummary?.usedForExecutionGate === false, 'DECISION_SUMMARY_EXECUTION_GATE_LEAK');
+check(profiles.decisionIntelligenceSummary?.usedForProductionAllocation === false, 'DECISION_SUMMARY_ALLOCATION_LEAK');
+check(profiles.decisionIntelligenceSummary?.usedForChampionSelection === false, 'DECISION_SUMMARY_CHAMPION_LEAK');
+check((profiles.researchDecisionRanking || []).length === profiles.profileCount, 'DECISION_RESEARCH_RANKING_COUNT_MISMATCH');
 
 for (const row of current.opportunities || []) {
   const rr = row.riskReward || {};
@@ -36,6 +61,14 @@ for (const row of current.opportunities || []) {
   check(primary === t1Net, `PRIMARY_NET_RR_MISMATCH_${row.ticker}`);
   if (finite(rr.legacyRiskReward) !== null) check(rr.legacyReference === 'UNVERIFIED_PRICE_REFERENCE', `LEGACY_REFERENCE_NOT_UNVERIFIED_${row.ticker}`);
   if (rr.materialMismatch === true) check((rr.auditReasons || []).includes('LEGACY_RR_MATERIAL_MISMATCH_VS_CONSERVATIVE_ENTRY_HIGH_REFERENCE'), `MISMATCH_NOT_EXPLICIT_${row.ticker}`);
+}
+
+function expectedDecisionTier(score, coveragePct) {
+  if (finite(score) === null || finite(coveragePct) === null || coveragePct < decisionPolicy.minimumEvidenceCoverageForTierPct) return 'UNRATED_INSUFFICIENT_EVIDENCE';
+  if (score >= decisionPolicy.tierThresholds.RESEARCH_A) return 'RESEARCH_A';
+  if (score >= decisionPolicy.tierThresholds.RESEARCH_B) return 'RESEARCH_B';
+  if (score >= decisionPolicy.tierThresholds.RESEARCH_C) return 'RESEARCH_C';
+  return 'RESEARCH_D';
 }
 
 for (const profile of profiles.profiles || []) {
@@ -51,7 +84,49 @@ for (const profile of profiles.profiles || []) {
     check(!(profile.whyThisStock?.strengths || []).some(x => String(x).startsWith('CURRENT_TRUSTED_TECHNICAL_') || String(x).startsWith('CURRENT_RSI_')), `STALE_TECHNICAL_STRENGTH_${profile.ticker}`);
   }
   check(profile.sectorContext?.sector === null, `UNVERIFIED_SECTOR_INFERRED_${profile.ticker}`);
+
+  const di = profile.decisionIntelligence;
+  check(Boolean(di), `DECISION_INTELLIGENCE_MISSING_${profile.ticker}`);
+  if (!di) continue;
+  check(di.scoreIsConfidence === false, `DECISION_SCORE_CONFIDENCE_MIX_${profile.ticker}`);
+  check(di.calibrationStatus === 'UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT', `DECISION_CALIBRATION_LABEL_DRIFT_${profile.ticker}`);
+  check(di.execution?.permissionSource === 'data/v17/resilient-session-status.json', `DECISION_EXECUTION_SOURCE_DRIFT_${profile.ticker}`);
+  check(di.execution?.issuedStatus === profile.status, `DECISION_ISSUED_STATUS_MUTATED_${profile.ticker}`);
+  check(di.execution?.scoreMayOpenExecutionGate === false, `DECISION_GATE_LEAK_${profile.ticker}`);
+  check(di.execution?.scoreMayCreateActionableStatus === false, `DECISION_ACTIONABLE_LEAK_${profile.ticker}`);
+  check(di.execution?.scoreMayChangePositionWeight === false, `DECISION_WEIGHT_LEAK_${profile.ticker}`);
+  check(di.confidenceSeparation?.marketConfidencePct === profile.confidence?.marketConfidencePct, `DECISION_MARKET_CONFIDENCE_CHANGED_${profile.ticker}`);
+  check(di.confidenceSeparation?.dataConfidencePct === profile.confidence?.dataConfidencePct, `DECISION_DATA_CONFIDENCE_CHANGED_${profile.ticker}`);
+  check(di.confidenceSeparation?.modelConfidencePct === profile.confidence?.modelConfidencePct, `DECISION_MODEL_CONFIDENCE_CHANGED_${profile.ticker}`);
+  check(di.confidenceSeparation?.executionConfidencePct === profile.confidence?.executionConfidencePct, `DECISION_EXECUTION_CONFIDENCE_CHANGED_${profile.ticker}`);
+  check(di.confidenceSeparation?.copiedFromStockProfileWithoutScoreInference === true, `DECISION_CONFIDENCE_COPY_CONTRACT_MISSING_${profile.ticker}`);
+  check(expectedDecisionTier(di.researchDecisionScore, di.scoreEvidenceCoveragePct) === di.researchTier, `DECISION_TIER_NONDETERMINISTIC_${profile.ticker}`);
+  check(finite(di.scoreEvidenceCoveragePct) !== null && di.scoreEvidenceCoveragePct >= 0 && di.scoreEvidenceCoveragePct <= 100, `DECISION_EVIDENCE_COVERAGE_INVALID_${profile.ticker}`);
+  check(finite(di.researchDecisionScore) === null || (di.researchDecisionScore >= 0 && di.researchDecisionScore <= 100), `DECISION_SCORE_RANGE_INVALID_${profile.ticker}`);
+  for (const key of decisionKeys) {
+    const comp = di.components?.[key];
+    check(Boolean(comp), `DECISION_COMPONENT_MISSING_${profile.ticker}_${key}`);
+    if (!comp) continue;
+    check(typeof comp.provenance === 'string' && comp.provenance.length > 0, `DECISION_COMPONENT_PROVENANCE_MISSING_${profile.ticker}_${key}`);
+    if (comp.available === false) check(comp.score === null, `DECISION_UNAVAILABLE_COMPONENT_SCORED_${profile.ticker}_${key}`);
+    if (comp.available === true) check(finite(comp.score) !== null && comp.score >= 0 && comp.score <= 100, `DECISION_COMPONENT_SCORE_INVALID_${profile.ticker}_${key}`);
+  }
+  if (profile.technicalAnalysis?.currentTechnicalReady !== true || profile.technicalAnalysis?.usedForCurrentDecision !== true) {
+    check(di.components?.currentTechnical?.available === false, `DECISION_STALE_TECHNICAL_SCORED_${profile.ticker}`);
+    check(di.components?.currentTechnical?.score === null, `DECISION_STALE_TECHNICAL_SCORE_POPULATED_${profile.ticker}`);
+  }
+  const alignmentState = String(profile.tradePlan?.alignment?.state || '');
+  const blockers = profile.whyThisStock?.blockers || [];
+  if (alignmentState.startsWith('REBUILD_REQUIRED') || alignmentState === 'INVALID_PLAN_RELATION') check(di.researchDecisionScore <= decisionPolicy.defensiveCaps.invalidOrRebuildRequiredTradePlanMaxScore, `DECISION_INVALID_PLAN_SCORE_NOT_CAPPED_${profile.ticker}`);
+  if (blockers.includes('CRITICAL_SOURCE_CONFLICT')) check(di.researchDecisionScore <= decisionPolicy.defensiveCaps.criticalSourceConflictMaxScore, `DECISION_CONFLICT_SCORE_NOT_CAPPED_${profile.ticker}`);
+  if (blockers.includes('MISSING_CRITICAL_SYMBOL_EVIDENCE')) check(di.researchDecisionScore <= decisionPolicy.defensiveCaps.missingCriticalEvidenceMaxScore, `DECISION_MISSING_EVIDENCE_SCORE_NOT_CAPPED_${profile.ticker}`);
+  if (alignmentState === 'ABOVE_ENTRY_RANGE_DO_NOT_CHASE') check(di.researchDecisionScore <= decisionPolicy.defensiveCaps.aboveEntryRangeDoNotChaseMaxScore, `DECISION_DO_NOT_CHASE_SCORE_NOT_CAPPED_${profile.ticker}`);
+  check(typeof di.decisionNarrativeAr === 'string' && di.decisionNarrativeAr.includes('ليست Confidence ولا Execution Permission'), `DECISION_NARRATIVE_SEPARATION_MISSING_${profile.ticker}`);
 }
+
+const sortedDecision = [...(profiles.profiles || [])]
+  .sort((a, b) => (finite(b.decisionIntelligence?.researchDecisionScore) ?? -1) - (finite(a.decisionIntelligence?.researchDecisionScore) ?? -1) || a.rank - b.rank);
+check(sortedDecision.every((profile, index) => profiles.researchDecisionRanking?.[index]?.ticker === profile.ticker), 'DECISION_RESEARCH_RANKING_ORDER_DRIFT');
 
 const immutableCore = {
   schemaVersion: '20.0.0-immutable-signal-core-1',
@@ -123,8 +198,15 @@ for (const horizon of [1, 3, 5, 10, 20]) {
   }
 }
 
+if (current.executionStatus !== 'EXECUTION_GRADE') {
+  check((profiles.profiles || []).every(p => p.status !== 'ACTIONABLE'), 'DECISION_INTELLIGENCE_CREATED_ACTIONABLE_WHILE_GATE_CLOSED');
+  check(current.portfolio?.recommendedExposurePct === 0, 'DECISION_INTELLIGENCE_CHANGED_CLOSED_GATE_EXPOSURE');
+}
+check(current.governance?.activeChampion === 'V16_9_EQUAL_WEIGHT_BASKET', 'DECISION_INTELLIGENCE_CHANGED_CHAMPION');
+check(current.governance?.automaticPromotion === false && current.governance?.promotionAllowed === false, 'DECISION_INTELLIGENCE_CHANGED_PROMOTION_GOVERNANCE');
+
 const report = {
-  schemaVersion: '20.0.0-phase3-regression-3',
+  schemaVersion: '20.0.0-phase3-regression-4',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -135,6 +217,13 @@ const report = {
     technicalIndicatorsRequirePointInTimeTrust: true,
     staleTechnicalCannotDriveCurrentDecision: true,
     scoreConfidenceSeparated: true,
+    decisionIntelligenceResearchOnly: true,
+    decisionIntelligenceDeterministicTiers: true,
+    decisionIntelligenceDefensiveCaps: true,
+    decisionIntelligenceComponentProvenance: true,
+    decisionIntelligenceModelConfidenceNotInferred: true,
+    decisionIntelligenceExecutionPermissionSeparated: true,
+    decisionIntelligenceChampionGovernancePreserved: true,
     immutableSignalArchive: true,
     forwardHorizonsSeparated: true,
     forwardEvidenceSelfContained: true,
