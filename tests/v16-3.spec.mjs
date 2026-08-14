@@ -25,12 +25,12 @@ test('dashboard loads V16.3 market regime, session-safe V16.9 basket and release
   await expect(page.locator('#marketRegimeCard')).toBeVisible();
   await expect(page.locator('#marketRegimeCard')).toContainText('محرك حالة السوق');
 
-  // V16.9 remains the primary recommendation surface. The title now describes
-  // the signal as a plan for the next trading session rather than implying that
-  // the wall-clock scan date is itself a market session.
+  // V16.9 remains the primary recommendation surface. The legacy recommendationGrid
+  // remains in the DOM for compatibility but must stay hidden behind the protected basket.
   const primaryBasket = page.locator('#v169BasketPanel');
   await expect(primaryBasket).toBeVisible({ timeout: 15_000 });
   await expect(primaryBasket).toContainText(/سلة V16\.9 (للجلسة التالية|مرجعية)/);
+  await expect(page.locator('#recommendationGrid')).toBeHidden();
 
   const primaryCards = primaryBasket.locator('.v169-card');
   await expect(primaryCards.first()).toBeVisible();
