@@ -46,13 +46,23 @@ jobs:
 
       - name: Static validation
         run: |
+          node --check scripts/v20/build-data-truth.cjs
           node --check scripts/v20/build-integrated-decision-snapshot.cjs
+          node --check scripts/v20/build-portfolio-risk.cjs
           node --check scripts/v20/regression.cjs
+          node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
+          node -e "JSON.parse(require('fs').readFileSync('data/v20/model-registry.json','utf8'))"
+
+      - name: Build V20 data truth layer
+        run: node scripts/v20/build-data-truth.cjs
 
       - name: Build integrated decision snapshot
         run: node scripts/v20/build-integrated-decision-snapshot.cjs
 
-      - name: Run governance regression suite
+      - name: Build portfolio risk plan
+        run: node scripts/v20/build-portfolio-risk.cjs
+
+      - name: Run governance and risk regression suite
         run: node scripts/v20/regression.cjs
 
       - name: Acceptance guard
@@ -60,11 +70,17 @@ jobs:
           node - <<'NODE'
           const x=require('./data/v20/current.json');
           const r=require('./data/v20/regression.json');
+          const p=require('./data/v20/portfolio-risk.json');
+          const policy=require('./data/v20/policy-registry.json');
           if(r.ok!==true) process.exit(1);
           if(x.governance.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
           if(x.governance.automaticPromotion!==false||x.governance.promotionAllowed!==false) process.exit(1);
           if(x.executionStatus!=='EXECUTION_GRADE' && x.opportunities.some(o=>o.status==='ACTIONABLE')) process.exit(1);
           if(x.executionStatus!=='EXECUTION_GRADE' && x.portfolio.recommendedExposurePct!==0) process.exit(1);
+          if(x.executionStatus!=='EXECUTION_GRADE' && p.appliedPositions.length!==0) process.exit(1);
+          if(x.portfolio.recommendedExposurePct>policy.portfolio.maximumTotalAllocationPct) process.exit(1);
+          if(x.portfolio.shadowResearch?.appliedToProductionPortfolio!==false) process.exit(1);
+          if(x.opportunities.some(o=>Number(o.suggestedPositionWeightPct||0)>policy.portfolio.maximumSinglePositionPct)) process.exit(1);
           NODE
 
       - name: Persist V20 evidence only
@@ -72,7 +88,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v20/current.json data/v20/regression.json
+          git add \
+            data/v20/current.json \
+            data/v20/regression.json \
+            data/v20/master-universe.json \
+            data/v20/current-market-snapshot.json \
+            data/v20/source-health.json \
+            data/v20/portfolio-risk.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update V20 integrated decision evidence"
+          git commit -m "Update V20 data truth and risk evidence"
           git push origin HEAD:develop/v20-integrated-decision-platform

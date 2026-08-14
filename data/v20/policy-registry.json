@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "20.0.0-policy-registry-1",
+  "effectiveFrom": "2026-08-14",
+  "status": "CONTROLLED_INTEGRATION",
+  "principles": {
+    "decisionSupportOnly": true,
+    "v17FinalExecutionGateIsAuthoritative": true,
+    "localRowExecutionFlagsCannotOverrideGlobalGate": true,
+    "automaticPromotionForbidden": true,
+    "automaticOrdersForbidden": true,
+    "failedOrUnfilledAllocationRemainsCash": true
+  },
+  "executionGate": {
+    "authoritativeSource": "data/v17/resilient-session-status.json",
+    "requirements": {
+      "executionGrade": true,
+      "sessionAligned": true,
+      "minimumCoveragePct": 95,
+      "minimumFreshnessPct": 98,
+      "liquidityGatePassed": true,
+      "criticalSourceConflictCount": 0,
+      "acceptableSourceConfidenceRequired": true
+    },
+    "researchBelowExecutionThresholds": "RESEARCH_ONLY",
+    "note": "V20 never upgrades V17's final execution decision. These thresholds document the integration contract and may only make V20 more conservative."
+  },
+  "transactionCosts": {
+    "roundTripPct": 0.6,
+    "application": "ENTRY_NOTIONAL_CONSERVATIVE_ROUND_TRIP",
+    "entryReference": "ENTRY_HIGH_FOR_LONGS",
+    "netRewardFormula": "(target - entryReference) - transactionCostPerShare",
+    "netRiskFormula": "(entryReference - stop) + transactionCostPerShare",
+    "transactionCostPerShareFormula": "entryReference * roundTripPct / 100",
+    "netRiskRewardFormula": "netReward / netRisk",
+    "gatingEnabled": false,
+    "gatingStatus": "PENDING_INDEPENDENT_CALIBRATION",
+    "note": "Net R/R is displayed and regression-tested but does not silently alter the frozen Champion selection policy."
+  },
+  "portfolio": {
+    "maximumTotalAllocationPct": 50,
+    "maximumPositions": 4,
+    "maximumSinglePositionPct": 12.5,
+    "productionConstruction": "CHAMPION_COMPATIBLE_EQUAL_WEIGHT",
+    "adaptiveWeightingProductionAllowed": false,
+    "adaptiveWeightingShadowResearchAllowed": true,
+    "riskStateExposureCapsPct": {
+      "NORMAL": 50,
+      "CAUTIOUS": 35,
+      "DEFENSIVE": 20,
+      "CASH_PRESERVATION": 0
+    },
+    "closedExecutionGateExposurePct": 0,
+    "unfilledMemberPolicy": "KEEP_CASH",
+    "sectorConcentrationPolicy": {
+      "enforcedWhenVerifiedSectorDataAvailable": true,
+      "currentFallback": "DO_NOT_INVENT_SECTOR_CLASSIFICATION",
+      "status": "DATA_DEPENDENT"
+    }
+  },
+  "tradePlan": {
+    "direction": "LONG_ONLY_CURRENT_SCOPE",
+    "entryReferenceForRiskMath": "ENTRY_HIGH",
+    "sameDailyCandleTargetStopAmbiguity": "CONSERVATIVE_STOP_OR_AMBIGUOUS_IF_EXISTING_LEDGER_SUPPORTS_IT",
+    "chaseForbidden": true,
+    "nextOpenExecutionAssumptionAllowedOnlyWhenExplicitlyBacktested": true
+  },
+  "confidence": {
+    "dimensions": [
+      "marketConfidencePct",
+      "dataConfidencePct",
+      "modelConfidencePct",
+      "executionConfidencePct"
+    ],
+    "doNotMixScoreAndConfidence": true,
+    "executionConfidenceZeroWhenGlobalGateClosed": true
+  },
+  "governance": {
+    "activeChampion": "V16_9_EQUAL_WEIGHT_BASKET",
+    "championBranch": "release/v16.9.2-frozen-20260806",
+    "v17Branch": "develop/v17-rebuild",
+    "v19Branch": "v19-egx-chat-gpt",
+    "integrationBranch": "develop/v20-integrated-decision-platform",
+    "challengerAutomaticPromotion": false,
+    "freshIndependentEvidenceRequiredForPromotionReview": true
+  }
+}
