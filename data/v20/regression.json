@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-regression-2",
-  "generatedAt": "2026-08-15T09:38:36.323Z",
+  "generatedAt": "2026-08-15T10:11:29.215Z",
   "ok": true,
   "failedCount": 0,
   "failures": [],
@@ -17,7 +17,7 @@
   },
   "finalAcceptance": {
     "schemaVersion": "20.0.0-final-acceptance-1",
-    "generatedAt": "2026-08-15T09:38:56.019Z",
+    "generatedAt": "2026-08-15T10:11:39.454Z",
     "sessionDate": "2026-08-13",
     "independentCritic": true,
     "finalStatus": "RESEARCH_PLATFORM_READY_EXECUTION_NOT_READY",
@@ -240,7 +240,7 @@
   },
   "executionReadinessGap": {
     "schemaVersion": "20.0.0-execution-gap-regression-2",
-    "generatedAt": "2026-08-15T09:38:56.025Z",
+    "generatedAt": "2026-08-15T10:11:39.458Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -318,7 +318,7 @@
   },
   "backtestReadiness": {
     "schemaVersion": "20.0.0-backtest-readiness-1",
-    "generatedAt": "2026-08-15T09:38:56.030Z",
+    "generatedAt": "2026-08-15T10:11:39.462Z",
     "sessionDate": "2026-08-13",
     "status": "NOT_READY_FOR_INDEPENDENT_V20_SCORE_BACKTEST",
     "decisionScore": {
@@ -382,7 +382,7 @@
   },
   "backtestReadinessRegression": {
     "schemaVersion": "20.0.0-backtest-readiness-regression-1",
-    "generatedAt": "2026-08-15T09:38:56.032Z",
+    "generatedAt": "2026-08-15T10:11:39.464Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -407,7 +407,7 @@
   },
   "supportResistanceRemediation": {
     "schemaVersion": "20.0.0-sr-remediation-audit-3",
-    "generatedAt": "2026-08-15T09:38:56.355Z",
+    "generatedAt": "2026-08-15T10:11:39.843Z",
     "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
     "sessionDate": "2026-08-13",
     "sourceSchemaVersion": "17.0.0-internal-ohlc-sr-3",
@@ -2309,7 +2309,7 @@
   },
   "supportResistanceRemediationRegression": {
     "schemaVersion": "20.0.0-sr-remediation-regression-3",
-    "generatedAt": "2026-08-15T09:38:56.373Z",
+    "generatedAt": "2026-08-15T10:11:39.859Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -2349,9 +2349,732 @@
     "automaticV17MutationAllowed": false,
     "guaranteesExecutionGrade": false
   },
+  "supportResistanceRemediationHandoff": {
+    "schemaVersion": "20.0.0-sr-remediation-handoff-1",
+    "generatedAt": "2026-08-15T10:11:42.448Z",
+    "sessionDate": "2026-08-13",
+    "status": "V17_MANUAL_REVIEW_HANDOFF_RESEARCH_ONLY",
+    "readOnly": true,
+    "sourceAudit": "data/v20/regression.json#supportResistanceRemediation",
+    "sourceReviewPacket": "data/v20/regression.json#supportResistanceReviewPacket",
+    "sourceStartaEvidence": "data/v20/regression.json#supportResistanceAlternateEvidence",
+    "summary": {
+      "targetCount": 8,
+      "stateCounts": {
+        "AUTHORITATIVE_OHLC_REPAIR_REQUIRED": 1,
+        "CRITICAL_SOURCE_CONFLICT_REMAINS": 1,
+        "NO_CURRENT_STARTA_SESSION": 3,
+        "STARTA_CURRENT_RECONCILED_HISTORY50_REVIEW_REQUIRED": 2,
+        "STARTA_CURRENT_RECONCILED_SR_REFRESH_REVIEW": 1
+      },
+      "startaCurrentReviewCandidateCount": 4,
+      "startaCurrentButContinuityRejectedCount": 4,
+      "startaCurrentWithoutMarketReferenceCount": 1,
+      "startaNotCurrentCount": 3,
+      "bothSupplementalCurrentAndReconciledCount": 1
+    },
+    "rows": [
+      {
+        "symbol": "SAIB",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewPriority": "MEDIUM",
+        "reviewState": "ALTERNATE_PROVIDER_REQUIRED",
+        "triangulationState": "NO_CURRENT_STARTA_SESSION",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": 2.11,
+            "available": true,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 2.11,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "sourceSessionVerified": false,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "UNAVAILABLE",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": null,
+            "localDifferencePct": null,
+            "diagnosticGuardPct": null,
+            "identityVerified": false
+          },
+          "startaHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "latestSession": "2026-07-06",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 2.11,
+            "name": "Societe Arabe Internationale de Banque",
+            "isin": "EGS60142C014"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": 0,
+          "marketVsYahooHistory": null,
+          "marketVsYahooMetadata": null,
+          "marketVsStartaHistory": null,
+          "marketVsStartaMetadata": 0,
+          "history50VsStartaHistory": null,
+          "history50VsYahooHistory": null,
+          "yahooHistoryVsStartaHistory": null
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": false,
+          "yahooAndStartaCloseDifferencePct": null,
+          "bothReconciledToMarket": false
+        },
+        "authoritativeReviewAction": "Acquire current-session evidence from an accepted authoritative source; the Starta history available here is not current enough.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "MEGM",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewPriority": "HIGH",
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "triangulationState": "NO_CURRENT_STARTA_SESSION",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": 17.69,
+            "available": true,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 17.69,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "sourceSessionVerified": false,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": 12.54,
+            "currentSession": true,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": 12.54,
+            "localDifferencePct": 29.1125,
+            "diagnosticGuardPct": 8,
+            "identityVerified": true
+          },
+          "startaHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "latestSession": "2022-04-28",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 12.54,
+            "name": "Middle East Glass Manufacturing SAE",
+            "isin": "EGS3C001C012"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": 0,
+          "marketVsYahooHistory": 29.112,
+          "marketVsYahooMetadata": 29.112,
+          "marketVsStartaHistory": null,
+          "marketVsStartaMetadata": 29.112,
+          "history50VsStartaHistory": null,
+          "history50VsYahooHistory": 29.112,
+          "yahooHistoryVsStartaHistory": null
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": false,
+          "yahooAndStartaCloseDifferencePct": null,
+          "bothReconciledToMarket": false
+        },
+        "authoritativeReviewAction": "Acquire current-session evidence from an accepted authoritative source; the Starta history available here is not current enough.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "SEIGA",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewPriority": "HIGH",
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "triangulationState": "NO_CURRENT_STARTA_SESSION",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": 5.41,
+            "available": true,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 5.41,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "sourceSessionVerified": false,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": 63.290001,
+            "currentSession": true,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": 63.29,
+            "localDifferencePct": 1069.8706,
+            "diagnosticGuardPct": 8,
+            "identityVerified": true
+          },
+          "startaHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "latestSession": "2022-02-09",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 0.95,
+            "name": "Saudi Egyptian Investment & Finance Co. SAE",
+            "isin": "EGS67032C010"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": 0,
+          "marketVsYahooHistory": 1069.871,
+          "marketVsYahooMetadata": 1069.871,
+          "marketVsStartaHistory": null,
+          "marketVsStartaMetadata": 82.44,
+          "history50VsStartaHistory": null,
+          "history50VsYahooHistory": 1069.871,
+          "yahooHistoryVsStartaHistory": null
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": false,
+          "yahooAndStartaCloseDifferencePct": null,
+          "bothReconciledToMarket": false
+        },
+        "authoritativeReviewAction": "Acquire current-session evidence from an accepted authoritative source; the Starta history available here is not current enough.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "ABUK",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewPriority": "HIGH",
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "triangulationState": "STARTA_CURRENT_RECONCILED_HISTORY50_REVIEW_REQUIRED",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": 77.89,
+            "available": true,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 75.31,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "sourceSessionVerified": false,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": 58.32,
+            "localDifferencePct": 25.1252,
+            "diagnosticGuardPct": 8,
+            "identityVerified": true
+          },
+          "startaHistory": {
+            "close": 77.9,
+            "currentSession": true,
+            "priceReconciled": true,
+            "status": "CURRENT_REVIEW_CANDIDATE",
+            "latestSession": "2026-08-13",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 77.9,
+            "name": "Abou Kir Fertilizers & Chemical Industries Co.",
+            "isin": "EGS38191C010"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": 3.312,
+          "marketVsYahooHistory": null,
+          "marketVsYahooMetadata": 25.125,
+          "marketVsStartaHistory": 0.013,
+          "marketVsStartaMetadata": 0.013,
+          "history50VsStartaHistory": 3.439,
+          "history50VsYahooHistory": null,
+          "yahooHistoryVsStartaHistory": null
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": false,
+          "yahooAndStartaCloseDifferencePct": null,
+          "bothReconciledToMarket": false
+        },
+        "authoritativeReviewAction": "Reconcile the current history-50 row/provenance against the authoritative market reference and Starta supplemental row; do not overwrite history-50 automatically.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "MFPC",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewPriority": "HIGH",
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "triangulationState": "STARTA_CURRENT_RECONCILED_HISTORY50_REVIEW_REQUIRED",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": 39.93,
+            "available": true,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 38.17,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "sourceSessionVerified": false,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": 43.8,
+            "localDifferencePct": 9.692,
+            "diagnosticGuardPct": 8,
+            "identityVerified": true
+          },
+          "startaHistory": {
+            "close": 39.91,
+            "currentSession": true,
+            "priceReconciled": true,
+            "status": "CURRENT_REVIEW_CANDIDATE",
+            "latestSession": "2026-08-13",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 39.91,
+            "name": "Misr Fertilizers Production Company MOPCO",
+            "isin": "EGS39061C014"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": 4.408,
+          "marketVsYahooHistory": null,
+          "marketVsYahooMetadata": 9.692,
+          "marketVsStartaHistory": 0.05,
+          "marketVsStartaMetadata": 0.05,
+          "history50VsStartaHistory": 4.559,
+          "history50VsYahooHistory": null,
+          "yahooHistoryVsStartaHistory": null
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": false,
+          "yahooAndStartaCloseDifferencePct": null,
+          "bothReconciledToMarket": false
+        },
+        "authoritativeReviewAction": "Reconcile the current history-50 row/provenance against the authoritative market reference and Starta supplemental row; do not overwrite history-50 automatically.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "ELNA",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewPriority": "HIGH",
+        "reviewState": "AUTHORITATIVE_OHLC_REPAIR_REQUIRED",
+        "triangulationState": "AUTHORITATIVE_OHLC_REPAIR_REQUIRED",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": null,
+            "available": false,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 0,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": false,
+            "sourceSessionVerified": false,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": 15.3,
+            "localDifferencePct": null,
+            "diagnosticGuardPct": 8,
+            "identityVerified": true
+          },
+          "startaHistory": {
+            "close": 37.01,
+            "currentSession": true,
+            "priceReconciled": false,
+            "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+            "latestSession": "2026-08-13",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 37.01,
+            "name": "El Nasr for Manufacturing Agricultural Crops",
+            "isin": "EGS300L1C011"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": null,
+          "marketVsYahooHistory": null,
+          "marketVsYahooMetadata": null,
+          "marketVsStartaHistory": null,
+          "marketVsStartaMetadata": null,
+          "history50VsStartaHistory": null,
+          "history50VsYahooHistory": null,
+          "yahooHistoryVsStartaHistory": null
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": false,
+          "yahooAndStartaCloseDifferencePct": null,
+          "bothReconciledToMarket": false
+        },
+        "authoritativeReviewAction": "Restore a valid authoritative current-session OHLC and current price reference from an accepted source before rebuilding Internal S/R.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "UBEE",
+        "roles": [
+          "STALE"
+        ],
+        "reviewPriority": "MEDIUM",
+        "reviewState": "ALTERNATE_PROVIDER_REQUIRED",
+        "triangulationState": "STARTA_CURRENT_RECONCILED_SR_REFRESH_REVIEW",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": 14.82,
+            "available": true,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 14.52,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "sourceSessionVerified": false,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": null,
+            "currentSession": false,
+            "priceReconciled": false,
+            "status": "UNAVAILABLE",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": null,
+            "localDifferencePct": null,
+            "diagnosticGuardPct": null,
+            "identityVerified": false
+          },
+          "startaHistory": {
+            "close": 14.82,
+            "currentSession": true,
+            "priceReconciled": true,
+            "status": "CURRENT_REVIEW_CANDIDATE",
+            "latestSession": "2026-08-13",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 14.82,
+            "name": "United Bank SAE",
+            "isin": "EGS600M1C017"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": 2.024,
+          "marketVsYahooHistory": null,
+          "marketVsYahooMetadata": null,
+          "marketVsStartaHistory": 0,
+          "marketVsStartaMetadata": 0,
+          "history50VsStartaHistory": 2.066,
+          "history50VsYahooHistory": null,
+          "yahooHistoryVsStartaHistory": null
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": false,
+          "yahooAndStartaCloseDifferencePct": null,
+          "bothReconciledToMarket": false
+        },
+        "authoritativeReviewAction": "Review the stale Internal S/R row against the current authoritative market reference and Starta supplemental row, then rebuild only through V17.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "AFMC",
+        "roles": [
+          "CONFLICT"
+        ],
+        "reviewPriority": "HIGH",
+        "reviewState": "CRITICAL_SOURCE_CONFLICT_MANUAL_REVIEW",
+        "triangulationState": "CRITICAL_SOURCE_CONFLICT_REMAINS",
+        "sessionDate": "2026-08-13",
+        "evidenceMatrix": {
+          "marketReference": {
+            "price": 230.23,
+            "available": true,
+            "source": "data/v20/market-explorer.json"
+          },
+          "history50": {
+            "close": 230.23,
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "sourceSessionVerified": true,
+            "source": "workflow-market-snapshot",
+            "input": "data/history-50.json"
+          },
+          "yahooHistory": {
+            "close": 239,
+            "currentSession": true,
+            "priceReconciled": true,
+            "status": "ELIGIBLE_FOR_V17_REVIEW",
+            "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY"
+          },
+          "yahooIdentity": {
+            "regularMarketPrice": 21.61,
+            "localDifferencePct": 90.6137,
+            "diagnosticGuardPct": 8,
+            "identityVerified": true
+          },
+          "startaHistory": {
+            "close": 239,
+            "currentSession": true,
+            "priceReconciled": true,
+            "status": "CURRENT_REVIEW_CANDIDATE",
+            "latestSession": "2026-08-13",
+            "identityVerified": true,
+            "historyContinuityAccepted": false,
+            "historyContinuityMethod": null,
+            "sourceRole": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_ONLY"
+          },
+          "startaIdentity": {
+            "lastPrice": 239,
+            "name": "Alexandria Flour Mills Co.",
+            "isin": "EGS30471C014"
+          }
+        },
+        "deltasPct": {
+          "marketVsHistory50": 0,
+          "marketVsYahooHistory": 3.809,
+          "marketVsYahooMetadata": 90.614,
+          "marketVsStartaHistory": 3.809,
+          "marketVsStartaMetadata": 3.809,
+          "history50VsStartaHistory": 3.809,
+          "history50VsYahooHistory": 3.809,
+          "yahooHistoryVsStartaHistory": 0
+        },
+        "supplementalAgreement": {
+          "yahooAndStartaCurrentRowsAvailable": true,
+          "yahooAndStartaCloseDifferencePct": 0,
+          "bothReconciledToMarket": true
+        },
+        "authoritativeReviewAction": "Resolve the authoritative V17 source conflict through documented comparison/rebuild; supplemental agreement cannot auto-select a winner.",
+        "safety": {
+          "causeVerified": false,
+          "autoRepairAllowed": false,
+          "autoTrustUpgradeAllowed": false,
+          "autoConflictResolutionAllowed": false,
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      }
+    ],
+    "interpretation": {
+      "handoffOnly": true,
+      "noAuthoritativeMutation": true,
+      "noAutomaticRepair": true,
+      "noAutomaticTrustUpgrade": true,
+      "noAutomaticConflictResolution": true,
+      "supplementalConsensusIsNotAuthority": true,
+      "historyContinuityRejectionBlocksAutomaticRepair": true,
+      "noCorporateActionOrPriceScaleCauseInferred": true,
+      "v17RebuildStillRequired": true,
+      "note": "This handoff combines authoritative and supplemental observations into a manual-review matrix. It does not change V17 data, resolve conflicts, or open execution."
+    }
+  },
+  "supportResistanceRemediationHandoffRegression": {
+    "schemaVersion": "20.0.0-sr-remediation-handoff-regression-1",
+    "generatedAt": "2026-08-15T10:11:42.471Z",
+    "ok": true,
+    "failedCount": 0,
+    "failures": [],
+    "checks": {
+      "sameTargetSet": true,
+      "noAuthoritativeMutationOrAutomaticRepair": true,
+      "supplementalSourcesRemainNonAuthoritative": true,
+      "startaCurrentCandidatesStillBlockedByContinuity": true,
+      "afmcSupplementalAgreementDoesNotResolveConflict": true,
+      "noCorporateActionOrPriceScaleInference": true,
+      "noDecisionExecutionOrAllocationEffect": true,
+      "manualAuthoritativeActionPresent": true
+    },
+    "evidence": {
+      "targetCount": 8,
+      "stateCounts": {
+        "AUTHORITATIVE_OHLC_REPAIR_REQUIRED": 1,
+        "CRITICAL_SOURCE_CONFLICT_REMAINS": 1,
+        "NO_CURRENT_STARTA_SESSION": 3,
+        "STARTA_CURRENT_RECONCILED_HISTORY50_REVIEW_REQUIRED": 2,
+        "STARTA_CURRENT_RECONCILED_SR_REFRESH_REVIEW": 1
+      },
+      "startaCurrentReviewCandidateCount": 4,
+      "startaCurrentButContinuityRejectedCount": 4,
+      "startaCurrentWithoutMarketReferenceCount": 1,
+      "startaNotCurrentCount": 3,
+      "bothSupplementalCurrentAndReconciledCount": 1
+    }
+  },
+  "supportResistanceRemediationHandoffMirror": {
+    "authoritativeRuntimeBuilder": "scripts/v20/build-sr-remediation-handoff.cjs",
+    "authoritativeRuntimeRegression": "scripts/v20/sr-remediation-handoff-regression.cjs",
+    "transientDetailedSidecar": "data/v20/sr-remediation-handoff.json",
+    "persistedEvidence": "data/v20/regression.json#supportResistanceRemediationHandoff",
+    "persistedRegression": "data/v20/regression.json#supportResistanceRemediationHandoffRegression",
+    "generatedInSameMainRun": true,
+    "manualReviewOnly": true,
+    "automaticV17MutationAllowed": false,
+    "automaticRepairAllowed": false,
+    "guaranteesExecutionGrade": false
+  },
   "supportResistanceAlternateEvidence": {
     "schemaVersion": "20.0.0-sr-remediation-alternate-evidence-1",
-    "generatedAt": "2026-08-15T09:39:12.085Z",
+    "generatedAt": "2026-08-15T10:11:42.401Z",
     "sessionDate": "2026-08-13",
     "status": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_RESEARCH_ONLY",
     "provider": "STARTA",
@@ -2460,9 +3183,9 @@
           },
           {
             "status": 200,
-            "url": "https://startamarkets.com/api/v1/egx/ohlc/SAIB?period=1y&limit=500",
+            "url": "https://starta.46-224-223-172.sslip.io/api/v1/egx/ohlc/SAIB?period=1y&limit=500",
             "attempt": 1,
-            "bytes": 61735
+            "bytes": 49539
           }
         ],
         "error": null,
@@ -2628,9 +3351,9 @@
         "diagnostics": [
           {
             "status": 200,
-            "url": "https://startamarkets.com/api/v1/egx/stock/SEIGA",
+            "url": "https://starta.46-224-223-172.sslip.io/api/v1/egx/stock/SEIGA",
             "attempt": 1,
-            "bytes": 514
+            "bytes": 927
           },
           {
             "status": 200,
@@ -3232,7 +3955,7 @@
   },
   "supportResistanceAlternateEvidenceRegression": {
     "schemaVersion": "20.0.0-sr-remediation-alternate-evidence-regression-1",
-    "generatedAt": "2026-08-15T09:39:12.121Z",
+    "generatedAt": "2026-08-15T10:11:42.429Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -3273,7 +3996,7 @@
   },
   "supportResistanceReviewPacket": {
     "schemaVersion": "20.0.0-sr-remediation-review-packet-1",
-    "generatedAt": "2026-08-15T09:38:56.402Z",
+    "generatedAt": "2026-08-15T10:11:39.882Z",
     "sessionDate": "2026-08-13",
     "status": "MANUAL_REVIEW_PACKET_RESEARCH_ONLY",
     "sourceAuditSchemaVersion": "20.0.0-sr-remediation-audit-3",
@@ -3944,7 +4667,7 @@
   },
   "supportResistanceReviewPacketRegression": {
     "schemaVersion": "20.0.0-sr-remediation-review-packet-regression-1",
-    "generatedAt": "2026-08-15T09:39:12.156Z",
+    "generatedAt": "2026-08-15T10:11:42.652Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -3985,7 +4708,7 @@
   },
   "fullMarketTechnical": {
     "schemaVersion": "20.0.0-full-market-technical-1",
-    "generatedAt": "2026-08-15T09:39:15.812Z",
+    "generatedAt": "2026-08-15T10:11:46.936Z",
     "asOfSessionDate": "2026-08-13",
     "policy": {
       "pointInTime": true,
@@ -13024,7 +13747,7 @@
   },
   "fullMarketTechnicalRegression": {
     "schemaVersion": "20.0.0-full-market-technical-regression-2",
-    "generatedAt": "2026-08-15T09:39:15.867Z",
+    "generatedAt": "2026-08-15T10:11:46.979Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -13058,8 +13781,8 @@
     "usedForProductionAllocation": false
   },
   "extendedResearchBrowserAcceptance": {
-    "schemaVersion": "20.0.0-extended-pages-smoke-2",
-    "generatedAt": "2026-08-15T09:39:19.624Z",
+    "schemaVersion": "20.0.0-extended-pages-smoke-3",
+    "generatedAt": "2026-08-15T10:11:50.659Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -13257,6 +13980,38 @@
         "ok": true,
         "detail": null
       },
+      "remediationStartaTriangulation_1024": {
+        "ok": true,
+        "detail": null
+      },
+      "remediationHandoffDataBound_1024": {
+        "ok": true,
+        "detail": {
+          "source": "regression",
+          "count": "8",
+          "blocks": 8,
+          "labelText": "V17 handoff verdictStarta لا تصل للجلسة الحاليةMANUAL ONLYMarket ref٢٫١١V20 currenthistory-50٢٫١١current rowYahoo history—not currentYahoo metadata—identity metadataStarta history—not currentStarta metadata٢٫١١identity metadataMarket ↔ H50 ٠%Market ↔ Yahoo hist —Market ↔ Starta —H50 ↔ Starta —Yahoo ↔ Starta —Authoritative review actionAcquire current-session evidence from an accepted authoritative source; the Starta history available here is not current enough.Auto-repair = NO • Auto-trust = NO ",
+          "error": null
+        }
+      },
+      "remediationHandoffVisible_1024": {
+        "ok": true,
+        "detail": {
+          "source": "regression",
+          "count": "8",
+          "blocks": 8,
+          "labelText": "V17 handoff verdictStarta لا تصل للجلسة الحاليةMANUAL ONLYMarket ref٢٫١١V20 currenthistory-50٢٫١١current rowYahoo history—not currentYahoo metadata—identity metadataStarta history—not currentStarta metadata٢٫١١identity metadataMarket ↔ H50 ٠%Market ↔ Yahoo hist —Market ↔ Starta —H50 ↔ Starta —Yahoo ↔ Starta —Authoritative review actionAcquire current-session evidence from an accepted authoritative source; the Starta history available here is not current enough.Auto-repair = NO • Auto-trust = NO ",
+          "error": null
+        }
+      },
+      "remediationNoAutoRepair_1024": {
+        "ok": true,
+        "detail": null
+      },
+      "remediationContinuityVisible_1024": {
+        "ok": true,
+        "detail": null
+      },
       "remediationNoError_1024": {
         "ok": true,
         "detail": null
@@ -13274,6 +14029,38 @@
         "detail": null
       },
       "remediationGapMetrics_390": {
+        "ok": true,
+        "detail": null
+      },
+      "remediationStartaTriangulation_390": {
+        "ok": true,
+        "detail": null
+      },
+      "remediationHandoffDataBound_390": {
+        "ok": true,
+        "detail": {
+          "source": "regression",
+          "count": "8",
+          "blocks": 8,
+          "labelText": "V17 handoff verdictStarta لا تصل للجلسة الحاليةMANUAL ONLYMarket ref٢٫١١V20 currenthistory-50٢٫١١current rowYahoo history—not currentYahoo metadata—identity metadataStarta history—not currentStarta metadata٢٫١١identity metadataMarket ↔ H50 ٠%Market ↔ Yahoo hist —Market ↔ Starta —H50 ↔ Starta —Yahoo ↔ Starta —Authoritative review actionAcquire current-session evidence from an accepted authoritative source; the Starta history available here is not current enough.Auto-repair = NO • Auto-trust = NO ",
+          "error": null
+        }
+      },
+      "remediationHandoffVisible_390": {
+        "ok": true,
+        "detail": {
+          "source": "regression",
+          "count": "8",
+          "blocks": 8,
+          "labelText": "V17 handoff verdictStarta لا تصل للجلسة الحاليةMANUAL ONLYMarket ref٢٫١١V20 currenthistory-50٢٫١١current rowYahoo history—not currentYahoo metadata—identity metadataStarta history—not currentStarta metadata٢٫١١identity metadataMarket ↔ H50 ٠%Market ↔ Yahoo hist —Market ↔ Starta —H50 ↔ Starta —Yahoo ↔ Starta —Authoritative review actionAcquire current-session evidence from an accepted authoritative source; the Starta history available here is not current enough.Auto-repair = NO • Auto-trust = NO ",
+          "error": null
+        }
+      },
+      "remediationNoAutoRepair_390": {
+        "ok": true,
+        "detail": null
+      },
+      "remediationContinuityVisible_390": {
         "ok": true,
         "detail": null
       },
@@ -13443,14 +14230,14 @@
   },
   "releaseManifest": {
     "schemaVersion": "20.0.0-release-manifest-3",
-    "generatedAt": "2026-08-15T09:39:31.391Z",
+    "generatedAt": "2026-08-15T10:12:02.442Z",
     "releaseClassification": "RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED",
     "product": "EGX PRO V20 — Integrated Investment Decision Platform",
     "branch": "develop/v20-integrated-decision-platform",
-    "validatedSourceCommit": "adc299cff87d6a5aef375c72455ee9db7576e9e8",
+    "validatedSourceCommit": "4296da4387e2fa5074872b1211d6db1aa9c2a95a",
     "validationRun": {
-      "githubRunId": "31877495503",
-      "githubRunNumber": "110",
+      "githubRunId": "31878890369",
+      "githubRunNumber": "115",
       "workflow": "EGX Integrated Decision Platform Validation",
       "actor": "rasheadsca-star"
     },
@@ -13912,7 +14699,7 @@
   },
   "releaseManifestRegression": {
     "schemaVersion": "20.0.0-release-manifest-regression-3",
-    "generatedAt": "2026-08-15T09:39:31.399Z",
+    "generatedAt": "2026-08-15T10:12:02.449Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
