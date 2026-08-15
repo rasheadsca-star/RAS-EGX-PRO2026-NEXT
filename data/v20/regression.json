@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-regression-2",
-  "generatedAt": "2026-08-15T09:16:59.698Z",
+  "generatedAt": "2026-08-15T09:24:38.882Z",
   "ok": true,
   "failedCount": 0,
   "failures": [],
@@ -17,7 +17,7 @@
   },
   "finalAcceptance": {
     "schemaVersion": "20.0.0-final-acceptance-1",
-    "generatedAt": "2026-08-15T09:17:18.941Z",
+    "generatedAt": "2026-08-15T09:24:54.593Z",
     "sessionDate": "2026-08-13",
     "independentCritic": true,
     "finalStatus": "RESEARCH_PLATFORM_READY_EXECUTION_NOT_READY",
@@ -240,7 +240,7 @@
   },
   "executionReadinessGap": {
     "schemaVersion": "20.0.0-execution-gap-regression-2",
-    "generatedAt": "2026-08-15T09:17:18.946Z",
+    "generatedAt": "2026-08-15T09:24:54.600Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -318,7 +318,7 @@
   },
   "backtestReadiness": {
     "schemaVersion": "20.0.0-backtest-readiness-1",
-    "generatedAt": "2026-08-15T09:17:18.951Z",
+    "generatedAt": "2026-08-15T09:24:54.605Z",
     "sessionDate": "2026-08-13",
     "status": "NOT_READY_FOR_INDEPENDENT_V20_SCORE_BACKTEST",
     "decisionScore": {
@@ -382,7 +382,7 @@
   },
   "backtestReadinessRegression": {
     "schemaVersion": "20.0.0-backtest-readiness-regression-1",
-    "generatedAt": "2026-08-15T09:17:18.953Z",
+    "generatedAt": "2026-08-15T09:24:54.607Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -406,15 +406,40 @@
     "predictivePerformanceValidated": false
   },
   "supportResistanceRemediation": {
-    "schemaVersion": "20.0.0-sr-remediation-audit-2",
-    "generatedAt": "2026-08-15T09:17:18.965Z",
+    "schemaVersion": "20.0.0-sr-remediation-audit-3",
+    "generatedAt": "2026-08-15T09:24:54.924Z",
+    "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
     "sessionDate": "2026-08-13",
     "sourceSchemaVersion": "17.0.0-internal-ohlc-sr-3",
     "readOnly": true,
     "automaticV17MutationAllowed": false,
+    "automaticTrustUpgradeAllowed": false,
+    "automaticConflictResolutionAllowed": false,
     "guaranteesExecutionGrade": false,
     "requiresV17InternalSrRebuild": true,
     "requiresV17GateRebuild": true,
+    "authoritativeInputPath": "data/history-50.json",
+    "supplementalProvider": "YAHOO",
+    "supplementalInputRole": "REVIEW_CANDIDATE_ONLY_NOT_V17_TRUSTED_EXECUTION_EVIDENCE",
+    "networkRefreshAttempted": true,
+    "inputIntegrity": {
+      "protectedInputs": [
+        "data/v17/resilient-session-status.json",
+        "data/v17/internal-ohlc-support-resistance.json",
+        "data/history-50.json"
+      ],
+      "before": {
+        "data/v17/resilient-session-status.json": "21f80bfb91d0136747a17666c3db8604a52af88c321ff4daf92f2bbeb02939e5",
+        "data/v17/internal-ohlc-support-resistance.json": "ba9c50dd3895625be18235d2cb24a62e2e6e4c8baf18eb194ee5d98bf3406c21",
+        "data/history-50.json": "b09357b03fa175fe540dbb484bf7847df2c117057390f3b8909f17fe9ee8af92"
+      },
+      "after": {
+        "data/v17/resilient-session-status.json": "21f80bfb91d0136747a17666c3db8604a52af88c321ff4daf92f2bbeb02939e5",
+        "data/v17/internal-ohlc-support-resistance.json": "ba9c50dd3895625be18235d2cb24a62e2e6e4c8baf18eb194ee5d98bf3406c21",
+        "data/history-50.json": "b09357b03fa175fe540dbb484bf7847df2c117057390f3b8909f17fe9ee8af92"
+      },
+      "unchanged": true
+    },
     "currentGap": {
       "candidateUniverseCount": 80,
       "trustedCount": 74,
@@ -441,10 +466,33 @@
       "MFPC",
       "ELNA"
     ],
+    "staleSymbols": [
+      "UBEE"
+    ],
+    "conflictSymbols": [
+      "AFMC"
+    ],
+    "summary": {
+      "targetCount": 8,
+      "missingTargetCount": 6,
+      "staleTargetCount": 1,
+      "conflictTargetCount": 1,
+      "supplementalFetchedCount": 6,
+      "supplementalReviewReadyCount": 1,
+      "supplementalUnresolvedCount": 7,
+      "automaticResolutionCount": 0
+    },
     "symbols": [
       {
         "symbol": "SAIB",
-        "diagnosis": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
         "currentMarket": {
           "sessionDate": "2026-08-13",
           "currentSessionAvailable": true,
@@ -452,31 +500,92 @@
           "dataQualityState": "PARTIAL",
           "sourceConflict": false
         },
-        "history": {
-          "exists": true,
-          "state": "HISTORY_IDENTITY_VERIFIED",
-          "symbolVerified": true,
-          "rowCount": 104,
-          "validOhlcCount": 104,
-          "latestSession": "2026-08-05",
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 1,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 2.11,
+              "high": 2.11,
+              "low": 2.11,
+              "close": 2.11,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "UNAVAILABLE",
+          "identityVerified": false,
+          "identityPolicy": null,
+          "identityScore": null,
+          "identityEvidence": null,
+          "acceptedRowCount": 0,
+          "latestSession": null,
           "currentSession": false,
-          "source": "mixed_history_with_starta_targeted_repair",
-          "verification": {
-            "verified": true,
-            "policy": "historical_seed_ticker_map_match",
-            "identityConfidence": 80,
-            "priceOfficiallyVerified": false,
-            "source": "kaggle_yahoo_seed"
-          }
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 2.11,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
         },
-        "internalSr": {
-          "rowExists": false
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCH_FAILED",
+          "error": "Yahoo history failed for SAIB: SAIB.CA: identity score 75",
+          "candidateFailures": [
+            "SAIB.CA: identity score 75"
+          ]
         },
-        "automaticMutationPerformed": false
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
       },
       {
         "symbol": "MEGM",
-        "diagnosis": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
         "currentMarket": {
           "sessionDate": "2026-08-13",
           "currentSessionAvailable": true,
@@ -484,55 +593,116 @@
           "dataQualityState": "COMPLETE_FOR_CURRENT_SCOPE",
           "sourceConflict": false
         },
-        "history": {
-          "exists": true,
-          "state": "HISTORY_IDENTITY_VERIFIED",
-          "symbolVerified": true,
-          "rowCount": 100,
-          "validOhlcCount": 100,
-          "latestSession": "2026-07-30",
-          "currentSession": false,
-          "source": "yahoo",
-          "verification": {
-            "verified": true,
-            "normalVerified": true,
-            "guardedVerified": false,
-            "policy": "standard_identity",
-            "baseConfidence": 75,
-            "score": 90,
-            "warnings": [
-              "latest_price_far_from_local_reference:29.112%"
-            ],
-            "evidence": {
-              "requestedSymbol": "MEGM.CA",
-              "returnedSymbol": "MEGM.CA",
-              "exchangeName": "CAI",
-              "fullExchangeName": "EGX",
-              "exchangeEvidence": [
-                "CAI",
-                "EGX",
-                "Africa/Cairo",
-                "EEST"
-              ],
-              "currency": "EGP",
-              "shortName": "MEGM.CA,0P0000I02F,0",
-              "longName": null,
-              "regularMarketPrice": 12.54,
-              "localReferenceClose": 17.69,
-              "localDifferencePct": 29.1125,
-              "guardedPolicyRequested": false,
-              "guardedMaxDifferencePct": 8
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 17.69,
+              "high": 17.69,
+              "low": 17.69,
+              "close": 17.69,
+              "valid": true,
+              "errors": []
             }
-          }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
         },
-        "internalSr": {
-          "rowExists": false
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "MEGM.CA",
+            "returnedSymbol": "MEGM.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "MEGM.CA,0P0000I02F,0",
+            "longName": null,
+            "regularMarketPrice": 12.54,
+            "localReferenceClose": 17.69,
+            "localDifferencePct": 29.1125,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 100,
+          "latestSession": "2026-08-13",
+          "currentSession": true,
+          "currentSessionOhlc": {
+            "open": 12.54,
+            "high": 12.54,
+            "low": 12.54,
+            "close": 12.54,
+            "valid": true,
+            "sourceUrl": "https://query1.finance.yahoo.com/v8/finance/chart/MEGM.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          },
+          "futureRowsRejected": 0,
+          "currentPrice": 17.69,
+          "currentPriceDifferencePct": 29.112,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
         },
-        "automaticMutationPerformed": false
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
       },
       {
         "symbol": "SEIGA",
-        "diagnosis": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
         "currentMarket": {
           "sessionDate": "2026-08-13",
           "currentSessionAvailable": true,
@@ -540,55 +710,116 @@
           "dataQualityState": "COMPLETE_FOR_CURRENT_SCOPE",
           "sourceConflict": false
         },
-        "history": {
-          "exists": true,
-          "state": "HISTORY_IDENTITY_VERIFIED",
-          "symbolVerified": true,
-          "rowCount": 102,
-          "validOhlcCount": 102,
-          "latestSession": "2026-08-05",
-          "currentSession": false,
-          "source": "yahoo",
-          "verification": {
-            "verified": true,
-            "normalVerified": true,
-            "guardedVerified": false,
-            "policy": "standard_identity",
-            "baseConfidence": 75,
-            "score": 90,
-            "warnings": [
-              "latest_price_far_from_local_reference:1069.871%"
-            ],
-            "evidence": {
-              "requestedSymbol": "SEIGA.CA",
-              "returnedSymbol": "SEIGA.CA",
-              "exchangeName": "CAI",
-              "fullExchangeName": "EGX",
-              "exchangeEvidence": [
-                "CAI",
-                "EGX",
-                "Africa/Cairo",
-                "EEST"
-              ],
-              "currency": "EGP",
-              "shortName": "SEIGA.CA,0P00014J8V,0",
-              "longName": null,
-              "regularMarketPrice": 63.29,
-              "localReferenceClose": 5.41,
-              "localDifferencePct": 1069.8706,
-              "guardedPolicyRequested": false,
-              "guardedMaxDifferencePct": 8
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 5.41,
+              "high": 5.41,
+              "low": 5.41,
+              "close": 5.41,
+              "valid": true,
+              "errors": []
             }
-          }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
         },
-        "internalSr": {
-          "rowExists": false
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "SEIGA.CA",
+            "returnedSymbol": "SEIGA.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "SEIGA.CA,0P00014J8V,0",
+            "longName": null,
+            "regularMarketPrice": 63.29,
+            "localReferenceClose": 5.41,
+            "localDifferencePct": 1069.8706,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 100,
+          "latestSession": "2026-08-13",
+          "currentSession": true,
+          "currentSessionOhlc": {
+            "open": 63.290001,
+            "high": 63.290001,
+            "low": 63.290001,
+            "close": 63.290001,
+            "valid": true,
+            "sourceUrl": "https://query1.finance.yahoo.com/v8/finance/chart/SEIGA.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          },
+          "futureRowsRejected": 0,
+          "currentPrice": 5.41,
+          "currentPriceDifferencePct": 1069.871,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
         },
-        "automaticMutationPerformed": false
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
       },
       {
         "symbol": "ABUK",
-        "diagnosis": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
         "currentMarket": {
           "sessionDate": "2026-08-13",
           "currentSessionAvailable": true,
@@ -596,53 +827,109 @@
           "dataQualityState": "PARTIAL",
           "sourceConflict": false
         },
-        "history": {
-          "exists": true,
-          "state": "HISTORY_IDENTITY_VERIFIED",
-          "symbolVerified": true,
-          "rowCount": 103,
-          "validOhlcCount": 103,
-          "latestSession": "2026-08-05",
-          "currentSession": false,
-          "source": "yahoo",
-          "verification": {
-            "verified": true,
-            "normalVerified": true,
-            "guardedVerified": false,
-            "policy": "standard_identity",
-            "baseConfidence": 75,
-            "score": 100,
-            "warnings": [],
-            "evidence": {
-              "requestedSymbol": "ABUK.CA",
-              "returnedSymbol": "ABUK.CA",
-              "exchangeName": "CAI",
-              "fullExchangeName": "EGX",
-              "exchangeEvidence": [
-                "CAI",
-                "EGX",
-                "Africa/Cairo",
-                "EEST"
-              ],
-              "currency": "EGP",
-              "shortName": "ABUK.CA,0P0000BP62,730724",
-              "longName": "Abu Qir Fertilizers & Chemical Industries Company (S.A.E)",
-              "regularMarketPrice": 58.32,
-              "localReferenceClose": 67.94,
-              "localDifferencePct": 14.1596,
-              "guardedPolicyRequested": false,
-              "guardedMaxDifferencePct": 8
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 1,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 75.31,
+              "high": 75.31,
+              "low": 75.31,
+              "close": 75.31,
+              "valid": true,
+              "errors": []
             }
-          }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
         },
-        "internalSr": {
-          "rowExists": false
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "ABUK.CA",
+            "returnedSymbol": "ABUK.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "ABUK.CA,0P0000BP62,730724",
+            "longName": "Abu Qir Fertilizers & Chemical Industries Company (S.A.E)",
+            "regularMarketPrice": 58.32,
+            "localReferenceClose": 77.89,
+            "localDifferencePct": 25.1252,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 89,
+          "latestSession": "2026-08-11",
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 77.89,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
         },
-        "automaticMutationPerformed": false
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
       },
       {
         "symbol": "MFPC",
-        "diagnosis": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
         "currentMarket": {
           "sessionDate": "2026-08-13",
           "currentSessionAvailable": true,
@@ -650,53 +937,109 @@
           "dataQualityState": "PARTIAL",
           "sourceConflict": false
         },
-        "history": {
-          "exists": true,
-          "state": "HISTORY_IDENTITY_VERIFIED",
-          "symbolVerified": true,
-          "rowCount": 104,
-          "validOhlcCount": 104,
-          "latestSession": "2026-08-05",
-          "currentSession": false,
-          "source": "yahoo",
-          "verification": {
-            "verified": true,
-            "normalVerified": true,
-            "guardedVerified": false,
-            "policy": "standard_identity",
-            "baseConfidence": 75,
-            "score": 100,
-            "warnings": [],
-            "evidence": {
-              "requestedSymbol": "MFPC.CA",
-              "returnedSymbol": "MFPC.CA",
-              "exchangeName": "CAI",
-              "fullExchangeName": "EGX",
-              "exchangeEvidence": [
-                "CAI",
-                "EGX",
-                "Africa/Cairo",
-                "EEST"
-              ],
-              "currency": "EGP",
-              "shortName": "MFPC.CA,0P00015NUO,2259521",
-              "longName": null,
-              "regularMarketPrice": 43.8,
-              "localReferenceClose": 35.72,
-              "localDifferencePct": 22.6204,
-              "guardedPolicyRequested": false,
-              "guardedMaxDifferencePct": 8
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 1,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 38.17,
+              "high": 38.17,
+              "low": 38.17,
+              "close": 38.17,
+              "valid": true,
+              "errors": []
             }
-          }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
         },
-        "internalSr": {
-          "rowExists": false
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 100,
+          "identityEvidence": {
+            "requestedSymbol": "MFPC.CA",
+            "returnedSymbol": "MFPC.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "MFPC.CA,0P00015NUO,2259521",
+            "longName": null,
+            "regularMarketPrice": 43.8,
+            "localReferenceClose": 39.93,
+            "localDifferencePct": 9.692,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 85,
+          "latestSession": "2026-08-11",
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 39.93,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
         },
-        "automaticMutationPerformed": false
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
       },
       {
         "symbol": "ELNA",
-        "diagnosis": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_OHLC_INVALID",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_OHLC_INVALID",
+        "causeVerified": false,
         "currentMarket": {
           "sessionDate": "2026-08-13",
           "currentSessionAvailable": false,
@@ -704,51 +1047,1245 @@
           "dataQualityState": "CURRENT_DATA_UNAVAILABLE",
           "sourceConflict": false
         },
-        "history": {
-          "exists": true,
-          "state": "HISTORY_IDENTITY_VERIFIED",
-          "symbolVerified": true,
-          "rowCount": 102,
-          "validOhlcCount": 102,
-          "latestSession": "2026-08-05",
-          "currentSession": false,
-          "source": "yahoo",
-          "verification": {
-            "verified": true,
-            "normalVerified": true,
-            "guardedVerified": false,
-            "policy": "standard_identity",
-            "baseConfidence": 75,
-            "score": 90,
-            "warnings": [
-              "latest_price_far_from_local_reference:61.334%"
-            ],
-            "evidence": {
-              "requestedSymbol": "ELNA.CA",
-              "returnedSymbol": "ELNA.CA",
-              "exchangeName": "CAI",
-              "fullExchangeName": "EGX",
-              "exchangeEvidence": [
-                "CAI",
-                "EGX",
-                "Africa/Cairo",
-                "EEST"
-              ],
-              "currency": "EGP",
-              "shortName": "ELNA.CA,0P0000D4NQ,20087",
-              "longName": null,
-              "regularMarketPrice": 15.3,
-              "localReferenceClose": 39.57,
-              "localDifferencePct": 61.3343,
-              "guardedPolicyRequested": false,
-              "guardedMaxDifferencePct": 8
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 0,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": false,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 37.81,
+              "high": 39.55,
+              "low": 37.5,
+              "close": 0,
+              "valid": false,
+              "errors": [
+                "MISSING_OR_NON_POSITIVE_OHLC"
+              ]
             }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 100,
+          "identityEvidence": {
+            "requestedSymbol": "ELNA.CA",
+            "returnedSymbol": "ELNA.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "ELNA.CA,0P0000D4NQ,20087",
+            "longName": null,
+            "regularMarketPrice": 15.3,
+            "localReferenceClose": null,
+            "localDifferencePct": null,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 100,
+          "latestSession": "2026-08-11",
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": null,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "UBEE",
+        "remediationRoles": [
+          "STALE"
+        ],
+        "primaryRole": "STALE",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_TRUSTED_SR_ROW_STALE",
+        "observedCondition": "OBSERVED_TRUSTED_SR_ROW_STALE",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 14.82,
+          "dataQualityState": "PARTIAL",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 14.52,
+              "high": 14.52,
+              "low": 14.52,
+              "close": 14.52,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": true,
+            "sessionDate": "2026-07-02",
+            "sessionAligned": false,
+            "source": "INTERNAL_OHLC_PIVOT",
+            "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+            "confidence": 0.642,
+            "trustedForExecution": true,
+            "executionEligible": false,
+            "provenanceInput": "data/history-50.json",
+            "externalValidation": {
+              "direct": {
+                "source": "MUBASHER_DIRECT",
+                "state": "CURRENT_DIVERGENCE",
+                "maxDiffPct": 9.99,
+                "critical": false
+              },
+              "rendered": {
+                "source": "MUBASHER_RENDERED",
+                "state": "UNAVAILABLE",
+                "critical": false
+              }
+            }
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "UNAVAILABLE",
+          "identityVerified": false,
+          "identityPolicy": null,
+          "identityScore": null,
+          "identityEvidence": null,
+          "acceptedRowCount": 0,
+          "latestSession": null,
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 14.82,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCH_FAILED",
+          "error": "Yahoo history failed for UBEE: UBEE.CA: All HTTP attempts failed. https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true | https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+          "candidateFailures": [
+            "UBEE.CA: All HTTP attempts failed. https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true | https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          ]
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "AFMC",
+        "remediationRoles": [
+          "CONFLICT"
+        ],
+        "primaryRole": "CONFLICT",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_CURRENT_CRITICAL_SOURCE_CONFLICT",
+        "observedCondition": "OBSERVED_CURRENT_CRITICAL_SOURCE_CONFLICT",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 230.23,
+          "dataQualityState": "COMPLETE_FOR_CURRENT_SCOPE",
+          "sourceConflict": true
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": "workflow-market-snapshot",
+            "currentSessionSourceVerified": true,
+            "sessionTruthSource": "data/v17/market-session-truth.json",
+            "marketSource": "mubasher_symbol_pages_precise_enriched",
+            "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/AFMC/",
+            "currentSessionOhlc": {
+              "open": 247,
+              "high": 254.9,
+              "low": 230,
+              "close": 230.23,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": true,
+            "sessionDate": "2026-08-13",
+            "sessionAligned": true,
+            "source": "INTERNAL_OHLC_PIVOT",
+            "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+            "confidence": 0.804,
+            "trustedForExecution": true,
+            "executionEligible": true,
+            "provenanceInput": "data/market.json",
+            "externalValidation": {
+              "direct": {
+                "source": "MUBASHER_DIRECT",
+                "state": "CURRENT_CRITICAL_CONFLICT",
+                "maxDiffPct": 13.67,
+                "critical": true
+              },
+              "rendered": {
+                "source": "MUBASHER_RENDERED",
+                "state": "UNAVAILABLE",
+                "critical": false
+              }
+            }
+          },
+          "conflict": {
+            "symbol": "AFMC",
+            "source": "MUBASHER_DIRECT",
+            "state": "CURRENT_CRITICAL_CONFLICT",
+            "maxDiffPct": 13.67,
+            "critical": true
           }
         },
-        "internalSr": {
-          "rowExists": false
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "ELIGIBLE_FOR_V17_REVIEW",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "AFMC.CA",
+            "returnedSymbol": "AFMC.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "AFMC.CA,0P0000C3S1,20898",
+            "longName": null,
+            "regularMarketPrice": 21.61,
+            "localReferenceClose": 230.23,
+            "localDifferencePct": 90.6137,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 93,
+          "latestSession": "2026-08-13",
+          "currentSession": true,
+          "currentSessionOhlc": {
+            "open": 247,
+            "high": 254.899994,
+            "low": 230,
+            "close": 239,
+            "valid": true,
+            "sourceUrl": "https://query1.finance.yahoo.com/v8/finance/chart/AFMC.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          },
+          "futureRowsRejected": 0,
+          "currentPrice": 230.23,
+          "currentPriceDifferencePct": 3.809,
+          "priceReconciled": true,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": true,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
         },
-        "automaticMutationPerformed": false
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      }
+    ],
+    "targets": [
+      {
+        "symbol": "SAIB",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 2.11,
+          "dataQualityState": "PARTIAL",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 1,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 2.11,
+              "high": 2.11,
+              "low": 2.11,
+              "close": 2.11,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "UNAVAILABLE",
+          "identityVerified": false,
+          "identityPolicy": null,
+          "identityScore": null,
+          "identityEvidence": null,
+          "acceptedRowCount": 0,
+          "latestSession": null,
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 2.11,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCH_FAILED",
+          "error": "Yahoo history failed for SAIB: SAIB.CA: identity score 75",
+          "candidateFailures": [
+            "SAIB.CA: identity score 75"
+          ]
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "MEGM",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 17.69,
+          "dataQualityState": "COMPLETE_FOR_CURRENT_SCOPE",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 17.69,
+              "high": 17.69,
+              "low": 17.69,
+              "close": 17.69,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "MEGM.CA",
+            "returnedSymbol": "MEGM.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "MEGM.CA,0P0000I02F,0",
+            "longName": null,
+            "regularMarketPrice": 12.54,
+            "localReferenceClose": 17.69,
+            "localDifferencePct": 29.1125,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 100,
+          "latestSession": "2026-08-13",
+          "currentSession": true,
+          "currentSessionOhlc": {
+            "open": 12.54,
+            "high": 12.54,
+            "low": 12.54,
+            "close": 12.54,
+            "valid": true,
+            "sourceUrl": "https://query1.finance.yahoo.com/v8/finance/chart/MEGM.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          },
+          "futureRowsRejected": 0,
+          "currentPrice": 17.69,
+          "currentPriceDifferencePct": 29.112,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "SEIGA",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 5.41,
+          "dataQualityState": "COMPLETE_FOR_CURRENT_SCOPE",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 5.41,
+              "high": 5.41,
+              "low": 5.41,
+              "close": 5.41,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "SEIGA.CA",
+            "returnedSymbol": "SEIGA.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "SEIGA.CA,0P00014J8V,0",
+            "longName": null,
+            "regularMarketPrice": 63.29,
+            "localReferenceClose": 5.41,
+            "localDifferencePct": 1069.8706,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 100,
+          "latestSession": "2026-08-13",
+          "currentSession": true,
+          "currentSessionOhlc": {
+            "open": 63.290001,
+            "high": 63.290001,
+            "low": 63.290001,
+            "close": 63.290001,
+            "valid": true,
+            "sourceUrl": "https://query1.finance.yahoo.com/v8/finance/chart/SEIGA.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          },
+          "futureRowsRejected": 0,
+          "currentPrice": 5.41,
+          "currentPriceDifferencePct": 1069.871,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "ABUK",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 77.89,
+          "dataQualityState": "PARTIAL",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 1,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 75.31,
+              "high": 75.31,
+              "low": 75.31,
+              "close": 75.31,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "ABUK.CA",
+            "returnedSymbol": "ABUK.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "ABUK.CA,0P0000BP62,730724",
+            "longName": "Abu Qir Fertilizers & Chemical Industries Company (S.A.E)",
+            "regularMarketPrice": 58.32,
+            "localReferenceClose": 77.89,
+            "localDifferencePct": 25.1252,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 89,
+          "latestSession": "2026-08-11",
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 77.89,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "MFPC",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 39.93,
+          "dataQualityState": "PARTIAL",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 1,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 38.17,
+              "high": 38.17,
+              "low": 38.17,
+              "close": 38.17,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 100,
+          "identityEvidence": {
+            "requestedSymbol": "MFPC.CA",
+            "returnedSymbol": "MFPC.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "MFPC.CA,0P00015NUO,2259521",
+            "longName": null,
+            "regularMarketPrice": 43.8,
+            "localReferenceClose": 39.93,
+            "localDifferencePct": 9.692,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 85,
+          "latestSession": "2026-08-11",
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 39.93,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "ELNA",
+        "remediationRoles": [
+          "MISSING"
+        ],
+        "primaryRole": "MISSING",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_V17_HISTORY50_CURRENT_OHLC_INVALID",
+        "observedCondition": "OBSERVED_V17_HISTORY50_CURRENT_OHLC_INVALID",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": false,
+          "price": null,
+          "dataQualityState": "CURRENT_DATA_UNAVAILABLE",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 0,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": false,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 37.81,
+              "high": 39.55,
+              "low": 37.5,
+              "close": 0,
+              "valid": false,
+              "errors": [
+                "MISSING_OR_NON_POSITIVE_OHLC"
+              ]
+            }
+          },
+          "internalSr": {
+            "rowExists": false,
+            "sessionDate": null,
+            "sessionAligned": false,
+            "source": null,
+            "methodology": null,
+            "confidence": null,
+            "trustedForExecution": false,
+            "executionEligible": false,
+            "externalValidation": null
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 100,
+          "identityEvidence": {
+            "requestedSymbol": "ELNA.CA",
+            "returnedSymbol": "ELNA.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "ELNA.CA,0P0000D4NQ,20087",
+            "longName": null,
+            "regularMarketPrice": 15.3,
+            "localReferenceClose": null,
+            "localDifferencePct": null,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 100,
+          "latestSession": "2026-08-11",
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": null,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "UBEE",
+        "remediationRoles": [
+          "STALE"
+        ],
+        "primaryRole": "STALE",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_TRUSTED_SR_ROW_STALE",
+        "observedCondition": "OBSERVED_TRUSTED_SR_ROW_STALE",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 14.82,
+          "dataQualityState": "PARTIAL",
+          "sourceConflict": false
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": null,
+            "currentSessionSourceVerified": false,
+            "sessionTruthSource": null,
+            "marketSource": null,
+            "sourceUrl": null,
+            "currentSessionOhlc": {
+              "open": 14.52,
+              "high": 14.52,
+              "low": 14.52,
+              "close": 14.52,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": true,
+            "sessionDate": "2026-07-02",
+            "sessionAligned": false,
+            "source": "INTERNAL_OHLC_PIVOT",
+            "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+            "confidence": 0.642,
+            "trustedForExecution": true,
+            "executionEligible": false,
+            "provenanceInput": "data/history-50.json",
+            "externalValidation": {
+              "direct": {
+                "source": "MUBASHER_DIRECT",
+                "state": "CURRENT_DIVERGENCE",
+                "maxDiffPct": 9.99,
+                "critical": false
+              },
+              "rendered": {
+                "source": "MUBASHER_RENDERED",
+                "state": "UNAVAILABLE",
+                "critical": false
+              }
+            }
+          },
+          "conflict": null
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "UNAVAILABLE",
+          "identityVerified": false,
+          "identityPolicy": null,
+          "identityScore": null,
+          "identityEvidence": null,
+          "acceptedRowCount": 0,
+          "latestSession": null,
+          "currentSession": false,
+          "currentSessionOhlc": null,
+          "futureRowsRejected": 0,
+          "currentPrice": 14.82,
+          "currentPriceDifferencePct": null,
+          "priceReconciled": false,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": false,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCH_FAILED",
+          "error": "Yahoo history failed for UBEE: UBEE.CA: All HTTP attempts failed. https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true | https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+          "candidateFailures": [
+            "UBEE.CA: All HTTP attempts failed. https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true | https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          ]
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
+      },
+      {
+        "symbol": "AFMC",
+        "remediationRoles": [
+          "CONFLICT"
+        ],
+        "primaryRole": "CONFLICT",
+        "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
+        "diagnosis": "OBSERVED_CURRENT_CRITICAL_SOURCE_CONFLICT",
+        "observedCondition": "OBSERVED_CURRENT_CRITICAL_SOURCE_CONFLICT",
+        "causeVerified": false,
+        "currentMarket": {
+          "sessionDate": "2026-08-13",
+          "currentSessionAvailable": true,
+          "price": 230.23,
+          "dataQualityState": "COMPLETE_FOR_CURRENT_SCOPE",
+          "sourceConflict": true
+        },
+        "authoritativeV17": {
+          "history50": {
+            "inputPath": "data/history-50.json",
+            "inputVersion": "5.6.0",
+            "inputGeneratedAt": "2026-08-14T15:09:14.175Z",
+            "inputVerifiedSessionDate": "2026-08-13",
+            "rowCount": 2,
+            "validOhlcCount": 2,
+            "latestSession": "2026-08-13",
+            "currentSessionRowPresent": true,
+            "currentSessionOhlcValid": true,
+            "currentSessionSource": "workflow-market-snapshot",
+            "currentSessionSourceQuality": "workflow-market-snapshot",
+            "currentSessionSourceVerified": true,
+            "sessionTruthSource": "data/v17/market-session-truth.json",
+            "marketSource": "mubasher_symbol_pages_precise_enriched",
+            "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/AFMC/",
+            "currentSessionOhlc": {
+              "open": 247,
+              "high": 254.9,
+              "low": 230,
+              "close": 230.23,
+              "valid": true,
+              "errors": []
+            }
+          },
+          "internalSr": {
+            "rowExists": true,
+            "sessionDate": "2026-08-13",
+            "sessionAligned": true,
+            "source": "INTERNAL_OHLC_PIVOT",
+            "methodology": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
+            "confidence": 0.804,
+            "trustedForExecution": true,
+            "executionEligible": true,
+            "provenanceInput": "data/market.json",
+            "externalValidation": {
+              "direct": {
+                "source": "MUBASHER_DIRECT",
+                "state": "CURRENT_CRITICAL_CONFLICT",
+                "maxDiffPct": 13.67,
+                "critical": true
+              },
+              "rendered": {
+                "source": "MUBASHER_RENDERED",
+                "state": "UNAVAILABLE",
+                "critical": false
+              }
+            }
+          },
+          "conflict": {
+            "symbol": "AFMC",
+            "source": "MUBASHER_DIRECT",
+            "state": "CURRENT_CRITICAL_CONFLICT",
+            "maxDiffPct": 13.67,
+            "critical": true
+          }
+        },
+        "supplementalCandidate": {
+          "provider": "YAHOO",
+          "sourceRole": "SUPPLEMENTAL_REVIEW_CANDIDATE_ONLY",
+          "status": "ELIGIBLE_FOR_V17_REVIEW",
+          "identityVerified": true,
+          "identityPolicy": "standard_identity",
+          "identityScore": 90,
+          "identityEvidence": {
+            "requestedSymbol": "AFMC.CA",
+            "returnedSymbol": "AFMC.CA",
+            "exchangeName": "CAI",
+            "fullExchangeName": "EGX",
+            "exchangeEvidence": [
+              "CAI",
+              "EGX",
+              "Africa/Cairo",
+              "EEST"
+            ],
+            "currency": "EGP",
+            "shortName": "AFMC.CA,0P0000C3S1,20898",
+            "longName": null,
+            "regularMarketPrice": 21.61,
+            "localReferenceClose": 230.23,
+            "localDifferencePct": 90.6137,
+            "guardedPolicyRequested": false,
+            "guardedMaxDifferencePct": 8
+          },
+          "acceptedRowCount": 93,
+          "latestSession": "2026-08-13",
+          "currentSession": true,
+          "currentSessionOhlc": {
+            "open": 247,
+            "high": 254.899994,
+            "low": 230,
+            "close": 239,
+            "valid": true,
+            "sourceUrl": "https://query1.finance.yahoo.com/v8/finance/chart/AFMC.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true"
+          },
+          "futureRowsRejected": 0,
+          "currentPrice": 230.23,
+          "currentPriceDifferencePct": 3.809,
+          "priceReconciled": true,
+          "priceTolerancePct": 5,
+          "eligibleForV17Review": true,
+          "trustedForV17Execution": false,
+          "executionEligible": false,
+          "autoResolveConflict": false
+        },
+        "acquisitionAttempt": {
+          "provider": "YAHOO",
+          "networkAttempted": true,
+          "mapEntryFound": true,
+          "status": "FETCHED",
+          "error": null,
+          "candidateFailures": []
+        },
+        "automaticMutationPerformed": false,
+        "automaticTrustUpgrade": false,
+        "automaticConflictResolution": false,
+        "reviewInstruction": "Supplemental evidence may be reviewed by the V17 pipeline only. It cannot be relabeled trusted, cannot resolve a conflict automatically, and cannot open Execution Grade without authoritative V17 rebuilds."
       }
     ],
     "sourceConflicts": [
@@ -763,24 +2300,44 @@
     "interpretation": {
       "necessaryRemediationOnly": true,
       "sufficientForExecutionGrade": false,
-      "individualYahooHistoryIsNotAutomaticallyV17TrustedExecutionEvidence": true,
-      "note": "The audit diagnoses current evidence gaps only. Any remediation must be followed by the authoritative V17 Internal S/R rebuild and resilient-session gate rebuild; V20 does not write V17 evidence or relabel sources as trusted."
+      "v17AuthoritativeInputSeparatedFromSupplementalCandidate": true,
+      "yahooHistoryIsNotV17TrustedExecutionEvidence": true,
+      "eligibleForV17ReviewDoesNotMeanExecutionEligible": true,
+      "noCandidateEffectSimulation": true,
+      "note": "V20 acquires supplemental point-in-time evidence for review only. It does not write data/history-50.json or any data/v17 artifact, does not relabel Yahoo evidence as V17-trusted, does not resolve source conflicts automatically, and does not simulate or open the V17 execution gate."
     }
   },
   "supportResistanceRemediationRegression": {
-    "schemaVersion": "20.0.0-sr-remediation-regression-2",
-    "generatedAt": "2026-08-15T09:17:18.969Z",
+    "schemaVersion": "20.0.0-sr-remediation-regression-3",
+    "generatedAt": "2026-08-15T09:24:54.943Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
+    "evidence": {
+      "targetCount": 8,
+      "missingCount": 6,
+      "staleCount": 1,
+      "conflictCount": 1,
+      "supplementalFetchedCount": 6,
+      "supplementalReviewReadyCount": 1,
+      "protectedInputHashes": {
+        "data/v17/resilient-session-status.json": "21f80bfb91d0136747a17666c3db8604a52af88c321ff4daf92f2bbeb02939e5",
+        "data/v17/internal-ohlc-support-resistance.json": "ba9c50dd3895625be18235d2cb24a62e2e6e4c8baf18eb194ee5d98bf3406c21",
+        "data/history-50.json": "b09357b03fa175fe540dbb484bf7847df2c117057390f3b8909f17fe9ee8af92"
+      }
+    },
     "checks": {
       "readOnlyNoV17Mutation": true,
-      "missingSymbolSetsMatchAuthoritativeEvidence": true,
-      "diagnosisPresentForEveryMissingSymbol": true,
+      "targetSetDerivedFromSameRunExecutionGap": true,
+      "authoritativeHistory50SeparatedFromSupplementalYahoo": true,
+      "supplementalNeverTrustedForV17Execution": true,
+      "supplementalNeverExecutionEligible": true,
+      "conflictNeverAutoResolved": true,
+      "reviewReadinessRequiresIdentitySessionOhlcAndPriceReconciliation": true,
       "gapsRecomputedFromOfficialThresholds": true,
       "noExecutionGuarantee": true,
       "fullV17RebuildRequired": true,
-      "sourceTrustNotRelabeled": true
+      "noCandidateEffectSimulation": true
     }
   },
   "supportResistanceRemediationMirror": {
@@ -794,7 +2351,7 @@
   },
   "fullMarketTechnical": {
     "schemaVersion": "20.0.0-full-market-technical-1",
-    "generatedAt": "2026-08-15T09:17:23.053Z",
+    "generatedAt": "2026-08-15T09:24:58.148Z",
     "asOfSessionDate": "2026-08-13",
     "policy": {
       "pointInTime": true,
@@ -851,7 +2408,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -983,25 +2540,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 12.15,
-          "sma20": 10.5485,
-          "sma50": 9.9738,
+          "sma20": 10.5365,
+          "sma50": 9.956,
           "sma200": null,
-          "ema12": 11.094772,
-          "ema26": 10.534862,
-          "rsi14": 80.922223,
-          "macd": 0.55991,
-          "macdSignal": 0.420575,
-          "macdHistogram": 0.139335,
-          "atr14": 0.403618,
+          "ema12": 11.092742,
+          "ema26": 10.52781,
+          "rsi14": 83.374301,
+          "macd": 0.564932,
+          "macdSignal": 0.424974,
+          "macdHistogram": 0.139958,
+          "atr14": 0.402276,
           "momentum5Pct": 10.958904,
-          "momentum20Pct": 27.358491
+          "momentum20Pct": 30.085653
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1131,25 +2688,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 4.4,
-          "sma20": 3.973,
-          "sma50": 3.7978,
+          "sma20": 3.96,
+          "sma50": 3.7998,
           "sma200": null,
-          "ema12": 4.145057,
-          "ema26": 3.970183,
-          "rsi14": 70.247914,
-          "macd": 0.174874,
-          "macdSignal": 0.122382,
-          "macdHistogram": 0.052492,
-          "atr14": 0.176155,
+          "ema12": 4.143029,
+          "ema26": 3.966365,
+          "rsi14": 70.373127,
+          "macd": 0.176664,
+          "macdSignal": 0.122733,
+          "macdHistogram": 0.053931,
+          "atr14": 0.177354,
           "momentum5Pct": 5.515588,
-          "momentum20Pct": 24.293785
+          "momentum20Pct": 27.536232
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1225,25 +2782,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 66.989998,
-          "sma20": 54.722,
-          "sma50": 47.9532,
+          "sma20": 54.6235,
+          "sma50": 47.826,
           "sma200": null,
-          "ema12": 60.200373,
-          "ema26": 54.675698,
-          "rsi14": 79.958174,
-          "macd": 5.524675,
-          "macdSignal": 4.211058,
-          "macdHistogram": 1.313617,
-          "atr14": 2.87532,
+          "ema12": 60.175751,
+          "ema26": 54.59541,
+          "rsi14": 79.698716,
+          "macd": 5.580341,
+          "macdSignal": 4.263153,
+          "macdHistogram": 1.317189,
+          "atr14": 2.888054,
           "momentum5Pct": 13.101465,
-          "momentum20Pct": 45.915918
+          "momentum20Pct": 48.076912
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1333,25 +2890,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 2.15,
-          "sma20": 2.175,
-          "sma50": 2.0482,
+          "sma20": 2.1735,
+          "sma50": 2.0404,
           "sma200": null,
-          "ema12": 2.161914,
-          "ema26": 2.133638,
-          "rsi14": 53.308491,
-          "macd": 0.028276,
-          "macdSignal": 0.041419,
-          "macdHistogram": -0.013143,
-          "atr14": 0.058749,
+          "ema12": 2.161485,
+          "ema26": 2.131185,
+          "rsi14": 53.618668,
+          "macd": 0.030299,
+          "macdSignal": 0.043724,
+          "macdHistogram": -0.013424,
+          "atr14": 0.060014,
           "momentum5Pct": -0.921659,
-          "momentum20Pct": 1.415094
+          "momentum20Pct": 0.938967
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1401,25 +2958,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 197.809998,
-          "sma20": 183.748499,
-          "sma50": 168.391799,
+          "sma20": 183.949999,
+          "sma50": 167.660199,
           "sma200": null,
-          "ema12": 188.448732,
-          "ema26": 181.815009,
-          "rsi14": 69.284292,
-          "macd": 6.633723,
-          "macdSignal": 6.501498,
-          "macdHistogram": 0.132225,
-          "atr14": 7.150175,
+          "ema12": 188.54735,
+          "ema26": 181.802029,
+          "rsi14": 68.882737,
+          "macd": 6.745321,
+          "macdSignal": 6.740455,
+          "macdHistogram": 0.004866,
+          "atr14": 7.224915,
           "momentum5Pct": 5.150969,
-          "momentum20Pct": 13.958979
+          "momentum20Pct": 11.681348
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1434,32 +2991,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 94,
         "currentPrice": 31.94,
         "latestClose": 31.9,
         "currentPriceDifferencePct": 0.125,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 31.9,
-          "sma20": 30.0645,
-          "sma50": 29.279,
+          "sma20": 30.0245,
+          "sma50": 29.265,
           "sma200": null,
-          "ema12": 30.647114,
-          "ema26": 30.01424,
-          "rsi14": 72.56927,
-          "macd": 0.632874,
-          "macdSignal": 0.448922,
-          "macdHistogram": 0.183952,
-          "atr14": 0.71345,
+          "ema12": 30.633803,
+          "ema26": 29.988518,
+          "rsi14": 72.803334,
+          "macd": 0.645286,
+          "macdSignal": 0.452704,
+          "macdHistogram": 0.192582,
+          "atr14": 0.717825,
           "momentum5Pct": 2.309173,
-          "momentum20Pct": 9.621993
+          "momentum20Pct": 12.880396
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1554,32 +3111,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 97,
+        "rowsUsed": 96,
         "currentPrice": 120.78,
         "latestClose": 120.779999,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 120.779999,
-          "sma20": 106.154001,
-          "sma50": 73.3848,
+          "sma20": 103.315001,
+          "sma50": 72.1232,
           "sma200": null,
-          "ema12": 114.572341,
-          "ema26": 99.477905,
-          "rsi14": 72.85187,
-          "macd": 15.094436,
-          "macdSignal": 15.996379,
-          "macdHistogram": -0.901943,
-          "atr14": 7.806256,
+          "ema12": 113.766144,
+          "ema26": 97.967313,
+          "rsi14": 73.366745,
+          "macd": 15.798832,
+          "macdSignal": 16.259724,
+          "macdHistogram": -0.460893,
+          "atr14": 7.775584,
           "momentum5Pct": 8.3423,
-          "momentum20Pct": 100.697905
+          "momentum20Pct": 99.603376
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1619,7 +3176,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1724,25 +3281,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 0.245,
-          "sma20": 0.2429,
-          "sma50": 0.22182,
+          "sma20": 0.24215,
+          "sma50": 0.22108,
           "sma200": null,
-          "ema12": 0.241287,
-          "ema26": 0.235437,
-          "rsi14": 59.529679,
-          "macd": 0.005849,
-          "macdSignal": 0.006935,
-          "macdHistogram": -0.001086,
-          "atr14": 0.008473,
+          "ema12": 0.241199,
+          "ema26": 0.234986,
+          "rsi14": 59.637246,
+          "macd": 0.006213,
+          "macdSignal": 0.007291,
+          "macdHistogram": -0.001078,
+          "atr14": 0.008418,
           "momentum5Pct": 3.375527,
-          "momentum20Pct": 8.888889
+          "momentum20Pct": 13.425926
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1782,7 +3339,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1804,16 +3361,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.5,
-          "sma20": 1.5175,
-          "sma50": 1.5096,
+          "sma20": 1.5275,
+          "sma50": 1.505,
           "sma200": null,
-          "ema12": 1.525449,
-          "ema26": 1.524606,
-          "rsi14": 47.213012,
-          "macd": 0.000843,
-          "macdSignal": 0.00499,
-          "macdHistogram": -0.004147,
-          "atr14": 0.062895,
+          "ema12": 1.526357,
+          "ema26": 1.525428,
+          "rsi14": 47.163393,
+          "macd": 0.000929,
+          "macdSignal": 0.006017,
+          "macdHistogram": -0.005088,
+          "atr14": 0.063529,
           "momentum5Pct": -3.225806,
           "momentum20Pct": -12.280702
         },
@@ -1822,7 +3379,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1871,7 +3428,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 20
+            "sessions": 19
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1886,32 +3443,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 91,
+        "rowsUsed": 90,
         "currentPrice": 65.28,
         "latestClose": 65.400002,
         "currentPriceDifferencePct": 0.184,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 65.400002,
-          "sma20": 63.1395,
-          "sma50": 57.265,
+          "sma20": 63.046,
+          "sma50": 56.9552,
           "sma200": null,
-          "ema12": 64.674818,
-          "ema26": 62.18985,
-          "rsi14": 62.977969,
-          "macd": 2.484968,
-          "macdSignal": 2.644976,
-          "macdHistogram": -0.160008,
-          "atr14": 2.626104,
+          "ema12": 64.664424,
+          "ema26": 62.099718,
+          "rsi14": 63.37898,
+          "macd": 2.564706,
+          "macdSignal": 2.742208,
+          "macdHistogram": -0.177502,
+          "atr14": 2.661979,
           "momentum5Pct": -0.894069,
-          "momentum20Pct": 11.546991
+          "momentum20Pct": 10.472974
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -1933,25 +3490,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 0.496,
-          "sma20": 0.4146,
-          "sma50": 0.34824,
+          "sma20": 0.41215,
+          "sma50": 0.34696,
           "sma200": null,
-          "ema12": 0.451775,
-          "ema26": 0.410222,
-          "rsi14": 75.432511,
-          "macd": 0.041553,
-          "macdSignal": 0.036353,
-          "macdHistogram": 0.0052,
-          "atr14": 0.02291,
+          "ema12": 0.451197,
+          "ema26": 0.409021,
+          "rsi14": 75.371907,
+          "macd": 0.042175,
+          "macdSignal": 0.036685,
+          "macdHistogram": 0.005491,
+          "atr14": 0.022974,
           "momentum5Pct": 11.210762,
-          "momentum20Pct": 56.962025
+          "momentum20Pct": 56.466877
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2006,32 +3563,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 90,
+        "rowsUsed": 89,
         "currentPrice": 10.87,
         "latestClose": 10.89,
         "currentPriceDifferencePct": 0.184,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 10.89,
-          "sma20": 9.9395,
-          "sma50": 9.7382,
+          "sma20": 9.9345,
+          "sma50": 9.7484,
           "sma200": null,
-          "ema12": 10.222258,
-          "ema26": 9.969006,
-          "rsi14": 76.279704,
-          "macd": 0.253252,
-          "macdSignal": 0.147325,
-          "macdHistogram": 0.105927,
-          "atr14": 0.252857,
+          "ema12": 10.221338,
+          "ema26": 9.967596,
+          "rsi14": 76.2788,
+          "macd": 0.253741,
+          "macdSignal": 0.147111,
+          "macdHistogram": 0.106631,
+          "atr14": 0.254651,
           "momentum5Pct": 7.821782,
-          "momentum20Pct": 14.511041
+          "momentum20Pct": 15.482503
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2053,25 +3610,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1305.430054,
-          "sma20": 1246.251007,
-          "sma50": 1173.525608,
+          "sma20": 1241.590509,
+          "sma50": 1171.483208,
           "sma200": null,
-          "ema12": 1274.73513,
-          "ema26": 1231.039914,
-          "rsi14": 62.264258,
-          "macd": 43.695216,
-          "macdSignal": 38.685657,
-          "macdHistogram": 5.009559,
-          "atr14": 60.447016,
+          "ema12": 1273.798147,
+          "ema26": 1228.588479,
+          "rsi14": 62.673058,
+          "macd": 45.209668,
+          "macdSignal": 39.875116,
+          "macdHistogram": 5.334552,
+          "atr14": 61.137585,
           "momentum5Pct": 3.641747,
-          "momentum20Pct": 13.590727
+          "momentum20Pct": 8.771332
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2111,7 +3668,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2126,32 +3683,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 95,
         "currentPrice": 521.88,
         "latestClose": 521.01001,
         "currentPriceDifferencePct": 0.167,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 521.01001,
-          "sma20": 236.3795,
-          "sma50": 137.990399,
+          "sma20": 233.9405,
+          "sma50": 137.120399,
           "sma200": null,
-          "ema12": 376.193393,
-          "ema26": 260.118665,
-          "rsi14": 84.402637,
-          "macd": 116.074728,
-          "macdSignal": 78.806219,
-          "macdHistogram": 37.268509,
-          "atr14": 55.459753,
+          "ema12": 375.134198,
+          "ema26": 258.687351,
+          "rsi14": 85.007049,
+          "macd": 116.446847,
+          "macdSignal": 78.623792,
+          "macdHistogram": 37.823055,
+          "atr14": 54.619259,
           "momentum5Pct": 30.999198,
-          "momentum20Pct": 652.687088
+          "momentum20Pct": 664.280512
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2234,32 +3791,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 97,
+        "rowsUsed": 96,
         "currentPrice": 126.66,
         "latestClose": 126.660004,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 126.660004,
-          "sma20": 115.32,
-          "sma50": 89.266,
+          "sma20": 112.998,
+          "sma50": 88.3868,
           "sma200": null,
-          "ema12": 119.221476,
-          "ema26": 108.547338,
-          "rsi14": 70.985225,
-          "macd": 10.674138,
-          "macdSignal": 11.771909,
-          "macdHistogram": -1.097772,
-          "atr14": 7.923668,
+          "ema12": 118.772816,
+          "ema26": 107.567935,
+          "rsi14": 71.202417,
+          "macd": 11.204881,
+          "macdSignal": 12.067261,
+          "macdHistogram": -0.86238,
+          "atr14": 7.801047,
           "momentum5Pct": 4.384381,
-          "momentum20Pct": 76.185847
+          "momentum20Pct": 77.221215
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2274,25 +3831,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 98,
+        "rowsUsed": 97,
         "currentPrice": 42.77,
         "latestClose": 40.43,
         "currentPriceDifferencePct": 5.471,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 40.43,
-          "sma20": 37.6385,
-          "sma50": 36.5682,
+          "sma20": 37.627,
+          "sma50": 36.5864,
           "sma200": null,
-          "ema12": 38.665252,
-          "ema26": 37.721049,
-          "rsi14": 71.724319,
-          "macd": 0.944202,
-          "macdSignal": 0.679548,
-          "macdHistogram": 0.264654,
-          "atr14": 1.06141,
+          "ema12": 38.657374,
+          "ema26": 37.710403,
+          "rsi14": 71.130266,
+          "macd": 0.946971,
+          "macdSignal": 0.678667,
+          "macdHistogram": 0.268304,
+          "atr14": 1.071542,
           "momentum5Pct": 5.176902,
-          "momentum20Pct": 11.93245
+          "momentum20Pct": 13.122545
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT",
@@ -2302,7 +3859,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2317,32 +3874,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 88,
+        "rowsUsed": 87,
         "currentPrice": 5.3,
         "latestClose": 5.29,
         "currentPriceDifferencePct": 0.189,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 5.29,
-          "sma20": 5.279,
-          "sma50": 5.1538,
+          "sma20": 5.247,
+          "sma50": 5.1402,
           "sma200": null,
-          "ema12": 5.272287,
-          "ema26": 5.208537,
-          "rsi14": 54.889684,
-          "macd": 0.06375,
-          "macdSignal": 0.080258,
-          "macdHistogram": -0.016508,
-          "atr14": 0.136649,
+          "ema12": 5.267722,
+          "ema26": 5.198594,
+          "rsi14": 55.340826,
+          "macd": 0.069127,
+          "macdSignal": 0.083651,
+          "macdHistogram": -0.014524,
+          "atr14": 0.137531,
           "momentum5Pct": 0.189394,
-          "momentum20Pct": 10.901468
+          "momentum20Pct": 11.603376
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2422,7 +3979,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2512,25 +4069,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 12.62,
-          "sma20": 12.3495,
-          "sma50": 12.1714,
+          "sma20": 12.33,
+          "sma50": 12.1834,
           "sma200": null,
-          "ema12": 12.570002,
-          "ema26": 12.368033,
-          "rsi14": 56.678659,
-          "macd": 0.201969,
-          "macdSignal": 0.181167,
-          "macdHistogram": 0.020802,
-          "atr14": 0.358649,
+          "ema12": 12.568231,
+          "ema26": 12.365144,
+          "rsi14": 56.589303,
+          "macd": 0.203088,
+          "macdSignal": 0.181147,
+          "macdHistogram": 0.021941,
+          "atr14": 0.361626,
           "momentum5Pct": -2.321981,
-          "momentum20Pct": 8.233276
+          "momentum20Pct": 6.139613
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2545,32 +4102,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 99,
+        "rowsUsed": 98,
         "currentPrice": 24.46,
         "latestClose": 24.459999,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 24.459999,
-          "sma20": 24.228,
-          "sma50": 23.9786,
+          "sma20": 24.236,
+          "sma50": 23.9636,
           "sma200": null,
-          "ema12": 24.291081,
-          "ema26": 24.193733,
-          "rsi14": 56.455353,
-          "macd": 0.097349,
-          "macdSignal": 0.095557,
-          "macdHistogram": 0.001792,
-          "atr14": 0.329528,
+          "ema12": 24.289828,
+          "ema26": 24.18835,
+          "rsi14": 56.414882,
+          "macd": 0.101478,
+          "macdSignal": 0.099868,
+          "macdHistogram": 0.00161,
+          "atr14": 0.330125,
           "momentum5Pct": -0.163269,
-          "momentum20Pct": 0.245898
+          "momentum20Pct": 1.40961
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2592,25 +4149,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 38.23,
-          "sma20": 33.716,
-          "sma50": 29.7694,
+          "sma20": 33.5505,
+          "sma50": 29.6598,
           "sma200": null,
-          "ema12": 35.952526,
-          "ema26": 33.24516,
-          "rsi14": 77.695001,
-          "macd": 2.707366,
-          "macdSignal": 2.379367,
-          "macdHistogram": 0.327999,
-          "atr14": 1.489638,
+          "ema12": 35.917908,
+          "ema26": 33.151343,
+          "rsi14": 77.589911,
+          "macd": 2.766565,
+          "macdSignal": 2.427686,
+          "macdHistogram": 0.338879,
+          "atr14": 1.508686,
           "momentum5Pct": 7.842028,
-          "momentum20Pct": 35.567371
+          "momentum20Pct": 35.759943
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2650,7 +4207,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2705,32 +4262,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 82,
+        "rowsUsed": 81,
         "currentPrice": 139.07,
         "latestClose": 139.270004,
         "currentPriceDifferencePct": 0.144,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 139.270004,
-          "sma20": 139.0315,
-          "sma50": 135.5634,
+          "sma20": 138.9275,
+          "sma50": 135.5336,
           "sma200": null,
-          "ema12": 139.451737,
-          "ema26": 138.013464,
-          "rsi14": 54.029935,
-          "macd": 1.438272,
-          "macdSignal": 1.68018,
-          "macdHistogram": -0.241908,
-          "atr14": 2.147074,
+          "ema12": 139.419006,
+          "ema26": 137.939093,
+          "rsi14": 54.095913,
+          "macd": 1.479913,
+          "macdSignal": 1.704593,
+          "macdHistogram": -0.22468,
+          "atr14": 2.161745,
           "momentum5Pct": 0.086245,
-          "momentum20Pct": 3.531073
+          "momentum20Pct": 3.546471
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2752,18 +4309,18 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 0.415,
-          "sma20": 0.39325,
-          "sma50": 0.37306,
+          "sma20": 0.3922,
+          "sma50": 0.37186,
           "sma200": null,
-          "ema12": 0.401862,
-          "ema26": 0.389935,
-          "rsi14": 69.302334,
-          "macd": 0.011926,
-          "macdSignal": 0.01221,
-          "macdHistogram": -0.000284,
+          "ema12": 0.401602,
+          "ema26": 0.389376,
+          "rsi14": 69.232865,
+          "macd": 0.012226,
+          "macdSignal": 0.01241,
+          "macdHistogram": -0.000184,
           "atr14": 0.011223,
           "momentum5Pct": 2.977667,
-          "momentum20Pct": 15.277778
+          "momentum20Pct": 14.325069
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -2772,7 +4329,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2830,32 +4387,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 95,
         "currentPrice": 534.19,
         "latestClose": 534.190002,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 534.190002,
-          "sma20": 478.205502,
-          "sma50": 409.287599,
+          "sma20": 474.556001,
+          "sma50": 406.798599,
           "sma200": null,
-          "ema12": 498.55768,
-          "ema26": 463.877049,
-          "rsi14": 77.005742,
-          "macd": 34.680631,
-          "macdSignal": 30.887212,
-          "macdHistogram": 3.793419,
-          "atr14": 27.713779,
+          "ema12": 497.845801,
+          "ema26": 461.955811,
+          "rsi14": 77.612209,
+          "macd": 35.889991,
+          "macdSignal": 31.844919,
+          "macdHistogram": 4.045072,
+          "atr14": 27.745312,
           "momentum5Pct": 10.18316,
-          "momentum20Pct": 34.529571
+          "momentum20Pct": 34.421241
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2966,32 +4523,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 100,
+        "rowsUsed": 99,
         "currentPrice": 124.45,
         "latestClose": 124.449997,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 124.449997,
-          "sma20": 98.419999,
-          "sma50": 87.9762,
+          "sma20": 98.315999,
+          "sma50": 87.8526,
           "sma200": null,
-          "ema12": 106.79186,
-          "ema26": 98.432095,
-          "rsi14": 87.712954,
-          "macd": 8.359765,
-          "macdSignal": 5.848986,
-          "macdHistogram": 2.510779,
-          "atr14": 5.362152,
+          "ema12": 106.747895,
+          "ema26": 98.325043,
+          "rsi14": 87.427507,
+          "macd": 8.422852,
+          "macdSignal": 5.892664,
+          "macdHistogram": 2.530188,
+          "atr14": 5.39145,
           "momentum5Pct": 19.836302,
-          "momentum20Pct": 46.256908
+          "momentum20Pct": 50.447287
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3056,15 +4613,15 @@
         "indicators": {
           "close": 10.34545,
           "sma20": 10.34545,
-          "sma50": 10.676507,
+          "sma50": 10.697198,
           "sma200": null,
-          "ema12": 10.348982,
-          "ema26": 10.421019,
+          "ema12": 10.349624,
+          "ema26": 10.427065,
           "rsi14": 0,
-          "macd": -0.072037,
-          "macdSignal": -0.099332,
-          "macdHistogram": 0.027295,
-          "atr14": 0.006405,
+          "macd": -0.07744,
+          "macdSignal": -0.106156,
+          "macdHistogram": 0.028716,
+          "atr14": 0.006898,
           "momentum5Pct": 0,
           "momentum20Pct": 0
         },
@@ -3075,7 +4632,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 125
+            "sessions": 124
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3125,25 +4682,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 29.27,
-          "sma20": 27.6135,
-          "sma50": 26.5278,
+          "sma20": 27.625,
+          "sma50": 26.5032,
           "sma200": null,
-          "ema12": 28.322883,
-          "ema26": 27.622376,
-          "rsi14": 64.458251,
-          "macd": 0.700507,
-          "macdSignal": 0.579432,
-          "macdHistogram": 0.121075,
-          "atr14": 0.8355,
+          "ema12": 28.32363,
+          "ema26": 27.614999,
+          "rsi14": 64.344714,
+          "macd": 0.708631,
+          "macdSignal": 0.591443,
+          "macdHistogram": 0.117188,
+          "atr14": 0.841219,
           "momentum5Pct": 1.105351,
-          "momentum20Pct": 8.769974
+          "momentum20Pct": 8.689194
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3198,32 +4755,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 93,
+        "rowsUsed": 92,
         "currentPrice": 299.93,
         "latestClose": 299.929993,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 299.929993,
-          "sma20": 240.920001,
-          "sma50": 175.440801,
+          "sma20": 239.850002,
+          "sma50": 173.551401,
           "sma200": null,
-          "ema12": 257.678222,
-          "ema26": 226.703409,
-          "rsi14": 76.163837,
-          "macd": 30.974813,
-          "macdSignal": 27.759694,
-          "macdHistogram": 3.215119,
-          "atr14": 19.875989,
+          "ema12": 257.075724,
+          "ema26": 225.040405,
+          "rsi14": 76.156181,
+          "macd": 32.035318,
+          "macdSignal": 28.594528,
+          "macdHistogram": 3.44079,
+          "atr14": 19.788682,
           "momentum5Pct": 24.903172,
-          "momentum20Pct": 45.174242
+          "momentum20Pct": 53.715663
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3265,7 +4822,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3320,32 +4877,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 99,
+        "rowsUsed": 98,
         "currentPrice": 36.25,
         "latestClose": 36.259998,
         "currentPriceDifferencePct": 0.028,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 36.259998,
-          "sma20": 36.5785,
-          "sma50": 37.6626,
+          "sma20": 36.579,
+          "sma50": 37.7234,
           "sma200": null,
-          "ema12": 36.497635,
-          "ema26": 36.893489,
-          "rsi14": 42.535523,
-          "macd": -0.395854,
-          "macdSignal": -0.431968,
-          "macdHistogram": 0.036114,
-          "atr14": 0.601144,
+          "ema12": 36.499901,
+          "ema26": 36.91318,
+          "rsi14": 42.56451,
+          "macd": -0.413278,
+          "macdSignal": -0.451902,
+          "macdHistogram": 0.038623,
+          "atr14": 0.606792,
           "momentum5Pct": 0.415389,
-          "momentum20Pct": -1.814249
+          "momentum20Pct": -3.819637
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3407,18 +4964,18 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 39.77,
-          "sma20": 33.859,
-          "sma50": 32.615,
+          "sma20": 33.8125,
+          "sma50": 32.5302,
           "sma200": null,
-          "ema12": 34.809415,
-          "ema26": 33.835845,
-          "rsi14": 85.887738,
-          "macd": 0.97357,
-          "macdSignal": 0.64448,
-          "macdHistogram": 0.329091,
-          "atr14": 1.217221,
+          "ema12": 34.795495,
+          "ema26": 33.803168,
+          "rsi14": 85.541521,
+          "macd": 0.992327,
+          "macdSignal": 0.659664,
+          "macdHistogram": 0.332662,
+          "atr14": 1.238881,
           "momentum5Pct": 15.644086,
-          "momentum20Pct": 22.218804
+          "momentum20Pct": 22.633364
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -3427,7 +4984,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3489,25 +5046,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 3.04,
-          "sma20": 2.762,
-          "sma50": 2.579,
+          "sma20": 2.764,
+          "sma50": 2.572,
           "sma200": null,
-          "ema12": 2.829279,
-          "ema26": 2.733095,
-          "rsi14": 67.628641,
-          "macd": 0.096183,
-          "macdSignal": 0.06518,
-          "macdHistogram": 0.031003,
-          "atr14": 0.13224,
+          "ema12": 2.828369,
+          "ema26": 2.728805,
+          "rsi14": 67.691418,
+          "macd": 0.099564,
+          "macdSignal": 0.068841,
+          "macdHistogram": 0.030723,
+          "atr14": 0.131303,
           "momentum5Pct": 13.857678,
-          "momentum20Pct": 8.185053
+          "momentum20Pct": 8.960573
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3627,7 +5184,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3642,32 +5199,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 93,
+        "rowsUsed": 92,
         "currentPrice": 334.48,
         "latestClose": 332.519989,
         "currentPriceDifferencePct": 0.586,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 332.519989,
-          "sma20": 301.402998,
-          "sma50": 304.613,
+          "sma20": 300.900998,
+          "sma50": 304.9922,
           "sma200": null,
-          "ema12": 308.04387,
-          "ema26": 303.057797,
-          "rsi14": 73.123341,
-          "macd": 4.986074,
-          "macdSignal": 1.098784,
-          "macdHistogram": 3.88729,
-          "atr14": 9.523137,
+          "ema12": 307.920179,
+          "ema26": 302.895435,
+          "rsi14": 73.250923,
+          "macd": 5.024744,
+          "macdSignal": 1.03693,
+          "macdHistogram": 3.987814,
+          "atr14": 9.472838,
           "momentum5Pct": 11.583889,
-          "momentum20Pct": 13.102037
+          "momentum20Pct": 11.214422
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3770,32 +5327,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 95,
         "currentPrice": 14.35,
         "latestClose": 14.42,
         "currentPriceDifferencePct": 0.488,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 14.42,
-          "sma20": 13.4305,
-          "sma50": 13.5826,
+          "sma20": 13.4275,
+          "sma50": 13.6068,
           "sma200": null,
-          "ema12": 13.788427,
-          "ema26": 13.527069,
-          "rsi14": 65.629783,
-          "macd": 0.261358,
-          "macdSignal": 0.126697,
-          "macdHistogram": 0.134661,
-          "atr14": 0.405678,
+          "ema12": 13.788952,
+          "ema26": 13.529997,
+          "rsi14": 65.158193,
+          "macd": 0.258955,
+          "macdSignal": 0.123849,
+          "macdHistogram": 0.135106,
+          "atr14": 0.408274,
           "momentum5Pct": 2.487562,
-          "momentum20Pct": 10.66769
+          "momentum20Pct": 14.172605
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3869,32 +5426,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 95,
         "currentPrice": 18.78,
         "latestClose": 18.719999,
         "currentPriceDifferencePct": 0.319,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 18.719999,
-          "sma20": 18.128,
-          "sma50": 18.0346,
+          "sma20": 18.153,
+          "sma50": 17.9376,
           "sma200": null,
-          "ema12": 18.319601,
-          "ema26": 18.003993,
-          "rsi14": 58.46174,
-          "macd": 0.315608,
-          "macdSignal": 0.24769,
-          "macdHistogram": 0.067919,
-          "atr14": 0.826157,
+          "ema12": 18.325317,
+          "ema26": 17.999582,
+          "rsi14": 58.23642,
+          "macd": 0.325735,
+          "macdSignal": 0.266228,
+          "macdHistogram": 0.059507,
+          "atr14": 0.834168,
           "momentum5Pct": 3.14049,
-          "momentum20Pct": 2.016343
+          "momentum20Pct": 1.408451
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3916,25 +5473,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 2.99,
-          "sma20": 2.8545,
-          "sma50": 2.6774,
+          "sma20": 2.846,
+          "sma50": 2.665,
           "sma200": null,
-          "ema12": 2.870053,
-          "ema26": 2.798646,
-          "rsi14": 63.534131,
-          "macd": 0.071408,
-          "macdSignal": 0.066674,
-          "macdHistogram": 0.004734,
-          "atr14": 0.107988,
+          "ema12": 2.868019,
+          "ema26": 2.792803,
+          "rsi14": 64.062657,
+          "macd": 0.075217,
+          "macdSignal": 0.06985,
+          "macdHistogram": 0.005367,
+          "atr14": 0.108109,
           "momentum5Pct": 6.028369,
-          "momentum20Pct": 10.332103
+          "momentum20Pct": 11.985019
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4036,18 +5593,18 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 37.880001,
-          "sma20": 38.185,
-          "sma50": 38.6016,
+          "sma20": 38.197001,
+          "sma50": 38.6478,
           "sma200": null,
-          "ema12": 37.813929,
-          "ema26": 38.084674,
-          "rsi14": 48.033677,
-          "macd": -0.270746,
-          "macdSignal": -0.214284,
-          "macdHistogram": -0.056462,
-          "atr14": 1.16568,
+          "ema12": 37.809567,
+          "ema26": 38.080096,
+          "rsi14": 48.069276,
+          "macd": -0.270528,
+          "macdSignal": -0.218347,
+          "macdHistogram": -0.052182,
+          "atr14": 1.172572,
           "momentum5Pct": 1.391863,
-          "momentum20Pct": -2.572016
+          "momentum20Pct": 0.185136
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT",
@@ -4057,7 +5614,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4119,25 +5676,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.75,
-          "sma20": 1.812,
-          "sma50": 1.9452,
+          "sma20": 1.8155,
+          "sma50": 1.9464,
           "sma200": null,
-          "ema12": 1.757252,
-          "ema26": 1.823184,
-          "rsi14": 38.43527,
-          "macd": -0.065933,
-          "macdSignal": -0.067404,
-          "macdHistogram": 0.001471,
-          "atr14": 0.069075,
+          "ema12": 1.757694,
+          "ema26": 1.824083,
+          "rsi14": 38.573906,
+          "macd": -0.066389,
+          "macdSignal": -0.067602,
+          "macdHistogram": 0.001214,
+          "atr14": 0.069343,
           "momentum5Pct": 3.550296,
-          "momentum20Pct": -13.793103
+          "momentum20Pct": -14.215686
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4159,25 +5716,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 11.74,
-          "sma20": 11.731,
-          "sma50": 11.588,
+          "sma20": 11.741,
+          "sma50": 11.574,
           "sma200": null,
-          "ema12": 11.755295,
-          "ema26": 11.700293,
-          "rsi14": 51.365515,
-          "macd": 0.055002,
-          "macdSignal": 0.05885,
-          "macdHistogram": -0.003849,
-          "atr14": 0.268424,
+          "ema12": 11.756264,
+          "ema26": 11.698491,
+          "rsi14": 51.381075,
+          "macd": 0.057773,
+          "macdSignal": 0.063706,
+          "macdHistogram": -0.005933,
+          "atr14": 0.273867,
           "momentum5Pct": -1.261564,
-          "momentum20Pct": -1.344538
+          "momentum20Pct": 1.381693
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4217,7 +5774,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4262,7 +5819,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4547,25 +6104,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 40.810001,
-          "sma20": 37.6405,
-          "sma50": 37.1794,
+          "sma20": 37.6285,
+          "sma50": 37.1802,
           "sma200": null,
-          "ema12": 38.276008,
-          "ema26": 37.657255,
-          "rsi14": 77.569024,
-          "macd": 0.618753,
-          "macdSignal": 0.336877,
-          "macdHistogram": 0.281876,
-          "atr14": 0.946579,
+          "ema12": 38.271871,
+          "ema26": 37.645108,
+          "rsi14": 77.146531,
+          "macd": 0.626763,
+          "macdSignal": 0.343606,
+          "macdHistogram": 0.283157,
+          "atr14": 0.952576,
           "momentum5Pct": 7.507909,
-          "momentum20Pct": 10.178185
+          "momentum20Pct": 9.822392
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4761,32 +6318,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 99,
+        "rowsUsed": 98,
         "currentPrice": 0.81,
         "latestClose": 0.807,
         "currentPriceDifferencePct": 0.37,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 0.807,
-          "sma20": 0.83275,
-          "sma50": 0.80474,
+          "sma20": 0.8281,
+          "sma50": 0.8034,
           "sma200": null,
-          "ema12": 0.817482,
-          "ema26": 0.816723,
-          "rsi14": 45.31109,
-          "macd": 0.000759,
-          "macdSignal": 0.005971,
-          "macdHistogram": -0.005212,
-          "atr14": 0.014826,
+          "ema12": 0.816605,
+          "ema26": 0.814942,
+          "rsi14": 46.34848,
+          "macd": 0.001663,
+          "macdSignal": 0.006399,
+          "macdHistogram": -0.004736,
+          "atr14": 0.015301,
           "momentum5Pct": -1.102941,
-          "momentum20Pct": 3.727506
+          "momentum20Pct": 4.805195
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4894,7 +6451,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4909,32 +6466,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 91,
+        "rowsUsed": 90,
         "currentPrice": 1.9,
         "latestClose": 1.9,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.9,
-          "sma20": 2.0015,
-          "sma50": 1.8928,
+          "sma20": 1.9995,
+          "sma50": 1.887,
           "sma200": null,
-          "ema12": 1.966818,
-          "ema26": 1.959361,
-          "rsi14": 43.17163,
-          "macd": 0.007457,
-          "macdSignal": 0.026494,
-          "macdHistogram": -0.019037,
-          "atr14": 0.081647,
+          "ema12": 1.966148,
+          "ema26": 1.956265,
+          "rsi14": 43.643571,
+          "macd": 0.009884,
+          "macdSignal": 0.029074,
+          "macdHistogram": -0.01919,
+          "atr14": 0.080054,
           "momentum5Pct": -4.040404,
-          "momentum20Pct": -5.472637
+          "momentum20Pct": -3.553299
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5226,23 +6783,23 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 94,
+        "rowsUsed": 93,
         "currentPrice": 7.82,
         "latestClose": 7.85,
         "currentPriceDifferencePct": 0.384,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.85,
-          "sma20": 8.207,
-          "sma50": 7.2574,
+          "sma20": 8.1685,
+          "sma50": 7.2362,
           "sma200": null,
-          "ema12": 8.140841,
-          "ema26": 7.883031,
-          "rsi14": 49.681945,
-          "macd": 0.25781,
-          "macdSignal": 0.353575,
-          "macdHistogram": -0.095765,
-          "atr14": 0.26573,
+          "ema12": 8.132658,
+          "ema26": 7.857896,
+          "rsi14": 50.442118,
+          "macd": 0.274761,
+          "macdSignal": 0.368237,
+          "macdHistogram": -0.093475,
+          "atr14": 0.268712,
           "momentum5Pct": -4.384896,
           "momentum20Pct": 6.802721
         },
@@ -5251,7 +6808,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5313,25 +6870,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 13.55,
-          "sma20": 8.676,
-          "sma50": 7.6802,
+          "sma20": 8.679,
+          "sma50": 7.617,
           "sma200": null,
-          "ema12": 9.63306,
-          "ema26": 8.709204,
-          "rsi14": 89.980462,
-          "macd": 0.923856,
-          "macdSignal": 0.47913,
-          "macdHistogram": 0.444726,
-          "atr14": 0.760379,
+          "ema12": 9.631009,
+          "ema26": 8.692985,
+          "rsi14": 89.649152,
+          "macd": 0.938024,
+          "macdSignal": 0.496675,
+          "macdHistogram": 0.441349,
+          "atr14": 0.763009,
           "momentum5Pct": 63.845224,
-          "momentum20Pct": 64.043584
+          "momentum20Pct": 63.44994
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5358,7 +6915,7 @@
           "sma200": null,
           "ema12": 15.76,
           "ema26": 15.76,
-          "rsi14": 100,
+          "rsi14": 0,
           "macd": 0,
           "macdSignal": 0,
           "macdHistogram": 0,
@@ -5373,7 +6930,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 125
+            "sessions": 124
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5625,25 +7182,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 9.4,
-          "sma20": 9.279,
-          "sma50": 8.7552,
+          "sma20": 9.299,
+          "sma50": 8.7178,
           "sma200": null,
-          "ema12": 9.351406,
-          "ema26": 9.188663,
-          "rsi14": 55.229464,
-          "macd": 0.162743,
-          "macdSignal": 0.168049,
-          "macdHistogram": -0.005306,
-          "atr14": 0.287261,
+          "ema12": 9.352929,
+          "ema26": 9.182626,
+          "rsi14": 55.422584,
+          "macd": 0.170303,
+          "macdSignal": 0.179795,
+          "macdHistogram": -0.009492,
+          "atr14": 0.290652,
           "momentum5Pct": 2.620087,
-          "momentum20Pct": -1.570681
+          "momentum20Pct": -3.092784
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5861,7 +7418,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6041,32 +7598,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 98,
+        "rowsUsed": 97,
         "currentPrice": 7.64,
         "latestClose": 7.62,
         "currentPriceDifferencePct": 0.262,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.62,
-          "sma20": 8.0155,
-          "sma50": 7.431,
+          "sma20": 7.935,
+          "sma50": 7.392,
           "sma200": null,
-          "ema12": 7.88312,
-          "ema26": 7.75595,
-          "rsi14": 46.440521,
-          "macd": 0.12717,
-          "macdSignal": 0.22582,
-          "macdHistogram": -0.09865,
-          "atr14": 0.221625,
+          "ema12": 7.871877,
+          "ema26": 7.72873,
+          "rsi14": 47.339143,
+          "macd": 0.143147,
+          "macdSignal": 0.236986,
+          "macdHistogram": -0.093839,
+          "atr14": 0.224269,
           "momentum5Pct": -4.511278,
-          "momentum20Pct": 13.05638
+          "momentum20Pct": 8.701854
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6146,7 +7703,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6228,7 +7785,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 125
+            "sessions": 124
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6250,16 +7807,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.24,
-          "sma20": 7.0255,
-          "sma50": 6.9048,
+          "sma20": 7.0225,
+          "sma50": 6.8908,
           "sma200": null,
-          "ema12": 7.022616,
-          "ema26": 6.972798,
-          "rsi14": 63.19759,
-          "macd": 0.049817,
-          "macdSignal": 0.051284,
-          "macdHistogram": -0.001466,
-          "atr14": 0.186043,
+          "ema12": 7.022142,
+          "ema26": 6.968367,
+          "rsi14": 63.107009,
+          "macd": 0.053775,
+          "macdSignal": 0.056259,
+          "macdHistogram": -0.002484,
+          "atr14": 0.187788,
           "momentum5Pct": 4.473304,
           "momentum20Pct": 3.281027
         },
@@ -6268,7 +7825,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6290,16 +7847,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.88,
-          "sma20": 1.844,
-          "sma50": 1.7362,
+          "sma20": 1.838,
+          "sma50": 1.734,
           "sma200": null,
-          "ema12": 1.862036,
-          "ema26": 1.814662,
-          "rsi14": 59.079567,
-          "macd": 0.047374,
-          "macdSignal": 0.050392,
-          "macdHistogram": -0.003018,
-          "atr14": 0.074458,
+          "ema12": 1.86075,
+          "ema26": 1.812003,
+          "rsi14": 59.243403,
+          "macd": 0.048747,
+          "macdSignal": 0.05102,
+          "macdHistogram": -0.002273,
+          "atr14": 0.074679,
           "momentum5Pct": 0.534759,
           "momentum20Pct": 13.253012
         },
@@ -6308,7 +7865,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6406,32 +7963,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 100,
+        "rowsUsed": 99,
         "currentPrice": 18.69,
         "latestClose": 18.690001,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 18.690001,
-          "sma20": 16.7965,
-          "sma50": 23.1394,
+          "sma20": 16.8225,
+          "sma50": 23.3598,
           "sma200": null,
-          "ema12": 17.484701,
-          "ema26": 18.64152,
-          "rsi14": 49.555037,
-          "macd": -1.15682,
-          "macdSignal": -1.851548,
-          "macdHistogram": 0.694728,
-          "atr14": 1.103179,
+          "ema12": 17.517437,
+          "ema26": 18.784741,
+          "rsi14": 48.618584,
+          "macd": -1.267304,
+          "macdSignal": -1.966467,
+          "macdHistogram": 0.699163,
+          "atr14": 1.135906,
           "momentum5Pct": 11.183832,
-          "momentum20Pct": 11.582096
+          "momentum20Pct": 10.985754
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6446,7 +8003,7 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 94,
+        "rowsUsed": 93,
         "currentPrice": 47.6,
         "latestClose": 47.599998,
         "currentPriceDifferencePct": 0,
@@ -6454,15 +8011,15 @@
         "indicators": {
           "close": 47.599998,
           "sma20": 42.096,
-          "sma50": 39.003,
+          "sma50": 38.9836,
           "sma200": null,
-          "ema12": 45.280482,
-          "ema26": 42.421211,
-          "rsi14": 69.390056,
-          "macd": 2.859271,
-          "macdSignal": 2.203081,
-          "macdHistogram": 0.65619,
-          "atr14": 1.839689,
+          "ema12": 45.278628,
+          "ema26": 42.406758,
+          "rsi14": 69.341076,
+          "macd": 2.87187,
+          "macdSignal": 2.218144,
+          "macdHistogram": 0.653726,
+          "atr14": 1.854446,
           "momentum5Pct": -3.780075,
           "momentum20Pct": 25.296119
         },
@@ -6471,7 +8028,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6511,7 +8068,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6593,7 +8150,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6736,25 +8293,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 94,
         "currentPrice": 321.69,
         "latestClose": 297.959991,
         "currentPriceDifferencePct": 7.377,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 297.959991,
-          "sma20": 283.770495,
-          "sma50": 279.588597,
+          "sma20": 283.049995,
+          "sma50": 280.063797,
           "sma200": null,
-          "ema12": 290.460661,
-          "ema26": 283.606363,
-          "rsi14": 62.460753,
-          "macd": 6.854298,
-          "macdSignal": 5.585692,
-          "macdHistogram": 1.268606,
-          "atr14": 12.468024,
+          "ema12": 290.15776,
+          "ema26": 283.135344,
+          "rsi14": 62.193663,
+          "macd": 7.022416,
+          "macdSignal": 5.609724,
+          "macdHistogram": 1.412691,
+          "atr14": 12.636626,
           "momentum5Pct": 4.477713,
-          "momentum20Pct": 9.612627
+          "momentum20Pct": 19.031633
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT",
@@ -6764,7 +8321,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6804,7 +8361,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6844,7 +8401,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6866,25 +8423,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 46.099998,
-          "sma20": 45.287,
-          "sma50": 39.3838,
+          "sma20": 45.1475,
+          "sma50": 39.1068,
           "sma200": null,
-          "ema12": 46.184792,
-          "ema26": 43.945194,
-          "rsi14": 57.254265,
-          "macd": 2.239598,
-          "macdSignal": 2.355439,
-          "macdHistogram": -0.11584,
-          "atr14": 1.94541,
+          "ema12": 46.140509,
+          "ema26": 43.798293,
+          "rsi14": 57.786745,
+          "macd": 2.342217,
+          "macdSignal": 2.451585,
+          "macdHistogram": -0.109368,
+          "atr14": 1.952523,
           "momentum5Pct": 1.541841,
-          "momentum20Pct": 9.345346
+          "momentum20Pct": 9.112421
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6906,17 +8463,17 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 9.57,
-          "sma20": 9.50575,
-          "sma50": 9.2695,
+          "sma20": 9.417917,
+          "sma50": 9.230367,
           "sma200": null,
-          "ema12": 9.535123,
-          "ema26": 9.435098,
-          "rsi14": 52.209826,
-          "macd": 0.100025,
-          "macdSignal": 0.102102,
-          "macdHistogram": -0.002077,
-          "atr14": 0.403948,
-          "momentum5Pct": -7.087379,
+          "ema12": 9.419838,
+          "ema26": 9.343546,
+          "rsi14": 53.673381,
+          "macd": 0.076291,
+          "macdSignal": 0.061368,
+          "macdHistogram": 0.014923,
+          "atr14": 0.42307,
+          "momentum5Pct": 11.49515,
           "momentum20Pct": 1.808511
         },
         "blockers": [],
@@ -6924,7 +8481,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7050,25 +8607,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 5.99,
-          "sma20": 6.369333,
-          "sma50": 6.125933,
+          "sma20": 6.281,
+          "sma50": 6.0726,
           "sma200": null,
-          "ema12": 6.167397,
-          "ema26": 6.217095,
-          "rsi14": 45.086154,
-          "macd": -0.049699,
-          "macdSignal": 0.023572,
-          "macdHistogram": -0.073271,
-          "atr14": 0.292929,
+          "ema12": 6.122,
+          "ema26": 6.159882,
+          "rsi14": 46.018807,
+          "macd": -0.037882,
+          "macdSignal": 0.016351,
+          "macdHistogram": -0.054233,
+          "atr14": 0.278595,
           "momentum5Pct": 0.955062,
-          "momentum20Pct": -2.601626
+          "momentum20Pct": -1.155116
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7182,32 +8739,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 95,
         "currentPrice": 88.92,
         "latestClose": 89.059998,
         "currentPriceDifferencePct": 0.157,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 89.059998,
-          "sma20": 84.5625,
-          "sma50": 74.8358,
+          "sma20": 83.6465,
+          "sma50": 74.5688,
           "sma200": null,
-          "ema12": 85.97434,
-          "ema26": 81.780756,
-          "rsi14": 63.442645,
-          "macd": 4.193584,
-          "macdSignal": 4.138293,
-          "macdHistogram": 0.055291,
-          "atr14": 4.505183,
+          "ema12": 85.819708,
+          "ema26": 81.424057,
+          "rsi14": 63.701392,
+          "macd": 4.395651,
+          "macdSignal": 4.259369,
+          "macdHistogram": 0.136282,
+          "atr14": 4.534136,
           "momentum5Pct": 7.404728,
-          "momentum20Pct": 31.862595
+          "momentum20Pct": 30.567364
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7287,7 +8844,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7342,32 +8899,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 90,
+        "rowsUsed": 89,
         "currentPrice": 35,
         "latestClose": 35.950001,
         "currentPriceDifferencePct": 2.714,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 35.950001,
-          "sma20": 29.2825,
-          "sma50": 25.3034,
+          "sma20": 29.2325,
+          "sma50": 25.211,
           "sma200": null,
-          "ema12": 31.408435,
-          "ema26": 28.899206,
-          "rsi14": 86.093604,
-          "macd": 2.50923,
-          "macdSignal": 1.897761,
-          "macdHistogram": 0.611469,
-          "atr14": 1.412293,
+          "ema12": 31.388011,
+          "ema26": 28.82444,
+          "rsi14": 85.770599,
+          "macd": 2.563571,
+          "macdSignal": 1.950694,
+          "macdHistogram": 0.612877,
+          "atr14": 1.417351,
           "momentum5Pct": 17.483663,
-          "momentum20Pct": 35.15038
+          "momentum20Pct": 31.878213
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7389,16 +8946,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 290,
-          "sma20": 323.553248,
-          "sma50": 340.448899,
+          "sma20": 323.979248,
+          "sma50": 340.619299,
           "sma200": null,
-          "ema12": 287.115061,
-          "ema26": 311.21609,
-          "rsi14": 47.24619,
-          "macd": -24.101028,
-          "macdSignal": -22.756405,
-          "macdHistogram": -1.344623,
-          "atr14": 43.208085,
+          "ema12": 292.912413,
+          "ema26": 314.235341,
+          "rsi14": 47.391821,
+          "macd": -21.322928,
+          "macdSignal": -19.312618,
+          "macdHistogram": -2.01031,
+          "atr14": 49.077397,
           "momentum5Pct": 21.460884,
           "momentum20Pct": -18.309859
         },
@@ -7487,7 +9044,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7549,25 +9106,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 25.1,
-          "sma20": 23.5625,
-          "sma50": 22.6776,
+          "sma20": 23.5725,
+          "sma50": 22.652,
           "sma200": null,
-          "ema12": 24.12962,
-          "ema26": 23.531249,
-          "rsi14": 66.247182,
-          "macd": 0.598371,
-          "macdSignal": 0.479033,
-          "macdHistogram": 0.119337,
-          "atr14": 0.731891,
+          "ema12": 24.128728,
+          "ema26": 23.52302,
+          "rsi14": 66.24906,
+          "macd": 0.605708,
+          "macdSignal": 0.487825,
+          "macdHistogram": 0.117883,
+          "atr14": 0.737973,
           "momentum5Pct": 1.332257,
-          "momentum20Pct": 9.130435
+          "momentum20Pct": 9.606987
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7624,25 +9181,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 86,
+        "rowsUsed": 85,
         "currentPrice": 42.88,
         "latestClose": 41.950001,
         "currentPriceDifferencePct": 2.169,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 41.950001,
-          "sma20": 39.776001,
-          "sma50": 37.675,
+          "sma20": 39.756001,
+          "sma50": 37.526,
           "sma200": null,
-          "ema12": 40.822529,
-          "ema26": 39.510524,
-          "rsi14": 67.555432,
-          "macd": 1.312005,
-          "macdSignal": 1.167558,
-          "macdHistogram": 0.144447,
-          "atr14": 1.141632,
+          "ema12": 40.833725,
+          "ema26": 39.485756,
+          "rsi14": 67.409998,
+          "macd": 1.347969,
+          "macdSignal": 1.218606,
+          "macdHistogram": 0.129363,
+          "atr14": 1.152235,
           "momentum5Pct": 6.715848,
-          "momentum20Pct": 10.394739
+          "momentum20Pct": 8.062857
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -7651,7 +9208,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7666,32 +9223,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 92,
+        "rowsUsed": 91,
         "currentPrice": 26.1,
         "latestClose": 26.110001,
         "currentPriceDifferencePct": 0.038,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 26.110001,
-          "sma20": 23.75,
-          "sma50": 23.3326,
+          "sma20": 23.745,
+          "sma50": 23.3346,
           "sma200": null,
-          "ema12": 24.776096,
-          "ema26": 23.986409,
-          "rsi14": 77.355555,
-          "macd": 0.789687,
-          "macdSignal": 0.426058,
-          "macdHistogram": 0.363629,
-          "atr14": 0.584847,
+          "ema12": 24.770137,
+          "ema26": 23.978545,
+          "rsi14": 77.027258,
+          "macd": 0.791592,
+          "macdSignal": 0.423925,
+          "macdHistogram": 0.367667,
+          "atr14": 0.592624,
           "momentum5Pct": 8.115946,
-          "momentum20Pct": 13.030307
+          "momentum20Pct": 16.875564
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7706,32 +9263,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 99,
+        "rowsUsed": 98,
         "currentPrice": 142,
         "latestClose": 143,
         "currentPriceDifferencePct": 0.704,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 143,
-          "sma20": 108.9535,
-          "sma50": 95.344,
+          "sma20": 108.751,
+          "sma50": 95.3218,
           "sma200": null,
-          "ema12": 126.520774,
-          "ema26": 111.693239,
-          "rsi14": 75.965961,
-          "macd": 14.827535,
-          "macdSignal": 10.486423,
-          "macdHistogram": 4.341112,
-          "atr14": 10.065305,
+          "ema12": 126.453486,
+          "ema26": 111.575999,
+          "rsi14": 75.996848,
+          "macd": 14.877488,
+          "macdSignal": 10.501391,
+          "macdHistogram": 4.376097,
+          "atr14": 10.089257,
           "momentum5Pct": 9.957706,
-          "momentum20Pct": 64.367816
+          "momentum20Pct": 63.447255
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7972,25 +9529,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 8.83,
-          "sma20": 9.152,
-          "sma50": 7.7658,
+          "sma20": 9.097,
+          "sma50": 7.6892,
           "sma200": null,
-          "ema12": 9.041045,
-          "ema26": 8.709806,
-          "rsi14": 53.042855,
-          "macd": 0.331239,
-          "macdSignal": 0.485365,
-          "macdHistogram": -0.154126,
-          "atr14": 0.427279,
+          "ema12": 9.026405,
+          "ema26": 8.667052,
+          "rsi14": 53.964735,
+          "macd": 0.359353,
+          "macdSignal": 0.509708,
+          "macdHistogram": -0.150355,
+          "atr14": 0.411044,
           "momentum5Pct": -2.967033,
-          "momentum20Pct": 6.385542
+          "momentum20Pct": 3.882353
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8120,16 +9677,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 22.629999,
-          "sma20": 22.699999,
-          "sma50": 22.8524,
+          "sma20": 22.678999,
+          "sma50": 22.8612,
           "sma200": null,
-          "ema12": 22.793239,
-          "ema26": 22.786149,
-          "rsi14": 45.856248,
-          "macd": 0.00709,
-          "macdSignal": -0.009907,
-          "macdHistogram": 0.016997,
-          "atr14": 0.945211,
+          "ema12": 22.7913,
+          "ema26": 22.788363,
+          "rsi14": 45.977614,
+          "macd": 0.002937,
+          "macdSignal": -0.01735,
+          "macdHistogram": 0.020287,
+          "atr14": 0.941964,
           "momentum5Pct": -1.437282,
           "momentum20Pct": 1.845185
         },
@@ -8140,7 +9697,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8162,25 +9719,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.07,
-          "sma20": 7.5085,
-          "sma50": 7.4584,
+          "sma20": 7.515,
+          "sma50": 7.4438,
           "sma200": null,
-          "ema12": 7.370056,
-          "ema26": 7.43303,
-          "rsi14": 37.313386,
-          "macd": -0.062975,
-          "macdSignal": 0.00366,
-          "macdHistogram": -0.066635,
-          "atr14": 0.231953,
+          "ema12": 7.368874,
+          "ema26": 7.425765,
+          "rsi14": 37.297784,
+          "macd": -0.05689,
+          "macdSignal": 0.010759,
+          "macdHistogram": -0.06765,
+          "atr14": 0.233551,
           "momentum5Pct": -4.716981,
-          "momentum20Pct": -11.292346
+          "momentum20Pct": -11.625
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8324,25 +9881,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 3.76,
-          "sma20": 3.884,
-          "sma50": 3.8446,
+          "sma20": 3.87,
+          "sma50": 3.8374,
           "sma200": null,
-          "ema12": 3.830131,
-          "ema26": 3.849121,
-          "rsi14": 43.620935,
-          "macd": -0.01899,
-          "macdSignal": -0.001135,
-          "macdHistogram": -0.017855,
-          "atr14": 0.09713,
+          "ema12": 3.826168,
+          "ema26": 3.842033,
+          "rsi14": 44.303582,
+          "macd": -0.015865,
+          "macdSignal": -0.000331,
+          "macdHistogram": -0.015534,
+          "atr14": 0.097595,
           "momentum5Pct": -2.337662,
-          "momentum20Pct": -2.083333
+          "momentum20Pct": -0.791557
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8456,32 +10013,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 100,
+        "rowsUsed": 99,
         "currentPrice": 23.51,
         "latestClose": 23.51,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 23.51,
-          "sma20": 22.07,
-          "sma50": 21.9516,
+          "sma20": 22.074,
+          "sma50": 21.966,
           "sma200": null,
-          "ema12": 22.401166,
-          "ema26": 22.110886,
-          "rsi14": 69.596192,
-          "macd": 0.29028,
-          "macdSignal": 0.151152,
-          "macdHistogram": 0.139128,
-          "atr14": 0.495264,
+          "ema12": 22.400085,
+          "ema26": 22.111219,
+          "rsi14": 69.101453,
+          "macd": 0.288866,
+          "macdSignal": 0.147867,
+          "macdHistogram": 0.140999,
+          "atr14": 0.49981,
           "momentum5Pct": 7.695831,
-          "momentum20Pct": 8.491001
+          "momentum20Pct": 8.141674
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8521,7 +10078,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8536,32 +10093,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 94,
+        "rowsUsed": 93,
         "currentPrice": 280.32,
         "latestClose": 280.320007,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 280.320007,
-          "sma20": 274.504495,
-          "sma50": 265.122197,
+          "sma20": 271.577495,
+          "sma50": 264.797997,
           "sma200": null,
-          "ema12": 278.951341,
-          "ema26": 271.82193,
-          "rsi14": 55.888394,
-          "macd": 7.129411,
-          "macdSignal": 7.204447,
-          "macdHistogram": -0.075036,
-          "atr14": 14.798917,
+          "ema12": 278.309198,
+          "ema26": 270.697761,
+          "rsi14": 58.303085,
+          "macd": 7.611437,
+          "macdSignal": 7.298984,
+          "macdHistogram": 0.312453,
+          "atr14": 13.761141,
           "momentum5Pct": 0.26469,
-          "momentum20Pct": 17.702386
+          "momentum20Pct": 18.238571
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8576,32 +10133,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 97,
+        "rowsUsed": 96,
         "currentPrice": 617.71,
         "latestClose": 617.710022,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 617.710022,
-          "sma20": 610.431503,
-          "sma50": 612.257003,
+          "sma20": 610.793002,
+          "sma50": 612.891403,
           "sma200": null,
-          "ema12": 611.102413,
-          "ema26": 607.806781,
-          "rsi14": 57.171545,
-          "macd": 3.295632,
-          "macdSignal": 3.371615,
-          "macdHistogram": -0.075984,
-          "atr14": 13.732448,
+          "ema12": 611.01522,
+          "ema26": 607.520293,
+          "rsi14": 57.092284,
+          "macd": 3.494927,
+          "macdSignal": 3.572845,
+          "macdHistogram": -0.077918,
+          "atr14": 13.234178,
           "momentum5Pct": 1.759385,
-          "momentum20Pct": -0.288939
+          "momentum20Pct": -0.577815
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9437,25 +10994,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 568.440002,
-          "sma20": 533.93251,
-          "sma50": 499.727604,
+          "sma20": 530.912511,
+          "sma50": 498.411005,
           "sma200": null,
-          "ema12": 544.674117,
-          "ema26": 527.981218,
-          "rsi14": 69.783343,
-          "macd": 16.692899,
-          "macdSignal": 15.601362,
-          "macdHistogram": 1.091537,
-          "atr14": 20.337075,
+          "ema12": 543.704572,
+          "ema26": 526.302051,
+          "rsi14": 69.733819,
+          "macd": 17.402521,
+          "macdSignal": 15.787265,
+          "macdHistogram": 1.615256,
+          "atr14": 20.561235,
           "momentum5Pct": 5.756279,
-          "momentum20Pct": 16.015266
+          "momentum20Pct": 13.813192
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9535,7 +11092,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9557,25 +11114,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 20.18,
-          "sma20": 18.6645,
-          "sma50": 15.8156,
+          "sma20": 18.694,
+          "sma50": 15.703,
           "sma200": null,
-          "ema12": 18.670979,
-          "ema26": 17.712462,
-          "rsi14": 67.560324,
-          "macd": 0.958517,
-          "macdSignal": 0.961204,
-          "macdHistogram": -0.002687,
-          "atr14": 1.145693,
+          "ema12": 18.652497,
+          "ema26": 17.635964,
+          "rsi14": 67.591757,
+          "macd": 1.016533,
+          "macdSignal": 1.018461,
+          "macdHistogram": -0.001928,
+          "atr14": 1.170996,
           "momentum5Pct": 11.368647,
-          "momentum20Pct": 3.434136
+          "momentum20Pct": 0.39801
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9674,32 +11231,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 86,
+        "rowsUsed": 85,
         "currentPrice": 630.79,
         "latestClose": 630.789978,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 630.789978,
-          "sma20": 574.875006,
-          "sma50": 551.465607,
+          "sma20": 570.929506,
+          "sma50": 550.511207,
           "sma200": null,
-          "ema12": 586.666874,
-          "ema26": 570.914563,
-          "rsi14": 72.552092,
-          "macd": 15.752311,
-          "macdSignal": 13.159185,
-          "macdHistogram": 2.593126,
-          "atr14": 24.289095,
+          "ema12": 586.000522,
+          "ema26": 569.63915,
+          "rsi14": 72.190147,
+          "macd": 16.361372,
+          "macdSignal": 13.373549,
+          "macdHistogram": 2.987823,
+          "atr14": 24.567875,
           "momentum5Pct": 7.926968,
-          "momentum20Pct": 24.251967
+          "momentum20Pct": 24.647271
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9761,18 +11318,18 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 12.97,
-          "sma20": 12.121,
-          "sma50": 10.8646,
+          "sma20": 12.0975,
+          "sma50": 10.8152,
           "sma200": null,
-          "ema12": 12.450893,
-          "ema26": 11.918694,
-          "rsi14": 73.035962,
-          "macd": 0.532199,
-          "macdSignal": 0.510016,
-          "macdHistogram": 0.022183,
-          "atr14": 0.523765,
+          "ema12": 12.444698,
+          "ema26": 11.895467,
+          "rsi14": 73.488641,
+          "macd": 0.549231,
+          "macdSignal": 0.527498,
+          "macdHistogram": 0.021733,
+          "atr14": 0.529741,
           "momentum5Pct": 2.125984,
-          "momentum20Pct": 14.778761
+          "momentum20Pct": 16.846847
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -9781,7 +11338,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9833,7 +11390,7 @@
   },
   "fullMarketTechnicalRegression": {
     "schemaVersion": "20.0.0-full-market-technical-regression-2",
-    "generatedAt": "2026-08-15T09:17:23.103Z",
+    "generatedAt": "2026-08-15T09:24:58.199Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -9868,7 +11425,7 @@
   },
   "extendedResearchBrowserAcceptance": {
     "schemaVersion": "20.0.0-extended-pages-smoke-2",
-    "generatedAt": "2026-08-15T09:17:26.862Z",
+    "generatedAt": "2026-08-15T09:25:02.469Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -10252,14 +11809,14 @@
   },
   "releaseManifest": {
     "schemaVersion": "20.0.0-release-manifest-3",
-    "generatedAt": "2026-08-15T09:17:38.627Z",
+    "generatedAt": "2026-08-15T09:25:14.261Z",
     "releaseClassification": "RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED",
     "product": "EGX PRO V20 — Integrated Investment Decision Platform",
     "branch": "develop/v20-integrated-decision-platform",
-    "validatedSourceCommit": "f719146e69c9e8721d95f0e44e17b93659de0917",
+    "validatedSourceCommit": "0719021c5c8bb3bbd56398b7a0bf4a396b9d99ef",
     "validationRun": {
-      "githubRunId": "31876589282",
-      "githubRunNumber": "107",
+      "githubRunId": "31876908528",
+      "githubRunNumber": "108",
       "workflow": "EGX Integrated Decision Platform Validation",
       "actor": "rasheadsca-star"
     },
@@ -10506,12 +12063,14 @@
         "ELNA"
       ],
       "diagnoses": {
-        "SAIB": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
-        "MEGM": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
-        "SEIGA": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
-        "ABUK": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
-        "MFPC": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION",
-        "ELNA": "HISTORY_NOT_REFRESHED_TO_CURRENT_SESSION"
+        "SAIB": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "MEGM": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "SEIGA": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "ABUK": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "MFPC": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "ELNA": "OBSERVED_V17_HISTORY50_CURRENT_OHLC_INVALID",
+        "UBEE": "OBSERVED_TRUSTED_SR_ROW_STALE",
+        "AFMC": "OBSERVED_CURRENT_CRITICAL_SOURCE_CONFLICT"
       },
       "evidence": "data/v20/regression.json#supportResistanceRemediation"
     },
@@ -10719,7 +12278,7 @@
   },
   "releaseManifestRegression": {
     "schemaVersion": "20.0.0-release-manifest-regression-3",
-    "generatedAt": "2026-08-15T09:17:38.635Z",
+    "generatedAt": "2026-08-15T09:25:14.269Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
