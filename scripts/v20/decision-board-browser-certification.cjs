@@ -96,7 +96,7 @@ async function main(){
 
     await cdp.eval("document.querySelector('#decisionRows tr')?.click()");await sleep(150);
     check('stockDossierOpened',await cdp.eval("document.querySelector('#decisionDossier')?.open === true"));
-    check('stockDossierLabelVisible',await cdp.eval("document.querySelector('#decisionDossierBody')?.innerText?.includes('Stock Dossier')"));
+    check('stockDossierLabelVisible',await cdp.eval("document.querySelector('#decisionDossierBody .eyebrow')?.textContent?.includes('Stock Dossier') === true"));
     check('nativeScoreNotConfidenceVisible',await cdp.eval("document.querySelector('#decisionDossierBody')?.innerText?.includes('Native Score ≠ Confidence')"));
     check('technicalSourceVsProductionVisible',await cdp.eval("document.querySelector('#decisionDossierBody')?.innerText?.includes('Technical Source Eligible') && document.querySelector('#decisionDossierBody')?.innerText?.includes('Technical Production Ready')"));
     check('srSourceVsProductionVisible',await cdp.eval("document.querySelector('#decisionDossierBody')?.innerText?.includes('S/R Source Eligible') && document.querySelector('#decisionDossierBody')?.innerText?.includes('S/R Production Ready')"));
