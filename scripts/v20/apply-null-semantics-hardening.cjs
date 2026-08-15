@@ -83,15 +83,21 @@ require('./apply-liquidity-decision-upgrade.cjs');
 // recommendation status, or execution semantics.
 require('./apply-market-trend-context-ui.cjs');
 
+// Phase 17 full-market native research integration. It patches the existing Market Explorer
+// regression step so the full master-universe technical scan, native selection and governance
+// regression are acceptance-gated without changing current.json or immutable issued signals.
+require('./apply-full-market-native-integration.cjs');
+
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-5',
+  schemaVersion: '20.0.0-null-semantics-hardening-6',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   liquidityDecisionUpgrade: true,
   nativeResearchChallengerWired: true,
   marketTrendContextUiIntegration: true,
+  fullMarketNativeIntegration: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
     'scripts/v20/phase3-regression.cjs'
