@@ -5,7 +5,6 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = process.cwd();
-const DATA = path.join(ROOT, 'data');
 const MAX_POINTS = 50;
 const BACKFILL_LIMIT = Number(process.env.V56_HISTORY_BACKFILL_LIMIT || 15);
 const ENABLE_WEB_BACKFILL = String(process.env.V56_ENABLE_WEB_BACKFILL || 'true').toLowerCase() !== 'false';
@@ -37,9 +36,21 @@ function num(v, fallback = null) {
 function text(v, fallback = '') { return v === null || v === undefined ? fallback : String(v).trim(); }
 function symbolOf(r) { return text(r.symbol || r.ticker || r.code || r.Symbol || r.s || r.shortName).toUpperCase(); }
 function priceOf(r) { return num(r.close ?? r.price ?? r.lastPrice ?? r.last ?? r.value ?? r.lastTradePrice); }
-function sessionDate(sourceHealth) {
-  const d = sourceHealth?.lastSuccessAt ? new Date(sourceHealth.lastSuccessAt) : new Date();
-  if (Number.isNaN(d.getTime())) return new Date().toISOString().slice(0, 10);
+function validIsoDate(value) { return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')); }
+function regularEgxSessionDate(value) {
+  if (!validIsoDate(value)) return false;
+  const d = new Date(`${value}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return false;
+  const day = d.getUTCDay();
+  return day >= 0 && day <= 4; // Sunday-Thursday; Friday/Saturday excluded.
+}
+function verifiedSessionDate(truth, sourceHealth) {
+  const selected = String(truth?.selectedSessionDate || '');
+  if (regularEgxSessionDate(selected)) return selected;
+  const raw = sourceHealth?.lastSuccessAt ? new Date(sourceHealth.lastSuccessAt) : new Date();
+  if (Number.isNaN(raw.getTime())) throw new Error('Cannot resolve a verified trading session date');
+  let d = new Date(Date.UTC(raw.getUTCFullYear(), raw.getUTCMonth(), raw.getUTCDate(), 12));
+  while ([5,6].includes(d.getUTCDay())) d.setUTCDate(d.getUTCDate() - 1);
   return d.toISOString().slice(0, 10);
 }
 function normalizePoint(raw, fallbackDate) {
@@ -56,15 +67,25 @@ function normalizePoint(raw, fallbackDate) {
     source: raw.source || raw._source || 'snapshot'
   };
 }
-function mergePoint(list, point) {
-  if (!point || !point.date) return list;
-  const idx = list.findIndex(p => p.date === point.date);
-  if (idx >= 0) list[idx] = { ...list[idx], ...point };
-  else list.push(point);
-  return list
-    .filter(p => p && p.date && num(p.close) !== null)
-    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
-    .slice(-MAX_POINTS);
+function eligiblePoint(point, maxSessionDate) {
+  return Boolean(point && regularEgxSessionDate(point.date) && point.date <= maxSessionDate && num(point.close) !== null);
+}
+function mergePoint(list, point, maxSessionDate) {
+  if (!eligiblePoint(point, maxSessionDate)) return sanitizeList(list, maxSessionDate);
+  const clean = sanitizeList(list, maxSessionDate);
+  const idx = clean.findIndex(p => p.date === point.date);
+  if (idx >= 0) clean[idx] = { ...clean[idx], ...point };
+  else clean.push(point);
+  return clean.sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(-MAX_POINTS);
+}
+function sanitizeList(list, maxSessionDate) {
+  const byDate = new Map();
+  for (const raw of Array.isArray(list) ? list : []) {
+    const p = normalizePoint(raw, raw?.date);
+    if (!eligiblePoint(p, maxSessionDate)) continue;
+    byDate.set(p.date, { ...(byDate.get(p.date) || {}), ...p });
+  }
+  return [...byDate.values()].sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-MAX_POINTS);
 }
 function uniqueRecords(...sources) {
   const map = new Map();
@@ -76,40 +97,25 @@ function uniqueRecords(...sources) {
   return Array.from(map.values());
 }
 function decodeHtml(s) {
-  return String(s || '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return String(s || '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 function parseDateLoose(s) {
   const t = String(s || '').trim();
   const m1 = t.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if (m1) {
-    const dd = m1[1].padStart(2, '0');
-    const mm = m1[2].padStart(2, '0');
-    const yyyy = m1[3].length === 2 ? `20${m1[3]}` : m1[3];
+    const dd = m1[1].padStart(2, '0'); const mm = m1[2].padStart(2, '0'); const yyyy = m1[3].length === 2 ? `20${m1[3]}` : m1[3];
     return `${yyyy}-${mm}-${dd}`;
   }
   const d = new Date(t);
   return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
 }
 function extractHistoricalRows(html) {
-  const rows = [];
-  const trRe = /<tr[\s\S]*?<\/tr>/gi;
-  let tr;
+  const rows = []; const trRe = /<tr[\s\S]*?<\/tr>/gi; let tr;
   while ((tr = trRe.exec(html))) {
     const cells = [...tr[0].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m => decodeHtml(m[1]));
-    if (cells.length < 5) continue;
-    const joined = cells.join('|');
-    if (!/\d/.test(joined)) continue;
-    const date = parseDateLoose(cells[0]);
-    if (!date) continue;
-    const nums = cells.slice(1).map(c => num(c)).filter(n => n !== null);
-    if (!nums.length) continue;
+    if (cells.length < 5 || !/\d/.test(cells.join('|'))) continue;
+    const date = parseDateLoose(cells[0]); if (!date) continue;
+    const nums = cells.slice(1).map(c => num(c)).filter(n => n !== null); if (!nums.length) continue;
     const [close, open, high, low, volume] = nums;
     rows.push({ date, close, open, high, low, volume: volume || 0, source: 'mubasher-historical-best-effort' });
   }
@@ -120,90 +126,59 @@ async function fetchText(url) {
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return await res.text();
 }
-async function tryBackfill(symbol) {
+async function tryBackfill(symbol, maxSessionDate) {
   if (!ENABLE_WEB_BACKFILL || !global.fetch) return { rows: [], status: 'disabled' };
-  const urls = [
-    `https://english.mubasher.info/markets/EGX/stocks/${encodeURIComponent(symbol)}/historical-data`,
-    `https://www.mubasher.info/markets/EGX/stocks/${encodeURIComponent(symbol)}/historical-data`
-  ];
+  const urls = [`https://english.mubasher.info/markets/EGX/stocks/${encodeURIComponent(symbol)}/historical-data`,`https://www.mubasher.info/markets/EGX/stocks/${encodeURIComponent(symbol)}/historical-data`];
   for (const url of urls) {
     try {
       const html = await fetchText(url);
-      const rows = extractHistoricalRows(html).slice(-MAX_POINTS);
+      const rows = extractHistoricalRows(html).filter(p => eligiblePoint(p, maxSessionDate)).slice(-MAX_POINTS);
       if (rows.length) return { rows, status: 'ok', url };
-    } catch (err) {
-      // Try next URL.
-    }
+    } catch {}
   }
   return { rows: [], status: 'unavailable' };
 }
 async function main() {
   const sourceHealth = readJson('data/source-health.json', {});
+  const truth = readJson('data/v17/market-session-truth.json', {});
   const existing = readJson('data/history-50.json', { symbols: {} });
   const legacyHistory = readJson('data/history.json', {});
   const fullCache = readJson('data/full-market-cache.json', []);
   const market = readJson('data/market.json', []);
   const recommendations = readJson('data/recommendations.json', []);
   const universeIndex = readJson('data/universe-index.json', {});
-  const today = sessionDate(sourceHealth);
+  const session = verifiedSessionDate(truth, sourceHealth);
 
   const output = {
-    version: '5.6.0',
-    generatedAt: new Date().toISOString(),
-    maxSessions: MAX_POINTS,
-    status: {
-      mode: ENABLE_WEB_BACKFILL ? 'best_effort_web_backfill_plus_incremental_snapshots' : 'incremental_snapshots_only',
-      note: 'No fabricated historical prices. If public historical pages are not parseable, the file grows by one real collected session per workflow run.'
-    },
-    symbols: existing.symbols && typeof existing.symbols === 'object' ? existing.symbols : {}
+    version: '5.6.1-v17-session-truth', generatedAt: new Date().toISOString(), referenceSessionDate: session, maxSessions: MAX_POINTS,
+    status: { mode: ENABLE_WEB_BACKFILL ? 'verified_session_web_backfill_plus_incremental_snapshots' : 'verified_session_incremental_snapshots_only', note: 'History is anchored to verified EGX trading-session truth. Friday/Saturday, workflow-run dates, and dates after the verified session are rejected.' },
+    symbols: {}
   };
 
-  // Import legacy history if it exists in any common shape.
+  for (const [symbol, list] of Object.entries(existing.symbols || {})) output.symbols[String(symbol).toUpperCase()] = sanitizeList(list, session);
   for (const [symbol, list] of Object.entries(legacyHistory.symbols || legacyHistory || {})) {
     if (!Array.isArray(list)) continue;
-    const s = String(symbol).toUpperCase();
-    output.symbols[s] = output.symbols[s] || [];
-    list.map(p => normalizePoint(p, today)).filter(Boolean).forEach(p => { output.symbols[s] = mergePoint(output.symbols[s], p); });
+    const s = String(symbol).toUpperCase(); output.symbols[s] = output.symbols[s] || [];
+    list.map(p => normalizePoint(p, session)).filter(Boolean).forEach(p => { output.symbols[s] = mergePoint(output.symbols[s], p, session); });
   }
 
   const records = uniqueRecords(universeIndex.symbols || universeIndex, fullCache, market, recommendations);
-  let backfilled = 0;
-  let attempted = 0;
-
+  let backfilled = 0, attempted = 0;
   for (const rec of records) {
-    const s = symbolOf(rec);
-    if (!s) continue;
+    const s = symbolOf(rec); if (!s) continue;
     output.symbols[s] = output.symbols[s] || [];
-    const point = normalizePoint({ ...rec, date: today, source: 'workflow-market-snapshot' }, today);
-    output.symbols[s] = mergePoint(output.symbols[s], point);
-
+    const point = normalizePoint({ ...rec, date: session, source: 'workflow-market-snapshot-verified-session' }, session);
+    output.symbols[s] = mergePoint(output.symbols[s], point, session);
     if (output.symbols[s].length < Math.min(20, MAX_POINTS) && attempted < BACKFILL_LIMIT) {
       attempted += 1;
-      const result = await tryBackfill(s);
-      if (result.rows.length) {
-        result.rows.forEach(p => { output.symbols[s] = mergePoint(output.symbols[s], p); });
-        backfilled += 1;
-      }
+      const result = await tryBackfill(s, session);
+      if (result.rows.length) { result.rows.forEach(p => { output.symbols[s] = mergePoint(output.symbols[s], p, session); }); backfilled += 1; }
       await new Promise(resolve => setTimeout(resolve, 250));
     }
   }
-
   const counts = Object.values(output.symbols).map(v => Array.isArray(v) ? v.length : 0);
-  output.summary = {
-    symbols: counts.length,
-    symbolsWithAtLeast2Sessions: counts.filter(n => n >= 2).length,
-    symbolsWithAtLeast20Sessions: counts.filter(n => n >= 20).length,
-    symbolsWith50Sessions: counts.filter(n => n >= 50).length,
-    backfillAttempted: attempted,
-    backfillSucceeded: backfilled,
-    latestSessionDate: today
-  };
-
+  output.summary = { symbols: counts.length, symbolsWithAtLeast2Sessions: counts.filter(n => n >= 2).length, symbolsWithAtLeast20Sessions: counts.filter(n => n >= 20).length, symbolsWith50Sessions: counts.filter(n => n >= 50).length, backfillAttempted: attempted, backfillSucceeded: backfilled, latestSessionDate: session, verifiedBy: truth.selectedSessionDate ? 'data/v17/market-session-truth.json' : 'conservative-calendar-fallback' };
   writeJson('data/history-50.json', output);
-  console.log(`history-50 generated: ${output.summary.symbols} symbols, ${output.summary.symbolsWithAtLeast2Sessions} with >=2 sessions, backfill ${backfilled}/${attempted}`);
+  console.log(`history-50 generated for verified session ${session}: ${output.summary.symbols} symbols, ${output.summary.symbolsWithAtLeast2Sessions} with >=2 sessions, backfill ${backfilled}/${attempted}`);
 }
-
-main().catch(err => {
-  console.error(err);
-  process.exitCode = 1;
-});
+main().catch(err => { console.error(err); process.exitCode = 1; });
