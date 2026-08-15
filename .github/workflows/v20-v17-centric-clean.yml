@@ -1,0 +1,225 @@
+name: V20 V17-Centric Clean Architecture Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - "scripts/v20/**"
+      - "docs/v20/**"
+      - "data/v20/**"
+      - "v20/**"
+      - ".github/workflows/v20-v17-centric-clean.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: egx-v20-v17-centric-clean-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout V20 branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Enforce branch isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
+          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-v17-centric-clean\.yml$)' || true)"
+          test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Sync authoritative V17 runtime evidence read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin develop/v17-rebuild:refs/remotes/origin/develop/v17-rebuild
+          V17_SHA="$(git rev-parse refs/remotes/origin/develop/v17-rebuild)"
+          V17_DATE="$(git show -s --format=%cI "$V17_SHA")"
+          readonly paths=(
+            data/market.json
+            data/final-opportunity-ranking.json
+            data/history.json
+            data/recommendations.json
+            data/v17/current.json
+            data/v17/resilient-session-status.json
+            data/v17/internal-ohlc-support-resistance.json
+            data/v17/liquidity-gate.json
+            data/v17/challenger-status.json
+            data/v17/market-session-truth.json
+            data/v17/regression.json
+            data/v17/review.json
+            data/v17/current-recommendation-base-status.json
+          )
+          for rel in "${paths[@]}"; do
+            git cat-file -e "$V17_SHA:$rel" || { echo "Missing V17 runtime input: $rel"; exit 1; }
+            mkdir -p "$(dirname "$rel")"
+            git show "$V17_SHA:$rel" > "${rel}.v17-runtime"
+            node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "${rel}.v17-runtime"
+            mv "${rel}.v17-runtime" "$rel"
+          done
+          V20_V17_RUNTIME_SOURCE_SHA="$V17_SHA" V20_V17_RUNTIME_SOURCE_DATE="$V17_DATE" node scripts/v20/validate-v17-runtime-sync.cjs
+          node scripts/v20/validate-v17-decision-core-runtime.cjs
+          echo "Using V17 $V17_SHA read-only for this runner; no V17 source is written or pushed."
+
+      - name: Static source validation — no runtime algorithm patching
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in \
+            scripts/v20/validate-v17-runtime-sync.cjs \
+            scripts/v20/validate-v17-decision-core-runtime.cjs \
+            scripts/v20/build-data-truth.cjs \
+            scripts/v20/data-quality-regression.cjs \
+            scripts/v20/build-sector-provenance-audit.cjs \
+            scripts/v20/build-integrated-decision-snapshot.cjs \
+            scripts/v20/enrich-risk-reward.cjs \
+            scripts/v20/validate-trade-plans.cjs \
+            scripts/v20/build-portfolio-risk.cjs \
+            scripts/v20/build-trusted-technical-history.cjs \
+            scripts/v20/technical-history-regression.cjs \
+            scripts/v20/build-stock-profiles.cjs \
+            scripts/v20/build-market-regime.cjs \
+            scripts/v20/market-regime-regression.cjs \
+            scripts/v20/market-regime-unit.cjs \
+            scripts/v20/build-market-explorer.cjs \
+            scripts/v20/market-explorer-regression.cjs \
+            scripts/v20/build-full-market-native-technical.cjs \
+            scripts/v20/build-full-market-native-selection.cjs \
+            scripts/v20/build-native-explainability.cjs \
+            scripts/v20/finalize-native-ranking-v1.cjs \
+            scripts/v20/build-native-model-freeze.cjs \
+            scripts/v20/build-native-current.cjs \
+            scripts/v20/native-current-regression.cjs \
+            scripts/v20/build-v17-production-decision-core.cjs \
+            scripts/v20/build-final-decision-contract.cjs \
+            scripts/v20/set-precertification-product-status.cjs \
+            scripts/v20/v17-centric-semantic-acceptance.cjs; do
+              node --check "$f"
+          done
+          test -z "$(grep -nE 'require\(.*/apply-|execFileSync\([^\n]*apply-' scripts/v20/finalize-native-ranking-v1.cjs scripts/v20/build-native-current.cjs scripts/v20/build-v17-production-decision-core.cjs scripts/v20/build-final-decision-contract.cjs scripts/v20/build-native-model-freeze.cjs scripts/v20/v17-centric-semantic-acceptance.cjs || true)"
+
+      - name: Build Data Truth
+        run: node scripts/v20/build-data-truth.cjs
+
+      - name: Validate Data Truth
+        run: node scripts/v20/data-quality-regression.cjs
+
+      - name: Build sector provenance
+        run: node scripts/v20/build-sector-provenance-audit.cjs
+
+      - name: Build integrated V20 base snapshot
+        run: node scripts/v20/build-integrated-decision-snapshot.cjs
+
+      - name: Build conservative Net R:R
+        run: node scripts/v20/enrich-risk-reward.cjs
+
+      - name: Validate base trade plans
+        run: node scripts/v20/validate-trade-plans.cjs
+
+      - name: Build base portfolio risk guard
+        run: node scripts/v20/build-portfolio-risk.cjs
+
+      - name: Build trusted point-in-time technical history
+        env:
+          V20_HISTORY_NETWORK_REFRESH: "true"
+          V20_HISTORY_CONCURRENCY: "4"
+          V20_HISTORY_CURRENT_PRICE_TOLERANCE_PCT: "5"
+        run: node scripts/v20/build-trusted-technical-history.cjs
+
+      - name: Validate technical history
+        run: node scripts/v20/technical-history-regression.cjs
+
+      - name: Build stock analytical profiles
+        run: node scripts/v20/build-stock-profiles.cjs
+
+      - name: Validate sector provenance
+        run: node scripts/v20/sector-provenance-regression.cjs
+
+      - name: Build Market Regime context
+        run: node scripts/v20/build-market-regime.cjs
+
+      - name: Validate Market Regime context
+        run: |
+          node scripts/v20/market-regime-unit.cjs
+          node scripts/v20/market-regime-regression.cjs
+
+      - name: Build Full Market Explorer
+        run: node scripts/v20/build-market-explorer.cjs
+
+      - name: Validate Full Market Explorer base contract
+        run: node scripts/v20/market-explorer-regression.cjs
+
+      - name: Build Native full-market technical evidence
+        env:
+          V20_NATIVE_FULL_TECH_NETWORK_REFRESH: "true"
+          V20_NATIVE_FULL_TECH_STARTA_FALLBACK: "true"
+          V20_NATIVE_FULL_TECH_CONCURRENCY: "8"
+          V20_NATIVE_FULL_TECH_RANGE: "6mo"
+          V20_NATIVE_FULL_TECH_PRICE_TOLERANCE_PCT: "5"
+        run: node scripts/v20/build-full-market-native-technical.cjs
+
+      - name: Build Native V1 base selection
+        run: node scripts/v20/build-full-market-native-selection.cjs
+
+      - name: Build Native explainability
+        run: node scripts/v20/build-native-explainability.cjs
+
+      - name: Finalize frozen Native V1 ranking from checked-in source
+        run: node scripts/v20/finalize-native-ranking-v1.cjs
+
+      - name: Build immutable Native V1 freeze
+        run: node scripts/v20/build-native-model-freeze.cjs
+
+      - name: Build authoritative Native current artifact
+        run: node scripts/v20/build-native-current.cjs
+
+      - name: Validate authoritative Native current artifact
+        run: node scripts/v20/native-current-regression.cjs
+
+      - name: Build V17 per-stock production decision core
+        run: node scripts/v20/build-v17-production-decision-core.cjs
+
+      - name: Build canonical V20 stock decision contract
+        run: |
+          node scripts/v20/build-final-decision-contract.cjs
+          node scripts/v20/set-precertification-product-status.cjs
+
+      - name: Run V17-centric semantic acceptance Cases A-H
+        run: node scripts/v20/v17-centric-semantic-acceptance.cjs
+
+      - name: Backend architecture acceptance guard
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const native=require('./data/v20/native-current.json');
+          const nr=require('./data/v20/native-current-regression.json');
+          const core=require('./data/v20/v17-production-decision-core.json');
+          const decision=require('./data/v20/final-decision-contract.json');
+          const freeze=require('./data/v20/native-model-freeze.json');
+          const sem=require('./data/v20/v17-centric-semantic-acceptance.json');
+          const gate=require('./data/v17/resilient-session-status.json');
+          if(nr.ok!==true||sem.ok!==true) process.exit(1);
+          if(native.engineId!=='V20_FULL_MARKET_NATIVE_SELECTION_V1'||native.legacySeedDependency!==false||native.legacyScoringContributionPct!==0) process.exit(1);
+          if(core.moduleId!=='V20_V17_PRODUCTION_DECISION_CORE'||core.policy?.v17IsAuthoritativeForProductionEligibility!==true) process.exit(1);
+          if(decision.productStatus!=='DEGRADED_PRODUCT'||decision.productReadiness?.certificationState!=='PRE_CERTIFICATION') process.exit(1);
+          if(decision.policy?.v20NativeCannotOverrideV17!==true) process.exit(1);
+          if(gate.executionGrade!==true&&(decision.summary?.productionActionableCount!==0||decision.summary?.productionNewExposurePct!==0)) process.exit(1);
+          if(freeze.modelVersion!=='V1'||freeze.governance?.retuneV1Forbidden!==true) process.exit(1);
+          if(freeze.rankingContract!=='V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2') process.exit(1);
+          console.log(JSON.stringify({ok:true,sessionDate:decision.sessionDate,productStatus:decision.productStatus,sessionStatus:decision.sessionStatus,nativePublishedCount:native.publishedCandidates.length,v17RecommendationEligibleCount:decision.summary.v17RecommendationEligibleCount,actionableCount:decision.summary.productionActionableCount,freezeId:freeze.freezeId},null,2));
+          NODE
