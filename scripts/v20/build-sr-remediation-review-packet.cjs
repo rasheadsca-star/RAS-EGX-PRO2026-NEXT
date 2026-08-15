@@ -3,6 +3,7 @@
 
 const fs=require('fs');
 const path=require('path');
+const {execFileSync}=require('child_process');
 const root=path.resolve(process.env.GITHUB_WORKSPACE||'.');
 const P=r=>path.join(root,r);
 const read=r=>JSON.parse(fs.readFileSync(P(r),'utf8'));
@@ -24,7 +25,6 @@ function rowPacket(row){
   if(h.currentSessionRowPresent===true&&h.currentSessionOhlcValid!==true){blockers.push(blocker('V17_HISTORY50_CURRENT_OHLC_INVALID','AUTHORITATIVE_V17','CRITICAL','The current-session authoritative history-50 OHLC is invalid or incomplete.','data/history-50.json'));actions.push(action('REPAIR_AUTHORITATIVE_CURRENT_SESSION_OHLC','V17_REVIEW','Repair the authoritative current-session OHLC from an accepted source; do not infer or synthesize missing OHLC.'))}
   if(roles.includes('STALE')||sr.rowExists===true&&sr.sessionAligned!==true){blockers.push(blocker('V17_INTERNAL_SR_STALE','AUTHORITATIVE_V17','HIGH','A trusted Internal S/R row exists but is not aligned to the current reference session.','data/v17/internal-ohlc-support-resistance.json'));actions.push(action('REBUILD_CURRENT_SESSION_INTERNAL_SR','V17_REVIEW','Rebuild Internal S/R from accepted current-session history after provenance is verified.'))}
   if(roles.includes('CONFLICT')||conflict?.critical===true){blockers.push(blocker('V17_CRITICAL_SOURCE_CONFLICT','AUTHORITATIVE_V17','CRITICAL',`Critical source conflict remains${conflict?.maxDiffPct!==undefined?` (maxDiffPct ${conflict.maxDiffPct})`:''}.`,'data/v17/resilient-session-status.json'));actions.push(action('DOCUMENT_AND_RESOLVE_SOURCE_CONFLICT','V17_REVIEW','Compare authoritative inputs and external validation sources, document the discrepancy, and resolve it only through the V17 review/rebuild path.'))}
-
   if(attempt.status==='FETCH_FAILED'){blockers.push(blocker('SUPPLEMENTAL_PROVIDER_FETCH_FAILED','SUPPLEMENTAL','MEDIUM',attempt.error||'Supplemental provider fetch failed.','Yahoo supplemental acquisition'));actions.push(action('TRY_ACCEPTED_ALTERNATE_PROVIDER','RESEARCH_REVIEW','Use an existing alternate provider only as supplemental review evidence; do not relabel it as V17 trusted execution evidence.'))}
   if(attempt.status==='NO_SYMBOL_MAP_ENTRY'){blockers.push(blocker('SUPPLEMENTAL_SYMBOL_MAP_ENTRY_MISSING','SUPPLEMENTAL','MEDIUM','No symbol-map entry was available for supplemental acquisition.','data/symbol-map.json'));actions.push(action('VERIFY_SYMBOL_IDENTITY_MAPPING','RESEARCH_REVIEW','Verify ticker/identity mapping before any alternate-provider acquisition.'))}
   if(attempt.status==='FETCHED'&&sup.identityVerified!==true){blockers.push(blocker('SUPPLEMENTAL_IDENTITY_UNVERIFIED','SUPPLEMENTAL','HIGH','Supplemental provider identity verification did not pass.','Yahoo identity evidence'));actions.push(action('VERIFY_SUPPLEMENTAL_IDENTITY','RESEARCH_REVIEW','Resolve symbol/exchange/currency/name identity before considering the supplemental history for review.'))}
@@ -33,7 +33,6 @@ function rowPacket(row){
   if(attempt.status==='FETCHED'&&sup.priceReconciled!==true){blockers.push(blocker('SUPPLEMENTAL_PRICE_NOT_RECONCILED','SUPPLEMENTAL','HIGH',`Supplemental/current reference difference is ${finite(sup.currentPriceDifferencePct)??'unavailable'}% versus tolerance ${finite(sup.priceTolerancePct)??'unavailable'}%.`,'Yahoo supplemental history + V20 current market reference'));actions.push(action('VERIFY_PRICE_SCALE_AND_REFERENCE','RESEARCH_REVIEW','Investigate the price/reference mismatch with authoritative evidence. Do not assume a split, adjustment, or corporate action without proof.'))}
   const identityDiff=finite(identity.localDifferencePct),identityGuard=finite(identity.guardedMaxDifferencePct),identityReferenceConflict=identityDiff!==null&&identityGuard!==null&&identityDiff>identityGuard;
   if(identityReferenceConflict){blockers.push(blocker('SUPPLEMENTAL_IDENTITY_REFERENCE_PRICE_CONFLICT','SUPPLEMENTAL','CRITICAL',`Provider identity metadata differs from the local reference by ${identityDiff}% and exceeds the adapter diagnostic guard ${identityGuard}%.`,'Yahoo identity metadata'));actions.push(action('RECONCILE_PROVIDER_IDENTITY_PRICE_REFERENCE','RESEARCH_REVIEW','Reconcile provider identity metadata versus the authoritative price reference before treating the supplemental candidate as clean review evidence.'))}
-
   const cleanSupplementalCandidate=sup.eligibleForV17Review===true&&!identityReferenceConflict&&blockers.every(x=>!(x.scope==='SUPPLEMENTAL'&&['HIGH','CRITICAL'].includes(x.severity)));
   let reviewState='V17_PROVENANCE_REVIEW_REQUIRED';
   if(roles.includes('CONFLICT'))reviewState='CRITICAL_SOURCE_CONFLICT_MANUAL_REVIEW';
@@ -44,27 +43,25 @@ function rowPacket(row){
   else if(attempt.status==='FETCHED'&&sup.priceReconciled!==true)reviewState='PRICE_REFERENCE_RECONCILIATION_REQUIRED';
   else if(cleanSupplementalCandidate)reviewState='SUPPLEMENTAL_CANDIDATE_CLEAN_FOR_MANUAL_V17_REVIEW';
   const priority=blockers.some(x=>x.severity==='CRITICAL')?'HIGH':blockers.some(x=>x.severity==='HIGH')?'MEDIUM':'NORMAL';
-  return{
-    symbol:row.symbol,roles,reviewState,reviewPriority:priority,cleanSupplementalCandidate,
-    authoritativeObservedCondition:row.observedCondition||row.diagnosis||null,causeVerified:false,
-    supplementalStatus:sup.status||'UNAVAILABLE',supplementalEligibleForV17Review:sup.eligibleForV17Review===true,
-    supplementalTrustedForV17Execution:false,supplementalExecutionEligible:false,
-    providerIdentityReference:{localDifferencePct:identityDiff,diagnosticGuardPct:identityGuard,conflict:identityReferenceConflict,guardedPolicyRequested:identity.guardedPolicyRequested===true},
-    blockers,reviewActions:uniq(actions.map(x=>JSON.stringify(x))).map(x=>JSON.parse(x)),
-    automaticMutationAllowed:false,automaticResolutionAllowed:false,
-    decisionEffect:{usedForDecisionScore:false,usedForExecutionGate:false,usedForProductionAllocation:false,opensExecutionGrade:false},
-  };
+  return{symbol:row.symbol,roles,reviewState,reviewPriority:priority,cleanSupplementalCandidate,authoritativeObservedCondition:row.observedCondition||row.diagnosis||null,causeVerified:false,supplementalStatus:sup.status||'UNAVAILABLE',supplementalEligibleForV17Review:sup.eligibleForV17Review===true,supplementalTrustedForV17Execution:false,supplementalExecutionEligible:false,providerIdentityReference:{localDifferencePct:identityDiff,diagnosticGuardPct:identityGuard,conflict:identityReferenceConflict,guardedPolicyRequested:identity.guardedPolicyRequested===true},blockers,reviewActions:uniq(actions.map(x=>JSON.stringify(x))).map(x=>JSON.parse(x)),automaticMutationAllowed:false,automaticResolutionAllowed:false,decisionEffect:{usedForDecisionScore:false,usedForExecutionGate:false,usedForProductionAllocation:false,opensExecutionGrade:false}};
 }
-
 const rows=(audit.targets||audit.symbols||[]).map(rowPacket);
 const stateCounts=Object.fromEntries([...new Set(rows.map(x=>x.reviewState))].sort().map(state=>[state,rows.filter(x=>x.reviewState===state).length]));
-const packet={
-  schemaVersion:'20.0.0-sr-remediation-review-packet-1',generatedAt:new Date().toISOString(),sessionDate:audit.sessionDate,status:'MANUAL_REVIEW_PACKET_RESEARCH_ONLY',
-  sourceAuditSchemaVersion:audit.schemaVersion,sourceAudit:'data/v20/regression.json#supportResistanceRemediation',readOnly:true,
-  automaticV17MutationAllowed:false,automaticTrustUpgradeAllowed:false,automaticConflictResolutionAllowed:false,guaranteesExecutionGrade:false,
-  summary:{targetCount:rows.length,cleanSupplementalCandidateCount:rows.filter(x=>x.cleanSupplementalCandidate).length,supplementalEligibleButNotCleanCount:rows.filter(x=>x.supplementalEligibleForV17Review&&!x.cleanSupplementalCandidate).length,alternateProviderRequiredCount:rows.filter(x=>x.reviewState==='ALTERNATE_PROVIDER_REQUIRED').length,currentSessionEvidenceRequiredCount:rows.filter(x=>x.reviewState==='CURRENT_SESSION_EVIDENCE_REQUIRED').length,priceReferenceReconciliationRequiredCount:rows.filter(x=>x.reviewState==='PRICE_REFERENCE_RECONCILIATION_REQUIRED').length,providerIdentityReferenceConflictCount:rows.filter(x=>x.providerIdentityReference?.conflict===true).length,criticalSourceConflictReviewCount:rows.filter(x=>x.reviewState==='CRITICAL_SOURCE_CONFLICT_MANUAL_REVIEW').length,authoritativeOhlcRepairRequiredCount:rows.filter(x=>x.reviewState==='AUTHORITATIVE_OHLC_REPAIR_REQUIRED').length,stateCounts},
-  rows,
-  interpretation:{manualReviewOnly:true,cleanSupplementalCandidateDoesNotMeanV17Trusted:true,providerIdentityDiagnosticGuardIsNotAnExecutionThreshold:true,noCorporateActionCauseInferred:true,v17RebuildStillRequired:true,note:'This packet converts same-run remediation evidence into explicit blockers and review actions. It never mutates V17, never upgrades trust, and never resolves a source conflict automatically.'}
-};
+const packet={schemaVersion:'20.0.0-sr-remediation-review-packet-1',generatedAt:new Date().toISOString(),sessionDate:audit.sessionDate,status:'MANUAL_REVIEW_PACKET_RESEARCH_ONLY',sourceAuditSchemaVersion:audit.schemaVersion,sourceAudit:'data/v20/regression.json#supportResistanceRemediation',readOnly:true,automaticV17MutationAllowed:false,automaticTrustUpgradeAllowed:false,automaticConflictResolutionAllowed:false,guaranteesExecutionGrade:false,summary:{targetCount:rows.length,cleanSupplementalCandidateCount:rows.filter(x=>x.cleanSupplementalCandidate).length,supplementalEligibleButNotCleanCount:rows.filter(x=>x.supplementalEligibleForV17Review&&!x.cleanSupplementalCandidate).length,alternateProviderRequiredCount:rows.filter(x=>x.reviewState==='ALTERNATE_PROVIDER_REQUIRED').length,currentSessionEvidenceRequiredCount:rows.filter(x=>x.reviewState==='CURRENT_SESSION_EVIDENCE_REQUIRED').length,priceReferenceReconciliationRequiredCount:rows.filter(x=>x.reviewState==='PRICE_REFERENCE_RECONCILIATION_REQUIRED').length,providerIdentityReferenceConflictCount:rows.filter(x=>x.providerIdentityReference?.conflict===true).length,criticalSourceConflictReviewCount:rows.filter(x=>x.reviewState==='CRITICAL_SOURCE_CONFLICT_MANUAL_REVIEW').length,authoritativeOhlcRepairRequiredCount:rows.filter(x=>x.reviewState==='AUTHORITATIVE_OHLC_REPAIR_REQUIRED').length,stateCounts},rows,interpretation:{manualReviewOnly:true,cleanSupplementalCandidateDoesNotMeanV17Trusted:true,providerIdentityDiagnosticGuardIsNotAnExecutionThreshold:true,noCorporateActionCauseInferred:true,v17RebuildStillRequired:true,note:'This packet converts same-run remediation evidence into explicit blockers and review actions. It never mutates V17, never upgrades trust, and never resolves a source conflict automatically.'}};
 write('data/v20/sr-remediation-review-packet.json',packet);
 console.log(JSON.stringify({status:packet.status,summary:packet.summary,rows:Object.fromEntries(rows.map(x=>[x.symbol,{state:x.reviewState,priority:x.reviewPriority,clean:x.cleanSupplementalCandidate,blockers:x.blockers.map(b=>b.code)}]))},null,2));
+
+// Secondary Starta triangulation is executed only after the deterministic review packet
+// is frozen for the same run. It remains supplemental and can never mutate V17/history-50.
+if(String(process.env.V20_SR_STARTA_TRIANGULATION||'true').toLowerCase()!=='false'){
+  execFileSync(process.execPath,[P('scripts/v20/build-sr-remediation-alternate-evidence.cjs')],{cwd:root,env:{...process.env},stdio:'inherit'});
+  execFileSync(process.execPath,[P('scripts/v20/sr-remediation-alternate-evidence-regression.cjs')],{cwd:root,env:{...process.env},stdio:'inherit'});
+  const alt=read('data/v20/sr-remediation-alternate-evidence.json');
+  const altReg=read('data/v20/sr-remediation-alternate-evidence-regression.json');
+  if(altReg.ok!==true)throw new Error('Starta alternate-evidence regression failed');
+  const regression=read('data/v20/regression.json');
+  regression.supportResistanceAlternateEvidence=alt;
+  regression.supportResistanceAlternateEvidenceRegression=altReg;
+  regression.supportResistanceAlternateEvidenceMirror={authoritativeRuntimeBuilder:'scripts/v20/build-sr-remediation-alternate-evidence.cjs',authoritativeRuntimeRegression:'scripts/v20/sr-remediation-alternate-evidence-regression.cjs',transientDetailedSidecar:'data/v20/sr-remediation-alternate-evidence.json',persistedEvidence:'data/v20/regression.json#supportResistanceAlternateEvidence',persistedRegression:'data/v20/regression.json#supportResistanceAlternateEvidenceRegression',generatedInSameMainRun:true,supplementalOnly:true,automaticV17MutationAllowed:false,guaranteesExecutionGrade:false};
+  write('data/v20/regression.json',regression);
+}
