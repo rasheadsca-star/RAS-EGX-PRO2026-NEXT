@@ -88,6 +88,13 @@ function decisionSrScore(sr) {
   const confPct = confRaw === null ? null : clamp(confRaw <= 1 ? confRaw * 100 : confRaw);
   return avg([statusScore, confPct]);
 }
+function decisionLiquidityScore(liquidity) {
+  if (!liquidity || liquidity.evidenceAvailable !== true) return null;
+  const raw = clamp(liquidity.liquidityScore);
+  if (raw === null) return null;
+  if (liquidity.sessionAligned !== true) return Math.min(raw, 25);
+  return raw;
+}
 function decisionDataScore(profile) {
   const completeness = clamp(profile.marketSnapshot?.criticalFieldCompletenessPct);
   const srConfRaw = finite(profile.supportResistance?.confidence);
@@ -150,6 +157,7 @@ const riskAudit = read('data/v20/risk-reward-audit.json');
 const technical = read('data/v20/technical-indicators.json', { symbols: [] });
 const technicalStatus = read('data/v20/technical-history-status.json', {});
 const decisionPolicy = read('data/v20/decision-intelligence-policy.json', null);
+const liquidityGate = read('data/v17/liquidity-gate.json', { rows: [] });
 const gate = read('data/v17/resilient-session-status.json', {});
 
 if (!decisionPolicy || decisionPolicy.status !== 'SHADOW_RESEARCH_ONLY_UNCALIBRATED') throw new Error('V20 decision intelligence policy missing');
@@ -162,6 +170,30 @@ if (decisionWeightKeys.reduce((sum, key) => sum + Number(decisionPolicy.componen
 const snapshotMap = new Map((snapshot.rows || []).map(row => [row.ticker, row]));
 const auditMap = new Map((riskAudit.rows || []).map(row => [row.ticker, row]));
 const technicalMap = new Map((technical.symbols || []).map(row => [row.ticker, row]));
+const liquidityMap = new Map((liquidityGate.rows || []).map(row => [String(row.symbol || row.ticker || '').trim().toUpperCase(), row]));
+
+function liquidityProfile(ticker) {
+  const symbol = String(ticker || '').trim().toUpperCase();
+  const item = liquidityMap.get(symbol);
+  const sessionAligned = liquidityGate.sessionAligned === true && liquidityGate.referenceSessionDate === current.sessionDate;
+  if (!item) {
+    return {
+      available: false, evidenceAvailable: false, sessionAligned, liquidityScore: null, liquidityDecision: 'NO_EVIDENCE',
+      executionEligible: false, conditionalEligible: false, currentTurnover: null, avg20Turnover: null,
+      currentVolume: null, avg20Volume: null, trades: null, historicalSessionsUsed: null,
+      scoringContract: liquidityGate.sourceLineage?.scoringContract || null, evidenceSource: 'data/v17/liquidity-gate.json',
+    };
+  }
+  return {
+    available: item.evidenceAvailable === true, evidenceAvailable: item.evidenceAvailable === true, sessionAligned,
+    liquidityScore: finite(item.liquidityScore), liquidityDecision: item.liquidityDecision || null,
+    executionEligible: item.executionLiquidityOk === true, conditionalEligible: item.conditionalLiquidityOk === true,
+    currentTurnover: finite(item.currentTurnover), avg20Turnover: finite(item.avg20Turnover),
+    currentVolume: finite(item.currentVolume), avg20Volume: finite(item.avg20Volume), trades: finite(item.trades),
+    historicalSessionsUsed: finite(item.historicalSessionsUsed), reason: item.reason || null,
+    scoringContract: liquidityGate.sourceLineage?.scoringContract || null, evidenceSource: 'data/v17/liquidity-gate.json',
+  };
+}
 
 function technicalProfile(ticker) {
   const item = technicalMap.get(ticker);
@@ -214,7 +246,15 @@ function buildDecisionIntelligence(profile) {
       sourceConflict: blockers.has('CRITICAL_SOURCE_CONFLICT'),
       missingCriticalEvidence: blockers.has('MISSING_CRITICAL_SYMBOL_EVIDENCE'),
     }),
-    liquidity: decisionComponent('LIQUIDITY_EVIDENCE', weights.liquidity, profile.liquidity?.executionEligible === true ? 100 : 30, 'data/v17/liquidity-gate.json', { executionEligible: profile.liquidity?.executionEligible === true }),
+    liquidity: decisionComponent('LIQUIDITY_EVIDENCE', weights.liquidity, decisionLiquidityScore(profile.liquidity), 'data/v17/liquidity-gate.json', {
+      liquidityScore: finite(profile.liquidity?.liquidityScore), liquidityDecision: profile.liquidity?.liquidityDecision || null,
+      evidenceAvailable: profile.liquidity?.evidenceAvailable === true, sessionAligned: profile.liquidity?.sessionAligned === true,
+      executionEligible: profile.liquidity?.executionEligible === true, conditionalEligible: profile.liquidity?.conditionalEligible === true,
+      currentTurnover: finite(profile.liquidity?.currentTurnover), avg20Turnover: finite(profile.liquidity?.avg20Turnover),
+      currentVolume: finite(profile.liquidity?.currentVolume), avg20Volume: finite(profile.liquidity?.avg20Volume),
+      trades: finite(profile.liquidity?.trades), historicalSessionsUsed: finite(profile.liquidity?.historicalSessionsUsed),
+      scoringContract: profile.liquidity?.scoringContract || null, binaryEligibilityFallbackUsed: false,
+    }),
     supportResistance: decisionComponent('SUPPORT_RESISTANCE_EVIDENCE', weights.supportResistance, decisionSrScore(profile.supportResistance), 'data/v17/internal-ohlc-support-resistance.json', {
       available: Boolean(profile.supportResistance), sessionAligned: profile.supportResistance?.sessionAligned === true,
       executionEligible: profile.supportResistance?.executionEligible === true, confidence: finite(profile.supportResistance?.confidence),
@@ -292,9 +332,10 @@ const profiles = (current.opportunities || []).map(row => {
   const marketRow = snapshotMap.get(row.ticker) || {};
   const rrAudit = auditMap.get(row.ticker) || {};
   const ta = technicalProfile(row.ticker);
+  const liq = liquidityProfile(row.ticker);
   const strengths = [
     finite(row.opportunityScore) !== null && row.opportunityScore >= 80 ? 'HIGH_LEGACY_OPPORTUNITY_SCORE' : null,
-    row.liquidityExecutionEligible === true ? 'LIQUIDITY_GATE_ELIGIBLE' : null,
+    liq.executionEligible === true ? 'LIQUIDITY_GATE_ELIGIBLE' : null,
     row.supportResistance?.sessionAligned === true ? 'SUPPORT_RESISTANCE_SESSION_ALIGNED' : null,
     row.supportResistance?.executionEligible === true ? 'INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE' : null,
     finite(row.riskReward?.primaryTarget1NetRiskReward) !== null && row.riskReward.primaryTarget1NetRiskReward > 0 ? 'POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS' : null,
@@ -335,7 +376,11 @@ const profiles = (current.opportunities || []).map(row => {
       executionConfidencePct: finite(row.confidence?.executionConfidencePct), dimensionsAreIndependent: true,
     },
     supportResistance: row.supportResistance || null,
-    liquidity: { executionEligible: row.liquidityExecutionEligible === true, evidenceSource: 'data/v17/liquidity-gate.json' },
+    liquidity: {
+      ...liq,
+      currentDecisionExecutionEligible: row.liquidityExecutionEligible === true,
+      consistentWithCurrentDecision: liq.executionEligible === (row.liquidityExecutionEligible === true),
+    },
     tradePlan: { ...row.tradePlan, riskReward: row.riskReward || null },
     whyThisStock: {
       strengths, blockers, technicalEvidenceUsed: ta.usedForCurrentDecision === true,
@@ -399,6 +444,10 @@ const out = {
     usedForExecutionGate: false,
     usedForProductionAllocation: false,
     usedForChampionSelection: false,
+    liquidityComponentWeightPct: decisionPolicy.componentWeightsPct.liquidity,
+    liquidityScoringContract: decisionPolicy.liquidityScoring?.scoringContract || null,
+    liquidityUsesNumericV17Score: true,
+    liquidityComponentAvailableCount: profiles.filter(p => p.decisionIntelligence.components.liquidity.available).length,
     medianResearchDecisionScore: medianDecisionScore === null ? null : round(medianDecisionScore, 1),
     tierCounts,
     currentTechnicalComponentAvailableCount: profiles.filter(p => p.decisionIntelligence.components.currentTechnical.available).length,

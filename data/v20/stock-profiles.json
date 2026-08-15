@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-stock-profiles-3",
-  "generatedAt": "2026-08-15T12:52:53.849Z",
+  "generatedAt": "2026-08-15T14:02:50.584Z",
   "sessionDate": "2026-08-13",
   "decisionSupportOnly": true,
   "executionStatus": "RESEARCH_ONLY",
@@ -8,7 +8,7 @@
   "technicalIndicatorPolicy": "POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION",
   "technicalHistoryStatus": {
     "schemaVersion": "20.0.0-technical-history-status-1",
-    "generatedAt": "2026-08-15T12:52:53.690Z",
+    "generatedAt": "2026-08-15T14:02:50.431Z",
     "asOfSessionDate": "2026-08-13",
     "requestedSymbols": 30,
     "historicalIndicatorReadyCount": 27,
@@ -24,7 +24,7 @@
   },
   "sectorPolicy": "NO_INFERENCE_WITHOUT_VERIFIED_CLASSIFICATION_SOURCE",
   "decisionIntelligencePolicy": {
-    "schemaVersion": "20.0.0-decision-intelligence-policy-1",
+    "schemaVersion": "20.0.0-decision-intelligence-policy-2",
     "effectiveFrom": "2026-08-15",
     "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
     "scoreName": "V20_RESEARCH_DECISION_SCORE",
@@ -37,13 +37,31 @@
     "modelConfidenceMayBeInferredFromScore": false,
     "rankingMayReplaceProductionChampionRanking": false,
     "componentWeightsPct": {
-      "legacyOpportunity": 25,
-      "dataEvidence": 20,
-      "liquidity": 15,
-      "supportResistance": 10,
+      "legacyOpportunity": 10,
+      "dataEvidence": 18,
+      "liquidity": 30,
+      "supportResistance": 12,
       "netRiskReward": 15,
       "tradePlanAlignment": 10,
       "currentTechnical": 5
+    },
+    "liquidityScoring": {
+      "researchWeightPct": 30,
+      "source": "data/v17/liquidity-gate.json",
+      "scoreField": "liquidityScore",
+      "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+      "usesCurrentTurnover": true,
+      "usesCompletedHistoricalAverageTurnover": true,
+      "usesTradeActivity": true,
+      "binaryEligibilityFallbackAllowed": false,
+      "sessionAlignmentRequiredForFullScore": true,
+      "misalignedSessionMaxScore": 25,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "supportResistanceScoring": {
+      "researchWeightPct": 12,
+      "source": "data/v17/internal-ohlc-support-resistance.json",
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
     },
     "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
     "minimumEvidenceCoverageForTierPct": 70,
@@ -60,7 +78,7 @@
       "aboveEntryRangeDoNotChaseMaxScore": 55
     },
     "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
-    "note": "Weights and tier thresholds are transparent research heuristics for explainability and shadow ranking only. They do not claim calibrated alpha, probability, confidence, or execution permission."
+    "note": "Weights are transparent shadow/research heuristics. Liquidity is intentionally raised to 30% and uses the numeric V17 liquidity score rather than a binary eligibility proxy. The score remains uncalibrated and cannot open execution, drive production allocation, change the Champion, or trigger automatic promotion."
   },
   "decisionIntelligenceSummary": {
     "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
@@ -68,39 +86,42 @@
     "usedForExecutionGate": false,
     "usedForProductionAllocation": false,
     "usedForChampionSelection": false,
+    "liquidityComponentWeightPct": 30,
+    "liquidityScoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+    "liquidityUsesNumericV17Score": true,
+    "liquidityComponentAvailableCount": 30,
     "medianResearchDecisionScore": 55,
     "tierCounts": {
-      "RESEARCH_A": 2,
-      "RESEARCH_B": 12,
-      "RESEARCH_C": 13,
-      "RESEARCH_D": 3
+      "RESEARCH_B": 13,
+      "RESEARCH_C": 12,
+      "RESEARCH_D": 5
     },
     "currentTechnicalComponentAvailableCount": 21,
     "cappedScoreCount": 16,
-    "highLegacyDependencyCount": 1
+    "highLegacyDependencyCount": 0
   },
   "researchDecisionRanking": [
     {
       "rank": 1,
-      "ticker": "OBRI",
-      "legacyRank": 8,
-      "researchDecisionScore": 80.3,
-      "researchTier": "RESEARCH_A",
+      "ticker": "BONY",
+      "legacyRank": 16,
+      "researchDecisionScore": 77.7,
+      "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
     {
       "rank": 2,
-      "ticker": "KORA",
-      "legacyRank": 1,
-      "researchDecisionScore": 80,
-      "researchTier": "RESEARCH_A",
+      "ticker": "OBRI",
+      "legacyRank": 8,
+      "researchDecisionScore": 76.9,
+      "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
     {
       "rank": 3,
-      "ticker": "BONY",
-      "legacyRank": 16,
-      "researchDecisionScore": 79.8,
+      "ticker": "KORA",
+      "legacyRank": 1,
+      "researchDecisionScore": 75.5,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
@@ -108,55 +129,55 @@
       "rank": 4,
       "ticker": "GBCO",
       "legacyRank": 5,
-      "researchDecisionScore": 78.3,
+      "researchDecisionScore": 75,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
     {
       "rank": 5,
-      "ticker": "AREH",
-      "legacyRank": 2,
-      "researchDecisionScore": 77.6,
+      "ticker": "ACAMD",
+      "legacyRank": 21,
+      "researchDecisionScore": 74.1,
       "researchTier": "RESEARCH_B",
-      "issuedStatus": "WAIT"
+      "issuedStatus": "AVOID"
     },
     {
       "rank": 6,
-      "ticker": "EAST",
-      "legacyRank": 3,
-      "researchDecisionScore": 77.3,
+      "ticker": "SCTS",
+      "legacyRank": 18,
+      "researchDecisionScore": 74,
       "researchTier": "RESEARCH_B",
-      "issuedStatus": "WAIT"
+      "issuedStatus": "AVOID"
     },
     {
       "rank": 7,
       "ticker": "EASB",
       "legacyRank": 6,
-      "researchDecisionScore": 76.9,
+      "researchDecisionScore": 73.8,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
     {
       "rank": 8,
-      "ticker": "NCCW",
-      "legacyRank": 7,
-      "researchDecisionScore": 76.6,
+      "ticker": "AREH",
+      "legacyRank": 2,
+      "researchDecisionScore": 73.7,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
     {
       "rank": 9,
-      "ticker": "ACAMD",
-      "legacyRank": 21,
-      "researchDecisionScore": 75.7,
+      "ticker": "NCCW",
+      "legacyRank": 7,
+      "researchDecisionScore": 73.7,
       "researchTier": "RESEARCH_B",
-      "issuedStatus": "AVOID"
+      "issuedStatus": "WAIT"
     },
     {
       "rank": 10,
-      "ticker": "RAYA",
-      "legacyRank": 11,
-      "researchDecisionScore": 73.9,
+      "ticker": "EAST",
+      "legacyRank": 3,
+      "researchDecisionScore": 73.5,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
@@ -164,32 +185,32 @@
       "rank": 11,
       "ticker": "EBSC",
       "legacyRank": 9,
-      "researchDecisionScore": 71.7,
+      "researchDecisionScore": 72.8,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WATCH"
     },
     {
       "rank": 12,
-      "ticker": "JUFO",
-      "legacyRank": 15,
+      "ticker": "RAYA",
+      "legacyRank": 11,
       "researchDecisionScore": 71.5,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
     {
       "rank": 13,
-      "ticker": "SCTS",
-      "legacyRank": 18,
-      "researchDecisionScore": 70.8,
+      "ticker": "JUFO",
+      "legacyRank": 15,
+      "researchDecisionScore": 69.7,
       "researchTier": "RESEARCH_B",
-      "issuedStatus": "AVOID"
+      "issuedStatus": "WAIT"
     },
     {
       "rank": 14,
       "ticker": "EPPK",
       "legacyRank": 10,
-      "researchDecisionScore": 70.4,
-      "researchTier": "RESEARCH_B",
+      "researchDecisionScore": 56.1,
+      "researchTier": "RESEARCH_C",
       "issuedStatus": "WAIT"
     },
     {
@@ -210,14 +231,6 @@
     },
     {
       "rank": 17,
-      "ticker": "EDFM",
-      "legacyRank": 22,
-      "researchDecisionScore": 55,
-      "researchTier": "RESEARCH_C",
-      "issuedStatus": "AVOID"
-    },
-    {
-      "rank": 18,
       "ticker": "ETRS",
       "legacyRank": 24,
       "researchDecisionScore": 55,
@@ -225,7 +238,7 @@
       "issuedStatus": "AVOID"
     },
     {
-      "rank": 19,
+      "rank": 18,
       "ticker": "EMFD",
       "legacyRank": 25,
       "researchDecisionScore": 55,
@@ -233,7 +246,7 @@
       "issuedStatus": "WAIT"
     },
     {
-      "rank": 20,
+      "rank": 19,
       "ticker": "FWRY",
       "legacyRank": 26,
       "researchDecisionScore": 55,
@@ -241,7 +254,7 @@
       "issuedStatus": "AVOID"
     },
     {
-      "rank": 21,
+      "rank": 20,
       "ticker": "TMGH",
       "legacyRank": 27,
       "researchDecisionScore": 55,
@@ -249,7 +262,7 @@
       "issuedStatus": "AVOID"
     },
     {
-      "rank": 22,
+      "rank": 21,
       "ticker": "ORAS",
       "legacyRank": 28,
       "researchDecisionScore": 55,
@@ -257,7 +270,7 @@
       "issuedStatus": "AVOID"
     },
     {
-      "rank": 23,
+      "rank": 22,
       "ticker": "BTFH",
       "legacyRank": 29,
       "researchDecisionScore": 55,
@@ -265,7 +278,7 @@
       "issuedStatus": "AVOID"
     },
     {
-      "rank": 24,
+      "rank": 23,
       "ticker": "PHDC",
       "legacyRank": 30,
       "researchDecisionScore": 55,
@@ -273,15 +286,15 @@
       "issuedStatus": "AVOID"
     },
     {
-      "rank": 25,
-      "ticker": "SAIB",
-      "legacyRank": 17,
-      "researchDecisionScore": 50,
+      "rank": 24,
+      "ticker": "EDFM",
+      "legacyRank": 22,
+      "researchDecisionScore": 53.1,
       "researchTier": "RESEARCH_C",
-      "issuedStatus": "WAIT"
+      "issuedStatus": "AVOID"
     },
     {
-      "rank": 26,
+      "rank": 25,
       "ticker": "MEGM",
       "legacyRank": 19,
       "researchDecisionScore": 50,
@@ -289,15 +302,15 @@
       "issuedStatus": "WAIT"
     },
     {
-      "rank": 27,
-      "ticker": "SEIGA",
-      "legacyRank": 23,
-      "researchDecisionScore": 50,
-      "researchTier": "RESEARCH_C",
+      "rank": 26,
+      "ticker": "SAIB",
+      "legacyRank": 17,
+      "researchDecisionScore": 41.1,
+      "researchTier": "RESEARCH_D",
       "issuedStatus": "WAIT"
     },
     {
-      "rank": 28,
+      "rank": 27,
       "ticker": "HDBK",
       "legacyRank": 12,
       "researchDecisionScore": 39,
@@ -305,7 +318,7 @@
       "issuedStatus": "WAIT"
     },
     {
-      "rank": 29,
+      "rank": 28,
       "ticker": "MHOT",
       "legacyRank": 13,
       "researchDecisionScore": 39,
@@ -313,10 +326,18 @@
       "issuedStatus": "WAIT"
     },
     {
-      "rank": 30,
+      "rank": 29,
       "ticker": "OCPH",
       "legacyRank": 14,
       "researchDecisionScore": 39,
+      "researchTier": "RESEARCH_D",
+      "issuedStatus": "WAIT"
+    },
+    {
+      "rank": 30,
+      "ticker": "SEIGA",
+      "legacyRank": 23,
+      "researchDecisionScore": 31.8,
       "researchTier": "RESEARCH_D",
       "issuedStatus": "WAIT"
     }
@@ -384,8 +405,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 56592552,
+        "avg20Turnover": 442502906,
+        "currentVolume": 17021975,
+        "avg20Volume": 127887321,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -547,20 +584,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 80,
-        "researchDecisionScoreBeforeCaps": 80,
-        "researchTier": "RESEARCH_A",
+        "researchDecisionScore": 75.5,
+        "researchDecisionScoreBeforeCaps": 75.5,
+        "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 95,
-        "legacyContributionPctOfWeightedPoints": 32.3,
+        "legacyContributionPctOfWeightedPoints": 13.7,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 98,
-            "weightedPoints": 24.5,
+            "weightedPoints": 9.8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 98,
@@ -569,10 +606,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -582,21 +619,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 56592552,
+              "avg20Turnover": 442502906,
+              "currentVolume": 17021975,
+              "avg20Volume": 127887321,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -685,7 +735,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "KORA: درجة قرار بحثية 80/100 (RESEARCH_A) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "KORA: درجة قرار بحثية 75.5/100 (RESEARCH_B) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -750,8 +800,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 11057310,
+        "avg20Turnover": 22073686,
+        "currentVolume": 7323513,
+        "avg20Volume": 14135912,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -923,20 +989,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 77.6,
-        "researchDecisionScoreBeforeCaps": 77.6,
+        "researchDecisionScore": 73.7,
+        "researchDecisionScoreBeforeCaps": 73.7,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 30.9,
+        "legacyContributionPctOfWeightedPoints": 13,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 96,
-            "weightedPoints": 24,
+            "weightedPoints": 9.6,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 96,
@@ -945,10 +1011,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -958,21 +1024,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 11057310,
+              "avg20Turnover": 22073686,
+              "currentVolume": 7323513,
+              "avg20Volume": 14135912,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -1058,7 +1137,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "AREH: درجة قرار بحثية 77.6/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "AREH: درجة قرار بحثية 73.7/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -1123,8 +1202,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 35195116,
+        "avg20Turnover": 37161225,
+        "currentVolume": 966862,
+        "avg20Volume": 995783,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -1295,20 +1390,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 77.3,
-        "researchDecisionScoreBeforeCaps": 77.3,
+        "researchDecisionScore": 73.5,
+        "researchDecisionScoreBeforeCaps": 73.5,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 30.7,
+        "legacyContributionPctOfWeightedPoints": 12.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 95,
-            "weightedPoints": 23.75,
+            "weightedPoints": 9.5,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 95,
@@ -1317,10 +1412,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.4,
-            "weightedPoints": 18.68,
+            "weightedPoints": 16.812,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -1330,21 +1425,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 35195116,
+              "avg20Turnover": 37161225,
+              "currentVolume": 966862,
+              "avg20Volume": 995783,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.1,
-            "weightedPoints": 9.01,
+            "weightedPoints": 10.812,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -1430,7 +1538,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "EAST: درجة قرار بحثية 77.3/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "EAST: درجة قرار بحثية 73.5/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -1496,8 +1604,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 122057880,
+        "avg20Turnover": 72956679,
+        "currentVolume": 4534455,
+        "avg20Volume": 2716094,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -1667,19 +1791,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 82.9,
+        "researchDecisionScoreBeforeCaps": 79.2,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 28.4,
+        "legacyContributionPctOfWeightedPoints": 11.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 94,
-            "weightedPoints": 23.5,
+            "weightedPoints": 9.4,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 94,
@@ -1688,10 +1812,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -1701,21 +1825,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 122057880,
+              "avg20Turnover": 72956679,
+              "currentVolume": 4534455,
+              "avg20Volume": 2716094,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -1871,8 +2008,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 23459548,
+        "avg20Turnover": 35306729,
+        "currentVolume": 736900,
+        "avg20Volume": 1108862,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -2044,20 +2197,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 78.3,
-        "researchDecisionScoreBeforeCaps": 78.3,
+        "researchDecisionScore": 75,
+        "researchDecisionScoreBeforeCaps": 75,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 29.4,
+        "legacyContributionPctOfWeightedPoints": 12.3,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 92,
-            "weightedPoints": 23,
+            "weightedPoints": 9.2,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 92,
@@ -2066,10 +2219,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -2079,21 +2232,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 23459548,
+              "avg20Turnover": 35306729,
+              "currentVolume": 736900,
+              "avg20Volume": 1108862,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -2179,7 +2345,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "GBCO: درجة قرار بحثية 78.3/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "GBCO: درجة قرار بحثية 75/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -2244,8 +2410,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 9432538,
+        "avg20Turnover": 18644562,
+        "currentVolume": 1282832,
+        "avg20Volume": 2463836,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -2417,20 +2599,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 76.9,
-        "researchDecisionScoreBeforeCaps": 76.9,
+        "researchDecisionScore": 73.8,
+        "researchDecisionScoreBeforeCaps": 73.8,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 29.3,
+        "legacyContributionPctOfWeightedPoints": 12.2,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 90,
-            "weightedPoints": 22.5,
+            "weightedPoints": 9,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 90,
@@ -2439,10 +2621,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -2452,21 +2634,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 9432538,
+              "avg20Turnover": 18644562,
+              "currentVolume": 1282832,
+              "avg20Volume": 2463836,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -2552,7 +2747,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "EASB: درجة قرار بحثية 76.9/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "EASB: درجة قرار بحثية 73.8/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -2617,8 +2812,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 17247774,
+        "avg20Turnover": 11989033,
+        "currentVolume": 2868158,
+        "avg20Volume": 1944006,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -2735,14 +2946,14 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0.1672,
-        "sma20": 6.3695,
-        "sma50": 6.126,
-        "ema20": 6.2367,
-        "rsi14": 46.62,
-        "macd": -0.0348,
-        "macdSignal": 0.0369,
-        "macdHistogram": -0.0717,
-        "atr14": 0.3775,
+        "sma20": 6.3693,
+        "sma50": 6.1259,
+        "ema20": 6.2206,
+        "rsi14": 45.09,
+        "macd": -0.0497,
+        "macdSignal": 0.0236,
+        "macdHistogram": -0.0733,
+        "atr14": 0.2929,
         "momentum5Pct": 0.96,
         "momentum10Pct": -12.94,
         "momentum20Pct": -2.6,
@@ -2790,20 +3001,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 76.6,
-        "researchDecisionScoreBeforeCaps": 76.6,
+        "researchDecisionScore": 73.7,
+        "researchDecisionScoreBeforeCaps": 73.7,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 29,
+        "legacyContributionPctOfWeightedPoints": 12.1,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 89,
-            "weightedPoints": 22.25,
+            "weightedPoints": 8.9,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 89,
@@ -2812,10 +3023,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -2825,21 +3036,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 17247774,
+              "avg20Turnover": 11989033,
+              "currentVolume": 2868158,
+              "avg20Volume": 1944006,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -2925,7 +3149,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "NCCW: درجة قرار بحثية 76.6/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "NCCW: درجة قرار بحثية 73.7/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -2990,8 +3214,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 15463038,
+        "avg20Turnover": 71276556,
+        "currentVolume": 473007,
+        "avg20Volume": 2011142,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -3162,20 +3402,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 80.3,
-        "researchDecisionScoreBeforeCaps": 80.3,
-        "researchTier": "RESEARCH_A",
+        "researchDecisionScore": 76.9,
+        "researchDecisionScoreBeforeCaps": 76.9,
+        "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 28.6,
+        "legacyContributionPctOfWeightedPoints": 12,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 92,
-            "weightedPoints": 23,
+            "weightedPoints": 9.2,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 92,
@@ -3184,10 +3424,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.4,
-            "weightedPoints": 18.68,
+            "weightedPoints": 16.812,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -3197,21 +3437,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 15463038,
+              "avg20Turnover": 71276556,
+              "currentVolume": 473007,
+              "avg20Volume": 2011142,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.1,
-            "weightedPoints": 9.01,
+            "weightedPoints": 10.812,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -3297,7 +3550,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "OBRI: درجة قرار بحثية 80.3/100 (RESEARCH_A) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "OBRI: درجة قرار بحثية 76.9/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -3362,8 +3615,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 63,
+        "liquidityDecision": "CONDITIONAL_OK",
         "executionEligible": false,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 1879553,
+        "avg20Turnover": 17853407,
+        "currentVolume": 978885,
+        "avg20Volume": 8690746,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة تسمح بالمراقبة/التنفيذ المشروط وليس مضاربة فورية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": false,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -3479,14 +3748,14 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0,
-        "sma20": 1.9085,
-        "sma50": 1.8774,
-        "ema20": 1.9149,
-        "rsi14": 50.46,
-        "macd": 0.0143,
-        "macdSignal": 0.0156,
-        "macdHistogram": -0.0012,
-        "atr14": 0.0725,
+        "sma20": 1.906,
+        "sma50": 1.8816,
+        "ema20": 1.9145,
+        "rsi14": 50.48,
+        "macd": 0.0141,
+        "macdSignal": 0.0148,
+        "macdHistogram": -0.0007,
+        "atr14": 0.071,
         "momentum5Pct": 0,
         "momentum10Pct": 0,
         "momentum20Pct": -1.04,
@@ -3534,20 +3803,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 71.7,
-        "researchDecisionScoreBeforeCaps": 71.7,
+        "researchDecisionScore": 72.8,
+        "researchDecisionScoreBeforeCaps": 72.8,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 30.7,
+        "legacyContributionPctOfWeightedPoints": 12.1,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 88,
-            "weightedPoints": 22,
+            "weightedPoints": 8.8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 88,
@@ -3556,10 +3825,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -3569,21 +3838,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 30,
-            "weightedPoints": 4.5,
+            "score": 63,
+            "weightedPoints": 18.9,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": false
+              "liquidityScore": 63,
+              "liquidityDecision": "CONDITIONAL_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": false,
+              "conditionalEligible": true,
+              "currentTurnover": 1879553,
+              "avg20Turnover": 17853407,
+              "currentVolume": 978885,
+              "avg20Volume": 8690746,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -3643,7 +3925,6 @@
             "TRADEPLANALIGNMENT_STRONG"
           ],
           "weaknesses": [
-            "LIQUIDITY_WEAK",
             "NETRISKREWARD_WEAK",
             "NET_RR_BELOW_0_5"
           ],
@@ -3670,7 +3951,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "EBSC: درجة قرار بحثية 71.7/100 (RESEARCH_B) بتغطية أدلة 100%. السعر داخل نطاق الدخول المرجعي، لكن إذن التنفيذ يظل منفصلًا وخاضعًا لبوابة V17. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "EBSC: درجة قرار بحثية 72.8/100 (RESEARCH_B) بتغطية أدلة 100%. السعر داخل نطاق الدخول المرجعي، لكن إذن التنفيذ يظل منفصلًا وخاضعًا لبوابة V17. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -3735,8 +4016,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 13,
+        "liquidityDecision": "WATCH_ONLY",
         "executionEligible": false,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": false,
+        "currentTurnover": 306201,
+        "avg20Turnover": 627917,
+        "currentVolume": 23242,
+        "avg20Volume": 44158,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "توجد سيولة لكن أقل من حد التنفيذ الآمن",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": false,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -3909,20 +4206,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 70.4,
-        "researchDecisionScoreBeforeCaps": 70.4,
-        "researchTier": "RESEARCH_B",
+        "researchDecisionScore": 56.1,
+        "researchDecisionScoreBeforeCaps": 56.1,
+        "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 95,
-        "legacyContributionPctOfWeightedPoints": 32.9,
+        "legacyContributionPctOfWeightedPoints": 16.5,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 88,
-            "weightedPoints": 22,
+            "weightedPoints": 8.8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 88,
@@ -3931,10 +4228,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 79.1,
-            "weightedPoints": 15.82,
+            "weightedPoints": 14.238,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 57.1,
@@ -3944,21 +4241,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 30,
-            "weightedPoints": 4.5,
+            "score": 13,
+            "weightedPoints": 3.9,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": false
+              "liquidityScore": 13,
+              "liquidityDecision": "WATCH_ONLY",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": false,
+              "conditionalEligible": false,
+              "currentTurnover": 306201,
+              "avg20Turnover": 627917,
+              "currentVolume": 23242,
+              "avg20Volume": 44158,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.1,
-            "weightedPoints": 9.01,
+            "weightedPoints": 10.812,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -4045,7 +4355,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "EPPK: درجة قرار بحثية 70.4/100 (RESEARCH_B) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "EPPK: درجة قرار بحثية 56.1/100 (RESEARCH_C) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -4110,8 +4420,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 109563224,
+        "avg20Turnover": 88907757,
+        "currentVolume": 15441436,
+        "avg20Volume": 11354523,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -4283,20 +4609,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 73.9,
-        "researchDecisionScoreBeforeCaps": 73.9,
+        "researchDecisionScore": 71.5,
+        "researchDecisionScoreBeforeCaps": 71.5,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 29.1,
+        "legacyContributionPctOfWeightedPoints": 12,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 86,
-            "weightedPoints": 21.5,
+            "weightedPoints": 8.6,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 86,
@@ -4305,10 +4631,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -4318,21 +4644,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 109563224,
+              "avg20Turnover": 88907757,
+              "currentVolume": 15441436,
+              "avg20Volume": 11354523,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -4419,7 +4758,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "RAYA: درجة قرار بحثية 73.9/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "RAYA: درجة قرار بحثية 71.5/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -4484,8 +4823,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 38223096,
+        "avg20Turnover": 35305519,
+        "currentVolume": 439508,
+        "avg20Volume": 252324,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -4659,19 +5014,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 39,
-        "researchDecisionScoreBeforeCaps": 69.9,
+        "researchDecisionScoreBeforeCaps": 67.3,
         "researchTier": "RESEARCH_D",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 31.1,
+        "legacyContributionPctOfWeightedPoints": 12.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 87,
-            "weightedPoints": 21.75,
+            "weightedPoints": 8.7,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 87,
@@ -4680,10 +5035,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -4693,21 +5048,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 38223096,
+              "avg20Turnover": 35305519,
+              "currentVolume": 439508,
+              "avg20Volume": 252324,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -4866,8 +5234,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 17830824,
+        "avg20Turnover": 15520394,
+        "currentVolume": 923961,
+        "avg20Volume": 538874,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -5042,19 +5426,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 39,
-        "researchDecisionScoreBeforeCaps": 69,
+        "researchDecisionScoreBeforeCaps": 66.5,
         "researchTier": "RESEARCH_D",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 31.2,
+        "legacyContributionPctOfWeightedPoints": 12.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 86,
-            "weightedPoints": 21.5,
+            "weightedPoints": 8.6,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 86,
@@ -5063,10 +5447,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -5076,21 +5460,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 17830824,
+              "avg20Turnover": 15520394,
+              "currentVolume": 923961,
+              "avg20Volume": 538874,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -5249,8 +5646,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 43207064,
+        "avg20Turnover": 9782163,
+        "currentVolume": 147835,
+        "avg20Volume": 27261,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -5369,14 +5782,14 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0,
-        "sma20": 323.9792,
-        "sma50": 340.6193,
-        "ema20": 306.9457,
-        "rsi14": 47.39,
-        "macd": -21.3229,
-        "macdSignal": -19.3126,
-        "macdHistogram": -2.0103,
-        "atr14": 49.0768,
+        "sma20": 323.5532,
+        "sma50": 340.4489,
+        "ema20": 302.9334,
+        "rsi14": 47.25,
+        "macd": -24.101,
+        "macdSignal": -22.7564,
+        "macdHistogram": -1.3446,
+        "atr14": 43.2075,
         "momentum5Pct": 21.46,
         "momentum10Pct": 25.06,
         "momentum20Pct": -18.31,
@@ -5425,19 +5838,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 39,
-        "researchDecisionScoreBeforeCaps": 66.6,
+        "researchDecisionScoreBeforeCaps": 64.1,
         "researchTier": "RESEARCH_D",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 32.3,
+        "legacyContributionPctOfWeightedPoints": 13.4,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 86,
-            "weightedPoints": 21.5,
+            "weightedPoints": 8.6,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 86,
@@ -5446,10 +5859,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -5459,21 +5872,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 43207064,
+              "avg20Turnover": 9782163,
+              "currentVolume": 147835,
+              "avg20Volume": 27261,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -5631,8 +6057,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 69945200,
+        "avg20Turnover": 13326590,
+        "currentVolume": 2554632,
+        "avg20Volume": 437505,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -5806,20 +6248,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 71.5,
-        "researchDecisionScoreBeforeCaps": 71.5,
+        "researchDecisionScore": 69.7,
+        "researchDecisionScoreBeforeCaps": 69.7,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 95,
-        "legacyContributionPctOfWeightedPoints": 30.5,
+        "legacyContributionPctOfWeightedPoints": 12.5,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 83,
-            "weightedPoints": 20.75,
+            "weightedPoints": 8.3,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 83,
@@ -5828,10 +6270,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 79.2,
-            "weightedPoints": 15.833,
+            "weightedPoints": 14.25,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 57.1,
@@ -5841,21 +6283,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 69945200,
+              "avg20Turnover": 13326590,
+              "currentVolume": 2554632,
+              "avg20Volume": 437505,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -5944,7 +6399,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "JUFO: درجة قرار بحثية 71.5/100 (RESEARCH_B) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "JUFO: درجة قرار بحثية 69.7/100 (RESEARCH_B) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -6009,8 +6464,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 31750864,
+        "avg20Turnover": 32237360,
+        "currentVolume": 6839527,
+        "avg20Volume": 6652870,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -6172,20 +6643,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 79.8,
-        "researchDecisionScoreBeforeCaps": 79.8,
+        "researchDecisionScore": 77.7,
+        "researchDecisionScoreBeforeCaps": 77.7,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 95,
-        "legacyContributionPctOfWeightedPoints": 27.4,
+        "legacyContributionPctOfWeightedPoints": 11.3,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 83,
-            "weightedPoints": 20.75,
+            "weightedPoints": 8.3,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 83,
@@ -6194,10 +6665,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.4,
-            "weightedPoints": 18.68,
+            "weightedPoints": 16.812,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -6207,21 +6678,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 31750864,
+              "avg20Turnover": 32237360,
+              "currentVolume": 6839527,
+              "avg20Volume": 6652870,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.1,
-            "weightedPoints": 9.01,
+            "weightedPoints": 10.812,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -6309,7 +6793,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "BONY: درجة قرار بحثية 79.8/100 (RESEARCH_B) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "BONY: درجة قرار بحثية 77.7/100 (RESEARCH_B) بتغطية أدلة 95%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -6349,8 +6833,24 @@
       },
       "supportResistance": null,
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 0,
+        "liquidityDecision": "WATCH_ONLY",
         "executionEligible": false,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": false,
+        "currentTurnover": 7058,
+        "avg20Turnover": 7058,
+        "currentVolume": 57,
+        "avg20Volume": 57,
+        "trades": 0,
+        "historicalSessionsUsed": 6,
+        "reason": "توجد سيولة لكن أقل من حد التنفيذ الآمن",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": false,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -6521,20 +7021,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 50,
-        "researchDecisionScoreBeforeCaps": 60.2,
-        "researchTier": "RESEARCH_C",
+        "researchDecisionScore": 41.1,
+        "researchDecisionScoreBeforeCaps": 41.1,
+        "researchTier": "RESEARCH_D",
         "scoreIsConfidence": false,
-        "scoreEvidenceCoveragePct": 85,
-        "legacyContributionPctOfWeightedPoints": 38.1,
+        "scoreEvidenceCoveragePct": 83,
+        "legacyContributionPctOfWeightedPoints": 22.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 78,
-            "weightedPoints": 19.5,
+            "weightedPoints": 7.8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 78,
@@ -6543,10 +7043,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 46.1,
-            "weightedPoints": 9.21,
+            "weightedPoints": 8.289,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 57.1,
@@ -6556,18 +7056,31 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 30,
-            "weightedPoints": 4.5,
+            "score": 0,
+            "weightedPoints": 0,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": false
+              "liquidityScore": 0,
+              "liquidityDecision": "WATCH_ONLY",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": false,
+              "conditionalEligible": false,
+              "currentTurnover": 7058,
+              "avg20Turnover": 7058,
+              "currentVolume": 57,
+              "avg20Volume": 57,
+              "trades": 0,
+              "historicalSessionsUsed": 6,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": false,
             "score": null,
             "weightedPoints": 0,
@@ -6670,7 +7183,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "SAIB: درجة قرار بحثية 50/100 (RESEARCH_C) بتغطية أدلة 85%. السعر أعلى نطاق الدخول؛ لا مطاردة للسعر، وتلزم عودة للنطاق أو خطة جديدة موثقة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "SAIB: درجة قرار بحثية 41.1/100 (RESEARCH_D) بتغطية أدلة 83%. السعر أعلى نطاق الدخول؛ لا مطاردة للسعر، وتلزم عودة للنطاق أو خطة جديدة موثقة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -6735,8 +7248,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 70,
+        "liquidityDecision": "CONDITIONAL_OK",
         "executionEligible": false,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 2871122,
+        "avg20Turnover": 12197663,
+        "currentVolume": 4647,
+        "avg20Volume": 19535,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة تسمح بالمراقبة/التنفيذ المشروط وليس مضاربة فورية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": false,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -6904,20 +7433,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 70.8,
-        "researchDecisionScoreBeforeCaps": 70.8,
+        "researchDecisionScore": 74,
+        "researchDecisionScoreBeforeCaps": 74,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 31.1,
+        "legacyContributionPctOfWeightedPoints": 11.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 88,
-            "weightedPoints": 22,
+            "weightedPoints": 8.8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 88,
@@ -6926,10 +7455,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -6939,21 +7468,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 30,
-            "weightedPoints": 4.5,
+            "score": 70,
+            "weightedPoints": 21,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": false
+              "liquidityScore": 70,
+              "liquidityDecision": "CONDITIONAL_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": false,
+              "conditionalEligible": true,
+              "currentTurnover": 2871122,
+              "avg20Turnover": 12197663,
+              "currentVolume": 4647,
+              "avg20Volume": 19535,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -7013,7 +7555,6 @@
             "TRADEPLANALIGNMENT_STRONG"
           ],
           "weaknesses": [
-            "LIQUIDITY_WEAK",
             "NETRISKREWARD_WEAK",
             "NET_RR_BELOW_0_5"
           ],
@@ -7040,7 +7581,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "SCTS: درجة قرار بحثية 70.8/100 (RESEARCH_B) بتغطية أدلة 100%. السعر داخل نطاق الدخول المرجعي، لكن إذن التنفيذ يظل منفصلًا وخاضعًا لبوابة V17. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "SCTS: درجة قرار بحثية 74/100 (RESEARCH_B) بتغطية أدلة 100%. السعر داخل نطاق الدخول المرجعي، لكن إذن التنفيذ يظل منفصلًا وخاضعًا لبوابة V17. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -7080,8 +7621,24 @@
       },
       "supportResistance": null,
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 24849202,
+        "avg20Turnover": 24849202,
+        "currentVolume": 1404559,
+        "avg20Volume": 1404559,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -7251,19 +7808,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 50,
-        "researchDecisionScoreBeforeCaps": 70.4,
+        "researchDecisionScoreBeforeCaps": 67.4,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
-        "scoreEvidenceCoveragePct": 85,
-        "legacyContributionPctOfWeightedPoints": 36.3,
+        "scoreEvidenceCoveragePct": 83,
+        "legacyContributionPctOfWeightedPoints": 15.5,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 87,
-            "weightedPoints": 21.75,
+            "weightedPoints": 8.7,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 87,
@@ -7272,10 +7829,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 67.5,
-            "weightedPoints": 13.5,
+            "weightedPoints": 12.15,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -7285,18 +7842,31 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 24849202,
+              "avg20Turnover": 24849202,
+              "currentVolume": 1404559,
+              "avg20Volume": 1404559,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": false,
             "score": null,
             "weightedPoints": 0,
@@ -7398,7 +7968,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "MEGM: درجة قرار بحثية 50/100 (RESEARCH_C) بتغطية أدلة 85%. السعر أعلى نطاق الدخول؛ لا مطاردة للسعر، وتلزم عودة للنطاق أو خطة جديدة موثقة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "MEGM: درجة قرار بحثية 50/100 (RESEARCH_C) بتغطية أدلة 83%. السعر أعلى نطاق الدخول؛ لا مطاردة للسعر، وتلزم عودة للنطاق أو خطة جديدة موثقة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -7463,8 +8033,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 112206280,
+        "avg20Turnover": 3580209,
+        "currentVolume": 212785,
+        "avg20Volume": 49075,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -7634,19 +8220,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 76,
+        "researchDecisionScoreBeforeCaps": 73.8,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 27.6,
+        "legacyContributionPctOfWeightedPoints": 11.4,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 84,
-            "weightedPoints": 21,
+            "weightedPoints": 8.4,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 84,
@@ -7655,10 +8241,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -7668,21 +8254,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 112206280,
+              "avg20Turnover": 3580209,
+              "currentVolume": 212785,
+              "avg20Volume": 49075,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -7839,8 +8438,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 30146108,
+        "avg20Turnover": 57461994,
+        "currentVolume": 13451764,
+        "avg20Volume": 25211127,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -8007,20 +8622,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 75.7,
-        "researchDecisionScoreBeforeCaps": 75.7,
+        "researchDecisionScore": 74.1,
+        "researchDecisionScoreBeforeCaps": 74.1,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 26.4,
+        "legacyContributionPctOfWeightedPoints": 10.8,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 80,
-            "weightedPoints": 20,
+            "weightedPoints": 8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 80,
@@ -8029,10 +8644,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -8042,21 +8657,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 30146108,
+              "avg20Turnover": 57461994,
+              "currentVolume": 13451764,
+              "avg20Volume": 25211127,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -8143,7 +8771,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "ACAMD: درجة قرار بحثية 75.7/100 (RESEARCH_B) بتغطية أدلة 100%. السعر داخل نطاق الدخول المرجعي، لكن إذن التنفيذ يظل منفصلًا وخاضعًا لبوابة V17. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "ACAMD: درجة قرار بحثية 74.1/100 (RESEARCH_B) بتغطية أدلة 100%. السعر داخل نطاق الدخول المرجعي، لكن إذن التنفيذ يظل منفصلًا وخاضعًا لبوابة V17. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -8208,8 +8836,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 30,
+        "liquidityDecision": "WATCH_ONLY",
         "executionEligible": false,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": false,
+        "currentTurnover": 515917,
+        "avg20Turnover": 1514431,
+        "currentVolume": 1249,
+        "avg20Volume": 4395,
+        "trades": 0,
+        "historicalSessionsUsed": 8,
+        "reason": "توجد سيولة لكن أقل من حد التنفيذ الآمن",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": false,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -8379,20 +9023,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 60.7,
+        "researchDecisionScore": 53.1,
+        "researchDecisionScoreBeforeCaps": 53.1,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 32.9,
+        "legacyContributionPctOfWeightedPoints": 15.1,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 80,
-            "weightedPoints": 20,
+            "weightedPoints": 8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 80,
@@ -8401,10 +9045,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.4,
-            "weightedPoints": 18.68,
+            "weightedPoints": 16.812,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -8414,21 +9058,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
             "score": 30,
-            "weightedPoints": 4.5,
+            "weightedPoints": 9,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": false
+              "liquidityScore": 30,
+              "liquidityDecision": "WATCH_ONLY",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": false,
+              "conditionalEligible": false,
+              "currentTurnover": 515917,
+              "avg20Turnover": 1514431,
+              "currentVolume": 1249,
+              "avg20Volume": 4395,
+              "trades": 0,
+              "historicalSessionsUsed": 8,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.1,
-            "weightedPoints": 9.01,
+            "weightedPoints": 10.812,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -8521,7 +9178,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "EDFM: درجة قرار بحثية 55/100 (RESEARCH_C) بتغطية أدلة 100%. السعر أعلى نطاق الدخول؛ لا مطاردة للسعر، وتلزم عودة للنطاق أو خطة جديدة موثقة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "EDFM: درجة قرار بحثية 53.1/100 (RESEARCH_C) بتغطية أدلة 100%. السعر أعلى نطاق الدخول؛ لا مطاردة للسعر، وتلزم عودة للنطاق أو خطة جديدة موثقة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -8561,8 +9218,24 @@
       },
       "supportResistance": null,
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 0,
+        "liquidityDecision": "WATCH_ONLY",
         "executionEligible": false,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": false,
+        "currentTurnover": 3924,
+        "avg20Turnover": 3924,
+        "currentVolume": 157,
+        "avg20Volume": 157,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "توجد سيولة لكن أقل من حد التنفيذ الآمن",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": false,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -8731,20 +9404,20 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 50,
-        "researchDecisionScoreBeforeCaps": 54.7,
-        "researchTier": "RESEARCH_C",
+        "researchDecisionScore": 31.8,
+        "researchDecisionScoreBeforeCaps": 31.8,
+        "researchTier": "RESEARCH_D",
         "scoreIsConfidence": false,
-        "scoreEvidenceCoveragePct": 75,
-        "legacyContributionPctOfWeightedPoints": 49.3,
+        "scoreEvidenceCoveragePct": 73,
+        "legacyContributionPctOfWeightedPoints": 34.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 81,
-            "weightedPoints": 20.25,
+            "weightedPoints": 8.1,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 81,
@@ -8753,10 +9426,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 60.4,
-            "weightedPoints": 12.07,
+            "weightedPoints": 10.863,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 85.7,
@@ -8766,18 +9439,31 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 30,
-            "weightedPoints": 4.5,
+            "score": 0,
+            "weightedPoints": 0,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": false
+              "liquidityScore": 0,
+              "liquidityDecision": "WATCH_ONLY",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": false,
+              "conditionalEligible": false,
+              "currentTurnover": 3924,
+              "avg20Turnover": 3924,
+              "currentVolume": 157,
+              "avg20Volume": 157,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": false,
             "score": null,
             "weightedPoints": 0,
@@ -8876,7 +9562,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "SEIGA: درجة قرار بحثية 50/100 (RESEARCH_C) بتغطية أدلة 75%. حالة خطة التداول تحتاج مراجعة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "SEIGA: درجة قرار بحثية 31.8/100 (RESEARCH_D) بتغطية أدلة 73%. حالة خطة التداول تحتاج مراجعة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -8941,8 +9627,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 41405436,
+        "avg20Turnover": 76568155,
+        "currentVolume": 3792182,
+        "avg20Volume": 7169418,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -9113,19 +9815,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 77.3,
+        "researchDecisionScoreBeforeCaps": 75.5,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 26.2,
+        "legacyContributionPctOfWeightedPoints": 10.7,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 81,
-            "weightedPoints": 20.25,
+            "weightedPoints": 8.1,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 81,
@@ -9134,10 +9836,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -9147,21 +9849,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 41405436,
+              "avg20Turnover": 76568155,
+              "currentVolume": 3792182,
+              "avg20Volume": 7169418,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -9317,8 +10032,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 46635240,
+        "avg20Turnover": 73635282,
+        "currentVolume": 3939074,
+        "avg20Volume": 6301895,
+        "trades": 0,
+        "historicalSessionsUsed": 10,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -9489,19 +10220,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 77.5,
+        "researchDecisionScoreBeforeCaps": 75.8,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 26.1,
+        "legacyContributionPctOfWeightedPoints": 10.7,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 81,
-            "weightedPoints": 20.25,
+            "weightedPoints": 8.1,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 81,
@@ -9510,10 +10241,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -9523,21 +10254,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 46635240,
+              "avg20Turnover": 73635282,
+              "currentVolume": 3939074,
+              "avg20Volume": 6301895,
+              "trades": 0,
+              "historicalSessionsUsed": 10,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -9693,8 +10437,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 125534736,
+        "avg20Turnover": 108156043,
+        "currentVolume": 6595710,
+        "avg20Volume": 5798363,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -9867,19 +10627,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 77,
+        "researchDecisionScoreBeforeCaps": 75.5,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 95,
-        "legacyContributionPctOfWeightedPoints": 27.7,
+        "legacyContributionPctOfWeightedPoints": 11.3,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 81,
-            "weightedPoints": 20.25,
+            "weightedPoints": 8.1,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 81,
@@ -9888,10 +10648,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 79.2,
-            "weightedPoints": 15.833,
+            "weightedPoints": 14.25,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 57.1,
@@ -9901,21 +10661,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 125534736,
+              "avg20Turnover": 108156043,
+              "currentVolume": 6595710,
+              "avg20Volume": 5798363,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -10074,8 +10847,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 286441216,
+        "avg20Turnover": 242384304,
+        "currentVolume": 2930666,
+        "avg20Volume": 2528431,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -10247,19 +11036,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 80.2,
+        "researchDecisionScoreBeforeCaps": 78.6,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 25,
+        "legacyContributionPctOfWeightedPoints": 10.2,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 80,
-            "weightedPoints": 20,
+            "weightedPoints": 8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 80,
@@ -10268,10 +11057,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -10281,21 +11070,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 286441216,
+              "avg20Turnover": 242384304,
+              "currentVolume": 2930666,
+              "avg20Volume": 2528431,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -10452,8 +11254,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 295101792,
+        "avg20Turnover": 195015137,
+        "currentVolume": 396324,
+        "avg20Volume": 273787,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -10626,19 +11444,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 79.3,
+        "researchDecisionScoreBeforeCaps": 77.6,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 95,
-        "legacyContributionPctOfWeightedPoints": 26.6,
+        "legacyContributionPctOfWeightedPoints": 10.9,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 80,
-            "weightedPoints": 20,
+            "weightedPoints": 8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 80,
@@ -10647,10 +11465,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -10660,21 +11478,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 295101792,
+              "avg20Turnover": 195015137,
+              "currentVolume": 396324,
+              "avg20Volume": 273787,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -10833,8 +11664,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 77343256,
+        "avg20Turnover": 249679126,
+        "currentVolume": 25028872,
+        "avg20Volume": 83484277,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -11006,19 +11853,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 79.3,
+        "researchDecisionScoreBeforeCaps": 77.7,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 25.2,
+        "legacyContributionPctOfWeightedPoints": 10.3,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 80,
-            "weightedPoints": 20,
+            "weightedPoints": 8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 80,
@@ -11027,10 +11874,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -11040,21 +11887,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 77343256,
+              "avg20Turnover": 249679126,
+              "currentVolume": 25028872,
+              "avg20Volume": 83484277,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
@@ -11210,8 +12070,24 @@
         }
       },
       "liquidity": {
+        "available": true,
+        "evidenceAvailable": true,
+        "sessionAligned": true,
+        "liquidityScore": 85,
+        "liquidityDecision": "EXECUTION_OK",
         "executionEligible": true,
-        "evidenceSource": "data/v17/liquidity-gate.json"
+        "conditionalEligible": true,
+        "currentTurnover": 59238196,
+        "avg20Turnover": 191057089,
+        "currentVolume": 3881507,
+        "avg20Volume": 13030626,
+        "trades": 0,
+        "historicalSessionsUsed": 11,
+        "reason": "السيولة الحالية ومتوسط الجلسات التاريخية المكتملة يسمحان بمراجعة تنفيذية",
+        "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+        "evidenceSource": "data/v17/liquidity-gate.json",
+        "currentDecisionExecutionEligible": true,
+        "consistentWithCurrentDecision": true
       },
       "tradePlan": {
         "direction": "LONG",
@@ -11383,19 +12259,19 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 80.3,
+        "researchDecisionScoreBeforeCaps": 78.8,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 24.9,
+        "legacyContributionPctOfWeightedPoints": 10.2,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
             "name": "LEGACY_OPPORTUNITY_REFERENCE",
-            "weightPct": 25,
+            "weightPct": 10,
             "available": true,
             "score": 80,
-            "weightedPoints": 20,
+            "weightedPoints": 8,
             "provenance": "data/final-opportunity-ranking.json",
             "evidence": {
               "legacyScore": 80,
@@ -11404,10 +12280,10 @@
           },
           "dataEvidence": {
             "name": "CURRENT_DATA_EVIDENCE",
-            "weightPct": 20,
+            "weightPct": 18,
             "available": true,
             "score": 93.5,
-            "weightedPoints": 18.693,
+            "weightedPoints": 16.824,
             "provenance": "data/v20/current-market-snapshot.json + data/v17/resilient-session-status.json",
             "evidence": {
               "criticalFieldCompletenessPct": 100,
@@ -11417,21 +12293,34 @@
           },
           "liquidity": {
             "name": "LIQUIDITY_EVIDENCE",
-            "weightPct": 15,
+            "weightPct": 30,
             "available": true,
-            "score": 100,
-            "weightedPoints": 15,
+            "score": 85,
+            "weightedPoints": 25.5,
             "provenance": "data/v17/liquidity-gate.json",
             "evidence": {
-              "executionEligible": true
+              "liquidityScore": 85,
+              "liquidityDecision": "EXECUTION_OK",
+              "evidenceAvailable": true,
+              "sessionAligned": true,
+              "executionEligible": true,
+              "conditionalEligible": true,
+              "currentTurnover": 59238196,
+              "avg20Turnover": 191057089,
+              "currentVolume": 3881507,
+              "avg20Volume": 13030626,
+              "trades": 0,
+              "historicalSessionsUsed": 11,
+              "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+              "binaryEligibilityFallbackUsed": false
             }
           },
           "supportResistance": {
             "name": "SUPPORT_RESISTANCE_EVIDENCE",
-            "weightPct": 10,
+            "weightPct": 12,
             "available": true,
             "score": 90.2,
-            "weightedPoints": 9.02,
+            "weightedPoints": 10.824,
             "provenance": "data/v17/internal-ohlc-support-resistance.json",
             "evidence": {
               "available": true,
