@@ -22,7 +22,29 @@ function mime(file){const ext=path.extname(file).toLowerCase();return({'.html':'
 function staticServer(){return http.createServer((req,res)=>{try{const u=new URL(req.url,'http://127.0.0.1');let rel=decodeURIComponent(u.pathname).replace(/^\/+/, '');if(!rel)rel='v20/index.html';if(rel==='favicon.ico'){res.writeHead(204,{'cache-control':'no-store'});return res.end();}if(rel.includes('..')){res.writeHead(403);return res.end('Forbidden');}let file=P(rel);if(fs.existsSync(file)&&fs.statSync(file).isDirectory())file=path.join(file,'index.html');if(!fs.existsSync(file)||!fs.statSync(file).isFile()){res.writeHead(404,{'content-type':'text/plain'});return res.end('Not found');}res.writeHead(200,{'content-type':mime(file),'cache-control':'no-store','access-control-allow-origin':'*'});fs.createReadStream(file).pipe(res);}catch(error){res.writeHead(500,{'content-type':'text/plain'});res.end(error.message);}});}
 function freePort(){return new Promise((resolve,reject)=>{const s=net.createServer();s.unref();s.on('error',reject);s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});});}
 function findChrome(){for(const name of ['google-chrome','google-chrome-stable','chromium','chromium-browser']){const r=spawnSync('which',[name],{encoding:'utf8'});if(r.status===0&&r.stdout.trim())return r.stdout.trim();}return null;}
-async function waitHttp(url,timeoutMs=10000){const end=Date.now()+timeoutMs;while(Date.now()<end){try{const r=await fetch(url);if(r.ok)return r;}catch{}await sleep(100);}throw new Error(`Timed out waiting for ${url}`);}
+async function waitHttp(url,timeoutMs=10000,proc=null){const end=Date.now()+timeoutMs;let lastError=null;while(Date.now()<end){if(proc&&proc.exitCode!==null)throw new Error(`Chrome exited before DevTools became ready (exit ${proc.exitCode})`);try{const r=await fetch(url);if(r.ok)return r;lastError=new Error(`HTTP ${r.status}`);}catch(e){lastError=e;}await sleep(150);}throw new Error(`Timed out waiting for ${url}${lastError?` (${lastError.message})`:''}`);}
+async function startChrome(chrome){
+  const attempts=[{name:'headless-new',flag:'--headless=new'},{name:'headless-compat',flag:'--headless'}];
+  const diagnostics=[];
+  for(const attempt of attempts){
+    const debugPort=await freePort();
+    const profileDir=fs.mkdtempSync(path.join(os.tmpdir(),`egx-v20-v17-centric-${attempt.name}-`));
+    const args=[attempt.flag,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--hide-scrollbars','--no-first-run','--no-default-browser-check','--disable-background-networking','--remote-debugging-address=127.0.0.1',`--remote-debugging-port=${debugPort}`,`--user-data-dir=${profileDir}`,'about:blank'];
+    const proc=spawn(chrome,args,{stdio:['ignore','ignore','pipe']});
+    let stderr='';
+    proc.stderr.on('data',d=>{stderr+=String(d);});
+    try{
+      const version=await (await waitHttp(`http://127.0.0.1:${debugPort}/json/version`,25000,proc)).json();
+      return{proc,debugPort,profileDir,version,mode:attempt.name,stderr};
+    }catch(error){
+      diagnostics.push({mode:attempt.name,error:error.message,exitCode:proc.exitCode,stderr:stderr.slice(-5000)});
+      try{proc.kill('SIGTERM');}catch{}
+      await sleep(200);
+      try{fs.rmSync(profileDir,{recursive:true,force:true});}catch{}
+    }
+  }
+  throw new Error(`Chrome DevTools bootstrap failed after controlled retry:\n${JSON.stringify(diagnostics,null,2)}`);
+}
 
 class Cdp{
   constructor(wsUrl){this.wsUrl=wsUrl;this.ws=null;this.nextId=1;this.pending=new Map();this.waiters=new Map();this.consoleErrors=[];}
@@ -48,12 +70,11 @@ async function main(){
 
   const chrome=findChrome();check('chromeExecutableAvailable',Boolean(chrome),chrome||'not found');if(!chrome)throw new Error('Chrome/Chromium executable not found');
   const server=staticServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const appPort=server.address().port;
-  const debugPort=await freePort();const profileDir=fs.mkdtempSync(path.join(os.tmpdir(),'egx-v20-v17-centric-'));
-  const chromeProc=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--hide-scrollbars',`--remote-debugging-port=${debugPort}`,`--user-data-dir=${profileDir}`,'about:blank'],{stdio:['ignore','ignore','pipe']});
-  let cdp;let version={};const screenshots=[];const viewportResults=[];const shotDir=path.join(os.tmpdir(),'v20-v17-centric-browser');
+  let boot=null;let cdp;const screenshots=[];const viewportResults=[];const shotDir=path.join(os.tmpdir(),'v20-v17-centric-browser');
   try{
-    version=await (await waitHttp(`http://127.0.0.1:${debugPort}/json/version`,12000)).json();
-    const targets=await (await waitHttp(`http://127.0.0.1:${debugPort}/json/list`,5000)).json();const page=targets.find(x=>x.type==='page');check('pageTargetAvailable',Boolean(page?.webSocketDebuggerUrl));if(!page?.webSocketDebuggerUrl)throw new Error('No Chrome page target');
+    boot=await startChrome(chrome);
+    check('chromeDevToolsBootstrap',true,{mode:boot.mode,debugPort:boot.debugPort,product:boot.version?.Browser||null});
+    const targets=await (await waitHttp(`http://127.0.0.1:${boot.debugPort}/json/list`,5000,boot.proc)).json();const page=targets.find(x=>x.type==='page');check('pageTargetAvailable',Boolean(page?.webSocketDebuggerUrl));if(!page?.webSocketDebuggerUrl)throw new Error('No Chrome page target');
     cdp=new Cdp(page.webSocketDebuggerUrl);await cdp.connect();await cdp.send('Page.enable');await cdp.send('Runtime.enable');await cdp.send('Log.enable');
     const base=`http://127.0.0.1:${appPort}`;
 
@@ -95,11 +116,11 @@ async function main(){
     }
 
     const consoleErrors=cdp.consoleErrors.filter(e=>!/favicon\.ico/i.test(`${e.url||''} ${e.text||''}`));check('noRuntimeOrConsoleErrors',consoleErrors.length===0,consoleErrors);
-    const report={schemaVersion:'20.0.0-v17-centric-browser-certification-1',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,browser:{executable:chrome,product:version.Browser||null,protocolVersion:version['Protocol-Version']||null},sessionDate:contract.sessionDate,architecture:contract.architecture,sessionStatus:contract.sessionStatus,checks,viewportResults,screenshots,consoleErrors,limitations:['RUNTIME_AND_LAYOUT_ACCEPTANCE_NOT_HUMAN_PIXEL_REVIEW','SCREENSHOTS_RECORDED_BY_HASH_ONLY']};
+    const report={schemaVersion:'20.0.0-v17-centric-browser-certification-1',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,browser:{executable:chrome,product:boot.version?.Browser||null,protocolVersion:boot.version?.['Protocol-Version']||null,bootstrapMode:boot.mode},sessionDate:contract.sessionDate,architecture:contract.architecture,sessionStatus:contract.sessionStatus,checks,viewportResults,screenshots,consoleErrors,limitations:['RUNTIME_AND_LAYOUT_ACCEPTANCE_NOT_HUMAN_PIXEL_REVIEW','SCREENSHOTS_RECORDED_BY_HASH_ONLY']};
     fs.writeFileSync(P('data/v20/decision-board-browser-certification.json'),`${JSON.stringify(report,null,2)}\n`,'utf8');
-    console.log(JSON.stringify({ok:report.ok,sessionDate:report.sessionDate,failedCount:report.failedCount,viewports:viewportResults.map(v=>v.width)},null,2));
+    console.log(JSON.stringify({ok:report.ok,sessionDate:report.sessionDate,failedCount:report.failedCount,viewports:viewportResults.map(v=>v.width),chromeBootstrapMode:boot.mode},null,2));
     if(!report.ok)process.exitCode=1;
-  }finally{cdp?.close();try{chromeProc.kill('SIGTERM');}catch{}await new Promise(resolve=>server.close(resolve));try{fs.rmSync(profileDir,{recursive:true,force:true});}catch{}}
+  }finally{cdp?.close();try{boot?.proc?.kill('SIGTERM');}catch{}await new Promise(resolve=>server.close(resolve));try{if(boot?.profileDir)fs.rmSync(boot.profileDir,{recursive:true,force:true});}catch{}}
 }
 
 main().catch(error=>{console.error(error.stack||error.message);process.exit(1);});
