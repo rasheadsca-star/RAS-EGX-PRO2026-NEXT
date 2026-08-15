@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-decision-intelligence-policy-3",
+  "schemaVersion": "20.0.0-decision-intelligence-policy-2",
   "effectiveFrom": "2026-08-15",
   "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
   "scoreName": "V20_RESEARCH_DECISION_SCORE",
@@ -36,24 +36,6 @@
   "supportResistanceScoring": {
     "researchWeightPct": 12,
     "source": "data/v17/internal-ohlc-support-resistance.json",
-    "scoringContract": "V20_SR_STRUCTURAL_SCORE_V1",
-    "subWeightsPct": {
-      "confidence": 25,
-      "sessionFreshness": 20,
-      "sourceHistoryQuality": 15,
-      "priceStructure": 30,
-      "externalValidation": 10
-    },
-    "missingExternalValidationPenalty": false,
-    "externalValidationRole": "VALIDATION_COMPARISON_NOT_HARD_DEPENDENCY",
-    "usesSupport1Resistance1PriceGeometry": true,
-    "usesFullPivotOrderingWhenAvailable": true,
-    "usesTrustedSourceAndHistoryDepth": true,
-    "usesSessionFreshness": true,
-    "singleMethodOnly": true,
-    "singleMethodName": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
-    "singleMethodMaximumScore": 90,
-    "multiMethodConfluenceClaimed": false,
     "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
   },
   "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
@@ -71,5 +53,5 @@
     "aboveEntryRangeDoNotChaseMaxScore": 55
   },
   "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
-  "note": "Weights remain transparent shadow/research heuristics. Liquidity is 30% and uses the numeric V17 score. Support/resistance remains 12% but now requires structural scoring from confidence, session freshness, source/history quality, current-price geometry and optional external validation. Because the current authoritative S/R methodology is still a single classic-pivot method, the S/R component is defensively capped at 90 until independent multi-method confluence is added and validated. Neither component can open execution, drive production allocation, change the Champion, or trigger automatic promotion."
+  "note": "Weights are transparent shadow/research heuristics. Liquidity is intentionally raised to 30% and uses the numeric V17 liquidity score rather than a binary eligibility proxy. The score remains uncalibrated and cannot open execution, drive production allocation, change the Champion, or trigger automatic promotion."
 }
