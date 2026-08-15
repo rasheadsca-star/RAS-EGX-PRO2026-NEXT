@@ -41,15 +41,49 @@ jobs:
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$)' || true)"
           test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
 
-      - name: Apply null semantics hardening
-        run: node scripts/v20/apply-null-semantics-hardening.cjs
-
       - name: Setup Node
         uses: actions/setup-node@v6
         with: {node-version: "22"}
 
+      - name: Sync latest accepted V17 evidence for runtime only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin develop/v17-rebuild:refs/remotes/origin/develop/v17-rebuild
+          V17_SHA="$(git rev-parse refs/remotes/origin/develop/v17-rebuild)"
+          V17_DATE="$(git show -s --format=%cI "$V17_SHA")"
+          readonly paths=(
+            data/market.json
+            data/final-opportunity-ranking.json
+            data/history.json
+            data/v17/current.json
+            data/v17/resilient-session-status.json
+            data/v17/internal-ohlc-support-resistance.json
+            data/v17/liquidity-gate.json
+            data/v17/challenger-status.json
+            data/v17/market-session-truth.json
+            data/v17/regression.json
+            data/v17/review.json
+          )
+          for rel in "${paths[@]}"; do
+            git cat-file -e "$V17_SHA:$rel" || { echo "Missing V17 runtime input: $rel"; exit 1; }
+            mkdir -p "$(dirname "$rel")"
+            tmp="${rel}.v17-runtime"
+            git show "$V17_SHA:$rel" > "$tmp"
+            node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$tmp"
+            mv "$tmp" "$rel"
+          done
+          V20_V17_RUNTIME_SOURCE_SHA="$V17_SHA" \
+          V20_V17_RUNTIME_SOURCE_DATE="$V17_DATE" \
+            node scripts/v20/validate-v17-runtime-sync.cjs
+          echo "V20 runtime is using V17 $V17_SHA ($V17_DATE); upstream files remain unstaged/read-only."
+
+      - name: Apply null semantics hardening
+        run: node scripts/v20/apply-null-semantics-hardening.cjs
+
       - name: Static validation
         run: |
+          node --check scripts/v20/validate-v17-runtime-sync.cjs
           node --check scripts/v20/apply-null-semantics-hardening.cjs
           node --check scripts/v20/null-semantics-regression.cjs
           node --check scripts/v20/build-data-truth.cjs
@@ -87,6 +121,7 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('data/v20/model-registry.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('data/v20/decision-intelligence-policy.json','utf8'))"
+          node -e "const s=JSON.parse(require('fs').readFileSync('data/v20/v17-runtime-sync.json','utf8')); if(s.ok!==true) process.exit(1)"
 
       - name: Build V20 data truth layer
         run: node scripts/v20/build-data-truth.cjs
@@ -172,6 +207,7 @@ jobs:
           node - <<'NODE'
           const fs=require('fs');
           const x=require('./data/v20/current.json');
+          const v17Sync=require('./data/v20/v17-runtime-sync.json');
           const r=require('./data/v20/regression.json');
           const tr=require('./data/v20/trade-plan-regression.json');
           const tpa=require('./data/v20/trade-plan-audit.json');
@@ -202,6 +238,11 @@ jobs:
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
           const decisionPolicy=require('./data/v20/decision-intelligence-policy.json');
+          if(v17Sync.ok!==true||v17Sync.failedCount!==0) process.exit(1);
+          if(v17Sync.source?.branch!=='develop/v17-rebuild'||!/^[0-9a-f]{40}$/.test(v17Sync.source?.commitSha||'')) process.exit(1);
+          if(v17Sync.sessionDate!==x.sessionDate||v17Sync.governance?.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') process.exit(1);
+          if(v17Sync.governance?.promotionAllowed!==false||v17Sync.governance?.automaticPromotion!==false||v17Sync.governance?.v20MayMutateV17Branch!==false||v17Sync.governance?.v17FilesPersistedIntoV20Branch!==false) process.exit(1);
+          if(v17Sync.persistence?.upstreamWorkingTreeFilesAreTemporary!==true||v17Sync.persistence?.upstreamFilesStagedForV20Commit!==false||v17Sync.persistence?.sourceShaPersistedForReproducibility!==true) process.exit(1);
           if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||browser.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||sectorReg.ok!==true||v18Reg.ok!==true||perfReg.ok!==true||upr.ok!==true) process.exit(1);
           if(browser.schemaVersion!=='20.0.0-browser-smoke-1'||browser.sessionDate!==x.sessionDate) process.exit(1);
           for(const key of ['indexLoadedWithOpportunities','executionBadgeRendered','researchScoreHeaderRendered','decisionSeparationVisible','researchScoreVisibleForOpportunity','decisionComponentsRendered','marketOnlyNoResearchScoreDisclosure','marketOnlyNoFakeScoreScopeDisclosure','marketOnlyResearchScoreWidgetAbsent','healthPageLoaded','performancePageLoaded','performanceNoHeadlineReturnWidget','noRuntimeOrConsoleErrors']) if(browser.checks?.[key]?.ok!==true) process.exit(1);
@@ -326,6 +367,7 @@ jobs:
             v20/app.js \
             v20/portfolio-core.js \
             v20/portfolio.js \
+            data/v20/v17-runtime-sync.json \
             data/v20/current.json \
             data/v20/regression.json \
             data/v20/master-universe.json \
@@ -356,7 +398,10 @@ jobs:
             data/v20/browser-smoke.json \
             data/v20/forward-evaluation.json \
             data/v20/signal-archive
-          if git diff --cached --quiet; then exit 0; fi
+          if git diff --cached --quiet; then
+            git reset --hard HEAD
+            exit 0
+          fi
           git commit -m "Update V20 separated performance evidence"
           git reset --hard HEAD
           git fetch origin develop/v20-integrated-decision-platform
