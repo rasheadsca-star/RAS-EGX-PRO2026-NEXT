@@ -58,15 +58,19 @@ results.push(replaceExact(
 
 results.push(replaceExact(
   'v20/app.js',
-  `  const num = (value, digits = 2) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';\n  const pct = value => Number.isFinite(Number(value)) ? \`${'${num(value, 1)}'}%\` : '—';\n  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';\n  const rr = value => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '—';`,
-  `  const isMissing = value => value === null || value === undefined || value === '';\n  const numeric = value => { if (isMissing(value)) return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);\n  const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };`
+  `  const num = (value, digits = 2) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';\n  const pct = value => Number.isFinite(Number(value)) ? \`${num(value, 1)}%\` : '—';\n  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';\n  const rr = value => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '—';`,
+  `  const isMissing = value => value === null || value === undefined || value === '';\n  const numeric = value => { if (isMissing(value)) return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${num(value, 1)}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);\n  const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };`
 ));
 
 results.push(replaceExact(
   'v20/portfolio.js',
-  `  const num = (value, digits = 2) => Number.isFinite(Number(value))\n    ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits })\n    : '—';\n  const pct = value => Number.isFinite(Number(value)) ? \`${'${num(value, 1)}'}%\` : '—';\n  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';`,
-  `  const numeric = value => { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);`
+  `  const num = (value, digits = 2) => Number.isFinite(Number(value))\n    ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits })\n    : '—';\n  const pct = value => Number.isFinite(Number(value)) ? \`${num(value, 1)}%\` : '—';\n  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';`,
+  `  const numeric = value => { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${num(value, 1)}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);`
 ));
+
+// Phase 16 V20 liquidity decision upgrade. This remains shadow/research only and
+// only replaces the old binary liquidity proxy with the existing numeric V17 score.
+require('./apply-liquidity-decision-upgrade.cjs');
 
 // Phase 15 UI integration is intentionally idempotent and only changes presentation of
 // already-verified Market Regime context. It does not alter technical readiness, scores,
@@ -76,9 +80,10 @@ require('./apply-market-trend-context-ui.cjs');
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-3',
+  schemaVersion: '20.0.0-null-semantics-hardening-4',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
+  liquidityDecisionUpgrade: true,
   marketTrendContextUiIntegration: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
