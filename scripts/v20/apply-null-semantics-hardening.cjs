@@ -59,7 +59,7 @@ results.push(replaceExact(
 results.push(replaceExact(
   'v20/app.js',
   `  const num = (value, digits = 2) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';\n  const pct = value => Number.isFinite(Number(value)) ? \`${'${num(value, 1)}'}%\` : '—';\n  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';\n  const rr = value => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '—';`,
-  `  const isMissing = value => value === null || value === undefined || value === '';\n  const numeric = value => { if (isMissing(value)) return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);\n  const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };`
+  `  const isMissing = value => value === null || value === undefined || value === '';\n  const numeric = value => { if (isMissing(value)) return null; const n = Number(value);\n  return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);\n  const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };`
 ));
 
 results.push(replaceExact(
@@ -88,6 +88,10 @@ require('./apply-market-trend-context-ui.cjs');
 // regression are acceptance-gated without changing current.json or immutable issued signals.
 require('./apply-full-market-native-integration.cjs');
 
+// Phase 19 keeps defensive caps intact but resolves exact Native-score ties with a transparent,
+// safety-first lexicographic ordering. It cannot mutate score, execution, allocation or Champion.
+require('./apply-native-ranking-discrimination.cjs');
+
 // Phase 18 exposes the accepted full-market Native candidates in the V20 UI while keeping
 // the research-only / execution separation explicit and browser-tested.
 require('./apply-full-market-native-ui.cjs');
@@ -95,13 +99,14 @@ require('./apply-full-market-native-ui.cjs');
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-7',
+  schemaVersion: '20.0.0-null-semantics-hardening-8',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   liquidityDecisionUpgrade: true,
   nativeResearchChallengerWired: true,
   marketTrendContextUiIntegration: true,
   fullMarketNativeIntegration: true,
+  nativeRankingDiscriminationIntegration: true,
   fullMarketNativeUiIntegration: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
