@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-decision-intelligence-policy-2",
+  "schemaVersion": "20.0.0-decision-intelligence-policy-3",
   "effectiveFrom": "2026-08-15",
   "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
   "scoreName": "V20_RESEARCH_DECISION_SCORE",
@@ -38,6 +38,78 @@
     "source": "data/v17/internal-ohlc-support-resistance.json",
     "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
   },
+  "nativeChallenger": {
+    "engineId": "V20_NATIVE_LIQUIDITY_SR_CHALLENGER_V1",
+    "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
+    "candidateUniverse": "V20_CURRENT_OPPORTUNITY_UNIVERSE",
+    "candidateUniverseIsFullMarketIndependent": false,
+    "legacySeedDependencyExplicit": true,
+    "weightsReuseComponentWeights": true,
+    "baselineRankingPreservedSideBySide": true,
+    "liquidity2": {
+      "scoringContract": "V20_LIQUIDITY_2_0_RESEARCH_V1",
+      "sourceAuthority": "data/v17/liquidity-gate.json",
+      "historySource": "data/history.json",
+      "subWeightsPct": {
+        "absoluteV17Score": 50,
+        "turnoverVs20": 20,
+        "volumeVs20": 10,
+        "tradeActivity": 10,
+        "continuity20": 10
+      },
+      "continuityMinimumTurnover": 1000000,
+      "completedSessionsOnly": true,
+      "sessionAlignmentRequiredForFullScore": true,
+      "misalignedSessionMaxScore": 25,
+      "conditionalMaxScore": 75,
+      "watchOnlyMaxScore": 55,
+      "blockedIlliquidMaxScore": 40,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "supportResistanceConfluence": {
+      "scoringContract": "V20_SR_CONFLUENCE_RESEARCH_V1",
+      "pivotAuthority": "data/v17/internal-ohlc-support-resistance.json",
+      "trustedHistorySource": "data/v20/technical-history.json",
+      "methods": [
+        "V17_CLASSIC_PIVOT",
+        "TRUSTED_SWING_TOUCH_STRUCTURE",
+        "ATR_VOLATILITY_STRUCTURE"
+      ],
+      "subWeightsPct": {
+        "confidence": 25,
+        "sessionFreshness": 15,
+        "sourceHistoryQuality": 15,
+        "priceGeometry": 15,
+        "methodConfluence": 20,
+        "externalValidation": 10
+      },
+      "externalValidationHardDependency": false,
+      "singleMethodMaximumScore": 70,
+      "criticalConflictComponentScore": 0,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "regimeOverlay": {
+      "source": "data/v20/market-regime.json",
+      "verifiedOnly": true,
+      "direction": "LONG_ONLY_CONSERVATIVE_PENALTY",
+      "points": {
+        "BULLISH": 0,
+        "NEUTRAL": -2,
+        "BEARISH": -5,
+        "UNVERIFIED_CURRENT_REGIME": 0
+      },
+      "canOpenExecutionGate": false
+    },
+    "governance": {
+      "activeProductionChampion": "V16_9_EQUAL_WEIGHT_BASKET",
+      "automaticPromotion": false,
+      "productionAllocation": false,
+      "executionPermission": false,
+      "requiresForwardEvidence": true,
+      "requiresIndependentHoldout": true,
+      "promotionReviewMustBeSeparate": true
+    }
+  },
   "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
   "minimumEvidenceCoverageForTierPct": 70,
   "tierThresholds": {
@@ -53,5 +125,5 @@
     "aboveEntryRangeDoNotChaseMaxScore": 55
   },
   "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
-  "note": "Weights are transparent shadow/research heuristics. Liquidity is intentionally raised to 30% and uses the numeric V17 liquidity score rather than a binary eligibility proxy. The score remains uncalibrated and cannot open execution, drive production allocation, change the Champion, or trigger automatic promotion."
+  "note": "The baseline V20 research score remains preserved. The native challenger is a side-by-side shadow ranking that upgrades liquidity and support/resistance evidence without changing execution, allocation, Champion governance, or historical issued signals. Liquidity remains 30% and support/resistance remains 12%."
 }
