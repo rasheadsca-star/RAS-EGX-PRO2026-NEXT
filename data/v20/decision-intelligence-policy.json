@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-decision-intelligence-policy-3",
+  "schemaVersion": "20.0.0-decision-intelligence-policy-4",
   "effectiveFrom": "2026-08-15",
   "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
   "scoreName": "V20_RESEARCH_DECISION_SCORE",
@@ -50,13 +50,7 @@
       "scoringContract": "V20_LIQUIDITY_2_0_RESEARCH_V1",
       "sourceAuthority": "data/v17/liquidity-gate.json",
       "historySource": "data/history.json",
-      "subWeightsPct": {
-        "absoluteV17Score": 50,
-        "turnoverVs20": 20,
-        "volumeVs20": 10,
-        "tradeActivity": 10,
-        "continuity20": 10
-      },
+      "subWeightsPct": {"absoluteV17Score": 50,"turnoverVs20": 20,"volumeVs20": 10,"tradeActivity": 10,"continuity20": 10},
       "continuityMinimumTurnover": 1000000,
       "completedSessionsOnly": true,
       "sessionAlignmentRequiredForFullScore": true,
@@ -70,60 +64,69 @@
       "scoringContract": "V20_SR_CONFLUENCE_RESEARCH_V1",
       "pivotAuthority": "data/v17/internal-ohlc-support-resistance.json",
       "trustedHistorySource": "data/v20/technical-history.json",
-      "methods": [
-        "V17_CLASSIC_PIVOT",
-        "TRUSTED_SWING_TOUCH_STRUCTURE",
-        "ATR_VOLATILITY_STRUCTURE"
-      ],
-      "subWeightsPct": {
-        "confidence": 25,
-        "sessionFreshness": 15,
-        "sourceHistoryQuality": 15,
-        "priceGeometry": 15,
-        "methodConfluence": 20,
-        "externalValidation": 10
-      },
+      "methods": ["V17_CLASSIC_PIVOT","TRUSTED_SWING_TOUCH_STRUCTURE","ATR_VOLATILITY_STRUCTURE"],
+      "subWeightsPct": {"confidence": 25,"sessionFreshness": 15,"sourceHistoryQuality": 15,"priceGeometry": 15,"methodConfluence": 20,"externalValidation": 10},
       "externalValidationHardDependency": false,
       "singleMethodMaximumScore": 70,
       "criticalConflictComponentScore": 0,
       "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
     },
-    "regimeOverlay": {
-      "source": "data/v20/market-regime.json",
-      "verifiedOnly": true,
-      "direction": "LONG_ONLY_CONSERVATIVE_PENALTY",
-      "points": {
-        "BULLISH": 0,
-        "NEUTRAL": -2,
-        "BEARISH": -5,
-        "UNVERIFIED_CURRENT_REGIME": 0
-      },
-      "canOpenExecutionGate": false
+    "regimeOverlay": {"source":"data/v20/market-regime.json","verifiedOnly":true,"direction":"LONG_ONLY_CONSERVATIVE_PENALTY","points":{"BULLISH":0,"NEUTRAL":-2,"BEARISH":-5,"UNVERIFIED_CURRENT_REGIME":0},"canOpenExecutionGate":false},
+    "governance": {"activeProductionChampion":"V16_9_EQUAL_WEIGHT_BASKET","automaticPromotion":false,"productionAllocation":false,"executionPermission":false,"requiresForwardEvidence":true,"requiresIndependentHoldout":true,"promotionReviewMustBeSeparate":true}
+  },
+  "fullMarketNativeSelection": {
+    "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+    "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
+    "candidateUniverse": "V20_MASTER_UNIVERSE_FULL_MARKET",
+    "candidateUniverseIsFullMarketIndependent": true,
+    "legacySeedDependency": false,
+    "legacyReferenceUsedForComparisonOnly": true,
+    "discoveryWeightsPct": {"dataEvidence":30,"liquidity":30,"supportResistance":20,"currentTechnical":20},
+    "minimumDataEvidenceScore": 70,
+    "minimumSrMethodCount": 2,
+    "minimumFinalResearchScore": 50,
+    "maximumPublishedResearchCandidates": 30,
+    "liquidity2": {
+      "scoringContract": "V20_FULL_MARKET_LIQUIDITY_2_0_RESEARCH_V1",
+      "rulesSource": "scripts/build-v111-liquidity-gate.js",
+      "currentSource": "data/v20/market-explorer.json",
+      "historySource": "data/history.json",
+      "subWeightsPct": {"absoluteV17Score":50,"turnoverVs20":20,"volumeVs20":10,"tradeActivity":10,"continuity20":10},
+      "continuityMinimumTurnover": 1000000,
+      "conditionalMaxScore": 75,
+      "watchOnlyMaxScore": 55,
+      "blockedIlliquidMaxScore": 40,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
     },
-    "governance": {
-      "activeProductionChampion": "V16_9_EQUAL_WEIGHT_BASKET",
-      "automaticPromotion": false,
-      "productionAllocation": false,
-      "executionPermission": false,
-      "requiresForwardEvidence": true,
-      "requiresIndependentHoldout": true,
-      "promotionReviewMustBeSeparate": true
-    }
+    "supportResistanceConfluence": {
+      "scoringContract": "V20_FULL_MARKET_SR_CONFLUENCE_RESEARCH_V1",
+      "v17PivotUsedWhenAvailable": true,
+      "fallbackPivotSource": "TRUSTED_FULL_MARKET_CURRENT_SESSION_OHLC",
+      "methods": ["V17_OR_TRUSTED_CLASSIC_PIVOT","TRUSTED_SWING_TOUCH_STRUCTURE","ATR_VOLATILITY_STRUCTURE"],
+      "subWeightsPct": {"provenanceQuality":20,"sessionFreshness":20,"sourceHistoryQuality":15,"priceGeometry":15,"methodConfluence":25,"externalValidation":5},
+      "externalValidationHardDependency": false,
+      "singleMethodMaximumScore": 65,
+      "criticalConflictComponentScore": 0,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "tradePlan": {
+      "methodology": "EVIDENCE_DERIVED_RESEARCH_PLAN_FROM_MULTI_METHOD_SR_AND_ATR",
+      "entryZoneAtrFraction": 0.35,
+      "minimumEntryZonePct": 0.5,
+      "stopBufferAtrFraction": 0.5,
+      "minimumStopBufferPct": 0.75,
+      "roundTripTransactionCostPct": 0.6,
+      "arbitraryLegacyFallbackAllowed": false,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "regimeOverlay": {"source":"data/v20/market-regime.json","verifiedOnly":true,"direction":"LONG_ONLY_CONSERVATIVE_PENALTY","points":{"BULLISH":0,"NEUTRAL":-2,"BEARISH":-5,"UNVERIFIED_CURRENT_REGIME":0},"canOpenExecutionGate":false},
+    "governance": {"activeProductionChampion":"V16_9_EQUAL_WEIGHT_BASKET","automaticPromotion":false,"productionAllocation":false,"executionPermission":false,"v17RemainsExecutionAuthority":true,"requiresForwardEvidence":true,"requiresIndependentHoldout":true,"promotionReviewMustBeSeparate":true}
   },
   "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
   "minimumEvidenceCoverageForTierPct": 70,
-  "tierThresholds": {
-    "RESEARCH_A": 80,
-    "RESEARCH_B": 65,
-    "RESEARCH_C": 50
-  },
+  "tierThresholds": {"RESEARCH_A":80,"RESEARCH_B":65,"RESEARCH_C":50},
   "tierExecutionMeaning": "NONE",
-  "defensiveCaps": {
-    "invalidOrRebuildRequiredTradePlanMaxScore": 39,
-    "criticalSourceConflictMaxScore": 35,
-    "missingCriticalEvidenceMaxScore": 50,
-    "aboveEntryRangeDoNotChaseMaxScore": 55
-  },
+  "defensiveCaps": {"invalidOrRebuildRequiredTradePlanMaxScore":39,"criticalSourceConflictMaxScore":35,"missingCriticalEvidenceMaxScore":50,"aboveEntryRangeDoNotChaseMaxScore":55},
   "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
-  "note": "The baseline V20 research score remains preserved. The native challenger is a side-by-side shadow ranking that upgrades liquidity and support/resistance evidence without changing execution, allocation, Champion governance, or historical issued signals. Liquidity remains 30% and support/resistance remains 12%."
+  "note": "The baseline V20 score and the 30-name legacy-seeded challenger remain preserved for comparison. V20_FULL_MARKET_NATIVE_SELECTION_V1 independently scans the full master universe, recalculates V11.1-equivalent liquidity across the market, requires trusted point-in-time technical evidence and multi-method S/R, derives research trade plans from structural evidence, and excludes legacy opportunity scoring entirely. All full-market native outputs remain shadow/research only and cannot open execution, allocate capital, change the V16.9 Champion, or trigger automatic promotion."
 }
