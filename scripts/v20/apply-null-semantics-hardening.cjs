@@ -88,16 +88,21 @@ require('./apply-market-trend-context-ui.cjs');
 // regression are acceptance-gated without changing current.json or immutable issued signals.
 require('./apply-full-market-native-integration.cjs');
 
+// Phase 18 exposes the accepted full-market Native candidates in the V20 UI while keeping
+// the research-only / execution separation explicit and browser-tested.
+require('./apply-full-market-native-ui.cjs');
+
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-6',
+  schemaVersion: '20.0.0-null-semantics-hardening-7',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   liquidityDecisionUpgrade: true,
   nativeResearchChallengerWired: true,
   marketTrendContextUiIntegration: true,
   fullMarketNativeIntegration: true,
+  fullMarketNativeUiIntegration: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
     'scripts/v20/phase3-regression.cjs'
