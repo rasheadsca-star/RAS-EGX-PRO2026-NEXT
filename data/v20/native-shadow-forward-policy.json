@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "20.0.0-native-shadow-forward-policy-1",
+  "status": "METHOD_FROZEN_SHADOW_FORWARD_ONLY",
+  "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+  "rankingContract": "V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2",
+  "methodFreeze": {
+    "sessionDate": "2026-08-13",
+    "sourceCommit": "9283b72305c581776b5762f04b3b9d7c7dbe6dd1",
+    "freezeRecordedAt": "2026-08-15T15:40:08Z",
+    "firstFreshForwardSessionMustBeAfter": "2026-08-13",
+    "freezeSessionSnapshotCountsTowardIndependentForward": false,
+    "retroactiveBackfillCountsTowardIndependentForward": false
+  },
+  "samplePolicy": {
+    "canonicalSnapshotPerSession": "FIRST_ACCEPTED_V2_SNAPSHOT_ONLY",
+    "sameSessionRevisionsMayBeArchived": true,
+    "sameSessionRevisionsIncreaseIndependentSampleCount": false,
+    "independentSampleUnit": "UNIQUE_CANONICAL_MARKET_SESSION_DATE",
+    "minimumIndependentResolvedSessionsForPerformanceReview": 30,
+    "minimumIndependentHoldoutSessions": 20
+  },
+  "evaluationPolicy": {
+    "horizonsSessions": [1, 3, 5, 10, 20],
+    "roundTripTransactionCostPct": 0.6,
+    "entryPolicy": "FIRST_CONSENSUS_MARKET_SESSION_OPEN_ONLY_WITHIN_ISSUED_ENTRY_RANGE",
+    "delayedEntryAfterFirstSessionAllowed": false,
+    "sameSessionTargetStopAmbiguity": "TREAT_AS_STOP",
+    "gapBelowStopPolicy": "EXIT_AT_ACTUAL_OPEN_IF_WORSE_THAN_STOP",
+    "gapAboveTargetPolicy": "CREDIT_CAPPED_AT_TARGET1",
+    "horizonClosePolicy": "CLOSE_AT_HORIZON_SESSION_CLOSE_IF_NO_PRIOR_EXIT",
+    "nonEnteredCandidateReturnPct": 0,
+    "futureRowsAllowed": false,
+    "syntheticOhlcAllowed": false,
+    "pendingReturnMustRemainNull": true
+  },
+  "governance": {
+    "researchOnly": true,
+    "automaticPromotion": false,
+    "productionAllocation": false,
+    "executionPermission": false,
+    "canOpenV17ExecutionGate": false,
+    "canChangeChampion": false,
+    "activeProductionChampion": "V16_9_EQUAL_WEIGHT_BASKET",
+    "nativeForwardEvidenceMustRemainSeparateFromHistoricalBacktests": true,
+    "nativeForwardEvidenceMustRemainSeparateFromExistingV20IssuedSignalForward": true
+  }
+}
