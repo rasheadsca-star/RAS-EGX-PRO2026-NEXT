@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "20.0.0-v18-performance-audit-1",
+  "generatedAt": "2026-08-15T12:52:54.732Z",
+  "auditScope": "V18_PERFORMANCE_EVIDENCE_ONLY",
+  "decisionSupportOnly": true,
+  "status": "BLOCKED_UNTIL_REPRODUCIBLE_SOURCE_AND_DEFINITIONS",
+  "acceptedForPerformanceClaims": false,
+  "reproducible": false,
+  "source": {
+    "manifestPath": "data/v20/v18-source-manifest.json",
+    "manifestPresent": false,
+    "sourceArtifact": null,
+    "sourceArtifactAvailable": false,
+    "provenance": "PROJECT_REQUIREMENTS_UNRECONCILED_REFERENCE_COUNTS"
+  },
+  "unreconciledClaims": {
+    "observedTradeCounts": [
+      16,
+      971,
+      1138
+    ],
+    "reconciled": false,
+    "evidenceUse": "AUDIT_TRIGGER_ONLY_NOT_PERFORMANCE_METRIC",
+    "note": "16, 971 and 1138 are retained as contradictory reference claims that require source-level reconciliation; they are not accepted performance observations."
+  },
+  "definitions": {
+    "required": {
+      "sourceArtifact": false,
+      "tradeDefinition": false,
+      "signalUniverse": false,
+      "holdingPeriod": false,
+      "inSampleDefinition": false,
+      "outOfSampleDefinition": false,
+      "walkForwardDefinition": false,
+      "multiHorizonDefinition": false,
+      "entryTiming": false,
+      "transactionCosts": false,
+      "overlapAndPortfolioCompounding": false,
+      "sameCandleAmbiguityPolicy": false,
+      "independentHoldoutDefinition": false
+    },
+    "requiredCount": 13,
+    "satisfiedCount": 0,
+    "definitionCoveragePct": 0,
+    "missing": [
+      "sourceArtifact",
+      "tradeDefinition",
+      "signalUniverse",
+      "holdingPeriod",
+      "inSampleDefinition",
+      "outOfSampleDefinition",
+      "walkForwardDefinition",
+      "multiHorizonDefinition",
+      "entryTiming",
+      "transactionCosts",
+      "overlapAndPortfolioCompounding",
+      "sameCandleAmbiguityPolicy",
+      "independentHoldoutDefinition"
+    ]
+  },
+  "governance": {
+    "countsAsIndependentEvidence": false,
+    "canCalibrateV20DecisionScore": false,
+    "canOpenExecutionGate": false,
+    "canChangeChampion": false,
+    "canPromoteChallenger": false,
+    "canCreateHeadlinePerformanceMetric": false
+  },
+  "blockingReasons": [
+    "REPRODUCIBLE_V18_SOURCE_ARTIFACT_MISSING",
+    "V18_TRADE_COUNTS_NOT_RECONCILED",
+    "V18_PERFORMANCE_DEFINITIONS_INCOMPLETE"
+  ],
+  "acceptanceRequirements": [
+    "Provide a reproducible V18 source artifact inside the isolated V20 evidence boundary.",
+    "Reconcile the 16 / 971 / 1138 trade-count claims against one explicit trade definition.",
+    "Define signal universe, holding period, IS/OOS, walk-forward and multi-horizon semantics.",
+    "Define next-session entry timing, transaction costs, overlap-aware portfolio compounding and conservative same-candle ambiguity.",
+    "Separate development evidence from genuinely fresh independent holdout evidence."
+  ]
+}

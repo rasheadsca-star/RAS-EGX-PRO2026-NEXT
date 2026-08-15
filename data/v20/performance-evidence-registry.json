@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-performance-evidence-registry-1",
-  "generatedAt": "2026-08-15T11:08:31.931Z",
+  "generatedAt": "2026-08-15T12:52:54.813Z",
   "decisionSupportOnly": true,
   "policy": {
     "singleHeadlinePerformanceMetricAllowed": false,
@@ -9,7 +9,8 @@
     "developmentAndHoldoutEvidenceMustRemainSeparate": true,
     "reusedBenchmarkCanPromoteChallenger": false,
     "pendingForwardReturnMustRemainNull": true,
-    "v18PerformanceAccepted": false
+    "v18PerformanceAccepted": false,
+    "v18AuditRequired": true
   },
   "summary": {
     "evidenceEntryCount": 7,
@@ -22,6 +23,8 @@
     "forwardResolvedCount": 0,
     "forwardPendingCount": 10,
     "forwardAmbiguousCount": 0,
+    "v18AuditStatus": "BLOCKED_UNTIL_REPRODUCIBLE_SOURCE_AND_DEFINITIONS",
+    "v18DefinitionCoveragePct": 0,
     "status": "FORWARD_EVIDENCE_PENDING"
   },
   "entries": [
@@ -236,9 +239,46 @@
   ],
   "externalReferences": {
     "v18": {
+      "auditFile": "data/v20/v18-performance-audit.json",
       "acceptedForPerformanceClaims": false,
-      "status": "NOT_INGESTED_OR_AUDITED_IN_V20",
-      "reason": "V20 does not accept external V18 performance claims without a reconciled evidence definition and auditable source artifact."
+      "reproducible": false,
+      "status": "BLOCKED_UNTIL_REPRODUCIBLE_SOURCE_AND_DEFINITIONS",
+      "sourceArtifactAvailable": false,
+      "observedTradeCounts": [
+        16,
+        971,
+        1138
+      ],
+      "tradeCountsReconciled": false,
+      "definitionCoveragePct": 0,
+      "missingDefinitions": [
+        "sourceArtifact",
+        "tradeDefinition",
+        "signalUniverse",
+        "holdingPeriod",
+        "inSampleDefinition",
+        "outOfSampleDefinition",
+        "walkForwardDefinition",
+        "multiHorizonDefinition",
+        "entryTiming",
+        "transactionCosts",
+        "overlapAndPortfolioCompounding",
+        "sameCandleAmbiguityPolicy",
+        "independentHoldoutDefinition"
+      ],
+      "blockingReasons": [
+        "REPRODUCIBLE_V18_SOURCE_ARTIFACT_MISSING",
+        "V18_TRADE_COUNTS_NOT_RECONCILED",
+        "V18_PERFORMANCE_DEFINITIONS_INCOMPLETE"
+      ],
+      "governance": {
+        "countsAsIndependentEvidence": false,
+        "canCalibrateV20DecisionScore": false,
+        "canOpenExecutionGate": false,
+        "canChangeChampion": false,
+        "canPromoteChallenger": false
+      },
+      "reason": "V18 performance claims remain blocked until the dedicated audit reconciles the source artifact, trade counts and methodology definitions."
     }
   }
 }
