@@ -8,183 +8,58 @@ const { execFileSync } = require('child_process');
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const P = rel => path.join(root, rel);
 const read = rel => JSON.parse(fs.readFileSync(P(rel), 'utf8'));
-const write = (rel, value) => {
-  const file = P(rel); fs.mkdirSync(path.dirname(file), {recursive:true});
-  const tmp = `${file}.tmp-${process.pid}`;
-  fs.writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
-  JSON.parse(fs.readFileSync(tmp, 'utf8')); fs.renameSync(tmp, file);
+const write = (rel, value) => { const file=P(rel); fs.mkdirSync(path.dirname(file),{recursive:true}); const tmp=`${file}.tmp-${process.pid}`; fs.writeFileSync(tmp,`${JSON.stringify(value,null,2)}\n`,'utf8'); JSON.parse(fs.readFileSync(tmp,'utf8')); fs.renameSync(tmp,file); };
+function gitSha(){if(process.env.GITHUB_SHA)return process.env.GITHUB_SHA;try{return execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()}catch{return null}}
+
+const current=read('data/v20/current.json');
+const regression=read('data/v20/regression.json');
+const browser=read('data/v20/browser-smoke.json');
+const explorer=read('data/v20/market-explorer.json');
+const decisionTechnical=read('data/v20/technical-history-status.json');
+const sector=read('data/v20/sector-provenance-audit.json');
+const forward=read('data/v20/forward-evaluation.json');
+const performance=read('data/v20/performance-evidence-registry.json');
+const sourceHealth=read('data/v20/source-health.json');
+const marketRegime=read('data/v20/market-regime.json');
+const profiles=read('data/v20/stock-profiles.json');
+const rr=read('data/v20/risk-reward-audit.json');
+const operations=read('data/v20/release-operations.json');
+const finalAcceptance=regression.finalAcceptance;
+const executionGap=regression.executionReadinessGap;
+const backtest=regression.backtestReadiness;
+const backtestRegression=regression.backtestReadinessRegression;
+const srRemediation=regression.supportResistanceRemediation;
+const srRemediationRegression=regression.supportResistanceRemediationRegression;
+const fullMarketTechnical=regression.fullMarketTechnical;
+const fullMarketTechnicalRegression=regression.fullMarketTechnicalRegression;
+const extendedBrowser=regression.extendedResearchBrowserAcceptance;
+if(!finalAcceptance)throw new Error('Final acceptance mirror missing from regression evidence');
+if(!executionGap||executionGap.ok!==true)throw new Error('Execution readiness gap evidence missing or failed');
+if(!backtest||backtestRegression?.ok!==true)throw new Error('Backtest readiness evidence missing or failed');
+if(!srRemediation||srRemediationRegression?.ok!==true)throw new Error('S/R remediation evidence missing or failed');
+if(!fullMarketTechnical||fullMarketTechnicalRegression?.ok!==true)throw new Error('Full-market technical evidence missing or failed');
+if(!extendedBrowser||extendedBrowser.ok!==true)throw new Error('Extended browser evidence missing or failed');
+
+const releaseClassification=finalAcceptance.researchPlatformReady===true&&finalAcceptance.executionReady===false?'RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED':finalAcceptance.executionReady===true?'EXECUTION_RELEASE_CANDIDATE_REQUIRES_USER_DECISION':'NOT_RELEASE_READY';
+
+const manifest={
+ schemaVersion:'20.0.0-release-manifest-3',generatedAt:new Date().toISOString(),releaseClassification,product:'EGX PRO V20 — Integrated Investment Decision Platform',branch:operations.releaseBranch,validatedSourceCommit:gitSha(),
+ validationRun:{githubRunId:process.env.GITHUB_RUN_ID||null,githubRunNumber:process.env.GITHUB_RUN_NUMBER||null,workflow:process.env.GITHUB_WORKFLOW||'EGX Integrated Decision Platform Validation',actor:process.env.GITHUB_ACTOR||null},
+ session:{decisionSessionDate:current.sessionDate,executionStatus:current.executionStatus,dataStatus:current.dataStatus?.status||null,marketRegime:marketRegime.regime||null,marketRegimeVerified:marketRegime.verified===true},
+ governance:{activeChampion:current.governance?.activeChampion||null,challenger:current.governance?.challenger||null,challengerStatus:current.governance?.challengerStatus||null,automaticPromotion:current.governance?.automaticPromotion===true,promotionAllowed:current.governance?.promotionAllowed===true,v17ExecutionAuthorityPreserved:finalAcceptance.invariants?.v17ExecutionAuthorityPreserved===true},
+ acceptance:{finalStatus:finalAcceptance.finalStatus,researchPlatformReady:finalAcceptance.researchPlatformReady===true,executionReady:finalAcceptance.executionReady===true,validatorSummary:finalAcceptance.validatorSummary,criticalFindingCount:finalAcceptance.criticSummary?.criticalFindingCount??null,productionBlockerCount:finalAcceptance.criticSummary?.productionBlockerCount??null,productionBlockers:finalAcceptance.productionBlockers||[],limitations:finalAcceptance.limitations||[]},
+ executionReadinessGap:{sourceSessionDate:executionGap.sessionDate,current:executionGap.current,required:executionGap.required,gaps:executionGap.gaps,symbols:executionGap.symbols,thresholds:executionGap.thresholds,mathematicalThresholdGapOnly:executionGap.interpretation?.mathematicalThresholdGapOnly===true,guaranteesExecutionGrade:executionGap.interpretation?.guaranteesExecutionGrade===true,requiresFullV17GateRebuildAfterEvidenceChanges:executionGap.interpretation?.requiresFullV17GateRebuildAfterEvidenceChanges===true,note:executionGap.interpretation?.note||null,evidence:'data/v20/regression.json#executionReadinessGap'},
+ marketCoverage:{universeCount:explorer.summary?.universeCount||0,currentSessionRows:explorer.summary?.currentSnapshotCount||0,currentSessionCoveragePct:explorer.summary?.currentSessionCoveragePct??null,completeCurrentRows:explorer.summary?.completeCurrentRows||0,partialCurrentRows:explorer.summary?.partialCurrentRows||0,opportunityCount:explorer.summary?.opportunityCount||0,marketOnlyCount:explorer.summary?.marketOnlyCount||0,decisionTechnicalCurrentReadyCount:decisionTechnical.currentTechnicalReadyCount||0,decisionTechnicalCoverageOfOpportunityUniversePct:decisionTechnical.currentTechnicalCoveragePct??null,fullMarketTechnicalCurrentReadyCount:fullMarketTechnical.summary?.currentReadyCount||0,fullMarketTechnicalCoverageOfUniversePct:fullMarketTechnical.summary?.currentReadyCoveragePct??null,verifiedMarketTrendContextCount:explorer.summary?.marketTrendContextReadyCount||0,verifiedMarketTrendContextCoveragePct:explorer.summary?.marketTrendContextCoverageOfUniversePct??null,marketOnlyWithVerifiedTrendContextCount:explorer.summary?.marketOnlyTrendContextReadyCount||0},
+ decisionIntelligence:{status:profiles.decisionIntelligenceSummary?.status||null,scoreIsConfidence:profiles.decisionIntelligenceSummary?.scoreIsConfidence===true,usedForExecutionGate:profiles.decisionIntelligenceSummary?.usedForExecutionGate===true,usedForProductionAllocation:profiles.decisionIntelligenceSummary?.usedForProductionAllocation===true,usedForChampionSelection:profiles.decisionIntelligenceSummary?.usedForChampionSelection===true,medianResearchDecisionScore:profiles.decisionIntelligenceSummary?.medianResearchDecisionScore??null,tierCounts:profiles.decisionIntelligenceSummary?.tierCounts||{},cappedScoreCount:profiles.decisionIntelligenceSummary?.cappedScoreCount||0},
+ backtestReadiness:{status:backtest.status,v20ScoreBacktestClaimAllowed:backtest.claimPolicy?.v20ScoreBacktestClaimAllowed===true,calibratedAlphaClaimAllowed:backtest.claimPolicy?.calibratedAlphaClaimAllowed===true,profitabilityClaimAllowed:backtest.claimPolicy?.profitabilityClaimAllowed===true,targetProbabilityClaimAllowed:backtest.claimPolicy?.targetProbabilityClaimAllowed===true,archiveEntries:backtest.currentEvidence?.archiveEntries??null,distinctSignalDates:backtest.currentEvidence?.distinctSignalDates??null,resolvedForwardEvaluations:backtest.currentEvidence?.resolvedForwardEvaluations??null,minimumFreshIndependentSessionsBeforeProductionReview:backtest.minimumFreshIndependentSessionsBeforeProductionReview??null,evidence:'data/v20/regression.json#backtestReadiness'},
+ supportResistanceRemediation:{readOnly:srRemediation.readOnly===true,automaticV17MutationAllowed:srRemediation.automaticV17MutationAllowed===true,guaranteesExecutionGrade:srRemediation.guaranteesExecutionGrade===true,requiresV17InternalSrRebuild:srRemediation.requiresV17InternalSrRebuild===true,requiresV17GateRebuild:srRemediation.requiresV17GateRebuild===true,currentGap:srRemediation.currentGap,missingSymbols:srRemediation.missingSymbols,diagnoses:Object.fromEntries((srRemediation.symbols||[]).map(x=>[x.symbol,x.diagnosis])),evidence:'data/v20/regression.json#supportResistanceRemediation'},
+ fullMarketTechnical:{status:fullMarketTechnical.status,currentReadyCount:fullMarketTechnical.summary?.currentReadyCount||0,currentReadyCoveragePct:fullMarketTechnical.summary?.currentReadyCoveragePct??null,unavailableCount:fullMarketTechnical.summary?.unavailableCount||0,usedForDecisionScore:fullMarketTechnical.policy?.usedForDecisionScore===true,usedForExecutionGate:fullMarketTechnical.policy?.usedForExecutionGate===true,usedForProductionAllocation:fullMarketTechnical.policy?.usedForProductionAllocation===true,evidence:'data/v20/regression.json#fullMarketTechnical'},
+ performanceAndForward:{performanceRegistryStatus:performance.summary?.status||null,singleHeadlineMetricAllowed:performance.policy?.singleHeadlinePerformanceMetricAllowed!==false,v18PerformanceAccepted:performance.policy?.v18PerformanceAccepted===true,forwardResolvedCount:forward.resolutionStatus?.resolvedCount||0,forwardPendingCount:forward.resolutionStatus?.pendingCount||0,pendingReturnMustRemainNull:forward.resolutionPolicy?.pendingReturnMustRemainNull===true,researchOutcomesMayBecomeProductionPerformance:(forward.evaluations||[]).some(e=>e.researchEvaluation?.appliedToProduction===true)},
+ riskAndEvidence:{sourceStatus:sourceHealth.status||null,executionGrade:sourceHealth.executionGrade===true,supportResistanceResearchReady:sourceHealth.supportResistance?.researchReady===true,supportResistanceExecutionCandidateReady:sourceHealth.supportResistance?.executionCandidateReady===true,productionVerifiedSectorCount:sector.summary?.productionVerifiedCount||0,productionSectorConcentrationEnabled:sector.summary?.productionSectorConcentrationEnabled===true,legacyRiskRewardMaterialMismatchCount:rr.materialMismatchCount||0,currentDecisionTechnicalReadyCount:decisionTechnical.currentTechnicalReadyCount||0},
+ browserAcceptance:{passed:browser.ok===true,browser:browser.browser?.product||null,consoleErrorCount:(browser.consoleErrors||[]).length,viewports:(browser.viewportResults||[]).map(v=>({width:v.width,height:v.height,ready:v.ready,horizontalOverflow:v.horizontalOverflow,dialogHorizontalOverflow:v.dialogHorizontalOverflow})),extendedResearchPassed:extendedBrowser.ok===true,extendedResearchPages:extendedBrowser.pages||[],extendedResearchViewports:(extendedBrowser.viewportResults||[]).map(v=>({page:v.page,width:v.width,height:v.height,ready:v.ready,horizontalOverflow:v.horizontalOverflow})),humanPixelReviewClaimed:false},
+ operations:{deploymentStatus:operations.deployment?.status||null,dedicatedEgxV20TargetVerified:operations.deployment?.dedicatedEgxV20TargetVerified===true,dailyEndToEndScheduleVerified:operations.automation?.dailyEndToEndScheduleVerified===true,automationStatus:operations.automation?.status||null,v18AuditStatus:operations.v18Reference?.auditStatus||null},
+ releaseClaims:{researchReadyClaimAllowed:finalAcceptance.researchPlatformReady===true,executionReadyClaimAllowed:finalAcceptance.executionReady===true,deployedClaimAllowed:operations.deployment?.dedicatedEgxV20TargetVerified===true&&operations.deployment?.status==='DEPLOYED_VERIFIED',v20ScoreBacktestClaimAllowed:backtest.claimPolicy?.v20ScoreBacktestClaimAllowed===true,calibratedAlphaClaimAllowed:backtest.claimPolicy?.calibratedAlphaClaimAllowed===true,profitabilityClaimAllowed:false,targetProbabilityClaimAllowed:false,v18PerformanceClaimAllowed:operations.v18Reference?.performanceEvidenceAccepted===true,humanPixelPerfectClaimAllowed:false},
+ evidenceIndex:{current:'data/v20/current.json',finalAcceptance:'data/v20/regression.json#finalAcceptance',executionReadinessGap:'data/v20/regression.json#executionReadinessGap',backtestReadiness:'data/v20/regression.json#backtestReadiness',supportResistanceRemediation:'data/v20/regression.json#supportResistanceRemediation',fullMarketTechnical:'data/v20/regression.json#fullMarketTechnical',extendedResearchBrowserAcceptance:'data/v20/regression.json#extendedResearchBrowserAcceptance',browser:'data/v20/browser-smoke.json',marketExplorer:'data/v20/market-explorer.json',sourceHealth:'data/v20/source-health.json',stockProfiles:'data/v20/stock-profiles.json',performance:'data/v20/performance-evidence-registry.json',forward:'data/v20/forward-evaluation.json',sector:'data/v20/sector-provenance-audit.json',operations:'data/v20/release-operations.json'}
 };
-function gitSha() {
-  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
-  try { return execFileSync('git', ['rev-parse','HEAD'], {cwd:root,encoding:'utf8'}).trim(); } catch { return null; }
-}
-
-const current = read('data/v20/current.json');
-const regression = read('data/v20/regression.json');
-const browser = read('data/v20/browser-smoke.json');
-const explorer = read('data/v20/market-explorer.json');
-const technical = read('data/v20/technical-history-status.json');
-const sector = read('data/v20/sector-provenance-audit.json');
-const forward = read('data/v20/forward-evaluation.json');
-const performance = read('data/v20/performance-evidence-registry.json');
-const sourceHealth = read('data/v20/source-health.json');
-const marketRegime = read('data/v20/market-regime.json');
-const profiles = read('data/v20/stock-profiles.json');
-const rr = read('data/v20/risk-reward-audit.json');
-const operations = read('data/v20/release-operations.json');
-const finalAcceptance = regression.finalAcceptance;
-const executionGap = regression.executionReadinessGap;
-if (!finalAcceptance) throw new Error('Final acceptance mirror missing from regression evidence');
-if (!executionGap || executionGap.ok !== true) throw new Error('Execution readiness gap evidence missing or failed');
-
-const releaseClassification = finalAcceptance.researchPlatformReady === true && finalAcceptance.executionReady === false
-  ? 'RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED'
-  : finalAcceptance.executionReady === true
-    ? 'EXECUTION_RELEASE_CANDIDATE_REQUIRES_USER_DECISION'
-    : 'NOT_RELEASE_READY';
-
-const manifest = {
-  schemaVersion: '20.0.0-release-manifest-2',
-  generatedAt: new Date().toISOString(),
-  releaseClassification,
-  product: 'EGX PRO V20 — Integrated Investment Decision Platform',
-  branch: operations.releaseBranch,
-  validatedSourceCommit: gitSha(),
-  validationRun: {
-    githubRunId: process.env.GITHUB_RUN_ID || null,
-    githubRunNumber: process.env.GITHUB_RUN_NUMBER || null,
-    workflow: process.env.GITHUB_WORKFLOW || 'EGX Integrated Decision Platform Validation',
-    actor: process.env.GITHUB_ACTOR || null,
-  },
-  session: {
-    decisionSessionDate: current.sessionDate,
-    executionStatus: current.executionStatus,
-    dataStatus: current.dataStatus?.status || null,
-    marketRegime: marketRegime.regime || null,
-    marketRegimeVerified: marketRegime.verified === true,
-  },
-  governance: {
-    activeChampion: current.governance?.activeChampion || null,
-    challenger: current.governance?.challenger || null,
-    challengerStatus: current.governance?.challengerStatus || null,
-    automaticPromotion: current.governance?.automaticPromotion === true,
-    promotionAllowed: current.governance?.promotionAllowed === true,
-    v17ExecutionAuthorityPreserved: finalAcceptance.invariants?.v17ExecutionAuthorityPreserved === true,
-  },
-  acceptance: {
-    finalStatus: finalAcceptance.finalStatus,
-    researchPlatformReady: finalAcceptance.researchPlatformReady === true,
-    executionReady: finalAcceptance.executionReady === true,
-    validatorSummary: finalAcceptance.validatorSummary,
-    criticalFindingCount: finalAcceptance.criticSummary?.criticalFindingCount ?? null,
-    productionBlockerCount: finalAcceptance.criticSummary?.productionBlockerCount ?? null,
-    productionBlockers: finalAcceptance.productionBlockers || [],
-    limitations: finalAcceptance.limitations || [],
-  },
-  executionReadinessGap: {
-    sourceSessionDate: executionGap.sessionDate,
-    current: executionGap.current,
-    required: executionGap.required,
-    gaps: executionGap.gaps,
-    symbols: executionGap.symbols,
-    thresholds: executionGap.thresholds,
-    mathematicalThresholdGapOnly: executionGap.interpretation?.mathematicalThresholdGapOnly === true,
-    guaranteesExecutionGrade: executionGap.interpretation?.guaranteesExecutionGrade === true,
-    requiresFullV17GateRebuildAfterEvidenceChanges: executionGap.interpretation?.requiresFullV17GateRebuildAfterEvidenceChanges === true,
-    note: executionGap.interpretation?.note || null,
-    evidence: 'data/v20/regression.json#executionReadinessGap',
-  },
-  marketCoverage: {
-    universeCount: explorer.summary?.universeCount || 0,
-    currentSessionRows: explorer.summary?.currentSnapshotCount || 0,
-    currentSessionCoveragePct: explorer.summary?.currentSessionCoveragePct ?? null,
-    completeCurrentRows: explorer.summary?.completeCurrentRows || 0,
-    partialCurrentRows: explorer.summary?.partialCurrentRows || 0,
-    opportunityCount: explorer.summary?.opportunityCount || 0,
-    marketOnlyCount: explorer.summary?.marketOnlyCount || 0,
-    fullTechnicalCurrentReadyCount: explorer.summary?.currentTechnicalReadyCount || 0,
-    fullTechnicalCoverageOfUniversePct: explorer.summary?.technicalCurrentCoverageOfUniversePct ?? null,
-    fullTechnicalCoverageOfOpportunityUniversePct: explorer.summary?.technicalCurrentCoverageOfOpportunityUniversePct ?? null,
-    verifiedMarketTrendContextCount: explorer.summary?.marketTrendContextReadyCount || 0,
-    verifiedMarketTrendContextCoveragePct: explorer.summary?.marketTrendContextCoverageOfUniversePct ?? null,
-    marketOnlyWithVerifiedTrendContextCount: explorer.summary?.marketOnlyTrendContextReadyCount || 0,
-  },
-  decisionIntelligence: {
-    status: profiles.decisionIntelligenceSummary?.status || null,
-    scoreIsConfidence: profiles.decisionIntelligenceSummary?.scoreIsConfidence === true,
-    usedForExecutionGate: profiles.decisionIntelligenceSummary?.usedForExecutionGate === true,
-    usedForProductionAllocation: profiles.decisionIntelligenceSummary?.usedForProductionAllocation === true,
-    usedForChampionSelection: profiles.decisionIntelligenceSummary?.usedForChampionSelection === true,
-    medianResearchDecisionScore: profiles.decisionIntelligenceSummary?.medianResearchDecisionScore ?? null,
-    tierCounts: profiles.decisionIntelligenceSummary?.tierCounts || {},
-    cappedScoreCount: profiles.decisionIntelligenceSummary?.cappedScoreCount || 0,
-  },
-  performanceAndForward: {
-    performanceRegistryStatus: performance.summary?.status || null,
-    singleHeadlineMetricAllowed: performance.policy?.singleHeadlinePerformanceMetricAllowed !== false,
-    v18PerformanceAccepted: performance.policy?.v18PerformanceAccepted === true,
-    forwardResolvedCount: forward.resolutionStatus?.resolvedCount || 0,
-    forwardPendingCount: forward.resolutionStatus?.pendingCount || 0,
-    pendingReturnMustRemainNull: forward.resolutionPolicy?.pendingReturnMustRemainNull === true,
-    researchOutcomesMayBecomeProductionPerformance: (forward.evaluations || []).some(e => e.researchEvaluation?.appliedToProduction === true),
-  },
-  riskAndEvidence: {
-    sourceStatus: sourceHealth.status || null,
-    executionGrade: sourceHealth.executionGrade === true,
-    supportResistanceResearchReady: sourceHealth.supportResistance?.researchReady === true,
-    supportResistanceExecutionCandidateReady: sourceHealth.supportResistance?.executionCandidateReady === true,
-    productionVerifiedSectorCount: sector.summary?.productionVerifiedCount || 0,
-    productionSectorConcentrationEnabled: sector.summary?.productionSectorConcentrationEnabled === true,
-    legacyRiskRewardMaterialMismatchCount: rr.materialMismatchCount || 0,
-    currentTechnicalReadyCount: technical.currentTechnicalReadyCount || 0,
-  },
-  browserAcceptance: {
-    passed: browser.ok === true,
-    browser: browser.browser?.product || null,
-    consoleErrorCount: (browser.consoleErrors || []).length,
-    viewports: (browser.viewportResults || []).map(v => ({width:v.width,height:v.height,ready:v.ready,horizontalOverflow:v.horizontalOverflow,dialogHorizontalOverflow:v.dialogHorizontalOverflow})),
-    humanPixelReviewClaimed: false,
-  },
-  operations: {
-    deploymentStatus: operations.deployment?.status || null,
-    dedicatedEgxV20TargetVerified: operations.deployment?.dedicatedEgxV20TargetVerified === true,
-    dailyEndToEndScheduleVerified: operations.automation?.dailyEndToEndScheduleVerified === true,
-    automationStatus: operations.automation?.status || null,
-    v18AuditStatus: operations.v18Reference?.auditStatus || null,
-  },
-  releaseClaims: {
-    researchReadyClaimAllowed: finalAcceptance.researchPlatformReady === true,
-    executionReadyClaimAllowed: finalAcceptance.executionReady === true,
-    deployedClaimAllowed: operations.deployment?.dedicatedEgxV20TargetVerified === true && operations.deployment?.status === 'DEPLOYED_VERIFIED',
-    profitabilityClaimAllowed: false,
-    v18PerformanceClaimAllowed: operations.v18Reference?.performanceEvidenceAccepted === true,
-    humanPixelPerfectClaimAllowed: false,
-  },
-  evidenceIndex: {
-    current: 'data/v20/current.json',
-    finalAcceptance: 'data/v20/regression.json#finalAcceptance',
-    executionReadinessGap: 'data/v20/regression.json#executionReadinessGap',
-    browser: 'data/v20/browser-smoke.json',
-    marketExplorer: 'data/v20/market-explorer.json',
-    sourceHealth: 'data/v20/source-health.json',
-    stockProfiles: 'data/v20/stock-profiles.json',
-    performance: 'data/v20/performance-evidence-registry.json',
-    forward: 'data/v20/forward-evaluation.json',
-    sector: 'data/v20/sector-provenance-audit.json',
-    operations: 'data/v20/release-operations.json',
-  },
-};
-
-write('data/v20/release-manifest.json', manifest);
-console.log(JSON.stringify({
-  releaseClassification: manifest.releaseClassification,
-  finalStatus: manifest.acceptance.finalStatus,
-  researchReady: manifest.releaseClaims.researchReadyClaimAllowed,
-  executionReadyClaimAllowed: manifest.releaseClaims.executionReadyClaimAllowed,
-  executionGaps: manifest.executionReadinessGap.gaps,
-  guaranteesExecutionGrade: manifest.executionReadinessGap.guaranteesExecutionGrade,
-  deployedClaimAllowed: manifest.releaseClaims.deployedClaimAllowed,
-  marketTrendContextCoveragePct: manifest.marketCoverage.verifiedMarketTrendContextCoveragePct,
-  validatedSourceCommit: manifest.validatedSourceCommit,
-  githubRunId: manifest.validationRun.githubRunId,
-}, null, 2));
+write('data/v20/release-manifest.json',manifest);
+console.log(JSON.stringify({releaseClassification:manifest.releaseClassification,finalStatus:manifest.acceptance.finalStatus,researchReady:manifest.releaseClaims.researchReadyClaimAllowed,executionReadyClaimAllowed:manifest.releaseClaims.executionReadyClaimAllowed,executionGaps:manifest.executionReadinessGap.gaps,backtestStatus:manifest.backtestReadiness.status,fullMarketTechnicalCoveragePct:manifest.fullMarketTechnical.currentReadyCoveragePct,extendedResearchPassed:manifest.browserAcceptance.extendedResearchPassed,deployedClaimAllowed:manifest.releaseClaims.deployedClaimAllowed,validatedSourceCommit:manifest.validatedSourceCommit,githubRunId:manifest.validationRun.githubRunId},null,2));
