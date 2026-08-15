@@ -145,3 +145,171 @@ jobs:
           git fetch origin develop/v20-integrated-decision-platform
           git rebase origin/develop/v20-integrated-decision-platform
           git push origin HEAD:develop/v20-integrated-decision-platform
+
+  deploy-isolated-v20-research:
+    needs: build-current-market-regime
+    if: ${{ needs.build-current-market-regime.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TEAM_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+      VERCEL_TEAM_SLUG: steverabin38-1168s-projects
+      VERCEL_PROJECT_NAME: egx-pro-v20-research
+    steps:
+      - name: Checkout latest V20 evidence head
+        uses: actions/checkout@v6
+        with:
+          ref: develop/v20-integrated-decision-platform
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with: {node-version: "22"}
+
+      - name: Verify persisted research release gate
+        run: |
+          node - <<'NODE'
+          const regression=require('./data/v20/regression.json');
+          const current=require('./data/v20/current.json');
+          const fa=regression.finalAcceptance;
+          const release=regression.releaseManifest;
+          if(!fa || fa.researchPlatformReady!==true) throw new Error('V20 research acceptance is not ready');
+          if(fa.executionReady!==false || fa.executionStatus!=='RESEARCH_ONLY') throw new Error('Deployment target must remain research-only');
+          if(fa.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET') throw new Error('Champion governance drift');
+          if(release?.releaseClassification!=='RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED') throw new Error('Release manifest is not the approved research candidate state');
+          if(current.executionStatus!=='RESEARCH_ONLY') throw new Error('Current V20 state is not research-only');
+          if(Number(current.portfolio?.recommendedExposurePct)!==0 || Number(current.portfolio?.cashPct)!==100) throw new Error('Closed execution gate must deploy with 0% exposure / 100% cash');
+          if(current.governance?.automaticPromotion!==false || current.governance?.promotionAllowed!==false) throw new Error('Automatic promotion must remain disabled');
+          console.log(JSON.stringify({researchPlatformReady:true,executionReady:false,executionStatus:current.executionStatus,exposurePct:current.portfolio.recommendedExposurePct,cashPct:current.portfolio.cashPct,champion:current.governance.activeChampion},null,2));
+          NODE
+
+      - name: Check isolated Vercel deployment credentials
+        id: vercel_prereq
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "V20_DEPLOYMENT_STATUS=BLOCKED_MISSING_VERCEL_TOKEN"
+            exit 0
+          fi
+          echo "available=true" >> "$GITHUB_OUTPUT"
+          echo "V20_DEPLOYMENT_STATUS=CREDENTIAL_AVAILABLE"
+
+      - name: Prepare isolated V20 static deployment package
+        if: ${{ steps.vercel_prereq.outputs.available == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .v20-vercel-package
+          mkdir -p .v20-vercel-package/data
+          cp -R v20 .v20-vercel-package/v20
+          cp -R data/v20 .v20-vercel-package/data/v20
+          cp -R data/v17 .v20-vercel-package/data/v17
+          cat > .v20-vercel-package/vercel.json <<'JSON'
+          {
+            "rewrites": [
+              {"source": "/", "destination": "/v20/index.html"}
+            ],
+            "headers": [
+              {
+                "source": "/data/(.*)",
+                "headers": [
+                  {"key": "Cache-Control", "value": "no-store, max-age=0"}
+                ]
+              }
+            ]
+          }
+          JSON
+          node - <<'NODE'
+          const fs=require('fs');
+          for(const file of [
+            '.v20-vercel-package/v20/index.html',
+            '.v20-vercel-package/v20/health.html',
+            '.v20-vercel-package/v20/performance.html',
+            '.v20-vercel-package/v20/research.html',
+            '.v20-vercel-package/v20/technical.html',
+            '.v20-vercel-package/v20/top5.html',
+            '.v20-vercel-package/data/v20/current.json',
+            '.v20-vercel-package/data/v20/regression.json',
+            '.v20-vercel-package/data/v17/resilient-session-status.json',
+            '.v20-vercel-package/data/v17/internal-ohlc-support-resistance.json'
+          ]) if(!fs.existsSync(file)) throw new Error(`Deployment package missing ${file}`);
+          const current=require('./.v20-vercel-package/data/v20/current.json');
+          if(current.executionStatus!=='RESEARCH_ONLY') throw new Error('Package must remain RESEARCH_ONLY');
+          console.log('V20_DEPLOYMENT_PACKAGE_READY');
+          NODE
+
+      - name: Ensure isolated Vercel project
+        id: vercel_project
+        if: ${{ steps.vercel_prereq.outputs.available == 'true' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const token=process.env.VERCEL_TOKEN;
+          const teamId=process.env.VERCEL_TEAM_ID;
+          const name=process.env.VERCEL_PROJECT_NAME;
+          if(!token) throw new Error('VERCEL_TOKEN missing');
+          if(name.toLowerCase().includes('optimum')) throw new Error('Refusing to target any Optimum project');
+          const headers={Authorization:`Bearer ${token}`,'Content-Type':'application/json'};
+          async function main(){
+            let response=await fetch(`https://api.vercel.com/v9/projects/${encodeURIComponent(name)}?teamId=${encodeURIComponent(teamId)}`,{headers});
+            let project;
+            if(response.status===404){
+              response=await fetch(`https://api.vercel.com/v11/projects?teamId=${encodeURIComponent(teamId)}`,{
+                method:'POST',headers,
+                body:JSON.stringify({name,framework:null})
+              });
+              if(!response.ok) throw new Error(`Vercel project create failed: HTTP ${response.status} ${await response.text()}`);
+              project=await response.json();
+              console.log('V20_VERCEL_PROJECT_STATE=CREATED');
+            }else{
+              if(!response.ok) throw new Error(`Vercel project lookup failed: HTTP ${response.status} ${await response.text()}`);
+              project=await response.json();
+              console.log('V20_VERCEL_PROJECT_STATE=EXISTING');
+            }
+            if(project.name!==name) throw new Error(`Unexpected Vercel project resolved: ${project.name}`);
+            if(String(project.name).toLowerCase().includes('optimum')) throw new Error('Resolved project is forbidden Optimum target');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT,`project_id=${project.id}\nproject_name=${project.name}\n`);
+            console.log(`V20_VERCEL_PROJECT=${project.name}`);
+            console.log(`V20_VERCEL_PROJECT_ID=${project.id}`);
+          }
+          main().catch(error=>{console.error(error);process.exit(1)});
+          NODE
+
+      - name: Deploy V20 research candidate to isolated Vercel project
+        id: vercel_deploy
+        if: ${{ steps.vercel_prereq.outputs.available == 'true' }}
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ steps.vercel_project.outputs.project_id }}
+        run: |
+          set -euo pipefail
+          cd .v20-vercel-package
+          DEPLOY_OUTPUT="$(npx --yes vercel@latest deploy --prod --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_TEAM_SLUG" --token "$VERCEL_TOKEN")"
+          printf '%s\n' "$DEPLOY_OUTPUT"
+          DEPLOY_URL="$(printf '%s\n' "$DEPLOY_OUTPUT" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -n 1)"
+          test -n "$DEPLOY_URL"
+          echo "url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          echo "V20_DEPLOYMENT_URL=$DEPLOY_URL"
+          npx --yes vercel@latest inspect "$DEPLOY_URL" --scope "$VERCEL_TEAM_SLUG" --token "$VERCEL_TOKEN" >/tmp/v20-vercel-inspect.txt
+          cat /tmp/v20-vercel-inspect.txt
+
+      - name: Deployment status summary
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.vercel_prereq.outputs.available }}" != "true" ]; then
+            echo "### V20 deployment" >> "$GITHUB_STEP_SUMMARY"
+            echo "Blocked: repository secret VERCEL_TOKEN is not configured. No Vercel project was created or modified." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### V20 deployment" >> "$GITHUB_STEP_SUMMARY"
+            echo "Project: $VERCEL_PROJECT_NAME" >> "$GITHUB_STEP_SUMMARY"
+            echo "URL: ${{ steps.vercel_deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "Release mode: RESEARCH_ONLY / EXECUTION_BLOCKED" >> "$GITHUB_STEP_SUMMARY"
+          fi
