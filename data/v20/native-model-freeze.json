@@ -1,0 +1,203 @@
+{
+  "schemaVersion": "20.0.0-native-model-freeze-1",
+  "freezeId": "V20_NATIVE_V1_METHOD_FREEZE_20260813",
+  "modelId": "V20_FULL_MARKET_NATIVE_SELECTION",
+  "modelVersion": "V1",
+  "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+  "frozenAt": "2026-08-15T15:40:08Z",
+  "freezeSessionDate": "2026-08-13",
+  "commitSHA": "9283b72305c581776b5762f04b3b9d7c7dbe6dd1",
+  "rulesetHash": "5d48b4cf6f10f2ca0a16d61cfccad4d033b9da6cbac9e5ce6e35e051305a076f",
+  "weightsHash": "e6a853bf1049aa12a35f7c1a4b0b15ae622d276df2cd1a18125bf7fe73ae93cc",
+  "liquidityPolicyHash": "21db016ca586f6f4af064fcb3d4bdc9090cf50d3ebc25c240f4fbe6df7f97ac7",
+  "srPolicyHash": "71636e58ea1c6e7221725a3b4eca26d18771d7c209eefc4039a93eb4766ca87c",
+  "technicalPolicyHash": "c408c44a08c176c52abc75ef358b7130548e4ab4f3be823ba1463021eba6f1e7",
+  "rrPolicyHash": "f297ee5e45f25cd73830a0cd675063fdde694e77cb4c942e33ea43f782c4dec9",
+  "tradePlanPolicyHash": "9492936419d742da6b1d5faf399deaec97e1cb7f252c09335e510fc2a985214b",
+  "riskPolicyHash": "77e3f7beea9dda23b7d891f39eddc836d42ff9c08d7bf4e8d83913a763441824",
+  "universePolicyHash": "dd9e9f4d420dad2dd11df2beed0eb084bc181f1be1131ef8cc98438bbbc088ad",
+  "dataPolicyHash": "54d96da5741a0f84fca66bd5e9cb23daf429a1c933ea603950c0eadcb0e114eb",
+  "compositeModelDigest": "53ee03fdf617b136d0e0e17ad7b91acc34ae47b941233c67586e25acf06707aa",
+  "freshEvidenceWindowStart": "AFTER_2026-08-13",
+  "baselineSessionCountsAsFreshEvidence": false,
+  "rankingContract": "V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2",
+  "governance": {
+    "immutableMethodology": true,
+    "methodologyChangeRequiresNewVersion": true,
+    "retuneV1Forbidden": true,
+    "automaticPromotion": false,
+    "executionInfluence": false,
+    "productionAllocationInfluence": false,
+    "activeChampion": "V16_9_EQUAL_WEIGHT_BASKET"
+  },
+  "contracts": {
+    "ruleset": {
+      "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+      "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
+      "candidateUniverse": "V20_MASTER_UNIVERSE_FULL_MARKET",
+      "candidateUniverseIsFullMarketIndependent": true,
+      "legacySeedDependency": false,
+      "legacyReferenceUsedForComparisonOnly": true,
+      "minimumDataEvidenceScore": 70,
+      "minimumSrMethodCount": 2,
+      "minimumNetRiskReward": 0.7,
+      "minimumFinalResearchScore": 50,
+      "maximumPublishedResearchCandidates": 30,
+      "rankingDiscrimination": {
+        "contract": "V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2",
+        "appliesOnlyWhenNativeResearchScoreExactlyTied": true,
+        "mutatesNativeResearchScore": false,
+        "canOverrideHigherNativeResearchScore": false,
+        "alignmentPriority": {
+          "IN_ENTRY_RANGE": 0,
+          "BELOW_ENTRY_RANGE_WAITING": 1,
+          "ABOVE_ENTRY_RANGE_DO_NOT_CHASE": 2,
+          "UNKNOWN": 3
+        },
+        "order": [
+          "alignmentSafetyPriorityAscending",
+          "scoreBeforeRegimeAndCapsDescending",
+          "entryDistancePctAscending",
+          "netRiskRewardDescending",
+          "liquidity2ScoreDescending",
+          "srConfluenceScoreDescending",
+          "technicalScoreDescending",
+          "discoveryScoreDescending",
+          "tickerAscending"
+        ],
+        "entryDistanceDefinition": "0 inside entry range; percent below entryLow when waiting below; percent above entryHigh when do-not-chase",
+        "underlyingStrengthDefinition": "Native weighted research score before regime overlay and defensive caps; used only to order exact final-score ties and never exposed as a replacement score",
+        "purpose": "BREAK_DEFENSIVE_CAP_TIES_USING_SAFETY_THEN_UNDERLYING_RESEARCH_STRENGTH_WITHOUT_WEAKENING_CAPS_OR_CREATING_NEW_ALPHA_SCORE",
+        "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+      },
+      "defensiveCaps": {
+        "invalidOrRebuildRequiredTradePlanMaxScore": 39,
+        "criticalSourceConflictMaxScore": 35,
+        "missingCriticalEvidenceMaxScore": 50,
+        "aboveEntryRangeDoNotChaseMaxScore": 55
+      },
+      "tierThresholds": {
+        "RESEARCH_A": 80,
+        "RESEARCH_B": 65,
+        "RESEARCH_C": 50
+      }
+    },
+    "weights": {
+      "discoveryWeightsPct": {
+        "dataEvidence": 30,
+        "liquidity": 30,
+        "supportResistance": 20,
+        "currentTechnical": 20
+      },
+      "finalComponentWeightsPct": {
+        "legacyOpportunity": 10,
+        "dataEvidence": 18,
+        "liquidity": 30,
+        "supportResistance": 12,
+        "netRiskReward": 15,
+        "tradePlanAlignment": 10,
+        "currentTechnical": 5
+      },
+      "legacyNativeContributionPct": 0
+    },
+    "liquidity": {
+      "scoringContract": "V20_FULL_MARKET_LIQUIDITY_2_0_RESEARCH_V1",
+      "rulesSource": "scripts/build-v111-liquidity-gate.js",
+      "currentSource": "data/v20/market-explorer.json",
+      "historySource": "data/history.json",
+      "subWeightsPct": {
+        "absoluteV17Score": 50,
+        "turnoverVs20": 20,
+        "volumeVs20": 10,
+        "tradeActivity": 10,
+        "continuity20": 10
+      },
+      "continuityMinimumTurnover": 1000000,
+      "conditionalMaxScore": 75,
+      "watchOnlyMaxScore": 55,
+      "blockedIlliquidMaxScore": 40,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "supportResistance": {
+      "scoringContract": "V20_FULL_MARKET_SR_CONFLUENCE_RESEARCH_V1",
+      "v17PivotUsedWhenAvailable": true,
+      "fallbackPivotSource": "TRUSTED_FULL_MARKET_CURRENT_SESSION_OHLC",
+      "methods": [
+        "V17_OR_TRUSTED_CLASSIC_PIVOT",
+        "TRUSTED_SWING_TOUCH_STRUCTURE",
+        "ATR_VOLATILITY_STRUCTURE"
+      ],
+      "subWeightsPct": {
+        "provenanceQuality": 20,
+        "sessionFreshness": 20,
+        "sourceHistoryQuality": 15,
+        "priceGeometry": 15,
+        "methodConfluence": 25,
+        "externalValidation": 5
+      },
+      "externalValidationHardDependency": false,
+      "singleMethodMaximumScore": 65,
+      "criticalConflictComponentScore": 0,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "technical": {
+      "pointInTimeRequired": true,
+      "currentSessionRequired": true,
+      "identityVerificationRequired": true,
+      "minimumTrustedRows": 50,
+      "currentPriceReconciliationTolerancePct": 5,
+      "missingOhlcSynthesisAllowed": false,
+      "futureRowsAllowed": false,
+      "providerBlendingAllowed": false
+    },
+    "riskReward": {
+      "minimumNetRiskReward": 0.7,
+      "roundTripTransactionCostPct": 0.6,
+      "defensiveCaps": {
+        "invalidOrRebuildRequiredTradePlanMaxScore": 39,
+        "criticalSourceConflictMaxScore": 35,
+        "missingCriticalEvidenceMaxScore": 50,
+        "aboveEntryRangeDoNotChaseMaxScore": 55
+      }
+    },
+    "tradePlan": {
+      "methodology": "EVIDENCE_DERIVED_RESEARCH_PLAN_FROM_MULTI_METHOD_SR_AND_ATR",
+      "entryZoneAtrFraction": 0.35,
+      "minimumEntryZonePct": 0.5,
+      "stopBufferAtrFraction": 0.5,
+      "minimumStopBufferPct": 0.75,
+      "roundTripTransactionCostPct": 0.6,
+      "arbitraryLegacyFallbackAllowed": false,
+      "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+    },
+    "riskPolicy": {
+      "researchOnly": true,
+      "executionPermission": false,
+      "productionAllocation": false,
+      "automaticPromotion": false,
+      "activeChampion": "V16_9_EQUAL_WEIGHT_BASKET",
+      "v17RemainsExecutionAuthority": true
+    },
+    "universePolicy": {
+      "candidateUniverse": "V20_MASTER_UNIVERSE_FULL_MARKET",
+      "candidateUniverseIsFullMarketIndependent": true,
+      "legacySeedDependency": false,
+      "legacyReferenceUsedForComparisonOnly": true
+    },
+    "dataPolicy": {
+      "minimumDataEvidenceScore": 70,
+      "currentSessionRequired": true,
+      "criticalSourceConflictCannotBeIgnored": true,
+      "legacySeedContributionPct": 0
+    }
+  },
+  "materialization": {
+    "selectionSource": "scripts/v20/build-full-market-native-selection.cjs",
+    "rankingFinalizerSource": "scripts/v20/finalize-native-ranking-v1.cjs",
+    "explainabilitySource": "scripts/v20/build-native-explainability.cjs",
+    "selectionSourceHash": "a725b9ee565bea058a4a9fc3c78258158281abda875d9e86579b18f960b0b8ea",
+    "rankingFinalizerSourceHash": "b9737695224eb2d36eb7df7b00d1b52040ab4acae0718638c7d0dba26c573518",
+    "explainabilitySourceHash": "1b1d7a5568ffb3e90ac4697783d3064f9b5028e569e37c20bfc5cc25bf4d945e",
+    "note": "Source materialization hashes may change only for proven implementation fixes that preserve the frozen methodological composite digest; any methodological digest change requires a new model version and fresh evidence window."
+  }
+}
