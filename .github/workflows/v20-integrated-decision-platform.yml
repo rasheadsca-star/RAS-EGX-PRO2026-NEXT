@@ -56,6 +56,8 @@ jobs:
           node --check scripts/v20/data-quality-regression.cjs
           node --check scripts/v20/build-sector-provenance-audit.cjs
           node --check scripts/v20/sector-provenance-regression.cjs
+          node --check scripts/v20/build-v18-performance-audit.cjs
+          node --check scripts/v20/v18-performance-audit-regression.cjs
           node --check scripts/v20/build-performance-evidence-registry.cjs
           node --check scripts/v20/performance-evidence-regression.cjs
           node --check scripts/v20/apply-market-regime-integration.cjs
@@ -79,6 +81,7 @@ jobs:
           node --check scripts/v20/validate-ui.cjs
           node --check scripts/v20/browser-smoke.cjs
           node --check v20/app.js
+          node --check v20/performance.js
           node --check v20/portfolio-core.js
           node --check v20/portfolio.js
           node -e "JSON.parse(require('fs').readFileSync('data/v20/policy-registry.json','utf8'))"
@@ -137,6 +140,12 @@ jobs:
       - name: Archive immutable daily signal and forward horizons
         run: node scripts/v20/archive-signal.cjs
 
+      - name: Build V18 performance audit gate
+        run: node scripts/v20/build-v18-performance-audit.cjs
+
+      - name: Run V18 performance audit regression
+        run: node scripts/v20/v18-performance-audit-regression.cjs
+
       - name: Build separated performance evidence registry
         run: node scripts/v20/build-performance-evidence-registry.cjs
 
@@ -173,6 +182,8 @@ jobs:
           const ns=require('./data/v20/null-semantics-regression.json');
           const sector=require('./data/v20/sector-provenance-audit.json');
           const sectorReg=require('./data/v20/sector-provenance-regression.json');
+          const v18Audit=require('./data/v20/v18-performance-audit.json');
+          const v18Reg=require('./data/v20/v18-performance-audit-regression.json');
           const perf=require('./data/v20/performance-evidence-registry.json');
           const perfReg=require('./data/v20/performance-evidence-regression.json');
           const upr=require('./data/v20/user-portfolio-regression.json');
@@ -191,7 +202,7 @@ jobs:
           const p=require('./data/v20/portfolio-risk.json');
           const policy=require('./data/v20/policy-registry.json');
           const decisionPolicy=require('./data/v20/decision-intelligence-policy.json');
-          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||browser.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||sectorReg.ok!==true||perfReg.ok!==true||upr.ok!==true) process.exit(1);
+          if(r.ok!==true||tr.ok!==true||r3.ok!==true||ui.ok!==true||browser.ok!==true||treg.ok!==true||mxr.ok!==true||dq.ok!==true||ns.ok!==true||sectorReg.ok!==true||v18Reg.ok!==true||perfReg.ok!==true||upr.ok!==true) process.exit(1);
           if(browser.schemaVersion!=='20.0.0-browser-smoke-1'||browser.sessionDate!==x.sessionDate) process.exit(1);
           for(const key of ['indexLoadedWithOpportunities','executionBadgeRendered','researchScoreHeaderRendered','decisionSeparationVisible','researchScoreVisibleForOpportunity','decisionComponentsRendered','marketOnlyNoResearchScoreDisclosure','marketOnlyNoFakeScoreScopeDisclosure','marketOnlyResearchScoreWidgetAbsent','healthPageLoaded','performancePageLoaded','performanceNoHeadlineReturnWidget','noRuntimeOrConsoleErrors']) if(browser.checks?.[key]?.ok!==true) process.exit(1);
           if((browser.viewportResults||[]).length!==5||(browser.viewportResults||[]).some(v=>v.ready!==true||v.horizontalOverflow!==false||((v.width<=430)&&v.dialogHorizontalOverflow!==false))) process.exit(1);
@@ -215,13 +226,20 @@ jobs:
           if((sector.rows||[]).some(s=>s.acceptedForProduction===true||s.productionSector!==null)) process.exit(1);
           if((profiles.profiles||[]).some(pr=>pr.sectorContext?.sector!==null)) process.exit(1);
           if(p.sectorConcentrationApplied===true||p.productionSectorConcentrationEnabled===true) process.exit(1);
+          if(v18Audit.schemaVersion!=='20.0.0-v18-performance-audit-1') process.exit(1);
+          if(JSON.stringify(v18Audit.unreconciledClaims?.observedTradeCounts)!==JSON.stringify([16,971,1138])) process.exit(1);
+          if(v18Audit.governance?.canCalibrateV20DecisionScore!==false||v18Audit.governance?.canOpenExecutionGate!==false||v18Audit.governance?.canChangeChampion!==false||v18Audit.governance?.canPromoteChallenger!==false) process.exit(1);
+          if((v18Audit.source?.sourceArtifactAvailable!==true||v18Audit.reproducible!==true||v18Audit.unreconciledClaims?.reconciled!==true)&&v18Audit.acceptedForPerformanceClaims!==false) process.exit(1);
           if(perf.policy?.singleHeadlinePerformanceMetricAllowed!==false) process.exit(1);
           if(perf.policy?.crossEvidenceAggregationAllowed!==false) process.exit(1);
           if(perf.policy?.historicalAndForwardEvidenceMustRemainSeparate!==true) process.exit(1);
           if(perf.policy?.developmentAndHoldoutEvidenceMustRemainSeparate!==true) process.exit(1);
           if(perf.policy?.reusedBenchmarkCanPromoteChallenger!==false) process.exit(1);
           if(perf.policy?.pendingForwardReturnMustRemainNull!==true) process.exit(1);
-          if(perf.policy?.v18PerformanceAccepted!==false) process.exit(1);
+          if(perf.policy?.v18AuditRequired!==true) process.exit(1);
+          if(perf.policy?.v18PerformanceAccepted!==(v18Audit.acceptedForPerformanceClaims===true&&v18Audit.reproducible===true)) process.exit(1);
+          if(perf.externalReferences?.v18?.acceptedForPerformanceClaims!==perf.policy.v18PerformanceAccepted) process.exit(1);
+          if(perf.externalReferences?.v18?.governance?.canCalibrateV20DecisionScore!==false||perf.externalReferences?.v18?.governance?.canOpenExecutionGate!==false||perf.externalReferences?.v18?.governance?.canChangeChampion!==false||perf.externalReferences?.v18?.governance?.canPromoteChallenger!==false) process.exit(1);
           if(perf.summary?.v19AutomaticPromotion!==false||perf.summary?.v19PromotionAllowed!==false) process.exit(1);
           const v19bench=(perf.entries||[]).find(e=>e.evidenceId==='V19_V6_REUSED_BENCHMARK');
           if(!v19bench||v19bench.promotionEligible!==false||v19bench.independence?.freshIndependentEvidence!==false) process.exit(1);
@@ -317,6 +335,8 @@ jobs:
             data/v20/null-semantics-regression.json \
             data/v20/sector-provenance-audit.json \
             data/v20/sector-provenance-regression.json \
+            data/v20/v18-performance-audit.json \
+            data/v20/v18-performance-audit-regression.json \
             data/v20/performance-evidence-registry.json \
             data/v20/performance-evidence-regression.json \
             data/v20/portfolio-risk.json \
