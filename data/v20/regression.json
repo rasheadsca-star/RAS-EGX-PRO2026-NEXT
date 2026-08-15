@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-regression-2",
-  "generatedAt": "2026-08-15T09:24:38.882Z",
+  "generatedAt": "2026-08-15T09:33:14.229Z",
   "ok": true,
   "failedCount": 0,
   "failures": [],
@@ -17,7 +17,7 @@
   },
   "finalAcceptance": {
     "schemaVersion": "20.0.0-final-acceptance-1",
-    "generatedAt": "2026-08-15T09:24:54.593Z",
+    "generatedAt": "2026-08-15T09:33:28.349Z",
     "sessionDate": "2026-08-13",
     "independentCritic": true,
     "finalStatus": "RESEARCH_PLATFORM_READY_EXECUTION_NOT_READY",
@@ -240,7 +240,7 @@
   },
   "executionReadinessGap": {
     "schemaVersion": "20.0.0-execution-gap-regression-2",
-    "generatedAt": "2026-08-15T09:24:54.600Z",
+    "generatedAt": "2026-08-15T09:33:28.354Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -318,7 +318,7 @@
   },
   "backtestReadiness": {
     "schemaVersion": "20.0.0-backtest-readiness-1",
-    "generatedAt": "2026-08-15T09:24:54.605Z",
+    "generatedAt": "2026-08-15T09:33:28.359Z",
     "sessionDate": "2026-08-13",
     "status": "NOT_READY_FOR_INDEPENDENT_V20_SCORE_BACKTEST",
     "decisionScore": {
@@ -382,7 +382,7 @@
   },
   "backtestReadinessRegression": {
     "schemaVersion": "20.0.0-backtest-readiness-regression-1",
-    "generatedAt": "2026-08-15T09:24:54.607Z",
+    "generatedAt": "2026-08-15T09:33:28.361Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -407,7 +407,7 @@
   },
   "supportResistanceRemediation": {
     "schemaVersion": "20.0.0-sr-remediation-audit-3",
-    "generatedAt": "2026-08-15T09:24:54.924Z",
+    "generatedAt": "2026-08-15T09:33:28.655Z",
     "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
     "sessionDate": "2026-08-13",
     "sourceSchemaVersion": "17.0.0-internal-ohlc-sr-3",
@@ -2309,7 +2309,7 @@
   },
   "supportResistanceRemediationRegression": {
     "schemaVersion": "20.0.0-sr-remediation-regression-3",
-    "generatedAt": "2026-08-15T09:24:54.943Z",
+    "generatedAt": "2026-08-15T09:33:28.672Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -2349,9 +2349,721 @@
     "automaticV17MutationAllowed": false,
     "guaranteesExecutionGrade": false
   },
+  "supportResistanceReviewPacket": {
+    "schemaVersion": "20.0.0-sr-remediation-review-packet-1",
+    "generatedAt": "2026-08-15T09:33:28.697Z",
+    "sessionDate": "2026-08-13",
+    "status": "MANUAL_REVIEW_PACKET_RESEARCH_ONLY",
+    "sourceAuditSchemaVersion": "20.0.0-sr-remediation-audit-3",
+    "sourceAudit": "data/v20/regression.json#supportResistanceRemediation",
+    "readOnly": true,
+    "automaticV17MutationAllowed": false,
+    "automaticTrustUpgradeAllowed": false,
+    "automaticConflictResolutionAllowed": false,
+    "guaranteesExecutionGrade": false,
+    "summary": {
+      "targetCount": 8,
+      "cleanSupplementalCandidateCount": 0,
+      "supplementalEligibleButNotCleanCount": 1,
+      "alternateProviderRequiredCount": 2,
+      "currentSessionEvidenceRequiredCount": 0,
+      "priceReferenceReconciliationRequiredCount": 0,
+      "providerIdentityReferenceConflictCount": 5,
+      "criticalSourceConflictReviewCount": 1,
+      "authoritativeOhlcRepairRequiredCount": 1,
+      "stateCounts": {
+        "ALTERNATE_PROVIDER_REQUIRED": 2,
+        "AUTHORITATIVE_OHLC_REPAIR_REQUIRED": 1,
+        "CRITICAL_SOURCE_CONFLICT_MANUAL_REVIEW": 1,
+        "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW": 4
+      }
+    },
+    "rows": [
+      {
+        "symbol": "SAIB",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewState": "ALTERNATE_PROVIDER_REQUIRED",
+        "reviewPriority": "MEDIUM",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "supplementalStatus": "UNAVAILABLE",
+        "supplementalEligibleForV17Review": false,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": null,
+          "diagnosticGuardPct": null,
+          "conflict": false,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_CANDIDATE_EVIDENCE_MISSING",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The symbol remains in the authoritative V17 missing-candidate set.",
+            "evidence": "data/v17/resilient-session-status.json"
+          },
+          {
+            "code": "V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The current-session history-50 row exists but sourceSessionVerified is not true.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_PROVIDER_FETCH_FAILED",
+            "scope": "SUPPLEMENTAL",
+            "severity": "MEDIUM",
+            "detail": "Yahoo history failed for SAIB: SAIB.CA: identity score 75",
+            "evidence": "Yahoo supplemental acquisition"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "REVERIFY_HISTORY50_CURRENT_SESSION_PROVENANCE",
+            "owner": "V17_REVIEW",
+            "detail": "Re-verify the current-session row provenance against an accepted source before rebuilding Internal S/R.",
+            "automatic": false
+          },
+          {
+            "code": "TRY_ACCEPTED_ALTERNATE_PROVIDER",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Use an existing alternate provider only as supplemental review evidence; do not relabel it as V17 trusted execution evidence.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "MEGM",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "reviewPriority": "HIGH",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "supplementalStatus": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+        "supplementalEligibleForV17Review": false,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": 29.1125,
+          "diagnosticGuardPct": 8,
+          "conflict": true,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_CANDIDATE_EVIDENCE_MISSING",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The symbol remains in the authoritative V17 missing-candidate set.",
+            "evidence": "data/v17/resilient-session-status.json"
+          },
+          {
+            "code": "V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The current-session history-50 row exists but sourceSessionVerified is not true.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_PRICE_NOT_RECONCILED",
+            "scope": "SUPPLEMENTAL",
+            "severity": "HIGH",
+            "detail": "Supplemental/current reference difference is 29.112% versus tolerance 5%.",
+            "evidence": "Yahoo supplemental history + V20 current market reference"
+          },
+          {
+            "code": "SUPPLEMENTAL_IDENTITY_REFERENCE_PRICE_CONFLICT",
+            "scope": "SUPPLEMENTAL",
+            "severity": "CRITICAL",
+            "detail": "Provider identity metadata differs from the local reference by 29.1125% and exceeds the adapter diagnostic guard 8%.",
+            "evidence": "Yahoo identity metadata"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "REVERIFY_HISTORY50_CURRENT_SESSION_PROVENANCE",
+            "owner": "V17_REVIEW",
+            "detail": "Re-verify the current-session row provenance against an accepted source before rebuilding Internal S/R.",
+            "automatic": false
+          },
+          {
+            "code": "VERIFY_PRICE_SCALE_AND_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Investigate the price/reference mismatch with authoritative evidence. Do not assume a split, adjustment, or corporate action without proof.",
+            "automatic": false
+          },
+          {
+            "code": "RECONCILE_PROVIDER_IDENTITY_PRICE_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Reconcile provider identity metadata versus the authoritative price reference before treating the supplemental candidate as clean review evidence.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "SEIGA",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "reviewPriority": "HIGH",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "supplementalStatus": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+        "supplementalEligibleForV17Review": false,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": 1069.8706,
+          "diagnosticGuardPct": 8,
+          "conflict": true,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_CANDIDATE_EVIDENCE_MISSING",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The symbol remains in the authoritative V17 missing-candidate set.",
+            "evidence": "data/v17/resilient-session-status.json"
+          },
+          {
+            "code": "V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The current-session history-50 row exists but sourceSessionVerified is not true.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_PRICE_NOT_RECONCILED",
+            "scope": "SUPPLEMENTAL",
+            "severity": "HIGH",
+            "detail": "Supplemental/current reference difference is 1069.871% versus tolerance 5%.",
+            "evidence": "Yahoo supplemental history + V20 current market reference"
+          },
+          {
+            "code": "SUPPLEMENTAL_IDENTITY_REFERENCE_PRICE_CONFLICT",
+            "scope": "SUPPLEMENTAL",
+            "severity": "CRITICAL",
+            "detail": "Provider identity metadata differs from the local reference by 1069.8706% and exceeds the adapter diagnostic guard 8%.",
+            "evidence": "Yahoo identity metadata"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "REVERIFY_HISTORY50_CURRENT_SESSION_PROVENANCE",
+            "owner": "V17_REVIEW",
+            "detail": "Re-verify the current-session row provenance against an accepted source before rebuilding Internal S/R.",
+            "automatic": false
+          },
+          {
+            "code": "VERIFY_PRICE_SCALE_AND_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Investigate the price/reference mismatch with authoritative evidence. Do not assume a split, adjustment, or corporate action without proof.",
+            "automatic": false
+          },
+          {
+            "code": "RECONCILE_PROVIDER_IDENTITY_PRICE_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Reconcile provider identity metadata versus the authoritative price reference before treating the supplemental candidate as clean review evidence.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "ABUK",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "reviewPriority": "HIGH",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "supplementalStatus": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+        "supplementalEligibleForV17Review": false,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": 25.1252,
+          "diagnosticGuardPct": 8,
+          "conflict": true,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_CANDIDATE_EVIDENCE_MISSING",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The symbol remains in the authoritative V17 missing-candidate set.",
+            "evidence": "data/v17/resilient-session-status.json"
+          },
+          {
+            "code": "V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The current-session history-50 row exists but sourceSessionVerified is not true.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_CURRENT_SESSION_MISSING",
+            "scope": "SUPPLEMENTAL",
+            "severity": "MEDIUM",
+            "detail": "Supplemental latest session is 2026-08-11, not 2026-08-13.",
+            "evidence": "Yahoo supplemental history"
+          },
+          {
+            "code": "SUPPLEMENTAL_PRICE_NOT_RECONCILED",
+            "scope": "SUPPLEMENTAL",
+            "severity": "HIGH",
+            "detail": "Supplemental/current reference difference is unavailable% versus tolerance 5%.",
+            "evidence": "Yahoo supplemental history + V20 current market reference"
+          },
+          {
+            "code": "SUPPLEMENTAL_IDENTITY_REFERENCE_PRICE_CONFLICT",
+            "scope": "SUPPLEMENTAL",
+            "severity": "CRITICAL",
+            "detail": "Provider identity metadata differs from the local reference by 25.1252% and exceeds the adapter diagnostic guard 8%.",
+            "evidence": "Yahoo identity metadata"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "REVERIFY_HISTORY50_CURRENT_SESSION_PROVENANCE",
+            "owner": "V17_REVIEW",
+            "detail": "Re-verify the current-session row provenance against an accepted source before rebuilding Internal S/R.",
+            "automatic": false
+          },
+          {
+            "code": "ACQUIRE_CURRENT_SESSION_FROM_ALTERNATE_PROVIDER",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Acquire current-session evidence from an existing alternate provider if available.",
+            "automatic": false
+          },
+          {
+            "code": "VERIFY_PRICE_SCALE_AND_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Investigate the price/reference mismatch with authoritative evidence. Do not assume a split, adjustment, or corporate action without proof.",
+            "automatic": false
+          },
+          {
+            "code": "RECONCILE_PROVIDER_IDENTITY_PRICE_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Reconcile provider identity metadata versus the authoritative price reference before treating the supplemental candidate as clean review evidence.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "MFPC",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewState": "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW",
+        "reviewPriority": "HIGH",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+        "causeVerified": false,
+        "supplementalStatus": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+        "supplementalEligibleForV17Review": false,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": 9.692,
+          "diagnosticGuardPct": 8,
+          "conflict": true,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_CANDIDATE_EVIDENCE_MISSING",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The symbol remains in the authoritative V17 missing-candidate set.",
+            "evidence": "data/v17/resilient-session-status.json"
+          },
+          {
+            "code": "V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The current-session history-50 row exists but sourceSessionVerified is not true.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_CURRENT_SESSION_MISSING",
+            "scope": "SUPPLEMENTAL",
+            "severity": "MEDIUM",
+            "detail": "Supplemental latest session is 2026-08-11, not 2026-08-13.",
+            "evidence": "Yahoo supplemental history"
+          },
+          {
+            "code": "SUPPLEMENTAL_PRICE_NOT_RECONCILED",
+            "scope": "SUPPLEMENTAL",
+            "severity": "HIGH",
+            "detail": "Supplemental/current reference difference is unavailable% versus tolerance 5%.",
+            "evidence": "Yahoo supplemental history + V20 current market reference"
+          },
+          {
+            "code": "SUPPLEMENTAL_IDENTITY_REFERENCE_PRICE_CONFLICT",
+            "scope": "SUPPLEMENTAL",
+            "severity": "CRITICAL",
+            "detail": "Provider identity metadata differs from the local reference by 9.692% and exceeds the adapter diagnostic guard 8%.",
+            "evidence": "Yahoo identity metadata"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "REVERIFY_HISTORY50_CURRENT_SESSION_PROVENANCE",
+            "owner": "V17_REVIEW",
+            "detail": "Re-verify the current-session row provenance against an accepted source before rebuilding Internal S/R.",
+            "automatic": false
+          },
+          {
+            "code": "ACQUIRE_CURRENT_SESSION_FROM_ALTERNATE_PROVIDER",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Acquire current-session evidence from an existing alternate provider if available.",
+            "automatic": false
+          },
+          {
+            "code": "VERIFY_PRICE_SCALE_AND_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Investigate the price/reference mismatch with authoritative evidence. Do not assume a split, adjustment, or corporate action without proof.",
+            "automatic": false
+          },
+          {
+            "code": "RECONCILE_PROVIDER_IDENTITY_PRICE_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Reconcile provider identity metadata versus the authoritative price reference before treating the supplemental candidate as clean review evidence.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "ELNA",
+        "roles": [
+          "MISSING"
+        ],
+        "reviewState": "AUTHORITATIVE_OHLC_REPAIR_REQUIRED",
+        "reviewPriority": "HIGH",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_V17_HISTORY50_CURRENT_OHLC_INVALID",
+        "causeVerified": false,
+        "supplementalStatus": "SUPPLEMENTAL_EVIDENCE_INCOMPLETE",
+        "supplementalEligibleForV17Review": false,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": null,
+          "diagnosticGuardPct": 8,
+          "conflict": false,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_CANDIDATE_EVIDENCE_MISSING",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The symbol remains in the authoritative V17 missing-candidate set.",
+            "evidence": "data/v17/resilient-session-status.json"
+          },
+          {
+            "code": "V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The current-session history-50 row exists but sourceSessionVerified is not true.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "V17_HISTORY50_CURRENT_OHLC_INVALID",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "CRITICAL",
+            "detail": "The current-session authoritative history-50 OHLC is invalid or incomplete.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_CURRENT_SESSION_MISSING",
+            "scope": "SUPPLEMENTAL",
+            "severity": "MEDIUM",
+            "detail": "Supplemental latest session is 2026-08-11, not 2026-08-13.",
+            "evidence": "Yahoo supplemental history"
+          },
+          {
+            "code": "SUPPLEMENTAL_PRICE_NOT_RECONCILED",
+            "scope": "SUPPLEMENTAL",
+            "severity": "HIGH",
+            "detail": "Supplemental/current reference difference is unavailable% versus tolerance 5%.",
+            "evidence": "Yahoo supplemental history + V20 current market reference"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "REVERIFY_HISTORY50_CURRENT_SESSION_PROVENANCE",
+            "owner": "V17_REVIEW",
+            "detail": "Re-verify the current-session row provenance against an accepted source before rebuilding Internal S/R.",
+            "automatic": false
+          },
+          {
+            "code": "REPAIR_AUTHORITATIVE_CURRENT_SESSION_OHLC",
+            "owner": "V17_REVIEW",
+            "detail": "Repair the authoritative current-session OHLC from an accepted source; do not infer or synthesize missing OHLC.",
+            "automatic": false
+          },
+          {
+            "code": "ACQUIRE_CURRENT_SESSION_FROM_ALTERNATE_PROVIDER",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Acquire current-session evidence from an existing alternate provider if available.",
+            "automatic": false
+          },
+          {
+            "code": "VERIFY_PRICE_SCALE_AND_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Investigate the price/reference mismatch with authoritative evidence. Do not assume a split, adjustment, or corporate action without proof.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "UBEE",
+        "roles": [
+          "STALE"
+        ],
+        "reviewState": "ALTERNATE_PROVIDER_REQUIRED",
+        "reviewPriority": "MEDIUM",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_TRUSTED_SR_ROW_STALE",
+        "causeVerified": false,
+        "supplementalStatus": "UNAVAILABLE",
+        "supplementalEligibleForV17Review": false,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": null,
+          "diagnosticGuardPct": null,
+          "conflict": false,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_HISTORY50_CURRENT_ROW_NOT_SOURCE_SESSION_VERIFIED",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "The current-session history-50 row exists but sourceSessionVerified is not true.",
+            "evidence": "data/history-50.json"
+          },
+          {
+            "code": "V17_INTERNAL_SR_STALE",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "HIGH",
+            "detail": "A trusted Internal S/R row exists but is not aligned to the current reference session.",
+            "evidence": "data/v17/internal-ohlc-support-resistance.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_PROVIDER_FETCH_FAILED",
+            "scope": "SUPPLEMENTAL",
+            "severity": "MEDIUM",
+            "detail": "Yahoo history failed for UBEE: UBEE.CA: All HTTP attempts failed. https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query1.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true | https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true attempt 1: HTTP 404 from https://query2.finance.yahoo.com/v8/finance/chart/UBEE.CA?range=6mo&interval=1d&events=history&includeAdjustedClose=true",
+            "evidence": "Yahoo supplemental acquisition"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "REVERIFY_HISTORY50_CURRENT_SESSION_PROVENANCE",
+            "owner": "V17_REVIEW",
+            "detail": "Re-verify the current-session row provenance against an accepted source before rebuilding Internal S/R.",
+            "automatic": false
+          },
+          {
+            "code": "REBUILD_CURRENT_SESSION_INTERNAL_SR",
+            "owner": "V17_REVIEW",
+            "detail": "Rebuild Internal S/R from accepted current-session history after provenance is verified.",
+            "automatic": false
+          },
+          {
+            "code": "TRY_ACCEPTED_ALTERNATE_PROVIDER",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Use an existing alternate provider only as supplemental review evidence; do not relabel it as V17 trusted execution evidence.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      },
+      {
+        "symbol": "AFMC",
+        "roles": [
+          "CONFLICT"
+        ],
+        "reviewState": "CRITICAL_SOURCE_CONFLICT_MANUAL_REVIEW",
+        "reviewPriority": "HIGH",
+        "cleanSupplementalCandidate": false,
+        "authoritativeObservedCondition": "OBSERVED_CURRENT_CRITICAL_SOURCE_CONFLICT",
+        "causeVerified": false,
+        "supplementalStatus": "ELIGIBLE_FOR_V17_REVIEW",
+        "supplementalEligibleForV17Review": true,
+        "supplementalTrustedForV17Execution": false,
+        "supplementalExecutionEligible": false,
+        "providerIdentityReference": {
+          "localDifferencePct": 90.6137,
+          "diagnosticGuardPct": 8,
+          "conflict": true,
+          "guardedPolicyRequested": false
+        },
+        "blockers": [
+          {
+            "code": "V17_CRITICAL_SOURCE_CONFLICT",
+            "scope": "AUTHORITATIVE_V17",
+            "severity": "CRITICAL",
+            "detail": "Critical source conflict remains (maxDiffPct 13.67).",
+            "evidence": "data/v17/resilient-session-status.json"
+          },
+          {
+            "code": "SUPPLEMENTAL_IDENTITY_REFERENCE_PRICE_CONFLICT",
+            "scope": "SUPPLEMENTAL",
+            "severity": "CRITICAL",
+            "detail": "Provider identity metadata differs from the local reference by 90.6137% and exceeds the adapter diagnostic guard 8%.",
+            "evidence": "Yahoo identity metadata"
+          }
+        ],
+        "reviewActions": [
+          {
+            "code": "DOCUMENT_AND_RESOLVE_SOURCE_CONFLICT",
+            "owner": "V17_REVIEW",
+            "detail": "Compare authoritative inputs and external validation sources, document the discrepancy, and resolve it only through the V17 review/rebuild path.",
+            "automatic": false
+          },
+          {
+            "code": "RECONCILE_PROVIDER_IDENTITY_PRICE_REFERENCE",
+            "owner": "RESEARCH_REVIEW",
+            "detail": "Reconcile provider identity metadata versus the authoritative price reference before treating the supplemental candidate as clean review evidence.",
+            "automatic": false
+          }
+        ],
+        "automaticMutationAllowed": false,
+        "automaticResolutionAllowed": false,
+        "decisionEffect": {
+          "usedForDecisionScore": false,
+          "usedForExecutionGate": false,
+          "usedForProductionAllocation": false,
+          "opensExecutionGrade": false
+        }
+      }
+    ],
+    "interpretation": {
+      "manualReviewOnly": true,
+      "cleanSupplementalCandidateDoesNotMeanV17Trusted": true,
+      "providerIdentityDiagnosticGuardIsNotAnExecutionThreshold": true,
+      "noCorporateActionCauseInferred": true,
+      "v17RebuildStillRequired": true,
+      "note": "This packet converts same-run remediation evidence into explicit blockers and review actions. It never mutates V17, never upgrades trust, and never resolves a source conflict automatically."
+    }
+  },
+  "supportResistanceReviewPacketRegression": {
+    "schemaVersion": "20.0.0-sr-remediation-review-packet-regression-1",
+    "generatedAt": "2026-08-15T09:33:28.727Z",
+    "ok": true,
+    "failedCount": 0,
+    "failures": [],
+    "checks": {
+      "sameRunAuditTargetSetPreserved": true,
+      "noV17MutationOrTrustUpgrade": true,
+      "noDecisionExecutionOrAllocationEffect": true,
+      "providerIdentityReferenceConflictDerivedFromAdapterEvidence": true,
+      "afmcConflictRemainsUnresolved": true,
+      "afmcProviderIdentityAnomalyFlagged": true,
+      "cleanCandidateNeverMeansV17Trusted": true,
+      "noCorporateActionCauseInferred": true,
+      "allReviewActionsManual": true
+    },
+    "evidence": {
+      "targetCount": 8,
+      "cleanSupplementalCandidateCount": 0,
+      "supplementalEligibleButNotCleanCount": 1,
+      "providerIdentityReferenceConflictCount": 5,
+      "stateCounts": {
+        "ALTERNATE_PROVIDER_REQUIRED": 2,
+        "AUTHORITATIVE_OHLC_REPAIR_REQUIRED": 1,
+        "CRITICAL_SOURCE_CONFLICT_MANUAL_REVIEW": 1,
+        "PROVIDER_IDENTITY_REFERENCE_CONFLICT_REVIEW": 4
+      }
+    }
+  },
+  "supportResistanceReviewPacketMirror": {
+    "authoritativeRuntimeBuilder": "scripts/v20/build-sr-remediation-review-packet.cjs",
+    "authoritativeRuntimeRegression": "scripts/v20/sr-remediation-review-packet-regression.cjs",
+    "transientDetailedPacket": "data/v20/sr-remediation-review-packet.json",
+    "persistedPacket": "data/v20/regression.json#supportResistanceReviewPacket",
+    "persistedRegression": "data/v20/regression.json#supportResistanceReviewPacketRegression",
+    "generatedInSameMainRun": true,
+    "manualReviewOnly": true,
+    "automaticV17MutationAllowed": false,
+    "guaranteesExecutionGrade": false
+  },
   "fullMarketTechnical": {
     "schemaVersion": "20.0.0-full-market-technical-1",
-    "generatedAt": "2026-08-15T09:24:58.148Z",
+    "generatedAt": "2026-08-15T09:33:31.600Z",
     "asOfSessionDate": "2026-08-13",
     "policy": {
       "pointInTime": true,
@@ -2423,25 +3135,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 89,
+        "rowsUsed": 88,
         "currentPrice": 77.89,
         "latestClose": 74.599998,
         "currentPriceDifferencePct": 4.224,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 74.599998,
-          "sma20": 72.141499,
-          "sma50": 75.6384,
+          "sma20": 71.981999,
+          "sma50": 75.8776,
           "sma200": null,
-          "ema12": 73.175101,
-          "ema26": 73.158588,
-          "rsi14": 56.67417,
-          "macd": 0.016513,
-          "macdSignal": -0.644958,
-          "macdHistogram": 0.661471,
-          "atr14": 1.685945,
+          "ema12": 73.136713,
+          "ema26": 73.167496,
+          "rsi14": 56.297186,
+          "macd": -0.030783,
+          "macdSignal": -0.740258,
+          "macdHistogram": 0.709474,
+          "atr14": 1.708102,
           "momentum5Pct": 2.191778,
-          "momentum20Pct": 7.030131
+          "momentum20Pct": 11.50971
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -2450,7 +3162,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2490,7 +3202,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2540,25 +3252,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 12.15,
-          "sma20": 10.5365,
-          "sma50": 9.956,
+          "sma20": 10.5485,
+          "sma50": 9.9738,
           "sma200": null,
-          "ema12": 11.092742,
-          "ema26": 10.52781,
-          "rsi14": 83.374301,
-          "macd": 0.564932,
-          "macdSignal": 0.424974,
-          "macdHistogram": 0.139958,
-          "atr14": 0.402276,
+          "ema12": 11.094772,
+          "ema26": 10.534862,
+          "rsi14": 80.922223,
+          "macd": 0.55991,
+          "macdSignal": 0.420575,
+          "macdHistogram": 0.139335,
+          "atr14": 0.403618,
           "momentum5Pct": 10.958904,
-          "momentum20Pct": 30.085653
+          "momentum20Pct": 27.358491
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2641,32 +3353,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 93,
+        "rowsUsed": 92,
         "currentPrice": 54.92,
         "latestClose": 54.849998,
         "currentPriceDifferencePct": 0.127,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 54.849998,
-          "sma20": 51.253,
-          "sma50": 48.5646,
+          "sma20": 51.229,
+          "sma50": 48.5618,
           "sma200": null,
-          "ema12": 52.791949,
-          "ema26": 50.99247,
-          "rsi14": 73.267351,
-          "macd": 1.79948,
-          "macdSignal": 1.60947,
-          "macdHistogram": 0.190009,
-          "atr14": 1.237463,
+          "ema12": 52.787861,
+          "ema26": 50.981726,
+          "rsi14": 72.688668,
+          "macd": 1.806135,
+          "macdSignal": 1.615285,
+          "macdHistogram": 0.19085,
+          "atr14": 1.265462,
           "momentum5Pct": 3.490562,
-          "momentum20Pct": 17.931628
+          "momentum20Pct": 17.956985
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2688,25 +3400,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 4.4,
-          "sma20": 3.96,
-          "sma50": 3.7998,
+          "sma20": 3.973,
+          "sma50": 3.7978,
           "sma200": null,
-          "ema12": 4.143029,
-          "ema26": 3.966365,
-          "rsi14": 70.373127,
-          "macd": 0.176664,
-          "macdSignal": 0.122733,
-          "macdHistogram": 0.053931,
-          "atr14": 0.177354,
+          "ema12": 4.145057,
+          "ema26": 3.970183,
+          "rsi14": 70.247914,
+          "macd": 0.174874,
+          "macdSignal": 0.122382,
+          "macdHistogram": 0.052492,
+          "atr14": 0.176155,
           "momentum5Pct": 5.515588,
-          "momentum20Pct": 27.536232
+          "momentum20Pct": 24.293785
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2782,25 +3494,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 66.989998,
-          "sma20": 54.6235,
-          "sma50": 47.826,
+          "sma20": 54.722,
+          "sma50": 47.9532,
           "sma200": null,
-          "ema12": 60.175751,
-          "ema26": 54.59541,
-          "rsi14": 79.698716,
-          "macd": 5.580341,
-          "macdSignal": 4.263153,
-          "macdHistogram": 1.317189,
-          "atr14": 2.888054,
+          "ema12": 60.200373,
+          "ema26": 54.675698,
+          "rsi14": 79.958174,
+          "macd": 5.524675,
+          "macdSignal": 4.211058,
+          "macdHistogram": 1.313617,
+          "atr14": 2.87532,
           "momentum5Pct": 13.101465,
-          "momentum20Pct": 48.076912
+          "momentum20Pct": 45.915918
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2840,7 +3552,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -2890,25 +3602,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 2.15,
-          "sma20": 2.1735,
-          "sma50": 2.0404,
+          "sma20": 2.175,
+          "sma50": 2.0482,
           "sma200": null,
-          "ema12": 2.161485,
-          "ema26": 2.131185,
-          "rsi14": 53.618668,
-          "macd": 0.030299,
-          "macdSignal": 0.043724,
-          "macdHistogram": -0.013424,
-          "atr14": 0.060014,
+          "ema12": 2.161914,
+          "ema26": 2.133638,
+          "rsi14": 53.308491,
+          "macd": 0.028276,
+          "macdSignal": 0.041419,
+          "macdHistogram": -0.013143,
+          "atr14": 0.058749,
           "momentum5Pct": -0.921659,
-          "momentum20Pct": 0.938967
+          "momentum20Pct": 1.415094
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 123
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3111,32 +3823,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 97,
         "currentPrice": 120.78,
         "latestClose": 120.779999,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 120.779999,
-          "sma20": 103.315001,
-          "sma50": 72.1232,
+          "sma20": 106.154001,
+          "sma50": 73.3848,
           "sma200": null,
-          "ema12": 113.766144,
-          "ema26": 97.967313,
-          "rsi14": 73.366745,
-          "macd": 15.798832,
-          "macdSignal": 16.259724,
-          "macdHistogram": -0.460893,
-          "atr14": 7.775584,
+          "ema12": 114.572341,
+          "ema26": 99.477905,
+          "rsi14": 72.85187,
+          "macd": 15.094436,
+          "macdSignal": 15.996379,
+          "macdHistogram": -0.901943,
+          "atr14": 7.806256,
           "momentum5Pct": 8.3423,
-          "momentum20Pct": 99.603376
+          "momentum20Pct": 100.697905
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3176,7 +3888,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3339,7 +4051,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3361,16 +4073,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.5,
-          "sma20": 1.5275,
-          "sma50": 1.505,
+          "sma20": 1.5175,
+          "sma50": 1.5096,
           "sma200": null,
-          "ema12": 1.526357,
-          "ema26": 1.525428,
-          "rsi14": 47.163393,
-          "macd": 0.000929,
-          "macdSignal": 0.006017,
-          "macdHistogram": -0.005088,
-          "atr14": 0.063529,
+          "ema12": 1.525449,
+          "ema26": 1.524606,
+          "rsi14": 47.213012,
+          "macd": 0.000843,
+          "macdSignal": 0.00499,
+          "macdHistogram": -0.004147,
+          "atr14": 0.062895,
           "momentum5Pct": -3.225806,
           "momentum20Pct": -12.280702
         },
@@ -3379,7 +4091,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3428,7 +4140,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 19
+            "sessions": 20
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3443,32 +4155,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 90,
+        "rowsUsed": 91,
         "currentPrice": 65.28,
         "latestClose": 65.400002,
         "currentPriceDifferencePct": 0.184,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 65.400002,
-          "sma20": 63.046,
-          "sma50": 56.9552,
+          "sma20": 63.1395,
+          "sma50": 57.265,
           "sma200": null,
-          "ema12": 64.664424,
-          "ema26": 62.099718,
-          "rsi14": 63.37898,
-          "macd": 2.564706,
-          "macdSignal": 2.742208,
-          "macdHistogram": -0.177502,
-          "atr14": 2.661979,
+          "ema12": 64.674818,
+          "ema26": 62.18985,
+          "rsi14": 62.977969,
+          "macd": 2.484968,
+          "macdSignal": 2.644976,
+          "macdHistogram": -0.160008,
+          "atr14": 2.626104,
           "momentum5Pct": -0.894069,
-          "momentum20Pct": 10.472974
+          "momentum20Pct": 11.546991
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3490,25 +4202,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 0.496,
-          "sma20": 0.41215,
-          "sma50": 0.34696,
+          "sma20": 0.4146,
+          "sma50": 0.34824,
           "sma200": null,
-          "ema12": 0.451197,
-          "ema26": 0.409021,
-          "rsi14": 75.371907,
-          "macd": 0.042175,
-          "macdSignal": 0.036685,
-          "macdHistogram": 0.005491,
-          "atr14": 0.022974,
+          "ema12": 0.451775,
+          "ema26": 0.410222,
+          "rsi14": 75.432511,
+          "macd": 0.041553,
+          "macdSignal": 0.036353,
+          "macdHistogram": 0.0052,
+          "atr14": 0.02291,
           "momentum5Pct": 11.210762,
-          "momentum20Pct": 56.466877
+          "momentum20Pct": 56.962025
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 123
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3530,25 +4242,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 5.6,
-          "sma20": 5.2915,
-          "sma50": 5.172,
+          "sma20": 5.295,
+          "sma50": 5.1652,
           "sma200": null,
-          "ema12": 5.400864,
-          "ema26": 5.300494,
-          "rsi14": 62.785896,
-          "macd": 0.10037,
-          "macdSignal": 0.061658,
-          "macdHistogram": 0.038712,
-          "atr14": 0.190049,
+          "ema12": 5.401162,
+          "ema26": 5.299992,
+          "rsi14": 62.538956,
+          "macd": 0.10117,
+          "macdSignal": 0.063098,
+          "macdHistogram": 0.038072,
+          "atr14": 0.192718,
           "momentum5Pct": 6.870229,
-          "momentum20Pct": 6.870229
+          "momentum20Pct": 7.279693
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3563,32 +4275,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 89,
+        "rowsUsed": 90,
         "currentPrice": 10.87,
         "latestClose": 10.89,
         "currentPriceDifferencePct": 0.184,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 10.89,
-          "sma20": 9.9345,
-          "sma50": 9.7484,
+          "sma20": 9.9395,
+          "sma50": 9.7382,
           "sma200": null,
-          "ema12": 10.221338,
-          "ema26": 9.967596,
-          "rsi14": 76.2788,
-          "macd": 0.253741,
-          "macdSignal": 0.147111,
-          "macdHistogram": 0.106631,
-          "atr14": 0.254651,
+          "ema12": 10.222258,
+          "ema26": 9.969006,
+          "rsi14": 76.279704,
+          "macd": 0.253252,
+          "macdSignal": 0.147325,
+          "macdHistogram": 0.105927,
+          "atr14": 0.252857,
           "momentum5Pct": 7.821782,
-          "momentum20Pct": 15.482503
+          "momentum20Pct": 14.511041
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3610,25 +4322,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1305.430054,
-          "sma20": 1241.590509,
-          "sma50": 1171.483208,
+          "sma20": 1246.251007,
+          "sma50": 1173.525608,
           "sma200": null,
-          "ema12": 1273.798147,
-          "ema26": 1228.588479,
-          "rsi14": 62.673058,
-          "macd": 45.209668,
-          "macdSignal": 39.875116,
-          "macdHistogram": 5.334552,
-          "atr14": 61.137585,
+          "ema12": 1274.73513,
+          "ema26": 1231.039914,
+          "rsi14": 62.264258,
+          "macd": 43.695216,
+          "macdSignal": 38.685657,
+          "macdHistogram": 5.009559,
+          "atr14": 60.447016,
           "momentum5Pct": 3.641747,
-          "momentum20Pct": 8.771332
+          "momentum20Pct": 13.590727
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3668,7 +4380,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3791,32 +4503,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 97,
         "currentPrice": 126.66,
         "latestClose": 126.660004,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 126.660004,
-          "sma20": 112.998,
-          "sma50": 88.3868,
+          "sma20": 115.32,
+          "sma50": 89.266,
           "sma200": null,
-          "ema12": 118.772816,
-          "ema26": 107.567935,
-          "rsi14": 71.202417,
-          "macd": 11.204881,
-          "macdSignal": 12.067261,
-          "macdHistogram": -0.86238,
-          "atr14": 7.801047,
+          "ema12": 119.221476,
+          "ema26": 108.547338,
+          "rsi14": 70.985225,
+          "macd": 10.674138,
+          "macdSignal": 11.771909,
+          "macdHistogram": -1.097772,
+          "atr14": 7.923668,
           "momentum5Pct": 4.384381,
-          "momentum20Pct": 77.221215
+          "momentum20Pct": 76.185847
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3831,25 +4543,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 97,
+        "rowsUsed": 98,
         "currentPrice": 42.77,
         "latestClose": 40.43,
         "currentPriceDifferencePct": 5.471,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 40.43,
-          "sma20": 37.627,
-          "sma50": 36.5864,
+          "sma20": 37.6385,
+          "sma50": 36.5682,
           "sma200": null,
-          "ema12": 38.657374,
-          "ema26": 37.710403,
-          "rsi14": 71.130266,
-          "macd": 0.946971,
-          "macdSignal": 0.678667,
-          "macdHistogram": 0.268304,
-          "atr14": 1.071542,
+          "ema12": 38.665252,
+          "ema26": 37.721049,
+          "rsi14": 71.724319,
+          "macd": 0.944202,
+          "macdSignal": 0.679548,
+          "macdHistogram": 0.264654,
+          "atr14": 1.06141,
           "momentum5Pct": 5.176902,
-          "momentum20Pct": 13.122545
+          "momentum20Pct": 11.93245
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT",
@@ -3859,7 +4571,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3874,32 +4586,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 87,
+        "rowsUsed": 88,
         "currentPrice": 5.3,
         "latestClose": 5.29,
         "currentPriceDifferencePct": 0.189,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 5.29,
-          "sma20": 5.247,
-          "sma50": 5.1402,
+          "sma20": 5.279,
+          "sma50": 5.1538,
           "sma200": null,
-          "ema12": 5.267722,
-          "ema26": 5.198594,
-          "rsi14": 55.340826,
-          "macd": 0.069127,
-          "macdSignal": 0.083651,
-          "macdHistogram": -0.014524,
-          "atr14": 0.137531,
+          "ema12": 5.272287,
+          "ema26": 5.208537,
+          "rsi14": 54.889684,
+          "macd": 0.06375,
+          "macdSignal": 0.080258,
+          "macdHistogram": -0.016508,
+          "atr14": 0.136649,
           "momentum5Pct": 0.189394,
-          "momentum20Pct": 11.603376
+          "momentum20Pct": 10.901468
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -3979,7 +4691,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4069,25 +4781,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 12.62,
-          "sma20": 12.33,
-          "sma50": 12.1834,
+          "sma20": 12.3495,
+          "sma50": 12.1714,
           "sma200": null,
-          "ema12": 12.568231,
-          "ema26": 12.365144,
-          "rsi14": 56.589303,
-          "macd": 0.203088,
-          "macdSignal": 0.181147,
-          "macdHistogram": 0.021941,
-          "atr14": 0.361626,
+          "ema12": 12.570002,
+          "ema26": 12.368033,
+          "rsi14": 56.678659,
+          "macd": 0.201969,
+          "macdSignal": 0.181167,
+          "macdHistogram": 0.020802,
+          "atr14": 0.358649,
           "momentum5Pct": -2.321981,
-          "momentum20Pct": 6.139613
+          "momentum20Pct": 8.233276
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4102,32 +4814,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 98,
+        "rowsUsed": 99,
         "currentPrice": 24.46,
         "latestClose": 24.459999,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 24.459999,
-          "sma20": 24.236,
-          "sma50": 23.9636,
+          "sma20": 24.228,
+          "sma50": 23.9786,
           "sma200": null,
-          "ema12": 24.289828,
-          "ema26": 24.18835,
-          "rsi14": 56.414882,
-          "macd": 0.101478,
-          "macdSignal": 0.099868,
-          "macdHistogram": 0.00161,
-          "atr14": 0.330125,
+          "ema12": 24.291081,
+          "ema26": 24.193733,
+          "rsi14": 56.455353,
+          "macd": 0.097349,
+          "macdSignal": 0.095557,
+          "macdHistogram": 0.001792,
+          "atr14": 0.329528,
           "momentum5Pct": -0.163269,
-          "momentum20Pct": 1.40961
+          "momentum20Pct": 0.245898
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4149,25 +4861,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 38.23,
-          "sma20": 33.5505,
-          "sma50": 29.6598,
+          "sma20": 33.716,
+          "sma50": 29.7694,
           "sma200": null,
-          "ema12": 35.917908,
-          "ema26": 33.151343,
-          "rsi14": 77.589911,
-          "macd": 2.766565,
-          "macdSignal": 2.427686,
-          "macdHistogram": 0.338879,
-          "atr14": 1.508686,
+          "ema12": 35.952526,
+          "ema26": 33.24516,
+          "rsi14": 77.695001,
+          "macd": 2.707366,
+          "macdSignal": 2.379367,
+          "macdHistogram": 0.327999,
+          "atr14": 1.489638,
           "momentum5Pct": 7.842028,
-          "momentum20Pct": 35.759943
+          "momentum20Pct": 35.567371
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4207,7 +4919,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4262,32 +4974,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 81,
+        "rowsUsed": 82,
         "currentPrice": 139.07,
         "latestClose": 139.270004,
         "currentPriceDifferencePct": 0.144,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 139.270004,
-          "sma20": 138.9275,
-          "sma50": 135.5336,
+          "sma20": 139.0315,
+          "sma50": 135.5634,
           "sma200": null,
-          "ema12": 139.419006,
-          "ema26": 137.939093,
-          "rsi14": 54.095913,
-          "macd": 1.479913,
-          "macdSignal": 1.704593,
-          "macdHistogram": -0.22468,
-          "atr14": 2.161745,
+          "ema12": 139.451737,
+          "ema26": 138.013464,
+          "rsi14": 54.029935,
+          "macd": 1.438272,
+          "macdSignal": 1.68018,
+          "macdHistogram": -0.241908,
+          "atr14": 2.147074,
           "momentum5Pct": 0.086245,
-          "momentum20Pct": 3.546471
+          "momentum20Pct": 3.531073
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4309,18 +5021,18 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 0.415,
-          "sma20": 0.3922,
-          "sma50": 0.37186,
+          "sma20": 0.39325,
+          "sma50": 0.37306,
           "sma200": null,
-          "ema12": 0.401602,
-          "ema26": 0.389376,
-          "rsi14": 69.232865,
-          "macd": 0.012226,
-          "macdSignal": 0.01241,
-          "macdHistogram": -0.000184,
+          "ema12": 0.401862,
+          "ema26": 0.389935,
+          "rsi14": 69.302334,
+          "macd": 0.011926,
+          "macdSignal": 0.01221,
+          "macdHistogram": -0.000284,
           "atr14": 0.011223,
           "momentum5Pct": 2.977667,
-          "momentum20Pct": 14.325069
+          "momentum20Pct": 15.277778
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -4329,7 +5041,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4351,16 +5063,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.72,
-          "sma20": 1.6855,
-          "sma50": 1.6182,
+          "sma20": 1.683,
+          "sma50": 1.615,
           "sma200": null,
-          "ema12": 1.690722,
-          "ema26": 1.662825,
-          "rsi14": 60.599545,
-          "macd": 0.027896,
-          "macdSignal": 0.029092,
-          "macdHistogram": -0.001196,
-          "atr14": 0.043738,
+          "ema12": 1.690012,
+          "ema26": 1.660764,
+          "rsi14": 60.719107,
+          "macd": 0.029248,
+          "macdSignal": 0.030226,
+          "macdHistogram": -0.000978,
+          "atr14": 0.043703,
           "momentum5Pct": 0.584795,
           "momentum20Pct": 5.521472
         },
@@ -4372,7 +5084,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4387,32 +5099,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 96,
         "currentPrice": 534.19,
         "latestClose": 534.190002,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 534.190002,
-          "sma20": 474.556001,
-          "sma50": 406.798599,
+          "sma20": 478.205502,
+          "sma50": 409.287599,
           "sma200": null,
-          "ema12": 497.845801,
-          "ema26": 461.955811,
-          "rsi14": 77.612209,
-          "macd": 35.889991,
-          "macdSignal": 31.844919,
-          "macdHistogram": 4.045072,
-          "atr14": 27.745312,
+          "ema12": 498.55768,
+          "ema26": 463.877049,
+          "rsi14": 77.005742,
+          "macd": 34.680631,
+          "macdSignal": 30.887212,
+          "macdHistogram": 3.793419,
+          "atr14": 27.713779,
           "momentum5Pct": 10.18316,
-          "momentum20Pct": 34.421241
+          "momentum20Pct": 34.529571
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4590,7 +5302,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 125
+            "sessions": 124
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4613,15 +5325,15 @@
         "indicators": {
           "close": 10.34545,
           "sma20": 10.34545,
-          "sma50": 10.697198,
+          "sma50": 10.676507,
           "sma200": null,
-          "ema12": 10.349624,
-          "ema26": 10.427065,
+          "ema12": 10.348982,
+          "ema26": 10.421019,
           "rsi14": 0,
-          "macd": -0.07744,
-          "macdSignal": -0.106156,
-          "macdHistogram": 0.028716,
-          "atr14": 0.006898,
+          "macd": -0.072037,
+          "macdSignal": -0.099332,
+          "macdHistogram": 0.027295,
+          "atr14": 0.006405,
           "momentum5Pct": 0,
           "momentum20Pct": 0
         },
@@ -4632,7 +5344,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 124
+            "sessions": 125
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4682,25 +5394,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 29.27,
-          "sma20": 27.625,
-          "sma50": 26.5032,
+          "sma20": 27.6135,
+          "sma50": 26.5278,
           "sma200": null,
-          "ema12": 28.32363,
-          "ema26": 27.614999,
-          "rsi14": 64.344714,
-          "macd": 0.708631,
-          "macdSignal": 0.591443,
-          "macdHistogram": 0.117188,
-          "atr14": 0.841219,
+          "ema12": 28.322883,
+          "ema26": 27.622376,
+          "rsi14": 64.458251,
+          "macd": 0.700507,
+          "macdSignal": 0.579432,
+          "macdHistogram": 0.121075,
+          "atr14": 0.8355,
           "momentum5Pct": 1.105351,
-          "momentum20Pct": 8.689194
+          "momentum20Pct": 8.769974
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4722,25 +5434,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 2.12,
-          "sma20": 2.023,
-          "sma50": 1.8832,
+          "sma20": 2.018,
+          "sma50": 1.8788,
           "sma200": null,
-          "ema12": 2.073908,
-          "ema26": 1.998074,
-          "rsi14": 66.669099,
-          "macd": 0.075834,
-          "macdSignal": 0.065129,
-          "macdHistogram": 0.010705,
-          "atr14": 0.053083,
+          "ema12": 2.072728,
+          "ema26": 1.995006,
+          "rsi14": 66.777872,
+          "macd": 0.077722,
+          "macdSignal": 0.066463,
+          "macdHistogram": 0.01126,
+          "atr14": 0.053395,
           "momentum5Pct": 0.952381,
-          "momentum20Pct": 13.368984
+          "momentum20Pct": 14.594595
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4755,32 +5467,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 92,
+        "rowsUsed": 93,
         "currentPrice": 299.93,
         "latestClose": 299.929993,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 299.929993,
-          "sma20": 239.850002,
-          "sma50": 173.551401,
+          "sma20": 240.920001,
+          "sma50": 175.440801,
           "sma200": null,
-          "ema12": 257.075724,
-          "ema26": 225.040405,
-          "rsi14": 76.156181,
-          "macd": 32.035318,
-          "macdSignal": 28.594528,
-          "macdHistogram": 3.44079,
-          "atr14": 19.788682,
+          "ema12": 257.678222,
+          "ema26": 226.703409,
+          "rsi14": 76.163837,
+          "macd": 30.974813,
+          "macdSignal": 27.759694,
+          "macdHistogram": 3.215119,
+          "atr14": 19.875989,
           "momentum5Pct": 24.903172,
-          "momentum20Pct": 53.715663
+          "momentum20Pct": 45.174242
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4822,7 +5534,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4877,32 +5589,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 98,
+        "rowsUsed": 99,
         "currentPrice": 36.25,
         "latestClose": 36.259998,
         "currentPriceDifferencePct": 0.028,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 36.259998,
-          "sma20": 36.579,
-          "sma50": 37.7234,
+          "sma20": 36.5785,
+          "sma50": 37.6626,
           "sma200": null,
-          "ema12": 36.499901,
-          "ema26": 36.91318,
-          "rsi14": 42.56451,
-          "macd": -0.413278,
-          "macdSignal": -0.451902,
-          "macdHistogram": 0.038623,
-          "atr14": 0.606792,
+          "ema12": 36.497635,
+          "ema26": 36.893489,
+          "rsi14": 42.535523,
+          "macd": -0.395854,
+          "macdSignal": -0.431968,
+          "macdHistogram": 0.036114,
+          "atr14": 0.601144,
           "momentum5Pct": 0.415389,
-          "momentum20Pct": -3.819637
+          "momentum20Pct": -1.814249
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -4924,16 +5636,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.91,
-          "sma20": 1.906,
-          "sma50": 1.8816,
+          "sma20": 1.9085,
+          "sma50": 1.8774,
           "sma200": null,
-          "ema12": 1.921882,
-          "ema26": 1.907786,
-          "rsi14": 50.484172,
-          "macd": 0.014096,
-          "macdSignal": 0.014835,
-          "macdHistogram": -0.000738,
-          "atr14": 0.070983,
+          "ema12": 1.922265,
+          "ema26": 1.907935,
+          "rsi14": 50.455159,
+          "macd": 0.01433,
+          "macdSignal": 0.015551,
+          "macdHistogram": -0.001221,
+          "atr14": 0.072546,
           "momentum5Pct": 0,
           "momentum20Pct": -1.036269
         },
@@ -4942,7 +5654,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5046,25 +5758,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 3.04,
-          "sma20": 2.764,
-          "sma50": 2.572,
+          "sma20": 2.762,
+          "sma50": 2.579,
           "sma200": null,
-          "ema12": 2.828369,
-          "ema26": 2.728805,
-          "rsi14": 67.691418,
-          "macd": 0.099564,
-          "macdSignal": 0.068841,
-          "macdHistogram": 0.030723,
-          "atr14": 0.131303,
+          "ema12": 2.829279,
+          "ema26": 2.733095,
+          "rsi14": 67.628641,
+          "macd": 0.096183,
+          "macdSignal": 0.06518,
+          "macdHistogram": 0.031003,
+          "atr14": 0.13224,
           "momentum5Pct": 13.857678,
-          "momentum20Pct": 8.960573
+          "momentum20Pct": 8.185053
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5119,32 +5831,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 99,
+        "rowsUsed": 98,
         "currentPrice": 32.79,
         "latestClose": 32.700001,
         "currentPriceDifferencePct": 0.274,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 32.700001,
-          "sma20": 28.9305,
-          "sma50": 28.5124,
+          "sma20": 28.968,
+          "sma50": 28.5172,
           "sma200": null,
-          "ema12": 30.363404,
-          "ema26": 29.300757,
-          "rsi14": 77.922719,
-          "macd": 1.062647,
-          "macdSignal": 0.505386,
-          "macdHistogram": 0.557261,
-          "atr14": 0.812056,
+          "ema12": 30.36984,
+          "ema26": 29.313828,
+          "rsi14": 78.739486,
+          "macd": 1.056013,
+          "macdSignal": 0.501547,
+          "macdHistogram": 0.554465,
+          "atr14": 0.806999,
           "momentum5Pct": 6.031132,
-          "momentum20Pct": 15.547711
+          "momentum20Pct": 13.620569
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5184,7 +5896,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5199,32 +5911,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 92,
+        "rowsUsed": 93,
         "currentPrice": 334.48,
         "latestClose": 332.519989,
         "currentPriceDifferencePct": 0.586,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 332.519989,
-          "sma20": 300.900998,
-          "sma50": 304.9922,
+          "sma20": 301.402998,
+          "sma50": 304.613,
           "sma200": null,
-          "ema12": 307.920179,
-          "ema26": 302.895435,
-          "rsi14": 73.250923,
-          "macd": 5.024744,
-          "macdSignal": 1.03693,
-          "macdHistogram": 3.987814,
-          "atr14": 9.472838,
+          "ema12": 308.04387,
+          "ema26": 303.057797,
+          "rsi14": 73.123341,
+          "macd": 4.986074,
+          "macdSignal": 1.098784,
+          "macdHistogram": 3.88729,
+          "atr14": 9.523137,
           "momentum5Pct": 11.583889,
-          "momentum20Pct": 11.214422
+          "momentum20Pct": 13.102037
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5239,32 +5951,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 94,
         "currentPrice": 59.07,
         "latestClose": 59.07,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 59.07,
-          "sma20": 54.0065,
-          "sma50": 51.503,
+          "sma20": 53.8785,
+          "sma50": 51.434,
           "sma200": null,
-          "ema12": 56.489057,
-          "ema26": 54.130873,
-          "rsi14": 76.72092,
-          "macd": 2.358185,
-          "macdSignal": 1.744264,
-          "macdHistogram": 0.613921,
-          "atr14": 2.455175,
+          "ema12": 56.459415,
+          "ema26": 54.066183,
+          "rsi14": 76.792105,
+          "macd": 2.393232,
+          "macdSignal": 1.76785,
+          "macdHistogram": 0.625381,
+          "atr14": 2.456188,
           "momentum5Pct": 0.118644,
-          "momentum20Pct": 18.116381
+          "momentum20Pct": 18.447967
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5327,32 +6039,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 96,
         "currentPrice": 14.35,
         "latestClose": 14.42,
         "currentPriceDifferencePct": 0.488,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 14.42,
-          "sma20": 13.4275,
-          "sma50": 13.6068,
+          "sma20": 13.4305,
+          "sma50": 13.5826,
           "sma200": null,
-          "ema12": 13.788952,
-          "ema26": 13.529997,
-          "rsi14": 65.158193,
-          "macd": 0.258955,
-          "macdSignal": 0.123849,
-          "macdHistogram": 0.135106,
-          "atr14": 0.408274,
+          "ema12": 13.788427,
+          "ema26": 13.527069,
+          "rsi14": 65.629783,
+          "macd": 0.261358,
+          "macdSignal": 0.126697,
+          "macdHistogram": 0.134661,
+          "atr14": 0.405678,
           "momentum5Pct": 2.487562,
-          "momentum20Pct": 14.172605
+          "momentum20Pct": 10.66769
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5426,32 +6138,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 96,
         "currentPrice": 18.78,
         "latestClose": 18.719999,
         "currentPriceDifferencePct": 0.319,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 18.719999,
-          "sma20": 18.153,
-          "sma50": 17.9376,
+          "sma20": 18.128,
+          "sma50": 18.0346,
           "sma200": null,
-          "ema12": 18.325317,
-          "ema26": 17.999582,
-          "rsi14": 58.23642,
-          "macd": 0.325735,
-          "macdSignal": 0.266228,
-          "macdHistogram": 0.059507,
-          "atr14": 0.834168,
+          "ema12": 18.319601,
+          "ema26": 18.003993,
+          "rsi14": 58.46174,
+          "macd": 0.315608,
+          "macdSignal": 0.24769,
+          "macdHistogram": 0.067919,
+          "atr14": 0.826157,
           "momentum5Pct": 3.14049,
-          "momentum20Pct": 1.408451
+          "momentum20Pct": 2.016343
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5473,25 +6185,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 2.99,
-          "sma20": 2.846,
-          "sma50": 2.665,
+          "sma20": 2.8545,
+          "sma50": 2.6774,
           "sma200": null,
-          "ema12": 2.868019,
-          "ema26": 2.792803,
-          "rsi14": 64.062657,
-          "macd": 0.075217,
-          "macdSignal": 0.06985,
-          "macdHistogram": 0.005367,
-          "atr14": 0.108109,
+          "ema12": 2.870053,
+          "ema26": 2.798646,
+          "rsi14": 63.534131,
+          "macd": 0.071408,
+          "macdSignal": 0.066674,
+          "macdHistogram": 0.004734,
+          "atr14": 0.107988,
           "momentum5Pct": 6.028369,
-          "momentum20Pct": 11.985019
+          "momentum20Pct": 10.332103
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5593,18 +6305,18 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 37.880001,
-          "sma20": 38.197001,
-          "sma50": 38.6478,
+          "sma20": 38.185,
+          "sma50": 38.6016,
           "sma200": null,
-          "ema12": 37.809567,
-          "ema26": 38.080096,
-          "rsi14": 48.069276,
-          "macd": -0.270528,
-          "macdSignal": -0.218347,
-          "macdHistogram": -0.052182,
-          "atr14": 1.172572,
+          "ema12": 37.813929,
+          "ema26": 38.084674,
+          "rsi14": 48.033677,
+          "macd": -0.270746,
+          "macdSignal": -0.214284,
+          "macdHistogram": -0.056462,
+          "atr14": 1.16568,
           "momentum5Pct": 1.391863,
-          "momentum20Pct": 0.185136
+          "momentum20Pct": -2.572016
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT",
@@ -5614,7 +6326,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5676,25 +6388,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.75,
-          "sma20": 1.8155,
-          "sma50": 1.9464,
+          "sma20": 1.812,
+          "sma50": 1.9452,
           "sma200": null,
-          "ema12": 1.757694,
-          "ema26": 1.824083,
-          "rsi14": 38.573906,
-          "macd": -0.066389,
-          "macdSignal": -0.067602,
-          "macdHistogram": 0.001214,
-          "atr14": 0.069343,
+          "ema12": 1.757252,
+          "ema26": 1.823184,
+          "rsi14": 38.43527,
+          "macd": -0.065933,
+          "macdSignal": -0.067404,
+          "macdHistogram": 0.001471,
+          "atr14": 0.069075,
           "momentum5Pct": 3.550296,
-          "momentum20Pct": -14.215686
+          "momentum20Pct": -13.793103
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -5716,25 +6428,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 11.74,
-          "sma20": 11.741,
-          "sma50": 11.574,
+          "sma20": 11.731,
+          "sma50": 11.588,
           "sma200": null,
-          "ema12": 11.756264,
-          "ema26": 11.698491,
-          "rsi14": 51.381075,
-          "macd": 0.057773,
-          "macdSignal": 0.063706,
-          "macdHistogram": -0.005933,
-          "atr14": 0.273867,
+          "ema12": 11.755295,
+          "ema26": 11.700293,
+          "rsi14": 51.365515,
+          "macd": 0.055002,
+          "macdSignal": 0.05885,
+          "macdHistogram": -0.003849,
+          "atr14": 0.268424,
           "momentum5Pct": -1.261564,
-          "momentum20Pct": 1.381693
+          "momentum20Pct": -1.344538
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6017,32 +6729,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 98,
+        "rowsUsed": 97,
         "currentPrice": 10.91,
         "latestClose": 10.91,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 10.91,
-          "sma20": 10.7215,
-          "sma50": 10.0646,
+          "sma20": 10.725,
+          "sma50": 10.0044,
           "sma200": null,
-          "ema12": 10.694931,
-          "ema26": 10.551049,
-          "rsi14": 64.469797,
-          "macd": 0.143882,
-          "macdSignal": 0.182993,
-          "macdHistogram": -0.039111,
-          "atr14": 0.216231,
+          "ema12": 10.693864,
+          "ema26": 10.537105,
+          "rsi14": 64.398458,
+          "macd": 0.156759,
+          "macdSignal": 0.19983,
+          "macdHistogram": -0.043071,
+          "atr14": 0.220818,
           "momentum5Pct": 3.707224,
-          "momentum20Pct": 0
+          "momentum20Pct": 1.112141
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6104,25 +6816,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 40.810001,
-          "sma20": 37.6285,
-          "sma50": 37.1802,
+          "sma20": 37.6405,
+          "sma50": 37.1794,
           "sma200": null,
-          "ema12": 38.271871,
-          "ema26": 37.645108,
-          "rsi14": 77.146531,
-          "macd": 0.626763,
-          "macdSignal": 0.343606,
-          "macdHistogram": 0.283157,
-          "atr14": 0.952576,
+          "ema12": 38.276008,
+          "ema26": 37.657255,
+          "rsi14": 77.569024,
+          "macd": 0.618753,
+          "macdSignal": 0.336877,
+          "macdHistogram": 0.281876,
+          "atr14": 0.946579,
           "momentum5Pct": 7.507909,
-          "momentum20Pct": 9.822392
+          "momentum20Pct": 10.178185
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6203,25 +6915,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 81.019997,
-          "sma20": 77.953501,
-          "sma50": 76.7638,
+          "sma20": 77.584501,
+          "sma50": 76.6536,
           "sma200": null,
-          "ema12": 78.855259,
-          "ema26": 77.848181,
-          "rsi14": 62.661631,
-          "macd": 1.007078,
-          "macdSignal": 0.53481,
-          "macdHistogram": 0.472269,
-          "atr14": 2.667646,
+          "ema12": 78.765077,
+          "ema26": 77.686779,
+          "rsi14": 65.986009,
+          "macd": 1.078298,
+          "macdSignal": 0.550993,
+          "macdHistogram": 0.527305,
+          "atr14": 2.604735,
           "momentum5Pct": 5.701233,
-          "momentum20Pct": 7.425085
+          "momentum20Pct": 6.703539
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6451,7 +7163,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6750,25 +7462,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 87.449997,
-          "sma20": 82.957,
-          "sma50": 109.6067,
+          "sma20": 82.8635,
+          "sma50": 110.8489,
           "sma200": null,
-          "ema12": 85.268475,
-          "ema26": 90.533993,
-          "rsi14": 41.841697,
-          "macd": -5.265517,
-          "macdSignal": -7.809495,
-          "macdHistogram": 2.543978,
-          "atr14": 2.876205,
+          "ema12": 85.369417,
+          "ema26": 91.12255,
+          "rsi14": 40.959364,
+          "macd": -5.753133,
+          "macdSignal": -8.360954,
+          "macdHistogram": 2.607821,
+          "atr14": 2.997227,
           "momentum5Pct": 3.149325,
-          "momentum20Pct": 12.072277
+          "momentum20Pct": 9.999996
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 123
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6783,23 +7495,23 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 93,
+        "rowsUsed": 94,
         "currentPrice": 7.82,
         "latestClose": 7.85,
         "currentPriceDifferencePct": 0.384,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.85,
-          "sma20": 8.1685,
-          "sma50": 7.2362,
+          "sma20": 8.207,
+          "sma50": 7.2574,
           "sma200": null,
-          "ema12": 8.132658,
-          "ema26": 7.857896,
-          "rsi14": 50.442118,
-          "macd": 0.274761,
-          "macdSignal": 0.368237,
-          "macdHistogram": -0.093475,
-          "atr14": 0.268712,
+          "ema12": 8.140841,
+          "ema26": 7.883031,
+          "rsi14": 49.681945,
+          "macd": 0.25781,
+          "macdSignal": 0.353575,
+          "macdHistogram": -0.095765,
+          "atr14": 0.26573,
           "momentum5Pct": -4.384896,
           "momentum20Pct": 6.802721
         },
@@ -6808,7 +7520,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6870,25 +7582,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 13.55,
-          "sma20": 8.679,
-          "sma50": 7.617,
+          "sma20": 8.676,
+          "sma50": 7.6802,
           "sma200": null,
-          "ema12": 9.631009,
-          "ema26": 8.692985,
-          "rsi14": 89.649152,
-          "macd": 0.938024,
-          "macdSignal": 0.496675,
-          "macdHistogram": 0.441349,
-          "atr14": 0.763009,
+          "ema12": 9.63306,
+          "ema26": 8.709204,
+          "rsi14": 89.980462,
+          "macd": 0.923856,
+          "macdSignal": 0.47913,
+          "macdHistogram": 0.444726,
+          "atr14": 0.760379,
           "momentum5Pct": 63.845224,
-          "momentum20Pct": 63.44994
+          "momentum20Pct": 64.043584
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6915,7 +7627,7 @@
           "sma200": null,
           "ema12": 15.76,
           "ema26": 15.76,
-          "rsi14": 0,
+          "rsi14": 100,
           "macd": 0,
           "macdSignal": 0,
           "macdHistogram": 0,
@@ -6930,7 +7642,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 124
+            "sessions": 125
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -6945,25 +7657,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 92,
+        "rowsUsed": 91,
         "currentPrice": 55,
         "latestClose": 57.200001,
         "currentPriceDifferencePct": 4,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 57.200001,
-          "sma20": 48.661001,
-          "sma50": 45.4758,
+          "sma20": 48.573501,
+          "sma50": 45.336,
           "sma200": null,
-          "ema12": 51.869013,
-          "ema26": 48.774677,
-          "rsi14": 78.624882,
-          "macd": 3.094335,
-          "macdSignal": 2.223061,
-          "macdHistogram": 0.871274,
-          "atr14": 2.225542,
+          "ema12": 51.84837,
+          "ema26": 48.722039,
+          "rsi14": 78.139303,
+          "macd": 3.126331,
+          "macdSignal": 2.250023,
+          "macdHistogram": 0.876308,
+          "atr14": 2.255971,
           "momentum5Pct": 14.422882,
-          "momentum20Pct": 31.042379
+          "momentum20Pct": 37.500009
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -6972,7 +7684,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7102,25 +7814,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 31.02,
-          "sma20": 31.419,
-          "sma50": 31.8888,
+          "sma20": 31.4525,
+          "sma50": 31.9122,
           "sma200": null,
-          "ema12": 31.514395,
-          "ema26": 31.614493,
-          "rsi14": 44.20101,
-          "macd": -0.100098,
-          "macdSignal": -0.126983,
-          "macdHistogram": 0.026885,
-          "atr14": 1.03674,
+          "ema12": 31.520592,
+          "ema26": 31.630853,
+          "rsi14": 44.147208,
+          "macd": -0.110261,
+          "macdSignal": -0.135186,
+          "macdHistogram": 0.024925,
+          "atr14": 1.047806,
           "momentum5Pct": -5.942996,
-          "momentum20Pct": -3.183524
+          "momentum20Pct": -4.081633
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7598,32 +8310,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 97,
+        "rowsUsed": 98,
         "currentPrice": 7.64,
         "latestClose": 7.62,
         "currentPriceDifferencePct": 0.262,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.62,
-          "sma20": 7.935,
-          "sma50": 7.392,
+          "sma20": 8.0155,
+          "sma50": 7.431,
           "sma200": null,
-          "ema12": 7.871877,
-          "ema26": 7.72873,
-          "rsi14": 47.339143,
-          "macd": 0.143147,
-          "macdSignal": 0.236986,
-          "macdHistogram": -0.093839,
-          "atr14": 0.224269,
+          "ema12": 7.88312,
+          "ema26": 7.75595,
+          "rsi14": 46.440521,
+          "macd": 0.12717,
+          "macdSignal": 0.22582,
+          "macdHistogram": -0.09865,
+          "atr14": 0.221625,
           "momentum5Pct": -4.511278,
-          "momentum20Pct": 8.701854
+          "momentum20Pct": 13.05638
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7703,7 +8415,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7785,7 +8497,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 124
+            "sessions": 125
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7807,16 +8519,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.24,
-          "sma20": 7.0225,
-          "sma50": 6.8908,
+          "sma20": 7.0255,
+          "sma50": 6.9048,
           "sma200": null,
-          "ema12": 7.022142,
-          "ema26": 6.968367,
-          "rsi14": 63.107009,
-          "macd": 0.053775,
-          "macdSignal": 0.056259,
-          "macdHistogram": -0.002484,
-          "atr14": 0.187788,
+          "ema12": 7.022616,
+          "ema26": 6.972798,
+          "rsi14": 63.19759,
+          "macd": 0.049817,
+          "macdSignal": 0.051284,
+          "macdHistogram": -0.001466,
+          "atr14": 0.186043,
           "momentum5Pct": 4.473304,
           "momentum20Pct": 3.281027
         },
@@ -7825,7 +8537,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -7847,16 +8559,16 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 1.88,
-          "sma20": 1.838,
-          "sma50": 1.734,
+          "sma20": 1.844,
+          "sma50": 1.7362,
           "sma200": null,
-          "ema12": 1.86075,
-          "ema26": 1.812003,
-          "rsi14": 59.243403,
-          "macd": 0.048747,
-          "macdSignal": 0.05102,
-          "macdHistogram": -0.002273,
-          "atr14": 0.074679,
+          "ema12": 1.862036,
+          "ema26": 1.814662,
+          "rsi14": 59.079567,
+          "macd": 0.047374,
+          "macdSignal": 0.050392,
+          "macdHistogram": -0.003018,
+          "atr14": 0.074458,
           "momentum5Pct": 0.534759,
           "momentum20Pct": 13.253012
         },
@@ -7865,7 +8577,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8003,7 +8715,7 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 93,
+        "rowsUsed": 94,
         "currentPrice": 47.6,
         "latestClose": 47.599998,
         "currentPriceDifferencePct": 0,
@@ -8011,15 +8723,15 @@
         "indicators": {
           "close": 47.599998,
           "sma20": 42.096,
-          "sma50": 38.9836,
+          "sma50": 39.003,
           "sma200": null,
-          "ema12": 45.278628,
-          "ema26": 42.406758,
-          "rsi14": 69.341076,
-          "macd": 2.87187,
-          "macdSignal": 2.218144,
-          "macdHistogram": 0.653726,
-          "atr14": 1.854446,
+          "ema12": 45.280482,
+          "ema26": 42.421211,
+          "rsi14": 69.390056,
+          "macd": 2.859271,
+          "macdSignal": 2.203081,
+          "macdHistogram": 0.65619,
+          "atr14": 1.839689,
           "momentum5Pct": -3.780075,
           "momentum20Pct": 25.296119
         },
@@ -8028,7 +8740,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8068,7 +8780,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8150,7 +8862,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 123
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8293,25 +9005,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 94,
+        "rowsUsed": 95,
         "currentPrice": 321.69,
         "latestClose": 297.959991,
         "currentPriceDifferencePct": 7.377,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 297.959991,
-          "sma20": 283.049995,
-          "sma50": 280.063797,
+          "sma20": 283.770495,
+          "sma50": 279.588597,
           "sma200": null,
-          "ema12": 290.15776,
-          "ema26": 283.135344,
-          "rsi14": 62.193663,
-          "macd": 7.022416,
-          "macdSignal": 5.609724,
-          "macdHistogram": 1.412691,
-          "atr14": 12.636626,
+          "ema12": 290.460661,
+          "ema26": 283.606363,
+          "rsi14": 62.460753,
+          "macd": 6.854298,
+          "macdSignal": 5.585692,
+          "macdHistogram": 1.268606,
+          "atr14": 12.468024,
           "momentum5Pct": 4.477713,
-          "momentum20Pct": 19.031633
+          "momentum20Pct": 9.612627
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT",
@@ -8321,7 +9033,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8361,7 +9073,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8401,7 +9113,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8423,25 +9135,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 46.099998,
-          "sma20": 45.1475,
-          "sma50": 39.1068,
+          "sma20": 45.287,
+          "sma50": 39.3838,
           "sma200": null,
-          "ema12": 46.140509,
-          "ema26": 43.798293,
-          "rsi14": 57.786745,
-          "macd": 2.342217,
-          "macdSignal": 2.451585,
-          "macdHistogram": -0.109368,
-          "atr14": 1.952523,
+          "ema12": 46.184792,
+          "ema26": 43.945194,
+          "rsi14": 57.254265,
+          "macd": 2.239598,
+          "macdSignal": 2.355439,
+          "macdHistogram": -0.11584,
+          "atr14": 1.94541,
           "momentum5Pct": 1.541841,
-          "momentum20Pct": 9.112421
+          "momentum20Pct": 9.345346
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8607,25 +9319,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 5.99,
-          "sma20": 6.281,
-          "sma50": 6.0726,
+          "sma20": 6.3695,
+          "sma50": 6.126,
           "sma200": null,
-          "ema12": 6.122,
-          "ema26": 6.159882,
-          "rsi14": 46.018807,
-          "macd": -0.037882,
-          "macdSignal": 0.016351,
-          "macdHistogram": -0.054233,
-          "atr14": 0.278595,
+          "ema12": 6.193774,
+          "ema26": 6.228575,
+          "rsi14": 46.621689,
+          "macd": -0.034801,
+          "macdSignal": 0.03691,
+          "macdHistogram": -0.071711,
+          "atr14": 0.377481,
           "momentum5Pct": 0.955062,
-          "momentum20Pct": -1.155116
+          "momentum20Pct": -2.601626
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8739,32 +9451,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 96,
         "currentPrice": 88.92,
         "latestClose": 89.059998,
         "currentPriceDifferencePct": 0.157,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 89.059998,
-          "sma20": 83.6465,
-          "sma50": 74.5688,
+          "sma20": 84.5625,
+          "sma50": 74.8358,
           "sma200": null,
-          "ema12": 85.819708,
-          "ema26": 81.424057,
-          "rsi14": 63.701392,
-          "macd": 4.395651,
-          "macdSignal": 4.259369,
-          "macdHistogram": 0.136282,
-          "atr14": 4.534136,
+          "ema12": 85.97434,
+          "ema26": 81.780756,
+          "rsi14": 63.442645,
+          "macd": 4.193584,
+          "macdSignal": 4.138293,
+          "macdHistogram": 0.055291,
+          "atr14": 4.505183,
           "momentum5Pct": 7.404728,
-          "momentum20Pct": 30.567364
+          "momentum20Pct": 31.862595
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8844,7 +9556,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -8899,32 +9611,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 89,
+        "rowsUsed": 90,
         "currentPrice": 35,
         "latestClose": 35.950001,
         "currentPriceDifferencePct": 2.714,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 35.950001,
-          "sma20": 29.2325,
-          "sma50": 25.211,
+          "sma20": 29.2825,
+          "sma50": 25.3034,
           "sma200": null,
-          "ema12": 31.388011,
-          "ema26": 28.82444,
-          "rsi14": 85.770599,
-          "macd": 2.563571,
-          "macdSignal": 1.950694,
-          "macdHistogram": 0.612877,
-          "atr14": 1.417351,
+          "ema12": 31.408435,
+          "ema26": 28.899206,
+          "rsi14": 86.093604,
+          "macd": 2.50923,
+          "macdSignal": 1.897761,
+          "macdHistogram": 0.611469,
+          "atr14": 1.412293,
           "momentum5Pct": 17.483663,
-          "momentum20Pct": 31.878213
+          "momentum20Pct": 35.15038
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9044,7 +9756,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9106,25 +9818,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 25.1,
-          "sma20": 23.5725,
-          "sma50": 22.652,
+          "sma20": 23.5625,
+          "sma50": 22.6776,
           "sma200": null,
-          "ema12": 24.128728,
-          "ema26": 23.52302,
-          "rsi14": 66.24906,
-          "macd": 0.605708,
-          "macdSignal": 0.487825,
-          "macdHistogram": 0.117883,
-          "atr14": 0.737973,
+          "ema12": 24.12962,
+          "ema26": 23.531249,
+          "rsi14": 66.247182,
+          "macd": 0.598371,
+          "macdSignal": 0.479033,
+          "macdHistogram": 0.119337,
+          "atr14": 0.731891,
           "momentum5Pct": 1.332257,
-          "momentum20Pct": 9.606987
+          "momentum20Pct": 9.130435
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9181,25 +9893,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 85,
+        "rowsUsed": 86,
         "currentPrice": 42.88,
         "latestClose": 41.950001,
         "currentPriceDifferencePct": 2.169,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 41.950001,
-          "sma20": 39.756001,
-          "sma50": 37.526,
+          "sma20": 39.776001,
+          "sma50": 37.675,
           "sma200": null,
-          "ema12": 40.833725,
-          "ema26": 39.485756,
-          "rsi14": 67.409998,
-          "macd": 1.347969,
-          "macdSignal": 1.218606,
-          "macdHistogram": 0.129363,
-          "atr14": 1.152235,
+          "ema12": 40.822529,
+          "ema26": 39.510524,
+          "rsi14": 67.555432,
+          "macd": 1.312005,
+          "macdSignal": 1.167558,
+          "macdHistogram": 0.144447,
+          "atr14": 1.141632,
           "momentum5Pct": 6.715848,
-          "momentum20Pct": 8.062857
+          "momentum20Pct": 10.394739
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -9208,7 +9920,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9223,32 +9935,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 91,
+        "rowsUsed": 92,
         "currentPrice": 26.1,
         "latestClose": 26.110001,
         "currentPriceDifferencePct": 0.038,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 26.110001,
-          "sma20": 23.745,
-          "sma50": 23.3346,
+          "sma20": 23.75,
+          "sma50": 23.3326,
           "sma200": null,
-          "ema12": 24.770137,
-          "ema26": 23.978545,
-          "rsi14": 77.027258,
-          "macd": 0.791592,
-          "macdSignal": 0.423925,
-          "macdHistogram": 0.367667,
-          "atr14": 0.592624,
+          "ema12": 24.776096,
+          "ema26": 23.986409,
+          "rsi14": 77.355555,
+          "macd": 0.789687,
+          "macdSignal": 0.426058,
+          "macdHistogram": 0.363629,
+          "atr14": 0.584847,
           "momentum5Pct": 8.115946,
-          "momentum20Pct": 16.875564
+          "momentum20Pct": 13.030307
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9263,32 +9975,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 98,
+        "rowsUsed": 99,
         "currentPrice": 142,
         "latestClose": 143,
         "currentPriceDifferencePct": 0.704,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 143,
-          "sma20": 108.751,
-          "sma50": 95.3218,
+          "sma20": 108.9535,
+          "sma50": 95.344,
           "sma200": null,
-          "ema12": 126.453486,
-          "ema26": 111.575999,
-          "rsi14": 75.996848,
-          "macd": 14.877488,
-          "macdSignal": 10.501391,
-          "macdHistogram": 4.376097,
-          "atr14": 10.089257,
+          "ema12": 126.520774,
+          "ema26": 111.693239,
+          "rsi14": 75.965961,
+          "macd": 14.827535,
+          "macdSignal": 10.486423,
+          "macdHistogram": 4.341112,
+          "atr14": 10.065305,
           "momentum5Pct": 9.957706,
-          "momentum20Pct": 63.447255
+          "momentum20Pct": 64.367816
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9303,32 +10015,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 95,
+        "rowsUsed": 94,
         "currentPrice": 15.25,
         "latestClose": 15.29,
         "currentPriceDifferencePct": 0.262,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 15.29,
-          "sma20": 15,
-          "sma50": 15.032,
+          "sma20": 15.0135,
+          "sma50": 15.0084,
           "sma200": null,
-          "ema12": 15.1606,
-          "ema26": 14.996279,
-          "rsi14": 56.560815,
-          "macd": 0.164321,
-          "macdSignal": 0.134896,
-          "macdHistogram": 0.029425,
-          "atr14": 0.367643,
+          "ema12": 15.164402,
+          "ema26": 14.999064,
+          "rsi14": 56.419253,
+          "macd": 0.165338,
+          "macdSignal": 0.140131,
+          "macdHistogram": 0.025207,
+          "atr14": 0.373076,
           "momentum5Pct": -0.971503,
-          "momentum20Pct": 2.479893
+          "momentum20Pct": 3.450609
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9479,25 +10191,25 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 98,
+        "rowsUsed": 97,
         "currentPrice": 32.99,
         "latestClose": 34.900002,
         "currentPriceDifferencePct": 5.79,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 34.900002,
-          "sma20": 35.8335,
-          "sma50": 30.1538,
+          "sma20": 35.8385,
+          "sma50": 29.8848,
           "sma200": null,
-          "ema12": 35.42846,
-          "ema26": 34.112265,
-          "rsi14": 55.088212,
-          "macd": 1.316194,
-          "macdSignal": 1.920615,
-          "macdHistogram": -0.604421,
-          "atr14": 1.377997,
+          "ema12": 35.399599,
+          "ema26": 33.976465,
+          "rsi14": 55.596998,
+          "macd": 1.423134,
+          "macdSignal": 2.034939,
+          "macdHistogram": -0.611804,
+          "atr14": 1.3991,
           "momentum5Pct": -5.343089,
-          "momentum20Pct": -3.324089
+          "momentum20Pct": -2.513958
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT",
@@ -9507,7 +10219,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9529,25 +10241,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 8.83,
-          "sma20": 9.097,
-          "sma50": 7.6892,
+          "sma20": 9.152,
+          "sma50": 7.7658,
           "sma200": null,
-          "ema12": 9.026405,
-          "ema26": 8.667052,
-          "rsi14": 53.964735,
-          "macd": 0.359353,
-          "macdSignal": 0.509708,
-          "macdHistogram": -0.150355,
-          "atr14": 0.411044,
+          "ema12": 9.041045,
+          "ema26": 8.709806,
+          "rsi14": 53.042855,
+          "macd": 0.331239,
+          "macdSignal": 0.485365,
+          "macdHistogram": -0.154126,
+          "atr14": 0.427279,
           "momentum5Pct": -2.967033,
-          "momentum20Pct": 3.882353
+          "momentum20Pct": 6.385542
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9719,25 +10431,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 7.07,
-          "sma20": 7.515,
-          "sma50": 7.4438,
+          "sma20": 7.5085,
+          "sma50": 7.4584,
           "sma200": null,
-          "ema12": 7.368874,
-          "ema26": 7.425765,
-          "rsi14": 37.297784,
-          "macd": -0.05689,
-          "macdSignal": 0.010759,
-          "macdHistogram": -0.06765,
-          "atr14": 0.233551,
+          "ema12": 7.370056,
+          "ema26": 7.43303,
+          "rsi14": 37.313386,
+          "macd": -0.062975,
+          "macdSignal": 0.00366,
+          "macdHistogram": -0.066635,
+          "atr14": 0.231953,
           "momentum5Pct": -4.716981,
-          "momentum20Pct": -11.625
+          "momentum20Pct": -11.292346
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9819,7 +10531,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9881,25 +10593,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 3.76,
-          "sma20": 3.87,
-          "sma50": 3.8374,
+          "sma20": 3.884,
+          "sma50": 3.8446,
           "sma200": null,
-          "ema12": 3.826168,
-          "ema26": 3.842033,
-          "rsi14": 44.303582,
-          "macd": -0.015865,
-          "macdSignal": -0.000331,
-          "macdHistogram": -0.015534,
-          "atr14": 0.097595,
+          "ema12": 3.830131,
+          "ema26": 3.849121,
+          "rsi14": 43.620935,
+          "macd": -0.01899,
+          "macdSignal": -0.001135,
+          "macdHistogram": -0.017855,
+          "atr14": 0.09713,
           "momentum5Pct": -2.337662,
-          "momentum20Pct": -0.791557
+          "momentum20Pct": -2.083333
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -9921,25 +10633,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 12.38,
-          "sma20": 12.8445,
-          "sma50": 11.7088,
+          "sma20": 12.8815,
+          "sma50": 11.6626,
           "sma200": null,
-          "ema12": 12.533608,
-          "ema26": 12.441373,
-          "rsi14": 49.247092,
-          "macd": 0.092235,
-          "macdSignal": 0.222642,
-          "macdHistogram": -0.130407,
-          "atr14": 0.487235,
+          "ema12": 12.528274,
+          "ema26": 12.411527,
+          "rsi14": 49.779348,
+          "macd": 0.116746,
+          "macdSignal": 0.24983,
+          "macdHistogram": -0.133084,
+          "atr14": 0.49414,
           "momentum5Pct": -0.241741,
-          "momentum20Pct": -12.446959
+          "momentum20Pct": -6.212121
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10013,32 +10725,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 99,
+        "rowsUsed": 100,
         "currentPrice": 23.51,
         "latestClose": 23.51,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 23.51,
-          "sma20": 22.074,
-          "sma50": 21.966,
+          "sma20": 22.07,
+          "sma50": 21.9516,
           "sma200": null,
-          "ema12": 22.400085,
-          "ema26": 22.111219,
-          "rsi14": 69.101453,
-          "macd": 0.288866,
-          "macdSignal": 0.147867,
-          "macdHistogram": 0.140999,
-          "atr14": 0.49981,
+          "ema12": 22.401166,
+          "ema26": 22.110886,
+          "rsi14": 69.596192,
+          "macd": 0.29028,
+          "macdSignal": 0.151152,
+          "macdHistogram": 0.139128,
+          "atr14": 0.495264,
           "momentum5Pct": 7.695831,
-          "momentum20Pct": 8.141674
+          "momentum20Pct": 8.491001
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10078,7 +10790,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10093,32 +10805,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 93,
+        "rowsUsed": 94,
         "currentPrice": 280.32,
         "latestClose": 280.320007,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 280.320007,
-          "sma20": 271.577495,
-          "sma50": 264.797997,
+          "sma20": 274.504495,
+          "sma50": 265.122197,
           "sma200": null,
-          "ema12": 278.309198,
-          "ema26": 270.697761,
-          "rsi14": 58.303085,
-          "macd": 7.611437,
-          "macdSignal": 7.298984,
-          "macdHistogram": 0.312453,
-          "atr14": 13.761141,
+          "ema12": 278.951341,
+          "ema26": 271.82193,
+          "rsi14": 55.888394,
+          "macd": 7.129411,
+          "macdSignal": 7.204447,
+          "macdHistogram": -0.075036,
+          "atr14": 14.798917,
           "momentum5Pct": 0.26469,
-          "momentum20Pct": 18.238571
+          "momentum20Pct": 17.702386
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10133,32 +10845,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 96,
+        "rowsUsed": 97,
         "currentPrice": 617.71,
         "latestClose": 617.710022,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 617.710022,
-          "sma20": 610.793002,
-          "sma50": 612.891403,
+          "sma20": 610.431503,
+          "sma50": 612.257003,
           "sma200": null,
-          "ema12": 611.01522,
-          "ema26": 607.520293,
-          "rsi14": 57.092284,
-          "macd": 3.494927,
-          "macdSignal": 3.572845,
-          "macdHistogram": -0.077918,
-          "atr14": 13.234178,
+          "ema12": 611.102413,
+          "ema26": 607.806781,
+          "rsi14": 57.171545,
+          "macd": 3.295632,
+          "macdSignal": 3.371615,
+          "macdHistogram": -0.075984,
+          "atr14": 13.732448,
           "momentum5Pct": 1.759385,
-          "momentum20Pct": -0.577815
+          "momentum20Pct": -0.288939
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10180,25 +10892,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 72.699997,
-          "sma20": 59.784999,
-          "sma50": 51.8374,
+          "sma20": 59.734999,
+          "sma50": 51.776,
           "sma200": null,
-          "ema12": 66.23406,
-          "ema26": 59.873308,
-          "rsi14": 79.909402,
-          "macd": 6.360752,
-          "macdSignal": 5.121657,
-          "macdHistogram": 1.239094,
-          "atr14": 3.765984,
+          "ema12": 66.223645,
+          "ema26": 59.843396,
+          "rsi14": 79.778053,
+          "macd": 6.380249,
+          "macdSignal": 5.138637,
+          "macdHistogram": 1.241612,
+          "atr14": 3.762934,
           "momentum5Pct": 8.750934,
-          "momentum20Pct": 54.680845
+          "momentum20Pct": 52.3151
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10282,7 +10994,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 125
+            "sessions": 124
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10606,25 +11318,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 49.360001,
-          "sma20": 47.330501,
-          "sma50": 47.8252,
+          "sma20": 47.347501,
+          "sma50": 47.8624,
           "sma200": null,
-          "ema12": 47.814952,
-          "ema26": 47.583347,
-          "rsi14": 70.149617,
-          "macd": 0.231605,
-          "macdSignal": -0.033327,
-          "macdHistogram": 0.264932,
-          "atr14": 0.813753,
+          "ema12": 47.816757,
+          "ema26": 47.596477,
+          "rsi14": 69.698068,
+          "macd": 0.220281,
+          "macdSignal": -0.047215,
+          "macdHistogram": 0.267496,
+          "atr14": 0.82504,
           "momentum5Pct": 3.762878,
-          "momentum20Pct": 4.443511
+          "momentum20Pct": 5.47009
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10664,7 +11376,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 122
+            "sessions": 121
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -10994,25 +11706,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 568.440002,
-          "sma20": 530.912511,
-          "sma50": 498.411005,
+          "sma20": 533.93251,
+          "sma50": 499.727604,
           "sma200": null,
-          "ema12": 543.704572,
-          "ema26": 526.302051,
-          "rsi14": 69.733819,
-          "macd": 17.402521,
-          "macdSignal": 15.787265,
-          "macdHistogram": 1.615256,
-          "atr14": 20.561235,
+          "ema12": 544.674117,
+          "ema26": 527.981218,
+          "rsi14": 69.783343,
+          "macd": 16.692899,
+          "macdSignal": 15.601362,
+          "macdHistogram": 1.091537,
+          "atr14": 20.337075,
           "momentum5Pct": 5.756279,
-          "momentum20Pct": 13.813192
+          "momentum20Pct": 16.015266
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -11092,7 +11804,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -11114,25 +11826,25 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 20.18,
-          "sma20": 18.694,
-          "sma50": 15.703,
+          "sma20": 18.6645,
+          "sma50": 15.8156,
           "sma200": null,
-          "ema12": 18.652497,
-          "ema26": 17.635964,
-          "rsi14": 67.591757,
-          "macd": 1.016533,
-          "macdSignal": 1.018461,
-          "macdHistogram": -0.001928,
-          "atr14": 1.170996,
+          "ema12": 18.670979,
+          "ema26": 17.712462,
+          "rsi14": 67.560324,
+          "macd": 0.958517,
+          "macdSignal": 0.961204,
+          "macdHistogram": -0.002687,
+          "atr14": 1.145693,
           "momentum5Pct": 11.368647,
-          "momentum20Pct": 0.39801
+          "momentum20Pct": 3.434136
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -11231,32 +11943,32 @@
         "source": "yahoo",
         "sourceKind": "LIVE_YAHOO_REFRESH",
         "identityVerified": true,
-        "rowsUsed": 85,
+        "rowsUsed": 86,
         "currentPrice": 630.79,
         "latestClose": 630.789978,
         "currentPriceDifferencePct": 0,
         "futureRowsRejected": 0,
         "indicators": {
           "close": 630.789978,
-          "sma20": 570.929506,
-          "sma50": 550.511207,
+          "sma20": 574.875006,
+          "sma50": 551.465607,
           "sma200": null,
-          "ema12": 586.000522,
-          "ema26": 569.63915,
-          "rsi14": 72.190147,
-          "macd": 16.361372,
-          "macdSignal": 13.373549,
-          "macdHistogram": 2.987823,
-          "atr14": 24.567875,
+          "ema12": 586.666874,
+          "ema26": 570.914563,
+          "rsi14": 72.552092,
+          "macd": 15.752311,
+          "macdSignal": 13.159185,
+          "macdHistogram": 2.593126,
+          "atr14": 24.289095,
           "momentum5Pct": 7.926968,
-          "momentum20Pct": 24.647271
+          "momentum20Pct": 24.251967
         },
         "blockers": [],
         "attempts": [
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -11318,18 +12030,18 @@
         "futureRowsRejected": 0,
         "indicators": {
           "close": 12.97,
-          "sma20": 12.0975,
-          "sma50": 10.8152,
+          "sma20": 12.121,
+          "sma50": 10.8646,
           "sma200": null,
-          "ema12": 12.444698,
-          "ema26": 11.895467,
-          "rsi14": 73.488641,
-          "macd": 0.549231,
-          "macdSignal": 0.527498,
-          "macdHistogram": 0.021733,
-          "atr14": 0.529741,
+          "ema12": 12.450893,
+          "ema26": 11.918694,
+          "rsi14": 73.035962,
+          "macd": 0.532199,
+          "macdSignal": 0.510016,
+          "macdHistogram": 0.022183,
+          "atr14": 0.523765,
           "momentum5Pct": 2.125984,
-          "momentum20Pct": 16.846847
+          "momentum20Pct": 14.778761
         },
         "blockers": [
           "LAST_HISTORY_SESSION_NOT_CURRENT"
@@ -11338,7 +12050,7 @@
           {
             "source": "yahoo_live",
             "ok": true,
-            "sessions": 121
+            "sessions": 122
           }
         ],
         "decisionUse": "MARKET_TECHNICAL_EVIDENCE_ONLY_NOT_SCORE_EXECUTION_OR_ALLOCATION",
@@ -11390,7 +12102,7 @@
   },
   "fullMarketTechnicalRegression": {
     "schemaVersion": "20.0.0-full-market-technical-regression-2",
-    "generatedAt": "2026-08-15T09:24:58.199Z",
+    "generatedAt": "2026-08-15T09:33:31.654Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -11425,7 +12137,7 @@
   },
   "extendedResearchBrowserAcceptance": {
     "schemaVersion": "20.0.0-extended-pages-smoke-2",
-    "generatedAt": "2026-08-15T09:25:02.469Z",
+    "generatedAt": "2026-08-15T09:33:35.498Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -11809,14 +12521,14 @@
   },
   "releaseManifest": {
     "schemaVersion": "20.0.0-release-manifest-3",
-    "generatedAt": "2026-08-15T09:25:14.261Z",
+    "generatedAt": "2026-08-15T09:33:47.291Z",
     "releaseClassification": "RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED",
     "product": "EGX PRO V20 — Integrated Investment Decision Platform",
     "branch": "develop/v20-integrated-decision-platform",
-    "validatedSourceCommit": "0719021c5c8bb3bbd56398b7a0bf4a396b9d99ef",
+    "validatedSourceCommit": "f5281c769b1fc8b28c4772c392992599141628d2",
     "validationRun": {
-      "githubRunId": "31876908528",
-      "githubRunNumber": "108",
+      "githubRunId": "31877274630",
+      "githubRunNumber": "109",
       "workflow": "EGX Integrated Decision Platform Validation",
       "actor": "rasheadsca-star"
     },
@@ -12278,7 +12990,7 @@
   },
   "releaseManifestRegression": {
     "schemaVersion": "20.0.0-release-manifest-regression-3",
-    "generatedAt": "2026-08-15T09:25:14.269Z",
+    "generatedAt": "2026-08-15T09:33:47.300Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
