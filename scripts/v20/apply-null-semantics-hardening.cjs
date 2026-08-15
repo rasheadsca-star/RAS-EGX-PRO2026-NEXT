@@ -59,7 +59,7 @@ results.push(replaceExact(
 results.push(replaceExact(
   'v20/app.js',
   `  const num = (value, digits = 2) => Number.isFinite(Number(value)) ? Number(value).toLocaleString('ar-EG', { maximumFractionDigits: digits }) : '—';\n  const pct = value => Number.isFinite(Number(value)) ? \`${'${num(value, 1)}'}%\` : '—';\n  const money = value => Number.isFinite(Number(value)) ? num(value, 4) : '—';\n  const rr = value => Number.isFinite(Number(value)) ? Number(value).toFixed(2) : '—';`,
-  `  const isMissing = value => value === null || value === undefined || value === '';\n  const numeric = value => { if (isMissing(value)) return null; const n = Number(value);\n  return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);\n  const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };`
+  `  const isMissing = value => value === null || value === undefined || value === '';\n  const numeric = value => { if (isMissing(value)) return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);\n  const rr = value => { const n = numeric(value); return n === null ? '—' : n.toFixed(2); };`
 ));
 
 results.push(replaceExact(
