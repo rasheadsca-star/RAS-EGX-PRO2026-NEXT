@@ -22,42 +22,61 @@ const current = readJson('data/v20/current.json');
 const healthHtml = readText('v20/health.html');
 const healthGapJs = readText('v20/health-gap.js');
 
+// V17 internal OHLC S/R schema v3 uses minimumCoveragePct / minimumFreshnessPct /
+// minimumConfidence and levelSessionDate. Older aliases remain accepted only so
+// this V20 diagnostic can read historical evidence without changing V17 itself.
 const thresholds = sr.thresholds || {};
 const total = Number(sr.candidateUniverseCount || 0);
 const trusted = Number(sr.candidateTrustedCount || 0);
 const fresh = Number(sr.candidateTrustedFreshCount || 0);
-const coverageThreshold = Number(thresholds.minimumCandidateCoveragePct || 95);
-const freshnessThreshold = Number(thresholds.minimumCandidateFreshnessPct || 98);
-const criticalThreshold = Number(thresholds.minimumCandidateCriticalFieldsPct || 95);
-const confidenceThreshold = Number(thresholds.minimumAverageFreshConfidence || 0.8);
+const coveragePct = finite(sr.candidateCoveragePct ?? sr.coveragePct ?? sr.researchCoveragePct);
+const freshnessPct = finite(sr.candidateFreshnessPct ?? sr.freshnessPct ?? sr.researchFreshnessPct);
+const criticalFieldsPct = finite(sr.criticalFieldsPct ?? coveragePct);
+const averageFreshConfidence = finite(sr.averageFreshConfidence);
+const referenceSessionDate = sr.referenceSessionDate || null;
+const sourceSessionDate = sr.sourceSessionDate || sr.levelSessionDate || referenceSessionDate;
+const coverageThreshold = Number(thresholds.minimumCandidateCoveragePct ?? thresholds.minimumCoveragePct ?? 95);
+const freshnessThreshold = Number(thresholds.minimumCandidateFreshnessPct ?? thresholds.minimumFreshnessPct ?? 98);
+const criticalThreshold = Number(thresholds.minimumCandidateCriticalFieldsPct ?? 95);
+const confidenceThreshold = Number(thresholds.minimumAverageFreshConfidence ?? thresholds.minimumConfidence ?? 0.8);
 const requiredTrusted = requiredCount(total, coverageThreshold);
 const requiredFresh = requiredCount(total, freshnessThreshold);
 const requiredCritical = requiredCount(total, criticalThreshold);
-const criticalCurrentEquivalent = Math.round(total * Number(sr.criticalFieldsPct || 0) / 100);
+const criticalCurrentEquivalent = Math.round(total * Number(criticalFieldsPct || 0) / 100);
 const trustedGap = Math.max(0, requiredTrusted - trusted);
 const freshGap = Math.max(0, requiredFresh - fresh);
 const criticalGap = Math.max(0, requiredCritical - criticalCurrentEquivalent);
 const conflicts = Array.isArray(sr.sourceConflicts) ? sr.sourceConflicts : [];
-const missing = Array.isArray(sr.missingCandidateSymbols) ? sr.missingCandidateSymbols : [];
+const missing = Array.isArray(sr.missingCandidateSymbols)
+  ? sr.missingCandidateSymbols
+  : Array.isArray(sr.missingSymbols) ? sr.missingSymbols : [];
 const candidateSet = new Set((sr.candidateSymbols || []).map(String));
-const staleTrusted = (sr.rows || []).filter(row => candidateSet.has(String(row.ticker)) && row.trustedProvenance === true && row.levelSessionDate !== sr.referenceSessionDate).map(row => row.ticker);
-const referenceAligned = sr.referenceSessionDate === sr.sourceSessionDate;
+const staleTrusted = (sr.rows || [])
+  .filter(row => candidateSet.has(String(row.symbol || row.ticker))
+    && row.provenance?.trustedForExecution === true
+    && String(row.sessionDate || row.levelSessionDate || '') !== String(sr.levelSessionDate || referenceSessionDate || ''))
+  .map(row => row.symbol || row.ticker)
+  .filter(Boolean);
+const referenceAligned = referenceSessionDate === sourceSessionDate;
+
+// Exact executionCandidateReady formula from scripts/v17/build-internal-ohlc-sr.cjs.
 const expectedExecutionCandidateReady = sr.sourceSessionVerified === true
   && sr.sessionCompletionConfirmed === true
+  && Boolean(referenceSessionDate)
   && referenceAligned
-  && Number(sr.candidateCoveragePct || 0) >= coverageThreshold
-  && Number(sr.candidateFreshnessPct || 0) >= freshnessThreshold
-  && Number(sr.averageFreshConfidence || 0) >= confidenceThreshold
+  && Number(coveragePct || 0) >= coverageThreshold
+  && Number(freshnessPct || 0) >= freshnessThreshold
+  && Number(averageFreshConfidence || 0) >= confidenceThreshold
   && conflicts.length === 0;
 
 check(gate.priceTruth?.verifiedSessionDate === current.sessionDate, 'GAP_GATE_SESSION_NOT_CURRENT');
-check(sr.referenceSessionDate === current.sessionDate, 'GAP_SR_REFERENCE_SESSION_NOT_CURRENT');
-check(sr.sourceSessionDate === current.sessionDate, 'GAP_SR_SOURCE_SESSION_NOT_CURRENT');
-check(gate.executionInputs?.internal?.coveragePct === sr.candidateCoveragePct, 'GAP_COVERAGE_GATE_SR_MISMATCH');
-check(gate.executionInputs?.internal?.freshnessPct === sr.candidateFreshnessPct, 'GAP_FRESHNESS_GATE_SR_MISMATCH');
-check(gate.executionInputs?.internal?.criticalFieldsPct === sr.criticalFieldsPct, 'GAP_CRITICAL_GATE_SR_MISMATCH');
-check(gate.executionInputs?.internal?.averageFreshConfidence === sr.averageFreshConfidence, 'GAP_CONFIDENCE_GATE_SR_MISMATCH');
-check(gate.executionInputs?.internal?.executionCandidateReady === sr.executionCandidateReady, 'GAP_EXECUTION_CANDIDATE_GATE_SR_MISMATCH');
+check(referenceSessionDate === current.sessionDate, 'GAP_SR_REFERENCE_SESSION_NOT_CURRENT');
+check(sourceSessionDate === current.sessionDate, 'GAP_SR_SOURCE_SESSION_NOT_CURRENT');
+check(finite(gate.executionInputs?.internal?.coveragePct) === coveragePct, 'GAP_COVERAGE_GATE_SR_MISMATCH');
+check(finite(gate.executionInputs?.internal?.freshnessPct) === freshnessPct, 'GAP_FRESHNESS_GATE_SR_MISMATCH');
+check(finite(gate.executionInputs?.internal?.criticalFieldsPct) === criticalFieldsPct, 'GAP_CRITICAL_GATE_SR_MISMATCH');
+check(finite(gate.executionInputs?.internal?.averageFreshConfidence) === averageFreshConfidence, 'GAP_CONFIDENCE_GATE_SR_MISMATCH');
+check(gate.executionInputs?.internal?.executionCandidateReady === (sr.executionCandidateReady === true), 'GAP_EXECUTION_CANDIDATE_GATE_SR_MISMATCH');
 check(expectedExecutionCandidateReady === (sr.executionCandidateReady === true), 'GAP_EXECUTION_CANDIDATE_FORMULA_MISMATCH');
 check(coverageThreshold === 95, 'GAP_COVERAGE_THRESHOLD_DRIFT');
 check(freshnessThreshold === 98, 'GAP_FRESHNESS_THRESHOLD_DRIFT');
@@ -84,12 +103,13 @@ check(!healthGapJs.includes('localStorage.setItem'), 'GAP_UI_LOCAL_MUTATION_DETE
 try { new Function(healthGapJs); } catch { failures.push('GAP_UI_JS_SYNTAX_INVALID'); }
 
 const report = {
-  schemaVersion: '20.0.0-execution-gap-regression-1',
+  schemaVersion: '20.0.0-execution-gap-regression-2',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
   failures,
   sessionDate: current.sessionDate,
+  sourceSchemaVersion: sr.schemaVersion || null,
   thresholds: {
     minimumCandidateCoveragePct: coverageThreshold,
     minimumCandidateFreshnessPct: freshnessThreshold,
@@ -101,10 +121,10 @@ const report = {
     candidateUniverseCount: total,
     candidateTrustedCount: trusted,
     candidateTrustedFreshCount: fresh,
-    coveragePct: finite(sr.candidateCoveragePct),
-    freshnessPct: finite(sr.candidateFreshnessPct),
-    criticalFieldsPct: finite(sr.criticalFieldsPct),
-    averageFreshConfidence: finite(sr.averageFreshConfidence),
+    coveragePct,
+    freshnessPct,
+    criticalFieldsPct,
+    averageFreshConfidence,
     sourceConflictCount: conflicts.length,
     executionCandidateReady: sr.executionCandidateReady === true
   },
@@ -119,7 +139,7 @@ const report = {
     trustedFreshCandidateCount: freshGap,
     criticalCandidateEquivalentCount: criticalGap,
     sourceConflictCount: conflicts.length,
-    confidenceGap: Math.max(0, confidenceThreshold - Number(sr.averageFreshConfidence || 0))
+    confidenceGap: Math.max(0, confidenceThreshold - Number(averageFreshConfidence || 0))
   },
   symbols: {
     missingCandidateSymbols: missing,
@@ -133,13 +153,17 @@ const report = {
     note: 'Closing the numeric gaps and current conflicts is necessary but not represented as sufficient until the authoritative V17 gate is recomputed with the new evidence.'
   },
   checks: {
-    gateAndInternalSrSessionAligned: true,
-    gateAndInternalSrMetricsConsistent: true,
-    executionCandidateFormulaRecomputed: true,
-    officialThresholdsReadFromInternalSr: true,
-    missingSymbolsMatchGate: true,
-    healthGapUiReadOnly: true,
-    healthGapUiReadsAuthoritativeSources: true
+    gateAndInternalSrSessionAligned: referenceSessionDate === current.sessionDate && sourceSessionDate === current.sessionDate,
+    gateAndInternalSrMetricsConsistent:
+      finite(gate.executionInputs?.internal?.coveragePct) === coveragePct
+      && finite(gate.executionInputs?.internal?.freshnessPct) === freshnessPct
+      && finite(gate.executionInputs?.internal?.criticalFieldsPct) === criticalFieldsPct
+      && finite(gate.executionInputs?.internal?.averageFreshConfidence) === averageFreshConfidence,
+    executionCandidateFormulaRecomputed: expectedExecutionCandidateReady === (sr.executionCandidateReady === true),
+    officialThresholdsReadFromInternalSr: coverageThreshold === 95 && freshnessThreshold === 98 && confidenceThreshold === 0.8,
+    missingSymbolsMatchGate: [...missing].sort().join('|') === [...(gate.missingSymbols || [])].sort().join('|'),
+    healthGapUiReadOnly: !/method\s*:\s*['"](?:POST|PUT|PATCH|DELETE)['"]/i.test(healthGapJs) && !healthGapJs.includes('localStorage.setItem'),
+    healthGapUiReadsAuthoritativeSources: healthGapJs.includes("loadJson('../data/v17/resilient-session-status.json')") && healthGapJs.includes("loadJson('../data/v17/internal-ohlc-support-resistance.json')")
   }
 };
 fs.writeFileSync(P('data/v20/execution-gap-regression.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
