@@ -118,7 +118,8 @@ async function main(){
     const consoleErrors=cdp.consoleErrors.filter(e=>!/favicon\.ico/i.test(`${e.url||''} ${e.text||''}`));check('noRuntimeOrConsoleErrors',consoleErrors.length===0,consoleErrors);
     const report={schemaVersion:'20.0.0-v17-centric-browser-certification-1',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,browser:{executable:chrome,product:boot.version?.Browser||null,protocolVersion:boot.version?.['Protocol-Version']||null,bootstrapMode:boot.mode},sessionDate:contract.sessionDate,architecture:contract.architecture,sessionStatus:contract.sessionStatus,checks,viewportResults,screenshots,consoleErrors,limitations:['RUNTIME_AND_LAYOUT_ACCEPTANCE_NOT_HUMAN_PIXEL_REVIEW','SCREENSHOTS_RECORDED_BY_HASH_ONLY']};
     fs.writeFileSync(P('data/v20/decision-board-browser-certification.json'),`${JSON.stringify(report,null,2)}\n`,'utf8');
-    console.log(JSON.stringify({ok:report.ok,sessionDate:report.sessionDate,failedCount:report.failedCount,viewports:viewportResults.map(v=>v.width),chromeBootstrapMode:boot.mode},null,2));
+    const failedChecks=Object.fromEntries(Object.entries(report.checks).filter(([,value])=>value?.ok!==true));
+    console.log(JSON.stringify({ok:report.ok,sessionDate:report.sessionDate,failedCount:report.failedCount,failures:report.failures,failedChecks,viewportResults:report.viewportResults,consoleErrors:report.consoleErrors,chromeBootstrapMode:boot.mode},null,2));
     if(!report.ok)process.exitCode=1;
   }finally{cdp?.close();try{boot?.proc?.kill('SIGTERM');}catch{}await new Promise(resolve=>server.close(resolve));try{if(boot?.profileDir)fs.rmSync(boot.profileDir,{recursive:true,force:true});}catch{}}
 }
