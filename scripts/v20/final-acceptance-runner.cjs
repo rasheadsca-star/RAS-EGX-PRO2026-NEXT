@@ -86,13 +86,23 @@ regression.supportResistanceRemediationMirror = {
 writeRegression(regression);
 
 // 4b) Convert the raw remediation evidence into an explicit human review packet.
-// This layer is deterministic/read-only and flags provider metadata anomalies that
-// must not be confused with clean supplemental evidence.
+// The review-packet builder also runs the Starta triangulation chain. Do not rely
+// on nested child-process writes remaining visible implicitly: mirror every
+// generated sidecar explicitly into the authoritative regression artifact before
+// browser acceptance so UI and CI read the exact same evidence contract.
 runNode('scripts/v20/build-sr-remediation-review-packet.cjs');
 runNode('scripts/v20/sr-remediation-review-packet-regression.cjs');
 const srReviewPacket = read('data/v20/sr-remediation-review-packet.json');
 const srReviewPacketRegression = read('data/v20/sr-remediation-review-packet-regression.json');
-if (srReviewPacketRegression.ok !== true) process.exitCode = 1;
+const srAlternateEvidence = read('data/v20/sr-remediation-alternate-evidence.json');
+const srAlternateEvidenceRegression = read('data/v20/sr-remediation-alternate-evidence-regression.json');
+const srRemediationHandoff = read('data/v20/sr-remediation-handoff.json');
+const srRemediationHandoffRegression = read('data/v20/sr-remediation-handoff-regression.json');
+if (
+  srReviewPacketRegression.ok !== true
+  || srAlternateEvidenceRegression.ok !== true
+  || srRemediationHandoffRegression.ok !== true
+) process.exitCode = 1;
 regression = read('data/v20/regression.json');
 regression.supportResistanceReviewPacket = srReviewPacket;
 regression.supportResistanceReviewPacketRegression = srReviewPacketRegression;
@@ -105,6 +115,33 @@ regression.supportResistanceReviewPacketMirror = {
   generatedInSameMainRun: true,
   manualReviewOnly: true,
   automaticV17MutationAllowed: false,
+  guaranteesExecutionGrade: false,
+};
+regression.supportResistanceAlternateEvidence = srAlternateEvidence;
+regression.supportResistanceAlternateEvidenceRegression = srAlternateEvidenceRegression;
+regression.supportResistanceAlternateEvidenceMirror = {
+  authoritativeRuntimeBuilder: 'scripts/v20/build-sr-remediation-alternate-evidence.cjs',
+  authoritativeRuntimeRegression: 'scripts/v20/sr-remediation-alternate-evidence-regression.cjs',
+  transientDetailedSidecar: 'data/v20/sr-remediation-alternate-evidence.json',
+  persistedEvidence: 'data/v20/regression.json#supportResistanceAlternateEvidence',
+  persistedRegression: 'data/v20/regression.json#supportResistanceAlternateEvidenceRegression',
+  generatedInSameMainRun: true,
+  supplementalOnly: true,
+  automaticV17MutationAllowed: false,
+  guaranteesExecutionGrade: false,
+};
+regression.supportResistanceRemediationHandoff = srRemediationHandoff;
+regression.supportResistanceRemediationHandoffRegression = srRemediationHandoffRegression;
+regression.supportResistanceRemediationHandoffMirror = {
+  authoritativeRuntimeBuilder: 'scripts/v20/build-sr-remediation-handoff.cjs',
+  authoritativeRuntimeRegression: 'scripts/v20/sr-remediation-handoff-regression.cjs',
+  transientDetailedSidecar: 'data/v20/sr-remediation-handoff.json',
+  persistedEvidence: 'data/v20/regression.json#supportResistanceRemediationHandoff',
+  persistedRegression: 'data/v20/regression.json#supportResistanceRemediationHandoffRegression',
+  generatedInSameMainRun: true,
+  manualReviewOnly: true,
+  automaticV17MutationAllowed: false,
+  automaticRepairAllowed: false,
   guaranteesExecutionGrade: false,
 };
 writeRegression(regression);
@@ -184,8 +221,13 @@ console.log(JSON.stringify({
   backtestClaimAllowed: backtestReadiness.claimPolicy?.v20ScoreBacktestClaimAllowed === true,
   srRemediationRegressionOk: srRemediationRegression.ok === true,
   srReviewPacketRegressionOk: srReviewPacketRegression.ok === true,
+  srAlternateEvidenceRegressionOk: srAlternateEvidenceRegression.ok === true,
+  srHandoffRegressionOk: srRemediationHandoffRegression.ok === true,
   srCleanSupplementalCandidates: srReviewPacket.summary?.cleanSupplementalCandidateCount ?? null,
   srProviderIdentityConflicts: srReviewPacket.summary?.providerIdentityReferenceConflictCount ?? null,
+  srStartaCurrentCandidates: srAlternateEvidence.summary?.currentReviewCandidateCount ?? null,
+  srHistoryContinuityAccepted: srAlternateEvidence.summary?.historyContinuityAcceptedCount ?? null,
+  srHandoffStates: srRemediationHandoff.summary?.stateCounts ?? {},
   fullMarketTechnicalCurrentReady: fullMarketTechnical.summary?.currentReadyCount ?? null,
   fullMarketTechnicalCoveragePct: fullMarketTechnical.summary?.currentReadyCoveragePct ?? null,
   extendedBrowserOk: extendedBrowser.ok === true,
@@ -197,6 +239,8 @@ console.log(JSON.stringify({
   persistedBacktestReadiness: 'data/v20/regression.json#backtestReadiness',
   persistedSrRemediation: 'data/v20/regression.json#supportResistanceRemediation',
   persistedSrReviewPacket: 'data/v20/regression.json#supportResistanceReviewPacket',
+  persistedSrAlternateEvidence: 'data/v20/regression.json#supportResistanceAlternateEvidence',
+  persistedSrHandoff: 'data/v20/regression.json#supportResistanceRemediationHandoff',
   persistedFullMarketTechnical: 'data/v20/regression.json#fullMarketTechnical',
   persistedExtendedBrowser: 'data/v20/regression.json#extendedResearchBrowserAcceptance',
   persistedReleaseManifest: 'data/v20/regression.json#releaseManifest',
