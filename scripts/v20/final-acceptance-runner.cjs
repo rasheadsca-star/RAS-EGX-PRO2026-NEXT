@@ -64,8 +64,8 @@ regression.backtestReadinessMirror = {
 };
 writeRegression(regression);
 
-// 4) S/R remediation is diagnostic only. It must not mutate V17 or claim that
-// closing the arithmetic gaps is sufficient for execution grade.
+// 4) S/R remediation acquires supplemental review evidence only. It must not mutate
+// V17/history-50, auto-upgrade trust, or claim that arithmetic gap closure is enough.
 require('./build-sr-remediation-audit.cjs');
 require('./sr-remediation-regression.cjs');
 const srRemediation = read('data/v20/sr-remediation-audit.json');
@@ -85,6 +85,30 @@ regression.supportResistanceRemediationMirror = {
 };
 writeRegression(regression);
 
+// 4b) Convert the raw remediation evidence into an explicit human review packet.
+// This layer is deterministic/read-only and flags provider metadata anomalies that
+// must not be confused with clean supplemental evidence.
+runNode('scripts/v20/build-sr-remediation-review-packet.cjs');
+runNode('scripts/v20/sr-remediation-review-packet-regression.cjs');
+const srReviewPacket = read('data/v20/sr-remediation-review-packet.json');
+const srReviewPacketRegression = read('data/v20/sr-remediation-review-packet-regression.json');
+if (srReviewPacketRegression.ok !== true) process.exitCode = 1;
+regression = read('data/v20/regression.json');
+regression.supportResistanceReviewPacket = srReviewPacket;
+regression.supportResistanceReviewPacketRegression = srReviewPacketRegression;
+regression.supportResistanceReviewPacketMirror = {
+  authoritativeRuntimeBuilder: 'scripts/v20/build-sr-remediation-review-packet.cjs',
+  authoritativeRuntimeRegression: 'scripts/v20/sr-remediation-review-packet-regression.cjs',
+  transientDetailedPacket: 'data/v20/sr-remediation-review-packet.json',
+  persistedPacket: 'data/v20/regression.json#supportResistanceReviewPacket',
+  persistedRegression: 'data/v20/regression.json#supportResistanceReviewPacketRegression',
+  generatedInSameMainRun: true,
+  manualReviewOnly: true,
+  automaticV17MutationAllowed: false,
+  guaranteesExecutionGrade: false,
+};
+writeRegression(regression);
+
 // 5) Full-market technical evidence is research display evidence only. Run it in
 // the authoritative Main cycle; individual network failures reduce coverage rather
 // than fabricating indicators. Its regression rejects any score/execution leakage.
@@ -98,8 +122,6 @@ const fullMarketTechnical = read('data/v20/full-market-technical.json');
 const fullMarketTechnicalRegression = read('data/v20/full-market-technical-regression.json');
 if (fullMarketTechnicalRegression.ok !== true) process.exitCode = 1;
 regression = read('data/v20/regression.json');
-// Persist the complete evidence in the already-authoritative regression artifact so
-// the research UI can fall back to it even though the raw sidecar is transient.
 regression.fullMarketTechnical = fullMarketTechnical;
 regression.fullMarketTechnicalRegression = fullMarketTechnicalRegression;
 regression.fullMarketTechnicalMirror = {
@@ -161,6 +183,9 @@ console.log(JSON.stringify({
   backtestStatus: backtestReadiness.status,
   backtestClaimAllowed: backtestReadiness.claimPolicy?.v20ScoreBacktestClaimAllowed === true,
   srRemediationRegressionOk: srRemediationRegression.ok === true,
+  srReviewPacketRegressionOk: srReviewPacketRegression.ok === true,
+  srCleanSupplementalCandidates: srReviewPacket.summary?.cleanSupplementalCandidateCount ?? null,
+  srProviderIdentityConflicts: srReviewPacket.summary?.providerIdentityReferenceConflictCount ?? null,
   fullMarketTechnicalCurrentReady: fullMarketTechnical.summary?.currentReadyCount ?? null,
   fullMarketTechnicalCoveragePct: fullMarketTechnical.summary?.currentReadyCoveragePct ?? null,
   extendedBrowserOk: extendedBrowser.ok === true,
@@ -171,6 +196,7 @@ console.log(JSON.stringify({
   persistedExecutionGap: 'data/v20/regression.json#executionReadinessGap',
   persistedBacktestReadiness: 'data/v20/regression.json#backtestReadiness',
   persistedSrRemediation: 'data/v20/regression.json#supportResistanceRemediation',
+  persistedSrReviewPacket: 'data/v20/regression.json#supportResistanceReviewPacket',
   persistedFullMarketTechnical: 'data/v20/regression.json#fullMarketTechnical',
   persistedExtendedBrowser: 'data/v20/regression.json#extendedResearchBrowserAcceptance',
   persistedReleaseManifest: 'data/v20/regression.json#releaseManifest',
