@@ -45,6 +45,30 @@ const marketExplorerRegression = read('data/v20/market-explorer-regression.json'
 const userPortfolioRegression = read('data/v20/user-portfolio-regression.json');
 const riskRewardAudit = read('data/v20/risk-reward-audit.json');
 
+// Full-market technical is a later same-run research-display layer. During the
+// first independent-critic pass it may not exist yet; during the final refresh it
+// must be preferred over the earlier Market Explorer technical snapshot. It never
+// becomes decision technical, an execution gate, or a production allocation input.
+const fullMarketTechnical = regression.fullMarketTechnical || null;
+const fullMarketTechnicalRegression = regression.fullMarketTechnicalRegression || null;
+const fullMarketTechnicalReady = fullMarketTechnical?.asOfSessionDate === current.sessionDate
+  && fullMarketTechnicalRegression?.ok === true
+  && fullMarketTechnical?.policy?.usedForDecisionScore === false
+  && fullMarketTechnical?.policy?.usedForExecutionGate === false
+  && fullMarketTechnical?.policy?.usedForProductionAllocation === false;
+const fullMarketTechnicalCoveragePct = fullMarketTechnicalReady
+  ? finite(fullMarketTechnical.summary?.currentReadyCoveragePct)
+  : finite(marketExplorer.summary?.technicalCurrentCoverageOfUniversePct);
+const fullMarketTechnicalCurrentReadyCount = fullMarketTechnicalReady
+  ? finite(fullMarketTechnical.summary?.currentReadyCount)
+  : finite(marketExplorer.summary?.currentTechnicalReadyCount);
+const fullMarketTechnicalUniverseCount = fullMarketTechnicalReady
+  ? finite(fullMarketTechnical.summary?.universeCount)
+  : finite(marketExplorer.summary?.universeCount);
+const fullMarketTechnicalSource = fullMarketTechnicalReady
+  ? 'data/v20/regression.json#fullMarketTechnical'
+  : 'data/v20/market-explorer.json';
+
 const validators = {
   governanceRegression: regression.ok === true,
   tradePlanRegression: tradePlanRegression.ok === true,
@@ -131,7 +155,13 @@ const limitations = [];
 if (sector.summary?.productionVerifiedCount === 0) limitations.push({code:'PRODUCTION_SECTOR_CLASSIFICATION_UNAVAILABLE', detail:`${sector.summary.productionVerifiedCount}/${sector.summary.universeCount || marketExplorer.summary?.universeCount || 0} production-verified sectors; sector concentration remains disabled.`, source:'data/v20/sector-provenance-audit.json'});
 if (forward.resolutionStatus?.pendingCount > 0) limitations.push({code:'FORWARD_OUTCOMES_PENDING', detail:`${forward.resolutionStatus.pendingCount} forward evaluations pending; no pending return is interpreted as zero.`, source:'data/v20/forward-evaluation.json'});
 if (technicalStatus.currentTechnicalCoveragePct < 100) limitations.push({code:'CURRENT_TECHNICAL_COVERAGE_PARTIAL', detail:`${technicalStatus.currentTechnicalReadyCount}/${technicalStatus.requestedSymbols} opportunity symbols current-technical-ready (${technicalStatus.currentTechnicalCoveragePct}%).`, source:'data/v20/technical-history-status.json'});
-if (marketExplorer.summary?.technicalCurrentCoverageOfUniversePct < 100) limitations.push({code:'FULL_MARKET_TECHNICAL_COVERAGE_PARTIAL', detail:`Current technical evidence covers ${marketExplorer.summary.technicalCurrentCoverageOfUniversePct}% of the full market universe; MARKET_ONLY rows are not assigned fabricated technical decision scores.`, source:'data/v20/market-explorer.json'});
+if (fullMarketTechnicalCoveragePct !== null && fullMarketTechnicalCoveragePct < 100) limitations.push({
+  code:'FULL_MARKET_TECHNICAL_COVERAGE_PARTIAL',
+  detail: fullMarketTechnicalReady
+    ? `Current full-market research technical evidence covers ${fullMarketTechnicalCurrentReadyCount}/${fullMarketTechnicalUniverseCount} symbols (${fullMarketTechnicalCoveragePct}%); this display-only layer does not drive decision scores, execution gates, or production allocation.`
+    : `Current technical evidence covers ${fullMarketTechnicalCoveragePct}% of the full market universe; MARKET_ONLY rows are not assigned fabricated technical decision scores.`,
+  source:fullMarketTechnicalSource,
+});
 if (performance.policy?.v18PerformanceAccepted === false) limitations.push({code:'V18_PERFORMANCE_NOT_AUDITED_OR_ACCEPTED', detail:'V18 performance claims remain excluded from accepted evidence until a reproducible audit is completed.', source:'data/v20/performance-evidence-registry.json'});
 if (browser.limitations?.length) limitations.push({code:'HUMAN_PIXEL_REVIEW_NOT_COMPLETED', detail:'Real Chrome runtime and overflow acceptance passed; screenshot hashes were recorded, but no human pixel-level design review is claimed.', source:'data/v20/browser-smoke.json'});
 if (riskRewardAudit.materialMismatchCount > 0) limitations.push({code:'LEGACY_RR_MISMATCHES_REMAIN_AUDIT_ONLY', detail:`${riskRewardAudit.materialMismatchCount}/${riskRewardAudit.rowCount || profiles.profileCount} legacy R/R rows materially mismatch conservative current methodology; legacy R/R remains audit-only.`, source:'data/v20/risk-reward-audit.json'});
@@ -146,6 +176,12 @@ const acceptanceMatrix = {
   costAwareRiskReward: {state: riskRewardAudit.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS' ? 'PASS' : 'FAIL', evidence:'Legacy R/R audit-only'},
   tradePlanAlignment: {state: tradePlanRegression.ok === true ? 'PASS' : 'FAIL', evidence:'Current price / entry-zone fail-closed policy'},
   pointInTimeTechnical: {state: technicalRegression.ok === true ? 'PASS_WITH_PARTIAL_COVERAGE' : 'FAIL', evidence:`${technicalStatus.currentTechnicalReadyCount}/${technicalStatus.requestedSymbols} current-ready`},
+  fullMarketTechnicalResearchContext: {
+    state: fullMarketTechnicalReady ? 'PASS_RESEARCH_ONLY' : 'PRE_REFRESH_CONTEXT_ONLY',
+    evidence: fullMarketTechnicalReady
+      ? `${fullMarketTechnicalCurrentReadyCount}/${fullMarketTechnicalUniverseCount} current-ready (${fullMarketTechnicalCoveragePct}%); display-only/no execution leakage`
+      : `${fullMarketTechnicalCoveragePct ?? '—'}% pre-refresh Market Explorer context`,
+  },
   decisionIntelligence: {state: decisionSeparationPass ? 'PASS_RESEARCH_ONLY' : 'FAIL', evidence:'Score/Confidence/Execution separated; uncalibrated research score'},
   sectorRisk: {state: sector.summary?.productionSectorConcentrationEnabled === false ? 'BLOCKED_BY_PROVENANCE' : 'PASS', evidence:`productionVerified=${sector.summary?.productionVerifiedCount || 0}`},
   performanceEvidence: {state: performanceEvidencePass ? 'PASS_SEPARATED' : 'FAIL', evidence:performance.summary?.status || 'evidence registry'},
@@ -170,6 +206,24 @@ const report = {
   cashPct:finite(current.portfolio?.cashPct),
   validatorSummary:{total:Object.keys(validators).length,passed:Object.values(validators).filter(Boolean).length,failed:failedValidators.length,failedValidators},
   acceptanceMatrix,
+  technicalEvidenceSummary:{
+    opportunityDecisionTechnical:{
+      currentReadyCount:finite(technicalStatus.currentTechnicalReadyCount),
+      requestedSymbols:finite(technicalStatus.requestedSymbols),
+      coveragePct:finite(technicalStatus.currentTechnicalCoveragePct),
+      source:'data/v20/technical-history-status.json',
+    },
+    fullMarketResearchTechnical:{
+      currentReadyCount:fullMarketTechnicalCurrentReadyCount,
+      universeCount:fullMarketTechnicalUniverseCount,
+      coveragePct:fullMarketTechnicalCoveragePct,
+      finalSameRunEvidence:fullMarketTechnicalReady,
+      usedForDecisionScore:false,
+      usedForExecutionGate:false,
+      usedForProductionAllocation:false,
+      source:fullMarketTechnicalSource,
+    },
+  },
   criticSummary:{criticalFindingCount:criticFindings.filter(x=>String(x.severity).startsWith('CRITICAL')).length,researchBlockerCount:criticFindings.filter(x=>x.severity==='RESEARCH_BLOCKER').length,productionBlockerCount:productionBlockers.length,limitationCount:limitations.length},
   criticFindings,
   productionBlockers,
@@ -184,6 +238,11 @@ const report = {
     researchPerformanceNotProduction:performance.policy?.reusedBenchmarkCanPromoteChallenger === false && (forward.evaluations || []).every(e=>e.researchEvaluation?.appliedToProduction !== true),
     pendingReturnsRemainNull:(forward.evaluations || []).filter(e=>e.status==='PENDING').every(e=>e.portfolioReturnGrossPct===null && e.portfolioReturnNetPct===null && e.researchEvaluation?.equalWeightIssuedNetReturnPct===null),
     browserAcceptanceRealRuntime:runtimePass,
+    fullMarketTechnicalResearchOnly: !fullMarketTechnicalReady || (
+      fullMarketTechnical.policy?.usedForDecisionScore === false
+      && fullMarketTechnical.policy?.usedForExecutionGate === false
+      && fullMarketTechnical.policy?.usedForProductionAllocation === false
+    ),
   },
   finalStatement: executionReady
     ? 'V20 passed the independent acceptance matrix including the authoritative V17 execution gate. It remains decision support; user execution remains discretionary.'
