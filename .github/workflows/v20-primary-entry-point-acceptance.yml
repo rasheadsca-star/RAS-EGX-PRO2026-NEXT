@@ -1,0 +1,81 @@
+name: V20 Primary Entry Point Acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - "v20/index.html"
+      - "v20/native-research.js"
+      - "v20/decision-board.js"
+      - "v20/decision-board.css"
+      - "scripts/v20/primary-entry-point-acceptance.cjs"
+      - "scripts/v20/decision-board-browser-certification.cjs"
+      - ".github/workflows/v20-primary-entry-point-acceptance.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: egx-v20-primary-entry-point-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  direct-entry-certification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout V20
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Enforce entry-point-only scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
+          BASE_SHA="0a417391b58c23a8857f7013c37e30986afd1240"
+          git cat-file -e "${BASE_SHA}^{commit}"
+          changed="$(git diff --name-only "$BASE_SHA" HEAD)"
+          printf '%s\n' "$changed"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(v20/index\.html|v20/native-research\.js|scripts/v20/primary-entry-point-acceptance\.cjs|\.github/workflows/v20-primary-entry-point-acceptance\.yml)$' || true)"
+          test -z "$violations" || { echo "Entry-point scope violation:"; echo "$violations"; exit 1; }
+          test -z "$(git diff --name-only "$BASE_SHA" HEAD -- scripts/v20/build-full-market-native-selection.cjs scripts/v20/build-v17-production-decision-core.cjs scripts/v20/build-final-decision-contract.cjs scripts/v20/build-funded-nav.cjs data/v20/final-decision-contract.json data/v20/v17-production-decision-core.json data/v20/native-current.json)" || { echo "Decision algorithm/data contract changed"; exit 1; }
+
+      - name: Static direct-entry acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check v20/native-research.js
+          node --check v20/decision-board.js
+          node --check scripts/v20/primary-entry-point-acceptance.cjs
+          node scripts/v20/primary-entry-point-acceptance.cjs
+
+      - name: Confirm CI tests delivered entry point without preload
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'await cdp.navigate(`${base}/v20/index.html`)' scripts/v20/decision-board-browser-certification.cjs >/dev/null
+          test -z "$(grep -nE 'native-research\.js.*(appendChild|createElement)|decision-board\.js.*(appendChild|createElement)' scripts/v20/decision-board-browser-certification.cjs || true)"
+
+      - name: Browser acceptance on committed v20 index
+        run: node scripts/v20/decision-board-browser-certification.cjs
+
+      - name: Final direct-entry browser guard
+        run: |
+          node - <<'NODE'
+          const r=require('./data/v20/decision-board-browser-certification.json');
+          if(r.ok!==true||r.failedCount!==0)throw new Error('Browser certification not green');
+          const required=['decisionBoardLoaded','decisionBoardNoLoadError','decisionBoardIsPrimary','decisionPipelineFourStages','nativeDiscoveryStageVisible','v17EligibilityStageVisible','v17GlobalGateStageVisible','finalCanonicalDecisionStageVisible','legacyWorkspaceSecondary','noRuntimeOrConsoleErrors'];
+          for(const name of required)if(r.checks?.[name]?.ok!==true)throw new Error(`Missing browser acceptance: ${name}`);
+          for(const width of [1440,1024,768,430,390])if(r.checks?.[`responsive_${width}_noPageOverflow`]?.ok!==true)throw new Error(`Viewport ${width} failed`);
+          for(const width of [430,390])if(r.checks?.[`responsive_${width}_noDossierOverflow`]?.ok!==true)throw new Error(`Dossier viewport ${width} failed`);
+          if((r.consoleErrors||[]).length!==0)throw new Error('Fatal/runtime console errors present');
+          console.log(JSON.stringify({ok:true,entryPoint:'v20/index.html',primary:'Decision Board — V17-Centric',viewports:[1440,1024,768,430,390],consoleErrors:0},null,2));
+          NODE
