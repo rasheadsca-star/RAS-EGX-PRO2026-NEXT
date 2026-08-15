@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "20.0.0-decision-intelligence-policy-1",
+  "schemaVersion": "20.0.0-decision-intelligence-policy-2",
   "effectiveFrom": "2026-08-15",
   "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
   "scoreName": "V20_RESEARCH_DECISION_SCORE",
@@ -12,13 +12,31 @@
   "modelConfidenceMayBeInferredFromScore": false,
   "rankingMayReplaceProductionChampionRanking": false,
   "componentWeightsPct": {
-    "legacyOpportunity": 25,
-    "dataEvidence": 20,
-    "liquidity": 15,
-    "supportResistance": 10,
+    "legacyOpportunity": 10,
+    "dataEvidence": 18,
+    "liquidity": 30,
+    "supportResistance": 12,
     "netRiskReward": 15,
     "tradePlanAlignment": 10,
     "currentTechnical": 5
+  },
+  "liquidityScoring": {
+    "researchWeightPct": 30,
+    "source": "data/v17/liquidity-gate.json",
+    "scoreField": "liquidityScore",
+    "scoringContract": "V11_1_EXACT_THRESHOLDS_AND_SCORE",
+    "usesCurrentTurnover": true,
+    "usesCompletedHistoricalAverageTurnover": true,
+    "usesTradeActivity": true,
+    "binaryEligibilityFallbackAllowed": false,
+    "sessionAlignmentRequiredForFullScore": true,
+    "misalignedSessionMaxScore": 25,
+    "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+  },
+  "supportResistanceScoring": {
+    "researchWeightPct": 12,
+    "source": "data/v17/internal-ohlc-support-resistance.json",
+    "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
   },
   "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
   "minimumEvidenceCoverageForTierPct": 70,
@@ -35,5 +53,5 @@
     "aboveEntryRangeDoNotChaseMaxScore": 55
   },
   "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
-  "note": "Weights and tier thresholds are transparent research heuristics for explainability and shadow ranking only. They do not claim calibrated alpha, probability, confidence, or execution permission."
+  "note": "Weights are transparent shadow/research heuristics. Liquidity is intentionally raised to 30% and uses the numeric V17 liquidity score rather than a binary eligibility proxy. The score remains uncalibrated and cannot open execution, drive production allocation, change the Champion, or trigger automatic promotion."
 }
