@@ -74,7 +74,12 @@ jobs:
       - name: Optional intelligence builders
         run: |
           set -u
-          for s in scripts/build-v52-intelligence.js scripts/build-v54-universe-index.js scripts/build-v55-sector-investor-flow.js scripts/build-v56-history-50.js scripts/build-v56-technical-report.js scripts/collect-egx-investor-type.js scripts/collect-v56-news.js scripts/build-multi-source-intelligence.js scripts/apply-multisource-intelligence-to-ranking.js scripts/apply-news-impact-to-recommendations.js scripts/build-institutional-score.js scripts/build-signal-quality-engine.js scripts/build-entry-trigger-engine.js scripts/build-alert-decision-center.js scripts/build-actionable-watchlist.js scripts/build-data-operations-center.js scripts/build-engines-console-report.js scripts/build-executive-home-report.js scripts/build-workflow-budget-status.js scripts/build-sector-completion-report.js scripts/build-recommendation-outcome-tracker.js scripts/build-recommendation-accuracy.js scripts/build-recommendation-performance-index.js scripts/build-accuracy-interpretation-report.js scripts/build-recommendation-validation-panel.js scripts/build-portfolio-decision-rules.js scripts/build-rebalancing-candidates.js; do [ ! -f "$s" ] || node "$s" || echo "::warning::$s failed"; done
+          for s in scripts/build-v52-intelligence.js scripts/build-v54-universe-index.js scripts/build-v55-sector-investor-flow.js scripts/build-v56-history-50.js scripts/build-v56-technical-report.js scripts/collect-egx-investor-type.js scripts/collect-v56-news.js scripts/build-multi-source-intelligence.js scripts/apply-multisource-intelligence-to-ranking.js scripts/build-institutional-score.js scripts/build-signal-quality-engine.js scripts/build-entry-trigger-engine.js scripts/build-alert-decision-center.js scripts/build-actionable-watchlist.js scripts/build-data-operations-center.js scripts/build-engines-console-report.js scripts/build-executive-home-report.js scripts/build-workflow-budget-status.js scripts/build-sector-completion-report.js scripts/build-recommendation-outcome-tracker.js scripts/build-recommendation-accuracy.js scripts/build-recommendation-performance-index.js scripts/build-accuracy-interpretation-report.js scripts/build-recommendation-validation-panel.js scripts/build-portfolio-decision-rules.js scripts/build-rebalancing-candidates.js; do [ ! -f "$s" ] || node "$s" || echo "::warning::$s failed"; done
+      - name: Build fresh V17 pre-session intelligence and apply trusted news
+        run: |
+          set -euo pipefail
+          node scripts/v17/build-pre-session-intelligence.cjs
+          node scripts/apply-news-impact-to-recommendations.js
       - name: Reapply verified session after legacy optional builders
         run: node scripts/v17/repair-session-history.cjs
       - name: Mandatory history and research ranking
@@ -123,7 +128,7 @@ jobs:
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json')); const b=JSON.parse(fs.readFileSync('data/v17/browser-runtime-critic.json')); const z=JSON.parse(fs.readFileSync('data/v17/destructive-critic.json'));
+          const fs=require('fs'); const s=JSON.parse(fs.readFileSync('data/v17/resilient-session-status.json')); const l=JSON.parse(fs.readFileSync('data/v17/liquidity-gate.json')); const c=JSON.parse(fs.readFileSync('data/v17/challenger-status.json')); const x=JSON.parse(fs.readFileSync('data/v17/current.json')); const r=JSON.parse(fs.readFileSync('data/v17/review.json')); const q=JSON.parse(fs.readFileSync('data/v17/regression.json')); const g=JSON.parse(fs.readFileSync('data/v17/sr-history-gap-diagnostics.json')); const t=JSON.parse(fs.readFileSync('data/v17/market-session-truth.json')); const h=JSON.parse(fs.readFileSync('data/v17/session-history-repair.json')); const b=JSON.parse(fs.readFileSync('data/v17/browser-runtime-critic.json')); const z=JSON.parse(fs.readFileSync('data/v17/destructive-critic.json')); const p=JSON.parse(fs.readFileSync('data/v17/pre-session-intelligence.json')); const n=JSON.parse(fs.readFileSync('data/news-impact-status.json'));
           if(!['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(s.status)) throw new Error(`Session status ${s.status} is not acceptable`);
           if(c.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||c.promotionAllowed!==false) throw new Error('Champion governance changed');
           if(r.schemaVersion!=='17.0.0-review-5'||r.verdict!=='NO_COMMENTS'||Object.values(r.counts||{}).some(Number)) throw new Error('Independent review V5 is not NO_COMMENTS');
@@ -132,6 +137,7 @@ jobs:
           if(z.schemaVersion!=='17.0.0-destructive-critic-5'||z.verdict!=='NO_COMMENTS'||Number(z.totalFindings||0)!==0||Object.values(z.counts||{}).some(Number)) throw new Error(`Destructive critic V5 found ${z.totalFindings} findings`);
           if(z.publicationArchitecture?.buildReviewReadOnly!==true||z.publicationArchitecture?.marketCanonicalPublisher!==true) throw new Error('Canonical publisher architecture is not safe');
           if(g?.policy?.doesNotChangeExecutionEligibility!==true||g?.policy?.gateThresholdsUnchanged!==true) throw new Error('S/R diagnostic attempted to change execution policy');
+          if(p.schemaVersion!=='17.0.0-pre-session-intelligence-1'||n.inputEngine!=='v17_fresh_pre_session_intelligence_1') throw new Error('Fresh pre-session intelligence was not applied before ranking');
           if(x.sessionDate!==x.systemHealth?.latestMarketSession||x.sessionDate!==x.currentResearch?.sessionDate||x.sessionDate!==t.selectedSessionDate) throw new Error('Current session truth not aligned');
           if(x.enrichment?.immutableSignalHashTouched!==false||x.finalization?.immutableSignalHashTouched!==false||x.finalization?.ledgerTouched!==false) throw new Error('Snapshot processing touched immutable signal contract');
           if(x.finalization?.staleChampionCurrentWeightsZeroed!==true) throw new Error('Historical champion weights were not neutralized');
@@ -141,7 +147,7 @@ jobs:
           if(s.executionGrade!==true){ if(x.systemHealth?.executionGrade!==false) throw new Error('Non-execution status claims execution grade'); if(Number(x.portfolioPolicy?.plannedAllocationPct||0)!==0||Number(x.portfolioPolicy?.cashReservePct||0)!==100) throw new Error('Non-execution status has exposure'); }
           const executable=(x.recommendations||[]).filter(row=>row.executionAllowed===true);
           if(executable.some(row=>row.liquidity?.executionLiquidityOk!==true)) throw new Error('Executable recommendation without per-symbol liquidity pass');
-          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,review:r.verdict,regression:q.ok,browserRuntime:b.verdict,destructiveCritic:z.verdict,buildReviewReadOnly:z.publicationArchitecture?.buildReviewReadOnly,marketCanonicalPublisher:z.publicationArchitecture?.marketCanonicalPublisher},null,2));
+          console.log(JSON.stringify({accepted:true,status:s.status,executionGrade:s.executionGrade,sessionDate:x.sessionDate,sourceSessionVerified:t.executionSafe,historyRepairApplied:h.applied,coveragePct:s.coveragePct,freshnessPct:s.freshnessPct,liquidityGatePassed:l.gatePassed,preSessionAffectedSymbols:p.affectedSymbols,newsEnhanced:n.enhancedRecommendations,review:r.verdict,regression:q.ok,browserRuntime:b.verdict,destructiveCritic:z.verdict,buildReviewReadOnly:z.publicationArchitecture?.buildReviewReadOnly,marketCanonicalPublisher:z.publicationArchitecture?.marketCanonicalPublisher},null,2));
           NODE
       - name: Upload diagnostics
         if: always()
@@ -155,6 +161,7 @@ jobs:
             data/v17/sr-history-gap-diagnostics.json
             data/v17/liquidity-gate.json
             data/v17/resilient-session-status.json
+            data/v17/pre-session-intelligence.json
             data/v17/challenger-status.json
             data/v17/current.json
             data/v17/ledger.json
@@ -162,6 +169,9 @@ jobs:
             data/v17/regression.json
             data/v17/browser-runtime-critic.json
             data/v17/destructive-critic.json
+            data/smart-news-report.json
+            data/news-intelligence.json
+            data/news-impact-status.json
             data/mubasher-support-resistance-direct-report.json
             data/mubasher-support-resistance-rendered.json
           if-no-files-found: warn
