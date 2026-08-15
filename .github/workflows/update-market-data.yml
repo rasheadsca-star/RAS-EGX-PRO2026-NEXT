@@ -177,3 +177,20 @@ jobs:
             git pull --rebase -X ours origin develop/v17-rebuild
             git push origin HEAD:develop/v17-rebuild
           fi
+      - name: Publish canonical V17 data to preview branch
+        run: |
+          set -euo pipefail
+          git fetch origin v17-preview-stable develop/v17-rebuild
+          preview_dir="$(mktemp -d)"
+          git worktree add -B v17-preview-publish "$preview_dir" origin/v17-preview-stable
+          mkdir -p "$preview_dir/data/v17"
+          cp data/market.json "$preview_dir/data/market.json"
+          cp data/v17/*.json "$preview_dir/data/v17/"
+          cd "$preview_dir"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/market.json data/v17/*.json
+          if ! git diff --cached --quiet; then
+            git commit -m "V17 preview: sync canonical market snapshot"
+            git push origin HEAD:v17-preview-stable
+          fi
