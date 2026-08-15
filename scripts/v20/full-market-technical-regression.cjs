@@ -101,8 +101,69 @@ for (const profile of profiles.profiles || []) {
   }
 }
 
+// Unresolved review packet: classify what evidence is missing without inventing a
+// root cause. These states are review routing only. They cannot auto-repair data,
+// grant trust, change a score, open execution, or imply a corporate action.
+function classifyUnresolved(row) {
+  const blockers = [...new Set(row.blockers || [])];
+  let primaryReviewState = 'OTHER_TECHNICAL_REVIEW_REQUIRED';
+  let recommendedAction = 'REVIEW_PROVIDER_EVIDENCE_MANUALLY';
+  let historicalProviderCanResolveAlone = false;
+  if (blockers.includes('CURRENT_MARKET_PRICE_UNAVAILABLE')) {
+    primaryReviewState = 'INDEPENDENT_CURRENT_MARKET_REFERENCE_REQUIRED';
+    recommendedAction = 'ACQUIRE_INDEPENDENT_CURRENT_MARKET_REFERENCE_BEFORE_RECONCILIATION';
+  } else if (blockers.includes('LAST_HISTORY_SESSION_NOT_CURRENT')) {
+    primaryReviewState = 'CURRENT_SESSION_OHLC_REQUIRED';
+    recommendedAction = 'ACQUIRE_CURRENT_SESSION_OHLC_FROM_ACCEPTED_SINGLE_PROVIDER';
+    historicalProviderCanResolveAlone = true;
+  } else if (blockers.includes('LATEST_CLOSE_NOT_RECONCILED_WITH_CURRENT_PRICE')) {
+    primaryReviewState = 'PRICE_REFERENCE_RECONCILIATION_REVIEW';
+    recommendedAction = 'TRIANGULATE_CURRENT_PRICE_AND_PROVIDER_CLOSE_WITHOUT_CAUSE_INFERENCE';
+  } else if (
+    blockers.includes('INSUFFICIENT_TRUSTED_ROWS_LT_50')
+    || blockers.some(code => code.startsWith('INDICATOR_UNAVAILABLE_'))
+  ) {
+    primaryReviewState = 'HISTORY_DEPTH_OR_INDICATOR_EVIDENCE_REQUIRED';
+    recommendedAction = 'ACQUIRE_LONGER_VERIFIED_HISTORY_FROM_ONE_ACCEPTED_PROVIDER';
+    historicalProviderCanResolveAlone = true;
+  }
+  return {
+    ticker: row.ticker,
+    primaryReviewState,
+    blockers,
+    recommendedAction,
+    historicalProviderCanResolveAlone,
+    currentMarketPrice: row.currentPrice ?? null,
+    latestProviderClose: row.latestClose ?? null,
+    latestHistorySession: row.asOfSession ?? null,
+    rowsUsed: row.rowsUsed ?? 0,
+    currentPriceDifferencePct: row.currentPriceDifferencePct ?? null,
+    selectedProvider: row.sourceKind ?? null,
+    selectedProviderRole: row.providerRole ?? null,
+    providerAttempts: (row.attempts || []).map(a => ({source:a.source ?? null, ok:a.ok === true, sessions:a.sessions ?? null, period:a.period ?? null})),
+    providerCandidates: row.providerCandidates || [],
+    causeVerified: false,
+    corporateActionInferred: false,
+    automaticRepairAllowed: false,
+    automaticTrustUpgradeAllowed: false,
+    usedForDecisionScore: false,
+    usedForExecutionGate: false,
+    usedForProductionAllocation: false,
+  };
+}
+const unresolvedReviewRows = (evidence.symbols || []).filter(row => row.currentReady !== true).map(classifyUnresolved);
+const reviewStateCounts = unresolvedReviewRows.reduce((acc,row) => { acc[row.primaryReviewState] = (acc[row.primaryReviewState] || 0) + 1; return acc; }, {});
+check(unresolvedReviewRows.length === Number(evidence.summary?.unavailableCount || 0), 'FULL_TECH_REVIEW_UNRESOLVED_COUNT_MISMATCH');
+check(unresolvedReviewRows.every(row => row.blockers.length > 0), 'FULL_TECH_REVIEW_ROW_WITHOUT_BLOCKER');
+check(unresolvedReviewRows.every(row => row.causeVerified === false && row.corporateActionInferred === false), 'FULL_TECH_REVIEW_CAUSE_INFERENCE_DETECTED');
+check(unresolvedReviewRows.every(row => row.automaticRepairAllowed === false && row.automaticTrustUpgradeAllowed === false), 'FULL_TECH_REVIEW_AUTO_REPAIR_OR_TRUST_ALLOWED');
+check(unresolvedReviewRows.every(row => row.usedForDecisionScore === false && row.usedForExecutionGate === false && row.usedForProductionAllocation === false), 'FULL_TECH_REVIEW_PRODUCTION_LEAK');
+check(unresolvedReviewRows.filter(row => row.primaryReviewState === 'INDEPENDENT_CURRENT_MARKET_REFERENCE_REQUIRED').every(row => row.historicalProviderCanResolveAlone === false), 'FULL_TECH_MARKET_REFERENCE_WRONGLY_RESOLVABLE_BY_HISTORY_ONLY');
+check(unresolvedReviewRows.filter(row => row.primaryReviewState === 'PRICE_REFERENCE_RECONCILIATION_REVIEW').every(row => row.historicalProviderCanResolveAlone === false), 'FULL_TECH_PRICE_CONFLICT_WRONGLY_AUTO_RESOLVABLE');
+check(Object.values(reviewStateCounts).reduce((a,b) => a + b, 0) === unresolvedReviewRows.length, 'FULL_TECH_REVIEW_STATE_COUNT_MISMATCH');
+
 const report = {
-  schemaVersion: '20.0.0-full-market-technical-regression-3',
+  schemaVersion: '20.0.0-full-market-technical-regression-4',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -120,6 +181,23 @@ const report = {
     unresolvedBlockerCounts: evidence.summary?.unresolvedBlockerCounts || {},
     opportunityProfilesUsingSeparateDecisionTechnical: (profiles.profiles || []).filter(p => p.technicalAnalysis?.usedForCurrentDecision === true).length,
   },
+  unresolvedReview: {
+    status: 'MANUAL_REVIEW_ROUTING_RESEARCH_ONLY',
+    targetCount: unresolvedReviewRows.length,
+    stateCounts: reviewStateCounts,
+    blockerCountsOverlapAllowed: true,
+    rows: unresolvedReviewRows,
+    policy: {
+      diagnosticOnly: true,
+      causeInferenceAllowed: false,
+      corporateActionInferenceAllowed: false,
+      automaticRepairAllowed: false,
+      automaticTrustUpgradeAllowed: false,
+      usedForDecisionScore: false,
+      usedForExecutionGate: false,
+      usedForProductionAllocation: false,
+    },
+  },
   checks: {
     pointInTimeNoLookahead: true,
     identityRequired: true,
@@ -128,6 +206,9 @@ const report = {
     noSyntheticOhlc: true,
     providerBlendingForbidden: true,
     startaSecondaryEvidenceResearchOnly: true,
+    unresolvedReviewDerivedOnlyFromObservedBlockers: true,
+    unresolvedReviewNeverInfersCorporateAction: true,
+    unresolvedReviewNeverAutoRepairsOrUpgradesTrust: true,
     fullMarketTechnicalNeverDrivesDecisionScore: true,
     fullMarketTechnicalNeverDrivesExecutionGate: true,
     fullMarketTechnicalNeverDrivesProductionAllocation: true,
