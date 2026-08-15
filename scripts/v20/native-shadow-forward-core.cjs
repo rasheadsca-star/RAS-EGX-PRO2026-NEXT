@@ -3,18 +3,20 @@
 const { finite, round, buildConsensusCalendar, evaluateLongPlan } = require('./forward-evaluation-core.cjs');
 
 function canonicalNativeCandidate(row) {
+  const tradePlan = row?.tradePlan || {};
   return {
     rank: Number(row.rank),
     ticker: String(row.ticker || '').trim().toUpperCase(),
     nativeResearchScore: finite(row.nativeResearchScore),
     scoreBeforeRegimeAndCaps: finite(row.rankingTieBreaker?.scoreBeforeRegimeAndCaps),
     rankingContract: row.rankingTieBreaker?.contract || null,
-    entryLow: finite(row.entryLow),
-    entryHigh: finite(row.entryHigh),
-    stop: finite(row.stop),
-    target1: finite(row.target1),
+    entryLow: finite(row.entryLow ?? tradePlan.entryLow),
+    entryHigh: finite(row.entryHigh ?? tradePlan.entryHigh),
+    stop: finite(row.stop ?? tradePlan.stop),
+    target1: finite(row.target1 ?? tradePlan.target1),
+    target2: finite(row.target2 ?? tradePlan.target2),
     netRiskReward: finite(row.netRiskReward),
-    alignmentState: row.alignmentState || null,
+    alignmentState: row.alignmentState || tradePlan.alignmentState || null,
     wasInLegacySeedUniverse: row.wasInLegacySeedUniverse === true,
   };
 }
