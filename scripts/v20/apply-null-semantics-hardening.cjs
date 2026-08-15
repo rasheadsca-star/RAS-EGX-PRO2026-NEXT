@@ -84,10 +84,13 @@ require('./apply-native-ranking-discrimination.cjs');
 require('./apply-native-shadow-persistent-storage.cjs');
 require('./apply-native-shadow-forward-integration.cjs');
 
+// The full-market UI acceptance must be applied before the Native-forward performance UI checks,
+// because both extend the shared UI/browser acceptance scripts at runtime.
 require('./apply-full-market-native-ui.cjs');
+require('./apply-native-shadow-forward-ui.cjs');
 
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-10',
+  schemaVersion: '20.0.0-null-semantics-hardening-11',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   liquidityDecisionUpgrade: true,
@@ -98,6 +101,7 @@ const report = {
   nativeShadowPersistentStorage: true,
   nativeShadowForwardIntegration: true,
   fullMarketNativeUiIntegration: true,
+  nativeShadowForwardUiAcceptance: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
     'scripts/v20/phase3-regression.cjs'
