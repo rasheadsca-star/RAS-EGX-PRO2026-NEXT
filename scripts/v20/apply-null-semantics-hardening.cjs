@@ -89,8 +89,13 @@ require('./apply-market-trend-context-ui.cjs');
 require('./apply-full-market-native-integration.cjs');
 
 // Phase 19 keeps defensive caps intact but resolves exact Native-score ties with a transparent,
-// safety-first lexicographic ordering. It cannot mutate score, execution, allocation or Champion.
+// safety-strength lexicographic ordering. It cannot mutate score, execution, allocation or Champion.
 require('./apply-native-ranking-discrimination.cjs');
+
+// Phase 20 freezes the current Native V2 method and adds a separate point-in-time shadow-forward
+// archive/evaluation stream. The freeze-session snapshot is baseline only; same-session revisions
+// cannot inflate sample size; no shadow evidence may open execution or change the Champion.
+require('./apply-native-shadow-forward-integration.cjs');
 
 // Phase 18 exposes the accepted full-market Native candidates in the V20 UI while keeping
 // the research-only / execution separation explicit and browser-tested.
@@ -99,7 +104,7 @@ require('./apply-full-market-native-ui.cjs');
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-8',
+  schemaVersion: '20.0.0-null-semantics-hardening-9',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   liquidityDecisionUpgrade: true,
@@ -107,6 +112,7 @@ const report = {
   marketTrendContextUiIntegration: true,
   fullMarketNativeIntegration: true,
   nativeRankingDiscriminationIntegration: true,
+  nativeShadowForwardIntegration: true,
   fullMarketNativeUiIntegration: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
