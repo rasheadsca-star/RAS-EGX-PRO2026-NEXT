@@ -338,6 +338,7 @@ jobs:
             data/v20/signal-archive
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Update V20 separated performance evidence"
+          git reset --hard HEAD
           git fetch origin develop/v20-integrated-decision-platform
           git rebase origin/develop/v20-integrated-decision-platform
           git push origin HEAD:develop/v20-integrated-decision-platform
