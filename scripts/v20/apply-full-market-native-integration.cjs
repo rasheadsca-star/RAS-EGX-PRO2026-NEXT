@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 'use strict';
+require('./apply-full-market-native-quality-gate.cjs');
 const fs=require('fs'),path=require('path');
 const root=path.resolve(process.env.GITHUB_WORKSPACE||'.'),P=r=>path.join(root,r),rel='scripts/v20/market-explorer-regression.cjs',file=P(rel);
 let text=fs.readFileSync(file,'utf8');
