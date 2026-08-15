@@ -70,6 +70,10 @@
     if (!document.querySelector('link[data-v20-stock-workbench]')) {
       const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = './stock-detail.css'; link.dataset.v20StockWorkbench = 'true'; document.head.appendChild(link);
     }
+    // FULL_MARKET_NATIVE_UI_INTEGRATED
+    if (!document.querySelector('script[data-v20-native-research]')) {
+      const nativeScript = document.createElement('script'); nativeScript.src = './native-research.js'; nativeScript.dataset.v20NativeResearch = 'true'; nativeScript.defer = true; document.body.appendChild(nativeScript);
+    }
     const actions = document.querySelector('.topbar-actions');
     if (actions && !document.getElementById('v20TopNav')) {
       const nav = document.createElement('nav'); nav.id = 'v20TopNav'; nav.className = 'v20-top-nav'; nav.setAttribute('aria-label', 'تنقل المنصة');
