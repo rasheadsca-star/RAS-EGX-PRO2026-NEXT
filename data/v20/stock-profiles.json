@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-stock-profiles-3",
-  "generatedAt": "2026-08-15T14:07:59.580Z",
+  "generatedAt": "2026-08-15T14:09:37.326Z",
   "sessionDate": "2026-08-13",
   "decisionSupportOnly": true,
   "executionStatus": "RESEARCH_ONLY",
@@ -8,7 +8,7 @@
   "technicalIndicatorPolicy": "POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION",
   "technicalHistoryStatus": {
     "schemaVersion": "20.0.0-technical-history-status-1",
-    "generatedAt": "2026-08-15T14:07:59.395Z",
+    "generatedAt": "2026-08-15T14:09:37.170Z",
     "asOfSessionDate": "2026-08-13",
     "requestedSymbols": 30,
     "historicalIndicatorReadyCount": 27,
@@ -24,7 +24,7 @@
   },
   "sectorPolicy": "NO_INFERENCE_WITHOUT_VERIFIED_CLASSIFICATION_SOURCE",
   "decisionIntelligencePolicy": {
-    "schemaVersion": "20.0.0-decision-intelligence-policy-3",
+    "schemaVersion": "20.0.0-decision-intelligence-policy-2",
     "effectiveFrom": "2026-08-15",
     "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
     "scoreName": "V20_RESEARCH_DECISION_SCORE",
@@ -61,24 +61,6 @@
     "supportResistanceScoring": {
       "researchWeightPct": 12,
       "source": "data/v17/internal-ohlc-support-resistance.json",
-      "scoringContract": "V20_SR_STRUCTURAL_SCORE_V1",
-      "subWeightsPct": {
-        "confidence": 25,
-        "sessionFreshness": 20,
-        "sourceHistoryQuality": 15,
-        "priceStructure": 30,
-        "externalValidation": 10
-      },
-      "missingExternalValidationPenalty": false,
-      "externalValidationRole": "VALIDATION_COMPARISON_NOT_HARD_DEPENDENCY",
-      "usesSupport1Resistance1PriceGeometry": true,
-      "usesFullPivotOrderingWhenAvailable": true,
-      "usesTrustedSourceAndHistoryDepth": true,
-      "usesSessionFreshness": true,
-      "singleMethodOnly": true,
-      "singleMethodName": "CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC",
-      "singleMethodMaximumScore": 90,
-      "multiMethodConfluenceClaimed": false,
       "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
     },
     "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
@@ -96,7 +78,7 @@
       "aboveEntryRangeDoNotChaseMaxScore": 55
     },
     "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
-    "note": "Weights remain transparent shadow/research heuristics. Liquidity is 30% and uses the numeric V17 score. Support/resistance remains 12% but now requires structural scoring from confidence, session freshness, source/history quality, current-price geometry and optional external validation. Because the current authoritative S/R methodology is still a single classic-pivot method, the S/R component is defensively capped at 90 until independent multi-method confluence is added and validated. Neither component can open execution, drive production allocation, change the Champion, or trigger automatic promotion."
+    "note": "Weights are transparent shadow/research heuristics. Liquidity is intentionally raised to 30% and uses the numeric V17 liquidity score rather than a binary eligibility proxy. The score remains uncalibrated and cannot open execution, drive production allocation, change the Champion, or trigger automatic promotion."
   },
   "decisionIntelligenceSummary": {
     "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
@@ -171,7 +153,7 @@
       "rank": 7,
       "ticker": "EASB",
       "legacyRank": 6,
-      "researchDecisionScore": 73.9,
+      "researchDecisionScore": 73.8,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
@@ -2562,17 +2544,17 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0,
-        "sma20": 7.362,
-        "sma50": 6.9092,
-        "ema20": 7.2428,
-        "rsi14": 51.29,
-        "macd": 0.0445,
-        "macdSignal": 0.1077,
-        "macdHistogram": -0.0631,
-        "atr14": 0.3819,
+        "sma20": 7.376,
+        "sma50": 6.9614,
+        "ema20": 7.2494,
+        "rsi14": 50.93,
+        "macd": 0.036,
+        "macdSignal": 0.0975,
+        "macdHistogram": -0.0616,
+        "atr14": 0.3814,
         "momentum5Pct": 0.98,
         "momentum10Pct": 0.42,
-        "momentum20Pct": 1.98,
+        "momentum20Pct": 0.98,
         "trend": "MIXED",
         "readiness": {
           "sma20": true,
@@ -2617,8 +2599,8 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 73.9,
-        "researchDecisionScoreBeforeCaps": 73.9,
+        "researchDecisionScore": 73.8,
+        "researchDecisionScoreBeforeCaps": 73.8,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
@@ -2719,8 +2701,8 @@
             "name": "CURRENT_POINT_IN_TIME_TECHNICAL",
             "weightPct": 5,
             "available": true,
-            "score": 67.6,
-            "weightedPoints": 3.382,
+            "score": 66.3,
+            "weightedPoints": 3.315,
             "provenance": "data/v20/technical-indicators.json",
             "evidence": {
               "currentTechnicalReady": true,
@@ -2765,7 +2747,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "EASB: درجة قرار بحثية 73.9/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "EASB: درجة قرار بحثية 73.8/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -6209,17 +6191,17 @@
         "sessionAligned": false,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0.9538,
-        "sma20": 27.8549,
-        "sma50": 28.8602,
-        "ema20": 27.4139,
-        "rsi14": 45.52,
-        "macd": -0.9197,
-        "macdSignal": -0.9085,
-        "macdHistogram": -0.0111,
-        "atr14": 1.1215,
+        "sma20": 27.9379,
+        "sma50": 28.8622,
+        "ema20": 27.4514,
+        "rsi14": 45.37,
+        "macd": -0.9271,
+        "macdSignal": -0.8973,
+        "macdHistogram": -0.0298,
+        "atr14": 1.1204,
         "momentum5Pct": 0.6,
         "momentum10Pct": -6.57,
-        "momentum20Pct": -11.36,
+        "momentum20Pct": -9.91,
         "trend": "BEARISH",
         "readiness": {
           "sma20": true,
@@ -10158,7 +10140,6 @@
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
           "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
-          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH",
           "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
@@ -10182,18 +10163,18 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0.0851,
-        "sma20": 11.731,
-        "sma50": 11.588,
-        "ema20": 11.7325,
-        "rsi14": 51.37,
-        "macd": 0.055,
-        "macdSignal": 0.0589,
-        "macdHistogram": -0.0038,
-        "atr14": 0.2684,
+        "sma20": 11.741,
+        "sma50": 11.574,
+        "ema20": 11.7327,
+        "rsi14": 51.38,
+        "macd": 0.0578,
+        "macdSignal": 0.0637,
+        "macdHistogram": -0.0059,
+        "atr14": 0.2739,
         "momentum5Pct": -1.26,
         "momentum10Pct": 0.77,
-        "momentum20Pct": -1.34,
-        "trend": "BULLISH",
+        "momentum20Pct": 1.38,
+        "trend": "MIXED",
         "readiness": {
           "sma20": true,
           "sma50": true,
@@ -10238,7 +10219,7 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 75.8,
+        "researchDecisionScoreBeforeCaps": 75.9,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
@@ -10339,14 +10320,14 @@
             "name": "CURRENT_POINT_IN_TIME_TECHNICAL",
             "weightPct": 5,
             "available": true,
-            "score": 66.2,
-            "weightedPoints": 3.308,
+            "score": 66.8,
+            "weightedPoints": 3.342,
             "provenance": "data/v20/technical-indicators.json",
             "evidence": {
               "currentTechnicalReady": true,
               "usedForCurrentDecision": true,
               "asOfSession": "2026-08-13",
-              "trend": "BULLISH"
+              "trend": "MIXED"
             }
           }
         },
