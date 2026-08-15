@@ -74,37 +74,20 @@ results.push(replaceExact(
   `write('data/v20/stock-profiles.json', out);\nrequire('./build-native-research-challenger.cjs').main();\nconsole.log(JSON.stringify({`
 ));
 
-// Phase 16 V20 liquidity decision upgrade. This remains shadow/research only and
-// only replaces the old binary liquidity proxy with the existing numeric V17 score.
 require('./apply-liquidity-decision-upgrade.cjs');
-
-// Phase 15 UI integration is intentionally idempotent and only changes presentation of
-// already-verified Market Regime context. It does not alter technical readiness, scores,
-// recommendation status, or execution semantics.
 require('./apply-market-trend-context-ui.cjs');
-
-// Phase 17 full-market native research integration. It patches the existing Market Explorer
-// regression step so the full master-universe technical scan, native selection and governance
-// regression are acceptance-gated without changing current.json or immutable issued signals.
 require('./apply-full-market-native-integration.cjs');
-
-// Phase 19 keeps defensive caps intact but resolves exact Native-score ties with a transparent,
-// safety-strength lexicographic ordering. It cannot mutate score, execution, allocation or Champion.
 require('./apply-native-ranking-discrimination.cjs');
 
-// Phase 20 freezes the current Native V2 method and adds a separate point-in-time shadow-forward
-// archive/evaluation stream. The freeze-session snapshot is baseline only; same-session revisions
-// cannot inflate sample size; no shadow evidence may open execution or change the Champion.
+// Phase 20 stores Native V2 shadow-forward evidence directly in a persistent namespace under
+// signal-archive without inserting any Native row into the legacy immutable archive index.
+require('./apply-native-shadow-persistent-storage.cjs');
 require('./apply-native-shadow-forward-integration.cjs');
 
-// Phase 18 exposes the accepted full-market Native candidates in the V20 UI while keeping
-// the research-only / execution separation explicit and browser-tested.
 require('./apply-full-market-native-ui.cjs');
 
-// Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
-// their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-9',
+  schemaVersion: '20.0.0-null-semantics-hardening-10',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   liquidityDecisionUpgrade: true,
@@ -112,6 +95,7 @@ const report = {
   marketTrendContextUiIntegration: true,
   fullMarketNativeIntegration: true,
   nativeRankingDiscriminationIntegration: true,
+  nativeShadowPersistentStorage: true,
   nativeShadowForwardIntegration: true,
   fullMarketNativeUiIntegration: true,
   immutableCompatibilityExclusions: [
