@@ -38,6 +38,22 @@ const v19Lock = read('data/v19/v6-research-champion-lock.json');
 const v19Gate = read('data/v19/challenger-status-v6.json');
 const forward = read('data/v20/forward-evaluation.json', { evaluations: [] });
 const current = read('data/v20/current.json');
+const v18Audit = read('data/v20/v18-performance-audit.json', {
+  status: 'AUDIT_OUTPUT_MISSING',
+  acceptedForPerformanceClaims: false,
+  reproducible: false,
+  source: { sourceArtifactAvailable: false },
+  unreconciledClaims: { observedTradeCounts: [16, 971, 1138], reconciled: false },
+  definitions: { definitionCoveragePct: 0, missing: [] },
+  governance: {
+    countsAsIndependentEvidence: false,
+    canCalibrateV20DecisionScore: false,
+    canOpenExecutionGate: false,
+    canChangeChampion: false,
+    canPromoteChallenger: false,
+  },
+  blockingReasons: ['V18_AUDIT_OUTPUT_MISSING'],
+});
 
 const entries = [];
 for (const size of ['3','4','5']) {
@@ -159,6 +175,7 @@ entries.push({
 
 const v19BenchmarkEntry = entries.find(e => e.evidenceId === 'V19_V6_REUSED_BENCHMARK');
 const v19DevelopmentEntry = entries.find(e => e.evidenceId === 'V19_V6_DEVELOPMENT_OOS');
+const v18Accepted = v18Audit?.acceptedForPerformanceClaims === true && v18Audit?.reproducible === true;
 const out = {
   schemaVersion: '20.0.0-performance-evidence-registry-1',
   generatedAt: new Date().toISOString(),
@@ -170,7 +187,8 @@ const out = {
     developmentAndHoldoutEvidenceMustRemainSeparate: true,
     reusedBenchmarkCanPromoteChallenger: false,
     pendingForwardReturnMustRemainNull: true,
-    v18PerformanceAccepted: false,
+    v18PerformanceAccepted: v18Accepted,
+    v18AuditRequired: true,
   },
   summary: {
     evidenceEntryCount: entries.length,
@@ -183,14 +201,33 @@ const out = {
     forwardResolvedCount: resolved.length,
     forwardPendingCount: pending.length,
     forwardAmbiguousCount: ambiguous.length,
+    v18AuditStatus: v18Audit?.status || 'AUDIT_OUTPUT_MISSING',
+    v18DefinitionCoveragePct: finite(v18Audit?.definitions?.definitionCoveragePct),
     status: resolved.length ? 'FORWARD_EVIDENCE_PARTIALLY_RESOLVED' : 'FORWARD_EVIDENCE_PENDING',
   },
   entries,
   externalReferences: {
     v18: {
-      acceptedForPerformanceClaims: false,
-      status: 'NOT_INGESTED_OR_AUDITED_IN_V20',
-      reason: 'V20 does not accept external V18 performance claims without a reconciled evidence definition and auditable source artifact.',
+      auditFile: 'data/v20/v18-performance-audit.json',
+      acceptedForPerformanceClaims: v18Accepted,
+      reproducible: v18Audit?.reproducible === true,
+      status: v18Audit?.status || 'AUDIT_OUTPUT_MISSING',
+      sourceArtifactAvailable: v18Audit?.source?.sourceArtifactAvailable === true,
+      observedTradeCounts: Array.isArray(v18Audit?.unreconciledClaims?.observedTradeCounts) ? v18Audit.unreconciledClaims.observedTradeCounts : [],
+      tradeCountsReconciled: v18Audit?.unreconciledClaims?.reconciled === true,
+      definitionCoveragePct: finite(v18Audit?.definitions?.definitionCoveragePct),
+      missingDefinitions: Array.isArray(v18Audit?.definitions?.missing) ? v18Audit.definitions.missing : [],
+      blockingReasons: Array.isArray(v18Audit?.blockingReasons) ? v18Audit.blockingReasons : [],
+      governance: {
+        countsAsIndependentEvidence: v18Audit?.governance?.countsAsIndependentEvidence === true,
+        canCalibrateV20DecisionScore: v18Audit?.governance?.canCalibrateV20DecisionScore === true,
+        canOpenExecutionGate: v18Audit?.governance?.canOpenExecutionGate === true,
+        canChangeChampion: v18Audit?.governance?.canChangeChampion === true,
+        canPromoteChallenger: v18Audit?.governance?.canPromoteChallenger === true,
+      },
+      reason: v18Accepted
+        ? 'V18 performance source passed the dedicated reproducibility and definition audit. Evidence remains separated by class and does not imply promotion.'
+        : 'V18 performance claims remain blocked until the dedicated audit reconciles the source artifact, trade counts and methodology definitions.',
     }
   }
 };
@@ -199,6 +236,10 @@ if (out.summary.v19AutomaticPromotion || out.summary.v19PromotionAllowed) throw 
 if (v19BenchmarkEntry?.promotionEligible !== false) throw new Error('Reused V19 benchmark must not be promotion evidence');
 if (pending.some(row => row.portfolioReturnGrossPct !== null || row.portfolioReturnNetPct !== null)) throw new Error('Pending forward return was populated');
 if (out.policy.singleHeadlinePerformanceMetricAllowed !== false || out.policy.crossEvidenceAggregationAllowed !== false) throw new Error('Performance evidence separation policy drift');
+if (out.policy.v18PerformanceAccepted !== v18Accepted) throw new Error('V18 audit/registry acceptance mismatch');
+if (out.externalReferences.v18.governance.canOpenExecutionGate || out.externalReferences.v18.governance.canChangeChampion || out.externalReferences.v18.governance.canPromoteChallenger) {
+  throw new Error('V18 performance audit cannot change execution or model governance');
+}
 
 write('data/v20/performance-evidence-registry.json', out);
 console.log(JSON.stringify(out.summary, null, 2));
