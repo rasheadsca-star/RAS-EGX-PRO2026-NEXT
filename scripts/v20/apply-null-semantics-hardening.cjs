@@ -68,6 +68,12 @@ results.push(replaceExact(
   `  const numeric = value => { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; };\n  const num = (value, digits = 2) => { const n = numeric(value); return n === null ? '—' : n.toLocaleString('ar-EG', { maximumFractionDigits: digits }); };\n  const pct = value => numeric(value) === null ? '—' : \`${'${num(value, 1)}'}%\`;\n  const money = value => numeric(value) === null ? '—' : num(value, 4);`
 ));
 
+results.push(replaceExact(
+  'scripts/v20/build-stock-profiles.cjs',
+  `write('data/v20/stock-profiles.json', out);\nconsole.log(JSON.stringify({`,
+  `write('data/v20/stock-profiles.json', out);\nrequire('./build-native-research-challenger.cjs').main();\nconsole.log(JSON.stringify({`
+));
+
 // Phase 16 V20 liquidity decision upgrade. This remains shadow/research only and
 // only replaces the old binary liquidity proxy with the existing numeric V17 score.
 require('./apply-liquidity-decision-upgrade.cjs');
@@ -80,10 +86,11 @@ require('./apply-market-trend-context-ui.cjs');
 // Deliberate exclusions: immutable signal archive and Phase 3 archive-hash regression retain
 // their historical numeric canonicalization semantics so existing signal hashes are never rewritten.
 const report = {
-  schemaVersion: '20.0.0-null-semantics-hardening-4',
+  schemaVersion: '20.0.0-null-semantics-hardening-5',
   generatedAt: new Date().toISOString(),
   hardenedFiles: results,
   liquidityDecisionUpgrade: true,
+  nativeResearchChallengerWired: true,
   marketTrendContextUiIntegration: true,
   immutableCompatibilityExclusions: [
     'scripts/v20/archive-signal.cjs',
