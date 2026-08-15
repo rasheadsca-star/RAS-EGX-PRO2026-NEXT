@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-regression-2",
-  "generatedAt": "2026-08-15T10:11:29.215Z",
+  "generatedAt": "2026-08-15T10:17:46.712Z",
   "ok": true,
   "failedCount": 0,
   "failures": [],
@@ -17,7 +17,7 @@
   },
   "finalAcceptance": {
     "schemaVersion": "20.0.0-final-acceptance-1",
-    "generatedAt": "2026-08-15T10:11:39.454Z",
+    "generatedAt": "2026-08-15T10:18:19.014Z",
     "sessionDate": "2026-08-13",
     "independentCritic": true,
     "finalStatus": "RESEARCH_PLATFORM_READY_EXECUTION_NOT_READY",
@@ -63,6 +63,10 @@
         "state": "PASS_WITH_PARTIAL_COVERAGE",
         "evidence": "21/30 current-ready"
       },
+      "fullMarketTechnicalResearchContext": {
+        "state": "PASS_RESEARCH_ONLY",
+        "evidence": "152/227 current-ready (66.96%); display-only/no execution leakage"
+      },
       "decisionIntelligence": {
         "state": "PASS_RESEARCH_ONLY",
         "evidence": "Score/Confidence/Execution separated; uncalibrated research score"
@@ -90,6 +94,24 @@
       "userPortfolio": {
         "state": "PASS_LOCAL_ONLY",
         "evidence": "localStorage only; current-session valuation; no automatic orders"
+      }
+    },
+    "technicalEvidenceSummary": {
+      "opportunityDecisionTechnical": {
+        "currentReadyCount": 21,
+        "requestedSymbols": 30,
+        "coveragePct": 70,
+        "source": "data/v20/technical-history-status.json"
+      },
+      "fullMarketResearchTechnical": {
+        "currentReadyCount": 152,
+        "universeCount": 227,
+        "coveragePct": 66.96,
+        "finalSameRunEvidence": true,
+        "usedForDecisionScore": false,
+        "usedForExecutionGate": false,
+        "usedForProductionAllocation": false,
+        "source": "data/v20/regression.json#fullMarketTechnical"
       }
     },
     "criticSummary": {
@@ -190,8 +212,8 @@
       },
       {
         "code": "FULL_MARKET_TECHNICAL_COVERAGE_PARTIAL",
-        "detail": "Current technical evidence covers 9.25% of the full market universe; MARKET_ONLY rows are not assigned fabricated technical decision scores.",
-        "source": "data/v20/market-explorer.json"
+        "detail": "Current full-market research technical evidence covers 152/227 symbols (66.96%); this display-only layer does not drive decision scores, execution gates, or production allocation.",
+        "source": "data/v20/regression.json#fullMarketTechnical"
       },
       {
         "code": "V18_PERFORMANCE_NOT_AUDITED_OR_ACCEPTED",
@@ -228,7 +250,8 @@
       "scoreConfidenceExecutionSeparated": true,
       "researchPerformanceNotProduction": true,
       "pendingReturnsRemainNull": true,
-      "browserAcceptanceRealRuntime": true
+      "browserAcceptanceRealRuntime": true,
+      "fullMarketTechnicalResearchOnly": true
     },
     "finalStatement": "V20 is accepted as a research and investment-decision-support platform. Execution Grade is explicitly not accepted because authoritative V17 production blockers remain."
   },
@@ -236,11 +259,19 @@
     "authoritativeRuntimeSource": "scripts/v20/final-acceptance.cjs",
     "detailedSidecar": "data/v20/final-acceptance.json",
     "persistedInMainEvidence": "data/v20/regression.json#finalAcceptance",
-    "generatedInSameMainRun": true
+    "generatedInSameMainRun": true,
+    "initialIndependentCriticPass": true,
+    "finalEvidenceRefresh": true,
+    "refreshedAfter": [
+      "data/v20/regression.json#fullMarketTechnical",
+      "data/v20/regression.json#extendedResearchBrowserAcceptance"
+    ],
+    "fullMarketTechnicalCoverageConsistency": true,
+    "opportunityTechnicalSeparationConsistency": true
   },
   "executionReadinessGap": {
     "schemaVersion": "20.0.0-execution-gap-regression-2",
-    "generatedAt": "2026-08-15T10:11:39.458Z",
+    "generatedAt": "2026-08-15T10:17:56.155Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -318,7 +349,7 @@
   },
   "backtestReadiness": {
     "schemaVersion": "20.0.0-backtest-readiness-1",
-    "generatedAt": "2026-08-15T10:11:39.462Z",
+    "generatedAt": "2026-08-15T10:17:56.160Z",
     "sessionDate": "2026-08-13",
     "status": "NOT_READY_FOR_INDEPENDENT_V20_SCORE_BACKTEST",
     "decisionScore": {
@@ -382,7 +413,7 @@
   },
   "backtestReadinessRegression": {
     "schemaVersion": "20.0.0-backtest-readiness-regression-1",
-    "generatedAt": "2026-08-15T10:11:39.464Z",
+    "generatedAt": "2026-08-15T10:17:56.161Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -407,7 +438,7 @@
   },
   "supportResistanceRemediation": {
     "schemaVersion": "20.0.0-sr-remediation-audit-3",
-    "generatedAt": "2026-08-15T10:11:39.843Z",
+    "generatedAt": "2026-08-15T10:17:56.586Z",
     "status": "REMEDIATION_CANDIDATE_RESEARCH_ONLY",
     "sessionDate": "2026-08-13",
     "sourceSchemaVersion": "17.0.0-internal-ohlc-sr-3",
@@ -2309,7 +2340,7 @@
   },
   "supportResistanceRemediationRegression": {
     "schemaVersion": "20.0.0-sr-remediation-regression-3",
-    "generatedAt": "2026-08-15T10:11:39.859Z",
+    "generatedAt": "2026-08-15T10:17:56.598Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -2351,7 +2382,7 @@
   },
   "supportResistanceRemediationHandoff": {
     "schemaVersion": "20.0.0-sr-remediation-handoff-1",
-    "generatedAt": "2026-08-15T10:11:42.448Z",
+    "generatedAt": "2026-08-15T10:17:58.848Z",
     "sessionDate": "2026-08-13",
     "status": "V17_MANUAL_REVIEW_HANDOFF_RESEARCH_ONLY",
     "readOnly": true,
@@ -3030,7 +3061,7 @@
   },
   "supportResistanceRemediationHandoffRegression": {
     "schemaVersion": "20.0.0-sr-remediation-handoff-regression-1",
-    "generatedAt": "2026-08-15T10:11:42.471Z",
+    "generatedAt": "2026-08-15T10:17:58.872Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -3074,7 +3105,7 @@
   },
   "supportResistanceAlternateEvidence": {
     "schemaVersion": "20.0.0-sr-remediation-alternate-evidence-1",
-    "generatedAt": "2026-08-15T10:11:42.401Z",
+    "generatedAt": "2026-08-15T10:17:58.793Z",
     "sessionDate": "2026-08-13",
     "status": "SECONDARY_SUPPLEMENTAL_TRIANGULATION_RESEARCH_ONLY",
     "provider": "STARTA",
@@ -3955,7 +3986,7 @@
   },
   "supportResistanceAlternateEvidenceRegression": {
     "schemaVersion": "20.0.0-sr-remediation-alternate-evidence-regression-1",
-    "generatedAt": "2026-08-15T10:11:42.429Z",
+    "generatedAt": "2026-08-15T10:17:58.825Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -3996,7 +4027,7 @@
   },
   "supportResistanceReviewPacket": {
     "schemaVersion": "20.0.0-sr-remediation-review-packet-1",
-    "generatedAt": "2026-08-15T10:11:39.882Z",
+    "generatedAt": "2026-08-15T10:17:56.623Z",
     "sessionDate": "2026-08-13",
     "status": "MANUAL_REVIEW_PACKET_RESEARCH_ONLY",
     "sourceAuditSchemaVersion": "20.0.0-sr-remediation-audit-3",
@@ -4667,7 +4698,7 @@
   },
   "supportResistanceReviewPacketRegression": {
     "schemaVersion": "20.0.0-sr-remediation-review-packet-regression-1",
-    "generatedAt": "2026-08-15T10:11:42.652Z",
+    "generatedAt": "2026-08-15T10:17:58.905Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -4708,7 +4739,7 @@
   },
   "fullMarketTechnical": {
     "schemaVersion": "20.0.0-full-market-technical-1",
-    "generatedAt": "2026-08-15T10:11:46.936Z",
+    "generatedAt": "2026-08-15T10:18:02.630Z",
     "asOfSessionDate": "2026-08-13",
     "policy": {
       "pointInTime": true,
@@ -13747,7 +13778,7 @@
   },
   "fullMarketTechnicalRegression": {
     "schemaVersion": "20.0.0-full-market-technical-regression-2",
-    "generatedAt": "2026-08-15T10:11:46.979Z",
+    "generatedAt": "2026-08-15T10:18:02.668Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -13782,7 +13813,7 @@
   },
   "extendedResearchBrowserAcceptance": {
     "schemaVersion": "20.0.0-extended-pages-smoke-3",
-    "generatedAt": "2026-08-15T10:11:50.659Z",
+    "generatedAt": "2026-08-15T10:18:07.197Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
@@ -14230,14 +14261,14 @@
   },
   "releaseManifest": {
     "schemaVersion": "20.0.0-release-manifest-3",
-    "generatedAt": "2026-08-15T10:12:02.442Z",
+    "generatedAt": "2026-08-15T10:18:19.044Z",
     "releaseClassification": "RESEARCH_RELEASE_CANDIDATE_EXECUTION_BLOCKED",
     "product": "EGX PRO V20 — Integrated Investment Decision Platform",
     "branch": "develop/v20-integrated-decision-platform",
-    "validatedSourceCommit": "4296da4387e2fa5074872b1211d6db1aa9c2a95a",
+    "validatedSourceCommit": "b066d29669b483914c04414550a0e16437a47cf2",
     "validationRun": {
-      "githubRunId": "31878890369",
-      "githubRunNumber": "115",
+      "githubRunId": "31879138394",
+      "githubRunNumber": "117",
       "workflow": "EGX Integrated Decision Platform Validation",
       "actor": "rasheadsca-star"
     },
@@ -14323,8 +14354,8 @@
         },
         {
           "code": "FULL_MARKET_TECHNICAL_COVERAGE_PARTIAL",
-          "detail": "Current technical evidence covers 9.25% of the full market universe; MARKET_ONLY rows are not assigned fabricated technical decision scores.",
-          "source": "data/v20/market-explorer.json"
+          "detail": "Current full-market research technical evidence covers 152/227 symbols (66.96%); this display-only layer does not drive decision scores, execution gates, or production allocation.",
+          "source": "data/v20/regression.json#fullMarketTechnical"
         },
         {
           "code": "V18_PERFORMANCE_NOT_AUDITED_OR_ACCEPTED",
@@ -14699,7 +14730,7 @@
   },
   "releaseManifestRegression": {
     "schemaVersion": "20.0.0-release-manifest-regression-3",
-    "generatedAt": "2026-08-15T10:12:02.449Z",
+    "generatedAt": "2026-08-15T10:18:19.053Z",
     "ok": true,
     "failedCount": 0,
     "failures": [],
