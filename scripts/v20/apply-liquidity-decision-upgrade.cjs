@@ -104,13 +104,6 @@ results.push(replaceExact(
 
 results.push(replaceExact(
   rel,
-  "  schemaVersion: '20.0.0-stock-profiles-3', generatedAt: new Date().toISOString(), sessionDate: current.sessionDate,",
-  "  schemaVersion: '20.0.0-stock-profiles-4', generatedAt: new Date().toISOString(), sessionDate: current.sessionDate,",
-  "schemaVersion: '20.0.0-stock-profiles-4'"
-));
-
-results.push(replaceExact(
-  rel,
   "    usedForChampionSelection: false,\n    medianResearchDecisionScore: medianDecisionScore === null ? null : round(medianDecisionScore, 1),",
   "    usedForChampionSelection: false,\n    liquidityComponentWeightPct: decisionPolicy.componentWeightsPct.liquidity,\n    liquidityScoringContract: decisionPolicy.liquidityScoring?.scoringContract || null,\n    liquidityUsesNumericV17Score: true,\n    liquidityComponentAvailableCount: profiles.filter(p => p.decisionIntelligence.components.liquidity.available).length,\n    medianResearchDecisionScore: medianDecisionScore === null ? null : round(medianDecisionScore, 1),",
   "    liquidityUsesNumericV17Score: true,"
@@ -121,20 +114,21 @@ for (const marker of [
   "decisionLiquidityScore(profile.liquidity)",
   "const liquidityGate = read('data/v17/liquidity-gate.json'",
   "const liquidityMap = new Map",
-  "schemaVersion: '20.0.0-stock-profiles-4'",
+  "schemaVersion: '20.0.0-stock-profiles-3'",
   "liquidityUsesNumericV17Score: true",
 ]) {
   if (!patched.includes(marker)) throw new Error(`Liquidity upgrade verification failed: missing ${marker}`);
 }
 
 console.log(JSON.stringify({
-  schemaVersion: '20.0.0-liquidity-decision-upgrade-1',
+  schemaVersion: '20.0.0-liquidity-decision-upgrade-2',
   status: 'APPLIED_OR_ALREADY_PRESENT',
   researchOnly: true,
   liquidityWeightPct: 30,
   supportResistanceWeightPct: 12,
   totalWeightPct: 100,
   liquidityScoreSource: 'data/v17/liquidity-gate.json::liquidityScore',
+  stockProfilesSchemaPreserved: '20.0.0-stock-profiles-3',
   binaryEligibilityFallbackUsed: false,
   sessionMisalignmentScoreCap: 25,
   results,
