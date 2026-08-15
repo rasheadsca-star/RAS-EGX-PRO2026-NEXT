@@ -49,6 +49,22 @@
     CURRENT_FORWARD_EVIDENCE: 'دليل Forward حالي'
   }[value] || value || '—');
 
+  const v18MissingAr = value => ({
+    sourceArtifact: 'ملف مصدر V18 قابل لإعادة الإنتاج',
+    tradeDefinition: 'تعريف الصفقة',
+    signalUniverse: 'نطاق الإشارات / الأسهم',
+    holdingPeriod: 'فترة الاحتفاظ',
+    inSampleDefinition: 'تعريف In-Sample',
+    outOfSampleDefinition: 'تعريف Out-of-Sample',
+    walkForwardDefinition: 'تعريف Walk-forward',
+    multiHorizonDefinition: 'تعريف Multi-horizon',
+    entryTiming: 'توقيت الدخول',
+    transactionCosts: 'تكاليف التداول',
+    overlapAndPortfolioCompounding: 'تداخل المراكز وتجميع عائد المحفظة',
+    sameCandleAmbiguityPolicy: 'سياسة Target/Stop داخل نفس الشمعة',
+    independentHoldoutDefinition: 'تعريف Independent Holdout'
+  }[value] || value);
+
   async function loadJson(url) {
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
@@ -117,6 +133,43 @@
     return card;
   }
 
+  function renderV18Audit(v18) {
+    const host = $('performanceV18Note');
+    if (!host) return;
+    const counts = Array.isArray(v18.observedTradeCounts) ? v18.observedTradeCounts : [];
+    const missing = Array.isArray(v18.missingDefinitions) ? v18.missingDefinitions : [];
+    const accepted = v18.acceptedForPerformanceClaims === true && v18.reproducible === true;
+    const statusText = accepted ? 'مقبول بعد التدقيق' : 'محجوب عن ادعاءات الأداء';
+    const statusClass = accepted ? 'good' : 'blocked';
+    const sourceText = v18.sourceArtifactAvailable === true ? 'المصدر متاح' : 'المصدر القابل لإعادة الإنتاج غير متاح';
+    const countChips = counts.length
+      ? counts.map(value => `<span class="v18-count-chip">${esc(num(value, 0))} صفقة</span>`).join('')
+      : '<span class="v18-count-chip">لا توجد Claims مسجلة</span>';
+    const missingList = missing.length
+      ? missing.slice(0, 8).map(value => `<li>${esc(v18MissingAr(value))}</li>`).join('')
+      : '<li>لا توجد تعريفات ناقصة مسجلة.</li>';
+
+    host.innerHTML = `
+      <div class="v18-audit-head">
+        <div>
+          <span class="eyebrow">V18 Performance Audit</span>
+          <h3>أرقام V18 لا تدخل سجل الأداء تلقائيًا</h3>
+          <p>يتم فصل تجربة V18 التحليلية والـUI عن قبول مطالبات الأداء. أي رقم تاريخي يحتاج مصدرًا قابلًا لإعادة الإنتاج وتعريفًا واضحًا للصفقة والـOOS والـWalk-forward قبل استخدامه.</p>
+        </div>
+        <span class="v18-audit-status ${statusClass}">${esc(statusText)}</span>
+      </div>
+      <div class="v18-audit-grid">
+        <div class="v18-audit-cell"><span>Claims المتعارضة</span><div class="v18-counts">${countChips}</div><small>للتدقيق فقط — ليست Performance Evidence.</small></div>
+        <div class="v18-audit-cell"><span>قابلية إعادة الإنتاج</span><strong>${esc(sourceText)}</strong><small>Audit status: ${esc(v18.status || '—')}</small></div>
+        <div class="v18-audit-cell"><span>اكتمال التعريفات</span><strong>${esc(pct(v18.definitionCoveragePct))}</strong><small>${esc(num(missing.length, 0))} تعريفات/متطلبات ما زالت ناقصة</small></div>
+      </div>
+      <details class="v18-audit-details" ${accepted ? '' : 'open'}>
+        <summary>ما المطلوب قبل قبول أداء V18؟</summary>
+        <ul>${missingList}</ul>
+        <p>حتى إغلاق التدقيق: V18 لا يضبط V20 Score، لا يفتح Execution Gate، لا يغيّر Champion، ولا يرقّي Challenger.</p>
+      </details>`;
+  }
+
   async function init() {
     const loading = $('performanceLoading');
     const error = $('performanceError');
@@ -125,8 +178,9 @@
       if (
         registry.policy?.singleHeadlinePerformanceMetricAllowed !== false ||
         registry.policy?.crossEvidenceAggregationAllowed !== false ||
-        registry.policy?.historicalAndForwardEvidenceMustRemainSeparate !== true
-      ) throw new Error('Performance evidence separation policy is not active');
+        registry.policy?.historicalAndForwardEvidenceMustRemainSeparate !== true ||
+        registry.policy?.v18AuditRequired !== true
+      ) throw new Error('Performance evidence separation/audit policy is not active');
 
       $('performanceEvidenceCount').textContent = num(registry.summary?.evidenceEntryCount, 0);
       $('performanceForwardState').textContent = Number(registry.summary?.forwardResolvedCount || 0) > 0
@@ -137,11 +191,7 @@
       const grid = $('performanceGrid');
       grid.innerHTML = '';
       for (const entry of registry.entries || []) grid.appendChild(renderEntry(entry));
-
-      const v18 = registry.externalReferences?.v18 || {};
-      $('performanceV18Note').textContent = v18.acceptedForPerformanceClaims === false
-        ? 'V18: مطالبات الأداء غير مقبولة داخل V20 حتى تتوفر مادة قابلة للتدقيق وتعريفات متصالحة.'
-        : 'V18: توجد أدلة أداء مقبولة.';
+      renderV18Audit(registry.externalReferences?.v18 || {});
 
       loading.classList.add('hidden');
       $('performanceContent').classList.remove('hidden');
