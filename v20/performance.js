@@ -22,7 +22,8 @@
     WALK_FORWARD_INTERNAL: 'Walk-forward داخلي',
     DEVELOPMENT_OOS: 'Development OOS',
     REUSED_BENCHMARK_NOT_INDEPENDENT: 'Benchmark معاد الاستخدام — غير مستقل',
-    LIVE_FORWARD: 'Live Forward'
+    LIVE_FORWARD: 'Live Forward',
+    LIVE_FORWARD_SHADOW: 'Native Shadow Forward'
   }[value] || value || '—');
 
   const titleAr = id => ({
@@ -32,7 +33,8 @@
     V16_BLOCKED_WALK_FORWARD: 'V16 — مرجع Walk-forward',
     V19_V6_DEVELOPMENT_OOS: 'V19 V6 — Development OOS',
     V19_V6_REUSED_BENCHMARK: 'V19 V6 — Reused Benchmark',
-    V20_LIVE_FORWARD_TRACKING: 'V20 — التتبع الأمامي الحي'
+    V20_LIVE_FORWARD_TRACKING: 'V20 — التتبع الأمامي الحي',
+    V20_FULL_MARKET_NATIVE_FORWARD_SHADOW: 'V20 Native — التتبع الأمامي المستقل'
   }[id] || id || 'دليل أداء');
 
   const independenceAr = value => ({
@@ -40,13 +42,16 @@
     INTERNAL_WALK_FORWARD_SOURCE_DOES_NOT_CLAIM_FRESH_EXTERNAL_HOLDOUT: 'Walk-forward داخلي — ليس Holdout خارجيًا حديثًا',
     NOT_FRESH_INDEPENDENT: 'ليس دليلًا مستقلًا حديثًا',
     EXPLICITLY_NOT_FRESH_INDEPENDENT: 'غير مستقل صراحةً',
-    POINT_IN_TIME_FORWARD_TRACKING: 'تتبع أمامي Point-in-time'
+    POINT_IN_TIME_FORWARD_TRACKING: 'تتبع أمامي Point-in-time',
+    METHOD_FREEZE_BASELINE_ONLY_NO_FRESH_FORWARD_SAMPLE: 'Baseline تثبيت المنهج — لا توجد عينة Forward مستقلة بعد',
+    POINT_IN_TIME_POST_FREEZE_FORWARD_EVIDENCE_EXISTS: 'توجد عينات Point-in-time بعد تثبيت المنهج'
   }[value] || value || '—');
 
   const roleAr = value => ({
     ACTIVE_CHAMPION_REFERENCE: 'مرجع Champion الحالي',
     SHADOW_CHALLENGER: 'Challenger بحثي فقط',
-    CURRENT_FORWARD_EVIDENCE: 'دليل Forward حالي'
+    CURRENT_FORWARD_EVIDENCE: 'دليل Forward حالي',
+    SHADOW_CHALLENGER_FORWARD_EVIDENCE: 'دليل Forward للـNative Challenger — بحثي فقط'
   }[value] || value || '—');
 
   const v18MissingAr = value => ({
@@ -99,18 +104,38 @@
     ].join('');
   }
 
+  function renderNativeShadowEntry(entry) {
+    const f = entry.forwardState || {};
+    const min = Number(entry.governance?.requiresMinimumIndependentResolvedSessions || 30);
+    const independent = Number(f.independentForwardSessionCount || 0);
+    const ready = independent >= min;
+    const horizons = Array.isArray(f.horizonsSessions) ? f.horizonsSessions.join(' / ') : '1 / 3 / 5 / 10 / 20';
+    return [
+      metric('جلسات Canonical', num(f.canonicalSessionCount, 0)),
+      metric('عينات Forward مستقلة', `${num(independent, 0)} / ${num(min, 0)}`),
+      metric('تقييمات مستقلة محسومة', num(f.independentResolvedEvaluationCount, 0)),
+      metric('Pending', num(f.pendingCount, 0)),
+      metric('Horizons', horizons),
+      metric('Performance Review', ready ? 'العينة بلغت الحد الأدنى للمراجعة' : 'غير جاهز — لا Performance claim')
+    ].join('');
+  }
+
   function renderEntry(entry) {
     const card = document.createElement('article');
     const isReused = entry.evidenceClass === 'REUSED_BENCHMARK_NOT_INDEPENDENT';
     const isDevelopment = entry.evidenceClass === 'DEVELOPMENT_OOS';
     const isForward = entry.evidenceClass === 'LIVE_FORWARD';
-    card.className = `performance-card${isReused ? ' performance-card-warning' : ''}${isDevelopment ? ' performance-card-development' : ''}${isForward ? ' performance-card-forward' : ''}`;
+    const isNativeShadow = entry.evidenceClass === 'LIVE_FORWARD_SHADOW';
+    card.dataset.evidenceId = entry.evidenceId || '';
+    card.dataset.evidenceClass = entry.evidenceClass || '';
+    card.className = `performance-card${isReused ? ' performance-card-warning' : ''}${isDevelopment ? ' performance-card-development' : ''}${isForward ? ' performance-card-forward' : ''}${isNativeShadow ? ' performance-card-forward performance-card-native-shadow' : ''}`;
 
     const caveats = (entry.caveats || []).map(item => `<li>${esc(item)}</li>`).join('');
     const fresh = entry.independence?.freshIndependentEvidence;
     const independenceClass = fresh === true ? 'performance-trust-good' : fresh === false ? 'performance-trust-warn' : 'performance-trust-neutral';
     const independenceText = independenceAr(entry.independence?.status);
     const promotionBadge = entry.promotionEligible === false ? '<span class="performance-badge performance-badge-blocked">غير صالح كدليل ترقية</span>' : '';
+    const freezeBadge = isNativeShadow ? '<span class="performance-badge performance-trust-neutral">Method Freeze: 13 أغسطس 2026</span>' : '';
 
     card.innerHTML = `
       <div class="performance-card-head">
@@ -121,14 +146,16 @@
         </div>
         <div class="performance-card-badges">
           <span class="performance-badge ${independenceClass}">${esc(independenceText)}</span>
+          ${freezeBadge}
           ${promotionBadge}
         </div>
       </div>
-      <div class="performance-metrics">${isForward ? renderForwardEntry(entry) : renderMetricEntry(entry)}</div>
+      <div class="performance-metrics">${isNativeShadow ? renderNativeShadowEntry(entry) : isForward ? renderForwardEntry(entry) : renderMetricEntry(entry)}</div>
       <div class="performance-evidence-meta">
         <span>المصدر: <b>${esc(entry.source || '—')}</b></span>
         <span>الاستخدام: <b>${esc(entry.decisionUse || '—')}</b></span>
       </div>
+      ${isNativeShadow ? '<div class="native-shadow-guard"><strong>Shadow Forward فقط</strong><span>Baseline جلسة تثبيت المنهج لا تُحسب عينة مستقلة. لا ترقية، لا Execution، ولا رقم عائد قبل وجود نتائج Forward حقيقية.</span></div>' : ''}
       ${caveats ? `<details class="performance-caveats"><summary>التحفظات والمنهجية</summary><ul>${caveats}</ul></details>` : ''}`;
     return card;
   }
@@ -179,14 +206,18 @@
         registry.policy?.singleHeadlinePerformanceMetricAllowed !== false ||
         registry.policy?.crossEvidenceAggregationAllowed !== false ||
         registry.policy?.historicalAndForwardEvidenceMustRemainSeparate !== true ||
-        registry.policy?.v18AuditRequired !== true
+        registry.policy?.v18AuditRequired !== true ||
+        registry.policy?.nativeShadowForwardMustRemainSeparate !== true ||
+        registry.policy?.nativeFreezeBaselineCannotCountAsIndependentForward !== true ||
+        registry.policy?.nativeSameSessionRevisionsCannotIncreaseSampleCount !== true ||
+        registry.policy?.nativeForwardCannotPromoteAutomatically !== true
       ) throw new Error('Performance evidence separation/audit policy is not active');
 
       $('performanceEvidenceCount').textContent = num(registry.summary?.evidenceEntryCount, 0);
       $('performanceForwardState').textContent = Number(registry.summary?.forwardResolvedCount || 0) > 0
         ? `${num(registry.summary.forwardResolvedCount, 0)} محسوم / ${num(registry.summary.forwardPendingCount, 0)} معلق`
         : `${num(registry.summary?.forwardPendingCount, 0)} تقييمات معلقة — لا عائد Forward محسوم`;
-      $('performancePolicyNote').textContent = 'لا يوجد رقم أداء موحد: Historical وWalk-forward وDevelopment وReused Benchmark وLive Forward معروضة كأدلة منفصلة.';
+      $('performancePolicyNote').textContent = `لا يوجد رقم أداء موحد: كل Evidence Class منفصلة. Native Shadow حاليًا ${num(registry.summary?.nativeForwardIndependentSessionCount,0)} جلسة مستقلة، وحالة ${registry.summary?.nativeForwardStatus === 'METHOD_FREEZE_BASELINE_ONLY' ? 'Baseline تثبيت المنهج فقط' : 'Forward tracking بعد التثبيت'}.`;
 
       const grid = $('performanceGrid');
       grid.innerHTML = '';
