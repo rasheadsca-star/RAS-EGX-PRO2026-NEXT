@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-stock-profiles-3",
-  "generatedAt": "2026-08-15T14:09:37.326Z",
+  "generatedAt": "2026-08-15T14:16:43.792Z",
   "sessionDate": "2026-08-13",
   "decisionSupportOnly": true,
   "executionStatus": "RESEARCH_ONLY",
@@ -8,7 +8,7 @@
   "technicalIndicatorPolicy": "POINT_IN_TIME_TRUSTED_OHLC_ONLY_STALE_CONTEXT_NEVER_CURRENT_DECISION",
   "technicalHistoryStatus": {
     "schemaVersion": "20.0.0-technical-history-status-1",
-    "generatedAt": "2026-08-15T14:09:37.170Z",
+    "generatedAt": "2026-08-15T14:16:43.636Z",
     "asOfSessionDate": "2026-08-13",
     "requestedSymbols": 30,
     "historicalIndicatorReadyCount": 27,
@@ -24,7 +24,7 @@
   },
   "sectorPolicy": "NO_INFERENCE_WITHOUT_VERIFIED_CLASSIFICATION_SOURCE",
   "decisionIntelligencePolicy": {
-    "schemaVersion": "20.0.0-decision-intelligence-policy-2",
+    "schemaVersion": "20.0.0-decision-intelligence-policy-3",
     "effectiveFrom": "2026-08-15",
     "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
     "scoreName": "V20_RESEARCH_DECISION_SCORE",
@@ -63,6 +63,78 @@
       "source": "data/v17/internal-ohlc-support-resistance.json",
       "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
     },
+    "nativeChallenger": {
+      "engineId": "V20_NATIVE_LIQUIDITY_SR_CHALLENGER_V1",
+      "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
+      "candidateUniverse": "V20_CURRENT_OPPORTUNITY_UNIVERSE",
+      "candidateUniverseIsFullMarketIndependent": false,
+      "legacySeedDependencyExplicit": true,
+      "weightsReuseComponentWeights": true,
+      "baselineRankingPreservedSideBySide": true,
+      "liquidity2": {
+        "scoringContract": "V20_LIQUIDITY_2_0_RESEARCH_V1",
+        "sourceAuthority": "data/v17/liquidity-gate.json",
+        "historySource": "data/history.json",
+        "subWeightsPct": {
+          "absoluteV17Score": 50,
+          "turnoverVs20": 20,
+          "volumeVs20": 10,
+          "tradeActivity": 10,
+          "continuity20": 10
+        },
+        "continuityMinimumTurnover": 1000000,
+        "completedSessionsOnly": true,
+        "sessionAlignmentRequiredForFullScore": true,
+        "misalignedSessionMaxScore": 25,
+        "conditionalMaxScore": 75,
+        "watchOnlyMaxScore": 55,
+        "blockedIlliquidMaxScore": 40,
+        "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+      },
+      "supportResistanceConfluence": {
+        "scoringContract": "V20_SR_CONFLUENCE_RESEARCH_V1",
+        "pivotAuthority": "data/v17/internal-ohlc-support-resistance.json",
+        "trustedHistorySource": "data/v20/technical-history.json",
+        "methods": [
+          "V17_CLASSIC_PIVOT",
+          "TRUSTED_SWING_TOUCH_STRUCTURE",
+          "ATR_VOLATILITY_STRUCTURE"
+        ],
+        "subWeightsPct": {
+          "confidence": 25,
+          "sessionFreshness": 15,
+          "sourceHistoryQuality": 15,
+          "priceGeometry": 15,
+          "methodConfluence": 20,
+          "externalValidation": 10
+        },
+        "externalValidationHardDependency": false,
+        "singleMethodMaximumScore": 70,
+        "criticalConflictComponentScore": 0,
+        "executionMeaning": "NONE_SHADOW_RESEARCH_ONLY"
+      },
+      "regimeOverlay": {
+        "source": "data/v20/market-regime.json",
+        "verifiedOnly": true,
+        "direction": "LONG_ONLY_CONSERVATIVE_PENALTY",
+        "points": {
+          "BULLISH": 0,
+          "NEUTRAL": -2,
+          "BEARISH": -5,
+          "UNVERIFIED_CURRENT_REGIME": 0
+        },
+        "canOpenExecutionGate": false
+      },
+      "governance": {
+        "activeProductionChampion": "V16_9_EQUAL_WEIGHT_BASKET",
+        "automaticPromotion": false,
+        "productionAllocation": false,
+        "executionPermission": false,
+        "requiresForwardEvidence": true,
+        "requiresIndependentHoldout": true,
+        "promotionReviewMustBeSeparate": true
+      }
+    },
     "missingComponentPolicy": "EXCLUDE_FROM_NUMERATOR_AND_DENOMINATOR_AND_REPORT_EVIDENCE_COVERAGE",
     "minimumEvidenceCoverageForTierPct": 70,
     "tierThresholds": {
@@ -78,7 +150,7 @@
       "aboveEntryRangeDoNotChaseMaxScore": 55
     },
     "calibrationStatus": "FORWARD_AND_INDEPENDENT_HOLDOUT_REQUIRED_BEFORE_PRODUCTION_USE",
-    "note": "Weights are transparent shadow/research heuristics. Liquidity is intentionally raised to 30% and uses the numeric V17 liquidity score rather than a binary eligibility proxy. The score remains uncalibrated and cannot open execution, drive production allocation, change the Champion, or trigger automatic promotion."
+    "note": "The baseline V20 research score remains preserved. The native challenger is a side-by-side shadow ranking that upgrades liquidity and support/resistance evidence without changing execution, allocation, Champion governance, or historical issued signals. Liquidity remains 30% and support/resistance remains 12%."
   },
   "decisionIntelligenceSummary": {
     "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
@@ -129,7 +201,7 @@
       "rank": 4,
       "ticker": "GBCO",
       "legacyRank": 5,
-      "researchDecisionScore": 75,
+      "researchDecisionScore": 75.2,
       "researchTier": "RESEARCH_B",
       "issuedStatus": "WAIT"
     },
@@ -2118,6 +2190,7 @@
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
           "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH",
           "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
@@ -2142,18 +2215,18 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0.0951,
-        "sma20": 31.502,
-        "sma50": 29.816,
-        "ema20": 31.2055,
-        "rsi14": 53.43,
-        "macd": 0.3276,
-        "macdSignal": 0.388,
-        "macdHistogram": -0.0604,
-        "atr14": 1.0845,
+        "sma20": 31.4505,
+        "sma50": 29.711,
+        "ema20": 31.1873,
+        "rsi14": 53.72,
+        "macd": 0.3571,
+        "macdSignal": 0.425,
+        "macdHistogram": -0.068,
+        "atr14": 1.0745,
         "momentum5Pct": 2.87,
         "momentum10Pct": 3.96,
-        "momentum20Pct": 2.54,
-        "trend": "MIXED",
+        "momentum20Pct": 3.72,
+        "trend": "BULLISH",
         "readiness": {
           "sma20": true,
           "sma50": true,
@@ -2197,12 +2270,12 @@
         "sessionAligned": true
       },
       "decisionIntelligence": {
-        "researchDecisionScore": 75,
-        "researchDecisionScoreBeforeCaps": 75,
+        "researchDecisionScore": 75.2,
+        "researchDecisionScoreBeforeCaps": 75.2,
         "researchTier": "RESEARCH_B",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
-        "legacyContributionPctOfWeightedPoints": 12.3,
+        "legacyContributionPctOfWeightedPoints": 12.2,
         "calibrationStatus": "UNVALIDATED_RESEARCH_HEURISTIC_REQUIRES_FORWARD_AND_INDEPENDENT_HOLDOUT",
         "components": {
           "legacyOpportunity": {
@@ -2299,14 +2372,14 @@
             "name": "CURRENT_POINT_IN_TIME_TECHNICAL",
             "weightPct": 5,
             "available": true,
-            "score": 68.4,
-            "weightedPoints": 3.419,
+            "score": 73.7,
+            "weightedPoints": 3.686,
             "provenance": "data/v20/technical-indicators.json",
             "evidence": {
               "currentTechnicalReady": true,
               "usedForCurrentDecision": true,
               "asOfSession": "2026-08-13",
-              "trend": "MIXED"
+              "trend": "BULLISH"
             }
           }
         },
@@ -2345,7 +2418,7 @@
           "legacyRanking": "data/final-opportunity-ranking.json",
           "stockProfile": "data/v20/stock-profiles.json"
         },
-        "decisionNarrativeAr": "GBCO: درجة قرار بحثية 75/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
+        "decisionNarrativeAr": "GBCO: درجة قرار بحثية 75.2/100 (RESEARCH_B) بتغطية أدلة 100%. السعر أسفل نطاق الدخول؛ المطلوب الانتظار حتى دخول النطاق المرجعي بدل المطاردة. هذه الدرجة ليست Confidence ولا Execution Permission ولا دليل ترقية للنموذج."
       }
     },
     {
@@ -3347,17 +3420,17 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0,
-        "sma20": 33.7125,
-        "sma50": 34.5414,
-        "ema20": 33.3194,
-        "rsi14": 43.25,
-        "macd": -0.7886,
-        "macdSignal": -0.7577,
-        "macdHistogram": -0.0309,
-        "atr14": 1.1764,
+        "sma20": 33.745,
+        "sma50": 34.5688,
+        "ema20": 33.3127,
+        "rsi14": 43.54,
+        "macd": -0.7843,
+        "macdSignal": -0.7556,
+        "macdHistogram": -0.0286,
+        "atr14": 1.1874,
         "momentum5Pct": 3.35,
         "momentum10Pct": -3.54,
-        "momentum20Pct": -10.29,
+        "momentum20Pct": -9.09,
         "trend": "BEARISH",
         "readiness": {
           "sma20": true,
@@ -10140,6 +10213,7 @@
           "SUPPORT_RESISTANCE_SESSION_ALIGNED",
           "INTERNAL_SUPPORT_RESISTANCE_EXECUTION_ELIGIBLE",
           "POSITIVE_TARGET1_NET_REWARD_AFTER_COSTS",
+          "CURRENT_TRUSTED_TECHNICAL_TREND_BULLISH",
           "CURRENT_RSI_IN_BALANCED_MOMENTUM_RANGE"
         ],
         "blockers": [
@@ -10163,18 +10237,18 @@
         "sessionAligned": true,
         "priceReconciled": true,
         "currentPriceDifferencePct": 0.0851,
-        "sma20": 11.741,
-        "sma50": 11.574,
-        "ema20": 11.7327,
-        "rsi14": 51.38,
-        "macd": 0.0578,
-        "macdSignal": 0.0637,
-        "macdHistogram": -0.0059,
-        "atr14": 0.2739,
+        "sma20": 11.731,
+        "sma50": 11.588,
+        "ema20": 11.7325,
+        "rsi14": 51.37,
+        "macd": 0.055,
+        "macdSignal": 0.0589,
+        "macdHistogram": -0.0038,
+        "atr14": 0.2684,
         "momentum5Pct": -1.26,
         "momentum10Pct": 0.77,
-        "momentum20Pct": 1.38,
-        "trend": "MIXED",
+        "momentum20Pct": -1.34,
+        "trend": "BULLISH",
         "readiness": {
           "sma20": true,
           "sma50": true,
@@ -10219,7 +10293,7 @@
       },
       "decisionIntelligence": {
         "researchDecisionScore": 55,
-        "researchDecisionScoreBeforeCaps": 75.9,
+        "researchDecisionScoreBeforeCaps": 75.8,
         "researchTier": "RESEARCH_C",
         "scoreIsConfidence": false,
         "scoreEvidenceCoveragePct": 100,
@@ -10320,14 +10394,14 @@
             "name": "CURRENT_POINT_IN_TIME_TECHNICAL",
             "weightPct": 5,
             "available": true,
-            "score": 66.8,
-            "weightedPoints": 3.342,
+            "score": 66.2,
+            "weightedPoints": 3.308,
             "provenance": "data/v20/technical-indicators.json",
             "evidence": {
               "currentTechnicalReady": true,
               "usedForCurrentDecision": true,
               "asOfSession": "2026-08-13",
-              "trend": "MIXED"
+              "trend": "BULLISH"
             }
           }
         },
