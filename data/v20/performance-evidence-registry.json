@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-performance-evidence-registry-1",
-  "generatedAt": "2026-08-15T15:48:45.744Z",
+  "generatedAt": "2026-08-15T15:51:47.131Z",
   "decisionSupportOnly": true,
   "policy": {
     "singleHeadlinePerformanceMetricAllowed": false,
@@ -10,7 +10,11 @@
     "reusedBenchmarkCanPromoteChallenger": false,
     "pendingForwardReturnMustRemainNull": true,
     "v18PerformanceAccepted": false,
-    "v18AuditRequired": true
+    "v18AuditRequired": true,
+    "nativeShadowForwardMustRemainSeparate": true,
+    "nativeFreezeBaselineCannotCountAsIndependentForward": true,
+    "nativeSameSessionRevisionsCannotIncreaseSampleCount": true,
+    "nativeForwardCannotPromoteAutomatically": true
   },
   "summary": {
     "evidenceEntryCount": 7,
@@ -25,7 +29,10 @@
     "forwardAmbiguousCount": 0,
     "v18AuditStatus": "BLOCKED_UNTIL_REPRODUCIBLE_SOURCE_AND_DEFINITIONS",
     "v18DefinitionCoveragePct": 0,
-    "status": "FORWARD_EVIDENCE_PENDING"
+    "status": "FORWARD_EVIDENCE_PENDING",
+    "nativeForwardIndependentSessionCount": 0,
+    "nativeForwardResolvedEvaluationCount": 0,
+    "nativeForwardStatus": "METHOD_FREEZE_BASELINE_ONLY"
   },
   "entries": [
     {
@@ -234,6 +241,98 @@
       "caveats": [
         "Pending horizons have null returns and are never converted to zero.",
         "Multiple horizons and signal revisions are not averaged into a single headline performance number."
+      ]
+    },
+    {
+      "evidenceId": "V20_FULL_MARKET_NATIVE_FORWARD_SHADOW",
+      "model": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+      "role": "SHADOW_CHALLENGER_FORWARD_EVIDENCE",
+      "evidenceClass": "LIVE_FORWARD_SHADOW",
+      "source": "data/v20/signal-archive/native-shadow/forward.json",
+      "sourceSection": "evaluations/metricsByHorizon",
+      "metrics": null,
+      "forwardState": {
+        "archiveCount": 1,
+        "canonicalSessionCount": 1,
+        "independentForwardSessionCount": 0,
+        "evaluationCount": 5,
+        "resolvedCount": 0,
+        "pendingCount": 5,
+        "independentResolvedEvaluationCount": 0,
+        "horizonsSessions": [
+          1,
+          3,
+          5,
+          10,
+          20
+        ],
+        "metricsByHorizon": {
+          "1": {
+            "resolvedIndependentSessionCount": 0,
+            "averageNetReturnPct": null,
+            "sessionWinRatePct": null,
+            "profitFactor": null,
+            "minimumIndependentSessionsForReview": 30,
+            "reviewSampleReady": false
+          },
+          "3": {
+            "resolvedIndependentSessionCount": 0,
+            "averageNetReturnPct": null,
+            "sessionWinRatePct": null,
+            "profitFactor": null,
+            "minimumIndependentSessionsForReview": 30,
+            "reviewSampleReady": false
+          },
+          "5": {
+            "resolvedIndependentSessionCount": 0,
+            "averageNetReturnPct": null,
+            "sessionWinRatePct": null,
+            "profitFactor": null,
+            "minimumIndependentSessionsForReview": 30,
+            "reviewSampleReady": false
+          },
+          "10": {
+            "resolvedIndependentSessionCount": 0,
+            "averageNetReturnPct": null,
+            "sessionWinRatePct": null,
+            "profitFactor": null,
+            "minimumIndependentSessionsForReview": 30,
+            "reviewSampleReady": false
+          },
+          "20": {
+            "resolvedIndependentSessionCount": 0,
+            "averageNetReturnPct": null,
+            "sessionWinRatePct": null,
+            "profitFactor": null,
+            "minimumIndependentSessionsForReview": 30,
+            "reviewSampleReady": false
+          }
+        }
+      },
+      "independence": {
+        "freshIndependentEvidence": false,
+        "status": "METHOD_FREEZE_BASELINE_ONLY_NO_FRESH_FORWARD_SAMPLE",
+        "freezeSessionDate": "2026-08-13",
+        "freezeSourceCommit": "9283b72305c581776b5762f04b3b9d7c7dbe6dd1",
+        "baselineExcludedFromIndependentCount": true,
+        "uniqueCanonicalSessionDatesOnly": true,
+        "sameSessionRevisionsIncreaseSampleCount": false
+      },
+      "decisionUse": "SEPARATE_SHADOW_FORWARD_EVIDENCE_ONLY",
+      "promotionEligible": false,
+      "governance": {
+        "automaticPromotion": false,
+        "canOpenExecutionGate": false,
+        "canDriveProductionAllocation": false,
+        "canChangeChampion": false,
+        "requiresMinimumIndependentResolvedSessions": 30,
+        "requiresIndependentHoldoutSessions": 20
+      },
+      "caveats": [
+        "The 2026-08-13 method-freeze snapshot is retained as a baseline but excluded from independent forward sample counts.",
+        "Only unique canonical post-freeze market-session snapshots may count as fresh forward evidence.",
+        "Same-session revisions do not increase sample size.",
+        "Native shadow forward evidence is never merged with V16 historical backtests, V19 development evidence, or the existing V20 issued-signal forward series."
       ]
     }
   ],
