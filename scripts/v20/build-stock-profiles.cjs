@@ -459,6 +459,7 @@ const out = {
 };
 
 write('data/v20/stock-profiles.json', out);
+require('./build-native-research-challenger.cjs').main();
 console.log(JSON.stringify({
   sessionDate: out.sessionDate, profiles: out.profileCount, technicalIndicatorPolicy: out.technicalIndicatorPolicy,
   currentTechnicalReady: profiles.filter(p => p.technicalAnalysis.currentTechnicalReady).length,
