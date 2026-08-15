@@ -16,9 +16,10 @@ const runNode = (rel, env = {}) => execFileSync(process.execPath, [P(rel)], {
 });
 
 // 1) Independent critic. It intentionally fails if research-platform integrity is
-// broken or if execution readiness is overstated.
+// broken or if execution readiness is overstated. This first pass is deliberately
+// early/fail-closed; a final same-run refresh is performed after later evidence.
 require('./final-acceptance.cjs');
-const finalAcceptance = read('data/v20/final-acceptance.json');
+let finalAcceptance = read('data/v20/final-acceptance.json');
 let regression = read('data/v20/regression.json');
 regression.finalAcceptance = finalAcceptance;
 regression.finalAcceptanceMirror = {
@@ -26,6 +27,8 @@ regression.finalAcceptanceMirror = {
   detailedSidecar: 'data/v20/final-acceptance.json',
   persistedInMainEvidence: 'data/v20/regression.json#finalAcceptance',
   generatedInSameMainRun: true,
+  initialIndependentCriticPass: true,
+  finalEvidenceRefresh: false,
 };
 writeRegression(regression);
 
@@ -190,8 +193,56 @@ regression.extendedResearchBrowserAcceptanceMirror = {
 };
 writeRegression(regression);
 
+// 6b) Final same-run acceptance refresh. The early critic above remains a fail-closed
+// gate, but release evidence must reflect the latest validated full-market research
+// technical layer rather than the pre-refresh Market Explorer snapshot. This layer
+// remains strictly separate from the 30-symbol opportunity decision-technical path.
+runNode('scripts/v20/final-acceptance.cjs');
+finalAcceptance = read('data/v20/final-acceptance.json');
+const technicalStatus = read('data/v20/technical-history-status.json');
+const fullTechCoverage = Number(fullMarketTechnical.summary?.currentReadyCoveragePct);
+const fullTechCount = Number(fullMarketTechnical.summary?.currentReadyCount);
+const fullTechUniverse = Number(fullMarketTechnical.summary?.universeCount);
+const fullTechLimitation = (finalAcceptance.limitations || []).find(x => x.code === 'FULL_MARKET_TECHNICAL_COVERAGE_PARTIAL');
+const fullTechShouldBePartial = Number.isFinite(fullTechCoverage) && fullTechCoverage < 100;
+const fullMarketTechnicalCoverageConsistency = fullTechShouldBePartial
+  ? fullTechLimitation?.source === 'data/v20/regression.json#fullMarketTechnical'
+    && String(fullTechLimitation?.detail || '').includes(`${fullTechCoverage}%`)
+    && String(fullTechLimitation?.detail || '').includes(`${fullTechCount}/${fullTechUniverse}`)
+  : !fullTechLimitation;
+const opportunityTechnicalSeparationConsistency = finalAcceptance.technicalEvidenceSummary?.opportunityDecisionTechnical?.currentReadyCount === technicalStatus.currentTechnicalReadyCount
+  && finalAcceptance.technicalEvidenceSummary?.opportunityDecisionTechnical?.requestedSymbols === technicalStatus.requestedSymbols
+  && finalAcceptance.technicalEvidenceSummary?.opportunityDecisionTechnical?.coveragePct === technicalStatus.currentTechnicalCoveragePct
+  && finalAcceptance.technicalEvidenceSummary?.fullMarketResearchTechnical?.coveragePct === fullMarketTechnical.summary?.currentReadyCoveragePct
+  && finalAcceptance.technicalEvidenceSummary?.fullMarketResearchTechnical?.currentReadyCount === fullMarketTechnical.summary?.currentReadyCount
+  && finalAcceptance.technicalEvidenceSummary?.fullMarketResearchTechnical?.universeCount === fullMarketTechnical.summary?.universeCount
+  && finalAcceptance.technicalEvidenceSummary?.fullMarketResearchTechnical?.finalSameRunEvidence === true
+  && finalAcceptance.technicalEvidenceSummary?.fullMarketResearchTechnical?.usedForDecisionScore === false
+  && finalAcceptance.technicalEvidenceSummary?.fullMarketResearchTechnical?.usedForExecutionGate === false
+  && finalAcceptance.technicalEvidenceSummary?.fullMarketResearchTechnical?.usedForProductionAllocation === false;
+if (!fullMarketTechnicalCoverageConsistency) throw new Error('Final acceptance full-market technical coverage is stale or inconsistent with same-run evidence');
+if (!opportunityTechnicalSeparationConsistency) throw new Error('Final acceptance mixed full-market research technical with opportunity decision technical');
+if (finalAcceptance.researchPlatformReady !== true) throw new Error('Final acceptance refresh no longer accepts the research platform');
+regression = read('data/v20/regression.json');
+regression.finalAcceptance = finalAcceptance;
+regression.finalAcceptanceMirror = {
+  authoritativeRuntimeSource: 'scripts/v20/final-acceptance.cjs',
+  detailedSidecar: 'data/v20/final-acceptance.json',
+  persistedInMainEvidence: 'data/v20/regression.json#finalAcceptance',
+  generatedInSameMainRun: true,
+  initialIndependentCriticPass: true,
+  finalEvidenceRefresh: true,
+  refreshedAfter: [
+    'data/v20/regression.json#fullMarketTechnical',
+    'data/v20/regression.json#extendedResearchBrowserAcceptance',
+  ],
+  fullMarketTechnicalCoverageConsistency,
+  opportunityTechnicalSeparationConsistency,
+};
+writeRegression(regression);
+
 // 7) Release manifest is generated only after all same-run evidence above has been
-// persisted into the authoritative regression artifact.
+// persisted into the authoritative regression artifact, including refreshed final acceptance.
 require('./build-release-manifest.cjs');
 require('./release-manifest-regression.cjs');
 
@@ -228,8 +279,12 @@ console.log(JSON.stringify({
   srStartaCurrentCandidates: srAlternateEvidence.summary?.currentReviewCandidateCount ?? null,
   srHistoryContinuityAccepted: srAlternateEvidence.summary?.historyContinuityAcceptedCount ?? null,
   srHandoffStates: srRemediationHandoff.summary?.stateCounts ?? {},
+  decisionTechnicalCurrentReady: technicalStatus.currentTechnicalReadyCount ?? null,
+  decisionTechnicalCoveragePct: technicalStatus.currentTechnicalCoveragePct ?? null,
   fullMarketTechnicalCurrentReady: fullMarketTechnical.summary?.currentReadyCount ?? null,
   fullMarketTechnicalCoveragePct: fullMarketTechnical.summary?.currentReadyCoveragePct ?? null,
+  finalAcceptanceFullMarketCoverageConsistency: fullMarketTechnicalCoverageConsistency,
+  finalAcceptanceTechnicalSeparationConsistency: opportunityTechnicalSeparationConsistency,
   extendedBrowserOk: extendedBrowser.ok === true,
   releaseClassification: releaseManifest.releaseClassification,
   releaseRegressionOk: releaseRegression.ok === true,
