@@ -1,0 +1,45 @@
+name: V20 Consensus Dossier Hook Once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/v20-consensus-dossier-hook-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  hook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: develop/v20-integrated-decision-platform
+          fetch-depth: 1
+      - name: Add post-open UI event only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('v20/decision-board.js')
+          s=p.read_text()
+          old="""    if(typeof d.showModal==='function')d.showModal(); else d.setAttribute('open','');\n  }\n"""
+          new="""    if(typeof d.showModal==='function')d.showModal(); else d.setAttribute('open','');\n    document.dispatchEvent(new CustomEvent('v20:decision-dossier-opened',{detail:{symbol}}));\n  }\n"""
+          if old not in s:
+              raise SystemExit('Expected dossier close block not found; refusing blind patch')
+          if "v20:decision-dossier-opened" in s:
+              raise SystemExit('Hook already present unexpectedly')
+          p.write_text(s.replace(old,new,1))
+          PY
+          node --check v20/decision-board.js
+          git diff --check
+          git diff -- v20/decision-board.js
+          changed="$(git diff --name-only)"
+          test "$changed" = "v20/decision-board.js" || { echo "Unexpected changes: $changed"; exit 1; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v20/decision-board.js
+          git commit -m "Emit Decision Board dossier-opened UI event [skip ci]"
+          git push origin HEAD:develop/v20-integrated-decision-platform
