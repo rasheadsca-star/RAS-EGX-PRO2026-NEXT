@@ -3,7 +3,7 @@
   if(window.__MAIN_APP_CONSENSUS_OVERLAY__)return;
   window.__MAIN_APP_CONSENSUS_OVERLAY__=true;
   const state={data:null,decision:null,observer:null,timer:null};
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const style=document.createElement('style');
   style.textContent=`
     .main-app-engine-note{margin:10px 0 2px;padding:10px 11px;border:1px solid #34566c;border-radius:12px;background:#0a1b29;display:grid;gap:6px;text-align:right}
