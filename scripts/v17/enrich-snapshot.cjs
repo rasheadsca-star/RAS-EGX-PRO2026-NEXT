@@ -31,8 +31,22 @@ function sym(value) {
   return String(value || '').trim().toUpperCase().replace(/\.CA$/, '').replace(/[^A-Z0-9.]/g, '');
 }
 function compactLiquidity(value) {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object') return {
+    evidenceState: 'MISSING_RESEARCH_ONLY',
+    candidate: false,
+    decision: 'MISSING_EVIDENCE',
+    score: null,
+    currentTurnover: null,
+    avg20Turnover: null,
+    currentVolume: null,
+    historicalSessionsUsed: 0,
+    evidenceAvailable: false,
+    executionLiquidityOk: false,
+    conditionalLiquidityOk: false,
+    provenance: null,
+  };
   return {
+    evidenceState: 'AVAILABLE',
     candidate: value.candidate === true,
     decision: value.decision || null,
     score: finite(value.score),
@@ -47,8 +61,20 @@ function compactLiquidity(value) {
   };
 }
 function compactSr(value) {
-  if (!value || typeof value !== 'object') return null;
+  if (!value || typeof value !== 'object') return {
+    evidenceState: 'MISSING_RESEARCH_ONLY',
+    source: null,
+    sessionDate: null,
+    researchSessionDate: null,
+    freshness: 'MISSING',
+    confidence: null,
+    methodology: null,
+    provenance: null,
+    externalValidation: null,
+    executionEligible: false,
+  };
   return {
+    evidenceState: 'AVAILABLE',
     source: value.source || null,
     sessionDate: value.sessionDate || null,
     researchSessionDate: value.researchSessionDate || null,
@@ -88,6 +114,7 @@ if (snapshot.recommendationMode === 'CURRENT_RESEARCH_WATCH_ONLY') {
       perSymbolLiquidityExecutionOk: source?.liquidity?.executionLiquidityOk === true,
       executionAllowed: source.executionAllowed === true,
       source: 'data/today-decision-center.json',
+      missingResearchEvidenceExplicitlyPreserved: !source.supportResistance || !source.liquidity,
     };
     enrichedRecommendations += 1;
   }
@@ -135,11 +162,12 @@ snapshot.lineage = {
 };
 
 snapshot.enrichment = {
-  schemaVersion: '17.0.0-snapshot-enrichment-1',
+  schemaVersion: '17.0.0-snapshot-enrichment-2',
   generatedAt: new Date().toISOString(),
   enrichedRecommendations,
   immutableSignalHashTouched: false,
   scope: 'DISPLAY_AND_PROVENANCE_ONLY',
+  missingEvidencePolicy: 'EXPLICIT_RESEARCH_ONLY_NEVER_SYNTHESIZED',
 };
 
 writeAtomic('data/v17/current.json', snapshot);
