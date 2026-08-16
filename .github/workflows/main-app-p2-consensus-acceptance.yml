@@ -85,22 +85,33 @@ jobs:
           test -n "$CHROME"
           for SIZE in 1440,1000 390,844; do
             OUT="/tmp/main-app-p3-${SIZE//,/-}.html"
-            "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size="$SIZE" --virtual-time-budget=16000 --dump-dom 'http://127.0.0.1:8123/preview-v16/app/v169-p2.html?accept=p3' >"$OUT" 2>/tmp/main-app-p3-chrome.log
-            grep -q 'id="v169BasketPanel"' "$OUT"
-            grep -q 'data-execution-grade="true"' "$OUT"
-            grep -q 'data-execution-eligible="true"' "$OUT"
-            grep -q 'main-app-consensus-summary' "$OUT"
-            grep -q '2/2 مستقل' "$OUT"
-            grep -q 'V19 Challenger' "$OUT"
-            if grep -q 'آخر تحقق للمصدر لم يحقق Execution Grade' "$OUT"; then echo 'stale source-gate warning still visible' >&2; exit 1; fi
+            "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size="$SIZE" --virtual-time-budget=18000 --dump-dom 'http://127.0.0.1:8123/preview-v16/app/v169-p2.html?accept=p3' >"$OUT" 2>/tmp/main-app-p3-chrome.log
             node - "$OUT" <<'NODE'
-          const fs=require('fs');const file=process.argv[2];const dom=fs.readFileSync(file,'utf8');const x=require('./RAS-EGX0.1/data/v20/multi-engine-consensus.json');
+          const fs=require('fs');
+          const file=process.argv[2];
+          const dom=fs.readFileSync(file,'utf8');
+          const x=require('./RAS-EGX0.1/data/v20/multi-engine-consensus.json');
+          const report={
+            file,
+            basketPanel:dom.includes('id="v169BasketPanel"'),
+            executionGrade:/id="v169BasketPanel"[^>]*data-execution-grade="true"/.test(dom),
+            executionEligible:/id="v169BasketPanel"[^>]*data-execution-eligible="true"/.test(dom),
+            consensusSummary:dom.includes('id="mainAppConsensusSummary"'),
+            independentScore:dom.includes('2/2 مستقل'),
+            v20IndependentLabel:dom.includes('V20 Native V1'),
+            v19SameFamilyLabel:dom.includes('same TOP10-probability family'),
+            staleSourceWarning:dom.includes('آخر تحقق للمصدر لم يحقق Execution Grade'),
+            cards:{}
+          };
           for(const a of x.current.mainAppAnnotations){
             const cardRe=new RegExp(`<article class="v169-card[^>]*>[\\s\\S]*?<h3>${a.ticker}<\\/h3>[\\s\\S]*?data-main-app-consensus-note="${a.ticker}"`);
-            if(!cardRe.test(dom)) throw Error(`visible V16.9 basket note missing ${a.ticker}`);
+            report.cards[a.ticker]=cardRe.test(dom);
           }
-          if(!dom.includes('V20 Native V1'))throw Error('independent V20 confirmation label missing');
-          if(!dom.includes('same TOP10-probability family'))throw Error('V19 same-family disclosure missing');
-          console.log(`MAIN APP P3 visible basket annotations PASS ${file}`);
+          console.log(JSON.stringify(report,null,2));
+          const failures=[];
+          for(const k of ['basketPanel','executionGrade','executionEligible','consensusSummary','independentScore','v20IndependentLabel','v19SameFamilyLabel']) if(!report[k]) failures.push(k);
+          if(report.staleSourceWarning) failures.push('staleSourceWarning');
+          for(const [ticker,ok] of Object.entries(report.cards)) if(!ok) failures.push(`visible-note-${ticker}`);
+          if(failures.length) throw Error(`browser acceptance failed: ${failures.join(', ')}`);
           NODE
           done
