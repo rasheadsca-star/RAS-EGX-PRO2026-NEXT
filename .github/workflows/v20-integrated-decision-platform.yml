@@ -38,7 +38,7 @@ jobs:
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
           git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
           changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
-          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-v17-centric-clean(-v2|-v3|-v5)?\.yml$)' || true)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-v17-centric-clean(-v2|-v3|-v5)?\.yml$|\.github/workflows/v20-primary-entry-point-acceptance\.yml$)' || true)"
           test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
 
       - name: Setup Node
