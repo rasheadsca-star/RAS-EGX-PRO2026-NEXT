@@ -1,0 +1,163 @@
+name: MAIN APP — Intraday LS1 Late-Session Opportunity
+run-name: LS1 intraday scan for ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/stable/v16-ls1-late-session-opportunity.cjs"
+      - "data/stable/v16-ls1-policy.json"
+      - "main-app-ls1.html"
+      - ".github/workflows/main-app-intraday-ls1.yml"
+  schedule:
+    # Broad UTC window covers Cairo UTC+2 / UTC+3. The engine itself decides
+    # the exact Africa/Cairo phase, so DST never creates a false 2 PM signal.
+    - cron: "*/15 7-12 * * 0-4"
+    # Dedicated 14:25 Cairo final-check coverage for both UTC offsets.
+    - cron: "25 10-12 * * 0-4"
+
+env:
+  EGXAPI_KEY: ${{ secrets.EGXAPI_KEY }}
+  EGX_KEY: ${{ secrets.EGX_KEY }}
+  EGX_MARKET_JSON_URL: ${{ secrets.EGX_MARKET_JSON_URL }}
+  PUBLIC_MARKET_JSON_URL: ${{ secrets.PUBLIC_MARKET_JSON_URL }}
+  EGX_MARKET_HOLIDAYS: ${{ vars.EGX_MARKET_HOLIDAYS }}
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: main-app-intraday-ls1
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    outputs:
+      publish: ${{ steps.ls1.outputs.publish }}
+      status: ${{ steps.ls1.outputs.status }}
+      active_signals: ${{ steps.ls1.outputs.active_signals }}
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate LS1 and market engines
+        run: |
+          set -euo pipefail
+          node --check scripts/fetch-market-data.js
+          node --check scripts/stable/v15-missing-symbol-fallback.cjs
+          node --check scripts/intraday/v13-12-intraday-monitor.cjs
+          node --check scripts/stable/v16-ls1-late-session-opportunity.cjs
+          node -e "JSON.parse(require('fs').readFileSync('data/stable/v16-ls1-policy.json','utf8')); console.log('LS1 policy JSON OK')"
+
+      - name: Refresh intraday market snapshot
+        shell: bash
+        run: |
+          set -u
+          node scripts/fetch-market-data.js
+          FETCH_CODE=$?
+          node scripts/stable/v15-missing-symbol-fallback.cjs
+          FALLBACK_CODE=$?
+          echo "fetch_code=$FETCH_CODE fallback_code=$FALLBACK_CODE"
+          # A source failure must not fail open. LS1 will inspect evidence and
+          # emit SOURCE_EVIDENCE_BLOCKED when current-session truth is absent.
+          exit 0
+
+      - name: Rebuild intraday monitor
+        run: node scripts/intraday/v13-12-intraday-monitor.cjs
+
+      - name: Evaluate LS1 late-session opportunity gate
+        id: ls1
+        run: node scripts/stable/v16-ls1-late-session-opportunity.cjs
+
+      - name: Verify frozen V16.9 engine was not modified
+        run: |
+          set -euo pipefail
+          git diff --exit-code HEAD -- \
+            scripts/research/v16-v169-basket-engine.py \
+            scripts/research/v16-two-stage-predictor.py \
+            scripts/research/v16-probabilistic-model-impact.py \
+            scripts/research/v16-v169-target-hit-audit.py \
+            scripts/stable/v16-publish-v169-basket.cjs \
+            scripts/stable/v16-session-data-fingerprint.cjs \
+            scripts/stable/v16-v169-live-evaluation.py \
+            data/stable/v16-v169-release-lock.json
+
+      - name: Commit material LS1 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            data/market.json \
+            data/fetch-status.json \
+            data/source-health.json \
+            data/source-fetch-report.json \
+            data/source-gateway-report.json \
+            data/session-calendar.json \
+            data/intraday \
+            data/stable/v16-ls1-late-session-opportunities.json \
+            data/stable/v16-ls1-history.json || true
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Run MAIN APP LS1 intraday opportunity scan"
+            # Discard any unrelated generated scratch changes before rebase.
+            git reset --hard HEAD
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then
+                break
+              fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
+          else
+            git reset --hard HEAD
+          fi
+
+  deploy:
+    needs: scan
+    if: needs.scan.outputs.publish == 'true' || github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout latest published main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Prepare Pages artifact
+        run: touch .nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload complete MAIN APP with LS1 module
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy MAIN APP LS1 state
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Show LS1 result
+        run: |
+          echo "LS1 status: ${{ needs.scan.outputs.status }}"
+          echo "Active signals: ${{ needs.scan.outputs.active_signals }}"
+          echo "URL: ${{ steps.deployment.outputs.page_url }}main-app-ls1.html"
