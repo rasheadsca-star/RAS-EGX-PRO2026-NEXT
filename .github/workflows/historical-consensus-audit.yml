@@ -1,0 +1,54 @@
+name: Historical Cross-Version Consensus Audit
+
+on:
+  push:
+    branches: [analysis/historical-consensus-20260816]
+    paths:
+      - "scripts/research/historical-consensus-audit.cjs"
+      - ".github/workflows/historical-consensus-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: historical-cross-version-consensus-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout isolated analysis branch
+        uses: actions/checkout@v6
+        with:
+          ref: analysis/historical-consensus-20260816
+          fetch-depth: 0
+      - name: Fetch comparison branches read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            main:refs/remotes/origin/main \
+            v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt \
+            develop/v17-rebuild:refs/remotes/origin/develop/v17-rebuild \
+            develop/v20-integrated-decision-platform:refs/remotes/origin/develop/v20-integrated-decision-platform
+      - name: Prove analysis isolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "analysis/historical-consensus-20260816"
+          node --check scripts/research/historical-consensus-audit.cjs
+      - name: Build historical consensus report
+        run: node scripts/research/historical-consensus-audit.cjs
+      - name: Persist report on analysis branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/research/historical-cross-version-consensus.json data/research/historical-cross-version-consensus.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Persist historical cross-version consensus audit [skip ci]"
+          git push origin HEAD:analysis/historical-consensus-20260816
