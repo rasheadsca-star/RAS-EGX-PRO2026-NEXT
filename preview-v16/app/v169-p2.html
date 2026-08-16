@@ -18,16 +18,16 @@
 <body>
   <main class="loader">
     <h2>جارٍ تحميل MAIN APP…</h2>
-    <p>محرك V16.9.2 مثبت منهجيًا. طبقة P2 تضيف فقط ملاحظات اتفاق المحركات بجوار التوصيات، بدون تغيير ترتيب أو معادلة أو إذن تنفيذ.</p>
+    <p>محرك V16.9.2 مثبت منهجيًا. طبقة P3 تعرض تأكيد المحركات المستقلة منهجيًا بجوار السلة دون تغيير الاختيار أو الترتيب أو قواعد التنفيذ.</p>
   </main>
   <script>
   (async()=>{
-    const BUILD='16.9.2-p2-consensus-display-20260816';
-    const response=await fetch(`index.html?source=main-app-v16.9.2-p2&t=${Date.now()}`,{cache:'no-store'});
+    const BUILD='16.9.2-p3-method-independent-consensus-20260816';
+    const response=await fetch(`index.html?source=main-app-v16.9.2-p3&t=${Date.now()}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
     const marker='<script src="app.js?v=16.1.0"><\/script>';
-    const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script><script src="main-app-consensus-overlay.js?v=${BUILD}"><\/script>`;
+    const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script><script src="v16-9-basket-overlay.js?v=${BUILD}" data-main-app-basket-direct="true"><\/script><script src="main-app-consensus-overlay.js?v=${BUILD}"><\/script>`;
     html=html.replace(marker,replacement)
       .replaceAll('V16.1','MAIN APP · V16.9.2')
       .replaceAll('v=16.1.0',`v=${BUILD}`);
