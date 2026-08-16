@@ -75,9 +75,10 @@ jobs:
       - name: Verify V17 reached MAIN APP session
         if: steps.gate.outputs.run == 'true'
         shell: bash
+        env:
+          EXPECTED_SESSION: ${{ steps.gate.outputs.session }}
         run: |
           set -euo pipefail
-          SESSION="${{ steps.gate.outputs.session }}"
           git fetch --no-tags origin develop/v17-rebuild:refs/remotes/origin/develop/v17-rebuild
           git show refs/remotes/origin/develop/v17-rebuild:data/v17/current.json > /tmp/v17-current.json
           node - <<'NODE'
@@ -88,8 +89,6 @@ jobs:
           if(x.engine?.id!=='V16_9_EQUAL_WEIGHT_BASKET'||x.engine?.selectionMethodFrozen!==true) throw new Error('V17 MAIN APP champion contract drift');
           console.log(JSON.stringify({sessionDate:x.sessionDate,status:x.status,engine:x.engine.id},null,2));
           NODE
-        env:
-          EXPECTED_SESSION: ${{ steps.gate.outputs.session }}
 
       - name: Dispatch V19 and V20 refreshes in parallel
         if: steps.gate.outputs.run == 'true'
@@ -129,9 +128,10 @@ jobs:
       - name: Verify downstream session contracts
         if: steps.gate.outputs.run == 'true'
         shell: bash
+        env:
+          EXPECTED_SESSION: ${{ steps.gate.outputs.session }}
         run: |
           set -euo pipefail
-          SESSION="${{ steps.gate.outputs.session }}"
           git fetch --no-tags origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt develop/v20-integrated-decision-platform:refs/remotes/origin/develop/v20-integrated-decision-platform
           git show refs/remotes/origin/v19-egx-chat-gpt:data/v19/challenger-status-v6.json > /tmp/v19-gate.json
           git show refs/remotes/origin/develop/v20-integrated-decision-platform:data/v20/v17-centric-final-certification.json > /tmp/v20-cert.json
@@ -149,8 +149,6 @@ jobs:
           if(contract.sessionStatus!=='EXECUTION_GRADE'&&(Number(contract.summary?.productionActionableCount)!==0||Number(contract.summary?.productionNewExposurePct)!==0)) throw new Error('V20 production leak while session is closed');
           console.log(JSON.stringify({v19Status:v19.status,v20Session:contract.sessionDate,v20Status:contract.sessionStatus,v20Certified:cert.ok},null,2));
           NODE
-        env:
-          EXPECTED_SESSION: ${{ steps.gate.outputs.session }}
 
       - name: Record completed session cascade
         if: steps.gate.outputs.run == 'true'
@@ -161,18 +159,23 @@ jobs:
           V17_RUN="$(cat /tmp/v17-run-id)"
           V19_RUN="$(cat /tmp/v19-run-id)"
           V20_RUN="$(cat /tmp/v20-run-id)"
-          git fetch --no-tags origin main develop/v17-rebuild v19-egx-chat-gpt develop/v20-integrated-decision-platform
-          MAIN_DATA_SHA="$(git rev-parse origin/main)"
-          V17_SHA="$(git rev-parse origin/develop/v17-rebuild)"
-          V19_SHA="$(git rev-parse origin/v19-egx-chat-gpt)"
-          V20_SHA="$(git rev-parse origin/develop/v20-integrated-decision-platform)"
-          V19_STATUS="$(git show origin/v19-egx-chat-gpt:data/v19/challenger-status-v6.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>process.stdout.write(JSON.parse(s).status||''))")"
-          V20_STATUS="$(git show origin/develop/v20-integrated-decision-platform:data/v20/final-decision-contract.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>process.stdout.write(JSON.parse(s).sessionStatus||''))")"
+          git fetch --no-tags origin \
+            main:refs/remotes/origin/main \
+            develop/v17-rebuild:refs/remotes/origin/develop/v17-rebuild \
+            v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt \
+            develop/v20-integrated-decision-platform:refs/remotes/origin/develop/v20-integrated-decision-platform
+          MAIN_DATA_SHA="$(git rev-parse refs/remotes/origin/main)"
+          V17_SHA="$(git rev-parse refs/remotes/origin/develop/v17-rebuild)"
+          V19_SHA="$(git rev-parse refs/remotes/origin/v19-egx-chat-gpt)"
+          V20_SHA="$(git rev-parse refs/remotes/origin/develop/v20-integrated-decision-platform)"
+          V19_STATUS="$(git show refs/remotes/origin/v19-egx-chat-gpt:data/v19/challenger-status-v6.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>process.stdout.write(JSON.parse(s).status||''))")"
+          V20_STATUS="$(git show refs/remotes/origin/develop/v20-integrated-decision-platform:data/v20/final-decision-contract.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>process.stdout.write(JSON.parse(s).sessionStatus||''))")"
+          export SESSION V17_RUN V19_RUN V20_RUN MAIN_DATA_SHA V17_SHA V19_SHA V20_SHA V19_STATUS V20_STATUS
           node - <<'NODE'
           const fs=require('fs');
           const out={
             schemaVersion:'VERSION-CASCADE-1',status:'COMPLETE',sessionDate:process.env.SESSION,recordedAt:new Date().toISOString(),
-            mainApp:{appName:'MAIN APP',engine:'V16_9_EQUAL_WEIGHT_BASKET',version:'16.9.2',methodologyFrozen:true,sourceDataCommit:process.env.MAIN_SHA,expectedSession:process.env.SESSION},
+            mainApp:{appName:'MAIN APP',engine:'V16_9_EQUAL_WEIGHT_BASKET',version:'16.9.2',methodologyFrozen:true,sourceDataCommit:process.env.MAIN_DATA_SHA,expectedSession:process.env.SESSION},
             v17:{branch:'develop/v17-rebuild',sessionDate:process.env.SESSION,status:'VERIFIED_CURRENT_SESSION',runId:Number(process.env.V17_RUN),conclusion:'success',commit:process.env.V17_SHA},
             v19:{branch:'v19-egx-chat-gpt',status:process.env.V19_STATUS,runId:Number(process.env.V19_RUN),conclusion:'success',commit:process.env.V19_SHA,automaticPromotion:false},
             v20:{branch:'develop/v20-integrated-decision-platform',sessionDate:process.env.SESSION,status:process.env.V20_STATUS,runId:Number(process.env.V20_RUN),conclusion:'success',commit:process.env.V20_SHA,certificationOk:true},
@@ -183,13 +186,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/stable/version-cascade-status.json
-          git commit -m "Record downstream version cascade for ${SESSION} [skip ci]" || exit 0
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record downstream version cascade for ${SESSION} [skip ci]"
           for attempt in 1 2 3; do
-            git fetch origin main
-            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git fetch origin main:refs/remotes/origin/main
+            if git rebase refs/remotes/origin/main && git push origin HEAD:main; then exit 0; fi
             git rebase --abort >/dev/null 2>&1 || true
             [ "$attempt" = "3" ] && exit 1
           done
-        env:
-          SESSION: ${{ steps.gate.outputs.session }}
-          V17_RUN: ${{ steps.gate.outputs.run == 'true' && '' || '' }}
