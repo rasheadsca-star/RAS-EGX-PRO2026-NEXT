@@ -1,9 +1,9 @@
-name: MAIN APP P2 Consensus Acceptance
+name: MAIN APP P3 Method-Independent Consensus Acceptance
 
 on:
   push:
     branches:
-      - release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
+      - release/MAIN-APP-v16.9.2-p3-method-independent-consensus-20260816
   workflow_dispatch:
 
 permissions:
@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
+          ref: release/MAIN-APP-v16.9.2-p3-method-independent-consensus-20260816
           fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
@@ -41,7 +41,19 @@ jobs:
           node --check preview-v16/app/main-app-consensus-overlay.js
           grep -q 'main-app-consensus-overlay.js' preview-v16/app/v169-p2.html
           grep -q "preview-v16/app/v169-p2.html" index.html
-      - name: Build real current multi-engine artifact
+      - name: Prove source execution grade is open
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const x=require('./data/stable/v15-price-truth.json');
+          if(x.expectedSession!=='2026-08-16') throw Error(`unexpected session ${x.expectedSession}`);
+          if(x.executionGrade!==true||x.ready!==true) throw Error('source execution grade is not open');
+          if(Number(x.source?.verifiedExpectedSessionRows||0)<80) throw Error('insufficient verified session rows');
+          if(Number(x.acceptedRows||0)<80) throw Error('insufficient accepted price rows');
+          console.log({executionGrade:x.executionGrade,verified:x.source.verifiedExpectedSessionRows,accepted:x.acceptedRows,coverage:x.source.sourceSessionEvidenceCoveragePct});
+          NODE
+      - name: Build real method-independent artifact
         shell: bash
         run: |
           set -euo pipefail
@@ -51,30 +63,44 @@ jobs:
           cp .v20/data/v20/multi-engine-consensus.json RAS-EGX0.1/data/v20/
           node - <<'NODE'
           const x=require('./RAS-EGX0.1/data/v20/multi-engine-consensus.json');
+          if(x.schemaVersion!=='20.1.0-method-independent-consensus-1')throw Error('method-independent schema missing');
           if(x.status!=='CURRENT_SESSION_ALIGNED')throw Error('multi-engine session mismatch');
-          if(x.scoreDefinition?.independentEngineCount!==3)throw Error('expected 3 independent engines');
+          if(x.scoreDefinition?.independentEngineCount!==2)throw Error('expected exactly 2 method-independent engines');
+          const ids=(x.engineRegistry?.activeIndependent||[]).map(e=>e.id).sort();
+          if(JSON.stringify(ids)!==JSON.stringify(['V16_9_EQUAL_WEIGHT_BASKET','V20_FULL_MARKET_NATIVE_SELECTION_V1'].sort()))throw Error(`unexpected independent engines ${ids}`);
+          if(!(x.engineRegistry?.relatedCorroborators||[]).some(e=>e.id==='V19_CHAT_GPT_NATIVE_CHALLENGER_V6'&&e.voteEligible===false))throw Error('V19 must be same-family corroboration only');
           if(x.governance?.changesMainAppRecommendation!==false||x.governance?.changesMainAppRanking!==false||x.governance?.changesExecutionPermission!==false)throw Error('governance drift');
           if((x.current?.mainAppAnnotations||[]).length===0)throw Error('MAIN APP annotations missing');
-          console.log(JSON.stringify({session:x.sessionDate,annotations:x.current.mainAppAnnotations.map(a=>({ticker:a.ticker,votes:a.independentVotes,score:a.confirmationScore,engines:a.confirmingEngines}))},null,2));
+          console.log(JSON.stringify({session:x.sessionDate,annotations:x.current.mainAppAnnotations.map(a=>({ticker:a.ticker,votes:a.independentVotes,score:a.confirmationScore,independent:a.confirmingIndependentEngines,related:a.relatedCorroborators}))},null,2));
           NODE
-      - name: Browser proof on MAIN APP cards
+      - name: Browser proof on visible V16.9 basket cards
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m http.server 8123 --bind 127.0.0.1 >/tmp/main-app-p2-http.log 2>&1 &
+          python3 -m http.server 8123 --bind 127.0.0.1 >/tmp/main-app-p3-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
           sleep 2
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,1000 --virtual-time-budget=15000 --dump-dom 'http://127.0.0.1:8123/preview-v16/app/v169-p2.html?accept=1' >/tmp/main-app-p2-dom.html 2>/tmp/main-app-p2-chrome.log
-          grep -q 'main-app-consensus-summary' /tmp/main-app-p2-dom.html
-          grep -q 'main-app-engine-note' /tmp/main-app-p2-dom.html
-          node - <<'NODE'
-          const fs=require('fs');const x=require('./RAS-EGX0.1/data/v20/multi-engine-consensus.json');const dom=fs.readFileSync('/tmp/main-app-p2-dom.html','utf8');
-          for(const a of x.current.mainAppAnnotations){if(!dom.includes(`data-main-app-consensus-note="${a.ticker}"`))throw Error(`card note missing ${a.ticker}`);}
-          if(!dom.includes('V19 Challenger')&&!dom.includes('V20 Native V1'))throw Error('confirming engine labels missing');
-          console.log('MAIN APP P2 browser annotations PASS');
+          for SIZE in 1440,1000 390,844; do
+            OUT="/tmp/main-app-p3-${SIZE//,/-}.html"
+            "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size="$SIZE" --virtual-time-budget=16000 --dump-dom 'http://127.0.0.1:8123/preview-v16/app/v169-p2.html?accept=p3' >"$OUT" 2>/tmp/main-app-p3-chrome.log
+            grep -q 'id="v169BasketPanel"' "$OUT"
+            grep -q 'data-execution-grade="true"' "$OUT"
+            grep -q 'data-execution-eligible="true"' "$OUT"
+            grep -q 'main-app-consensus-summary' "$OUT"
+            grep -q '2/2 مستقل' "$OUT"
+            grep -q 'V19 Challenger' "$OUT"
+            if grep -q 'آخر تحقق للمصدر لم يحقق Execution Grade' "$OUT"; then echo 'stale source-gate warning still visible' >&2; exit 1; fi
+            node - "$OUT" <<'NODE'
+          const fs=require('fs');const file=process.argv[2];const dom=fs.readFileSync(file,'utf8');const x=require('./RAS-EGX0.1/data/v20/multi-engine-consensus.json');
+          for(const a of x.current.mainAppAnnotations){
+            const cardRe=new RegExp(`<article class="v169-card[^>]*>[\\s\\S]*?<h3>${a.ticker}<\\/h3>[\\s\\S]*?data-main-app-consensus-note="${a.ticker}"`);
+            if(!cardRe.test(dom)) throw Error(`visible V16.9 basket note missing ${a.ticker}`);
+          }
+          if(!dom.includes('V20 Native V1'))throw Error('independent V20 confirmation label missing');
+          if(!dom.includes('same TOP10-probability family'))throw Error('V19 same-family disclosure missing');
+          console.log(`MAIN APP P3 visible basket annotations PASS ${file}`);
           NODE
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=390,844 --virtual-time-budget=12000 --dump-dom 'http://127.0.0.1:8123/preview-v16/app/v169-p2.html?accept=mobile' >/tmp/main-app-p2-mobile.html 2>/tmp/main-app-p2-mobile.log
-          grep -q 'main-app-engine-note' /tmp/main-app-p2-mobile.html
+          done
