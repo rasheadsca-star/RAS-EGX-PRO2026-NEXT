@@ -31,13 +31,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Enforce Pages secret guard
+        run: |
+          set -euo pipefail
+          test ! -e .env
+          test ! -e .project-config.json
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "Tracked .env is forbidden from Pages"
+            exit 1
+          fi
+          echo "PAGES_SECRET_GUARD_PASS"
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
+          # Upload entire tracked working tree only after the sensitive-file guard passes.
           path: '.'
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
