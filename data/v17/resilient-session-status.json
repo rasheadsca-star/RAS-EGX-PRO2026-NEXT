@@ -1,16 +1,16 @@
 {
   "schemaVersion": "17.0.0-resilient-session-gate-6",
-  "generatedAt": "2026-08-16T05:39:41.922Z",
+  "generatedAt": "2026-08-16T16:40:11.245Z",
   "status": "DEGRADED",
   "mode": "DEGRADED",
   "reasons": [
-    "CRITICAL_SOURCE_CONFLICT",
+    "INTERNAL_SR_FRESHNESS_BELOW_98",
     "INTERNAL_SR_NOT_EXECUTION_CANDIDATE"
   ],
   "sessionAligned": true,
-  "coveragePct": 98.75,
-  "freshnessPct": 98.75,
-  "criticalFieldsPct": 98.75,
+  "coveragePct": 97.5,
+  "freshnessPct": 80,
+  "criticalFieldsPct": 97.5,
   "sourcesUsed": [
     "MANDATORY_MARKET_COLLECTOR",
     "VERIFIED_PRICE_SOURCE_SESSION",
@@ -19,99 +19,22 @@
     "MUBASHER_DIRECT_VALIDATION",
     "MUBASHER_RENDERED_VALIDATION"
   ],
-  "sourceConflicts": [
-    {
-      "symbol": "CRST",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 10.34,
-      "critical": true
-    },
-    {
-      "symbol": "CRST",
-      "source": "MUBASHER_RENDERED",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 10.22,
-      "critical": true
-    },
-    {
-      "symbol": "AMER",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 15.36,
-      "critical": true
-    },
-    {
-      "symbol": "GGCC",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 12.68,
-      "critical": true
-    },
-    {
-      "symbol": "GGCC",
-      "source": "MUBASHER_RENDERED",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 12.99,
-      "critical": true
-    },
-    {
-      "symbol": "ARCC",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 13.16,
-      "critical": true
-    },
-    {
-      "symbol": "EFIC",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 10.93,
-      "critical": true
-    },
-    {
-      "symbol": "EFIC",
-      "source": "MUBASHER_RENDERED",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 10.93,
-      "critical": true
-    },
-    {
-      "symbol": "ICID",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 15.54,
-      "critical": true
-    },
-    {
-      "symbol": "ICID",
-      "source": "MUBASHER_RENDERED",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 15.57,
-      "critical": true
-    },
-    {
-      "symbol": "AFMC",
-      "source": "MUBASHER_DIRECT",
-      "state": "CURRENT_CRITICAL_CONFLICT",
-      "maxDiffPct": 13.67,
-      "critical": true
-    }
-  ],
+  "sourceConflicts": [],
   "missingSymbols": [
-    "MEGM"
+    "MEGM",
+    "ESRS"
   ],
   "executionGrade": false,
   "priceTruth": {
     "healthy": true,
     "researchMinimumHealthy": true,
     "sourceSessionVerified": true,
-    "verifiedSessionDate": "2026-08-13",
-    "marketCoveragePct": 96,
+    "verifiedSessionDate": "2026-08-16",
+    "marketCoveragePct": 96.9,
     "sourceCoveragePct": 100,
     "stale": false,
-    "sourceAgeMinutes": 3.2,
-    "lastSourceUpdate": "2026-08-16T05:35:56.759Z",
+    "sourceAgeMinutes": 4,
+    "lastSourceUpdate": "2026-08-16T16:35:26.421Z",
     "sourceName": "mubasher_symbol_pages_precise_enriched",
     "sessionTruthSource": "data/v17/market-session-truth.json",
     "contract": "MANDATORY_MARKET_COLLECTOR_IS_PRICE_TRUTH_AND_SESSION_MUST_BE_SOURCE_VERIFIED_FOR_EXECUTION"
@@ -120,8 +43,8 @@
     "ready": false,
     "sourceSession": {
       "verified": true,
-      "sessionDate": "2026-08-13",
-      "externalValidationConflict": false
+      "sessionDate": "2026-08-16",
+      "externalValidationConflict": true
     },
     "supportResistanceReady": true,
     "supportResistanceMethod": "INTERNAL_OHLC_PIVOT_WITH_MUBASHER_VALIDATION",
@@ -129,22 +52,22 @@
       "researchReady": true,
       "executionCandidateReady": false,
       "sourceSessionVerified": true,
-      "coveragePct": 98.75,
-      "freshnessPct": 98.75,
-      "criticalFieldsPct": 98.75,
-      "averageFreshConfidence": 0.804,
-      "referenceSessionDate": "2026-08-13",
+      "coveragePct": 97.5,
+      "freshnessPct": 80,
+      "criticalFieldsPct": 97.5,
+      "averageFreshConfidence": 0.805,
+      "referenceSessionDate": "2026-08-16",
       "sessionCompletionConfirmed": true
     },
     "liquidity": {
       "gatePassed": true,
       "sourceSessionVerified": true,
       "sessionAligned": true,
-      "referenceSessionDate": "2026-08-13",
+      "referenceSessionDate": "2026-08-16",
       "candidateUniverseCount": 80,
       "candidateEvidenceCoveragePct": 100,
-      "candidateExecutionOkCount": 77,
-      "candidateExecutionOkPct": 96.25,
+      "candidateExecutionOkCount": 74,
+      "candidateExecutionOkPct": 92.5,
       "thresholds": {
         "intradayMinCurrentTurnover": 5000000,
         "intradayMinAvg20Turnover": 2000000,
@@ -159,10 +82,10 @@
   },
   "sourceState": {
     "availableRows": 221,
-    "marketRows": 215,
+    "marketRows": 217,
     "cacheRows": 221,
-    "lastSourceUpdate": "2026-08-16T05:35:56.759Z",
-    "sourceAgeMinutes": 3.2,
+    "lastSourceUpdate": "2026-08-16T16:35:26.421Z",
+    "sourceAgeMinutes": 4,
     "stale": false
   },
   "confidencePolicy": {
@@ -188,7 +111,7 @@
     "stale": 0,
     "subPound": 22,
     "sourceCoveragePct": 100,
-    "marketCoveragePct": 96
+    "marketCoveragePct": 96.9
   },
   "invariant": "V16 champion and main branch are not modified or promoted by this V17 lab gate."
 }
