@@ -56,6 +56,7 @@ jobs:
           set -euo pipefail
           node --check scripts/fetch-market-data.js
           node --check scripts/stable/v15-missing-symbol-fallback.cjs
+          node --check scripts/stable/v16-mubasher-session-evidence-enricher.cjs
           node --check scripts/stable/v15-live-price-truth.cjs
           node --check scripts/stable/v15-practical-market-scanner.cjs
           node --check scripts/stable/v15-price-truth-gate.cjs
@@ -87,6 +88,12 @@ jobs:
             FETCH_CODE=$?
             node scripts/stable/v15-missing-symbol-fallback.cjs
             FALLBACK_CODE=$?
+            # The quote header often exposes only a clock time. Enrich only
+            # rows whose Mubasher Volume Statistics page supplies an explicit
+            # calendar date AND whose traded volume matches the quote snapshot.
+            # Never infer the market session from fetch/build time.
+            node scripts/stable/v16-mubasher-session-evidence-enricher.cjs
+            EVIDENCE_CODE=$?
             node scripts/stable/v15-live-price-truth.cjs
             TRUTH_CODE=$?
             node scripts/stable/v15-practical-market-scanner.cjs
@@ -94,7 +101,7 @@ jobs:
             node scripts/stable/v15-price-truth-gate.cjs
             GATE_CODE=$?
             set -e
-            echo "attempt=$ATTEMPT fetch=$FETCH_CODE fallback=$FALLBACK_CODE truth=$TRUTH_CODE scanner=$SCANNER_CODE gate=$GATE_CODE"
+            echo "attempt=$ATTEMPT fetch=$FETCH_CODE fallback=$FALLBACK_CODE evidence=$EVIDENCE_CODE truth=$TRUTH_CODE scanner=$SCANNER_CODE gate=$GATE_CODE"
             if node - <<'NODE'
           const fs = require('fs');
           const decision = JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json', 'utf8'));
