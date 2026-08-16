@@ -19,6 +19,7 @@ on:
       - "data/stable/main-app-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
       - ".github/workflows/v169-primary-pages-deploy.yml"
+      - ".github/workflows/main-app-immutability-guard.yml"
   schedule:
     - cron: "17 * * * *"
 
@@ -30,8 +31,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  MAIN_APP_FROZEN_SOURCE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
+  MAIN_APP_FROZEN_SOURCE_REF: origin/release/MAIN-APP-v16.9.2-p1-frozen-20260816
+  MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
+  MAIN_APP_OPERATIONAL_PATCH: P1_PUBLISHER_VARIABLE_ONLY
 
 jobs:
   enforce:
@@ -48,9 +51,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_COMMIT}^{commit}"
+          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_REF}^{commit}"
+          git cat-file -e "${MAIN_APP_METHOD_BASE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_LOCK_COMMIT}^{commit}"
 
+          # P1 changes only the publisher variable name and the deploy baseline
+          # reference. Model formula, ranking, features, weights, thresholds,
+          # basket construction, costs, allocation and entry/stop/target rules
+          # remain anchored to MAIN_APP_METHOD_BASE_COMMIT.
           PROTECTED_SOURCE=(
             index.html
             manifest.json
@@ -69,10 +77,10 @@ jobs:
           )
 
           drift=0
-          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"; then
-            echo "Protected MAIN APP source drift detected:"
-            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
-            git checkout "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
+          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"; then
+            echo "Protected MAIN APP source drift detected against P1 baseline:"
+            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"
+            git checkout "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"
             drift=1
           fi
 
@@ -83,18 +91,18 @@ jobs:
           fi
 
           if [ "$drift" -eq 0 ]; then
-            echo "MAIN APP is unchanged and matches its frozen baseline."
+            echo "MAIN APP matches frozen V16.9.2 P1 operational baseline."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "${PROTECTED_SOURCE[@]}" data/stable/main-app-lock.json
-          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 baseline"
+          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 P1 baseline"
 
           for attempt in 1 2 3; do
             if git pull --rebase -X ours origin main && git push origin HEAD:main; then
-              echo "MAIN APP protected source restored."
+              echo "MAIN APP protected source restored to P1."
               exit 0
             fi
             [ "$attempt" = "3" ] && exit 1
@@ -115,7 +123,10 @@ jobs:
             appName: lock.appName,
             engine: lock.engine,
             version: lock.version,
-            frozenSourceCommit: lock.frozenSourceCommit,
+            methodBaseCommit: process.env.MAIN_APP_METHOD_BASE_COMMIT,
+            frozenSourceRef: process.env.MAIN_APP_FROZEN_SOURCE_REF,
+            operationalPatch: process.env.MAIN_APP_OPERATIONAL_PATCH,
+            methodologyChanged: false,
             methodologyLocked: lock.policy.methodologyLocked,
             liveMarketDataAllowed: lock.policy.liveMarketDataAllowed,
             liveRecommendationOutputAllowed: lock.policy.liveRecommendationOutputAllowed
