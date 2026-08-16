@@ -103,7 +103,6 @@
       <div class="decision-evidence-strip"><div class="decision-evidence-box"><span>Technical evidence</span><strong>${num(cr.evidence?.technicalHistorySessions,0)} جلسة</strong><small>الحد الدلالي في V17 قبل زوال «تاريخ غير كافٍ»: ${num(cr.evidence?.technicalMinimumSessionsBeforeHistoryIsNotInsufficient,0)}</small></div><div class="decision-evidence-box"><span>S/R evidence</span><strong>${num(cr.evidence?.srConfidence,2)}</strong><small>${esc(cr.evidence?.srFreshness||'—')} · ${esc(cr.evidence?.srMethodology||'—')}</small></div><div class="decision-evidence-box"><span>Model freeze / ranking</span><strong>${esc((state.native?.rankingDigest||'—').slice(0,12))}</strong><small>${esc(state.native?.rankingContract||'—')} · V1 لا يُعاد ضبطها بأثر رجعي</small></div></div>`;
     body.querySelector('.decision-dossier-close').addEventListener('click',()=>d.close());
     if(typeof d.showModal==='function')d.showModal(); else d.setAttribute('open','');
-    document.dispatchEvent(new CustomEvent('v20:decision-dossier-opened',{detail:{symbol}}));
   }
 
   function evidenceStrip(){
