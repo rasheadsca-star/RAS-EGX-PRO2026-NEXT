@@ -1,0 +1,116 @@
+name: V16 Session Evidence Probe — Research Only
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v16-session-evidence-probe.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v16-session-evidence-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Probe Yahoo metadata against current Mubasher snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const expected = '2026-08-16';
+          const mapRaw = JSON.parse(fs.readFileSync('data/symbol-map.json','utf8'));
+          const entries = (Array.isArray(mapRaw) ? mapRaw : Object.values(mapRaw))
+            .filter(x => x && x.active !== false && x.ticker)
+            .map(x => ({...x, ticker:String(x.ticker).toUpperCase()}));
+          const market = JSON.parse(fs.readFileSync('data/market.json','utf8'));
+          const current = new Map((market.rows || []).map(r => [String(r.symbol||r.ticker||'').toUpperCase(), Number(r.price ?? r.last ?? r.close)]));
+
+          function cairoDate(unix) {
+            if (!Number.isFinite(Number(unix))) return null;
+            const d = new Date(Number(unix) * 1000);
+            const p = new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).reduce((a,x)=>(a[x.type]=x.value,a),{});
+            return `${p.year}-${p.month}-${p.day}`;
+          }
+          function pctDiff(a,b){ return a>0&&b>0 ? Math.abs(a-b)/b*100 : null; }
+          async function one(entry){
+            const candidate = entry.yahooSymbol || entry.reutersCode || `${entry.ticker}.CA`;
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(candidate)}?range=5d&interval=1d&events=history&includeAdjustedClose=true`;
+            try {
+              const res = await fetch(url,{headers:{'user-agent':'Mozilla/5.0 EGX-PRO-Session-Probe/1.0'},signal:AbortSignal.timeout(12000)});
+              if(!res.ok) return {ticker:entry.ticker,candidate,ok:false,error:`HTTP_${res.status}`};
+              const payload = await res.json();
+              const result = payload?.chart?.result?.[0];
+              if(!result) return {ticker:entry.ticker,candidate,ok:false,error:'NO_RESULT'};
+              const meta = result.meta || {};
+              const returned = String(meta.symbol||'').toUpperCase();
+              const currency = String(meta.currency||'').toUpperCase();
+              const exchange = `${meta.exchangeName||''} ${meta.fullExchangeName||''} ${meta.exchangeTimezoneName||''}`;
+              const identity = returned === String(candidate).toUpperCase() && (currency === 'EGP' || currency === '') && /(CAI|EGX|Cairo|Egypt)/i.test(exchange);
+              const metaDate = cairoDate(Number(meta.regularMarketTime));
+              const timestamps = Array.isArray(result.timestamp) ? result.timestamp : [];
+              const lastBarDate = timestamps.length ? cairoDate(Number(timestamps.at(-1))) : null;
+              const yahooPrice = Number(meta.regularMarketPrice);
+              const mubasherPrice = current.get(entry.ticker) || null;
+              const diff = pctDiff(yahooPrice,mubasherPrice);
+              const priceMatch = diff !== null && diff <= 2.0;
+              return {ticker:entry.ticker,candidate,ok:true,identity,metaDate,lastBarDate,yahooPrice:Number.isFinite(yahooPrice)?yahooPrice:null,mubasherPrice,diffPct:diff===null?null:Number(diff.toFixed(4)),priceMatch};
+            } catch(e) { return {ticker:entry.ticker,candidate,ok:false,error:e.name||e.message}; }
+          }
+          async function mapLimit(items,limit,fn){
+            const out=new Array(items.length); let i=0;
+            async function worker(){ while(true){ const j=i++; if(j>=items.length) return; out[j]=await fn(items[j]); } }
+            await Promise.all(Array.from({length:Math.min(limit,items.length)},worker)); return out;
+          }
+          (async()=>{
+            const results = await mapLimit(entries,6,one);
+            const ok = results.filter(r=>r.ok);
+            const identity = ok.filter(r=>r.identity);
+            const metaCurrent = identity.filter(r=>r.metaDate===expected);
+            const barCurrent = identity.filter(r=>r.lastBarDate===expected);
+            const cross = metaCurrent.filter(r=>r.priceMatch);
+            const report = {
+              schemaVersion:'V16_SESSION_EVIDENCE_PROBE_1',
+              generatedAt:new Date().toISOString(),
+              expectedSession:expected,
+              productionImpact:'NONE_RESEARCH_ONLY',
+              totalMapped:entries.length,
+              responsesOk:ok.length,
+              identityVerified:identity.length,
+              yahooMetaCurrentSession:metaCurrent.length,
+              yahooDailyBarCurrentSession:barCurrent.length,
+              yahooMetaCurrentAndMubasherPriceMatch2Pct:cross.length,
+              minimumNeededForV16PriceTruth:80,
+              viableCrossSourceSessionEvidence:cross.length>=80,
+              sampleCrossValidated:cross.slice(0,25),
+              sampleMetaCurrentButPriceConflict:metaCurrent.filter(r=>!r.priceMatch).slice(0,25),
+              sampleFailures:results.filter(r=>!r.ok||!r.identity).slice(0,25)
+            };
+            fs.writeFileSync('/tmp/v16-session-evidence-probe.json',JSON.stringify(report,null,2)+'\n');
+            console.log(JSON.stringify(report,null,2));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+
+      - name: Upload research probe
+        uses: actions/upload-artifact@v4
+        with:
+          name: v16-session-evidence-probe-${{ github.run_number }}
+          path: /tmp/v16-session-evidence-probe.json
+          retention-days: 7
