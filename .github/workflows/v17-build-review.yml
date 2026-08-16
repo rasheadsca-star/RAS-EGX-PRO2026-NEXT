@@ -43,11 +43,11 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then test "${GITHUB_REF_NAME}" = "develop/v17-rebuild"; fi
           ! grep -En 'uses:[[:space:]]+actions/deploy-pages' .github/workflows/v17-build-review.yml
 
-      - name: Prove protected V16 application files are unchanged
+      - name: Prove protected MAIN APP files are unchanged
         run: |
           set -euo pipefail
-          git fetch origin release/v16.9.2-frozen-20260806:refs/remotes/origin/release/v16.9.2-frozen-20260806
-          changed="$(git diff --name-only origin/release/v16.9.2-frozen-20260806...HEAD)"
+          git fetch origin release/MAIN-APP-v16.9.2-frozen-20260816:refs/remotes/origin/release/MAIN-APP-v16.9.2-frozen-20260816
+          changed="$(git diff --name-only origin/release/MAIN-APP-v16.9.2-frozen-20260816...HEAD)"
           violations="$(printf '%s\n' "$changed" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/.*|scripts/stable/.*|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
           test -z "$violations" || { echo "$violations"; exit 1; }
 
