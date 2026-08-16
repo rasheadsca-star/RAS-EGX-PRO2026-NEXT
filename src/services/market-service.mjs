@@ -26,6 +26,7 @@ export class MarketService {
   }
 
   status() {
+    const ledgerPersistent = process.env.VERCEL !== '1' || process.env.PERSISTENT_LEDGER_CONFIGURED === 'true';
     let ledgerValid = true;
     try {
       this.ledger.readVerified();
@@ -41,12 +42,18 @@ export class MarketService {
       failClosed: true,
       automaticTrading: false,
       ledgerValid,
+      ledgerPersistent,
     };
   }
 
   async analyze({ ric, horizon = 'short' }) {
     if (!['short', 'medium', 'long'].includes(horizon)) {
       throw new DataUnavailableError('INVALID_HORIZON');
+    }
+
+    const status = this.status();
+    if (!status.ledgerPersistent || !status.ledgerValid) {
+      throw new DataUnavailableError('IMMUTABLE_LEDGER_NOT_READY', 'A verified persistent append-only ledger is required before recommendations can be generated.');
     }
 
     const now = this.now();
