@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-16T13:53:45.635Z",
+  "generatedAt": "2026-08-16T14:36:31.458Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,15 +12,167 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 0,
-  "tickers": [],
-  "matrix": [],
+  "recommendationCount": 5,
+  "tickers": [
+    "COPR",
+    "ETEL",
+    "ZEOT",
+    "AALR",
+    "CANA"
+  ],
+  "matrix": [
+    {
+      "ticker": "COPR",
+      "correlations": {
+        "COPR": {
+          "value": 1,
+          "observations": 60
+        },
+        "ETEL": {
+          "value": 0.204,
+          "observations": 49
+        },
+        "ZEOT": {
+          "value": 0.03,
+          "observations": 52
+        },
+        "AALR": {
+          "value": -0.087,
+          "observations": 49
+        },
+        "CANA": {
+          "value": 0.046,
+          "observations": 51
+        }
+      }
+    },
+    {
+      "ticker": "ETEL",
+      "correlations": {
+        "COPR": {
+          "value": 0.204,
+          "observations": 49
+        },
+        "ETEL": {
+          "value": 1,
+          "observations": 60
+        },
+        "ZEOT": {
+          "value": 0.142,
+          "observations": 48
+        },
+        "AALR": {
+          "value": 0.256,
+          "observations": 49
+        },
+        "CANA": {
+          "value": 0.109,
+          "observations": 50
+        }
+      }
+    },
+    {
+      "ticker": "ZEOT",
+      "correlations": {
+        "COPR": {
+          "value": 0.03,
+          "observations": 52
+        },
+        "ETEL": {
+          "value": 0.142,
+          "observations": 48
+        },
+        "ZEOT": {
+          "value": 1,
+          "observations": 60
+        },
+        "AALR": {
+          "value": 0.015,
+          "observations": 52
+        },
+        "CANA": {
+          "value": 0.204,
+          "observations": 53
+        }
+      }
+    },
+    {
+      "ticker": "AALR",
+      "correlations": {
+        "COPR": {
+          "value": -0.087,
+          "observations": 49
+        },
+        "ETEL": {
+          "value": 0.256,
+          "observations": 49
+        },
+        "ZEOT": {
+          "value": 0.015,
+          "observations": 52
+        },
+        "AALR": {
+          "value": 1,
+          "observations": 60
+        },
+        "CANA": {
+          "value": 0.17,
+          "observations": 49
+        }
+      }
+    },
+    {
+      "ticker": "CANA",
+      "correlations": {
+        "COPR": {
+          "value": 0.046,
+          "observations": 51
+        },
+        "ETEL": {
+          "value": 0.109,
+          "observations": 50
+        },
+        "ZEOT": {
+          "value": 0.204,
+          "observations": 53
+        },
+        "AALR": {
+          "value": 0.17,
+          "observations": 49
+        },
+        "CANA": {
+          "value": 1,
+          "observations": 60
+        }
+      }
+    }
+  ],
   "highCorrelationPairs": [],
-  "sectorConcentration": [],
+  "sectorConcentration": [
+    {
+      "sector": "REAL_ESTATE",
+      "count": 2,
+      "sharePct": 40
+    },
+    {
+      "sector": "GENERAL",
+      "count": 2,
+      "sharePct": 40
+    },
+    {
+      "sector": "BANK",
+      "count": 1,
+      "sharePct": 20
+    }
+  ],
   "summary": {
     "highCorrelationPairCount": 0,
     "averageHighPairCorrelation": null,
-    "largestSector": null,
+    "largestSector": {
+      "sector": "REAL_ESTATE",
+      "count": 2,
+      "sharePct": 40
+    },
     "regime": "RISK_ON",
     "regimeRiskMultiplier": 1,
     "suggestedMaximumPositions": 5,
@@ -32,19 +184,19 @@
       "id": "MARKET_GAP_5",
       "labelAr": "فجوة سوقية -5%",
       "assumedMovePct": -5,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -5
     },
     {
       "id": "RISK_OFF_8",
       "labelAr": "صدمة سوق دفاعي -8%",
       "assumedMovePct": -8,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -8
     },
     {
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -4
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
@@ -54,7 +206,7 @@
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 0
+    "positionWeightPct": 20
   },
   "warnings": []
 }

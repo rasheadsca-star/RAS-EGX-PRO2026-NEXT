@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-16T13:54:28.155Z",
+  "generatedAt": "2026-08-16T14:37:15.068Z",
   "application": "EGX Pro Professional V16.3",
   "scope": {
     "type": "TECHNICAL_ANALYSIS_ONLY",
@@ -24,13 +24,13 @@
     "severity": {
       "CRITICAL": {
         "total": 11,
-        "open": 4,
-        "closed": 7
+        "open": 3,
+        "closed": 8
       },
       "HIGH": {
         "total": 26,
-        "open": 6,
-        "closed": 20
+        "open": 7,
+        "closed": 19
       },
       "MEDIUM": {
         "total": 4,
@@ -43,7 +43,7 @@
         "closed": 0
       }
     },
-    "recommendationCount": 0,
+    "recommendationCount": 5,
     "selectedModelCount": 5,
     "testSessions": 15,
     "liveResolvedTrades": 56
@@ -104,9 +104,9 @@
           "id": "T03-1",
           "severity": "HIGH",
           "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
-          "status": "OPEN",
-          "evidence": "valid=0/0",
-          "remediation": "رفض السجل ذي القيم المفقودة."
+          "status": "CLOSED",
+          "evidence": "valid=5/5",
+          "remediation": null
         },
         {
           "id": "T03-2",
@@ -151,16 +151,16 @@
           "severity": "CRITICAL",
           "title": "حد RSI الأعلى مطبق على كل توصية",
           "status": "OPEN",
-          "evidence": "",
+          "evidence": "COPR:67.9, ETEL:66, ZEOT:72.9, AALR:67.3, CANA:80.6",
           "remediation": "نقل السهم إلى المراقبة."
         },
         {
           "id": "T05-2",
           "severity": "HIGH",
           "title": "بوابة الامتداد القصير تمنع المطاردة",
-          "status": "CLOSED",
-          "evidence": "",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "COPR:ret5=7.5, ETEL:ret5=3.68, ZEOT:ret5=8.79, AALR:ret5=2.42, CANA:ret5=10.26",
+          "remediation": "خفض الترتيب أو إلغاء الدخول."
         }
       ]
     },
@@ -196,16 +196,16 @@
           "id": "T07-1",
           "severity": "CRITICAL",
           "title": "كل خطة هندسيًا صحيحة",
-          "status": "OPEN",
-          "evidence": "valid=0/0",
-          "remediation": "إعادة بناء أو حذف الخطة."
+          "status": "CLOSED",
+          "evidence": "valid=5/5",
+          "remediation": null
         },
         {
           "id": "T07-2",
           "severity": "HIGH",
           "title": "لا يتساوى الوقف أو الهدف مع منطقة الدخول",
           "status": "CLOSED",
-          "evidence": "",
+          "evidence": "COPR, ETEL, ZEOT, AALR, CANA",
           "remediation": null
         }
       ]
@@ -220,16 +220,16 @@
           "severity": "CRITICAL",
           "title": "كل توصية تجتاز الحد الأدنى للعائد/المخاطرة",
           "status": "CLOSED",
-          "evidence": "",
+          "evidence": "COPR:1.17, ETEL:1.17, ZEOT:1.17, AALR:1.17, CANA:1.17",
           "remediation": null
         },
         {
           "id": "T08-2",
           "severity": "HIGH",
           "title": "احتمال الهدف أعلى من احتمال الوقف",
-          "status": "CLOSED",
-          "evidence": "",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "COPR:10.095>17.486, ETEL:9.674>16.673, ZEOT:9.812>16.443, AALR:9.277>15.515, CANA:10.167>16.07",
+          "remediation": "إعادة المعايرة أو الرفض."
         }
       ]
     },
@@ -289,7 +289,7 @@
           "severity": "HIGH",
           "title": "لا توجد رموز مكررة في التوصيات",
           "status": "CLOSED",
-          "evidence": "unique=0/0",
+          "evidence": "unique=5/5",
           "remediation": null
         },
         {
@@ -297,7 +297,7 @@
           "severity": "HIGH",
           "title": "عدد التوصيات من 1 إلى 5 فقط عند الجاهزية",
           "status": "CLOSED",
-          "evidence": "count=0",
+          "evidence": "count=5",
           "remediation": null
         }
       ]
@@ -381,7 +381,7 @@
           "severity": "HIGH",
           "title": "عدم الاستقرار موثق ولا يُخفى",
           "status": "OPEN",
-          "evidence": "",
+          "evidence": "COPR:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, ETEL:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, ZEOT:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, AALR:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, CANA:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX",
           "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
         },
         {
@@ -389,7 +389,7 @@
           "severity": "CRITICAL",
           "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
           "status": "OPEN",
-          "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; professional=false; modes=",
+          "evidence": "decisionTier=PILOT_56_SESSION_WALK_FORWARD; professional=false; modes=REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX",
           "remediation": "فرض وضع Pilot منخفض المخاطرة."
         }
       ]
@@ -404,7 +404,7 @@
           "severity": "HIGH",
           "title": "قصر عينة الاختبار مصرح به",
           "status": "OPEN",
-          "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; test sample remains explicitly Pilot",
+          "evidence": "decisionTier=PILOT_56_SESSION_WALK_FORWARD; test sample remains explicitly Pilot",
           "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
         },
         {
@@ -427,7 +427,7 @@
           "severity": "HIGH",
           "title": "كل توصيات الجلسة مؤرشفة",
           "status": "CLOSED",
-          "evidence": "archivedCurrent=0/0",
+          "evidence": "archivedCurrent=5/5",
           "remediation": null
         },
         {
@@ -458,7 +458,7 @@
           "severity": "HIGH",
           "title": "نتيجة التوصية لا تُحذف عند الفشل",
           "status": "CLOSED",
-          "evidence": "records=94",
+          "evidence": "records=99",
           "remediation": null
         }
       ]
@@ -504,7 +504,7 @@
           "severity": "HIGH",
           "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
           "status": "OPEN",
-          "evidence": "tier=MODEL_CALIBRATION_REVIEW; reducedRisk=true; noProfitClaim=true",
+          "evidence": "tier=PILOT_56_SESSION_WALK_FORWARD; reducedRisk=false; noProfitClaim=true",
           "remediation": "إزالة الادعاءات وإظهار القيود."
         },
         {
@@ -512,7 +512,7 @@
           "severity": "HIGH",
           "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
           "status": "OPEN",
-          "evidence": "recs=0; source=false; plans=true",
+          "evidence": "recs=5; source=false; plans=true",
           "remediation": "حجب الإصدار الفني وإعادة البناء."
         }
       ]
@@ -528,20 +528,20 @@
       "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
     },
     {
-      "id": "T03-1",
-      "severity": "HIGH",
-      "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
-      "status": "OPEN",
-      "evidence": "valid=0/0",
-      "remediation": "رفض السجل ذي القيم المفقودة."
-    },
-    {
       "id": "T05-1",
       "severity": "CRITICAL",
       "title": "حد RSI الأعلى مطبق على كل توصية",
       "status": "OPEN",
-      "evidence": "",
+      "evidence": "COPR:67.9, ETEL:66, ZEOT:72.9, AALR:67.3, CANA:80.6",
       "remediation": "نقل السهم إلى المراقبة."
+    },
+    {
+      "id": "T05-2",
+      "severity": "HIGH",
+      "title": "بوابة الامتداد القصير تمنع المطاردة",
+      "status": "OPEN",
+      "evidence": "COPR:ret5=7.5, ETEL:ret5=3.68, ZEOT:ret5=8.79, AALR:ret5=2.42, CANA:ret5=10.26",
+      "remediation": "خفض الترتيب أو إلغاء الدخول."
     },
     {
       "id": "T06-2",
@@ -552,19 +552,19 @@
       "remediation": "حجب المسح عند ضعف التغطية."
     },
     {
-      "id": "T07-1",
-      "severity": "CRITICAL",
-      "title": "كل خطة هندسيًا صحيحة",
+      "id": "T08-2",
+      "severity": "HIGH",
+      "title": "احتمال الهدف أعلى من احتمال الوقف",
       "status": "OPEN",
-      "evidence": "valid=0/0",
-      "remediation": "إعادة بناء أو حذف الخطة."
+      "evidence": "COPR:10.095>17.486, ETEL:9.674>16.673, ZEOT:9.812>16.443, AALR:9.277>15.515, CANA:10.167>16.07",
+      "remediation": "إعادة المعايرة أو الرفض."
     },
     {
       "id": "T15-1",
       "severity": "HIGH",
       "title": "عدم الاستقرار موثق ولا يُخفى",
       "status": "OPEN",
-      "evidence": "",
+      "evidence": "COPR:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, ETEL:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, ZEOT:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, AALR:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, CANA:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX",
       "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
     },
     {
@@ -572,7 +572,7 @@
       "severity": "CRITICAL",
       "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; professional=false; modes=",
+      "evidence": "decisionTier=PILOT_56_SESSION_WALK_FORWARD; professional=false; modes=REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX",
       "remediation": "فرض وضع Pilot منخفض المخاطرة."
     },
     {
@@ -580,7 +580,7 @@
       "severity": "HIGH",
       "title": "قصر عينة الاختبار مصرح به",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; test sample remains explicitly Pilot",
+      "evidence": "decisionTier=PILOT_56_SESSION_WALK_FORWARD; test sample remains explicitly Pilot",
       "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
     },
     {
@@ -588,7 +588,7 @@
       "severity": "HIGH",
       "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
       "status": "OPEN",
-      "evidence": "tier=MODEL_CALIBRATION_REVIEW; reducedRisk=true; noProfitClaim=true",
+      "evidence": "tier=PILOT_56_SESSION_WALK_FORWARD; reducedRisk=false; noProfitClaim=true",
       "remediation": "إزالة الادعاءات وإظهار القيود."
     },
     {
@@ -596,7 +596,7 @@
       "severity": "HIGH",
       "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
       "status": "OPEN",
-      "evidence": "recs=0; source=false; plans=true",
+      "evidence": "recs=5; source=false; plans=true",
       "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
@@ -610,20 +610,20 @@
       "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
     },
     {
-      "id": "T03-1",
-      "severity": "HIGH",
-      "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
-      "status": "OPEN",
-      "evidence": "valid=0/0",
-      "remediation": "رفض السجل ذي القيم المفقودة."
-    },
-    {
       "id": "T05-1",
       "severity": "CRITICAL",
       "title": "حد RSI الأعلى مطبق على كل توصية",
       "status": "OPEN",
-      "evidence": "",
+      "evidence": "COPR:67.9, ETEL:66, ZEOT:72.9, AALR:67.3, CANA:80.6",
       "remediation": "نقل السهم إلى المراقبة."
+    },
+    {
+      "id": "T05-2",
+      "severity": "HIGH",
+      "title": "بوابة الامتداد القصير تمنع المطاردة",
+      "status": "OPEN",
+      "evidence": "COPR:ret5=7.5, ETEL:ret5=3.68, ZEOT:ret5=8.79, AALR:ret5=2.42, CANA:ret5=10.26",
+      "remediation": "خفض الترتيب أو إلغاء الدخول."
     },
     {
       "id": "T06-2",
@@ -634,19 +634,19 @@
       "remediation": "حجب المسح عند ضعف التغطية."
     },
     {
-      "id": "T07-1",
-      "severity": "CRITICAL",
-      "title": "كل خطة هندسيًا صحيحة",
+      "id": "T08-2",
+      "severity": "HIGH",
+      "title": "احتمال الهدف أعلى من احتمال الوقف",
       "status": "OPEN",
-      "evidence": "valid=0/0",
-      "remediation": "إعادة بناء أو حذف الخطة."
+      "evidence": "COPR:10.095>17.486, ETEL:9.674>16.673, ZEOT:9.812>16.443, AALR:9.277>15.515, CANA:10.167>16.07",
+      "remediation": "إعادة المعايرة أو الرفض."
     },
     {
       "id": "T15-1",
       "severity": "HIGH",
       "title": "عدم الاستقرار موثق ولا يُخفى",
       "status": "OPEN",
-      "evidence": "",
+      "evidence": "COPR:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, ETEL:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, ZEOT:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, AALR:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, CANA:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX",
       "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
     },
     {
@@ -654,7 +654,7 @@
       "severity": "CRITICAL",
       "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; professional=false; modes=",
+      "evidence": "decisionTier=PILOT_56_SESSION_WALK_FORWARD; professional=false; modes=REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX",
       "remediation": "فرض وضع Pilot منخفض المخاطرة."
     },
     {
@@ -662,7 +662,7 @@
       "severity": "HIGH",
       "title": "قصر عينة الاختبار مصرح به",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; test sample remains explicitly Pilot",
+      "evidence": "decisionTier=PILOT_56_SESSION_WALK_FORWARD; test sample remains explicitly Pilot",
       "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
     },
     {
@@ -670,7 +670,7 @@
       "severity": "HIGH",
       "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
       "status": "OPEN",
-      "evidence": "tier=MODEL_CALIBRATION_REVIEW; reducedRisk=true; noProfitClaim=true",
+      "evidence": "tier=PILOT_56_SESSION_WALK_FORWARD; reducedRisk=false; noProfitClaim=true",
       "remediation": "إزالة الادعاءات وإظهار القيود."
     },
     {
@@ -678,7 +678,7 @@
       "severity": "HIGH",
       "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
       "status": "OPEN",
-      "evidence": "recs=0; source=false; plans=true",
+      "evidence": "recs=5; source=false; plans=true",
       "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
