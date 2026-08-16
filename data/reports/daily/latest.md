@@ -3,7 +3,7 @@
 - حالة التشغيل: **يحتاج متابعة**
 - الأول فنيًا: **OLFI**
 - أول B للمراقبة: **EGCH**
-- الجاهز ورقيًا: **SAUD**
+- الجاهز ورقيًا: **لا يوجد**
 - إشارات جديدة: **40**
 - دخول جديد: **20**
 - صفقات مغلقة: **11**
@@ -18,7 +18,7 @@
 ## ملاحظات التشغيل
 
 - تحذير: Data coverage is 96.43%, below preferred 98%.
-- تحذير: 28 scheduled legacy workflow(s) may cause independent updates.
+- تحذير: 29 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `1df8bd6c1ce17705c445943ca1a781a08b4a4affe12be87cada61bffa57bd186`
+بصمة التقرير: `775925437bcf150d15458942df862847ecefbc197cdc102a353008d95a182d2d`
