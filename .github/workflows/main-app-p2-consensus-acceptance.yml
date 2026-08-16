@@ -1,0 +1,80 @@
+name: MAIN APP P2 Consensus Acceptance
+
+on:
+  push:
+    branches:
+      - release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Prove frozen engine/core unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin release/MAIN-APP-v16.9.2-p1-frozen-20260816 develop/v20-integrated-decision-platform
+          BASE=origin/release/MAIN-APP-v16.9.2-p1-frozen-20260816
+          CORE=(
+            preview-v16/app/app.js
+            preview-v16/app/decision-source.js
+            scripts/research/v16-v169-basket-engine.py
+            scripts/research/v16-two-stage-predictor.py
+            scripts/research/v16-probabilistic-model-impact.py
+            scripts/research/v16-v169-target-hit-audit.py
+            scripts/stable/v16-publish-v169-basket.cjs
+            data/stable/v16-v169-release-lock.json
+          )
+          git diff --exit-code "$BASE" -- "${CORE[@]}"
+          node --check preview-v16/app/main-app-consensus-overlay.js
+          grep -q 'main-app-consensus-overlay.js' preview-v16/app/v169-p2.html
+          grep -q "preview-v16/app/v169-p2.html" index.html
+      - name: Build real current multi-engine artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          git worktree add --detach .v20 origin/develop/v20-integrated-decision-platform
+          (cd .v20 && node scripts/v20/build-multi-engine-consensus.cjs && node scripts/v20/multi-engine-consensus-regression.cjs)
+          mkdir -p RAS-EGX0.1/data/v20
+          cp .v20/data/v20/multi-engine-consensus.json RAS-EGX0.1/data/v20/
+          node - <<'NODE'
+          const x=require('./RAS-EGX0.1/data/v20/multi-engine-consensus.json');
+          if(x.status!=='CURRENT_SESSION_ALIGNED')throw Error('multi-engine session mismatch');
+          if(x.scoreDefinition?.independentEngineCount!==3)throw Error('expected 3 independent engines');
+          if(x.governance?.changesMainAppRecommendation!==false||x.governance?.changesMainAppRanking!==false||x.governance?.changesExecutionPermission!==false)throw Error('governance drift');
+          if((x.current?.mainAppAnnotations||[]).length===0)throw Error('MAIN APP annotations missing');
+          console.log(JSON.stringify({session:x.sessionDate,annotations:x.current.mainAppAnnotations.map(a=>({ticker:a.ticker,votes:a.independentVotes,score:a.confirmationScore,engines:a.confirmingEngines}))},null,2));
+          NODE
+      - name: Browser proof on MAIN APP cards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8123 --bind 127.0.0.1 >/tmp/main-app-p2-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 2
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,1000 --virtual-time-budget=15000 --dump-dom 'http://127.0.0.1:8123/preview-v16/app/v169-p2.html?accept=1' >/tmp/main-app-p2-dom.html 2>/tmp/main-app-p2-chrome.log
+          grep -q 'main-app-consensus-summary' /tmp/main-app-p2-dom.html
+          grep -q 'main-app-engine-note' /tmp/main-app-p2-dom.html
+          node - <<'NODE'
+          const fs=require('fs');const x=require('./RAS-EGX0.1/data/v20/multi-engine-consensus.json');const dom=fs.readFileSync('/tmp/main-app-p2-dom.html','utf8');
+          for(const a of x.current.mainAppAnnotations){if(!dom.includes(`data-main-app-consensus-note="${a.ticker}"`))throw Error(`card note missing ${a.ticker}`);}
+          if(!dom.includes('V19 Challenger')&&!dom.includes('V20 Native V1'))throw Error('confirming engine labels missing');
+          console.log('MAIN APP P2 browser annotations PASS');
+          NODE
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=390,844 --virtual-time-budget=12000 --dump-dom 'http://127.0.0.1:8123/preview-v16/app/v169-p2.html?accept=mobile' >/tmp/main-app-p2-mobile.html 2>/tmp/main-app-p2-mobile.log
+          grep -q 'main-app-engine-note' /tmp/main-app-p2-mobile.html
