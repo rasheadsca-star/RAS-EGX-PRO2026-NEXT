@@ -36,8 +36,12 @@ jobs:
         run: |
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
-          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
-          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
+          # Immutable merge-base between V19 and V20. Comparing against a moving
+          # V19 HEAD creates false violations whenever V19 advances independently.
+          V20_ISOLATION_BASE="fb5aafb3e3e4cd908831a7cb98de3f952e356c34"
+          git fetch --no-tags --depth=1 origin "$V20_ISOLATION_BASE"
+          git cat-file -e "$V20_ISOLATION_BASE^{commit}"
+          changed="$(git diff --name-only "$V20_ISOLATION_BASE" HEAD)"
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-v17-centric-clean(-v2|-v3|-v5)?\.yml$|\.github/workflows/v20-primary-entry-point-acceptance\.yml$)' || true)"
           test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
 
