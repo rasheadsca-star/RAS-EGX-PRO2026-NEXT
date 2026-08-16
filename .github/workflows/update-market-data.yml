@@ -40,6 +40,11 @@ jobs:
         run: npm ci || npm install
       - name: Mandatory market collector
         run: node scripts/fetch-market-data.js
+      - name: Enrich explicit Mubasher session evidence
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-mubasher-session-evidence-enricher.cjs
+          node scripts/stable/v16-mubasher-session-evidence-enricher.cjs
       - name: Collect direct Mubasher S/R validation - degradable
         id: direct_sr
         continue-on-error: true
