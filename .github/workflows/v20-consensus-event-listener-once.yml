@@ -1,0 +1,44 @@
+name: V20 Consensus Dossier Listener Once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/v20-consensus-event-listener-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  hook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: develop/v20-integrated-decision-platform
+          fetch-depth: 1
+      - name: Bind consensus overlay to Decision Board dossier event
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('v20/consensus-overlay.js')
+          s=p.read_text()
+          old="  document.addEventListener('v20:decision-board-ready',init,{once:true});\n"
+          new="  document.addEventListener('v20:decision-dossier-opened',e=>augmentDossier(e.detail?.symbol));\n  document.addEventListener('v20:decision-board-ready',init,{once:true});\n"
+          if old not in s:
+              raise SystemExit('Expected overlay event anchor not found; refusing blind patch')
+          if "v20:decision-dossier-opened',e=>augmentDossier" in s:
+              raise SystemExit('Listener already present unexpectedly')
+          p.write_text(s.replace(old,new,1))
+          PY
+          node --check v20/consensus-overlay.js
+          git diff --check
+          changed="$(git diff --name-only)"
+          test "$changed" = "v20/consensus-overlay.js" || { echo "Unexpected changes: $changed"; exit 1; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add v20/consensus-overlay.js
+          git commit -m "Bind consensus overlay to dossier-opened event [skip ci]"
+          git push origin HEAD:develop/v20-integrated-decision-platform
