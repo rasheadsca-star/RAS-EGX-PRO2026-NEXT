@@ -17,7 +17,7 @@ on:
       - "scripts/stable/v16-v169-live-evaluation.py"
       - "data/stable/v16-v169-release-lock.json"
       - "data/stable/main-app-lock.json"
-      - "data/stable/main-app-p2-presentation-lock.json"
+      - "data/stable/main-app-p3-presentation-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
       - ".github/workflows/v169-primary-pages-deploy.yml"
       - ".github/workflows/main-app-immutability-guard.yml"
@@ -32,10 +32,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  MAIN_APP_FROZEN_SOURCE_REF: origin/release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
+  MAIN_APP_FROZEN_SOURCE_COMMIT: a4a1e6c7673133dc287bf1ee76efb385d9844721
   MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
-  MAIN_APP_OPERATIONAL_PATCH: P2_MULTI_ENGINE_CONSENSUS_DISPLAY_ONLY
+  MAIN_APP_OPERATIONAL_PATCH: P3_METHOD_INDEPENDENT_CONSENSUS_AND_DIRECT_BASKET_LOAD
 
 jobs:
   enforce:
@@ -43,7 +43,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout latest main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: main
           fetch-depth: 0
@@ -52,14 +52,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --no-tags origin release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816:refs/remotes/origin/release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
-          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_REF}^{commit}"
+          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_METHOD_BASE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_LOCK_COMMIT}^{commit}"
 
-          # P2 is a presentation-only overlay. The model formula, ranking, features,
-          # weights, thresholds, basket construction, costs, allocation and
-          # entry/stop/target methodology remain anchored to MAIN_APP_METHOD_BASE_COMMIT.
+          # P3 changes presentation/load order only. Model formula, alpha generation,
+          # ranking, features, weights, thresholds, basket construction, costs,
+          # allocation and entry/stop/target rules stay anchored to METHOD_BASE.
           PROTECTED_SOURCE=(
             index.html
             manifest.json
@@ -73,16 +72,16 @@ jobs:
             scripts/stable/v16-session-data-fingerprint.cjs
             scripts/stable/v16-v169-live-evaluation.py
             data/stable/v16-v169-release-lock.json
-            data/stable/main-app-p2-presentation-lock.json
+            data/stable/main-app-p3-presentation-lock.json
             .github/workflows/v16-v169-basket-engine.yml
             .github/workflows/v169-primary-pages-deploy.yml
           )
 
           drift=0
-          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"; then
-            echo "Protected MAIN APP source drift detected against P2 baseline:"
-            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"
-            git checkout "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"
+          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"; then
+            echo "Protected MAIN APP source drift detected against pinned P3 baseline:"
+            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
+            git checkout "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
             drift=1
           fi
 
@@ -93,47 +92,55 @@ jobs:
           fi
 
           if [ "$drift" -eq 0 ]; then
-            echo "MAIN APP matches frozen V16.9.2 P2 presentation baseline."
+            echo "MAIN APP matches pinned V16.9.2 P3 presentation baseline."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "${PROTECTED_SOURCE[@]}" data/stable/main-app-lock.json
-          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 P2 presentation baseline"
+          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 P3 presentation baseline"
 
           for attempt in 1 2 3; do
             if git pull --rebase -X ours origin main && git push origin HEAD:main; then
-              echo "MAIN APP protected source restored to P2."
+              echo "MAIN APP protected source restored to pinned P3 baseline."
               exit 0
             fi
             [ "$attempt" = "3" ] && exit 1
             sleep $((attempt * 8))
           done
 
-      - name: Verify frozen-method and P2 display-only policy
+      - name: Verify frozen-method and P3 presentation-only policy
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const lock = JSON.parse(fs.readFileSync('data/stable/main-app-lock.json', 'utf8'));
-          const p2 = JSON.parse(fs.readFileSync('data/stable/main-app-p2-presentation-lock.json', 'utf8'));
+          const p3 = JSON.parse(fs.readFileSync('data/stable/main-app-p3-presentation-lock.json', 'utf8'));
           if (lock.appName !== 'MAIN APP') throw new Error('MAIN APP identity mismatch');
           if (lock.engine !== 'V16_9_EQUAL_WEIGHT_BASKET') throw new Error('MAIN APP engine mismatch');
           if (lock.policy?.methodologyLocked !== true) throw new Error('Methodology lock missing');
           if (lock.policy?.liveMarketDataAllowed !== true) throw new Error('Live market data must remain enabled');
           if (lock.policy?.liveRecommendationOutputAllowed !== true) throw new Error('Live recommendation output must remain enabled');
-          if (p2.methodologyChanged !== false || p2.rankingChanged !== false || p2.recommendationChanged !== false || p2.executionChanged !== false || p2.runtimeCoreChanged !== false) throw new Error('P2 presentation boundary drift');
-          if (p2.consensusPolicy?.cannotChangeMainAppRank !== true || p2.consensusPolicy?.cannotGrantExecutionPermission !== true) throw new Error('P2 governance boundary missing');
+          for (const key of ['methodologyChanged','rankingChanged','recommendationChanged','allocationChanged','executionRulesChanged','runtimeCoreChanged']) {
+            if (p3[key] !== false) throw new Error(`P3 boundary drift: ${key}`);
+          }
+          if (p3.consensusPolicy?.currentIndependentEngines !== 2) throw new Error('P3 independent engine count drift');
+          if (p3.consensusPolicy?.v19SameFamilyDoesNotIncreaseIndependentScore !== true) throw new Error('V19 independence boundary missing');
+          if (p3.consensusPolicy?.v17IsValidatorNotVote !== true) throw new Error('V17 vote boundary missing');
+          if (p3.consensusPolicy?.cannotChangeMainAppRank !== true || p3.consensusPolicy?.cannotGrantExecutionPermission !== true) throw new Error('P3 governance boundary missing');
+          if (p3.sourceGatePolicy?.sourceGateOpeningDoesNotChangeMainAppMethodology !== true) throw new Error('source-gate boundary missing');
           console.log({
             appName: lock.appName,
             engine: lock.engine,
             version: lock.version,
             methodBaseCommit: process.env.MAIN_APP_METHOD_BASE_COMMIT,
-            frozenSourceRef: process.env.MAIN_APP_FROZEN_SOURCE_REF,
+            frozenSourceCommit: process.env.MAIN_APP_FROZEN_SOURCE_COMMIT,
             operationalPatch: process.env.MAIN_APP_OPERATIONAL_PATCH,
+            independentEngines: p3.consensusPolicy.independentEngines,
+            sameFamilyCorroborators: p3.consensusPolicy.sameFamilyCorroborators,
             methodologyChanged: false,
             rankingChanged: false,
-            executionChanged: false,
+            executionRulesChanged: false,
             methodologyLocked: lock.policy.methodologyLocked,
             liveMarketDataAllowed: lock.policy.liveMarketDataAllowed,
             liveRecommendationOutputAllowed: lock.policy.liveRecommendationOutputAllowed
