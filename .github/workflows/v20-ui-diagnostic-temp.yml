@@ -1,0 +1,36 @@
+name: V20 UI Contract Diagnostic TEMP
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - ".github/workflows/v20-ui-diagnostic-temp.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Run validator and persist diagnostic only
+        shell: bash
+        run: |
+          set +e
+          node scripts/v20/validate-ui.cjs
+          rc=$?
+          test -f data/v20/ui-validation.json || exit "$rc"
+          cat data/v20/ui-validation.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v20/ui-validation.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Record V20 UI validation diagnostic [skip ci]"
+            git push origin HEAD:develop/v20-integrated-decision-platform
+          fi
+          exit "$rc"
