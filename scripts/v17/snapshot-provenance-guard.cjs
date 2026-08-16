@@ -49,17 +49,44 @@ if (snapshot.recommendationMode === 'CURRENT_RESEARCH_WATCH_ONLY') {
     if (rec.executionAllowed === true || Number(rec.portfolioWeightPct || 0) !== 0) {
       throw new Error(`Research recommendation ${rec.ticker} unexpectedly executable/allocated.`);
     }
-    if (rec.liquidity.executionLiquidityOk !== (source?.liquidity?.executionLiquidityOk === true)) {
-      throw new Error(`Liquidity eligibility mismatch for ${rec.ticker}`);
+
+    const sourceLiquidityAvailable = Boolean(source?.liquidity && typeof source.liquidity === 'object');
+    if (!sourceLiquidityAvailable) {
+      if (rec.liquidity.evidenceState !== 'MISSING_RESEARCH_ONLY' || rec.liquidity.executionLiquidityOk !== false || rec.liquidity.evidenceAvailable !== false) {
+        throw new Error(`Missing liquidity evidence was not preserved fail-closed for ${rec.ticker}`);
+      }
+    } else {
+      if (rec.liquidity.evidenceState !== 'AVAILABLE') throw new Error(`Available liquidity evidence mislabeled for ${rec.ticker}`);
+      if (rec.liquidity.executionLiquidityOk !== (source.liquidity.executionLiquidityOk === true)) {
+        throw new Error(`Liquidity eligibility mismatch for ${rec.ticker}`);
+      }
+      if (finite(source?.liquidity?.score) && Number(rec.liquidity.score) !== Number(source.liquidity.score)) {
+        throw new Error(`Liquidity score mismatch for ${rec.ticker}`);
+      }
     }
-    if (finite(source?.liquidity?.score) && Number(rec.liquidity.score) !== Number(source.liquidity.score)) {
-      throw new Error(`Liquidity score mismatch for ${rec.ticker}`);
+
+    const sourceSrAvailable = Boolean(source?.supportResistance && typeof source.supportResistance === 'object');
+    if (!sourceSrAvailable) {
+      if (rec.supportResistanceEvidence.evidenceState !== 'MISSING_RESEARCH_ONLY'
+        || rec.supportResistanceEvidence.sessionDate !== null
+        || rec.supportResistanceEvidence.executionEligible !== false) {
+        throw new Error(`Missing S/R evidence was not preserved fail-closed for ${rec.ticker}`);
+      }
+    } else {
+      if (rec.supportResistanceEvidence.evidenceState !== 'AVAILABLE') throw new Error(`Available S/R evidence mislabeled for ${rec.ticker}`);
+      if (rec.supportResistanceEvidence.sessionDate !== source.supportResistance.sessionDate) {
+        throw new Error(`S/R session provenance mismatch for ${rec.ticker}`);
+      }
+      if (rec.supportResistanceEvidence.executionEligible !== (source.supportResistance.executionEligible === true)) {
+        throw new Error(`S/R execution eligibility mismatch for ${rec.ticker}`);
+      }
     }
-    if (rec.supportResistanceEvidence.sessionDate !== source?.supportResistance?.sessionDate) {
-      throw new Error(`S/R session provenance mismatch for ${rec.ticker}`);
-    }
+
     if (rec.executionProvenance.executionAllowed !== false) {
       throw new Error(`Research execution provenance is unsafe for ${rec.ticker}`);
+    }
+    if ((!sourceSrAvailable || !sourceLiquidityAvailable) && rec.executionProvenance.missingResearchEvidenceExplicitlyPreserved !== true) {
+      throw new Error(`Missing research evidence is not explicitly disclosed for ${rec.ticker}`);
     }
   }
 }
@@ -79,4 +106,5 @@ console.log(JSON.stringify({
   liquidityExecutionOkCount: liquidity.candidateExecutionOkCount,
   executionGrade: resilient.executionGrade,
   immutableSignalHashTouched: snapshot.enrichment.immutableSignalHashTouched,
+  missingEvidencePolicy: snapshot.enrichment.missingEvidencePolicy || null,
 }, null, 2));
