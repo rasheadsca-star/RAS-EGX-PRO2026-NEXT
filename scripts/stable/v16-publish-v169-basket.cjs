@@ -105,7 +105,7 @@ const recommendations = approved
 const metrics = report.blockedWalkForwardMetrics || {};
 const blockedBySessionTruth = report.productionEligible === true && sourceBasket.length >= 3 && !sourceSessionReady;
 const generatedAt = new Date().toISOString();
-const sourceEvidenceCoveragePct = Number(priceTruth?.source?.sourceSessionEvidenceCoveragePct || 0);
+const sourceSessionEvidenceCoveragePct = Number(priceTruth?.source?.sourceSessionEvidenceCoveragePct || 0);
 
 const output = {
   ...previous,
