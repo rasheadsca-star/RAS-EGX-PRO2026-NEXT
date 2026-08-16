@@ -7,7 +7,11 @@ on:
     paths:
       - ".github/workflows/v16-daily-recommendation-scan.yml"
   schedule:
-    - cron: "15 13-20 * * 0-4"
+    # GitHub cron is UTC. Keep retrying hourly after the EGX close and through
+    # the following morning so a late source-session timestamp can still be
+    # accepted without manual intervention.
+    - cron: "15 13-23 * * 0-4"
+    - cron: "15 0-6 * * 1-5"
 
 env:
   EGXAPI_KEY: ${{ secrets.EGXAPI_KEY }}
@@ -34,6 +38,7 @@ jobs:
     timeout-minutes: 45
     outputs:
       fresh: ${{ steps.scan.outputs.fresh }}
+      publish: ${{ steps.scan.outputs.publish }}
     steps:
       - name: Checkout latest main
         uses: actions/checkout@v4
@@ -66,6 +71,12 @@ jobs:
         run: |
           set -euo pipefail
           cp data/stable/v15-practical-decision.json /tmp/previous-practical-decision.json
+          if [ -f data/stable/v16-immediate-scan-status.json ]; then
+            cp data/stable/v16-immediate-scan-status.json /tmp/previous-scan-status.json
+          else
+            printf '{}\n' > /tmp/previous-scan-status.json
+          fi
+
           FRESH=0
           ATTEMPTS=0
           for ATTEMPT in 1 2 3; do
@@ -115,39 +126,99 @@ jobs:
             node scripts/stable/v16-correlation-risk-engine.cjs
             node scripts/stable/v16-alert-engine.cjs
           else
+            # Never replace the last trusted recommendation set with an
+            # unverified current-session candidate set.
             cp /tmp/previous-practical-decision.json data/stable/v15-practical-decision.json
           fi
 
           node scripts/stable/v16-recommendation-freshness-guard.cjs
           FRESH="$FRESH" ATTEMPTS="$ATTEMPTS" node - <<'NODE'
+          const crypto = require('crypto');
           const fs = require('fs');
           const read = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; } };
+          const stableHash = (value) => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
+
           const fetchStatus = read('data/fetch-status.json');
           const freshness = read('data/stable/v16-recommendation-freshness.json');
           const decision = read('data/stable/v15-practical-decision.json');
+          const previous = read('/tmp/previous-scan-status.json');
+          const recommendationTickers = (decision.recommendations || []).map(row => row.ticker);
+          const fresh = process.env.FRESH === '1' && freshness.isFresh === true;
+
+          // Deliberately exclude timestamps. The same market-session state must
+          // not cause another Pages publication merely because a retry ran.
+          const materialState = {
+            acceptedFreshSession: fresh,
+            expectedSession: freshness.expectedSession || null,
+            decisionSession: freshness.decisionSession || null,
+            priceSession: freshness.priceSession || null,
+            executionGrade: freshness.executionGrade === true,
+            fetchMode: fetchStatus.mode || null,
+            sourceName: fetchStatus.sourceName || null,
+            fetchedRows: fetchStatus.marketRows ?? fetchStatus.inputRows ?? null,
+            sourceSessionVerifiedRows: fetchStatus.sourceSessionVerifiedRows ?? null,
+            sourceSessionEvidenceCoveragePct: fetchStatus.sourceSessionEvidenceCoveragePct ?? null,
+            recommendationCount: recommendationTickers.length,
+            recommendationTickers,
+          };
+          const materialFingerprint = stableHash(materialState);
+
+          const previousComparable = previous.materialFingerprint
+            ? previous.materialFingerprint
+            : stableHash({
+                acceptedFreshSession: previous.acceptedFreshSession === true,
+                expectedSession: previous.expectedSession || null,
+                decisionSession: previous.decisionSession || null,
+                priceSession: previous.priceSession || null,
+                executionGrade: previous.executionGrade === true,
+                fetchMode: previous.fetchMode || null,
+                sourceName: previous.sourceName || null,
+                fetchedRows: previous.fetchedRows ?? null,
+                sourceSessionVerifiedRows: previous.sourceSessionVerifiedRows ?? null,
+                sourceSessionEvidenceCoveragePct: previous.sourceSessionEvidenceCoveragePct ?? null,
+                recommendationCount: previous.recommendationCount || 0,
+                recommendationTickers: previous.recommendationTickers || [],
+              });
+
+          const publicationRequired = materialFingerprint !== previousComparable;
           const out = {
-            schemaVersion: '16.3.4',
+            schemaVersion: '16.3.5-auto-rescan',
             generatedAt: new Date().toISOString(),
             trigger: process.env.GITHUB_EVENT_NAME || null,
             attempts: Number(process.env.ATTEMPTS || 0),
-            acceptedFreshSession: process.env.FRESH === '1' && freshness.isFresh === true,
+            acceptedFreshSession: fresh,
             expectedSession: freshness.expectedSession,
             decisionSession: freshness.decisionSession,
             priceSession: freshness.priceSession,
             executionGrade: freshness.executionGrade,
             fetchMode: fetchStatus.mode || null,
-            fetchedRows: fetchStatus.marketRows || null,
-            recommendationCount: Array.isArray(decision.recommendations) ? decision.recommendations.length : 0,
-            recommendationTickers: (decision.recommendations || []).map(row => row.ticker),
-            status: freshness.isFresh ? 'FRESH_RECOMMENDATIONS_PUBLISHED' : 'CURRENT_SESSION_NOT_ACCEPTED',
-            statusAr: freshness.isFresh
+            sourceName: fetchStatus.sourceName || null,
+            fetchedRows: fetchStatus.marketRows ?? fetchStatus.inputRows ?? null,
+            sourceSessionVerifiedRows: fetchStatus.sourceSessionVerifiedRows ?? null,
+            sourceSessionEvidenceCoveragePct: fetchStatus.sourceSessionEvidenceCoveragePct ?? null,
+            recommendationCount: recommendationTickers.length,
+            recommendationTickers,
+            materialFingerprint,
+            publicationRequired,
+            automaticRetry: !fresh,
+            retryPolicy: {
+              continueUntilFresh: true,
+              scheduledCadenceMinutes: 60,
+              attemptsPerRun: 3,
+              delayBetweenAttemptsSeconds: 45,
+              sourceSessionTruthRequired: true,
+              duplicateSameStatePublicationBlocked: true,
+            },
+            status: fresh ? 'FRESH_RECOMMENDATIONS_PUBLISHED' : 'CURRENT_SESSION_NOT_ACCEPTED_RETRY_SCHEDULED',
+            statusAr: fresh
               ? 'تم مسح السوق وتحليل الأسهم واعتماد توصيات جلسة اليوم.'
-              : 'اكتمل المسح، لكن جلسة اليوم لم تجتز جميع بوابات الأسعار والتنفيذ؛ أبقيت آخر جلسة كمرجع فقط.',
+              : 'اكتمل المسح ولم تُقبل الجلسة الحالية بعد؛ ستستمر إعادة المحاولة تلقائيًا مع الإبقاء على آخر توصيات موثقة فقط.',
           };
           fs.writeFileSync('data/stable/v16-immediate-scan-status.json', JSON.stringify(out, null, 2) + '\n');
           console.log(out);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `fresh=${fresh ? 'true' : 'false'}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `publish=${publicationRequired ? 'true' : 'false'}\n`);
           NODE
-          echo "fresh=$FRESH" >> "$GITHUB_OUTPUT"
 
       - name: Commit scan result regardless of acceptance
         run: |
@@ -165,18 +236,22 @@ jobs:
           fi
 
       - name: Prepare Pages artifact
+        if: steps.scan.outputs.publish == 'true'
         run: touch .nojekyll
 
       - name: Configure Pages
+        if: steps.scan.outputs.publish == 'true'
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
+        if: steps.scan.outputs.publish == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
   deploy-current-session:
     needs: scan-and-publish-evidence
+    if: needs.scan-and-publish-evidence.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
