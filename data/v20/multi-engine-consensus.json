@@ -1,6 +1,6 @@
 {
   "schemaVersion": "20.0.0-multi-engine-consensus-1",
-  "generatedAt": "2026-08-16T20:14:16.017Z",
+  "generatedAt": "2026-08-16T20:21:58.873Z",
   "sessionDate": "2026-08-16",
   "status": "CURRENT_SESSION_ALIGNED",
   "scoreDefinition": {
@@ -50,12 +50,31 @@
     ],
     "monitoredNonVotes": [
       {
-        "id": "V17_PRODUCTION_VALIDATION_AUTHORITY",
-        "label": "V17 Validation",
-        "role": "VALIDATOR_EXECUTION_AUTHORITY",
+        "id": "V13_HISTORICAL_LINEAGE",
+        "label": "V13 historical family",
+        "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
-        "status": "DEGRADED",
-        "reason": "V17 validates eligibility/execution and is not counted as an independent recommendation vote."
+        "status": "ARCHIVED_HISTORICAL",
+        "artifact": "data/research/v13-20-multi-session-results.json",
+        "reason": "Historical multi-session lineage. Retrospective evidence only; no live same-session canonical vote."
+      },
+      {
+        "id": "V14_HISTORICAL_LINEAGE",
+        "label": "V14 historical family",
+        "role": "LEGACY_HISTORICAL_ENGINE",
+        "voteEligible": false,
+        "status": "ARCHIVED_HISTORICAL",
+        "artifact": "data/research/v13-20-multi-session-results.json",
+        "reason": "Historical multi-session lineage. Retrospective evidence only; no live same-session canonical vote."
+      },
+      {
+        "id": "V15_PRACTICAL_DECISION",
+        "label": "V15 Practical Decision",
+        "role": "LEGACY_HISTORICAL_ENGINE",
+        "voteEligible": false,
+        "status": "ARCHIVED_HISTORICAL",
+        "artifact": "data/research/v15-practical-validation.json",
+        "reason": "Historical lineage; monitored for retrospective overlap only."
       },
       {
         "id": "V16_3_IMMEDIATE_SCAN",
@@ -66,12 +85,39 @@
         "reason": "Historical lineage; not a current independent engine vote."
       },
       {
-        "id": "V15_PRACTICAL_DECISION",
-        "label": "V15 Practical Decision",
-        "role": "LEGACY_HISTORICAL_ENGINE",
+        "id": "V16_6_TRIPLE_BARRIER",
+        "label": "V16.6 Triple Barrier / Gate",
+        "role": "LEGACY_RESEARCH_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "reason": "Historical lineage; monitored for retrospective overlap only."
+        "artifact": "data/research/v16-v166-triple-barrier.json",
+        "reason": "Historical V16 research lineage; tracked but not double-counted against the V16.9 production descendant."
+      },
+      {
+        "id": "V16_7_COHERENT_ENGINE",
+        "label": "V16.7 Coherent Engine",
+        "role": "LEGACY_RESEARCH_ENGINE",
+        "voteEligible": false,
+        "status": "ARCHIVED_HISTORICAL",
+        "artifact": "data/research/v16-v167-coherent-engine.json",
+        "reason": "Historical V16 research lineage; tracked but not double-counted against the V16.9 production descendant."
+      },
+      {
+        "id": "V16_8_PRACTICAL_SELECTOR",
+        "label": "V16.8 Practical Selector",
+        "role": "LEGACY_RESEARCH_ENGINE",
+        "voteEligible": false,
+        "status": "ARCHIVED_HISTORICAL",
+        "artifact": "data/research/v16-v168-practical-selector.json",
+        "reason": "Historical V16 research lineage; tracked but not double-counted against the V16.9 production descendant."
+      },
+      {
+        "id": "V17_PRODUCTION_VALIDATION_AUTHORITY",
+        "label": "V17 Validation",
+        "role": "VALIDATOR_EXECUTION_AUTHORITY",
+        "voteEligible": false,
+        "status": "DEGRADED",
+        "reason": "V17 validates eligibility/execution and is not counted as an independent recommendation vote."
       },
       {
         "id": "V20_LIQ30_EXPERIMENT",
@@ -90,6 +136,7 @@
         "reason": "No canonical V21 branch/artifact currently exists."
       }
     ],
+    "monitoredEngineCount": 13,
     "rule": "Only canonical, current-session, genuinely independent recommendation/discovery engines may add a confirmation vote. Validators, same-lineage versions, archived engines, experiments without canonical output, and nonexistent versions never add votes."
   },
   "current": {
@@ -1166,6 +1213,7 @@
   },
   "historicalEvidence": {
     "pairEvidenceSource": "data/v20/cross-version-consensus.json",
+    "multiSessionArchiveSource": "data/research/v13-20-multi-session-results.json",
     "v16V19Consensus": {
       "selections": 51,
       "uniqueTickers": 26,
@@ -1827,7 +1875,7 @@
         ]
       }
     ],
-    "note": "Historical pair evidence is retained as evidence only. V20 Native is not retroactively backfilled into historical votes without session-resolved canonical evidence."
+    "note": "Historical engine lineages are monitored as retrospective evidence. They do not become current votes unless a same-session canonical artifact exists and independence is proven."
   },
   "governance": {
     "displayPriorityOnly": true,
