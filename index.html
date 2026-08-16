@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071521">
-  <meta name="description" content="MAIN APP — EGX Pro V16.9.2 — التطبيق الرئيسي بمحرك السلة الاحتمالية المجمد مع بيانات سوق متجددة">
+  <meta name="description" content="MAIN APP — EGX Pro V16.9.2 — التطبيق الرئيسي بمحرك السلة الاحتمالية المجمد مع طبقة متابعة اتفاق المحركات">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -15,54 +15,31 @@
 <body>
   <main class="box">
     <h1>جارٍ فتح MAIN APP…</h1>
-    <p>التطبيق الرئيسي يستخدم محرك V16.9.2 المجمد منهجيًا، مع استمرار تحديث بيانات السوق وتوليد توصيات الجلسات الجديدة بنفس القواعد الثابتة.</p>
+    <p>محرك V16.9.2 يظل مجمدًا منهجيًا كما هو. طبقة P2 تضيف فقط ملاحظات اتفاق المحركات بجوار توصيات الجلسة، دون تغيير الترتيب أو المعادلة أو إذن التنفيذ.</p>
     <div class="status" id="launchStatus">جارٍ تفعيل MAIN APP…</div>
-    <a id="openApp" href="preview-v16/app/v169.html?entry=manual&version=16.9.2">فتح MAIN APP الآن</a>
+    <a id="openApp" href="preview-v16/app/v169-p2.html?entry=manual&version=16.9.2&ui=P2">فتح MAIN APP الآن</a>
   </main>
   <script>
   (()=>{
     'use strict';
     const RELEASE='16.9.2';
-    const SW_VERSION='MAIN-APP-V16.9.2-FROZEN-METHOD-20260816';
+    const SW_VERSION='MAIN-APP-V16.9.2-P2-CONSENSUS-DISPLAY-20260816';
     const statusUrl='data/stable/v15-update-status.json';
     const decisionUrl='data/stable/v16-v169-primary-decision.json';
-    const appUrl='preview-v16/app/v169.html';
+    const appUrl='preview-v16/app/v169-p2.html';
     const params=new URLSearchParams(location.search);
     const requested=params.get('view')==='evaluation'?'evidence':params.get('view');
     const statusEl=document.getElementById('launchStatus');
     const button=document.getElementById('openApp');
-    const target=stamp=>`${appUrl}?entry=main-app&latest=1&version=${RELEASE}&mobileReset=1&v=${encodeURIComponent(stamp||Date.now())}${requested?`&view=${encodeURIComponent(requested)}`:''}`;
+    const target=stamp=>`${appUrl}?entry=main-app&latest=1&version=${RELEASE}&ui=P2&mobileReset=1&v=${encodeURIComponent(stamp||Date.now())}${requested?`&view=${encodeURIComponent(requested)}`:''}`;
     const label=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'آخر نسخة منشورة':d.toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'})};
-    async function clearLegacy(){
-      try{const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}catch(_){}
+    async function clearLegacy(){try{const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}catch(_){}
     }
-    async function activate(){
-      if(!('serviceWorker'in navigator))return;
-      try{
-        const registration=await navigator.serviceWorker.register(`service-worker.js?v=${encodeURIComponent(SW_VERSION)}`,{scope:'./',updateViaCache:'none'});
-        await registration.update();
-        const worker=registration.waiting||registration.installing;
-        if(worker)worker.postMessage({type:'SKIP_WAITING'});
-      }catch(_){}
+    async function activate(){if(!('serviceWorker'in navigator))return;try{const registration=await navigator.serviceWorker.register(`service-worker.js?v=${encodeURIComponent(SW_VERSION)}`,{scope:'./',updateViaCache:'none'});await registration.update();const worker=registration.waiting||registration.installing;if(worker)worker.postMessage({type:'SKIP_WAITING'});}catch(_){}
     }
-    async function latest(){
-      const q=`?t=${Date.now()}`;
-      try{const r=await fetch(decisionUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.generatedAt,label:`آخر توصيات MAIN APP: ${label(d.generatedAt)}`}}}catch(_){}
-      try{const r=await fetch(statusUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.recommendationGeneratedAt||d.generatedAt,label:`آخر مسح آلي: ${label(d.lastAutomaticScanAt||d.generatedAt)}`}}}catch(_){}
-      return{stamp:Date.now(),label:'فتح MAIN APP بتحديث إجباري'};
-    }
-    async function launch(){
-      statusEl.textContent='جارٍ حذف كاش النسخة القديمة…';
-      await clearLegacy();
-      await activate();
-      const latestState=await latest();
-      const url=target(latestState.stamp);
-      button.href=url;
-      statusEl.textContent=latestState.label+' — MAIN APP';
-      setTimeout(()=>location.replace(url),200);
-    }
-    button.onclick=event=>{event.preventDefault();launch()};
-    launch();
+    async function latest(){const q=`?t=${Date.now()}`;try{const r=await fetch(decisionUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.generatedAt,label:`آخر توصيات MAIN APP: ${label(d.generatedAt)}`}}}catch(_){}try{const r=await fetch(statusUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.recommendationGeneratedAt||d.generatedAt,label:`آخر مسح آلي: ${label(d.lastAutomaticScanAt||d.generatedAt)}`}}}catch(_){}return{stamp:Date.now(),label:'فتح MAIN APP بتحديث إجباري'};}
+    async function launch(){statusEl.textContent='جارٍ حذف كاش النسخة القديمة…';await clearLegacy();await activate();const latestState=await latest();const url=target(latestState.stamp);button.href=url;statusEl.textContent=latestState.label+' — MAIN APP · P2';setTimeout(()=>location.replace(url),200);}
+    button.onclick=event=>{event.preventDefault();launch()};launch();
   })();
   </script>
 </body>
