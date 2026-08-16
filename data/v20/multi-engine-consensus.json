@@ -1,21 +1,20 @@
 {
-  "schemaVersion": "20.0.0-multi-engine-consensus-1",
-  "generatedAt": "2026-08-16T20:37:03.727Z",
+  "schemaVersion": "20.1.0-method-independent-consensus-1",
+  "generatedAt": "2026-08-16T20:44:17.488Z",
   "sessionDate": "2026-08-16",
   "status": "CURRENT_SESSION_ALIGNED",
   "scoreDefinition": {
-    "name": "MULTI_ENGINE_CONFIRMATION_SCORE_V1",
+    "name": "METHOD_INDEPENDENT_CONFIRMATION_SCORE_V1",
     "purpose": "DISPLAY_AND_REVIEW_PRIORITY_ONLY",
-    "independentEngineCount": 3,
-    "formula": "independentVotes / 3 * 100",
+    "independentEngineCount": 2,
+    "formula": "independentVotes / 2 * 100",
     "historicalPerformanceUsedInScore": false,
     "changesMainAppRanking": false,
     "changesExecutionPermission": false,
     "levels": {
-      "3/3": "VERY_HIGH",
-      "2/3": "HIGH",
-      "1/3": "BASE_ONLY",
-      "0/3": "NONE"
+      "2/2": "VERY_HIGH",
+      "1/2": "BASE_ONLY",
+      "0/2": "NONE"
     }
   },
   "engineRegistry": {
@@ -26,17 +25,9 @@
         "role": "PRODUCTION_CHAMPION",
         "voteEligible": true,
         "authority": "PRIMARY_RECOMMENDATION",
+        "alphaFamily": "CALIBRATED_TOP10_PROBABILITY",
         "sessionDate": "2026-08-16",
         "status": "ACTIVE_FROZEN_METHOD_LIVE_DATA"
-      },
-      {
-        "id": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6",
-        "label": "V19 Challenger",
-        "role": "SHADOW_CHALLENGER",
-        "voteEligible": true,
-        "authority": "INDEPENDENT_CONFIRMATION_ONLY",
-        "sessionDate": "2026-08-16",
-        "status": "ACTIVE_SHADOW_RESEARCH"
       },
       {
         "id": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
@@ -44,28 +35,39 @@
         "role": "FULL_MARKET_DISCOVERY",
         "voteEligible": true,
         "authority": "INDEPENDENT_RESEARCH_CONFIRMATION_ONLY",
+        "alphaFamily": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
         "sessionDate": "2026-08-16",
         "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED"
+      }
+    ],
+    "relatedCorroborators": [
+      {
+        "id": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6",
+        "label": "V19 Challenger",
+        "role": "SAME_ALPHA_FAMILY_CHALLENGER",
+        "voteEligible": false,
+        "corroborationEligible": true,
+        "alphaFamily": "TOP10_PROBABILITY_RELATED",
+        "status": "ACTIVE_SHADOW_RESEARCH",
+        "reason": "V19 V6 uses TOP10 probability ranking with ATR candidate preference, inverse-volatility weights and exposure overlay. Because MAIN APP also derives its alpha from calibrated TOP10 probability, V19 is useful corroboration but is not counted as an independent alpha vote."
       }
     ],
     "monitoredNonVotes": [
       {
         "id": "V13_HISTORICAL_LINEAGE",
-        "label": "V13 historical family",
+        "label": "V13 lineage",
         "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "artifact": "data/research/v13-20-multi-session-results.json",
-        "reason": "Historical multi-session lineage. Retrospective evidence only; no live same-session canonical vote."
+        "reason": "Historical monitoring only."
       },
       {
         "id": "V14_HISTORICAL_LINEAGE",
-        "label": "V14 historical family",
+        "label": "V14 lineage",
         "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "artifact": "data/research/v13-20-multi-session-results.json",
-        "reason": "Historical multi-session lineage. Retrospective evidence only; no live same-session canonical vote."
+        "reason": "Historical monitoring only."
       },
       {
         "id": "V15_PRACTICAL_DECISION",
@@ -73,8 +75,7 @@
         "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "artifact": "data/research/v15-practical-validation.json",
-        "reason": "Historical lineage; monitored for retrospective overlap only."
+        "reason": "Historical lineage; monitored retrospectively."
       },
       {
         "id": "V16_3_IMMEDIATE_SCAN",
@@ -82,34 +83,31 @@
         "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "reason": "Historical lineage; not a current independent engine vote."
+        "reason": "Historical lineage; not a current independent vote."
       },
       {
         "id": "V16_6_TRIPLE_BARRIER",
-        "label": "V16.6 Triple Barrier / Gate",
-        "role": "LEGACY_RESEARCH_ENGINE",
+        "label": "V16.6 Triple Barrier",
+        "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "artifact": "data/research/v16-v166-triple-barrier.json",
-        "reason": "Historical V16 research lineage; tracked but not double-counted against the V16.9 production descendant."
+        "reason": "Historical monitoring only."
       },
       {
         "id": "V16_7_COHERENT_ENGINE",
         "label": "V16.7 Coherent Engine",
-        "role": "LEGACY_RESEARCH_ENGINE",
+        "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "artifact": "data/research/v16-v167-coherent-engine.json",
-        "reason": "Historical V16 research lineage; tracked but not double-counted against the V16.9 production descendant."
+        "reason": "Historical monitoring only."
       },
       {
         "id": "V16_8_PRACTICAL_SELECTOR",
         "label": "V16.8 Practical Selector",
-        "role": "LEGACY_RESEARCH_ENGINE",
+        "role": "LEGACY_HISTORICAL_ENGINE",
         "voteEligible": false,
         "status": "ARCHIVED_HISTORICAL",
-        "artifact": "data/research/v16-v168-practical-selector.json",
-        "reason": "Historical V16 research lineage; tracked but not double-counted against the V16.9 production descendant."
+        "reason": "Historical monitoring only."
       },
       {
         "id": "V17_PRODUCTION_VALIDATION_AUTHORITY",
@@ -117,7 +115,7 @@
         "role": "VALIDATOR_EXECUTION_AUTHORITY",
         "voteEligible": false,
         "status": "DEGRADED",
-        "reason": "V17 validates eligibility/execution and is not counted as an independent recommendation vote."
+        "reason": "Validator/execution authority; never an independent recommendation vote."
       },
       {
         "id": "V20_LIQ30_EXPERIMENT",
@@ -125,7 +123,7 @@
         "role": "EXPERIMENT_BRANCH",
         "voteEligible": false,
         "status": "NO_CANONICAL_CURRENT_VOTE",
-        "reason": "Experimental branch exists but no canonical current recommendation artifact is registered for voting."
+        "reason": "No canonical current recommendation artifact registered for voting."
       },
       {
         "id": "V21",
@@ -133,11 +131,37 @@
         "role": "FUTURE_ENGINE_SLOT",
         "voteEligible": false,
         "status": "NOT_PRESENT",
-        "reason": "No canonical V21 branch/artifact currently exists."
+        "reason": "No canonical V21 engine/artifact exists."
       }
     ],
     "monitoredEngineCount": 13,
-    "rule": "Only canonical, current-session, genuinely independent recommendation/discovery engines may add a confirmation vote. Validators, same-lineage versions, archived engines, experiments without canonical output, and nonexistent versions never add votes."
+    "rule": "Independent votes require materially different alpha-generation methodology, not merely a different version, filter, weighting scheme, risk overlay or branch name."
+  },
+  "engineIndependenceAudit": {
+    "schemaVersion": "20.0.0-engine-independence-audit-1",
+    "rule": "Independent votes require materially different alpha-generation methodology, not merely a different version, filter, weighting scheme, risk overlay or branch name.",
+    "engines": [
+      {
+        "id": "V16_9_EQUAL_WEIGHT_BASKET",
+        "alphaGeneration": "Calibrated supervised TOP10 probability from historical feature vectors; adaptive basket size; equal basket weighting.",
+        "independentVote": true,
+        "family": "CALIBRATED_TOP10_PROBABILITY"
+      },
+      {
+        "id": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6",
+        "alphaGeneration": "V19 TOP10 probability ranking; ATR<=8 preference; inverse-volatility weighting; prior-loss exposure overlay.",
+        "independentVote": false,
+        "family": "TOP10_PROBABILITY_RELATED",
+        "relatedTo": "V16_9_EQUAL_WEIGHT_BASKET"
+      },
+      {
+        "id": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+        "alphaGeneration": "Deterministic full-market evidence composite: data evidence, liquidity, multi-method S/R, net risk/reward, trade-plan alignment and current technical evidence; no legacy alpha score contribution.",
+        "independentVote": true,
+        "family": "MULTI_COMPONENT_EVIDENCE_COMPOSITE"
+      }
+    ],
+    "conclusion": "CURRENT_INDEPENDENT_VOTES_ARE_MAIN_APP_AND_V20_NATIVE_ONLY"
   },
   "current": {
     "sessionAligned": true,
@@ -187,17 +211,19 @@
       {
         "ticker": "GTWL",
         "sessionDate": "2026-08-16",
-        "independentVotes": 3,
-        "independentEngineCount": 3,
+        "independentVotes": 2,
+        "independentEngineCount": 2,
         "confirmationScore": 100,
         "confirmationLevel": "VERY_HIGH",
         "mainAppSelected": true,
-        "v19Selected": true,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": true,
+        "supportingIndependentEngines": [
           "MAIN APP · V16.9.2",
-          "V19 Challenger",
           "V20 Native V1"
+        ],
+        "relatedCorroborators": [
+          "V19 Challenger · same TOP10-probability family"
         ],
         "v17Validation": {
           "selectionCandidate": false,
@@ -219,17 +245,19 @@
       {
         "ticker": "KZPC",
         "sessionDate": "2026-08-16",
-        "independentVotes": 3,
-        "independentEngineCount": 3,
+        "independentVotes": 2,
+        "independentEngineCount": 2,
         "confirmationScore": 100,
         "confirmationLevel": "VERY_HIGH",
         "mainAppSelected": true,
-        "v19Selected": true,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": true,
+        "supportingIndependentEngines": [
           "MAIN APP · V16.9.2",
-          "V19 Challenger",
           "V20 Native V1"
+        ],
+        "relatedCorroborators": [
+          "V19 Challenger · same TOP10-probability family"
         ],
         "v17Validation": {
           "selectionCandidate": false,
@@ -253,17 +281,19 @@
       {
         "ticker": "MBSC",
         "sessionDate": "2026-08-16",
-        "independentVotes": 3,
-        "independentEngineCount": 3,
+        "independentVotes": 2,
+        "independentEngineCount": 2,
         "confirmationScore": 100,
         "confirmationLevel": "VERY_HIGH",
         "mainAppSelected": true,
-        "v19Selected": true,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": true,
+        "supportingIndependentEngines": [
           "MAIN APP · V16.9.2",
-          "V19 Challenger",
           "V20 Native V1"
+        ],
+        "relatedCorroborators": [
+          "V19 Challenger · same TOP10-probability family"
         ],
         "v17Validation": {
           "selectionCandidate": false,
@@ -288,15 +318,16 @@
         "ticker": "ACGC",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -320,15 +351,16 @@
         "ticker": "ADRI",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": true,
           "recommendationEligible": false,
@@ -349,15 +381,16 @@
         "ticker": "AIFI",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": true,
           "recommendationEligible": false,
@@ -378,15 +411,16 @@
         "ticker": "AMOC",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -410,15 +444,16 @@
         "ticker": "ASPI",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -440,15 +475,16 @@
         "ticker": "CANA",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -470,15 +506,16 @@
         "ticker": "COPR",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -501,15 +538,16 @@
         "ticker": "CRST",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -531,15 +569,16 @@
         "ticker": "EFID",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -563,15 +602,16 @@
         "ticker": "EGAL",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -593,15 +633,16 @@
         "ticker": "EGTS",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -623,15 +664,16 @@
         "ticker": "EHDR",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -653,15 +695,16 @@
         "ticker": "ETEL",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -685,15 +728,16 @@
         "ticker": "GBCO",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": true,
           "recommendationEligible": false,
@@ -714,15 +758,16 @@
         "ticker": "ICID",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -744,15 +789,16 @@
         "ticker": "KABO",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -774,15 +820,16 @@
         "ticker": "MCQE",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -806,15 +853,16 @@
         "ticker": "MFPC",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -837,15 +885,16 @@
         "ticker": "OCDI",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -867,15 +916,16 @@
         "ticker": "OFH",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -897,15 +947,16 @@
         "ticker": "ORAS",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": true,
           "recommendationEligible": false,
@@ -928,15 +979,16 @@
         "ticker": "ORWE",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -960,15 +1012,16 @@
         "ticker": "PHTV",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -990,15 +1043,16 @@
         "ticker": "SIPC",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -1020,15 +1074,16 @@
         "ticker": "SPIN",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -1052,15 +1107,16 @@
         "ticker": "SVCE",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -1082,15 +1138,16 @@
         "ticker": "SWDY",
         "sessionDate": "2026-08-16",
         "independentVotes": 1,
-        "independentEngineCount": 3,
-        "confirmationScore": 33.33,
+        "independentEngineCount": 2,
+        "confirmationScore": 50,
         "confirmationLevel": "BASE_ONLY",
         "mainAppSelected": false,
-        "v19Selected": false,
         "v20NativeSelected": true,
-        "supportingEngines": [
+        "v19Corroborates": false,
+        "supportingIndependentEngines": [
           "V20 Native V1"
         ],
+        "relatedCorroborators": [],
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -1114,16 +1171,18 @@
     "mainAppAnnotations": [
       {
         "ticker": "GTWL",
-        "independentVotes": 3,
-        "independentEngineCount": 3,
+        "independentVotes": 2,
+        "independentEngineCount": 2,
         "confirmationScore": 100,
         "confirmationLevel": "VERY_HIGH",
-        "confirmationLabelAr": "تأكيد مرتفع جدًا",
-        "confirmingEngines": [
-          "V19 Challenger",
+        "confirmationLabelAr": "تأكيد مستقل مرتفع",
+        "confirmingIndependentEngines": [
           "V20 Native V1"
         ],
-        "noteAr": "أوصى/أكد السهم أيضًا: V19 Challenger + V20 Native V1. لذلك يحصل على وزن تأكيدي أعلى في ترتيب المراجعة، دون تغيير خوارزمية MAIN APP أو إذن التنفيذ.",
+        "relatedCorroborators": [
+          "V19 Challenger · same TOP10-probability family"
+        ],
+        "noteAr": "تأكيد مستقل من: V20 Native V1. هذا يرفع وزن المراجعة لأن منهج الاختيار مختلف فعليًا عن MAIN APP. V19 وافق أيضًا، لكن لا يُحتسب صوتًا مستقلًا لأنه من نفس عائلة TOP10 probability.",
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -1143,16 +1202,18 @@
       },
       {
         "ticker": "KZPC",
-        "independentVotes": 3,
-        "independentEngineCount": 3,
+        "independentVotes": 2,
+        "independentEngineCount": 2,
         "confirmationScore": 100,
         "confirmationLevel": "VERY_HIGH",
-        "confirmationLabelAr": "تأكيد مرتفع جدًا",
-        "confirmingEngines": [
-          "V19 Challenger",
+        "confirmationLabelAr": "تأكيد مستقل مرتفع",
+        "confirmingIndependentEngines": [
           "V20 Native V1"
         ],
-        "noteAr": "أوصى/أكد السهم أيضًا: V19 Challenger + V20 Native V1. لذلك يحصل على وزن تأكيدي أعلى في ترتيب المراجعة، دون تغيير خوارزمية MAIN APP أو إذن التنفيذ.",
+        "relatedCorroborators": [
+          "V19 Challenger · same TOP10-probability family"
+        ],
+        "noteAr": "تأكيد مستقل من: V20 Native V1. هذا يرفع وزن المراجعة لأن منهج الاختيار مختلف فعليًا عن MAIN APP. V19 وافق أيضًا، لكن لا يُحتسب صوتًا مستقلًا لأنه من نفس عائلة TOP10 probability.",
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -1174,16 +1235,18 @@
       },
       {
         "ticker": "MBSC",
-        "independentVotes": 3,
-        "independentEngineCount": 3,
+        "independentVotes": 2,
+        "independentEngineCount": 2,
         "confirmationScore": 100,
         "confirmationLevel": "VERY_HIGH",
-        "confirmationLabelAr": "تأكيد مرتفع جدًا",
-        "confirmingEngines": [
-          "V19 Challenger",
+        "confirmationLabelAr": "تأكيد مستقل مرتفع",
+        "confirmingIndependentEngines": [
           "V20 Native V1"
         ],
-        "noteAr": "أوصى/أكد السهم أيضًا: V19 Challenger + V20 Native V1. لذلك يحصل على وزن تأكيدي أعلى في ترتيب المراجعة، دون تغيير خوارزمية MAIN APP أو إذن التنفيذ.",
+        "relatedCorroborators": [
+          "V19 Challenger · same TOP10-probability family"
+        ],
+        "noteAr": "تأكيد مستقل من: V20 Native V1. هذا يرفع وزن المراجعة لأن منهج الاختيار مختلف فعليًا عن MAIN APP. V19 وافق أيضًا، لكن لا يُحتسب صوتًا مستقلًا لأنه من نفس عائلة TOP10 probability.",
         "v17Validation": {
           "selectionCandidate": false,
           "recommendationEligible": false,
@@ -1204,8 +1267,8 @@
         }
       }
     ],
-    "fullThreeEngineMainAppSupport": true,
-    "threeEngineSupportedMainAppTickers": [
+    "fullIndependentMainAppSupport": true,
+    "independentlySupportedMainAppTickers": [
       "GTWL",
       "KZPC",
       "MBSC"
@@ -1213,8 +1276,7 @@
   },
   "historicalEvidence": {
     "pairEvidenceSource": "data/v20/cross-version-consensus.json",
-    "multiSessionArchiveSource": "data/research/v13-20-multi-session-results.json",
-    "v16V19Consensus": {
+    "v16V19SameFamilyCorroboration": {
       "selections": 51,
       "uniqueTickers": 26,
       "rawMarketTargetReached": 21,
@@ -1250,7 +1312,7 @@
       "avgMaxUpsideFromEntryHighPct": 4.709,
       "medianMaxUpsideFromEntryHighPct": 3.101
     },
-    "recurringConsensusTickers": [
+    "recurringCorroborationTickers": [
       {
         "ticker": "AMER",
         "occurrences": 6,
@@ -1875,7 +1937,7 @@
         ]
       }
     ],
-    "note": "Historical engine lineages are monitored as retrospective evidence. They do not become current votes unless a same-session canonical artifact exists and independence is proven."
+    "note": "V16/V19 historical overlap remains useful same-family corroboration evidence, but is no longer represented as independent-engine evidence."
   },
   "governance": {
     "displayPriorityOnly": true,
