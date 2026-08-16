@@ -42,10 +42,10 @@ function marketMinutes(text) {
 }
 function eligibleTimeOnlyRow(row, expectedSession) {
   if (dateOnly(row?.sourceSessionDate)) return false;
-  if (!/^https:\/\/english\.mubasher\.info\/markets\/EGX\/stocks\//i.test(String(row?.sourceUrl || ''))) return false;
+  if (!/^https:\/\/(?:english\.|www\.)?mubasher\.info\/markets\/EGX\/stocks\//i.test(String(row?.sourceUrl || ''))) return false;
   const mins = marketMinutes(row?.sourceMarketTime);
   if (mins === null || mins < 9 * 60 || mins > 16 * 60) return false;
-  const fetchedDate = dateOnly(row?.updatedAt);
+  const fetchedDate = dateOnly(row?.updatedAt) || dateOnly(market?.generatedAt) || dateOnly(market?.updatedAt);
   return fetchedDate === expectedSession;
 }
 
@@ -57,21 +57,32 @@ const p = cairoParts(now);
 const cairoDate = `${p.year}-${p.month}-${p.day}`;
 const cairoMinutes = Number(p.hour) * 60 + Number(p.minute);
 const sameDayAfterClose = cairoDate === expectedSession && cairoMinutes >= 15 * 60;
+const explicitExpectedRows = market.rows.filter(r => dateOnly(r?.sourceSessionDate) === expectedSession);
 const explicitDates = market.rows.map(r => dateOnly(r?.sourceSessionDate)).filter(Boolean);
 const explicitMismatches = explicitDates.filter(d => d !== expectedSession).length;
+const explicitCoveragePct = market.rows.length ? explicitExpectedRows.length / market.rows.length * 100 : 0;
+const explicitQuorumPassed = Boolean(
+  market.ok === true &&
+  /mubasher_symbol_pages_precise/i.test(String(market.source || '')) &&
+  explicitExpectedRows.length >= MIN_QUORUM &&
+  explicitCoveragePct >= MIN_COVERAGE_PCT &&
+  explicitMismatches === 0
+);
 const candidates = market.rows.filter(r => eligibleTimeOnlyRow(r, expectedSession));
-const coveragePct = market.rows.length ? candidates.length / market.rows.length * 100 : 0;
-const quorumPassed = Boolean(
+const candidateCoveragePct = market.rows.length ? candidates.length / market.rows.length * 100 : 0;
+const inferenceQuorumPassed = Boolean(
+  !explicitQuorumPassed &&
   sameDayAfterClose &&
   market.ok === true &&
   /mubasher_symbol_pages_precise/i.test(String(market.source || '')) &&
   candidates.length >= MIN_QUORUM &&
-  coveragePct >= MIN_COVERAGE_PCT &&
+  candidateCoveragePct >= MIN_COVERAGE_PCT &&
   explicitMismatches === 0
 );
+const quorumPassed = explicitQuorumPassed || inferenceQuorumPassed;
 
 let promoted = 0;
-if (quorumPassed) {
+if (inferenceQuorumPassed) {
   const checkedAt = new Date().toISOString();
   market.rows = market.rows.map(row => {
     if (!eligibleTimeOnlyRow(row, expectedSession)) return row;
@@ -79,31 +90,38 @@ if (quorumPassed) {
     return {
       ...row,
       sourceSessionDate: expectedSession,
+      marketSessionDate: row.marketSessionDate || expectedSession,
       sourceSessionEvidence: 'mubasher_time_only_same_day_cross_symbol_quorum',
       sourceSessionCheckedAt: checkedAt,
     };
   });
 }
 market.sourceSessionQuorumInference = {
-  schemaVersion: '16.3.5-source-session-quorum-1',
+  schemaVersion: '16.3.6-source-session-quorum-2',
   checkedAt: new Date().toISOString(),
   expectedSession,
   cairoDate,
   sameDayAfterClose,
   marketSource: market.source || null,
   totalRows: market.rows.length,
+  explicitExpectedRows: explicitExpectedRows.length,
+  explicitCoveragePct: Number(explicitCoveragePct.toFixed(2)),
+  explicitQuorumPassed,
   timeOnlyCandidates: candidates.length,
-  candidateCoveragePct: Number(coveragePct.toFixed(2)),
+  candidateCoveragePct: Number(candidateCoveragePct.toFixed(2)),
+  inferenceQuorumPassed,
   minimumQuorum: MIN_QUORUM,
   minimumCoveragePct: MIN_COVERAGE_PCT,
   explicitMismatches,
   quorumPassed,
+  mode: explicitQuorumPassed ? 'EXPLICIT_SOURCE_SESSION_EVIDENCE' : inferenceQuorumPassed ? 'TIME_ONLY_CROSS_SYMBOL_INFERENCE' : 'FAIL_CLOSED',
   promotedRows: promoted,
   policy: {
+    explicitEvidencePreferredOverInference: true,
     workflowTimestampAloneNeverDefinesSession: true,
-    sourceMarketTimeRequired: true,
-    exactMubasherEgxSourceUrlRequired: true,
-    regularCompletedTradingDayRequired: true,
+    sourceMarketTimeRequiredForInferenceOnly: true,
+    exactMubasherEgxSourceUrlRequiredForInference: true,
+    regularCompletedTradingDayRequiredForInference: true,
     crossSymbolQuorumRequired: true,
     explicitDateConflictFailsClosed: true,
     downstreamPriceJumpAndChangeConsistencyGuardsRemainRequired: true
