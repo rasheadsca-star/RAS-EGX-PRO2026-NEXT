@@ -1,4 +1,4 @@
-name: EGX V16.9 Protected App Deploy
+name: MAIN APP — Protected V16.9 Deploy
 
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
       - "service-worker.js"
       - "preview-v16/app/**"
       - "data/stable/v16-v169-primary-decision.json"
+      - "data/stable/v16-v169-release-lock.json"
       - ".github/workflows/v169-primary-pages-deploy.yml"
 
 permissions:
@@ -17,8 +18,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: egx-v169-protected-pages
+  group: main-app-v169-protected-pages
   cancel-in-progress: true
+
+env:
+  MAIN_APP_FROZEN_SOURCE_COMMIT: c1231f79167bbd5641c271b9f5c7764ccae5d3e9
 
 jobs:
   validate-and-deploy:
@@ -34,15 +38,43 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Validate protected V16.9 entry
+      - name: Enforce frozen MAIN APP source
+        shell: bash
         run: |
           set -euo pipefail
+          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_COMMIT}^{commit}"
+          PROTECTED=(
+            index.html
+            manifest.json
+            service-worker.js
+            preview-v16/app
+            scripts/research/v16-v169-basket-engine.py
+            scripts/research/v16-two-stage-predictor.py
+            scripts/research/v16-v169-target-hit-audit.py
+            scripts/stable/v16-publish-v169-basket.cjs
+            scripts/stable/v16-session-data-fingerprint.cjs
+            scripts/stable/v16-v169-live-evaluation.py
+            data/stable/v16-v169-release-lock.json
+            .github/workflows/v16-v169-basket-engine.yml
+          )
+          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED[@]}"; then
+            echo "MAIN APP protected source drift detected. Deployment refused."
+            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED[@]}"
+            exit 1
+          fi
+          echo "MAIN APP source matches frozen baseline ${MAIN_APP_FROZEN_SOURCE_COMMIT}."
+
+      - name: Validate MAIN APP runtime and live decision contract
+        run: |
+          set -euo pipefail
+          grep -q "MAIN APP" index.html
+          grep -q "MAIN APP" manifest.json
+          grep -q "MAIN APP" preview-v16/app/v169.html
           node --check service-worker.js
           node --check preview-v16/app/decision-source.js
           node --check preview-v16/app/launch.js
           node --check preview-v16/app/v16-9-basket-overlay.js
           node --check preview-v16/app/session-truth-ui.js
-          test -s preview-v16/app/v169.html
           test -s data/stable/v16-v169-primary-decision.json
           test -s data/stable/v15-price-truth.json
           node - <<'NODE'
@@ -52,35 +84,35 @@ jobs:
           const model = decision?.selectedModel?.id;
           const tickers = (decision.recommendations || []).map(row => row.ticker);
           if (model !== 'V16_9_EQUAL_WEIGHT_BASKET') {
-            throw new Error(`Unexpected primary model: ${model}`);
+            throw new Error(`Unexpected MAIN APP model: ${model}`);
           }
           if (tickers.length < 3) {
-            throw new Error('Protected V16.9 basket is empty.');
+            throw new Error('MAIN APP basket is empty.');
           }
-          const recommendationSession = decision.sessionDate || null;
-          const marketSession = priceTruth.expectedSession || null;
           console.log({
+            app: 'MAIN APP',
             model,
-            recommendationSession,
-            marketSession,
-            sessionAligned: Boolean(recommendationSession && marketSession && recommendationSession === marketSession),
+            recommendationSession: decision.sessionDate || null,
+            marketSession: priceTruth.expectedSession || null,
             tickers,
+            liveDataAllowed: true,
+            methodologyLocked: true,
           });
           NODE
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload protected application
+      - name: Upload MAIN APP
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
 
-      - name: Deploy protected V16.9 application
+      - name: Deploy MAIN APP
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Record protected deployment
+      - name: Record MAIN APP deployment
         env:
           DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
@@ -89,16 +121,21 @@ jobs:
           const fs = require('fs');
           const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
           const output = {
-            schemaVersion: '16.9.2-session-truth-pages',
+            schemaVersion: 'MAIN-APP-16.9.2-frozen-method-live-data-1',
             generatedAt: new Date().toISOString(),
             status: 'DEPLOYED',
+            appName: 'MAIN APP',
             deployedUrl: process.env.DEPLOYED_URL || null,
             sourceCommit: process.env.GITHUB_SHA || null,
+            frozenSourceCommit: process.env.MAIN_APP_FROZEN_SOURCE_COMMIT || null,
+            methodologyLocked: true,
+            liveMarketDataAllowed: true,
+            liveRecommendationOutputAllowed: true,
             primaryDecisionModel: decision?.selectedModel?.id || null,
             sessionDate: decision.sessionDate || null,
             recommendationTickers: (decision.recommendations || []).map(row => row.ticker),
             protectedDecisionPath: 'data/stable/v16-v169-primary-decision.json',
-            applicationEntry: 'preview-v16/app/v169.html',
+            applicationEntry: 'preview-v16/app/v169.html'
           };
           fs.writeFileSync('data/stable/v16-v169-pages-status.json', JSON.stringify(output, null, 2) + '\n');
           console.log(output);
@@ -107,7 +144,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/stable/v16-v169-pages-status.json
           if ! git diff --cached --quiet; then
-            git commit -m "Confirm protected V16.9 Pages deployment"
+            git commit -m "Confirm MAIN APP protected Pages deployment"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
