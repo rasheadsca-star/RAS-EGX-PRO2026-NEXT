@@ -17,6 +17,7 @@ on:
       - "scripts/stable/v16-v169-live-evaluation.py"
       - "data/stable/v16-v169-release-lock.json"
       - "data/stable/main-app-lock.json"
+      - "data/stable/main-app-p2-presentation-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
       - ".github/workflows/v169-primary-pages-deploy.yml"
       - ".github/workflows/main-app-immutability-guard.yml"
@@ -31,10 +32,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  MAIN_APP_FROZEN_SOURCE_REF: origin/release/MAIN-APP-v16.9.2-p1-frozen-20260816
+  MAIN_APP_FROZEN_SOURCE_REF: origin/release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
   MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
-  MAIN_APP_OPERATIONAL_PATCH: P1_PUBLISHER_VARIABLE_ONLY
+  MAIN_APP_OPERATIONAL_PATCH: P2_MULTI_ENGINE_CONSENSUS_DISPLAY_ONLY
 
 jobs:
   enforce:
@@ -51,14 +52,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git fetch --no-tags origin release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816:refs/remotes/origin/release/MAIN-APP-v16.9.2-p2-consensus-frozen-20260816
           git cat-file -e "${MAIN_APP_FROZEN_SOURCE_REF}^{commit}"
           git cat-file -e "${MAIN_APP_METHOD_BASE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_LOCK_COMMIT}^{commit}"
 
-          # P1 changes only the publisher variable name and the deploy baseline
-          # reference. Model formula, ranking, features, weights, thresholds,
-          # basket construction, costs, allocation and entry/stop/target rules
-          # remain anchored to MAIN_APP_METHOD_BASE_COMMIT.
+          # P2 is a presentation-only overlay. The model formula, ranking, features,
+          # weights, thresholds, basket construction, costs, allocation and
+          # entry/stop/target methodology remain anchored to MAIN_APP_METHOD_BASE_COMMIT.
           PROTECTED_SOURCE=(
             index.html
             manifest.json
@@ -72,53 +73,57 @@ jobs:
             scripts/stable/v16-session-data-fingerprint.cjs
             scripts/stable/v16-v169-live-evaluation.py
             data/stable/v16-v169-release-lock.json
+            data/stable/main-app-p2-presentation-lock.json
             .github/workflows/v16-v169-basket-engine.yml
             .github/workflows/v169-primary-pages-deploy.yml
           )
 
           drift=0
           if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"; then
-            echo "Protected MAIN APP source drift detected against P1 baseline:"
+            echo "Protected MAIN APP source drift detected against P2 baseline:"
             git diff --name-status "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"
             git checkout "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED_SOURCE[@]}"
             drift=1
           fi
 
           if ! git diff --quiet "$MAIN_APP_LOCK_COMMIT" -- data/stable/main-app-lock.json; then
-            echo "MAIN APP lock metadata drift detected."
+            echo "MAIN APP methodology lock metadata drift detected."
             git checkout "$MAIN_APP_LOCK_COMMIT" -- data/stable/main-app-lock.json
             drift=1
           fi
 
           if [ "$drift" -eq 0 ]; then
-            echo "MAIN APP matches frozen V16.9.2 P1 operational baseline."
+            echo "MAIN APP matches frozen V16.9.2 P2 presentation baseline."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "${PROTECTED_SOURCE[@]}" data/stable/main-app-lock.json
-          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 P1 baseline"
+          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 P2 presentation baseline"
 
           for attempt in 1 2 3; do
             if git pull --rebase -X ours origin main && git push origin HEAD:main; then
-              echo "MAIN APP protected source restored to P1."
+              echo "MAIN APP protected source restored to P2."
               exit 0
             fi
             [ "$attempt" = "3" ] && exit 1
             sleep $((attempt * 8))
           done
 
-      - name: Verify live-data policy remains enabled
+      - name: Verify frozen-method and P2 display-only policy
         run: |
           node - <<'NODE'
           const fs = require('fs');
           const lock = JSON.parse(fs.readFileSync('data/stable/main-app-lock.json', 'utf8'));
+          const p2 = JSON.parse(fs.readFileSync('data/stable/main-app-p2-presentation-lock.json', 'utf8'));
           if (lock.appName !== 'MAIN APP') throw new Error('MAIN APP identity mismatch');
           if (lock.engine !== 'V16_9_EQUAL_WEIGHT_BASKET') throw new Error('MAIN APP engine mismatch');
           if (lock.policy?.methodologyLocked !== true) throw new Error('Methodology lock missing');
           if (lock.policy?.liveMarketDataAllowed !== true) throw new Error('Live market data must remain enabled');
           if (lock.policy?.liveRecommendationOutputAllowed !== true) throw new Error('Live recommendation output must remain enabled');
+          if (p2.methodologyChanged !== false || p2.rankingChanged !== false || p2.recommendationChanged !== false || p2.executionChanged !== false || p2.runtimeCoreChanged !== false) throw new Error('P2 presentation boundary drift');
+          if (p2.consensusPolicy?.cannotChangeMainAppRank !== true || p2.consensusPolicy?.cannotGrantExecutionPermission !== true) throw new Error('P2 governance boundary missing');
           console.log({
             appName: lock.appName,
             engine: lock.engine,
@@ -127,6 +132,8 @@ jobs:
             frozenSourceRef: process.env.MAIN_APP_FROZEN_SOURCE_REF,
             operationalPatch: process.env.MAIN_APP_OPERATIONAL_PATCH,
             methodologyChanged: false,
+            rankingChanged: false,
+            executionChanged: false,
             methodologyLocked: lock.policy.methodologyLocked,
             liveMarketDataAllowed: lock.policy.liveMarketDataAllowed,
             liveRecommendationOutputAllowed: lock.policy.liveRecommendationOutputAllowed
