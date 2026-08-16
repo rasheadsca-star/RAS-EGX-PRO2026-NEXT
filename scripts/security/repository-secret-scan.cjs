@@ -31,7 +31,10 @@ const secretPatterns = [
   { id: 'OPENAI_STYLE_SECRET', re: /\bsk-[A-Za-z0-9_-]{24,}\b/g },
 ];
 
-const genericAssignment = /\b([A-Z0-9_]*(?:API[_-]?KEY|TOKEN|SECRET|PASSWORD|PRIVATE[_-]?KEY)[A-Z0-9_]*)\s*[:=]\s*["']?([^\s"'#`,;]{16,})/gi;
+// Plain variables such as `token` are common in UI/parser code and are not
+// evidence of credential material. Generic assignment scanning is therefore
+// intentionally limited to names that clearly describe secret credentials.
+const genericAssignment = /\b([A-Z0-9_]*(?:API[_-]?KEY|SECRET|PASSWORD|PRIVATE[_-]?KEY|AUTH[_-]?TOKEN|ACCESS[_-]?TOKEN|BEARER[_-]?TOKEN|SECRET[_-]?TOKEN)[A-Z0-9_]*)\s*[:=]\s*["']?([^\s"'#`,;]{16,})/gi;
 
 const placeholder = value => {
   const v = String(value || '').trim().toLowerCase();
