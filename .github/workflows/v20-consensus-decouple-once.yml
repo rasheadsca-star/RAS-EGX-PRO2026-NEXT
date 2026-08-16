@@ -1,0 +1,70 @@
+name: V20 Consensus Decouple Once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/v20-consensus-decouple-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  decouple:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: develop/v20-integrated-decision-platform
+          fetch-depth: 1
+      - name: Keep consensus overlay independent of Stock Dossier
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          board=Path('v20/decision-board.js')
+          s=board.read_text()
+          hook="    document.dispatchEvent(new CustomEvent('v20:decision-dossier-opened',{detail:{symbol}}));\n"
+          if hook not in s:
+              raise SystemExit('Decision Board dossier hook not found; refusing blind edit')
+          board.write_text(s.replace(hook,'',1))
+
+          overlay=Path('v20/consensus-overlay.js')
+          s=overlay.read_text()
+          old="function applyAll(){overlay.scheduled=false;if(!overlay.data)return;decorateTable();decorateCards();augmentDossier();}"
+          new="function applyAll(){overlay.scheduled=false;if(!overlay.data)return;decorateTable();decorateCards();}"
+          if old not in s:
+              raise SystemExit('Overlay applyAll anchor not found')
+          s=s.replace(old,new,1)
+          listener="  document.addEventListener('v20:decision-dossier-opened',e=>augmentDossier(e.detail?.symbol));\n"
+          if listener not in s:
+              raise SystemExit('Overlay dossier event listener not found')
+          s=s.replace(listener,'',1)
+          overlay.write_text(s)
+
+          test=Path('scripts/v20/consensus-browser-acceptance.cjs')
+          s=test.read_text()
+          start="const first=expected[0];await cdp.eval(`document.querySelector('#consensusFilter').value='ALL';document.querySelector('#consensusFilter').dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('#decisionRows tr[data-symbol=\\\"${first}\\\"]')?.click()`);"
+          if start not in s:
+              raise SystemExit('Acceptance dossier test start not found')
+          a=s.index(start)
+          end_marker="const afterStates=await cdp.eval"
+          b=s.index(end_marker,a)
+          replacement="await cdp.eval(\"document.querySelector('#consensusFilter').value='ALL';document.querySelector('#consensusFilter').dispatchEvent(new Event('change',{bubbles:true}))\");"
+          s=s[:a]+replacement+s[b:]
+          test.write_text(s)
+          PY
+          node --check v20/decision-board.js
+          node --check v20/consensus-overlay.js
+          node --check scripts/v20/consensus-browser-acceptance.cjs
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' scripts/v20/consensus-browser-acceptance.cjs v20/consensus-overlay.js v20/decision-board.js | sort)"
+          test "$changed" = "$expected" || { echo "Unexpected changes:"; echo "$changed"; exit 1; }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/v20/consensus-browser-acceptance.cjs v20/consensus-overlay.js v20/decision-board.js
+          git commit -m "Decouple consensus overlay from canonical Stock Dossier [skip ci]"
+          git push origin HEAD:develop/v20-integrated-decision-platform
