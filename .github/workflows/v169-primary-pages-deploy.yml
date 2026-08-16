@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  MAIN_APP_FROZEN_SOURCE_COMMIT: c1231f79167bbd5641c271b9f5c7764ccae5d3e9
+  MAIN_APP_FROZEN_SOURCE_REF: origin/release/MAIN-APP-v16.9.2-p1-frozen-20260816
 
 jobs:
   validate-and-deploy:
@@ -42,7 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_COMMIT}^{commit}"
+          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_REF}^{commit}"
           PROTECTED=(
             index.html
             manifest.json
@@ -57,12 +57,12 @@ jobs:
             data/stable/v16-v169-release-lock.json
             .github/workflows/v16-v169-basket-engine.yml
           )
-          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED[@]}"; then
+          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED[@]}"; then
             echo "MAIN APP protected source drift detected. Deployment refused."
-            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED[@]}"
+            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED[@]}"
             exit 1
           fi
-          echo "MAIN APP source matches frozen baseline ${MAIN_APP_FROZEN_SOURCE_COMMIT}."
+          echo "MAIN APP source matches frozen P1 baseline ${MAIN_APP_FROZEN_SOURCE_REF}."
 
       - name: Validate MAIN APP runtime and live decision contract
         run: |
@@ -97,6 +97,7 @@ jobs:
             tickers,
             liveDataAllowed: true,
             methodologyLocked: true,
+            operationalPatch: 'P1_PUBLISHER_VARIABLE_ONLY',
           });
           NODE
 
@@ -121,13 +122,15 @@ jobs:
           const fs = require('fs');
           const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
           const output = {
-            schemaVersion: 'MAIN-APP-16.9.2-frozen-method-live-data-1',
+            schemaVersion: 'MAIN-APP-16.9.2-p1-frozen-method-live-data-1',
             generatedAt: new Date().toISOString(),
             status: 'DEPLOYED',
             appName: 'MAIN APP',
             deployedUrl: process.env.DEPLOYED_URL || null,
             sourceCommit: process.env.GITHUB_SHA || null,
-            frozenSourceCommit: process.env.MAIN_APP_FROZEN_SOURCE_COMMIT || null,
+            frozenSourceRef: process.env.MAIN_APP_FROZEN_SOURCE_REF || null,
+            operationalPatch: 'P1_PUBLISHER_VARIABLE_ONLY',
+            methodologyChanged: false,
             methodologyLocked: true,
             liveMarketDataAllowed: true,
             liveRecommendationOutputAllowed: true,
