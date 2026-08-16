@@ -136,11 +136,25 @@ jobs:
       - name: Build sector provenance audit
         run: node scripts/v20/build-sector-provenance-audit.cjs
 
+      - name: Build current full-market regime evidence
+        env:
+          V20_REGIME_NETWORK_REFRESH: "true"
+          V20_REGIME_CONCURRENCY: "6"
+          V20_REGIME_MIN_PARTICIPATION_PCT: "60"
+          V20_REGIME_PRICE_TOLERANCE_PCT: "5"
+          V20_REGIME_MIN_TRUSTED_SESSIONS: "50"
+          V20_REGIME_FETCH_RANGE: "6mo"
+        run: node scripts/v20/build-market-regime.cjs
+
+      - name: Run market regime leakage and provenance regression
+        run: node scripts/v20/market-regime-regression.cjs
+
       - name: Build integrated decision snapshot
         run: node scripts/v20/build-integrated-decision-snapshot.cjs
 
       - name: Enrich conservative cost-aware risk reward
         run: node scripts/v20/enrich-risk-reward.cjs
+
       - name: Validate trade plan current-price alignment
         run: node scripts/v20/validate-trade-plans.cjs
 
@@ -380,6 +394,8 @@ jobs:
             data/v20/null-semantics-regression.json \
             data/v20/sector-provenance-audit.json \
             data/v20/sector-provenance-regression.json \
+            data/v20/market-regime.json \
+            data/v20/market-regime-regression.json \
             data/v20/v18-performance-audit.json \
             data/v20/v18-performance-audit-regression.json \
             data/v20/performance-evidence-registry.json \
