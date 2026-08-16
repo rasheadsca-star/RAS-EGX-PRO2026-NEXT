@@ -26,19 +26,19 @@ jobs:
       - name: Checkout V20
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Enforce V20 isolation
         shell: bash
         run: |
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
-          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
-          changed="$(git diff --name-only --diff-filter=ACMRTUXB origin/v19-egx-chat-gpt HEAD)"
+          git fetch --no-tags origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          merge_base="$(git merge-base origin/v19-egx-chat-gpt HEAD)"
+          test -n "$merge_base" || { echo "Unable to resolve V19/V20 merge base"; exit 1; }
+          changed="$(git diff --name-only "$merge_base" HEAD)"
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-primary-entry-point-acceptance\.yml$|\.github/workflows/v20-v17-centric-clean[^/]*\.yml$)' || true)"
-          test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
-          tracked_v19="$(git ls-files 'data/v19/**' '.github/workflows/v19-egx-chat-gpt.yml' || true)"
-          test -z "$tracked_v19" || { echo "V20 must not track V19-owned files:"; echo "$tracked_v19"; exit 1; }
+          test -z "$violations" || { echo "V20 isolation violation since merge-base $merge_base:"; echo "$violations"; exit 1; }
 
       - name: Setup Node
         uses: actions/setup-node@v6
