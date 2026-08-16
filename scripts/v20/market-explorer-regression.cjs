@@ -65,6 +65,7 @@ for (const row of explorer.rows || []) {
   if (ctx.available === true) {
     trendContextCount += 1;
     if (row.decision?.scope === 'MARKET_ONLY') marketOnlyTrendContextCount += 1;
+    check(regime.verified === true, `TREND_CONTEXT_EXPOSED_FROM_UNVERIFIED_REGIME_${row.ticker}`);
     check(ctx.state === 'CURRENT_VERIFIED_TREND_CONTEXT', `TREND_CONTEXT_STATE_DRIFT_${row.ticker}`);
     check(ctx.asOfSession === current.sessionDate, `TREND_CONTEXT_SESSION_MISMATCH_${row.ticker}`);
     check(ctx.provenance === 'data/v20/market-regime.json', `TREND_CONTEXT_PROVENANCE_MISSING_${row.ticker}`);
@@ -81,10 +82,16 @@ check(explorer.summary.marketOnlyCount + explorer.summary.opportunityCount === e
 check(explorer.summary.marketTrendContextReadyCount === trendContextCount, 'TREND_CONTEXT_COUNT_MISMATCH');
 check(explorer.summary.marketOnlyTrendContextReadyCount === marketOnlyTrendContextCount, 'MARKET_ONLY_TREND_CONTEXT_COUNT_MISMATCH');
 check(explorer.summary.marketTrendContextCoverageOfUniversePct === Math.round(trendContextCount / universe.count * 10000) / 100, 'TREND_CONTEXT_COVERAGE_MISMATCH');
-check(trendContextCount === Number(regime.metrics?.analyzedCount || 0), 'TREND_CONTEXT_NOT_ALIGNED_WITH_VERIFIED_REGIME_UNIVERSE');
+const expectedTrendContextCount = regime.verified === true && regime.asOfSessionDate === current.sessionDate
+  ? Number(regime.metrics?.analyzedCount || 0)
+  : 0;
+check(trendContextCount === expectedTrendContextCount, 'TREND_CONTEXT_NOT_ALIGNED_WITH_VERIFIED_REGIME_UNIVERSE');
+if (regime.verified !== true) {
+  check(trendContextCount === 0, 'UNVERIFIED_REGIME_EXPOSED_TREND_CONTEXT');
+}
 
 const report = {
-  schemaVersion: '20.0.0-market-explorer-regression-2',
+  schemaVersion: '20.0.0-market-explorer-regression-3',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -96,11 +103,18 @@ const report = {
     technicalReadinessExplicit: true,
     nonEvaluatedTechnicalNotMisrepresented: true,
     verifiedTrendContextSeparatedFromFullTechnical: true,
+    unverifiedRegimeExposesNoTrendContext: regime.verified !== true ? trendContextCount === 0 : true,
     trendContextNeverCreatesScoreRecommendationOrExecution: true,
     trendContextSessionAndProvenanceVerified: true,
     searchIndexIncludesTicker: true
   },
-  evidence: {trendContextCount, marketOnlyTrendContextCount}
+  evidence: {
+    regimeVerified: regime.verified === true,
+    regimeSessionDate: regime.asOfSessionDate || null,
+    expectedTrendContextCount,
+    trendContextCount,
+    marketOnlyTrendContextCount
+  }
 };
 
 fs.writeFileSync(P('data/v20/market-explorer-regression.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
