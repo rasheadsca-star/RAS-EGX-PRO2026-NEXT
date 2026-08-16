@@ -2,7 +2,7 @@
   'use strict';
   if (window.__V20_CONSENSUS_OVERLAY__) return;
   window.__V20_CONSENSUS_OVERLAY__ = true;
-  const overlay={data:null,filter:'ALL',observer:null,dossierObserver:null,scheduled:false};
+  const overlay={data:null,starting:false,filter:'ALL',observer:null,dossierObserver:null,scheduled:false};
   const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
   const num=(v,d=2)=>finite(v)?Number(v).toLocaleString('ar-EG',{maximumFractionDigits:d}):'—';
@@ -19,6 +19,7 @@
   function applyAll(){overlay.scheduled=false;if(!overlay.data)return;decorateTable();decorateCards();augmentDossier();}
   function scheduleApply(){if(overlay.scheduled)return;overlay.scheduled=true;requestAnimationFrame(applyAll);}
   function observe(){const content=document.getElementById('decisionContent'),dossier=document.getElementById('decisionDossierBody');if(content&&!overlay.observer){overlay.observer=new MutationObserver(scheduleApply);overlay.observer.observe(content,{childList:true,subtree:true});}if(dossier&&!overlay.dossierObserver){overlay.dossierObserver=new MutationObserver(scheduleApply);overlay.dossierObserver.observe(dossier,{childList:true,subtree:true});}}
-  async function init(){if(overlay.data)return;try{overlay.data=await load();mountSummary();applyAll();observe();document.dispatchEvent(new CustomEvent('v20:consensus-overlay-ready',{detail:{sessionDate:overlay.data.sessionDate,sharedTickers:overlay.data.current?.sharedTickers||[],fullAgreement:overlay.data.current?.fullMainAppBasketAgreement===true}}));}catch(e){const board=document.getElementById('decisionBoardPanel');if(board&&!document.getElementById('consensusOverlayError')){const box=document.createElement('div');box.id='consensusOverlayError';box.className='consensus-overlay-error';box.textContent=`Consensus Overlay غير متاح: ${e.message}`;board.querySelector('.decision-board-notice')?.insertAdjacentElement('afterend',box);}}}
-  document.addEventListener('v20:decision-board-ready',init,{once:true});if(document.readyState==='complete')setTimeout(init,0);
+  async function init(){if(overlay.data||overlay.starting)return;overlay.starting=true;try{overlay.data=await load();mountSummary();applyAll();observe();document.dispatchEvent(new CustomEvent('v20:consensus-overlay-ready',{detail:{sessionDate:overlay.data.sessionDate,sharedTickers:overlay.data.current?.sharedTickers||[],fullAgreement:overlay.data.current?.fullMainAppBasketAgreement===true}}));}catch(e){const board=document.getElementById('decisionBoardPanel');if(board&&!document.getElementById('consensusOverlayError')){const box=document.createElement('div');box.id='consensusOverlayError';box.className='consensus-overlay-error';box.textContent=`Consensus Overlay غير متاح: ${e.message}`;board.querySelector('.decision-board-notice')?.insertAdjacentElement('afterend',box);}}finally{overlay.starting=false;}}
+  document.addEventListener('v20:decision-board-ready',init,{once:true});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(init,0),{once:true});else setTimeout(init,0);
 })();
