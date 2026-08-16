@@ -1,22 +1,22 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-08-16T14:30:20.144Z",
+  "generatedAt": "2026-08-16T14:51:31.070Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 76,
-    "scheduled": 29,
-    "scheduledLegacy": 29,
-    "pageDeployers": 40,
-    "repositoryWriters": 72,
+    "total": 78,
+    "scheduled": 30,
+    "scheduledLegacy": 30,
+    "pageDeployers": 41,
+    "repositoryWriters": 73,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "29 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
-    "40 workflows can deploy GitHub Pages.",
-    "72 workflows can write to the repository."
+    "30 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "41 workflows can deploy GitHub Pages.",
+    "73 workflows can write to the repository."
   ],
   "scheduledLegacy": [
     {
@@ -66,6 +66,14 @@
       "name": "MAIN APP — Immutability Guard",
       "schedules": [
         "17 * * * *"
+      ]
+    },
+    {
+      "filename": "main-app-intraday-ls1.yml",
+      "name": "MAIN APP — Intraday LS1 Late-Session Opportunity",
+      "schedules": [
+        "*/15 7-12 * * 0-4",
+        "25 10-12 * * 0-4"
       ]
     },
     {
@@ -692,6 +700,23 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "main-app-intraday-ls1.yml",
+      "relativePath": ".github/workflows/main-app-intraday-ls1.yml",
+      "name": "MAIN APP — Intraday LS1 Late-Session Opportunity",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "*/15 7-12 * * 0-4",
+        "25 10-12 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": true,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "mobile-hotfix-deploy.yml",
       "relativePath": ".github/workflows/mobile-hotfix-deploy.yml",
       "name": "EGX V16.3.3 Immediate Market Rescan and Deploy",
@@ -748,6 +773,20 @@
       "deploysPages": false,
       "writesRepository": true,
       "classification": "EMERGENCY"
+    },
+    {
+      "filename": "security-secret-scan.yml",
+      "relativePath": ".github/workflows/security-secret-scan.yml",
+      "name": "Security — Repository Secret Scan",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
     },
     {
       "filename": "static.yml",
