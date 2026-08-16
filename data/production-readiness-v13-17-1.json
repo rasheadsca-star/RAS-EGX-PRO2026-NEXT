@@ -1,28 +1,31 @@
 {
   "version": "13.17.1",
-  "generatedAt": "2026-08-13T17:11:05.477Z",
+  "generatedAt": "2026-08-16T07:10:12.469Z",
   "systemRole": "production_decision_support",
   "releaseChannel": "production-gated",
   "operational": true,
-  "operationalState": "READY_FOR_MANUAL_EXECUTION_REVIEW",
-  "operationalLabelAr": "تشغيلي — مؤهل للمراجعة التنفيذية اليدوية",
-  "manualExecutionReviewReady": true,
+  "operationalState": "PRODUCTION_GATED",
+  "operationalLabelAr": "تشغيلي — بوابات التنفيذ مغلقة",
+  "manualExecutionReviewReady": false,
   "automaticBrokerOrders": false,
   "manualBrokerConfirmationRequired": true,
   "manualPriceVerificationRequired": true,
   "gates": {
     "marketExecutionGrade": true,
-    "finalizedCurrentSession": true,
+    "finalizedCurrentSession": false,
     "sessionIntegrity": true,
-    "candidateRiskGate": true,
+    "candidateRiskGate": false,
     "strategyEvidenceGate": true
   },
-  "failedGates": [],
+  "failedGates": [
+    "finalizedCurrentSession",
+    "candidateRiskGate"
+  ],
   "evidenceGate": "PAPER_GATE_PASSED",
   "candidate": {
     "ticker": "OLFI",
-    "decision": "READY_FOR_PAPER_REVIEW",
-    "decisionLabelAr": "جاهز للمراجعة الورقية منخفضة المخاطر",
+    "decision": "WAIT_FOR_ENTRY",
+    "decisionLabelAr": "انتظر منطقة الدخول",
     "tier": "TIER_A_EXPERIMENTAL_PAPER"
   },
   "warningAr": "هذا إصدار تشغيلي لدعم القرار. لا يرسل أوامر شراء أو بيع تلقائيًا، ولا يصبح أي سهم قابلًا للمراجعة التنفيذية إلا بعد اجتياز جودة البيانات والجلسة والأدلة والمخاطر."
