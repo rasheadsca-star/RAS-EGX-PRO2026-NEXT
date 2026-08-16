@@ -1,0 +1,123 @@
+name: MAIN APP — Immutability Guard
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "index.html"
+      - "manifest.json"
+      - "service-worker.js"
+      - "preview-v16/app/**"
+      - "scripts/research/v16-v169-basket-engine.py"
+      - "scripts/research/v16-two-stage-predictor.py"
+      - "scripts/research/v16-probabilistic-model-impact.py"
+      - "scripts/research/v16-v169-target-hit-audit.py"
+      - "scripts/stable/v16-publish-v169-basket.cjs"
+      - "scripts/stable/v16-session-data-fingerprint.cjs"
+      - "scripts/stable/v16-v169-live-evaluation.py"
+      - "data/stable/v16-v169-release-lock.json"
+      - "data/stable/main-app-lock.json"
+      - ".github/workflows/v16-v169-basket-engine.yml"
+      - ".github/workflows/v169-primary-pages-deploy.yml"
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: main-app-immutability-guard
+  cancel-in-progress: false
+
+env:
+  MAIN_APP_FROZEN_SOURCE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
+  MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Detect and restore protected MAIN APP source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_COMMIT}^{commit}"
+          git cat-file -e "${MAIN_APP_LOCK_COMMIT}^{commit}"
+
+          PROTECTED_SOURCE=(
+            index.html
+            manifest.json
+            service-worker.js
+            preview-v16/app
+            scripts/research/v16-v169-basket-engine.py
+            scripts/research/v16-two-stage-predictor.py
+            scripts/research/v16-probabilistic-model-impact.py
+            scripts/research/v16-v169-target-hit-audit.py
+            scripts/stable/v16-publish-v169-basket.cjs
+            scripts/stable/v16-session-data-fingerprint.cjs
+            scripts/stable/v16-v169-live-evaluation.py
+            data/stable/v16-v169-release-lock.json
+            .github/workflows/v16-v169-basket-engine.yml
+            .github/workflows/v169-primary-pages-deploy.yml
+          )
+
+          drift=0
+          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"; then
+            echo "Protected MAIN APP source drift detected:"
+            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
+            git checkout "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
+            drift=1
+          fi
+
+          if ! git diff --quiet "$MAIN_APP_LOCK_COMMIT" -- data/stable/main-app-lock.json; then
+            echo "MAIN APP lock metadata drift detected."
+            git checkout "$MAIN_APP_LOCK_COMMIT" -- data/stable/main-app-lock.json
+            drift=1
+          fi
+
+          if [ "$drift" -eq 0 ]; then
+            echo "MAIN APP is unchanged and matches its frozen baseline."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${PROTECTED_SOURCE[@]}" data/stable/main-app-lock.json
+          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 baseline"
+
+          for attempt in 1 2 3; do
+            if git pull --rebase -X ours origin main && git push origin HEAD:main; then
+              echo "MAIN APP protected source restored."
+              exit 0
+            fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt * 8))
+          done
+
+      - name: Verify live-data policy remains enabled
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const lock = JSON.parse(fs.readFileSync('data/stable/main-app-lock.json', 'utf8'));
+          if (lock.appName !== 'MAIN APP') throw new Error('MAIN APP identity mismatch');
+          if (lock.engine !== 'V16_9_EQUAL_WEIGHT_BASKET') throw new Error('MAIN APP engine mismatch');
+          if (lock.policy?.methodologyLocked !== true) throw new Error('Methodology lock missing');
+          if (lock.policy?.liveMarketDataAllowed !== true) throw new Error('Live market data must remain enabled');
+          if (lock.policy?.liveRecommendationOutputAllowed !== true) throw new Error('Live recommendation output must remain enabled');
+          console.log({
+            appName: lock.appName,
+            engine: lock.engine,
+            version: lock.version,
+            frozenSourceCommit: lock.frozenSourceCommit,
+            methodologyLocked: lock.policy.methodologyLocked,
+            liveMarketDataAllowed: lock.policy.liveMarketDataAllowed,
+            liveRecommendationOutputAllowed: lock.policy.liveRecommendationOutputAllowed
+          });
+          NODE
