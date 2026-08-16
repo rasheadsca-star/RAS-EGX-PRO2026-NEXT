@@ -11,9 +11,9 @@
 
 ## حالة الاستراتيجيات
 
-- trend_follow: ACTIVE_PAPER — صفقات مغلقة 166, PF 2.0002, Average R 0.4327
-- breakout: ACTIVE_PAPER — صفقات مغلقة 40, PF 2.1051, Average R 0.4696
-- pullback: RESEARCH_ONLY — صفقات مغلقة 11, PF 4.5955, Average R 0.7903
+- trend_follow: ACTIVE_PAPER — صفقات مغلقة 174, PF 2.0265, Average R 0.4423
+- breakout: ACTIVE_PAPER — صفقات مغلقة 41, PF 1.9826, Average R 0.4325
+- pullback: RESEARCH_ONLY — صفقات مغلقة 12, PF 5.3322, Average R 0.8728
 
 ## ملاحظات التشغيل
 
@@ -21,4 +21,4 @@
 - تحذير: 30 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `ca8fba9aa6bff66de18b26a581c8266c6b1dad8bb3ed3dc5f066fa756d76f972`
+بصمة التقرير: `0f55b72cb0e36f80ed626c2fadc0153622c0050a0ed7ad2a6dcef6d475dbb4f9`
