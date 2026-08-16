@@ -32,7 +32,9 @@ function expectedLatestCompletedSessionCairo(now = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 function marketMinutes(text) {
-  const m = String(text || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)\s+market time$/i);
+  // Normalize non-breaking spaces because some rendered "Last update" labels use them.
+  const normalized = String(text || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+  const m = normalized.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)\s+market\s+time$/i);
   if (!m) return null;
   let h = Number(m[1]); const min = Number(m[2]); const ap = m[3].toUpperCase();
   if (h < 1 || h > 12 || min < 0 || min > 59) return null;
@@ -40,13 +42,15 @@ function marketMinutes(text) {
   if (ap === 'PM' && h !== 12) h += 12;
   return h * 60 + min;
 }
-function eligibleTimeOnlyRow(row, expectedSession) {
-  if (dateOnly(row?.sourceSessionDate)) return false;
-  if (!/^https:\/\/(?:english\.|www\.)?mubasher\.info\/markets\/EGX\/stocks\//i.test(String(row?.sourceUrl || ''))) return false;
-  const mins = marketMinutes(row?.sourceMarketTime);
-  if (mins === null || mins < 9 * 60 || mins > 16 * 60) return false;
-  const fetchedDate = dateOnly(row?.updatedAt) || dateOnly(market?.generatedAt) || dateOnly(market?.updatedAt);
-  return fetchedDate === expectedSession;
+function isMubasherEgxStockRow(row) {
+  if (String(row?.source || '').trim() !== 'mubasher_symbol_pages') return false;
+  try {
+    const u = new URL(String(row?.sourceUrl || ''));
+    const host = u.hostname.toLowerCase();
+    const hostOk = host === 'english.mubasher.info' || host === 'www.mubasher.info' || host === 'mubasher.info';
+    const pathOk = /^\/markets\/EGX\/stocks\/[^/]+\/?$/i.test(u.pathname);
+    return hostOk && pathOk;
+  } catch { return false; }
 }
 
 const market = readJson(MARKET_PATH, null);
@@ -57,6 +61,35 @@ const p = cairoParts(now);
 const cairoDate = `${p.year}-${p.month}-${p.day}`;
 const cairoMinutes = Number(p.hour) * 60 + Number(p.minute);
 const sameDayAfterClose = cairoDate === expectedSession && cairoMinutes >= 15 * 60;
+const marketFetchDate = dateOnly(market.generatedAt) || dateOnly(market.updatedAt);
+
+function classifyTimeOnlyRow(row) {
+  const explicit = dateOnly(row?.sourceSessionDate);
+  if (explicit) return { eligible:false, reason:'HAS_EXPLICIT_SOURCE_DATE', explicit };
+  if (!isMubasherEgxStockRow(row)) return { eligible:false, reason:'NOT_MUBASHER_EGX_STOCK_ROW', source:row?.source || null, sourceUrl:row?.sourceUrl || null };
+  const mins = marketMinutes(row?.sourceMarketTime);
+  if (mins === null) return { eligible:false, reason:'INVALID_SOURCE_MARKET_TIME', sourceMarketTime:row?.sourceMarketTime || null };
+  if (mins < 9 * 60 || mins > 16 * 60) return { eligible:false, reason:'SOURCE_MARKET_TIME_OUTSIDE_SESSION', sourceMarketTime:row?.sourceMarketTime || null, minutes:mins };
+  const rowFetchDate = dateOnly(row?.updatedAt);
+  const fetchedDate = rowFetchDate || marketFetchDate;
+  if (!fetchedDate) return { eligible:false, reason:'FETCH_DATE_MISSING' };
+  if (fetchedDate !== expectedSession) return { eligible:false, reason:'FETCH_DATE_MISMATCH', fetchedDate, expectedSession };
+  return { eligible:true, reason:'ELIGIBLE_TIME_ONLY_MUBASHER_ROW', minutes:mins, fetchedDate };
+}
+
+const classifications = market.rows.map(row => ({ row, result: classifyTimeOnlyRow(row) }));
+const reasonCounts = {};
+for (const { result } of classifications) reasonCounts[result.reason] = (reasonCounts[result.reason] || 0) + 1;
+const diagnosticSamples = classifications.slice(0, 5).map(({ row, result }) => ({
+  symbol: row?.symbol || null,
+  source: row?.source || null,
+  sourceUrl: row?.sourceUrl || null,
+  sourceMarketTime: row?.sourceMarketTime || null,
+  sourceSessionDate: row?.sourceSessionDate || null,
+  updatedAt: row?.updatedAt || null,
+  classification: result
+}));
+
 const explicitExpectedRows = market.rows.filter(r => dateOnly(r?.sourceSessionDate) === expectedSession);
 const explicitDates = market.rows.map(r => dateOnly(r?.sourceSessionDate)).filter(Boolean);
 const explicitMismatches = explicitDates.filter(d => d !== expectedSession).length;
@@ -68,13 +101,14 @@ const explicitQuorumPassed = Boolean(
   explicitCoveragePct >= MIN_COVERAGE_PCT &&
   explicitMismatches === 0
 );
-const candidates = market.rows.filter(r => eligibleTimeOnlyRow(r, expectedSession));
+const candidates = classifications.filter(x => x.result.eligible).map(x => x.row);
 const candidateCoveragePct = market.rows.length ? candidates.length / market.rows.length * 100 : 0;
 const inferenceQuorumPassed = Boolean(
   !explicitQuorumPassed &&
   sameDayAfterClose &&
   market.ok === true &&
   /mubasher_symbol_pages_precise/i.test(String(market.source || '')) &&
+  marketFetchDate === expectedSession &&
   candidates.length >= MIN_QUORUM &&
   candidateCoveragePct >= MIN_COVERAGE_PCT &&
   explicitMismatches === 0
@@ -85,7 +119,7 @@ let promoted = 0;
 if (inferenceQuorumPassed) {
   const checkedAt = new Date().toISOString();
   market.rows = market.rows.map(row => {
-    if (!eligibleTimeOnlyRow(row, expectedSession)) return row;
+    if (!classifyTimeOnlyRow(row).eligible) return row;
     promoted += 1;
     return {
       ...row,
@@ -97,11 +131,12 @@ if (inferenceQuorumPassed) {
   });
 }
 market.sourceSessionQuorumInference = {
-  schemaVersion: '16.3.6-source-session-quorum-2',
+  schemaVersion: '16.3.7-source-session-quorum-3',
   checkedAt: new Date().toISOString(),
   expectedSession,
   cairoDate,
   sameDayAfterClose,
+  marketFetchDate,
   marketSource: market.source || null,
   totalRows: market.rows.length,
   explicitExpectedRows: explicitExpectedRows.length,
@@ -116,12 +151,14 @@ market.sourceSessionQuorumInference = {
   quorumPassed,
   mode: explicitQuorumPassed ? 'EXPLICIT_SOURCE_SESSION_EVIDENCE' : inferenceQuorumPassed ? 'TIME_ONLY_CROSS_SYMBOL_INFERENCE' : 'FAIL_CLOSED',
   promotedRows: promoted,
+  candidateDiagnostics: { reasonCounts, samples: diagnosticSamples },
   policy: {
     explicitEvidencePreferredOverInference: true,
     workflowTimestampAloneNeverDefinesSession: true,
     sourceMarketTimeRequiredForInferenceOnly: true,
-    exactMubasherEgxSourceUrlRequiredForInference: true,
+    exactMubasherEgxSourceIdentityRequiredForInference: true,
     regularCompletedTradingDayRequiredForInference: true,
+    sameDayMarketFetchContextRequiredForInference: true,
     crossSymbolQuorumRequired: true,
     explicitDateConflictFailsClosed: true,
     downstreamPriceJumpAndChangeConsistencyGuardsRemainRequired: true
