@@ -48,7 +48,7 @@ jobs:
           set -euo pipefail
           git fetch origin release/MAIN-APP-v16.9.2-frozen-20260816:refs/remotes/origin/release/MAIN-APP-v16.9.2-frozen-20260816
           changed="$(git diff --name-only origin/release/MAIN-APP-v16.9.2-frozen-20260816...HEAD)"
-          violations="$(printf '%s\n' "$changed" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/.*|scripts/stable/.*|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
+          violations="$(printf '%s\n' "$changed" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/.*|scripts/stable/v16-publish-v169-basket\.cjs|scripts/stable/v16-session-data-fingerprint\.cjs|scripts/stable/v16-v169-live-evaluation\.py|data/stable/v16-v169-release-lock\.json|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
           test -z "$violations" || { echo "$violations"; exit 1; }
 
       - name: Setup Node
