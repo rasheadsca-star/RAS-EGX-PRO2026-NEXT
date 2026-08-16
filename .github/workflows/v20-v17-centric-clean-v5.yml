@@ -34,9 +34,11 @@ jobs:
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
           git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
-          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
+          changed="$(git diff --name-only --diff-filter=ACMRTUXB origin/v19-egx-chat-gpt HEAD)"
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-primary-entry-point-acceptance\.yml$|\.github/workflows/v20-v17-centric-clean[^/]*\.yml$)' || true)"
           test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
+          tracked_v19="$(git ls-files 'data/v19/**' '.github/workflows/v19-egx-chat-gpt.yml' || true)"
+          test -z "$tracked_v19" || { echo "V20 must not track V19-owned files:"; echo "$tracked_v19"; exit 1; }
 
       - name: Setup Node
         uses: actions/setup-node@v6
