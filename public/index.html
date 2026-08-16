@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EGX Audit Core</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <span class="eyebrow">EGX AUDIT CORE</span>
+      <h1>نظام واحد، مصدر واحد، قرار قابل للتدقيق</h1>
+      <p>لا scraping، لا أرقام مخفية المصدر، ولا توصية تتجاوز بوابات التحقق.</p>
+    </div>
+    <div id="sourceBadge" class="badge">فحص المصدر...</div>
+  </header>
+
+  <main>
+    <section class="warning">
+      <strong>تنويه دائم:</strong>
+      هذا التطبيق أداة بحث وتحليل فقط، وليس نصيحة استثمارية وليس وسيطًا مرخصًا، ولا ينفذ أوامر تداول تلقائية.
+    </section>
+
+    <section class="grid status-grid">
+      <article class="card">
+        <span class="label">مصدر البيانات الوحيد</span>
+        <h2>LSEG Data Platform</h2>
+        <p id="providerState">جارٍ التحقق من الاتصال...</p>
+      </article>
+      <article class="card">
+        <span class="label">سياسة الفشل</span>
+        <h2>Fail Closed</h2>
+        <p>أي فشل في المصدر أو freshness أو backtest = لا توصية ولا رقم قديم.</p>
+      </article>
+      <article class="card">
+        <span class="label">التداول الآلي</span>
+        <h2>ممنوع</h2>
+        <p>لا توجد أي واجهة broker أو endpoint لتنفيذ الأوامر.</p>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <span class="label">تحليل موثّق</span>
+          <h2>أدخل LSEG RIC كما هو</h2>
+        </div>
+        <span class="muted">لا يقوم النظام بتخمين تحويل ticker إلى RIC.</span>
+      </div>
+      <form id="analysisForm">
+        <label>
+          RIC
+          <input id="ric" name="ric" required maxlength="40" placeholder="مثال: RIC الممنوح في اشتراكك">
+        </label>
+        <label>
+          الأفق
+          <select id="horizon">
+            <option value="short">قصير</option>
+            <option value="medium">متوسط — يتطلب fundamentals موثقة</option>
+            <option value="long">طويل — يتطلب fundamentals موثقة</option>
+          </select>
+        </label>
+        <button type="submit">تحليل</button>
+      </form>
+      <div id="analysisResult" class="result empty">لا توجد نتيجة بعد.</div>
+    </section>
+
+    <section class="card">
+      <span class="label">منهجية القرار</span>
+      <h2>الأوزان معلنة وثابتة</h2>
+      <div class="weights">
+        <div><b>30%</b><span>SMA20 / SMA50</span></div>
+        <div><b>25%</b><span>RSI(14)</span></div>
+        <div><b>20%</b><span>ATR(14) Risk</span></div>
+        <div><b>25%</b><span>Momentum 20</span></div>
+      </div>
+      <p class="muted">BUY عند +35 فأعلى، SELL عند -35 فأقل. لا يظهر BUY/SELL دون backtest طويل وWilson 95% CI.</p>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <span class="label">سجل غير قابل للتعديل بأثر رجعي</span>
+          <h2>Recommendation Ledger</h2>
+        </div>
+        <button id="refreshLedger" class="secondary">تحديث السجل</button>
+      </div>
+      <div id="ledger" class="result empty">جارٍ تحميل السجل...</div>
+    </section>
+  </main>
+
+  <footer>EGX Audit Core · one codebase · one licensed source · append-only audit trail</footer>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>
