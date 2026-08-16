@@ -29,13 +29,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Probe Yahoo metadata against current Mubasher snapshot
+      - name: Probe current Yahoo daily bars against Mubasher snapshot
         shell: bash
         run: |
           set -euo pipefail
           node - <<'NODE'
           const fs = require('fs');
           const expected = '2026-08-16';
+          const tolerancePct = 1.75;
           const mapRaw = JSON.parse(fs.readFileSync('data/symbol-map.json','utf8'));
           const entries = (Array.isArray(mapRaw) ? mapRaw : Object.values(mapRaw))
             .filter(x => x && x.active !== false && x.ticker)
@@ -49,12 +50,13 @@ jobs:
             const p = new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d).reduce((a,x)=>(a[x.type]=x.value,a),{});
             return `${p.year}-${p.month}-${p.day}`;
           }
+          function n(v){ const x=Number(v); return Number.isFinite(x) ? x : null; }
           function pctDiff(a,b){ return a>0&&b>0 ? Math.abs(a-b)/b*100 : null; }
           async function one(entry){
             const candidate = entry.yahooSymbol || entry.reutersCode || `${entry.ticker}.CA`;
             const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(candidate)}?range=5d&interval=1d&events=history&includeAdjustedClose=true`;
             try {
-              const res = await fetch(url,{headers:{'user-agent':'Mozilla/5.0 EGX-PRO-Session-Probe/1.0'},signal:AbortSignal.timeout(12000)});
+              const res = await fetch(url,{headers:{'user-agent':'Mozilla/5.0 EGX-PRO-Session-Probe/2.0'},signal:AbortSignal.timeout(12000)});
               if(!res.ok) return {ticker:entry.ticker,candidate,ok:false,error:`HTTP_${res.status}`};
               const payload = await res.json();
               const result = payload?.chart?.result?.[0];
@@ -64,14 +66,28 @@ jobs:
               const currency = String(meta.currency||'').toUpperCase();
               const exchange = `${meta.exchangeName||''} ${meta.fullExchangeName||''} ${meta.exchangeTimezoneName||''}`;
               const identity = returned === String(candidate).toUpperCase() && (currency === 'EGP' || currency === '') && /(CAI|EGX|Cairo|Egypt)/i.test(exchange);
-              const metaDate = cairoDate(Number(meta.regularMarketTime));
               const timestamps = Array.isArray(result.timestamp) ? result.timestamp : [];
-              const lastBarDate = timestamps.length ? cairoDate(Number(timestamps.at(-1))) : null;
-              const yahooPrice = Number(meta.regularMarketPrice);
+              const quote = result.indicators?.quote?.[0] || {};
+              const lastIndex = timestamps.length - 1;
+              const lastBarDate = lastIndex >= 0 ? cairoDate(Number(timestamps[lastIndex])) : null;
+              const barClose = lastIndex >= 0 ? n(quote.close?.[lastIndex]) : null;
+              const barOpen = lastIndex >= 0 ? n(quote.open?.[lastIndex]) : null;
+              const barHigh = lastIndex >= 0 ? n(quote.high?.[lastIndex]) : null;
+              const barLow = lastIndex >= 0 ? n(quote.low?.[lastIndex]) : null;
+              const barVolume = lastIndex >= 0 ? n(quote.volume?.[lastIndex]) : null;
               const mubasherPrice = current.get(entry.ticker) || null;
-              const diff = pctDiff(yahooPrice,mubasherPrice);
-              const priceMatch = diff !== null && diff <= 2.0;
-              return {ticker:entry.ticker,candidate,ok:true,identity,metaDate,lastBarDate,yahooPrice:Number.isFinite(yahooPrice)?yahooPrice:null,mubasherPrice,diffPct:diff===null?null:Number(diff.toFixed(4)),priceMatch};
+              const diff = pctDiff(barClose,mubasherPrice);
+              const priceMatch = diff !== null && diff <= tolerancePct;
+              const ohlcValid = [barOpen,barHigh,barLow,barClose].every(v=>v>0)
+                && barHigh >= Math.max(barOpen,barLow,barClose)
+                && barLow <= Math.min(barOpen,barHigh,barClose);
+              return {
+                ticker:entry.ticker,candidate,ok:true,identity,lastBarDate,
+                barClose,barOpen,barHigh,barLow,barVolume,ohlcValid,
+                mubasherPrice,diffPct:diff===null?null:Number(diff.toFixed(4)),priceMatch,
+                diagnosticMetaDate:cairoDate(Number(meta.regularMarketTime)),
+                sourceUrl:url
+              };
             } catch(e) { return {ticker:entry.ticker,candidate,ok:false,error:e.name||e.message}; }
           }
           async function mapLimit(items,limit,fn){
@@ -83,24 +99,25 @@ jobs:
             const results = await mapLimit(entries,6,one);
             const ok = results.filter(r=>r.ok);
             const identity = ok.filter(r=>r.identity);
-            const metaCurrent = identity.filter(r=>r.metaDate===expected);
-            const barCurrent = identity.filter(r=>r.lastBarDate===expected);
-            const cross = metaCurrent.filter(r=>r.priceMatch);
+            const barCurrent = identity.filter(r=>r.lastBarDate===expected && r.barClose>0);
+            const cross = barCurrent.filter(r=>r.priceMatch);
+            const crossOhlc = cross.filter(r=>r.ohlcValid);
             const report = {
-              schemaVersion:'V16_SESSION_EVIDENCE_PROBE_1',
+              schemaVersion:'V16_SESSION_EVIDENCE_PROBE_2',
               generatedAt:new Date().toISOString(),
               expectedSession:expected,
               productionImpact:'NONE_RESEARCH_ONLY',
+              tolerancePct,
               totalMapped:entries.length,
               responsesOk:ok.length,
               identityVerified:identity.length,
-              yahooMetaCurrentSession:metaCurrent.length,
               yahooDailyBarCurrentSession:barCurrent.length,
-              yahooMetaCurrentAndMubasherPriceMatch2Pct:cross.length,
+              currentBarAndMubasherPriceMatch:cross.length,
+              currentBarPriceMatchAndValidOhlc:crossOhlc.length,
               minimumNeededForV16PriceTruth:80,
               viableCrossSourceSessionEvidence:cross.length>=80,
               sampleCrossValidated:cross.slice(0,25),
-              sampleMetaCurrentButPriceConflict:metaCurrent.filter(r=>!r.priceMatch).slice(0,25),
+              sampleCurrentBarPriceConflict:barCurrent.filter(r=>!r.priceMatch).slice(0,25),
               sampleFailures:results.filter(r=>!r.ok||!r.identity).slice(0,25)
             };
             fs.writeFileSync('/tmp/v16-session-evidence-probe.json',JSON.stringify(report,null,2)+'\n');
