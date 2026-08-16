@@ -29,92 +29,66 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Probe explicit Mubasher Volume Statistics session date
+      - name: Discover Mubasher volume-statistics data endpoint
         shell: bash
         run: |
           set -euo pipefail
           node - <<'NODE'
-          const fs = require('fs');
-          const expected = '2026-08-16';
-          const market = JSON.parse(fs.readFileSync('data/market.json','utf8'));
-          const rows = (market.rows || []).filter(r => r && (r.symbol || r.ticker) && r.sourceUrl);
-          const months = new Map([
-            ['january',1],['february',2],['march',3],['april',4],['may',5],['june',6],
-            ['july',7],['august',8],['september',9],['october',10],['november',11],['december',12]
-          ]);
-          const clean = s => String(s||'').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g,' ').trim();
-          const strip = html => clean(String(html||'').replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,' '));
-          const num = v => { if(v==null)return null; const n=Number(String(v).replace(/,/g,'').replace(/[^0-9.+-]/g,'')); return Number.isFinite(n)?n:null; };
-          function parseDate(text){
-            const m=String(text||'').match(/\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})\b/i);
-            if(!m)return null;
-            const mo=months.get(m[2].toLowerCase());
-            return `${m[3]}-${String(mo).padStart(2,'0')}-${String(Number(m[1])).padStart(2,'0')}`;
-          }
-          function volumeMatch(a,b){
-            if(!(a>=0) || !(b>=0)) return false;
-            if(a===b) return true;
-            const base=Math.max(1,a,b);
-            return Math.abs(a-b)/base <= 0.005;
-          }
-          async function fetchText(url){
-            const res=await fetch(url,{redirect:'follow',headers:{
-              'accept':'text/html,application/xhtml+xml,*/*',
-              'accept-language':'en-US,en;q=0.9',
-              'cache-control':'no-cache','pragma':'no-cache',
-              'referer':'https://english.mubasher.info/',
-              'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36 EGXProSessionProbe/3.0'
+          const fs=require('fs');
+          const pageUrl='https://english.mubasher.info/markets/EGX/stocks/MBSC/volume-statistics';
+          async function get(url){
+            const r=await fetch(url,{redirect:'follow',headers:{
+              accept:'text/html,application/javascript,text/javascript,*/*',
+              'accept-language':'en-US,en;q=0.9','cache-control':'no-cache',pragma:'no-cache',
+              referer:pageUrl,
+              'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36 EGXProEndpointDiscovery/1.0'
             },signal:AbortSignal.timeout(15000)});
-            if(!res.ok)throw new Error(`HTTP_${res.status}`);
-            return res.text();
+            if(!r.ok)throw new Error(`HTTP_${r.status}`);
+            return r.text();
           }
-          function statsUrl(sourceUrl){
-            const u=new URL(sourceUrl);
-            u.search=''; u.hash='';
-            u.pathname=u.pathname.replace(/\/$/,'').replace(/\/(profile|financial-statements|volume-statistics)$/i,'') + '/volume-statistics';
-            return u.toString();
+          function scriptUrls(html){
+            const out=[]; let m; const re=/<script[^>]+src=["']([^"']+)["']/gi;
+            while((m=re.exec(html))){
+              try{out.push(new URL(m[1],pageUrl).toString())}catch{}
+            }
+            return [...new Set(out)];
           }
-          async function one(row){
-            const ticker=String(row.symbol||row.ticker).toUpperCase();
-            const url=statsUrl(row.sourceUrl);
-            try{
-              const plain=strip(await fetchText(url));
-              const sectionIndex=plain.search(/Volume Statistics/i);
-              const section=sectionIndex>=0 ? plain.slice(sectionIndex, sectionIndex+2500) : plain;
-              const dateMatch=section.match(/Last Update\s+(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+20\d{2})/i);
-              const volumeMatchText=section.match(/(?:^|\s)Volume\s+([0-9][0-9,]*)\b/i);
-              const explicitText=dateMatch?.[1]||null;
-              const sourceSessionDate=parseDate(explicitText);
-              const statsVolume=num(volumeMatchText?.[1]);
-              const snapshotVolume=num(row.volume);
-              const sameVolume=volumeMatch(statsVolume,snapshotVolume);
-              return {ticker,ok:true,url,sourceSessionDate,explicitText,statsVolume,snapshotVolume,sameVolume,current:sourceSessionDate===expected,validated:sourceSessionDate===expected&&sameVolume};
-            }catch(e){ return {ticker,ok:false,url,error:e.message}; }
-          }
-          async function mapLimit(items,limit,fn){
-            const out=new Array(items.length); let cursor=0;
-            async function worker(){while(true){const i=cursor++;if(i>=items.length)return;out[i]=await fn(items[i]);}}
-            await Promise.all(Array.from({length:Math.min(limit,items.length)},worker));return out;
+          function extract(text, source){
+            const hits=[];
+            const patterns=[/volume[-_. ]?statistics/ig,/last[-_. ]?update/ig,/api-community\.mubasher\.info/ig,/\/api\/[A-Za-z0-9_?=&{}./:-]+/ig,/stock[^"'`\s]{0,50}volume/ig];
+            for(const p of patterns){
+              p.lastIndex=0; let m; let count=0;
+              while((m=p.exec(text))&&count<20){
+                const a=Math.max(0,m.index-220),b=Math.min(text.length,m.index+m[0].length+300);
+                hits.push({source,pattern:p.source,snippet:text.slice(a,b).replace(/\s+/g,' ')}); count++;
+              }
+            }
+            return hits;
           }
           (async()=>{
-            const results=await mapLimit(rows,8,one);
-            const ok=results.filter(x=>x.ok);
-            const dated=ok.filter(x=>x.sourceSessionDate);
-            const current=dated.filter(x=>x.current);
-            const validated=current.filter(x=>x.validated);
-            const report={
-              schemaVersion:'V16_SESSION_EVIDENCE_PROBE_3',generatedAt:new Date().toISOString(),expectedSession:expected,
-              productionImpact:'NONE_RESEARCH_ONLY',source:'mubasher_volume_statistics_explicit_date',
-              snapshotRows:rows.length,responsesOk:ok.length,explicitDateRows:dated.length,currentSessionDateRows:current.length,
-              currentSessionDateAndVolumeMatch:validated.length,minimumNeededForV16PriceTruth:80,
-              viableExplicitSessionEvidence:validated.length>=80,
-              sampleValidated:validated.slice(0,30),
-              sampleCurrentDateVolumeMismatch:current.filter(x=>!x.sameVolume).slice(0,20),
-              sampleStale:dated.filter(x=>!x.current).slice(0,20),
-              sampleFailures:results.filter(x=>!x.ok).slice(0,20)
-            };
+            const html=await get(pageUrl);
+            const scripts=scriptUrls(html);
+            const hits=extract(html,pageUrl);
+            const fetched=[];
+            for(const url of scripts.slice(0,40)){
+              try{
+                const text=await get(url);
+                fetched.push({url,bytes:text.length});
+                hits.push(...extract(text,url));
+              }catch(e){fetched.push({url,error:e.message});}
+            }
+            const unique=[]; const seen=new Set();
+            for(const h of hits){const k=h.source+'|'+h.snippet;if(!seen.has(k)){seen.add(k);unique.push(h)}}
+            const urls=new Set();
+            for(const h of unique){
+              for(const m of h.snippet.matchAll(/https?:\/\/[^"'`\s)]+/g))urls.add(m[0]);
+              for(const m of h.snippet.matchAll(/["'`](\/[^"'`\s]*(?:volume|statistic|stock|api)[^"'`\s]*)["'`]/gi)){
+                try{urls.add(new URL(m[1],h.source).toString())}catch{}
+              }
+            }
+            const report={schemaVersion:'V16_SESSION_EVIDENCE_PROBE_4',generatedAt:new Date().toISOString(),productionImpact:'NONE_RESEARCH_ONLY',pageUrl,scriptCount:scripts.length,fetchedScripts:fetched,candidateUrls:[...urls].slice(0,150),hits:unique.slice(0,120)};
             fs.writeFileSync('/tmp/v16-session-evidence-probe.json',JSON.stringify(report,null,2)+'\n');
-            console.log(JSON.stringify(report,null,2));
+            console.log(JSON.stringify({schemaVersion:report.schemaVersion,scriptCount:report.scriptCount,candidateUrls:report.candidateUrls,hits:report.hits.slice(0,30)},null,2));
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
 
