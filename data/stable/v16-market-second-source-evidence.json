@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.9.2-market-second-source-evidence-v2",
-  "generatedAt": "2026-08-17T21:13:00.551Z",
+  "generatedAt": "2026-08-17T21:14:42.279Z",
   "expectedSession": "2026-08-17",
   "policy": {
     "failClosed": true,
@@ -12,11 +12,10 @@
     "strategyMutation": false,
     "rule": "For a same-session primary anomaly, independent close agreement is mandatory. For a stale or unknown primary session, an independent exact-session EGX row may replace the stale primary without matching the stale price. Yahoo remains disallowed when historical identity/scale warnings exist."
   },
-  "targetCount": 5,
-  "approvedCount": 2,
+  "targetCount": 4,
+  "approvedCount": 1,
   "unresolvedCount": 3,
   "approvedTickers": [
-    "CFGH",
     "NAHO"
   ],
   "unresolvedTickers": [
@@ -148,57 +147,6 @@
               "latestAvailableClose": 0.95
             }
           ]
-        }
-      ]
-    },
-    "CFGH": {
-      "ticker": "CFGH",
-      "originalReason": "SECOND_SOURCE_HISTORY_PERSIST_FAILED",
-      "primary": {
-        "source": "mubasher_symbol_pages",
-        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/CFGH/",
-        "sourceSessionDate": "2026-08-17",
-        "close": 0.11
-      },
-      "approved": true,
-      "approvedEvidence": {
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "status": "APPROVED",
-        "url": "https://stockanalysis.com/quote/egx/CFGH/history/",
-        "sessionDate": "2026-08-17",
-        "close": 0.11,
-        "open": 0.11,
-        "high": 0.12,
-        "low": 0.11,
-        "volume": 599057,
-        "previousClose": 0.11,
-        "priceDifferencePct": 0,
-        "primaryPriceAgreementRequired": true,
-        "replacementForStalePrimary": false
-      },
-      "attempts": [
-        {
-          "provider": "YAHOO_CHART",
-          "status": "REJECTED_SYMBOL_IDENTITY",
-          "url": "https://query1.finance.yahoo.com/v8/finance/chart/CFGH.CA?period1=1786665600&period2=1787356800&interval=1d&events=history&includeAdjustedClose=true",
-          "returned": "CFGH",
-          "exchangeName": "CAI",
-          "currency": "USD"
-        },
-        {
-          "provider": "STOCKANALYSIS_EGX_HISTORY",
-          "status": "APPROVED",
-          "url": "https://stockanalysis.com/quote/egx/CFGH/history/",
-          "sessionDate": "2026-08-17",
-          "close": 0.11,
-          "open": 0.11,
-          "high": 0.12,
-          "low": 0.11,
-          "volume": 599057,
-          "previousClose": 0.11,
-          "priceDifferencePct": 0,
-          "primaryPriceAgreementRequired": true,
-          "replacementForStalePrimary": false
         }
       ]
     },

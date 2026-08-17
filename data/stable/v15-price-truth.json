@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-08-17T21:13:00.603Z",
+  "generatedAt": "2026-08-17T21:14:42.339Z",
   "expectedSession": "2026-08-17",
   "ready": true,
   "executionGrade": true,
@@ -13,18 +13,19 @@
     "preciseSource": true,
     "realFetch": true,
     "inputRows": 217,
-    "verifiedExpectedSessionRows": 214,
-    "sourceSessionEvidenceCoveragePct": 98.6,
+    "verifiedExpectedSessionRows": 215,
+    "sourceSessionEvidenceCoveragePct": 99.1,
     "primaryVerifiedExpectedSessionRows": 212,
-    "secondSourceVerifiedSessionRows": 2,
+    "secondSourceVerifiedSessionRows": 3,
     "secondSourceVerifiedSessionTickers": [
       "DEIN",
-      "MEGM"
+      "MEGM",
+      "SAIB"
     ],
     "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 213,
-  "rejectedRows": 4,
+  "acceptedRows": 214,
+  "rejectedRows": 3,
   "droppedRows": 0,
   "updatedHistoryFiles": 180,
   "missingHistoryFiles": [
@@ -346,6 +347,18 @@
       "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
       "priceDifferencePct": 0,
       "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "NAHO",
+      "date": "2026-08-17",
+      "close": 0.14,
+      "mode": "SECOND_SOURCE_OHLC_AFTER_PRIMARY_CLOSE_CONFIRMATION",
+      "originalRejectReason": "SECOND_SOURCE_HISTORY_PERSIST_FAILED",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
@@ -373,17 +386,6 @@
       "reason": "SOURCE_SESSION_MISMATCH",
       "sourceSessionDate": "2002-02-05",
       "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "NAHO",
-      "reason": "SECOND_SOURCE_HISTORY_PERSIST_FAILED",
-      "close": 0.14,
-      "previousClose": 0.13,
-      "reportedChangePct": 2.26,
-      "impliedChangePct": 7.69,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
     }
   ],
   "sampleDropped": [],
@@ -391,36 +393,31 @@
     "enabled": true,
     "failClosed": true,
     "expectedSession": "2026-08-17",
-    "targetRejectedRowsThisRun": 5,
-    "resolverApprovedRowsThisRun": 2,
+    "targetRejectedRowsThisRun": 4,
+    "resolverApprovedRowsThisRun": 1,
     "recoveredRowsThisRun": 1,
-    "unresolvedRows": 4,
+    "unresolvedRows": 3,
     "recoveredTickersThisRun": [
-      "CFGH"
+      "NAHO"
     ],
     "cumulativeSecondSourceSessionTickers": [
       "DEIN",
-      "MEGM"
+      "MEGM",
+      "SAIB"
     ],
     "unresolvedTickers": [
       "PHGC",
       "DCCC",
-      "SEIGA",
-      "NAHO"
+      "SEIGA"
     ],
     "historyResults": [
       {
-        "ticker": "CFGH",
+        "ticker": "NAHO",
         "merged": true,
         "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 0.11,
-        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
-        "createdHistorySeed": true
-      },
-      {
-        "ticker": "NAHO",
-        "merged": false,
-        "reason": "INVALID_PRIMARY_OHLC_AFTER_SECOND_SOURCE_CONFIRMATION"
+        "close": 0.14,
+        "mode": "SECOND_SOURCE_OHLC_AFTER_PRIMARY_CLOSE_CONFIRMATION",
+        "createdHistorySeed": false
       }
     ],
     "changesAlphaOrRanking": false,
