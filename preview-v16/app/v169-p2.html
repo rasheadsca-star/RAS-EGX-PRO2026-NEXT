@@ -22,10 +22,31 @@
   </main>
   <script>
   (async()=>{
-    const BUILD='16.9.2-main-app-professional-readiness-v2-isolated-20260817-2242';
+    const BUILD='16.9.2-main-app-readiness-v2-hard-mount-20260817-2250';
     const response=await fetch(`index.html?source=main-app-v16.9.2-canonical&t=${Date.now()}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
+
+    // Hard-mount Professional Readiness V2 before app.js runs. The legacy V1
+    // panel remains only as a hidden compatibility target for the old app.js;
+    // it can no longer become visible or show the obsolete 42 score.
+    const readinessMarker='<article class="panel readiness-panel">';
+    if(!html.includes(readinessMarker))throw new Error('تعذر تثبيت Professional Readiness V2: readiness marker missing');
+    const readinessV2=`<article id="professionalReadinessV2Panel" class="panel">
+      <div class="prv2-head">
+        <div><h2>الجاهزية المهنية — Professional Readiness V2</h2><p>تقيس جودة الأدلة والحوكمة لمحرك V16.9 الحالي، وليست احتمال نجاح التوصية القادمة.</p></div>
+        <span id="professionalReadinessV2Stage">جارٍ التقييم</span>
+      </div>
+      <div class="prv2-main">
+        <div id="professionalReadinessV2Gauge"><div><strong>—</strong><span>من 100</span></div></div>
+        <div id="professionalReadinessV2Breakdown"></div>
+      </div>
+      <div id="professionalReadinessV2Meta"></div>
+      <div id="professionalReadinessV2Verdict"></div>
+      <div id="professionalReadinessV2Gaps"></div>
+    </article>`;
+    html=html.replace(readinessMarker,`${readinessV2}<article class="panel readiness-panel" style="display:none!important" aria-hidden="true">`);
+
     const marker='<script src="app.js?v=16.1.0"><\/script>';
     const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script><script src="v16-9-basket-overlay.js?v=${BUILD}" data-main-app-basket-direct="true"><\/script><script src="main-app-governance-overlay.js?v=${BUILD}"><\/script><script src="main-app-consensus-overlay.js?v=${BUILD}"><\/script><script src="main-app-professional-readiness-v2.js?v=${BUILD}"><\/script><script src="stock-analyzer.js?v=${BUILD}"><\/script><script src="stock-analyzer-chart.js?v=${BUILD}"><\/script><script src="stock-analyzer-decision.js?v=${BUILD}"><\/script>`;
     if(!html.includes(marker))throw new Error('تعذر تثبيت طبقات MAIN APP: app.js marker missing');
