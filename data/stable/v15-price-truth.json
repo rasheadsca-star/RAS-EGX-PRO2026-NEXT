@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-08-17T21:18:49.123Z",
+  "generatedAt": "2026-08-17T21:20:08.826Z",
   "expectedSession": "2026-08-17",
   "ready": true,
   "executionGrade": true,
@@ -24,8 +24,8 @@
     ],
     "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 214,
-  "rejectedRows": 3,
+  "acceptedRows": 215,
+  "rejectedRows": 2,
   "droppedRows": 0,
   "updatedHistoryFiles": 180,
   "missingHistoryFiles": [
@@ -359,20 +359,21 @@
       "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
       "priceDifferencePct": 0,
       "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "PHGC",
+      "date": "2026-08-17",
+      "close": 0.09,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "REPORTED_CHANGE_MISMATCH",
+      "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_sigma_capital_live_market",
+      "priceDifferencePct": 1.099,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
-    {
-      "rejected": true,
-      "ticker": "PHGC",
-      "reason": "REPORTED_CHANGE_MISMATCH",
-      "close": 0.09,
-      "previousClose": 0.09,
-      "reportedChangePct": 4.6,
-      "impliedChangePct": 0,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
     {
       "rejected": true,
       "ticker": "DCCC",
@@ -394,21 +395,31 @@
     "failClosed": true,
     "expectedSession": "2026-08-17",
     "targetRejectedRowsThisRun": 3,
-    "resolverApprovedRowsThisRun": 0,
-    "recoveredRowsThisRun": 0,
-    "unresolvedRows": 3,
-    "recoveredTickersThisRun": [],
+    "resolverApprovedRowsThisRun": 1,
+    "recoveredRowsThisRun": 1,
+    "unresolvedRows": 2,
+    "recoveredTickersThisRun": [
+      "PHGC"
+    ],
     "cumulativeSecondSourceSessionTickers": [
       "DEIN",
       "MEGM",
       "SAIB"
     ],
     "unresolvedTickers": [
-      "PHGC",
       "DCCC",
       "SEIGA"
     ],
-    "historyResults": [],
+    "historyResults": [
+      {
+        "ticker": "PHGC",
+        "merged": true,
+        "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+        "close": 0.09,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": true
+      }
+    ],
     "changesAlphaOrRanking": false,
     "changesEntryStopTargetAllocation": false
   }
