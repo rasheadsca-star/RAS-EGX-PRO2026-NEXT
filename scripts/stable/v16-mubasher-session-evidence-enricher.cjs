@@ -34,6 +34,13 @@ function n(value) {
 function dateOnly(value) {
   return (String(value || '').match(/^(20\d{2}-\d{2}-\d{2})/) || [])[1] || null;
 }
+function regularEgxDate(value) {
+  const date = dateOnly(value);
+  if (!date) return false;
+  const d = new Date(`${date}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return false;
+  return d.getUTCDay() >= 0 && d.getUTCDay() <= 4;
+}
 function parseDate(value) {
   const iso = dateOnly(value);
   if (iso) return iso;
@@ -178,23 +185,29 @@ async function enrichRow(row) {
 
   const audits = results.map(result => result.audit);
   const verified = audits.filter(row => row.status === 'VERIFIED');
+  const explicitDated = audits.filter(row => regularEgxDate(row.sourceSessionDate));
   const bySession = {};
+  const byExplicitSession = {};
   for (const item of verified) bySession[item.sourceSessionDate] = (bySession[item.sourceSessionDate] || 0) + 1;
+  for (const item of explicitDated) byExplicitSession[item.sourceSessionDate] = (byExplicitSession[item.sourceSessionDate] || 0) + 1;
 
   const report = {
-    schemaVersion: '16.3.6-mubasher-explicit-session-evidence',
+    schemaVersion: '16.3.7-mubasher-explicit-session-evidence',
     generatedAt: new Date().toISOString(),
     source: 'mubasher_volume_statistics_html',
     policy: {
       explicitCalendarDateRequired: true,
-      volumeMatchRequired: true,
+      volumeMatchRequiredForExecutionVerification: true,
+      explicitDateWithoutVolumeMatchMaySupportResearchSessionOnly: true,
       volumeTolerancePct: Number((VOLUME_TOLERANCE * 100).toFixed(4)),
       fetchTimestampInferenceForbidden: true,
       staleDatesPreservedForDownstreamRejection: true
     },
     totalMarketRows: market.rows.length,
     verifiedRows: verified.length,
+    explicitDateRows: explicitDated.length,
     bySourceSession: Object.entries(bySession).sort(([a], [b]) => a.localeCompare(b)).map(([session, count]) => ({ session, count })),
+    byExplicitSourceSession: Object.entries(byExplicitSession).sort(([a], [b]) => a.localeCompare(b)).map(([session, count]) => ({ session, count })),
     statusCounts: audits.reduce((acc, item) => { acc[item.status] = (acc[item.status] || 0) + 1; return acc; }, {}),
     failures: audits.filter(item => item.status !== 'VERIFIED' && item.status !== 'EXISTING_EXPLICIT_DATE_PRESERVED').slice(0, 100)
   };
