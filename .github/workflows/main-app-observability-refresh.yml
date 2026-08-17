@@ -9,6 +9,8 @@ on:
     branches: ["main"]
     paths:
       - "scripts/stable/v16-main-app-intelligence-snapshot.cjs"
+      - "scripts/stable/v16-main-app-intelligence-snapshot-v3.cjs"
+      - "scripts/stable/v16-main-app-financial-resolver.cjs"
       - "scripts/stable/v16-main-app-drift-monitor.cjs"
       - "scripts/stable/v16-main-app-challenger-shadow.cjs"
       - "scripts/stable/v16-main-app-pilot-lock-guard.cjs"
@@ -45,7 +47,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node --check scripts/stable/v16-main-app-intelligence-snapshot.cjs
+          node --check scripts/stable/v16-main-app-financial-resolver.cjs
+          node --check scripts/stable/v16-main-app-intelligence-snapshot-v3.cjs
           node --check scripts/stable/v16-main-app-drift-monitor.cjs
           node --check scripts/stable/v16-main-app-challenger-shadow.cjs
           node --check scripts/stable/v16-main-app-pilot-lock-guard.cjs
@@ -73,11 +76,11 @@ jobs:
           set -euo pipefail
           node scripts/stable/v16-main-app-auto-data-guard.cjs
 
-      - name: Build auditable intelligence snapshot
+      - name: Build no-lookahead multi-source intelligence snapshot
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/stable/v16-main-app-intelligence-snapshot.cjs
+          node scripts/stable/v16-main-app-intelligence-snapshot-v3.cjs
 
       - name: Build advisory drift monitor
         shell: bash
@@ -111,16 +114,20 @@ jobs:
           const lock=read('data/stable/v16-main-app-pilot-lock-status.json');
           const auto=read('data/stable/v16-main-app-auto-data-guard.json');
           const intel=read('data/stable/v16-main-app-intelligence-snapshot.json');
+          const financialCache=read('data/stable/v16-main-app-financial-cache.json');
           const drift=read('data/stable/v16-main-app-drift-monitor.json');
           const challenger=read('data/stable/v16-main-app-challenger-shadow.json');
           if(lock.status!=='PASS') throw new Error('Pilot methodology lock failed');
           if(auto.status!=='PASS') throw new Error('Automatic data refresh guard failed');
           if(intel?.immutableMethodology?.changesAlphaOrRanking!==false) throw new Error('Intelligence layer may not change alpha/ranking');
           if(intel?.immutableMethodology?.changesExecutionGrant!==false) throw new Error('Intelligence layer may not change execution');
+          if(intel?.auditCompleteness?.noPostDecisionFinancialDataCounted!==true) throw new Error('Financial audit may not use post-decision data');
+          if(intel?.auditCompleteness?.noPostDecisionNewsCounted!==true) throw new Error('News audit may not use post-decision news');
+          if(financialCache?.policy?.changesAlphaOrRanking!==false || financialCache?.policy?.changesExecutionGrant!==false) throw new Error('Financial cache may not affect production');
           if(drift?.immutableMethodology?.changesAlphaOrRanking!==false || drift.productionEffect!=='NONE') throw new Error('Drift monitor must be advisory only');
           if(challenger.mode!=='SHADOW_RESEARCH_ONLY') throw new Error('Challenger is not shadow-only');
           if(challenger?.immutableMethodology?.changesMainAppRanking!==false || challenger?.immutableMethodology?.changesExecutionGrant!==false) throw new Error('Challenger may not affect MAIN APP');
-          console.log({pilotLock:lock.status,autoData:auto.status,intelligenceCoverage:intel.auditCompleteness,drift:drift.status,challengerMode:challenger.mode});
+          console.log({pilotLock:lock.status,autoData:auto.status,intelligenceCoverage:intel.auditCompleteness,financialCacheRecords:Object.keys(financialCache.records||{}).length,drift:drift.status,challengerMode:challenger.mode});
           NODE
 
       - name: Commit observability evidence only
@@ -132,6 +139,7 @@ jobs:
           git add \
             data/stable/v16-main-app-pilot-lock-status.json \
             data/stable/v16-main-app-auto-data-guard.json \
+            data/stable/v16-main-app-financial-cache.json \
             data/stable/v16-main-app-intelligence-snapshot.json \
             data/stable/v16-main-app-intelligence-ledger.json \
             data/stable/v16-main-app-drift-monitor.json \
