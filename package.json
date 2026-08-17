@@ -6,8 +6,13 @@
     "fetch": "node scripts/fetch-market-data.js",
     "v11.1:trust-lift": "node scripts/build-v111-price-truth-layer.js && node scripts/build-v111-history-trust-recovery.js && node scripts/build-v111-liquidity-gate.js && node scripts/build-v111-trade-plan-validator.js && node scripts/build-unified-decision-board.js && node scripts/build-v111-paper-trading-engine.js && node scripts/build-v111-readiness-report.js && node scripts/validate-v11-governor.js",
     "v11.4:history-adapter": "node scripts/build-v114-history-adapter-fix.js && node scripts/build-v113-history-source-diagnostics.js && node scripts/build-v113-history-integrity-v2.js && node scripts/build-v113-readiness-accelerator.js",
-    "quant-edge:test": "node --test engines/quant-edge/test/quant-edge.test.js",
-    "quant-edge:run": "node engines/quant-edge/run-snapshot.js"
+    "quant-edge:test": "node --test engines/quant-edge/test/*.test.js",
+    "quant-edge:feed": "node engines/quant-edge/feed.js",
+    "quant-edge:brokers": "node engines/quant-edge/broker-collector.js",
+    "quant-edge:calibrate": "node engines/quant-edge/walk-forward.js",
+    "quant-edge:run": "node engines/quant-edge/run-snapshot.js",
+    "quant-edge:pipeline": "node engines/quant-edge/pipeline.js",
+    "quant-edge:acceptance": "node engines/quant-edge/acceptance.js"
   },
   "engines": {
     "node": "22.x"
