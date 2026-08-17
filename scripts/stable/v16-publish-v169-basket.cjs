@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { fingerprintSession } = require('./v16-session-data-fingerprint.cjs');
+const { buildMainAppGovernance } = require('./v16-main-app-governance.cjs');
 
 const root = path.resolve(process.env.GITHUB_WORKSPACE || '.');
 const reportPath = path.join(root, 'data/research/v16-v169-basket-engine.json');
@@ -11,6 +12,7 @@ const legacyDecisionPath = path.join(root, 'data/stable/v15-practical-decision.j
 const primaryDecisionPath = path.join(root, 'data/stable/v16-v169-primary-decision.json');
 const priceTruthPath = path.join(root, 'data/stable/v15-price-truth.json');
 const PILOT_ALLOCATION_PCT = 50;
+const ALLOCATION_DIGITS = 4;
 
 function readJson(filePath, fallback = {}) {
   try {
@@ -39,6 +41,15 @@ function cairoTimestamp(iso) {
   }
 }
 
+function splitAllocation(totalPct, count, digits = ALLOCATION_DIGITS) {
+  if (!(count > 0)) return [];
+  const factor = 10 ** digits;
+  const totalUnits = Math.round(totalPct * factor);
+  const baseUnits = Math.floor(totalUnits / count);
+  const remainder = totalUnits - baseUnits * count;
+  return Array.from({ length: count }, (_, index) => (baseUnits + (index < remainder ? 1 : 0)) / factor);
+}
+
 const report = readJson(reportPath);
 if (!report.schemaVersion) {
   throw new Error('Missing V16.9 basket report; refusing to overwrite application decision.');
@@ -63,7 +74,10 @@ const sourceSessionReady = Boolean(
 const previous = readJson(primaryDecisionPath, readJson(legacyDecisionPath, {}));
 const sourceBasket = Array.isArray(report.currentBasket) ? report.currentBasket : [];
 const approved = report.productionEligible === true && sourceBasket.length >= 3 && sourceSessionReady;
-const memberPortfolioWeightPct = approved
+const memberPortfolioWeights = approved
+  ? splitAllocation(PILOT_ALLOCATION_PCT, sourceBasket.length)
+  : sourceBasket.map(() => 0);
+const memberPortfolioWeightPct = memberPortfolioWeights.length
   ? Math.round((PILOT_ALLOCATION_PCT / sourceBasket.length) * 100) / 100
   : 0;
 
@@ -79,7 +93,7 @@ const recommendations = approved
       localRank: index + 1,
       basketSize: sourceBasket.length,
       basketInternalWeightPct: item.weightPct,
-      portfolioWeightPct: memberPortfolioWeightPct,
+      portfolioWeightPct: memberPortfolioWeights[index],
       cashIfNotTriggered: true,
       close: item.close,
       entryLow: item.entryLow,
@@ -106,6 +120,10 @@ const metrics = report.blockedWalkForwardMetrics || {};
 const blockedBySessionTruth = report.productionEligible === true && sourceBasket.length >= 3 && !sourceSessionReady;
 const generatedAt = new Date().toISOString();
 const sourceSessionEvidenceCoveragePct = Number(priceTruth?.source?.sourceSessionEvidenceCoveragePct || 0);
+const plannedAllocationPct = recommendations.reduce((sum, row) => sum + Number(row.portfolioWeightPct || 0), 0);
+if (plannedAllocationPct > PILOT_ALLOCATION_PCT + 0.0001) {
+  throw new Error(`MAIN APP allocation exceeds ${PILOT_ALLOCATION_PCT}%: ${plannedAllocationPct}`);
+}
 
 const output = {
   ...previous,
@@ -202,6 +220,10 @@ const output = {
     totalAllocationPct: approved ? PILOT_ALLOCATION_PCT : 0,
     cashReservePct: approved ? 100 - PILOT_ALLOCATION_PCT : 100,
     memberPortfolioWeightPct,
+    memberPortfolioWeightsPct: memberPortfolioWeights,
+    sourceRoundedAllocationPct: approved ? Math.round(memberPortfolioWeightPct * sourceBasket.length * 100) / 100 : 0,
+    roundingAdjustmentApplied: approved && Math.abs(memberPortfolioWeightPct * sourceBasket.length - PILOT_ALLOCATION_PCT) > 0.0001,
+    plannedAllocationPct: approved ? plannedAllocationPct : 0,
     holdingSessions: 1,
     unfilledMemberPolicy: 'KEEP_CASH',
     rebalancePolicyAr: 'لا يُعاد توزيع وزن السهم غير المتفعل؛ يظل نقدًا لتجنب زيادة المخاطرة في بقية الأسهم.',
@@ -218,8 +240,14 @@ const output = {
 // mirror for old links, but no longer controls what the user sees.
 writeJsonAtomic(primaryDecisionPath, output);
 writeJsonAtomic(legacyDecisionPath, output);
+
+// Build the V17-grade canonical governance snapshot and immutable signal ledger.
+const governed = buildMainAppGovernance();
+
 console.log(JSON.stringify({
   status: output.status,
+  systemState: governed.systemState,
+  executionAllowed: governed.executionAllowed,
   sessionDate: output.sessionDate,
   expectedLatestSession: output.expectedLatestSession,
   sourceSessionReady,
@@ -228,6 +256,7 @@ console.log(JSON.stringify({
   basketSize: recommendations.length,
   tickers: recommendations.map(item => item.ticker),
   totalAllocationPct: output.basketPlan.totalAllocationPct,
-  memberPortfolioWeightPct,
+  plannedAllocationPct,
+  memberPortfolioWeights,
   primaryDecisionPath: path.relative(root, primaryDecisionPath),
 }, null, 2));
