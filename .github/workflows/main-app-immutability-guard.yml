@@ -15,6 +15,7 @@ on:
       - "scripts/stable/v16-recommendation-freshness-guard.cjs"
       - "scripts/stable/v16-main-app-governance.cjs"
       - "scripts/stable/v16-main-app-consensus.cjs"
+      - "scripts/stable/v16-main-app-professional-readiness.cjs"
       - "data/stable/v16-v169-release-lock.json"
       - "data/stable/main-app-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
@@ -33,7 +34,7 @@ concurrency:
 env:
   MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
-  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_LEDGER_ALL_ENGINE_MATRIX_STOCK_ANALYZER_TECH_CHART_PORTFOLIO_DECISION
+  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_LEDGER_ENGINE_MATRIX_ANALYZER_TECH_CHART_PORTFOLIO_DECISION_PROFESSIONAL_READINESS_V2
 
 jobs:
   enforce:
@@ -90,9 +91,11 @@ jobs:
           node --check scripts/stable/v16-recommendation-freshness-guard.cjs
           node --check scripts/stable/v16-main-app-governance.cjs
           node --check scripts/stable/v16-main-app-consensus.cjs
+          node --check scripts/stable/v16-main-app-professional-readiness.cjs
           node --check preview-v16/app/decision-source.js
           node --check preview-v16/app/main-app-governance-overlay.js
           node --check preview-v16/app/main-app-consensus-overlay.js
+          node --check preview-v16/app/main-app-professional-readiness-v2.js
           node --check preview-v16/app/stock-analyzer.js
           node --check preview-v16/app/stock-analyzer-chart.js
           node --check preview-v16/app/stock-analyzer-decision.js
@@ -104,15 +107,17 @@ jobs:
           const freshness=fs.readFileSync('scripts/stable/v16-recommendation-freshness-guard.cjs','utf8');
           const governance=fs.readFileSync('scripts/stable/v16-main-app-governance.cjs','utf8');
           const consensus=fs.readFileSync('scripts/stable/v16-main-app-consensus.cjs','utf8');
+          const readiness=fs.readFileSync('scripts/stable/v16-main-app-professional-readiness.cjs','utf8');
           const router=fs.readFileSync('preview-v16/app/decision-source.js','utf8');
           const launcher=fs.readFileSync('preview-v16/app/v169-p2.html','utf8');
           const consensusUi=fs.readFileSync('preview-v16/app/main-app-consensus-overlay.js','utf8');
+          const readinessUi=fs.readFileSync('preview-v16/app/main-app-professional-readiness-v2.js','utf8');
           const analyzer=fs.readFileSync('preview-v16/app/stock-analyzer.js','utf8');
           const chart=fs.readFileSync('preview-v16/app/stock-analyzer-chart.js','utf8');
           const decision=fs.readFileSync('preview-v16/app/stock-analyzer-decision.js','utf8');
           const checks={
             engineLocked:publisher.includes('V16_9_EQUAL_WEIGHT_BASKET'),
-            scanPostProcessing:freshness.includes('buildMainAppGovernance')&&freshness.includes('v16-main-app-consensus.cjs'),
+            scanPostProcessing:freshness.includes('buildMainAppGovernance')&&freshness.includes('v16-main-app-consensus.cjs')&&freshness.includes('v16-main-app-professional-readiness.cjs'),
             allocationGuard:governance.includes('MAX_TOTAL_ALLOCATION_PCT = 50'),
             failClosed:governance.includes('failClosed: true'),
             immutableLedger:governance.includes('immutableLedger: true'),
@@ -120,6 +125,12 @@ jobs:
             allEngineMatrix:consensus.includes('V17_VALIDATION')&&consensus.includes('V19_CHALLENGER')&&consensus.includes('V20_NATIVE')&&consensus.includes('QUANT_EDGE'),
             agreementCount:consensus.includes('agreementCount')&&consensusUi.includes('توافق المحركات'),
             periodicComparison:consensusUi.includes('setInterval(refreshData,60000)'),
+            readinessV2Loaded:launcher.includes('main-app-professional-readiness-v2.js'),
+            readinessV2Engine:readiness.includes("const ENGINE = 'V16_9_EQUAL_WEIGHT_BASKET'"),
+            readinessV2LiveHardGate:readiness.includes('MIN_LIVE_RESOLVED_SESSIONS = 20')&&readiness.includes('LIVE_FORWARD_HARD_GATE'),
+            readinessV2NoAlphaMutation:readiness.includes('لا يرفع ترتيب الأسهم')&&readinessUi.includes('لا تغيّر Alpha'),
+            readinessV2CanReach100:readiness.includes("axis('RISK_GOVERNANCE', 'إدارة المخاطر والحوكمة', 10")&&readiness.includes('automaticOrdersDisabled ? 1.5 : 0'),
+            readinessV2Requirements:readiness.includes('requirementsTo100')&&readinessUi.includes('ما الذي ينقص للوصول إلى 100%؟'),
             stockAnalyzerLoaded:launcher.includes('stock-analyzer.js'),
             chartLoaded:launcher.includes('stock-analyzer-chart.js'),
             decisionLayerLoaded:launcher.includes('stock-analyzer-decision.js'),
