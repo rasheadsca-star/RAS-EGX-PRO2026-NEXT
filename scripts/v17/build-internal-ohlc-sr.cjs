@@ -196,7 +196,12 @@ const verifiedMarketSession = Boolean(
   market.sessionDate === sessionTruth.selectedSessionDate &&
   isRegularTradingWeekday(sessionTruth.selectedSessionDate)
 );
-const referenceSessionDate = verifiedMarketSession
+const researchMarketSession = Boolean(
+  sessionTruth.researchSessionVerified === true &&
+  validDate(sessionTruth.selectedSessionDate) &&
+  isRegularTradingWeekday(sessionTruth.selectedSessionDate)
+);
+const referenceSessionDate = (verifiedMarketSession || researchMarketSession)
   ? sessionTruth.selectedSessionDate
   : latestHistorySession(history) || (validDate(market.sessionDate) ? market.sessionDate : null);
 const completionConfirmed = sessionCompletionConfirmed(referenceSessionDate);
@@ -315,7 +320,7 @@ const executionCandidateReady = Boolean(
 const researchReady = Boolean(levelSessionDate && researchCoveragePct >= researchMinCoverage);
 
 const output = {
-  schemaVersion: '17.0.0-internal-ohlc-sr-3',
+  schemaVersion: '17.0.0-internal-ohlc-sr-4',
   generatedAt: new Date().toISOString(),
   ok: researchReady,
   researchReady,
@@ -324,6 +329,7 @@ const output = {
   levelSessionDate,
   sessionCompletionConfirmed: completionConfirmed,
   sourceSessionVerified: verifiedMarketSession,
+  researchSessionVerified: researchMarketSession,
   methodology: 'CLASSIC_PIVOT_FROM_COMPLETED_SESSION_OHLC',
   policy: {
     fabricatedPricesForbidden: true,
@@ -331,6 +337,7 @@ const output = {
     priceSourceSessionTruthRequiredForExecution: true,
     currentSessionUsedOnlyWhenConservativelyConfirmedComplete: true,
     incompleteCurrentSessionExcludedFromCompletedOhlc: true,
+    researchSessionMayReferenceCurrentIntradayWhileLevelsUsePriorCompletedSession: true,
     staleOrUntrustedOhlcAllowedForResearchOnly: true,
     candidateUniverseMayUseTrustedHistoryEvenWhenCurrentMarketRowMissing: true,
     fridaySaturdayExcludedFromHistorySessions: true,
@@ -377,6 +384,7 @@ console.log(JSON.stringify({
   referenceSessionDate,
   levelSessionDate,
   sourceSessionVerified: verifiedMarketSession,
+  researchSessionVerified: researchMarketSession,
   sessionCompletionConfirmed: completionConfirmed,
   eligible: eligibleMarketSymbols.length,
   derived: rows.length,
