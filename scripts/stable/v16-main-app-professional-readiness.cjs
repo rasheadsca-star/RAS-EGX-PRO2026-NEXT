@@ -83,32 +83,51 @@ function buildProfessionalReadiness() {
     .filter(Boolean);
 
   // AXIS 1 — Data & Session Integrity (25)
-  const inputRows = Math.max(1, n(price?.source?.inputRows, 0));
-  const acceptedRows = n(price.acceptedRows, 0);
-  const acceptedRatioPct = clamp(acceptedRows / inputRows * 100);
-  const sourceEvidencePct = pct(price?.source?.sourceSessionEvidenceCoveragePct ?? snap?.dataTruth?.sourceSessionEvidenceCoveragePct);
+  // Separate two concepts deliberately:
+  // 1) immutable evidence used when the published decision was created;
+  // 2) health of the latest source refresh right now.
+  // A later provider outage must block current execution, but it must not erase
+  // the evidence quality of the already-issued immutable decision.
+  const inputRows = Math.max(1, n(price?.source?.inputRows, n(snap?.dataTruth?.marketRows, 0)));
+  const currentAcceptedRows = n(price.acceptedRows, 0);
+  const currentEvidencePct = pct(price?.source?.sourceSessionEvidenceCoveragePct ?? snap?.dataTruth?.sourceSessionEvidenceCoveragePct);
+  const publishedEvidencePct = pct(snap?.portfolioPolicy?.sourceSessionEvidenceCoveragePct);
+  const publishedEvidenceRows = n(snap?.portfolioPolicy?.sourceSessionDataRows, 0);
+  const evidenceCoveragePct = Math.max(currentEvidencePct, publishedEvidencePct);
+  const verifiedRows = Math.max(currentAcceptedRows, publishedEvidenceRows);
+  const verifiedRowsRatioPct = clamp(verifiedRows / inputRows * 100);
   const sessionAligned = snap?.governance?.sessionAligned === true
     && snap?.dataTruth?.marketSession
     && snap?.dataTruth?.decisionSession
     && snap.dataTruth.marketSession === snap.dataTruth.decisionSession;
-  const executionGrade = price.executionGrade === true && snap?.dataTruth?.executionGrade === true;
+  const currentExecutionGrade = price.executionGrade === true && snap?.dataTruth?.executionGrade === true;
+  const publishedDecisionEvidenceReady = snap?.portfolioPolicy?.sourceSessionReady === true
+    && publishedEvidencePct > 0
+    && publishedEvidenceRows >= 80;
   let dataPoints = 0;
-  dataPoints += executionGrade ? 8 : 0;
+  dataPoints += currentExecutionGrade ? 8 : 0;
   dataPoints += sessionAligned ? 6 : 0;
-  dataPoints += 6 * sourceEvidencePct / 100;
-  dataPoints += 5 * acceptedRatioPct / 100;
+  dataPoints += 6 * evidenceCoveragePct / 100;
+  dataPoints += 5 * verifiedRowsRatioPct / 100;
   const dataReq = [];
-  if (!executionGrade) dataReq.push({ code: 'EXECUTION_GRADE', labelAr: 'اجتياز Execution Grade لبيانات الجلسة الحالية', hard: true });
+  if (!currentExecutionGrade) dataReq.push({ code: 'EXECUTION_GRADE', labelAr: 'استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ', hard: true });
   if (!sessionAligned) dataReq.push({ code: 'SESSION_ALIGNMENT', labelAr: 'تطابق جلسة السوق مع جلسة القرار', hard: true });
-  if (sourceEvidencePct < 100) dataReq.push({ code: 'SOURCE_EVIDENCE_100', labelAr: `رفع تغطية إثبات جلسة المصدر من ${round(sourceEvidencePct,1)}% إلى 100%`, hard: false });
-  if (acceptedRatioPct < 100) dataReq.push({ code: 'PRICE_ACCEPTANCE_100', labelAr: `تقليل الصفوف المرفوضة؛ المقبول حاليًا ${acceptedRows}/${inputRows}`, hard: false });
+  if (!publishedDecisionEvidenceReady) dataReq.push({ code: 'PUBLISHED_DECISION_EVIDENCE', labelAr: 'وجود دليل جلسة موثق وكافٍ للقرار المنشور نفسه', hard: true });
+  if (evidenceCoveragePct < 100) dataReq.push({ code: 'SOURCE_EVIDENCE_100', labelAr: `رفع أفضل تغطية موثقة لإثبات الجلسة من ${round(evidenceCoveragePct,1)}% إلى 100%`, hard: false });
+  if (verifiedRowsRatioPct < 100) dataReq.push({ code: 'VERIFIED_ROWS_100', labelAr: `رفع تغطية الصفوف الموثقة؛ الحالي ${verifiedRows}/${inputRows}`, hard: false });
   const dataAxis = axis('DATA_SESSION_INTEGRITY', 'سلامة البيانات والجلسة', 25, dataPoints, {
-    executionGrade,
+    currentExecutionGrade,
     sessionAligned,
-    sourceSessionEvidenceCoveragePct: round(sourceEvidencePct, 1),
-    acceptedRows,
+    currentSourceSessionEvidenceCoveragePct: round(currentEvidencePct, 1),
+    publishedDecisionEvidenceCoveragePct: round(publishedEvidencePct, 1),
+    publishedDecisionEvidenceReady,
+    publishedEvidenceRows,
+    currentAcceptedRows,
+    verifiedRows,
     inputRows,
-    acceptedRatioPct: round(acceptedRatioPct, 1),
+    evidenceCoveragePct: round(evidenceCoveragePct, 1),
+    verifiedRowsRatioPct: round(verifiedRowsRatioPct, 1),
+    currentSourceHealth: currentExecutionGrade ? 'EXECUTION_GRADE' : 'BLOCKED',
   }, dataReq);
 
   // AXIS 2 — V16.9 Walk-Forward Stability (25)
@@ -189,7 +208,7 @@ function buildProfessionalReadiness() {
   const financialCapability = analyzer.includes('fundamentalScore') && analyzer.includes('trailingPE') && analyzer.includes('priceToBook');
   const newsCapability = analyzer.includes('newsSummary') && analyzer.includes('sentimentForTitle');
   const chartCapability = chart.includes('EMA20') && chart.includes('RSI(14)') && chart.includes('Fibonacci') && chart.includes('tc-wick');
-  const decisionCapability = decisionUi.includes('مستوى إلغاء القرار') && decisionUi.includes('الهدف الأقرب');
+  const decisionCapability = decisionUi.includes('إلغاء القرار') && decisionUi.includes('الهدف الأقرب') && decisionUi.includes('زيادة تدريجية مشروطة');
   const historyCovered = tickers.filter(historyExists).length;
   const historyCoveragePct = tickers.length ? historyCovered / tickers.length * 100 : 0;
   const consensusCovered = Array.isArray(consensus?.current?.mainAppAnnotations)
@@ -207,6 +226,7 @@ function buildProfessionalReadiness() {
   intelligencePoints += persistedIntelligence ? 2 : 0;
   const intelligenceReq = [];
   if (!analyzerTechnical) intelligenceReq.push({ code: 'TECH_ANALYZER', labelAr: 'اكتمال طبقة التحليل الفني/Fibonacci وإدارة المركز', hard: false });
+  if (!decisionCapability) intelligenceReq.push({ code: 'PORTFOLIO_DECISION_LAYER', labelAr: 'اكتمال طبقة قرار المحفظة ومستوى إلغاء القرار والهدف الأقرب', hard: false });
   if (!financialCapability) intelligenceReq.push({ code: 'FINANCIAL_CAPABILITY', labelAr: 'اكتمال التحليل المالي داخل محلل السهم', hard: false });
   if (!newsCapability) intelligenceReq.push({ code: 'NEWS_CAPABILITY', labelAr: 'اكتمال تحليل الأخبار وتأثيرها', hard: false });
   if (historyCoveragePct < 100) intelligenceReq.push({ code: 'RECOMMENDATION_HISTORY_COVERAGE', labelAr: `تغطية تاريخ OHLCV لكل توصيات اليوم؛ الحالي ${historyCovered}/${tickers.length}`, hard: false });
@@ -263,7 +283,7 @@ function buildProfessionalReadiness() {
 
   const axes = [dataAxis, wfAxis, liveAxis, intelligenceAxis, riskAxis];
   const foundationScore = round(axes.reduce((sum, item) => sum + item.points, 0), 1);
-  const criticalDataGate = executionGrade && sessionAligned;
+  const criticalDataGate = currentExecutionGrade && sessionAligned && publishedDecisionEvidenceReady;
   const historicalGate = wfReq.filter(item => item.hard).length === 0;
   const governanceGate = riskReq.filter(item => item.hard).length === 0;
   const professionalHardGates = {
@@ -277,8 +297,8 @@ function buildProfessionalReadiness() {
 
   // A strong engineering foundation must not visually masquerade as a completed
   // professional evidence claim. Until the mandatory live/forward gate passes,
-  // the professional score is capped below 80. Data or governance failure caps
-  // it even lower.
+  // the professional score is capped below 80. A current data/provider failure
+  // caps it lower without erasing the published decision's evidence quality.
   let professionalReadinessScore = foundationScore;
   let capReason = null;
   if (!engineLocked || !governanceGate) {
@@ -331,6 +351,7 @@ function buildProfessionalReadiness() {
       scoreMeaningAr: 'يقيس جاهزية MAIN APP التشغيلية والمهنية وجودة الأدلة، وليس احتمال نجاح التوصية القادمة.',
       accuracyMeaningAr: 'لا يرفع ترتيب الأسهم أو Alpha تلقائيًا. أي تغيير في الترتيب يتطلب Challenger/Ablation واختبارًا خارج العينة قبل الترقية.',
       qualityImpactAr: 'يرفع جودة التطبيق فعليًا عبر منع الادعاء المهني عند نقص البيانات أو السجل الحي، وإظهار الفجوات القابلة للقياس بدل درجة تجميلية.',
+      sourceHealthMeaningAr: 'فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا.',
     },
     evidence: {
       priceTruthGeneratedAt: price.generatedAt || null,
