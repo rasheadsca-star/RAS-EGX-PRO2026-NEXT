@@ -7,6 +7,8 @@ on:
     paths:
       - ".github/workflows/v16-daily-recommendation-scan.yml"
       - "scripts/stable/v16-source-session-quorum.cjs"
+      - "scripts/stable/v16-v169-live-resolution-normalizer.cjs"
+      - "scripts/stable/v16-main-app-professional-readiness.cjs"
   schedule:
     # GitHub cron is UTC. We schedule both Egypt UTC+2 and UTC+3 candidates,
     # then the preflight gate checks the real Africa/Cairo local clock.
@@ -137,6 +139,8 @@ jobs:
           node --check scripts/stable/v16-publish-v169-basket.cjs
           node --check scripts/stable/v16-session-data-fingerprint.cjs
           node --check scripts/stable/v16-recommendation-freshness-guard.cjs
+          node --check scripts/stable/v16-v169-live-resolution-normalizer.cjs
+          node --check scripts/stable/v16-main-app-professional-readiness.cjs
           python -m py_compile scripts/research/v16-v169-basket-engine.py
           python -m py_compile scripts/research/v16-v169-target-hit-audit.py
           python -m py_compile scripts/stable/v16-v169-live-evaluation.py
@@ -218,6 +222,12 @@ jobs:
             cp /tmp/previous-legacy.json data/stable/v15-practical-decision.json
           fi
 
+          # Canonical governance normalization runs on EVERY non-noop scan.
+          # The live evaluator deliberately records raw conservative states;
+          # this step applies the frozen KEEP_CASH and holding-expiry policy so
+          # a later scan can never regress the resolved-session ledger.
+          node scripts/stable/v16-v169-live-resolution-normalizer.cjs
+          node scripts/stable/v16-main-app-professional-readiness.cjs
           node scripts/stable/v16-recommendation-freshness-guard.cjs || true
 
           SOURCE_READY="$SOURCE_READY" ATTEMPTS="$ATTEMPTS" node - <<'NODE'
