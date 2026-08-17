@@ -1,0 +1,26 @@
+#!/usr/bin/env node
+'use strict';
+const fs=require('fs'),path=require('path');
+const root=path.resolve(process.env.GITHUB_WORKSPACE||'.'),P=r=>path.join(root,r),read=r=>JSON.parse(fs.readFileSync(P(r),'utf8'));
+const current=read('data/v20/current.json'),selection=read('data/v20/full-market-native-selection.json'),nativeRegression=read('data/v20/full-market-native-regression.json'),comparison=read('data/v20/native-vs-main-comparison.json'),gate=read('data/v17/resilient-session-status.json');
+const failures=[],check=(ok,code)=>{if(!ok)failures.push(code)};
+check(current.sessionDate===selection.sessionDate,'NATIVE_EXEC_CURRENT_SESSION_MISMATCH');
+check(current.selectionEngine?.engineId==='V20_FULL_MARKET_NATIVE_SELECTION_V1','NATIVE_EXEC_ENGINE_ID_DRIFT');
+check(current.selectionEngine?.mode==='V20_NATIVE_FULL_MARKET_PRIMARY_SELECTION','NATIVE_EXEC_NOT_PRIMARY_SELECTION');
+check(current.selectionEngine?.candidateUniverseIsFullMarketIndependent===true,'NATIVE_EXEC_NOT_FULL_MARKET_INDEPENDENT');
+check(current.selectionEngine?.legacySeedDependency===false,'NATIVE_EXEC_LEGACY_SEED_DEPENDENCY');
+check(Number(current.selectionEngine?.legacyScoringContributionPct)===0,'NATIVE_EXEC_LEGACY_SCORE_CONTRIBUTION');
+check(current.selectionEngine?.scoreIsConfidence===false,'NATIVE_EXEC_SCORE_SEMANTICS_DRIFT');
+check(current.selectionEngine?.rankingSource==='data/v20/full-market-native-selection.json','NATIVE_EXEC_RANKING_SOURCE_DRIFT');
+check(current.selectionEngine?.v17GlobalExecutionAuthority===true,'NATIVE_EXEC_V17_AUTHORITY_MISSING');
+check(nativeRegression.ok===true&&Number(nativeRegression.failedCount||0)===0,'NATIVE_EXEC_UPSTREAM_REGRESSION_NOT_GREEN');
+check(current.governance?.automaticPromotion===false&&current.selectionEngine?.automaticPromotion===false,'NATIVE_EXEC_AUTOMATIC_PROMOTION_LEAK');
+check(current.portfolio?.automaticOrders===false&&current.selectionEngine?.automaticBrokerOrders===false,'NATIVE_EXEC_AUTOMATIC_ORDER_LEAK');
+const nativeRank=(selection.recommendationRanking||[]).slice(0,30),rows=current.opportunities||[];
+check(rows.length===nativeRank.length,'NATIVE_EXEC_OPPORTUNITY_COUNT_MISMATCH');
+for(let i=0;i<Math.min(rows.length,nativeRank.length);i++){const r=rows[i],n=nativeRank[i];check(r.ticker===n.ticker,`NATIVE_EXEC_RANK_MISMATCH_${i+1}`);check(r.rank===i+1,`NATIVE_EXEC_RANK_FIELD_${r.ticker}`);check(r.scoreProvenance==='V20_FULL_MARKET_NATIVE_RESEARCH_SCORE_NOT_CONFIDENCE',`NATIVE_EXEC_LEGACY_SCORE_PROVENANCE_${r.ticker}`);check(r.provenance?.rankingSource==='data/v20/full-market-native-selection.json',`NATIVE_EXEC_LEGACY_RANKING_SOURCE_${r.ticker}`);check(Number(r.nativeEvidence?.legacyContributionPct)===0,`NATIVE_EXEC_LEGACY_CONTRIBUTION_${r.ticker}`);check(r.confidence?.modelConfidencePct===null,`NATIVE_EXEC_SCORE_MISLABELED_CONFIDENCE_${r.ticker}`);}
+if(gate.executionGrade!==true){check(rows.every(r=>r.status!=='ACTIONABLE'),'NATIVE_EXEC_ACTIONABLE_WITH_CLOSED_V17_GATE');check(Number(current.portfolio?.recommendedExposurePct||0)===0,'NATIVE_EXEC_EXPOSURE_WITH_CLOSED_V17_GATE');check(Number(current.portfolio?.cashPct||0)===100,'NATIVE_EXEC_CASH_NOT_100_WITH_CLOSED_V17_GATE');}
+for(const r of rows.filter(x=>x.status==='ACTIONABLE')){check(gate.executionGrade===true&&gate.sessionAligned===true,`NATIVE_EXEC_ACTIONABLE_GLOBAL_GATE_${r.ticker}`);check(r.liquidityExecutionEligible===true,`NATIVE_EXEC_ACTIONABLE_LIQUIDITY_${r.ticker}`);check(r.supportResistance?.executionEligible===true&&r.supportResistance?.sessionAligned===true,`NATIVE_EXEC_ACTIONABLE_SR_${r.ticker}`);check(r.tradePlan?.alignment?.eligibleForActionable===true&&r.tradePlan?.alignment?.state==='IN_ENTRY_RANGE'&&r.tradePlan?.alignment?.relationshipValid===true,`NATIVE_EXEC_ACTIONABLE_ALIGNMENT_${r.ticker}`);check(r.tradePlan?.target1Metrics?.valid===true,`NATIVE_EXEC_ACTIONABLE_RR_${r.ticker}`);}
+check(comparison.sessionDate===current.sessionDate,'NATIVE_EXEC_COMPARISON_SESSION_MISMATCH');check(comparison.governance?.nativeSelectsV20Opportunities===true,'NATIVE_EXEC_COMPARISON_GOVERNANCE');check(comparison.governance?.mainAppMutated===false,'NATIVE_EXEC_MAIN_APP_MUTATION_FLAG');check(comparison.forwardEvaluation?.status==='PENDING_FUTURE_SESSIONS','NATIVE_EXEC_FORWARD_EVAL_SEMANTICS');
+const report={schemaVersion:'20.0.0-native-executive-current-regression-1',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,sessionDate:current.sessionDate,evidence:{engineId:current.selectionEngine?.engineId,opportunityCount:rows.length,nativeTop10:rows.slice(0,10).map(r=>r.ticker),actionableCount:rows.filter(r=>r.status==='ACTIONABLE').length,watchCount:rows.filter(r=>r.status==='WATCH').length,v17ExecutionGrade:gate.executionGrade===true,v17SessionAligned:gate.sessionAligned===true,legacyScoringContributionPct:current.selectionEngine?.legacyScoringContributionPct,mainAppMutated:false},checks:{fullMarketNativeIsPrimary:true,legacyRankingRemovedFromCurrentOpportunities:true,nativeScoreNotConfidence:true,v17ExecutionAuthorityPreserved:true,closedGateFailClosed:true,automaticPromotionDisabled:true,automaticOrdersDisabled:true,mainAppIsolationAsserted:true}};
+fs.writeFileSync(P('data/v20/native-executive-current-regression.json'),`${JSON.stringify(report,null,2)}\n`,'utf8');console.log(JSON.stringify(report,null,2));if(!report.ok)process.exitCode=1;
