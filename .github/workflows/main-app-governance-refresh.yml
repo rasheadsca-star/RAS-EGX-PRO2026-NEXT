@@ -10,6 +10,7 @@ on:
       - "data/fetch-status.json"
       - "data/market.json"
       - "data/v17/current.json"
+      - "scripts/stable/v16-recommendation-freshness-guard.cjs"
       - "scripts/stable/v16-main-app-governance.cjs"
       - "scripts/stable/v16-main-app-consensus.cjs"
       - "scripts/stable/v16-publish-v169-basket.cjs"
@@ -26,8 +27,7 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
+  actions: write
 
 concurrency:
   # Same group as the canonical market scanner: never rebuild governance while
@@ -39,10 +39,6 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      should_deploy: ${{ steps.clock.outputs.run }}
-      system_state: ${{ steps.acceptance.outputs.system_state }}
-      session_date: ${{ steps.acceptance.outputs.session_date }}
     steps:
       - name: Resolve Cairo refresh window
         id: clock
@@ -78,11 +74,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --check scripts/stable/v16-recommendation-freshness-guard.cjs
           node --check scripts/stable/v16-main-app-governance.cjs
           node --check scripts/stable/v16-main-app-consensus.cjs
           node --check preview-v16/app/decision-source.js
           node --check preview-v16/app/main-app-governance-overlay.js
           node --check preview-v16/app/main-app-consensus-overlay.js
+          grep -q "buildMainAppGovernance" scripts/stable/v16-recommendation-freshness-guard.cjs
           grep -q "V16_9_EQUAL_WEIGHT_BASKET" scripts/stable/v16-main-app-governance.cjs
           grep -q "v16-main-app-current.json" preview-v16/app/decision-source.js
           grep -q "main-app-governance-overlay.js" preview-v16/app/v169-p2.html
@@ -115,7 +113,6 @@ jobs:
 
       - name: Build stack status and acceptance
         if: steps.clock.outputs.run == 'true'
-        id: acceptance
         env:
           GOVERNANCE_EXIT: ${{ steps.governance.outputs.exit_code }}
         shell: bash
@@ -157,8 +154,6 @@ jobs:
             checks:required,
           };
           fs.writeFileSync('data/stable/v16-main-app-stack-status.json',JSON.stringify(out,null,2)+'\n');
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,`system_state=${snap.systemState||'BLOCKED'}\n`);
-          fs.appendFileSync(process.env.GITHUB_OUTPUT,`session_date=${snap.sessionDate||''}\n`);
           console.log(out);
           if(!pass)process.exit(1);
           NODE
@@ -187,48 +182,21 @@ jobs:
             echo "Canonical MAIN APP governance already current."
           fi
 
-      - name: Enforce Pages secret guard
+      - name: Dispatch stable Pages deployment for latest main
         if: steps.clock.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test ! -e .env
-          test ! -e .project-config.json
-          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
-            echo "Tracked .env is forbidden from Pages"
-            exit 1
-          fi
-          touch .nojekyll
-          echo "PAGES_SECRET_GUARD_PASS"
-
-      - name: Configure Pages for canonical MAIN APP snapshot
-        if: steps.clock.outputs.run == 'true'
-        uses: actions/configure-pages@v5
-
-      - name: Upload complete canonical MAIN APP
-        if: steps.clock.outputs.run == 'true'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-  deploy-pages:
-    needs: refresh
-    if: needs.refresh.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy canonical MAIN APP to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
-
-      - name: Confirm published MAIN APP state
-        run: |
-          echo "MAIN APP session: ${{ needs.refresh.outputs.session_date }}"
-          echo "MAIN APP state: ${{ needs.refresh.outputs.system_state }}"
-          echo "Published: ${{ steps.deployment.outputs.page_url }}"
+          # Commits made with GITHUB_TOKEN do not recursively trigger normal
+          # push workflows. workflow_dispatch is the supported exception, so
+          # explicitly deploy the latest main after every canonical refresh.
+          for attempt in 1 2 3; do
+            if gh workflow run static.yml --repo "$GITHUB_REPOSITORY" --ref main; then
+              echo "Pages deployment dispatched for latest main."
+              exit 0
+            fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt * 10))
+          done
