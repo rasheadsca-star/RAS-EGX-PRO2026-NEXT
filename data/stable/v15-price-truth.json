@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-08-17T21:39:35.047Z",
+  "generatedAt": "2026-08-17T21:41:18.739Z",
   "expectedSession": "2026-08-17",
   "ready": true,
   "executionGrade": true,
@@ -13,11 +13,20 @@
     "preciseSource": true,
     "realFetch": true,
     "inputRows": 218,
-    "verifiedExpectedSessionRows": 211,
-    "sourceSessionEvidenceCoveragePct": 96.79
+    "verifiedExpectedSessionRows": 215,
+    "sourceSessionEvidenceCoveragePct": 98.6,
+    "primaryVerifiedExpectedSessionRows": 211,
+    "secondSourceVerifiedSessionRows": 4,
+    "secondSourceVerifiedSessionTickers": [
+      "DEIN",
+      "DSCW",
+      "MEGM",
+      "SAIB"
+    ],
+    "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 204,
-  "rejectedRows": 14,
+  "acceptedRows": 215,
+  "rejectedRows": 3,
   "droppedRows": 0,
   "updatedHistoryFiles": 179,
   "missingHistoryFiles": [
@@ -78,15 +87,6 @@
     }
   ],
   "sampleAccepted": [
-    {
-      "ticker": "OCDI",
-      "close": 33,
-      "sourceSessionDate": "2026-08-17",
-      "previousTrustedClose": 34.45,
-      "jumpPct": 4.21,
-      "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
-      "warnings": []
-    },
     {
       "ticker": "ISMQ",
       "close": 9.39,
@@ -451,115 +451,146 @@
       "jumpPct": null,
       "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
       "warnings": []
+    },
+    {
+      "ticker": "ORAS",
+      "date": "2026-08-17",
+      "close": 761.2,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0.368,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "BIOC",
+      "date": "2026-08-17",
+      "close": 507,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_sigma_capital_live_market",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "DSCW",
+      "date": "2026-08-17",
+      "close": 2.03,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 0.493,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "PHGC",
+      "date": "2026-08-17",
+      "close": 0.09,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "REPORTED_CHANGE_MISMATCH",
+      "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_sigma_capital_live_market",
+      "priceDifferencePct": 1.099,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "MEGM",
+      "date": "2026-08-17",
+      "close": 12.54,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 41.069,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "OCPH",
+      "date": "2026-08-17",
+      "close": 270,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "DEIN",
+      "date": "2026-08-17",
+      "close": 10.35,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 9.952,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "TRTO",
+      "date": "2026-08-17",
+      "close": 0.05,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_sigma_capital_live_market",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "CFGH",
+      "date": "2026-08-17",
+      "close": 0.11,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "REPORTED_CHANGE_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "NAHO",
+      "date": "2026-08-17",
+      "close": 0.14,
+      "mode": "SECOND_SOURCE_OHLC_AFTER_PRIMARY_CLOSE_CONFIRMATION",
+      "originalRejectReason": "REPORTED_CHANGE_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "SAIB",
+      "date": "2026-08-17",
+      "close": 2.11,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
     {
       "rejected": true,
-      "ticker": "ORAS",
-      "reason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
-      "close": 761.2,
-      "previousTrustedClose": 71.05,
-      "jumpPct": 971.36,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "BIOC",
-      "reason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
-      "close": 507,
-      "previousTrustedClose": 166.5,
-      "jumpPct": 204.5,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "DSCW",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2026-08-16",
-      "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "PHGC",
-      "reason": "REPORTED_CHANGE_MISMATCH",
-      "close": 0.09,
-      "previousClose": 0.09,
-      "reportedChangePct": 4.6,
-      "impliedChangePct": 0,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "MEGM",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2022-04-28",
-      "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "OCPH",
-      "reason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
-      "close": 270,
-      "previousTrustedClose": 480,
-      "jumpPct": 43.75,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
-    {
-      "rejected": true,
       "ticker": "DCCC",
       "reason": "SOURCE_SESSION_MISMATCH",
       "sourceSessionDate": "2008-04-07",
-      "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "DEIN",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2026-06-25",
-      "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "TRTO",
-      "reason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
-      "close": 0.05,
-      "previousTrustedClose": 0.03,
-      "jumpPct": 66.67,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "CFGH",
-      "reason": "REPORTED_CHANGE_MISMATCH",
-      "close": 0.11,
-      "previousClose": 0.11,
-      "reportedChangePct": 5.56,
-      "impliedChangePct": 0,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "NAHO",
-      "reason": "REPORTED_CHANGE_MISMATCH",
-      "close": 0.14,
-      "previousClose": 0.13,
-      "reportedChangePct": 2.26,
-      "impliedChangePct": 7.69,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "SAIB",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2026-07-06",
       "expectedSession": "2026-08-17"
     },
     {
@@ -575,5 +606,154 @@
       "reason": "SOURCE_SESSION_UNKNOWN"
     }
   ],
-  "sampleDropped": []
+  "sampleDropped": [],
+  "secondSourceReconciliation": {
+    "enabled": true,
+    "failClosed": true,
+    "expectedSession": "2026-08-17",
+    "targetRejectedRowsThisRun": 14,
+    "resolverApprovedRowsThisRun": 11,
+    "recoveredRowsThisRun": 11,
+    "unresolvedRows": 3,
+    "recoveredTickersThisRun": [
+      "ORAS",
+      "BIOC",
+      "DSCW",
+      "PHGC",
+      "MEGM",
+      "OCPH",
+      "DEIN",
+      "TRTO",
+      "CFGH",
+      "NAHO",
+      "SAIB"
+    ],
+    "cumulativeSecondSourceSessionTickers": [
+      "DEIN",
+      "DSCW",
+      "MEGM",
+      "SAIB"
+    ],
+    "unresolvedTickers": [
+      "DCCC",
+      "SEIGA",
+      "RAKT"
+    ],
+    "historyResults": [
+      {
+        "ticker": "ORAS",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 761.2,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "BIOC",
+        "merged": true,
+        "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+        "close": 507,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "DSCW",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 2.03,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "PHGC",
+        "merged": true,
+        "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+        "close": 0.09,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": true
+      },
+      {
+        "ticker": "MEGM",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 12.54,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "OCPH",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 270,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "DEIN",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 10.35,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "TRTO",
+        "merged": true,
+        "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+        "close": 0.05,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "CFGH",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 0.11,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": true
+      },
+      {
+        "ticker": "NAHO",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 0.14,
+        "mode": "SECOND_SOURCE_OHLC_AFTER_PRIMARY_CLOSE_CONFIRMATION",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "SAIB",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 2.11,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      }
+    ],
+    "changesAlphaOrRanking": false,
+    "changesEntryStopTargetAllocation": false
+  },
+  "professionalCoverage": {
+    "schemaVersion": "16.9.2-professional-market-coverage-v1",
+    "generatedAt": "2026-08-17T21:41:18.779Z",
+    "rawUniverseRows": 218,
+    "rawSessionEvidenceRows": 215,
+    "rawSessionEvidenceCoveragePct": 98.6,
+    "acceptedCurrentSessionPriceRows": 215,
+    "verifiedIneligibleRows": 3,
+    "verifiedIneligibleTickers": [
+      "DCCC",
+      "SEIGA",
+      "RAKT"
+    ],
+    "executionEligibleUniverseRows": 215,
+    "executionEligibleAcceptedRows": 215,
+    "executionEligibleCoveragePct": 100,
+    "verifiedDispositionRows": 218,
+    "universeDispositionCoveragePct": 100,
+    "unresolvedRows": 0,
+    "complete": true,
+    "failClosed": true,
+    "noSyntheticPrices": true,
+    "dispositionEvidencePath": "data/stable/v16-market-universe-disposition.json"
+  }
 }

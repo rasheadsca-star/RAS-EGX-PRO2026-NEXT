@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.9.2-market-universe-disposition-v1",
-  "generatedAt": "2026-08-17T21:27:17.715Z",
+  "generatedAt": "2026-08-17T21:41:18.779Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "expectedSession": "2026-08-17",
   "methodology": {
@@ -11,16 +11,16 @@
     "rule": "Every raw market row must either have an accepted exact-session price or a verified non-executable disposition. Only accepted exact-session rows belong to the execution-eligible universe."
   },
   "summary": {
-    "rawUniverseRows": 217,
+    "rawUniverseRows": 218,
     "acceptedCurrentSessionPriceRows": 215,
     "rawSessionEvidenceRows": 215,
-    "rawSessionEvidenceCoveragePct": 99.1,
-    "verifiedIneligibleRows": 2,
+    "rawSessionEvidenceCoveragePct": 98.6,
+    "verifiedIneligibleRows": 3,
     "unresolvedRows": 0,
     "executionEligibleUniverseRows": 215,
     "executionEligibleAcceptedRows": 215,
     "executionEligibleCoveragePct": 100,
-    "verifiedDispositionRows": 217,
+    "verifiedDispositionRows": 218,
     "universeDispositionCoveragePct": 100,
     "professionalDataCoverageComplete": true
   },
@@ -70,8 +70,31 @@
       },
       "executionPolicy": "EXCLUDE_FROM_CURRENT_SESSION_EXECUTION_UNIVERSE",
       "rationale": "No exact expected-session price row is independently available. The row is documented and quarantined rather than assigned a synthetic current-session price."
+    },
+    {
+      "ticker": "RAKT",
+      "verified": true,
+      "executionEligible": false,
+      "quarantined": true,
+      "disposition": "NO_CURRENT_SESSION_PRICE_ROW_CONFIRMED",
+      "originalReason": "SOURCE_SESSION_UNKNOWN",
+      "expectedSession": "2026-08-17",
+      "primarySourceSessionDate": null,
+      "primaryEvidenceStatus": "STALE_OR_NON_CURRENT_SESSION",
+      "independentEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "NO_EXPECTED_SESSION_CONFIRMED",
+        "checkedUrls": [
+          "https://stockanalysis.com/quote/egx/RAKT/history/",
+          "https://stockanalysis.com/quote/egx/RAKT/history/?p=1"
+        ],
+        "latestAvailableSession": "2026-08-16",
+        "latestAvailableClose": 22.63
+      },
+      "executionPolicy": "EXCLUDE_FROM_CURRENT_SESSION_EXECUTION_UNIVERSE",
+      "rationale": "No exact expected-session price row is independently available. The row is documented and quarantined rather than assigned a synthetic current-session price."
     }
   ],
   "unresolved": [],
-  "dispositionHash": "bf41d6e87f5a2482b3f19f9528250490f13c6329351d8b2ad898a8ce9331d753"
+  "dispositionHash": "61be9e9e4796337fd4822a1289875b6b0bb8cc5dd881cb41a185c4d43463bf3a"
 }
