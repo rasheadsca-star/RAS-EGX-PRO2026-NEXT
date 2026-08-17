@@ -3,10 +3,12 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const LEDGER_PATH = path.join(ROOT, 'data/stable/v16-v169-live-evaluation.json');
 const LOCK_PATH = path.join(ROOT, 'data/stable/v16-v169-release-lock.json');
+const REGRESSION_GUARD_PATH = path.join(ROOT, 'scripts/stable/v16-v169-live-regression-guard.cjs');
 
 function readJson(file, fallback = {}) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
@@ -33,6 +35,18 @@ function pct(exitPrice, entryPrice) {
   const x = n(exitPrice);
   if (!(e > 0) || x === null) return null;
   return (x / e - 1) * 100;
+}
+function enforceRegressionGuard() {
+  const result = spawnSync(process.execPath, [REGRESSION_GUARD_PATH], {
+    cwd: ROOT,
+    env: process.env,
+    stdio: 'inherit',
+    timeout: 120000,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`V16.9 live regression guard failed with exit=${result.status}`);
+  }
 }
 
 const TERMINAL = new Set(['TARGET_HIT', 'STOP_HIT', 'CASH_UNFILLED', 'TIME_EXIT']);
@@ -194,13 +208,14 @@ function normalizeLedger() {
   ledger.promotionEligible = Object.values(ledger.promotionChecks).every(Boolean);
   ledger.nextCheckpoint = (lock.reviewCheckpoints || [5, 10, 20, 30]).find(v => v > summary.resolvedSessions) || null;
   ledger.normalization = {
-    schemaVersion: '16.9.2-live-resolution-accounting-v1',
+    schemaVersion: '16.9.2-live-resolution-accounting-v2',
     generatedAt: new Date().toISOString(),
     policy: {
       unfilledMemberPolicy: lock?.pilotRules?.unfilledMemberPolicy || 'KEEP_CASH',
       noEntryOutcome: 'CASH_UNFILLED_0_RETURN',
       holdingWindowCompleteOutcome: 'TIME_EXIT_LAST_CLOSE',
       futureDataStillRequired: true,
+      immutableRegressionGuard: 'ENFORCED_AGAINST_LAST_COMMITTED_LEDGER',
       changesAlphaOrPublishedSignal: false,
     },
     normalizedMembers,
@@ -215,9 +230,18 @@ function normalizeLedger() {
     unfilledMemberPolicy: 'KEEP_CASH_AND_RESOLVE_ZERO_RETURN',
     holdingWindowExpiryRule: 'EXIT_AT_LAST_OBSERVED_CLOSE',
     unresolvedState: 'WAITING_ONLY_WHEN_FUTURE_MARKET_DATA_IS_GENUINELY_REQUIRED',
+    terminalOutcomeMutationPolicy: 'FORBIDDEN_AFTER_COMMIT',
+    resolvedSessionRegressionPolicy: 'FORBIDDEN',
   };
 
   writeJsonAtomic(LEDGER_PATH, ledger);
+
+  // This guard compares the normalized worktree ledger with the last committed
+  // ledger. It blocks the scan if a resolved session regresses, a terminal
+  // member outcome mutates, or a newly resolved session is not fully terminal.
+  // It does not alter ranking, signals, entry/stop/target or allocation rules.
+  enforceRegressionGuard();
+
   console.log(JSON.stringify({
     totalTrackedSessions: sessions.length,
     resolvedSessions: summary.resolvedSessions,
@@ -227,6 +251,7 @@ function normalizeLedger() {
     memberSummary: ledger.memberSummary,
     summary,
     promotionChecks: ledger.promotionChecks,
+    immutableRegressionGuard: 'PASS',
   }, null, 2));
   return ledger;
 }
