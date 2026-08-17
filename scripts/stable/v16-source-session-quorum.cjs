@@ -84,7 +84,7 @@ async function fetchSourceMarketTime(row) {
         'cache-control': 'no-cache',
         pragma: 'no-cache',
         referer: 'https://english.mubasher.info/',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36 EGXProV16SessionQuorum/4.1'
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36 EGXProV16SessionQuorum/4.2'
       }
     });
     if (!response.ok) return { ok: false, reason: `HTTP_${response.status}` };
@@ -166,7 +166,7 @@ async function mapLimit(items, limit, fn) {
     preciseMarketSource &&
     explicitExpectedRows.length >= MIN_QUORUM &&
     explicitCoveragePct >= MIN_COVERAGE_PCT &&
-    explicitMismatches === 0
+    explicitConflictQuarantinePassed
   );
 
   const candidates = classifications.filter(x => x.result.eligible).map(x => x.row);
@@ -217,7 +217,7 @@ async function mapLimit(items, limit, fn) {
     }));
 
   const report = {
-    schemaVersion: '16.3.9-source-session-quorum-5-stale-minority-quarantine',
+    schemaVersion: '16.3.9-source-session-quorum-6-explicit-stale-minority-quarantine',
     checkedAt: new Date().toISOString(),
     expectedSession,
     cairoDate,
@@ -245,7 +245,7 @@ async function mapLimit(items, limit, fn) {
     quarantinedExplicitMismatches,
     quorumPassed,
     mode: explicitQuorumPassed
-      ? 'EXPLICIT_SOURCE_SESSION_EVIDENCE'
+      ? (explicitMismatches > 0 ? 'EXPLICIT_SOURCE_SESSION_EVIDENCE_WITH_STALE_MINORITY_QUARANTINE' : 'EXPLICIT_SOURCE_SESSION_EVIDENCE')
       : inferenceQuorumPassed
         ? (explicitMismatches > 0 ? 'TIME_ONLY_CROSS_SYMBOL_INFERENCE_WITH_STALE_MINORITY_QUARANTINE' : 'TIME_ONLY_CROSS_SYMBOL_INFERENCE')
         : 'FAIL_CLOSED',
