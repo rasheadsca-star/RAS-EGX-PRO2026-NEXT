@@ -12,8 +12,18 @@ const V17_PATH = P('data/v17/current.json');
 const OUTPUT_PATH = P('data/stable/v16-main-app-consensus.json');
 const REGRESSION_PATH = P('data/stable/v16-main-app-consensus-regression.json');
 
-const EXTERNAL_V20_URL = 'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX0.1/main/data/v20/native-current.json';
-const EXTERNAL_CONSENSUS_URL = 'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX0.1/main/data/v20/multi-engine-consensus.json';
+const EXTERNAL_SOURCES = {
+  v20: [
+    'https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/native-current.json',
+    'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX0.1/main/data/v20/native-current.json',
+    'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX0.1@main/data/v20/native-current.json',
+  ],
+  consensus: [
+    'https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/multi-engine-consensus.json',
+    'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX0.1/main/data/v20/multi-engine-consensus.json',
+    'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX0.1@main/data/v20/multi-engine-consensus.json',
+  ],
+};
 
 function readJson(file, fallback = {}) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
@@ -27,20 +37,46 @@ function writeJsonAtomic(file, value) {
 }
 function ticker(value) { return String(value || '').trim().toUpperCase(); }
 function unique(values) { return [...new Set(values.filter(Boolean))]; }
-async function fetchJson(url) {
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+async function fetchJson(url, attempt = 1) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(`${url}?t=${Date.now()}`, {
+    const separator = url.includes('?') ? '&' : '?';
+    const response = await fetch(`${url}${separator}t=${Date.now()}-${attempt}`, {
       cache: 'no-store',
       signal: controller.signal,
-      headers: { 'User-Agent': 'EGX-MAIN-APP-V16.9.2-consensus' },
+      headers: {
+        'User-Agent': 'EGX-MAIN-APP-V16.9.2-consensus',
+        'Cache-Control': 'no-cache',
+        'Accept': 'application/json,text/plain;q=0.9,*/*;q=0.8',
+      },
     });
     if (!response.ok) throw new Error(`HTTP_${response.status}`);
-    return await response.json();
+    const text = await response.text();
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object') throw new Error('INVALID_JSON_OBJECT');
+    return parsed;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchFirstValid(label, urls) {
+  const errors = [];
+  for (const url of urls) {
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const data = await fetchJson(url, attempt);
+        return { data, sourceUrl: url, attempts: attempt, errors };
+      } catch (error) {
+        errors.push(`${label}:${new URL(url).hostname}:attempt${attempt}:${error.message}`);
+        if (attempt < 2) await sleep(1200 * attempt);
+      }
+    }
+  }
+  return { data: null, sourceUrl: null, attempts: 0, errors };
 }
 
 async function main() {
@@ -52,11 +88,13 @@ async function main() {
   const mainRows = Array.isArray(snapshot.recommendations) ? snapshot.recommendations : Array.isArray(decision.recommendations) ? decision.recommendations : [];
   const mainTickers = unique(mainRows.map(row => ticker(row.ticker)));
 
-  let v20 = null;
-  let previousConsensus = null;
-  const sourceErrors = [];
-  try { v20 = await fetchJson(EXTERNAL_V20_URL); } catch (error) { sourceErrors.push(`V20:${error.message}`); }
-  try { previousConsensus = await fetchJson(EXTERNAL_CONSENSUS_URL); } catch (error) { sourceErrors.push(`RELATED:${error.message}`); }
+  const [v20Result, relatedResult] = await Promise.all([
+    fetchFirstValid('V20', EXTERNAL_SOURCES.v20),
+    fetchFirstValid('RELATED', EXTERNAL_SOURCES.consensus),
+  ]);
+  const v20 = v20Result.data;
+  const previousConsensus = relatedResult.data;
+  const sourceErrors = [...v20Result.errors, ...relatedResult.errors];
 
   const v20Session = v20?.sessionDate || null;
   const v20Aligned = Boolean(sessionDate && v20Session && sessionDate === v20Session);
@@ -177,10 +215,13 @@ async function main() {
       v20Session,
       v20SessionAligned: v20Aligned,
       v20GeneratedAt: v20?.generatedAt || null,
+      v20Source: v20Result.sourceUrl,
       v17Session,
       v17SessionAligned: v17Aligned,
       previousConsensusSession: previousConsensus?.sessionDate || null,
+      relatedConsensusSource: relatedResult.sourceUrl,
       sourceErrors,
+      resilientSourcePolicy: 'GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_WITH_RETRY',
     },
     current: {
       sessionAligned: v20Aligned,
@@ -195,6 +236,7 @@ async function main() {
       staleExternalVotesCount: false,
       exactSessionAlignmentRequired: true,
       failClosedOnMissingExternalData: true,
+      multipleReadSourcesRequiredForResilience: true,
     },
   };
 
@@ -213,12 +255,23 @@ async function main() {
       staleExternalVotesSuppressed: !v20Aligned ? annotations.every(row => row.independentVotes === 1) : true,
       rankingMutationDisabled: output.policy.comparisonCanChangeMainRanking === false,
       executionMutationDisabled: output.policy.comparisonCanGrantExecution === false,
+      resilientSourcePolicyEnabled: output.policy.multipleReadSourcesRequiredForResilience === true,
     },
   };
 
   writeJsonAtomic(OUTPUT_PATH, output);
   writeJsonAtomic(REGRESSION_PATH, regression);
-  console.log(JSON.stringify({ status, sessionDate, v20Session, v20Aligned, mainTickers, fullyConfirmed, sourceErrors, regressionPass: regression.pass }, null, 2));
+  console.log(JSON.stringify({
+    status,
+    sessionDate,
+    v20Session,
+    v20Aligned,
+    v20Source: v20Result.sourceUrl,
+    mainTickers,
+    fullyConfirmed,
+    sourceErrors,
+    regressionPass: regression.pass,
+  }, null, 2));
   if (!regression.pass) process.exitCode = 2;
 }
 
