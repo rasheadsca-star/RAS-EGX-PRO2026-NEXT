@@ -35,7 +35,7 @@ concurrency:
 env:
   MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
-  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_FAIL_CLOSED_LEDGER_CONSENSUS_P2
+  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_FAIL_CLOSED_LEDGER_ALL_ENGINE_MATRIX_P2
 
 jobs:
   enforce:
@@ -55,10 +55,6 @@ jobs:
           git cat-file -e "${MAIN_APP_METHOD_BASE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_LOCK_COMMIT}^{commit}"
 
-          # Freeze only the alpha-generation / ranking methodology. Operational
-          # governance, freshness, consensus, canonical snapshot, UI truth and
-          # safe allocation-rounding layers are intentionally NOT restored to an
-          # old presentation baseline.
           PROTECTED_METHOD=(
             scripts/research/v16-v169-basket-engine.py
             scripts/research/v16-two-stage-predictor.py
@@ -136,13 +132,17 @@ jobs:
             immutableLedger: governance.includes('immutableLedger: true'),
             canonicalSnapshot: governance.includes('v16-main-app-current.json'),
             sessionBoundConsensus: consensus.includes('exactSessionAlignmentRequired: true'),
-            resilientConsensusSources: consensus.includes('GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_WITH_RETRY'),
+            allEngineMatrix: consensus.includes('V17_VALIDATION') && consensus.includes('V19_CHALLENGER') && consensus.includes('V20_NATIVE') && consensus.includes('QUANT_EDGE'),
+            rawAgreementCount: consensus.includes('agreementCount') && consensus.includes('otherEngineCount'),
+            resilientConsensusSources: consensus.includes('GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_PLUS_VERCEL_QUANT_WITH_RETRY'),
             consensusNoRankingMutation: consensus.includes('comparisonCanChangeMainRanking: false'),
             consensusNoExecutionGrant: consensus.includes('comparisonCanGrantExecution: false'),
             uiCanonicalRouting: router.includes('v16-main-app-current.json'),
             uiGovernanceOverlay: launcher.includes('main-app-governance-overlay.js'),
             uiConsensusOverlay: launcher.includes('main-app-consensus-overlay.js'),
-            uiLocalConsensus: consensusUi.includes('v16-main-app-consensus.json'),
+            uiAllEngineLabels: launcher.includes('V17') && launcher.includes('V19') && launcher.includes('V20') && launcher.includes('QUANT EDGE'),
+            uiAgreementCount: consensusUi.includes('التوافق مع باقي المحركات') && consensusUi.includes('engineComparisons'),
+            uiPeriodicRefresh: consensusUi.includes('setInterval(refreshData,60000)'),
           };
           console.log(checks);
           for (const [key,value] of Object.entries(checks)) if (!value) throw new Error(`MAIN APP governance check failed: ${key}`);
