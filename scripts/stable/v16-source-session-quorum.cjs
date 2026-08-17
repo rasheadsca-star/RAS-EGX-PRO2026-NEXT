@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { applyCompanyNameCorrections } = require('./v16-company-name-corrections.cjs');
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const MARKET_PATH = path.join(ROOT, 'data/market.json');
 const REPORT_PATH = path.join(ROOT, 'data/stable/v16-source-session-quorum-report.json');
@@ -108,6 +109,10 @@ async function mapLimit(items, limit, fn) {
 }
 
 (async () => {
+  // Correct symbol/company identity before any downstream MAIN APP artifact is
+  // evaluated or regenerated. This never changes numerical market/model data.
+  applyCompanyNameCorrections();
+
   const market = readJson(MARKET_PATH, null);
   if (!market || !Array.isArray(market.rows)) throw new Error('data/market.json rows are required');
 
