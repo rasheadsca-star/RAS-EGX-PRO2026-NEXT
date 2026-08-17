@@ -10,6 +10,7 @@ on:
     paths:
       - "scripts/stable/v16-market-second-source-resolver.cjs"
       - "scripts/stable/v16-market-coverage-reconciler.cjs"
+      - "scripts/stable/v16-market-universe-disposition.cjs"
       - ".github/workflows/main-app-market-coverage-repair.yml"
 
 permissions:
@@ -42,6 +43,7 @@ jobs:
           set -euo pipefail
           node --check scripts/stable/v16-market-second-source-resolver.cjs
           node --check scripts/stable/v16-market-coverage-reconciler.cjs
+          node --check scripts/stable/v16-market-universe-disposition.cjs
           node --check scripts/stable/v16-main-app-pilot-lock-guard.cjs
           node --check scripts/stable/v16-main-app-auto-data-guard.cjs
           node --check scripts/stable/v16-v169-live-resolution-normalizer.cjs
@@ -63,6 +65,9 @@ jobs:
 
       - name: Reconcile independently proven rows into Price Truth
         run: node scripts/stable/v16-market-coverage-reconciler.cjs
+
+      - name: Verify every raw market row has a professional disposition
+        run: node scripts/stable/v16-market-universe-disposition.cjs
 
       - name: Preserve automatic market-data and fail-closed guard
         run: node scripts/stable/v16-main-app-auto-data-guard.cjs
@@ -89,20 +94,33 @@ jobs:
           const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
           const p=read('data/stable/v15-price-truth.json');
           const s=read('data/stable/v16-market-second-source-evidence.json');
+          const d=read('data/stable/v16-market-universe-disposition.json');
           const r=read('data/stable/v16-main-app-professional-readiness.json');
           if(p.executionGrade!==true || p.ready!==true) throw new Error('Execution Grade regressed during coverage repair');
           if(Number(p.acceptedRows||0)<205) throw new Error('Accepted-row coverage regressed below baseline 205');
-          if(Number(p?.source?.sourceSessionEvidenceCoveragePct||0)<97.7) throw new Error('Session-evidence coverage regressed below baseline 97.7%');
+          if(Number(p?.source?.sourceSessionEvidenceCoveragePct||0)<97.7) throw new Error('Raw session-evidence coverage regressed below baseline 97.7%');
+          const pc=p.professionalCoverage||{};
+          if(pc.complete!==true) throw new Error('Professional market coverage is not complete');
+          if(Number(pc.executionEligibleCoveragePct)!==100) throw new Error('Execution-eligible price coverage is not 100%');
+          if(Number(pc.universeDispositionCoveragePct)!==100) throw new Error('Universe disposition coverage is not 100%');
+          if(Number(pc.verifiedDispositionRows)!==Number(pc.rawUniverseRows)) throw new Error('Not every raw row has a verified disposition');
+          if(Number(d?.summary?.unresolvedRows)!==0) throw new Error('Universe disposition still has unresolved rows');
           console.log({
             expectedSession:p.expectedSession,
             secondSourceTargets:s.targetCount,
             secondSourceApproved:s.approvedCount,
             approvedTickers:s.approvedTickers,
-            unresolvedTickers:s.unresolvedTickers,
-            acceptedRows:p.acceptedRows,
-            inputRows:p?.source?.inputRows,
-            verifiedExpectedSessionRows:p?.source?.verifiedExpectedSessionRows,
-            sourceCoveragePct:p?.source?.sourceSessionEvidenceCoveragePct,
+            remainingRawQuarantine:s.unresolvedTickers,
+            acceptedCurrentSessionPriceRows:p.acceptedRows,
+            rawUniverseRows:p?.source?.inputRows,
+            rawVerifiedExpectedSessionRows:p?.source?.verifiedExpectedSessionRows,
+            rawSourceCoveragePct:p?.source?.sourceSessionEvidenceCoveragePct,
+            executionEligibleUniverseRows:pc.executionEligibleUniverseRows,
+            executionEligibleAcceptedRows:pc.executionEligibleAcceptedRows,
+            executionEligibleCoveragePct:pc.executionEligibleCoveragePct,
+            verifiedDispositionRows:pc.verifiedDispositionRows,
+            universeDispositionCoveragePct:pc.universeDispositionCoveragePct,
+            verifiedIneligibleTickers:pc.verifiedIneligibleTickers,
             readiness:r.professionalReadinessScore,
             foundation:r.foundationQualityScore,
             hardBlockers:(r.hardBlockers||[]).map(x=>x.code)
@@ -121,6 +139,7 @@ jobs:
             data/stable/v15-price-truth.json \
             data/stable/v16-source-session-evidence.json \
             data/stable/v16-market-second-source-evidence.json \
+            data/stable/v16-market-universe-disposition.json \
             data/stable/v16-main-app-pilot-lock-status.json \
             data/stable/v16-main-app-auto-data-guard.json \
             data/stable/v16-v169-live-evaluation.json \
