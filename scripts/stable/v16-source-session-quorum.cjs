@@ -9,6 +9,7 @@ const MARKET_PATH = path.join(ROOT, 'data/market.json');
 const REPORT_PATH = path.join(ROOT, 'data/stable/v16-source-session-quorum-report.json');
 const MIN_QUORUM = Number(process.env.EGX_SESSION_TIME_QUORUM_MIN || 80);
 const MIN_COVERAGE_PCT = Number(process.env.EGX_SESSION_TIME_QUORUM_COVERAGE_PCT || 80);
+const MAX_EXPLICIT_MISMATCH_PCT = Number(process.env.EGX_SESSION_EXPLICIT_MISMATCH_MAX_PCT || 5);
 const CONCURRENCY = Math.max(2, Math.min(Number(process.env.EGX_SESSION_TIME_QUORUM_CONCURRENCY || 10), 16));
 const TIMEOUT_MS = Number(process.env.EGX_SESSION_TIME_QUORUM_TIMEOUT_MS || 12000);
 
@@ -83,7 +84,7 @@ async function fetchSourceMarketTime(row) {
         'cache-control': 'no-cache',
         pragma: 'no-cache',
         referer: 'https://english.mubasher.info/',
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36 EGXProV16SessionQuorum/4.0'
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36 EGXProV16SessionQuorum/4.1'
       }
     });
     if (!response.ok) return { ok: false, reason: `HTTP_${response.status}` };
@@ -109,8 +110,6 @@ async function mapLimit(items, limit, fn) {
 }
 
 (async () => {
-  // Correct symbol/company identity before any downstream MAIN APP artifact is
-  // evaluated or regenerated. This never changes numerical market/model data.
   applyCompanyNameCorrections();
 
   const market = readJson(MARKET_PATH, null);
@@ -125,9 +124,6 @@ async function mapLimit(items, limit, fn) {
   const marketFetchDate = dateOnly(market.generatedAt) || dateOnly(market.updatedAt);
   const preciseMarketSource = /mubasher_symbol_pages_precise/i.test(String(market.source || ''));
 
-  // The quote parser already reads "Last update: <time> market time", but older
-  // snapshots did not persist it. Recover that source evidence directly from the
-  // exact Mubasher stock page. This is source evidence, not a GitHub-clock guess.
   const recoverable = sameDayAfterClose && preciseMarketSource
     ? market.rows.filter(row => !dateOnly(row?.sourceSessionDate) && isMubasherEgxStockRow(row) && marketMinutes(row?.sourceMarketTime) === null)
     : [];
@@ -163,6 +159,8 @@ async function mapLimit(items, limit, fn) {
   const explicitDates = market.rows.map(r => dateOnly(r?.sourceSessionDate)).filter(Boolean);
   const explicitMismatches = explicitDates.filter(d => d !== expectedSession).length;
   const explicitCoveragePct = market.rows.length ? explicitExpectedRows.length / market.rows.length * 100 : 0;
+  const explicitMismatchPct = market.rows.length ? explicitMismatches / market.rows.length * 100 : 0;
+  const explicitConflictQuarantinePassed = explicitMismatchPct <= MAX_EXPLICIT_MISMATCH_PCT;
   const explicitQuorumPassed = Boolean(
     market.ok === true &&
     preciseMarketSource &&
@@ -181,7 +179,7 @@ async function mapLimit(items, limit, fn) {
     marketFetchDate === expectedSession &&
     candidates.length >= MIN_QUORUM &&
     candidateCoveragePct >= MIN_COVERAGE_PCT &&
-    explicitMismatches === 0
+    explicitConflictQuarantinePassed
   );
   const quorumPassed = explicitQuorumPassed || inferenceQuorumPassed;
 
@@ -195,15 +193,31 @@ async function mapLimit(items, limit, fn) {
         ...row,
         sourceSessionDate: expectedSession,
         marketSessionDate: row.marketSessionDate || expectedSession,
-        sourceSessionEvidence: 'mubasher_time_only_same_day_cross_symbol_quorum',
+        sourceSessionEvidence: explicitMismatches > 0
+          ? 'mubasher_time_only_same_day_cross_symbol_quorum_stale_minority_quarantined'
+          : 'mubasher_time_only_same_day_cross_symbol_quorum',
         sourceSessionCheckedAt: checkedAt,
       };
     });
   }
 
   const recoveredCount = recoveredAudit.filter(item => item?.ok).length;
+  const quarantinedExplicitMismatches = market.rows
+    .filter(row => {
+      const session = dateOnly(row?.sourceSessionDate);
+      return session && session !== expectedSession;
+    })
+    .map(row => ({
+      symbol: row?.symbol || row?.ticker || row?.code || null,
+      sourceSessionDate: dateOnly(row?.sourceSessionDate),
+      sourceMarketTime: row?.sourceMarketTime || null,
+      sourceUrl: row?.sourceUrl || null,
+      executionEligible: false,
+      quarantineReason: 'EXPLICIT_SOURCE_SESSION_MISMATCH'
+    }));
+
   const report = {
-    schemaVersion: '16.3.8-source-session-quorum-4',
+    schemaVersion: '16.3.9-source-session-quorum-5-stale-minority-quarantine',
     checkedAt: new Date().toISOString(),
     expectedSession,
     cairoDate,
@@ -224,8 +238,17 @@ async function mapLimit(items, limit, fn) {
     minimumQuorum: MIN_QUORUM,
     minimumCoveragePct: MIN_COVERAGE_PCT,
     explicitMismatches,
+    explicitMismatchPct: Number(explicitMismatchPct.toFixed(2)),
+    maximumExplicitMismatchPct: MAX_EXPLICIT_MISMATCH_PCT,
+    explicitConflictQuarantinePassed,
+    quarantinedExplicitMismatchRows: quarantinedExplicitMismatches.length,
+    quarantinedExplicitMismatches,
     quorumPassed,
-    mode: explicitQuorumPassed ? 'EXPLICIT_SOURCE_SESSION_EVIDENCE' : inferenceQuorumPassed ? 'TIME_ONLY_CROSS_SYMBOL_INFERENCE' : 'FAIL_CLOSED',
+    mode: explicitQuorumPassed
+      ? 'EXPLICIT_SOURCE_SESSION_EVIDENCE'
+      : inferenceQuorumPassed
+        ? (explicitMismatches > 0 ? 'TIME_ONLY_CROSS_SYMBOL_INFERENCE_WITH_STALE_MINORITY_QUARANTINE' : 'TIME_ONLY_CROSS_SYMBOL_INFERENCE')
+        : 'FAIL_CLOSED',
     promotedRows: promoted,
     candidateDiagnostics: {
       reasonCounts,
@@ -246,7 +269,11 @@ async function mapLimit(items, limit, fn) {
       regularCompletedTradingDayRequiredForInference: true,
       sameDayMarketFetchContextRequiredForInference: true,
       crossSymbolQuorumRequired: true,
-      explicitDateConflictFailsClosed: true,
+      explicitDateConflictNeverPromoted: true,
+      staleMinorityMayBeQuarantinedOnlyBelowConfiguredPct: true,
+      staleMinorityMaximumPct: MAX_EXPLICIT_MISMATCH_PCT,
+      staleRowsRemainExecutionIneligibleDownstream: true,
+      excessiveExplicitDateConflictFailsClosed: true,
       downstreamPriceJumpAndChangeConsistencyGuardsRemainRequired: true
     }
   };
