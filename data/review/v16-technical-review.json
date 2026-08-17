@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-17T17:52:43.481Z",
+  "generatedAt": "2026-08-17T19:28:07.688Z",
   "application": "EGX Pro Professional V16.3",
   "scope": {
     "type": "TECHNICAL_ANALYSIS_ONLY",
@@ -12,25 +12,25 @@
   "acceptance": "REJECTED_BLOCKING_TECHNICAL_FINDINGS",
   "acceptanceCriteria": {
     "exactlyTwentyCycles": true,
-    "zeroCritical": true,
+    "zeroCritical": false,
     "zeroHigh": false,
-    "pilotScopeEnforced": true
+    "pilotScopeEnforced": false
   },
   "summary": {
     "totalChecks": 41,
-    "closedChecks": 38,
-    "openChecks": 3,
-    "blockingFindings": 3,
+    "closedChecks": 28,
+    "openChecks": 13,
+    "blockingFindings": 13,
     "severity": {
       "CRITICAL": {
         "total": 11,
-        "open": 0,
-        "closed": 11
+        "open": 4,
+        "closed": 7
       },
       "HIGH": {
         "total": 26,
-        "open": 3,
-        "closed": 23
+        "open": 9,
+        "closed": 17
       },
       "MEDIUM": {
         "total": 4,
@@ -43,7 +43,7 @@
         "closed": 0
       }
     },
-    "recommendationCount": 5,
+    "recommendationCount": 3,
     "selectedModelCount": 6,
     "testSessions": 15,
     "liveResolvedTrades": 74
@@ -58,17 +58,17 @@
           "id": "T01-1",
           "severity": "CRITICAL",
           "title": "بوابة الأسعار جاهزة للتنفيذ",
-          "status": "CLOSED",
-          "evidence": "ready=true; executionGrade=true; accepted=205",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "ready=false; executionGrade=false; accepted=0",
+          "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
         },
         {
           "id": "T01-2",
           "severity": "HIGH",
           "title": "جلسة القرار مطابقة للجلسة المتوقعة",
-          "status": "OPEN",
-          "evidence": "2026-08-17 vs undefined",
-          "remediation": "إعادة المسح من آخر جلسة مكتملة."
+          "status": "CLOSED",
+          "evidence": "2026-08-17 vs 2026-08-17",
+          "remediation": null
         }
       ]
     },
@@ -104,9 +104,9 @@
           "id": "T03-1",
           "severity": "HIGH",
           "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
-          "status": "CLOSED",
-          "evidence": "valid=5/5",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "valid=0/3",
+          "remediation": "رفض السجل ذي القيم المفقودة."
         },
         {
           "id": "T03-2",
@@ -150,17 +150,17 @@
           "id": "T05-1",
           "severity": "CRITICAL",
           "title": "حد RSI الأعلى مطبق على كل توصية",
-          "status": "CLOSED",
-          "evidence": "SIPC:67.4, EFIH:63.7, KABO:76.7, ENGC:74.8, ETEL:69.6",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "AMIA:85.2, GTWL:88.6, AALR:76.7",
+          "remediation": "نقل السهم إلى المراقبة."
         },
         {
           "id": "T05-2",
           "severity": "HIGH",
           "title": "بوابة الامتداد القصير تمنع المطاردة",
-          "status": "CLOSED",
-          "evidence": "SIPC:ret5=-0.39, EFIH:ret5=3.78, KABO:ret5=13.55, ENGC:ret5=9.84, ETEL:ret5=7.76",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "AMIA:ret5=undefined, GTWL:ret5=undefined, AALR:ret5=undefined",
+          "remediation": "خفض الترتيب أو إلغاء الدخول."
         }
       ]
     },
@@ -181,9 +181,9 @@
           "id": "T06-2",
           "severity": "HIGH",
           "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
-          "status": "CLOSED",
-          "evidence": "acceptedRows=205",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "acceptedRows=0",
+          "remediation": "حجب المسح عند ضعف التغطية."
         }
       ]
     },
@@ -197,7 +197,7 @@
           "severity": "CRITICAL",
           "title": "كل خطة هندسيًا صحيحة",
           "status": "CLOSED",
-          "evidence": "valid=5/5",
+          "evidence": "valid=3/3",
           "remediation": null
         },
         {
@@ -205,7 +205,7 @@
           "severity": "HIGH",
           "title": "لا يتساوى الوقف أو الهدف مع منطقة الدخول",
           "status": "CLOSED",
-          "evidence": "SIPC, EFIH, KABO, ENGC, ETEL",
+          "evidence": "AMIA, GTWL, AALR",
           "remediation": null
         }
       ]
@@ -219,17 +219,17 @@
           "id": "T08-1",
           "severity": "CRITICAL",
           "title": "كل توصية تجتاز الحد الأدنى للعائد/المخاطرة",
-          "status": "CLOSED",
-          "evidence": "SIPC:1.24, EFIH:1.24, KABO:1.24, ENGC:1.24, ETEL:1.24",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "AMIA:undefined, GTWL:undefined, AALR:undefined",
+          "remediation": "استبعاد الفرصة."
         },
         {
           "id": "T08-2",
           "severity": "HIGH",
           "title": "احتمال الهدف أعلى من احتمال الوقف",
-          "status": "CLOSED",
-          "evidence": "SIPC:57.4>29.6, EFIH:57.4>29.6, KABO:50.7>32.4, ENGC:50.7>32.4, ETEL:50.7>32.4",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "AMIA:undefined>undefined, GTWL:undefined>undefined, AALR:undefined>undefined",
+          "remediation": "إعادة المعايرة أو الرفض."
         }
       ]
     },
@@ -289,7 +289,7 @@
           "severity": "HIGH",
           "title": "لا توجد رموز مكررة في التوصيات",
           "status": "CLOSED",
-          "evidence": "unique=5/5",
+          "evidence": "unique=3/3",
           "remediation": null
         },
         {
@@ -297,7 +297,7 @@
           "severity": "HIGH",
           "title": "عدد التوصيات من 1 إلى 5 فقط عند الجاهزية",
           "status": "CLOSED",
-          "evidence": "count=5",
+          "evidence": "count=3",
           "remediation": null
         }
       ]
@@ -380,17 +380,17 @@
           "id": "T15-1",
           "severity": "HIGH",
           "title": "عدم الاستقرار موثق ولا يُخفى",
-          "status": "CLOSED",
-          "evidence": "SIPC:غير مستقر/REDUCED_RISK, EFIH:غير مستقر/REDUCED_RISK, KABO:غير مستقر/REDUCED_RISK, ENGC:غير مستقر/REDUCED_RISK, ETEL:غير مستقر/REDUCED_RISK",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "AMIA:undefined/undefined, GTWL:undefined/undefined, AALR:undefined/undefined",
+          "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
         },
         {
           "id": "T15-2",
           "severity": "CRITICAL",
           "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
-          "status": "CLOSED",
-          "evidence": "decisionTier=PILOT_SHORT_SAMPLE; professional=false; modes=REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK,REDUCED_RISK",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "decisionTier=BLOCKED_WALK_FORWARD_PILOT; professional=false; modes=,,",
+          "remediation": "فرض وضع Pilot منخفض المخاطرة."
         }
       ]
     },
@@ -403,9 +403,9 @@
           "id": "T16-1",
           "severity": "HIGH",
           "title": "قصر عينة الاختبار مصرح به",
-          "status": "CLOSED",
-          "evidence": "decisionTier=PILOT_SHORT_SAMPLE; test sample remains explicitly Pilot",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "decisionTier=BLOCKED_WALK_FORWARD_PILOT; test sample remains explicitly Pilot",
+          "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
         },
         {
           "id": "T16-2",
@@ -426,9 +426,9 @@
           "id": "T17-1",
           "severity": "HIGH",
           "title": "كل توصيات الجلسة مؤرشفة",
-          "status": "OPEN",
-          "evidence": "archivedCurrent=0/5",
-          "remediation": "تشغيل الأرشفة قبل النشر."
+          "status": "CLOSED",
+          "evidence": "archivedCurrent=3/3",
+          "remediation": null
         },
         {
           "id": "T17-2",
@@ -503,37 +503,101 @@
           "id": "T20-2",
           "severity": "HIGH",
           "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
-          "status": "CLOSED",
-          "evidence": "tier=PILOT_SHORT_SAMPLE; reducedRisk=true; noProfitClaim=true",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "tier=BLOCKED_WALK_FORWARD_PILOT; reducedRisk=false; noProfitClaim=true",
+          "remediation": "إزالة الادعاءات وإظهار القيود."
         },
         {
           "id": "T20-3",
           "severity": "HIGH",
           "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
-          "status": "CLOSED",
-          "evidence": "recs=5; source=true; plans=true",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "recs=3; source=false; plans=true",
+          "remediation": "حجب الإصدار الفني وإعادة البناء."
         }
       ]
     }
   ],
   "openFindings": [
     {
-      "id": "T01-2",
-      "severity": "HIGH",
-      "title": "جلسة القرار مطابقة للجلسة المتوقعة",
+      "id": "T01-1",
+      "severity": "CRITICAL",
+      "title": "بوابة الأسعار جاهزة للتنفيذ",
       "status": "OPEN",
-      "evidence": "2026-08-17 vs undefined",
-      "remediation": "إعادة المسح من آخر جلسة مكتملة."
+      "evidence": "ready=false; executionGrade=false; accepted=0",
+      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
     },
     {
-      "id": "T17-1",
+      "id": "T03-1",
       "severity": "HIGH",
-      "title": "كل توصيات الجلسة مؤرشفة",
+      "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
       "status": "OPEN",
-      "evidence": "archivedCurrent=0/5",
-      "remediation": "تشغيل الأرشفة قبل النشر."
+      "evidence": "valid=0/3",
+      "remediation": "رفض السجل ذي القيم المفقودة."
+    },
+    {
+      "id": "T05-1",
+      "severity": "CRITICAL",
+      "title": "حد RSI الأعلى مطبق على كل توصية",
+      "status": "OPEN",
+      "evidence": "AMIA:85.2, GTWL:88.6, AALR:76.7",
+      "remediation": "نقل السهم إلى المراقبة."
+    },
+    {
+      "id": "T05-2",
+      "severity": "HIGH",
+      "title": "بوابة الامتداد القصير تمنع المطاردة",
+      "status": "OPEN",
+      "evidence": "AMIA:ret5=undefined, GTWL:ret5=undefined, AALR:ret5=undefined",
+      "remediation": "خفض الترتيب أو إلغاء الدخول."
+    },
+    {
+      "id": "T06-2",
+      "severity": "HIGH",
+      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
+      "status": "OPEN",
+      "evidence": "acceptedRows=0",
+      "remediation": "حجب المسح عند ضعف التغطية."
+    },
+    {
+      "id": "T08-1",
+      "severity": "CRITICAL",
+      "title": "كل توصية تجتاز الحد الأدنى للعائد/المخاطرة",
+      "status": "OPEN",
+      "evidence": "AMIA:undefined, GTWL:undefined, AALR:undefined",
+      "remediation": "استبعاد الفرصة."
+    },
+    {
+      "id": "T08-2",
+      "severity": "HIGH",
+      "title": "احتمال الهدف أعلى من احتمال الوقف",
+      "status": "OPEN",
+      "evidence": "AMIA:undefined>undefined, GTWL:undefined>undefined, AALR:undefined>undefined",
+      "remediation": "إعادة المعايرة أو الرفض."
+    },
+    {
+      "id": "T15-1",
+      "severity": "HIGH",
+      "title": "عدم الاستقرار موثق ولا يُخفى",
+      "status": "OPEN",
+      "evidence": "AMIA:undefined/undefined, GTWL:undefined/undefined, AALR:undefined/undefined",
+      "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
+    },
+    {
+      "id": "T15-2",
+      "severity": "CRITICAL",
+      "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
+      "status": "OPEN",
+      "evidence": "decisionTier=BLOCKED_WALK_FORWARD_PILOT; professional=false; modes=,,",
+      "remediation": "فرض وضع Pilot منخفض المخاطرة."
+    },
+    {
+      "id": "T16-1",
+      "severity": "HIGH",
+      "title": "قصر عينة الاختبار مصرح به",
+      "status": "OPEN",
+      "evidence": "decisionTier=BLOCKED_WALK_FORWARD_PILOT; test sample remains explicitly Pilot",
+      "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
     },
     {
       "id": "T19-1",
@@ -542,24 +606,104 @@
       "status": "OPEN",
       "evidence": "status=FAILED; tests=0; realBrowser=true",
       "remediation": "تشغيل Playwright وإصلاح الرحلة."
+    },
+    {
+      "id": "T20-2",
+      "severity": "HIGH",
+      "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
+      "status": "OPEN",
+      "evidence": "tier=BLOCKED_WALK_FORWARD_PILOT; reducedRisk=false; noProfitClaim=true",
+      "remediation": "إزالة الادعاءات وإظهار القيود."
+    },
+    {
+      "id": "T20-3",
+      "severity": "HIGH",
+      "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
+      "status": "OPEN",
+      "evidence": "recs=3; source=false; plans=true",
+      "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
   "blockingFindings": [
     {
-      "id": "T01-2",
-      "severity": "HIGH",
-      "title": "جلسة القرار مطابقة للجلسة المتوقعة",
+      "id": "T01-1",
+      "severity": "CRITICAL",
+      "title": "بوابة الأسعار جاهزة للتنفيذ",
       "status": "OPEN",
-      "evidence": "2026-08-17 vs undefined",
-      "remediation": "إعادة المسح من آخر جلسة مكتملة."
+      "evidence": "ready=false; executionGrade=false; accepted=0",
+      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
     },
     {
-      "id": "T17-1",
+      "id": "T03-1",
       "severity": "HIGH",
-      "title": "كل توصيات الجلسة مؤرشفة",
+      "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
       "status": "OPEN",
-      "evidence": "archivedCurrent=0/5",
-      "remediation": "تشغيل الأرشفة قبل النشر."
+      "evidence": "valid=0/3",
+      "remediation": "رفض السجل ذي القيم المفقودة."
+    },
+    {
+      "id": "T05-1",
+      "severity": "CRITICAL",
+      "title": "حد RSI الأعلى مطبق على كل توصية",
+      "status": "OPEN",
+      "evidence": "AMIA:85.2, GTWL:88.6, AALR:76.7",
+      "remediation": "نقل السهم إلى المراقبة."
+    },
+    {
+      "id": "T05-2",
+      "severity": "HIGH",
+      "title": "بوابة الامتداد القصير تمنع المطاردة",
+      "status": "OPEN",
+      "evidence": "AMIA:ret5=undefined, GTWL:ret5=undefined, AALR:ret5=undefined",
+      "remediation": "خفض الترتيب أو إلغاء الدخول."
+    },
+    {
+      "id": "T06-2",
+      "severity": "HIGH",
+      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
+      "status": "OPEN",
+      "evidence": "acceptedRows=0",
+      "remediation": "حجب المسح عند ضعف التغطية."
+    },
+    {
+      "id": "T08-1",
+      "severity": "CRITICAL",
+      "title": "كل توصية تجتاز الحد الأدنى للعائد/المخاطرة",
+      "status": "OPEN",
+      "evidence": "AMIA:undefined, GTWL:undefined, AALR:undefined",
+      "remediation": "استبعاد الفرصة."
+    },
+    {
+      "id": "T08-2",
+      "severity": "HIGH",
+      "title": "احتمال الهدف أعلى من احتمال الوقف",
+      "status": "OPEN",
+      "evidence": "AMIA:undefined>undefined, GTWL:undefined>undefined, AALR:undefined>undefined",
+      "remediation": "إعادة المعايرة أو الرفض."
+    },
+    {
+      "id": "T15-1",
+      "severity": "HIGH",
+      "title": "عدم الاستقرار موثق ولا يُخفى",
+      "status": "OPEN",
+      "evidence": "AMIA:undefined/undefined, GTWL:undefined/undefined, AALR:undefined/undefined",
+      "remediation": "إظهار عدم الاستقرار وخفض المخاطرة."
+    },
+    {
+      "id": "T15-2",
+      "severity": "CRITICAL",
+      "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
+      "status": "OPEN",
+      "evidence": "decisionTier=BLOCKED_WALK_FORWARD_PILOT; professional=false; modes=,,",
+      "remediation": "فرض وضع Pilot منخفض المخاطرة."
+    },
+    {
+      "id": "T16-1",
+      "severity": "HIGH",
+      "title": "قصر عينة الاختبار مصرح به",
+      "status": "OPEN",
+      "evidence": "decisionTier=BLOCKED_WALK_FORWARD_PILOT; test sample remains explicitly Pilot",
+      "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
     },
     {
       "id": "T19-1",
@@ -568,6 +712,22 @@
       "status": "OPEN",
       "evidence": "status=FAILED; tests=0; realBrowser=true",
       "remediation": "تشغيل Playwright وإصلاح الرحلة."
+    },
+    {
+      "id": "T20-2",
+      "severity": "HIGH",
+      "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
+      "status": "OPEN",
+      "evidence": "tier=BLOCKED_WALK_FORWARD_PILOT; reducedRisk=false; noProfitClaim=true",
+      "remediation": "إزالة الادعاءات وإظهار القيود."
+    },
+    {
+      "id": "T20-3",
+      "severity": "HIGH",
+      "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
+      "status": "OPEN",
+      "evidence": "recs=3; source=false; plans=true",
+      "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
   "finalReceiverDecisionAr": "مرفوض فنيًا حتى إغلاق الملاحظات الحرجة والعالية."
