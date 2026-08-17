@@ -1,12 +1,9 @@
-name: MAIN APP — Immutability Guard
+name: MAIN APP — Methodology & Governance Guard
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - "index.html"
-      - "manifest.json"
-      - "service-worker.js"
       - "preview-v16/app/**"
       - "scripts/research/v16-v169-basket-engine.py"
       - "scripts/research/v16-two-stage-predictor.py"
@@ -15,12 +12,15 @@ on:
       - "scripts/stable/v16-publish-v169-basket.cjs"
       - "scripts/stable/v16-session-data-fingerprint.cjs"
       - "scripts/stable/v16-v169-live-evaluation.py"
+      - "scripts/stable/v16-main-app-governance.cjs"
+      - "scripts/stable/v16-main-app-consensus.cjs"
       - "data/stable/v16-v169-release-lock.json"
       - "data/stable/main-app-lock.json"
       - "data/stable/main-app-p3-presentation-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
       - ".github/workflows/v169-primary-pages-deploy.yml"
       - ".github/workflows/main-app-immutability-guard.yml"
+      - ".github/workflows/main-app-governance-refresh.yml"
   schedule:
     - cron: "17 * * * *"
 
@@ -28,14 +28,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: main-app-immutability-guard
+  group: main-app-methodology-governance-guard
   cancel-in-progress: false
 
 env:
-  MAIN_APP_FROZEN_SOURCE_COMMIT: a4a1e6c7673133dc287bf1ee76efb385d9844721
   MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
-  MAIN_APP_OPERATIONAL_PATCH: P3_METHOD_INDEPENDENT_CONSENSUS_AND_DIRECT_BASKET_LOAD
+  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_FAIL_CLOSED_LEDGER_CONSENSUS_P2
 
 jobs:
   enforce:
@@ -43,45 +42,38 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout latest main
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Detect and restore protected MAIN APP source
+      - name: Restore methodology-only protected source
         shell: bash
         run: |
           set -euo pipefail
-          git cat-file -e "${MAIN_APP_FROZEN_SOURCE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_METHOD_BASE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_LOCK_COMMIT}^{commit}"
 
-          # P3 changes presentation/load order only. Model formula, alpha generation,
-          # ranking, features, weights, thresholds, basket construction, costs,
-          # allocation and entry/stop/target rules stay anchored to METHOD_BASE.
-          PROTECTED_SOURCE=(
-            index.html
-            manifest.json
-            service-worker.js
-            preview-v16/app
+          # Freeze only the alpha-generation / ranking methodology. Operational
+          # governance, freshness, consensus, canonical snapshot, UI truth and
+          # safe allocation-rounding layers are intentionally NOT restored to an
+          # old presentation baseline.
+          PROTECTED_METHOD=(
             scripts/research/v16-v169-basket-engine.py
             scripts/research/v16-two-stage-predictor.py
             scripts/research/v16-probabilistic-model-impact.py
             scripts/research/v16-v169-target-hit-audit.py
-            scripts/stable/v16-publish-v169-basket.cjs
             scripts/stable/v16-session-data-fingerprint.cjs
             scripts/stable/v16-v169-live-evaluation.py
             data/stable/v16-v169-release-lock.json
-            data/stable/main-app-p3-presentation-lock.json
             .github/workflows/v16-v169-basket-engine.yml
-            .github/workflows/v169-primary-pages-deploy.yml
           )
 
           drift=0
-          if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"; then
-            echo "Protected MAIN APP source drift detected against pinned P3 baseline:"
-            git diff --name-status "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
-            git checkout "$MAIN_APP_FROZEN_SOURCE_COMMIT" -- "${PROTECTED_SOURCE[@]}"
+          if ! git diff --quiet "$MAIN_APP_METHOD_BASE_COMMIT" -- "${PROTECTED_METHOD[@]}"; then
+            echo "MAIN APP methodology drift detected; restoring method-only files."
+            git diff --name-status "$MAIN_APP_METHOD_BASE_COMMIT" -- "${PROTECTED_METHOD[@]}"
+            git checkout "$MAIN_APP_METHOD_BASE_COMMIT" -- "${PROTECTED_METHOD[@]}"
             drift=1
           fi
 
@@ -92,57 +84,61 @@ jobs:
           fi
 
           if [ "$drift" -eq 0 ]; then
-            echo "MAIN APP matches pinned V16.9.2 P3 presentation baseline."
+            echo "MAIN APP methodology is unchanged. Governance/presentation upgrades are allowed."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "${PROTECTED_SOURCE[@]}" data/stable/main-app-lock.json
-          git commit -m "Auto-restore MAIN APP to frozen V16.9.2 P3 presentation baseline"
-
+          git add "${PROTECTED_METHOD[@]}" data/stable/main-app-lock.json
+          git commit -m "Auto-restore MAIN APP methodology only"
           for attempt in 1 2 3; do
-            if git pull --rebase -X ours origin main && git push origin HEAD:main; then
-              echo "MAIN APP protected source restored to pinned P3 baseline."
-              exit 0
-            fi
+            if git pull --rebase -X ours origin main && git push origin HEAD:main; then exit 0; fi
             [ "$attempt" = "3" ] && exit 1
             sleep $((attempt * 8))
           done
 
-      - name: Verify frozen-method and P3 presentation-only policy
+      - name: Verify frozen methodology and required governance stack
+        shell: bash
         run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-publish-v169-basket.cjs
+          node --check scripts/stable/v16-main-app-governance.cjs
+          node --check scripts/stable/v16-main-app-consensus.cjs
+          node --check preview-v16/app/decision-source.js
+          node --check preview-v16/app/main-app-governance-overlay.js
+          node --check preview-v16/app/main-app-consensus-overlay.js
+
           node - <<'NODE'
           const fs = require('fs');
           const lock = JSON.parse(fs.readFileSync('data/stable/main-app-lock.json', 'utf8'));
-          const p3 = JSON.parse(fs.readFileSync('data/stable/main-app-p3-presentation-lock.json', 'utf8'));
           if (lock.appName !== 'MAIN APP') throw new Error('MAIN APP identity mismatch');
           if (lock.engine !== 'V16_9_EQUAL_WEIGHT_BASKET') throw new Error('MAIN APP engine mismatch');
           if (lock.policy?.methodologyLocked !== true) throw new Error('Methodology lock missing');
           if (lock.policy?.liveMarketDataAllowed !== true) throw new Error('Live market data must remain enabled');
           if (lock.policy?.liveRecommendationOutputAllowed !== true) throw new Error('Live recommendation output must remain enabled');
-          for (const key of ['methodologyChanged','rankingChanged','recommendationChanged','allocationChanged','executionRulesChanged','runtimeCoreChanged']) {
-            if (p3[key] !== false) throw new Error(`P3 boundary drift: ${key}`);
-          }
-          if (p3.consensusPolicy?.currentIndependentEngines !== 2) throw new Error('P3 independent engine count drift');
-          if (p3.consensusPolicy?.v19SameFamilyDoesNotIncreaseIndependentScore !== true) throw new Error('V19 independence boundary missing');
-          if (p3.consensusPolicy?.v17IsValidatorNotVote !== true) throw new Error('V17 vote boundary missing');
-          if (p3.consensusPolicy?.cannotChangeMainAppRank !== true || p3.consensusPolicy?.cannotGrantExecutionPermission !== true) throw new Error('P3 governance boundary missing');
-          if (p3.sourceGatePolicy?.sourceGateOpeningDoesNotChangeMainAppMethodology !== true) throw new Error('source-gate boundary missing');
-          console.log({
-            appName: lock.appName,
-            engine: lock.engine,
-            version: lock.version,
-            methodBaseCommit: process.env.MAIN_APP_METHOD_BASE_COMMIT,
-            frozenSourceCommit: process.env.MAIN_APP_FROZEN_SOURCE_COMMIT,
-            operationalPatch: process.env.MAIN_APP_OPERATIONAL_PATCH,
-            independentEngines: p3.consensusPolicy.independentEngines,
-            sameFamilyCorroborators: p3.consensusPolicy.sameFamilyCorroborators,
-            methodologyChanged: false,
-            rankingChanged: false,
-            executionRulesChanged: false,
-            methodologyLocked: lock.policy.methodologyLocked,
-            liveMarketDataAllowed: lock.policy.liveMarketDataAllowed,
-            liveRecommendationOutputAllowed: lock.policy.liveRecommendationOutputAllowed
-          });
+
+          const publisher = fs.readFileSync('scripts/stable/v16-publish-v169-basket.cjs','utf8');
+          const governance = fs.readFileSync('scripts/stable/v16-main-app-governance.cjs','utf8');
+          const consensus = fs.readFileSync('scripts/stable/v16-main-app-consensus.cjs','utf8');
+          const router = fs.readFileSync('preview-v16/app/decision-source.js','utf8');
+          const launcher = fs.readFileSync('preview-v16/app/v169-p2.html','utf8');
+          const consensusUi = fs.readFileSync('preview-v16/app/main-app-consensus-overlay.js','utf8');
+
+          const checks = {
+            engineLocked: publisher.includes('V16_9_EQUAL_WEIGHT_BASKET'),
+            maxAllocation50: governance.includes('MAX_TOTAL_ALLOCATION_PCT = 50'),
+            failClosed: governance.includes('failClosed: true'),
+            immutableLedger: governance.includes('immutableLedger: true'),
+            canonicalSnapshot: governance.includes('v16-main-app-current.json'),
+            sessionBoundConsensus: consensus.includes('exactSessionAlignmentRequired: true'),
+            consensusNoRankingMutation: consensus.includes('comparisonCanChangeMainRanking: false'),
+            consensusNoExecutionGrant: consensus.includes('comparisonCanGrantExecution: false'),
+            uiCanonicalRouting: router.includes('v16-main-app-current.json'),
+            uiGovernanceOverlay: launcher.includes('main-app-governance-overlay.js'),
+            uiConsensusOverlay: launcher.includes('main-app-consensus-overlay.js'),
+            uiLocalConsensus: consensusUi.includes('v16-main-app-consensus.json'),
+          };
+          console.log(checks);
+          for (const [key,value] of Object.entries(checks)) if (!value) throw new Error(`MAIN APP governance check failed: ${key}`);
           NODE
