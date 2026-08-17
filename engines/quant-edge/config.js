@@ -3,7 +3,7 @@
 module.exports = Object.freeze({
   engine: Object.freeze({
     name: 'QUANT EDGE',
-    version: '1.0.0-shadow',
+    version: '1.1.0-shadow',
     shadowMode: true,
     allowExecution: false,
     minBars: 60,
