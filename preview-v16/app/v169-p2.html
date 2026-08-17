@@ -11,23 +11,23 @@
   <style>
     html,body{margin:0;min-height:100%;background:#071521;color:#ecf8ff;font-family:Tahoma,Arial,sans-serif}
     body{display:grid;place-items:center;text-align:center;padding:24px}
-    .loader{max-width:560px;background:#0b2031;border:1px solid #2d5872;border-radius:18px;padding:28px}
+    .loader{max-width:620px;background:#0b2031;border:1px solid #2d5872;border-radius:18px;padding:28px}
     p{color:#9fb9c9;line-height:1.8}
   </style>
 </head>
 <body>
   <main class="loader">
     <h2>جارٍ تحميل MAIN APP…</h2>
-    <p>محرك V16.9.2 مثبت منهجيًا. طبقة P3 تعرض تأكيد المحركات المستقلة منهجيًا بجوار السلة دون تغيير الاختيار أو الترتيب أو قواعد التنفيذ.</p>
+    <p>محرك V16.9.2 مثبت. الواجهة تقرأ Canonical Snapshot واحدًا وتعرض حالة الجلسة والتنفيذ ومقارنة المحركات المستقلة دون تغيير الاختيار أو الترتيب.</p>
   </main>
   <script>
   (async()=>{
-    const BUILD='16.9.2-p3-method-independent-consensus-20260816';
-    const response=await fetch(`index.html?source=main-app-v16.9.2-p3&t=${Date.now()}`,{cache:'no-store'});
+    const BUILD='16.9.2-main-app-canonical-governance-consensus-20260817';
+    const response=await fetch(`index.html?source=main-app-v16.9.2-canonical&t=${Date.now()}`,{cache:'no-store'});
     if(!response.ok)throw new Error(`HTTP ${response.status}`);
     let html=await response.text();
     const marker='<script src="app.js?v=16.1.0"><\/script>';
-    const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script><script src="v16-9-basket-overlay.js?v=${BUILD}" data-main-app-basket-direct="true"><\/script><script src="main-app-consensus-overlay.js?v=${BUILD}"><\/script>`;
+    const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script><script src="v16-9-basket-overlay.js?v=${BUILD}" data-main-app-basket-direct="true"><\/script><script src="main-app-governance-overlay.js?v=${BUILD}"><\/script><script src="main-app-consensus-overlay.js?v=${BUILD}"><\/script>`;
     html=html.replace(marker,replacement)
       .replaceAll('V16.1','MAIN APP · V16.9.2')
       .replaceAll('v=16.1.0',`v=${BUILD}`);
