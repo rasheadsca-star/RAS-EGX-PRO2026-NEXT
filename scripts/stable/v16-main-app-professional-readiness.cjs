@@ -14,6 +14,7 @@ const FILES = {
   live: P('data/stable/v16-v169-live-evaluation.json'),
   consensus: P('data/stable/v16-main-app-consensus.json'),
   consensusRegression: P('data/stable/v16-main-app-consensus-regression.json'),
+  intelligence: P('data/stable/v16-main-app-intelligence-snapshot.json'),
   stack: P('data/stable/v16-main-app-stack-status.json'),
   analyzer: P('preview-v16/app/stock-analyzer.js'),
   chart: P('preview-v16/app/stock-analyzer-chart.js'),
@@ -73,6 +74,7 @@ function buildProfessionalReadiness() {
   const live = readJson(FILES.live, {});
   const consensus = readJson(FILES.consensus, {});
   const consensusRegression = readJson(FILES.consensusRegression, {});
+  const intelligence = readJson(FILES.intelligence, {});
   const stack = readJson(FILES.stack, {});
   const analyzer = readText(FILES.analyzer);
   const chart = readText(FILES.chart);
@@ -214,7 +216,16 @@ function buildProfessionalReadiness() {
   const consensusCovered = Array.isArray(consensus?.current?.mainAppAnnotations)
     && consensus.current.mainAppAnnotations.length === tickers.length;
   const consensusRegressionPassed = consensusRegression.pass === true;
-  const persistedIntelligence = fileExists('data/stable/v16-main-app-intelligence-snapshot.json');
+  const intelligenceSession = snap.sessionDate || basket.currentSignalDate || price.expectedSession || null;
+  const intelligenceSessionAligned = intelligence.engine === ENGINE && intelligence.sessionDate === intelligenceSession;
+  const intelligenceAudit = intelligence.auditCompleteness || {};
+  const technicalAuditCoveragePct = intelligenceSessionAligned ? pct(intelligenceAudit.technicalCoveragePct) : 0;
+  const financialAuditCoveragePct = intelligenceSessionAligned ? pct(intelligenceAudit.financialCoveragePct) : 0;
+  const newsAuditCoveragePct = intelligenceSessionAligned ? pct(intelligenceAudit.newsCoveragePct) : 0;
+  const auditableIntelligenceCoveragePct = Math.min(technicalAuditCoveragePct, financialAuditCoveragePct, newsAuditCoveragePct);
+  const persistedIntelligence = intelligenceSessionAligned
+    && intelligenceAudit.auditableIntelligenceComplete === true
+    && auditableIntelligenceCoveragePct >= 100;
   let intelligencePoints = 0;
   intelligencePoints += analyzerTechnical ? 2.5 : 0;
   intelligencePoints += chartCapability ? 2 : 0;
@@ -223,7 +234,7 @@ function buildProfessionalReadiness() {
   intelligencePoints += newsCapability ? 2 : 0;
   intelligencePoints += 2 * historyCoveragePct / 100;
   intelligencePoints += consensusCovered && consensusRegressionPassed ? 1 : 0;
-  intelligencePoints += persistedIntelligence ? 2 : 0;
+  intelligencePoints += 2 * auditableIntelligenceCoveragePct / 100;
   const intelligenceReq = [];
   if (!analyzerTechnical) intelligenceReq.push({ code: 'TECH_ANALYZER', labelAr: 'اكتمال طبقة التحليل الفني/Fibonacci وإدارة المركز', hard: false });
   if (!decisionCapability) intelligenceReq.push({ code: 'PORTFOLIO_DECISION_LAYER', labelAr: 'اكتمال طبقة قرار المحفظة ومستوى إلغاء القرار والهدف الأقرب', hard: false });
@@ -233,7 +244,7 @@ function buildProfessionalReadiness() {
   if (!consensusCovered || !consensusRegressionPassed) intelligenceReq.push({ code: 'CONSENSUS_REVIEW', labelAr: 'اكتمال مقارنة المحركات لكل توصيات MAIN APP مع Regression PASS', hard: false });
   if (!persistedIntelligence) intelligenceReq.push({
     code: 'AUDITABLE_INTELLIGENCE_SNAPSHOT',
-    labelAr: 'أرشفة Snapshot مالي/إخباري موثق زمنيًا ومصدرًا لكل توصية بدل الاعتماد على الاستعلام الحي فقط',
+    labelAr: `أرشفة Snapshot فني/مالي/إخباري موثق لنفس الجلسة لكل توصية؛ التغطية المكتملة الحالية ${round(auditableIntelligenceCoveragePct,1)}%`,
     hard: false,
   });
   const intelligenceAxis = axis('INTELLIGENCE_EXPLAINABILITY', 'التحليل الشامل وقابلية التفسير', 15, intelligencePoints, {
@@ -246,6 +257,12 @@ function buildProfessionalReadiness() {
     consensusCovered,
     consensusRegressionPassed,
     persistedAuditableIntelligenceSnapshot: persistedIntelligence,
+    intelligenceSnapshotSessionAligned: intelligenceSessionAligned,
+    intelligenceSnapshotGeneratedAt: intelligence.generatedAt || null,
+    technicalAuditCoveragePct: round(technicalAuditCoveragePct, 1),
+    financialAuditCoveragePct: round(financialAuditCoveragePct, 1),
+    newsAuditCoveragePct: round(newsAuditCoveragePct, 1),
+    auditableIntelligenceCoveragePct: round(auditableIntelligenceCoveragePct, 1),
   }, intelligenceReq);
 
   // AXIS 5 — Risk governance and operational reliability (10)
@@ -359,6 +376,7 @@ function buildProfessionalReadiness() {
       liveGeneratedAt: live.generatedAt || null,
       canonicalSnapshotHash: snap.snapshotHash || null,
       consensusGeneratedAt: consensus.generatedAt || null,
+      intelligenceSnapshotGeneratedAt: intelligence.generatedAt || null,
       liveReleaseLock: live.releaseLock || null,
     },
   };
