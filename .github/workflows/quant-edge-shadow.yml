@@ -1,0 +1,73 @@
+name: QUANT EDGE Shadow Lab
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '10 12 * * 0-4'
+  push:
+    branches:
+      - 'develop/v17-rebuild'
+    paths:
+      - 'engines/quant-edge/**'
+      - '!engines/quant-edge/data/**'
+      - 'package.json'
+      - '.github/workflows/quant-edge-shadow.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: quant-edge-shadow-v17
+  cancel-in-progress: false
+
+jobs:
+  shadow:
+    if: github.ref == 'refs/heads/develop/v17-rebuild'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout isolated V17 branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop/v17-rebuild
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Isolation and unit tests
+        run: npm run quant-edge:test
+
+      - name: Run independent shadow pipeline
+        run: npm run quant-edge:pipeline
+
+      - name: Acceptance guard
+        run: npm run quant-edge:acceptance
+
+      - name: Persist QUANT EDGE shadow artifacts
+        shell: bash
+        run: |
+          git config user.name "quant-edge-shadow-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add engines/quant-edge/data
+          if ! git diff --cached --quiet; then
+            git commit -m "Update QUANT EDGE shadow artifacts [skip ci]"
+            git push origin HEAD:develop/v17-rebuild
+          fi
+
+      - name: Upload audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: quant-edge-shadow-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            engines/quant-edge/data/manifest.json
+            engines/quant-edge/data/shadow-latest.json
+            engines/quant-edge/data/calibration.json
+            engines/quant-edge/data/broker-collection.json
+            engines/quant-edge/data/vs-main-latest.json
+            engines/quant-edge/data/shadow-journal.json
+            engines/quant-edge/data/acceptance-report.json
