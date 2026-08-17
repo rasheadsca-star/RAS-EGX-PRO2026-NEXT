@@ -11,6 +11,7 @@ on:
       - "scripts/stable/v16-market-second-source-resolver.cjs"
       - "scripts/stable/v16-market-coverage-reconciler.cjs"
       - "scripts/stable/v16-market-universe-disposition.cjs"
+      - "scripts/stable/v16-main-app-professional-coverage-finalizer.cjs"
       - ".github/workflows/main-app-market-coverage-repair.yml"
 
 permissions:
@@ -44,6 +45,7 @@ jobs:
           node --check scripts/stable/v16-market-second-source-resolver.cjs
           node --check scripts/stable/v16-market-coverage-reconciler.cjs
           node --check scripts/stable/v16-market-universe-disposition.cjs
+          node --check scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
           node --check scripts/stable/v16-main-app-pilot-lock-guard.cjs
           node --check scripts/stable/v16-main-app-auto-data-guard.cjs
           node --check scripts/stable/v16-v169-live-resolution-normalizer.cjs
@@ -78,6 +80,9 @@ jobs:
       - name: Rebuild Professional Readiness V2
         run: node scripts/stable/v16-main-app-professional-readiness.cjs
 
+      - name: Finalize readiness with professional execution-eligible coverage
+        run: node scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
+
       - name: Verify no strategy or recommendation mutation
         env:
           BEFORE_DECISION: ${{ steps.frozen.outputs.decision }}
@@ -105,6 +110,9 @@ jobs:
           if(Number(pc.universeDispositionCoveragePct)!==100) throw new Error('Universe disposition coverage is not 100%');
           if(Number(pc.verifiedDispositionRows)!==Number(pc.rawUniverseRows)) throw new Error('Not every raw row has a verified disposition');
           if(Number(d?.summary?.unresolvedRows)!==0) throw new Error('Universe disposition still has unresolved rows');
+          const dataAxis=(r.axes||[]).find(a=>a.id==='DATA_SESSION_INTEGRITY');
+          if(Number(dataAxis?.scorePct)!==100) throw new Error('Professional Readiness data axis is not finalized at 100%');
+          if((r.softGaps||[]).some(x=>['SOURCE_EVIDENCE_100','VERIFIED_ROWS_100'].includes(x.code))) throw new Error('Resolved market coverage gaps remain in readiness');
           console.log({
             expectedSession:p.expectedSession,
             secondSourceTargets:s.targetCount,
@@ -121,6 +129,7 @@ jobs:
             verifiedDispositionRows:pc.verifiedDispositionRows,
             universeDispositionCoveragePct:pc.universeDispositionCoveragePct,
             verifiedIneligibleTickers:pc.verifiedIneligibleTickers,
+            readinessDataAxis:dataAxis?.scorePct,
             readiness:r.professionalReadinessScore,
             foundation:r.foundationQualityScore,
             hardBlockers:(r.hardBlockers||[]).map(x=>x.code)
