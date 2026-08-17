@@ -3,36 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#071521">
-  <meta name="description" content="EGX Pro Professional V16.9.1 — محرك السلة الاحتمالية اليومي المعزول عن المحركات القديمة">
+  <meta name="theme-color" content="#071522">
+  <meta name="description" content="EGX Pro V17 — منصة القرار الحالية المرتبطة مباشرة بآخر Snapshot منشور">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>EGX Pro Professional V16.9.1</title>
-  <link rel="manifest" href="manifest.json?v=16.9.1-primary-decision">
-  <style>html,body{margin:0;min-height:100%;background:#071521;color:#ecf8ff;font-family:Tahoma,Arial,sans-serif}body{display:grid;place-items:center;padding:24px;text-align:center}.box{max-width:680px;background:#0b2031;border:1px solid #2d5872;border-radius:18px;padding:28px;box-shadow:0 16px 42px #0005}h1{margin:0 0 12px;font-size:24px}p{color:#9fb9c9;line-height:1.9}.status{margin-top:12px;color:#ffca61;font-size:12px}a{display:inline-block;margin-top:15px;background:#10658f;border:1px solid #3b769a;color:#fff;text-decoration:none;padding:11px 16px;border-radius:10px}</style>
+  <title>EGX Pro V17 — السوق الحالي</title>
+  <link rel="manifest" href="manifest.json?v=17-current-20260817">
+  <style>
+    html,body{margin:0;min-height:100%;background:#071522;color:#ecf8ff;font-family:Tahoma,Arial,sans-serif}
+    body{display:grid;place-items:center;padding:24px;text-align:center}
+    .box{width:min(680px,100%);box-sizing:border-box;background:#0b2031;border:1px solid #2d5872;border-radius:18px;padding:28px;box-shadow:0 16px 42px #0005}
+    h1{margin:0 0 12px;font-size:24px}p{color:#9fb9c9;line-height:1.9}.status{margin-top:12px;color:#71d6ff;font-size:13px;line-height:1.8}
+    a{display:inline-block;margin-top:15px;background:#10658f;border:1px solid #3b769a;color:#fff;text-decoration:none;padding:11px 16px;border-radius:10px}
+  </style>
 </head>
 <body>
   <main class="box">
-    <h1>جارٍ فتح EGX Pro Professional V16.9.1…</h1>
-    <p>يتم حذف الكاش القديم، تفعيل ملف توصيات V16.9 المعزول، ثم فتح منصة التحليل والسلة اليومية.</p>
-    <div class="status" id="launchStatus">جارٍ تفعيل تحديث الهاتف…</div>
-    <a id="openApp" href="preview-v16/app/v169.html?entry=manual&version=16.9.1">فتح V16.9.1 الآن</a>
+    <h1>جارٍ فتح EGX Pro V17…</h1>
+    <p>يتم تحميل آخر Snapshot منشور مباشرة من V17 وإزالة أي كاش قديم قبل فتح منصة القرار.</p>
+    <div class="status" id="launchStatus">جارٍ التحقق من آخر مسح…</div>
+    <a id="openApp" href="preview-v17/app/index.html?entry=manual&latest=1&version=17">فتح V17 الآن</a>
   </main>
   <script>
   (()=>{
     'use strict';
-    const RELEASE='16.9.1';
-    const SW_VERSION='V16.9.1-PRIMARY-DECISION-20260805';
-    const statusUrl='data/stable/v15-update-status.json';
-    const decisionUrl='data/stable/v16-v169-primary-decision.json';
-    const appUrl='preview-v16/app/v169.html';
+    const SW_VERSION='V17-CURRENT-RESEARCH-20260817';
+    const currentUrl='data/v17/current.json';
+    const appUrl='preview-v17/app/index.html';
     const params=new URLSearchParams(location.search);
     const requested=params.get('view')==='evaluation'?'evidence':params.get('view');
     const statusEl=document.getElementById('launchStatus');
     const button=document.getElementById('openApp');
-    const target=stamp=>`${appUrl}?entry=installed-icon&latest=1&version=${RELEASE}&mobileReset=1&v=${encodeURIComponent(stamp||Date.now())}${requested?`&view=${encodeURIComponent(requested)}`:''}`;
     const label=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'آخر نسخة منشورة':d.toLocaleString('ar-EG',{dateStyle:'medium',timeStyle:'short'})};
+    const target=state=>`${appUrl}?entry=installed-icon&latest=1&version=17&session=${encodeURIComponent(state.sessionDate||'current')}&v=${encodeURIComponent(state.generatedAt||Date.now())}${requested?`&view=${encodeURIComponent(requested)}`:''}`;
+
     async function clearLegacy(){
       try{const keys=await caches.keys();await Promise.all(keys.map(key=>caches.delete(key)));}catch(_){}
     }
@@ -46,20 +51,23 @@
       }catch(_){}
     }
     async function latest(){
-      const q=`?t=${Date.now()}`;
-      try{const r=await fetch(decisionUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.generatedAt,label:`آخر سلة V16.9: ${label(d.generatedAt)}`}}}catch(_){}
-      try{const r=await fetch(statusUrl+q,{cache:'no-store'});if(r.ok){const d=await r.json();return{stamp:d.recommendationGeneratedAt||d.generatedAt,label:`آخر مسح آلي: ${label(d.lastAutomaticScanAt||d.generatedAt)}`}}}catch(_){}
-      return{stamp:Date.now(),label:'فتح V16.9.1 بتحديث إجباري'};
+      try{
+        const response=await fetch(`${currentUrl}?t=${Date.now()}`,{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
+        if(!response.ok)throw new Error(`HTTP ${response.status}`);
+        const data=await response.json();
+        return{generatedAt:data.generatedAt,sessionDate:data.sessionDate,status:data.status,recommendationCount:Array.isArray(data.recommendations)?data.recommendations.length:0};
+      }catch(_){return{generatedAt:Date.now(),sessionDate:'current',status:'UNKNOWN',recommendationCount:null};}
     }
     async function launch(){
-      statusEl.textContent='جارٍ حذف كاش النسخة القديمة…';
+      statusEl.textContent='جارٍ حذف كاش الواجهة القديمة…';
       await clearLegacy();
       await activate();
-      const latestState=await latest();
-      const url=target(latestState.stamp);
+      const state=await latest();
+      const url=target(state);
       button.href=url;
-      statusEl.textContent=latestState.label+' — فتح V16.9.1';
-      setTimeout(()=>location.replace(url),200);
+      const count=state.recommendationCount===null?'':` — ${state.recommendationCount} فرصة حالية`;
+      statusEl.textContent=`آخر تحديث V17: ${label(state.generatedAt)} — جلسة ${state.sessionDate}${count}`;
+      setTimeout(()=>location.replace(url),180);
     }
     button.onclick=event=>{event.preventDefault();launch()};
     launch();
