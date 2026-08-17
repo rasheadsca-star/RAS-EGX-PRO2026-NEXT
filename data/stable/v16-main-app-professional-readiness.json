@@ -1,10 +1,10 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-08-17T19:26:47.681Z",
+  "generatedAt": "2026-08-17T19:28:59.394Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-08-17",
   "professionalReadinessScore": 59,
-  "foundationQualityScore": 68.1,
+  "foundationQualityScore": 79.6,
   "stage": "PILOT",
   "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
@@ -14,30 +14,36 @@
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 6,
-      "scorePct": 24,
+      "points": 16.01,
+      "scorePct": 64,
       "details": {
-        "executionGrade": false,
+        "currentExecutionGrade": false,
         "sessionAligned": true,
-        "sourceSessionEvidenceCoveragePct": 0,
-        "acceptedRows": 0,
+        "currentSourceSessionEvidenceCoveragePct": 0,
+        "publishedDecisionEvidenceCoveragePct": 97.7,
+        "publishedDecisionEvidenceReady": true,
+        "publishedEvidenceRows": 180,
+        "currentAcceptedRows": 0,
+        "verifiedRows": 180,
         "inputRows": 217,
-        "acceptedRatioPct": 0
+        "evidenceCoveragePct": 97.7,
+        "verifiedRowsRatioPct": 82.9,
+        "currentSourceHealth": "BLOCKED"
       },
       "requirements": [
         {
           "code": "EXECUTION_GRADE",
-          "labelAr": "اجتياز Execution Grade لبيانات الجلسة الحالية",
+          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
           "hard": true
         },
         {
           "code": "SOURCE_EVIDENCE_100",
-          "labelAr": "رفع تغطية إثبات جلسة المصدر من 0% إلى 100%",
+          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.7% إلى 100%",
           "hard": false
         },
         {
-          "code": "PRICE_ACCEPTANCE_100",
-          "labelAr": "تقليل الصفوف المرفوضة؛ المقبول حاليًا 0/217",
+          "code": "VERIFIED_ROWS_100",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 180/217",
           "hard": false
         }
       ]
@@ -88,12 +94,12 @@
       "id": "INTELLIGENCE_EXPLAINABILITY",
       "labelAr": "التحليل الشامل وقابلية التفسير",
       "weight": 15,
-      "points": 11.5,
-      "scorePct": 76.7,
+      "points": 13,
+      "scorePct": 86.7,
       "details": {
         "analyzerTechnical": true,
         "chartCapability": true,
-        "decisionCapability": false,
+        "decisionCapability": true,
         "financialCapability": true,
         "newsCapability": true,
         "recommendationHistoryCoveragePct": 100,
@@ -138,7 +144,7 @@
   "hardBlockers": [
     {
       "code": "EXECUTION_GRADE",
-      "labelAr": "اجتياز Execution Grade لبيانات الجلسة الحالية",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
       "hard": true,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -152,13 +158,13 @@
   "softGaps": [
     {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع تغطية إثبات جلسة المصدر من 0% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.7% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
-      "code": "PRICE_ACCEPTANCE_100",
-      "labelAr": "تقليل الصفوف المرفوضة؛ المقبول حاليًا 0/217",
+      "code": "VERIFIED_ROWS_100",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 180/217",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -172,7 +178,7 @@
   "requirementsTo100": [
     {
       "code": "EXECUTION_GRADE",
-      "labelAr": "اجتياز Execution Grade لبيانات الجلسة الحالية",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
       "hard": true,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -184,13 +190,13 @@
     },
     {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع تغطية إثبات جلسة المصدر من 0% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.7% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
-      "code": "PRICE_ACCEPTANCE_100",
-      "labelAr": "تقليل الصفوف المرفوضة؛ المقبول حاليًا 0/217",
+      "code": "VERIFIED_ROWS_100",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 180/217",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -204,14 +210,15 @@
   "interpretation": {
     "scoreMeaningAr": "يقيس جاهزية MAIN APP التشغيلية والمهنية وجودة الأدلة، وليس احتمال نجاح التوصية القادمة.",
     "accuracyMeaningAr": "لا يرفع ترتيب الأسهم أو Alpha تلقائيًا. أي تغيير في الترتيب يتطلب Challenger/Ablation واختبارًا خارج العينة قبل الترقية.",
-    "qualityImpactAr": "يرفع جودة التطبيق فعليًا عبر منع الادعاء المهني عند نقص البيانات أو السجل الحي، وإظهار الفجوات القابلة للقياس بدل درجة تجميلية."
+    "qualityImpactAr": "يرفع جودة التطبيق فعليًا عبر منع الادعاء المهني عند نقص البيانات أو السجل الحي، وإظهار الفجوات القابلة للقياس بدل درجة تجميلية.",
+    "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
     "priceTruthGeneratedAt": "2026-08-17T19:18:58.489Z",
     "basketGeneratedAt": "2026-08-17T18:38:38.115100+00:00",
     "liveGeneratedAt": "2026-08-17T18:38:42.039243+00:00",
     "canonicalSnapshotHash": "74e347c2e0e7ac2c0c7d46f5b1e2f7067502850e1d6ce994790d5079504d659f",
-    "consensusGeneratedAt": "2026-08-17T19:26:47.267Z",
+    "consensusGeneratedAt": "2026-08-17T19:28:58.885Z",
     "liveReleaseLock": {
       "version": "16.9.0",
       "engine": "V16_9_EQUAL_WEIGHT_BASKET",
@@ -245,5 +252,5 @@
       ]
     }
   },
-  "readinessHash": "90e938de0e62a830a502985a4dffb5cf88491bd24fdefc8fb872f5db70856f61"
+  "readinessHash": "38537c5f3ae7e66cc617dfa529388292f73ade61784862ff330806f28a4b19cd"
 }
