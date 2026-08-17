@@ -1,134 +1,404 @@
 {
   "schemaVersion": "20.1.0-method-independent-consensus-1",
-  "generatedAt": "2026-08-17T16:18:51.048Z",
+  "comparisonVersion": "16.9.2-all-engine-matrix-1",
+  "generatedAt": "2026-08-17T16:27:36.166Z",
   "sessionDate": "2026-08-17",
   "status": "EXTERNAL_ENGINE_SESSION_PENDING",
   "scoreDefinition": {
-    "name": "METHOD_INDEPENDENT_CONFIRMATION_SCORE_V1",
+    "name": "METHOD_INDEPENDENT_CONFIRMATION_SCORE_V2",
     "purpose": "DISPLAY_AND_REVIEW_PRIORITY_ONLY",
-    "independentEngineCount": 2,
-    "formula": "independentVotes / independentEngineCount * 100",
+    "independentEngineCount": 3,
+    "formula": "MAIN_APP_BASE_VOTE + same-session V20 vote + same-session QUANT_EDGE vote",
     "historicalPerformanceUsedInScore": false,
     "changesMainAppRanking": false,
     "changesExecutionPermission": false,
-    "levels": {
-      "2/2": "VERY_HIGH",
-      "1/2": "BASE_ONLY"
-    }
+    "rawAgreementDefinition": "Count same-ticker selections across V17, V19, V20 and QUANT EDGE only when each engine is on the exact MAIN APP session."
   },
   "engineRegistry": {
+    "primary": {
+      "id": "V16_9_EQUAL_WEIGHT_BASKET",
+      "label": "MAIN APP · V16.9.2",
+      "role": "PRODUCTION_CHAMPION",
+      "sessionDate": "2026-08-17",
+      "status": "DEGRADED"
+    },
+    "comparisonEngines": [
+      {
+        "id": "V17_VALIDATION",
+        "label": "V17",
+        "role": "RELATED_VALIDATOR_ENGINE",
+        "family": "V16_9_METHOD_RELATED",
+        "sessionDate": "2026-08-12",
+        "sessionAligned": false,
+        "sourceStatus": "READY_FOR_NEXT_SESSION_REVIEW",
+        "blocked": false
+      },
+      {
+        "id": "V19_CHALLENGER",
+        "label": "V19 Challenger",
+        "role": "RELATED_CHALLENGER",
+        "family": "TOP10_PROBABILITY_RELATED",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "sourceStatus": "CURRENT_SESSION_ALIGNED",
+        "blocked": false
+      },
+      {
+        "id": "V20_NATIVE",
+        "label": "V20 Native",
+        "role": "INDEPENDENT_DISCOVERY_ENGINE",
+        "family": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "sourceStatus": "SHADOW_RESEARCH_ONLY_UNCALIBRATED",
+        "blocked": false
+      },
+      {
+        "id": "QUANT_EDGE",
+        "label": "QUANT EDGE",
+        "role": "INDEPENDENT_SHADOW_ENGINE",
+        "family": "INDEPENDENT_QUANT_STRATEGY_STACK",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "sourceStatus": "BLOCKED_STALE_DATA",
+        "blocked": true
+      }
+    ],
     "activeIndependent": [
       {
         "id": "V16_9_EQUAL_WEIGHT_BASKET",
         "label": "MAIN APP · V16.9.2",
-        "role": "PRODUCTION_CHAMPION",
-        "voteEligible": true,
-        "authority": "PRIMARY_RECOMMENDATION",
         "sessionDate": "2026-08-17",
-        "status": "DEGRADED"
+        "voteEligible": true
       },
       {
-        "id": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
-        "label": "V20 Native V1",
-        "role": "FULL_MARKET_DISCOVERY",
-        "voteEligible": true,
-        "authority": "INDEPENDENT_RESEARCH_CONFIRMATION_ONLY",
+        "id": "V20_NATIVE",
+        "label": "V20 Native",
         "sessionDate": "2026-08-16",
         "sessionAligned": false,
-        "status": "SHADOW_RESEARCH_ONLY_UNCALIBRATED"
+        "voteEligible": true
+      },
+      {
+        "id": "QUANT_EDGE",
+        "label": "QUANT EDGE",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "voteEligible": true,
+        "blocked": true
       }
     ],
-    "relatedCorroborators": [],
-    "validators": [
+    "relatedCorroborators": [
       {
-        "id": "V17_PRODUCTION_VALIDATION_AUTHORITY",
-        "label": "V17 Validation",
-        "voteEligible": false,
+        "id": "V17_VALIDATION",
+        "label": "V17",
         "sessionDate": "2026-08-12",
         "sessionAligned": false,
-        "reason": "Validator only; never counted as an independent recommendation vote."
+        "voteEligible": false
+      },
+      {
+        "id": "V19_CHALLENGER",
+        "label": "V19 Challenger",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "voteEligible": false
       }
     ],
-    "rule": "Independent votes require materially different alpha-generation methodology and exact session alignment."
+    "rule": "Raw agreement displays every monitored recommendation engine. Independent confirmation counts only materially different alpha-generation methods and requires exact session alignment."
   },
   "sourceHealth": {
     "mainSession": "2026-08-17",
-    "v20Session": "2026-08-16",
-    "v20SessionAligned": false,
-    "v20GeneratedAt": "2026-08-16T17:15:13.694Z",
-    "v20Source": "https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/native-current.json",
     "v17Session": "2026-08-12",
     "v17SessionAligned": false,
-    "previousConsensusSession": "2026-08-16",
-    "relatedConsensusSource": "https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/multi-engine-consensus.json",
+    "v19Session": "2026-08-16",
+    "v19SessionAligned": false,
+    "v20Session": "2026-08-16",
+    "v20SessionAligned": false,
+    "quantSession": "2026-08-16",
+    "quantRequiredSession": "2026-08-17",
+    "quantSessionAligned": false,
+    "quantBlocked": true,
+    "quantBlockReason": "STALE_MARKET_DATA",
+    "v20Source": "https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/native-current.json",
+    "familyConsensusSource": "https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/multi-engine-consensus.json",
+    "quantSource": "https://quant-edge-shadow.vercel.app/api/run",
     "sourceErrors": [],
-    "resilientSourcePolicy": "GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_WITH_RETRY"
+    "resilientSourcePolicy": "GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_PLUS_VERCEL_QUANT_WITH_RETRY"
   },
   "current": {
-    "sessionAligned": false,
     "mainAppBasket": [
       "AMIA",
       "GTWL",
       "AALR"
     ],
-    "v20NativePublished": [],
+    "otherEngineCount": 4,
+    "alignedOtherEngineCount": 0,
+    "pendingOtherEngineCount": 4,
+    "anyAgreementCount": 0,
+    "fullyConfirmedCount": 0,
+    "engineSessions": [
+      {
+        "id": "V17_VALIDATION",
+        "label": "V17",
+        "sessionDate": "2026-08-12",
+        "sessionAligned": false,
+        "blocked": false,
+        "sourceStatus": "READY_FOR_NEXT_SESSION_REVIEW"
+      },
+      {
+        "id": "V19_CHALLENGER",
+        "label": "V19 Challenger",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "blocked": false,
+        "sourceStatus": "CURRENT_SESSION_ALIGNED"
+      },
+      {
+        "id": "V20_NATIVE",
+        "label": "V20 Native",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "blocked": false,
+        "sourceStatus": "SHADOW_RESEARCH_ONLY_UNCALIBRATED"
+      },
+      {
+        "id": "QUANT_EDGE",
+        "label": "QUANT EDGE",
+        "sessionDate": "2026-08-16",
+        "sessionAligned": false,
+        "blocked": true,
+        "sourceStatus": "BLOCKED_STALE_DATA"
+      }
+    ],
     "mainAppAnnotations": [
       {
         "ticker": "AMIA",
         "sessionDate": "2026-08-17",
-        "independentVotes": 1,
-        "independentEngineCount": 2,
-        "confirmationScore": 50,
-        "confirmationLevel": "BASE_ONLY",
-        "confirmationLabelAr": "توصية MAIN APP فقط حاليًا",
         "mainAppSelected": true,
-        "v20NativeSelected": false,
+        "agreementCount": 0,
+        "otherEngineCount": 4,
+        "alignedEngineCount": 0,
+        "disagreementCount": 0,
+        "pendingEngineCount": 4,
+        "agreementPctOfAllEngines": 0,
+        "agreementPctOfAlignedEngines": null,
+        "agreementLabelAr": "التوافق مع باقي المحركات 0/4",
+        "alignmentLabelAr": "المتزامن 0/4",
+        "engineComparisons": [
+          {
+            "id": "V17_VALIDATION",
+            "label": "V17",
+            "role": "RELATED_VALIDATOR_ENGINE",
+            "family": "V16_9_METHOD_RELATED",
+            "sessionDate": "2026-08-12",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "READY_FOR_NEXT_SESSION_REVIEW"
+          },
+          {
+            "id": "V19_CHALLENGER",
+            "label": "V19 Challenger",
+            "role": "RELATED_CHALLENGER",
+            "family": "TOP10_PROBABILITY_RELATED",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "CURRENT_SESSION_ALIGNED"
+          },
+          {
+            "id": "V20_NATIVE",
+            "label": "V20 Native",
+            "role": "INDEPENDENT_DISCOVERY_ENGINE",
+            "family": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "SHADOW_RESEARCH_ONLY_UNCALIBRATED"
+          },
+          {
+            "id": "QUANT_EDGE",
+            "label": "QUANT EDGE",
+            "role": "INDEPENDENT_SHADOW_ENGINE",
+            "family": "INDEPENDENT_QUANT_STRATEGY_STACK",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": true,
+            "selected": null,
+            "agreementStatus": "BLOCKED_OR_STALE",
+            "sourceStatus": "BLOCKED_STALE_DATA"
+          }
+        ],
+        "independentVotes": 1,
+        "independentEngineCount": 3,
+        "independentAlignedEngineCount": 1,
+        "confirmationScore": 33.33333333333333,
+        "confirmationLevel": "BASE_ONLY",
+        "confirmationLabelAr": "لا يوجد تأكيد مستقل متزامن بعد",
         "confirmingIndependentEngines": [],
         "supportingIndependentEngines": [
           "MAIN APP · V16.9.2"
         ],
         "relatedCorroborators": [],
-        "v17Validation": null,
-        "noteAr": "بيانات المحرك المستقل لم تصل بعد إلى نفس جلسة MAIN APP؛ لا يُحتسب أي تأكيد حتى تتزامن الجلسات."
+        "noteAr": "لا يوجد محرك آخر متزامن مع جلسة MAIN APP الحالية حتى الآن؛ العدد سيُحدّث تلقائيًا فور وصول أي محرك لنفس الجلسة."
       },
       {
         "ticker": "GTWL",
         "sessionDate": "2026-08-17",
-        "independentVotes": 1,
-        "independentEngineCount": 2,
-        "confirmationScore": 50,
-        "confirmationLevel": "BASE_ONLY",
-        "confirmationLabelAr": "توصية MAIN APP فقط حاليًا",
         "mainAppSelected": true,
-        "v20NativeSelected": false,
+        "agreementCount": 0,
+        "otherEngineCount": 4,
+        "alignedEngineCount": 0,
+        "disagreementCount": 0,
+        "pendingEngineCount": 4,
+        "agreementPctOfAllEngines": 0,
+        "agreementPctOfAlignedEngines": null,
+        "agreementLabelAr": "التوافق مع باقي المحركات 0/4",
+        "alignmentLabelAr": "المتزامن 0/4",
+        "engineComparisons": [
+          {
+            "id": "V17_VALIDATION",
+            "label": "V17",
+            "role": "RELATED_VALIDATOR_ENGINE",
+            "family": "V16_9_METHOD_RELATED",
+            "sessionDate": "2026-08-12",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "READY_FOR_NEXT_SESSION_REVIEW"
+          },
+          {
+            "id": "V19_CHALLENGER",
+            "label": "V19 Challenger",
+            "role": "RELATED_CHALLENGER",
+            "family": "TOP10_PROBABILITY_RELATED",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "CURRENT_SESSION_ALIGNED"
+          },
+          {
+            "id": "V20_NATIVE",
+            "label": "V20 Native",
+            "role": "INDEPENDENT_DISCOVERY_ENGINE",
+            "family": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "SHADOW_RESEARCH_ONLY_UNCALIBRATED"
+          },
+          {
+            "id": "QUANT_EDGE",
+            "label": "QUANT EDGE",
+            "role": "INDEPENDENT_SHADOW_ENGINE",
+            "family": "INDEPENDENT_QUANT_STRATEGY_STACK",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": true,
+            "selected": null,
+            "agreementStatus": "BLOCKED_OR_STALE",
+            "sourceStatus": "BLOCKED_STALE_DATA"
+          }
+        ],
+        "independentVotes": 1,
+        "independentEngineCount": 3,
+        "independentAlignedEngineCount": 1,
+        "confirmationScore": 33.33333333333333,
+        "confirmationLevel": "BASE_ONLY",
+        "confirmationLabelAr": "لا يوجد تأكيد مستقل متزامن بعد",
         "confirmingIndependentEngines": [],
         "supportingIndependentEngines": [
           "MAIN APP · V16.9.2"
         ],
         "relatedCorroborators": [],
-        "v17Validation": null,
-        "noteAr": "بيانات المحرك المستقل لم تصل بعد إلى نفس جلسة MAIN APP؛ لا يُحتسب أي تأكيد حتى تتزامن الجلسات."
+        "noteAr": "لا يوجد محرك آخر متزامن مع جلسة MAIN APP الحالية حتى الآن؛ العدد سيُحدّث تلقائيًا فور وصول أي محرك لنفس الجلسة."
       },
       {
         "ticker": "AALR",
         "sessionDate": "2026-08-17",
-        "independentVotes": 1,
-        "independentEngineCount": 2,
-        "confirmationScore": 50,
-        "confirmationLevel": "BASE_ONLY",
-        "confirmationLabelAr": "توصية MAIN APP فقط حاليًا",
         "mainAppSelected": true,
-        "v20NativeSelected": false,
+        "agreementCount": 0,
+        "otherEngineCount": 4,
+        "alignedEngineCount": 0,
+        "disagreementCount": 0,
+        "pendingEngineCount": 4,
+        "agreementPctOfAllEngines": 0,
+        "agreementPctOfAlignedEngines": null,
+        "agreementLabelAr": "التوافق مع باقي المحركات 0/4",
+        "alignmentLabelAr": "المتزامن 0/4",
+        "engineComparisons": [
+          {
+            "id": "V17_VALIDATION",
+            "label": "V17",
+            "role": "RELATED_VALIDATOR_ENGINE",
+            "family": "V16_9_METHOD_RELATED",
+            "sessionDate": "2026-08-12",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "READY_FOR_NEXT_SESSION_REVIEW"
+          },
+          {
+            "id": "V19_CHALLENGER",
+            "label": "V19 Challenger",
+            "role": "RELATED_CHALLENGER",
+            "family": "TOP10_PROBABILITY_RELATED",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "CURRENT_SESSION_ALIGNED"
+          },
+          {
+            "id": "V20_NATIVE",
+            "label": "V20 Native",
+            "role": "INDEPENDENT_DISCOVERY_ENGINE",
+            "family": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": false,
+            "selected": null,
+            "agreementStatus": "SESSION_PENDING",
+            "sourceStatus": "SHADOW_RESEARCH_ONLY_UNCALIBRATED"
+          },
+          {
+            "id": "QUANT_EDGE",
+            "label": "QUANT EDGE",
+            "role": "INDEPENDENT_SHADOW_ENGINE",
+            "family": "INDEPENDENT_QUANT_STRATEGY_STACK",
+            "sessionDate": "2026-08-16",
+            "sessionAligned": false,
+            "blocked": true,
+            "selected": null,
+            "agreementStatus": "BLOCKED_OR_STALE",
+            "sourceStatus": "BLOCKED_STALE_DATA"
+          }
+        ],
+        "independentVotes": 1,
+        "independentEngineCount": 3,
+        "independentAlignedEngineCount": 1,
+        "confirmationScore": 33.33333333333333,
+        "confirmationLevel": "BASE_ONLY",
+        "confirmationLabelAr": "لا يوجد تأكيد مستقل متزامن بعد",
         "confirmingIndependentEngines": [],
         "supportingIndependentEngines": [
           "MAIN APP · V16.9.2"
         ],
         "relatedCorroborators": [],
-        "v17Validation": null,
-        "noteAr": "بيانات المحرك المستقل لم تصل بعد إلى نفس جلسة MAIN APP؛ لا يُحتسب أي تأكيد حتى تتزامن الجلسات."
+        "noteAr": "لا يوجد محرك آخر متزامن مع جلسة MAIN APP الحالية حتى الآن؛ العدد سيُحدّث تلقائيًا فور وصول أي محرك لنفس الجلسة."
       }
-    ],
-    "fullyConfirmedCount": 0
+    ]
   },
   "policy": {
     "comparisonCanChangeMainRanking": false,
@@ -136,6 +406,8 @@
     "staleExternalVotesCount": false,
     "exactSessionAlignmentRequired": true,
     "failClosedOnMissingExternalData": true,
-    "multipleReadSourcesRequiredForResilience": true
+    "rawAgreementIncludesRelatedEngines": true,
+    "independentConfirmationExcludesRelatedEngines": true,
+    "allOtherEnginesShownInUi": true
   }
 }
