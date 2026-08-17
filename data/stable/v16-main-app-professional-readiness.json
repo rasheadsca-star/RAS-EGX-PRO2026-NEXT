@@ -1,0 +1,249 @@
+{
+  "schemaVersion": "16.9.2-professional-readiness-v2",
+  "generatedAt": "2026-08-17T19:26:17.318Z",
+  "engine": "V16_9_EQUAL_WEIGHT_BASKET",
+  "sessionDate": "2026-08-17",
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 68.1,
+  "stage": "PILOT",
+  "stageAr": "Pilot — يحتاج أدلة إضافية",
+  "professionalClaimAllowed": false,
+  "capReason": "DATA_SESSION_HARD_GATE",
+  "axes": [
+    {
+      "id": "DATA_SESSION_INTEGRITY",
+      "labelAr": "سلامة البيانات والجلسة",
+      "weight": 25,
+      "points": 6,
+      "scorePct": 24,
+      "details": {
+        "executionGrade": false,
+        "sessionAligned": true,
+        "sourceSessionEvidenceCoveragePct": 0,
+        "acceptedRows": 0,
+        "inputRows": 217,
+        "acceptedRatioPct": 0
+      },
+      "requirements": [
+        {
+          "code": "EXECUTION_GRADE",
+          "labelAr": "اجتياز Execution Grade لبيانات الجلسة الحالية",
+          "hard": true
+        },
+        {
+          "code": "SOURCE_EVIDENCE_100",
+          "labelAr": "رفع تغطية إثبات جلسة المصدر من 0% إلى 100%",
+          "hard": false
+        },
+        {
+          "code": "PRICE_ACCEPTANCE_100",
+          "labelAr": "تقليل الصفوف المرفوضة؛ المقبول حاليًا 0/217",
+          "hard": false
+        }
+      ]
+    },
+    {
+      "id": "V169_WALK_FORWARD",
+      "labelAr": "ثبات V16.9 خارج العينة",
+      "weight": 25,
+      "points": 25,
+      "scorePct": 100,
+      "details": {
+        "sessions": 37,
+        "minimumSessions": 30,
+        "averageNetReturnPct": 1.5457,
+        "profitFactor": 2.387,
+        "sessionWinRatePct": 54.05,
+        "maximumDrawdownPct": -10.877,
+        "acceptanceGatePassed": true
+      },
+      "requirements": []
+    },
+    {
+      "id": "V169_LIVE_FORWARD",
+      "labelAr": "السجل الحي / Forward لـV16.9",
+      "weight": 25,
+      "points": 15.63,
+      "scorePct": 62.5,
+      "details": {
+        "resolvedSessions": 5,
+        "minimumResolvedSessions": 20,
+        "sampleCompletionPct": 25,
+        "winningSessionPct": 80,
+        "averageNetReturnPct": 2.0929,
+        "profitFactor": 4.463,
+        "maximumDrawdownPct": -3.022,
+        "promotionEligible": false,
+        "hardGatePassed": false
+      },
+      "requirements": [
+        {
+          "code": "LIVE_MIN_RESOLVED_SESSIONS",
+          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 5 والمتبقي 15",
+          "hard": true
+        }
+      ]
+    },
+    {
+      "id": "INTELLIGENCE_EXPLAINABILITY",
+      "labelAr": "التحليل الشامل وقابلية التفسير",
+      "weight": 15,
+      "points": 11.5,
+      "scorePct": 76.7,
+      "details": {
+        "analyzerTechnical": true,
+        "chartCapability": true,
+        "decisionCapability": false,
+        "financialCapability": true,
+        "newsCapability": true,
+        "recommendationHistoryCoveragePct": 100,
+        "consensusCovered": true,
+        "consensusRegressionPassed": true,
+        "persistedAuditableIntelligenceSnapshot": false
+      },
+      "requirements": [
+        {
+          "code": "AUDITABLE_INTELLIGENCE_SNAPSHOT",
+          "labelAr": "أرشفة Snapshot مالي/إخباري موثق زمنيًا ومصدرًا لكل توصية بدل الاعتماد على الاستعلام الحي فقط",
+          "hard": false
+        }
+      ]
+    },
+    {
+      "id": "RISK_GOVERNANCE",
+      "labelAr": "إدارة المخاطر والحوكمة",
+      "weight": 10,
+      "points": 10,
+      "scorePct": 100,
+      "details": {
+        "engineLocked": true,
+        "canonical": true,
+        "failClosed": true,
+        "immutableLedger": true,
+        "allocationGuard": true,
+        "plannedAllocationPct": 50,
+        "automaticOrdersDisabled": true,
+        "stackPass": true
+      },
+      "requirements": []
+    }
+  ],
+  "hardGates": {
+    "engineIsV169": true,
+    "dataAndSessionIntegrity": false,
+    "walkForwardEvidence": true,
+    "liveForwardMinimum": false,
+    "governanceAndRisk": true
+  },
+  "hardBlockers": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "اجتياز Execution Grade لبيانات الجلسة الحالية",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 5 والمتبقي 15",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    }
+  ],
+  "softGaps": [
+    {
+      "code": "SOURCE_EVIDENCE_100",
+      "labelAr": "رفع تغطية إثبات جلسة المصدر من 0% إلى 100%",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "PRICE_ACCEPTANCE_100",
+      "labelAr": "تقليل الصفوف المرفوضة؛ المقبول حاليًا 0/217",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "AUDITABLE_INTELLIGENCE_SNAPSHOT",
+      "labelAr": "أرشفة Snapshot مالي/إخباري موثق زمنيًا ومصدرًا لكل توصية بدل الاعتماد على الاستعلام الحي فقط",
+      "hard": false,
+      "axis": "INTELLIGENCE_EXPLAINABILITY"
+    }
+  ],
+  "requirementsTo100": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "اجتياز Execution Grade لبيانات الجلسة الحالية",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 5 والمتبقي 15",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "SOURCE_EVIDENCE_100",
+      "labelAr": "رفع تغطية إثبات جلسة المصدر من 0% إلى 100%",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "PRICE_ACCEPTANCE_100",
+      "labelAr": "تقليل الصفوف المرفوضة؛ المقبول حاليًا 0/217",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "AUDITABLE_INTELLIGENCE_SNAPSHOT",
+      "labelAr": "أرشفة Snapshot مالي/إخباري موثق زمنيًا ومصدرًا لكل توصية بدل الاعتماد على الاستعلام الحي فقط",
+      "hard": false,
+      "axis": "INTELLIGENCE_EXPLAINABILITY"
+    }
+  ],
+  "interpretation": {
+    "scoreMeaningAr": "يقيس جاهزية MAIN APP التشغيلية والمهنية وجودة الأدلة، وليس احتمال نجاح التوصية القادمة.",
+    "accuracyMeaningAr": "لا يرفع ترتيب الأسهم أو Alpha تلقائيًا. أي تغيير في الترتيب يتطلب Challenger/Ablation واختبارًا خارج العينة قبل الترقية.",
+    "qualityImpactAr": "يرفع جودة التطبيق فعليًا عبر منع الادعاء المهني عند نقص البيانات أو السجل الحي، وإظهار الفجوات القابلة للقياس بدل درجة تجميلية."
+  },
+  "evidence": {
+    "priceTruthGeneratedAt": "2026-08-17T19:18:58.489Z",
+    "basketGeneratedAt": "2026-08-17T18:38:38.115100+00:00",
+    "liveGeneratedAt": "2026-08-17T18:38:42.039243+00:00",
+    "canonicalSnapshotHash": "74e347c2e0e7ac2c0c7d46f5b1e2f7067502850e1d6ce994790d5079504d659f",
+    "consensusGeneratedAt": "2026-08-17T19:26:16.908Z",
+    "liveReleaseLock": {
+      "version": "16.9.0",
+      "engine": "V16_9_EQUAL_WEIGHT_BASKET",
+      "status": "FROZEN_PILOT_EVALUATION",
+      "frozenAt": "2026-08-05T13:39:00+03:00",
+      "changePolicy": "No ranking, basket-size, cost, allocation, entry, stop or target rule may change during the pilot. Any change requires a new version and a separate evaluation ledger.",
+      "pilotRules": {
+        "estimatedRoundTripCostPct": 0.6,
+        "holdingSessions": 1,
+        "maximumPortfolioAllocationPct": 50,
+        "unfilledMemberPolicy": "KEEP_CASH",
+        "morningConfirmationRequired": true
+      },
+      "promotionGate": {
+        "minimumResolvedSessions": 20,
+        "averageNetReturnMustBePositive": true,
+        "minimumProfitFactor": 1.2,
+        "minimumWinningSessionPct": 45,
+        "maximumDrawdownFloorPct": -15
+      },
+      "reviewCheckpoints": [
+        5,
+        10,
+        20,
+        30
+      ],
+      "notesAr": [
+        "نجاح جلسة واحدة مؤشر إيجابي أولي وليس إثباتًا نهائيًا.",
+        "لا يتم حذف أو تعديل أي جلسة خاسرة بعد النشر.",
+        "الترقية أو الإيقاف يعتمد على السجل الحي الكامل بعد التكاليف."
+      ]
+    }
+  },
+  "readinessHash": "90e938de0e62a830a502985a4dffb5cf88491bd24fdefc8fb872f5db70856f61"
+}
