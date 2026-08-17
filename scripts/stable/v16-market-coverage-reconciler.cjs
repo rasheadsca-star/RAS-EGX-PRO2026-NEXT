@@ -45,8 +45,6 @@ function validOhlc(row, closeOverride = null) {
   const high = n(row?.high) ?? Math.max(open, close);
   const low = n(row?.low) ?? Math.min(open, close);
   if (!(close > 0 && open > 0 && high > 0 && low > 0)) return null;
-  // Some public tables round low/open independently at penny prices. Accept a
-  // one-tick rounding overlap only when the independent close is already proven.
   const tick = Math.max(0.01, close * 0.0025);
   if (high + tick < Math.max(open, close) || low - tick > Math.min(open, close)) return null;
   return {
@@ -57,7 +55,7 @@ function validOhlc(row, closeOverride = null) {
     volume: n(row?.volume)
   };
 }
-function minimalHistoryDocument(ticker, marketRow, expectedSession, provider) {
+function minimalHistoryDocument(ticker, marketRow, provider) {
   return {
     schemaVersion: '16.9.2-current-session-second-source-seed',
     ticker,
@@ -89,21 +87,31 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
   const file = path.join(HISTORY_DIR, `${ticker}.json`);
   let document = readJson(file, null);
   const staleReplacement = STALE_REASONS.has(String(originalReason || '')) || evidence?.replacementForStalePrimary === true;
-  const usePrimarySessionOhlc = !staleReplacement && SAME_SESSION_CONFIRM_REASONS.has(String(originalReason || ''));
+  const sameSessionConfirmation = !staleReplacement && SAME_SESSION_CONFIRM_REASONS.has(String(originalReason || ''));
 
-  if (!document || !Array.isArray(document.sessions)) {
-    document = minimalHistoryDocument(ticker, marketRow, expectedSession, evidence.provider);
-  }
+  if (!document || !Array.isArray(document.sessions)) document = minimalHistoryDocument(ticker, marketRow, evidence.provider);
 
   const primaryClose = n(marketRow?.price ?? marketRow?.last ?? marketRow?.close);
-  const base = usePrimarySessionOhlc
-    ? validOhlc(marketRow, primaryClose)
-    : validOhlc(evidence, n(evidence.close));
-  if (!base) {
-    return { ticker, merged: false, reason: usePrimarySessionOhlc ? 'INVALID_PRIMARY_OHLC_AFTER_SECOND_SOURCE_CONFIRMATION' : 'INVALID_SECOND_SOURCE_OHLC' };
+  let base = null;
+  let ohlcMode = null;
+  if (sameSessionConfirmation) {
+    base = validOhlc(marketRow, primaryClose);
+    ohlcMode = base ? 'PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED' : null;
+    // If the primary quote page exposes an exact-session close but incomplete or
+    // internally rounded OHLC, the independently dated OHLC may be used only
+    // after that independent source has already confirmed the same close/session.
+    if (!base) {
+      base = validOhlc(evidence, n(evidence.close));
+      ohlcMode = base ? 'SECOND_SOURCE_OHLC_AFTER_PRIMARY_CLOSE_CONFIRMATION' : null;
+    }
+  } else {
+    base = validOhlc(evidence, n(evidence.close));
+    ohlcMode = base ? 'SECOND_SOURCE_EXACT_SESSION_REPLACEMENT' : null;
   }
+  if (!base) return { ticker, merged: false, reason: 'NO_VALID_OHLC_AFTER_EXACT_SESSION_CONFIRMATION' };
 
   const now = new Date().toISOString();
+  const primaryIsCanonical = ohlcMode === 'PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED';
   const row = {
     ticker,
     date: expectedSession,
@@ -116,16 +124,16 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
     adjustedClose: round(base.close, 6),
     volume: base.volume === null ? null : Math.round(base.volume),
     currency: 'EGP',
-    primarySource: usePrimarySessionOhlc ? String(marketRow?.source || 'mubasher_symbol_pages') : sourceLabel(evidence.provider),
-    source: usePrimarySessionOhlc ? String(marketRow?.source || 'mubasher_symbol_pages') : sourceLabel(evidence.provider),
+    primarySource: primaryIsCanonical ? String(marketRow?.source || 'mubasher_symbol_pages') : sourceLabel(evidence.provider),
+    source: primaryIsCanonical ? String(marketRow?.source || 'mubasher_symbol_pages') : sourceLabel(evidence.provider),
     verificationSources: [sourceLabel(evidence.provider)],
     sourceUrls: {
-      primary: usePrimarySessionOhlc ? (marketRow?.sourceUrl || null) : (evidence.url || null),
-      verification: [usePrimarySessionOhlc ? evidence.url : marketRow?.sourceUrl].filter(Boolean)
+      primary: primaryIsCanonical ? (marketRow?.sourceUrl || null) : (evidence.url || null),
+      verification: [primaryIsCanonical ? evidence.url : marketRow?.sourceUrl].filter(Boolean)
     },
-    sourceSessionEvidence: usePrimarySessionOhlc
-      ? `primary_exact_session_close_independently_confirmed_by_${String(evidence.provider).toLowerCase()}`
-      : `independent_second_source_${String(evidence.provider).toLowerCase()}_exact_session_replacement`,
+    sourceSessionEvidence: staleReplacement
+      ? `independent_second_source_${String(evidence.provider).toLowerCase()}_exact_session_replacement`
+      : `primary_exact_session_close_independently_confirmed_by_${String(evidence.provider).toLowerCase()}`,
     validationStatus: 'precise_public_source_session_confirmed',
     fetchedAt: now,
     validatedAt: now,
@@ -136,11 +144,12 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
     originalPrimaryClose: primaryClose,
     stalePrimaryReplaced: staleReplacement,
     originalRejectReason: originalReason || null,
+    ohlcMode,
     confidence: {
       overall: 95,
-      policy: usePrimarySessionOhlc
-        ? 'primary_exact_session_ohlc_plus_independent_close_confirmation'
-        : 'independent_exact_session_replacement_for_stale_primary',
+      policy: staleReplacement
+        ? 'independent_exact_session_replacement_for_stale_primary'
+        : 'primary_exact_session_close_plus_independent_exact_session_confirmation',
       failClosed: true
     }
   };
@@ -152,10 +161,10 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
   document.availableSessions = document.sessions.length;
   document.firstSession = document.sessions.length ? dateOnly(document.sessions[0]?.date || document.sessions[0]?.sessionDate) : null;
   document.lastSession = document.sessions.length ? dateOnly(document.sessions.at(-1)?.date || document.sessions.at(-1)?.sessionDate) : null;
-  if (document.historyStatus === 'current_session_only_second_source_seed' && document.sessions.length > 1) document.historyStatus = 'partial_history_with_second_source_current_session';
+  if (document.historyStatus === 'current_session_only_second-source-seed' && document.sessions.length > 1) document.historyStatus = 'partial_history_with_second_source_current_session';
   document.staleData = false;
   writeJson(file, document);
-  return { ticker, merged: true, provider: evidence.provider, close: base.close, mode: usePrimarySessionOhlc ? 'PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED' : 'SECOND_SOURCE_EXACT_SESSION_REPLACEMENT', createdHistorySeed: document.schemaVersion === '16.9.2-current-session-second-source-seed' };
+  return { ticker, merged: true, provider: evidence.provider, close: base.close, mode: ohlcMode, createdHistorySeed: document.schemaVersion === '16.9.2-current-session-second-source-seed' };
 }
 
 function main() {
@@ -219,14 +228,24 @@ function main() {
 
   const staleTickers = new Set((sourceEvidence.staleSymbols || []).map(x => norm(x.ticker)));
   const unknownTickers = new Set((sourceEvidence.unknownSymbols || []).map(x => norm(x.ticker || x)));
-  const priorSecondSourceTickers = new Set([
+  const cumulativeSecondSource = new Set([
     ...(sourceEvidence.secondSourceResolvedTickers || []),
     ...(price?.source?.secondSourceVerifiedSessionTickers || [])
   ].map(norm).filter(Boolean));
-  for (const row of acceptedRecovered) {
-    if (staleTickers.has(row.ticker) || unknownTickers.has(row.ticker) || STALE_REASONS.has(String(row.originalRejectReason || ''))) priorSecondSourceTickers.add(row.ticker);
+
+  // Recover proof already persisted by a previous repair cycle even if an
+  // intermediate summary accidentally omitted it. This is evidence recovery,
+  // not inference: only explicit accepted rows with exact expected-session
+  // second-source provenance qualify.
+  for (const row of (Array.isArray(price.sampleAccepted) ? price.sampleAccepted : [])) {
+    const ticker = norm(row?.ticker);
+    if (!ticker || row?.secondSourceConfirmed !== true || dateOnly(row?.sourceSessionDate || row?.date) !== expectedSession) continue;
+    if (STALE_REASONS.has(String(row?.originalRejectReason || ''))) cumulativeSecondSource.add(ticker);
   }
-  const cumulativeSecondSourceTickers = [...priorSecondSourceTickers].sort();
+  for (const row of acceptedRecovered) {
+    if (STALE_REASONS.has(String(row.originalRejectReason || '')) || staleTickers.has(row.ticker) || unknownTickers.has(row.ticker)) cumulativeSecondSource.add(row.ticker);
+  }
+  const cumulativeSecondSourceTickers = [...cumulativeSecondSource].sort();
 
   const primaryMatchingRows = Number(sourceEvidence.primaryMatchingRows ?? price?.source?.primaryVerifiedExpectedSessionRows ?? sourceEvidence.matchingRows ?? 0);
   const effectiveMatchingRows = Math.min(inputRows || Infinity, primaryMatchingRows + cumulativeSecondSourceTickers.length);
@@ -243,7 +262,7 @@ function main() {
   price.sampleRejected = finalRejected;
   const acceptedByTicker = new Map((Array.isArray(price.sampleAccepted) ? price.sampleAccepted : []).map(r => [norm(r.ticker), r]));
   for (const row of acceptedRecovered) acceptedByTicker.set(row.ticker, row);
-  price.sampleAccepted = [...acceptedByTicker.values()].slice(-Math.max(40, acceptedRecovered.length));
+  price.sampleAccepted = [...acceptedByTicker.values()].slice(-Math.max(50, acceptedRecovered.length));
   price.ready = ready;
   price.executionGrade = executionGrade;
   price.secondSourceReconciliation = {
@@ -287,8 +306,8 @@ function main() {
   sourceEvidence.readyForPriceTruth = effectiveMatchingRows >= minimumExecutionRows;
   sourceEvidence.effectiveEvidencePolicy = 'Primary exact-session evidence plus cumulative independent exact-session second-source confirmation. Primary stale timestamps remain preserved as diagnostics and are never rewritten as current evidence.';
   const priorEvidenceRecords = new Map((sourceEvidence.effectiveSecondSourceRecords || []).map(r => [norm(r.ticker), r]));
-  for (const row of acceptedRecovered) {
-    if (cumulativeSecondSourceTickers.includes(row.ticker)) priorEvidenceRecords.set(row.ticker, row);
+  for (const row of (Array.isArray(price.sampleAccepted) ? price.sampleAccepted : [])) {
+    if (cumulativeSecondSourceTickers.includes(norm(row.ticker)) && row.secondSourceConfirmed === true) priorEvidenceRecords.set(norm(row.ticker), row);
   }
   sourceEvidence.effectiveSecondSourceRecords = [...priorEvidenceRecords.values()].filter(r => cumulativeSecondSourceTickers.includes(norm(r.ticker)));
   writeJson(EVIDENCE_PATH, sourceEvidence);
