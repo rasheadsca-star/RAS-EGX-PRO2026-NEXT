@@ -83,7 +83,7 @@ function historyIdentity(ticker) {
   const conflict = warnings.some(w => /latest_close_conflict|local_price_conflict/i.test(w)) || (diff !== null && diff > 8);
   return { yahooSymbol: history.yahooSymbol || `${ticker}.CA`, conflict, localDifferencePct: diff, warnings };
 }
-async function yahooEvidence(ticker, expectedSession, primaryClose) {
+async function yahooEvidence(ticker, expectedSession, primaryClose, allowStaleReplacement = false) {
   const identity = historyIdentity(ticker);
   if (identity.conflict) return { provider: 'YAHOO_CHART', status: 'REJECTED_IDENTITY_CONFLICT', identity };
   const start = Math.floor(Date.parse(`${expectedSession}T00:00:00Z`) / 1000) - 86400 * 3;
@@ -100,44 +100,38 @@ async function yahooEvidence(ticker, expectedSession, primaryClose) {
     const timestamps = result?.timestamp || [];
     const q = result?.indicators?.quote?.[0] || {};
     const adj = result?.indicators?.adjclose?.[0]?.adjclose || [];
-    const rows = timestamps.map((ts, i) => ({
-      date: cairoDateFromEpoch(ts), timestamp: ts,
-      open: n(q.open?.[i]), high: n(q.high?.[i]), low: n(q.low?.[i]), close: n(q.close?.[i]), adjustedClose: n(adj[i]), volume: n(q.volume?.[i])
-    })).filter(r => r.date && r.close > 0);
+    const rows = timestamps.map((ts, i) => ({ date: cairoDateFromEpoch(ts), timestamp: ts, open: n(q.open?.[i]), high: n(q.high?.[i]), low: n(q.low?.[i]), close: n(q.close?.[i]), adjustedClose: n(adj[i]), volume: n(q.volume?.[i]) })).filter(r => r.date && r.close > 0);
     const row = rows.find(r => r.date === expectedSession);
     if (!row) return { provider: 'YAHOO_CHART', status: 'NO_EXPECTED_SESSION', url, availableDates: rows.map(r => r.date) };
     const prior = rows.filter(r => r.date < expectedSession).at(-1) || null;
     const diff = priceDiffPct(primaryClose, row.close);
-    if (!pricesAgree(primaryClose, row.close)) return { provider: 'YAHOO_CHART', status: 'PRICE_DISAGREEMENT', url, sessionDate: row.date, close: row.close, primaryClose, priceDifferencePct: round(diff, 3) };
-    return { provider: 'YAHOO_CHART', status: 'APPROVED', url, sessionDate: row.date, close: row.close, open: row.open, high: row.high, low: row.low, volume: row.volume, previousClose: prior?.close ?? null, priceDifferencePct: round(diff, 3), identity };
+    if (!allowStaleReplacement && !pricesAgree(primaryClose, row.close)) return { provider: 'YAHOO_CHART', status: 'PRICE_DISAGREEMENT', url, sessionDate: row.date, close: row.close, primaryClose, priceDifferencePct: round(diff, 3) };
+    return { provider: 'YAHOO_CHART', status: 'APPROVED', url, sessionDate: row.date, close: row.close, open: row.open, high: row.high, low: row.low, volume: row.volume, previousClose: prior?.close ?? null, priceDifferencePct: round(diff, 3), identity, primaryPriceAgreementRequired: !allowStaleReplacement, replacementForStalePrimary: allowStaleReplacement };
   } catch (error) { return { provider: 'YAHOO_CHART', status: 'FETCH_FAILED', url, error: String(error?.message || error) }; }
 }
-function parseStockAnalysisHistory(html, expectedSession) {
+function parseStockAnalysisRows(html) {
   const rows = [];
   for (const tr of String(html || '').matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
     const cells = [...tr[1].matchAll(/<(?:th|td)\b[^>]*>([\s\S]*?)<\/(?:th|td)>/gi)].map(m => decodeHtml(m[1]));
     if (cells.length < 5) continue;
     const time = Date.parse(cells[0]);
     if (!Number.isFinite(time)) continue;
-    const date = new Date(time).toISOString().slice(0, 10);
-    rows.push({ date, raw: cells, open: parseNum(cells[1]), high: parseNum(cells[2]), low: parseNum(cells[3]), close: parseNum(cells[4]), volume: parseNum(cells.find((_, i) => i >= 5 && /[KMBT]|\d[\d,]{3,}/i.test(cells[i])) || cells[6]) });
+    rows.push({ date: new Date(time).toISOString().slice(0, 10), raw: cells, open: parseNum(cells[1]), high: parseNum(cells[2]), low: parseNum(cells[3]), close: parseNum(cells[4]), volume: parseNum(cells.find((_, i) => i >= 5 && /[KMBT]|\d[\d,]{3,}/i.test(cells[i])) || cells[6]) });
   }
-  return rows.find(r => r.date === expectedSession) || null;
+  return rows.sort((a, b) => a.date.localeCompare(b.date));
 }
-async function stockAnalysisEvidence(ticker, expectedSession, primaryClose) {
-  const urls = [
-    `https://stockanalysis.com/quote/egx/${encodeURIComponent(ticker)}/history/`,
-    `https://stockanalysis.com/quote/egx/${encodeURIComponent(ticker)}/history/?p=1`
-  ];
+async function stockAnalysisEvidence(ticker, expectedSession, primaryClose, allowStaleReplacement = false) {
+  const urls = [`https://stockanalysis.com/quote/egx/${encodeURIComponent(ticker)}/history/`, `https://stockanalysis.com/quote/egx/${encodeURIComponent(ticker)}/history/?p=1`];
   const attempts = [];
   for (const url of urls) {
     try {
       const html = await fetchText(url);
-      const row = parseStockAnalysisHistory(html, expectedSession);
-      if (!row) { attempts.push({ url, status: 'NO_EXPECTED_SESSION' }); continue; }
+      const rows = parseStockAnalysisRows(html);
+      const row = rows.find(r => r.date === expectedSession);
+      if (!row) { attempts.push({ url, status: 'NO_EXPECTED_SESSION', latestAvailableSession: rows.at(-1)?.date || null, latestAvailableClose: rows.at(-1)?.close ?? null }); continue; }
       const diff = priceDiffPct(primaryClose, row.close);
-      if (!pricesAgree(primaryClose, row.close)) { attempts.push({ url, status: 'PRICE_DISAGREEMENT', close: row.close, priceDifferencePct: round(diff, 3) }); continue; }
-      return { provider: 'STOCKANALYSIS_EGX_HISTORY', status: 'APPROVED', url, sessionDate: expectedSession, close: row.close, open: row.open, high: row.high, low: row.low, volume: row.volume, previousClose: null, priceDifferencePct: round(diff, 3) };
+      if (!allowStaleReplacement && !pricesAgree(primaryClose, row.close)) { attempts.push({ url, status: 'PRICE_DISAGREEMENT', close: row.close, priceDifferencePct: round(diff, 3) }); continue; }
+      return { provider: 'STOCKANALYSIS_EGX_HISTORY', status: 'APPROVED', url, sessionDate: expectedSession, close: row.close, open: row.open, high: row.high, low: row.low, volume: row.volume, previousClose: rows.filter(r => r.date < expectedSession).at(-1)?.close ?? null, priceDifferencePct: round(diff, 3), primaryPriceAgreementRequired: !allowStaleReplacement, replacementForStalePrimary: allowStaleReplacement };
     } catch (error) { attempts.push({ url, status: 'FETCH_FAILED', error: String(error?.message || error) }); }
   }
   return { provider: 'STOCKANALYSIS_EGX_HISTORY', status: 'UNRESOLVED', attempts };
@@ -146,10 +140,11 @@ async function resolveTarget(target, marketByTicker, expectedSession) {
   const ticker = norm(target.ticker);
   const primary = marketByTicker.get(ticker) || {};
   const primaryClose = n(primary.price ?? primary.last ?? primary.close ?? target.close);
+  const stalePrimary = ['SOURCE_SESSION_MISMATCH', 'SOURCE_SESSION_UNKNOWN'].includes(String(target.reason || ''));
   const attempts = [];
-  const yahoo = await yahooEvidence(ticker, expectedSession, primaryClose); attempts.push(yahoo);
+  const yahoo = await yahooEvidence(ticker, expectedSession, primaryClose, stalePrimary); attempts.push(yahoo);
   if (yahoo.status === 'APPROVED') return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: yahoo, attempts };
-  const stock = await stockAnalysisEvidence(ticker, expectedSession, primaryClose); attempts.push(stock);
+  const stock = await stockAnalysisEvidence(ticker, expectedSession, primaryClose, stalePrimary); attempts.push(stock);
   if (stock.status === 'APPROVED') return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: stock, attempts };
   return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: false, approvedEvidence: null, attempts };
 }
@@ -164,17 +159,16 @@ async function main() {
   const price = readJson(PRICE_TRUTH_PATH, {});
   const expectedSession = price.expectedSession || market?.sourceSessionEvidence?.expectedSession || null;
   if (!expectedSession) throw new Error('Missing expected session');
-  const targets = (Array.isArray(price.sampleRejected) ? price.sampleRejected : []).filter(r => r?.ticker && ['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN','EXTREME_JUMP_REQUIRES_SECOND_SOURCE','REPORTED_CHANGE_MISMATCH'].includes(r.reason));
+  const targets = (Array.isArray(price.sampleRejected) ? price.sampleRejected : []).filter(r => r?.ticker && ['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN','EXTREME_JUMP_REQUIRES_SECOND_SOURCE','REPORTED_CHANGE_MISMATCH','SECOND_SOURCE_HISTORY_PERSIST_FAILED'].includes(r.reason));
   const uniqueTargets = [...new Map(targets.map(r => [norm(r.ticker), { ...r, ticker: norm(r.ticker) }])).values()];
   const marketByTicker = new Map((market.rows || []).map(r => [norm(r.symbol || r.ticker || r.code), r]));
   const records = await mapLimit(uniqueTargets, CONCURRENCY, target => resolveTarget(target, marketByTicker, expectedSession));
   const approved = records.filter(r => r.approved);
   const out = {
-    schemaVersion: '16.9.2-market-second-source-evidence-v1', generatedAt: new Date().toISOString(), expectedSession,
-    policy: { failClosed: true, providers: ['Yahoo Finance chart with strict EGX identity guard', 'StockAnalysis EGX history'], maximumPrimaryVsSecondaryPriceDifferencePct: MAX_PRICE_DIFF_PCT, strategyMutation: false, rule: 'A rejected primary row is recoverable only when an independent provider exposes the expected session and a close consistent with the primary market price. Yahoo is disallowed when historical identity/scale warnings exist.' },
+    schemaVersion: '16.9.2-market-second-source-evidence-v2', generatedAt: new Date().toISOString(), expectedSession,
+    policy: { failClosed: true, providers: ['Yahoo Finance chart with strict EGX identity guard', 'StockAnalysis EGX history'], maximumPrimaryVsSecondaryPriceDifferencePct: MAX_PRICE_DIFF_PCT, strategyMutation: false, rule: 'For a same-session primary anomaly, independent close agreement is mandatory. For a stale or unknown primary session, an independent exact-session EGX row may replace the stale primary without matching the stale price. Yahoo remains disallowed when historical identity/scale warnings exist.' },
     targetCount: uniqueTargets.length, approvedCount: approved.length, unresolvedCount: records.length - approved.length,
-    approvedTickers: approved.map(r => r.ticker), unresolvedTickers: records.filter(r => !r.approved).map(r => r.ticker),
-    records: Object.fromEntries(records.map(r => [r.ticker, r]))
+    approvedTickers: approved.map(r => r.ticker), unresolvedTickers: records.filter(r => !r.approved).map(r => r.ticker), records: Object.fromEntries(records.map(r => [r.ticker, r]))
   };
   writeJson(OUT_PATH, out);
   console.log(JSON.stringify({ expectedSession, targets: out.targetCount, approved: out.approvedCount, unresolved: out.unresolvedCount, approvedTickers: out.approvedTickers, unresolvedTickers: out.unresolvedTickers }, null, 2));
