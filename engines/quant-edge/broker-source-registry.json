@@ -1,21 +1,26 @@
 {
-  "version": 1,
+  "version": 2,
   "policy": {
-    "defaultMode": "DISCOVERY_ONLY",
+    "defaultMode": "PUBLIC_STRICT_DISCOVERY",
     "autoTrustPublicPage": false,
     "requireOriginalTimestamp": true,
     "requireOriginalSourceIdentity": true,
     "unknownSourceWeight": 0,
-    "notes": "Registry is for audited discovery/ingestion. A source being listed here does not make every public post a verified recommendation."
+    "noAuthenticationBypass": true,
+    "noPaywallBypass": true,
+    "strictStructuredExtractionOnly": true,
+    "notes": "A listed source is only an audited discovery target. Influence is granted only to explicit, dated, structured recommendations from the official source or an explicitly authorized export."
   },
   "sources": [
     {
       "id": "RUMBLE",
-      "displayName": "Rumble",
+      "displayName": "Rumble / Thndr Securities Research",
       "officialDomain": "therumble.app",
       "researchTypes": ["FUNDAMENTAL_RECOMMENDATIONS", "TECHNICAL_RECOMMENDATIONS", "EXPERT_INSIGHTS"],
-      "mode": "DISCOVERY_ONLY",
+      "mode": "PUBLIC_STRICT_DISCOVERY",
       "defaultSourceType": "OFFICIAL_BROKER_APP_OR_SITE",
+      "discoveryUrls": ["https://therumble.app/pricing", "https://therumble.app/auth/login"],
+      "accessNote": "Recommendation content may require an authorized account. Collector must not bypass login or subscription controls.",
       "enabled": true
     },
     {
@@ -23,8 +28,9 @@
       "displayName": "Ostoul Capital",
       "officialDomain": "ostoulcapital.com",
       "researchTypes": ["NEWSLETTERS", "FUNDAMENTAL_RESEARCH", "TECHNICAL_ANALYSIS", "MARKET_INSIGHTS"],
-      "mode": "DISCOVERY_ONLY",
+      "mode": "PUBLIC_STRICT_DISCOVERY",
       "defaultSourceType": "OFFICIAL_BROKER_APP_OR_SITE",
+      "discoveryUrls": ["https://www.ostoulcapital.com/services/brokerage-services-in-egypt", "https://www.ostoulcapital.com/media"],
       "enabled": true
     },
     {
@@ -32,8 +38,9 @@
       "displayName": "Mirage Brokerage",
       "officialDomain": "miragebrokerage.eg",
       "researchTypes": ["RESEARCH_REPORTS", "TECHNICAL_ANALYSIS", "FINANCIAL_ANALYSIS"],
-      "mode": "DISCOVERY_ONLY",
+      "mode": "PUBLIC_STRICT_DISCOVERY",
       "defaultSourceType": "OFFICIAL_BROKER_APP_OR_SITE",
+      "discoveryUrls": ["https://miragebrokerage.eg/"],
       "enabled": true
     }
   ]
