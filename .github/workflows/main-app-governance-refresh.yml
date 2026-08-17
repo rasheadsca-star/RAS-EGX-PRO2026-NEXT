@@ -1,0 +1,179 @@
+name: MAIN APP — Canonical Governance Refresh
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "data/stable/v16-v169-primary-decision.json"
+      - "data/stable/v15-price-truth.json"
+      - "data/fetch-status.json"
+      - "data/market.json"
+      - "data/v17/current.json"
+      - "scripts/stable/v16-main-app-governance.cjs"
+      - "scripts/stable/v16-main-app-consensus.cjs"
+      - "scripts/stable/v16-publish-v169-basket.cjs"
+      - "preview-v16/app/decision-source.js"
+      - "preview-v16/app/v169-p2.html"
+      - "preview-v16/app/main-app-governance-overlay.js"
+      - "preview-v16/app/main-app-consensus-overlay.js"
+      - ".github/workflows/main-app-governance-refresh.yml"
+      - ".github/workflows/main-app-immutability-guard.yml"
+  schedule:
+    # Run hourly candidates; Cairo clock gate below accepts 10:00-21:59 only.
+    # This works across Egypt UTC+2 / UTC+3 without hard-coding DST.
+    - cron: "25 7-19 * * 0-4"
+
+permissions:
+  contents: write
+
+concurrency:
+  # Same group as the canonical market scanner: never rebuild the governance
+  # snapshot while the MAIN APP engine is still writing its session.
+  group: egx-main-app-v1692-p2-canonical
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Resolve Cairo refresh window
+        id: clock
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          DOW=$(TZ=Africa/Cairo date '+%w')
+          HOUR=$(TZ=Africa/Cairo date '+%H')
+          RUN=false
+          if [ "$DOW" -le 4 ] && [ "$HOUR" -ge 10 ] && [ "$HOUR" -le 21 ]; then RUN=true; fi
+          echo "Cairo governance refresh: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M') run=$RUN"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout latest MAIN APP
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate canonical stack
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-main-app-governance.cjs
+          node --check scripts/stable/v16-main-app-consensus.cjs
+          node --check preview-v16/app/decision-source.js
+          node --check preview-v16/app/main-app-governance-overlay.js
+          node --check preview-v16/app/main-app-consensus-overlay.js
+          grep -q "V16_9_EQUAL_WEIGHT_BASKET" scripts/stable/v16-main-app-governance.cjs
+          grep -q "v16-main-app-current.json" preview-v16/app/decision-source.js
+          grep -q "main-app-governance-overlay.js" preview-v16/app/v169-p2.html
+          grep -q "v16-main-app-consensus.json" preview-v16/app/main-app-consensus-overlay.js
+
+      - name: Build fail-closed canonical snapshot and immutable ledger
+        if: steps.clock.outputs.run == 'true'
+        id: governance
+        shell: bash
+        run: |
+          set +e
+          node scripts/stable/v16-main-app-governance.cjs
+          CODE=$?
+          set -e
+          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
+          # Exit 2 means the snapshot intentionally entered BLOCKED state.
+          # The blocked snapshot must still be persisted and published.
+          if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then exit "$CODE"; fi
+          test -s data/stable/v16-main-app-current.json
+          test -s data/stable/v16-main-app-signal-ledger.json
+
+      - name: Refresh session-bound multi-engine consensus
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/stable/v16-main-app-consensus.cjs
+          test -s data/stable/v16-main-app-consensus.json
+          test -s data/stable/v16-main-app-consensus-regression.json
+
+      - name: Build stack status and acceptance
+        if: steps.clock.outputs.run == 'true'
+        env:
+          GOVERNANCE_EXIT: ${{ steps.governance.outputs.exit_code }}
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
+          const snap=read('data/stable/v16-main-app-current.json');
+          const consensus=read('data/stable/v16-main-app-consensus.json');
+          const regression=read('data/stable/v16-main-app-consensus-regression.json');
+          const required={
+            engine:snap?.governance?.activeEngine==='V16_9_EQUAL_WEIGHT_BASKET',
+            canonical:snap.canonicalSnapshot===true,
+            failClosed:snap?.governance?.failClosed===true,
+            immutableLedger:snap?.governance?.immutableLedger===true,
+            state:['HEALTHY','DEGRADED','RESEARCH_ONLY','BLOCKED'].includes(snap.systemState),
+            allocationGuard:Number(snap?.portfolioPolicy?.plannedAllocationPct||0)<=50.0001,
+            consensusRegression:regression.pass===true,
+            consensusNoRankingMutation:consensus?.policy?.comparisonCanChangeMainRanking===false,
+            consensusNoExecutionGrant:consensus?.policy?.comparisonCanGrantExecution===false,
+            exactSessionConsensus:consensus?.policy?.exactSessionAlignmentRequired===true,
+          };
+          const pass=Object.values(required).every(Boolean);
+          const out={
+            schemaVersion:'16.9.2-main-app-canonical-stack-status',
+            generatedAt:new Date().toISOString(),
+            status:pass?'PASS':'FAIL',
+            governanceExitCode:Number(process.env.GOVERNANCE_EXIT||0),
+            systemState:snap.systemState,
+            executionAllowed:snap.executionAllowed===true,
+            sessionDate:snap.sessionDate||null,
+            marketSession:snap?.dataTruth?.marketSession||null,
+            recommendationTickers:(snap.recommendations||[]).map(r=>r.ticker),
+            sourceSessionEvidenceCoveragePct:snap?.dataTruth?.sourceSessionEvidenceCoveragePct??null,
+            plannedAllocationPct:snap?.portfolioPolicy?.plannedAllocationPct??null,
+            consensusStatus:consensus.status,
+            fullyConfirmedCount:consensus?.current?.fullyConfirmedCount||0,
+            externalEngineSession:consensus?.sourceHealth?.v20Session||null,
+            checks:required,
+          };
+          fs.writeFileSync('data/stable/v16-main-app-stack-status.json',JSON.stringify(out,null,2)+'\n');
+          console.log(out);
+          if(!pass)process.exit(1);
+          NODE
+
+      - name: Commit canonical MAIN APP governance state
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            data/stable/v16-main-app-current.json \
+            data/stable/v16-main-app-signal-ledger.json \
+            data/stable/v16-main-app-consensus.json \
+            data/stable/v16-main-app-consensus-regression.json \
+            data/stable/v16-main-app-stack-status.json
+          if git diff --cached --quiet; then
+            echo "Canonical MAIN APP governance already current."
+            exit 0
+          fi
+          git commit -m "Refresh MAIN APP canonical governance and consensus"
+          for attempt in 1 2 3; do
+            if git pull --rebase -X ours origin main && git push origin HEAD:main; then exit 0; fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt * 8))
+          done
