@@ -3,7 +3,8 @@ name: QUANT EDGE Shadow Lab
 on:
   workflow_dispatch:
   schedule:
-    - cron: '10 12 * * 0-4'
+    # Two post-close attempts: covers Cairo summer/winter time and delayed EOD providers.
+    - cron: '10 12,14 * * 0-4'
   push:
     branches:
       - 'develop/v17-rebuild'
@@ -43,10 +44,11 @@ jobs:
       - name: Run independent shadow pipeline
         run: npm run quant-edge:pipeline
 
-      - name: Acceptance guard
+      - name: Freshness and acceptance guard
         run: npm run quant-edge:acceptance
 
       - name: Persist QUANT EDGE shadow artifacts
+        if: always()
         shell: bash
         run: |
           git config user.name "quant-edge-shadow-bot"
@@ -58,13 +60,15 @@ jobs:
           fi
 
       - name: Upload audit artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: quant-edge-shadow-${{ github.run_id }}
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
           path: |
             engines/quant-edge/data/manifest.json
+            engines/quant-edge/data/independent-snapshot.json
             engines/quant-edge/data/shadow-latest.json
             engines/quant-edge/data/calibration.json
             engines/quant-edge/data/broker-collection.json
