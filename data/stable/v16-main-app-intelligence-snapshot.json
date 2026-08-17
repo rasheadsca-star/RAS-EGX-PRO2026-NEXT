@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "16.9.2-auditable-intelligence-snapshot-v2",
-  "generatedAt": "2026-08-17T20:42:27.897Z",
+  "schemaVersion": "16.9.2-auditable-intelligence-snapshot-v3",
+  "generatedAt": "2026-08-17T20:56:03.701Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-08-17",
   "sourceDecisionGeneratedAt": "2026-08-17T20:18:33.413Z",
@@ -135,75 +135,68 @@
           }
         },
         "financial": {
-          "status": "UNAVAILABLE",
-          "source": "Yahoo Finance quote",
-          "fetchedAt": "2026-08-17T20:42:27.864Z",
-          "errors": [
-            "HTTP_401",
-            "HTTP_401"
-          ],
+          "status": "SUCCESS",
+          "auditEligibleAtIssue": true,
+          "source": "StockAnalysis / S&P standardized cache",
+          "sourceTier": "SECONDARY_STANDARDIZED",
+          "sourceAsOf": "2026-03-31",
+          "fetchedAt": "2026-08-03T00:21:43.239Z",
+          "capturedBeforeDecision": true,
+          "provider": "stockanalysis_sp_global_standardized",
+          "sourceUrls": {
+            "income": "https://stockanalysis.com/quote/egx/AMIA/financials/",
+            "balance": "https://stockanalysis.com/quote/egx/AMIA/financials/balance-sheet/",
+            "cashFlow": "https://stockanalysis.com/quote/egx/AMIA/financials/cash-flow-statement/",
+            "statistics": "https://stockanalysis.com/quote/egx/AMIA/statistics/"
+          },
+          "officialDisclosureVerified": false,
+          "audited": null,
+          "values": {
+            "marketCap": 6070000000,
+            "pe": 13.72,
+            "forwardPE": null,
+            "eps": 0,
+            "bookValue": null,
+            "priceToBook": 3.21,
+            "dividendYield": 1.24,
+            "week52High": null,
+            "week52Low": null,
+            "currency": "EGP",
+            "revenue": 2730000000,
+            "netIncome": 528010000,
+            "freeCashFlow": -1284000000,
+            "totalDebt": 6829000000,
+            "cashAndInvestments": 605030000,
+            "returnOnEquityPct": 0,
+            "currentRatio": 1.07,
+            "debtToEquity": 3.62
+          },
+          "provenance": "PERSISTED_PRE_DECISION_FINANCIAL_RECORD",
           "score": {
-            "label": "UNAVAILABLE",
-            "score": null,
-            "notes": []
+            "label": "NEUTRAL_OR_INSUFFICIENT",
+            "score": 1,
+            "notes": [
+              "PE_LOW_RELATIVE"
+            ]
           }
         },
         "news": {
           "status": "SUCCESS",
+          "auditEligibleAtIssue": true,
           "source": "Yahoo Finance search/news",
-          "sourceUrl": "https://query1.finance.yahoo.com/v1/finance/search?q=AMIA.CA&quotesCount=1&newsCount=6",
-          "fetchedAt": "2026-08-17T20:42:27.850Z",
-          "items": [
-            {
-              "title": "Morgan Stanley Delivers a Bullish Message for Nvidia Stock Investors",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/morgan-stanley-delivers-bullish-message-204121851.html",
-              "published": "2026-08-17T20:41:21.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "BHP's Uranium Talks Could Open a New AI-Power Growth Lane",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/commodities/articles/bhps-uranium-talks-could-open-203838876.html",
-              "published": "2026-08-17T20:38:38.000Z",
-              "sentiment": "POSITIVE"
-            },
-            {
-              "title": "SpaceX Surges as Intesa Reveals a $966 Million Stake",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-surges-intesa-reveals-966-203802474.html",
-              "published": "2026-08-17T20:38:02.000Z",
-              "sentiment": "POSITIVE"
-            },
-            {
-              "title": "Fed's Next Rate Move Just Got More Complicated",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/economy/policy/articles/feds-next-rate-move-just-203716877.html",
-              "published": "2026-08-17T20:37:16.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "Nvidia's Next AI Infrastructure Bet Is Scaling Fast",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/technology/ai/articles/nvidias-next-ai-infrastructure-bet-203610188.html",
-              "published": "2026-08-17T20:36:10.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "Trump admin. urges Apple not to purchase Chinese memory chips, but this presents a problem",
-              "publisher": "Yahoo Finance Video",
-              "link": "https://finance.yahoo.com/video/trump-admin-urges-apple-not-203543932.html",
-              "published": "2026-08-17T20:35:43.000Z",
-              "sentiment": "NEUTRAL"
-            }
-          ],
+          "sourceUrl": "https://query1.finance.yahoo.com/v1/finance/search?q=AMIA.CA&quotesCount=1&newsCount=12",
+          "fetchedAt": "2026-08-17T20:56:03.692Z",
+          "cutoffAt": "2026-08-17T20:18:33.413Z",
+          "discardedFutureItems": 10,
+          "items": [],
           "summary": {
-            "label": "POSITIVE_PRELIMINARY",
-            "score": 2,
-            "pos": 2,
+            "label": "NEUTRAL_OR_MIXED",
+            "score": 0,
+            "pos": 0,
             "neg": 0,
-            "total": 6
-          }
+            "total": 0
+          },
+          "provenance": "ONLY_NEWS_PUBLISHED_AT_OR_BEFORE_DECISION"
         }
       }
     },
@@ -316,75 +309,69 @@
           }
         },
         "financial": {
-          "status": "UNAVAILABLE",
-          "source": "Yahoo Finance quote",
-          "fetchedAt": "2026-08-17T20:42:27.897Z",
-          "errors": [
-            "HTTP_401",
-            "HTTP_401"
-          ],
+          "status": "SUCCESS",
+          "auditEligibleAtIssue": true,
+          "source": "StockAnalysis / S&P standardized cache",
+          "sourceTier": "SECONDARY_STANDARDIZED",
+          "sourceAsOf": "2025-12-31",
+          "fetchedAt": "2026-08-03T00:24:03.576Z",
+          "capturedBeforeDecision": true,
+          "provider": "stockanalysis_sp_global_standardized",
+          "sourceUrls": {
+            "income": "https://stockanalysis.com/quote/egx/GTWL/financials/",
+            "balance": "https://stockanalysis.com/quote/egx/GTWL/financials/balance-sheet/",
+            "cashFlow": "https://stockanalysis.com/quote/egx/GTWL/financials/cash-flow-statement/",
+            "statistics": "https://stockanalysis.com/quote/egx/GTWL/statistics/"
+          },
+          "officialDisclosureVerified": false,
+          "audited": null,
+          "values": {
+            "marketCap": 1450000000,
+            "pe": 14.5,
+            "forwardPE": null,
+            "eps": 0,
+            "bookValue": null,
+            "priceToBook": 1.49,
+            "dividendYield": 0,
+            "week52High": null,
+            "week52Low": null,
+            "currency": "EGP",
+            "revenue": 877630000,
+            "netIncome": 110890000,
+            "freeCashFlow": 154580000,
+            "totalDebt": 776610000,
+            "cashAndInvestments": 11520000,
+            "returnOnEquityPct": 0,
+            "currentRatio": 0.92,
+            "debtToEquity": 0.8
+          },
+          "provenance": "PERSISTED_PRE_DECISION_FINANCIAL_RECORD",
           "score": {
-            "label": "UNAVAILABLE",
-            "score": null,
-            "notes": []
+            "label": "POSITIVE_PRELIMINARY",
+            "score": 2,
+            "notes": [
+              "PE_LOW_RELATIVE",
+              "PB_ACCEPTABLE"
+            ]
           }
         },
         "news": {
           "status": "SUCCESS",
+          "auditEligibleAtIssue": true,
           "source": "Yahoo Finance search/news",
-          "sourceUrl": "https://query1.finance.yahoo.com/v1/finance/search?q=GTWL.CA&quotesCount=1&newsCount=6",
-          "fetchedAt": "2026-08-17T20:42:27.851Z",
-          "items": [
-            {
-              "title": "Morgan Stanley Delivers a Bullish Message for Nvidia Stock Investors",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/morgan-stanley-delivers-bullish-message-204121851.html",
-              "published": "2026-08-17T20:41:21.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "BHP's Uranium Talks Could Open a New AI-Power Growth Lane",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/commodities/articles/bhps-uranium-talks-could-open-203838876.html",
-              "published": "2026-08-17T20:38:38.000Z",
-              "sentiment": "POSITIVE"
-            },
-            {
-              "title": "SpaceX Surges as Intesa Reveals a $966 Million Stake",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-surges-intesa-reveals-966-203802474.html",
-              "published": "2026-08-17T20:38:02.000Z",
-              "sentiment": "POSITIVE"
-            },
-            {
-              "title": "Fed's Next Rate Move Just Got More Complicated",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/economy/policy/articles/feds-next-rate-move-just-203716877.html",
-              "published": "2026-08-17T20:37:16.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "Nvidia's Next AI Infrastructure Bet Is Scaling Fast",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/technology/ai/articles/nvidias-next-ai-infrastructure-bet-203610188.html",
-              "published": "2026-08-17T20:36:10.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "Trump admin. urges Apple not to purchase Chinese memory chips, but this presents a problem",
-              "publisher": "Yahoo Finance Video",
-              "link": "https://finance.yahoo.com/video/trump-admin-urges-apple-not-203543932.html",
-              "published": "2026-08-17T20:35:43.000Z",
-              "sentiment": "NEUTRAL"
-            }
-          ],
+          "sourceUrl": "https://query1.finance.yahoo.com/v1/finance/search?q=GTWL.CA&quotesCount=1&newsCount=12",
+          "fetchedAt": "2026-08-17T20:56:03.701Z",
+          "cutoffAt": "2026-08-17T20:18:33.413Z",
+          "discardedFutureItems": 10,
+          "items": [],
           "summary": {
-            "label": "POSITIVE_PRELIMINARY",
-            "score": 2,
-            "pos": 2,
+            "label": "NEUTRAL_OR_MIXED",
+            "score": 0,
+            "pos": 0,
             "neg": 0,
-            "total": 6
-          }
+            "total": 0
+          },
+          "provenance": "ONLY_NEWS_PUBLISHED_AT_OR_BEFORE_DECISION"
         }
       }
     },
@@ -497,75 +484,69 @@
           }
         },
         "financial": {
-          "status": "UNAVAILABLE",
-          "source": "Yahoo Finance quote",
-          "fetchedAt": "2026-08-17T20:42:27.867Z",
-          "errors": [
-            "HTTP_401",
-            "HTTP_401"
-          ],
+          "status": "SUCCESS",
+          "auditEligibleAtIssue": true,
+          "source": "StockAnalysis / S&P standardized cache",
+          "sourceTier": "SECONDARY_STANDARDIZED",
+          "sourceAsOf": "2026-03-31",
+          "fetchedAt": "2026-08-03T00:21:42.378Z",
+          "capturedBeforeDecision": true,
+          "provider": "stockanalysis_sp_global_standardized",
+          "sourceUrls": {
+            "income": "https://stockanalysis.com/quote/egx/AALR/financials/",
+            "balance": "https://stockanalysis.com/quote/egx/AALR/financials/balance-sheet/",
+            "cashFlow": "https://stockanalysis.com/quote/egx/AALR/financials/cash-flow-statement/",
+            "statistics": "https://stockanalysis.com/quote/egx/AALR/statistics/"
+          },
+          "officialDisclosureVerified": false,
+          "audited": null,
+          "values": {
+            "marketCap": 1780000000,
+            "pe": 309.88,
+            "forwardPE": null,
+            "eps": 0,
+            "bookValue": null,
+            "priceToBook": -3.63,
+            "dividendYield": 0,
+            "week52High": null,
+            "week52Low": null,
+            "currency": "EGP",
+            "revenue": 167860000,
+            "netIncome": 5750000,
+            "freeCashFlow": 23300000,
+            "totalDebt": 138910000,
+            "cashAndInvestments": 31360000,
+            "returnOnEquityPct": 0,
+            "currentRatio": 0.56,
+            "debtToEquity": 0
+          },
+          "provenance": "PERSISTED_PRE_DECISION_FINANCIAL_RECORD",
           "score": {
-            "label": "UNAVAILABLE",
-            "score": null,
-            "notes": []
+            "label": "NEUTRAL_OR_INSUFFICIENT",
+            "score": 0,
+            "notes": [
+              "PE_HIGH",
+              "PB_ACCEPTABLE"
+            ]
           }
         },
         "news": {
           "status": "SUCCESS",
+          "auditEligibleAtIssue": true,
           "source": "Yahoo Finance search/news",
-          "sourceUrl": "https://query1.finance.yahoo.com/v1/finance/search?q=AALR.CA&quotesCount=1&newsCount=6",
-          "fetchedAt": "2026-08-17T20:42:27.877Z",
-          "items": [
-            {
-              "title": "Morgan Stanley Delivers a Bullish Message for Nvidia Stock Investors",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/morgan-stanley-delivers-bullish-message-204121851.html",
-              "published": "2026-08-17T20:41:21.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "BHP's Uranium Talks Could Open a New AI-Power Growth Lane",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/commodities/articles/bhps-uranium-talks-could-open-203838876.html",
-              "published": "2026-08-17T20:38:38.000Z",
-              "sentiment": "POSITIVE"
-            },
-            {
-              "title": "SpaceX Surges as Intesa Reveals a $966 Million Stake",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/markets/stocks/articles/spacex-surges-intesa-reveals-966-203802474.html",
-              "published": "2026-08-17T20:38:02.000Z",
-              "sentiment": "POSITIVE"
-            },
-            {
-              "title": "Fed's Next Rate Move Just Got More Complicated",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/economy/policy/articles/feds-next-rate-move-just-203716877.html",
-              "published": "2026-08-17T20:37:16.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "Nvidia's Next AI Infrastructure Bet Is Scaling Fast",
-              "publisher": "GuruFocus.com",
-              "link": "https://finance.yahoo.com/technology/ai/articles/nvidias-next-ai-infrastructure-bet-203610188.html",
-              "published": "2026-08-17T20:36:10.000Z",
-              "sentiment": "NEUTRAL"
-            },
-            {
-              "title": "Trump admin. urges Apple not to purchase Chinese memory chips, but this presents a problem",
-              "publisher": "Yahoo Finance Video",
-              "link": "https://finance.yahoo.com/video/trump-admin-urges-apple-not-203543932.html",
-              "published": "2026-08-17T20:35:43.000Z",
-              "sentiment": "NEUTRAL"
-            }
-          ],
+          "sourceUrl": "https://query1.finance.yahoo.com/v1/finance/search?q=AALR.CA&quotesCount=1&newsCount=12",
+          "fetchedAt": "2026-08-17T20:56:03.698Z",
+          "cutoffAt": "2026-08-17T20:18:33.413Z",
+          "discardedFutureItems": 10,
+          "items": [],
           "summary": {
-            "label": "POSITIVE_PRELIMINARY",
-            "score": 2,
-            "pos": 2,
+            "label": "NEUTRAL_OR_MIXED",
+            "score": 0,
+            "pos": 0,
             "neg": 0,
-            "total": 6
-          }
+            "total": 0
+          },
+          "provenance": "ONLY_NEWS_PUBLISHED_AT_OR_BEFORE_DECISION"
         }
       }
     }
@@ -574,14 +555,21 @@
     "recommendationCount": 3,
     "consensusRowsMatched": 3,
     "technicalSuccess": 3,
-    "financialSuccess": 0,
+    "financialObserved": 3,
+    "financialSuccess": 3,
     "newsSuccess": 3,
     "technicalCoveragePct": 100,
-    "financialCoveragePct": 0,
+    "financialObservedCoveragePct": 100,
+    "financialCoveragePct": 100,
     "newsCoveragePct": 100,
-    "auditableIntelligenceComplete": false,
+    "auditableIntelligenceComplete": true,
+    "financialSourceCounts": {
+      "StockAnalysis / S&P standardized cache": 3
+    },
     "noSyntheticValues": true,
-    "noFutureMarketDataUsedForTechnical": true
+    "noFutureMarketDataUsedForTechnical": true,
+    "noPostDecisionFinancialDataCounted": true,
+    "noPostDecisionNewsCounted": true
   },
-  "snapshotHash": "ead54114302f4ebe34386234bdf386a08cb6957fa410764db672ffed8401f4b6"
+  "snapshotHash": "36b03c9e5cc7111f14701129356660b9a32ba63a4f2f9f6674b48c30bbc4c94d"
 }
