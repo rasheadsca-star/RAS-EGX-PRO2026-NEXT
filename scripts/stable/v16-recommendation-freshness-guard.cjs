@@ -3,11 +3,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
+const { buildMainAppGovernance } = require('./v16-main-app-governance.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const DECISION_PATH = path.join(ROOT, 'data/stable/v15-practical-decision.json');
 const PRICE_PATH = path.join(ROOT, 'data/stable/v15-price-truth.json');
 const OUT_PATH = path.join(ROOT, 'data/stable/v16-recommendation-freshness.json');
+const CONSENSUS_SCRIPT = path.join(ROOT, 'scripts/stable/v16-main-app-consensus.cjs');
 
 function readJson(file, fallback = {}) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
@@ -124,7 +127,7 @@ if (!isFresh) {
 }
 
 const report = {
-  schemaVersion: '16.3.3',
+  schemaVersion: '16.9.2-main-app-freshness-guard',
   generatedAt: new Date().toISOString(),
   cairoNow: now,
   expectedSession: expected,
@@ -135,6 +138,7 @@ const report = {
   displayMode: decision.freshness.displayMode,
   recommendationTickers: (decision.recommendations || []).map(row => row.ticker),
   reasonCodes,
+  canonicalPostProcessing: true,
   actionAr: isFresh
     ? 'التوصيات تخص آخر جلسة مكتملة ومعتمدة.'
     : 'اعرض القائمة كمرجع للجلسة السابقة، ولا تقدمها كتوصيات اليوم أو كخطة تنفيذ.',
@@ -143,3 +147,34 @@ const report = {
 writeJson(DECISION_PATH, decision);
 writeJson(OUT_PATH, report);
 console.log(report);
+
+// Every canonical MAIN APP scan ends by rebuilding the same governance snapshot,
+// immutable signal ledger and session-bound engine comparison. This avoids a
+// timing gap between a new V16.9 basket and its safety/consensus overlays.
+try {
+  const snapshot = buildMainAppGovernance();
+  console.log({
+    canonicalMainAppPostProcess: 'GOVERNANCE_COMPLETE',
+    systemState: snapshot.systemState,
+    executionAllowed: snapshot.executionAllowed,
+    sessionDate: snapshot.sessionDate,
+    snapshotHash: snapshot.snapshotHash,
+  });
+} catch (error) {
+  console.error('MAIN APP canonical governance post-process failed:', error);
+  process.exitCode = 2;
+}
+
+const consensus = spawnSync(process.execPath, [CONSENSUS_SCRIPT], {
+  cwd: ROOT,
+  env: process.env,
+  stdio: 'inherit',
+  timeout: 120000,
+});
+if (consensus.error) {
+  console.error('MAIN APP consensus post-process failed:', consensus.error);
+  process.exitCode = 2;
+} else if (![0, 2].includes(consensus.status)) {
+  console.error(`MAIN APP consensus post-process exit=${consensus.status}`);
+  process.exitCode = 2;
+}
