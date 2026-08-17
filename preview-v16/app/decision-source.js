@@ -4,11 +4,10 @@
   const nativeFetch = window.fetch.bind(window);
   const legacyDecisionSuffix = '/data/stable/v15-practical-decision.json';
   const legacyUpdateSuffix = '/data/stable/v15-update-status.json';
-  const primaryUrl = new URL('../../data/stable/v16-main-app-current.json', window.location.href);
+  const primaryUrl = new URL('../../data/stable/v16-v169-primary-decision.json', window.location.href);
   const priceTruthUrl = new URL('../../data/stable/v15-price-truth.json', window.location.href);
 
   window.__EGX_PRIMARY_DECISION__ = primaryUrl.href;
-  window.__EGX_MAIN_APP_CANONICAL_SNAPSHOT__ = primaryUrl.href;
 
   const requestUrl = input => {
     try {
@@ -18,13 +17,13 @@
     }
   };
 
-  const noStore = init => ({ ...(init || {}), cache: 'no-store', headers: { ...((init || {}).headers || {}), 'Cache-Control': 'no-cache' } });
+  const noStore = init => ({ ...(init || {}), cache: 'no-store' });
 
   async function fetchPrimary(search = '') {
     const routedUrl = new URL(primaryUrl.href);
     routedUrl.search = search;
     const response = await nativeFetch(routedUrl.href, noStore());
-    if (!response.ok) throw new Error(`Canonical MAIN APP snapshot HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`Primary decision HTTP ${response.status}`);
     return response;
   }
 
@@ -55,23 +54,38 @@
     ]);
 
     const recommendations = Array.isArray(primary.recommendations) ? primary.recommendations : [];
-    const truth = primary.dataTruth || {};
-    const actualScanAt = truth.marketScanAt || legacy.lastAutomaticScanAt || legacy.generatedAt || null;
-    const statusGeneratedAt = primary.snapshotGeneratedAt || legacy.generatedAt || actualScanAt || null;
-    const marketSessionDate = truth.marketSession || priceTruth?.expectedSession || primary.expectedLatestSession || primary.sessionDate || null;
-    const recommendationSessionDate = truth.decisionSession || primary.sessionDate || marketSessionDate || null;
-    const recommendationGeneratedAt = truth.decisionBuiltAt || primary.generatedAt || null;
-    const recommendationSessionAligned = primary?.governance?.sessionAligned === true;
-    const currentExecutionGrade = truth.executionGrade === true || priceTruth?.executionGrade === true;
-    const executionEligible = primary.executionAllowed === true;
+
+    // Keep independent truths separate:
+    // 1) wall-clock scanner run, 2) latest completed market session,
+    // 3) recommendation signal session, 4) recommendation build time,
+    // 5) current source execution grade.
+    // A post-close build can cross midnight in Cairo without creating a new EGX session.
+    const actualScanAt = legacy.lastAutomaticScanAt || legacy.generatedAt || null;
+    const statusGeneratedAt = legacy.generatedAt || actualScanAt || null;
+    const marketSessionDate = priceTruth?.expectedSession || legacy.expectedLatestSession || legacy.sessionDate || primary.sessionDate || null;
+    const recommendationSessionDate = primary.sessionDate || legacy.recommendationSessionDate || marketSessionDate || null;
+    const recommendationGeneratedAt = primary.generatedAt || legacy.recommendationGeneratedAt || null;
+    const recommendationSessionAligned = Boolean(
+      marketSessionDate &&
+      recommendationSessionDate &&
+      marketSessionDate === recommendationSessionDate
+    );
+    const currentExecutionGrade = priceTruth
+      ? priceTruth.executionGrade === true
+      : legacy?.priceTruth?.executionGrade === true;
+    const executionEligible = Boolean(
+      recommendationSessionAligned &&
+      currentExecutionGrade &&
+      primary.practicalReady === true &&
+      recommendations.length > 0
+    );
 
     const merged = {
       ...legacy,
-      schemaVersion: '16.9.2-canonical-governance-status',
+      schemaVersion: '16.9.2-session-truth-status',
       generatedAt: statusGeneratedAt,
       lastAutomaticScanAt: actualScanAt,
-      productInterface: 'EGX_PROFESSIONAL_MAIN_APP_V16_9_2',
-      systemState: primary.systemState || primary.state || 'BLOCKED',
+      productInterface: 'EGX_PROFESSIONAL_V16_9_2',
       sessionDate: marketSessionDate,
       expectedLatestSession: marketSessionDate,
       marketSessionDate,
@@ -83,22 +97,19 @@
       recommendationsReady: executionEligible,
       recommendationCount: recommendations.length,
       recommendationTickers: recommendations.map(row => row.ticker),
-      productionEngine: primary?.governance?.activeEngine || primary.selectedModel?.id || 'V16_9_EQUAL_WEIGHT_BASKET',
+      productionEngine: primary.selectedModel?.id || 'V16_9_EQUAL_WEIGHT_BASKET',
       primaryTickers: recommendations.map(row => row.ticker),
-      protectedDecisionPath: 'data/stable/v16-main-app-current.json',
-      canonicalSnapshotHash: primary.snapshotHash || null,
+      protectedDecisionPath: 'data/stable/v16-v169-primary-decision.json',
       sessionTruth: {
         scannerRunAt: actualScanAt,
         statusGeneratedAt,
         latestCompletedMarketSession: marketSessionDate,
         recommendationSignalSession: recommendationSessionDate,
         recommendationBuiltAt: recommendationGeneratedAt,
-        priceTruthGeneratedAt: truth.priceTruthAt || priceTruth?.generatedAt || null,
+        priceTruthGeneratedAt: priceTruth?.generatedAt || null,
         aligned: recommendationSessionAligned,
         executionGrade: currentExecutionGrade,
         executionEligible,
-        sourceSessionEvidenceCoveragePct: truth.sourceSessionEvidenceCoveragePct ?? null,
-        state: primary.systemState || primary.state || 'BLOCKED',
       },
     };
 
