@@ -1,22 +1,22 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-08-16T17:14:14.228Z",
+  "generatedAt": "2026-08-17T07:39:24.102Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 79,
-    "scheduled": 30,
-    "scheduledLegacy": 30,
+    "total": 84,
+    "scheduled": 33,
+    "scheduledLegacy": 33,
     "pageDeployers": 41,
-    "repositoryWriters": 73,
+    "repositoryWriters": 76,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "30 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "33 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "41 workflows can deploy GitHub Pages.",
-    "73 workflows can write to the repository."
+    "76 workflows can write to the repository."
   ],
   "scheduledLegacy": [
     {
@@ -89,6 +89,20 @@
       "schedules": [
         "20 8 * * 0-4",
         "15 12 * * 0-4"
+      ]
+    },
+    {
+      "filename": "update-v20-consensus-overlay.yml",
+      "name": "Update V20 Cross-Version Consensus Overlay",
+      "schedules": [
+        "15 7-20 * * 0-4"
+      ]
+    },
+    {
+      "filename": "update-v20-multi-engine-consensus.yml",
+      "name": "Update V20 Multi-Engine Consensus Monitor",
+      "schedules": [
+        "25 7-20 * * 0-4"
       ]
     },
     {
@@ -234,6 +248,13 @@
       "schedules": [
         "30 7 * * 5"
       ]
+    },
+    {
+      "filename": "v20-consensus-overlay-acceptance.yml",
+      "name": "V20 Consensus Overlay Acceptance",
+      "schedules": [
+        "35 7-20 * * 0-4"
+      ]
     }
   ],
   "workflows": [
@@ -289,6 +310,20 @@
       "schedules": [],
       "hasWorkflowDispatch": true,
       "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "cascade-downstream-versions.yml",
+      "relativePath": ".github/workflows/cascade-downstream-versions.yml",
+      "name": "Cascade MAIN APP Session to V17 V19 V20",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": false,
       "deploysPages": false,
       "writesRepository": true,
       "classification": "LEGACY_OR_AUXILIARY"
@@ -717,6 +752,20 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "main-app-p2-consensus-acceptance.yml",
+      "relativePath": ".github/workflows/main-app-p2-consensus-acceptance.yml",
+      "name": "MAIN APP P3 Method-Independent Consensus Acceptance",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "mobile-hotfix-deploy.yml",
       "relativePath": ".github/workflows/mobile-hotfix-deploy.yml",
       "name": "EGX V16.3.3 Immediate Market Rescan and Deploy",
@@ -815,6 +864,38 @@
       ],
       "hasWorkflowDispatch": true,
       "hasPush": false,
+      "deploysPages": false,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "update-v20-consensus-overlay.yml",
+      "relativePath": ".github/workflows/update-v20-consensus-overlay.yml",
+      "name": "Update V20 Cross-Version Consensus Overlay",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "15 7-20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "update-v20-multi-engine-consensus.yml",
+      "relativePath": ".github/workflows/update-v20-multi-engine-consensus.yml",
+      "name": "Update V20 Multi-Engine Consensus Monitor",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "25 7-20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
       "deploysPages": false,
       "writesRepository": true,
       "classification": "LEGACY_OR_AUXILIARY"
@@ -1405,6 +1486,22 @@
       ],
       "hasWorkflowDispatch": true,
       "hasPush": false,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "v20-consensus-overlay-acceptance.yml",
+      "relativePath": ".github/workflows/v20-consensus-overlay-acceptance.yml",
+      "name": "V20 Consensus Overlay Acceptance",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "35 7-20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
       "deploysPages": false,
       "writesRepository": false,
       "classification": "LEGACY_OR_AUXILIARY"
