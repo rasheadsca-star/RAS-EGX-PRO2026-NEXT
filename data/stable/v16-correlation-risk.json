@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-17T17:35:11.023Z",
+  "generatedAt": "2026-08-17T17:51:21.136Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,85 +12,164 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 3,
+  "recommendationCount": 5,
   "tickers": [
-    "AMIA",
-    "GTWL",
-    "AALR"
+    "SIPC",
+    "EFIH",
+    "KABO",
+    "ENGC",
+    "ETEL"
   ],
   "matrix": [
     {
-      "ticker": "AMIA",
+      "ticker": "SIPC",
       "correlations": {
-        "AMIA": {
+        "SIPC": {
           "value": 1,
           "observations": 60
         },
-        "GTWL": {
-          "value": -0.004,
+        "EFIH": {
+          "value": 0.247,
+          "observations": 45
+        },
+        "KABO": {
+          "value": 0.185,
           "observations": 53
         },
-        "AALR": {
-          "value": 0.449,
-          "observations": 49
+        "ENGC": {
+          "value": -0.032,
+          "observations": 50
+        },
+        "ETEL": {
+          "value": 0.35,
+          "observations": 51
         }
       }
     },
     {
-      "ticker": "GTWL",
+      "ticker": "EFIH",
       "correlations": {
-        "AMIA": {
-          "value": -0.004,
-          "observations": 53
+        "SIPC": {
+          "value": 0.247,
+          "observations": 45
         },
-        "GTWL": {
+        "EFIH": {
           "value": 1,
           "observations": 60
         },
-        "AALR": {
-          "value": 0.036,
+        "KABO": {
+          "value": 0.759,
+          "observations": 44
+        },
+        "ENGC": {
+          "value": 0.172,
+          "observations": 49
+        },
+        "ETEL": {
+          "value": 0.337,
+          "observations": 48
+        }
+      }
+    },
+    {
+      "ticker": "KABO",
+      "correlations": {
+        "SIPC": {
+          "value": 0.185,
+          "observations": 53
+        },
+        "EFIH": {
+          "value": 0.759,
+          "observations": 44
+        },
+        "KABO": {
+          "value": 1,
+          "observations": 60
+        },
+        "ENGC": {
+          "value": 0.236,
+          "observations": 51
+        },
+        "ETEL": {
+          "value": 0.13,
           "observations": 50
         }
       }
     },
     {
-      "ticker": "AALR",
+      "ticker": "ENGC",
       "correlations": {
-        "AMIA": {
-          "value": 0.449,
-          "observations": 49
-        },
-        "GTWL": {
-          "value": 0.036,
+        "SIPC": {
+          "value": -0.032,
           "observations": 50
         },
-        "AALR": {
+        "EFIH": {
+          "value": 0.172,
+          "observations": 49
+        },
+        "KABO": {
+          "value": 0.236,
+          "observations": 51
+        },
+        "ENGC": {
+          "value": 1,
+          "observations": 60
+        },
+        "ETEL": {
+          "value": 0.034,
+          "observations": 52
+        }
+      }
+    },
+    {
+      "ticker": "ETEL",
+      "correlations": {
+        "SIPC": {
+          "value": 0.35,
+          "observations": 51
+        },
+        "EFIH": {
+          "value": 0.337,
+          "observations": 48
+        },
+        "KABO": {
+          "value": 0.13,
+          "observations": 50
+        },
+        "ENGC": {
+          "value": 0.034,
+          "observations": 52
+        },
+        "ETEL": {
           "value": 1,
           "observations": 60
         }
       }
     }
   ],
-  "highCorrelationPairs": [],
+  "highCorrelationPairs": [
+    {
+      "left": "EFIH",
+      "right": "KABO",
+      "correlation": 0.759,
+      "observations": 44,
+      "severity": "MEDIUM"
+    }
+  ],
   "sectorConcentration": [
     {
       "sector": "GENERAL",
-      "count": 2,
-      "sharePct": 66.7
-    },
-    {
-      "sector": "REAL_ESTATE",
-      "count": 1,
-      "sharePct": 33.3
+      "count": 5,
+      "sharePct": 100
     }
   ],
   "summary": {
-    "highCorrelationPairCount": 0,
-    "averageHighPairCorrelation": null,
+    "highCorrelationPairCount": 1,
+    "averageHighPairCorrelation": 0.759,
     "largestSector": {
       "sector": "GENERAL",
-      "count": 2,
-      "sharePct": 66.7
+      "count": 5,
+      "sharePct": 100
     },
     "regime": "RISK_ON",
     "regimeRiskMultiplier": 1,
@@ -115,17 +194,17 @@
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": -6.67
+      "equalWeightPortfolioImpactPct": -10
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
       "labelAr": "تزامن وقف الأسهم الأعلى ارتباطًا",
       "assumedMovePct": null,
-      "equalWeightPortfolioImpactPct": 0
+      "equalWeightPortfolioImpactPct": -2.8
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 33.3
+    "positionWeightPct": 20
   },
   "warnings": [
     "SECTOR_CONCENTRATION_ABOVE_40"
