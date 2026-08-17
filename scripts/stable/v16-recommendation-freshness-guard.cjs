@@ -11,6 +11,7 @@ const DECISION_PATH = path.join(ROOT, 'data/stable/v15-practical-decision.json')
 const PRICE_PATH = path.join(ROOT, 'data/stable/v15-price-truth.json');
 const OUT_PATH = path.join(ROOT, 'data/stable/v16-recommendation-freshness.json');
 const CONSENSUS_SCRIPT = path.join(ROOT, 'scripts/stable/v16-main-app-consensus.cjs');
+const READINESS_SCRIPT = path.join(ROOT, 'scripts/stable/v16-main-app-professional-readiness.cjs');
 
 function readJson(file, fallback = {}) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
@@ -62,6 +63,25 @@ function expectedSession(now) {
   // delayed public-source finalisation, then accept the current session from 15:00.
   if (now.hour < 15) candidate = previousDate(candidate);
   return previousTradingDate(candidate, holidays);
+}
+function runPostProcess(label, script, allowedExitCodes = [0]) {
+  const result = spawnSync(process.execPath, [script], {
+    cwd: ROOT,
+    env: process.env,
+    stdio: 'inherit',
+    timeout: 120000,
+  });
+  if (result.error) {
+    console.error(`MAIN APP ${label} post-process failed:`, result.error);
+    process.exitCode = 2;
+    return false;
+  }
+  if (!allowedExitCodes.includes(result.status)) {
+    console.error(`MAIN APP ${label} post-process exit=${result.status}`);
+    process.exitCode = 2;
+    return false;
+  }
+  return true;
 }
 
 const decision = readJson(DECISION_PATH);
@@ -139,6 +159,7 @@ const report = {
   recommendationTickers: (decision.recommendations || []).map(row => row.ticker),
   reasonCodes,
   canonicalPostProcessing: true,
+  professionalReadinessV2PostProcessing: true,
   actionAr: isFresh
     ? 'التوصيات تخص آخر جلسة مكتملة ومعتمدة.'
     : 'اعرض القائمة كمرجع للجلسة السابقة، ولا تقدمها كتوصيات اليوم أو كخطة تنفيذ.',
@@ -148,9 +169,9 @@ writeJson(DECISION_PATH, decision);
 writeJson(OUT_PATH, report);
 console.log(report);
 
-// Every canonical MAIN APP scan ends by rebuilding the same governance snapshot,
-// immutable signal ledger and session-bound engine comparison. This avoids a
-// timing gap between a new V16.9 basket and its safety/consensus overlays.
+// Every canonical MAIN APP scan ends by rebuilding governance, immutable signal
+// ledger, method-independent consensus and Professional Readiness V2. This keeps
+// the recommendation and all quality/evidence layers on the same snapshot.
 try {
   const snapshot = buildMainAppGovernance();
   console.log({
@@ -165,16 +186,5 @@ try {
   process.exitCode = 2;
 }
 
-const consensus = spawnSync(process.execPath, [CONSENSUS_SCRIPT], {
-  cwd: ROOT,
-  env: process.env,
-  stdio: 'inherit',
-  timeout: 120000,
-});
-if (consensus.error) {
-  console.error('MAIN APP consensus post-process failed:', consensus.error);
-  process.exitCode = 2;
-} else if (![0, 2].includes(consensus.status)) {
-  console.error(`MAIN APP consensus post-process exit=${consensus.status}`);
-  process.exitCode = 2;
-}
+const consensusOk = runPostProcess('consensus', CONSENSUS_SCRIPT, [0, 2]);
+if (consensusOk) runPostProcess('professional-readiness-v2', READINESS_SCRIPT, [0]);
