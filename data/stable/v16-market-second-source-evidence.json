@@ -1,0 +1,580 @@
+{
+  "schemaVersion": "16.9.2-market-second-source-evidence-v1",
+  "generatedAt": "2026-08-17T21:08:18.684Z",
+  "expectedSession": "2026-08-17",
+  "policy": {
+    "failClosed": true,
+    "providers": [
+      "Yahoo Finance chart with strict EGX identity guard",
+      "StockAnalysis EGX history"
+    ],
+    "maximumPrimaryVsSecondaryPriceDifferencePct": 2.5,
+    "strategyMutation": false,
+    "rule": "A rejected primary row is recoverable only when an independent provider exposes the expected session and a close consistent with the primary market price. Yahoo is disallowed when historical identity/scale warnings exist."
+  },
+  "targetCount": 12,
+  "approvedCount": 7,
+  "unresolvedCount": 5,
+  "approvedTickers": [
+    "ORAS",
+    "BIOC",
+    "OCPH",
+    "TRTO",
+    "CFGH",
+    "NAHO",
+    "SAIB"
+  ],
+  "unresolvedTickers": [
+    "PHGC",
+    "MEGM",
+    "DCCC",
+    "DEIN",
+    "SEIGA"
+  ],
+  "records": {
+    "ORAS": {
+      "ticker": "ORAS",
+      "originalReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ORAS/",
+        "sourceSessionDate": "2026-08-17",
+        "close": 761.2
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/ORAS/history/",
+        "sessionDate": "2026-08-17",
+        "close": 764.01,
+        "open": 794.9,
+        "high": 794.9,
+        "low": 751.5,
+        "volume": 237324,
+        "previousClose": null,
+        "priceDifferencePct": 0.368
+      },
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "ORAS.CA",
+            "conflict": true,
+            "localDifferencePct": 90.1377,
+            "warnings": [
+              "latest_close_conflict:90.1377%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/ORAS/history/",
+          "sessionDate": "2026-08-17",
+          "close": 764.01,
+          "open": 794.9,
+          "high": 794.9,
+          "low": 751.5,
+          "volume": 237324,
+          "previousClose": null,
+          "priceDifferencePct": 0.368
+        }
+      ]
+    },
+    "BIOC": {
+      "ticker": "BIOC",
+      "originalReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/BIOC/",
+        "sourceSessionDate": "2026-08-17",
+        "close": 507
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/BIOC/history/",
+        "sessionDate": "2026-08-17",
+        "close": 507,
+        "open": 485.5,
+        "high": 555,
+        "low": 451.67,
+        "volume": 748452,
+        "previousClose": null,
+        "priceDifferencePct": 0
+      },
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "BIOC.CA",
+            "conflict": true,
+            "localDifferencePct": 60.1567,
+            "warnings": [
+              "latest_close_conflict:383.0022%",
+              "corporate_action_review_required"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/BIOC/history/",
+          "sessionDate": "2026-08-17",
+          "close": 507,
+          "open": 485.5,
+          "high": 555,
+          "low": 451.67,
+          "volume": 748452,
+          "previousClose": null,
+          "priceDifferencePct": 0
+        }
+      ]
+    },
+    "PHGC": {
+      "ticker": "PHGC",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/PHGC/",
+        "sourceSessionDate": "2026-08-17",
+        "close": 0.09
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "FETCH_FAILED",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/PHGC.CA?period1=1786665600&period2=1787356800&interval=1d&events=history&includeAdjustedClose=true",
+          "error": "HTTP_404"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/PHGC/history/",
+              "status": "NO_EXPECTED_SESSION"
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/PHGC/history/?p=1",
+              "status": "NO_EXPECTED_SESSION"
+            }
+          ]
+        }
+      ]
+    },
+    "MEGM": {
+      "ticker": "MEGM",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
+        "sourceSessionDate": "2022-04-28",
+        "close": 17.69
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "MEGM.CA",
+            "conflict": true,
+            "localDifferencePct": 29.1125,
+            "warnings": [
+              "latest_close_conflict:29.1125%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/MEGM/history/",
+              "status": "PRICE_DISAGREEMENT",
+              "close": 12.54,
+              "priceDifferencePct": 41.069
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/MEGM/history/?p=1",
+              "status": "PRICE_DISAGREEMENT",
+              "close": 12.54,
+              "priceDifferencePct": 41.069
+            }
+          ]
+        }
+      ]
+    },
+    "OCPH": {
+      "ticker": "OCPH",
+      "originalReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/OCPH/",
+        "sourceSessionDate": "2026-08-17",
+        "close": 270
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/OCPH/history/",
+        "sessionDate": "2026-08-17",
+        "close": 270,
+        "open": 279.06,
+        "high": 295,
+        "low": 269.99,
+        "volume": 126320,
+        "previousClose": null,
+        "priceDifferencePct": 0
+      },
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "OCPH.CA",
+            "conflict": true,
+            "localDifferencePct": 71.9511,
+            "warnings": [
+              "latest_close_conflict:30.0825%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/OCPH/history/",
+          "sessionDate": "2026-08-17",
+          "close": 270,
+          "open": 279.06,
+          "high": 295,
+          "low": 269.99,
+          "volume": 126320,
+          "previousClose": null,
+          "priceDifferencePct": 0
+        }
+      ]
+    },
+    "DCCC": {
+      "ticker": "DCCC",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DCCC/",
+        "sourceSessionDate": "2008-04-07",
+        "close": 9.35
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "DCCC.CA",
+            "conflict": true,
+            "localDifferencePct": 0,
+            "warnings": [
+              "latest_close_conflict:81.8182%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/DCCC/history/",
+              "status": "NO_EXPECTED_SESSION"
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/DCCC/history/?p=1",
+              "status": "NO_EXPECTED_SESSION"
+            }
+          ]
+        }
+      ]
+    },
+    "DEIN": {
+      "ticker": "DEIN",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DEIN/",
+        "sourceSessionDate": "2026-06-25",
+        "close": 11.38
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "DEIN.CA",
+            "conflict": true,
+            "localDifferencePct": 25.0439,
+            "warnings": [
+              "latest_close_conflict:9.0909%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/DEIN/history/",
+              "status": "PRICE_DISAGREEMENT",
+              "close": 10.35,
+              "priceDifferencePct": 9.952
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/DEIN/history/?p=1",
+              "status": "PRICE_DISAGREEMENT",
+              "close": 10.35,
+              "priceDifferencePct": 9.952
+            }
+          ]
+        }
+      ]
+    },
+    "TRTO": {
+      "ticker": "TRTO",
+      "originalReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/TRTO/",
+        "sourceSessionDate": "2026-08-17",
+        "close": 0.05
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/TRTO/history/",
+        "sessionDate": "2026-08-17",
+        "close": 0.05,
+        "open": 0.04,
+        "high": 0.05,
+        "low": 0.04,
+        "volume": 2047314,
+        "previousClose": null,
+        "priceDifferencePct": 0
+      },
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_SYMBOL_IDENTITY",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/TRTO.CA?period1=1786665600&period2=1787356800&interval=1d&events=history&includeAdjustedClose=true",
+          "returned": "TRTO",
+          "exchangeName": "CAI",
+          "currency": "USD"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/TRTO/history/",
+          "sessionDate": "2026-08-17",
+          "close": 0.05,
+          "open": 0.04,
+          "high": 0.05,
+          "low": 0.04,
+          "volume": 2047314,
+          "previousClose": null,
+          "priceDifferencePct": 0
+        }
+      ]
+    },
+    "CFGH": {
+      "ticker": "CFGH",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/CFGH/",
+        "sourceSessionDate": "2026-08-17",
+        "close": 0.11
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/CFGH/history/",
+        "sessionDate": "2026-08-17",
+        "close": 0.11,
+        "open": 0.11,
+        "high": 0.12,
+        "low": 0.11,
+        "volume": 599057,
+        "previousClose": null,
+        "priceDifferencePct": 0
+      },
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_SYMBOL_IDENTITY",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/CFGH.CA?period1=1786665600&period2=1787356800&interval=1d&events=history&includeAdjustedClose=true",
+          "returned": "CFGH",
+          "exchangeName": "CAI",
+          "currency": "USD"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/CFGH/history/",
+          "sessionDate": "2026-08-17",
+          "close": 0.11,
+          "open": 0.11,
+          "high": 0.12,
+          "low": 0.11,
+          "volume": 599057,
+          "previousClose": null,
+          "priceDifferencePct": 0
+        }
+      ]
+    },
+    "NAHO": {
+      "ticker": "NAHO",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/NAHO/",
+        "sourceSessionDate": "2026-08-17",
+        "close": 0.14
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/NAHO/history/",
+        "sessionDate": "2026-08-17",
+        "close": 0.14,
+        "open": 0.13,
+        "high": 0.16,
+        "low": 0.14,
+        "volume": 4114105,
+        "previousClose": null,
+        "priceDifferencePct": 0
+      },
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_SYMBOL_IDENTITY",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/NAHO.CA?period1=1786665600&period2=1787356800&interval=1d&events=history&includeAdjustedClose=true",
+          "returned": "NAHO",
+          "exchangeName": "CAI",
+          "currency": "USD"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/NAHO/history/",
+          "sessionDate": "2026-08-17",
+          "close": 0.14,
+          "open": 0.13,
+          "high": 0.16,
+          "low": 0.14,
+          "volume": 4114105,
+          "previousClose": null,
+          "priceDifferencePct": 0
+        }
+      ]
+    },
+    "SAIB": {
+      "ticker": "SAIB",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SAIB/",
+        "sourceSessionDate": "2026-07-06",
+        "close": 2.11
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/SAIB/history/",
+        "sessionDate": "2026-08-17",
+        "close": 2.11,
+        "open": 2.11,
+        "high": 2.11,
+        "low": 2.11,
+        "volume": null,
+        "previousClose": null,
+        "priceDifferencePct": 0
+      },
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_SYMBOL_IDENTITY",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/SAIB.CA?period1=1786665600&period2=1787356800&interval=1d&events=history&includeAdjustedClose=true",
+          "returned": "SAIB",
+          "exchangeName": "CAI",
+          "currency": "USD"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/SAIB/history/",
+          "sessionDate": "2026-08-17",
+          "close": 2.11,
+          "open": 2.11,
+          "high": 2.11,
+          "low": 2.11,
+          "volume": null,
+          "previousClose": null,
+          "priceDifferencePct": 0
+        }
+      ]
+    },
+    "SEIGA": {
+      "ticker": "SEIGA",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
+        "sourceSessionDate": "2002-02-05",
+        "close": 5.41
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "SEIGA.CA",
+            "conflict": true,
+            "localDifferencePct": 1069.8706,
+            "warnings": [
+              "latest_close_conflict:1069.8706%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/SEIGA/history/",
+              "status": "NO_EXPECTED_SESSION"
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/SEIGA/history/?p=1",
+              "status": "NO_EXPECTED_SESSION"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
