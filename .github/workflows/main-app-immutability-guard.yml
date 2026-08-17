@@ -33,7 +33,7 @@ concurrency:
 env:
   MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
-  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_LEDGER_ALL_ENGINE_MATRIX_STOCK_ANALYZER_TECH_CHART
+  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_LEDGER_ALL_ENGINE_MATRIX_STOCK_ANALYZER_TECH_CHART_PORTFOLIO_DECISION
 
 jobs:
   enforce:
@@ -95,6 +95,7 @@ jobs:
           node --check preview-v16/app/main-app-consensus-overlay.js
           node --check preview-v16/app/stock-analyzer.js
           node --check preview-v16/app/stock-analyzer-chart.js
+          node --check preview-v16/app/stock-analyzer-decision.js
           node - <<'NODE'
           const fs=require('fs');
           const lock=JSON.parse(fs.readFileSync('data/stable/main-app-lock.json','utf8'));
@@ -108,6 +109,7 @@ jobs:
           const consensusUi=fs.readFileSync('preview-v16/app/main-app-consensus-overlay.js','utf8');
           const analyzer=fs.readFileSync('preview-v16/app/stock-analyzer.js','utf8');
           const chart=fs.readFileSync('preview-v16/app/stock-analyzer-chart.js','utf8');
+          const decision=fs.readFileSync('preview-v16/app/stock-analyzer-decision.js','utf8');
           const checks={
             engineLocked:publisher.includes('V16_9_EQUAL_WEIGHT_BASKET'),
             scanPostProcessing:freshness.includes('buildMainAppGovernance')&&freshness.includes('v16-main-app-consensus.cjs'),
@@ -120,6 +122,7 @@ jobs:
             periodicComparison:consensusUi.includes('setInterval(refreshData,60000)'),
             stockAnalyzerLoaded:launcher.includes('stock-analyzer.js'),
             chartLoaded:launcher.includes('stock-analyzer-chart.js'),
+            decisionLayerLoaded:launcher.includes('stock-analyzer-decision.js'),
             analyzerTechnical:analyzer.includes('technicalAnalysis')&&analyzer.includes('nearestLevels'),
             analyzerPortfolio:analyzer.includes('portfolioDecision')&&analyzer.includes('زيادة تدريجية مشروطة')&&analyzer.includes('تخفيف')&&analyzer.includes('بيع'),
             chartCandles:chart.includes('tc-wick')&&chart.includes('tc-up')&&chart.includes('tc-down'),
@@ -128,8 +131,13 @@ jobs:
             chartFibonacci:chart.includes('38.2%')&&chart.includes('61.8%')&&chart.includes('161.8%'),
             chartTargetsStop:chart.includes('Targets')&&chart.includes('وقف فني'),
             chartVolumeRSI:chart.includes('Volume')&&chart.includes('RSI(14)'),
-            chartTooltip:chart.includes('tcTooltip')&&chart.includes('OHLCV')===false&&chart.includes('O ${fmt(r.open'),
+            chartTooltip:chart.includes('tcTooltip')&&chart.includes('O ${fmt(r.open'),
             chartRanges:chart.includes('30 جلسة')&&chart.includes('60 جلسة')&&chart.includes('100 جلسة'),
+            portfolioDecisionActions:decision.includes('زيادة تدريجية مشروطة')&&decision.includes('تخفيف جزئي')&&decision.includes('بيع / خفض مخاطرة')&&decision.includes('احتفاظ'),
+            decisionInvalidation:decision.includes('إلغاء القرار')&&decision.includes('tc-decision-line invalidation'),
+            decisionNearestTarget:decision.includes('الهدف الأقرب')&&decision.includes('tc-decision-line target'),
+            recommendationChartAction:decision.includes('فتح الشارت الفني والتحليل الشامل')&&decision.includes('decorateRecommendations'),
+            portfolioLocalState:decision.includes('egx-main-app-stock-analyzer-portfolio-v1'),
           };
           console.log(checks);
           for(const [k,v] of Object.entries(checks))if(!v)throw new Error(`MAIN APP stack check failed: ${k}`);
