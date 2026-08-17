@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-08-17T21:08:18.739Z",
+  "generatedAt": "2026-08-17T21:11:06.388Z",
   "expectedSession": "2026-08-17",
   "ready": true,
   "executionGrade": true,
@@ -13,17 +13,18 @@
     "preciseSource": true,
     "realFetch": true,
     "inputRows": 217,
-    "verifiedExpectedSessionRows": 213,
-    "sourceSessionEvidenceCoveragePct": 98.2,
+    "verifiedExpectedSessionRows": 214,
+    "sourceSessionEvidenceCoveragePct": 98.6,
     "primaryVerifiedExpectedSessionRows": 212,
-    "secondSourceVerifiedSessionRows": 1,
+    "secondSourceVerifiedSessionRows": 2,
     "secondSourceVerifiedSessionTickers": [
-      "SAIB"
+      "MEGM",
+      "DEIN"
     ],
     "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 210,
-  "rejectedRows": 7,
+  "acceptedRows": 212,
+  "rejectedRows": 5,
   "droppedRows": 0,
   "updatedHistoryFiles": 180,
   "missingHistoryFiles": [
@@ -84,26 +85,6 @@
     }
   ],
   "sampleAccepted": [
-    {
-      "ticker": "TANM",
-      "close": 6.64,
-      "sourceSessionDate": "2026-08-17",
-      "previousTrustedClose": null,
-      "jumpPct": null,
-      "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
-      "warnings": []
-    },
-    {
-      "ticker": "HDBK",
-      "close": 91.97,
-      "sourceSessionDate": "2026-08-17",
-      "previousTrustedClose": 88.66,
-      "jumpPct": 3.73,
-      "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
-      "warnings": [
-        "partial_ohlc_reconstructed_from_close_or_previous_close"
-      ]
-    },
     {
       "ticker": "AXPH",
       "close": 1344.57,
@@ -329,6 +310,30 @@
       "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_confirmed",
       "priceDifferencePct": 0,
       "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "MEGM",
+      "date": "2026-08-17",
+      "close": 12.54,
+      "mode": "INDEPENDENT_SECOND_SOURCE_SESSION_CONFIRMED",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_confirmed",
+      "priceDifferencePct": 41.069,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "DEIN",
+      "date": "2026-08-17",
+      "close": 10.35,
+      "mode": "INDEPENDENT_SECOND_SOURCE_SESSION_CONFIRMED",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_confirmed",
+      "priceDifferencePct": 9.952,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
@@ -345,23 +350,9 @@
     },
     {
       "rejected": true,
-      "ticker": "MEGM",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2022-04-28",
-      "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
       "ticker": "DCCC",
       "reason": "SOURCE_SESSION_MISMATCH",
       "sourceSessionDate": "2008-04-07",
-      "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "DEIN",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2026-06-25",
       "expectedSession": "2026-08-17"
     },
     {
@@ -399,50 +390,33 @@
     "enabled": true,
     "failClosed": true,
     "expectedSession": "2026-08-17",
-    "targetRejectedRows": 12,
-    "resolverApprovedRows": 7,
-    "recoveredRows": 5,
-    "unresolvedRows": 7,
+    "targetRejectedRows": 7,
+    "resolverApprovedRows": 4,
+    "recoveredRows": 2,
+    "unresolvedRows": 5,
     "recoveredTickers": [
-      "ORAS",
-      "BIOC",
-      "OCPH",
-      "TRTO",
-      "SAIB"
+      "MEGM",
+      "DEIN"
     ],
     "unresolvedTickers": [
       "PHGC",
-      "MEGM",
       "DCCC",
-      "DEIN",
       "SEIGA",
       "CFGH",
       "NAHO"
     ],
     "historyResults": [
       {
-        "ticker": "ORAS",
+        "ticker": "MEGM",
         "merged": true,
         "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 764.01
+        "close": 12.54
       },
       {
-        "ticker": "BIOC",
+        "ticker": "DEIN",
         "merged": true,
         "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 507
-      },
-      {
-        "ticker": "OCPH",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 270
-      },
-      {
-        "ticker": "TRTO",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 0.05
+        "close": 10.35
       },
       {
         "ticker": "CFGH",
@@ -453,12 +427,6 @@
         "ticker": "NAHO",
         "merged": false,
         "reason": "INVALID_SECOND_SOURCE_OHLC"
-      },
-      {
-        "ticker": "SAIB",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 2.11
       }
     ],
     "changesAlphaOrRanking": false,
