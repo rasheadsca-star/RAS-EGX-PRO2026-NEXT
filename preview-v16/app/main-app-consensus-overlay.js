@@ -3,7 +3,7 @@
   if(window.__MAIN_APP_CONSENSUS_OVERLAY__)return;
   window.__MAIN_APP_CONSENSUS_OVERLAY__=true;
   const state={data:null,decision:null,observer:null,timer:null};
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   const style=document.createElement('style');
   style.textContent=`
     .main-app-engine-note{margin:10px 0 2px;padding:10px 11px;border:1px solid #34566c;border-radius:12px;background:#0a1b29;display:grid;gap:6px;text-align:right}
@@ -19,9 +19,9 @@
     .main-app-consensus-summary b{color:#fff}.main-app-consensus-stale{border-color:#8a6632;color:#ffd990}
   `;
   document.head.appendChild(style);
-  const json=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(`HTTP ${r.status}`);return r.json();};
-  const multiUrl=()=>`${location.origin}/RAS-EGX0.1/data/v20/multi-engine-consensus.json`;
-  const decisionUrl=()=>new URL('../../data/stable/v16-v169-primary-decision.json',location.href).href;
+  const json=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});if(!r.ok)throw Error(`HTTP ${r.status}`);return r.json();};
+  const multiUrl=()=>new URL('../../data/stable/v16-main-app-consensus.json',location.href).href;
+  const decisionUrl=()=>new URL('../../data/stable/v16-main-app-current.json',location.href).href;
   function annotationMap(){return new Map((state.data?.current?.mainAppAnnotations||[]).map(x=>[String(x.ticker||'').toUpperCase(),x]));}
   function v17Text(v){
     if(!v)return'V17 Validator: لا توجد حالة تحقق متزامنة — لا يُحتسب صوتًا في الاتفاق.';
@@ -71,8 +71,8 @@
     if(!box){box=document.createElement('div');box.id='mainAppConsensusSummary';}
     box.className='main-app-consensus-summary'+(aligned?'':' main-app-consensus-stale');
     box.innerHTML=aligned
-      ?`<b>تأكيد مستقل منهجيًا:</b> ${full}/${anns.length} من توصيات MAIN APP يؤيدها كل المحركات المستقلة الحالية (${esc(independent)}). ${related?`${esc(related)} يُعرض كتأييد من نفس عائلة الإشارة ولا يزيد الدرجة المستقلة.`:''} V17 Validator لا يُحتسب صوتًا.`
-      :'<b>متابعة المحركات:</b> بيانات الاتفاق لم تتزامن بعد مع جلسة MAIN APP الحالية؛ لا يتم منح وزن تأكيدي حتى تتطابق الجلسات.';
+      ?`<b>تأكيد مستقل منهجيًا:</b> ${full}/${anns.length} من توصيات MAIN APP يؤيدها كل المحركات المستقلة المتزامنة (${esc(independent)}). ${related?`${esc(related)} يُعرض كتأييد من نفس عائلة الإشارة ولا يزيد الدرجة المستقلة.`:''} V17 Validator لا يُحتسب صوتًا.`
+      :'<b>متابعة المحركات:</b> بيانات المحركات الأخرى لم تتزامن بعد مع جلسة MAIN APP الحالية؛ لا يتم منح أي تأكيد حتى تتطابق الجلسات.';
     const v169Truth=document.querySelector('#v169BasketPanel .v169-session-truth');
     if(v169Truth){if(box.previousElementSibling!==v169Truth)v169Truth.insertAdjacentElement('afterend',box);return;}
     const grid=document.getElementById('recommendationGrid');if(grid&&box.parentElement!==grid.parentElement)grid.parentElement?.insertBefore(box,grid);
