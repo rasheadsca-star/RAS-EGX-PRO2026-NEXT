@@ -11,11 +11,8 @@ function bars({ start = 100, drift = 0.006, volatility = 0.008, volume = 2_000_0
   let p = start;
   for (let i = 0; i < n; i++) {
     const wave = Math.sin(i / 4) * volatility;
-    const open = p;
-    const close = p * (1 + drift + wave);
-    const high = Math.max(open, close) * 1.008;
-    const low = Math.min(open, close) * 0.992;
-    out.push({ date: `D${i + 1}`, open, high, low, close, volume: volume * (1 + (i % 7) * 0.03) });
+    const open = p, close = p * (1 + drift + wave);
+    out.push({ date: `D${i + 1}`, open, high: Math.max(open, close) * 1.008, low: Math.min(open, close) * 0.992, close, volume: volume * (1 + (i % 7) * 0.03) });
     p = close;
   }
   return out;
@@ -52,10 +49,8 @@ test('broker influence is hard capped at 15 points', () => {
 });
 
 test('core reject cannot be flipped into BUY by broker consensus', () => {
-  const weak = bars({ drift: -0.009, volatility: 0.002 });
-  const benchmark = bars({ drift: -0.010, volatility: 0.003 });
   const brokers = Array.from({ length: 5 }, (_, i) => ({ ticker: 'TEST', source: `B${i}`, sourceType: 'OFFICIAL_RESEARCH_REPORT', rating: 'STRONG_BUY', ageSessions: 0, originReportId: `B${i}` }));
-  const r = QE.analyzeSymbol({ ticker: 'TEST', bars: weak, benchmarkBars: benchmark, brokerRecommendations: brokers });
+  const r = QE.analyzeSymbol({ ticker: 'TEST', bars: bars({ drift: -0.009, volatility: 0.002 }), benchmarkBars: bars({ drift: -0.010, volatility: 0.003 }), brokerRecommendations: brokers });
   assert.equal(r.direction, 'REJECT');
   assert.equal(r.invariants.brokerCanFlipCoreReject, false);
 });
@@ -74,10 +69,22 @@ test('triple barrier uses conservative same-bar ordering', () => {
 test('source code has no imports from MAIN recommendation/ranking/score modules', () => {
   const root = path.resolve(__dirname, '..');
   const files = fs.readdirSync(root).filter(f => f.endsWith('.js'));
-  const forbidden = [/main[^\n]*recommend/i, /main[^\n]*ranking/i, /main[^\n]*score/i];
+  const forbidden = [/require\([^)]*main[^)]*(recommend|ranking|score)/i, /from\s+['\"][^'\"]*main[^'\"]*(recommend|ranking|score)/i];
   for (const file of files) {
     const source = fs.readFileSync(path.join(root, file), 'utf8');
-    const scrubbed = source.replace(/mainRecommendationImports|mainRankingImports|mainScoreImports/g, '');
-    for (const rx of forbidden) assert.equal(rx.test(scrubbed), false, `${file} matched ${rx}`);
+    for (const rx of forbidden) assert.equal(rx.test(source), false, `${file} matched ${rx}`);
   }
+});
+
+test('independent source boundary rejects MAIN APP origin', () => {
+  const boundary = require('../data-boundary');
+  const snapshot = { sourceGrade: 'ANALYSIS_GRADE', origin: 'MAIN_APP_CACHE', benchmark: { bars: bars() }, symbols: [{ ticker: 'X', bars: bars() }] };
+  assert.throws(() => boundary.validateIndependentSnapshot(snapshot), /NON_INDEPENDENT/);
+});
+
+test('independent source boundary accepts auditable analysis-grade snapshot', () => {
+  const boundary = require('../data-boundary');
+  const snapshot = { sourceGrade: 'ANALYSIS_GRADE', origin: 'QUANT_EDGE_SOURCE_A', benchmark: { bars: bars() }, symbols: [{ ticker: 'X', bars: bars() }] };
+  assert.equal(boundary.validateIndependentSnapshot(snapshot), true);
+  assert.equal(boundary.hashSnapshot(snapshot).length, 64);
 });
