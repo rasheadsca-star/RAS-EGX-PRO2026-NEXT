@@ -12,6 +12,7 @@ on:
       - "scripts/stable/v16-publish-v169-basket.cjs"
       - "scripts/stable/v16-session-data-fingerprint.cjs"
       - "scripts/stable/v16-v169-live-evaluation.py"
+      - "scripts/stable/v16-recommendation-freshness-guard.cjs"
       - "scripts/stable/v16-main-app-governance.cjs"
       - "scripts/stable/v16-main-app-consensus.cjs"
       - "data/stable/v16-v169-release-lock.json"
@@ -103,6 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/stable/v16-publish-v169-basket.cjs
+          node --check scripts/stable/v16-recommendation-freshness-guard.cjs
           node --check scripts/stable/v16-main-app-governance.cjs
           node --check scripts/stable/v16-main-app-consensus.cjs
           node --check preview-v16/app/decision-source.js
@@ -119,6 +121,7 @@ jobs:
           if (lock.policy?.liveRecommendationOutputAllowed !== true) throw new Error('Live recommendation output must remain enabled');
 
           const publisher = fs.readFileSync('scripts/stable/v16-publish-v169-basket.cjs','utf8');
+          const freshness = fs.readFileSync('scripts/stable/v16-recommendation-freshness-guard.cjs','utf8');
           const governance = fs.readFileSync('scripts/stable/v16-main-app-governance.cjs','utf8');
           const consensus = fs.readFileSync('scripts/stable/v16-main-app-consensus.cjs','utf8');
           const router = fs.readFileSync('preview-v16/app/decision-source.js','utf8');
@@ -127,11 +130,13 @@ jobs:
 
           const checks = {
             engineLocked: publisher.includes('V16_9_EQUAL_WEIGHT_BASKET'),
+            scanPostProcessing: freshness.includes('buildMainAppGovernance') && freshness.includes('v16-main-app-consensus.cjs'),
             maxAllocation50: governance.includes('MAX_TOTAL_ALLOCATION_PCT = 50'),
             failClosed: governance.includes('failClosed: true'),
             immutableLedger: governance.includes('immutableLedger: true'),
             canonicalSnapshot: governance.includes('v16-main-app-current.json'),
             sessionBoundConsensus: consensus.includes('exactSessionAlignmentRequired: true'),
+            resilientConsensusSources: consensus.includes('GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_WITH_RETRY'),
             consensusNoRankingMutation: consensus.includes('comparisonCanChangeMainRanking: false'),
             consensusNoExecutionGrant: consensus.includes('comparisonCanGrantExecution: false'),
             uiCanonicalRouting: router.includes('v16-main-app-current.json'),
