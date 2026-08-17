@@ -20,16 +20,18 @@ on:
       - ".github/workflows/main-app-governance-refresh.yml"
       - ".github/workflows/main-app-immutability-guard.yml"
   schedule:
-    # Run hourly candidates; Cairo clock gate below accepts 10:00-21:59 only.
-    # This works across Egypt UTC+2 / UTC+3 without hard-coding DST.
+    # Periodic add-on refresh. Cairo gate below accepts 10:00-21:59 only.
+    # Candidate UTC hours cover Egypt UTC+2 / UTC+3 without hard-coding DST.
     - cron: "25 7-19 * * 0-4"
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
-  # Same group as the canonical market scanner: never rebuild the governance
-  # snapshot while the MAIN APP engine is still writing its session.
+  # Same group as the canonical market scanner: never rebuild governance while
+  # the MAIN APP engine is still writing its session.
   group: egx-main-app-v1692-p2-canonical
   cancel-in-progress: false
 
@@ -37,6 +39,10 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      should_deploy: ${{ steps.clock.outputs.run }}
+      system_state: ${{ steps.acceptance.outputs.system_state }}
+      session_date: ${{ steps.acceptance.outputs.session_date }}
     steps:
       - name: Resolve Cairo refresh window
         id: clock
@@ -92,8 +98,8 @@ jobs:
           CODE=$?
           set -e
           echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
-          # Exit 2 means the snapshot intentionally entered BLOCKED state.
-          # The blocked snapshot must still be persisted and published.
+          # Exit 2 is an intentional BLOCKED snapshot. Persist/publish it so the
+          # UI fails closed instead of continuing to show an older safe-looking state.
           if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then exit "$CODE"; fi
           test -s data/stable/v16-main-app-current.json
           test -s data/stable/v16-main-app-signal-ledger.json
@@ -109,6 +115,7 @@ jobs:
 
       - name: Build stack status and acceptance
         if: steps.clock.outputs.run == 'true'
+        id: acceptance
         env:
           GOVERNANCE_EXIT: ${{ steps.governance.outputs.exit_code }}
         shell: bash
@@ -150,6 +157,8 @@ jobs:
             checks:required,
           };
           fs.writeFileSync('data/stable/v16-main-app-stack-status.json',JSON.stringify(out,null,2)+'\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`system_state=${snap.systemState||'BLOCKED'}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`session_date=${snap.sessionDate||''}\n`);
           console.log(out);
           if(!pass)process.exit(1);
           NODE
@@ -167,13 +176,59 @@ jobs:
             data/stable/v16-main-app-consensus.json \
             data/stable/v16-main-app-consensus-regression.json \
             data/stable/v16-main-app-stack-status.json
-          if git diff --cached --quiet; then
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh MAIN APP canonical governance and consensus"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
+          else
             echo "Canonical MAIN APP governance already current."
-            exit 0
           fi
-          git commit -m "Refresh MAIN APP canonical governance and consensus"
-          for attempt in 1 2 3; do
-            if git pull --rebase -X ours origin main && git push origin HEAD:main; then exit 0; fi
-            [ "$attempt" = "3" ] && exit 1
-            sleep $((attempt * 8))
-          done
+
+      - name: Enforce Pages secret guard
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e .env
+          test ! -e .project-config.json
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "Tracked .env is forbidden from Pages"
+            exit 1
+          fi
+          touch .nojekyll
+          echo "PAGES_SECRET_GUARD_PASS"
+
+      - name: Configure Pages for canonical MAIN APP snapshot
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/configure-pages@v5
+
+      - name: Upload complete canonical MAIN APP
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy-pages:
+    needs: refresh
+    if: needs.refresh.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy canonical MAIN APP to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Confirm published MAIN APP state
+        run: |
+          echo "MAIN APP session: ${{ needs.refresh.outputs.session_date }}"
+          echo "MAIN APP state: ${{ needs.refresh.outputs.system_state }}"
+          echo "Published: ${{ steps.deployment.outputs.page_url }}"
