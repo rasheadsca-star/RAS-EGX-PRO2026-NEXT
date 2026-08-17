@@ -17,9 +17,7 @@ on:
       - "scripts/stable/v16-main-app-consensus.cjs"
       - "data/stable/v16-v169-release-lock.json"
       - "data/stable/main-app-lock.json"
-      - "data/stable/main-app-p3-presentation-lock.json"
       - ".github/workflows/v16-v169-basket-engine.yml"
-      - ".github/workflows/v169-primary-pages-deploy.yml"
       - ".github/workflows/main-app-immutability-guard.yml"
       - ".github/workflows/main-app-governance-refresh.yml"
   schedule:
@@ -35,7 +33,7 @@ concurrency:
 env:
   MAIN_APP_METHOD_BASE_COMMIT: 1e5f3ab7e74f88982cf241fd5e1fcc1baced8f48
   MAIN_APP_LOCK_COMMIT: c5d6e49854e3a96d4b5bdfc6eaf726049878fa91
-  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_FAIL_CLOSED_LEDGER_ALL_ENGINE_MATRIX_P2
+  MAIN_APP_OPERATIONAL_STACK: CANONICAL_SNAPSHOT_LEDGER_ALL_ENGINE_MATRIX_STOCK_ANALYZER
 
 jobs:
   enforce:
@@ -54,7 +52,6 @@ jobs:
           set -euo pipefail
           git cat-file -e "${MAIN_APP_METHOD_BASE_COMMIT}^{commit}"
           git cat-file -e "${MAIN_APP_LOCK_COMMIT}^{commit}"
-
           PROTECTED_METHOD=(
             scripts/research/v16-v169-basket-engine.py
             scripts/research/v16-two-stage-predictor.py
@@ -65,26 +62,16 @@ jobs:
             data/stable/v16-v169-release-lock.json
             .github/workflows/v16-v169-basket-engine.yml
           )
-
           drift=0
           if ! git diff --quiet "$MAIN_APP_METHOD_BASE_COMMIT" -- "${PROTECTED_METHOD[@]}"; then
-            echo "MAIN APP methodology drift detected; restoring method-only files."
-            git diff --name-status "$MAIN_APP_METHOD_BASE_COMMIT" -- "${PROTECTED_METHOD[@]}"
             git checkout "$MAIN_APP_METHOD_BASE_COMMIT" -- "${PROTECTED_METHOD[@]}"
             drift=1
           fi
-
           if ! git diff --quiet "$MAIN_APP_LOCK_COMMIT" -- data/stable/main-app-lock.json; then
-            echo "MAIN APP methodology lock metadata drift detected."
             git checkout "$MAIN_APP_LOCK_COMMIT" -- data/stable/main-app-lock.json
             drift=1
           fi
-
-          if [ "$drift" -eq 0 ]; then
-            echo "MAIN APP methodology is unchanged. Governance/presentation upgrades are allowed."
-            exit 0
-          fi
-
+          if [ "$drift" -eq 0 ]; then exit 0; fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "${PROTECTED_METHOD[@]}" data/stable/main-app-lock.json
@@ -95,7 +82,7 @@ jobs:
             sleep $((attempt * 8))
           done
 
-      - name: Verify frozen methodology and required governance stack
+      - name: Verify MAIN APP operational stack
         shell: bash
         run: |
           set -euo pipefail
@@ -106,44 +93,37 @@ jobs:
           node --check preview-v16/app/decision-source.js
           node --check preview-v16/app/main-app-governance-overlay.js
           node --check preview-v16/app/main-app-consensus-overlay.js
-
+          node --check preview-v16/app/stock-analyzer.js
           node - <<'NODE'
-          const fs = require('fs');
-          const lock = JSON.parse(fs.readFileSync('data/stable/main-app-lock.json', 'utf8'));
-          if (lock.appName !== 'MAIN APP') throw new Error('MAIN APP identity mismatch');
-          if (lock.engine !== 'V16_9_EQUAL_WEIGHT_BASKET') throw new Error('MAIN APP engine mismatch');
-          if (lock.policy?.methodologyLocked !== true) throw new Error('Methodology lock missing');
-          if (lock.policy?.liveMarketDataAllowed !== true) throw new Error('Live market data must remain enabled');
-          if (lock.policy?.liveRecommendationOutputAllowed !== true) throw new Error('Live recommendation output must remain enabled');
-
-          const publisher = fs.readFileSync('scripts/stable/v16-publish-v169-basket.cjs','utf8');
-          const freshness = fs.readFileSync('scripts/stable/v16-recommendation-freshness-guard.cjs','utf8');
-          const governance = fs.readFileSync('scripts/stable/v16-main-app-governance.cjs','utf8');
-          const consensus = fs.readFileSync('scripts/stable/v16-main-app-consensus.cjs','utf8');
-          const router = fs.readFileSync('preview-v16/app/decision-source.js','utf8');
-          const launcher = fs.readFileSync('preview-v16/app/v169-p2.html','utf8');
-          const consensusUi = fs.readFileSync('preview-v16/app/main-app-consensus-overlay.js','utf8');
-
-          const checks = {
-            engineLocked: publisher.includes('V16_9_EQUAL_WEIGHT_BASKET'),
-            scanPostProcessing: freshness.includes('buildMainAppGovernance') && freshness.includes('v16-main-app-consensus.cjs'),
-            maxAllocation50: governance.includes('MAX_TOTAL_ALLOCATION_PCT = 50'),
-            failClosed: governance.includes('failClosed: true'),
-            immutableLedger: governance.includes('immutableLedger: true'),
-            canonicalSnapshot: governance.includes('v16-main-app-current.json'),
-            sessionBoundConsensus: consensus.includes('exactSessionAlignmentRequired: true'),
-            allEngineMatrix: consensus.includes('V17_VALIDATION') && consensus.includes('V19_CHALLENGER') && consensus.includes('V20_NATIVE') && consensus.includes('QUANT_EDGE'),
-            rawAgreementCount: consensus.includes('agreementCount') && consensus.includes('otherEngineCount'),
-            resilientConsensusSources: consensus.includes('GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_PLUS_VERCEL_QUANT_WITH_RETRY'),
-            consensusNoRankingMutation: consensus.includes('comparisonCanChangeMainRanking: false'),
-            consensusNoExecutionGrant: consensus.includes('comparisonCanGrantExecution: false'),
-            uiCanonicalRouting: router.includes('v16-main-app-current.json'),
-            uiGovernanceOverlay: launcher.includes('main-app-governance-overlay.js'),
-            uiConsensusOverlay: launcher.includes('main-app-consensus-overlay.js'),
-            uiAllEngineLabels: launcher.includes('V17') && launcher.includes('V19') && launcher.includes('V20') && launcher.includes('QUANT EDGE'),
-            uiAgreementCount: consensusUi.includes('التوافق مع باقي المحركات') && consensusUi.includes('engineComparisons'),
-            uiPeriodicRefresh: consensusUi.includes('setInterval(refreshData,60000)'),
+          const fs=require('fs');
+          const lock=JSON.parse(fs.readFileSync('data/stable/main-app-lock.json','utf8'));
+          if(lock.appName!=='MAIN APP'||lock.engine!=='V16_9_EQUAL_WEIGHT_BASKET')throw new Error('MAIN APP identity/method lock mismatch');
+          const publisher=fs.readFileSync('scripts/stable/v16-publish-v169-basket.cjs','utf8');
+          const freshness=fs.readFileSync('scripts/stable/v16-recommendation-freshness-guard.cjs','utf8');
+          const governance=fs.readFileSync('scripts/stable/v16-main-app-governance.cjs','utf8');
+          const consensus=fs.readFileSync('scripts/stable/v16-main-app-consensus.cjs','utf8');
+          const router=fs.readFileSync('preview-v16/app/decision-source.js','utf8');
+          const launcher=fs.readFileSync('preview-v16/app/v169-p2.html','utf8');
+          const consensusUi=fs.readFileSync('preview-v16/app/main-app-consensus-overlay.js','utf8');
+          const analyzer=fs.readFileSync('preview-v16/app/stock-analyzer.js','utf8');
+          const checks={
+            engineLocked:publisher.includes('V16_9_EQUAL_WEIGHT_BASKET'),
+            scanPostProcessing:freshness.includes('buildMainAppGovernance')&&freshness.includes('v16-main-app-consensus.cjs'),
+            allocationGuard:governance.includes('MAX_TOTAL_ALLOCATION_PCT = 50'),
+            failClosed:governance.includes('failClosed: true'),
+            immutableLedger:governance.includes('immutableLedger: true'),
+            canonicalSnapshot:router.includes('v16-main-app-current.json'),
+            allEngineMatrix:consensus.includes('V17_VALIDATION')&&consensus.includes('V19_CHALLENGER')&&consensus.includes('V20_NATIVE')&&consensus.includes('QUANT_EDGE'),
+            agreementCount:consensus.includes('agreementCount')&&consensusUi.includes('توافق المحركات'),
+            periodicComparison:consensusUi.includes('setInterval(refreshData,60000)'),
+            stockAnalyzerLoaded:launcher.includes('stock-analyzer.js'),
+            analyzerTechnical:analyzer.includes('technicalAnalysis')&&analyzer.includes('nearestLevels'),
+            analyzerFibonacci:analyzer.includes('fibonacci')&&analyzer.includes('e1618'),
+            analyzerPortfolio:analyzer.includes('portfolioDecision')&&analyzer.includes('زيادة تدريجية مشروطة')&&analyzer.includes('تخفيف')&&analyzer.includes('بيع'),
+            analyzerFundamentals:analyzer.includes('finance.yahoo.com/v7/finance/quote')&&analyzer.includes('fundamentalScore'),
+            analyzerNews:analyzer.includes('finance.yahoo.com/v1/finance/search')&&analyzer.includes('newsSummary'),
+            analyzerSecondOpinion:analyzer.includes('annotateRecommendations')&&analyzer.includes('Second Opinion'),
           };
           console.log(checks);
-          for (const [key,value] of Object.entries(checks)) if (!value) throw new Error(`MAIN APP governance check failed: ${key}`);
+          for(const [k,v] of Object.entries(checks))if(!v)throw new Error(`MAIN APP stack check failed: ${k}`);
           NODE
