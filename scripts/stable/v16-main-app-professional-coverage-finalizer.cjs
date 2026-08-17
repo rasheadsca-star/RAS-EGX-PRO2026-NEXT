@@ -28,9 +28,9 @@ function main() {
   const pc = price.professionalCoverage || {};
   const ds = disposition.summary || {};
 
-  if (pc.complete !== true || ds.professionalDataCoverageComplete !== true) {
-    console.log(JSON.stringify({ status: 'NO_FINALIZATION', reason: 'PROFESSIONAL_COVERAGE_INCOMPLETE', professionalCoverage: pc, dispositionSummary: ds }, null, 2));
-    process.exit(2);
+  if (pc.complete !== true || ds.professionalDataCoverageComplete !== true || disposition.expectedSession !== price.expectedSession) {
+    console.log(JSON.stringify({ status: 'NO_FINALIZATION', reason: 'CURRENT_SESSION_PROFESSIONAL_COVERAGE_NOT_READY', priceSession: price.expectedSession || null, dispositionSession: disposition.expectedSession || null }, null, 2));
+    return;
   }
   if (Number(pc.executionEligibleCoveragePct) !== 100 || Number(pc.universeDispositionCoveragePct) !== 100) {
     throw new Error('Professional coverage claims 100% are not supported by disposition evidence');
@@ -69,8 +69,6 @@ function main() {
   readiness.softGaps = (readiness.softGaps || []).filter(r => !['SOURCE_EVIDENCE_100', 'VERIFIED_ROWS_100'].includes(r.code));
   readiness.requirementsTo100 = (readiness.requirementsTo100 || []).filter(r => !['SOURCE_EVIDENCE_100', 'VERIFIED_ROWS_100'].includes(r.code));
   readiness.foundationQualityScore = round((readiness.axes || []).reduce((sum, axis) => sum + Number(axis.points || 0), 0), 1);
-  // Do not touch the live-forward cap, hard gates, stage, or professional claim.
-  // The 79 cap must remain until the frozen V16.9 live minimum is genuinely met.
   if (readiness.hardGates?.liveForwardMinimum !== true) {
     readiness.professionalReadinessScore = Math.min(Number(readiness.professionalReadinessScore || 0), 79);
     readiness.capReason = 'LIVE_FORWARD_HARD_GATE';
