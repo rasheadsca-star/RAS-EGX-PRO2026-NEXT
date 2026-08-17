@@ -1,10 +1,10 @@
 {
   "schemaVersion": "17.0.0-regression-5",
-  "generatedAt": "2026-08-17T07:07:40.022Z",
+  "generatedAt": "2026-08-17T10:45:08.767Z",
   "contract": "V17_CANONICAL_RUNTIME_AND_SINGLE_PUBLISHER_STABILITY",
   "ok": true,
-  "total": 142,
-  "passed": 142,
+  "total": 143,
+  "passed": 143,
   "failedCount": 0,
   "criticalFailedCount": 0,
   "failed": [],
@@ -346,12 +346,6 @@
       "message": "researchReady=true"
     },
     {
-      "name": "gate:conflict-blocks-execution",
-      "ok": true,
-      "severity": "CRITICAL",
-      "message": "21 source conflicts"
-    },
-    {
       "name": "sr:canonical-coverage",
       "ok": true,
       "severity": "CRITICAL",
@@ -373,13 +367,19 @@
       "name": "sr:research-session",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "reference=2026-08-16; current=2026-08-16"
+      "message": "reference=2026-08-17; current=2026-08-17"
+    },
+    {
+      "name": "sr:partial-session-not-completed-ohlc",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "levels=2026-08-16; research=2026-08-17"
     },
     {
       "name": "sr:row-provenance",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "209 internal rows"
+      "message": "208 internal rows"
     },
     {
       "name": "liquidity:engine",
@@ -439,7 +439,7 @@
       "name": "liquidity:session-aligned",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "liquidity=2026-08-16; current=2026-08-16"
+      "message": "executionGrade=false; sessionAligned=false; liquidity=2026-08-17; current=2026-08-17"
     },
     {
       "name": "liquidity:evidence-coverage",
@@ -463,7 +463,7 @@
       "name": "liquidity:row-consistency",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "217 rows checked"
+      "message": "216 rows checked"
     },
     {
       "name": "liquidity:candidate-count",
@@ -475,7 +475,7 @@
       "name": "liquidity:execution-count",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "derived=75; declared=75"
+      "message": "derived=73; declared=73"
     },
     {
       "name": "liquidity:resilient-wiring",
@@ -613,7 +613,7 @@
       "name": "session-truth:verified-source-session",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "session=2026-08-16; verified=true"
+      "message": "research session=2026-08-17; researchVerified=true; executionSafe=false"
     },
     {
       "name": "session-truth:validation-not-hard-dependency",
@@ -625,13 +625,13 @@
       "name": "session-truth:canonical-chain",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "snapshot=2026-08-16; sr=2026-08-16; liq=2026-08-16; history=2026-08-16; expected=2026-08-16"
+      "message": "mode=RESEARCH; snapshot=2026-08-17; sr=2026-08-17; levels=2026-08-16; liq=2026-08-17; history=2026-08-17; expected=2026-08-17"
     },
     {
       "name": "history-repair:applied",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "applied=true; date=2026-08-16"
+      "message": "research mode: repairApplied=false; completedLevelSession=2026-08-16; selected=2026-08-17"
     },
     {
       "name": "history-repair:no-weekend-or-future-rows",
@@ -662,6 +662,12 @@
       "ok": true,
       "severity": "CRITICAL",
       "message": "execution grade requires liquidity + internal SR + alignment"
+    },
+    {
+      "name": "research:watch-only-contract",
+      "ok": true,
+      "severity": "CRITICAL",
+      "message": "research session must remain zero-allocation watch-only"
     },
     {
       "name": "review:v5-clean",
@@ -859,17 +865,23 @@
       "name": "snapshot:verified-session-still-canonical",
       "ok": true,
       "severity": "CRITICAL",
-      "message": "current=2026-08-16; truth=2026-08-16"
+      "message": "RESEARCH current=2026-08-17; truth=2026-08-17; researchVerified=true; level=2026-08-16; executionSafe=false"
     }
   ],
   "releaseWiring": {
     "coherentV5": true,
     "fingerprint": "a14046b4a0b4af269c54d986a7dfdac992abd75f559a7af5a76d4092aa837885"
   },
+  "sessionContract": {
+    "mode": "RESEARCH_WATCH_ONLY",
+    "selectedSession": "2026-08-17",
+    "canonicalExecution": false,
+    "canonicalResearch": true
+  },
   "baseRegression": {
     "schemaVersion": "17.0.0-regression-4",
-    "total": 130,
-    "passed": 126,
+    "total": 131,
+    "passed": 127,
     "failedCount": 4,
     "supersededFailedChecks": [
       "workflow:market:regression-v3",
@@ -878,5 +890,5 @@
       "workflow:market:critic-v4"
     ]
   },
-  "rule": "Regression V5 is additive. Only lower-version workflow-wiring checks (V3/V4 critic/regression invocation names) may be superseded by mandatory V5 wiring. All substantive lower-version tests remain unchanged and blocking. Build Review must remain read-only; Market Workflow is the sole canonical publisher; both workflows must enforce the same V5 contract and current Actions runtimes."
+  "rule": "Regression V5 is additive. Only lower-version workflow-wiring checks may be superseded. Research watch-only mode may use a separately verified intraday research session with prior completed OHLC levels, but execution mode still requires price-source verification, aligned liquidity/SR gates, and all execution safety contracts. Build Review remains read-only; Market Workflow remains the sole canonical publisher."
 }
