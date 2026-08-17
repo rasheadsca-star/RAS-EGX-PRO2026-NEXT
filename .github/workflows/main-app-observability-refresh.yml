@@ -16,6 +16,7 @@ on:
       - "scripts/stable/v16-main-app-pilot-lock-guard.cjs"
       - "scripts/stable/v16-main-app-auto-data-guard.cjs"
       - "scripts/stable/v16-main-app-professional-readiness.cjs"
+      - "scripts/stable/v16-main-app-professional-coverage-finalizer.cjs"
       - ".github/workflows/main-app-observability-refresh.yml"
 
 permissions:
@@ -54,6 +55,7 @@ jobs:
           node --check scripts/stable/v16-main-app-pilot-lock-guard.cjs
           node --check scripts/stable/v16-main-app-auto-data-guard.cjs
           node --check scripts/stable/v16-main-app-professional-readiness.cjs
+          node --check scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
 
       - name: Capture production decision fingerprint before observability
         id: before
@@ -99,6 +101,7 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/stable/v16-main-app-professional-readiness.cjs
+          node scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
 
       - name: Prove production decision and strategy were not changed
         env:
@@ -117,6 +120,8 @@ jobs:
           const financialCache=read('data/stable/v16-main-app-financial-cache.json');
           const drift=read('data/stable/v16-main-app-drift-monitor.json');
           const challenger=read('data/stable/v16-main-app-challenger-shadow.json');
+          const price=read('data/stable/v15-price-truth.json');
+          const readiness=read('data/stable/v16-main-app-professional-readiness.json');
           if(lock.status!=='PASS') throw new Error('Pilot methodology lock failed');
           if(auto.status!=='PASS') throw new Error('Automatic data refresh guard failed');
           if(intel?.immutableMethodology?.changesAlphaOrRanking!==false) throw new Error('Intelligence layer may not change alpha/ranking');
@@ -127,7 +132,11 @@ jobs:
           if(drift?.immutableMethodology?.changesAlphaOrRanking!==false || drift.productionEffect!=='NONE') throw new Error('Drift monitor must be advisory only');
           if(challenger.mode!=='SHADOW_RESEARCH_ONLY') throw new Error('Challenger is not shadow-only');
           if(challenger?.immutableMethodology?.changesMainAppRanking!==false || challenger?.immutableMethodology?.changesExecutionGrant!==false) throw new Error('Challenger may not affect MAIN APP');
-          console.log({pilotLock:lock.status,autoData:auto.status,intelligenceCoverage:intel.auditCompleteness,financialCacheRecords:Object.keys(financialCache.records||{}).length,drift:drift.status,challengerMode:challenger.mode});
+          if(price?.professionalCoverage?.complete===true){
+            const data=(readiness.axes||[]).find(a=>a.id==='DATA_SESSION_INTEGRITY');
+            if(Number(data?.scorePct)!==100) throw new Error('Completed professional coverage was not preserved in readiness');
+          }
+          console.log({pilotLock:lock.status,autoData:auto.status,intelligenceCoverage:intel.auditCompleteness,financialCacheRecords:Object.keys(financialCache.records||{}).length,drift:drift.status,challengerMode:challenger.mode,professionalCoverage:price?.professionalCoverage||null});
           NODE
 
       - name: Commit observability evidence only
