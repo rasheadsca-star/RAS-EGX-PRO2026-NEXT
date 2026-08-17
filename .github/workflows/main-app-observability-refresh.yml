@@ -18,7 +18,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 concurrency:
   group: main-app-v169-observability-refresh
@@ -120,7 +120,7 @@ jobs:
           if(drift?.immutableMethodology?.changesAlphaOrRanking!==false || drift.productionEffect!=='NONE') throw new Error('Drift monitor must be advisory only');
           if(challenger.mode!=='SHADOW_RESEARCH_ONLY') throw new Error('Challenger is not shadow-only');
           if(challenger?.immutableMethodology?.changesMainAppRanking!==false || challenger?.immutableMethodology?.changesExecutionGrant!==false) throw new Error('Challenger may not affect MAIN APP');
-          console.log({pilotLock:lock.status,autoData: auto.status,intelligenceCoverage:intel.auditCompleteness,drift:drift.status,challengerMode:challenger.mode});
+          console.log({pilotLock:lock.status,autoData:auto.status,intelligenceCoverage:intel.auditCompleteness,drift:drift.status,challengerMode:challenger.mode});
           NODE
 
       - name: Commit observability evidence only
@@ -146,3 +146,11 @@ jobs:
               sleep $((attempt * 8))
             done
           fi
+
+      - name: Publish latest MAIN APP evidence to Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run static.yml --repo "$GITHUB_REPOSITORY" --ref main
