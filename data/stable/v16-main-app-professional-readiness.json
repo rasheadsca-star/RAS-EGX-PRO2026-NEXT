@@ -3,47 +3,50 @@
   "generatedAt": "2026-08-18T11:32:35.636Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-08-17",
-  "professionalReadinessScore": 79,
-  "foundationQualityScore": 92.5,
-  "stage": "ADVANCED_PILOT",
-  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 83.7,
+  "stage": "PILOT",
+  "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "LIVE_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 25,
-      "scorePct": 100,
+      "points": 16.17,
+      "scorePct": 64.7,
       "details": {
-        "currentExecutionGrade": true,
+        "currentExecutionGrade": false,
         "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 99.5,
+        "currentSourceSessionEvidenceCoveragePct": 0,
         "publishedDecisionEvidenceCoveragePct": 96.8,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 190,
-        "currentAcceptedRows": 217,
-        "verifiedRows": 218,
+        "currentAcceptedRows": 0,
+        "verifiedRows": 190,
         "inputRows": 218,
-        "evidenceCoveragePct": 100,
-        "verifiedRowsRatioPct": 100,
-        "currentSourceHealth": "EXECUTION_GRADE",
-        "rawCurrentSourceSessionEvidenceCoveragePct": 99.5,
-        "rawCurrentSessionEvidenceRows": 217,
-        "professionalExecutionEligibleCoveragePct": 100,
-        "professionalUniverseDispositionCoveragePct": 100,
-        "executionEligibleUniverseRows": 217,
-        "executionEligibleAcceptedRows": 217,
-        "verifiedIneligibleRows": 1,
-        "verifiedIneligibleTickers": [
-          "DCCC"
-        ],
-        "verifiedDispositionRows": 218,
-        "professionalCoverageComplete": true,
-        "rawCoverageDiagnosticRetained": true
+        "evidenceCoveragePct": 96.8,
+        "verifiedRowsRatioPct": 87.2,
+        "currentSourceHealth": "BLOCKED"
       },
-      "requirements": []
+      "requirements": [
+        {
+          "code": "EXECUTION_GRADE",
+          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+          "hard": true
+        },
+        {
+          "code": "SOURCE_EVIDENCE_100",
+          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 96.8% إلى 100%",
+          "hard": false
+        },
+        {
+          "code": "VERIFIED_ROWS_100",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 190/218",
+          "hard": false
+        }
+      ]
     },
     {
       "id": "V169_WALK_FORWARD",
@@ -133,21 +136,18 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": true,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
     {
-      "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
       "hard": true,
-      "axis": "V169_LIVE_FORWARD"
-    }
-  ],
-  "softGaps": [],
-  "requirementsTo100": [
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "LIVE_MIN_RESOLVED_SESSIONS",
       "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
@@ -155,15 +155,54 @@
       "axis": "V169_LIVE_FORWARD"
     }
   ],
+  "softGaps": [
+    {
+      "code": "SOURCE_EVIDENCE_100",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 96.8% إلى 100%",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "VERIFIED_ROWS_100",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 190/218",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    }
+  ],
+  "requirementsTo100": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "SOURCE_EVIDENCE_100",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 96.8% إلى 100%",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "VERIFIED_ROWS_100",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 190/218",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    }
+  ],
   "interpretation": {
     "scoreMeaningAr": "يقيس جاهزية MAIN APP التشغيلية والمهنية وجودة الأدلة، وليس احتمال نجاح التوصية القادمة.",
     "accuracyMeaningAr": "لا يرفع ترتيب الأسهم أو Alpha تلقائيًا. أي تغيير في الترتيب يتطلب Challenger/Ablation واختبارًا خارج العينة قبل الترقية.",
     "qualityImpactAr": "يرفع جودة التطبيق فعليًا عبر منع الادعاء المهني عند نقص البيانات أو السجل الحي، وإظهار الفجوات القابلة للقياس بدل درجة تجميلية.",
-    "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا.",
-    "professionalCoverageMeaningAr": "تغطية 100% المهنية تعني أن كل سهم صالح للتنفيذ لديه سعر جلسة موثق، وكل صف غير صالح للتنفيذ لديه سبب عزل موثق؛ ولا تعني اختلاق سعر جلسة لصف لم يتداول أو لم تتوفر له أدلة جلسة."
+    "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-08-18T08:51:41.075Z",
+    "priceTruthGeneratedAt": "2026-08-18T11:49:43.320Z",
     "basketGeneratedAt": "2026-08-17T21:39:42.673425+00:00",
     "liveGeneratedAt": "2026-08-17T21:39:46.674055+00:00",
     "canonicalSnapshotHash": "45edaa2f2fff0a3beb56f44ec1517211a938ebc18c8b2fb7efd6d92383df3550",
@@ -200,12 +239,7 @@
         "لا يتم حذف أو تعديل أي جلسة خاسرة بعد النشر.",
         "الترقية أو الإيقاف يعتمد على السجل الحي الكامل بعد التكاليف."
       ]
-    },
-    "marketUniverseDispositionGeneratedAt": "2026-08-18T08:51:41.126Z",
-    "professionalCoverageGeneratedAt": "2026-08-18T08:51:41.126Z",
-    "rawMarketSessionEvidenceCoveragePct": 99.5,
-    "professionalExecutionEligibleCoveragePct": 100,
-    "professionalUniverseDispositionCoveragePct": 100
+    }
   },
   "readinessHash": "bd64bc267f56e944a9a574a7612ea46d459651cdae757bcd40ab580c2564725a"
 }
