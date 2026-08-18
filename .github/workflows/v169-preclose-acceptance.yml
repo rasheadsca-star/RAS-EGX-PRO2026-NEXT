@@ -1,0 +1,51 @@
+name: V16.9.2 Pre-Close Acceptance Guard
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/v169-preclose-rescan.yml"
+      - ".github/workflows/v169-preclose-acceptance.yml"
+      - "preview-v16/app/v16-9-preclose-runtime.js"
+      - "preview-v16/app/decision-source.js"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate browser runtime syntax
+        run: |
+          set -euo pipefail
+          node --check preview-v16/app/v16-9-preclose-runtime.js
+          node --check preview-v16/app/decision-source.js
+
+      - name: Verify pre-close contract
+        run: |
+          set -euo pipefail
+          grep -q "14:15" .github/workflows/v169-preclose-rescan.yml
+          grep -q "mobile-hotfix-deploy.yml" .github/workflows/v169-preclose-rescan.yml
+          grep -q "v16-v169-basket-engine.yml" .github/workflows/v169-preclose-rescan.yml
+          grep -q "main-app-governance-refresh.yml" .github/workflows/v169-preclose-rescan.yml
+          grep -q "MARKET_CLOSE_MINUTE = 14 \* 60 + 30" preview-v16/app/v16-9-preclose-runtime.js
+          grep -q "CHECKPOINTS = \[15, 10, 5\]" preview-v16/app/v16-9-preclose-runtime.js
+          grep -q "v16-main-app-current.json" preview-v16/app/v16-9-preclose-runtime.js
+
+      - name: Prove recommendation-selection code is untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -E '^scripts/(stable|research)/'; then
+            echo "Recommendation engine code changed; pre-close patch must not alter selection technique." >&2
+            exit 1
+          fi
+          echo "PASS: no scripts/stable or scripts/research selection-engine files changed."
