@@ -1,176 +1,40 @@
-name: MAIN APP — V19 V6 Consensus Enrichment
+name: MAIN APP — V19 V6 Diagnostic Only
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["MAIN APP — Canonical Governance Refresh"]
-    types: [completed]
-  push:
-    branches: ["main"]
-    paths:
-      - "data/stable/v16-main-app-consensus.json"
-      - "data/stable/v16-main-app-current.json"
-      - "scripts/stable/v16-main-app-ledger-reconcile.cjs"
-      - "scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs"
-      - ".github/workflows/main-app-v19v6-consensus-enrich.yml"
-  schedule:
-    # Keep reconciliation and display-only V19 V6 comparison current during EGX days.
-    # Cairo gate below accepts 10:00-21:59 and handles Egypt DST dynamically.
-    - cron: "10,25,40,55 7-19 * * 0-4"
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 concurrency:
-  group: egx-main-app-v19v6-consensus-enrichment
+  group: egx-main-app-v19v6-diagnostic
   cancel-in-progress: true
 
 jobs:
-  enrich:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - name: Resolve Cairo refresh window
-        id: clock
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          DOW=$(TZ=Africa/Cairo date '+%w')
-          HOUR=$(TZ=Africa/Cairo date '+%H')
-          RUN=false
-          if [ "$DOW" -le 4 ] && [ "$HOUR" -ge 10 ] && [ "$HOUR" -le 21 ]; then RUN=true; fi
-          echo "Cairo reconciliation/V19 V6 refresh: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M') run=$RUN"
-          echo "run=$RUN" >> "$GITHUB_OUTPUT"
-
       - name: Checkout latest main
-        if: steps.clock.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
       - name: Setup Node 22
-        if: steps.clock.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Validate reconciliation and V19 V6 guards
-        if: steps.clock.outputs.run == 'true'
+      - name: Verify stability contract
         shell: bash
         run: |
           set -euo pipefail
+          node --check scripts/stable/v16-main-app-governance.cjs
           node --check scripts/stable/v16-main-app-ledger-reconcile.cjs
-          node --check scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
-          node --check scripts/stable/v16-main-app-professional-readiness.cjs
+          node --check scripts/stable/v16-main-app-consensus.cjs
           grep -q "PUBLISHED_SIGNAL_IS_AUTHORITY" scripts/stable/v16-main-app-ledger-reconcile.cjs
           grep -q "MATERIAL_SELECTION_CHANGE_REQUIRES_NEW_VERSION" scripts/stable/v16-main-app-ledger-reconcile.cjs
-          grep -q "V19_CHAT_GPT_NATIVE_CHALLENGER_V6" scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
-          grep -q "changesIndependentConfirmationScore: false" scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
-          grep -q "canGrantExecution: false" scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
-
-      - name: Reconcile same-selection immutable ledger drift
-        if: steps.clock.outputs.run == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s data/stable/v16-main-app-current.json
-          test -s data/stable/v16-main-app-signal-ledger.json
-          node scripts/stable/v16-main-app-ledger-reconcile.cjs
-          test -s data/stable/v16-main-app-ledger-reconcile.json
-
-      - name: Enrich consensus with direct V19 V6 session
-        if: steps.clock.outputs.run == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s data/stable/v16-main-app-consensus.json
-          node scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
-          test -s data/stable/v16-main-app-v19v6-consensus-acceptance.json
-
-      - name: Rebuild Professional Readiness after reconciliation
-        if: steps.clock.outputs.run == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          node scripts/stable/v16-main-app-professional-readiness.cjs
-          node scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
-          test -s data/stable/v16-main-app-professional-readiness.json
-
-      - name: Verify reconciliation and consensus contracts
-        if: steps.clock.outputs.run == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const fs=require('fs');
-          const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
-          const acc=read('data/stable/v16-main-app-v19v6-consensus-acceptance.json');
-          const rec=read('data/stable/v16-main-app-ledger-reconcile.json');
-          const snap=read('data/stable/v16-main-app-current.json');
-          const ready=read('data/stable/v16-main-app-professional-readiness.json');
-          if(acc.pass!==true) throw new Error(`V19 V6 acceptance failed: ${JSON.stringify(acc.checks)}`);
-          if(rec.conflictDetected===true && rec.sameTickerSet===true && rec.reconciled!==true) {
-            throw new Error(`Safe ledger reconciliation did not complete: ${JSON.stringify(rec)}`);
-          }
-          if(rec.reconciled===true) {
-            if(snap?.immutableSignal?.ledgerConflict===true) throw new Error('ledgerConflict remained true after reconciliation');
-            if((snap?.governance?.criticalErrors||[]).some(x=>String(x).startsWith('IMMUTABLE_LEDGER_CONFLICT:'))) throw new Error('immutable conflict remained in criticalErrors');
-            if(ready.capReason==='ENGINE_OR_GOVERNANCE_HARD_GATE') throw new Error('Professional Readiness remained governance-capped after safe reconciliation');
-          }
-          console.log({
-            ledgerReconciled:rec.reconciled,
-            ledgerReason:rec.reason,
-            professionalReadinessScore:ready.professionalReadinessScore,
-            capReason:ready.capReason,
-            v19SessionAligned:acc.v19SessionAligned,
-            v19SelectedTickers:acc.v19SelectedTickers,
-            observedV19Matches:acc.observedV19Matches,
-          });
-          NODE
-
-      - name: Commit reconciled comparison and readiness state
-        if: steps.clock.outputs.run == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            data/stable/v16-main-app-current.json \
-            data/stable/v16-main-app-ledger-reconcile.json \
-            data/stable/v16-main-app-consensus.json \
-            data/stable/v16-main-app-v19v6-consensus-acceptance.json \
-            data/stable/v16-main-app-professional-readiness.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Reconcile MAIN APP immutable signal and refresh V19 V6 readiness"
-            for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
-              [ "$attempt" = "3" ] && exit 1
-              sleep $((attempt * 8))
-            done
-          else
-            echo "Reconciled MAIN APP state already current."
-          fi
-
-      - name: Dispatch Pages deployment for reconciled state
-        if: steps.clock.outputs.run == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in 1 2 3; do
-            if gh workflow run static.yml --repo "$GITHUB_REPOSITORY" --ref main; then
-              echo "Pages deployment dispatched for reconciled readiness and V19 V6 consensus."
-              exit 0
-            fi
-            [ "$attempt" = "3" ] && exit 1
-            sleep $((attempt * 10))
-          done
+          grep -q "V19_CHAT_GPT_NATIVE_CHALLENGER_V6" scripts/stable/v16-main-app-consensus.cjs
+          grep -q "canonicalConsensusSingleWriter: true" scripts/stable/v16-main-app-consensus.cjs
+          echo "Diagnostic only: this workflow has no write permission, no schedule, no push trigger and no workflow_run trigger."
