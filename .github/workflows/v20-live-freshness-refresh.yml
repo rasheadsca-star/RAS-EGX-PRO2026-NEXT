@@ -1,3 +1,4 @@
+# V20 live freshness orchestrator v1 — trigger 2026-08-18
 name: V20 Live Freshness Refresh
 
 on:
@@ -125,18 +126,7 @@ jobs:
           if(regression.ok!==true) throw new Error('V20 native regression failed');
           if(!Array.isArray(native.publishedCandidates)||native.publishedCandidates.length<3) throw new Error('V20 has fewer than 3 published research candidates');
           const nextTradingSession=s=>{let d=new Date(`${s}T12:00:00Z`);do{d.setUTCDate(d.getUTCDate()+1)}while([5,6].includes(d.getUTCDay()));return d.toISOString().slice(0,10)};
-          const status={
-            schemaVersion:'20.0.0-live-freshness-status-1',
-            generatedAt:new Date().toISOString(),
-            status:'FRESH_FOR_NEXT_TRADING_SESSION_RESEARCH',
-            engineId:native.engineId,
-            sourceSession,
-            nativeSession:native.sessionDate,
-            forNextTradingSession:nextTradingSession(sourceSession),
-            top3:native.publishedCandidates.slice(0,3).map(r=>({rank:r.rank,ticker:r.ticker,entryLow:r.entryLow,entryHigh:r.entryHigh,stop:r.stop,target1:r.target1,target2:r.target2})),
-            governance:{researchOnly:true,selectionTechniqueChanged:false,rankingContractChanged:false,executionPermission:false,productionAllocation:false,automaticPromotion:false},
-            sessions
-          };
+          const status={schemaVersion:'20.0.0-live-freshness-status-1',generatedAt:new Date().toISOString(),status:'FRESH_FOR_NEXT_TRADING_SESSION_RESEARCH',engineId:native.engineId,sourceSession,nativeSession:native.sessionDate,forNextTradingSession:nextTradingSession(sourceSession),top3:native.publishedCandidates.slice(0,3).map(r=>({rank:r.rank,ticker:r.ticker,entryLow:r.entryLow,entryHigh:r.entryHigh,stop:r.stop,target1:r.target1,target2:r.target2})),governance:{researchOnly:true,selectionTechniqueChanged:false,rankingContractChanged:false,executionPermission:false,productionAllocation:false,automaticPromotion:false},sessions};
           fs.writeFileSync('data/v20/native-freshness-status.json',JSON.stringify(status,null,2)+'\n');
           console.log(JSON.stringify(status,null,2));
           NODE
@@ -146,11 +136,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git restore --source=HEAD -- \
-            data/market.json \
-            data/history.json \
-            data/final-opportunity-ranking.json \
-            data/v17
+          git restore --source=HEAD -- data/market.json data/history.json data/final-opportunity-ranking.json data/v17
 
       - name: Persist V20 canonical and Native evidence
         if: steps.gate.outputs.proceed == 'true'
