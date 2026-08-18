@@ -2,11 +2,11 @@
 
 const fs=require('fs');
 const path=require('path');
+const {main:buildIndependentConsensusAudit}=require('./v16-main-app-independent-consensus-audit.cjs');
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||'.');
 const OUT=path.join(ROOT,'data/stable/v16-main-app-engine-performance.json');
 const V16_AUDIT=path.join(ROOT,'data/research/v16-v169-target-hit-audit.json');
 const CONSENSUS=path.join(ROOT,'data/stable/v16-main-app-consensus.json');
-const INDEPENDENT_CONSENSUS=path.join(ROOT,'data/stable/v16-main-app-independent-consensus-audit.json');
 const V19_URLS=[
   'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/target-stop-audit-v6.json',
   'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v19-egx-chat-gpt/data/v19/target-stop-audit-v6.json'
@@ -31,8 +31,10 @@ function noEvidence(id,label,status,reason,sessionDate=null,extra={}){
 }
 
 async function main(){
-  const v16=read(V16_AUDIT);const consensus=read(CONSENSUS);const independent=read(INDEPENDENT_CONSENSUS,null);
+  const independent=await buildIndependentConsensusAudit();
+  const v16=read(V16_AUDIT);const consensus=read(CONSENSUS);
   if(v16.schemaVersion!=='16.9.1-target-hit-audit')throw new Error(`V16 target audit schema mismatch: ${v16.schemaVersion}`);
+  if(independent?.schemaVersion!=='16.9.2-independent-consensus-evidence-1'||independent?.governance?.automaticBonusActivation!==false||independent?.governance?.changesMainAppRanking!==false)throw new Error('Independent consensus isolation contract failed');
   const engines=consensus?.current?.engineSessions||consensus?.engineRegistry?.comparisonEngines||[];
   const engine=id=>engines.find(x=>x.id===id)||{};
   const v16Exec=Number(v16.executableByOpenRuleCount||0),v16Sel=Number(v16.selectionCount||0);
@@ -94,7 +96,7 @@ async function main(){
   const comparable=rows.filter(x=>x.evidenceComparable&&Number.isFinite(x.targetRatePct)&&Number.isFinite(x.stopRatePct));
   const leaderPool=comparable.filter(x=>x.leaderEligible!==false);
   const leader=leaderPool.length?leaderPool.slice().sort((a,b)=>(b.targetRatePct-b.stopRatePct)-(a.targetRatePct-a.stopRatePct))[0]:null;
-  const independentSummary=independent?.schemaVersion==='16.9.2-independent-consensus-evidence-1'?{
+  const independentSummary={
     available:true,
     generatedAt:independent.generatedAt,
     matchedSessions:independent.sessionWindow?.matchedSessions??null,
@@ -103,7 +105,7 @@ async function main(){
     deltasAgreementMinusV16Only:independent.deltasAgreementMinusV16Only||null,
     bonusEvidenceGate:independent.bonusEvidenceGate||null,
     governance:independent.governance||null,
-  }:{available:false};
+  };
   const out={
     schemaVersion:'16.9.2-engine-performance-comparison-1',generatedAt:new Date().toISOString(),sessionDate:consensus.sessionDate||null,
     titleAr:'أداء المحركات — تحقيق الهدف / ضرب الوقف',diagnosticOnly:true,changesMainAppRanking:false,changesExecutionPermission:false,changesWeights:false,changesRiskGates:false,usedInProfessionalReadinessScore:false,
