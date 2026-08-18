@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "20.0.0-engine-methodology-freeze-1",
+  "policy": {
+    "immutablePerEngineVersion": true,
+    "sessionRefreshMayChangeDataAndRecommendationsOnly": true,
+    "methodologyChangeRequiresNewEngineVersion": true,
+    "silentRetuneForbidden": true,
+    "failClosedOnMethodologyDrift": true
+  },
+  "engines": {
+    "V16_9_EQUAL_WEIGHT_BASKET": {
+      "branch": "main",
+      "version": "16.9.0-equal-weight-basket",
+      "artifactPath": "data/research/v16-v169-basket-engine.json",
+      "sourceBlobs": {
+        "scripts/research/v16-v169-basket-engine.py": "27ed1970b0624b040b7539e598599219dcc8fc7c"
+      },
+      "expectedMethodology": {
+        "ranking": "Existing out-of-sample top-gainer probability model.",
+        "portfolio": "Equal-weight basket; fixed one-session holding; 0.60% cost deducted.",
+        "basketSizesTested": [3, 4, 5],
+        "selection": "Basket size selected from previous 8 sessions and fixed for next 5 sessions.",
+        "reason": "Diversify idiosyncratic prediction error instead of forcing one or two stocks."
+      }
+    },
+    "V17_PRODUCTION_DECISION_LAYER": {
+      "branch": "develop/v17-rebuild",
+      "version": "17.0-isolated-v16.9-champion",
+      "artifactPath": "data/v17/current.json",
+      "sourceBlobs": {
+        "scripts/v17/build-snapshot.cjs": "33144d5bbd79e6b0d74e138dd77a232aba9b5d6f",
+        "scripts/v17/challenger-gate.cjs": "f9a67746ad8c7a2e2768c815cbcd0923711f541e",
+        "scripts/v17/finalize-snapshot.cjs": "f3488a55e1e5042a0da4344f23dc26985f268a3c"
+      },
+      "expectedEngine": {
+        "id": "V16_9_EQUAL_WEIGHT_BASKET",
+        "version": "17.0-isolated-v16.9-champion",
+        "singleProductionEngine": true,
+        "selectionMethodFrozen": true
+      }
+    },
+    "V19_CHAT_GPT_NATIVE_CHALLENGER_V6": {
+      "branch": "v19-egx-chat-gpt",
+      "version": "19.5.0-native-challenger-v6",
+      "artifactPath": "data/v19/native-challenger-v6.json",
+      "sourceBlobs": {
+        "scripts/v19/native-challenger-v2.py": "547df4d41dd4f90e9dee97ebd18e37479da91221",
+        "scripts/v19/native-challenger-v4.py": "558b577634f6d7a55df46537556024bac76b49b5",
+        "scripts/v19/native-challenger-v6.py": "b2768ad020d4eeba6d3c1bd1b573f9bf079f9d6c"
+      },
+      "expectedMethodology": {
+        "ranking": "V19 TOP10 probability ranking with ATR<=8 candidate preference and inverse-volatility weighting across 3 names.",
+        "basePolicy": "S0.00|R0|A8|INV_VOL|N3",
+        "riskBudgetOverlay": "Portfolio exposure is 100% normally, 65% after one losing session, 40% after two consecutive losing sessions, and 25% after three or more; reset to 100% after a positive session.",
+        "causality": "Exposure for each session depends only on previously resolved V19 session outcomes.",
+        "benchmarkInformedArchitecture": true,
+        "postHocDiagnosticInfluencedBasePolicy": true,
+        "countsAsFreshIndependentEvidence": false,
+        "transactionCostPct": 0.6,
+        "automaticPromotion": false
+      }
+    },
+    "V20_FULL_MARKET_NATIVE_SELECTION_V1": {
+      "branch": "develop/v20-integrated-decision-platform",
+      "version": "V1",
+      "artifactPath": "data/v20/native-model-freeze.json",
+      "expectedFreeze": {
+        "freezeId": "V20_NATIVE_V1_METHOD_FREEZE_20260813",
+        "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+        "modelVersion": "V1",
+        "rulesetHash": "5d48b4cf6f10f2ca0a16d61cfccad4d033b9da6cbac9e5ce6e35e051305a076f",
+        "weightsHash": "e6a853bf1049aa12a35f7c1a4b0b15ae622d276df2cd1a18125bf7fe73ae93cc",
+        "compositeModelDigest": "53ee03fdf617b136d0e0e17ad7b91acc34ae47b941233c67586e25acf06707aa",
+        "rankingContract": "V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2"
+      }
+    }
+  }
+}
