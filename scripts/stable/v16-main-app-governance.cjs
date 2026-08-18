@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { spawnSync } = require('child_process');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const P = relative => path.join(ROOT, relative);
@@ -15,6 +16,7 @@ const FILES = {
   scanStatus: P('data/stable/v16-immediate-scan-status.json'),
   snapshot: P('data/stable/v16-main-app-current.json'),
   ledger: P('data/stable/v16-main-app-signal-ledger.json'),
+  ledgerReconcile: P('scripts/stable/v16-main-app-ledger-reconcile.cjs'),
 };
 
 const ENGINE_ID = 'V16_9_EQUAL_WEIGHT_BASKET';
@@ -66,6 +68,23 @@ function cairoTimestamp(value) {
       hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
     }).format(new Date(value)).replace(',', '');
   } catch { return null; }
+}
+function reconcilePublishedSignal() {
+  if (!fs.existsSync(FILES.ledgerReconcile)) return { ok: false, skipped: true, reason: 'RECONCILE_SCRIPT_MISSING' };
+  const result = spawnSync(process.execPath, [FILES.ledgerReconcile], {
+    cwd: ROOT,
+    env: process.env,
+    encoding: 'utf8',
+    timeout: 60000,
+  });
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  return {
+    ok: !result.error && result.status === 0,
+    skipped: false,
+    status: result.status,
+    error: result.error ? String(result.error.message || result.error) : null,
+  };
 }
 
 function buildMainAppGovernance() {
@@ -295,6 +314,14 @@ function buildMainAppGovernance() {
       ledgerConflict,
       ledgerEntries: ledger.entries.length,
     },
+    stabilityPolicy: {
+      version: '16.9.2-stability-lock-1',
+      canonicalSignalAuthority: 'IMMUTABLE_LEDGER',
+      sameSessionRecomputePolicy: 'SHADOW_ONLY_RESTORE_PUBLISHED_SIGNAL',
+      materialTickerChangePolicy: 'BLOCK_AND_REQUIRE_NEW_VERSION',
+      comparisonCanRewriteCanonicalSignal: false,
+      comparisonCanChangeProfessionalReadiness: false,
+    },
     scanCycle: {
       latestStatusAt: scanStatus.generatedAt || null,
       attempts: finite(scanStatus.attempts, 0),
@@ -323,27 +350,39 @@ function buildMainAppGovernance() {
       portfolioWeightPct: row.portfolioWeightPct,
     })),
   });
-  const snapshot = { ...snapshotCore, snapshotHash };
+  let snapshot = { ...snapshotCore, snapshotHash };
   writeJsonAtomic(FILES.snapshot, snapshot);
 
+  // Stability lock: every canonical build passes through the same reconciliation
+  // contract. Same-ticker recomputes are shadow-only and restore the published
+  // ledger signal; material ticker changes remain blocked and require a new version.
+  const reconciliation = reconcilePublishedSignal();
+  if (!reconciliation.skipped) snapshot = readJson(FILES.snapshot, snapshot);
+
+  const unresolvedCriticalErrors = Array.isArray(snapshot?.governance?.criticalErrors)
+    ? snapshot.governance.criticalErrors
+    : criticalErrors;
+
   console.log(JSON.stringify({
-    systemState: finalState,
-    executionAllowed: finalExecutionAllowed,
+    systemState: snapshot.systemState || finalState,
+    executionAllowed: snapshot.executionAllowed === true,
     sessionAligned,
     marketSession,
     decisionSession,
     sourceSessionEvidenceCoveragePct: sourceCoveragePct,
-    plannedAllocationPct,
+    plannedAllocationPct: snapshot?.portfolioPolicy?.plannedAllocationPct ?? plannedAllocationPct,
     sourceRoundedAllocationPct,
     roundingAdjustmentApplied: allocationRoundingAdjusted,
-    recommendationTickers: recommendations.map(row => row.ticker),
+    recommendationTickers: (snapshot.recommendations || recommendations).map(row => row.ticker),
     ledgerEntries: ledger.entries.length,
-    criticalErrors,
-    warnings,
+    ledgerConflict: snapshot?.immutableSignal?.ledgerConflict === true,
+    reconciliation,
+    criticalErrors: unresolvedCriticalErrors,
+    warnings: snapshot?.governance?.warnings || warnings,
     snapshotPath: path.relative(ROOT, FILES.snapshot),
   }, null, 2));
 
-  if (criticalErrors.length > 0) process.exitCode = 2;
+  if (unresolvedCriticalErrors.length > 0 || reconciliation.ok === false) process.exitCode = 2;
   return snapshot;
 }
 

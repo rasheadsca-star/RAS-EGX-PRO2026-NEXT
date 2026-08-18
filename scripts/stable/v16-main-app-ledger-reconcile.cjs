@@ -25,6 +25,10 @@ function finite(value, fallback = null) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
 }
+function round(value, digits = 4) {
+  const factor = 10 ** digits;
+  return Math.round(Number(value || 0) * factor) / factor;
+}
 function sortedTickers(rows) { return (rows || []).map(row => ticker(row?.ticker)).filter(Boolean).sort(); }
 function sameTickerSet(a, b) { return JSON.stringify(sortedTickers(a)) === JSON.stringify(sortedTickers(b)); }
 
@@ -40,8 +44,9 @@ function main() {
   const entry = (ledger.entries || []).find(row => row?.signalId === signalId);
 
   const report = {
-    schemaVersion: '16.9.2-ledger-reconcile-1',
+    schemaVersion: '16.9.2-ledger-reconcile-2-stability-lock',
     generatedAt: new Date().toISOString(),
+    policy: 'PUBLISHED_SIGNAL_IS_AUTHORITY',
     signalId: signalId || null,
     conflictDetected: conflict,
     reconciled: false,
@@ -50,10 +55,13 @@ function main() {
     recomputedSignalHash: snapshot?.immutableSignal?.signalHash || null,
     sameTickerSet: entry ? sameTickerSet(currentRows, entry.recommendations) : false,
     preservedRecommendationSelection: false,
+    preservedPublishedOrder: false,
   };
 
   if (!conflict) {
     report.reason = 'NO_LEDGER_CONFLICT';
+    report.preservedRecommendationSelection = true;
+    report.preservedPublishedOrder = true;
     writeJsonAtomic(REPORT_PATH, report);
     console.log(JSON.stringify(report, null, 2));
     return;
@@ -83,6 +91,7 @@ function main() {
   const currentByTicker = new Map(currentRows.map(row => [ticker(row?.ticker), row]));
   const shadowRecomputedPlan = currentRows.map(row => ({
     ticker: ticker(row?.ticker),
+    rank: finite(row?.rank),
     entryLow: finite(row?.entryLow),
     entryHigh: finite(row?.entryHigh),
     stopLoss: finite(row?.stopLoss),
@@ -90,14 +99,17 @@ function main() {
     portfolioWeightPct: finite(row?.portfolioWeightPct),
   }));
 
+  // The ledger array order is the published ranking authority for this signal.
+  // Same-session recalculation may be observed as shadow evidence, but it may not
+  // silently reorder or rewrite an already-issued recommendation.
   const publishedRows = entry.recommendations.map((published, index) => {
     const symbol = ticker(published?.ticker);
     const current = currentByTicker.get(symbol) || {};
     return {
       ...current,
       ticker: symbol,
-      rank: current.rank ?? index + 1,
-      localRank: current.localRank ?? index + 1,
+      rank: index + 1,
+      localRank: index + 1,
       entryLow: finite(published.entryLow),
       entryHigh: finite(published.entryHigh),
       stopLoss: finite(published.stopLoss),
@@ -108,15 +120,18 @@ function main() {
 
   const publishedByTicker = new Map(publishedRows.map(row => [row.ticker, row]));
   if (Array.isArray(snapshot.researchWatchlist)) {
-    snapshot.researchWatchlist = snapshot.researchWatchlist.map(row => {
-      const published = publishedByTicker.get(ticker(row?.ticker));
-      return published ? {
+    const watchByTicker = new Map(snapshot.researchWatchlist.map(row => [ticker(row?.ticker), row]));
+    snapshot.researchWatchlist = publishedRows.map((published, index) => {
+      const row = watchByTicker.get(published.ticker) || {};
+      return {
         ...row,
+        rank: index + 1,
+        ticker: published.ticker,
         entryLow: published.entryLow,
         entryHigh: published.entryHigh,
         stopLoss: published.stopLoss,
         target1: published.target1,
-      } : row;
+      };
     });
   }
 
@@ -163,19 +178,36 @@ function main() {
     marketDataHealth: finalState,
     executionReadiness: snapshot.executionAllowed,
   };
+
+  const plannedAllocationPct = round(publishedRows.reduce((sum, row) => sum + finite(row.portfolioWeightPct, 0), 0));
+  snapshot.portfolioPolicy = {
+    ...(snapshot.portfolioPolicy || {}),
+    plannedAllocationPct,
+    totalAllocationPct: plannedAllocationPct,
+    cashReservePct: round(100 - plannedAllocationPct),
+  };
+
   snapshot.ledgerReconciliation = {
     mode: 'PUBLISHED_SIGNAL_IS_AUTHORITY',
-    reason: 'SAME_TICKER_RECOMPUTE_CHANGED_PRICE_LEVELS_AFTER_IMMUTABLE_ISSUE',
+    reason: 'SAME_TICKER_RECOMPUTE_CHANGED_PUBLISHED_FIELDS_AFTER_IMMUTABLE_ISSUE',
     publishedSignalHash: entry.signalHash,
     shadowRecomputedSignalHash: report.recomputedSignalHash,
     shadowRecomputedPlan,
     recommendationSelectionChanged: false,
     publishedRecommendationSelectionPreserved: true,
+    publishedOrderPreserved: true,
     changesRanking: false,
     changesSelectionTechnique: false,
   };
+  snapshot.stabilityPolicy = {
+    version: '16.9.2-stability-lock-1',
+    canonicalSignalAuthority: 'IMMUTABLE_LEDGER',
+    sameSessionRecomputePolicy: 'SHADOW_ONLY_RESTORE_PUBLISHED_SIGNAL',
+    materialTickerChangePolicy: 'BLOCK_AND_REQUIRE_NEW_VERSION',
+    comparisonCanRewriteCanonicalSignal: false,
+    comparisonCanChangeProfessionalReadiness: false,
+  };
 
-  const plannedAllocationPct = finite(snapshot?.portfolioPolicy?.plannedAllocationPct, 0);
   snapshot.snapshotHash = sha({
     engine: ENGINE_ID,
     state: finalState,
@@ -195,12 +227,14 @@ function main() {
   });
 
   report.reconciled = true;
-  report.reason = 'RESTORED_PUBLISHED_LEDGER_PLAN';
+  report.reason = 'RESTORED_PUBLISHED_LEDGER_PLAN_AND_ORDER';
   report.preservedRecommendationSelection = true;
+  report.preservedPublishedOrder = true;
   report.finalState = finalState;
   report.executionAllowed = snapshot.executionAllowed;
   report.reconciledSnapshotHash = snapshot.snapshotHash;
   report.publishedTickers = publishedRows.map(row => row.ticker);
+  report.plannedAllocationPct = plannedAllocationPct;
 
   writeJsonAtomic(SNAPSHOT_PATH, snapshot);
   writeJsonAtomic(REPORT_PATH, report);
