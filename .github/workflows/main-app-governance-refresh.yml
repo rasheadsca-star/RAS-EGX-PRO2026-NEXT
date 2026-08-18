@@ -14,6 +14,7 @@ on:
       - "data/research/v16-v169-basket-engine.json"
       - "scripts/stable/v16-recommendation-freshness-guard.cjs"
       - "scripts/stable/v16-main-app-governance.cjs"
+      - "scripts/stable/v16-main-app-ledger-reconcile.cjs"
       - "scripts/stable/v16-main-app-consensus.cjs"
       - "scripts/stable/v16-main-app-professional-readiness.cjs"
       - "scripts/stable/v16-main-app-professional-coverage-finalizer.cjs"
@@ -27,10 +28,11 @@ on:
       - "preview-v16/app/stock-analyzer-chart.js"
       - "preview-v16/app/stock-analyzer-decision.js"
       - ".github/workflows/main-app-governance-refresh.yml"
+      - ".github/workflows/main-app-v19v6-consensus-enrich.yml"
       - ".github/workflows/main-app-immutability-guard.yml"
   schedule:
-    # Periodic add-on refresh. Cairo gate below accepts 10:00-21:59 only.
-    # Candidate UTC hours cover Egypt UTC+2 / UTC+3 without hard-coding DST.
+    # One canonical refresh cadence. Other comparison workflows are diagnostic-only.
+    # Cairo gate below accepts 10:00-21:59 only and handles Egypt DST dynamically.
     - cron: "25 7-19 * * 0-4"
 
 permissions:
@@ -59,7 +61,7 @@ jobs:
           HOUR=$(TZ=Africa/Cairo date '+%H')
           RUN=false
           if [ "$DOW" -le 4 ] && [ "$HOUR" -ge 10 ] && [ "$HOUR" -le 21 ]; then RUN=true; fi
-          echo "Cairo governance refresh: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M') run=$RUN"
+          echo "Cairo canonical refresh: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M') run=$RUN"
           echo "run=$RUN" >> "$GITHUB_OUTPUT"
 
       - name: Checkout latest MAIN APP
@@ -75,13 +77,14 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Validate canonical stack
+      - name: Validate canonical stability stack
         if: steps.clock.outputs.run == 'true'
         shell: bash
         run: |
           set -euo pipefail
           node --check scripts/stable/v16-recommendation-freshness-guard.cjs
           node --check scripts/stable/v16-main-app-governance.cjs
+          node --check scripts/stable/v16-main-app-ledger-reconcile.cjs
           node --check scripts/stable/v16-main-app-consensus.cjs
           node --check scripts/stable/v16-main-app-professional-readiness.cjs
           node --check scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
@@ -95,11 +98,17 @@ jobs:
           grep -q "buildMainAppGovernance" scripts/stable/v16-recommendation-freshness-guard.cjs
           grep -q "v16-main-app-professional-readiness.cjs" scripts/stable/v16-recommendation-freshness-guard.cjs
           grep -q "V16_9_EQUAL_WEIGHT_BASKET" scripts/stable/v16-main-app-governance.cjs
+          grep -q "PUBLISHED_SIGNAL_IS_AUTHORITY" scripts/stable/v16-main-app-ledger-reconcile.cjs
+          grep -q "MATERIAL_SELECTION_CHANGE_REQUIRES_NEW_VERSION" scripts/stable/v16-main-app-ledger-reconcile.cjs
+          grep -q "V19_CHAT_GPT_NATIVE_CHALLENGER_V6" scripts/stable/v16-main-app-consensus.cjs
+          grep -q "canonicalConsensusSingleWriter: true" scripts/stable/v16-main-app-consensus.cjs
           grep -q "professionalReadinessScore" scripts/stable/v16-main-app-professional-readiness.cjs
           grep -q "professionalReadinessV2Panel" preview-v16/app/v169-p2.html
           grep -q "v16-main-app-professional-readiness.json" preview-v16/app/v169-p2.html
+          # The former V19 enrichment workflow must remain manual diagnostic-only.
+          ! grep -Eq "^[[:space:]]*(push|schedule|workflow_run):" .github/workflows/main-app-v19v6-consensus-enrich.yml
 
-      - name: Build fail-closed canonical snapshot and immutable ledger
+      - name: Build canonical snapshot with immutable stability lock
         if: steps.clock.outputs.run == 'true'
         id: governance
         shell: bash
@@ -112,8 +121,9 @@ jobs:
           if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then exit "$CODE"; fi
           test -s data/stable/v16-main-app-current.json
           test -s data/stable/v16-main-app-signal-ledger.json
+          test -s data/stable/v16-main-app-ledger-reconcile.json
 
-      - name: Refresh session-bound multi-engine consensus
+      - name: Refresh canonical multi-engine consensus
         if: steps.clock.outputs.run == 'true'
         shell: bash
         run: |
@@ -131,7 +141,7 @@ jobs:
           node scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
           test -s data/stable/v16-main-app-professional-readiness.json
 
-      - name: Build stack status and acceptance
+      - name: Build stack status and stability acceptance
         if: steps.clock.outputs.run == 'true'
         env:
           GOVERNANCE_EXIT: ${{ steps.governance.outputs.exit_code }}
@@ -141,29 +151,37 @@ jobs:
           const fs=require('fs');
           const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
           const snap=read('data/stable/v16-main-app-current.json');
+          const rec=read('data/stable/v16-main-app-ledger-reconcile.json');
           const consensus=read('data/stable/v16-main-app-consensus.json');
           const regression=read('data/stable/v16-main-app-consensus-regression.json');
           const readiness=read('data/stable/v16-main-app-professional-readiness.json');
           const price=read('data/stable/v15-price-truth.json');
+          const v19=(consensus?.engineRegistry?.comparisonEngines||[]).find(e=>e.id==='V19_CHALLENGER');
           const required={
             engine:snap?.governance?.activeEngine==='V16_9_EQUAL_WEIGHT_BASKET',
             canonical:snap.canonicalSnapshot===true,
             failClosed:snap?.governance?.failClosed===true,
-            immutableLedger:snap?.governance?.immutableLedger===true,
+            immutableLedger:snap?.governance?.immutableLedger===true && snap?.immutableSignal?.ledgerConflict!==true,
+            publishedSignalAuthority:snap?.stabilityPolicy?.canonicalSignalAuthority==='IMMUTABLE_LEDGER' || rec?.policy==='PUBLISHED_SIGNAL_IS_AUTHORITY',
+            noSilentSameSessionRewrite:rec?.reason!=='MATERIAL_SELECTION_CHANGE_REQUIRES_NEW_VERSION' || snap.systemState==='BLOCKED',
             state:['HEALTHY','DEGRADED','RESEARCH_ONLY','BLOCKED'].includes(snap.systemState),
             allocationGuard:Number(snap?.portfolioPolicy?.plannedAllocationPct||0)<=50.0001,
             consensusRegression:regression.pass===true,
+            directV19V6:v19?.label==='V19 V6' && v19?.sourceEngineId==='V19_CHAT_GPT_NATIVE_CHALLENGER_V6',
+            consensusSingleWriter:consensus?.policy?.canonicalConsensusSingleWriter===true,
             consensusNoRankingMutation:consensus?.policy?.comparisonCanChangeMainRanking===false,
             consensusNoExecutionGrant:consensus?.policy?.comparisonCanGrantExecution===false,
+            consensusNoCanonicalRewrite:consensus?.policy?.comparisonCanRewriteCanonicalSignal===false,
             exactSessionConsensus:consensus?.policy?.exactSessionAlignmentRequired===true,
             readinessV2Schema:readiness.schemaVersion==='16.9.2-professional-readiness-v2',
             readinessV2Engine:readiness.engine==='V16_9_EQUAL_WEIGHT_BASKET',
+            readinessNotGovernanceCappedBySafeDrift:!(rec?.sameTickerSet===true && rec?.reconciled===true && readiness?.capReason==='ENGINE_OR_GOVERNANCE_HARD_GATE'),
             readinessDoesNotClaimAccuracy:/لا يرفع ترتيب الأسهم/.test(readiness?.interpretation?.accuracyMeaningAr||''),
             professionalCoveragePreserved:price?.professionalCoverage?.complete!==true || Number((readiness.axes||[]).find(a=>a.id==='DATA_SESSION_INTEGRITY')?.scorePct)===100,
           };
           const pass=Object.values(required).every(Boolean);
           const out={
-            schemaVersion:'16.9.2-main-app-canonical-stack-status',
+            schemaVersion:'16.9.2-main-app-stability-lock-status-1',
             generatedAt:new Date().toISOString(),
             status:pass?'PASS':'FAIL',
             governanceExitCode:Number(process.env.GOVERNANCE_EXIT||0),
@@ -174,9 +192,11 @@ jobs:
             recommendationTickers:(snap.recommendations||[]).map(r=>r.ticker),
             sourceSessionEvidenceCoveragePct:snap?.dataTruth?.sourceSessionEvidenceCoveragePct??null,
             plannedAllocationPct:snap?.portfolioPolicy?.plannedAllocationPct??null,
+            ledgerReconcileReason:rec?.reason||null,
             consensusStatus:consensus.status,
+            v19Session:v19?.sessionDate||null,
+            v19SessionAligned:v19?.sessionAligned===true,
             fullyConfirmedCount:consensus?.current?.fullyConfirmedCount||0,
-            externalEngineSession:consensus?.sourceHealth?.v20Session||null,
             professionalReadinessScore:readiness.professionalReadinessScore,
             foundationQualityScore:readiness.foundationQualityScore,
             professionalClaimAllowed:readiness.professionalClaimAllowed===true,
@@ -189,7 +209,7 @@ jobs:
           if(!pass)process.exit(1);
           NODE
 
-      - name: Commit canonical MAIN APP governance state
+      - name: Commit canonical MAIN APP state
         if: steps.clock.outputs.run == 'true'
         shell: bash
         run: |
@@ -199,19 +219,20 @@ jobs:
           git add \
             data/stable/v16-main-app-current.json \
             data/stable/v16-main-app-signal-ledger.json \
+            data/stable/v16-main-app-ledger-reconcile.json \
             data/stable/v16-main-app-consensus.json \
             data/stable/v16-main-app-consensus-regression.json \
             data/stable/v16-main-app-professional-readiness.json \
             data/stable/v16-main-app-stack-status.json
           if ! git diff --cached --quiet; then
-            git commit -m "Refresh MAIN APP canonical governance, consensus and readiness V2"
+            git commit -m "Refresh stable MAIN APP canonical state"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
               sleep $((attempt * 8))
             done
           else
-            echo "Canonical MAIN APP governance already current."
+            echo "Canonical MAIN APP state already current."
           fi
 
       - name: Dispatch stable Pages deployment for latest main
@@ -223,7 +244,7 @@ jobs:
           set -euo pipefail
           for attempt in 1 2 3; do
             if gh workflow run static.yml --repo "$GITHUB_REPOSITORY" --ref main; then
-              echo "Pages deployment dispatched for latest main."
+              echo "Pages deployment dispatched for latest stable canonical state."
               exit 0
             fi
             [ "$attempt" = "3" ] && exit 1
