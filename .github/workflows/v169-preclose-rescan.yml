@@ -1,0 +1,156 @@
+name: V16.9.2 Pre-Close Rescan Orchestrator
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 14:15 Africa/Cairo across Egypt UTC+2 / UTC+3 seasons.
+    # The Cairo clock gate below ignores the non-matching candidate run.
+    - cron: "15 11,12 * * 0-4"
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: egx-v1692-preclose-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  preclose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Resolve Cairo T-15 gate
+        id: clock
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual pre-close rescan requested."
+            exit 0
+          fi
+          DOW=$(TZ=Africa/Cairo date '+%w')
+          LOCAL_TIME=$(TZ=Africa/Cairo date '+%H:%M')
+          RUN=false
+          if [ "$DOW" -le 4 ] && [ "$LOCAL_TIME" = "14:15" ]; then RUN=true; fi
+          echo "Cairo pre-close gate: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M:%S %Z') run=$RUN"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch the existing full-market engine
+        if: steps.clock.outputs.run == 'true'
+        id: scan_dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+          echo "started_at=$STARTED_AT" >> "$GITHUB_OUTPUT"
+          gh workflow run mobile-hotfix-deploy.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Dispatched the existing immediate market scan without changing its selection logic."
+
+      - name: Wait for the dispatched market scan
+        if: steps.clock.outputs.run == 'true'
+        id: scan_wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED_AT: ${{ steps.scan_dispatch.outputs.started_at }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID=""
+          for attempt in $(seq 1 24); do
+            RUN_ID=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow mobile-hotfix-deploy.yml \
+              --event workflow_dispatch \
+              --limit 20 \
+              --json databaseId,createdAt,status \
+              --jq ".[] | select(.createdAt >= \"$STARTED_AT\") | .databaseId" | head -n 1)
+            [ -n "$RUN_ID" ] && break
+            sleep 5
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "Could not resolve the dispatched market-scan run." >&2
+            exit 1
+          fi
+          echo "scan_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
+
+      - name: Wait for the existing frozen V16.9 basket publication
+        if: steps.clock.outputs.run == 'true'
+        id: basket_wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED_AT: ${{ steps.scan_dispatch.outputs.started_at }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID=""
+          for attempt in $(seq 1 36); do
+            RUN_ID=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow v16-v169-basket-engine.yml \
+              --event workflow_run \
+              --limit 20 \
+              --json databaseId,createdAt,status \
+              --jq ".[] | select(.createdAt >= \"$STARTED_AT\") | .databaseId" | head -n 1)
+            [ -n "$RUN_ID" ] && break
+            sleep 5
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "Could not resolve the frozen V16.9 basket workflow triggered by the market scan." >&2
+            exit 1
+          fi
+          echo "basket_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
+
+      - name: Refresh canonical MAIN APP snapshot after frozen publication
+        if: steps.clock.outputs.run == 'true'
+        id: governance_dispatch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+          echo "started_at=$STARTED_AT" >> "$GITHUB_OUTPUT"
+          gh workflow run main-app-governance-refresh.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Dispatched canonical MAIN APP governance rebuild after the frozen V16.9 publisher completed."
+
+      - name: Wait for canonical snapshot publication
+        if: steps.clock.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED_AT: ${{ steps.governance_dispatch.outputs.started_at }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID=""
+          for attempt in $(seq 1 24); do
+            RUN_ID=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow main-app-governance-refresh.yml \
+              --event workflow_dispatch \
+              --limit 20 \
+              --json databaseId,createdAt,status \
+              --jq ".[] | select(.createdAt >= \"$STARTED_AT\") | .databaseId" | head -n 1)
+            [ -n "$RUN_ID" ] && break
+            sleep 5
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "Could not resolve the canonical-governance run." >&2
+            exit 1
+          fi
+          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
+
+      - name: Confirm orchestration contract
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          echo "Pre-close contract completed:"
+          echo "1) Existing full-market scan executed unchanged."
+          echo "2) Existing frozen V16.9 basket publisher completed unchanged."
+          echo "3) Existing canonical MAIN APP governance rebuilt unchanged."
+          echo "4) No recommendation scoring, ranking, weights, or risk gates were modified by this workflow."
