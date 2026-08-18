@@ -11,17 +11,17 @@ const DECISION_PATH = P('data/stable/v16-v169-primary-decision.json');
 const V17_PATH = P('data/v17/current.json');
 const OUTPUT_PATH = P('data/stable/v16-main-app-consensus.json');
 const REGRESSION_PATH = P('data/stable/v16-main-app-consensus-regression.json');
+const V19_ENGINE_ID = 'V19_CHAT_GPT_NATIVE_CHALLENGER_V6';
 
 const EXTERNAL_SOURCES = {
+  v19V6: [
+    'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/native-challenger-v6.json',
+    'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v19-egx-chat-gpt/data/v19/native-challenger-v6.json',
+  ],
   v20: [
     'https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/native-current.json',
     'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX0.1/main/data/v20/native-current.json',
     'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX0.1@main/data/v20/native-current.json',
-  ],
-  familyConsensus: [
-    'https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/multi-engine-consensus.json',
-    'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX0.1/main/data/v20/multi-engine-consensus.json',
-    'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX0.1@main/data/v20/multi-engine-consensus.json',
   ],
   quantEdge: [
     'https://quant-edge-shadow.vercel.app/api/run',
@@ -40,7 +40,7 @@ function writeJsonAtomic(file, value) {
   fs.renameSync(tmp, file);
 }
 function ticker(value) { return String(value || '').trim().toUpperCase(); }
-function unique(values) { return [...new Set(values.filter(Boolean))]; }
+function unique(values) { return [...new Set((values || []).filter(Boolean))]; }
 function setOfRows(rows) { return new Set(unique((Array.isArray(rows) ? rows : []).map(row => ticker(row?.ticker || row)))); }
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -53,7 +53,7 @@ async function fetchJson(url, attempt = 1) {
       cache: 'no-store',
       signal: controller.signal,
       headers: {
-        'User-Agent': 'EGX-MAIN-APP-V16.9.2-all-engine-comparison',
+        'User-Agent': 'EGX-MAIN-APP-V16.9.2-stable-consensus',
         'Cache-Control': 'no-cache',
         'Accept': 'application/json,text/plain;q=0.9,*/*;q=0.8',
       },
@@ -84,7 +84,17 @@ async function fetchFirstValid(label, urls) {
   return { data: null, sourceUrl: null, attempts: 0, errors };
 }
 
-function engineState({ id, label, role, family, sessionDate, mainSession, selectedSet, sourceStatus, blocked = false, sourceUrl = null }) {
+function v19SelectedTickers(v19) {
+  const current = v19?.current || {};
+  const explicit = Array.isArray(current.selectedTickers) ? current.selectedTickers.map(ticker) : [];
+  if (explicit.length) return unique(explicit);
+  const candidates = Array.isArray(current.candidates) ? current.candidates : [];
+  return unique(candidates
+    .filter(row => row?.selectedByV6 === true || Number(row?.effectivePortfolioWeightPct || row?.baseBasketWeightPct || 0) > 0)
+    .map(row => ticker(row?.ticker)));
+}
+
+function engineState({ id, label, role, family, sessionDate, mainSession, selectedSet, sourceStatus, blocked = false, sourceUrl = null, sourceEngineId = null }) {
   const hasSession = Boolean(sessionDate);
   const sessionAligned = Boolean(mainSession && hasSession && sessionDate === mainSession && !blocked);
   return {
@@ -97,6 +107,7 @@ function engineState({ id, label, role, family, sessionDate, mainSession, select
     sourceStatus: sourceStatus || (hasSession ? 'AVAILABLE' : 'UNAVAILABLE'),
     blocked: Boolean(blocked),
     sourceUrl,
+    sourceEngineId,
     selectedTickers: sessionAligned ? [...selectedSet] : [],
   };
 }
@@ -119,6 +130,7 @@ function comparisonForTicker(engine, symbol) {
     selected,
     agreementStatus,
     sourceStatus: engine.sourceStatus,
+    ...(engine.sourceEngineId ? { sourceEngineId: engine.sourceEngineId } : {}),
   };
 }
 
@@ -135,22 +147,24 @@ async function main() {
       : [];
   const mainTickers = unique(mainRows.map(row => ticker(row.ticker)));
 
-  const [v20Result, familyResult, quantResult] = await Promise.all([
+  const [v19Result, v20Result, quantResult] = await Promise.all([
+    fetchFirstValid('V19_V6', EXTERNAL_SOURCES.v19V6),
     fetchFirstValid('V20', EXTERNAL_SOURCES.v20),
-    fetchFirstValid('FAMILY', EXTERNAL_SOURCES.familyConsensus),
     fetchFirstValid('QUANT', EXTERNAL_SOURCES.quantEdge),
   ]);
 
+  const v19 = v19Result.data;
   const v20 = v20Result.data;
-  const familyConsensus = familyResult.data;
   const quant = quantResult.data;
-  const sourceErrors = [...v20Result.errors, ...familyResult.errors, ...quantResult.errors];
+  const sourceErrors = [...v19Result.errors, ...v20Result.errors, ...quantResult.errors];
 
   const v17Session = v17?.sessionDate || v17?.marketSession || v17?.dataTruth?.marketSession || null;
   const v17Set = setOfRows(v17?.recommendations);
 
-  const v19Session = familyConsensus?.sessionDate || null;
-  const v19Set = new Set(unique(Array.isArray(familyConsensus?.current?.v19Selected) ? familyConsensus.current.v19Selected.map(ticker) : []));
+  const v19EngineValid = v19?.engineId === V19_ENGINE_ID;
+  if (v19 && !v19EngineValid) sourceErrors.push(`V19_V6:ENGINE_ID_MISMATCH:${v19?.engineId || 'missing'}`);
+  const v19Session = v19EngineValid ? (v19?.current?.signalDate || v19?.signalDate || null) : null;
+  const v19Set = new Set(v19EngineValid ? v19SelectedTickers(v19) : []);
 
   const v20Session = v20?.sessionDate || null;
   const v20Set = setOfRows(v20?.publishedCandidates);
@@ -174,14 +188,16 @@ async function main() {
     }),
     engineState({
       id: 'V19_CHALLENGER',
-      label: 'V19 Challenger',
+      label: 'V19 V6',
       role: 'RELATED_CHALLENGER',
       family: 'TOP10_PROBABILITY_RELATED',
       sessionDate: v19Session,
       mainSession: sessionDate,
       selectedSet: v19Set,
-      sourceStatus: familyConsensus?.status || 'UNAVAILABLE',
-      sourceUrl: familyResult.sourceUrl,
+      sourceStatus: v19EngineValid ? (v19?.status || 'AVAILABLE') : 'UNAVAILABLE',
+      sourceUrl: v19Result.sourceUrl,
+      sourceEngineId: V19_ENGINE_ID,
+      blocked: !v19EngineValid && Boolean(v19),
     }),
     engineState({
       id: 'V20_NATIVE',
@@ -212,9 +228,8 @@ async function main() {
   const alignedOtherEngineCount = comparisonEngines.filter(engine => engine.sessionAligned).length;
   const pendingOtherEngineCount = totalOtherEngineCount - alignedOtherEngineCount;
 
-  // Independent confidence is separate from the raw agreement count. V19 and
-  // V17 are deliberately excluded from the independent score because they are
-  // method-related to MAIN APP. V20 and QUANT EDGE are method-independent.
+  // Independent confidence is deliberately separate from raw agreement. V17 and
+  // V19 V6 are method-related corroborators; V20 and QUANT EDGE are independent.
   const independentExternalIds = new Set(['V20_NATIVE', 'QUANT_EDGE']);
   const independentEngineCount = 3; // MAIN APP + V20 Native + QUANT EDGE.
 
@@ -295,7 +310,7 @@ async function main() {
       historicalPerformanceUsedInScore: false,
       changesMainAppRanking: false,
       changesExecutionPermission: false,
-      rawAgreementDefinition: 'Count same-ticker selections across V17, V19, V20 and QUANT EDGE only when each engine is on the exact MAIN APP session.',
+      rawAgreementDefinition: 'Count same-ticker selections across V17, V19 V6, V20 and QUANT EDGE only when each engine is on the exact MAIN APP session.',
     },
     engineRegistry: {
       primary: {
@@ -314,6 +329,7 @@ async function main() {
         sessionAligned: engine.sessionAligned,
         sourceStatus: engine.sourceStatus,
         blocked: engine.blocked,
+        ...(engine.sourceEngineId ? { sourceEngineId: engine.sourceEngineId } : {}),
       })),
       activeIndependent: [
         { id: 'V16_9_EQUAL_WEIGHT_BASKET', label: 'MAIN APP · V16.9.2', sessionDate, voteEligible: true },
@@ -322,7 +338,7 @@ async function main() {
       ],
       relatedCorroborators: [
         { id: 'V17_VALIDATION', label: 'V17', sessionDate: v17Session, sessionAligned: comparisonEngines[0].sessionAligned, voteEligible: false },
-        { id: 'V19_CHALLENGER', label: 'V19 Challenger', sessionDate: v19Session, sessionAligned: comparisonEngines[1].sessionAligned, voteEligible: false },
+        { id: 'V19_CHALLENGER', label: 'V19 V6', sessionDate: v19Session, sessionAligned: comparisonEngines[1].sessionAligned, voteEligible: false, sourceEngineId: V19_ENGINE_ID },
       ],
       rule: 'Raw agreement displays every monitored recommendation engine. Independent confirmation counts only materially different alpha-generation methods and requires exact session alignment.',
     },
@@ -332,6 +348,9 @@ async function main() {
       v17SessionAligned: comparisonEngines[0].sessionAligned,
       v19Session,
       v19SessionAligned: comparisonEngines[1].sessionAligned,
+      v19Source: v19Result.sourceUrl,
+      v19V6EngineId: V19_ENGINE_ID,
+      v19V6GeneratedAt: v19?.generatedAt || null,
       v20Session,
       v20SessionAligned: comparisonEngines[2].sessionAligned,
       quantSession,
@@ -340,10 +359,9 @@ async function main() {
       quantBlocked: comparisonEngines[3].blocked,
       quantBlockReason: quant?.blockReason || null,
       v20Source: v20Result.sourceUrl,
-      familyConsensusSource: familyResult.sourceUrl,
       quantSource: quantResult.sourceUrl,
       sourceErrors,
-      resilientSourcePolicy: 'GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_PLUS_VERCEL_QUANT_WITH_RETRY',
+      resilientSourcePolicy: 'DIRECT_V19_V6_RAW_OR_JSDELIVR_PLUS_V20_PAGES_RAW_CDN_PLUS_VERCEL_QUANT_WITH_RETRY',
     },
     current: {
       mainAppBasket: mainTickers,
@@ -359,18 +377,22 @@ async function main() {
         sessionAligned: engine.sessionAligned,
         blocked: engine.blocked,
         sourceStatus: engine.sourceStatus,
+        ...(engine.sourceEngineId ? { sourceEngineId: engine.sourceEngineId } : {}),
       })),
       mainAppAnnotations: annotations,
     },
     policy: {
       comparisonCanChangeMainRanking: false,
       comparisonCanGrantExecution: false,
+      comparisonCanRewriteCanonicalSignal: false,
+      comparisonCanChangeProfessionalReadiness: false,
       staleExternalVotesCount: false,
       exactSessionAlignmentRequired: true,
       failClosedOnMissingExternalData: true,
       rawAgreementIncludesRelatedEngines: true,
       independentConfirmationExcludesRelatedEngines: true,
       allOtherEnginesShownInUi: true,
+      canonicalConsensusSingleWriter: true,
     },
   };
 
@@ -385,18 +407,23 @@ async function main() {
       && annotations.every(row => row.agreementCount <= row.alignedEngineCount && row.alignedEngineCount <= row.otherEngineCount)
       && annotations.every(row => row.independentVotes >= 1 && row.independentVotes <= independentEngineCount)
       && annotations.every(row => row.engineComparisons.filter(engine => !engine.sessionAligned).every(engine => engine.selected === null))
+      && comparisonEngines.filter(engine => engine.id === 'V19_CHALLENGER').length === 1
+      && comparisonEngines.find(engine => engine.id === 'V19_CHALLENGER')?.label === 'V19 V6'
     ),
     checks: {
       mainBasketCovered: annotations.length === mainTickers.length,
       allComparisonEnginesRegistered: comparisonEngines.length === 4,
       v17Visible: comparisonEngines.some(engine => engine.id === 'V17_VALIDATION'),
       v19Visible: comparisonEngines.some(engine => engine.id === 'V19_CHALLENGER'),
+      v19V6DirectSource: comparisonEngines.some(engine => engine.id === 'V19_CHALLENGER' && engine.sourceEngineId === V19_ENGINE_ID),
+      singleV19Entry: comparisonEngines.filter(engine => engine.id === 'V19_CHALLENGER').length === 1,
       v20Visible: comparisonEngines.some(engine => engine.id === 'V20_NATIVE'),
       quantEdgeVisible: comparisonEngines.some(engine => engine.id === 'QUANT_EDGE'),
       staleExternalVotesSuppressed: annotations.every(row => row.engineComparisons.filter(engine => !engine.sessionAligned).every(engine => engine.selected === null)),
       rawAgreementBounded: annotations.every(row => row.agreementCount <= row.alignedEngineCount),
       rankingMutationDisabled: output.policy.comparisonCanChangeMainRanking === false,
       executionMutationDisabled: output.policy.comparisonCanGrantExecution === false,
+      canonicalRewriteDisabled: output.policy.comparisonCanRewriteCanonicalSignal === false,
     },
   };
 
@@ -409,6 +436,7 @@ async function main() {
     otherEngineCount: totalOtherEngineCount,
     alignedOtherEngineCount,
     sessions: Object.fromEntries(comparisonEngines.map(engine => [engine.id, engine.sessionDate])),
+    v19V6Selected: [...v19Set],
     anyAgreementCount,
     fullyConfirmedCount,
     quantBlocked: comparisonEngines[3].blocked,
