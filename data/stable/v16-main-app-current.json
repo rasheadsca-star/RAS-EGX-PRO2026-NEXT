@@ -83,10 +83,10 @@
       "portfolioWeightPct": 16.6667,
       "cashIfNotTriggered": true,
       "close": 1.42,
-      "entryLow": 1.4118,
-      "entryHigh": 1.4282,
-      "stopLoss": 1.3277,
-      "target1": 1.5431,
+      "entryLow": 1.4109,
+      "entryHigh": 1.4291,
+      "stopLoss": 1.3174,
+      "target1": 1.5568,
       "holdingSessions": 1,
       "estimatedTop10ProbabilityPct": 12.1,
       "rsi14": 94.6,
@@ -116,10 +116,10 @@
       "portfolioWeightPct": 16.6667,
       "cashIfNotTriggered": true,
       "close": 16.02,
-      "entryLow": 15.9453,
-      "entryHigh": 16.0947,
-      "stopLoss": 15.1798,
-      "target1": 17.1403,
+      "entryLow": 15.9308,
+      "entryHigh": 16.1092,
+      "stopLoss": 15.0165,
+      "target1": 17.358,
       "holdingSessions": 1,
       "estimatedTop10ProbabilityPct": 11.9,
       "rsi14": 85.2,
@@ -336,10 +336,10 @@
       "companyNameAr": "لوتس للتنمية والاستثمار الزراعي",
       "weightPct": 33.33,
       "close": 1.42,
-      "entryLow": 1.4118,
-      "entryHigh": 1.4282,
-      "stopLoss": 1.3277,
-      "target1": 1.5431,
+      "entryLow": 1.4109,
+      "entryHigh": 1.4291,
+      "stopLoss": 1.3174,
+      "target1": 1.5568,
       "probabilityTop10Pct": 12.1,
       "rsi14": 94.6,
       "volumeRatio20": 1.65,
@@ -356,10 +356,10 @@
       "companyNameAr": "الملتقى العربي للاستثمارات",
       "weightPct": 33.33,
       "close": 16.02,
-      "entryLow": 15.9453,
-      "entryHigh": 16.0947,
-      "stopLoss": 15.1798,
-      "target1": 17.1403,
+      "entryLow": 15.9308,
+      "entryHigh": 16.1092,
+      "stopLoss": 15.0165,
+      "target1": 17.358,
       "probabilityTop10Pct": 11.9,
       "rsi14": 85.2,
       "volumeRatio20": 5.72,
@@ -394,11 +394,11 @@
   "primaryDecisionSource": "V16_9_ISOLATED_FILE_SESSION_BOUND",
   "canonicalSnapshot": true,
   "snapshotGeneratedAt": "2026-08-18T17:50:38.483Z",
-  "systemState": "BLOCKED",
-  "state": "BLOCKED",
-  "executionAllowed": false,
+  "systemState": "DEGRADED",
+  "state": "DEGRADED",
+  "executionAllowed": true,
   "researchReady": true,
-  "executionReady": false,
+  "executionReady": true,
   "governance": {
     "engineLocked": true,
     "activeEngine": "V16_9_EQUAL_WEIGHT_BASKET",
@@ -411,11 +411,10 @@
     "sessionAligned": true,
     "sourceSessionReady": true,
     "allocationGuardPassed": true,
-    "criticalErrors": [
-      "IMMUTABLE_LEDGER_CONFLICT:2026-08-18:V16_9_EQUAL_WEIGHT_BASKET"
-    ],
+    "criticalErrors": [],
     "warnings": [
-      "EQUAL_WEIGHT_ROUNDING_NORMALIZED"
+      "EQUAL_WEIGHT_ROUNDING_NORMALIZED",
+      "IMMUTABLE_LEDGER_RECONCILED_TO_PUBLISHED_SIGNAL"
     ]
   },
   "dataTruth": {
@@ -441,9 +440,9 @@
     "priceTruthAgeMinutes": 78.8
   },
   "readiness": {
-    "marketDataHealth": "BLOCKED",
+    "marketDataHealth": "DEGRADED",
     "researchReadiness": true,
-    "executionReadiness": false,
+    "executionReadiness": true,
     "modelConfidenceSeparatedFromExecution": true
   },
   "portfolioPolicy": {
@@ -506,9 +505,12 @@
   },
   "immutableSignal": {
     "signalId": "2026-08-18:V16_9_EQUAL_WEIGHT_BASKET",
-    "signalHash": "32fce0878b20c97170a73d59824b145f70cbd083d13a72030b237ffa22c9ba97",
-    "ledgerConflict": true,
-    "ledgerEntries": 2
+    "signalHash": "24b8305294bc5054f4c978b253c5a01285295610b48c55554070554fba94c416",
+    "ledgerConflict": false,
+    "ledgerEntries": 2,
+    "reconciledToPublishedLedger": true,
+    "reconciledAt": "2026-08-18T19:01:20.460Z",
+    "shadowRecomputedSignalHash": "32fce0878b20c97170a73d59824b145f70cbd083d13a72030b237ffa22c9ba97"
   },
   "scanCycle": {
     "latestStatusAt": "2026-08-18T16:32:03.648Z",
@@ -522,5 +524,41 @@
     "postCloseHourlyFrom": "15:00",
     "postCloseHourlyUntil": "21:00"
   },
-  "snapshotHash": "bac1b9e12fe62669ac471627ccfdfa036bbe0a7134a7671472056aadc65a1cc0"
+  "snapshotHash": "36ec3946f00b47b7582c63b9fe0bea481a479fffaeef803e655ceaa4a6a7895f",
+  "ledgerReconciliation": {
+    "mode": "PUBLISHED_SIGNAL_IS_AUTHORITY",
+    "reason": "SAME_TICKER_RECOMPUTE_CHANGED_PRICE_LEVELS_AFTER_IMMUTABLE_ISSUE",
+    "publishedSignalHash": "24b8305294bc5054f4c978b253c5a01285295610b48c55554070554fba94c416",
+    "shadowRecomputedSignalHash": "32fce0878b20c97170a73d59824b145f70cbd083d13a72030b237ffa22c9ba97",
+    "shadowRecomputedPlan": [
+      {
+        "ticker": "LUTS",
+        "entryLow": 1.4118,
+        "entryHigh": 1.4282,
+        "stopLoss": 1.3277,
+        "target1": 1.5431,
+        "portfolioWeightPct": 16.6667
+      },
+      {
+        "ticker": "AMIA",
+        "entryLow": 15.9453,
+        "entryHigh": 16.0947,
+        "stopLoss": 15.1798,
+        "target1": 17.1403,
+        "portfolioWeightPct": 16.6667
+      },
+      {
+        "ticker": "COPR",
+        "entryLow": 0.5183,
+        "entryHigh": 0.5217,
+        "stopLoss": 0.501,
+        "target1": 0.5454,
+        "portfolioWeightPct": 16.6666
+      }
+    ],
+    "recommendationSelectionChanged": false,
+    "publishedRecommendationSelectionPreserved": true,
+    "changesRanking": false,
+    "changesSelectionTechnique": false
+  }
 }
