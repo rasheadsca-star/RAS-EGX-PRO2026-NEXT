@@ -12,10 +12,12 @@ on:
       - "data/v17/current.json"
       - "data/stable/v16-v169-live-evaluation.json"
       - "data/research/v16-v169-basket-engine.json"
+      - "data/research/v16-v169-target-hit-audit.json"
       - "scripts/stable/v16-recommendation-freshness-guard.cjs"
       - "scripts/stable/v16-main-app-governance.cjs"
       - "scripts/stable/v16-main-app-ledger-reconcile.cjs"
       - "scripts/stable/v16-main-app-consensus.cjs"
+      - "scripts/stable/v16-main-app-engine-performance.cjs"
       - "scripts/stable/v16-main-app-professional-readiness.cjs"
       - "scripts/stable/v16-main-app-professional-coverage-finalizer.cjs"
       - "scripts/stable/v16-publish-v169-basket.cjs"
@@ -86,6 +88,7 @@ jobs:
           node --check scripts/stable/v16-main-app-governance.cjs
           node --check scripts/stable/v16-main-app-ledger-reconcile.cjs
           node --check scripts/stable/v16-main-app-consensus.cjs
+          node --check scripts/stable/v16-main-app-engine-performance.cjs
           node --check scripts/stable/v16-main-app-professional-readiness.cjs
           node --check scripts/stable/v16-main-app-professional-coverage-finalizer.cjs
           node --check preview-v16/app/decision-source.js
@@ -102,9 +105,13 @@ jobs:
           grep -q "MATERIAL_SELECTION_CHANGE_REQUIRES_NEW_VERSION" scripts/stable/v16-main-app-ledger-reconcile.cjs
           grep -q "V19_CHAT_GPT_NATIVE_CHALLENGER_V6" scripts/stable/v16-main-app-consensus.cjs
           grep -q "canonicalConsensusSingleWriter: true" scripts/stable/v16-main-app-consensus.cjs
+          grep -q "diagnosticOnly:true" scripts/stable/v16-main-app-engine-performance.cjs
+          grep -q "changesMainAppRanking:false" scripts/stable/v16-main-app-engine-performance.cjs
+          grep -q "usedInProfessionalReadinessScore:false" scripts/stable/v16-main-app-engine-performance.cjs
           grep -q "professionalReadinessScore" scripts/stable/v16-main-app-professional-readiness.cjs
           grep -q "professionalReadinessV2Panel" preview-v16/app/v169-p2.html
           grep -q "v16-main-app-professional-readiness.json" preview-v16/app/v169-p2.html
+          grep -q "v16-main-app-engine-performance.json" preview-v16/app/main-app-consensus-overlay.js
           # The former V19 enrichment workflow must remain manual diagnostic-only.
           ! grep -Eq "^[[:space:]]*(push|schedule|workflow_run):" .github/workflows/main-app-v19v6-consensus-enrich.yml
 
@@ -132,6 +139,23 @@ jobs:
           test -s data/stable/v16-main-app-consensus.json
           test -s data/stable/v16-main-app-consensus-regression.json
 
+      - name: Build canonical engine target stop performance audit
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/stable/v16-main-app-engine-performance.cjs
+          test -s data/stable/v16-main-app-engine-performance.json
+          node - <<'NODE'
+          const p=require('./data/stable/v16-main-app-engine-performance.json');
+          if(p.schemaVersion!=='16.9.2-engine-performance-comparison-1')throw Error('Engine performance schema mismatch');
+          if(p.diagnosticOnly!==true||p.changesMainAppRanking!==false||p.changesExecutionPermission!==false||p.changesWeights!==false||p.changesRiskGates!==false||p.usedInProfessionalReadinessScore!==false)throw Error('Engine performance isolation contract failed');
+          const main=p.rows.find(r=>r.id==='MAIN_APP_V16_9');
+          const v19=p.rows.find(r=>r.id==='V19_V6');
+          if(!main?.evidenceComparable)throw Error('MAIN APP performance evidence missing');
+          if(!v19)throw Error('V19 V6 performance row missing');
+          NODE
+
       - name: Build Professional Readiness V2
         if: steps.clock.outputs.run == 'true'
         shell: bash
@@ -154,9 +178,11 @@ jobs:
           const rec=read('data/stable/v16-main-app-ledger-reconcile.json');
           const consensus=read('data/stable/v16-main-app-consensus.json');
           const regression=read('data/stable/v16-main-app-consensus-regression.json');
+          const performance=read('data/stable/v16-main-app-engine-performance.json');
           const readiness=read('data/stable/v16-main-app-professional-readiness.json');
           const price=read('data/stable/v15-price-truth.json');
           const v19=(consensus?.engineRegistry?.comparisonEngines||[]).find(e=>e.id==='V19_CHALLENGER');
+          const v19Perf=(performance?.rows||[]).find(e=>e.id==='V19_V6');
           const required={
             engine:snap?.governance?.activeEngine==='V16_9_EQUAL_WEIGHT_BASKET',
             canonical:snap.canonicalSnapshot===true,
@@ -173,6 +199,14 @@ jobs:
             consensusNoExecutionGrant:consensus?.policy?.comparisonCanGrantExecution===false,
             consensusNoCanonicalRewrite:consensus?.policy?.comparisonCanRewriteCanonicalSignal===false,
             exactSessionConsensus:consensus?.policy?.exactSessionAlignmentRequired===true,
+            performanceSchema:performance?.schemaVersion==='16.9.2-engine-performance-comparison-1',
+            performanceDiagnosticOnly:performance?.diagnosticOnly===true,
+            performanceNoRankingMutation:performance?.changesMainAppRanking===false,
+            performanceNoExecutionMutation:performance?.changesExecutionPermission===false,
+            performanceNoWeightMutation:performance?.changesWeights===false,
+            performanceNoRiskGateMutation:performance?.changesRiskGates===false,
+            performanceExcludedFromReadiness:performance?.usedInProfessionalReadinessScore===false,
+            performanceHasV19Row:!!v19Perf,
             readinessV2Schema:readiness.schemaVersion==='16.9.2-professional-readiness-v2',
             readinessV2Engine:readiness.engine==='V16_9_EQUAL_WEIGHT_BASKET',
             readinessNotGovernanceCappedBySafeDrift:!(rec?.sameTickerSet===true && rec?.reconciled===true && readiness?.capReason==='ENGINE_OR_GOVERNANCE_HARD_GATE'),
@@ -197,6 +231,8 @@ jobs:
             v19Session:v19?.sessionDate||null,
             v19SessionAligned:v19?.sessionAligned===true,
             fullyConfirmedCount:consensus?.current?.fullyConfirmedCount||0,
+            enginePerformanceComparableCount:performance?.comparableEngineCount||0,
+            v19PerformanceAuditAvailable:v19Perf?.evidenceComparable===true,
             professionalReadinessScore:readiness.professionalReadinessScore,
             foundationQualityScore:readiness.foundationQualityScore,
             professionalClaimAllowed:readiness.professionalClaimAllowed===true,
@@ -222,6 +258,7 @@ jobs:
             data/stable/v16-main-app-ledger-reconcile.json \
             data/stable/v16-main-app-consensus.json \
             data/stable/v16-main-app-consensus-regression.json \
+            data/stable/v16-main-app-engine-performance.json \
             data/stable/v16-main-app-professional-readiness.json \
             data/stable/v16-main-app-stack-status.json
           if ! git diff --cached --quiet; then
