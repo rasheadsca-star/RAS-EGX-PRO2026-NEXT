@@ -1,0 +1,169 @@
+name: V20 Live Freshness Refresh
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/v20-live-freshness-refresh.yml"
+  schedule:
+    - cron: "10 12,13 * * 0-4"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v20-live-freshness-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Cairo session gate
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          HOUR="$(TZ=Africa/Cairo date +%H)"
+          DOW="$(TZ=Africa/Cairo date +%u)"
+          if [ "$HOUR" = "15" ] && [ "$DOW" -ge 1 ] && [ "$DOW" -le 5 ]; then
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout isolated V20 branch
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: develop/v20-integrated-decision-platform
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        if: steps.gate.outputs.proceed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Sync latest completed market session from V17
+        if: steps.gate.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin develop/v17-rebuild --depth=1
+          git checkout origin/develop/v17-rebuild -- \
+            data/market.json \
+            data/history.json \
+            data/final-opportunity-ranking.json \
+            data/v17
+          node - <<'NODE'
+          const fs=require('fs');
+          const v17=JSON.parse(fs.readFileSync('data/v17/current.json','utf8'));
+          const s=v17.sessionDate||v17.marketSession||v17.sourceMarketSession;
+          if(!s) throw new Error('V17 latest completed session is unavailable');
+          console.log(`Synced V17 market truth session ${s}`);
+          NODE
+
+      - name: Rebuild V20 canonical market evidence
+        if: steps.gate.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/v20/build-data-truth.cjs
+          node scripts/v20/data-quality-regression.cjs
+          node scripts/v20/build-market-regime.cjs
+          node scripts/v20/market-regime-regression.cjs
+          node scripts/v20/build-integrated-decision-snapshot.cjs
+          node scripts/v20/enrich-risk-reward.cjs
+          node scripts/v20/validate-trade-plans.cjs
+          node scripts/v20/build-trusted-technical-history.cjs
+          node scripts/v20/technical-history-regression.cjs
+          node scripts/v20/build-stock-profiles.cjs
+          node scripts/v20/build-market-explorer.cjs
+          node scripts/v20/market-explorer-regression.cjs
+
+      - name: Rebuild frozen V20 Native ranking for latest session
+        if: steps.gate.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/v20/build-full-market-native-technical.cjs
+          node scripts/v20/build-full-market-native-selection.cjs
+          node scripts/v20/build-native-explainability-v1.cjs
+          node scripts/v20/finalize-native-ranking-v1.cjs
+          node scripts/v20/build-native-current.cjs
+          node scripts/v20/native-current-regression.cjs
+
+      - name: Enforce V20 freshness lock
+        if: steps.gate.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
+          const v17=read('data/v17/current.json');
+          const core=read('data/v20/current.json');
+          const native=read('data/v20/native-current.json');
+          const selection=read('data/v20/full-market-native-selection.json');
+          const regression=read('data/v20/native-current-regression.json');
+          const sourceSession=v17.sessionDate||v17.marketSession||v17.sourceMarketSession;
+          const sessions={sourceSession,coreSession:core.sessionDate,nativeSession:native.sessionDate,selectionSession:selection.sessionDate};
+          if(!sourceSession) throw new Error('Missing source market session');
+          if(core.sessionDate!==sourceSession) throw new Error(`V20 core stale: ${core.sessionDate} != ${sourceSession}`);
+          if(native.sessionDate!==sourceSession) throw new Error(`V20 Native stale: ${native.sessionDate} != ${sourceSession}`);
+          if(selection.sessionDate!==sourceSession) throw new Error(`V20 selection stale: ${selection.sessionDate} != ${sourceSession}`);
+          if(native.engineId!=='V20_FULL_MARKET_NATIVE_SELECTION_V1') throw new Error('V20 engine identity drift');
+          if(native.executionPermission!==false||native.productionAllocation!==false||native.automaticPromotion!==false) throw new Error('Freshness refresh must not grant execution or promotion');
+          if(native.rankingContract!=='V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2') throw new Error('Frozen V20 ranking contract drift');
+          if(regression.ok!==true) throw new Error('V20 native regression failed');
+          if(!Array.isArray(native.publishedCandidates)||native.publishedCandidates.length<3) throw new Error('V20 has fewer than 3 published research candidates');
+          const nextTradingSession=s=>{let d=new Date(`${s}T12:00:00Z`);do{d.setUTCDate(d.getUTCDate()+1)}while([5,6].includes(d.getUTCDay()));return d.toISOString().slice(0,10)};
+          const status={
+            schemaVersion:'20.0.0-live-freshness-status-1',
+            generatedAt:new Date().toISOString(),
+            status:'FRESH_FOR_NEXT_TRADING_SESSION_RESEARCH',
+            engineId:native.engineId,
+            sourceSession,
+            nativeSession:native.sessionDate,
+            forNextTradingSession:nextTradingSession(sourceSession),
+            top3:native.publishedCandidates.slice(0,3).map(r=>({rank:r.rank,ticker:r.ticker,entryLow:r.entryLow,entryHigh:r.entryHigh,stop:r.stop,target1:r.target1,target2:r.target2})),
+            governance:{researchOnly:true,selectionTechniqueChanged:false,rankingContractChanged:false,executionPermission:false,productionAllocation:false,automaticPromotion:false},
+            sessions
+          };
+          fs.writeFileSync('data/v20/native-freshness-status.json',JSON.stringify(status,null,2)+'\n');
+          console.log(JSON.stringify(status,null,2));
+          NODE
+
+      - name: Restore runtime-only V17 inputs
+        if: steps.gate.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore --source=HEAD -- \
+            data/market.json \
+            data/history.json \
+            data/final-opportunity-ranking.json \
+            data/v17
+
+      - name: Persist V20 canonical and Native evidence
+        if: steps.gate.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v20
+          if git diff --cached --quiet; then
+            echo "V20 already fresh; nothing to commit."
+            exit 0
+          fi
+          SESSION="$(node -p "require('./data/v20/native-current.json').sessionDate")"
+          git commit -m "Refresh V20 Native for session ${SESSION}"
+          git push origin HEAD:develop/v20-integrated-decision-platform
