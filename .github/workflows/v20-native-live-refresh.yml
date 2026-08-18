@@ -18,7 +18,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Checkout V20
         uses: actions/checkout@v4
@@ -37,24 +37,61 @@ jobs:
           set -euo pipefail
           git fetch origin develop/v17-rebuild --depth=1
           git checkout origin/develop/v17-rebuild -- data/market.json data/history.json data/final-opportunity-ranking.json data/v17
-          node -e "const x=require('./data/v17/current.json'); console.log('source session',x.sessionDate||x.marketSession||x.sourceMarketSession)"
+          node -e "const x=require('./data/v17/current.json'); const s=x.sessionDate||x.marketSession||x.sourceMarketSession; if(!s)process.exit(1); console.log('source session',s)"
 
-      - name: Rebuild V20 core evidence
+      - name: Build V20 data truth
+        run: node scripts/v20/build-data-truth.cjs
+
+      - name: Run V20 data-quality gate
+        run: node scripts/v20/data-quality-regression.cjs
+
+      - name: Build sector provenance evidence
+        run: node scripts/v20/build-sector-provenance-audit.cjs
+
+      - name: Build current market regime
+        env:
+          V20_REGIME_NETWORK_REFRESH: "true"
+          V20_REGIME_CONCURRENCY: "6"
+          V20_REGIME_MIN_PARTICIPATION_PCT: "60"
+          V20_REGIME_PRICE_TOLERANCE_PCT: "5"
+          V20_REGIME_MIN_TRUSTED_SESSIONS: "50"
+          V20_REGIME_FETCH_RANGE: "6mo"
+        run: node scripts/v20/build-market-regime.cjs
+
+      - name: Validate market regime
+        run: node scripts/v20/market-regime-regression.cjs
+
+      - name: Build integrated V20 decision snapshot
+        run: node scripts/v20/build-integrated-decision-snapshot.cjs
+
+      - name: Enrich risk reward and trade-plan alignment
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/v20/build-data-truth.cjs
-          node scripts/v20/data-quality-regression.cjs
-          node scripts/v20/build-market-regime.cjs
-          node scripts/v20/market-regime-regression.cjs
-          node scripts/v20/build-integrated-decision-snapshot.cjs
           node scripts/v20/enrich-risk-reward.cjs
           node scripts/v20/validate-trade-plans.cjs
-          node scripts/v20/build-trusted-technical-history.cjs
-          node scripts/v20/technical-history-regression.cjs
+          node scripts/v20/build-portfolio-risk.cjs
+
+      - name: Build trusted point-in-time technical history
+        env:
+          V20_HISTORY_NETWORK_REFRESH: "true"
+          V20_HISTORY_CONCURRENCY: "4"
+          V20_HISTORY_CURRENT_PRICE_TOLERANCE_PCT: "5"
+        run: node scripts/v20/build-trusted-technical-history.cjs
+
+      - name: Validate technical history
+        run: node scripts/v20/technical-history-regression.cjs
+
+      - name: Build analytical profiles and market explorer
+        shell: bash
+        run: |
+          set -euo pipefail
           node scripts/v20/build-stock-profiles.cjs
+          node scripts/v20/sector-provenance-regression.cjs
           node scripts/v20/build-market-explorer.cjs
           node scripts/v20/market-explorer-regression.cjs
+          node scripts/v20/null-semantics-regression.cjs
+          node scripts/v20/user-portfolio-regression.cjs
 
       - name: Rebuild frozen Native V1 outputs
         shell: bash
