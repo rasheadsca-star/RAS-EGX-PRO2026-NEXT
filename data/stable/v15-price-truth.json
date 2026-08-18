@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-08-17T21:41:18.739Z",
+  "generatedAt": "2026-08-18T07:51:31.624Z",
   "expectedSession": "2026-08-17",
   "ready": true,
   "executionGrade": true,
@@ -13,20 +13,22 @@
     "preciseSource": true,
     "realFetch": true,
     "inputRows": 218,
-    "verifiedExpectedSessionRows": 215,
-    "sourceSessionEvidenceCoveragePct": 98.6,
+    "verifiedExpectedSessionRows": 217,
+    "sourceSessionEvidenceCoveragePct": 99.5,
     "primaryVerifiedExpectedSessionRows": 211,
-    "secondSourceVerifiedSessionRows": 4,
+    "secondSourceVerifiedSessionRows": 6,
     "secondSourceVerifiedSessionTickers": [
       "DEIN",
       "DSCW",
       "MEGM",
-      "SAIB"
+      "RAKT",
+      "SAIB",
+      "SEIGA"
     ],
     "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 215,
-  "rejectedRows": 3,
+  "acceptedRows": 217,
+  "rejectedRows": 1,
   "droppedRows": 0,
   "updatedHistoryFiles": 179,
   "missingHistoryFiles": [
@@ -87,24 +89,6 @@
     }
   ],
   "sampleAccepted": [
-    {
-      "ticker": "ISMQ",
-      "close": 9.39,
-      "sourceSessionDate": "2026-08-17",
-      "previousTrustedClose": 9.6,
-      "jumpPct": 2.19,
-      "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
-      "warnings": []
-    },
-    {
-      "ticker": "SVCE",
-      "close": 10.87,
-      "sourceSessionDate": "2026-08-17",
-      "previousTrustedClose": 11.29,
-      "jumpPct": 3.72,
-      "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
-      "warnings": []
-    },
     {
       "ticker": "RUBX",
       "close": 13.17,
@@ -583,6 +567,30 @@
       "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
       "priceDifferencePct": 0,
       "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "SEIGA",
+      "date": "2026-08-17",
+      "close": 0.95,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 469.474,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "RAKT",
+      "date": "2026-08-17",
+      "close": 22.63,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_UNKNOWN",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-17",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
@@ -592,18 +600,6 @@
       "reason": "SOURCE_SESSION_MISMATCH",
       "sourceSessionDate": "2008-04-07",
       "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "SEIGA",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2002-02-05",
-      "expectedSession": "2026-08-17"
-    },
-    {
-      "rejected": true,
-      "ticker": "RAKT",
-      "reason": "SOURCE_SESSION_UNKNOWN"
     }
   ],
   "sampleDropped": [],
@@ -611,120 +607,39 @@
     "enabled": true,
     "failClosed": true,
     "expectedSession": "2026-08-17",
-    "targetRejectedRowsThisRun": 14,
-    "resolverApprovedRowsThisRun": 11,
-    "recoveredRowsThisRun": 11,
-    "unresolvedRows": 3,
+    "targetRejectedRowsThisRun": 3,
+    "resolverApprovedRowsThisRun": 2,
+    "recoveredRowsThisRun": 2,
+    "unresolvedRows": 1,
     "recoveredTickersThisRun": [
-      "ORAS",
-      "BIOC",
-      "DSCW",
-      "PHGC",
-      "MEGM",
-      "OCPH",
-      "DEIN",
-      "TRTO",
-      "CFGH",
-      "NAHO",
-      "SAIB"
+      "SEIGA",
+      "RAKT"
     ],
     "cumulativeSecondSourceSessionTickers": [
       "DEIN",
       "DSCW",
       "MEGM",
-      "SAIB"
+      "RAKT",
+      "SAIB",
+      "SEIGA"
     ],
     "unresolvedTickers": [
-      "DCCC",
-      "SEIGA",
-      "RAKT"
+      "DCCC"
     ],
     "historyResults": [
       {
-        "ticker": "ORAS",
+        "ticker": "SEIGA",
         "merged": true,
         "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 761.2,
-        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
-        "createdHistorySeed": false
-      },
-      {
-        "ticker": "BIOC",
-        "merged": true,
-        "provider": "SIGMA_CAPITAL_LIVE_MARKET",
-        "close": 507,
-        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
-        "createdHistorySeed": false
-      },
-      {
-        "ticker": "DSCW",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 2.03,
+        "close": 0.95,
         "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
         "createdHistorySeed": false
       },
       {
-        "ticker": "PHGC",
-        "merged": true,
-        "provider": "SIGMA_CAPITAL_LIVE_MARKET",
-        "close": 0.09,
-        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
-        "createdHistorySeed": true
-      },
-      {
-        "ticker": "MEGM",
+        "ticker": "RAKT",
         "merged": true,
         "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 12.54,
-        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
-        "createdHistorySeed": false
-      },
-      {
-        "ticker": "OCPH",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 270,
-        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
-        "createdHistorySeed": false
-      },
-      {
-        "ticker": "DEIN",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 10.35,
-        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
-        "createdHistorySeed": false
-      },
-      {
-        "ticker": "TRTO",
-        "merged": true,
-        "provider": "SIGMA_CAPITAL_LIVE_MARKET",
-        "close": 0.05,
-        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
-        "createdHistorySeed": false
-      },
-      {
-        "ticker": "CFGH",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 0.11,
-        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
-        "createdHistorySeed": true
-      },
-      {
-        "ticker": "NAHO",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 0.14,
-        "mode": "SECOND_SOURCE_OHLC_AFTER_PRIMARY_CLOSE_CONFIRMATION",
-        "createdHistorySeed": false
-      },
-      {
-        "ticker": "SAIB",
-        "merged": true,
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "close": 2.11,
+        "close": 22.63,
         "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
         "createdHistorySeed": false
       }
@@ -734,19 +649,17 @@
   },
   "professionalCoverage": {
     "schemaVersion": "16.9.2-professional-market-coverage-v1",
-    "generatedAt": "2026-08-17T21:41:18.779Z",
+    "generatedAt": "2026-08-18T07:51:31.675Z",
     "rawUniverseRows": 218,
-    "rawSessionEvidenceRows": 215,
-    "rawSessionEvidenceCoveragePct": 98.6,
-    "acceptedCurrentSessionPriceRows": 215,
-    "verifiedIneligibleRows": 3,
+    "rawSessionEvidenceRows": 217,
+    "rawSessionEvidenceCoveragePct": 99.5,
+    "acceptedCurrentSessionPriceRows": 217,
+    "verifiedIneligibleRows": 1,
     "verifiedIneligibleTickers": [
-      "DCCC",
-      "SEIGA",
-      "RAKT"
+      "DCCC"
     ],
-    "executionEligibleUniverseRows": 215,
-    "executionEligibleAcceptedRows": 215,
+    "executionEligibleUniverseRows": 217,
+    "executionEligibleAcceptedRows": 217,
     "executionEligibleCoveragePct": 100,
     "verifiedDispositionRows": 218,
     "universeDispositionCoveragePct": 100,
