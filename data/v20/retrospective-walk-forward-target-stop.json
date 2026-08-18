@@ -1,0 +1,1646 @@
+{
+  "schemaVersion": "20.0.0-retrospective-point-in-time-target-stop-1",
+  "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+  "rankingContract": "V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2",
+  "generatedAt": "2026-08-18T20:20:03.822Z",
+  "evidenceClass": "RETROSPECTIVE_POINT_IN_TIME_RECONSTRUCTION",
+  "status": "DIAGNOSTIC_ONLY_NOT_FRESH_FORWARD",
+  "retrospective": true,
+  "freshIndependentForward": false,
+  "changesRanking": false,
+  "changesExecutionPermission": false,
+  "changesProductionAllocation": false,
+  "changesProfessionalReadiness": false,
+  "usedForCalibrationClaim": false,
+  "productionPromotionEligible": false,
+  "method": "Replay frozen V20 full-market native selection session-by-session using only trusted OHLC rows available at each signal date; freeze top 3; then audit next-session OHLC with the standardized conservative open/target/stop contract.",
+  "comparisonContract": {
+    "selectedPerSession": 3,
+    "horizonSessions": 1,
+    "entryRule": "NEXT_OPEN_LE_ENTRY_HIGH_AND_GE_STOP",
+    "sameSessionTargetStopAmbiguity": "COUNT_AS_STOP_NOT_CONSERVATIVE_TARGET",
+    "targetMetric": "CONSERVATIVE_TARGET_HIT",
+    "rateDenominator": "EXECUTABLE_BY_OPEN_RULE"
+  },
+  "auditWindow": {
+    "requestedSessions": 20,
+    "completedSessions": 8,
+    "fromSignalDate": "2026-07-21",
+    "toSignalDate": "2026-08-17",
+    "lastOutcomeDate": "2026-08-18"
+  },
+  "summary": {
+    "selectionCount": 22,
+    "executableByOpenRuleCount": 15,
+    "notExecutableByOpenRuleCount": 7,
+    "notExecutableByOpenRulePct": 31.82,
+    "rawTargetTouchCount": 7,
+    "rawTargetTouchRateOfExecutablePct": 46.67,
+    "conservativeTargetHitCount": 7,
+    "conservativeTargetHitRateOfExecutablePct": 46.67,
+    "stopTouchedCount": 2,
+    "stopTouchRateOfExecutablePct": 13.33,
+    "ambiguousTargetAndStopSameDayCount": 0,
+    "averageNextCloseReturnPct": 0.7031,
+    "positiveNextCloseReturnPct": 53.33
+  },
+  "fidelity": {
+    "grade": "MEDIUM_RETROSPECTIVE_DIAGNOSTIC",
+    "historicalDataCutAtSignalDate": true,
+    "futureFeatureRowsUsed": 0,
+    "trustedPerSymbolOhlcUsed": true,
+    "frozenV20WeightsUsed": true,
+    "frozenV20RankingContractUsed": true,
+    "currentUniverseReconstructedHistorically": false,
+    "survivorshipBiasPossible": true,
+    "actualHistoricalValueTradedAvailable": false,
+    "turnoverApproximation": "CLOSE_X_VOLUME",
+    "historicalTradeCountAvailable": false,
+    "tradeCountTreatment": "ZERO_CONSERVATIVE",
+    "historicalMarketRegimeArchiveAvailable": false,
+    "regimeTreatment": "UNVERIFIED_ZERO_OVERLAY",
+    "historicalV17PivotArchiveGuaranteed": false,
+    "v17PivotTreatment": "NOT_USED_V20_TRUSTED_OHLC_PIVOT_FALLBACK_ONLY",
+    "historicalSemanticConflictArchiveGuaranteed": false,
+    "sourceConflictTreatment": "TRUSTED_HISTORY_IDENTITY_ONLY_NO_RETROSPECTIVE_CONFLICT_PENALTY"
+  },
+  "limitationsAr": [
+    "هذه محاكاة Retrospective Point-in-Time وليست Fresh Forward؛ لا تُستخدم للترقية أو الادعاء بالمعايرة.",
+    "عضوية السوق التاريخية الكاملة غير مؤرشفة؛ أُعيد البناء من Master Universe الحالي، لذلك يوجد احتمال Survivorship Bias.",
+    "قيمة التداول التاريخية الدقيقة وعدد الصفقات غير محفوظين في ملفات OHLC؛ استُخدم Close×Volume لقيمة التداول وعدد الصفقات = 0 بشكل محافظ.",
+    "لم يُستخدم Market Regime تاريخي أو V17 Pivot تاريخي لعدم ضمان Point-in-Time archive؛ استُخدم V20 trusted-OHLC fallback فقط لمنع Look-Ahead.",
+    "Daily OHLC لا يحدد أيهما حدث أولًا إذا لمس الهدف والوقف في اليوم نفسه؛ الحالة المزدوجة تُحسب وقفًا في النتيجة المحافظة."
+  ],
+  "sourceHashes": {
+    "policy": "b38baf1881c674cc9d54e0a83302ff92ea31e33e209934d8c2eaae364168dd8d",
+    "masterUniverse": "b22836dfd929874d5d589285f0f4ade06d80da761436781c35a9d447d1bbccc2",
+    "comparableDateAudit": "6b3713c12da4a0c55829cc4f547b6c93fa6743a59ea23bac25b5b45b7eb46560"
+  },
+  "sessions": [
+    {
+      "signalDate": "2026-07-21",
+      "outcomeDate": "2026-07-22",
+      "reconstructedUniverseTickerCount": 130,
+      "eligibleCandidateCount": 103,
+      "selectionCount": 3,
+      "tickers": [
+        "NINH",
+        "MCQE",
+        "SVCE"
+      ],
+      "members": [
+        {
+          "ticker": "NINH",
+          "signalDate": "2026-07-21",
+          "outcomeDate": "2026-07-22",
+          "price": 21.52,
+          "score": 80.6,
+          "scoreBeforeRegimeAndCaps": 80.6,
+          "discoveryScore": 89.2,
+          "liquidityScore": 80.1,
+          "srScore": 88.2,
+          "srMethodCount": 3,
+          "technicalScore": 87.4,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 21.1933,
+            "entryHigh": 21.52,
+            "stop": 20.6931,
+            "target1": 22.1733,
+            "target2": 22.5204,
+            "netRiskReward": 0.548,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 95,
+            "latestFeatureDate": "2026-07-21",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 80.6,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.548,
+            "liquidity2Score": 80.1,
+            "srConfluenceScore": 88.2,
+            "technicalScore": 87.4,
+            "discoveryScore": 89.2
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 21.52,
+            "nextHigh": 22.35,
+            "nextLow": 21.12,
+            "nextClose": 21.81,
+            "executableByOpenRule": true,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": true,
+            "nextCloseReturnPct": 1.3476
+          },
+          "rank": 1
+        },
+        {
+          "ticker": "MCQE",
+          "signalDate": "2026-07-21",
+          "outcomeDate": "2026-07-22",
+          "price": 190.02,
+          "score": 80.2,
+          "scoreBeforeRegimeAndCaps": 80.2,
+          "discoveryScore": 89.4,
+          "liquidityScore": 81,
+          "srScore": 95.3,
+          "srMethodCount": 3,
+          "technicalScore": 80,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 188.28,
+            "entryHigh": 190.02,
+            "stop": 185.7651,
+            "target1": 193.38,
+            "target2": 195.0499,
+            "netRiskReward": 0.411,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 93,
+            "latestFeatureDate": "2026-07-21",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 80.2,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.411,
+            "liquidity2Score": 81,
+            "srConfluenceScore": 95.3,
+            "technicalScore": 80,
+            "discoveryScore": 89.4
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 190.02,
+            "nextHigh": 192,
+            "nextLow": 187,
+            "nextClose": 188.35,
+            "executableByOpenRule": false,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": null
+          },
+          "rank": 2
+        },
+        {
+          "ticker": "SVCE",
+          "signalDate": "2026-07-21",
+          "outcomeDate": "2026-07-22",
+          "price": 9.4,
+          "score": 78.4,
+          "scoreBeforeRegimeAndCaps": 78.4,
+          "discoveryScore": 88.4,
+          "liquidityScore": 77.7,
+          "srScore": 95.5,
+          "srMethodCount": 3,
+          "technicalScore": 79.7,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 9.2867,
+            "entryHigh": 9.4,
+            "stop": 9.1033,
+            "target1": 9.5767,
+            "target2": 9.59,
+            "netRiskReward": 0.341,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 93,
+            "latestFeatureDate": "2026-07-21",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 78.4,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.341,
+            "liquidity2Score": 77.7,
+            "srConfluenceScore": 95.5,
+            "technicalScore": 79.7,
+            "discoveryScore": 88.4
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 9.4,
+            "nextHigh": 9.48,
+            "nextLow": 9.34,
+            "nextClose": 9.35,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": -0.5319
+          },
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-22",
+      "outcomeDate": "2026-07-23",
+      "reconstructedUniverseTickerCount": 153,
+      "eligibleCandidateCount": 123,
+      "selectionCount": 3,
+      "tickers": [
+        "OBRI",
+        "MCQE",
+        "SIPC"
+      ],
+      "members": [
+        {
+          "ticker": "OBRI",
+          "signalDate": "2026-07-22",
+          "outcomeDate": "2026-07-23",
+          "price": 35.27,
+          "score": 80.2,
+          "scoreBeforeRegimeAndCaps": 80.2,
+          "discoveryScore": 87.5,
+          "liquidityScore": 81,
+          "srScore": 95.4,
+          "srMethodCount": 3,
+          "technicalScore": 70.4,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 35.01,
+            "entryHigh": 35.27,
+            "stop": 34.2648,
+            "target1": 36.0433,
+            "target2": 36.3,
+            "netRiskReward": 0.462,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 94,
+            "latestFeatureDate": "2026-07-22",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 80.2,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.462,
+            "liquidity2Score": 81,
+            "srConfluenceScore": 95.4,
+            "technicalScore": 70.4,
+            "discoveryScore": 87.5
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 35.3,
+            "nextHigh": 36.4,
+            "nextLow": 35.21,
+            "nextClose": 35.26,
+            "executableByOpenRule": false,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": null
+          },
+          "rank": 1
+        },
+        {
+          "ticker": "MCQE",
+          "signalDate": "2026-07-22",
+          "outcomeDate": "2026-07-23",
+          "price": 188.35,
+          "score": 80,
+          "scoreBeforeRegimeAndCaps": 80,
+          "discoveryScore": 89.6,
+          "liquidityScore": 78.3,
+          "srScore": 94.6,
+          "srMethodCount": 3,
+          "technicalScore": 85.7,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 188.18,
+            "entryHigh": 188.35,
+            "stop": 185.6662,
+            "target1": 191.2333,
+            "target2": 193.3777,
+            "netRiskReward": 0.46,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 94,
+            "latestFeatureDate": "2026-07-22",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 80,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.46,
+            "liquidity2Score": 78.3,
+            "srConfluenceScore": 94.6,
+            "technicalScore": 85.7,
+            "discoveryScore": 89.6
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 190.02,
+            "nextHigh": 192,
+            "nextLow": 187,
+            "nextClose": 188.78,
+            "executableByOpenRule": false,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": null
+          },
+          "rank": 2
+        },
+        {
+          "ticker": "SIPC",
+          "signalDate": "2026-07-22",
+          "outcomeDate": "2026-07-23",
+          "price": 3.82,
+          "score": 79.5,
+          "scoreBeforeRegimeAndCaps": 79.5,
+          "discoveryScore": 89.4,
+          "liquidityScore": 80.9,
+          "srScore": 93.6,
+          "srMethodCount": 2,
+          "technicalScore": 81.9,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 3.7833,
+            "entryHigh": 3.82,
+            "stop": 3.7307,
+            "target1": 3.8833,
+            "target2": 3.9253,
+            "netRiskReward": 0.36,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 95,
+            "latestFeatureDate": "2026-07-22",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.5,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.36,
+            "liquidity2Score": 80.9,
+            "srConfluenceScore": 93.6,
+            "technicalScore": 81.9,
+            "discoveryScore": 89.4
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 3.84,
+            "nextHigh": 3.91,
+            "nextLow": 3.81,
+            "nextClose": 3.82,
+            "executableByOpenRule": false,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": null
+          },
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-23",
+      "outcomeDate": "2026-07-26",
+      "reconstructedUniverseTickerCount": 118,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-07-26",
+      "outcomeDate": "2026-07-27",
+      "reconstructedUniverseTickerCount": 120,
+      "eligibleCandidateCount": 95,
+      "selectionCount": 3,
+      "tickers": [
+        "CCRS",
+        "EGCH",
+        "NIPH"
+      ],
+      "members": [
+        {
+          "ticker": "CCRS",
+          "signalDate": "2026-07-26",
+          "outcomeDate": "2026-07-27",
+          "price": 2.66,
+          "score": 78.7,
+          "scoreBeforeRegimeAndCaps": 78.7,
+          "discoveryScore": 90.3,
+          "liquidityScore": 82,
+          "srScore": 92.7,
+          "srMethodCount": 3,
+          "technicalScore": 85.8,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 2.6267,
+            "entryHigh": 2.66,
+            "stop": 2.5731,
+            "target1": 2.7,
+            "target2": 2.7267,
+            "netRiskReward": 0.234,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 92,
+            "latestFeatureDate": "2026-07-26",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 78.7,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.234,
+            "liquidity2Score": 82,
+            "srConfluenceScore": 92.7,
+            "technicalScore": 85.8,
+            "discoveryScore": 90.3
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 2.66,
+            "nextHigh": 2.72,
+            "nextLow": 2.6,
+            "nextClose": 2.63,
+            "executableByOpenRule": true,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": true,
+            "nextCloseReturnPct": -1.1278
+          },
+          "rank": 1
+        },
+        {
+          "ticker": "EGCH",
+          "signalDate": "2026-07-26",
+          "outcomeDate": "2026-07-27",
+          "price": 12.9,
+          "score": 76.9,
+          "scoreBeforeRegimeAndCaps": 76.9,
+          "discoveryScore": 82.3,
+          "liquidityScore": 80.4,
+          "srScore": 93.6,
+          "srMethodCount": 2,
+          "technicalScore": 47.4,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 12.8033,
+            "entryHigh": 12.9,
+            "stop": 12.5963,
+            "target1": 13.0933,
+            "target2": 13.3141,
+            "netRiskReward": 0.304,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 96,
+            "latestFeatureDate": "2026-07-26",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 76.9,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.304,
+            "liquidity2Score": 80.4,
+            "srConfluenceScore": 93.6,
+            "technicalScore": 47.4,
+            "discoveryScore": 82.3
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 12.9,
+            "nextHigh": 13.17,
+            "nextLow": 12.84,
+            "nextClose": 13.08,
+            "executableByOpenRule": true,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": true,
+            "nextCloseReturnPct": 1.3953
+          },
+          "rank": 2
+        },
+        {
+          "ticker": "NIPH",
+          "signalDate": "2026-07-26",
+          "outcomeDate": "2026-07-27",
+          "price": 235.9,
+          "score": 76.6,
+          "scoreBeforeRegimeAndCaps": 76.6,
+          "discoveryScore": 87.5,
+          "liquidityScore": 78.8,
+          "srScore": 93.5,
+          "srMethodCount": 2,
+          "technicalScore": 75.7,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 233.9333,
+            "entryHigh": 235.9,
+            "stop": 228.8395,
+            "target1": 238.9333,
+            "target2": 246.0877,
+            "netRiskReward": 0.191,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 96,
+            "latestFeatureDate": "2026-07-26",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 76.6,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.191,
+            "liquidity2Score": 78.8,
+            "srConfluenceScore": 93.5,
+            "technicalScore": 75.7,
+            "discoveryScore": 87.5
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 235.9,
+            "nextHigh": 237.5,
+            "nextLow": 225.2,
+            "nextClose": 228,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": -3.3489
+          },
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-27",
+      "outcomeDate": "2026-07-28",
+      "reconstructedUniverseTickerCount": 141,
+      "eligibleCandidateCount": 105,
+      "selectionCount": 3,
+      "tickers": [
+        "WKOL",
+        "KWIN",
+        "COPR"
+      ],
+      "members": [
+        {
+          "ticker": "WKOL",
+          "signalDate": "2026-07-27",
+          "outcomeDate": "2026-07-28",
+          "price": 313.34,
+          "score": 80.2,
+          "scoreBeforeRegimeAndCaps": 80.2,
+          "discoveryScore": 89,
+          "liquidityScore": 78.8,
+          "srScore": 92.7,
+          "srMethodCount": 3,
+          "technicalScore": 84,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 309.38,
+            "entryHigh": 313.34,
+            "stop": 303.365,
+            "target1": 321.15,
+            "target2": 325.37,
+            "netRiskReward": 0.5,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 97,
+            "latestFeatureDate": "2026-07-27",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 80.2,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.5,
+            "liquidity2Score": 78.8,
+            "srConfluenceScore": 92.7,
+            "technicalScore": 84,
+            "discoveryScore": 89
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 313.34,
+            "nextHigh": 320,
+            "nextLow": 311.05,
+            "nextClose": 311.76,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": -0.5042
+          },
+          "rank": 1
+        },
+        {
+          "ticker": "KWIN",
+          "signalDate": "2026-07-27",
+          "outcomeDate": "2026-07-28",
+          "price": 97.32,
+          "score": 79.5,
+          "scoreBeforeRegimeAndCaps": 79.5,
+          "discoveryScore": 87.5,
+          "liquidityScore": 77.1,
+          "srScore": 93.6,
+          "srMethodCount": 2,
+          "technicalScore": 78.1,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 95.7,
+            "entryHigh": 97.32,
+            "stop": 92.8081,
+            "target1": 100.47,
+            "target2": 103.1038,
+            "netRiskReward": 0.504,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 97,
+            "latestFeatureDate": "2026-07-27",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.5,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.504,
+            "liquidity2Score": 77.1,
+            "srConfluenceScore": 93.6,
+            "technicalScore": 78.1,
+            "discoveryScore": 87.5
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 97.32,
+            "nextHigh": 111.95,
+            "nextLow": 96.3,
+            "nextClose": 100.9,
+            "executableByOpenRule": true,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": true,
+            "nextCloseReturnPct": 3.6786
+          },
+          "rank": 2
+        },
+        {
+          "ticker": "COPR",
+          "signalDate": "2026-07-27",
+          "outcomeDate": "2026-07-28",
+          "price": 0.416,
+          "score": 79.5,
+          "scoreBeforeRegimeAndCaps": 79.5,
+          "discoveryScore": 89.1,
+          "liquidityScore": 81.3,
+          "srScore": 93.6,
+          "srMethodCount": 2,
+          "technicalScore": 79.7,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 0.412,
+            "entryHigh": 0.416,
+            "stop": 0.4058,
+            "target1": 0.423,
+            "target2": 0.4284,
+            "netRiskReward": 0.355,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 93,
+            "latestFeatureDate": "2026-07-27",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.5,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.355,
+            "liquidity2Score": 81.3,
+            "srConfluenceScore": 93.6,
+            "technicalScore": 79.7,
+            "discoveryScore": 89.1
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 0.416,
+            "nextHigh": 0.422,
+            "nextLow": 0.409,
+            "nextClose": 0.418,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": 0.4808
+          },
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-28",
+      "outcomeDate": "2026-07-29",
+      "reconstructedUniverseTickerCount": 157,
+      "eligibleCandidateCount": 120,
+      "selectionCount": 3,
+      "tickers": [
+        "SCFM",
+        "DAPH",
+        "AALR"
+      ],
+      "members": [
+        {
+          "ticker": "SCFM",
+          "signalDate": "2026-07-28",
+          "outcomeDate": "2026-07-29",
+          "price": 277.36,
+          "score": 81.5,
+          "scoreBeforeRegimeAndCaps": 81.5,
+          "discoveryScore": 90.2,
+          "liquidityScore": 80.5,
+          "srScore": 92.3,
+          "srMethodCount": 3,
+          "technicalScore": 87.8,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 272.24,
+            "entryHigh": 277.36,
+            "stop": 264.8344,
+            "target1": 287.24,
+            "target2": 292.1713,
+            "netRiskReward": 0.579,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 98,
+            "latestFeatureDate": "2026-07-28",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 81.5,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.579,
+            "liquidity2Score": 80.5,
+            "srConfluenceScore": 92.3,
+            "technicalScore": 87.8,
+            "discoveryScore": 90.2
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 277.36,
+            "nextHigh": 319,
+            "nextLow": 272,
+            "nextClose": 294,
+            "executableByOpenRule": true,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": true,
+            "nextCloseReturnPct": 5.9994
+          },
+          "rank": 1
+        },
+        {
+          "ticker": "DAPH",
+          "signalDate": "2026-07-28",
+          "outcomeDate": "2026-07-29",
+          "price": 95.35,
+          "score": 79.5,
+          "scoreBeforeRegimeAndCaps": 79.5,
+          "discoveryScore": 89.8,
+          "liquidityScore": 78,
+          "srScore": 93.6,
+          "srMethodCount": 2,
+          "technicalScore": 88.2,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 94.4333,
+            "entryHigh": 95.35,
+            "stop": 93.0135,
+            "target1": 97.1333,
+            "target2": 98.1896,
+            "netRiskReward": 0.416,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 94,
+            "latestFeatureDate": "2026-07-28",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.5,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.416,
+            "liquidity2Score": 78,
+            "srConfluenceScore": 93.6,
+            "technicalScore": 88.2,
+            "discoveryScore": 89.8
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 95.35,
+            "nextHigh": 99.71,
+            "nextLow": 95,
+            "nextClose": 97.68,
+            "executableByOpenRule": true,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": true,
+            "nextCloseReturnPct": 2.4436
+          },
+          "rank": 2
+        },
+        {
+          "ticker": "AALR",
+          "signalDate": "2026-07-28",
+          "outcomeDate": "2026-07-29",
+          "price": 243.4,
+          "score": 79.3,
+          "scoreBeforeRegimeAndCaps": 79.3,
+          "discoveryScore": 88.7,
+          "liquidityScore": 76.3,
+          "srScore": 91.6,
+          "srMethodCount": 3,
+          "technicalScore": 87.4,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 239.9733,
+            "entryHigh": 243.4,
+            "stop": 234.5625,
+            "target1": 249.8533,
+            "target2": 249.99,
+            "netRiskReward": 0.485,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 97,
+            "latestFeatureDate": "2026-07-28",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.3,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.485,
+            "liquidity2Score": 76.3,
+            "srConfluenceScore": 91.6,
+            "technicalScore": 87.4,
+            "discoveryScore": 88.7
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 243.4,
+            "nextHigh": 247.5,
+            "nextLow": 236.15,
+            "nextClose": 240.98,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": -0.9942
+          },
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-29",
+      "outcomeDate": "2026-07-30",
+      "reconstructedUniverseTickerCount": 143,
+      "eligibleCandidateCount": 114,
+      "selectionCount": 3,
+      "tickers": [
+        "ARCC",
+        "OBRI",
+        "CAED"
+      ],
+      "members": [
+        {
+          "ticker": "ARCC",
+          "signalDate": "2026-07-29",
+          "outcomeDate": "2026-07-30",
+          "price": 56.66,
+          "score": 80.6,
+          "scoreBeforeRegimeAndCaps": 80.6,
+          "discoveryScore": 91,
+          "liquidityScore": 82,
+          "srScore": 95.6,
+          "srMethodCount": 3,
+          "technicalScore": 86.5,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 56.25,
+            "entryHigh": 56.66,
+            "stop": 55.6084,
+            "target1": 57.52,
+            "target2": 57.9067,
+            "netRiskReward": 0.374,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 96,
+            "latestFeatureDate": "2026-07-29",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 80.6,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.374,
+            "liquidity2Score": 82,
+            "srConfluenceScore": 95.6,
+            "technicalScore": 86.5,
+            "discoveryScore": 91
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 56.66,
+            "nextHigh": 56.9,
+            "nextLow": 55.4,
+            "nextClose": 56.1,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": true,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": -0.9884
+          },
+          "rank": 1
+        },
+        {
+          "ticker": "OBRI",
+          "signalDate": "2026-07-29",
+          "outcomeDate": "2026-07-30",
+          "price": 33.9,
+          "score": 79.1,
+          "scoreBeforeRegimeAndCaps": 79.1,
+          "discoveryScore": 80.7,
+          "liquidityScore": 78.7,
+          "srScore": 94.8,
+          "srMethodCount": 3,
+          "technicalScore": 40.4,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 33.9,
+            "entryHigh": 33.9,
+            "stop": 33.2121,
+            "target1": 34.6933,
+            "target2": 35.2758,
+            "netRiskReward": 0.662,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 99,
+            "latestFeatureDate": "2026-07-29",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.1,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.662,
+            "liquidity2Score": 78.7,
+            "srConfluenceScore": 94.8,
+            "technicalScore": 40.4,
+            "discoveryScore": 80.7
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 33.9,
+            "nextHigh": 33.9,
+            "nextLow": 32.2,
+            "nextClose": 32.4,
+            "executableByOpenRule": false,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": null
+          },
+          "rank": 2
+        },
+        {
+          "ticker": "CAED",
+          "signalDate": "2026-07-29",
+          "outcomeDate": "2026-07-30",
+          "price": 128.5,
+          "score": 78.9,
+          "scoreBeforeRegimeAndCaps": 78.9,
+          "discoveryScore": 85.9,
+          "liquidityScore": 77.9,
+          "srScore": 86.6,
+          "srMethodCount": 3,
+          "technicalScore": 75.9,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 125.68,
+            "entryHigh": 128.5,
+            "stop": 120.9595,
+            "target1": 133.65,
+            "target2": 134.04,
+            "netRiskReward": 0.527,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 95,
+            "latestFeatureDate": "2026-07-29",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 78.9,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.527,
+            "liquidity2Score": 77.9,
+            "srConfluenceScore": 86.6,
+            "technicalScore": 75.9,
+            "discoveryScore": 85.9
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 128.5,
+            "nextHigh": 132,
+            "nextLow": 125,
+            "nextClose": 125.11,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": -2.6381
+          },
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-07-30",
+      "outcomeDate": "2026-08-02",
+      "reconstructedUniverseTickerCount": 145,
+      "eligibleCandidateCount": 128,
+      "selectionCount": 3,
+      "tickers": [
+        "MOED",
+        "SKPC",
+        "CCAP"
+      ],
+      "members": [
+        {
+          "ticker": "MOED",
+          "signalDate": "2026-07-30",
+          "outcomeDate": "2026-08-02",
+          "price": 0.678,
+          "score": 79.8,
+          "scoreBeforeRegimeAndCaps": 79.8,
+          "discoveryScore": 81.6,
+          "liquidityScore": 80,
+          "srScore": 94.4,
+          "srMethodCount": 3,
+          "technicalScore": 43.7,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 0.675,
+            "entryHigh": 0.678,
+            "stop": 0.6653,
+            "target1": 0.6933,
+            "target2": 0.6974,
+            "netRiskReward": 0.67,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 100,
+            "latestFeatureDate": "2026-07-30",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.8,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.67,
+            "liquidity2Score": 80,
+            "srConfluenceScore": 94.4,
+            "technicalScore": 43.7,
+            "discoveryScore": 81.6
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 0.68,
+            "nextHigh": 0.69,
+            "nextLow": 0.65,
+            "nextClose": 0.68,
+            "executableByOpenRule": false,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": null
+          },
+          "rank": 1
+        },
+        {
+          "ticker": "SKPC",
+          "signalDate": "2026-07-30",
+          "outcomeDate": "2026-08-02",
+          "price": 15.71,
+          "score": 79.8,
+          "scoreBeforeRegimeAndCaps": 79.8,
+          "discoveryScore": 83.7,
+          "liquidityScore": 82,
+          "srScore": 94.2,
+          "srMethodCount": 3,
+          "technicalScore": 51.2,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 15.58,
+            "entryHigh": 15.71,
+            "stop": 15.3796,
+            "target1": 16.0233,
+            "target2": 16.1108,
+            "netRiskReward": 0.516,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 100,
+            "latestFeatureDate": "2026-07-30",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.8,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.516,
+            "liquidity2Score": 82,
+            "srConfluenceScore": 94.2,
+            "technicalScore": 51.2,
+            "discoveryScore": 83.7
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 15.71,
+            "nextHigh": 15.91,
+            "nextLow": 15.71,
+            "nextClose": 15.91,
+            "executableByOpenRule": true,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": 1.2731
+          },
+          "rank": 2
+        },
+        {
+          "ticker": "CCAP",
+          "signalDate": "2026-07-30",
+          "outcomeDate": "2026-08-02",
+          "price": 5.17,
+          "score": 79.1,
+          "scoreBeforeRegimeAndCaps": 79.1,
+          "discoveryScore": 86.3,
+          "liquidityScore": 76.1,
+          "srScore": 94.7,
+          "srMethodCount": 3,
+          "technicalScore": 72.8,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 5.12,
+            "entryHigh": 5.17,
+            "stop": 5.0335,
+            "target1": 5.2867,
+            "target2": 5.3431,
+            "netRiskReward": 0.511,
+            "alignment": {
+              "state": "IN_ENTRY_RANGE",
+              "score": 100,
+              "distanceAboveEntryHighPct": 0
+            }
+          },
+          "caps": [],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 96,
+            "latestFeatureDate": "2026-07-30",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 0,
+            "scoreBeforeRegimeAndCaps": 79.1,
+            "entryDistancePct": 0,
+            "netRiskReward": 0.511,
+            "liquidity2Score": 76.1,
+            "srConfluenceScore": 94.7,
+            "technicalScore": 72.8,
+            "discoveryScore": 86.3
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 5.17,
+            "nextHigh": 5.39,
+            "nextLow": 5.17,
+            "nextClose": 5.38,
+            "executableByOpenRule": true,
+            "targetTouched": true,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": true,
+            "nextCloseReturnPct": 4.0619
+          },
+          "rank": 3
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-08-02",
+      "outcomeDate": "2026-08-03",
+      "reconstructedUniverseTickerCount": 180,
+      "eligibleCandidateCount": 1,
+      "selectionCount": 1,
+      "tickers": [
+        "AFMC"
+      ],
+      "members": [
+        {
+          "ticker": "AFMC",
+          "signalDate": "2026-08-02",
+          "outcomeDate": "2026-08-03",
+          "price": 218.55,
+          "score": 55,
+          "scoreBeforeRegimeAndCaps": 79.2,
+          "discoveryScore": 88,
+          "liquidityScore": 81,
+          "srScore": 93.6,
+          "srMethodCount": 2,
+          "technicalScore": 74.8,
+          "dataScore": 100,
+          "tradePlan": {
+            "entryLow": 205.6332,
+            "entryHigh": 210.1541,
+            "stop": 199.1748,
+            "target1": 231.4668,
+            "target2": 231.9267,
+            "netRiskReward": 1.638,
+            "alignment": {
+              "state": "ABOVE_ENTRY_RANGE_DO_NOT_CHASE",
+              "score": 30,
+              "distanceAboveEntryHighPct": 4
+            }
+          },
+          "caps": [
+            {
+              "code": "ABOVE_ENTRY_RANGE_DO_NOT_CHASE",
+              "maxScore": 55
+            }
+          ],
+          "reconstruction": {
+            "historyRowsVisibleAtSignal": 100,
+            "latestFeatureDate": "2026-08-02",
+            "futureFeatureRowsUsed": 0,
+            "historicalTurnoverApproximation": "CLOSE_X_VOLUME",
+            "historicalTrades": "UNAVAILABLE_SET_TO_ZERO_CONSERVATIVELY",
+            "historicalRegime": "UNVERIFIED_ZERO_OVERLAY",
+            "historicalV17Pivot": "NOT_USED_NO_GUARANTEED_POINT_IN_TIME_ARCHIVE"
+          },
+          "tieBreak": {
+            "alignmentSafetyPriority": 2,
+            "scoreBeforeRegimeAndCaps": 79.2,
+            "entryDistancePct": 3.995,
+            "netRiskReward": 1.638,
+            "liquidity2Score": 81,
+            "srConfluenceScore": 93.6,
+            "technicalScore": 74.8,
+            "discoveryScore": 88
+          },
+          "outcome": {
+            "outcomeAvailable": true,
+            "nextOpen": 218.55,
+            "nextHigh": 235,
+            "nextLow": 174.84,
+            "nextClose": 174.84,
+            "executableByOpenRule": false,
+            "targetTouched": false,
+            "stopTouched": false,
+            "ambiguousSameDay": false,
+            "conservativeTargetHit": false,
+            "nextCloseReturnPct": null
+          },
+          "rank": 1
+        }
+      ]
+    },
+    {
+      "signalDate": "2026-08-03",
+      "outcomeDate": "2026-08-04",
+      "reconstructedUniverseTickerCount": 180,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-04",
+      "outcomeDate": "2026-08-05",
+      "reconstructedUniverseTickerCount": 181,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-05",
+      "outcomeDate": "2026-08-06",
+      "reconstructedUniverseTickerCount": 180,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-06",
+      "outcomeDate": "2026-08-09",
+      "reconstructedUniverseTickerCount": 180,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-09",
+      "outcomeDate": "2026-08-10",
+      "reconstructedUniverseTickerCount": 177,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-10",
+      "outcomeDate": "2026-08-11",
+      "reconstructedUniverseTickerCount": 178,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-11",
+      "outcomeDate": "2026-08-12",
+      "reconstructedUniverseTickerCount": 181,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-12",
+      "outcomeDate": "2026-08-13",
+      "reconstructedUniverseTickerCount": 178,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-13",
+      "outcomeDate": "2026-08-16",
+      "reconstructedUniverseTickerCount": 177,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-16",
+      "outcomeDate": "2026-08-17",
+      "reconstructedUniverseTickerCount": 179,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    },
+    {
+      "signalDate": "2026-08-17",
+      "outcomeDate": "2026-08-18",
+      "reconstructedUniverseTickerCount": 186,
+      "eligibleCandidateCount": 0,
+      "selectionCount": 0,
+      "tickers": [],
+      "members": []
+    }
+  ]
+}
