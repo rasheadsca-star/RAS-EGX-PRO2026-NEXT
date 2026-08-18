@@ -3,7 +3,7 @@
   "comparisonVersion": "16.9.2-all-engine-matrix-1",
   "generatedAt": "2026-08-18T17:50:38.558Z",
   "sessionDate": "2026-08-18",
-  "status": "EXTERNAL_ENGINE_SESSION_PENDING",
+  "status": "PARTIAL_ENGINE_SESSION_ALIGNMENT",
   "scoreDefinition": {
     "name": "METHOD_INDEPENDENT_CONFIRMATION_SCORE_V2",
     "purpose": "DISPLAY_AND_REVIEW_PRIORITY_ONLY",
@@ -12,7 +12,7 @@
     "historicalPerformanceUsedInScore": false,
     "changesMainAppRanking": false,
     "changesExecutionPermission": false,
-    "rawAgreementDefinition": "Count same-ticker selections across V17, V19, V20 and QUANT EDGE only when each engine is on the exact MAIN APP session."
+    "rawAgreementDefinition": "Count same-ticker selections across V17, V19 V6, V20 and QUANT EDGE only when each engine is on the exact MAIN APP session."
   },
   "engineRegistry": {
     "primary": {
@@ -35,13 +35,14 @@
       },
       {
         "id": "V19_CHALLENGER",
-        "label": "V19 Challenger",
+        "label": "V19 V6",
         "role": "RELATED_CHALLENGER",
         "family": "TOP10_PROBABILITY_RELATED",
-        "sessionDate": "2026-08-16",
-        "sessionAligned": false,
-        "sourceStatus": "CURRENT_SESSION_ALIGNED",
-        "blocked": false
+        "sessionDate": "2026-08-18",
+        "sessionAligned": true,
+        "sourceStatus": "SHADOW_RESEARCH_ONLY",
+        "blocked": false,
+        "sourceEngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6"
       },
       {
         "id": "V20_NATIVE",
@@ -97,10 +98,15 @@
       },
       {
         "id": "V19_CHALLENGER",
-        "label": "V19 Challenger",
-        "sessionDate": "2026-08-16",
-        "sessionAligned": false,
-        "voteEligible": false
+        "label": "V19 V6",
+        "sessionDate": "2026-08-18",
+        "sessionAligned": true,
+        "voteEligible": false,
+        "role": "RELATED_CHALLENGER",
+        "family": "TOP10_PROBABILITY_RELATED",
+        "sourceStatus": "SHADOW_RESEARCH_ONLY",
+        "blocked": false,
+        "sourceEngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6"
       }
     ],
     "rule": "Raw agreement displays every monitored recommendation engine. Independent confirmation counts only materially different alpha-generation methods and requires exact session alignment."
@@ -109,8 +115,8 @@
     "mainSession": "2026-08-18",
     "v17Session": "2026-08-12",
     "v17SessionAligned": false,
-    "v19Session": "2026-08-16",
-    "v19SessionAligned": false,
+    "v19Session": "2026-08-18",
+    "v19SessionAligned": true,
     "v20Session": "2026-08-16",
     "v20SessionAligned": false,
     "quantSession": "2026-08-16",
@@ -122,7 +128,12 @@
     "familyConsensusSource": "https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/multi-engine-consensus.json",
     "quantSource": "https://quant-edge-shadow.vercel.app/api/run",
     "sourceErrors": [],
-    "resilientSourcePolicy": "GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_PLUS_VERCEL_QUANT_WITH_RETRY"
+    "resilientSourcePolicy": "GITHUB_PAGES_THEN_RAW_THEN_JSDELIVR_PLUS_VERCEL_QUANT_WITH_RETRY",
+    "v19Source": "https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/native-challenger-v6.json",
+    "v19V6Source": "https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/native-challenger-v6.json",
+    "v19V6EngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6",
+    "v19V6GeneratedAt": "2026-08-18T18:28:47.189637+00:00",
+    "v19V6SourceErrors": []
   },
   "current": {
     "mainAppBasket": [
@@ -131,9 +142,9 @@
       "COPR"
     ],
     "otherEngineCount": 4,
-    "alignedOtherEngineCount": 0,
-    "pendingOtherEngineCount": 4,
-    "anyAgreementCount": 0,
+    "alignedOtherEngineCount": 1,
+    "pendingOtherEngineCount": 3,
+    "anyAgreementCount": 1,
     "fullyConfirmedCount": 0,
     "engineSessions": [
       {
@@ -146,11 +157,12 @@
       },
       {
         "id": "V19_CHALLENGER",
-        "label": "V19 Challenger",
-        "sessionDate": "2026-08-16",
-        "sessionAligned": false,
+        "label": "V19 V6",
+        "sessionDate": "2026-08-18",
+        "sessionAligned": true,
         "blocked": false,
-        "sourceStatus": "CURRENT_SESSION_ALIGNED"
+        "sourceStatus": "SHADOW_RESEARCH_ONLY",
+        "sourceEngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6"
       },
       {
         "id": "V20_NATIVE",
@@ -174,15 +186,15 @@
         "ticker": "LUTS",
         "sessionDate": "2026-08-18",
         "mainAppSelected": true,
-        "agreementCount": 0,
+        "agreementCount": 1,
         "otherEngineCount": 4,
-        "alignedEngineCount": 0,
+        "alignedEngineCount": 1,
         "disagreementCount": 0,
-        "pendingEngineCount": 4,
-        "agreementPctOfAllEngines": 0,
-        "agreementPctOfAlignedEngines": null,
-        "agreementLabelAr": "التوافق مع باقي المحركات 0/4",
-        "alignmentLabelAr": "المتزامن 0/4",
+        "pendingEngineCount": 3,
+        "agreementPctOfAllEngines": 25,
+        "agreementPctOfAlignedEngines": 100,
+        "agreementLabelAr": "التوافق مع باقي المحركات 1/4",
+        "alignmentLabelAr": "المتزامن 1/4",
         "engineComparisons": [
           {
             "id": "V17_VALIDATION",
@@ -198,15 +210,16 @@
           },
           {
             "id": "V19_CHALLENGER",
-            "label": "V19 Challenger",
+            "label": "V19 V6",
             "role": "RELATED_CHALLENGER",
             "family": "TOP10_PROBABILITY_RELATED",
-            "sessionDate": "2026-08-16",
-            "sessionAligned": false,
+            "sessionDate": "2026-08-18",
+            "sessionAligned": true,
             "blocked": false,
-            "selected": null,
-            "agreementStatus": "SESSION_PENDING",
-            "sourceStatus": "CURRENT_SESSION_ALIGNED"
+            "selected": true,
+            "agreementStatus": "AGREE",
+            "sourceStatus": "SHADOW_RESEARCH_ONLY",
+            "sourceEngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6"
           },
           {
             "id": "V20_NATIVE",
@@ -243,8 +256,10 @@
         "supportingIndependentEngines": [
           "MAIN APP · V16.9.2"
         ],
-        "relatedCorroborators": [],
-        "noteAr": "لا يوجد محرك آخر متزامن مع جلسة MAIN APP الحالية حتى الآن؛ العدد سيُحدّث تلقائيًا فور وصول أي محرك لنفس الجلسة."
+        "relatedCorroborators": [
+          "V19 V6"
+        ],
+        "noteAr": "1 من 4 محركات أخرى اختارت السهم، و1 محركات متزامنة حاليًا مع نفس الجلسة."
       },
       {
         "ticker": "AMIA",
@@ -252,13 +267,13 @@
         "mainAppSelected": true,
         "agreementCount": 0,
         "otherEngineCount": 4,
-        "alignedEngineCount": 0,
-        "disagreementCount": 0,
-        "pendingEngineCount": 4,
+        "alignedEngineCount": 1,
+        "disagreementCount": 1,
+        "pendingEngineCount": 3,
         "agreementPctOfAllEngines": 0,
-        "agreementPctOfAlignedEngines": null,
+        "agreementPctOfAlignedEngines": 0,
         "agreementLabelAr": "التوافق مع باقي المحركات 0/4",
-        "alignmentLabelAr": "المتزامن 0/4",
+        "alignmentLabelAr": "المتزامن 1/4",
         "engineComparisons": [
           {
             "id": "V17_VALIDATION",
@@ -274,15 +289,16 @@
           },
           {
             "id": "V19_CHALLENGER",
-            "label": "V19 Challenger",
+            "label": "V19 V6",
             "role": "RELATED_CHALLENGER",
             "family": "TOP10_PROBABILITY_RELATED",
-            "sessionDate": "2026-08-16",
-            "sessionAligned": false,
+            "sessionDate": "2026-08-18",
+            "sessionAligned": true,
             "blocked": false,
-            "selected": null,
-            "agreementStatus": "SESSION_PENDING",
-            "sourceStatus": "CURRENT_SESSION_ALIGNED"
+            "selected": false,
+            "agreementStatus": "NO_MATCH",
+            "sourceStatus": "SHADOW_RESEARCH_ONLY",
+            "sourceEngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6"
           },
           {
             "id": "V20_NATIVE",
@@ -320,7 +336,7 @@
           "MAIN APP · V16.9.2"
         ],
         "relatedCorroborators": [],
-        "noteAr": "لا يوجد محرك آخر متزامن مع جلسة MAIN APP الحالية حتى الآن؛ العدد سيُحدّث تلقائيًا فور وصول أي محرك لنفس الجلسة."
+        "noteAr": "1 محركات أخرى متزامنة، ولم يختر أي منها هذا السهم حاليًا."
       },
       {
         "ticker": "COPR",
@@ -328,13 +344,13 @@
         "mainAppSelected": true,
         "agreementCount": 0,
         "otherEngineCount": 4,
-        "alignedEngineCount": 0,
-        "disagreementCount": 0,
-        "pendingEngineCount": 4,
+        "alignedEngineCount": 1,
+        "disagreementCount": 1,
+        "pendingEngineCount": 3,
         "agreementPctOfAllEngines": 0,
-        "agreementPctOfAlignedEngines": null,
+        "agreementPctOfAlignedEngines": 0,
         "agreementLabelAr": "التوافق مع باقي المحركات 0/4",
-        "alignmentLabelAr": "المتزامن 0/4",
+        "alignmentLabelAr": "المتزامن 1/4",
         "engineComparisons": [
           {
             "id": "V17_VALIDATION",
@@ -350,15 +366,16 @@
           },
           {
             "id": "V19_CHALLENGER",
-            "label": "V19 Challenger",
+            "label": "V19 V6",
             "role": "RELATED_CHALLENGER",
             "family": "TOP10_PROBABILITY_RELATED",
-            "sessionDate": "2026-08-16",
-            "sessionAligned": false,
+            "sessionDate": "2026-08-18",
+            "sessionAligned": true,
             "blocked": false,
-            "selected": null,
-            "agreementStatus": "SESSION_PENDING",
-            "sourceStatus": "CURRENT_SESSION_ALIGNED"
+            "selected": false,
+            "agreementStatus": "NO_MATCH",
+            "sourceStatus": "SHADOW_RESEARCH_ONLY",
+            "sourceEngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6"
           },
           {
             "id": "V20_NATIVE",
@@ -396,7 +413,7 @@
           "MAIN APP · V16.9.2"
         ],
         "relatedCorroborators": [],
-        "noteAr": "لا يوجد محرك آخر متزامن مع جلسة MAIN APP الحالية حتى الآن؛ العدد سيُحدّث تلقائيًا فور وصول أي محرك لنفس الجلسة."
+        "noteAr": "1 محركات أخرى متزامنة، ولم يختر أي منها هذا السهم حاليًا."
       }
     ]
   },
@@ -409,5 +426,22 @@
     "rawAgreementIncludesRelatedEngines": true,
     "independentConfirmationExcludesRelatedEngines": true,
     "allOtherEnginesShownInUi": true
+  },
+  "v19V6Enrichment": {
+    "mode": "DISPLAY_AND_RAW_AGREEMENT_ONLY",
+    "sourceEngineId": "V19_CHAT_GPT_NATIVE_CHALLENGER_V6",
+    "sourceGeneratedAt": "2026-08-18T18:28:47.189637+00:00",
+    "sourceUrl": "https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/native-challenger-v6.json",
+    "sessionDate": "2026-08-18",
+    "sessionAligned": true,
+    "selectedTickers": [
+      "LUTS",
+      "ORAS",
+      "ICID"
+    ],
+    "changesMainAppRanking": false,
+    "changesMainAppRecommendations": false,
+    "changesIndependentConfirmationScore": false,
+    "canGrantExecution": false
   }
 }
