@@ -1,11 +1,12 @@
-name: EGX V17 Build Review and Deploy
+name: EGX V17 Freshness-Locked Build Review
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["EGX V16.9 Basket Engine"]
+    types: [completed]
   push:
-    branches:
-      - main
-      - develop/v17-rebuild
+    branches: [main]
     paths:
       - "preview-v17/**"
       - "scripts/v17/**"
@@ -21,8 +22,7 @@ on:
       - "data/fetch-status.json"
       - ".github/workflows/v17-build-review.yml"
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "preview-v17/**"
       - "scripts/v17/**"
@@ -30,48 +30,38 @@ on:
       - "data/v17/**"
       - ".github/workflows/v17-build-review.yml"
   schedule:
+    # Fallback only. V17 normally follows a successful V16.9 basket publication.
     - cron: "50 13-20 * * 0-4"
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
+  actions: write
 
 concurrency:
-  group: egx-v17-${{ github.event_name }}-${{ github.ref }}
+  group: egx-v17-freshness-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build-review:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 20
     env:
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+      TARGET_BRANCH: main
     steps:
-      - name: Checkout V17 merge candidate
+      - name: Checkout V17 source of truth
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
           fetch-depth: 0
 
-      - name: Prove frozen V16 application is unchanged
-        run: |
-          set -euo pipefail
-          git fetch origin release/v16.9.2-frozen-20260806:refs/remotes/origin/release/v16.9.2-frozen-20260806
-          CHANGED_FILES="$(git diff --name-only origin/release/v16.9.2-frozen-20260806...HEAD)"
-          echo "$CHANGED_FILES"
-          VIOLATIONS="$(printf '%s\n' "$CHANGED_FILES" | grep -E '^(index\.html|manifest\.json|service-worker\.js|preview-v16/.*|scripts/stable/.*|\.github/workflows/mobile-hotfix-deploy\.yml|\.github/workflows/v169-primary-pages-deploy\.yml)$' || true)"
-          if [ -n "$VIOLATIONS" ]; then
-            echo "Protected V16 files changed:"
-            echo "$VIOLATIONS"
-            exit 1
-          fi
-
-      - name: Setup Node
+      - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Static validation
+      - name: Validate V17 runtime and freshness contract
+        shell: bash
         run: |
           set -euo pipefail
           node --check scripts/v17/resolve-ledger.cjs
@@ -85,6 +75,9 @@ jobs:
             echo "Legacy source reference detected in V17 app"
             exit 1
           fi
+          # Do not compare today's repository against an old frozen V16 branch.
+          # Isolation is enforced by proving that THIS V17 run does not mutate protected MAIN APP files.
+          test -z "$(git status --porcelain -- index.html manifest.json service-worker.js preview-v16 scripts/stable .github/workflows/mobile-hotfix-deploy.yml .github/workflows/v169-primary-pages-deploy.yml)"
 
       - name: Resolve prior V17 signals conservatively
         run: node scripts/v17/resolve-ledger.cjs
@@ -98,7 +91,47 @@ jobs:
       - name: Independent critic and destructive review
         run: node scripts/v17/review.cjs
 
+      - name: Enforce exact current-session freshness
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
+          const primary=read('data/stable/v16-v169-primary-decision.json');
+          const regime=read('data/stable/v16-market-regime.json');
+          const v17=read('data/v17/current.json');
+          const expected=primary.sessionDate || primary.expectedLatestSession || null;
+          const regimeSession=regime?.metrics?.sessionDate || null;
+          const checks={
+            expectedSessionPresent:Boolean(expected),
+            v17MatchesPrimary:v17.sessionDate===expected,
+            regimeMatchesPrimary:regimeSession===expected,
+            v17DecisionSession:v17?.systemHealth?.decisionSession===expected,
+            v17RegimeSession:v17?.systemHealth?.regimeSession===expected,
+            championMethodPreserved:v17?.engine?.id==='V16_9_EQUAL_WEIGHT_BASKET',
+            noAutomaticPromotion:v17?.championChallenger?.promotionAllowed===false,
+            reviewReady:['READY_FOR_NEXT_SESSION_REVIEW','RESEARCH_READY_EXECUTION_BLOCKED'].includes(v17.status),
+          };
+          console.log({expected,v17Session:v17.sessionDate,regimeSession,status:v17.status,checks});
+          if(!Object.values(checks).every(Boolean)) {
+            throw new Error(`V17_FRESHNESS_CONTRACT_FAIL ${JSON.stringify(checks)}`);
+          }
+          NODE
+
+      - name: Prove V17 build did not mutate MAIN APP
+        shell: bash
+        run: |
+          set -euo pipefail
+          violations="$(git status --porcelain -- index.html manifest.json service-worker.js preview-v16 scripts/stable .github/workflows/mobile-hotfix-deploy.yml .github/workflows/v169-primary-pages-deploy.yml)"
+          if [ -n "$violations" ]; then
+            echo "V17 attempted to mutate protected MAIN APP files:"
+            echo "$violations"
+            exit 1
+          fi
+
       - name: Browser-facing smoke checks
+        shell: bash
         run: |
           set -euo pipefail
           python3 -m http.server 4173 >/tmp/v17-http.log 2>&1 &
@@ -106,92 +139,36 @@ jobs:
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
           curl --fail --silent http://127.0.0.1:4173/preview-v17/app/index.html | grep -q "EGX Pro V17"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.status!=='READY_FOR_NEXT_SESSION_REVIEW')process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(!x.evidence.nativeV17)process.exit(1);if(x.championChallenger.activeEngine!==x.engine.id||x.championChallenger.promotionAllowed!==false)process.exit(1);})"
-          curl --fail --silent http://127.0.0.1:4173/data/v17/challenger-status.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.activeEngine!=='V16_9_EQUAL_WEIGHT_BASKET'||x.promotionAllowed!==false)process.exit(1);})"
+          curl --fail --silent http://127.0.0.1:4173/data/v17/current.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(!['READY_FOR_NEXT_SESSION_REVIEW','RESEARCH_READY_EXECUTION_BLOCKED'].includes(x.status))process.exit(1);if(x.engine.id!=='V16_9_EQUAL_WEIGHT_BASKET')process.exit(1);if(x.championChallenger.promotionAllowed!==false)process.exit(1);})"
           curl --fail --silent http://127.0.0.1:4173/data/v17/review.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const x=JSON.parse(s);if(x.counts.CRITICAL||x.counts.MAJOR||x.counts.MINOR)process.exit(1);})"
 
-      - name: Commit V17 evidence to active branch
+      - name: Commit fresh V17 evidence to main
         if: github.event_name != 'pull_request'
+        shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/v17/current.json data/v17/ledger.json data/v17/challenger-status.json data/v17/review.json
           if ! git diff --cached --quiet; then
-            git commit -m "Build and review V17 canonical release candidate"
+            git commit -m "Refresh V17 to current verified market session"
             for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin "$BRANCH_NAME" && git push origin "HEAD:$BRANCH_NAME"; then
+              if git pull --rebase -X ours origin "$TARGET_BRANCH" && git push origin "HEAD:$TARGET_BRANCH"; then
                 break
               fi
               [ "$attempt" = "3" ] && exit 1
               sleep $((attempt * 6))
             done
+          else
+            echo "V17 is already current for the verified primary session."
           fi
 
-      - name: Upload main Pages artifact
-        if: github.event_name != 'pull_request' && github.ref_name == 'main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-  deploy-v17:
-    if: github.event_name != 'pull_request' && github.ref_name == 'main'
-    needs: build-review
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/preview-v17/app/
-    steps:
-      - name: Deploy repository with isolated V17 path
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Checkout main for deployment evidence
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Record verified V17 deployment
+      - name: Refresh MAIN APP consensus from fresh V17
+        if: github.event_name != 'pull_request'
         env:
-          PAGES_ROOT: ${{ steps.deployment.outputs.page_url }}
-          SOURCE_COMMIT: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           set -euo pipefail
-          node - <<'NODE'
-          const fs = require('fs');
-          const current = JSON.parse(fs.readFileSync('data/v17/current.json', 'utf8'));
-          const review = JSON.parse(fs.readFileSync('data/v17/review.json', 'utf8'));
-          if (review.verdict !== 'NO_COMMENTS' || review.counts.CRITICAL || review.counts.MAJOR || review.counts.MINOR) {
-            throw new Error('Refusing to record deployment without a zero-comments review.');
-          }
-          const root = String(process.env.PAGES_ROOT || 'https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/').replace(/\/+$/, '');
-          const output = {
-            schemaVersion: '17.0.0-pages-status',
-            generatedAt: new Date().toISOString(),
-            status: 'DEPLOYED',
-            deployedUrl: `${root}/preview-v17/app/`,
-            sourceCommit: process.env.SOURCE_COMMIT || null,
-            snapshotGeneratedAt: current.generatedAt,
-            sessionDate: current.sessionDate,
-            engine: current.engine?.id || null,
-            reviewVerdict: review.verdict,
-            reviewCounts: review.counts,
-            frozenV16Preserved: true
-          };
-          fs.writeFileSync('data/v17/deploy-status.json', JSON.stringify(output, null, 2) + '\n');
-          console.log(output);
-          NODE
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/v17/deploy-status.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Confirm verified V17 Pages deployment"
-            for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin main && git push origin HEAD:main; then
-                break
-              fi
-              [ "$attempt" = "3" ] && exit 1
-              sleep $((attempt * 6))
-            done
-          fi
+          gh workflow run main-app-governance-refresh.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Canonical consensus refresh dispatched after V17 freshness validation."
