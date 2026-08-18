@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 'use strict';
-const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const fs=require('fs'),path=require('path'),crypto=require('crypto'),{execFileSync}=require('child_process');
 const root=path.resolve(process.env.GITHUB_WORKSPACE||'.'),P=r=>path.join(root,r);
+execFileSync('node',[P('scripts/v20/validate-engine-methodology-freeze.cjs')],{cwd:root,stdio:'inherit'});
 const read=r=>JSON.parse(fs.readFileSync(P(r),'utf8'));
 const hash=r=>crypto.createHash('sha256').update(fs.readFileSync(P(r))).digest('hex');
 const required=['data/recommendations.json','data/technical-50-report.json','data/v17/current-recommendation-base-status.json'];
@@ -19,5 +20,5 @@ if(status.engine!==rec.engine)failures.push('V17_RECOMMENDATION_STATUS_ENGINE_MI
 if(Number(rec.total||0)<=0||(rec.all||[]).length!==Number(rec.total||0))failures.push('V17_RECOMMENDATION_UNIVERSE_INVALID');
 const technicalMap=new Map((technical.symbols||[]).map(r=>[String(r.symbol||'').toUpperCase(),r]));
 if((rec.all||[]).some(r=>!technicalMap.has(String(r.symbol||'').toUpperCase())))failures.push('V17_RECOMMENDATION_ROW_WITHOUT_TECHNICAL_SOURCE');
-const out={schemaVersion:'20.0.0-v17-decision-core-runtime-2',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,source:{...sync.source},sessionDate:sync.sessionDate,recommendationEngine:rec.engine,recommendationCount:Number(rec.total||0),technicalReportVersion:technical.version,technicalSummary:technical.summary||null,methodology:{newTradingFormulaIntroduced:false,technical50MethodologyReused:true,technicalInsufficientHistoryThresholdSessions:10,staleLegacyConfidenceForbidden:rec.policy?.staleLegacyConfidenceForbidden===true,staleLegacyPricePlanForbidden:rec.policy?.staleLegacyPricePlanForbidden===true},files:required.map(r=>({path:r,sha256:hash(r),bytes:fs.statSync(P(r)).size})),governance:{readOnlyV17Source:true,v20MayMutateV17:false,productionEligibilityAuthority:'V17',technicalSourceBoundToSameV17Runtime:true}};
+const out={schemaVersion:'20.0.0-v17-decision-core-runtime-2',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,source:{...sync.source},sessionDate:sync.sessionDate,recommendationEngine:rec.engine,recommendationCount:Number(rec.total||0),technicalReportVersion:technical.version,technicalSummary:technical.summary||null,methodology:{newTradingFormulaIntroduced:false,technical50MethodologyReused:true,technicalInsufficientHistoryThresholdSessions:10,staleLegacyConfidenceForbidden:rec.policy?.staleLegacyConfidenceForbidden===true,staleLegacyPricePlanForbidden:rec.policy?.staleLegacyPricePlanForbidden===true},files:required.map(r=>({path:r,sha256:hash(r),bytes:fs.statSync(P(r)).size})),governance:{readOnlyV17Source:true,v20MayMutateV17:false,productionEligibilityAuthority:'V17',technicalSourceBoundToSameV17Runtime:true,engineMethodologyFreezeValidated:true,methodologyChangeRequiresNewEngineVersion:true}};
 fs.writeFileSync(P('data/v20/v17-decision-core-runtime.json'),`${JSON.stringify(out,null,2)}\n`,'utf8');console.log(JSON.stringify(out,null,2));if(!out.ok)process.exitCode=1;
