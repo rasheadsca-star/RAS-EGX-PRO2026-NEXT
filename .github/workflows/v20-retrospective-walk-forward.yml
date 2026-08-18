@@ -11,6 +11,13 @@ on:
       - "scripts/v20/retrospective-walk-forward-regression.cjs"
       - "data/v20/decision-intelligence-policy.json"
       - ".github/workflows/v20-retrospective-walk-forward.yml"
+  pull_request:
+    branches:
+      - develop/v20-integrated-decision-platform
+    paths:
+      - "scripts/v20/build-retrospective-walk-forward-target-stop.cjs"
+      - "scripts/v20/retrospective-walk-forward-regression.cjs"
+      - ".github/workflows/v20-retrospective-walk-forward.yml"
 
 permissions:
   contents: write
@@ -74,6 +81,7 @@ jobs:
           node scripts/v20/retrospective-walk-forward-regression.cjs
 
       - name: Restore synced MAIN APP inputs before persist
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -86,6 +94,7 @@ jobs:
           git reset -- data/history data/research/v16-v169-target-hit-audit.json 2>/dev/null || true
 
       - name: Persist diagnostic output only
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
