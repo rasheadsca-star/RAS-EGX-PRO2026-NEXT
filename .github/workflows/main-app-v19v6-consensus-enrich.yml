@@ -1,0 +1,118 @@
+name: MAIN APP — V19 V6 Consensus Enrichment
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["MAIN APP — Canonical Governance Refresh"]
+    types: [completed]
+  push:
+    branches: ["main"]
+    paths:
+      - "data/stable/v16-main-app-consensus.json"
+      - "scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs"
+      - ".github/workflows/main-app-v19v6-consensus-enrich.yml"
+  schedule:
+    # Keep the display-only V19 V6 comparison reasonably current during EGX days.
+    # Cairo gate below accepts 10:00-21:59 and handles Egypt DST dynamically.
+    - cron: "10,25,40,55 7-19 * * 0-4"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-main-app-v19v6-consensus-enrichment
+  cancel-in-progress: true
+
+jobs:
+  enrich:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve Cairo refresh window
+        id: clock
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          DOW=$(TZ=Africa/Cairo date '+%w')
+          HOUR=$(TZ=Africa/Cairo date '+%H')
+          RUN=false
+          if [ "$DOW" -le 4 ] && [ "$HOUR" -ge 10 ] && [ "$HOUR" -le 21 ]; then RUN=true; fi
+          echo "Cairo V19 V6 consensus refresh: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M') run=$RUN"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout latest main
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate V19 V6 display-only enricher
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
+          grep -q "V19_CHAT_GPT_NATIVE_CHALLENGER_V6" scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
+          grep -q "changesIndependentConfirmationScore: false" scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
+          grep -q "canGrantExecution: false" scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
+
+      - name: Enrich consensus with direct V19 V6 session
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s data/stable/v16-main-app-consensus.json
+          node scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs
+          test -s data/stable/v16-main-app-v19v6-consensus-acceptance.json
+
+      - name: Verify acceptance contract
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const out=JSON.parse(fs.readFileSync('data/stable/v16-main-app-v19v6-consensus-acceptance.json','utf8'));
+          if(out.pass!==true) throw new Error(`V19 V6 acceptance failed: ${JSON.stringify(out.checks)}`);
+          console.log({
+            pass:out.pass,
+            mainSession:out.mainSession,
+            v19Session:out.v19Session,
+            v19SessionAligned:out.v19SessionAligned,
+            v19SelectedTickers:out.v19SelectedTickers,
+            observedV19Matches:out.observedV19Matches,
+          });
+          NODE
+
+      - name: Commit enriched comparison state
+        if: steps.clock.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            data/stable/v16-main-app-consensus.json \
+            data/stable/v16-main-app-v19v6-consensus-acceptance.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh MAIN APP V19 V6 comparison and agreement counts"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
+          else
+            echo "V19 V6 consensus enrichment already current."
+          fi
