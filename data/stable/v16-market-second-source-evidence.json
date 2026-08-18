@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.9.2-market-second-source-evidence-v3",
-  "generatedAt": "2026-08-18T07:51:31.567Z",
+  "generatedAt": "2026-08-18T08:51:41.029Z",
   "expectedSession": "2026-08-17",
   "policy": {
     "failClosed": true,
@@ -13,13 +13,10 @@
     "strategyMutation": false,
     "rule": "Same-session anomalies require independent same-session price confirmation; reported-change anomalies also compare independent change percent when available. Stale primary rows require an independent exact-session replacement and are never promoted from stale timestamps alone."
   },
-  "targetCount": 3,
-  "approvedCount": 2,
+  "targetCount": 1,
+  "approvedCount": 0,
   "unresolvedCount": 1,
-  "approvedTickers": [
-    "SEIGA",
-    "RAKT"
-  ],
+  "approvedTickers": [],
   "unresolvedTickers": [
     "DCCC"
   ],
@@ -65,116 +62,6 @@
               "latestAvailableClose": 1.82
             }
           ]
-        }
-      ]
-    },
-    "SEIGA": {
-      "ticker": "SEIGA",
-      "originalReason": "SOURCE_SESSION_MISMATCH",
-      "primary": {
-        "source": "mubasher_symbol_pages",
-        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
-        "sourceSessionDate": null,
-        "close": 5.41
-      },
-      "approved": true,
-      "approvedEvidence": {
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "status": "APPROVED",
-        "url": "https://stockanalysis.com/quote/egx/SEIGA/history/",
-        "sessionDate": "2026-08-17",
-        "close": 0.95,
-        "open": 0.95,
-        "high": 0.95,
-        "low": 0.95,
-        "volume": null,
-        "previousClose": 0.95,
-        "priceDifferencePct": 469.474,
-        "primaryPriceAgreementRequired": false,
-        "replacementForStalePrimary": true
-      },
-      "attempts": [
-        {
-          "provider": "YAHOO_CHART",
-          "status": "REJECTED_IDENTITY_CONFLICT",
-          "identity": {
-            "yahooSymbol": "SEIGA.CA",
-            "conflict": true,
-            "localDifferencePct": 1069.8706,
-            "warnings": [
-              "latest_close_conflict:1069.8706%"
-            ]
-          }
-        },
-        {
-          "provider": "STOCKANALYSIS_EGX_HISTORY",
-          "status": "APPROVED",
-          "url": "https://stockanalysis.com/quote/egx/SEIGA/history/",
-          "sessionDate": "2026-08-17",
-          "close": 0.95,
-          "open": 0.95,
-          "high": 0.95,
-          "low": 0.95,
-          "volume": null,
-          "previousClose": 0.95,
-          "priceDifferencePct": 469.474,
-          "primaryPriceAgreementRequired": false,
-          "replacementForStalePrimary": true
-        }
-      ]
-    },
-    "RAKT": {
-      "ticker": "RAKT",
-      "originalReason": "SOURCE_SESSION_UNKNOWN",
-      "primary": {
-        "source": null,
-        "sourceUrl": null,
-        "sourceSessionDate": null,
-        "close": null
-      },
-      "approved": true,
-      "approvedEvidence": {
-        "provider": "STOCKANALYSIS_EGX_HISTORY",
-        "status": "APPROVED",
-        "url": "https://stockanalysis.com/quote/egx/RAKT/history/",
-        "sessionDate": "2026-08-17",
-        "close": 22.63,
-        "open": 22.63,
-        "high": 23.09,
-        "low": 22,
-        "volume": 6540,
-        "previousClose": 22.63,
-        "priceDifferencePct": 0,
-        "primaryPriceAgreementRequired": false,
-        "replacementForStalePrimary": true
-      },
-      "attempts": [
-        {
-          "provider": "YAHOO_CHART",
-          "status": "REJECTED_IDENTITY_CONFLICT",
-          "identity": {
-            "yahooSymbol": "RAKT.CA",
-            "conflict": true,
-            "localDifferencePct": 6.3906,
-            "warnings": [
-              "latest_close_conflict:1.3951%"
-            ]
-          }
-        },
-        {
-          "provider": "STOCKANALYSIS_EGX_HISTORY",
-          "status": "APPROVED",
-          "url": "https://stockanalysis.com/quote/egx/RAKT/history/",
-          "sessionDate": "2026-08-17",
-          "close": 22.63,
-          "open": 22.63,
-          "high": 23.09,
-          "low": 22,
-          "volume": 6540,
-          "previousClose": 22.63,
-          "priceDifferencePct": 0,
-          "primaryPriceAgreementRequired": false,
-          "replacementForStalePrimary": true
         }
       ]
     }
