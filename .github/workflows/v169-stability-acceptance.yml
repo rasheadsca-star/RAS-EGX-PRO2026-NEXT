@@ -1,0 +1,87 @@
+name: V16.9.2 Stability Lock Acceptance
+
+on:
+  pull_request:
+    paths:
+      - "scripts/stable/v16-main-app-governance.cjs"
+      - "scripts/stable/v16-main-app-ledger-reconcile.cjs"
+      - "scripts/stable/v16-main-app-consensus.cjs"
+      - ".github/workflows/main-app-governance-refresh.yml"
+      - ".github/workflows/main-app-v19v6-consensus-enrich.yml"
+      - ".github/workflows/v169-stability-acceptance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  stability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Syntax and writer-contract checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-main-app-governance.cjs
+          node --check scripts/stable/v16-main-app-ledger-reconcile.cjs
+          node --check scripts/stable/v16-main-app-consensus.cjs
+          node --check scripts/stable/v16-main-app-professional-readiness.cjs
+          grep -q "PUBLISHED_SIGNAL_IS_AUTHORITY" scripts/stable/v16-main-app-ledger-reconcile.cjs
+          grep -q "MATERIAL_SELECTION_CHANGE_REQUIRES_NEW_VERSION" scripts/stable/v16-main-app-ledger-reconcile.cjs
+          grep -q "V19_CHAT_GPT_NATIVE_CHALLENGER_V6" scripts/stable/v16-main-app-consensus.cjs
+          grep -q "canonicalConsensusSingleWriter: true" scripts/stable/v16-main-app-consensus.cjs
+          ! grep -Eq "^[[:space:]]*(push|schedule|workflow_run):" .github/workflows/main-app-v19v6-consensus-enrich.yml
+
+      - name: Rebuild canonical state through stability lock
+        shell: bash
+        run: |
+          set +e
+          node scripts/stable/v16-main-app-governance.cjs
+          CODE=$?
+          set -e
+          if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 2 ]; then exit "$CODE"; fi
+          test -s data/stable/v16-main-app-current.json
+          test -s data/stable/v16-main-app-ledger-reconcile.json
+          node scripts/stable/v16-main-app-consensus.cjs
+          node scripts/stable/v16-main-app-professional-readiness.cjs
+
+      - name: Assert stable outcome
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const read=f=>JSON.parse(fs.readFileSync(f,'utf8'));
+          const snap=read('data/stable/v16-main-app-current.json');
+          const rec=read('data/stable/v16-main-app-ledger-reconcile.json');
+          const consensus=read('data/stable/v16-main-app-consensus.json');
+          const regression=read('data/stable/v16-main-app-consensus-regression.json');
+          const ready=read('data/stable/v16-main-app-professional-readiness.json');
+          const v19=(consensus?.engineRegistry?.comparisonEngines||[]).filter(e=>e.id==='V19_CHALLENGER');
+          const luts=(consensus?.current?.mainAppAnnotations||[]).find(r=>r.ticker==='LUTS');
+          const checks={
+            noLedgerConflict:snap?.immutableSignal?.ledgerConflict!==true,
+            noImmutableCritical:(snap?.governance?.criticalErrors||[]).every(x=>!String(x).startsWith('IMMUTABLE_LEDGER_CONFLICT:')),
+            publishedAuthority:rec?.policy==='PUBLISHED_SIGNAL_IS_AUTHORITY',
+            sameSelectionDriftHandled:rec?.sameTickerSet!==true || rec?.conflictDetected!==true || rec?.reconciled===true,
+            materialChangeStillFails:rec?.reason!=='MATERIAL_SELECTION_CHANGE_REQUIRES_NEW_VERSION' || snap.systemState==='BLOCKED',
+            oneV19:v19.length===1,
+            directV19:v19[0]?.label==='V19 V6' && v19[0]?.sourceEngineId==='V19_CHAT_GPT_NATIVE_CHALLENGER_V6',
+            regressionPass:regression.pass===true,
+            lutsCountsV19:!v19[0]?.sessionAligned || luts?.engineComparisons?.some(e=>e.id==='V19_CHALLENGER' && e.selected===true),
+            noGovernance39FromSafeDrift:!(rec?.sameTickerSet===true && rec?.reconciled===true && ready?.capReason==='ENGINE_OR_GOVERNANCE_HARD_GATE'),
+            comparisonNoCoreMutation:consensus?.policy?.comparisonCanRewriteCanonicalSignal===false && consensus?.policy?.comparisonCanChangeProfessionalReadiness===false,
+          };
+          console.log({checks,score:ready.professionalReadinessScore,capReason:ready.capReason,lutsAgreement:luts?.agreementLabelAr,v19Session:v19[0]?.sessionDate,v19Aligned:v19[0]?.sessionAligned,recReason:rec?.reason});
+          if(!Object.values(checks).every(Boolean)) process.exit(1);
+          NODE
