@@ -14,8 +14,8 @@ on:
     # then the preflight gate checks the real Africa/Cairo local clock.
     # 10:15 Cairo
     - cron: "15 7,8 * * 0-4"
-    # 14:00 Cairo
-    - cron: "0 11,12 * * 0-4"
+    # 14:15 Cairo
+    - cron: "15 11,12 * * 0-4"
     # Post-close hourly candidates. The Cairo gate allows 15:00-21:00 only.
     - cron: "0 12-19 * * 0-4"
 
@@ -65,9 +65,9 @@ jobs:
           # EGX regular trading days: Sunday-Thursday.
           if [ "$DOW" -le 4 ]; then
             # Tolerate GitHub scheduler delivery delay without changing the
-            # requested nominal slots (10:15 and 14:00 Cairo).
+            # requested nominal slots (10:15 and 14:15 Cairo).
             if [ "$HOUR" = "10" ] && [ "$MINUTE" -ge 10 ] && [ "$MINUTE" -le 45 ]; then RUN=true; fi
-            if [ "$HOUR" = "14" ] && [ "$MINUTE" -le 45 ]; then RUN=true; fi
+            if [ "$HOUR" = "14" ] && [ "$MINUTE" -ge 10 ] && [ "$MINUTE" -le 45 ]; then RUN=true; fi
             if [ "$HOUR" -ge 15 ] && [ "$HOUR" -le 21 ] && [ "$MINUTE" -le 45 ]; then RUN=true; fi
           fi
 
@@ -276,7 +276,7 @@ jobs:
             pagesPublished:false,
             pagesPublishedSession:null,
             retryPolicy:{
-              cairoSlots:['10:15','14:00'],
+              cairoSlots:['10:15','14:15'],
               postCloseHourlyFrom:'15:00',
               postCloseHourlyUntil:'21:00',
               stopAfterFinalPublishedSession:true,
