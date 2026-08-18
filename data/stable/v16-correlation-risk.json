@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-18T14:59:59.372Z",
+  "generatedAt": "2026-08-18T15:03:24.722Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,90 +12,164 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 3,
+  "recommendationCount": 5,
   "tickers": [
-    "LUTS",
-    "AMIA",
-    "COPR"
+    "AMES",
+    "CEFM",
+    "EEII",
+    "SCFM",
+    "AJWA"
   ],
   "matrix": [
     {
-      "ticker": "LUTS",
+      "ticker": "AMES",
       "correlations": {
-        "LUTS": {
+        "AMES": {
           "value": 1,
           "observations": 60
         },
-        "AMIA": {
-          "value": 0.337,
+        "CEFM": {
+          "value": -0.112,
+          "observations": 51
+        },
+        "EEII": {
+          "value": -0.029,
           "observations": 53
         },
-        "COPR": {
-          "value": 0.323,
+        "SCFM": {
+          "value": 0.192,
+          "observations": 48
+        },
+        "AJWA": {
+          "value": 0.021,
+          "observations": 50
+        }
+      }
+    },
+    {
+      "ticker": "CEFM",
+      "correlations": {
+        "AMES": {
+          "value": -0.112,
+          "observations": 51
+        },
+        "CEFM": {
+          "value": 1,
+          "observations": 60
+        },
+        "EEII": {
+          "value": 0.076,
+          "observations": 51
+        },
+        "SCFM": {
+          "value": 0.777,
+          "observations": 50
+        },
+        "AJWA": {
+          "value": -0.01,
+          "observations": 49
+        }
+      }
+    },
+    {
+      "ticker": "EEII",
+      "correlations": {
+        "AMES": {
+          "value": -0.029,
+          "observations": 53
+        },
+        "CEFM": {
+          "value": 0.076,
+          "observations": 51
+        },
+        "EEII": {
+          "value": 1,
+          "observations": 60
+        },
+        "SCFM": {
+          "value": 0.049,
+          "observations": 46
+        },
+        "AJWA": {
+          "value": -0.063,
           "observations": 52
         }
       }
     },
     {
-      "ticker": "AMIA",
+      "ticker": "SCFM",
       "correlations": {
-        "LUTS": {
-          "value": 0.337,
-          "observations": 53
+        "AMES": {
+          "value": 0.192,
+          "observations": 48
         },
-        "AMIA": {
+        "CEFM": {
+          "value": 0.777,
+          "observations": 50
+        },
+        "EEII": {
+          "value": 0.049,
+          "observations": 46
+        },
+        "SCFM": {
           "value": 1,
           "observations": 60
         },
-        "COPR": {
-          "value": 0.031,
-          "observations": 52
+        "AJWA": {
+          "value": -0.125,
+          "observations": 46
         }
       }
     },
     {
-      "ticker": "COPR",
+      "ticker": "AJWA",
       "correlations": {
-        "LUTS": {
-          "value": 0.323,
+        "AMES": {
+          "value": 0.021,
+          "observations": 50
+        },
+        "CEFM": {
+          "value": -0.01,
+          "observations": 49
+        },
+        "EEII": {
+          "value": -0.063,
           "observations": 52
         },
-        "AMIA": {
-          "value": 0.031,
-          "observations": 52
+        "SCFM": {
+          "value": -0.125,
+          "observations": 46
         },
-        "COPR": {
+        "AJWA": {
           "value": 1,
           "observations": 60
         }
       }
     }
   ],
-  "highCorrelationPairs": [],
+  "highCorrelationPairs": [
+    {
+      "left": "CEFM",
+      "right": "SCFM",
+      "correlation": 0.777,
+      "observations": 50,
+      "severity": "MEDIUM"
+    }
+  ],
   "sectorConcentration": [
     {
-      "sector": "غير مصنف",
-      "count": 1,
-      "sharePct": 33.3
-    },
-    {
       "sector": "GENERAL",
-      "count": 1,
-      "sharePct": 33.3
-    },
-    {
-      "sector": "REAL_ESTATE",
-      "count": 1,
-      "sharePct": 33.3
+      "count": 5,
+      "sharePct": 100
     }
   ],
   "summary": {
-    "highCorrelationPairCount": 0,
-    "averageHighPairCorrelation": null,
+    "highCorrelationPairCount": 1,
+    "averageHighPairCorrelation": 0.777,
     "largestSector": {
-      "sector": "غير مصنف",
-      "count": 1,
-      "sharePct": 33.3
+      "sector": "GENERAL",
+      "count": 5,
+      "sharePct": 100
     },
     "regime": "RISK_ON",
     "regimeRiskMultiplier": 1,
@@ -120,17 +194,19 @@
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": -3.33
+      "equalWeightPortfolioImpactPct": -10
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
       "labelAr": "تزامن وقف الأسهم الأعلى ارتباطًا",
       "assumedMovePct": null,
-      "equalWeightPortfolioImpactPct": 0
+      "equalWeightPortfolioImpactPct": -2.8
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 33.3
+    "positionWeightPct": 20
   },
-  "warnings": []
+  "warnings": [
+    "SECTOR_CONCENTRATION_ABOVE_40"
+  ]
 }
