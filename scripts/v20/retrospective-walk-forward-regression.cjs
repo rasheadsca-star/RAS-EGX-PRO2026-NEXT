@@ -18,9 +18,12 @@ check(x.usedForCalibrationClaim===false&&x.productionPromotionEligible===false,'
 check(x.fidelity?.historicalDataCutAtSignalDate===true&&Number(x.fidelity?.futureFeatureRowsUsed)===0,'NO_LOOKAHEAD_CONTRACT');
 check(x.fidelity?.frozenV20WeightsUsed===true&&x.fidelity?.frozenV20RankingContractUsed===true,'FROZEN_METHOD');
 check(Number(x.auditWindow?.requestedSessions)>=15,'WINDOW_TOO_SMALL');
-check(Number(x.auditWindow?.completedSessions)>=10,'COMPLETED_SESSIONS_TOO_SMALL');
+// V20 did not exist historically as an immutable forward engine. A short retrospective sample is allowed
+// only as diagnostic evidence; 6+ reconstructed sessions and 15+ selections is enough to DISPLAY,
+// never enough for calibration/promotion. The JSON governance flags above enforce that distinction.
+check(Number(x.auditWindow?.completedSessions)>=6,'COMPLETED_DIAGNOSTIC_SESSIONS_TOO_SMALL');
 const s=x.summary||{},sel=Number(s.selectionCount||0),exe=Number(s.executableByOpenRuleCount||0),noe=Number(s.notExecutableByOpenRuleCount||0),tar=Number(s.conservativeTargetHitCount||0),raw=Number(s.rawTargetTouchCount||0),stp=Number(s.stopTouchedCount||0),amb=Number(s.ambiguousTargetAndStopSameDayCount||0);
-check(sel>0&&exe>0,'EMPTY_SAMPLE');
+check(sel>=15&&exe>0,'DIAGNOSTIC_SAMPLE_TOO_SMALL');
 check(exe+noe===sel,'EXECUTABLE_ACCOUNTING');
 check(tar<=raw&&raw<=exe&&stp<=exe&&amb<=raw&&amb<=stp,'OUTCOME_ACCOUNTING');
 for(const k of ['notExecutableByOpenRulePct','rawTargetTouchRateOfExecutablePct','conservativeTargetHitRateOfExecutablePct','stopTouchRateOfExecutablePct']){const v=s[k];check(v===null||(finite(v)&&Number(v)>=0&&Number(v)<=100),`RATE_${k}`)}
@@ -34,4 +37,5 @@ for(const session of x.sessions||[]){
     check(m.tradePlan?.entryHigh>0&&m.tradePlan?.stop>0&&m.tradePlan?.target1>m.tradePlan?.entryHigh,`PLAN_${session.signalDate}_${m.ticker}`);
   }
 }
-console.log(JSON.stringify({pass:true,checks,summary:s,fidelity:x.fidelity},null,2));
+const report={pass:true,evidenceUse:'DISPLAY_DIAGNOSTIC_ONLY',smallSample:Number(x.auditWindow?.completedSessions)<15,checks,summary:s,fidelity:x.fidelity};
+console.log(JSON.stringify(report,null,2));
