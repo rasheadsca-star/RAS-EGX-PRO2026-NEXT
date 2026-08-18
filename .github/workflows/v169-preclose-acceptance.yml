@@ -44,8 +44,18 @@ jobs:
           git fetch origin main --depth=1
           CHANGED=$(git diff --name-only origin/main...HEAD)
           echo "$CHANGED"
-          if echo "$CHANGED" | grep -E '^scripts/(stable|research)/'; then
-            echo "Recommendation engine code changed; pre-close patch must not alter selection technique." >&2
+
+          # Diagnostic-only scripts may analyze already-produced selections, but they must never
+          # expand this exception into recommendation-selection/research engine code.
+          SCRIPT_CHANGED=$(printf '%s\n' "$CHANGED" | grep -E '^scripts/(stable|research)/' || true)
+          ALLOWED_DIAGNOSTIC='^scripts/stable/(v16-main-app-engine-performance\.cjs|v16-main-app-independent-consensus-audit\.cjs)$'
+          VIOLATIONS=$(printf '%s\n' "$SCRIPT_CHANGED" | grep -Ev "$ALLOWED_DIAGNOSTIC" || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "Recommendation selection/research code changed; pre-close patch must not alter selection technique:" >&2
+            printf '%s\n' "$VIOLATIONS" >&2
             exit 1
           fi
-          echo "PASS: no scripts/stable or scripts/research selection-engine files changed."
+
+          # Explicitly prove the frozen V16.9 selection engine itself is byte-identical to main.
+          git diff --quiet origin/main...HEAD -- scripts/research/v16-v169-basket-engine.py
+          echo "PASS: frozen V16.9 selection engine unchanged; only approved diagnostic scripts differ."

@@ -133,20 +133,30 @@
     return nativeFetch(input, init);
   };
 
-  function loadPreCloseRuntime() {
-    if (window.__V169_PRE_CLOSE_RUNTIME_LOADER__) return;
-    window.__V169_PRE_CLOSE_RUNTIME_LOADER__ = true;
+  function appendRuntimeScript(src, marker, errorMessage) {
+    if (document.querySelector(`script[data-${marker}]`)) return;
     const script = document.createElement('script');
-    script.src = `v16-9-preclose-runtime.js?v=16.9.2-preclose-20260818-r1`;
+    script.src = src;
     script.defer = true;
-    script.dataset.v169PreCloseRuntime = 'true';
-    script.onerror = () => console.warn('V16.9 pre-close runtime could not be loaded.');
+    script.setAttribute(`data-${marker}`, 'true');
+    script.onerror = () => console.warn(errorMessage);
     (document.body || document.head || document.documentElement).appendChild(script);
   }
 
+  function loadSupplementalRuntime() {
+    if (!window.__V169_PRE_CLOSE_RUNTIME_LOADER__) {
+      window.__V169_PRE_CLOSE_RUNTIME_LOADER__ = true;
+      appendRuntimeScript('v16-9-preclose-runtime.js?v=16.9.2-preclose-20260818-r1','v169-preclose-runtime','V16.9 pre-close runtime could not be loaded.');
+    }
+    if (!window.__V169_INDEPENDENT_CONSENSUS_EVIDENCE_LOADER__) {
+      window.__V169_INDEPENDENT_CONSENSUS_EVIDENCE_LOADER__ = true;
+      appendRuntimeScript('main-app-independent-consensus-evidence.js?v=16.9.2-independent-consensus-20260818-r1','main-app-independent-consensus-evidence','Independent consensus evidence panel could not be loaded.');
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadPreCloseRuntime, { once: true });
+    document.addEventListener('DOMContentLoaded', loadSupplementalRuntime, { once: true });
   } else {
-    loadPreCloseRuntime();
+    loadSupplementalRuntime();
   }
 })();
