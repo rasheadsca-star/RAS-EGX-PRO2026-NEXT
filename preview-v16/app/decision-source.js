@@ -132,4 +132,21 @@
 
     return nativeFetch(input, init);
   };
+
+  function loadPreCloseRuntime() {
+    if (window.__V169_PRE_CLOSE_RUNTIME_LOADER__) return;
+    window.__V169_PRE_CLOSE_RUNTIME_LOADER__ = true;
+    const script = document.createElement('script');
+    script.src = `v16-9-preclose-runtime.js?v=16.9.2-preclose-20260818-r1`;
+    script.defer = true;
+    script.dataset.v169PreCloseRuntime = 'true';
+    script.onerror = () => console.warn('V16.9 pre-close runtime could not be loaded.');
+    (document.body || document.head || document.documentElement).appendChild(script);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadPreCloseRuntime, { once: true });
+  } else {
+    loadPreCloseRuntime();
+  }
 })();
