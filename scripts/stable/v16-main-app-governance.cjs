@@ -300,7 +300,7 @@ function buildMainAppGovernance() {
       attempts: finite(scanStatus.attempts, 0),
       final: scanStatus.final === true,
       pagesPublished: scanStatus.pagesPublished === true,
-      nominalCairoSlots: ['10:15', '14:00'],
+      nominalCairoSlots: ['10:15', '14:15'],
       postCloseHourlyFrom: '15:00',
       postCloseHourlyUntil: '21:00',
     },
