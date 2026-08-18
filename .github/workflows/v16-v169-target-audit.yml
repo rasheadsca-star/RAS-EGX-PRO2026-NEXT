@@ -1,10 +1,11 @@
-name: EGX V16.9 Target Hit Audit
+name: EGX V16.9 Target + Shadow Rank Audit
 
 on:
   workflow_dispatch:
   push:
     paths:
       - "scripts/research/v16-v169-target-hit-audit.py"
+      - "scripts/research/v16-v169-shadow-rank-audit.py"
       - "scripts/research/v16-v169-basket-engine.py"
       - "scripts/research/v16-two-stage-predictor.py"
       - "data/history/**"
@@ -35,26 +36,52 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate audit source
-        run: python -m py_compile scripts/research/v16-v169-target-hit-audit.py
+      - name: Validate audit sources
+        run: |
+          python -m py_compile scripts/research/v16-v169-target-hit-audit.py
+          python -m py_compile scripts/research/v16-v169-shadow-rank-audit.py
 
-      - name: Run exact twenty-session audit
+      - name: Run exact twenty-session target audit
         run: python scripts/research/v16-v169-target-hit-audit.py
 
-      - name: Upload audit report
+      - name: Run persistent shadow rank audit
+        run: python scripts/research/v16-v169-shadow-rank-audit.py
+
+      - name: Verify shadow-only contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('data/research/v16-v169-shadow-rank-audit.json').read_text(encoding='utf-8'))
+          contract = report.get('decisionContract') or {}
+          required_false = ['changesScoring', 'changesRanking', 'changesWeights', 'changesFilters', 'changesRiskGates', 'canGrantExecution']
+          assert report.get('mode') == 'SHADOW_ONLY_NO_ENGINE_EFFECT'
+          assert contract.get('shadowOnly') is True
+          for key in required_false:
+              assert contract.get(key) is False, f'{key} must remain false'
+          print('SHADOW_RANK_NO_ENGINE_EFFECT_PASS')
+          PY
+
+      - name: Upload audit reports
         uses: actions/upload-artifact@v4
         with:
-          name: v16-v169-twenty-session-target-audit
-          path: data/research/v16-v169-target-hit-audit.json
+          name: v16-v169-target-and-shadow-rank-audits
+          path: |
+            data/research/v16-v169-target-hit-audit.json
+            data/research/v16-v169-shadow-rank-audit.json
+            data/research/v16-v169-shadow-rank-ledger.json
 
-      - name: Commit audit report
+      - name: Commit audit reports
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/research/v16-v169-target-hit-audit.json
+          git add \
+            data/research/v16-v169-target-hit-audit.json \
+            data/research/v16-v169-shadow-rank-audit.json \
+            data/research/v16-v169-shadow-rank-ledger.json
           if ! git diff --cached --quiet; then
-            git commit -m "Publish V16.9 target hit audit"
+            git commit -m "Publish V16.9 target and shadow rank audits"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
