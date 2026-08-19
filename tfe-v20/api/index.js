@@ -69,9 +69,12 @@ async function scan(outputLimit = 20) {
     ranking: {
       primary: 'FUSION_RANK',
       hardGatesBeforeHistoricalConfidence: true,
-      researchWeight: POLICY.fusionRank.researchWeight,
-      historicalConfidenceWeight: POLICY.fusionRank.historicalConfidenceWeight,
-      historicalConfidenceMethod: 'WILSON_95_LOWER_BOUND_SHRUNK_BY_SAMPLE_RELIABILITY',
+      weightingMode: 'EVIDENCE_AWARE',
+      researchWeightRange: [POLICY.fusionRank.researchWeight, 1],
+      historicalConfidenceWeightRange: [0, POLICY.fusionRank.historicalConfidenceWeight],
+      missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
+      historicalConfidenceMethod: 'WILSON_95_LOWER_BOUND_WITH_WEIGHT_SCALED_BY_SAMPLE_RELIABILITY',
+      minimumHistoricalTradesForFullWeight: POLICY.minHistoricalTrades,
     },
     universe: {
       mode: universeMode,
@@ -184,7 +187,8 @@ export default async function handler(req, res) {
       policy: POLICY,
       invariant: 'RESEARCH_ONLY_EXECUTION_BLOCKED',
       technicalCore: 'ORIGINAL_SCOREBARS_PRESERVED',
-      historicalConfidence: 'WILSON_AFTER_HARD_GATES_ONLY',
+      historicalConfidence: 'WILSON_AFTER_HARD_GATES_WITH_EVIDENCE_AWARE_WEIGHTING',
+      missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
       decisionLog: 'AVAILABLE',
       ablationBenchmark: 'AVAILABLE_RESEARCH_DIAGNOSTIC',
     });
