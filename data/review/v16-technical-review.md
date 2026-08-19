@@ -1,23 +1,23 @@
 # تقرير المراجعة الفنية المستقلة — EGX Pro V16.3
 
 - النطاق: **الشق الفني بالكامل**
-- تاريخ التوليد: 2026-08-19T14:23:33.534Z
+- تاريخ التوليد: 2026-08-19T14:56:14.034Z
 - الدورات: 20/20
 - الحكم: **REJECTED_BLOCKING_TECHNICAL_FINDINGS**
-- الفحوص: 32/41 مغلق
-- الحرجة المفتوحة: 2
-- العالية المفتوحة: 7
+- الفحوص: 30/41 مغلق
+- الحرجة المفتوحة: 3
+- العالية المفتوحة: 8
 
 | الدورة | المراجع | الفحوص | المغلق | المفتوح |
 |---:|---|---:|---:|---:|
 | 1 | مراجع حقيقة الأسعار الفنية | 2 | 2 | 0 |
 | 2 | مراجع سلامة OHLC والتاريخ | 2 | 2 | 0 |
-| 3 | مراجع حساب المؤشرات | 2 | 2 | 0 |
+| 3 | مراجع حساب المؤشرات | 2 | 1 | 1 |
 | 4 | مراجع الاتجاه والمتوسطات | 2 | 2 | 0 |
 | 5 | مراجع الزخم وعدم المطاردة | 2 | 0 | 2 |
 | 6 | مراجع السيولة وقابلية التنفيذ | 2 | 2 | 0 |
 | 7 | مراجع الدعم والمقاومة والخطة | 2 | 2 | 0 |
-| 8 | مراجع العائد إلى المخاطرة | 2 | 1 | 1 |
+| 8 | مراجع العائد إلى المخاطرة | 2 | 0 | 2 |
 | 9 | مراجع فجوات الافتتاح والانزلاق | 2 | 2 | 0 |
 | 10 | مراجع حالة السوق | 2 | 2 | 0 |
 | 11 | مراجع الترتيب المتقاطع | 2 | 2 | 0 |
@@ -35,15 +35,17 @@
 
 | الدورة | الخطورة | الملاحظة | الدليل | الإجراء |
 |---:|---|---|---|---|
-| 5 | CRITICAL | حد RSI الأعلى مطبق على كل توصية | CEFM:63.2, RTVC:63.6, AXPH:69.9, AMES:75.3, SAUD:78.9 | نقل السهم إلى المراقبة. |
-| 5 | HIGH | بوابة الامتداد القصير تمنع المطاردة | CEFM:ret5=6.98, RTVC:ret5=10.37, AXPH:ret5=2.25, AMES:ret5=28.16, SAUD:ret5=5.47 | خفض الترتيب أو إلغاء الدخول. |
-| 8 | HIGH | احتمال الهدف أعلى من احتمال الوقف | CEFM:9.356>17.976, RTVC:9.501>16.241, AXPH:8.725>14.856, AMES:11.61>20.684, SAUD:9.637>16.51 | إعادة المعايرة أو الرفض. |
-| 15 | HIGH | عدم الاستقرار موثق ولا يُخفى | CEFM:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, RTVC:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, AXPH:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, AMES:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX, SAUD:Pilot محسّن — يحتاج سجلًا حيًا أطول/REDUCED_RISK_TWO_POSITIONS_MAX | إظهار عدم الاستقرار وخفض المخاطرة. |
-| 15 | CRITICAL | النماذج غير المستقرة لا تستخدم مخاطرة كاملة | decisionTier=PILOT_56_SESSION_WALK_FORWARD; professional=false; modes=REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX,REDUCED_RISK_TWO_POSITIONS_MAX | فرض وضع Pilot منخفض المخاطرة. |
-| 16 | HIGH | قصر عينة الاختبار مصرح به | decisionTier=PILOT_56_SESSION_WALK_FORWARD; test sample remains explicitly Pilot | إظهار Pilot وعدم ادعاء الاحتراف المثبت. |
+| 3 | HIGH | كل توصية تحمل قيمًا عددية للخطة والمؤشرات | valid=0/3 | رفض السجل ذي القيم المفقودة. |
+| 5 | CRITICAL | حد RSI الأعلى مطبق على كل توصية | LUTS:97.6, GTWL:92.4, KZPC:97.1 | نقل السهم إلى المراقبة. |
+| 5 | HIGH | بوابة الامتداد القصير تمنع المطاردة | LUTS:ret5=undefined, GTWL:ret5=undefined, KZPC:ret5=undefined | خفض الترتيب أو إلغاء الدخول. |
+| 8 | CRITICAL | كل توصية تجتاز الحد الأدنى للعائد/المخاطرة | LUTS:undefined, GTWL:undefined, KZPC:undefined | استبعاد الفرصة. |
+| 8 | HIGH | احتمال الهدف أعلى من احتمال الوقف | LUTS:undefined>undefined, GTWL:undefined>undefined, KZPC:undefined>undefined | إعادة المعايرة أو الرفض. |
+| 15 | HIGH | عدم الاستقرار موثق ولا يُخفى | LUTS:undefined/undefined, GTWL:undefined/undefined, KZPC:undefined/undefined | إظهار عدم الاستقرار وخفض المخاطرة. |
+| 15 | CRITICAL | النماذج غير المستقرة لا تستخدم مخاطرة كاملة | decisionTier=BLOCKED_WALK_FORWARD_PILOT; professional=false; modes=,, | فرض وضع Pilot منخفض المخاطرة. |
+| 16 | HIGH | قصر عينة الاختبار مصرح به | decisionTier=BLOCKED_WALK_FORWARD_PILOT; test sample remains explicitly Pilot | إظهار Pilot وعدم ادعاء الاحتراف المثبت. |
 | 19 | HIGH | اختبارات متصفح حقيقية ناجحة | status=FAILED; tests=0; realBrowser=true | تشغيل Playwright وإصلاح الرحلة. |
-| 20 | HIGH | النسخة تصرح بمرحلة Pilot ولا تعد بالربح | tier=PILOT_56_SESSION_WALK_FORWARD; reducedRisk=false; noProfitClaim=true | إزالة الادعاءات وإظهار القيود. |
-| 20 | HIGH | التوصيات الحالية اجتازت كل البوابات الفنية الأساسية | recs=5; source=true; plans=true | حجب الإصدار الفني وإعادة البناء. |
+| 20 | HIGH | النسخة تصرح بمرحلة Pilot ولا تعد بالربح | tier=BLOCKED_WALK_FORWARD_PILOT; reducedRisk=false; noProfitClaim=true | إزالة الادعاءات وإظهار القيود. |
+| 20 | HIGH | التوصيات الحالية اجتازت كل البوابات الفنية الأساسية | recs=3; source=true; plans=true | حجب الإصدار الفني وإعادة البناء. |
 
 ## قرار المستلم الفني
 
