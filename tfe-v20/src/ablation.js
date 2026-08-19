@@ -1,5 +1,5 @@
 import { POLICY } from './policy.js';
-import { analyzeTicker, rankAnalyses } from './engine.js';
+import { analyzeTicker, analyzeTickerBase, rankAnalyses } from './engine.js';
 import { summarizeBacktest } from './backtest.js';
 import { normalizeBars } from './quality.js';
 import { round } from './math.js';
@@ -184,6 +184,16 @@ function deltas(summary, base) {
   };
 }
 
+export function rankResearchOnly(items) {
+  return items.filter((x) => x?.eligible).sort((a, b) =>
+    (b.scores?.research ?? -1) - (a.scores?.research ?? -1)
+    || (b.scores?.core ?? -1) - (a.scores?.core ?? -1)
+    || (b.scores?.supportResistance ?? -1) - (a.scores?.supportResistance ?? -1)
+    || (b.scores?.liquidity ?? -1) - (a.scores?.liquidity ?? -1)
+    || String(a.ticker).localeCompare(String(b.ticker))
+  ).map((x, i) => ({ ...x, rank: i + 1 }));
+}
+
 function normalizedHistoryMap(histories) {
   const out = {};
   for (const [ticker, rows] of Object.entries(histories)) {
@@ -193,7 +203,7 @@ function normalizedHistoryMap(histories) {
   return out;
 }
 
-function tfeSelectionsForSessions({ signalDates, histories, universeTickers, selectionBudget }) {
+function selectionsForSessions({ signalDates, histories, universeTickers, selectionBudget, analyzer, ranker }) {
   const normalized = normalizedHistoryMap(histories);
   const selected = [];
   const sessions = [];
@@ -210,7 +220,7 @@ function tfeSelectionsForSessions({ signalDates, histories, universeTickers, sel
       dateAvailable += 1;
       if (signalIndex < POLICY.minBars - 1) continue;
       sufficientHistory += 1;
-      const analysis = analyzeTicker({
+      const analysis = analyzer({
         ticker,
         rows: bars.slice(0, signalIndex + 1),
         historyMeta: { warnings: [] },
@@ -218,27 +228,28 @@ function tfeSelectionsForSessions({ signalDates, histories, universeTickers, sel
       });
       if (analysis?.eligible && analysis?.tradePlan) analyses.push(analysis);
     }
-    const ranked = rankAnalyses(analyses).slice(0, selectionBudget);
+    const ranked = ranker(analyses).slice(0, selectionBudget);
     for (const analysis of ranked) {
       selected.push({
         ticker: analysis.ticker,
         signalDate,
         plan: analysis.tradePlan,
         researchScore: analysis.scores?.research ?? null,
+        fusionRankScore: analysis.scores?.fusionRank ?? null,
       });
     }
     sessions.push({
       signalDate,
       universeWithBar: dateAvailable,
       universeWithSufficientHistory: sufficientHistory,
-      tfeEligible: analyses.length,
-      selected: ranked.map((x) => x.ticker),
+      eligible: analyses.length,
+      selected: ranked.map((x) => ({ ticker: x.ticker, research: x.scores?.research ?? null, fusionRank: x.scores?.fusionRank ?? null })),
     });
   }
   return { selected, sessions };
 }
 
-function sameDateTickerOverlap(a, b) {
+function overlapCount(a, b) {
   const bKeys = new Set(b.map((x) => keyOf(x.signalDate, x.ticker)));
   return a.filter((x) => bKeys.has(keyOf(x.signalDate, x.ticker))).length;
 }
@@ -262,17 +273,27 @@ function unavailableMetrics() {
   };
 }
 
+function evaluateSelection(selection, histories) {
+  const state = newState();
+  for (const event of selection) {
+    addResult(state, evaluateRecordedPlan({
+      ticker: event.ticker,
+      rows: histories[event.ticker] ?? [],
+      signalDate: event.signalDate,
+      plan: event.plan,
+      holdSessions: 10,
+    }));
+  }
+  return state;
+}
+
 export function buildAblationBenchmark({ v20Replay, v17TrackRecord, histories = {}, universeTickers = [], historyErrors = [] }) {
   const v20Events = extractV20ReplayEvents(v20Replay);
   const signalDates = [...new Set(v20Events.map((x) => x.signalDate))].sort();
   const selectionBudget = Math.max(1, Number(v20Replay?.comparisonContract?.selectedPerSession ?? 3) || 3);
   const capacity = signalDates.length * selectionBudget;
   const v20State = newState();
-  const diagnostics = {
-    missingHistory: 0,
-    v20PlanUnavailable: 0,
-    v20SignalBarUnavailable: 0,
-  };
+  const diagnostics = { missingHistory: 0, v20PlanUnavailable: 0, v20SignalBarUnavailable: 0 };
 
   for (const event of v20Events) {
     const rows = histories[event.ticker];
@@ -284,115 +305,110 @@ export function buildAblationBenchmark({ v20Replay, v17TrackRecord, histories = 
   }
 
   const effectiveUniverse = [...new Set((universeTickers.length ? universeTickers : Object.keys(histories)).map((x) => String(x).toUpperCase()).filter(Boolean))];
-  const tfeReplay = tfeSelectionsForSessions({ signalDates, histories, universeTickers: effectiveUniverse, selectionBudget });
-  const tfeState = newState();
-  for (const event of tfeReplay.selected) {
-    addResult(tfeState, evaluateRecordedPlan({ ticker: event.ticker, rows: histories[event.ticker] ?? [], signalDate: event.signalDate, plan: event.plan, holdSessions: 10 }));
-  }
+  const coreReplay = selectionsForSessions({
+    signalDates,
+    histories,
+    universeTickers: effectiveUniverse,
+    selectionBudget,
+    analyzer: (args) => analyzeTickerBase({ ...args, includeOverlay: false }),
+    ranker: rankResearchOnly,
+  });
+  const fusionReplay = selectionsForSessions({
+    signalDates,
+    histories,
+    universeTickers: effectiveUniverse,
+    selectionBudget,
+    analyzer: (args) => analyzeTicker({ ...args, v17: null }),
+    ranker: rankAnalyses,
+  });
 
+  const coreState = evaluateSelection(coreReplay.selected, histories);
+  const fusionState = evaluateSelection(fusionReplay.selected, histories);
   const v20Summary = summarizeState(v20State, capacity);
-  const tfeSummary = summarizeState(tfeState, capacity);
-  const fusionSummary = { ...tfeSummary };
+  const coreSummary = summarizeState(coreState, capacity);
+  const fusionSummary = summarizeState(fusionState, capacity);
+
   const v17Signals = collectV17SignalKeys(v17TrackRecord);
   const windowSet = new Set(signalDates);
   const v17RecordedSignalsInWindow = [...v17Signals.values()].filter((x) => windowSet.has(x.date)).length;
-  const overlap = sameDateTickerOverlap(v20Events, tfeReplay.selected);
 
   const variants = [
     {
-      id: 'V20_NATIVE_ONLY',
-      label: 'V20 Native',
-      decisionRole: 'NATIVE_SELECTION_ENGINE',
-      comparisonStatus: 'COMPARABLE_DIAGNOSTIC',
-      evidenceClass: 'RETROSPECTIVE_POINT_IN_TIME_RECONSTRUCTION',
-      historicalAttribution: 'POINT_IN_TIME_DIAGNOSTIC',
-      ...v20Summary,
-      deltaVsV20: deltas(v20Summary, v20Summary),
+      id: 'V20_NATIVE_ONLY', label: 'V20 Native', decisionRole: 'NATIVE_SELECTION_ENGINE',
+      comparisonStatus: 'COMPARABLE_DIAGNOSTIC', evidenceClass: 'RETROSPECTIVE_POINT_IN_TIME_RECONSTRUCTION', historicalAttribution: 'POINT_IN_TIME_DIAGNOSTIC',
+      ...v20Summary, deltaVsV20: deltas(v20Summary, v20Summary),
     },
     {
-      id: 'TFE_STANDALONE',
-      label: 'TFE standalone',
-      decisionRole: 'INDEPENDENT_FULL_MARKET_SCORING_ENGINE',
-      comparisonStatus: 'COMPARABLE_DIAGNOSTIC',
-      evidenceClass: 'POINT_IN_TIME_FULL_MARKET_REPLAY_ON_COMMON_SESSION_SET',
-      historicalAttribution: 'RECONSTRUCTED_CURRENT_UNIVERSE_POINT_IN_TIME',
-      ...tfeSummary,
-      deltaVsV20: deltas(tfeSummary, v20Summary),
+      id: 'TFE_CORE_STANDALONE', label: 'TFE Core standalone', decisionRole: 'TECHNICAL_RESEARCH_SCORE_AFTER_HARD_GATES',
+      comparisonStatus: 'COMPARABLE_DIAGNOSTIC', evidenceClass: 'POINT_IN_TIME_FULL_MARKET_REPLAY_RESEARCH_RANK', historicalAttribution: 'RECONSTRUCTED_CURRENT_UNIVERSE_POINT_IN_TIME',
+      ...coreSummary, deltaVsV20: deltas(coreSummary, v20Summary),
     },
     {
-      id: 'FULL_FUSION_RC1',
-      label: 'Full Fusion RC1',
-      decisionRole: 'TFE_DECISION_PLUS_NON_SCORING_V20_DISCOVERY_AND_V17_SAFETY_METADATA',
-      comparisonStatus: 'DECISION_EQUIVALENT_TO_TFE_STANDALONE_IN_RC1',
-      evidenceClass: 'RC1_SOURCE_PATH_ATTRIBUTION',
-      historicalAttribution: 'SAME_RESEARCH_DECISION_PATH_AS_TFE_STANDALONE',
-      decisionEquivalentTo: 'TFE_STANDALONE',
-      ...fusionSummary,
-      deltaVsV20: deltas(fusionSummary, v20Summary),
+      id: 'FULL_FUSION_RC2', label: 'Full Fusion RC2', decisionRole: 'TFE_CORE_PLUS_WILSON_HISTORICAL_CONFIDENCE_AFTER_HARD_GATES',
+      comparisonStatus: 'COMPARABLE_DIAGNOSTIC', evidenceClass: 'POINT_IN_TIME_FULL_MARKET_REPLAY_FUSION_RANK', historicalAttribution: 'RECONSTRUCTED_CURRENT_UNIVERSE_POINT_IN_TIME',
+      ...fusionSummary, deltaVsV20: deltas(fusionSummary, v20Summary),
+      deltaVsTfeCore: deltas(fusionSummary, coreSummary),
     },
     {
-      id: 'V17_SAFETY_OVERLAY',
-      label: 'V17 Safety overlay',
-      decisionRole: 'SAFETY_AND_EXECUTION_METADATA_OVERLAY',
-      comparisonStatus: 'NOT_COMPARABLE_EXACT_HISTORICAL_OVERLAY_STATE_NOT_ARCHIVED',
-      evidenceClass: 'RECORDED_V17_EVIDENCE_PARTIAL_ONLY',
-      historicalAttribution: 'NO_PERFORMANCE_CLAIM',
-      ...unavailableMetrics(),
-      deltaVsV20: { target1Pct: null, stopPct: null, avgNetPct: null, profitFactor: null, maxDrawdownPct: null },
+      id: 'V17_SAFETY_OVERLAY', label: 'V17 Safety overlay', decisionRole: 'SAFETY_AND_EXECUTION_METADATA_OVERLAY',
+      comparisonStatus: 'NOT_COMPARABLE_EXACT_HISTORICAL_OVERLAY_STATE_NOT_ARCHIVED', evidenceClass: 'RECORDED_V17_EVIDENCE_PARTIAL_ONLY', historicalAttribution: 'NO_PERFORMANCE_CLAIM',
+      ...unavailableMetrics(), deltaVsV20: { target1Pct: null, stopPct: null, avgNetPct: null, profitFactor: null, maxDrawdownPct: null },
     },
   ];
 
   return {
-    benchmarkId: 'TFE_V20_EVIDENCE_AWARE_ABLATION_V2',
+    benchmarkId: 'TFE_V20_EVIDENCE_AWARE_ABLATION_V3_RC2',
     status: 'RESEARCH_DIAGNOSTIC_ONLY',
+    engineUnderTest: POLICY.engineId,
     promotionEligible: false,
     commonCohort: {
       sessionSetSource: v20Replay?.engineId ?? 'V20_RETROSPECTIVE_REPLAY',
-      sessions: signalDates.length,
-      signalDates,
-      from: signalDates[0] ?? null,
-      to: signalDates.at(-1) ?? null,
-      selectionBudgetPerSession: selectionBudget,
-      maximumComparableSelections: capacity,
+      sessions: signalDates.length, signalDates, from: signalDates[0] ?? null, to: signalDates.at(-1) ?? null,
+      selectionBudgetPerSession: selectionBudget, maximumComparableSelections: capacity,
       fullMarketUniverseTickers: effectiveUniverse.length,
       v20RecordedSelections: v20Events.length,
-      tfeReconstructedSelections: tfeReplay.selected.length,
-      sameDateTickerOverlap: overlap,
+      tfeCoreReconstructedSelections: coreReplay.selected.length,
+      fusionRc2ReconstructedSelections: fusionReplay.selected.length,
+      overlapV20VsTfeCore: overlapCount(v20Events, coreReplay.selected),
+      overlapV20VsFusionRc2: overlapCount(v20Events, fusionReplay.selected),
+      overlapTfeCoreVsFusionRc2: overlapCount(coreReplay.selected, fusionReplay.selected),
       historyErrors,
     },
     methodology: {
       noLookahead: true,
       sessionSetFrozenBeforeOutcomeEvaluation: true,
       selectionBudgetPerSession: selectionBudget,
-      entryTiming: 'NEXT_SESSION_OR_LATER_ONLY',
-      entryExpirySessions: POLICY.entryExpirySessions,
-      maxHoldSessions: 10,
-      sameBarAmbiguity: 'STOP_FIRST',
-      roundTripCostPct: POLICY.roundTripCostPct,
-      target: 'TARGET1',
-      minimumComparativeEnteredSample: 30,
-      tfeSelection: 'REPLAY_FULL_MARKET_AT_EACH_COMMON_SIGNAL_DATE_THEN_RANK_AND_TAKE_TOP_N',
+      entryTiming: 'NEXT_SESSION_OR_LATER_ONLY', entryExpirySessions: POLICY.entryExpirySessions,
+      maxHoldSessions: 10, sameBarAmbiguity: 'STOP_FIRST', roundTripCostPct: POLICY.roundTripCostPct,
+      target: 'TARGET1', minimumComparativeEnteredSample: 30,
+      tfeCoreSelection: 'HARD_GATES_THEN_RESEARCH_SCORE_RANK_TOP_N',
+      fusionRc2Selection: 'SAME_HARD_GATES_THEN_EVIDENCE_AWARE_FUSION_RANK_TOP_N',
+      historicalConfidence: 'WILSON_95_LOWER_BOUND_WEIGHTED_BY_SAMPLE_RELIABILITY',
+      historicalConfidenceCanBypassHardGates: false,
+      missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
       maxDrawdown: 'COMPOUNDED_TRADE_SEQUENCE_DIAGNOSTIC_NOT_CONCURRENT_PORTFOLIO_DRAWDOWN',
     },
     architectureFinding: {
-      v20DiscoveryAffectsTfeScoreInRc1: false,
-      v20DiscoveryAffectsResearchEligibilityInRc1: false,
-      v17OverlayAffectsResearchEligibilityInRc1: false,
-      v17OverlayAffectsResearchRankInRc1: false,
-      fullFusionResearchDecisionEquivalentTo: 'TFE_STANDALONE',
-      interpretation: 'RC1 V20 and V17 layers add discovery/provenance/safety context but do not change the TFE research scoring or ranking path.',
+      v20DiscoveryAffectsTfeCoreScore: false,
+      v20DiscoveryAffectsResearchEligibility: false,
+      v17OverlayAffectsResearchEligibility: false,
+      v17OverlayAffectsFusionRank: false,
+      rc2HistoricalConfidenceAffectsRankAfterHardGates: true,
+      rc2HistoricalConfidenceCanRescueRejectedCandidate: false,
+      interpretation: 'RC2 keeps V20 discovery and V17 safety as non-scoring overlays, but unlike RC1 it can reorder already-eligible TFE candidates using Wilson historical confidence after the hard gates.',
     },
     diagnostics: {
       ...diagnostics,
       v17RecordedSignalsInWindow,
-      tfeSessions: tfeReplay.sessions,
+      tfeCoreSessions: coreReplay.sessions,
+      fusionRc2Sessions: fusionReplay.sessions,
     },
     variants,
     limitations: [
       'V20 is retrospective point-in-time reconstruction, not fresh forward evidence.',
-      'TFE is replayed on the same session set using the currently reconstructable full-market history universe; exact historical market membership is not archived, so survivorship bias remains possible.',
-      'Exact historical V17 Safety Overlay state is not archived for the full window, so V17 is shown as NOT COMPARABLE rather than assigning fabricated returns.',
-      'Full Fusion RC1 research performance equals TFE standalone by construction because the RC1 V20 discovery and V17 overlay fields do not alter research eligibility, score, trade plan, or ranking.',
+      'TFE Core and RC2 Fusion are replayed on the same session set using the currently reconstructable full-market universe; exact historical market membership is not archived, so survivorship bias remains possible.',
+      'Historical confidence is recomputed point-in-time from bars visible at each signal date; it never bypasses the hard gates.',
+      'Exact historical V17 Safety Overlay state is not archived for the full window, so V17 remains NOT COMPARABLE rather than receiving fabricated returns.',
       'Samples below 30 entered trades remain LOW_SAMPLE_DIAGNOSTIC and cannot support promotion claims.',
     ],
   };
