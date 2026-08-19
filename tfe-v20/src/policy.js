@@ -1,0 +1,36 @@
+export const POLICY = Object.freeze({
+  engineId: 'TFE_V20_FUSION_RC1',
+  schemaVersion: '20.tfe.1',
+  minBars: 60,
+  minCoreScore: 70,
+  minResearchScore: 72,
+  minLiquidityScore: 55,
+  minSrScore: 55,
+  minSrMethods: 2,
+  minStructuralNetRR: 0.70,
+  precisionTargetR: 0.80,
+  maxPullbackDistanceAtr: 0.70,
+  entryAtr: 0.38,
+  entryPct: 0.45,
+  stopAtr: 0.70,
+  stopPct: 0.80,
+  entryExpirySessions: 3,
+  maxHoldSessions: 10,
+  roundTripCostPct: 0.60,
+  quality: {
+    hardBlockWarnings: [
+      'corporate_action_review_required',
+      'not_officially_verified',
+      'historical_seed_not_officially_verified'
+    ],
+    conflictReviewPct: 5,
+    conflictBlockPct: 20,
+  },
+  permissions: Object.freeze({
+    researchOnly: true,
+    executionAllowed: false,
+    productionAllocation: false,
+    automaticOrders: false,
+    automaticChampionPromotion: false,
+  }),
+});
