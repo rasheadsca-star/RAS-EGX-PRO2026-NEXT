@@ -10,6 +10,22 @@ const json = (res, status, body) => {
   res.end(JSON.stringify(body));
 };
 
+function withPublicationGate(result) {
+  const technicalEligible = Boolean(result?.eligible);
+  const publicationHold = Boolean(result?.quality?.publicationHold);
+  const publicationEligible = technicalEligible && !publicationHold;
+  return {
+    ...result,
+    technicalEligible,
+    publicationEligible,
+    publicationState: publicationHold
+      ? 'PRICE_RECONCILIATION_REQUIRED'
+      : publicationEligible
+        ? 'RESEARCH_CANDIDATE'
+        : 'REJECTED',
+  };
+}
+
 function reasonCounts(items) {
   const counts = {};
   for (const x of items) for (const r of x.reasonCodes ?? (x.error ? ['HISTORY_LOAD_ERROR'] : [])) counts[r] = (counts[r] ?? 0) + 1;
@@ -23,16 +39,22 @@ async function scan(outputLimit = 20) {
     const batch = await Promise.all(candidates.slice(i, i + 16).map(async (d) => {
       try {
         const h = await loadHistory(d.ticker);
-        return analyzeTicker({ ticker: d.ticker, nameAr: d.nameAr, nameEn: d.nameEn, rows: h.rows, historyMeta: h.meta, v17, discovery: d, expectedSessionDate });
+        const analyzed = analyzeTicker({ ticker: d.ticker, nameAr: d.nameAr, nameEn: d.nameEn, rows: h.rows, historyMeta: h.meta, v17, discovery: d, expectedSessionDate });
+        return withPublicationGate(analyzed);
       } catch (e) {
-        return { ticker: d.ticker, eligible: false, decision: 'NO_RECOMMENDATION', error: e.message, permissions: POLICY.permissions };
+        return withPublicationGate({ ticker: d.ticker, eligible: false, decision: 'NO_RECOMMENDATION', error: e.message, permissions: POLICY.permissions });
       }
     }));
     results.push(...batch);
   }
-  const allRanked = rankAnalyses(results);
+
+  const technicalEligible = results.filter((x) => x.technicalEligible);
+  const publishable = results.filter((x) => x.publicationEligible);
+  const withheld = results.filter((x) => x.technicalEligible && !x.publicationEligible);
+  const rejected = results.filter((x) => !x.technicalEligible);
+  const allRanked = rankAnalyses(publishable);
   const recommendations = allRanked.slice(0, outputLimit);
-  const rejected = results.filter((x) => !x.eligible);
+
   return {
     ok: true, engine: POLICY.engineId, schemaVersion: POLICY.schemaVersion, generatedAt: new Date().toISOString(),
     mode: 'RESEARCH_ONLY', permissions: POLICY.permissions,
@@ -46,8 +68,21 @@ async function scan(outputLimit = 20) {
       nativeOverlayOnly: true,
     },
     v17: v17 ? { status: v17.status, sessionDate: v17.sessionDate, executionReady: Boolean(v17.readiness?.executionReady), executionOverride: false } : { available: false },
-    summary: { scanned: results.length, eligibleTotal: allRanked.length, returned: recommendations.length, rejected: rejected.length },
+    summary: {
+      scanned: results.length,
+      technicalEligibleTotal: technicalEligible.length,
+      publicationEligibleTotal: allRanked.length,
+      withheldForPriceReconciliation: withheld.length,
+      returned: recommendations.length,
+      rejected: rejected.length,
+    },
     recommendations,
+    withheldForReconciliation: withheld.map((x) => ({
+      ticker: x.ticker,
+      technicalResearchScore: x.scores?.research ?? null,
+      conflictPct: x.quality?.conflictPct ?? null,
+      holdReason: x.quality?.publicationHoldReason ?? 'PRICE_RECONCILIATION_REQUIRED',
+    })),
     rejectionReasonCounts: reasonCounts(rejected),
     rejectedSample: rejected.slice(0, 40).map((x) => ({ ticker: x.ticker, reasonCodes: x.reasonCodes ?? [], quality: x.quality?.state ?? null, reviewFlags: x.quality?.reviewFlags ?? [], error: x.error ?? null })),
   };
@@ -90,8 +125,8 @@ export default async function handler(req, res) {
       const ticker = String(url.searchParams.get('ticker') ?? '').trim().toUpperCase();
       if (!ticker) return json(res, 400, { ok: false, error: 'ticker is required' });
       const [h, v17, hs] = await Promise.all([loadHistory(ticker), loadV17(), loadHistorySummary()]);
-      const result = analyzeTicker({ ticker, rows: h.rows, historyMeta: h.meta, v17, expectedSessionDate: hs?.latestMarketSession ?? null });
-      return json(res, 200, { ok: true, result });
+      const analyzed = analyzeTicker({ ticker, rows: h.rows, historyMeta: h.meta, v17, expectedSessionDate: hs?.latestMarketSession ?? null });
+      return json(res, 200, { ok: true, result: withPublicationGate(analyzed) });
     }
     if (route === 'simulate') {
       const scope = String(url.searchParams.get('scope') ?? 'ticker').toLowerCase();
