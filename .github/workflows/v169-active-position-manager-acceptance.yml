@@ -55,10 +55,57 @@ jobs:
             localPortfolioOnly:out.portfolioPersonalization?.localOnly===true,
             tenMinuteCadence:out.refreshIntervalMinutes===10,
             allRowsHaveActions:(out.recommendations||[]).every(r=>r.action?.code && r.action?.automaticOrder===false),
+            currentMarketSessionContract:out.sessionContract?.managementSessionIsCurrentMarketSession===true,
+            signalAndManagementSeparated:out.sessionContract?.nextSessionMayDifferFromSignalDate===true,
           };
           console.log({expected,actual,checks});
           if(Object.values(checks).some(v=>v!==true)) process.exit(1);
           NODE
+
+      - name: Prove next-session prices are managed against the market session not signal date
+        run: |
+          set -euo pipefail
+          cp data/market.json /tmp/position-market.json
+          cp data/stable/v16-ls1-late-session-opportunities.json /tmp/position-ls1.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const current=JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json','utf8'));
+          const market=JSON.parse(fs.readFileSync('data/market.json','utf8'));
+          const ls1=JSON.parse(fs.readFileSync('data/stable/v16-ls1-late-session-opportunities.json','utf8'));
+          const first=(current.recommendations||[])[0];
+          if(!first?.ticker) throw new Error('No current recommendation for synthetic next-session test');
+          const mid=(Number(first.entryLow)+Number(first.entryHigh))/2;
+          let matched=0;
+          for(const row of market.rows||[]){
+            const ticker=String(row.ticker||row.symbol||'').toUpperCase();
+            if(ticker!==String(first.ticker).toUpperCase()) continue;
+            row.price=mid; row.last=mid; row.open=mid; row.high=mid; row.low=mid;
+            row.sourceSessionDate='2099-01-02'; row.marketSessionDate='2099-01-02';
+            row.updatedAt='2099-01-02T10:00:00.000Z';
+            matched++;
+          }
+          if(!matched) throw new Error(`Ticker ${first.ticker} not found in market rows`);
+          ls1.evidence={...(ls1.evidence||{}),intradaySnapshotCairoDate:'2099-01-02'};
+          fs.writeFileSync('data/market.json',JSON.stringify(market,null,2)+'\n');
+          fs.writeFileSync('data/stable/v16-ls1-late-session-opportunities.json',JSON.stringify(ls1,null,2)+'\n');
+          NODE
+          EGX_POSITION_MANAGER_SESSION_DATE=2099-01-02 node scripts/stable/v16-active-position-manager.cjs
+          node - <<'NODE'
+          const fs=require('fs');
+          const out=JSON.parse(fs.readFileSync('data/stable/v16-active-position-manager.json','utf8'));
+          const first=(out.recommendations||[])[0];
+          const checks={
+            signalDateRemainsOriginal:out.signalDate!=='2099-01-02',
+            managementSessionIsNextSession:out.managementSessionDate==='2099-01-02',
+            tickerSessionVerified:first?.market?.sessionVerified===true,
+            notBlockedByOldSignalDate:first?.action?.code!=='WAIT_DATA',
+            validationMode:first?.market?.sessionValidationMode==='CURRENT_MARKET_SESSION_NOT_SIGNAL_DATE',
+          };
+          console.log({ticker:first?.ticker,action:first?.action?.code,checks});
+          if(Object.values(checks).some(v=>v!==true)) process.exit(1);
+          NODE
+          mv /tmp/position-market.json data/market.json
+          mv /tmp/position-ls1.json data/stable/v16-ls1-late-session-opportunities.json
 
       - name: Verify ten-minute workflow and UI action vocabulary
         run: |
@@ -84,10 +131,14 @@ jobs:
           NODE
 
       - name: Prove frozen recommendation selection is untouched
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          git fetch origin main --depth=1
-          git diff --quiet origin/main...HEAD -- scripts/research/v16-v169-basket-engine.py
-          git diff --quiet origin/main...HEAD -- scripts/stable/v16-publish-v169-basket.cjs
-          git diff --quiet origin/main...HEAD -- scripts/stable/v16-session-data-fingerprint.cjs
-          echo 'PASS: active position management is post-selection only.'
+          if ! git cat-file -e "${PR_BASE_SHA}^{commit}" 2>/dev/null; then
+            git fetch origin "$PR_BASE_SHA" --depth=1
+          fi
+          git diff --quiet "$PR_BASE_SHA" HEAD -- scripts/research/v16-v169-basket-engine.py
+          git diff --quiet "$PR_BASE_SHA" HEAD -- scripts/stable/v16-publish-v169-basket.cjs
+          git diff --quiet "$PR_BASE_SHA" HEAD -- scripts/stable/v16-session-data-fingerprint.cjs
+          echo "PASS: frozen recommendation selection is unchanged relative to PR base $PR_BASE_SHA."
