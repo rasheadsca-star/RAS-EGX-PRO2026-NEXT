@@ -17,8 +17,9 @@
 
 ## ملاحظات التشغيل
 
+- تحذير: Candidate market data age reached 842.1 minutes.
 - تحذير: Data coverage is 97.77%, below preferred 98%.
-- تحذير: 36 scheduled legacy workflow(s) may cause independent updates.
-- تحذير: 41 workflows can deploy Pages.
+- تحذير: 37 scheduled legacy workflow(s) may cause independent updates.
+- تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `2d01451894505f5adeb8f456097f09552fe4187065c6fb79cd79353e5d7abcc6`
+بصمة التقرير: `5ee108bd8e19fd7579212ecd888ee8e40704dfb39457026749e93c83db528c7c`
