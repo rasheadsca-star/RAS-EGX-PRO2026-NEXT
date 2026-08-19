@@ -2,6 +2,7 @@ import { POLICY } from '../src/policy.js';
 import { analyzeTicker, rankAnalyses } from '../src/engine.js';
 import { backtestHistory, summarizeBacktest } from '../src/backtest.js';
 import { buildAblationBenchmark } from '../src/ablation.js';
+import { buildDecisionLogRows, toDecisionLogCsv } from '../src/decisionLog.js';
 import { fetchJson, rawUrl, loadUniverse, loadHistory, loadV17, loadHistorySummary } from '../src/repository.js';
 
 const DATA_BRANCH = 'develop/v20-integrated-decision-platform';
@@ -59,8 +60,19 @@ async function scan(outputLimit = 20) {
   const recommendations = allRanked.slice(0, outputLimit);
 
   return {
-    ok: true, engine: POLICY.engineId, schemaVersion: POLICY.schemaVersion, generatedAt: new Date().toISOString(),
-    mode: 'RESEARCH_ONLY', permissions: POLICY.permissions,
+    ok: true,
+    engine: POLICY.engineId,
+    schemaVersion: POLICY.schemaVersion,
+    generatedAt: new Date().toISOString(),
+    mode: 'RESEARCH_ONLY',
+    permissions: POLICY.permissions,
+    ranking: {
+      primary: 'FUSION_RANK',
+      hardGatesBeforeHistoricalConfidence: true,
+      researchWeight: POLICY.fusionRank.researchWeight,
+      historicalConfidenceWeight: POLICY.fusionRank.historicalConfidenceWeight,
+      historicalConfidenceMethod: 'WILSON_95_LOWER_BOUND_SHRUNK_BY_SAMPLE_RELIABILITY',
+    },
     universe: {
       mode: universeMode,
       sessionDate: expectedSessionDate,
@@ -83,6 +95,7 @@ async function scan(outputLimit = 20) {
     withheldForReconciliation: withheld.map((x) => ({
       ticker: x.ticker,
       technicalResearchScore: x.scores?.research ?? null,
+      fusionRankScore: x.scores?.fusionRank ?? null,
       conflictPct: x.quality?.conflictPct ?? null,
       holdReason: x.quality?.publicationHoldReason ?? 'PRICE_RECONCILIATION_REQUIRED',
     })),
@@ -105,15 +118,30 @@ async function simulateMarket(maxSymbols = 220) {
     }));
     for (const r of batch) {
       if (r.error) { errors.push({ ticker: r.ticker, error: r.error }); continue; }
-      allTrades.push(...r.bt.trades); allExpired.push(...r.bt.expired.map((x) => ({ ticker: r.ticker, ...x })));
+      allTrades.push(...r.bt.trades);
+      allExpired.push(...r.bt.expired.map((x) => ({ ticker: r.ticker, ...x })));
       perTicker.push({ ticker: r.ticker, ...r.bt.summary });
     }
   }
   const aggregate = summarizeBacktest(allTrades, allExpired).summary;
   return {
-    ok: true, engine: POLICY.engineId, scope: 'RECORDED_FULL_MARKET_HISTORY',
-    methodology: { noLookahead: true, entryAfterSignal: true, entryExpirySessions: POLICY.entryExpirySessions, maxHoldSessions: POLICY.maxHoldSessions, sameBarAmbiguity: 'STOP_FIRST', costPct: POLICY.roundTripCostPct, presentDayQualityWarningsExcludedFromPastSignals: true },
-    symbolsRequested: selected.length, symbolsCompleted: perTicker.length, errors,
+    ok: true,
+    engine: POLICY.engineId,
+    scope: 'RECORDED_FULL_MARKET_HISTORY',
+    methodology: {
+      technicalCore: 'ORIGINAL_SCOREBARS_SMA50_SMA200_RSI14_MACD_ATR_VOLUME',
+      hardGates: true,
+      noLookahead: true,
+      entryAfterSignal: true,
+      entryExpirySessions: POLICY.entryExpirySessions,
+      maxHoldSessions: POLICY.maxHoldSessions,
+      sameBarAmbiguity: 'STOP_FIRST',
+      costPct: POLICY.roundTripCostPct,
+      presentDayQualityWarningsExcludedFromPastSignals: true,
+    },
+    symbolsRequested: selected.length,
+    symbolsCompleted: perTicker.length,
+    errors,
     summary: aggregate,
     perTicker: perTicker.filter((x) => x.entered > 0).sort((a,b) => (b.target1Pct ?? -1) - (a.target1Pct ?? -1) || b.entered - a.entered),
   };
@@ -150,13 +178,39 @@ export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const route = url.searchParams.get('route') ?? 'scan';
-    if (route === 'health') return json(res, 200, { ok: true, engine: POLICY.engineId, policy: POLICY, invariant: 'RESEARCH_ONLY_EXECUTION_BLOCKED', ablationBenchmark: 'AVAILABLE_RESEARCH_DIAGNOSTIC' });
+    if (route === 'health') return json(res, 200, {
+      ok: true,
+      engine: POLICY.engineId,
+      policy: POLICY,
+      invariant: 'RESEARCH_ONLY_EXECUTION_BLOCKED',
+      technicalCore: 'ORIGINAL_SCOREBARS_PRESERVED',
+      historicalConfidence: 'WILSON_AFTER_HARD_GATES_ONLY',
+      decisionLog: 'AVAILABLE',
+      ablationBenchmark: 'AVAILABLE_RESEARCH_DIAGNOSTIC',
+    });
     if (route === 'analyze') {
       const ticker = String(url.searchParams.get('ticker') ?? '').trim().toUpperCase();
       if (!ticker) return json(res, 400, { ok: false, error: 'ticker is required' });
       const [h, v17, hs] = await Promise.all([loadHistory(ticker), loadV17(), loadHistorySummary()]);
       const analyzed = analyzeTicker({ ticker, rows: h.rows, historyMeta: h.meta, v17, expectedSessionDate: hs?.latestMarketSession ?? null });
       return json(res, 200, { ok: true, result: withPublicationGate(analyzed) });
+    }
+    if (route === 'decision-log') {
+      const limit = Math.max(5, Math.min(50, Number(url.searchParams.get('limit') ?? 50) || 50));
+      const scanned = await scan(limit);
+      const sourceCommit = String(res.getHeader?.('x-tfe-source-commit') ?? '') || null;
+      const rows = buildDecisionLogRows(scanned.recommendations, {
+        sessionDate: scanned.universe?.sessionDate ?? null,
+        generatedAt: scanned.generatedAt,
+        sourceCommit,
+      });
+      if (String(url.searchParams.get('format') ?? 'json').toLowerCase() === 'csv') {
+        res.statusCode = 200;
+        res.setHeader('content-type', 'text/csv; charset=utf-8');
+        res.setHeader('cache-control', 'no-store');
+        return res.end(toDecisionLogCsv(rows));
+      }
+      return json(res, 200, { ok: true, engine: POLICY.engineId, sessionDate: scanned.universe?.sessionDate ?? null, generatedAt: scanned.generatedAt, rows });
     }
     if (route === 'ablation') return json(res, 200, await ablationMarket());
     if (route === 'simulate') {
@@ -167,7 +221,7 @@ export default async function handler(req, res) {
       }
       const ticker = String(url.searchParams.get('ticker') ?? 'ETEL').trim().toUpperCase();
       const h = await loadHistory(ticker);
-      return json(res, 200, { ok: true, engine: POLICY.engineId, ticker, methodology: { noLookahead: true, entryAfterSignal: true, sameBarAmbiguity: 'STOP_FIRST', costPct: POLICY.roundTripCostPct, presentDayQualityWarningsExcludedFromPastSignals: true }, ...backtestHistory({ ticker, rows: h.rows, historyMeta: h.meta }) });
+      return json(res, 200, { ok: true, engine: POLICY.engineId, ticker, methodology: { technicalCore: 'ORIGINAL_SCOREBARS_SMA50_SMA200_RSI14_MACD_ATR_VOLUME', noLookahead: true, entryAfterSignal: true, sameBarAmbiguity: 'STOP_FIRST', costPct: POLICY.roundTripCostPct, presentDayQualityWarningsExcludedFromPastSignals: true }, ...backtestHistory({ ticker, rows: h.rows, historyMeta: h.meta }) });
     }
     const limit = Math.max(5, Math.min(50, Number(url.searchParams.get('limit') ?? 20) || 20));
     return json(res, 200, await scan(limit));
