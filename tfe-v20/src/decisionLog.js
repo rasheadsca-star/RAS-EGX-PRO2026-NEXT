@@ -1,8 +1,8 @@
 const COLUMNS = [
   'sessionDate','generatedAt','rank','ticker','decision','publicationState','price',
-  'technicalScore','technicalReading','researchScore','fusionRankScore','liquidityScore','srScore',
+  'technicalScore','technicalReading','researchScore','fusionRankScore','fusionResearchWeight','fusionHistoricalWeight','liquidityScore','srScore',
   'entryLow','entryHigh','stop','target1','target2','structuralNetRR','alignmentState',
-  'historicalTrades','historicalT1Pct','historicalWilsonLower95Pct','historicalAvgNetPct',
+  'historicalTrades','historicalT1Pct','historicalWilsonLower95Pct','historicalSampleReliability','historicalAvgNetPct',
   'dataQuality','priceConflictPct','v17Status','sourceCommit'
 ];
 
@@ -24,6 +24,8 @@ export function buildDecisionLogRows(items, { sessionDate = null, generatedAt = 
     technicalReading: x.technical?.technicalReading ?? null,
     researchScore: x.scores?.research,
     fusionRankScore: x.scores?.fusionRank,
+    fusionResearchWeight: x.fusionWeights?.research ?? null,
+    fusionHistoricalWeight: x.fusionWeights?.historicalConfidence ?? null,
     liquidityScore: x.scores?.liquidity,
     srScore: x.scores?.supportResistance,
     entryLow: x.tradePlan?.entryLow,
@@ -36,6 +38,7 @@ export function buildDecisionLogRows(items, { sessionDate = null, generatedAt = 
     historicalTrades: x.historicalConfidence?.historicalTradeCount,
     historicalT1Pct: x.historicalConfidence?.target1HitRatePct,
     historicalWilsonLower95Pct: x.historicalConfidence?.confidenceWilsonLower95Pct,
+    historicalSampleReliability: x.historicalConfidence?.sampleReliability,
     historicalAvgNetPct: x.historicalConfidence?.avgNetPct,
     dataQuality: x.quality?.state,
     priceConflictPct: x.quality?.conflictPct,
