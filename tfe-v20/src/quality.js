@@ -26,34 +26,62 @@ export function parseLatestConflictPct(warnings = []) {
   return null;
 }
 
-export function assessDataQuality({ bars, warnings = [], updateFailed = false, staleData = false, expectedSessionDate = null, symbolVerified = null, symbolVerification = null }) {
+export function assessDataQuality({
+  bars,
+  warnings = [],
+  updateFailed = false,
+  staleData = false,
+  expectedSessionDate = null,
+  symbolVerified = null,
+  symbolVerification = null,
+  officiallyVerifiedLatestSession = null,
+} = {}) {
   const reasons = [];
+  const reviewFlags = [];
   const lastDate = bars.at(-1)?.date ?? null;
   if (updateFailed) reasons.push('UPDATE_FAILED');
   if (staleData) reasons.push('STALE_DATA_FLAG');
   if (bars.length < POLICY.minBars) reasons.push('INSUFFICIENT_HISTORY');
   if (expectedSessionDate && lastDate && lastDate < expectedSessionDate) reasons.push('SESSION_BEHIND_REFERENCE');
-  if (symbolVerified === false) reasons.push('SYMBOL_IDENTITY_UNVERIFIED');
+  if (symbolVerified === false || symbolVerification?.verified === false) reasons.push('SYMBOL_IDENTITY_UNVERIFIED');
+
   const identityDiffPct = toNum(symbolVerification?.evidence?.localDifferencePct);
   const identityMaxDiffPct = toNum(symbolVerification?.evidence?.guardedMaxDifferencePct) ?? 8;
-  if (identityDiffPct !== null && identityDiffPct > identityMaxDiffPct && symbolVerification?.guardedVerified !== true) {
-    reasons.push('SYMBOL_REFERENCE_DIVERGENCE');
-  }
+  const identityReferenceDivergence = identityDiffPct !== null && identityDiffPct > identityMaxDiffPct;
+  // Upstream local verification can compare against a cache without enforcing session-date alignment.
+  // If exact symbol/exchange/currency identity already passed, divergence is review evidence, not a hard block.
+  if (identityReferenceDivergence) reviewFlags.push('LOCAL_REFERENCE_DIVERGENCE_REVIEW');
+  if (symbolVerification?.guardedVerified === true) reviewFlags.push('GUARDED_IDENTITY_REVIEW');
+  if (officiallyVerifiedLatestSession === false) reviewFlags.push('LATEST_SESSION_NOT_OFFICIALLY_VERIFIED');
+
   const warningText = warnings.map(String);
   const hardWarning = POLICY.quality.hardBlockWarnings.find((needle) => warningText.some((w) => w.includes(needle)));
   if (hardWarning) reasons.push(`HARD_WARNING:${hardWarning}`);
   const conflictPct = parseLatestConflictPct(warningText);
-  if (conflictPct !== null && conflictPct >= POLICY.quality.conflictBlockPct) reasons.push('SOURCE_CONFLICT_BLOCK');
+  if (conflictPct !== null && conflictPct >= POLICY.quality.conflictReviewPct) reviewFlags.push('LOCAL_REFERENCE_CLOSE_CONFLICT_REVIEW');
+  if (conflictPct !== null && conflictPct >= POLICY.quality.conflictBlockPct) reviewFlags.push('HIGH_LOCAL_REFERENCE_CONFLICT_REVIEW');
+  if (warningText.length > 0) reviewFlags.push('SOURCE_WARNING_PRESENT');
 
-  let state = reasons.length ? 'BLOCKED' : 'TRUSTED';
-  if (state !== 'BLOCKED' && conflictPct !== null && conflictPct >= POLICY.quality.conflictReviewPct) state = 'REVIEW';
-  if (state !== 'BLOCKED' && warningText.length > 0 && state === 'TRUSTED') state = 'REVIEW';
-
+  const state = reasons.length ? 'BLOCKED' : (reviewFlags.length ? 'REVIEW' : 'TRUSTED');
   let score = 100;
-  score -= Math.min(25, warningText.length * 4);
-  if (conflictPct !== null) score -= Math.min(35, conflictPct * 1.2);
+  score -= Math.min(16, warningText.length * 4);
+  if (conflictPct !== null) score -= Math.min(18, conflictPct * 0.45);
+  if (identityReferenceDivergence) score -= Math.min(10, identityDiffPct * 0.10);
+  if (officiallyVerifiedLatestSession === false) score = Math.min(score, 85);
   if (state === 'REVIEW') score = Math.min(score, 78);
   if (state === 'BLOCKED') score = Math.min(score, 30);
 
-  return { state, score: round(clamp(score), 1), reasons, warnings: warningText, conflictPct, identityDiffPct, identityMaxDiffPct, lastDate };
+  return {
+    state,
+    score: round(clamp(score), 1),
+    reasons,
+    reviewFlags: [...new Set(reviewFlags)],
+    warnings: warningText,
+    conflictPct,
+    identityDiffPct,
+    identityMaxDiffPct,
+    identityReferenceDivergence,
+    latestOfficiallyVerified: officiallyVerifiedLatestSession,
+    lastDate,
+  };
 }
