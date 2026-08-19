@@ -26,13 +26,19 @@ export function parseLatestConflictPct(warnings = []) {
   return null;
 }
 
-export function assessDataQuality({ bars, warnings = [], updateFailed = false, staleData = false, expectedSessionDate = null }) {
+export function assessDataQuality({ bars, warnings = [], updateFailed = false, staleData = false, expectedSessionDate = null, symbolVerified = null, symbolVerification = null }) {
   const reasons = [];
   const lastDate = bars.at(-1)?.date ?? null;
   if (updateFailed) reasons.push('UPDATE_FAILED');
   if (staleData) reasons.push('STALE_DATA_FLAG');
   if (bars.length < POLICY.minBars) reasons.push('INSUFFICIENT_HISTORY');
   if (expectedSessionDate && lastDate && lastDate < expectedSessionDate) reasons.push('SESSION_BEHIND_REFERENCE');
+  if (symbolVerified === false) reasons.push('SYMBOL_IDENTITY_UNVERIFIED');
+  const identityDiffPct = toNum(symbolVerification?.evidence?.localDifferencePct);
+  const identityMaxDiffPct = toNum(symbolVerification?.evidence?.guardedMaxDifferencePct) ?? 8;
+  if (identityDiffPct !== null && identityDiffPct > identityMaxDiffPct && symbolVerification?.guardedVerified !== true) {
+    reasons.push('SYMBOL_REFERENCE_DIVERGENCE');
+  }
   const warningText = warnings.map(String);
   const hardWarning = POLICY.quality.hardBlockWarnings.find((needle) => warningText.some((w) => w.includes(needle)));
   if (hardWarning) reasons.push(`HARD_WARNING:${hardWarning}`);
@@ -49,5 +55,5 @@ export function assessDataQuality({ bars, warnings = [], updateFailed = false, s
   if (state === 'REVIEW') score = Math.min(score, 78);
   if (state === 'BLOCKED') score = Math.min(score, 30);
 
-  return { state, score: round(clamp(score), 1), reasons, warnings: warningText, conflictPct, lastDate };
+  return { state, score: round(clamp(score), 1), reasons, warnings: warningText, conflictPct, identityDiffPct, identityMaxDiffPct, lastDate };
 }
