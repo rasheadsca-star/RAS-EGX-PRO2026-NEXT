@@ -48,8 +48,6 @@ export function assessDataQuality({
   const identityDiffPct = toNum(symbolVerification?.evidence?.localDifferencePct);
   const identityMaxDiffPct = toNum(symbolVerification?.evidence?.guardedMaxDifferencePct) ?? 8;
   const identityReferenceDivergence = identityDiffPct !== null && identityDiffPct > identityMaxDiffPct;
-  // Upstream local verification can compare against a cache without enforcing session-date alignment.
-  // If exact symbol/exchange/currency identity already passed, divergence is review evidence, not a hard block.
   if (identityReferenceDivergence) reviewFlags.push('LOCAL_REFERENCE_DIVERGENCE_REVIEW');
   if (symbolVerification?.guardedVerified === true) reviewFlags.push('GUARDED_IDENTITY_REVIEW');
   if (officiallyVerifiedLatestSession === false) reviewFlags.push('LATEST_SESSION_NOT_OFFICIALLY_VERIFIED');
@@ -59,7 +57,8 @@ export function assessDataQuality({
   if (hardWarning) reasons.push(`HARD_WARNING:${hardWarning}`);
   const conflictPct = parseLatestConflictPct(warningText);
   if (conflictPct !== null && conflictPct >= POLICY.quality.conflictReviewPct) reviewFlags.push('LOCAL_REFERENCE_CLOSE_CONFLICT_REVIEW');
-  if (conflictPct !== null && conflictPct >= POLICY.quality.conflictBlockPct) reviewFlags.push('HIGH_LOCAL_REFERENCE_CONFLICT_REVIEW');
+  const publicationHold = conflictPct !== null && conflictPct >= POLICY.quality.conflictBlockPct;
+  if (publicationHold) reviewFlags.push('HIGH_LOCAL_REFERENCE_CONFLICT_REVIEW');
   if (warningText.length > 0) reviewFlags.push('SOURCE_WARNING_PRESENT');
 
   const state = reasons.length ? 'BLOCKED' : (reviewFlags.length ? 'REVIEW' : 'TRUSTED');
@@ -76,6 +75,8 @@ export function assessDataQuality({
     score: round(clamp(score), 1),
     reasons,
     reviewFlags: [...new Set(reviewFlags)],
+    publicationHold,
+    publicationHoldReason: publicationHold ? 'PRICE_RECONCILIATION_REQUIRED' : null,
     warnings: warningText,
     conflictPct,
     identityDiffPct,
