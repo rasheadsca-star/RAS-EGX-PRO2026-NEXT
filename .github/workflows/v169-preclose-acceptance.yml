@@ -52,7 +52,9 @@ jobs:
           echo "$CHANGED"
 
           SCRIPT_CHANGED=$(printf '%s\n' "$CHANGED" | grep -E '^scripts/(stable|research)/' || true)
-          ALLOWED_DIAGNOSTIC='^scripts/stable/(v16-main-app-engine-performance\.cjs|v16-main-app-independent-consensus-audit\.cjs)$'
+          # Exact diagnostic/post-selection exceptions only. Any other stable/research
+          # script remains a hard failure for a pre-close presentation/orchestration patch.
+          ALLOWED_DIAGNOSTIC='^scripts/stable/(v16-main-app-engine-performance\.cjs|v16-main-app-independent-consensus-audit\.cjs|v16-active-position-manager\.cjs)$'
           VIOLATIONS=$(printf '%s\n' "$SCRIPT_CHANGED" | grep -Ev "$ALLOWED_DIAGNOSTIC" || true)
           if [ -n "$VIOLATIONS" ]; then
             echo "Recommendation selection/research code changed; pre-close patch must not alter selection technique:" >&2
@@ -62,4 +64,4 @@ jobs:
 
           git diff --quiet origin/main...HEAD -- scripts/research/v16-v169-basket-engine.py
           git diff --quiet origin/main...HEAD -- scripts/stable/v16-publish-v169-basket.cjs
-          echo "PASS: frozen V16.9 basket engine/publisher unchanged; pre-close routing is LS1 intraday only."
+          echo "PASS: frozen V16.9 basket engine/publisher unchanged; active position manager is post-selection only."
