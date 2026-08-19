@@ -1,0 +1,83 @@
+name: V16.9.2 Active Position Manager Acceptance
+
+on:
+  pull_request:
+    paths:
+      - "scripts/stable/v16-active-position-manager.cjs"
+      - "data/stable/v16-active-position-manager-policy.json"
+      - "preview-v16/app/v16-9-active-position-manager.js"
+      - "preview-v16/app/decision-source.js"
+      - ".github/workflows/main-app-intraday-ls1.yml"
+      - ".github/workflows/v169-active-position-manager-acceptance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate syntax and policy
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-active-position-manager.cjs
+          node --check preview-v16/app/v16-9-active-position-manager.js
+          node --check preview-v16/app/decision-source.js
+          node -e "JSON.parse(require('fs').readFileSync('data/stable/v16-active-position-manager-policy.json','utf8')); console.log('policy ok')"
+
+      - name: Build manager from current canonical evidence
+        run: node scripts/stable/v16-active-position-manager.cjs
+
+      - name: Assert post-selection management contract
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const out=JSON.parse(fs.readFileSync('data/stable/v16-active-position-manager.json','utf8'));
+          const current=JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json','utf8'));
+          const expected=(current.recommendations||[]).map(x=>x.ticker);
+          const actual=(out.recommendations||[]).map(x=>x.ticker);
+          const checks={
+            sameRecommendationCount:actual.length===expected.length,
+            sameRecommendationOrder:JSON.stringify(actual)===JSON.stringify(expected),
+            postSelectionOnly:out.governance?.postSelectionOnly===true,
+            noSelectionChange:out.governance?.changesRecommendationSelection===false,
+            noRankingChange:out.governance?.changesRanking===false,
+            noWeightChange:out.governance?.changesWeights===false,
+            noRiskGateChange:out.governance?.changesRiskGates===false,
+            noAutomaticOrders:out.governance?.automaticOrders===false,
+            targetIsNotSilentLongTerm:out.interpretation?.repeatedAfterTarget==='NEW_CYCLE_NOT_AUTOMATIC_LONG_TERM',
+            localPortfolioOnly:out.portfolioPersonalization?.localOnly===true,
+            tenMinuteCadence:out.refreshIntervalMinutes===10,
+            allRowsHaveActions:(out.recommendations||[]).every(r=>r.action?.code && r.action?.automaticOrder===false),
+          };
+          console.log({expected,actual,checks});
+          if(Object.values(checks).some(v=>v!==true)) process.exit(1);
+          NODE
+
+      - name: Verify ten-minute workflow and UI action vocabulary
+        run: |
+          set -euo pipefail
+          grep -Fq '*/10 7-12 * * 0-4' .github/workflows/main-app-intraday-ls1.yml
+          grep -q 'v16-active-position-manager.cjs' .github/workflows/main-app-intraday-ls1.yml
+          grep -q 'v16-active-position-manager.json' .github/workflows/main-app-intraday-ls1.yml
+          grep -q 'egx-v137-portfolio' preview-v16/app/v16-9-active-position-manager.js
+          grep -q 'بيع / خروج' preview-v16/app/v16-9-active-position-manager.js
+          grep -q 'خفف / ثبت الربح' preview-v16/app/v16-9-active-position-manager.js
+          grep -q 'زود كمية بحذر' preview-v16/app/v16-9-active-position-manager.js
+          grep -q 'إعادة دخول' preview-v16/app/v16-9-active-position-manager.js
+          grep -q 'لا تطارد السعر' data/stable/v16-active-position-manager-policy.json
+
+      - name: Prove frozen recommendation selection is untouched
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          git diff --quiet origin/main...HEAD -- scripts/research/v16-v169-basket-engine.py
+          git diff --quiet origin/main...HEAD -- scripts/stable/v16-publish-v169-basket.cjs
+          git diff --quiet origin/main...HEAD -- scripts/stable/v16-session-data-fingerprint.cjs
+          echo 'PASS: active position management is post-selection only.'
