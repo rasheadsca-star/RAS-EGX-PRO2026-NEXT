@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { POLICY } from '../src/policy.js';
 import { scoreBars } from '../src/originalScore.js';
-import { analyzeTicker, analyzeTickerBase, rankAnalyses } from '../src/engine.js';
+import { analyzeTicker, analyzeTickerBase, blendFusionScore, rankAnalyses } from '../src/engine.js';
 import { assessDataQuality, normalizeBars } from '../src/quality.js';
 import { wilsonLowerBound95, summarizeConfidence } from '../src/confidence.js';
 
@@ -83,10 +83,26 @@ test('Wilson penalizes tiny samples',()=>{
   assert.ok(wilsonLowerBound95(3,3)<wilsonLowerBound95(30,45));
 });
 
-test('historical confidence reliability shrinks small samples',()=>{
+test('historical confidence exposes low reliability for small samples',()=>{
   const c=summarizeConfidence([{outcome:'TARGET1',netPct:1}]);
-  assert.ok(c.effectiveHistoricalScore<c.confidenceWilsonLower95Pct);
+  assert.equal(c.sampleReliability,.2);
   assert.equal(c.hasEnoughSample,false);
+  assert.equal(c.effectiveHistoricalScore,c.confidenceWilsonLower95Pct);
+});
+
+test('missing historical evidence is neutral in fusion',()=>{
+  const b=blendFusionScore(82,{historicalTradeCount:0,sampleReliability:0,confidenceWilsonLower95Pct:null});
+  assert.equal(b.fusionRank,82);
+  assert.equal(b.researchWeight,1);
+  assert.equal(b.historicalWeight,0);
+});
+
+test('historical weight increases gradually with evidence',()=>{
+  const small=blendFusionScore(80,{sampleReliability:.2,confidenceWilsonLower95Pct:60});
+  const full=blendFusionScore(80,{sampleReliability:1,confidenceWilsonLower95Pct:60});
+  assert.equal(small.historicalWeight,.05);
+  assert.equal(full.historicalWeight,.25);
+  assert.ok(small.fusionRank>full.fusionRank);
 });
 
 test('fusion rank cannot make ineligible items rank',()=>{
