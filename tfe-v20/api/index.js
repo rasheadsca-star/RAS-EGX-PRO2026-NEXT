@@ -1,7 +1,10 @@
 import { POLICY } from '../src/policy.js';
 import { analyzeTicker, rankAnalyses } from '../src/engine.js';
 import { backtestHistory, summarizeBacktest } from '../src/backtest.js';
-import { loadUniverse, loadHistory, loadV17, loadHistorySummary } from '../src/repository.js';
+import { buildAblationBenchmark } from '../src/ablation.js';
+import { fetchJson, rawUrl, loadUniverse, loadHistory, loadV17, loadHistorySummary } from '../src/repository.js';
+
+const DATA_BRANCH = 'develop/v20-integrated-decision-platform';
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -116,11 +119,38 @@ async function simulateMarket(maxSymbols = 220) {
   };
 }
 
+async function ablationMarket() {
+  const [v20Replay, v17TrackRecord] = await Promise.all([
+    fetchJson(rawUrl(DATA_BRANCH, 'data/v20/retrospective-walk-forward-target-stop.json')),
+    fetchJson(rawUrl(DATA_BRANCH, 'data/v17/recommendation-track-record.json')),
+  ]);
+  const tickers = [...new Set((v20Replay?.sessions ?? []).flatMap((s) => (s?.members ?? []).map((m) => String(m?.ticker ?? '').trim().toUpperCase())).filter(Boolean))];
+  const histories = {}, historyErrors = [];
+  for (let i = 0; i < tickers.length; i += 12) {
+    const batch = await Promise.all(tickers.slice(i, i + 12).map(async (ticker) => {
+      try {
+        const h = await loadHistory(ticker);
+        return { ticker, rows: h.rows };
+      } catch (e) { return { ticker, error: e.message }; }
+    }));
+    for (const item of batch) {
+      if (item.error) historyErrors.push({ ticker: item.ticker, error: item.error });
+      else histories[item.ticker] = item.rows;
+    }
+  }
+  return {
+    ok: true,
+    engine: POLICY.engineId,
+    generatedAt: new Date().toISOString(),
+    ...buildAblationBenchmark({ v20Replay, v17TrackRecord, histories, historyErrors }),
+  };
+}
+
 export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const route = url.searchParams.get('route') ?? 'scan';
-    if (route === 'health') return json(res, 200, { ok: true, engine: POLICY.engineId, policy: POLICY, invariant: 'RESEARCH_ONLY_EXECUTION_BLOCKED' });
+    if (route === 'health') return json(res, 200, { ok: true, engine: POLICY.engineId, policy: POLICY, invariant: 'RESEARCH_ONLY_EXECUTION_BLOCKED', ablationBenchmark: 'AVAILABLE_RESEARCH_DIAGNOSTIC' });
     if (route === 'analyze') {
       const ticker = String(url.searchParams.get('ticker') ?? '').trim().toUpperCase();
       if (!ticker) return json(res, 400, { ok: false, error: 'ticker is required' });
@@ -128,6 +158,7 @@ export default async function handler(req, res) {
       const analyzed = analyzeTicker({ ticker, rows: h.rows, historyMeta: h.meta, v17, expectedSessionDate: hs?.latestMarketSession ?? null });
       return json(res, 200, { ok: true, result: withPublicationGate(analyzed) });
     }
+    if (route === 'ablation') return json(res, 200, await ablationMarket());
     if (route === 'simulate') {
       const scope = String(url.searchParams.get('scope') ?? 'ticker').toLowerCase();
       if (scope === 'market') {
