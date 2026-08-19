@@ -67,12 +67,13 @@ export function evaluateRecordedPlan({ ticker, rows, signalDate, plan, holdSessi
 
 function isRecordedV17Evidence(evidence = '') {
   const e = String(evidence).toUpperCase();
-  return e.includes('NATIVE_V17_LIVE') || e.includes('RECORDED');
+  return e === 'NATIVE_V17_LIVE' || e.includes('RECORDED');
 }
 
 function evidenceRank(evidence = '') {
   const e = String(evidence).toUpperCase();
-  if (e.includes('NATIVE_V17_LIVE')) return 5;
+  if (e.includes('NOT_NATIVE_V17_LIVE')) return 2;
+  if (e === 'NATIVE_V17_LIVE') return 5;
   if (e.includes('EXACT_METHOD_RECORDED_LIVE')) return 4;
   if (e.includes('RECORDED_ORIGINAL')) return 3;
   if (e.includes('RECORDED')) return 2;
