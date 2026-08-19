@@ -148,6 +148,10 @@
       window.__V169_PRE_CLOSE_RUNTIME_LOADER__ = true;
       appendRuntimeScript('v16-9-preclose-runtime.js?v=16.9.2-preclose-20260818-r1','v169-preclose-runtime','V16.9 pre-close runtime could not be loaded.');
     }
+    if (!window.__V169_PRE_CLOSE_LS1_STATUS_LOADER__) {
+      window.__V169_PRE_CLOSE_LS1_STATUS_LOADER__ = true;
+      appendRuntimeScript('v16-9-preclose-ls1-status.js?v=16.9.2-ls1-ui-20260819-r1','v169-preclose-ls1-status','V16.9 LS1 pre-close status panel could not be loaded.');
+    }
     if (!window.__V169_INDEPENDENT_CONSENSUS_EVIDENCE_LOADER__) {
       window.__V169_INDEPENDENT_CONSENSUS_EVIDENCE_LOADER__ = true;
       appendRuntimeScript('main-app-independent-consensus-evidence.js?v=16.9.2-independent-consensus-20260818-r1','main-app-independent-consensus-evidence','Independent consensus evidence panel could not be loaded.');
