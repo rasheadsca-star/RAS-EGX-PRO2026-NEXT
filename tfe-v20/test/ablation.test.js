@@ -33,6 +33,19 @@ test('V17 collector indexes recorded same-date ticker evidence and keeps stronge
   assert.ok(signals.has('2026-08-04|SWDY'));
 });
 
+test('V17 safety proxy excludes retrospective research-only sessions', () => {
+  const signals = collectV17SignalKeys({
+    research: { sessions: [
+      { signalDate: '2026-07-21', tickers: ['ETEL'], evidenceClass: 'HISTORICAL_BLOCKED_WALK_FORWARD_RESEARCH' },
+    ] },
+    recorded: { records: [
+      { recommendationDate: '2026-07-21', ticker: 'SWDY', evidenceClass: 'RECORDED_BACKFILL_NOT_NATIVE_V17_LIVE' },
+    ] },
+  });
+  assert.equal(signals.has('2026-07-21|ETEL'), false);
+  assert.equal(signals.has('2026-07-21|SWDY'), true);
+});
+
 test('V20 replay extraction freezes only stored session members', () => {
   const events = extractV20ReplayEvents({ sessions: [
     { signalDate: '2026-08-13', members: [
