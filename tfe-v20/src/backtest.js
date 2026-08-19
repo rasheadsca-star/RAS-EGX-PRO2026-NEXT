@@ -17,7 +17,9 @@ export function backtestHistory({ ticker, rows, historyMeta = {}, minBars = POLI
   let i = minBars - 1;
   while (i < bars.length - 1) {
     const slice = bars.slice(0, i + 1);
-    const a = analyzeTicker({ ticker, rows: slice, historyMeta: { ...historyMeta, warnings: [] }, expectedSessionDate: null });
+    // Present-day warnings/verification are intentionally excluded from past signals.
+    // The simulator tests the strategy conditional on the recorded bars, avoiding metadata look-ahead.
+    const a = analyzeTicker({ ticker, rows: slice, historyMeta: { warnings: [] }, expectedSessionDate: null });
     if (!a.eligible || !a.tradePlan) { i += 1; continue; }
     let entry = null;
     const end = Math.min(bars.length - 1, i + POLICY.entryExpirySessions);
