@@ -1,10 +1,11 @@
 import { POLICY } from './policy.js';
-import { analyzeTicker } from './engine.js';
+import { analyzeTicker, analyzeTickerBase, rankAnalyses } from './engine.js';
 import { summarizeBacktest } from './backtest.js';
 import { normalizeBars } from './quality.js';
 import { round } from './math.js';
 
 const keyOf = (date, ticker) => `${date}|${String(ticker ?? '').trim().toUpperCase()}`;
+const hasNumber = (value) => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 
 function normalizePlan(plan = {}) {
   const entryLow = Number(plan.entryLow);
@@ -135,12 +136,24 @@ function sequenceMaxDrawdownPct(trades) {
   return round(worst, 2);
 }
 
-function summarizeVariant(state, baseCount) {
+function newState() {
+  return { accepted: 0, trades: [], expired: [] };
+}
+
+function addResult(state, result) {
+  if (!result || result.status === 'PLAN_UNAVAILABLE' || result.status === 'SIGNAL_BAR_UNAVAILABLE') return false;
+  state.accepted += 1;
+  if (result.trade) state.trades.push(result.trade);
+  if (result.expired) state.expired.push(result.expired);
+  return true;
+}
+
+function summarizeState(state, capacity) {
   const summary = summarizeBacktest(state.trades, state.expired).summary;
   const timeExit = state.trades.filter((x) => x.outcome === 'TIME_EXIT').length;
   return {
     selectedSignals: state.accepted,
-    gateCoveragePct: baseCount ? round(state.accepted / baseCount * 100, 1) : null,
+    selectionCoveragePct: capacity ? round(state.accepted / capacity * 100, 1) : null,
     entered: summary.entered,
     entryCoveragePct: state.accepted ? round(summary.entered / state.accepted * 100, 1) : null,
     target1Pct: summary.target1Pct,
@@ -156,119 +169,247 @@ function summarizeVariant(state, baseCount) {
   };
 }
 
-function delta(value, base) {
-  return Number.isFinite(Number(value)) && Number.isFinite(Number(base)) ? round(Number(value) - Number(base), 2) : null;
+export function metricDelta(value, base) {
+  if (!hasNumber(value) || !hasNumber(base)) return null;
+  return round(Number(value) - Number(base), 2);
 }
 
-export function buildAblationBenchmark({ v20Replay, v17TrackRecord, histories = {}, historyErrors = [] }) {
-  const events = extractV20ReplayEvents(v20Replay);
-  const v17Signals = collectV17SignalKeys(v17TrackRecord);
-  const states = {
-    V20_NATIVE_ONLY: { accepted: 0, trades: [], expired: [] },
-    V20_PLUS_TFE: { accepted: 0, trades: [], expired: [] },
-    V20_PLUS_V17_SAFETY: { accepted: 0, trades: [], expired: [] },
-    FULL_FUSION: { accepted: 0, trades: [], expired: [] },
+function deltas(summary, base) {
+  return {
+    target1Pct: metricDelta(summary.target1Pct, base.target1Pct),
+    stopPct: metricDelta(summary.stopPct, base.stopPct),
+    avgNetPct: metricDelta(summary.avgNetPct, base.avgNetPct),
+    profitFactor: metricDelta(summary.profitFactor, base.profitFactor),
+    maxDrawdownPct: metricDelta(summary.maxDrawdownPct, base.maxDrawdownPct),
   };
-  const diagnostics = { missingHistory: 0, nativePlanUnavailable: 0, tfeRejected: 0, tfePlanUnavailable: 0, v17Unconfirmed: 0 };
+}
 
-  const add = (state, result) => {
-    state.accepted += 1;
-    if (result.trade) state.trades.push(result.trade);
-    if (result.expired) state.expired.push(result.expired);
+export function rankResearchOnly(items) {
+  return items.filter((x) => x?.eligible).sort((a, b) =>
+    (b.scores?.research ?? -1) - (a.scores?.research ?? -1)
+    || (b.scores?.core ?? -1) - (a.scores?.core ?? -1)
+    || (b.scores?.supportResistance ?? -1) - (a.scores?.supportResistance ?? -1)
+    || (b.scores?.liquidity ?? -1) - (a.scores?.liquidity ?? -1)
+    || String(a.ticker).localeCompare(String(b.ticker))
+  ).map((x, i) => ({ ...x, rank: i + 1 }));
+}
+
+function normalizedHistoryMap(histories) {
+  const out = {};
+  for (const [ticker, rows] of Object.entries(histories)) {
+    const bars = normalizeBars(rows).bars;
+    if (bars.length) out[String(ticker).toUpperCase()] = bars;
+  }
+  return out;
+}
+
+function selectionsForSessions({ signalDates, histories, universeTickers, selectionBudget, analyzer, ranker }) {
+  const normalized = normalizedHistoryMap(histories);
+  const selected = [];
+  const sessions = [];
+  for (const signalDate of signalDates) {
+    const analyses = [];
+    let dateAvailable = 0;
+    let sufficientHistory = 0;
+    for (const tickerRaw of universeTickers) {
+      const ticker = String(tickerRaw).toUpperCase();
+      const bars = normalized[ticker];
+      if (!bars?.length) continue;
+      const signalIndex = bars.findIndex((x) => x.date === signalDate);
+      if (signalIndex < 0) continue;
+      dateAvailable += 1;
+      if (signalIndex < POLICY.minBars - 1) continue;
+      sufficientHistory += 1;
+      const analysis = analyzer({
+        ticker,
+        rows: bars.slice(0, signalIndex + 1),
+        historyMeta: { warnings: [] },
+        expectedSessionDate: null,
+      });
+      if (analysis?.eligible && analysis?.tradePlan) analyses.push(analysis);
+    }
+    const ranked = ranker(analyses).slice(0, selectionBudget);
+    for (const analysis of ranked) {
+      selected.push({
+        ticker: analysis.ticker,
+        signalDate,
+        plan: analysis.tradePlan,
+        researchScore: analysis.scores?.research ?? null,
+        fusionRankScore: analysis.scores?.fusionRank ?? null,
+      });
+    }
+    sessions.push({
+      signalDate,
+      universeWithBar: dateAvailable,
+      universeWithSufficientHistory: sufficientHistory,
+      eligible: analyses.length,
+      selected: ranked.map((x) => ({ ticker: x.ticker, research: x.scores?.research ?? null, fusionRank: x.scores?.fusionRank ?? null })),
+    });
+  }
+  return { selected, sessions };
+}
+
+function overlapCount(a, b) {
+  const bKeys = new Set(b.map((x) => keyOf(x.signalDate, x.ticker)));
+  return a.filter((x) => bKeys.has(keyOf(x.signalDate, x.ticker))).length;
+}
+
+function unavailableMetrics() {
+  return {
+    selectedSignals: null,
+    selectionCoveragePct: null,
+    entered: null,
+    entryCoveragePct: null,
+    target1Pct: null,
+    stopPct: null,
+    noHitPct: null,
+    positivePct: null,
+    avgNetPct: null,
+    profitFactor: null,
+    maxDrawdownPct: null,
+    wilson95LowerTarget1Pct: null,
+    entryExpired: null,
+    sampleClass: 'NOT_COMPARABLE',
   };
+}
 
-  for (const event of events) {
+function evaluateSelection(selection, histories) {
+  const state = newState();
+  for (const event of selection) {
+    addResult(state, evaluateRecordedPlan({
+      ticker: event.ticker,
+      rows: histories[event.ticker] ?? [],
+      signalDate: event.signalDate,
+      plan: event.plan,
+      holdSessions: 10,
+    }));
+  }
+  return state;
+}
+
+export function buildAblationBenchmark({ v20Replay, v17TrackRecord, histories = {}, universeTickers = [], historyErrors = [] }) {
+  const v20Events = extractV20ReplayEvents(v20Replay);
+  const signalDates = [...new Set(v20Events.map((x) => x.signalDate))].sort();
+  const selectionBudget = Math.max(1, Number(v20Replay?.comparisonContract?.selectedPerSession ?? 3) || 3);
+  const capacity = signalDates.length * selectionBudget;
+  const v20State = newState();
+  const diagnostics = { missingHistory: 0, v20PlanUnavailable: 0, v20SignalBarUnavailable: 0 };
+
+  for (const event of v20Events) {
     const rows = histories[event.ticker];
     if (!Array.isArray(rows) || !rows.length) { diagnostics.missingHistory += 1; continue; }
-
-    const nativeResult = evaluateRecordedPlan({ ticker: event.ticker, rows, signalDate: event.signalDate, plan: event.plan, holdSessions: 10 });
-    if (nativeResult.status === 'PLAN_UNAVAILABLE') diagnostics.nativePlanUnavailable += 1;
-    else add(states.V20_NATIVE_ONLY, nativeResult);
-
-    const bars = normalizeBars(rows).bars;
-    const signalIndex = bars.findIndex((x) => x.date === event.signalDate);
-    let tfe = null;
-    if (signalIndex >= POLICY.minBars - 1) {
-      tfe = analyzeTicker({ ticker: event.ticker, rows: bars.slice(0, signalIndex + 1), historyMeta: { warnings: [] }, expectedSessionDate: null });
-    }
-    const tfeAccepted = Boolean(tfe?.eligible && tfe?.tradePlan);
-    if (!tfeAccepted) diagnostics.tfeRejected += 1;
-    else {
-      const tfeResult = evaluateRecordedPlan({ ticker: event.ticker, rows, signalDate: event.signalDate, plan: tfe.tradePlan, holdSessions: 10 });
-      if (tfeResult.status === 'PLAN_UNAVAILABLE') diagnostics.tfePlanUnavailable += 1;
-      else add(states.V20_PLUS_TFE, tfeResult);
-    }
-
-    const v17Confirmed = v17Signals.has(keyOf(event.signalDate, event.ticker));
-    if (!v17Confirmed) diagnostics.v17Unconfirmed += 1;
-    else if (nativeResult.status !== 'PLAN_UNAVAILABLE') add(states.V20_PLUS_V17_SAFETY, nativeResult);
-
-    if (tfeAccepted && v17Confirmed) {
-      const fullResult = evaluateRecordedPlan({ ticker: event.ticker, rows, signalDate: event.signalDate, plan: tfe.tradePlan, holdSessions: 10 });
-      if (fullResult.status !== 'PLAN_UNAVAILABLE') add(states.FULL_FUSION, fullResult);
-    }
+    const result = evaluateRecordedPlan({ ticker: event.ticker, rows, signalDate: event.signalDate, plan: event.plan, holdSessions: 10 });
+    if (result.status === 'PLAN_UNAVAILABLE') diagnostics.v20PlanUnavailable += 1;
+    if (result.status === 'SIGNAL_BAR_UNAVAILABLE') diagnostics.v20SignalBarUnavailable += 1;
+    addResult(v20State, result);
   }
 
-  const baseEventCount = events.length;
-  const summaries = Object.fromEntries(Object.entries(states).map(([id, state]) => [id, summarizeVariant(state, baseEventCount)]));
-  const base = summaries.V20_NATIVE_ONLY;
-  const variants = [
-    ['V20_NATIVE_ONLY', 'V20 Native only', 'RETROSPECTIVE_POINT_IN_TIME_RECONSTRUCTION'],
-    ['V20_PLUS_TFE', 'V20 + TFE', 'RETROSPECTIVE_V20_COHORT_WITH_POINT_IN_TIME_TFE'],
-    ['V20_PLUS_V17_SAFETY', 'V20 + V17 Safety', 'RECORDED_V17_CONFIRMATION_PROXY'],
-    ['FULL_FUSION', 'V20 + TFE + V17 Safety', 'RECORDED_V17_CONFIRMATION_PROXY'],
-  ].map(([id, label, evidenceClass]) => ({
-    id,
-    label,
-    evidenceClass,
-    historicalAttribution: id.includes('V17') || id === 'FULL_FUSION'
-      ? 'PARTIAL_PROXY_EXACT_HISTORICAL_SAFETY_OVERLAY_STATE_NOT_ARCHIVED'
-      : 'POINT_IN_TIME_DIAGNOSTIC',
-    ...summaries[id],
-    deltaVsV20: {
-      target1Pct: delta(summaries[id].target1Pct, base.target1Pct),
-      stopPct: delta(summaries[id].stopPct, base.stopPct),
-      avgNetPct: delta(summaries[id].avgNetPct, base.avgNetPct),
-      profitFactor: delta(summaries[id].profitFactor, base.profitFactor),
-      maxDrawdownPct: delta(summaries[id].maxDrawdownPct, base.maxDrawdownPct),
-    },
-  }));
+  const effectiveUniverse = [...new Set((universeTickers.length ? universeTickers : Object.keys(histories)).map((x) => String(x).toUpperCase()).filter(Boolean))];
+  const coreReplay = selectionsForSessions({
+    signalDates,
+    histories,
+    universeTickers: effectiveUniverse,
+    selectionBudget,
+    analyzer: (args) => analyzeTickerBase({ ...args, includeOverlay: false }),
+    ranker: rankResearchOnly,
+  });
+  const fusionReplay = selectionsForSessions({
+    signalDates,
+    histories,
+    universeTickers: effectiveUniverse,
+    selectionBudget,
+    analyzer: (args) => analyzeTicker({ ...args, v17: null }),
+    ranker: rankAnalyses,
+  });
 
-  const uniqueDates = [...new Set(events.map((x) => x.signalDate))].sort();
-  const v17Matched = events.filter((x) => v17Signals.has(keyOf(x.signalDate, x.ticker))).length;
+  const coreState = evaluateSelection(coreReplay.selected, histories);
+  const fusionState = evaluateSelection(fusionReplay.selected, histories);
+  const v20Summary = summarizeState(v20State, capacity);
+  const coreSummary = summarizeState(coreState, capacity);
+  const fusionSummary = summarizeState(fusionState, capacity);
+
+  const v17Signals = collectV17SignalKeys(v17TrackRecord);
+  const windowSet = new Set(signalDates);
+  const v17RecordedSignalsInWindow = [...v17Signals.values()].filter((x) => windowSet.has(x.date)).length;
+
+  const variants = [
+    {
+      id: 'V20_NATIVE_ONLY', label: 'V20 Native', decisionRole: 'NATIVE_SELECTION_ENGINE',
+      comparisonStatus: 'COMPARABLE_DIAGNOSTIC', evidenceClass: 'RETROSPECTIVE_POINT_IN_TIME_RECONSTRUCTION', historicalAttribution: 'POINT_IN_TIME_DIAGNOSTIC',
+      ...v20Summary, deltaVsV20: deltas(v20Summary, v20Summary),
+    },
+    {
+      id: 'TFE_CORE_STANDALONE', label: 'TFE Core standalone', decisionRole: 'TECHNICAL_RESEARCH_SCORE_AFTER_HARD_GATES',
+      comparisonStatus: 'COMPARABLE_DIAGNOSTIC', evidenceClass: 'POINT_IN_TIME_FULL_MARKET_REPLAY_RESEARCH_RANK', historicalAttribution: 'RECONSTRUCTED_CURRENT_UNIVERSE_POINT_IN_TIME',
+      ...coreSummary, deltaVsV20: deltas(coreSummary, v20Summary),
+    },
+    {
+      id: 'FULL_FUSION_RC2', label: 'Full Fusion RC2', decisionRole: 'TFE_CORE_PLUS_WILSON_HISTORICAL_CONFIDENCE_AFTER_HARD_GATES',
+      comparisonStatus: 'COMPARABLE_DIAGNOSTIC', evidenceClass: 'POINT_IN_TIME_FULL_MARKET_REPLAY_FUSION_RANK', historicalAttribution: 'RECONSTRUCTED_CURRENT_UNIVERSE_POINT_IN_TIME',
+      ...fusionSummary, deltaVsV20: deltas(fusionSummary, v20Summary),
+      deltaVsTfeCore: deltas(fusionSummary, coreSummary),
+    },
+    {
+      id: 'V17_SAFETY_OVERLAY', label: 'V17 Safety overlay', decisionRole: 'SAFETY_AND_EXECUTION_METADATA_OVERLAY',
+      comparisonStatus: 'NOT_COMPARABLE_EXACT_HISTORICAL_OVERLAY_STATE_NOT_ARCHIVED', evidenceClass: 'RECORDED_V17_EVIDENCE_PARTIAL_ONLY', historicalAttribution: 'NO_PERFORMANCE_CLAIM',
+      ...unavailableMetrics(), deltaVsV20: { target1Pct: null, stopPct: null, avgNetPct: null, profitFactor: null, maxDrawdownPct: null },
+    },
+  ];
+
   return {
-    benchmarkId: 'TFE_V20_EVIDENCE_AWARE_ABLATION_V1',
+    benchmarkId: 'TFE_V20_EVIDENCE_AWARE_ABLATION_V3_RC2',
     status: 'RESEARCH_DIAGNOSTIC_ONLY',
+    engineUnderTest: POLICY.engineId,
     promotionEligible: false,
     commonCohort: {
-      source: v20Replay?.engineId ?? 'V20_RETROSPECTIVE_REPLAY',
-      signalEvents: baseEventCount,
-      sessions: uniqueDates.length,
-      from: uniqueDates[0] ?? null,
-      to: uniqueDates.at(-1) ?? null,
-      v17MatchedSignalEvents: v17Matched,
+      sessionSetSource: v20Replay?.engineId ?? 'V20_RETROSPECTIVE_REPLAY',
+      sessions: signalDates.length, signalDates, from: signalDates[0] ?? null, to: signalDates.at(-1) ?? null,
+      selectionBudgetPerSession: selectionBudget, maximumComparableSelections: capacity,
+      fullMarketUniverseTickers: effectiveUniverse.length,
+      v20RecordedSelections: v20Events.length,
+      tfeCoreReconstructedSelections: coreReplay.selected.length,
+      fusionRc2ReconstructedSelections: fusionReplay.selected.length,
+      overlapV20VsTfeCore: overlapCount(v20Events, coreReplay.selected),
+      overlapV20VsFusionRc2: overlapCount(v20Events, fusionReplay.selected),
+      overlapTfeCoreVsFusionRc2: overlapCount(coreReplay.selected, fusionReplay.selected),
       historyErrors,
     },
     methodology: {
       noLookahead: true,
-      cohortFrozenBeforeOutcomeEvaluation: true,
-      entryTiming: 'NEXT_SESSION_OR_LATER_ONLY',
-      entryExpirySessions: POLICY.entryExpirySessions,
-      maxHoldSessions: 10,
-      sameBarAmbiguity: 'STOP_FIRST',
-      roundTripCostPct: POLICY.roundTripCostPct,
-      target: 'TARGET1',
-      minimumComparativeEnteredSample: 30,
+      sessionSetFrozenBeforeOutcomeEvaluation: true,
+      selectionBudgetPerSession: selectionBudget,
+      entryTiming: 'NEXT_SESSION_OR_LATER_ONLY', entryExpirySessions: POLICY.entryExpirySessions,
+      maxHoldSessions: 10, sameBarAmbiguity: 'STOP_FIRST', roundTripCostPct: POLICY.roundTripCostPct,
+      target: 'TARGET1', minimumComparativeEnteredSample: 30,
+      tfeCoreSelection: 'HARD_GATES_THEN_RESEARCH_SCORE_RANK_TOP_N',
+      fusionRc2Selection: 'SAME_HARD_GATES_THEN_EVIDENCE_AWARE_FUSION_RANK_TOP_N',
+      historicalConfidence: 'WILSON_95_LOWER_BOUND_WEIGHTED_BY_SAMPLE_RELIABILITY',
+      historicalConfidenceCanBypassHardGates: false,
+      missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
       maxDrawdown: 'COMPOUNDED_TRADE_SEQUENCE_DIAGNOSTIC_NOT_CONCURRENT_PORTFOLIO_DRAWDOWN',
-      v17Treatment: 'RECORDED_SAME_DATE_TICKER_CONFIRMATION_PROXY_ONLY; RETROSPECTIVE_RESEARCH_SESSIONS_ARE_EXCLUDED',
     },
-    diagnostics,
+    architectureFinding: {
+      v20DiscoveryAffectsTfeCoreScore: false,
+      v20DiscoveryAffectsResearchEligibility: false,
+      v17OverlayAffectsResearchEligibility: false,
+      v17OverlayAffectsFusionRank: false,
+      rc2HistoricalConfidenceAffectsRankAfterHardGates: true,
+      rc2HistoricalConfidenceCanRescueRejectedCandidate: false,
+      interpretation: 'RC2 keeps V20 discovery and V17 safety as non-scoring overlays, but unlike RC1 it can reorder already-eligible TFE candidates using Wilson historical confidence after the hard gates.',
+    },
+    diagnostics: {
+      ...diagnostics,
+      v17RecordedSignalsInWindow,
+      tfeCoreSessions: coreReplay.sessions,
+      fusionRc2Sessions: fusionReplay.sessions,
+    },
     variants,
     limitations: [
-      'V20 cohort is retrospective point-in-time reconstruction, not fresh forward evidence.',
-      'Exact historical V17 safety-overlay state is not archived for the full window; V17 variants use recorded same-date/ticker confirmation as an explicit proxy.',
-      'Variants below 30 entered trades are marked low-sample and must not be used for promotion claims.',
-      'Ablation is isolated from production eligibility and cannot promote a Champion or enable execution.',
+      'V20 is retrospective point-in-time reconstruction, not fresh forward evidence.',
+      'TFE Core and RC2 Fusion are replayed on the same session set using the currently reconstructable full-market universe; exact historical market membership is not archived, so survivorship bias remains possible.',
+      'Historical confidence is recomputed point-in-time from bars visible at each signal date; it never bypasses the hard gates.',
+      'Exact historical V17 Safety Overlay state is not archived for the full window, so V17 remains NOT COMPARABLE rather than receiving fabricated returns.',
+      'Samples below 30 entered trades remain LOW_SAMPLE_DIAGNOSTIC and cannot support promotion claims.',
     ],
   };
 }
