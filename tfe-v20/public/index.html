@@ -1,7 +1,233 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TFE V20 Fusion RC2</title><style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#08111f;color:#eef4ff;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}.wrap{max-width:1380px;margin:auto;padding:28px}.hero,.card{background:#0e1b2d;border:1px solid #20344e;border-radius:18px}.hero{padding:24px;margin-bottom:18px}.tag{display:inline-block;background:#122f29;color:#9ef5c9;border:1px solid #245c4c;border-radius:999px;padding:7px 12px;font-size:13px}.warn{background:#312413;color:#ffd18a;border-color:#694b20}.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:16px 0}.kpi{padding:16px}.kpi b{font-size:22px;display:block;margin-top:4px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}button,input{background:#0b1727;color:#fff;border:1px solid #2c4463;border-radius:10px;padding:10px 13px}button{cursor:pointer}.table{overflow:auto}.row{display:grid;grid-template-columns:42px 74px 126px 78px 72px 72px 72px 72px 72px 62px 74px 1fr;gap:8px;align-items:center;padding:12px;border-top:1px solid #1d314a;min-width:1220px}.head{font-size:11px;color:#91a7c2;border-top:0}.good{color:#8df0bd}.review{color:#ffd18a}.blocked{color:#ff9b9b}.muted{color:#91a7c2}.ltr{direction:ltr;text-align:left}.sim{margin-top:16px;padding:16px;white-space:pre-wrap;direction:ltr;text-align:left;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}.abl{margin-top:16px;padding:18px}.abl h2{margin:0 0 8px}.abl-meta{font-size:13px;color:#91a7c2;margin-bottom:12px}.abl-table{overflow:auto;border:1px solid #20344e;border-radius:12px}.abl-row{display:grid;grid-template-columns:180px repeat(8,minmax(82px,1fr)) 220px;gap:8px;align-items:center;padding:11px 12px;border-top:1px solid #1d314a;min-width:1180px;direction:ltr;text-align:left}.abl-row:first-child{border-top:0}.abl-head{font-size:11px;color:#91a7c2;background:#0b1727}.proxy{color:#ffd18a}.exact{color:#8df0bd}.note{margin-top:12px;padding:12px;background:#0b1727;border:1px solid #20344e;border-radius:10px;font-size:13px}@media(max-width:1000px){.grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:650px){.grid{grid-template-columns:repeat(2,1fr)}.wrap{padding:14px}}
-</style></head><body><main class="wrap"><section class="hero"><span class="tag">TFE V20 Fusion RC2</span> <span class="tag warn">RESEARCH ONLY — EXECUTION BLOCKED</span><h1>محرك البحث والتنقية المدمج لـ EGX</h1><p class="muted">Original scoreBars (SMA50/SMA200 + RSI + MACD + ATR + Volume) → Quality/Liquidity/SR/RR/Alignment hard gates → Wilson historical confidence → Fusion ranking → Publication gate → V17 safety overlay.</p><div class="toolbar"><button id="scan">تحديث المسح الكامل</button><input id="ticker" placeholder="مثال ETEL"><button id="analyze">تحليل سهم</button><button id="simulate">Simulator السوق المسجل</button><button id="ablate">Ablation Benchmark</button><button id="log">Decision Log CSV</button></div><div id="status" class="muted">جاهز.</div></section><section class="grid"><div class="card kpi">تم فحصه<b id="scanned">—</b></div><div class="card kpi">مرشحون منشورون<b id="eligible">—</b></div><div class="card kpi">موقوفون للمصالحة<b id="withheld">—</b></div><div class="card kpi">جلسة الكون الحالي<b id="session">—</b></div><div class="card kpi">V20 Native Overlay<b id="nativeSession">—</b></div><div class="card kpi">V17 Execution<b id="v17">BLOCKED</b></div></section><section class="card table"><div class="row head"><div>#</div><div>السهم</div><div>الحالة</div><div>الجودة</div><div>Tech</div><div>Research</div><div>Fusion</div><div>Wilson</div><div>Hist N</div><div>T1</div><div>T2</div><div>الدخول / الوقف</div></div><div id="rows"></div></section><section id="simBox" class="card sim" hidden></section><section id="ablBox" class="card abl" hidden></section></main><script>
-const $=id=>document.getElementById(id),fmt=x=>x==null?'—':Number(x).toFixed(2),pct=x=>x==null?'—':`${Number(x).toFixed(1)}%`;function qualityClass(q){return q==='TRUSTED'?'good':q==='REVIEW'?'review':'blocked'}function render(data){const s=data.summary||{};$('scanned').textContent=s.scanned??1;$('eligible').textContent=s.publicationEligibleTotal??(data.result?Number(Boolean(data.result.publicationEligible??data.result.eligible)):'—');$('withheld').textContent=s.withheldForPriceReconciliation??(data.result?.publicationState==='PRICE_RECONCILIATION_REQUIRED'?1:0);$('session').textContent=data.universe?.sessionDate??data.result?.sessionDate??'—';$('nativeSession').textContent=data.universe?.v20NativeSessionDate??'—';$('v17').textContent=data.v17?.executionReady?'BLOCKED BY TFE':'BLOCKED';const list=data.recommendations??(data.result?[data.result]:[]);$('rows').innerHTML=list.length?list.map((x,i)=>`<div class="row"><div>${x.rank??i+1}</div><div class="ltr"><b>${x.ticker}</b></div><div class="good">${x.publicationState??x.decision}</div><div class="${qualityClass(x.quality?.state)}">${x.quality?.state??'—'}</div><div>${fmt(x.scores?.core)}</div><div>${fmt(x.scores?.research)}</div><div><b>${fmt(x.scores?.fusionRank)}</b></div><div>${pct(x.historicalConfidence?.confidenceWilsonLower95Pct)}</div><div>${x.historicalConfidence?.historicalTradeCount??'—'}</div><div>${fmt(x.tradePlan?.target1)}</div><div>${fmt(x.tradePlan?.target2)}</div><div class="ltr">${fmt(x.tradePlan?.entryLow)}–${fmt(x.tradePlan?.entryHigh)} / SL ${fmt(x.tradePlan?.stop)}</div></div>`).join(''):'<div style="padding:20px" class="muted">لا توجد توصيات قابلة للنشر وفق البوابات الحالية.</div>'}
-function renderAblation(d){const c=d.commonCohort||{},m=d.methodology||{},rows=d.variants||[];$('ablBox').hidden=false;$('ablBox').innerHTML=`<h2>Evidence-aware Ablation Benchmark</h2><div class="abl-meta">نفس cohort: ${c.signalEvents??0} إشارة / ${c.sessions??0} جلسات (${c.from??'—'} → ${c.to??'—'}) · Hold ${m.maxHoldSessions??'—'} sessions · Cost ${m.roundTripCostPct??'—'}% · Same-bar: ${m.sameBarAmbiguity??'—'}</div><div class="abl-table"><div class="abl-row abl-head"><div>Variant</div><div>Signals</div><div>Entered</div><div>T1</div><div>Stop</div><div>Avg Net</div><div>PF</div><div>Max DD</div><div>Δ T1</div><div>Evidence / attribution</div></div>${rows.map(x=>`<div class="abl-row"><div><b>${x.label}</b></div><div>${x.selectedSignals??0}<br><span class="muted">${pct(x.gateCoveragePct)}</span></div><div>${x.entered??0}</div><div>${pct(x.target1Pct)}</div><div>${pct(x.stopPct)}</div><div>${pct(x.avgNetPct)}</div><div>${x.profitFactor??'—'}</div><div>${pct(x.maxDrawdownPct)}</div><div>${x.deltaVsV20?.target1Pct==null?'—':`${x.deltaVsV20.target1Pct>0?'+':''}${x.deltaVsV20.target1Pct.toFixed(1)} pp`}</div><div class="${x.historicalAttribution?.startsWith('PARTIAL')?'proxy':'exact'}">${x.evidenceClass}<br><span class="muted">${x.historicalAttribution}</span></div></div>`).join('')}</div><div class="note"><b>قاعدة النزاهة:</b> نتائج V17 قد تكون Proxy عندما لا تتوفر الحالة التاريخية الدقيقة للـSafety Overlay لكل جلسة. هذه الشاشة تشخيص بحثي فقط ولا تغيّر صلاحية التنفيذ.</div>`}
-async function request(url,mode='scan'){$('status').textContent='جاري التحليل…';try{const r=await fetch(url),d=await r.json();if(!d.ok)throw Error(d.error||'failed');if(mode==='sim'){const s=d.summary||{};$('simBox').hidden=false;$('simBox').textContent=`RECORDED FULL-MARKET SIMULATOR — RC2\nSymbols: ${d.symbolsCompleted}/${d.symbolsRequested}\nEntered trades: ${s.entered??0}\nT1 hit: ${s.target1Pct??'—'}%\nStop: ${s.stopPct??'—'}%\nPositive: ${s.positivePct??'—'}%\nAverage net: ${s.avgNetPct??'—'}%\nProfit factor: ${s.profitFactor??'—'}\nWilson 95% lower T1: ${s.wilson95LowerTarget1Pct??'—'}%`; }else if(mode==='abl')renderAblation(d);else render(d);$('status').textContent='اكتمل — النتائج بحثية فقط.'}catch(e){$('status').textContent='خطأ: '+e.message}}$('scan').onclick=()=>request('/api/index?route=scan&limit=20');$('analyze').onclick=()=>{const t=$('ticker').value.trim().toUpperCase();if(t)request('/api/index?route=analyze&ticker='+encodeURIComponent(t))};$('simulate').onclick=()=>request('/api/index?route=simulate&scope=market','sim');$('ablate').onclick=()=>request('/api/index?route=ablation','abl');$('log').onclick=()=>window.open('/api/index?route=decision-log&format=csv&limit=50','_blank');request('/api/index?route=scan&limit=20');
-</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071521">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="description" content="TFE V20 Fusion RC2 — V16.9 Professional Interface">
+  <title>EGX Pro Professional — TFE Fusion RC2</title>
+  <link rel="stylesheet" href="styles-v169.css?v=16.9-rc2">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">EGX</div>
+        <div>
+          <h1>EGX Pro Professional <span>V16.9 UI × TFE RC2</span></h1>
+          <p>واجهة V16.9 المهنية — محرك التحليل والترشيحات TFE V20 Fusion RC2 بدون أي تغيير في التكنيك</p>
+          <div class="runtime-strip">
+            <span class="runtime-chip good">Original scoreBars</span>
+            <span class="runtime-chip good">Hard Gates قبل Wilson</span>
+            <span class="runtime-chip warn">Research / Shadow Only</span>
+            <span class="runtime-chip good safety-lock">Execution مقفول</span>
+          </div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="last-update" id="lastUpdate">جارٍ قراءة آخر تحديث…</div>
+        <button class="btn primary" id="refreshBtn">تحديث البيانات</button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="التنقل الرئيسي">
+      <button class="tab active" data-view="dashboard">لوحة القرار</button>
+      <button class="tab" data-view="market">بحث السوق</button>
+      <button class="tab" data-view="portfolio">المحفظة والمخاطر</button>
+      <button class="tab" data-view="fundamentals">التحليل المالي</button>
+      <button class="tab" data-view="evidence">السجل الحي والاختبارات</button>
+    </nav>
+
+    <main>
+      <section class="view active" id="view-dashboard">
+        <div class="hero-grid">
+          <article class="panel readiness-panel">
+            <div class="panel-head">
+              <div>
+                <h2>جاهزية المحرك للبحث المنضبط</h2>
+                <p>قياس عرضي لجودة البيانات، التغطية، الاختبارات والحوكمة. لا يدخل في Alpha ولا يغيّر ترتيب RC2.</p>
+              </div>
+              <span class="badge" id="productStage">جارٍ التقييم</span>
+            </div>
+            <div class="readiness-body">
+              <div class="gauge" id="readinessGauge"><strong>—</strong><span>من 100</span></div>
+              <div class="readiness-breakdown" id="readinessBreakdown"></div>
+            </div>
+            <div class="professional-verdict" id="professionalVerdict"></div>
+          </article>
+
+          <article class="panel truth-panel">
+            <div class="panel-head">
+              <div>
+                <h2>حقيقة البيانات والأداء</h2>
+                <p>فصل صريح بين جلسة السوق، الأداء التاريخي، التوصيات الحالية وصلاحية التنفيذ.</p>
+              </div>
+            </div>
+            <div class="truth-grid" id="truthGrid"></div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head split">
+            <div>
+              <h2>أفضل الفرص بعد بوابات RC2</h2>
+              <p>Quality → Technical → Liquidity → S/R → R/R → Alignment → Wilson → Publication Gate.</p>
+            </div>
+            <div class="filters">
+              <select id="recommendationFilter" class="control">
+                <option value="all">كل الفرص المعروضة</option>
+                <option value="eligible">جاهزة للمراجعة</option>
+                <option value="caution">Pending / تحتاج متابعة</option>
+                <option value="blocked">موقوفة أو محجوبة</option>
+              </select>
+              <button class="btn" id="decisionLogBtn">Decision Log CSV</button>
+            </div>
+          </div>
+          <div class="rc2-note">واجهة V16.9 هنا لا تضيف أي فلتر تحليلي جديد. حالة «جاهزة/حذر/محجوبة» تصنيف عرضي لنتيجة RC2 الموجودة بالفعل، وليست توصية مستقلة.</div>
+          <div class="recommendation-grid" id="recommendationGrid"></div>
+        </article>
+
+        <article class="panel" id="selectedPanel">
+          <div class="panel-head split">
+            <div>
+              <h2 id="selectedTitle">تفاصيل السهم</h2>
+              <p id="selectedSubtitle">اختر فرصة أو ابحث عن سهم لعرض نتيجة RC2، الرسم، الخطة وحجم المركز.</p>
+            </div>
+            <span class="badge neutral" id="selectedDecision">غير محدد</span>
+          </div>
+          <div class="selected-layout">
+            <div>
+              <div class="chart-box" id="chartBox"><div class="empty">اختر سهمًا لعرض الرسم.</div></div>
+              <div class="chart-legend" id="chartLegend" hidden>
+                <span class="legend-line entry"><i></i>Entry</span>
+                <span class="legend-line stop"><i></i>Stop</span>
+                <span class="legend-line t1"><i></i>T1</span>
+                <span class="legend-line t2"><i></i>T2</span>
+              </div>
+              <div class="analysis-columns">
+                <div class="analysis-card"><h3>التحليل الفني الأصلي</h3><div id="technicalDetail"></div></div>
+                <div class="analysis-card"><h3>المخاطر والتنفيذ</h3><div id="riskDetail"></div></div>
+                <div class="analysis-card"><h3>التحليل المالي المساعد</h3><div id="fundamentalDetail"></div></div>
+              </div>
+            </div>
+            <aside class="position-box">
+              <h3>حاسبة حجم المركز</h3>
+              <label>رأس المال<input id="capitalInput" type="number" min="0" step="1000" value="100000"></label>
+              <label>المخاطرة القصوى للصفقة %<input id="riskPctInput" type="number" min="0.1" max="2" step="0.1" value="0.5"></label>
+              <label>الحد الأقصى لوزن السهم %<input id="maxWeightInput" type="number" min="1" max="25" step="1" value="10"></label>
+              <div class="position-result" id="positionResult"></div>
+              <button class="btn good full" id="addPortfolioBtn" disabled>إضافة للمحفظة التجريبية</button>
+              <div class="fundamental-disclaimer" style="margin:10px 0 0">المحفظة تجريبية ومحفوظة على جهازك فقط. لا توجد أوامر وسيط أو تنفيذ آلي.</div>
+            </aside>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="view-market">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>بحث شامل لكل أسهم السوق</h2>
+              <p>يعرض الكون التاريخي الكامل، ويبيّن بوضوح هل السهم مرشح RC2 أم خارج توصيات اليوم أو يحتاج مراجعة بيانات.</p>
+            </div>
+          </div>
+          <div class="market-toolbar">
+            <input class="control search-input" id="marketSearch" placeholder="ابحث بالرمز أو اسم الشركة — مثال HELI أو مصر الجديدة">
+            <select class="control" id="marketScope">
+              <option value="all">كل السوق</option>
+              <option value="recommended">توصيات RC2 فقط</option>
+              <option value="outside">خارج توصيات اليوم</option>
+              <option value="datawarn">تحتاج مراجعة بيانات</option>
+            </select>
+          </div>
+          <div class="market-results" id="marketResults"></div>
+        </article>
+      </section>
+
+      <section class="view" id="view-portfolio">
+        <div class="portfolio-grid">
+          <article class="panel">
+            <div class="panel-head"><div><h2>اختبار مخاطر المحفظة</h2><p>حساب محلي للتعرض والمخاطرة ولا يغيّر توصيات RC2.</p></div></div>
+            <div class="portfolio-summary" id="portfolioSummary"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h2>سياسة المخاطر</h2><p>حدود تشغيلية محلية قابلة للتعديل، وليست جزءًا من محرك Alpha.</p></div></div>
+            <div class="policy-form">
+              <label>أقصى مخاطرة إجمالية مفتوحة %<input id="portfolioRiskLimit" type="number" min="0.5" max="10" step="0.5" value="2"></label>
+              <label>أقصى عدد مراكز متزامنة<input id="portfolioPositionLimit" type="number" min="1" max="20" step="1" value="5"></label>
+              <label>أقصى تعرض لاستراتيجية واحدة %<input id="strategyExposureLimit" type="number" min="10" max="100" step="5" value="40"></label>
+            </div>
+          </article>
+        </div>
+        <article class="panel">
+          <div class="panel-head split">
+            <div><h2>المراكز التجريبية</h2><p>محفوظة محليًا فقط ولا تُرسل أي أوامر للوسيط.</p></div>
+            <button class="btn danger" id="clearPortfolioBtn">مسح المحفظة</button>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>السهم</th><th>الحالة</th><th>الدخول</th><th>الوقف</th><th>الكمية</th><th>قيمة المركز</th><th>الخطر</th><th>الجلسة</th><th></th></tr></thead><tbody id="portfolioRows"></tbody></table>
+          </div>
+        </article>
+      </section>
+
+      <section class="view" id="view-fundamentals">
+        <div class="fundamental-layout">
+          <article class="panel">
+            <div class="panel-head"><div><h2>التحليل المالي المساعد</h2><p>نفس خيار V16.9 لكن كمذكرة يدوية محلية فقط؛ لا يدخل في RC2 Fusion Rank أو البوابات.</p></div></div>
+            <div class="fundamental-disclaimer">أي تقييم مالي محفوظ هنا «Supplemental Only». محرك RC2 لن يقرأ هذه القيم ولن يغيّر توصية بسببها.</div>
+            <div class="fundamental-form">
+              <label>السهم<select id="fundamentalTicker" class="control"></select></label>
+              <label>نمو الإيرادات %<input id="revenueGrowth" type="number" step="0.1"></label>
+              <label>نمو صافي الربح %<input id="profitGrowth" type="number" step="0.1"></label>
+              <label>ROE %<input id="roe" type="number" step="0.1"></label>
+              <label>Debt / Equity<input id="debtEquity" type="number" step="0.01"></label>
+              <label>P/E<input id="pe" type="number" step="0.1"></label>
+              <label>القيمة العادلة التقديرية<input id="fairValue" type="number" step="0.01"></label>
+              <label class="check-label"><input id="positiveCfo" type="checkbox"> تدفق نقدي تشغيلي موجب</label>
+              <label class="check-label"><input id="auditedData" type="checkbox"> أرقام من مصدر مدقق/إفصاح رسمي</label>
+              <label class="wide">ملاحظات<textarea id="fundamentalNotes" rows="4"></textarea></label>
+              <button class="btn primary" id="saveFundamentalBtn">حفظ التقييم المالي محليًا</button>
+            </div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h2>النتيجة المالية المساعدة</h2><p>للعرض والمراجعة اليدوية فقط.</p></div></div>
+            <div id="fundamentalScoreCard" class="fundamental-score-card"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="view-evidence">
+        <div class="evidence-grid">
+          <article class="panel">
+            <div class="panel-head"><div><h2>السجل الحي للتوصيات</h2><p>تُحفظ أول نسخة شاهدتها لكل توصية محليًا، ولا يتم تعديلها بأثر رجعي.</p></div></div>
+            <div class="evidence-summary" id="liveEvidenceSummary"></div>
+            <div class="archive-note">السجل المحلي يبدأ من أول تشغيل لهذه الواجهة على جهازك. Decision Log الرسمي متاح للتصدير بشكل منفصل.</div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><h2>بوابة الثقة</h2><p>تفصل بين الدليل التاريخي الحالي وبين الدليل الحي المستقبلي.</p></div></div>
+            <div id="confidenceGate"></div>
+          </article>
+        </div>
+        <article class="panel">
+          <div class="panel-head split">
+            <div><h2>نتائج / سجلات التوصيات</h2><p>الأرشيف المحلي + Decision Log الحالي. لا يتم اختراع نتيجة لصفقة لم تُحسم.</p></div>
+            <div class="evidence-actions"><button class="btn" id="evidenceRefreshBtn">تحديث الأدلة</button><button class="btn" id="evidenceCsvBtn">تنزيل Decision Log CSV</button></div>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>التاريخ</th><th>السهم</th><th>الحالة</th><th>الدخول</th><th>T1</th><th>الوقف</th><th>Fusion</th><th>Wilson</th></tr></thead><tbody id="evaluationRows"></tbody></table>
+          </div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h2>ثبات النماذج والاختبارات</h2><p>RC1 وRC2 وAblation مع فصل واضح بين Historical Evidence وForward Evidence.</p></div></div>
+          <div class="table-wrap"><table><thead><tr><th>النموذج</th><th>الصفقات</th><th>T1</th><th>Stop</th><th>Avg Net</th><th>PF</th><th>Wilson 95% Lower</th><th>الحكم</th></tr></thead><tbody id="modelRows"></tbody></table></div>
+        </article>
+      </section>
+    </main>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="ui-v169.js?v=16.9-rc2"></script>
+</body>
+</html>
