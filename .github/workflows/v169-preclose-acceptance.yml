@@ -32,16 +32,16 @@ jobs:
         run: |
           set -euo pipefail
           grep -q "14:15" .github/workflows/v169-preclose-rescan.yml
-          grep -q "mobile-hotfix-deploy.yml" .github/workflows/v169-preclose-rescan.yml
-          grep -q "v16-v169-basket-engine.yml" .github/workflows/v169-preclose-rescan.yml
-          grep -q "main-app-governance-refresh.yml" .github/workflows/v169-preclose-rescan.yml
+          grep -q "main-app-intraday-ls1.yml" .github/workflows/v169-preclose-rescan.yml
+          grep -q "LS1_INTRADAY_PRE_CLOSE" .github/workflows/v169-preclose-rescan.yml
+          grep -q "formalBasketPublicationRequiredAtPreclose:false" .github/workflows/v169-preclose-rescan.yml
+          grep -q "activeSignalCount" .github/workflows/v169-preclose-rescan.yml
           grep -q "MARKET_CLOSE_MINUTE = 14 \* 60 + 30" preview-v16/app/v16-9-preclose-runtime.js
           grep -q "CHECKPOINTS = \[15, 10, 5\]" preview-v16/app/v16-9-preclose-runtime.js
           grep -q "v16-main-app-current.json" preview-v16/app/v16-9-preclose-runtime.js
           grep -q "v16-ls1-late-session-opportunities.json" preview-v16/app/v16-9-preclose-ls1-status.js
           grep -q "لا توجد توصيات تنفيذية جديدة" preview-v16/app/v16-9-preclose-ls1-status.js
           grep -q "مراقبة فقط" preview-v16/app/v16-9-preclose-ls1-status.js
-          grep -q "selection technique" .github/workflows/v169-preclose-rescan.yml || true
 
       - name: Prove recommendation-selection code is untouched
         shell: bash
@@ -51,8 +51,6 @@ jobs:
           CHANGED=$(git diff --name-only origin/main...HEAD)
           echo "$CHANGED"
 
-          # Diagnostic-only scripts may analyze already-produced selections, but they must never
-          # expand this exception into recommendation-selection/research engine code.
           SCRIPT_CHANGED=$(printf '%s\n' "$CHANGED" | grep -E '^scripts/(stable|research)/' || true)
           ALLOWED_DIAGNOSTIC='^scripts/stable/(v16-main-app-engine-performance\.cjs|v16-main-app-independent-consensus-audit\.cjs)$'
           VIOLATIONS=$(printf '%s\n' "$SCRIPT_CHANGED" | grep -Ev "$ALLOWED_DIAGNOSTIC" || true)
@@ -62,6 +60,6 @@ jobs:
             exit 1
           fi
 
-          # Explicitly prove the frozen V16.9 selection engine itself is byte-identical to main.
           git diff --quiet origin/main...HEAD -- scripts/research/v16-v169-basket-engine.py
-          echo "PASS: frozen V16.9 selection engine unchanged; only approved presentation/diagnostic files differ."
+          git diff --quiet origin/main...HEAD -- scripts/stable/v16-publish-v169-basket.cjs
+          echo "PASS: frozen V16.9 basket engine/publisher unchanged; pre-close routing is LS1 intraday only."

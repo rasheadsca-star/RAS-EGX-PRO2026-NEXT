@@ -8,8 +8,8 @@ on:
       - ".github/workflows/v169-preclose-rescan.yml"
   schedule:
     # Candidate runs around 14:15 Africa/Cairo across UTC+2 / UTC+3 seasons.
-    # GitHub scheduled workflows can start a few minutes late, so the Cairo gate
-    # accepts a bounded T-15 window and an idempotency lock keeps one success/session.
+    # GitHub schedules can start a few minutes late; the Cairo gate below accepts
+    # a bounded window and the completion lock prevents duplicate successful runs.
     - cron: "12,15,18,21 11,12 * * 0-4"
 
 permissions:
@@ -23,7 +23,7 @@ concurrency:
 jobs:
   preclose:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 45
     steps:
       - name: Resolve resilient Cairo T-15 gate
         id: clock
@@ -34,23 +34,19 @@ jobs:
           DOW=$(TZ=Africa/Cairo date '+%w')
           HOUR=$(TZ=Africa/Cairo date '+%H')
           MINUTE=$(TZ=Africa/Cairo date '+%M')
-          LOCAL_TIME=$(TZ=Africa/Cairo date '+%H:%M')
           NOW_MIN=$((10#$HOUR * 60 + 10#$MINUTE))
           RUN=false
 
           if [ "$EVENT" = "workflow_dispatch" ]; then
             RUN=true
           elif [ "$DOW" -le 4 ] && [ "$EVENT" = "schedule" ] && [ "$NOW_MIN" -ge 852 ] && [ "$NOW_MIN" -le 864 ]; then
-            # 14:12-14:24 Cairo: tolerates scheduler delay without drifting away from T-15.
             RUN=true
-          elif [ "$DOW" -le 4 ] && [ "$EVENT" = "push" ] && [ "$NOW_MIN" -ge 850 ] && [ "$NOW_MIN" -le 890 ]; then
-            # Safe one-time deployment trigger while the market is still in/near close.
+          elif [ "$DOW" -le 4 ] && [ "$EVENT" = "push" ] && [ "$NOW_MIN" -ge 850 ] && [ "$NOW_MIN" -le 900 ]; then
             RUN=true
           fi
 
           echo "Cairo pre-close gate: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M:%S %Z') event=$EVENT run=$RUN"
           echo "run=$RUN" >> "$GITHUB_OUTPUT"
-          echo "local_time=$LOCAL_TIME" >> "$GITHUB_OUTPUT"
 
       - name: Checkout latest MAIN APP state
         if: steps.clock.outputs.run == 'true'
@@ -67,7 +63,6 @@ jobs:
           set -euo pipefail
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "Manual dispatch overrides the daily completion lock."
             exit 0
           fi
           TODAY=$(TZ=Africa/Cairo date '+%Y-%m-%d')
@@ -84,14 +79,14 @@ jobs:
           fi
           if [ "$DONE" = "true" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Pre-close cycle already completed for $TODAY; duplicate candidate skipped."
+            echo "Pre-close LS1 cycle already completed for $TODAY."
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Dispatch the existing full-market engine
+      - name: Dispatch LS1 intraday pre-close scan
         if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
-        id: scan_dispatch
+        id: ls1_dispatch
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -99,15 +94,15 @@ jobs:
           set -euo pipefail
           STARTED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
           echo "started_at=$STARTED_AT" >> "$GITHUB_OUTPUT"
-          gh workflow run mobile-hotfix-deploy.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo "Dispatched the existing immediate market scan without changing its selection logic."
+          gh workflow run main-app-intraday-ls1.yml --repo "$GITHUB_REPOSITORY" --ref main
+          echo "Dispatched the existing LS1 intraday engine. Frozen V16.9 selection remains untouched."
 
-      - name: Wait for the dispatched market scan
+      - name: Wait for LS1 pre-close result and Pages publication
         if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
-        id: scan_wait
+        id: ls1_wait
         env:
           GH_TOKEN: ${{ github.token }}
-          STARTED_AT: ${{ steps.scan_dispatch.outputs.started_at }}
+          STARTED_AT: ${{ steps.ls1_dispatch.outputs.started_at }}
         shell: bash
         run: |
           set -euo pipefail
@@ -115,7 +110,7 @@ jobs:
           for attempt in $(seq 1 30); do
             RUN_ID=$(gh run list \
               --repo "$GITHUB_REPOSITORY" \
-              --workflow mobile-hotfix-deploy.yml \
+              --workflow main-app-intraday-ls1.yml \
               --event workflow_dispatch \
               --limit 30 \
               --json databaseId,createdAt,status \
@@ -124,63 +119,15 @@ jobs:
             sleep 4
           done
           if [ -z "$RUN_ID" ]; then
-            echo "Could not resolve the dispatched market-scan run." >&2
+            echo "Could not resolve the LS1 pre-close run." >&2
             exit 1
           fi
-          echo "scan_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "ls1_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
 
-      - name: Resolve or force the frozen V16.9 basket publication
+      - name: Verify same-day LS1 result exists even when signal count is zero
         if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
-        id: basket_wait
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SCAN_STARTED_AT: ${{ steps.scan_dispatch.outputs.started_at }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          RUN_ID=""
-
-          # Prefer the normal workflow_run chain, but do not let recommendations
-          # disappear if GitHub fails to emit/resolve that secondary trigger.
-          for attempt in $(seq 1 18); do
-            RUN_ID=$(gh run list \
-              --repo "$GITHUB_REPOSITORY" \
-              --workflow v16-v169-basket-engine.yml \
-              --event workflow_run \
-              --limit 30 \
-              --json databaseId,createdAt,status \
-              --jq ".[] | select(.createdAt >= \"$SCAN_STARTED_AT\") | .databaseId" | head -n 1)
-            [ -n "$RUN_ID" ] && break
-            sleep 5
-          done
-
-          if [ -z "$RUN_ID" ]; then
-            echo "Automatic basket trigger not resolved in time; dispatching the same frozen engine directly."
-            BASKET_STARTED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-            gh workflow run v16-v169-basket-engine.yml --repo "$GITHUB_REPOSITORY" --ref main
-            for attempt in $(seq 1 30); do
-              RUN_ID=$(gh run list \
-                --repo "$GITHUB_REPOSITORY" \
-                --workflow v16-v169-basket-engine.yml \
-                --event workflow_dispatch \
-                --limit 30 \
-                --json databaseId,createdAt,status \
-                --jq ".[] | select(.createdAt >= \"$BASKET_STARTED_AT\") | .databaseId" | head -n 1)
-              [ -n "$RUN_ID" ] && break
-              sleep 4
-            done
-          fi
-
-          if [ -z "$RUN_ID" ]; then
-            echo "Could not resolve any V16.9 basket run after the market scan." >&2
-            exit 1
-          fi
-          echo "basket_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
-
-      - name: Prove today's pre-close basket was actually published
-        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
+        id: verify
         shell: bash
         run: |
           set -euo pipefail
@@ -189,65 +136,20 @@ jobs:
           TODAY=$(TZ=Africa/Cairo date '+%Y-%m-%d')
           TODAY="$TODAY" node - <<'NODE'
           const fs=require('fs');
-          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
-          const research=read('data/research/v16-v169-basket-engine.json');
-          const primary=read('data/stable/v16-v169-primary-decision.json');
-          const basket=Array.isArray(research.currentBasket)?research.currentBasket:[];
-          const model=primary?.selectedModel?.id;
-          if(research.currentSignalDate!==process.env.TODAY) throw new Error(`Pre-close basket is stale: ${research.currentSignalDate} != ${process.env.TODAY}`);
-          if(primary.sessionDate!==process.env.TODAY) throw new Error(`Primary decision is stale: ${primary.sessionDate} != ${process.env.TODAY}`);
-          if(model!=='V16_9_EQUAL_WEIGHT_BASKET') throw new Error(`Unexpected model: ${model}`);
-          if(!basket.length) throw new Error('Pre-close basket is empty');
-          console.log(JSON.stringify({preclosePublished:true,sessionDate:research.currentSignalDate,tickers:basket.map(r=>r.ticker)},null,2));
+          const x=JSON.parse(fs.readFileSync('data/stable/v16-ls1-late-session-opportunities.json','utf8'));
+          if(x.cairoDate!==process.env.TODAY) throw new Error(`LS1 result is stale: ${x.cairoDate} != ${process.env.TODAY}`);
+          if(x.modelId!=='V16_9_LATE_SESSION_OPPORTUNITY_LS1') throw new Error(`Unexpected LS1 model: ${x.modelId}`);
+          if(x.methodologyFrozen!==true||x.productionV169MethodologyModified!==false) throw new Error('LS1/V16.9 methodology isolation drift');
+          const active=Number(x.activeSignalCount||0);
+          const signals=Array.isArray(x.signals)?x.signals:[];
+          const watch=Array.isArray(x.watchTop)?x.watchTop:[];
+          console.log(JSON.stringify({ok:true,cairoDate:x.cairoDate,cairoTime:x.cairoTime,phase:x.phase,status:x.status,activeSignalCount:active,signalTickers:signals.filter(r=>r?.eligible===true||r?.active===true||r?.executionEligible===true).map(r=>r.ticker),watchTickers:watch.slice(0,3).map(r=>r.ticker),evidenceBlockers:x.evidenceBlockers||[]},null,2));
           NODE
 
-      - name: Refresh canonical MAIN APP snapshot after frozen publication
-        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
-        id: governance_dispatch
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          STARTED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-          echo "started_at=$STARTED_AT" >> "$GITHUB_OUTPUT"
-          gh workflow run main-app-governance-refresh.yml --repo "$GITHUB_REPOSITORY" --ref main
-          echo "Dispatched canonical MAIN APP governance rebuild after the frozen V16.9 publisher completed."
-
-      - name: Wait for canonical snapshot publication
-        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
-        id: governance_wait
-        env:
-          GH_TOKEN: ${{ github.token }}
-          STARTED_AT: ${{ steps.governance_dispatch.outputs.started_at }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          RUN_ID=""
-          for attempt in $(seq 1 30); do
-            RUN_ID=$(gh run list \
-              --repo "$GITHUB_REPOSITORY" \
-              --workflow main-app-governance-refresh.yml \
-              --event workflow_dispatch \
-              --limit 30 \
-              --json databaseId,createdAt,status \
-              --jq ".[] | select(.createdAt >= \"$STARTED_AT\") | .databaseId" | head -n 1)
-            [ -n "$RUN_ID" ] && break
-            sleep 4
-          done
-          if [ -z "$RUN_ID" ]; then
-            echo "Could not resolve the canonical-governance run." >&2
-            exit 1
-          fi
-          echo "governance_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
-
-      - name: Persist successful pre-close completion lock
+      - name: Persist completed pre-close LS1 status
         if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
         env:
-          SCAN_RUN_ID: ${{ steps.scan_wait.outputs.scan_run_id }}
-          BASKET_RUN_ID: ${{ steps.basket_wait.outputs.basket_run_id }}
-          GOVERNANCE_RUN_ID: ${{ steps.governance_wait.outputs.governance_run_id }}
+          LS1_RUN_ID: ${{ steps.ls1_wait.outputs.ls1_run_id }}
         shell: bash
         run: |
           set -euo pipefail
@@ -255,19 +157,24 @@ jobs:
           git reset --hard origin/main
           node - <<'NODE'
           const fs=require('fs');
-          const research=JSON.parse(fs.readFileSync('data/research/v16-v169-basket-engine.json','utf8'));
-          const primary=JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json','utf8'));
+          const x=JSON.parse(fs.readFileSync('data/stable/v16-ls1-late-session-opportunities.json','utf8'));
+          const signals=(Array.isArray(x.signals)?x.signals:[]).filter(r=>r?.eligible===true||r?.active===true||r?.executionEligible===true);
+          const watch=Array.isArray(x.watchTop)?x.watchTop:[];
           const out={
-            schemaVersion:'16.9.2-preclose-status-2',
+            schemaVersion:'16.9.2-preclose-status-3',
             generatedAt:new Date().toISOString(),
             cairoCompletedAt:new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date()),
-            sessionDate:research.currentSignalDate,
+            sessionDate:x.cairoDate,
             status:'COMPLETED',
-            recommendationTickers:(research.currentBasket||[]).map(r=>r.ticker),
-            primaryDecisionSession:primary.sessionDate||null,
-            model:primary?.selectedModel?.id||null,
-            runIds:{scan:process.env.SCAN_RUN_ID||null,basket:process.env.BASKET_RUN_ID||null,governance:process.env.GOVERNANCE_RUN_ID||null},
-            governance:{selectionTechniqueChanged:false,scoringChanged:false,rankingChanged:false,weightsChanged:false,riskGatesChanged:false},
+            layer:'LS1_INTRADAY_PRE_CLOSE',
+            phase:x.phase||null,
+            ls1Status:x.status||null,
+            activeSignalCount:Number(x.activeSignalCount||signals.length||0),
+            recommendationTickers:signals.map(r=>r.ticker),
+            watchTickers:watch.slice(0,3).map(r=>r.ticker),
+            evidenceBlockers:Array.isArray(x.evidenceBlockers)?x.evidenceBlockers:[],
+            runIds:{ls1:process.env.LS1_RUN_ID||null},
+            governance:{productionV169MethodologyModified:false,selectionTechniqueChanged:false,scoringChanged:false,rankingChanged:false,weightsChanged:false,riskGatesChanged:false,formalBasketPublicationRequiredAtPreclose:false}
           };
           fs.writeFileSync('data/stable/v169-preclose-status.json',JSON.stringify(out,null,2)+'\n');
           console.log(out);
@@ -276,7 +183,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/stable/v169-preclose-status.json
           if ! git diff --cached --quiet; then
-            git commit -m "Record completed V16.9 pre-close recommendation cycle"
+            git commit -m "Record completed V16.9 LS1 pre-close cycle"
             for attempt in 1 2 3; do
               if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
               [ "$attempt" = "3" ] && exit 1
@@ -284,13 +191,13 @@ jobs:
             done
           fi
 
-      - name: Confirm orchestration contract
+      - name: Confirm pre-close contract
         if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
         shell: bash
         run: |
           echo "Pre-close contract completed:"
-          echo "1) Existing full-market scan executed unchanged."
-          echo "2) Existing frozen V16.9 basket publisher completed unchanged (with direct fallback if workflow_run is delayed/missed)."
-          echo "3) Today's basket publication was explicitly verified before MAIN APP refresh."
-          echo "4) Existing canonical MAIN APP governance rebuilt unchanged."
+          echo "1) LS1 refreshed the intraday market snapshot and evaluated the 14:15 tactical layer."
+          echo "2) Zero eligible signals is a valid completed result and is surfaced explicitly in MAIN APP."
+          echo "3) Monitoring-only watch candidates remain clearly separated from executable recommendations."
+          echo "4) The frozen V16.9 formal basket is not forced before the market session is completed/verified."
           echo "5) No recommendation scoring, ranking, weights, filters, or risk gates were modified by this workflow."
