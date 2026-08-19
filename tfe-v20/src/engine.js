@@ -191,7 +191,7 @@ export function analyzeTicker({ ticker, nameAr = null, nameEn = null, rows = [],
   if (!ticker) throw new Error('TICKER_REQUIRED');
   const normalized = normalizeBars(rows);
   const bars = normalized.bars;
-  const quality = assessDataQuality({ bars, warnings: historyMeta.warnings ?? [], updateFailed: historyMeta.updateFailed, staleData: historyMeta.staleData, expectedSessionDate });
+  const quality = assessDataQuality({ bars, warnings: historyMeta.warnings ?? [], updateFailed: historyMeta.updateFailed, staleData: historyMeta.staleData, expectedSessionDate, symbolVerified: historyMeta.symbolVerified, symbolVerification: historyMeta.symbolVerification });
   const overlay = v17Overlay(ticker, v17);
   if (bars.length < POLICY.minBars) return { ticker, nameAr, nameEn, decision: 'NO_RECOMMENDATION', eligible: false, quality, overlay, reasonCodes: ['INSUFFICIENT_HISTORY'], permissions: POLICY.permissions };
 
