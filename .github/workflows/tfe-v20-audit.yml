@@ -1,0 +1,39 @@
+name: TFE V20 Audit
+
+on:
+  push:
+    branches:
+      - develop/v20-integrated-decision-platform
+    paths:
+      - 'tfe-v20/**'
+      - '.github/workflows/tfe-v20-audit.yml'
+  pull_request:
+    paths:
+      - 'tfe-v20/**'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check
+        run: |
+          node --check src/policy.js
+          node --check src/math.js
+          node --check src/quality.js
+          node --check src/engine.js
+          node --check src/backtest.js
+          node --check src/repository.js
+          node --check api/index.js
+      - name: Functional and destructive tests
+        run: npm test
