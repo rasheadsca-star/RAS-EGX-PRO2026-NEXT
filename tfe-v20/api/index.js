@@ -6,6 +6,7 @@ import { buildDecisionLogRows, toDecisionLogCsv } from '../src/decisionLog.js';
 import { fetchJson, rawUrl, loadUniverse, loadHistory, loadV17, loadHistorySummary } from '../src/repository.js';
 
 const DATA_BRANCH = 'develop/v20-integrated-decision-platform';
+let ablationCache = { at: 0, value: null };
 
 const json = (res, status, body) => {
   res.statusCode = status;
@@ -151,14 +152,18 @@ async function simulateMarket(maxSymbols = 220) {
 }
 
 async function ablationMarket() {
-  const [v20Replay, v17TrackRecord] = await Promise.all([
+  if (ablationCache.value && Date.now() - ablationCache.at < 5 * 60 * 1000) return ablationCache.value;
+  const [{ candidates }, v20Replay, v17TrackRecord] = await Promise.all([
+    loadUniverse(),
     fetchJson(rawUrl(DATA_BRANCH, 'data/v20/retrospective-walk-forward-target-stop.json')),
     fetchJson(rawUrl(DATA_BRANCH, 'data/v17/recommendation-track-record.json')),
   ]);
-  const tickers = [...new Set((v20Replay?.sessions ?? []).flatMap((s) => (s?.members ?? []).map((m) => String(m?.ticker ?? '').trim().toUpperCase())).filter(Boolean))];
+  const universeTickers = [...new Set(candidates.map((x) => String(x?.ticker ?? '').trim().toUpperCase()).filter(Boolean))];
+  const v20Tickers = [...new Set((v20Replay?.sessions ?? []).flatMap((s) => (s?.members ?? []).map((m) => String(m?.ticker ?? '').trim().toUpperCase())).filter(Boolean))];
+  const tickers = [...new Set([...universeTickers, ...v20Tickers])];
   const histories = {}, historyErrors = [];
-  for (let i = 0; i < tickers.length; i += 12) {
-    const batch = await Promise.all(tickers.slice(i, i + 12).map(async (ticker) => {
+  for (let i = 0; i < tickers.length; i += 16) {
+    const batch = await Promise.all(tickers.slice(i, i + 16).map(async (ticker) => {
       try {
         const h = await loadHistory(ticker);
         return { ticker, rows: h.rows };
@@ -169,12 +174,14 @@ async function ablationMarket() {
       else histories[item.ticker] = item.rows;
     }
   }
-  return {
+  const value = {
     ok: true,
     engine: POLICY.engineId,
     generatedAt: new Date().toISOString(),
-    ...buildAblationBenchmark({ v20Replay, v17TrackRecord, histories, historyErrors }),
+    ...buildAblationBenchmark({ v20Replay, v17TrackRecord, histories, universeTickers, historyErrors }),
   };
+  ablationCache = { at: Date.now(), value };
+  return value;
 }
 
 export default async function handler(req, res) {
@@ -190,7 +197,7 @@ export default async function handler(req, res) {
       historicalConfidence: 'WILSON_AFTER_HARD_GATES_WITH_EVIDENCE_AWARE_WEIGHTING',
       missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
       decisionLog: 'AVAILABLE',
-      ablationBenchmark: 'AVAILABLE_RESEARCH_DIAGNOSTIC',
+      ablationBenchmark: 'AVAILABLE_RESEARCH_DIAGNOSTIC_V2',
     });
     if (route === 'analyze') {
       const ticker = String(url.searchParams.get('ticker') ?? '').trim().toUpperCase();
