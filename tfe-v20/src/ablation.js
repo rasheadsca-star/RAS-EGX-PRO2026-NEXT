@@ -65,12 +65,18 @@ export function evaluateRecordedPlan({ ticker, rows, signalDate, plan, holdSessi
   };
 }
 
+function isRecordedV17Evidence(evidence = '') {
+  const e = String(evidence).toUpperCase();
+  return e.includes('NATIVE_V17_LIVE') || e.includes('RECORDED');
+}
+
 function evidenceRank(evidence = '') {
-  if (evidence.includes('NATIVE_V17_LIVE')) return 5;
-  if (evidence.includes('EXACT_METHOD_RECORDED_LIVE')) return 4;
-  if (evidence.includes('HISTORICAL_BLOCKED_WALK_FORWARD')) return 3;
-  if (evidence.includes('RECORDED')) return 2;
-  return 1;
+  const e = String(evidence).toUpperCase();
+  if (e.includes('NATIVE_V17_LIVE')) return 5;
+  if (e.includes('EXACT_METHOD_RECORDED_LIVE')) return 4;
+  if (e.includes('RECORDED_ORIGINAL')) return 3;
+  if (e.includes('RECORDED')) return 2;
+  return 0;
 }
 
 export function collectV17SignalKeys(trackRecord) {
@@ -79,9 +85,9 @@ export function collectV17SignalKeys(trackRecord) {
     if (Array.isArray(node)) { node.forEach(visit); return; }
     if (!node || typeof node !== 'object') return;
     const date = node.signalDate ?? node.recommendationDate ?? null;
-    const evidenceClass = String(node.evidenceClass ?? node.provenance ?? 'V17_RECORDED_SIGNAL');
+    const evidenceClass = String(node.evidenceClass ?? node.provenance ?? '');
     const tickers = Array.isArray(node.tickers) ? node.tickers : node.ticker ? [node.ticker] : [];
-    if (date && tickers.length) {
+    if (date && tickers.length && isRecordedV17Evidence(evidenceClass)) {
       for (const ticker of tickers) {
         const key = keyOf(date, ticker);
         const prev = signals.get(key);
@@ -145,6 +151,7 @@ function summarizeVariant(state, baseCount) {
     maxDrawdownPct: sequenceMaxDrawdownPct(state.trades),
     wilson95LowerTarget1Pct: summary.wilson95LowerTarget1Pct,
     entryExpired: state.expired.length,
+    sampleClass: summary.entered >= 30 ? 'MINIMUM_COMPARATIVE_SAMPLE_REACHED' : 'LOW_SAMPLE_DIAGNOSTIC',
   };
 }
 
@@ -214,7 +221,7 @@ export function buildAblationBenchmark({ v20Replay, v17TrackRecord, histories = 
     label,
     evidenceClass,
     historicalAttribution: id.includes('V17') || id === 'FULL_FUSION'
-      ? 'PARTIAL_PROXY_V17_EXACT_SAFETY_ARCHIVE_NOT_AVAILABLE'
+      ? 'PARTIAL_PROXY_EXACT_HISTORICAL_SAFETY_OVERLAY_STATE_NOT_ARCHIVED'
       : 'POINT_IN_TIME_DIAGNOSTIC',
     ...summaries[id],
     deltaVsV20: {
@@ -250,14 +257,16 @@ export function buildAblationBenchmark({ v20Replay, v17TrackRecord, histories = 
       sameBarAmbiguity: 'STOP_FIRST',
       roundTripCostPct: POLICY.roundTripCostPct,
       target: 'TARGET1',
+      minimumComparativeEnteredSample: 30,
       maxDrawdown: 'COMPOUNDED_TRADE_SEQUENCE_DIAGNOSTIC_NOT_CONCURRENT_PORTFOLIO_DRAWDOWN',
-      v17Treatment: 'RECORDED_SAME_DATE_TICKER_CONFIRMATION_PROXY; DOES_NOT CLAIM EXACT HISTORICAL SAFETY-OVERLAY REPLAY',
+      v17Treatment: 'RECORDED_SAME_DATE_TICKER_CONFIRMATION_PROXY_ONLY; RETROSPECTIVE_RESEARCH_SESSIONS_ARE_EXCLUDED',
     },
     diagnostics,
     variants,
     limitations: [
       'V20 cohort is retrospective point-in-time reconstruction, not fresh forward evidence.',
       'Exact historical V17 safety-overlay state is not archived for the full window; V17 variants use recorded same-date/ticker confirmation as an explicit proxy.',
+      'Variants below 30 entered trades are marked low-sample and must not be used for promotion claims.',
       'Ablation is isolated from production eligibility and cannot promote a Champion or enable execution.',
     ],
   };
