@@ -1,88 +1,168 @@
-# TFE V20 Fusion RC1 — Developer Handoff
+# TFE V20 Fusion RC2 — Developer Handoff
 
-Standalone research engine embedded **inside** `develop/v20-integrated-decision-platform` without changing MAIN APP, V17, or the existing V20 Native engine.
+RC2 is the merged research engine inside `develop/v20-integrated-decision-platform`. It preserves the strongest parts of the original standalone EGX scorer while retaining the TFE hard-gate architecture, full-market scan, V20 provenance, V17 safety overlay, publication controls, and recorded-session simulator.
 
-## Contract
+It does **not** modify MAIN APP, V17, or the existing V20 Native engine.
 
-- V17 remains the authoritative production/safety backbone.
-- V20 Native remains discovery/provenance intelligence; its `nativeResearchScore` is never a TFE scoring input.
-- A freshness bridge uses the current recorded full-market history universe, then TFE re-scores OHLC/volume independently.
-- `RESEARCH_ONLY` is immutable in this RC: no broker execution, no production allocation, no automatic orders, and no automatic Champion promotion.
-- Fail closed on broken OHLC, insufficient history, stale/update-failed history, explicit symbol-identity failure, corporate-action review flags, and unofficial historical seed warnings.
-- Local-reference price divergence is treated as review evidence because the upstream local-reference adapter does not guarantee session-date alignment. A very high `latest_close_conflict` (>=20%) creates a **publication hold** until price reconciliation; it does not silently become a recommendation.
+## What RC2 merges
 
-## Final fixed policy
+### Preserved from the original standalone engine
 
-- Minimum history: 60 sessions
-- Core score: >= 70
-- Fusion research score: >= 72
-- Liquidity score: >= 55 + eligibility gate
-- S/R confluence: >= 55 with >= 2 strong methods
-- Structural net R/R: >= 0.70 after 0.60% round-trip cost
-- Pullback distance: <= 0.70 ATR; otherwise DO NOT CHASE
-- Entry expiry: 3 sessions
-- Maximum holding window: 10 sessions
-- T1: precision target at 0.8 effective-risk units, capped by structural resistance
+- The original `scoreBars()` technical core.
+- SMA50 / SMA200 trend logic.
+- RSI(14).
+- MACD histogram / acceleration.
+- ATR volatility penalty.
+- Volume confirmation.
+- Explainable component-by-component technical breakdown.
+
+### Preserved from TFE RC1
+
+- Full-market fresh-history universe.
+- Fail-closed data-quality gate.
+- Liquidity eligibility.
+- Multi-method support/resistance confluence.
+- Entry zone, stop, T1 and structural T2.
+- Structural net R/R floor after modeled transaction cost.
+- `DO_NOT_CHASE` / `BELOW_ENTRY_WAIT` hard rejection.
+- Price-reconciliation publication hold.
+- V20 Native as provenance only, never a scoring input.
+- V17 safety overlay, never an execution override.
+- Next-session-only, STOP_FIRST recorded-session simulation.
+
+### Added in RC2
+
+- Per-symbol historical-confidence layer using Wilson 95% lower bound.
+- Evidence-aware weighting: Wilson can contribute **0% to 25%** of ranking depending on sample reliability; missing historical evidence is neutral, not treated as zero quality.
+- Historical confidence is calculated **only after all hard gates pass** and can never rescue a stale, illiquid, low-score, poor-R/R, or DO_NOT_CHASE setup.
+- Decision Log JSON/CSV including actual fusion weights, historical sample size, Wilson confidence, trade plan, quality state, V17 status, and runtime source commit.
+- New anti-rescue/adversarial regression tests.
+
+## Immutable research-only contract
+
+- `researchOnly = true`
+- `executionAllowed = false`
+- `productionAllocation = false`
+- `automaticOrders = false`
+- `automaticChampionPromotion = false`
+
+V17 cannot turn execution on. V20 Native cannot become a TFE scoring input.
+
+## Fixed hard gates
+
+- Minimum history: **60 sessions**
+- Original technical score: **>= 70**
+- Research score: **>= 72**
+- Liquidity score: **>= 55** plus liquidity eligibility
+- S/R confluence: **>= 55** with at least **2 strong methods**
+- Structural net R/R: **>= 0.70** after **0.60%** round-trip modeled cost
+- Maximum pullback distance: **0.70 ATR**
+- Entry expiry: **3 sessions**
+- Maximum hold: **10 sessions**
+- T1: **0.8R precision target capped by structural resistance**
 - T2: structural resistance
-- Same-bar ambiguity in simulator: STOP_FIRST
+- Same-bar target/stop ambiguity: **STOP_FIRST**
 
-## Current runtime
+## Fusion ranking
 
-Production review URL:
+Ranking occurs only after hard-gate eligibility.
 
-`https://egx-tfe-v20-fusion-rc1.vercel.app`
+- Research weight range: **75%–100%**
+- Wilson historical-confidence weight range: **0%–25%**
+- Full Wilson weight requires at least **5 qualifying historical trades**
+- With zero qualifying historical trades: `Fusion Rank = Research Score`
 
-The deployed runtime is pinned to an immutable Git commit and emits `x-tfe-source-commit` so reviewers can match the running code to the repository revision.
+This avoids the two failure modes found during destructive review: historical results rescuing an invalid current setup, and missing historical evidence unfairly acting like a zero score.
+
+## Production review runtime
+
+`https://egx-tfe-v20-fusion-rc2.vercel.app`
+
+Reviewed runtime source commit:
+
+`779b336d4baf52d9185b2c05da24033231a75730`
+
+Every runtime response exposes `x-tfe-source-commit` so the reviewer can match deployed behavior to reviewed source.
 
 ## Endpoints
 
-- `/health` — immutable policy and permission contract
-- `/scan?limit=20` — scans the fresh current full-market history universe, applies independent TFE analysis, publication quality gate, V20 provenance overlay and V17 safety overlay
-- `/analyze?ticker=ETEL` — single ticker analysis + publication state
-- `/simulate?ticker=ETEL` — recorded-session single-symbol simulator
-- `/simulate?scope=market&symbols=220` — aggregate recorded full-market simulator
+- `/health`
+- `/scan?limit=20`
+- `/analyze?ticker=ETEL`
+- `/simulate?ticker=ETEL`
+- `/simulate?scope=market&symbols=220`
+- `/decision-log?format=json&limit=50`
+- `/decision-log?format=csv&limit=50`
+- `/ablation`
 
-## Final acceptance snapshot — 2026-08-19
+## Final RC2 audit — 2026-08-19
 
-### Runtime tests
+The exact final source commit was loaded into an independent runtime audit harness.
 
-The exact published commit was fetched into an independent Vercel test runner and executed with Node's test runner:
+- Syntax checked files: **13/13 passed**
+- Tests: **53/53 passed**
+- Failed: **0**
 
-- **38/38 tests passed**
-- **0 failed**
-- **15/15 destructive/adversarial tests passed**
+The RC2-specific destructive checks include explicit tests that Wilson/historical confidence cannot rescue:
 
-Covered invariants include immutable RESEARCH_ONLY permissions, no caller-input mutation, invalid-OHLC rejection, date de-duplication, stale/update-failed fail-closed behavior, explicit symbol identity failure, stale local-reference review semantics, high-conflict publication hold, corporate-action blocking, deterministic ranking, V17 inability to override execution lock, next-session-only simulator entry, transaction-cost inclusion, conservative STOP_FIRST same-bar policy, structural RR floor, pullback cap, and T1 <= T2.
+- stale data
+- illiquid data
+- technical score below the gate
+- structural R/R below 0.70
+- DO_NOT_CHASE
+- an otherwise ineligible item with a synthetic Fusion score of 100
 
-### Full-market live scan
+It also verifies that missing historical evidence is neutral and that historical weight increases gradually with sample reliability.
 
-- Current recorded market session: **2026-08-19**
-- Current verified history candidates scanned: **188**
-- Technically eligible: **11**
-- Publishable research candidates: **10**
+## Current full-market scan
+
+Session: **2026-08-19**
+
+- Scanned: **188**
+- Technically eligible: **4**
+- Publishable research candidates: **3**
 - Withheld for price reconciliation: **1**
-- V20 Native overlay session: 2026-08-16
-- V17 overlay session: 2026-08-13
-- Execution remains blocked.
+- Rejected by hard gates: **184**
 
-### Recorded full-market simulator
+Current publishable research candidates:
 
-The fixed RC policy was simulated across all 188 current-history candidates, using only bars available at each signal date:
+1. `COPR` — Pending Pullback
+2. `FAIT` — Pending Pullback
+3. `MPCO` — Pending Pullback
+
+`MILS` is technically eligible but withheld because its current price-conflict signal exceeds the publication threshold.
+
+The three current publishable candidates have no completed historical trades matching **all** RC2 hard gates inside the currently recorded history window. RC2 therefore assigns Wilson weight = 0 and leaves their Fusion Rank equal to Research Score. It does not invent confidence.
+
+## Recorded full-market simulator — RC2
 
 - Symbols completed: **188/188**
-- Simulator errors: **0**
-- Entered trades: **120**
-- T1 hit rate: **65.8%**
-- Stop rate: **27.5%**
-- Positive trade rate: **65.8%**
-- Average net result after 0.60% round-trip cost: **+0.66% per entered trade**
-- Profit factor: **1.49**
-- Wilson 95% lower bound for T1 hit rate: **57.0%**
+- Errors: **0**
+- Entered trades: **64**
+- T1 hit rate: **73.4%**
+- Stop rate: **18.8%**
+- Positive trade rate: **73.4%**
+- Average net result after 0.60% modeled round-trip cost: **+1.23% per entered trade**
+- Profit factor: **2.33**
+- Wilson 95% lower bound for T1 hit rate: **61.5%**
 
-These figures are historical research evidence, not a guarantee of future performance.
+## RC1 → RC2 comparison
 
-## Reviewer notes
+| Metric | RC1 | RC2 | Change |
+|---|---:|---:|---:|
+| Entered trades | 120 | 64 | -46.7% |
+| T1 hit rate | 65.8% | 73.4% | +7.6 pp |
+| Stop rate | 27.5% | 18.8% | -8.7 pp |
+| Avg net / entered trade | +0.66% | +1.23% | +0.57 pp |
+| Profit factor | 1.49 | 2.33 | +0.84 |
+| Wilson 95% lower T1 | 57.0% | 61.5% | +4.5 pp |
 
-The engine intentionally does not claim a guaranteed hit-rate. During development, aggressive parameter searches produced attractive in-sample numbers that degraded on blind symbols; those profiles were rejected rather than promoted. The fixed RC policy favors auditability, conservative publication rules, and repeatable behavior over headline backtest accuracy.
+RC2 is deliberately more selective. The historical evidence currently shows a meaningful improvement in quality metrics in exchange for materially fewer trades. This is a trade-off, not a free improvement, and must be tracked forward.
 
-See `docs/VALIDATION_REPORT.md` for the destructive-critic findings, rejected experiments, and the final acceptance evidence.
+## Review status
+
+RC2 is suitable for **research/shadow operation** and third-party review now. It is not certified for automatic execution or Champion promotion.
+
+Historical results are evidence, not a guarantee. Forward out-of-sample sessions must be accumulated without tuning on them before any promotion decision.
+
+See `docs/VALIDATION_REPORT.md` for the destructive-review record and rejected failure modes.
