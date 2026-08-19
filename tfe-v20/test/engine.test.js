@@ -25,6 +25,8 @@ test('quality blocks short history',()=>{const q=assessDataQuality({bars:bars(20
 test('quality blocks corporate action review',()=>{const q=assessDataQuality({bars:bars(80),warnings:['corporate_action_review_required']});assert.equal(q.state,'BLOCKED')});
 test('quality reviews moderate conflict',()=>{const q=assessDataQuality({bars:bars(80),warnings:['latest_close_conflict:8%']});assert.equal(q.state,'REVIEW')});
 test('quality blocks large conflict',()=>{const q=assessDataQuality({bars:bars(80),warnings:['latest_close_conflict:25%']});assert.equal(q.state,'BLOCKED')});
+test('quality blocks symbol reference divergence above declared guard',()=>{const q=assessDataQuality({bars:bars(80),symbolVerified:true,symbolVerification:{guardedVerified:false,evidence:{localDifferencePct:12,guardedMaxDifferencePct:8}}});assert.equal(q.state,'BLOCKED');assert.ok(q.reasons.includes('SYMBOL_REFERENCE_DIVERGENCE'))});
+test('quality accepts guarded identity reconciliation',()=>{const q=assessDataQuality({bars:bars(80),symbolVerified:true,symbolVerification:{guardedVerified:true,evidence:{localDifferencePct:12,guardedMaxDifferencePct:8}}});assert.notEqual(q.state,'BLOCKED')});
 test('analysis always research only',()=>{const a=analyzeTicker({ticker:'TEST',rows:bars(100),historyMeta:{warnings:[]}});assert.equal(a.permissions.executionAllowed,false);assert.equal(a.researchOnly,true)});
 test('analysis requires ticker',()=>assert.throws(()=>analyzeTicker({rows:bars(100)}),/TICKER_REQUIRED/));
 test('short history returns no recommendation',()=>{const a=analyzeTicker({ticker:'X',rows:bars(30)});assert.equal(a.eligible,false);assert.equal(a.decision,'NO_RECOMMENDATION')});
