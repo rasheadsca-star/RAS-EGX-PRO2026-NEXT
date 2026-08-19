@@ -63,15 +63,25 @@ jobs:
       - name: Verify ten-minute workflow and UI action vocabulary
         run: |
           set -euo pipefail
-          grep -Fq '*/10 7-12 * * 0-4' .github/workflows/main-app-intraday-ls1.yml
-          grep -q 'v16-active-position-manager.cjs' .github/workflows/main-app-intraday-ls1.yml
-          grep -q 'v16-active-position-manager.json' .github/workflows/main-app-intraday-ls1.yml
-          grep -q 'egx-v137-portfolio' preview-v16/app/v16-9-active-position-manager.js
-          grep -q 'بيع / خروج' preview-v16/app/v16-9-active-position-manager.js
-          grep -q 'خفف / ثبت الربح' preview-v16/app/v16-9-active-position-manager.js
-          grep -q 'زود كمية بحذر' preview-v16/app/v16-9-active-position-manager.js
-          grep -q 'إعادة دخول' preview-v16/app/v16-9-active-position-manager.js
-          grep -q 'لا تطارد السعر' data/stable/v16-active-position-manager-policy.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const workflow=fs.readFileSync('.github/workflows/main-app-intraday-ls1.yml','utf8');
+          const ui=fs.readFileSync('preview-v16/app/v16-9-active-position-manager.js','utf8');
+          const policy=JSON.parse(fs.readFileSync('data/stable/v16-active-position-manager-policy.json','utf8'));
+          const checks={
+            cadence:workflow.includes('*/10 7-12 * * 0-4'),
+            workflowBuildsManager:workflow.includes('v16-active-position-manager.cjs'),
+            workflowPublishesManager:workflow.includes('v16-active-position-manager.json'),
+            portfolioKey:ui.includes('egx-v137-portfolio'),
+            sellLabel:ui.includes('بيع / خروج'),
+            reduceLabel:ui.includes('خفف / ثبت الربح'),
+            addLabel:ui.includes('زود كمية بحذر'),
+            reentryLabel:ui.includes('إعادة دخول'),
+            doNotChase:policy.actionCatalog?.DO_NOT_CHASE==='لا تطارد السعر',
+          };
+          console.log(checks);
+          if(Object.values(checks).some(v=>v!==true)) process.exit(1);
+          NODE
 
       - name: Prove frozen recommendation selection is untouched
         run: |
