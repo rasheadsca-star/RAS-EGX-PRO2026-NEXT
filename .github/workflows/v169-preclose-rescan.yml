@@ -2,14 +2,19 @@ name: V16.9.2 Pre-Close Rescan Orchestrator
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/v169-preclose-rescan.yml"
   schedule:
-    # 14:15 Africa/Cairo across Egypt UTC+2 / UTC+3 seasons.
-    # The Cairo clock gate below ignores the non-matching candidate run.
-    - cron: "15 11,12 * * 0-4"
+    # Candidate runs around 14:15 Africa/Cairo across UTC+2 / UTC+3 seasons.
+    # GitHub scheduled workflows can start a few minutes late, so the Cairo gate
+    # accepts a bounded T-15 window and an idempotency lock keeps one success/session.
+    - cron: "12,15,18,21 11,12 * * 0-4"
 
 permissions:
   actions: write
-  contents: read
+  contents: write
 
 concurrency:
   group: egx-v1692-preclose-orchestrator
@@ -18,27 +23,74 @@ concurrency:
 jobs:
   preclose:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
-      - name: Resolve Cairo T-15 gate
+      - name: Resolve resilient Cairo T-15 gate
         id: clock
         shell: bash
         run: |
           set -euo pipefail
-          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
+          EVENT="${GITHUB_EVENT_NAME}"
+          DOW=$(TZ=Africa/Cairo date '+%w')
+          HOUR=$(TZ=Africa/Cairo date '+%H')
+          MINUTE=$(TZ=Africa/Cairo date '+%M')
+          LOCAL_TIME=$(TZ=Africa/Cairo date '+%H:%M')
+          NOW_MIN=$((10#$HOUR * 60 + 10#$MINUTE))
+          RUN=false
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            RUN=true
+          elif [ "$DOW" -le 4 ] && [ "$EVENT" = "schedule" ] && [ "$NOW_MIN" -ge 852 ] && [ "$NOW_MIN" -le 864 ]; then
+            # 14:12-14:24 Cairo: tolerates scheduler delay without drifting away from T-15.
+            RUN=true
+          elif [ "$DOW" -le 4 ] && [ "$EVENT" = "push" ] && [ "$NOW_MIN" -ge 850 ] && [ "$NOW_MIN" -le 890 ]; then
+            # Safe one-time deployment trigger while the market is still in/near close.
+            RUN=true
+          fi
+
+          echo "Cairo pre-close gate: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M:%S %Z') event=$EVENT run=$RUN"
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          echo "local_time=$LOCAL_TIME" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout latest MAIN APP state
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Enforce one completed pre-close cycle per session
+        if: steps.clock.outputs.run == 'true'
+        id: once
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "Manual pre-close rescan requested."
+            echo "Manual dispatch overrides the daily completion lock."
             exit 0
           fi
-          DOW=$(TZ=Africa/Cairo date '+%w')
-          LOCAL_TIME=$(TZ=Africa/Cairo date '+%H:%M')
-          RUN=false
-          if [ "$DOW" -le 4 ] && [ "$LOCAL_TIME" = "14:15" ]; then RUN=true; fi
-          echo "Cairo pre-close gate: $(TZ=Africa/Cairo date '+%Y-%m-%d %H:%M:%S %Z') run=$RUN"
-          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          TODAY=$(TZ=Africa/Cairo date '+%Y-%m-%d')
+          DONE=false
+          if [ -s data/stable/v169-preclose-status.json ]; then
+            DONE=$(TODAY="$TODAY" node - <<'NODE'
+          const fs=require('fs');
+          try {
+            const x=JSON.parse(fs.readFileSync('data/stable/v169-preclose-status.json','utf8'));
+            process.stdout.write(String(x.sessionDate===process.env.TODAY && x.status==='COMPLETED'));
+          } catch { process.stdout.write('false'); }
+          NODE
+            )
+          fi
+          if [ "$DONE" = "true" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Pre-close cycle already completed for $TODAY; duplicate candidate skipped."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Dispatch the existing full-market engine
-        if: steps.clock.outputs.run == 'true'
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
         id: scan_dispatch
         env:
           GH_TOKEN: ${{ github.token }}
@@ -51,7 +103,7 @@ jobs:
           echo "Dispatched the existing immediate market scan without changing its selection logic."
 
       - name: Wait for the dispatched market scan
-        if: steps.clock.outputs.run == 'true'
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
         id: scan_wait
         env:
           GH_TOKEN: ${{ github.token }}
@@ -60,16 +112,16 @@ jobs:
         run: |
           set -euo pipefail
           RUN_ID=""
-          for attempt in $(seq 1 24); do
+          for attempt in $(seq 1 30); do
             RUN_ID=$(gh run list \
               --repo "$GITHUB_REPOSITORY" \
               --workflow mobile-hotfix-deploy.yml \
               --event workflow_dispatch \
-              --limit 20 \
+              --limit 30 \
               --json databaseId,createdAt,status \
               --jq ".[] | select(.createdAt >= \"$STARTED_AT\") | .databaseId" | head -n 1)
             [ -n "$RUN_ID" ] && break
-            sleep 5
+            sleep 4
           done
           if [ -z "$RUN_ID" ]; then
             echo "Could not resolve the dispatched market-scan run." >&2
@@ -78,36 +130,79 @@ jobs:
           echo "scan_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
 
-      - name: Wait for the existing frozen V16.9 basket publication
-        if: steps.clock.outputs.run == 'true'
+      - name: Resolve or force the frozen V16.9 basket publication
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
         id: basket_wait
         env:
           GH_TOKEN: ${{ github.token }}
-          STARTED_AT: ${{ steps.scan_dispatch.outputs.started_at }}
+          SCAN_STARTED_AT: ${{ steps.scan_dispatch.outputs.started_at }}
         shell: bash
         run: |
           set -euo pipefail
           RUN_ID=""
-          for attempt in $(seq 1 36); do
+
+          # Prefer the normal workflow_run chain, but do not let recommendations
+          # disappear if GitHub fails to emit/resolve that secondary trigger.
+          for attempt in $(seq 1 18); do
             RUN_ID=$(gh run list \
               --repo "$GITHUB_REPOSITORY" \
               --workflow v16-v169-basket-engine.yml \
               --event workflow_run \
-              --limit 20 \
+              --limit 30 \
               --json databaseId,createdAt,status \
-              --jq ".[] | select(.createdAt >= \"$STARTED_AT\") | .databaseId" | head -n 1)
+              --jq ".[] | select(.createdAt >= \"$SCAN_STARTED_AT\") | .databaseId" | head -n 1)
             [ -n "$RUN_ID" ] && break
             sleep 5
           done
+
           if [ -z "$RUN_ID" ]; then
-            echo "Could not resolve the frozen V16.9 basket workflow triggered by the market scan." >&2
+            echo "Automatic basket trigger not resolved in time; dispatching the same frozen engine directly."
+            BASKET_STARTED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+            gh workflow run v16-v169-basket-engine.yml --repo "$GITHUB_REPOSITORY" --ref main
+            for attempt in $(seq 1 30); do
+              RUN_ID=$(gh run list \
+                --repo "$GITHUB_REPOSITORY" \
+                --workflow v16-v169-basket-engine.yml \
+                --event workflow_dispatch \
+                --limit 30 \
+                --json databaseId,createdAt,status \
+                --jq ".[] | select(.createdAt >= \"$BASKET_STARTED_AT\") | .databaseId" | head -n 1)
+              [ -n "$RUN_ID" ] && break
+              sleep 4
+            done
+          fi
+
+          if [ -z "$RUN_ID" ]; then
+            echo "Could not resolve any V16.9 basket run after the market scan." >&2
             exit 1
           fi
           echo "basket_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
 
+      - name: Prove today's pre-close basket was actually published
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          TODAY=$(TZ=Africa/Cairo date '+%Y-%m-%d')
+          TODAY="$TODAY" node - <<'NODE'
+          const fs=require('fs');
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const research=read('data/research/v16-v169-basket-engine.json');
+          const primary=read('data/stable/v16-v169-primary-decision.json');
+          const basket=Array.isArray(research.currentBasket)?research.currentBasket:[];
+          const model=primary?.selectedModel?.id;
+          if(research.currentSignalDate!==process.env.TODAY) throw new Error(`Pre-close basket is stale: ${research.currentSignalDate} != ${process.env.TODAY}`);
+          if(primary.sessionDate!==process.env.TODAY) throw new Error(`Primary decision is stale: ${primary.sessionDate} != ${process.env.TODAY}`);
+          if(model!=='V16_9_EQUAL_WEIGHT_BASKET') throw new Error(`Unexpected model: ${model}`);
+          if(!basket.length) throw new Error('Pre-close basket is empty');
+          console.log(JSON.stringify({preclosePublished:true,sessionDate:research.currentSignalDate,tickers:basket.map(r=>r.ticker)},null,2));
+          NODE
+
       - name: Refresh canonical MAIN APP snapshot after frozen publication
-        if: steps.clock.outputs.run == 'true'
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
         id: governance_dispatch
         env:
           GH_TOKEN: ${{ github.token }}
@@ -120,7 +215,8 @@ jobs:
           echo "Dispatched canonical MAIN APP governance rebuild after the frozen V16.9 publisher completed."
 
       - name: Wait for canonical snapshot publication
-        if: steps.clock.outputs.run == 'true'
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
+        id: governance_wait
         env:
           GH_TOKEN: ${{ github.token }}
           STARTED_AT: ${{ steps.governance_dispatch.outputs.started_at }}
@@ -128,29 +224,73 @@ jobs:
         run: |
           set -euo pipefail
           RUN_ID=""
-          for attempt in $(seq 1 24); do
+          for attempt in $(seq 1 30); do
             RUN_ID=$(gh run list \
               --repo "$GITHUB_REPOSITORY" \
               --workflow main-app-governance-refresh.yml \
               --event workflow_dispatch \
-              --limit 20 \
+              --limit 30 \
               --json databaseId,createdAt,status \
               --jq ".[] | select(.createdAt >= \"$STARTED_AT\") | .databaseId" | head -n 1)
             [ -n "$RUN_ID" ] && break
-            sleep 5
+            sleep 4
           done
           if [ -z "$RUN_ID" ]; then
             echo "Could not resolve the canonical-governance run." >&2
             exit 1
           fi
+          echo "governance_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status
 
+      - name: Persist successful pre-close completion lock
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
+        env:
+          SCAN_RUN_ID: ${{ steps.scan_wait.outputs.scan_run_id }}
+          BASKET_RUN_ID: ${{ steps.basket_wait.outputs.basket_run_id }}
+          GOVERNANCE_RUN_ID: ${{ steps.governance_wait.outputs.governance_run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          node - <<'NODE'
+          const fs=require('fs');
+          const research=JSON.parse(fs.readFileSync('data/research/v16-v169-basket-engine.json','utf8'));
+          const primary=JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json','utf8'));
+          const out={
+            schemaVersion:'16.9.2-preclose-status-2',
+            generatedAt:new Date().toISOString(),
+            cairoCompletedAt:new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date()),
+            sessionDate:research.currentSignalDate,
+            status:'COMPLETED',
+            recommendationTickers:(research.currentBasket||[]).map(r=>r.ticker),
+            primaryDecisionSession:primary.sessionDate||null,
+            model:primary?.selectedModel?.id||null,
+            runIds:{scan:process.env.SCAN_RUN_ID||null,basket:process.env.BASKET_RUN_ID||null,governance:process.env.GOVERNANCE_RUN_ID||null},
+            governance:{selectionTechniqueChanged:false,scoringChanged:false,rankingChanged:false,weightsChanged:false,riskGatesChanged:false},
+          };
+          fs.writeFileSync('data/stable/v169-preclose-status.json',JSON.stringify(out,null,2)+'\n');
+          console.log(out);
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/stable/v169-preclose-status.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Record completed V16.9 pre-close recommendation cycle"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 6))
+            done
+          fi
+
       - name: Confirm orchestration contract
-        if: steps.clock.outputs.run == 'true'
+        if: steps.clock.outputs.run == 'true' && steps.once.outputs.run == 'true'
         shell: bash
         run: |
           echo "Pre-close contract completed:"
           echo "1) Existing full-market scan executed unchanged."
-          echo "2) Existing frozen V16.9 basket publisher completed unchanged."
-          echo "3) Existing canonical MAIN APP governance rebuilt unchanged."
-          echo "4) No recommendation scoring, ranking, weights, or risk gates were modified by this workflow."
+          echo "2) Existing frozen V16.9 basket publisher completed unchanged (with direct fallback if workflow_run is delayed/missed)."
+          echo "3) Today's basket publication was explicitly verified before MAIN APP refresh."
+          echo "4) Existing canonical MAIN APP governance rebuilt unchanged."
+          echo "5) No recommendation scoring, ranking, weights, filters, or risk gates were modified by this workflow."
