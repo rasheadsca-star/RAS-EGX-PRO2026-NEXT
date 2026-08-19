@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { collectV17SignalKeys, evaluateRecordedPlan, extractV20ReplayEvents, metricDelta } from '../src/ablation.js';
+import { collectV17SignalKeys, evaluateRecordedPlan, extractV20ReplayEvents, metricDelta, rankResearchOnly } from '../src/ablation.js';
 
 const bars = [
   { date: '2026-01-01', open: 100, high: 101, low: 99, close: 100, volume: 1000 },
@@ -24,6 +24,14 @@ test('missing ablation metrics never become fabricated zero deltas', () => {
   assert.equal(metricDelta(undefined, 63.6), null);
   assert.equal(metricDelta(63.6, null), null);
   assert.equal(metricDelta(70, 63.6), 6.4);
+});
+
+test('TFE core ranking ignores RC2 fusion rank and orders by research score', () => {
+  const ranked = rankResearchOnly([
+    { ticker: 'AAA', eligible: true, scores: { research: 80, fusionRank: 60, core: 80, supportResistance: 70, liquidity: 90 } },
+    { ticker: 'BBB', eligible: true, scores: { research: 75, fusionRank: 95, core: 80, supportResistance: 70, liquidity: 90 } },
+  ]);
+  assert.deepEqual(ranked.map((x) => x.ticker), ['AAA', 'BBB']);
 });
 
 test('V17 collector indexes recorded same-date ticker evidence and keeps strongest class', () => {
