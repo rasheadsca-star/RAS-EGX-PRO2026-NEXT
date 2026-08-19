@@ -19,6 +19,7 @@ export function wilsonLowerBound95(hits, n) {
 
 export function summarizeConfidence(trades) {
   const n = trades.length;
+  const reliability = Math.min(1, n / POLICY.minHistoricalTrades);
   if (!n) return {
     historicalTradeCount: 0,
     target1HitRatePct: null,
@@ -27,8 +28,9 @@ export function summarizeConfidence(trades) {
     avgNetPct: null,
     profitFactor: null,
     confidenceWilsonLower95Pct: null,
+    sampleReliability: 0,
     hasEnoughSample: false,
-    effectiveHistoricalScore: 0,
+    effectiveHistoricalScore: null,
   };
   const t1 = trades.filter((t) => t.outcome === 'TARGET1').length;
   const stops = trades.filter((t) => t.outcome.startsWith('STOP')).length;
@@ -37,7 +39,6 @@ export function summarizeConfidence(trades) {
   const gp = wins.reduce((s, t) => s + t.netPct, 0);
   const gl = Math.abs(losses.reduce((s, t) => s + t.netPct, 0));
   const wilson = wilsonLowerBound95(t1, n) * 100;
-  const reliability = Math.min(1, n / POLICY.minHistoricalTrades);
   return {
     historicalTradeCount: n,
     target1HitRatePct: round(t1 / n * 100, 1),
@@ -46,8 +47,9 @@ export function summarizeConfidence(trades) {
     avgNetPct: round(avg(trades.map((t) => t.netPct)), 2),
     profitFactor: gl ? round(gp / gl, 2) : gp > 0 ? 'INF' : null,
     confidenceWilsonLower95Pct: round(wilson, 1),
+    sampleReliability: round(reliability, 2),
     hasEnoughSample: n >= POLICY.minHistoricalTrades,
-    effectiveHistoricalScore: round(wilson * reliability, 1),
+    effectiveHistoricalScore: round(wilson, 1),
   };
 }
 
