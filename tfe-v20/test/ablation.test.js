@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { collectV17SignalKeys, evaluateRecordedPlan, extractV20ReplayEvents } from '../src/ablation.js';
+import { collectV17SignalKeys, evaluateRecordedPlan, extractV20ReplayEvents, metricDelta } from '../src/ablation.js';
 
 const bars = [
   { date: '2026-01-01', open: 100, high: 101, low: 99, close: 100, volume: 1000 },
@@ -17,6 +17,13 @@ test('standardized evaluator resolves same-bar target/stop conservatively to sto
   assert.equal(result.trade.outcome, 'STOP_SAME_BAR');
   assert.equal(result.trade.entryDate, '2026-01-02');
   assert.equal(result.trade.netPct, -5.6);
+});
+
+test('missing ablation metrics never become fabricated zero deltas', () => {
+  assert.equal(metricDelta(null, 63.6), null);
+  assert.equal(metricDelta(undefined, 63.6), null);
+  assert.equal(metricDelta(63.6, null), null);
+  assert.equal(metricDelta(70, 63.6), 6.4);
 });
 
 test('V17 collector indexes recorded same-date ticker evidence and keeps strongest class', () => {
