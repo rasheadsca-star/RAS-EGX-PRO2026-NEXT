@@ -3,6 +3,7 @@ import { analyzeTicker, rankAnalyses } from '../src/engine.js';
 import { backtestHistory, summarizeBacktest } from '../src/backtest.js';
 import { buildAblationBenchmark } from '../src/ablation.js';
 import { buildDecisionLogRows, toDecisionLogCsv } from '../src/decisionLog.js';
+import { normalizeBars } from '../src/quality.js';
 import { fetchJson, rawUrl, loadUniverse, loadHistory, loadV17, loadHistorySummary } from '../src/repository.js';
 
 const DATA_BRANCH = 'develop/v20-integrated-decision-platform';
@@ -34,6 +35,69 @@ function reasonCounts(items) {
   const counts = {};
   for (const x of items) for (const r of x.reasonCodes ?? (x.error ? ['HISTORY_LOAD_ERROR'] : [])) counts[r] = (counts[r] ?? 0) + 1;
   return counts;
+}
+
+function warningConflictPct(warnings = []) {
+  for (const w of warnings) {
+    const m = String(w).match(/latest_close_conflict:([0-9.]+)%/i);
+    if (m) return Number(m[1]);
+  }
+  return null;
+}
+
+async function marketIndex() {
+  const hs = await loadHistorySummary();
+  const latest = hs?.latestMarketSession ?? null;
+  const symbols = Array.isArray(hs?.symbols) ? hs.symbols.map((x) => ({
+    ticker: x.ticker,
+    companyNameAr: x.companyNameAr ?? null,
+    companyNameEn: x.companyNameEn ?? null,
+    symbolVerified: x.symbolVerified === true,
+    availableSessions: x.availableSessions ?? 0,
+    firstSession: x.firstSession ?? null,
+    lastSession: x.lastSession ?? null,
+    historyStatus: x.historyStatus ?? null,
+    primarySource: x.primarySource ?? null,
+    officiallyVerifiedLatestSession: x.officiallyVerifiedLatestSession === true,
+    averageConfidence: x.averageConfidence ?? null,
+    staleData: Boolean(x.staleData),
+    updateFailed: Boolean(x.updateFailed),
+    warnings: Array.isArray(x.warnings) ? x.warnings : [],
+    conflictPct: warningConflictPct(x.warnings),
+    currentRc2UniverseCandidate: x.symbolVerified === true
+      && (x.availableSessions ?? 0) >= POLICY.minBars
+      && !x.staleData
+      && !x.updateFailed
+      && (!latest || x.lastSession === latest),
+  })) : [];
+  return {
+    ok: true,
+    engine: POLICY.engineId,
+    sessionDate: latest,
+    generatedAt: hs?.generatedAt ?? null,
+    symbolsTotal: symbols.length,
+    currentCandidateCount: symbols.filter((x) => x.currentRc2UniverseCandidate).length,
+    symbols,
+    uiOnly: true,
+    scoringImpact: 'NONE',
+  };
+}
+
+async function historySeries(ticker, limit = 120) {
+  const h = await loadHistory(ticker);
+  const bars = normalizeBars(h.rows).bars;
+  const n = Math.max(20, Math.min(260, Number(limit) || 120));
+  return {
+    ok: true,
+    engine: POLICY.engineId,
+    ticker,
+    source: h.meta?.primarySource ?? h.meta?.source ?? null,
+    lastSession: bars.at(-1)?.date ?? null,
+    availableSessions: bars.length,
+    bars: bars.slice(-n),
+    uiOnly: true,
+    scoringImpact: 'NONE',
+  };
 }
 
 async function scan(outputLimit = 20) {
@@ -191,7 +255,14 @@ export default async function handler(req, res) {
       missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
       decisionLog: 'AVAILABLE',
       ablationBenchmark: 'AVAILABLE_RESEARCH_DIAGNOSTIC',
+      professionalUi: 'V16_9_INTERFACE_ADAPTER_ONLY',
     });
+    if (route === 'market-index') return json(res, 200, await marketIndex());
+    if (route === 'history') {
+      const ticker = String(url.searchParams.get('ticker') ?? '').trim().toUpperCase();
+      if (!ticker) return json(res, 400, { ok: false, error: 'ticker is required' });
+      return json(res, 200, await historySeries(ticker, url.searchParams.get('limit')));
+    }
     if (route === 'analyze') {
       const ticker = String(url.searchParams.get('ticker') ?? '').trim().toUpperCase();
       if (!ticker) return json(res, 400, { ok: false, error: 'ticker is required' });
