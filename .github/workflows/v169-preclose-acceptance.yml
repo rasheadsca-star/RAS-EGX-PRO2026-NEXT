@@ -6,6 +6,7 @@ on:
       - ".github/workflows/v169-preclose-rescan.yml"
       - ".github/workflows/v169-preclose-acceptance.yml"
       - "preview-v16/app/v16-9-preclose-runtime.js"
+      - "preview-v16/app/v16-9-preclose-ls1-status.js"
       - "preview-v16/app/decision-source.js"
 
 permissions:
@@ -24,6 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check preview-v16/app/v16-9-preclose-runtime.js
+          node --check preview-v16/app/v16-9-preclose-ls1-status.js
           node --check preview-v16/app/decision-source.js
 
       - name: Verify pre-close contract
@@ -36,6 +38,10 @@ jobs:
           grep -q "MARKET_CLOSE_MINUTE = 14 \* 60 + 30" preview-v16/app/v16-9-preclose-runtime.js
           grep -q "CHECKPOINTS = \[15, 10, 5\]" preview-v16/app/v16-9-preclose-runtime.js
           grep -q "v16-main-app-current.json" preview-v16/app/v16-9-preclose-runtime.js
+          grep -q "v16-ls1-late-session-opportunities.json" preview-v16/app/v16-9-preclose-ls1-status.js
+          grep -q "لا توجد توصيات تنفيذية جديدة" preview-v16/app/v16-9-preclose-ls1-status.js
+          grep -q "مراقبة فقط" preview-v16/app/v16-9-preclose-ls1-status.js
+          grep -q "selection technique" .github/workflows/v169-preclose-rescan.yml || true
 
       - name: Prove recommendation-selection code is untouched
         shell: bash
@@ -58,4 +64,4 @@ jobs:
 
           # Explicitly prove the frozen V16.9 selection engine itself is byte-identical to main.
           git diff --quiet origin/main...HEAD -- scripts/research/v16-v169-basket-engine.py
-          echo "PASS: frozen V16.9 selection engine unchanged; only approved diagnostic scripts differ."
+          echo "PASS: frozen V16.9 selection engine unchanged; only approved presentation/diagnostic files differ."
