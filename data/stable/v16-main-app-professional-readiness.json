@@ -1,36 +1,41 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-08-19T10:52:22.983Z",
+  "generatedAt": "2026-08-19T11:44:46.345Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-08-18",
-  "professionalReadinessScore": 79,
-  "foundationQualityScore": 89.5,
-  "stage": "ADVANCED_PILOT",
-  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 84.1,
+  "stage": "PILOT",
+  "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "LIVE_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 24.53,
-      "scorePct": 98.1,
+      "points": 16.02,
+      "scorePct": 64.1,
       "details": {
-        "currentExecutionGrade": true,
+        "currentExecutionGrade": false,
         "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 95.9,
+        "currentSourceSessionEvidenceCoveragePct": 1.8,
         "publishedDecisionEvidenceCoveragePct": 95.9,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 187,
-        "currentAcceptedRows": 209,
-        "verifiedRows": 209,
+        "currentAcceptedRows": 0,
+        "verifiedRows": 187,
         "inputRows": 219,
         "evidenceCoveragePct": 95.9,
-        "verifiedRowsRatioPct": 95.4,
-        "currentSourceHealth": "EXECUTION_GRADE"
+        "verifiedRowsRatioPct": 85.4,
+        "currentSourceHealth": "BLOCKED"
       },
       "requirements": [
+        {
+          "code": "EXECUTION_GRADE",
+          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+          "hard": true
+        },
         {
           "code": "SOURCE_EVIDENCE_100",
           "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.9% إلى 100%",
@@ -38,7 +43,7 @@
         },
         {
           "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 209/219",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 187/219",
           "hard": false
         }
       ]
@@ -64,23 +69,23 @@
       "id": "V169_LIVE_FORWARD",
       "labelAr": "السجل الحي / Forward لـV16.9",
       "weight": 25,
-      "points": 15.63,
-      "scorePct": 62.5,
+      "points": 18.75,
+      "scorePct": 75,
       "details": {
-        "resolvedSessions": 5,
+        "resolvedSessions": 10,
         "minimumResolvedSessions": 20,
-        "sampleCompletionPct": 25,
-        "winningSessionPct": 80,
-        "averageNetReturnPct": 2.0929,
-        "profitFactor": 4.463,
-        "maximumDrawdownPct": -3.022,
+        "sampleCompletionPct": 50,
+        "winningSessionPct": 50,
+        "averageNetReturnPct": 0.9132,
+        "profitFactor": 2.176,
+        "maximumDrawdownPct": -7.098,
         "promotionEligible": false,
         "hardGatePassed": false
       },
       "requirements": [
         {
           "code": "LIVE_MIN_RESOLVED_SESSIONS",
-          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 5 والمتبقي 15",
+          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 10 والمتبقي 10",
           "hard": true
         }
       ]
@@ -137,15 +142,21 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": true,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
     {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
       "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 5 والمتبقي 15",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 10 والمتبقي 10",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     }
@@ -159,7 +170,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 209/219",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 187/219",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -172,8 +183,14 @@
   ],
   "requirementsTo100": [
     {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
       "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 5 والمتبقي 15",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 10 والمتبقي 10",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     },
@@ -185,7 +202,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 209/219",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 187/219",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -203,11 +220,11 @@
     "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-08-18T20:52:04.731Z",
+    "priceTruthGeneratedAt": "2026-08-19T11:44:44.711Z",
     "basketGeneratedAt": "2026-08-18T20:53:12.320999+00:00",
     "liveGeneratedAt": "2026-08-18T20:53:16.799345+00:00",
-    "canonicalSnapshotHash": "36ec3946f00b47b7582c63b9fe0bea481a479fffaeef803e655ceaa4a6a7895f",
-    "consensusGeneratedAt": "2026-08-19T10:52:21.220Z",
+    "canonicalSnapshotHash": "a45bf29fd5627065c145c9b3edb178112875129cc08b95046d0e3747557b7a96",
+    "consensusGeneratedAt": "2026-08-19T11:44:44.959Z",
     "intelligenceSnapshotGeneratedAt": "2026-08-19T08:52:51.073Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -242,5 +259,5 @@
       ]
     }
   },
-  "readinessHash": "7efd6bd054ef12b6c8caeda8061149e74a09664bda210fda56b3101db53dcac3"
+  "readinessHash": "a661ea4b4a302f93d8768c3ad6e989bf8164e800bc4695a60cd45c2a9e75cc53"
 }
