@@ -1,6 +1,6 @@
 export const POLICY = Object.freeze({
-  engineId: 'TFE_V20_FUSION_RC1',
-  schemaVersion: '20.tfe.1',
+  engineId: 'TFE_V20_FUSION_RC2',
+  schemaVersion: '20.tfe.2',
   minBars: 60,
   minCoreScore: 70,
   minResearchScore: 72,
@@ -17,7 +17,12 @@ export const POLICY = Object.freeze({
   entryExpirySessions: 3,
   maxHoldSessions: 10,
   roundTripCostPct: 0.60,
-  quality: {
+  minHistoricalTrades: 5,
+  fusionRank: Object.freeze({
+    researchWeight: 0.75,
+    historicalConfidenceWeight: 0.25,
+  }),
+  quality: Object.freeze({
     hardBlockWarnings: [
       'corporate_action_review_required',
       'not_officially_verified',
@@ -25,7 +30,7 @@ export const POLICY = Object.freeze({
     ],
     conflictReviewPct: 5,
     conflictBlockPct: 20,
-  },
+  }),
   permissions: Object.freeze({
     researchOnly: true,
     executionAllowed: false,
