@@ -133,14 +133,52 @@
     return nativeFetch(input, init);
   };
 
-  function appendRuntimeScript(src, marker, errorMessage) {
-    if (document.querySelector(`script[data-${marker}]`)) return;
+  function appendRuntimeScript(src, marker, errorMessage, onLoad, onError) {
+    const existing = document.querySelector(`script[data-${marker}]`);
+    if (existing) return existing;
     const script = document.createElement('script');
     script.src = src;
-    script.defer = true;
+    script.async = true;
     script.setAttribute(`data-${marker}`, 'true');
-    script.onerror = () => console.warn(errorMessage);
+    script.onload = () => {
+      script.dataset.loaded = 'true';
+      if (typeof onLoad === 'function') onLoad();
+    };
+    script.onerror = () => {
+      console.warn(errorMessage);
+      script.remove();
+      if (typeof onError === 'function') onError();
+    };
     (document.body || document.head || document.documentElement).appendChild(script);
+    return script;
+  }
+
+  let positionManagerAttempts = 0;
+  let positionManagerRetry = null;
+  function ensureActivePositionManager() {
+    if (window.__V169_ACTIVE_POSITION_MANAGER_VERSION__ === 'ui-r2' || window.__V169_ACTIVE_POSITION_MANAGER_READY__ === true) return;
+    if (document.querySelector('script[data-v169-active-position-manager]')) return;
+    if (positionManagerAttempts >= 8) {
+      console.warn('Active position manager loader exhausted retries.');
+      return;
+    }
+    positionManagerAttempts += 1;
+    const src = `v16-9-active-position-manager.js?v=16.9.2-position-manager-ui-r2&cb=${Date.now()}`;
+    appendRuntimeScript(
+      src,
+      'v169-active-position-manager',
+      'Active recommendation position manager could not be loaded.',
+      () => {
+        clearTimeout(positionManagerRetry);
+        if (typeof window.__V169_ACTIVE_POSITION_MANAGER_APPLY__ === 'function') {
+          window.__V169_ACTIVE_POSITION_MANAGER_APPLY__();
+        }
+      },
+      () => {
+        clearTimeout(positionManagerRetry);
+        positionManagerRetry = setTimeout(ensureActivePositionManager, 900);
+      }
+    );
   }
 
   function loadSupplementalRuntime() {
@@ -152,10 +190,7 @@
       window.__V169_PRE_CLOSE_LS1_STATUS_LOADER__ = true;
       appendRuntimeScript('v16-9-preclose-ls1-status.js?v=16.9.2-ls1-ui-20260819-r1','v169-preclose-ls1-status','V16.9 LS1 pre-close status panel could not be loaded.');
     }
-    if (!window.__V169_ACTIVE_POSITION_MANAGER_LOADER__) {
-      window.__V169_ACTIVE_POSITION_MANAGER_LOADER__ = true;
-      appendRuntimeScript('v16-9-active-position-manager.js?v=16.9.2-position-manager-20260819-r1','v169-active-position-manager','Active recommendation position manager could not be loaded.');
-    }
+    ensureActivePositionManager();
     if (!window.__V169_INDEPENDENT_CONSENSUS_EVIDENCE_LOADER__) {
       window.__V169_INDEPENDENT_CONSENSUS_EVIDENCE_LOADER__ = true;
       appendRuntimeScript('main-app-independent-consensus-evidence.js?v=16.9.2-independent-consensus-20260818-r1','main-app-independent-consensus-evidence','Independent consensus evidence panel could not be loaded.');
@@ -167,4 +202,11 @@
   } else {
     loadSupplementalRuntime();
   }
+
+  // The basket is rendered asynchronously after index.html is rewritten by P2.
+  // Re-check the manager loader a few times so one transient load failure or a
+  // late DOM build cannot leave the management badge silently absent.
+  setTimeout(loadSupplementalRuntime, 500);
+  setTimeout(ensureActivePositionManager, 1600);
+  setTimeout(ensureActivePositionManager, 3200);
 })();
