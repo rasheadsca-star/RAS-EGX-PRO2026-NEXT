@@ -1,6 +1,6 @@
 # TFE V20 Fusion RC2 — Developer Handoff
 
-RC2 is the merged research engine inside `develop/v20-integrated-decision-platform`. It preserves the strongest parts of the original standalone EGX scorer while retaining the TFE hard-gate architecture, full-market scan, V20 provenance, V17 safety overlay, publication controls, and recorded-session simulator.
+RC2 is the merged research engine inside `develop/v20-integrated-decision-platform`. It preserves the strongest parts of the original standalone EGX scorer while retaining the TFE hard-gate architecture, full-market scan, V20 provenance, V17 safety overlay, publication controls, recorded-session simulator, and now the professional V16.9 interface/options as a presentation-only adapter.
 
 It does **not** modify MAIN APP, V17, or the existing V20 Native engine.
 
@@ -37,6 +37,24 @@ It does **not** modify MAIN APP, V17, or the existing V20 Native engine.
 - Historical confidence is calculated **only after all hard gates pass** and can never rescue a stale, illiquid, low-score, poor-R/R, or DO_NOT_CHASE setup.
 - Decision Log JSON/CSV including actual fusion weights, historical sample size, Wilson confidence, trade plan, quality state, V17 status, and runtime source commit.
 - New anti-rescue/adversarial regression tests.
+
+## V16.9 professional interface adapter
+
+The production RC2 runtime now uses the V16.9 professional shell and its main options while keeping RC2 Alpha unchanged.
+
+Primary views:
+
+1. Decision Board / recommendation cards and filters.
+2. Full-market search across the history index.
+3. Experimental local portfolio and position-sizing/risk controls.
+4. Manual supplemental fundamental-analysis worksheet.
+5. Live evidence / Decision Log / simulator and model-comparison view.
+
+Additional UI options include selected-stock charting, Entry/Stop/T1/T2 overlays, original technical-score breakdown, Fusion/Wilson display, market data-quality status, Decision Log CSV export, local first-seen recommendation archive, and experimental position sizing.
+
+The portfolio and fundamental-analysis helpers are stored locally in the browser and are **not Alpha inputs**. The UI JavaScript does not import `src/engine.js`, `src/originalScore.js`, or `src/policy.js` and does not implement its own scorer. Read-only `market-index` and `history` adapters explicitly return `scoringImpact: NONE`.
+
+A source comparison from pre-UI RC2 to the V16.9 UI commit confirmed that `src/engine.js`, `src/originalScore.js`, `src/backtest.js`, `src/policy.js`, and the Fusion logic were unchanged.
 
 ## Immutable research-only contract
 
@@ -80,11 +98,13 @@ This avoids the two failure modes found during destructive review: historical re
 
 Reviewed runtime source commit:
 
-`779b336d4baf52d9185b2c05da24033231a75730`
+`bf5d793f8e2b273b06e2da708c215cadc7b68276`
 
 Every runtime response exposes `x-tfe-source-commit` so the reviewer can match deployed behavior to reviewed source.
 
 ## Endpoints
+
+Analysis/runtime:
 
 - `/health`
 - `/scan?limit=20`
@@ -95,24 +115,32 @@ Every runtime response exposes `x-tfe-source-commit` so the reviewer can match d
 - `/decision-log?format=csv&limit=50`
 - `/ablation`
 
-## Final RC2 audit — 2026-08-19
+UI-only read adapters:
 
-The exact final source commit was loaded into an independent runtime audit harness.
+- `/market-index`
+- `/history?ticker=COPR&limit=120`
 
-- Syntax checked files: **13/13 passed**
-- Tests: **53/53 passed**
+The two UI-only adapters do not calculate or alter RC2 scores/recommendations.
+
+## Final RC2 + V16.9 audit — 2026-08-19
+
+The exact production UI/source commit was loaded into an independent runtime audit harness.
+
+- Syntax checked files/modules: **14/14 passed**
+- Tests: **65/65 passed**
 - Failed: **0**
 
-The RC2-specific destructive checks include explicit tests that Wilson/historical confidence cannot rescue:
+The full suite includes the RC1/RC2 destructive coverage plus V16.9 UI contract tests proving:
 
-- stale data
-- illiquid data
-- technical score below the gate
-- structural R/R below 0.70
-- DO_NOT_CHASE
-- an otherwise ineligible item with a synthetic Fusion score of 100
+- all five primary V16.9 views are present;
+- recommendation, market, position-sizing, fundamental and evidence options are exposed;
+- portfolio/fundamental helpers are local and non-Alpha;
+- UI never imports engine/scorer/policy modules;
+- UI consumes the public API rather than reimplementing `scoreBars()`;
+- market/history adapters declare zero scoring impact;
+- no execution-enabling UI control exists.
 
-It also verifies that missing historical evidence is neutral and that historical weight increases gradually with sample reliability.
+Production checks also returned HTTP 200 for the UI, `/health`, `/scan`, `/market-index`, and `/history`; the latest deployment had no error/fatal runtime logs during acceptance.
 
 ## Current full-market scan
 
@@ -124,7 +152,7 @@ Session: **2026-08-19**
 - Withheld for price reconciliation: **1**
 - Rejected by hard gates: **184**
 
-Current publishable research candidates:
+Current publishable research candidates remain unchanged after the V16.9 UI migration:
 
 1. `COPR` — Pending Pullback
 2. `FAIT` — Pending Pullback
@@ -161,7 +189,7 @@ RC2 is deliberately more selective. The historical evidence currently shows a me
 
 ## Review status
 
-RC2 is suitable for **research/shadow operation** and third-party review now. It is not certified for automatic execution or Champion promotion.
+RC2 with the V16.9 professional interface is suitable for **research/shadow operation** and third-party review now. It is not certified for automatic execution or Champion promotion.
 
 Historical results are evidence, not a guarantee. Forward out-of-sample sessions must be accumulated without tuning on them before any promotion decision.
 
