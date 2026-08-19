@@ -67,4 +67,40 @@ jobs:
             done
           fi
 
+      - name: Enforce production acceptance gate
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report_path = Path("data/research/v16-v168-practical-selector.json")
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          acceptance = report.get("acceptanceGate") or {}
+          failed = [name for name, passed in acceptance.items() if passed is not True]
+          eligible = report.get("productionEligible") is True
+          status = report.get("status", "UNKNOWN")
+
+          summary_path = os.getenv("GITHUB_STEP_SUMMARY")
+          if summary_path:
+              lines = [
+                  "## V16.8 production acceptance gate",
+                  "",
+                  f"- Status: `{status}`",
+                  f"- Production eligible: `{str(eligible).lower()}`",
+              ]
+              if failed:
+                  lines.extend(["- Failed criteria:"] + [f"  - `{name}`" for name in failed])
+              else:
+                  lines.append("- Failed criteria: none")
+              Path(summary_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          if not eligible:
+              details = ", ".join(failed) if failed else "productionEligible=false"
+              raise SystemExit(
+                  f"V16.8 production acceptance gate failed: {details}. "
+                  f"Report status={status}."
+              )
+          PY
+
 # trigger: final-practical-selector
