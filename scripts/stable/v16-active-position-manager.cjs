@@ -19,19 +19,19 @@ function writeJson(file, value) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
-function num(v, fallback = null) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
+function num(value, fallback = null) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
-function round(v, digits = 4) {
-  const n = num(v);
-  return n === null ? null : Number(n.toFixed(digits));
+function round(value, digits = 4) {
+  const parsed = num(value);
+  return parsed === null ? null : Number(parsed.toFixed(digits));
 }
 function tickerOf(row) {
   return String(row?.ticker || row?.symbol || '').trim().toUpperCase();
 }
-function dateOnly(v) {
-  return (String(v || '').match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
+function dateOnly(value) {
+  return (String(value || '').match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
 }
 function percentFrom(value, base) {
   return value > 0 && base > 0 ? (value / base - 1) * 100 : null;
@@ -39,11 +39,16 @@ function percentFrom(value, base) {
 function action(code, labelAr, tone, reasonAr) {
   return { code, labelAr, tone, reasonAr };
 }
-function cairoStamp() {
-  return new Intl.DateTimeFormat('en-CA', {
+function cairoParts() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-  }).format(new Date());
+  }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.filter(p => p.type !== 'literal').map(p => [p.type, p.value]));
+  return {
+    date: `${map.year}-${map.month}-${map.day}`,
+    stamp: `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`
+  };
 }
 
 const policy = readJson(POLICY_PATH);
@@ -51,17 +56,50 @@ const decision = readJson(DECISION_PATH);
 const evaluation = readJson(EVAL_PATH);
 const market = readJson(MARKET_PATH);
 const ls1 = readJson(LS1_PATH);
+const cairo = cairoParts();
 
+// The recommendation signal date and the session being managed are deliberately
+// separate. A signal issued after 19/8 can be managed during the 20/8 session.
 const signalDate = dateOnly(decision.sessionDate || decision.expectedLatestSession);
+const managementSessionDate = dateOnly(process.env.EGX_POSITION_MANAGER_SESSION_DATE)
+  || dateOnly(ls1?.evidence?.intradaySnapshotCairoDate)
+  || cairo.date;
 const currentRecommendations = Array.isArray(decision.recommendations) ? decision.recommendations : [];
 const records = Array.isArray(evaluation.records) ? evaluation.records : [];
 const marketRows = Array.isArray(market.rows) ? market.rows : [];
-const marketMap = new Map(marketRows.map(row => [tickerOf(row), row]));
 const ls1Rows = [
   ...(Array.isArray(ls1.signals) ? ls1.signals : []),
   ...(Array.isArray(ls1.watchTop) ? ls1.watchTop : [])
 ];
-const ls1Map = new Map(ls1Rows.map(row => [tickerOf(row), row]));
+
+function marketSessionOf(row) {
+  return dateOnly(row?.sourceSessionDate || row?.marketSessionDate);
+}
+function marketRowScore(row) {
+  const session = marketSessionOf(row);
+  const price = num(row?.price, num(row?.last));
+  const updated = Date.parse(row?.updatedAt || row?.sourceSessionCheckedAt || 0) || 0;
+  let score = 0;
+  if (price > 0) score += 100;
+  if (session === managementSessionDate) score += 10000;
+  else if (session) score += 500;
+  if (dateOnly(row?.updatedAt) === managementSessionDate) score += 100;
+  if (row?.sourceMarketTimeEvidence) score += 25;
+  return score * 1e13 + Math.min(updated, 9e12);
+}
+function bestByTicker(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const ticker = tickerOf(row);
+    if (!ticker) continue;
+    const old = map.get(ticker);
+    if (!old || marketRowScore(row) > marketRowScore(old)) map.set(ticker, row);
+  }
+  return map;
+}
+
+const marketMap = bestByTicker(marketRows);
+const ls1Map = new Map(ls1Rows.filter(row => tickerOf(row)).map(row => [tickerOf(row), row]));
 
 const targetStatuses = new Set(['TARGET_HIT']);
 const stopStatuses = new Set(['STOP_HIT', 'STOP_HIT_AMBIGUOUS_CONSERVATIVE']);
@@ -74,8 +112,8 @@ const closedStatuses = new Set([
 
 function recordsFor(ticker) {
   return records
-    .filter(r => tickerOf(r) === ticker)
-    .filter(r => !signalDate || dateOnly(r.recommendationDate) <= signalDate)
+    .filter(row => tickerOf(row) === ticker)
+    .filter(row => !signalDate || dateOnly(row.recommendationDate) <= signalDate)
     .sort((a, b) => {
       const ad = String(a.recommendationDate || '');
       const bd = String(b.recommendationDate || '');
@@ -86,11 +124,11 @@ function recordsFor(ticker) {
 
 function cycleContext(ticker) {
   const all = recordsFor(ticker);
-  const prior = all.filter(r => dateOnly(r.recommendationDate) !== signalDate);
+  const prior = all.filter(row => dateOnly(row.recommendationDate) !== signalDate);
   const latestPrior = prior[0] || null;
-  const occurrences = new Set(all.map(r => dateOnly(r.recommendationDate)).filter(Boolean)).size;
-  const priorTargets = prior.filter(r => targetStatuses.has(String(r.evaluationStatus || ''))).length;
-  const priorStops = prior.filter(r => stopStatuses.has(String(r.evaluationStatus || ''))).length;
+  const occurrences = new Set(all.map(row => dateOnly(row.recommendationDate)).filter(Boolean)).size;
+  const priorTargets = prior.filter(row => targetStatuses.has(String(row.evaluationStatus || ''))).length;
+  const priorStops = prior.filter(row => stopStatuses.has(String(row.evaluationStatus || ''))).length;
   const latestStatus = String(latestPrior?.evaluationStatus || '');
 
   let state = 'NEW_CYCLE';
@@ -120,33 +158,43 @@ function cycleContext(ticker) {
     priorTargetHits: priorTargets,
     priorStopHits: priorStops,
     repeatedRecommendation: occurrences >= 2,
-    repeatAfterTarget: Boolean(latestPrior && targetStatuses.has(latestStatus)),
+    repeatAfterTarget: Boolean(latestPrior && targetStatuses.has(latestStatus))
   };
 }
 
 function genericAction(rec, priceRow, cycle) {
-  const t = policy.thresholds || {};
+  const thresholds = policy.thresholds || {};
   const entryLow = num(rec.entryLow);
   const entryHigh = num(rec.entryHigh);
   const stopLoss = num(rec.stopLoss);
   const target1 = num(rec.target1);
   const price = num(priceRow?.price, num(priceRow?.last, num(rec.close)));
   const high = num(priceRow?.high, price);
-  const sourceSession = dateOnly(priceRow?.sourceSessionDate || priceRow?.marketSessionDate);
-  const sessionVerified = Boolean(signalDate && sourceSession === signalDate && price > 0);
-  const hot = rec.hotMomentumRisk === true || num(rec.rsi14, 0) >= num(t.hotMomentumRsi, 80);
+  const sourceSession = marketSessionOf(priceRow);
+
+  // Important: verify against the live/current market session, not the date on
+  // which the recommendation was issued. This keeps next-session management live.
+  const sessionVerified = Boolean(
+    managementSessionDate && sourceSession === managementSessionDate && price > 0
+  );
+  const hot = rec.hotMomentumRisk === true || num(rec.rsi14, 0) >= num(thresholds.hotMomentumRsi, 80);
 
   if (!sessionVerified) {
     return {
-      ...action('WAIT_DATA', 'انتظر تحديث البيانات', 'neutral', 'لا توجد قراءة لحظية موثقة لنفس جلسة التوصية.'),
-      price, high, sessionVerified, hot
+      ...action(
+        'WAIT_DATA',
+        'انتظر تحديث البيانات',
+        'neutral',
+        `لا توجد قراءة موثقة لجلسة السوق الحالية ${managementSessionDate || '—'}؛ لن يصدر مدير المركز إجراءً لحظيًا من بيانات غير مؤكدة.`
+      ),
+      price, high, sourceSession, sessionVerified, hot
     };
   }
 
   if (stopLoss > 0 && price <= stopLoss) {
     return {
       ...action('SELL', 'بيع / خروج', 'danger', 'السعر الحالي عند أو أسفل وقف الخسارة المنشور للتوصية.'),
-      price, high, sessionVerified, hot
+      price, high, sourceSession, sessionVerified, hot
     };
   }
 
@@ -154,13 +202,15 @@ function genericAction(rec, priceRow, cycle) {
   if (targetTouched && cycle.state === 'PRIOR_CYCLE_STILL_OPEN') {
     return {
       ...action('REDUCE', 'خفف / ثبت جزءًا من الربح', 'profit', 'مركز سابق ما زال مفتوحًا والهدف المنشور تم لمسه؛ لا يتحول الهدف تلقائيًا إلى استثمار طويل.'),
-      price, high, sessionVerified, hot, targetTouched
+      price, high, sourceSession, sessionVerified, hot, targetTouched
     };
   }
 
-  const tolerance = num(t.entryTolerancePct, 0.5) / 100;
-  const chase = num(t.doNotChaseAboveEntryPct, 1) / 100;
-  const inZone = entryLow > 0 && entryHigh > 0 && price >= entryLow * (1 - tolerance) && price <= entryHigh * (1 + tolerance);
+  const tolerance = num(thresholds.entryTolerancePct, 0.5) / 100;
+  const chase = num(thresholds.doNotChaseAboveEntryPct, 1) / 100;
+  const inZone = entryLow > 0 && entryHigh > 0
+    && price >= entryLow * (1 - tolerance)
+    && price <= entryHigh * (1 + tolerance);
   const aboveZone = entryHigh > 0 && price > entryHigh * (1 + chase);
   const belowZone = entryLow > 0 && price < entryLow * (1 - tolerance);
 
@@ -168,18 +218,18 @@ function genericAction(rec, priceRow, cycle) {
     if (inZone) {
       return {
         ...action('REENTER', 'إعادة دخول', 'reentry', 'الهدف السابق تحقق وأغلق الدورة السابقة افتراضيًا؛ السعر عاد إلى نطاق دخول التوصية الجديدة.'),
-        price, high, sessionVerified, hot, inZone
+        price, high, sourceSession, sessionVerified, hot, inZone
       };
     }
     if (aboveZone) {
       return {
         ...action('DO_NOT_CHASE', 'لا تطارد السعر', 'warning', 'الهدف السابق تحقق، لكن السعر الحالي أعلى من نطاق إعادة الدخول الجديد.'),
-        price, high, sessionVerified, hot, aboveZone
+        price, high, sourceSession, sessionVerified, hot, aboveZone
       };
     }
     return {
       ...action('WAIT_REENTRY', 'انتظر إعادة الدخول', 'watch', 'الصفقة السابقة انتهت عند الهدف؛ انتظر دخول السعر في النطاق الجديد بدل اعتبارها استثمارًا ممتدًا تلقائيًا.'),
-      price, high, sessionVerified, hot, belowZone
+      price, high, sourceSession, sessionVerified, hot, belowZone
     };
   }
 
@@ -187,19 +237,19 @@ function genericAction(rec, priceRow, cycle) {
     if (hot) {
       return {
         ...action('HOLD_TODAY', 'لا تبيع اليوم', 'hold', 'المركز السابق ما زال مفتوحًا والسهم أعيد ترشيحه، لكن الزخم ساخن؛ احتفظ دون زيادة آلية وراقب الوقف.'),
-        price, high, sessionVerified, hot
+        price, high, sourceSession, sessionVerified, hot
       };
     }
     if (inZone) {
       return {
         ...action('HOLD', 'احتفظ', 'hold', 'المركز السابق ما زال مفتوحًا والسهم ما زال داخل خطة التوصية الحالية.'),
-        price, high, sessionVerified, hot, inZone
+        price, high, sourceSession, sessionVerified, hot, inZone
       };
     }
     if (aboveZone) {
       return {
         ...action('HOLD_TODAY', 'لا تبيع اليوم', 'hold', 'المركز السابق ما زال مفتوحًا والسعر أعلى من نطاق إضافة جديد؛ احتفظ ولا تطارد بزيادة.'),
-        price, high, sessionVerified, hot, aboveZone
+        price, high, sourceSession, sessionVerified, hot, aboveZone
       };
     }
   }
@@ -207,18 +257,18 @@ function genericAction(rec, priceRow, cycle) {
   if (aboveZone) {
     return {
       ...action('DO_NOT_CHASE', 'لا تطارد السعر', 'warning', 'السعر الحالي أعلى من نطاق الدخول المنشور؛ انتظار فرصة أفضل أكثر تحفظًا.'),
-      price, high, sessionVerified, hot, aboveZone
+      price, high, sourceSession, sessionVerified, hot, aboveZone
     };
   }
   if (belowZone) {
     return {
       ...action('WAIT_ENTRY', 'انتظر منطقة الدخول', 'watch', 'السعر لم يدخل بعد نطاق التنفيذ المنشور.'),
-      price, high, sessionVerified, hot, belowZone
+      price, high, sourceSession, sessionVerified, hot, belowZone
     };
   }
   return {
     ...action('WATCH', 'مراقبة', 'watch', 'السهم داخل أو قريب من خطة التوصية؛ التنفيذ يظل مشروطًا بقواعد الافتتاح والسيولة.'),
-    price, high, sessionVerified, hot, inZone
+    price, high, sourceSession, sessionVerified, hot, inZone
   };
 }
 
@@ -227,17 +277,20 @@ const rows = currentRecommendations.map(rec => {
   const marketRow = marketMap.get(ticker) || null;
   const ls1Row = ls1Map.get(ticker) || null;
   const cycle = cycleContext(ticker);
-  const act = genericAction(rec, marketRow, cycle);
+  const managed = genericAction(rec, marketRow, cycle);
   const prior = cycle.latestPrior;
   const priorEntry = num(prior?.entryPrice);
-  const currentPrice = num(act.price);
-  const priorOpenReturnPct = priorEntry > 0 && currentPrice > 0 ? round(percentFrom(currentPrice, priorEntry), 3) : null;
+  const currentPrice = num(managed.price);
+  const priorOpenReturnPct = priorEntry > 0 && currentPrice > 0
+    ? round(percentFrom(currentPrice, priorEntry), 3)
+    : null;
 
   return {
     ticker,
     companyNameAr: rec.companyNameAr || ticker,
     rank: num(rec.rank, null),
     signalDate,
+    managementSessionDate,
     currentRecommendation: {
       entryLow: round(rec.entryLow),
       entryHigh: round(rec.entryHigh),
@@ -246,17 +299,19 @@ const rows = currentRecommendations.map(rec => {
       holdingSessions: num(rec.holdingSessions, null),
       hotMomentumRisk: rec.hotMomentumRisk === true,
       rsi14: round(rec.rsi14, 2),
-      portfolioWeightPct: round(rec.portfolioWeightPct, 4),
+      portfolioWeightPct: round(rec.portfolioWeightPct, 4)
     },
     market: {
-      price: round(act.price),
+      price: round(managed.price),
       open: round(marketRow?.open),
       high: round(marketRow?.high),
       low: round(marketRow?.low),
       changePct: round(marketRow?.changePct, 3),
       source: marketRow?.source || market.source || null,
-      sourceSessionDate: dateOnly(marketRow?.sourceSessionDate || marketRow?.marketSessionDate),
-      sessionVerified: act.sessionVerified === true,
+      sourceSessionDate: managed.sourceSession || marketSessionOf(marketRow),
+      managementSessionDate,
+      sessionVerified: managed.sessionVerified === true,
+      sessionValidationMode: 'CURRENT_MARKET_SESSION_NOT_SIGNAL_DATE'
     },
     cycle: {
       state: cycle.state,
@@ -276,7 +331,9 @@ const rows = currentRecommendations.map(rec => {
       priorOpenReturnPct,
       horizonInterpretation: cycle.repeatAfterTarget
         ? 'NEW_TRADING_CYCLE_AFTER_TARGET'
-        : cycle.state === 'PRIOR_CYCLE_STILL_OPEN' ? 'ACTIVE_SHORT_TERM_POSITION' : 'CURRENT_RECOMMENDATION_CYCLE',
+        : cycle.state === 'PRIOR_CYCLE_STILL_OPEN'
+          ? 'ACTIVE_SHORT_TERM_POSITION'
+          : 'CURRENT_RECOMMENDATION_CYCLE',
       horizonInterpretationAr: cycle.repeatAfterTarget
         ? 'دورة تداول جديدة بعد تحقيق هدف سابق — ليست استثمارًا متوسط/طويل الأجل تلقائيًا.'
         : cycle.state === 'PRIOR_CYCLE_STILL_OPEN'
@@ -284,16 +341,16 @@ const rows = currentRecommendations.map(rec => {
           : 'توصية حالية؛ لا توجد إشارة مستقلة تكفي لتصنيفها استثمارًا متوسط/طويل الأجل.'
     },
     action: {
-      code: act.code,
-      labelAr: act.labelAr,
-      tone: act.tone,
-      reasonAr: act.reasonAr,
+      code: managed.code,
+      labelAr: managed.labelAr,
+      tone: managed.tone,
+      reasonAr: managed.reasonAr,
       protectiveStop: round(rec.stopLoss),
       nextTarget: round(rec.target1),
       addEligibleServerSide: Boolean(
-        cycle.state === 'PRIOR_CYCLE_STILL_OPEN' &&
-        act.inZone === true &&
-        act.hot !== true
+        cycle.state === 'PRIOR_CYCLE_STILL_OPEN'
+        && managed.inZone === true
+        && managed.hot !== true
       ),
       personalizedByLocalPortfolio: false,
       automaticOrder: false
@@ -307,22 +364,29 @@ const rows = currentRecommendations.map(rec => {
   };
 });
 
-const counts = rows.reduce((acc, row) => {
-  const key = row.action.code;
-  acc[key] = (acc[key] || 0) + 1;
+const actionCounts = rows.reduce((acc, row) => {
+  acc[row.action.code] = (acc[row.action.code] || 0) + 1;
   return acc;
 }, {});
 
 const out = {
-  schemaVersion: '16.9.2-active-position-manager-1',
+  schemaVersion: '16.9.2-active-position-manager-2-session-aware',
   generatedAt: new Date().toISOString(),
-  generatedAtCairo: cairoStamp(),
+  generatedAtCairo: cairo.stamp,
   signalDate,
+  managementSessionDate,
   refreshIntervalMinutes: num(policy.refreshIntervalMinutes, 10),
   model: 'V16_9_ACTIVE_POSITION_MANAGER_POST_SELECTION',
   status: rows.length ? 'READY' : 'NO_CURRENT_RECOMMENDATIONS',
   recommendationCount: rows.length,
-  actionCounts: counts,
+  actionCounts,
+  sessionContract: {
+    signalDateIsRecommendationOrigin: true,
+    managementSessionIsCurrentMarketSession: true,
+    nextSessionMayDifferFromSignalDate: true,
+    requiresPerTickerCurrentSessionEvidence: true,
+    duplicateMarketRowsPreferVerifiedManagementSession: true
+  },
   portfolioPersonalization: {
     browserLocalStorageKey: 'egx-v137-portfolio',
     localOnly: true,
@@ -348,8 +412,10 @@ writeJson(OUT_PATH, out);
 console.log(JSON.stringify({
   generatedAt: out.generatedAt,
   signalDate: out.signalDate,
+  managementSessionDate: out.managementSessionDate,
   recommendationCount: out.recommendationCount,
   actionCounts: out.actionCounts,
-  tickers: rows.map(r => `${r.ticker}:${r.action.code}`),
+  tickers: rows.map(row => `${row.ticker}:${row.action.code}`),
+  sessionContract: out.sessionContract,
   governance: out.governance
 }, null, 2));
