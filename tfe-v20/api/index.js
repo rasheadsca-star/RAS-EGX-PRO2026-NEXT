@@ -4,16 +4,33 @@ import { backtestHistory, summarizeBacktest } from '../src/backtest.js';
 import { buildAblationBenchmark } from '../src/ablation.js';
 import { buildDecisionLogRows, toDecisionLogCsv } from '../src/decisionLog.js';
 import { normalizeBars } from '../src/quality.js';
-import { fetchJson, rawUrl, loadUniverse, loadHistory, loadV17, loadHistorySummary } from '../src/repository.js';
+import { DATA_SOURCES, fetchJson, rawUrl, loadUniverse, loadHistory, loadV17, loadHistorySummary } from '../src/repository.js';
 
-const DATA_BRANCH = 'develop/v20-integrated-decision-platform';
+export function runtimeSourceCommit() {
+  return process.env.VERCEL_GIT_COMMIT_SHA
+    || process.env.GITHUB_SHA
+    || process.env.TFE_SOURCE_COMMIT
+    || null;
+}
+
+function applyRuntimeHeaders(res) {
+  res.setHeader('x-tfe-engine', POLICY.engineId);
+  const sourceCommit = runtimeSourceCommit();
+  if (sourceCommit) res.setHeader('x-tfe-source-commit', sourceCommit);
+}
 
 const json = (res, status, body) => {
   res.statusCode = status;
+  applyRuntimeHeaders(res);
   res.setHeader('content-type', 'application/json; charset=utf-8');
   res.setHeader('cache-control', 'no-store');
   res.end(JSON.stringify(body));
 };
+
+function logInternal(scope, error, context = null) {
+  const payload = context ? ` ${JSON.stringify(context)}` : '';
+  console.error(`[${scope}]${payload}`, error?.stack ?? error?.message ?? error);
+}
 
 function withPublicationGate(result) {
   const technicalEligible = Boolean(result?.eligible);
@@ -73,11 +90,13 @@ async function marketIndex() {
   return {
     ok: true,
     engine: POLICY.engineId,
+    sourceCommit: runtimeSourceCommit(),
     sessionDate: latest,
     generatedAt: hs?.generatedAt ?? null,
     symbolsTotal: symbols.length,
     currentCandidateCount: symbols.filter((x) => x.currentRc2UniverseCandidate).length,
     symbols,
+    dataSources: DATA_SOURCES,
     uiOnly: true,
     scoringImpact: 'NONE',
   };
@@ -90,8 +109,10 @@ async function historySeries(ticker, limit = 120) {
   return {
     ok: true,
     engine: POLICY.engineId,
+    sourceCommit: runtimeSourceCommit(),
     ticker,
     source: h.meta?.primarySource ?? h.meta?.source ?? null,
+    sourceBranch: h.sourceBranch ?? DATA_SOURCES.alphaDataBranch,
     lastSession: bars.at(-1)?.date ?? null,
     availableSessions: bars.length,
     bars: bars.slice(-n),
@@ -110,7 +131,8 @@ async function scan(outputLimit = 20) {
         const analyzed = analyzeTicker({ ticker: d.ticker, nameAr: d.nameAr, nameEn: d.nameEn, rows: h.rows, historyMeta: h.meta, v17, discovery: d, expectedSessionDate });
         return withPublicationGate(analyzed);
       } catch (e) {
-        return withPublicationGate({ ticker: d.ticker, eligible: false, decision: 'NO_RECOMMENDATION', error: e.message, permissions: POLICY.permissions });
+        logInternal('TFE_SCAN_SYMBOL_ERROR', e, { ticker: d.ticker });
+        return withPublicationGate({ ticker: d.ticker, eligible: false, decision: 'NO_RECOMMENDATION', error: 'DATA_SOURCE_ERROR', permissions: POLICY.permissions });
       }
     }));
     results.push(...batch);
@@ -127,6 +149,7 @@ async function scan(outputLimit = 20) {
     ok: true,
     engine: POLICY.engineId,
     schemaVersion: POLICY.schemaVersion,
+    sourceCommit: runtimeSourceCommit(),
     generatedAt: new Date().toISOString(),
     mode: 'RESEARCH_ONLY',
     permissions: POLICY.permissions,
@@ -145,6 +168,8 @@ async function scan(outputLimit = 20) {
       sessionDate: expectedSessionDate,
       historySummaryGeneratedAt: historySummary?.generatedAt ?? null,
       currentVerifiedCandidates: candidates.length,
+      alphaDataBranch: DATA_SOURCES.alphaDataBranch,
+      overlayBranch: DATA_SOURCES.overlayBranch,
       v20NativeSourceEngine: snapshot?.engineId ?? snapshot?.schemaVersion ?? 'V20_CURRENT_MARKET',
       v20NativeSessionDate: snapshot?.sessionDate ?? null,
       nativeOverlayOnly: true,
@@ -181,7 +206,10 @@ async function simulateMarket(maxSymbols = 220) {
         const h = await loadHistory(d.ticker);
         const bt = backtestHistory({ ticker: d.ticker, rows: h.rows, historyMeta: h.meta });
         return { ticker: d.ticker, bt };
-      } catch (e) { return { ticker: d.ticker, error: e.message }; }
+      } catch (e) {
+        logInternal('TFE_SIM_SYMBOL_ERROR', e, { ticker: d.ticker });
+        return { ticker: d.ticker, error: 'DATA_SOURCE_ERROR' };
+      }
     }));
     for (const r of batch) {
       if (r.error) { errors.push({ ticker: r.ticker, error: r.error }); continue; }
@@ -194,6 +222,7 @@ async function simulateMarket(maxSymbols = 220) {
   return {
     ok: true,
     engine: POLICY.engineId,
+    sourceCommit: runtimeSourceCommit(),
     scope: 'RECORDED_FULL_MARKET_HISTORY',
     methodology: {
       technicalCore: 'ORIGINAL_SCOREBARS_SMA50_SMA200_RSI14_MACD_ATR_VOLUME',
@@ -205,6 +234,7 @@ async function simulateMarket(maxSymbols = 220) {
       sameBarAmbiguity: 'STOP_FIRST',
       costPct: POLICY.roundTripCostPct,
       presentDayQualityWarningsExcludedFromPastSignals: true,
+      alphaDataBranch: DATA_SOURCES.alphaDataBranch,
     },
     symbolsRequested: selected.length,
     symbolsCompleted: perTicker.length,
@@ -216,8 +246,8 @@ async function simulateMarket(maxSymbols = 220) {
 
 async function ablationMarket() {
   const [v20Replay, v17TrackRecord] = await Promise.all([
-    fetchJson(rawUrl(DATA_BRANCH, 'data/v20/retrospective-walk-forward-target-stop.json')),
-    fetchJson(rawUrl(DATA_BRANCH, 'data/v17/recommendation-track-record.json')),
+    fetchJson(rawUrl(DATA_SOURCES.overlayBranch, 'data/v20/retrospective-walk-forward-target-stop.json')),
+    fetchJson(rawUrl(DATA_SOURCES.overlayBranch, 'data/v17/recommendation-track-record.json')),
   ]);
   const tickers = [...new Set((v20Replay?.sessions ?? []).flatMap((s) => (s?.members ?? []).map((m) => String(m?.ticker ?? '').trim().toUpperCase())).filter(Boolean))];
   const histories = {}, historyErrors = [];
@@ -226,7 +256,10 @@ async function ablationMarket() {
       try {
         const h = await loadHistory(ticker);
         return { ticker, rows: h.rows };
-      } catch (e) { return { ticker, error: e.message }; }
+      } catch (e) {
+        logInternal('TFE_ABLATION_HISTORY_ERROR', e, { ticker });
+        return { ticker, error: 'DATA_SOURCE_ERROR' };
+      }
     }));
     for (const item of batch) {
       if (item.error) historyErrors.push({ ticker: item.ticker, error: item.error });
@@ -236,6 +269,7 @@ async function ablationMarket() {
   return {
     ok: true,
     engine: POLICY.engineId,
+    sourceCommit: runtimeSourceCommit(),
     generatedAt: new Date().toISOString(),
     ...buildAblationBenchmark({ v20Replay, v17TrackRecord, histories, historyErrors }),
   };
@@ -248,7 +282,9 @@ export default async function handler(req, res) {
     if (route === 'health') return json(res, 200, {
       ok: true,
       engine: POLICY.engineId,
+      sourceCommit: runtimeSourceCommit(),
       policy: POLICY,
+      dataSources: DATA_SOURCES,
       invariant: 'RESEARCH_ONLY_EXECUTION_BLOCKED',
       technicalCore: 'ORIGINAL_SCOREBARS_PRESERVED',
       historicalConfidence: 'WILSON_AFTER_HARD_GATES_WITH_EVIDENCE_AWARE_WEIGHTING',
@@ -268,12 +304,12 @@ export default async function handler(req, res) {
       if (!ticker) return json(res, 400, { ok: false, error: 'ticker is required' });
       const [h, v17, hs] = await Promise.all([loadHistory(ticker), loadV17(), loadHistorySummary()]);
       const analyzed = analyzeTicker({ ticker, rows: h.rows, historyMeta: h.meta, v17, expectedSessionDate: hs?.latestMarketSession ?? null });
-      return json(res, 200, { ok: true, result: withPublicationGate(analyzed) });
+      return json(res, 200, { ok: true, sourceCommit: runtimeSourceCommit(), result: withPublicationGate(analyzed) });
     }
     if (route === 'decision-log') {
       const limit = Math.max(5, Math.min(50, Number(url.searchParams.get('limit') ?? 50) || 50));
       const scanned = await scan(limit);
-      const sourceCommit = String(res.getHeader?.('x-tfe-source-commit') ?? '') || null;
+      const sourceCommit = runtimeSourceCommit();
       const rows = buildDecisionLogRows(scanned.recommendations, {
         sessionDate: scanned.universe?.sessionDate ?? null,
         generatedAt: scanned.generatedAt,
@@ -281,11 +317,12 @@ export default async function handler(req, res) {
       });
       if (String(url.searchParams.get('format') ?? 'json').toLowerCase() === 'csv') {
         res.statusCode = 200;
+        applyRuntimeHeaders(res);
         res.setHeader('content-type', 'text/csv; charset=utf-8');
         res.setHeader('cache-control', 'no-store');
         return res.end(toDecisionLogCsv(rows));
       }
-      return json(res, 200, { ok: true, engine: POLICY.engineId, sessionDate: scanned.universe?.sessionDate ?? null, generatedAt: scanned.generatedAt, rows });
+      return json(res, 200, { ok: true, engine: POLICY.engineId, sourceCommit, sessionDate: scanned.universe?.sessionDate ?? null, generatedAt: scanned.generatedAt, rows });
     }
     if (route === 'ablation') return json(res, 200, await ablationMarket());
     if (route === 'simulate') {
@@ -296,11 +333,12 @@ export default async function handler(req, res) {
       }
       const ticker = String(url.searchParams.get('ticker') ?? 'ETEL').trim().toUpperCase();
       const h = await loadHistory(ticker);
-      return json(res, 200, { ok: true, engine: POLICY.engineId, ticker, methodology: { technicalCore: 'ORIGINAL_SCOREBARS_SMA50_SMA200_RSI14_MACD_ATR_VOLUME', noLookahead: true, entryAfterSignal: true, sameBarAmbiguity: 'STOP_FIRST', costPct: POLICY.roundTripCostPct, presentDayQualityWarningsExcludedFromPastSignals: true }, ...backtestHistory({ ticker, rows: h.rows, historyMeta: h.meta }) });
+      return json(res, 200, { ok: true, engine: POLICY.engineId, sourceCommit: runtimeSourceCommit(), ticker, methodology: { technicalCore: 'ORIGINAL_SCOREBARS_SMA50_SMA200_RSI14_MACD_ATR_VOLUME', noLookahead: true, entryAfterSignal: true, sameBarAmbiguity: 'STOP_FIRST', costPct: POLICY.roundTripCostPct, presentDayQualityWarningsExcludedFromPastSignals: true, alphaDataBranch: DATA_SOURCES.alphaDataBranch }, ...backtestHistory({ ticker, rows: h.rows, historyMeta: h.meta }) });
     }
     const limit = Math.max(5, Math.min(50, Number(url.searchParams.get('limit') ?? 20) || 20));
     return json(res, 200, await scan(limit));
   } catch (e) {
-    return json(res, 500, { ok: false, engine: POLICY.engineId, error: e.stack ?? e.message });
+    logInternal('TFE_API_ERROR', e);
+    return json(res, 500, { ok: false, engine: POLICY.engineId, error: 'INTERNAL_SERVER_ERROR' });
   }
 }
