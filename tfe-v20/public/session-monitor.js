@@ -24,6 +24,27 @@ function readFrozenSignals() {
   } catch { return []; }
 }
 
+function publishSnapshot(signals, results = lastResults, quoteData = null, error = null) {
+  const detail = {
+    monitor:'SESSION_MONITOR_V1',
+    generatedAt: quoteData?.generatedAt || lastGeneratedAt || new Date().toISOString(),
+    signals: Array.isArray(signals) ? signals : [],
+    results: Array.isArray(results) ? results : [],
+    quotes: Array.isArray(quoteData?.quotes) ? quoteData.quotes : [],
+    errors: Array.isArray(quoteData?.errors) ? quoteData.errors : [],
+    error: error || null,
+    phase: marketPhase(),
+    pollingMs: MONITOR_POLICY.pollingMs,
+    delayedMinutes: quoteData?.delayedMinutes ?? 15,
+    monitorOnly:true,
+    scoringImpact:'NONE',
+    recommendationMutationAllowed:false,
+    executionAllowed:false,
+  };
+  window.__RC2_SESSION_MONITOR_LAST__ = detail;
+  window.dispatchEvent(new CustomEvent('rc2:session-monitor', { detail }));
+}
+
 function stateMeta(state) {
   const map = {
     WAITING_FOR_ENTRY:['في انتظار الدخول','warn'],
@@ -151,6 +172,7 @@ async function refresh(force = false) {
   const signals = readFrozenSignals();
   if (!signals.length) {
     render(signals, [], null);
+    publishSnapshot(signals, [], null, null);
     refreshing = false;
     return;
   }
@@ -164,8 +186,11 @@ async function refresh(force = false) {
     lastResults = signals.map((signal, index) => evaluateFrozenCandidate(signal, histories[index], quoteMap.get(signal.ticker) || null));
     lastGeneratedAt = quoteData.generatedAt || new Date().toISOString();
     render(signals, lastResults, null);
+    publishSnapshot(signals, lastResults, quoteData, null);
   } catch (error) {
-    render(signals, lastResults, error?.message || 'UNKNOWN_ERROR');
+    const message = error?.message || 'UNKNOWN_ERROR';
+    render(signals, lastResults, message);
+    publishSnapshot(signals, lastResults, null, message);
   } finally {
     refreshing = false;
   }
