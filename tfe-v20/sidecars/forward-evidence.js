@@ -27,10 +27,10 @@ function canonicalSignal(row) {
 }
 
 export function freezeDecisionRows(rows, { generatedAt = new Date().toISOString(), sourceCommit = null } = {}) {
-  const signals = (Array.isArray(rows) ? rows : [])
+  const signals = Object.freeze((Array.isArray(rows) ? rows : [])
     .map(canonicalSignal)
     .filter((x) => x.ticker && x.sessionDate && Number(x.entryLow) > 0 && Number(x.entryHigh) >= Number(x.entryLow) && Number(x.stop) > 0 && Number(x.target1) > 0)
-    .map((signal) => Object.freeze({ ...signal, signalHash: sha256(stable(signal)) }));
+    .map((signal) => Object.freeze({ ...signal, signalHash: sha256(stable(signal)) })));
   const payload = {
     schemaVersion: 'tfe.forward.1',
     generatedAt,
