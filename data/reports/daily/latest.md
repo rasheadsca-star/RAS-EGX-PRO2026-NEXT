@@ -4,15 +4,15 @@
 - الأول فنيًا: **MPCO**
 - أول B للمراقبة: **MPCO**
 - الجاهز ورقيًا: **لا يوجد**
-- إشارات جديدة: **20**
-- دخول جديد: **18**
-- صفقات مغلقة: **18**
+- إشارات جديدة: **22**
+- دخول جديد: **19**
+- صفقات مغلقة: **19**
 - منتهية دون دخول: **6**
 
 ## حالة الاستراتيجيات
 
 - breakout: ACTIVE_PAPER — صفقات مغلقة 54, PF 1.7657, Average R 0.3603
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 233, PF 1.6406, Average R 0.3079
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 234, PF 1.6254, Average R 0.3021
 - pullback: RESEARCH_ONLY — صفقات مغلقة 13, PF 3.7176, Average R 0.7249
 
 ## ملاحظات التشغيل
@@ -21,4 +21,4 @@
 - تحذير: 37 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `03c1ba63e678cb18a7b5bb42b98ddd29eb6b4a3c80000cf07a84565d0973590b`
+بصمة التقرير: `e7423e87f25fa455682460e95e5b20667e49ede60780bc2e35222d0d5e8f8df7`
