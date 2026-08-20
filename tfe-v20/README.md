@@ -1,60 +1,42 @@
 # TFE V20 Fusion RC2 — Developer Handoff
 
-RC2 is the merged research engine inside `develop/v20-integrated-decision-platform`. It preserves the strongest parts of the original standalone EGX scorer while retaining the TFE hard-gate architecture, full-market scan, V20 provenance, V17 safety overlay, publication controls, recorded-session simulator, and now the professional V16.9 interface/options as a presentation-only adapter.
+`TFE_V20_FUSION_RC2` is the research/shadow engine in branch `develop/v20-integrated-decision-platform`, under `tfe-v20/`. It combines a frozen standalone-reference technical scorer with TFE hard gates, data-quality controls, liquidity and support/resistance validation, trade-plan construction, evidence-aware Wilson ranking, V20/V17 overlays, recorded-session simulation, Decision Log, and the V16.9 professional UI adapter.
 
-It does **not** modify MAIN APP, V17, or the existing V20 Native engine.
+It does **not** modify MAIN APP, V16 production source, V17 source, or V20 Native source. It is **not approved for automatic execution or automatic Champion promotion**.
 
-## What RC2 merges
+## Provenance and build history
 
-### Preserved from the original standalone engine
+The `tfe-v20/` tree was assembled rapidly during 19–20 August 2026. It must not be described as a long-hardened production engine.
 
-- The original `scoreBars()` technical core.
-- SMA50 / SMA200 trend logic.
-- RSI(14).
-- MACD histogram / acceleration.
-- ATR volatility penalty.
-- Volume confirmation.
-- Explainable component-by-component technical breakdown.
+The files `src/originalScore.js` and `src/originalIndicators.js` are the technical scorer/indicator implementation **adopted from the standalone reference implementation and frozen inside RC2**. The phrase means RC2 intentionally keeps that implementation stable while layering TFE gates around it; it does **not** mean those files existed historically in this repository before RC2 was assembled.
 
-### Preserved from TFE RC1
+## Alpha / overlay separation
 
-- Full-market fresh-history universe.
-- Fail-closed data-quality gate.
-- Liquidity eligibility.
-- Multi-method support/resistance confluence.
-- Entry zone, stop, T1 and structural T2.
-- Structural net R/R floor after modeled transaction cost.
-- `DO_NOT_CHASE` / `BELOW_ENTRY_WAIT` hard rejection.
-- Price-reconciliation publication hold.
-- V20 Native as provenance only, never a scoring input.
-- V17 safety overlay, never an execution override.
-- Next-session-only, STOP_FIRST recorded-session simulation.
+RC2 now uses explicit data-source separation:
 
-### Added in RC2
+- **Alpha market-history branch:** `main`
+  - `data/history-summary.json`
+  - `data/history/<ticker>.json`
+- **Overlay branch:** `develop/v20-integrated-decision-platform`
+  - V20 Native discovery/provenance snapshots
+  - V17 safety overlay and recorded research diagnostics
 
-- Per-symbol historical-confidence layer using Wilson 95% lower bound.
-- Evidence-aware weighting: Wilson can contribute **0% to 25%** of ranking depending on sample reliability; missing historical evidence is neutral, not treated as zero quality.
-- Historical confidence is calculated **only after all hard gates pass** and can never rescue a stale, illiquid, low-score, poor-R/R, or DO_NOT_CHASE setup.
-- Decision Log JSON/CSV including actual fusion weights, historical sample size, Wilson confidence, trade plan, quality state, V17 status, and runtime source commit.
-- New anti-rescue/adversarial regression tests.
+Market-history scoring never falls back to the overlay branch. V20 Native remains discovery/provenance only and is not an Alpha scoring input. V17 can never enable execution.
 
-## V16.9 professional interface adapter
+Remote JSON loading uses a short in-process cache (default 5 minutes), ETag conditional requests when available, a 10-second timeout, and two bounded retries. These are operational hardening only and do not alter scores or recommendations.
 
-The production RC2 runtime now uses the V16.9 professional shell and its main options while keeping RC2 Alpha unchanged.
+## Technical core
 
-Primary views:
+The frozen reference `scoreBars()` technical core uses:
 
-1. Decision Board / recommendation cards and filters.
-2. Full-market search across the history index.
-3. Experimental local portfolio and position-sizing/risk controls.
-4. Manual supplemental fundamental-analysis worksheet.
-5. Live evidence / Decision Log / simulator and model-comparison view.
+- SMA50 / SMA200 trend logic
+- RSI(14)
+- MACD histogram / acceleration
+- ATR volatility penalty
+- Volume confirmation
+- Component-level explainability
 
-Additional UI options include selected-stock charting, Entry/Stop/T1/T2 overlays, original technical-score breakdown, Fusion/Wilson display, market data-quality status, Decision Log CSV export, local first-seen recommendation archive, and experimental position sizing.
-
-The portfolio and fundamental-analysis helpers are stored locally in the browser and are **not Alpha inputs**. The UI JavaScript does not import `src/engine.js`, `src/originalScore.js`, or `src/policy.js` and does not implement its own scorer. Read-only `market-index` and `history` adapters explicitly return `scoringImpact: NONE`.
-
-A source comparison from pre-UI RC2 to the V16.9 UI commit confirmed that `src/engine.js`, `src/originalScore.js`, `src/backtest.js`, `src/policy.js`, and the Fusion logic were unchanged.
+The same scorer is used by live analysis and recorded historical simulation.
 
 ## Immutable research-only contract
 
@@ -64,47 +46,71 @@ A source comparison from pre-UI RC2 to the V16.9 UI commit confirmed that `src/e
 - `automaticOrders = false`
 - `automaticChampionPromotion = false`
 
-V17 cannot turn execution on. V20 Native cannot become a TFE scoring input.
-
 ## Fixed hard gates
 
+These thresholds are unchanged by the hardening work:
+
 - Minimum history: **60 sessions**
-- Original technical score: **>= 70**
+- Technical score: **>= 70**
 - Research score: **>= 72**
 - Liquidity score: **>= 55** plus liquidity eligibility
 - S/R confluence: **>= 55** with at least **2 strong methods**
-- Structural net R/R: **>= 0.70** after **0.60%** round-trip modeled cost
+- Structural net R/R: **>= 0.70** after **0.60%** modeled round-trip cost
 - Maximum pullback distance: **0.70 ATR**
 - Entry expiry: **3 sessions**
 - Maximum hold: **10 sessions**
 - T1: **0.8R precision target capped by structural resistance**
 - T2: structural resistance
 - Same-bar target/stop ambiguity: **STOP_FIRST**
+- `DO_NOT_CHASE` and `BELOW_ENTRY_WAIT`: hard rejection
+- Price conflict >= configured publication threshold: publication hold / reconciliation required
 
 ## Fusion ranking
 
-Ranking occurs only after hard-gate eligibility.
+Historical confidence is calculated **only after all current hard gates pass**.
 
 - Research weight range: **75%–100%**
 - Wilson historical-confidence weight range: **0%–25%**
-- Full Wilson weight requires at least **5 qualifying historical trades**
+- Full historical weight requires at least **5 qualifying historical trades**
 - With zero qualifying historical trades: `Fusion Rank = Research Score`
 
-This avoids the two failure modes found during destructive review: historical results rescuing an invalid current setup, and missing historical evidence unfairly acting like a zero score.
+Historical confidence cannot rescue stale, illiquid, low-score, poor-R/R, or alignment-rejected setups. Missing history is neutral rather than a zero-quality penalty.
 
-## Production review runtime
+## Historical evidence warning
 
-`https://egx-tfe-v20-fusion-rc2.vercel.app`
+Historical statistics are **evidence, not a probability forecast or guarantee of future target achievement**. The currently recorded sample is small and concentrated in a limited market period. Any displayed T1 rate, profit factor, average net return, or Wilson bound must be interpreted as retrospective research evidence only.
 
-Reviewed runtime source commit:
+Before any real-money use, RC2 requires materially longer history, multiple market regimes (bull/bear/sideways), forward out-of-sample tracking, and stronger official/cross-source market-data verification.
 
-`bf5d793f8e2b273b06e2da708c215cadc7b68276`
+## API security and runtime provenance
 
-Every runtime response exposes `x-tfe-source-commit` so the reviewer can match deployed behavior to reviewed source.
+Runtime responses now:
+
+- never return JavaScript stack traces to clients on unexpected 500 errors;
+- log internal stack details server-side only;
+- expose engine identity through `x-tfe-engine`;
+- expose the deployment source commit through `x-tfe-source-commit` when `VERCEL_GIT_COMMIT_SHA`, `GITHUB_SHA`, or `TFE_SOURCE_COMMIT` is available;
+- include `sourceCommit` in `/health`, `/scan`, analysis/simulation responses, and Decision Log rows.
+
+The Decision Log no longer relies on reading an unset response header to infer provenance.
+
+## V16.9 professional UI adapter
+
+The production UI is branded:
+
+**EGX Pro Professional V16.9 UI CLAUDE**
+
+Primary views:
+
+1. Decision Board / recommendation cards and filters
+2. Full-market search
+3. Experimental local portfolio and position sizing
+4. Manual supplemental fundamental worksheet
+5. Live evidence / Decision Log / simulator and model-comparison view
+
+Portfolio and fundamental helpers are local/browser-only and are **not Alpha inputs**. UI-only `market-index` and `history` adapters declare `scoringImpact: NONE`.
 
 ## Endpoints
-
-Analysis/runtime:
 
 - `/health`
 - `/scan?limit=20`
@@ -114,83 +120,41 @@ Analysis/runtime:
 - `/decision-log?format=json&limit=50`
 - `/decision-log?format=csv&limit=50`
 - `/ablation`
-
-UI-only read adapters:
-
 - `/market-index`
 - `/history?ticker=COPR&limit=120`
 
-The two UI-only adapters do not calculate or alter RC2 scores/recommendations.
+## Independently reproduced pre-hardening baseline
 
-## Final RC2 + V16.9 audit — 2026-08-19
+An independent Claude review on 19–20 August 2026 reproduced the pre-hardening research baseline by running the code rather than trusting documentation:
 
-The exact production UI/source commit was loaded into an independent runtime audit harness.
-
-- Syntax checked files/modules: **14/14 passed**
-- Tests: **65/65 passed**
-- Failed: **0**
-
-The full suite includes the RC1/RC2 destructive coverage plus V16.9 UI contract tests proving:
-
-- all five primary V16.9 views are present;
-- recommendation, market, position-sizing, fundamental and evidence options are exposed;
-- portfolio/fundamental helpers are local and non-Alpha;
-- UI never imports engine/scorer/policy modules;
-- UI consumes the public API rather than reimplementing `scoreBars()`;
-- market/history adapters declare zero scoring impact;
-- no execution-enabling UI control exists.
-
-Production checks also returned HTTP 200 for the UI, `/health`, `/scan`, `/market-index`, and `/history`; the latest deployment had no error/fatal runtime logs during acceptance.
-
-## Current full-market scan
-
-Session: **2026-08-19**
-
-- Scanned: **188**
-- Technically eligible: **4**
-- Publishable research candidates: **3**
-- Withheld for price reconciliation: **1**
-- Rejected by hard gates: **184**
-
-Current publishable research candidates remain unchanged after the V16.9 UI migration:
-
-1. `COPR` — Pending Pullback
-2. `FAIT` — Pending Pullback
-3. `MPCO` — Pending Pullback
-
-`MILS` is technically eligible but withheld because its current price-conflict signal exceeds the publication threshold.
-
-The three current publishable candidates have no completed historical trades matching **all** RC2 hard gates inside the currently recorded history window. RC2 therefore assigns Wilson weight = 0 and leaves their Fusion Rank equal to Research Score. It does not invent confidence.
-
-## Recorded full-market simulator — RC2
-
-- Symbols completed: **188/188**
-- Errors: **0**
-- Entered trades: **64**
-- T1 hit rate: **73.4%**
-- Stop rate: **18.8%**
-- Positive trade rate: **73.4%**
-- Average net result after 0.60% modeled round-trip cost: **+1.23% per entered trade**
+- tests: **65/65 passed**
+- recorded full-market simulator: **64 entered trades**
+- T1: **73.4%**
+- Stop: **18.8%**
+- Avg net after modeled cost: **+1.23%**
 - Profit factor: **2.33**
-- Wilson 95% lower bound for T1 hit rate: **61.5%**
+- Wilson 95% lower T1 bound: **61.5%**
+- scan: **188 scanned / 4 technically eligible / 3 publishable / 1 withheld**
+- publishable at that session: `COPR`, `FAIT`, `MPCO`
+- `MILS`: withheld for price reconciliation
 
-## RC1 → RC2 comparison
+Those numbers are a reproduced historical baseline, **not forward accuracy claims**.
 
-| Metric | RC1 | RC2 | Change |
-|---|---:|---:|---:|
-| Entered trades | 120 | 64 | -46.7% |
-| T1 hit rate | 65.8% | 73.4% | +7.6 pp |
-| Stop rate | 27.5% | 18.8% | -8.7 pp |
-| Avg net / entered trade | +0.66% | +1.23% | +0.57 pp |
-| Profit factor | 1.49 | 2.33 | +0.84 |
-| Wilson 95% lower T1 | 57.0% | 61.5% | +4.5 pp |
+## Independent-review hardening — 20 August 2026
 
-RC2 is deliberately more selective. The historical evidence currently shows a meaningful improvement in quality metrics in exchange for materially fewer trades. This is a trade-off, not a free improvement, and must be tracked forward.
+The following changes were made without changing `engine.js`, `policy.js`, scoring weights, hard-gate thresholds, trade-plan formulas, or recommendation ranking logic:
+
+1. Sanitized unexpected API error responses; stack traces remain server-side only.
+2. Replaced dead Decision Log commit-header inference with real runtime commit provenance.
+3. Separated Alpha market-history data (`main`) from V20/V17 overlays (development branch).
+4. Added bounded cache / ETag / timeout / retry behavior to remote JSON fetching.
+5. Corrected technical-scorer provenance wording and documented the rapid build window.
+6. Added API hardening regression tests.
 
 ## Review status
 
-RC2 with the V16.9 professional interface is suitable for **research/shadow operation** and third-party review now. It is not certified for automatic execution or Champion promotion.
+Current status remains:
 
-Historical results are evidence, not a guarantee. Forward out-of-sample sessions must be accumulated without tuning on them before any promotion decision.
+**PASS WITH CONDITIONS for research/shadow use only.**
 
-See `docs/VALIDATION_REPORT.md` for the destructive-review record and rejected failure modes.
+Not approved for automatic execution, production capital allocation, or automatic Champion promotion. The next evidence milestone is longer, multi-regime, genuinely forward/out-of-sample validation without tuning on those future sessions.
