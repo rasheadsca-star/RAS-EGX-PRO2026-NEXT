@@ -4,6 +4,7 @@ import { freezeDecisionRows, evaluateFrozenSignal, summarizeForwardEvidence } fr
 import { verifyOfficialSnapshot } from '../sidecars/data-verification.js';
 import { auditHistoryDepth } from '../sidecars/history-depth.js';
 import { classifyRegime, classifyRegimeAtDate, segmentEvidenceByRegime } from '../sidecars/regime-analysis.js';
+import { validateLongHistories } from '../sidecars/long-history-validation.js';
 
 const signalRow = {
   sessionDate:'2026-08-19', rank:1, ticker:'TEST', decision:'RESEARCH_PENDING_PULLBACK', publicationState:'RESEARCH_CANDIDATE',
@@ -95,4 +96,23 @@ test('regime segmentation remains evidence-only', () => {
   assert.equal(r.BULL.target1Pct,100);
   assert.equal(r.BEAR.stopPct,100);
   assert.equal(r.scoringImpact,'NONE');
+});
+
+test('long-history validation reuses frozen backtest without runtime or parameter mutation', () => {
+  const rows=[];
+  const start=new Date('2023-01-01T00:00:00Z');
+  for(let i=0;i<520;i++){
+    const d=new Date(start.getTime()+i*86400000).toISOString().slice(0,10);
+    const close=10+i*0.01;
+    rows.push({date:d,open:close,high:close*1.01,low:close*0.99,close,volume:1000000});
+  }
+  const before=JSON.stringify(rows);
+  const report=validateLongHistories([{ticker:'TEST',rows}]);
+  assert.equal(JSON.stringify(rows),before);
+  assert.equal(report.scoringImpact,'NONE');
+  assert.equal(report.productionRuntimeMutation,false);
+  assert.equal(report.engineParametersModified,false);
+  assert.equal(report.symbols,1);
+  assert.equal(report.multiYearSymbols,1);
+  assert.equal(report.totalSessions,520);
 });
