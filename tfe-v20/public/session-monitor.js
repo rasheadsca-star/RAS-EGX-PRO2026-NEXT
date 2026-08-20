@@ -1,4 +1,5 @@
 import { evaluateFrozenCandidate, marketPhase, MONITOR_POLICY } from './session-monitor-core.js';
+import './ops-v169.js';
 
 const ARCHIVE_KEY = 'egx-tfe-rc2-v169-forward-archive';
 const PANEL_ID = 'rc2SessionMonitorPanel';
