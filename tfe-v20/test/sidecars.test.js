@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { freezeDecisionRows, evaluateFrozenSignal, summarizeForwardEvidence } from '../sidecars/forward-evidence.js';
 import { verifyOfficialSnapshot } from '../sidecars/data-verification.js';
 import { auditHistoryDepth } from '../sidecars/history-depth.js';
-import { classifyRegime, segmentEvidenceByRegime } from '../sidecars/regime-analysis.js';
+import { classifyRegime, classifyRegimeAtDate, segmentEvidenceByRegime } from '../sidecars/regime-analysis.js';
 
 const signalRow = {
   sessionDate:'2026-08-19', rank:1, ticker:'TEST', decision:'RESEARCH_PENDING_PULLBACK', publicationState:'RESEARCH_CANDIDATE',
@@ -79,6 +79,15 @@ test('regime classifier labels short history as provisional', () => {
   assert.equal(r.regime,'BULL');
   assert.equal(r.confidence,'PROVISIONAL_SHORT_HISTORY');
   assert.equal(r.scoringImpact,'NONE');
+});
+
+test('regime classification at signal date excludes all future benchmark rows', () => {
+  const rows=[];
+  for(let i=0;i<100;i++) rows.push({date:`2026-${String(Math.floor(i/28)+1).padStart(2,'0')}-${String(i%28+1).padStart(2,'0')}`,close:100+i});
+  const r=classifyRegimeAtDate(rows,'2026-03-04');
+  assert.equal(r.futureRowsExcluded,true);
+  assert.equal(r.asOfDate,'2026-03-04');
+  assert.equal(r.close,159);
 });
 
 test('regime segmentation remains evidence-only', () => {
