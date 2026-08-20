@@ -21,6 +21,11 @@ export function classifyRegime(rows = []) {
   return { regime: bull ? 'BULL' : bear ? 'BEAR' : 'SIDEWAYS', confidence: 'PROVISIONAL_SHORT_HISTORY', close, sma20:s20, sma50:s50, return20Pct:r20, return60Pct:r60, scoringImpact:'NONE' };
 }
 
+export function classifyRegimeAtDate(rows = [], date) {
+  const prefix = (Array.isArray(rows) ? rows : []).filter((x)=>String(x.date) <= String(date));
+  return { ...classifyRegime(prefix), asOfDate: date ?? null, futureRowsExcluded: true };
+}
+
 export function segmentEvidenceByRegime(items = []) {
   const groups = { BULL:[], BEAR:[], SIDEWAYS:[], INSUFFICIENT_HISTORY:[] };
   for (const item of Array.isArray(items) ? items : []) {
