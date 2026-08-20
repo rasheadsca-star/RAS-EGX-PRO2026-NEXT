@@ -93,6 +93,6 @@ test('session monitor runtime is isolated from Alpha modules', async () => {
   assert.equal(/automaticOrders\s*[:=]\s*true/i.test(joined), false);
   assert.equal(/executionAllowed\s*[:=]\s*true/i.test(joined), false);
   assert.ok(client.includes('ARCHIVE_KEY'));
-  assert.ok(client.includes("'/api/session-monitor?"));
+  assert.ok(client.includes('/api/session-monitor?'));
   assert.ok(html.includes('session-monitor.js?v=1.0.0'));
 });
