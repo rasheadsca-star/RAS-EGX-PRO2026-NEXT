@@ -10,6 +10,7 @@ on:
   pull_request:
     paths:
       - 'tfe-v20/**'
+      - '.github/workflows/tfe-v20-audit.yml'
 
 permissions:
   contents: read
@@ -74,5 +75,43 @@ jobs:
         with:
           name: tfe-v20-runtime
           path: tfe-v20/runtime-artifact
+          if-no-files-found: error
+          retention-days: 1
+      - name: Check Vercel token availability
+        id: vercel_creds
+        if: success()
+        shell: bash
+        working-directory: .
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Vercel token is configured; exact runtime preview deployment is enabled."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Vercel token is not configured in GitHub Actions; artifact remains validated but undeployed by CI."
+          fi
+      - name: Deploy exact runtime artifact to Vercel preview
+        if: steps.vercel_creds.outputs.available == 'true'
+        shell: bash
+        working-directory: tfe-v20/runtime-artifact
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+          VERCEL_PROJECT_ID: prj_gXmmVe1QqGFJ9nsv30uu0emLqIdY
+        run: |
+          npm install -g vercel@latest
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+          PREVIEW_URL="$(vercel deploy --yes --token "$VERCEL_TOKEN")"
+          echo "TFE_V20_PREVIEW_URL=$PREVIEW_URL"
+          printf '%s\n' "$PREVIEW_URL" > preview-url.txt
+      - name: Upload preview URL
+        if: steps.vercel_creds.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfe-v20-preview-url
+          path: tfe-v20/runtime-artifact/preview-url.txt
           if-no-files-found: error
           retention-days: 1
