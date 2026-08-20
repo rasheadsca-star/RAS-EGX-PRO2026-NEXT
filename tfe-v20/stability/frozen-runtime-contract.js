@@ -1,5 +1,5 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.0.0',
+  contractVersion: '1.1.0',
   frozenAtSourceCommit: '75aa7bd42c77db8d081278e0279611bc42ab5ec8',
   purpose: 'Protect RC2 stability, recommendations, performance path, and execution lock while validation sidecars evolve independently.',
   criticalFiles: Object.freeze({
@@ -16,6 +16,9 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'public/index.html': 'fe63c028f253066aac075cfd0acbd7a7385fbc03',
     'public/ui-v169.js': '8696d78e1dcf8b62a18fa92547a0b7d0a3dfbf4f',
     'public/styles-v169.css': '7194d4fdcf1b25b4cabce01e3b7ab827a5915a8b',
+  }),
+  immutableEvidenceFiles: Object.freeze({
+    'evidence/forward/2026-08-19-75aa7bd42c77.json': '4e2a3d8eddf6c6bebd820b4789c70989d5299669',
   }),
   policy: Object.freeze({
     engineId: 'TFE_V20_FUSION_RC2',
