@@ -1,7 +1,7 @@
 # تقرير المراجعة الفنية المستقلة — EGX Pro V16.3
 
 - النطاق: **الشق الفني بالكامل**
-- تاريخ التوليد: 2026-08-19T17:49:49.922Z
+- تاريخ التوليد: 2026-08-20T14:08:26.213Z
 - الدورات: 20/20
 - الحكم: **REJECTED_BLOCKING_TECHNICAL_FINDINGS**
 - الفحوص: 30/41 مغلق
@@ -36,11 +36,11 @@
 | الدورة | الخطورة | الملاحظة | الدليل | الإجراء |
 |---:|---|---|---|---|
 | 3 | HIGH | كل توصية تحمل قيمًا عددية للخطة والمؤشرات | valid=0/3 | رفض السجل ذي القيم المفقودة. |
-| 5 | CRITICAL | حد RSI الأعلى مطبق على كل توصية | LUTS:97.6, GTWL:92.4, KZPC:97.1 | نقل السهم إلى المراقبة. |
-| 5 | HIGH | بوابة الامتداد القصير تمنع المطاردة | LUTS:ret5=undefined, GTWL:ret5=undefined, KZPC:ret5=undefined | خفض الترتيب أو إلغاء الدخول. |
-| 8 | CRITICAL | كل توصية تجتاز الحد الأدنى للعائد/المخاطرة | LUTS:undefined, GTWL:undefined, KZPC:undefined | استبعاد الفرصة. |
-| 8 | HIGH | احتمال الهدف أعلى من احتمال الوقف | LUTS:undefined>undefined, GTWL:undefined>undefined, KZPC:undefined>undefined | إعادة المعايرة أو الرفض. |
-| 15 | HIGH | عدم الاستقرار موثق ولا يُخفى | LUTS:undefined/undefined, GTWL:undefined/undefined, KZPC:undefined/undefined | إظهار عدم الاستقرار وخفض المخاطرة. |
+| 5 | CRITICAL | حد RSI الأعلى مطبق على كل توصية | MOED:89.5, ICID:95, KZPC:97.2 | نقل السهم إلى المراقبة. |
+| 5 | HIGH | بوابة الامتداد القصير تمنع المطاردة | MOED:ret5=undefined, ICID:ret5=undefined, KZPC:ret5=undefined | خفض الترتيب أو إلغاء الدخول. |
+| 8 | CRITICAL | كل توصية تجتاز الحد الأدنى للعائد/المخاطرة | MOED:undefined, ICID:undefined, KZPC:undefined | استبعاد الفرصة. |
+| 8 | HIGH | احتمال الهدف أعلى من احتمال الوقف | MOED:undefined>undefined, ICID:undefined>undefined, KZPC:undefined>undefined | إعادة المعايرة أو الرفض. |
+| 15 | HIGH | عدم الاستقرار موثق ولا يُخفى | MOED:undefined/undefined, ICID:undefined/undefined, KZPC:undefined/undefined | إظهار عدم الاستقرار وخفض المخاطرة. |
 | 15 | CRITICAL | النماذج غير المستقرة لا تستخدم مخاطرة كاملة | decisionTier=BLOCKED_WALK_FORWARD_PILOT; professional=false; modes=,, | فرض وضع Pilot منخفض المخاطرة. |
 | 16 | HIGH | قصر عينة الاختبار مصرح به | decisionTier=BLOCKED_WALK_FORWARD_PILOT; test sample remains explicitly Pilot | إظهار Pilot وعدم ادعاء الاحتراف المثبت. |
 | 19 | HIGH | اختبارات متصفح حقيقية ناجحة | status=FAILED; tests=0; realBrowser=true | تشغيل Playwright وإصلاح الرحلة. |
