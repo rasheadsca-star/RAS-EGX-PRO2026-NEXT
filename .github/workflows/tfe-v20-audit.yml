@@ -60,3 +60,18 @@ jobs:
         run: npm test
       - name: Independent red-team stability gate
         run: npm run red-team
+      - name: Stage exact runtime artifact
+        if: success()
+        run: |
+          rm -rf runtime-artifact
+          mkdir -p runtime-artifact
+          cp package.json vercel.json runtime-artifact/
+          cp -R src api monitor public runtime-artifact/
+      - name: Upload exact runtime artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfe-v20-runtime
+          path: tfe-v20/runtime-artifact
+          if-no-files-found: error
+          retention-days: 1
