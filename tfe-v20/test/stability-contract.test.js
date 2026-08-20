@@ -91,3 +91,31 @@ test('session monitor source does not call production scan or import Alpha modul
   assert.equal(/executionAllowed\s*[:=]\s*true/i.test(joined), false);
   assert.equal(/automaticOrders\s*[:=]\s*true/i.test(joined), false);
 });
+
+test('V16.9 operational overlays are observation-only and cannot become a hidden policy layer', () => {
+  const rules = FROZEN_RUNTIME_CONTRACT.opsRules;
+  assert.equal(rules.moduleId, 'V16_9_OPERATIONAL_OVERLAYS_V1');
+  assert.equal(rules.consumesExistingMonitorSnapshot, true);
+  assert.equal(rules.duplicateQuotePollingAllowed, false);
+  assert.equal(rules.mayTriggerProductionScan, false);
+  assert.equal(rules.mayMutateRecommendation, false);
+  assert.equal(rules.mayChangeFusionRank, false);
+  assert.equal(rules.mayChangePolicyRiskCaps, false);
+  assert.equal(rules.mayExecuteOrders, false);
+  assert.equal(rules.morningConfirmationMode, 'PRICE_ONLY_NO_INVENTED_FIRST15M_LIQUIDITY');
+  assert.equal(rules.portfolioCorrelationSource, 'READ_ONLY_HISTORY_ENDPOINT');
+  assert.equal(rules.portfolioStress, 'LOCAL_LINEAR_SCENARIOS_ONLY');
+  assert.equal(rules.basketPlanner, 'LOCAL_EQUAL_RISK_NON_EXECUTION');
+  assert.equal(rules.regimeUi, 'EVIDENCE_ONLY_PENDING_VERIFIED_BENCHMARK_FEED');
+  assert.equal(rules.staleV16RegimeMayBeReusedAsCurrent, false);
+});
+
+test('V16.9 ops cannot duplicate quote polling, rescan Alpha, or silently reuse stale V16 regime', () => {
+  const source = localFile('public/ops-v169.js').toString('utf8');
+  assert.equal(source.includes('/api/session-monitor?'), false);
+  assert.equal(/route\s*[:=]\s*['"]scan['"]/i.test(source), false);
+  assert.equal(/src\/(engine|policy|confidence|originalScore|originalIndicators|repository)/.test(source), false);
+  assert.equal(source.includes('v16-market-regime.json'), false);
+  assert.equal(/executionAllowed\s*[:=]\s*true/i.test(source), false);
+  assert.equal(/automaticOrders\s*[:=]\s*true/i.test(source), false);
+});
