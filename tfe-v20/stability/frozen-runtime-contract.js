@@ -1,7 +1,7 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.2.0',
-  frozenAtSourceCommit: 'e70fbd86d424867b6dfe08e1ad32897345acdfa0',
-  purpose: 'Protect RC2 Alpha, recommendations, execution lock, and the isolated session-monitor contract while validation sidecars evolve independently.',
+  contractVersion: '1.3.0',
+  frozenAtSourceCommit: '2adefd036ae510f2feff4e4d17d88b6d9eb870fb',
+  purpose: 'Protect RC2 Alpha, recommendations, execution lock, session monitoring, and V16.9 operational overlays while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
     'src/engine.js': '36e1309fa1e5e4640dd7ef62b7b532e459103193',
     'src/policy.js': '581c72df397e6f66adf7720aa7420e191b110999',
@@ -19,7 +19,8 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'public/ui-v169.js': '8696d78e1dcf8b62a18fa92547a0b7d0a3dfbf4f',
     'public/styles-v169.css': '7194d4fdcf1b25b4cabce01e3b7ab827a5915a8b',
     'public/session-monitor-core.js': 'f78d26ed14277f66272957a0bb95a73507674627',
-    'public/session-monitor.js': 'b417c1dc1fbfd12f645c366e8f29a6e6627be47c',
+    'public/session-monitor.js': '9e2689440e8ac6c03a9354f50d57d8e726453d76',
+    'public/ops-v169.js': 'be055378ed7f0aa4d6d0c4a04b9b2f7706a2b0ca',
   }),
   immutableEvidenceFiles: Object.freeze({
     'evidence/forward/2026-08-19-75aa7bd42c77.json': '4e2a3d8eddf6c6bebd820b4789c70989d5299669',
@@ -109,5 +110,21 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     productionScanCalled: false,
     historyEndpointReadOnly: true,
     staleSourceMustNotClaimLive: true,
+  }),
+  opsRules: Object.freeze({
+    moduleId: 'V16_9_OPERATIONAL_OVERLAYS_V1',
+    consumesExistingMonitorSnapshot: true,
+    duplicateQuotePollingAllowed: false,
+    mayTriggerProductionScan: false,
+    mayMutateRecommendation: false,
+    mayChangeFusionRank: false,
+    mayChangePolicyRiskCaps: false,
+    mayExecuteOrders: false,
+    morningConfirmationMode: 'PRICE_ONLY_NO_INVENTED_FIRST15M_LIQUIDITY',
+    portfolioCorrelationSource: 'READ_ONLY_HISTORY_ENDPOINT',
+    portfolioStress: 'LOCAL_LINEAR_SCENARIOS_ONLY',
+    basketPlanner: 'LOCAL_EQUAL_RISK_NON_EXECUTION',
+    regimeUi: 'EVIDENCE_ONLY_PENDING_VERIFIED_BENCHMARK_FEED',
+    staleV16RegimeMayBeReusedAsCurrent: false,
   }),
 });
