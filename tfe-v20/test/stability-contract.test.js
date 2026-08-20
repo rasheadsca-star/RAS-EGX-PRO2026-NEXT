@@ -24,6 +24,16 @@ test('frozen RC2 critical runtime files are byte-identical to accepted baseline'
   }
 });
 
+test('strict forward evidence snapshots are append-only and byte-immutable', () => {
+  for (const [path, expectedSha] of Object.entries(FROZEN_RUNTIME_CONTRACT.immutableEvidenceFiles)) {
+    assert.equal(gitBlobSha(localFile(path)), expectedSha, `FORWARD_EVIDENCE_MUTATED:${path}`);
+    const snapshot = JSON.parse(localFile(path).toString('utf8'));
+    assert.equal(snapshot.immutable, true);
+    assert.equal(snapshot.scoringImpact, 'NONE');
+    assert.match(snapshot.snapshotHash, /^[a-f0-9]{64}$/);
+  }
+});
+
 test('frozen RC2 policy remains exactly identical to accepted baseline', () => {
   assert.deepEqual(plain(POLICY), plain(FROZEN_RUNTIME_CONTRACT.policy));
 });
