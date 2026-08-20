@@ -1,43 +1,98 @@
 const REPO = 'rasheadsca-star/RAS-EGX-PRO2026-NEXT';
-const BRANCH = 'develop/v20-integrated-decision-platform';
+const ALPHA_DATA_BRANCH = process.env.TFE_ALPHA_DATA_BRANCH || 'main';
+const OVERLAY_BRANCH = process.env.TFE_OVERLAY_BRANCH || 'develop/v20-integrated-decision-platform';
 const RAW = 'https://raw.githubusercontent.com';
 
-export async function fetchJson(url) {
-  const r = await fetch(url, { headers: { 'user-agent': 'TFE-V20-FUSION-RC1' } });
-  if (!r.ok) throw new Error(`HTTP_${r.status}:${url}`);
-  return r.json();
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
+const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_RETRIES = 2;
+const cache = globalThis.__TFE_JSON_CACHE__ ?? (globalThis.__TFE_JSON_CACHE__ = new Map());
+
+const envInt = (name, fallback, min, max) => {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) ? Math.max(min, Math.min(max, Math.trunc(n))) : fallback;
+};
+
+export const DATA_SOURCES = Object.freeze({
+  alphaDataBranch: ALPHA_DATA_BRANCH,
+  overlayBranch: OVERLAY_BRANCH,
+  cacheTtlMs: envInt('TFE_FETCH_CACHE_TTL_MS', DEFAULT_CACHE_TTL_MS, 0, 60 * 60 * 1000),
+  timeoutMs: envInt('TFE_FETCH_TIMEOUT_MS', DEFAULT_TIMEOUT_MS, 1_000, 60_000),
+  retries: envInt('TFE_FETCH_RETRIES', DEFAULT_RETRIES, 0, 4),
+});
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function fetchJson(url, {
+  ttlMs = DATA_SOURCES.cacheTtlMs,
+  timeoutMs = DATA_SOURCES.timeoutMs,
+  retries = DATA_SOURCES.retries,
+} = {}) {
+  const now = Date.now();
+  const cached = cache.get(url);
+  if (cached?.data && cached.expiresAt > now) return cached.data;
+
+  let lastErr = null;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const headers = { 'user-agent': 'TFE-V20-FUSION-RC2' };
+      if (cached?.etag) headers['if-none-match'] = cached.etag;
+      const r = await fetch(url, { headers, signal: controller.signal });
+      if (r.status === 304 && cached?.data) {
+        const refreshed = { ...cached, expiresAt: Date.now() + ttlMs };
+        cache.set(url, refreshed);
+        return cached.data;
+      }
+      if (!r.ok) {
+        const err = new Error(`HTTP_${r.status}`);
+        err.status = r.status;
+        throw err;
+      }
+      const data = await r.json();
+      cache.set(url, {
+        data,
+        etag: r.headers.get('etag') || null,
+        expiresAt: Date.now() + ttlMs,
+      });
+      return data;
+    } catch (e) {
+      lastErr = e;
+      const status = Number(e?.status ?? 0);
+      const retryable = e?.name === 'AbortError' || status === 429 || status >= 500 || status === 0;
+      if (!retryable || attempt >= retries) break;
+      await sleep(150 * (2 ** attempt));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  const error = new Error(`DATA_FETCH_FAILED:${new URL(url).pathname}`);
+  error.cause = lastErr;
+  throw error;
 }
 
 export const rawUrl = (branch, path) => `${RAW}/${REPO}/${branch}/${path}`;
 
 export async function loadDiscoverySnapshot() {
-  try { return await fetchJson(rawUrl(BRANCH, 'data/v20/native-current.json')); }
-  catch { return await fetchJson(rawUrl(BRANCH, 'data/v20/current-market-snapshot.json')); }
+  try { return await fetchJson(rawUrl(OVERLAY_BRANCH, 'data/v20/native-current.json')); }
+  catch { return await fetchJson(rawUrl(OVERLAY_BRANCH, 'data/v20/current-market-snapshot.json')); }
 }
 
 export async function loadHistorySummary() {
-  try { return await fetchJson(rawUrl('main', 'data/history-summary.json')); }
+  try { return await fetchJson(rawUrl(ALPHA_DATA_BRANCH, 'data/history-summary.json')); }
   catch { return null; }
 }
 
 export async function loadV17() {
-  try { return await fetchJson(rawUrl(BRANCH, 'data/v17/current.json')); }
+  try { return await fetchJson(rawUrl(OVERLAY_BRANCH, 'data/v17/current.json')); }
   catch { return null; }
 }
 
 export async function loadHistory(ticker) {
-  const paths = [
-    rawUrl('main', `data/history/${ticker}.json`),
-    rawUrl(BRANCH, `data/history/${ticker}.json`),
-  ];
-  let lastErr;
-  for (const url of paths) {
-    try {
-      const d = await fetchJson(url);
-      return { rows: d.sessions ?? d.rows ?? [], meta: d, sourceUrl: url };
-    } catch (e) { lastErr = e; }
-  }
-  throw lastErr ?? new Error(`HISTORY_NOT_FOUND:${ticker}`);
+  const url = rawUrl(ALPHA_DATA_BRANCH, `data/history/${ticker}.json`);
+  const d = await fetchJson(url);
+  return { rows: d.sessions ?? d.rows ?? [], meta: d, sourceUrl: url, sourceBranch: ALPHA_DATA_BRANCH };
 }
 
 function nativeCandidateMap(snapshot) {
@@ -88,5 +143,6 @@ export async function loadUniverse() {
     candidates,
     expectedSessionDate: historySummary?.latestMarketSession ?? snapshot?.sessionDate ?? null,
     universeMode: fresh.length ? 'CURRENT_HISTORY_FULL_MARKET_WITH_V20_NATIVE_OVERLAY' : 'V20_NATIVE_FALLBACK',
+    dataSources: DATA_SOURCES,
   };
 }
