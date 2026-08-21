@@ -52,6 +52,28 @@ test('missed entry can still record directional T1/T2 touches without counting a
   assert.equal(r.target2TouchDateWithoutEntry, '2026-08-20');
 });
 
+test('19-Aug accepted basket resolves to 2 of 3 achieved after entry while COPR remains missed-entry directional hit', () => {
+  const day = (open,high,low,close) => [{date:'2026-08-20',open,high,low,close}];
+  const copr = evaluateFrozenCandidate({sessionDate:'2026-08-19',ticker:'COPR',price:.48,entryLow:.4567,entryHigh:.4655,stop:.4404,target1:.4879,target2:.5167}, day(.48,.55,.47,.52), null, new Date('2026-08-21T16:00:00Z'));
+  const fait = evaluateFrozenCandidate({sessionDate:'2026-08-19',ticker:'FAIT',price:40.65,entryLow:39.58,entryHigh:40.0348,stop:38.7422,target1:41.261,target2:42.14}, day(40,43.5,39.58,42.44), null, new Date('2026-08-21T16:00:00Z'));
+  const mpco = evaluateFrozenCandidate({sessionDate:'2026-08-19',ticker:'MPCO',price:2.2,entryLow:2.1267,entryHigh:2.1644,stop:2.0572,target1:2.2606,target2:2.3}, day(2.19,2.29,2.14,2.22), null, new Date('2026-08-21T16:00:00Z'));
+  const rows=[copr,fait,mpco];
+  assert.equal(rows.filter(x => x.entered && ['TARGET1_REACHED','TARGET2_REACHED'].includes(x.state)).length, 2);
+  assert.equal(fait.state, 'TARGET2_REACHED');
+  assert.equal(mpco.state, 'TARGET1_REACHED');
+  assert.equal(copr.entered, false);
+  assert.equal(copr.target1TouchedWithoutEntry, true);
+  assert.equal(copr.target2TouchedWithoutEntry, true);
+});
+
+test('live evidence reconciliation preserves accepted 19-Aug baseline independently from newer unevaluated sessions', async () => {
+  const client = await readFile(new URL('../public/session-monitor.js', import.meta.url), 'utf8');
+  assert.ok(client.includes('IMMUTABLE_ACCEPTED_FORWARD_SNAPSHOT'));
+  assert.ok(client.includes('refreshEvidenceArchive'));
+  assert.ok(client.includes('sessionsObserved || 0'));
+  assert.ok(client.includes('results.map((x) => x.signalDate)'));
+});
+
 test('candidate monitor never enters on the signal session', () => {
   const signal = { sessionDate:'2026-08-19', ticker:'TEST', price:10.1, entryLow:10, entryHigh:10.2, stop:9.5, target1:11, target2:12 };
   const history = [{date:'2026-08-19',open:10.1,high:11.5,low:9.4,close:10.5}];

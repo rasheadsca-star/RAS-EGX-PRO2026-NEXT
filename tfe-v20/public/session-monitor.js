@@ -6,18 +6,54 @@ const PANEL_ID = 'rc2SessionMonitorPanel';
 const HISTORY_LIMIT = 40;
 const historyCache = new Map();
 let lastResults = [];
+let lastEvidenceResults = [];
 let lastGeneratedAt = null;
 let refreshing = false;
+let evidenceRefreshing = false;
+
+const ACCEPTED_FORWARD_BASELINE = Object.freeze([
+  Object.freeze({sessionDate:'2026-08-19',firstSeenAt:'2026-08-20T05:42:27.499Z',ticker:'COPR',decision:'RESEARCH_PENDING_PULLBACK',publicationState:'RESEARCH_CANDIDATE',price:0.48,entryLow:0.4567,entryHigh:0.4655,stop:0.4404,target1:0.4879,target2:0.5167,fusionRank:80.7,wilson:null,sourceCommit:'75aa7bd42c77db8d081278e0279611bc42ab5ec8',outcome:'OPEN',evidenceSource:'IMMUTABLE_ACCEPTED_FORWARD_SNAPSHOT'}),
+  Object.freeze({sessionDate:'2026-08-19',firstSeenAt:'2026-08-20T05:42:27.499Z',ticker:'FAIT',decision:'RESEARCH_PENDING_PULLBACK',publicationState:'RESEARCH_CANDIDATE',price:40.65,entryLow:39.58,entryHigh:40.0348,stop:38.7422,target1:41.261,target2:42.14,fusionRank:76.5,wilson:null,sourceCommit:'75aa7bd42c77db8d081278e0279611bc42ab5ec8',outcome:'OPEN',evidenceSource:'IMMUTABLE_ACCEPTED_FORWARD_SNAPSHOT'}),
+  Object.freeze({sessionDate:'2026-08-19',firstSeenAt:'2026-08-20T05:42:27.499Z',ticker:'MPCO',decision:'RESEARCH_PENDING_PULLBACK',publicationState:'RESEARCH_CANDIDATE',price:2.2,entryLow:2.1267,entryHigh:2.1644,stop:2.0572,target1:2.2606,target2:2.3,fusionRank:75.7,wilson:null,sourceCommit:'75aa7bd42c77db8d081278e0279611bc42ab5ec8',outcome:'OPEN',evidenceSource:'IMMUTABLE_ACCEPTED_FORWARD_SNAPSHOT'}),
+]);
 
 const esc = value => String(value ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const n = value => Number.isFinite(Number(value)) ? Number(value) : null;
 const fmt = (value, digits = 3) => n(value) === null ? '—' : Number(value).toLocaleString('en-GB', { maximumFractionDigits:digits });
 const pct = value => n(value) === null ? '—' : `${Number(value).toLocaleString('en-GB',{maximumFractionDigits:2})}%`;
 
-function readFrozenSignals() {
+function ensureAcceptedForwardBaseline() {
+  try {
+    const archive = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+    const rows = Array.isArray(archive) ? archive : [];
+    const existing = new Set(rows.map((x) => `${x.sessionDate}|${x.ticker}`));
+    let changed = false;
+    for (const signal of ACCEPTED_FORWARD_BASELINE) {
+      const key = `${signal.sessionDate}|${signal.ticker}`;
+      if (existing.has(key)) continue;
+      rows.push({ ...signal }); existing.add(key); changed = true;
+    }
+    if (changed) {
+      rows.sort((a,b) => String(b.sessionDate).localeCompare(String(a.sessionDate)) || String(a.ticker).localeCompare(String(b.ticker)));
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify(rows));
+    }
+  } catch {}
+}
+
+function readArchiveSignals() {
+  ensureAcceptedForwardBaseline();
   try {
     const rows = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
-    if (!Array.isArray(rows) || !rows.length) return [];
+    return (Array.isArray(rows) ? rows : [])
+      .filter(x => x.sessionDate && x.ticker && n(x.entryLow) > 0 && n(x.entryHigh) >= n(x.entryLow) && n(x.stop) > 0 && n(x.target1) > 0)
+      .sort((a,b) => String(b.sessionDate).localeCompare(String(a.sessionDate)) || (n(b.fusionRank) ?? -1) - (n(a.fusionRank) ?? -1));
+  } catch { return []; }
+}
+
+function readFrozenSignals() {
+  try {
+    const rows = readArchiveSignals();
+    if (!rows.length) return [];
     const session = rows.map(x => x.sessionDate).filter(Boolean).sort().at(-1);
     return rows
       .filter(x => x.sessionDate === session && x.ticker && n(x.entryLow) > 0 && n(x.entryHigh) >= n(x.entryLow) && n(x.stop) > 0 && n(x.target1) > 0)
@@ -43,7 +79,7 @@ function publishSnapshot(signals, results = lastResults, quoteData = null, error
     executionAllowed:false,
   };
   syncArchiveOutcomes(detail.results);
-  renderEvidenceOutcomeSummary(detail.results);
+  void refreshEvidenceArchive();
   window.__RC2_SESSION_MONITOR_LAST__ = detail;
   window.dispatchEvent(new CustomEvent('rc2:session-monitor', { detail }));
 }
@@ -182,19 +218,37 @@ function renderEvidenceOutcomeSummary(results) {
   const host = document.getElementById('liveEvidenceSummary');
   if (!host || !Array.isArray(results) || !results.length) return;
   const s = outcomeSummary(results);
+  const signalSession = [...new Set(results.map((x) => x.signalDate).filter(Boolean))].sort().at(-1) || '—';
   host.innerHTML = [
-    ['تحقق فعلي بعد الدخول', `${s.achieved}/${s.total}`, s.achievedPct === null ? '—' : `${pct(s.achievedPct)} من توصيات الجلسة`],
+    [`نتيجة توصيات ${signalSession}`, `${s.achieved}/${s.total}`, s.achievedPct === null ? '—' : `${pct(s.achievedPct)} حققت هدفًا بعد تفعيل الدخول`],
     ['دخلت الصفقة فعليًا', `${s.entered}/${s.total}`, 'يُحتسب النجاح فقط بعد تفعيل Entry'],
     ['لم يتفعل الدخول', `${s.missedEntry}/${s.total}`, s.targetsWithoutEntry ? `${s.targetsWithoutEntry} منها لمس الأهداف بدون دخول` : 'لا تُحتسب كصفقة ناجحة'],
   ].map((x) => `<div class="summary-card"><small>${esc(x[0])}</small><b>${esc(x[1])}</b><span>${esc(x[2])}</span></div>`).join('');
 
   try {
     const archive = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
-    const session = [...new Set((Array.isArray(archive) ? archive : []).map((x) => x.sessionDate).filter(Boolean))].sort().at(-1);
+    const session = [...new Set(results.map((x) => x.signalDate).filter(Boolean))].sort().at(-1);
     const rows = (Array.isArray(archive) ? archive : []).filter((x) => x.sessionDate === session);
     const body = document.getElementById('evaluationRows');
     if (body && rows.length) body.innerHTML = rows.map((x) => `<tr><td>${esc(x.sessionDate)}</td><td>${esc(x.ticker)}</td><td><b>${esc(outcomeLabel(x.outcome))}</b></td><td>${fmt(x.entryLow,3)}–${fmt(x.entryHigh,3)}</td><td>${fmt(x.target1,3)}</td><td>${fmt(x.stop,3)}</td><td>${fmt(x.fusionRank,1)}</td><td>${x.wilson == null ? '—' : pct(x.wilson)}</td></tr>`).join('');
   } catch {}
+}
+
+async function refreshEvidenceArchive() {
+  if (evidenceRefreshing) return;
+  evidenceRefreshing = true;
+  try {
+    const signals = readArchiveSignals();
+    if (!signals.length) return;
+    const histories = await Promise.all(signals.map((x) => loadHistory(x.ticker, x.sessionDate).catch(() => [])));
+    const evaluated = signals.map((signal,index) => evaluateFrozenCandidate(signal,histories[index],null))
+      .filter((result) => Number(result.sessionsObserved || 0) > 0);
+    if (!evaluated.length) return;
+    syncArchiveOutcomes(evaluated);
+    const latestSession = [...new Set(evaluated.map((x) => x.signalDate).filter(Boolean))].sort().at(-1);
+    lastEvidenceResults = evaluated.filter((x) => x.signalDate === latestSession);
+    renderEvidenceOutcomeSummary(lastEvidenceResults);
+  } finally { evidenceRefreshing = false; }
 }
 
 function freshnessSummary(results) {
@@ -272,6 +326,8 @@ async function refresh(force = false) {
   }
 }
 
+ensureAcceptedForwardBaseline();
+
 function startWhenArchiveReady() {
   let attempts = 0;
   const tryStart = () => {
@@ -298,7 +354,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('storage', event => {
   if (event.key === ARCHIVE_KEY) refresh(true);
 });
-document.querySelector('[data-view="evidence"]')?.addEventListener('click', () => setTimeout(() => renderEvidenceOutcomeSummary(lastResults), 30));
+document.querySelector('[data-view="evidence"]')?.addEventListener('click', () => setTimeout(() => { if (lastEvidenceResults.length) renderEvidenceOutcomeSummary(lastEvidenceResults); void refreshEvidenceArchive(); }, 30));
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startWhenArchiveReady, { once:true });
 else startWhenArchiveReady();
