@@ -41,6 +41,17 @@ test('previous-session quote is explicitly reference-only before open', () => {
   assert.equal(f.state, 'PRE_OPEN_REFERENCE');
 });
 
+test('missed entry can still record directional T1/T2 touches without counting a trade', () => {
+  const signal = { sessionDate:'2026-08-19', ticker:'COPR', price:0.48, entryLow:0.4567, entryHigh:0.4655, stop:0.4404, target1:0.4879, target2:0.5167 };
+  const history = [{date:'2026-08-20',open:0.48,high:0.55,low:0.47,close:0.52}];
+  const r = evaluateFrozenCandidate(signal, history, null, new Date('2026-08-21T16:00:00Z'));
+  assert.equal(r.entered, false);
+  assert.equal(r.target1TouchedWithoutEntry, true);
+  assert.equal(r.target2TouchedWithoutEntry, true);
+  assert.equal(r.target1TouchDateWithoutEntry, '2026-08-20');
+  assert.equal(r.target2TouchDateWithoutEntry, '2026-08-20');
+});
+
 test('candidate monitor never enters on the signal session', () => {
   const signal = { sessionDate:'2026-08-19', ticker:'TEST', price:10.1, entryLow:10, entryHigh:10.2, stop:9.5, target1:11, target2:12 };
   const history = [{date:'2026-08-19',open:10.1,high:11.5,low:9.4,close:10.5}];
@@ -93,6 +104,7 @@ test('session monitor runtime is isolated from Alpha modules', async () => {
   assert.equal(/automaticOrders\s*[:=]\s*true/i.test(joined), false);
   assert.equal(/executionAllowed\s*[:=]\s*true/i.test(joined), false);
   assert.ok(client.includes('ARCHIVE_KEY'));
-  assert.ok(client.includes('/api/session-monitor?'));
+  assert.ok(client.includes("route:'session-monitor'"));
+  assert.equal(client.includes('/api/session-monitor?'), false);
   assert.ok(html.includes('session-monitor.js?v=1.0.0'));
 });

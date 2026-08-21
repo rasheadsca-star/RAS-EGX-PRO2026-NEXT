@@ -275,10 +275,54 @@ async function ablationMarket() {
   };
 }
 
+async function sessionMonitorPayload(url) {
+  const tickers = [...new Set(String(url.searchParams.get('tickers') ?? '')
+    .split(',')
+    .map((x) => x.trim().toUpperCase())
+    .filter((x) => /^[A-Z0-9._-]{2,12}$/.test(x)))]
+    .slice(0, 10);
+  if (!tickers.length) return { status: 400, body: { ok: false, error: 'tickers is required' } };
+  const force = url.searchParams.get('force') === '1';
+  const { fetchMubasherQuote } = await import('../monitor/session-quote.js');
+  const settled = await Promise.allSettled(tickers.map((ticker) => fetchMubasherQuote(ticker, { force })));
+  const quotes = [], errors = [];
+  settled.forEach((result, index) => {
+    const ticker = tickers[index];
+    if (result.status === 'fulfilled') quotes.push(result.value);
+    else {
+      logInternal('SESSION_MONITOR_QUOTE_ERROR', result.reason, { ticker });
+      errors.push({ ticker, error: 'QUOTE_SOURCE_UNAVAILABLE' });
+    }
+  });
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      monitor: 'SESSION_MONITOR_V1',
+      generatedAt: new Date().toISOString(),
+      monitorOnly: true,
+      scoringImpact: 'NONE',
+      recommendationMutationAllowed: false,
+      executionAllowed: false,
+      source: 'MUBASHER_DELAYED_15_MIN',
+      delayedMinutes: 15,
+      disclaimer: 'Monitoring prices update only the observed status of already-frozen RC2 candidates and never alter Alpha, Fusion Rank, hard gates, or recommendations.',
+      requested: tickers.length,
+      returned: quotes.length,
+      quotes,
+      errors,
+    },
+  };
+}
+
 export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const route = url.searchParams.get('route') ?? 'scan';
+    if (route === 'session-monitor') {
+      const monitor = await sessionMonitorPayload(url);
+      return json(res, monitor.status, monitor.body);
+    }
     if (route === 'health') return json(res, 200, {
       ok: true,
       engine: POLICY.engineId,

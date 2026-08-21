@@ -111,13 +111,21 @@ export function evaluateFrozenCandidate(signal, historyRows = [], liveQuote = nu
   };
 
   if (entryIndex < 0) {
+    const firstT1Touch = bars.find((bar) => bar.high >= plan.target1) ?? null;
+    const firstT2Touch = plan.target2 > 0 ? (bars.find((bar) => bar.high >= plan.target2) ?? null) : null;
+    const noEntryTargets = {
+      target1TouchedWithoutEntry: Boolean(firstT1Touch),
+      target2TouchedWithoutEntry: Boolean(firstT2Touch),
+      target1TouchDateWithoutEntry: firstT1Touch?.date ?? null,
+      target2TouchDateWithoutEntry: firstT2Touch?.date ?? null,
+    };
     const third = entryWindow[ENTRY_EXPIRY_SESSIONS - 1];
     const thirdStillOpen = Boolean(third?.partial);
-    if (entryWindow.length >= ENTRY_EXPIRY_SESSIONS && !thirdStillOpen) return { ...base, state:'ENTRY_EXPIRED', resolved:true, entered:false };
-    if (base.zone === 'IN_ENTRY_ZONE') return { ...base, state:'ENTRY_ZONE_TOUCHED', resolved:false, entered:false };
-    if (base.zone === 'ABOVE_ENTRY') return { ...base, state:'WAIT_PULLBACK_ABOVE_ENTRY', resolved:false, entered:false };
-    if (base.zone === 'BELOW_ENTRY') return { ...base, state:'WAIT_RECOVERY_BELOW_ENTRY', resolved:false, entered:false };
-    return { ...base, state:'WAITING_FOR_ENTRY', resolved:false, entered:false };
+    if (entryWindow.length >= ENTRY_EXPIRY_SESSIONS && !thirdStillOpen) return { ...base, ...noEntryTargets, state:'ENTRY_EXPIRED', resolved:true, entered:false };
+    if (base.zone === 'IN_ENTRY_ZONE') return { ...base, ...noEntryTargets, state:'ENTRY_ZONE_TOUCHED', resolved:false, entered:false };
+    if (base.zone === 'ABOVE_ENTRY') return { ...base, ...noEntryTargets, state:'WAIT_PULLBACK_ABOVE_ENTRY', resolved:false, entered:false };
+    if (base.zone === 'BELOW_ENTRY') return { ...base, ...noEntryTargets, state:'WAIT_RECOVERY_BELOW_ENTRY', resolved:false, entered:false };
+    return { ...base, ...noEntryTargets, state:'WAITING_FOR_ENTRY', resolved:false, entered:false };
   }
 
   const entryBar = entryWindow[entryIndex];

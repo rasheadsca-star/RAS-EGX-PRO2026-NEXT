@@ -1,5 +1,5 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.3.0',
+  contractVersion: '1.4.0',
   frozenAtSourceCommit: '2adefd036ae510f2feff4e4d17d88b6d9eb870fb',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, session monitoring, and V16.9 operational overlays while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
@@ -12,14 +12,14 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'src/math.js': 'f9254c53763082a8778e3c87c1a14db9bfb156be',
     'src/quality.js': 'c0b423e7b055ba3ab27b27d689b451b910999821',
     'src/repository.js': '9f20380d58fcb3ed37b6c9ed88ebf827ee773e5d',
-    'api/index.js': 'e7150b1dfa1783ed81b588790b7e13f0bf197e2d',
+    'api/index.js': '0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b',
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
     'monitor/session-quote.js': '56fdd6e5518b07e1545bcffebbd3ccb156f035e9',
     'public/index.html': 'e508a2e8148cd0838959838c34a1e24873fc14b2',
     'public/ui-v169.js': '8696d78e1dcf8b62a18fa92547a0b7d0a3dfbf4f',
     'public/styles-v169.css': '7194d4fdcf1b25b4cabce01e3b7ab827a5915a8b',
-    'public/session-monitor-core.js': 'f78d26ed14277f66272957a0bb95a73507674627',
-    'public/session-monitor.js': '9e2689440e8ac6c03a9354f50d57d8e726453d76',
+    'public/session-monitor-core.js': 'df353eb605877954d0efc4a37143e7a35a40b462',
+    'public/session-monitor.js': 'c5790602c9843a7a8fdc03e00e660d4184fb94e9',
     'public/ops-v169.js': 'be055378ed7f0aa4d6d0c4a04b9b2f7706a2b0ca',
   }),
   immutableEvidenceFiles: Object.freeze({
