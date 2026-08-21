@@ -1,5 +1,5 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.6.0',
+  contractVersion: '1.7.0',
   frozenAtSourceCommit: '2adefd036ae510f2feff4e4d17d88b6d9eb870fb',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, session monitoring, and V16.9 operational overlays while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
@@ -15,7 +15,8 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'api/index.js': '0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b',
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
     'monitor/session-quote.js': '56fdd6e5518b07e1545bcffebbd3ccb156f035e9',
-    'public/index.html': 'e508a2e8148cd0838959838c34a1e24873fc14b2',
+    'public/index.html': 'b0000e97d4fbf367d7522c49da1ef064e6685c6e',
+    'public/portfolio-manager.js': '7a99eaf32be3506d26b64ce6e1c8ad065e804a56',
     'public/ui-v169.js': '8696d78e1dcf8b62a18fa92547a0b7d0a3dfbf4f',
     'public/styles-v169.css': '7194d4fdcf1b25b4cabce01e3b7ab827a5915a8b',
     'public/session-monitor-core.js': 'df353eb605877954d0efc4a37143e7a35a40b462',
@@ -124,6 +125,11 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     portfolioCorrelationSource: 'READ_ONLY_HISTORY_ENDPOINT',
     portfolioStress: 'LOCAL_LINEAR_SCENARIOS_ONLY',
     basketPlanner: 'LOCAL_EQUAL_RISK_NON_EXECUTION',
+    eodPortfolioManager: 'USER_TRIGGERED_LOCAL_DECISION_SUPPORT_NON_EXECUTION',
+    eodPortfolioManagerReads: 'SCAN_ANALYZE_HISTORY_READ_ONLY',
+    tomorrowCashPlanner: 'CURRENT_PUBLISHED_RC2_EQUAL_RISK_CONDITIONAL',
+    portfolioManagerMayExecuteOrders: false,
+    portfolioManagerMayMutateRecommendation: false,
     regimeUi: 'EVIDENCE_ONLY_PENDING_VERIFIED_BENCHMARK_FEED',
     staleV16RegimeMayBeReusedAsCurrent: false,
   }),
