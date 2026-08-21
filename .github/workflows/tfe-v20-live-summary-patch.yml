@@ -1,0 +1,62 @@
+name: TFE V20 Live Summary Patch
+
+on:
+  push:
+    branches:
+      - develop/v20-integrated-decision-platform
+    paths:
+      - 'tfe-v20/.live-summary-patch-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop/v20-integrated-decision-platform
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply narrowly scoped patch
+        working-directory: tfe-v20
+        run: python3 scripts/apply-live-summary-patch.py
+      - name: Guard Alpha core from any worktree drift
+        run: |
+          git diff --exit-code -- \
+            tfe-v20/src/engine.js \
+            tfe-v20/src/policy.js \
+            tfe-v20/src/confidence.js \
+            tfe-v20/src/backtest.js \
+            tfe-v20/src/originalScore.js \
+            tfe-v20/src/originalIndicators.js \
+            tfe-v20/src/repository.js
+      - name: Reject unexpected changed files
+        shell: bash
+        run: |
+          allowed='^(tfe-v20/api/index.js|tfe-v20/public/session-monitor-core.js|tfe-v20/public/session-monitor.js|tfe-v20/test/session-monitor.test.js|tfe-v20/stability/frozen-runtime-contract.js)$'
+          bad=$(git diff --name-only | grep -Ev "$allowed" || true)
+          if [ -n "$bad" ]; then echo "Unexpected files changed:"; echo "$bad"; exit 1; fi
+      - name: Full functional test suite
+        working-directory: tfe-v20
+        run: npm test
+      - name: Independent red-team gate
+        working-directory: tfe-v20
+        run: npm run red-team
+      - name: Syntax checks for changed runtime
+        working-directory: tfe-v20
+        run: |
+          node --check api/index.js
+          node --check public/session-monitor-core.js
+          node --check public/session-monitor.js
+      - name: Commit only after all gates pass
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tfe-v20/api/index.js tfe-v20/public/session-monitor-core.js tfe-v20/public/session-monitor.js tfe-v20/test/session-monitor.test.js tfe-v20/stability/frozen-runtime-contract.js
+          git commit -m 'fix(tfe-v20): clarify live forward outcomes and unify monitor route'
+          git push origin HEAD:develop/v20-integrated-decision-platform
