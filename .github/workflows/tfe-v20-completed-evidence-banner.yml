@@ -1,0 +1,43 @@
+name: TFE V20 Completed Evidence Banner
+on:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths: ['tfe-v20/.completed-evidence-banner-trigger']
+permissions:
+  contents: write
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: develop/v20-integrated-decision-platform, fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Apply banner patch
+        working-directory: tfe-v20
+        run: python3 scripts/apply-completed-evidence-banner.py
+      - name: Guard runtime core
+        run: git diff --exit-code -- tfe-v20/src tfe-v20/api tfe-v20/monitor tfe-v20/public/session-monitor-core.js tfe-v20/public/ui-v169.js tfe-v20/public/ops-v169.js
+      - name: Reject unexpected files
+        shell: bash
+        run: |
+          allowed='^(tfe-v20/public/session-monitor.js|tfe-v20/test/session-monitor.test.js|tfe-v20/stability/frozen-runtime-contract.js)$'
+          bad=$(git diff --name-only | grep -Ev "$allowed" || true)
+          test -z "$bad" || { echo "$bad"; exit 1; }
+      - name: Functional tests
+        working-directory: tfe-v20
+        run: npm test
+      - name: Red-team
+        working-directory: tfe-v20
+        run: npm run red-team
+      - name: Syntax
+        working-directory: tfe-v20
+        run: node --check public/session-monitor.js
+      - name: Commit after all gates
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tfe-v20/public/session-monitor.js tfe-v20/test/session-monitor.test.js tfe-v20/stability/frozen-runtime-contract.js
+          git commit -m 'fix(tfe-v20): show completed 2-of-3 evidence on live monitor'
+          git push origin HEAD:develop/v20-integrated-decision-platform
