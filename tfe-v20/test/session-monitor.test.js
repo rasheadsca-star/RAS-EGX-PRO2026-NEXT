@@ -72,6 +72,8 @@ test('live evidence reconciliation preserves accepted 19-Aug baseline independen
   assert.ok(client.includes('refreshEvidenceArchive'));
   assert.ok(client.includes('sessionsObserved || 0'));
   assert.ok(client.includes('results.map((x) => x.signalDate)'));
+  assert.ok(client.includes('آخر توصيات مكتملة التقييم'));
+  assert.ok(client.includes('completedEvidence.achieved'));
 });
 
 test('candidate monitor never enters on the signal session', () => {

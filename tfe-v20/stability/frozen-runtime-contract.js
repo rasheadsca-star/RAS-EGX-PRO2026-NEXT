@@ -1,5 +1,5 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.5.0',
+  contractVersion: '1.6.0',
   frozenAtSourceCommit: '2adefd036ae510f2feff4e4d17d88b6d9eb870fb',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, session monitoring, and V16.9 operational overlays while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
@@ -19,7 +19,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'public/ui-v169.js': '8696d78e1dcf8b62a18fa92547a0b7d0a3dfbf4f',
     'public/styles-v169.css': '7194d4fdcf1b25b4cabce01e3b7ab827a5915a8b',
     'public/session-monitor-core.js': 'df353eb605877954d0efc4a37143e7a35a40b462',
-    'public/session-monitor.js': '4046d32be2ef25f4a6be118c2be718b91cc4c85d',
+    'public/session-monitor.js': 'cbade19b79c29837b8b5b7ed5fc11d8489bdb501',
     'public/ops-v169.js': 'be055378ed7f0aa4d6d0c4a04b9b2f7706a2b0ca',
   }),
   immutableEvidenceFiles: Object.freeze({

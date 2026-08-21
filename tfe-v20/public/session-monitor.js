@@ -113,6 +113,7 @@ function ensureStyle() {
     #${PANEL_ID} .sm-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     #${PANEL_ID} .sm-source{margin:13px 0;padding:11px 13px;border:1px solid #24566a;border-radius:12px;background:#081b26;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px}
     #${PANEL_ID} .sm-outcome-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 13px}#${PANEL_ID} .sm-kpi{padding:11px 12px;border:1px solid #24566a;border-radius:11px;background:#071823}#${PANEL_ID} .sm-kpi small{display:block;color:#8eacbc;font-size:10px;margin-bottom:4px}#${PANEL_ID} .sm-kpi b{display:block;font-size:21px}#${PANEL_ID} .sm-kpi span{font-size:11px;color:#b7ced9}
+    #${PANEL_ID} .sm-evidence-banner{margin:0 0 13px;padding:12px 14px;border:1px solid #2d7358;border-radius:12px;background:#0a2b29;line-height:1.75;color:#d8eee7}#${PANEL_ID} .sm-evidence-banner b{color:#7de0b3}#${PANEL_ID} .sm-evidence-banner span{color:#b9d5cd}
     #${PANEL_ID} .sm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     #${PANEL_ID} .sm-card{padding:14px;border:1px solid #24566a;border-radius:14px;background:#091f2c}
     #${PANEL_ID} .sm-card.good{border-color:#2d7358}#${PANEL_ID} .sm-card.warn{border-color:#8b692d}#${PANEL_ID} .sm-card.bad{border-color:#8b4b55}
@@ -248,6 +249,7 @@ async function refreshEvidenceArchive() {
     const latestSession = [...new Set(evaluated.map((x) => x.signalDate).filter(Boolean))].sort().at(-1);
     lastEvidenceResults = evaluated.filter((x) => x.signalDate === latestSession);
     renderEvidenceOutcomeSummary(lastEvidenceResults);
+    render(readFrozenSignals(), lastResults, null);
   } finally { evidenceRefreshing = false; }
 }
 
@@ -265,6 +267,8 @@ function render(signals, results = lastResults, error = null) {
   const phase = marketPhase();
   const [summary, summaryCls] = freshnessSummary(results);
   const outcome = outcomeSummary(results);
+  const completedEvidence = outcomeSummary(lastEvidenceResults);
+  const completedSession = [...new Set(lastEvidenceResults.map((x) => x.signalDate).filter(Boolean))].sort().at(-1) || null;
   const phaseLabel = phase.phase === 'OPEN' ? 'الجلسة متوقعة مفتوحة' : phase.phase === 'PRE_OPEN' ? 'قبل الافتتاح' : phase.phase === 'POST_CLOSE' ? 'بعد الإغلاق' : 'خارج أيام التداول المعتادة';
   panel.innerHTML = `
     <div class="sm-head">
@@ -272,6 +276,7 @@ function render(signals, results = lastResults, error = null) {
       <div class="sm-actions"><span class="badge ${summaryCls}">${esc(summary)}</span><button class="btn" id="sessionMonitorRefresh" type="button">تحديث المتابعة الآن</button></div>
     </div>
     <div class="sm-source"><span>${esc(phaseLabel)} · القاهرة ${esc(phase.time)}</span><span>آخر جلب: ${lastGeneratedAt ? esc(new Date(lastGeneratedAt).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})) : '—'} · Poll 5m · Source delay 15m</span></div>
+    ${completedSession ? `<div class="sm-evidence-banner"><b>آخر توصيات مكتملة التقييم: ${esc(completedSession)} — تحقق فعلي ${completedEvidence.achieved}/${completedEvidence.total}</b><br><span>${completedEvidence.achievedPct === null ? '—' : pct(completedEvidence.achievedPct)} حققت هدفًا بعد تفعيل الدخول · لم يتفعل الدخول ${completedEvidence.missedEntry}/${completedEvidence.total}${completedEvidence.targetsWithoutEntry ? ` · ${completedEvidence.targetsWithoutEntry} منها لمس الأهداف بدون دخول` : ''}</span></div>` : ''}
     ${results.length ? `<div class="sm-outcome-summary"><div class="sm-kpi"><small>تحقق فعلي بعد الدخول</small><b>${outcome.achieved}/${outcome.total}</b><span>${outcome.achievedPct === null ? '—' : pct(outcome.achievedPct)} من توصيات الجلسة</span></div><div class="sm-kpi"><small>دخلت فعليًا</small><b>${outcome.entered}/${outcome.total}</b><span>النجاح لا يُحتسب قبل Entry</span></div><div class="sm-kpi"><small>لم يتفعل الدخول</small><b>${outcome.missedEntry}/${outcome.total}</b><span>${outcome.targetsWithoutEntry ? `${outcome.targetsWithoutEntry} لمس الأهداف بدون دخول` : '—'}</span></div></div>` : ''}
     ${error ? `<div class="sm-empty red">تعذر تحديث مصدر المتابعة: ${esc(error)}</div>` : !signals.length ? '<div class="sm-empty">في انتظار تحميل توصيات RC2 المجمدة من الواجهة…</div>' : `
       <div class="sm-grid">${results.map(result => {
