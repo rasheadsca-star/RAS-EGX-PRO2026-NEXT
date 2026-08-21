@@ -22,12 +22,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply narrowly scoped evidence patch
+      - name: Apply narrowly scoped completed evidence banner patch
         working-directory: tfe-v20
-        run: python3 scripts/apply-evidence-reconciliation-patch.py
+        run: python3 scripts/apply-completed-evidence-banner.py
       - name: Guard Alpha core from any worktree drift
         run: |
-          git diff --exit-code -- tfe-v20/src/engine.js tfe-v20/src/policy.js tfe-v20/src/confidence.js tfe-v20/src/backtest.js tfe-v20/src/originalScore.js tfe-v20/src/originalIndicators.js tfe-v20/src/repository.js tfe-v20/api/index.js tfe-v20/public/session-monitor-core.js
+          git diff --exit-code -- tfe-v20/src/engine.js tfe-v20/src/policy.js tfe-v20/src/confidence.js tfe-v20/src/backtest.js tfe-v20/src/originalScore.js tfe-v20/src/originalIndicators.js tfe-v20/src/repository.js tfe-v20/api/index.js tfe-v20/public/session-monitor-core.js tfe-v20/public/ui-v169.js tfe-v20/public/ops-v169.js
       - name: Reject unexpected changed files
         shell: bash
         run: |
@@ -48,5 +48,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add tfe-v20/public/session-monitor.js tfe-v20/test/session-monitor.test.js tfe-v20/stability/frozen-runtime-contract.js
-          git commit -m 'fix(tfe-v20): reconcile live evidence across recommendation sessions'
+          git commit -m 'fix(tfe-v20): show completed 2-of-3 evidence on live monitor'
           git push origin HEAD:develop/v20-integrated-decision-platform
