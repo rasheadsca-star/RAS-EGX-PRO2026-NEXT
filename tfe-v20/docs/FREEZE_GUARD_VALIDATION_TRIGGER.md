@@ -1,0 +1,1 @@
+Temporary validation-only marker to exercise the RC2 Frozen Release Guard. No runtime effect. Do not merge.
