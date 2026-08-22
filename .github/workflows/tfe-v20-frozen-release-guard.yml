@@ -1,0 +1,61 @@
+name: RC2 Frozen Release Guard
+
+on:
+  push:
+    branches:
+      - release/rc2-frozen
+  pull_request:
+    branches:
+      - release/rc2-frozen
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-runtime-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require exact frozen runtime bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          FROZEN_RUNTIME_COMMIT=66b2ac2bc63fe144d5d30d3d304350a6c0d04da9
+          git cat-file -e "${FROZEN_RUNTIME_COMMIT}^{commit}"
+          git diff --exit-code "$FROZEN_RUNTIME_COMMIT" -- \
+            tfe-v20/src \
+            tfe-v20/api \
+            tfe-v20/monitor \
+            tfe-v20/public \
+            tfe-v20/package.json \
+            tfe-v20/vercel.json
+
+      - name: Verify final SHA-256 manifest
+        shell: bash
+        working-directory: tfe-v20
+        run: sha256sum -c stability/FINAL_FREEZE_SHA256SUMS.txt
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Full functional and destructive tests
+        working-directory: tfe-v20
+        run: npm test
+
+      - name: Independent red-team stability gate
+        working-directory: tfe-v20
+        run: npm run red-team
+
+      - name: Assert freeze identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'FROZEN_ACCEPTED_RUNTIME' tfe-v20/docs/FINAL_FREEZE_RECORD.md
+          grep -q 'dpl_G5yVECL2Tpp6joJYccMtij5ZA1os' tfe-v20/docs/FINAL_FREEZE_RECORD.md
+          grep -q '66b2ac2bc63fe144d5d30d3d304350a6c0d04da9' tfe-v20/docs/FINAL_FREEZE_RECORD.md
