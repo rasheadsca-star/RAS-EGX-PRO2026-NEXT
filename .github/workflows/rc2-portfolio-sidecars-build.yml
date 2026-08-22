@@ -1,0 +1,148 @@
+name: RC2 Portfolio Sidecars V2 Build
+
+on:
+  push:
+    branches:
+      - validation/rc2-portfolio-sidecars-payload
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-validate-commit:
+    if: ${{ !contains(github.event.head_commit.message || '', '[portfolio-v2-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: validation/rc2-portfolio-sidecars-payload
+
+      - name: Decode guarded portfolio sidecars
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, gzip, json, hashlib, re, shutil
+
+          root=Path('tfe-v20')
+          payload=root/'validation/portfolio-v2'
+          targets={
+            'portfolio-manager.js.gz.b64': root/'public/portfolio-manager.js',
+            'portfolio-sidecar-core.js.gz.b64': root/'public/portfolio-sidecar-core.js',
+            'portfolio-sidecar-v2.test.js.gz.b64': root/'test/portfolio-sidecar-v2.test.js',
+            'api-index.js.gz.b64': root/'api/index.js',
+            'ops-v169.js.gz.b64': root/'public/ops-v169.js',
+            'index.html.gz.b64': root/'public/index.html',
+          }
+          for src,dst in targets.items():
+            raw=(payload/src).read_text().strip()
+            data=gzip.decompress(base64.b64decode(raw))
+            dst.parent.mkdir(parents=True,exist_ok=True)
+            dst.write_bytes(data)
+
+          pkg_path=root/'package.json'
+          pkg=json.loads(pkg_path.read_text())
+          rt='test/portfolio-sidecar-v2.test.js'
+          if rt not in pkg['scripts']['red-team']:
+            pkg['scripts']['red-team'] += ' ' + rt
+          pkg_path.write_text(json.dumps(pkg,ensure_ascii=False,indent=2)+'\n')
+
+          def git_blob_sha(path):
+            b=Path(path).read_bytes()
+            return hashlib.sha1(f'blob {len(b)}\0'.encode()+b).hexdigest()
+
+          contract_path=root/'stability/frozen-runtime-contract.js'
+          c=contract_path.read_text()
+          c=c.replace("contractVersion: '1.8.0'", "contractVersion: '2.0.0'")
+          c=c.replace("purpose: 'Protect RC2 Alpha, recommendations, execution lock, session monitoring, and V16.9 operational overlays while evidence tooling evolves independently.'",
+                      "purpose: 'Protect frozen RC2 Alpha while permitting explicitly isolated local-only Portfolio Sidecars V2 decision-support tooling.'")
+          replacements={
+            'api/index.js': git_blob_sha(root/'api/index.js'),
+            'public/index.html': git_blob_sha(root/'public/index.html'),
+            'public/portfolio-manager.js': git_blob_sha(root/'public/portfolio-manager.js'),
+            'public/ops-v169.js': git_blob_sha(root/'public/ops-v169.js'),
+          }
+          for rel,sha in replacements.items():
+            c=re.sub(rf"('{re.escape(rel)}':\s*)'[0-9a-f]{{40}}'", rf"\1'{sha}'", c)
+          core_sha=git_blob_sha(root/'public/portfolio-sidecar-core.js')
+          marker=re.search(r"\s+'public/portfolio-manager\.js': '[0-9a-f]{40}',",c)
+          if not marker: raise SystemExit('portfolio manager contract marker missing')
+          if "'public/portfolio-sidecar-core.js'" not in c:
+            pos=marker.end()
+            c=c[:pos]+f"\n    'public/portfolio-sidecar-core.js': '{core_sha}',"+c[pos:]
+
+          c=c.replace("portfolioCorrelationSource: 'READ_ONLY_HISTORY_ENDPOINT'", "portfolioCorrelationSource: 'LOCAL_MANAGER_BATCH_HISTORY_SAME_SESSION'")
+          c=c.replace("portfolioStress: 'LOCAL_LINEAR_SCENARIOS_ONLY'", "portfolioStress: 'LOCAL_GAP_AWARE_SCENARIOS_ONLY'")
+          c=c.replace("eodPortfolioManagerReads: 'SCAN_ANALYZE_HISTORY_READ_ONLY'", "eodPortfolioManagerReads: 'PORTFOLIO_BATCH_TICKERS_ONLY_READ_ONLY'")
+          anchor="    portfolioManagerMayExecuteOrders: false,\n"
+          extra=(
+            "    portfolioStorage: 'LOCAL_STORAGE_ONLY',\n"
+            "    serverPortfolioPersistence: false,\n"
+            "    serverPortfolioRequestFields: 'TICKERS_ONLY_NO_CASH_QUANTITY_COST_STOP',\n"
+            "    sessionConsistencyLock: 'EXACT_SCAN_ANALYZE_HISTORY_SESSION_MATCH_FAIL_CLOSED',\n"
+            "    portfolioJournal: 'LOCAL_APPEND_ONLY',\n"
+            "    transactionLedger: 'LOCAL_WEIGHTED_AVERAGE_MANUAL_EVENTS',\n"
+            "    backupRestore: 'LOCAL_OPTIONAL_AES_GCM_NO_CLOUD',\n"
+            "    preTradeImpact: 'LOCAL_BEFORE_AFTER_CASH_WEIGHT_RISK',\n"
+            "    batchPortfolioEndpoint: 'READ_ONLY_TICKERS_ONLY_NON_PERSISTENT',\n"
+          )
+          if 'portfolioStorage:' not in c:
+            c=c.replace(anchor,anchor+extra)
+          contract_path.write_text(c)
+
+          st_path=root/'test/stability-contract.test.js'
+          s=st_path.read_text()
+          s=s.replace("assert.equal(rules.portfolioCorrelationSource, 'READ_ONLY_HISTORY_ENDPOINT');", "assert.equal(rules.portfolioCorrelationSource, 'LOCAL_MANAGER_BATCH_HISTORY_SAME_SESSION');")
+          s=s.replace("assert.equal(rules.portfolioStress, 'LOCAL_LINEAR_SCENARIOS_ONLY');", "assert.equal(rules.portfolioStress, 'LOCAL_GAP_AWARE_SCENARIOS_ONLY');")
+          add='''\n\ntest('Portfolio Sidecars V2 are local-only, session-locked and non-executing', () => {\n  const rules = FROZEN_RUNTIME_CONTRACT.opsRules;\n  assert.equal(rules.portfolioStorage, 'LOCAL_STORAGE_ONLY');\n  assert.equal(rules.serverPortfolioPersistence, false);\n  assert.equal(rules.serverPortfolioRequestFields, 'TICKERS_ONLY_NO_CASH_QUANTITY_COST_STOP');\n  assert.equal(rules.sessionConsistencyLock, 'EXACT_SCAN_ANALYZE_HISTORY_SESSION_MATCH_FAIL_CLOSED');\n  assert.equal(rules.portfolioJournal, 'LOCAL_APPEND_ONLY');\n  assert.equal(rules.transactionLedger, 'LOCAL_WEIGHTED_AVERAGE_MANUAL_EVENTS');\n  assert.equal(rules.backupRestore, 'LOCAL_OPTIONAL_AES_GCM_NO_CLOUD');\n  assert.equal(rules.preTradeImpact, 'LOCAL_BEFORE_AFTER_CASH_WEIGHT_RISK');\n  assert.equal(rules.batchPortfolioEndpoint, 'READ_ONLY_TICKERS_ONLY_NON_PERSISTENT');\n  assert.equal(rules.portfolioManagerMayExecuteOrders, false);\n  assert.equal(rules.portfolioManagerMayMutateRecommendation, false);\n  const manager=localFile('public/portfolio-manager.js').toString('utf8');\n  const api=localFile('api/index.js').toString('utf8');\n  assert.equal(manager.includes("route:'analyze'"), false);\n  assert.equal(manager.includes("route:'history'"), false);\n  assert.ok(manager.includes("portfolio-batch"));\n  assert.ok(manager.includes('localStorage'));\n  assert.equal(/fetch\\([^\\n]+method\\s*:\\s*['\"]POST/i.test(manager), false);\n  assert.ok(api.includes('portfolio-batch'));\n  assert.ok(api.includes('TICKERS_ONLY_NO_CASH_QUANTITY_COST_STOP_OR_PORTFOLIO_STATE_SENT_OR_PERSISTED'));\n  assert.equal(/executionAllowed\\s*:\\s*true/i.test(manager + api), false);\n});\n'''
+          if "Portfolio Sidecars V2 are local-only" not in s:
+            s += add
+          st_path.write_text(s)
+
+          # Remove transport-only payloads from final source tree.
+          shutil.rmtree(payload)
+          PY
+
+      - name: Prove frozen Alpha core is byte-identical
+        shell: bash
+        run: |
+          git diff --exit-code 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9 -- \
+            tfe-v20/src \
+            tfe-v20/monitor/session-quote.js \
+            tfe-v20/public/session-monitor-core.js \
+            tfe-v20/public/session-monitor.js \
+            tfe-v20/api/session-monitor.js
+
+      - name: Syntax checks
+        shell: bash
+        run: |
+          node --check tfe-v20/api/index.js
+          node --check tfe-v20/public/portfolio-sidecar-core.js
+          node --check tfe-v20/public/portfolio-manager.js
+          node --check tfe-v20/public/ops-v169.js
+          node --check tfe-v20/test/portfolio-sidecar-v2.test.js
+          node --check tfe-v20/test/stability-contract.test.js
+
+      - name: Full functional and destructive tests
+        working-directory: tfe-v20
+        run: npm test
+
+      - name: Red-team stability gate
+        working-directory: tfe-v20
+        run: npm run red-team
+
+      - name: Commit only after all gates pass
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No changes to commit'
+            exit 0
+          fi
+          git commit -m 'feat(tfe-v20): Portfolio Sidecars V2 [portfolio-v2-applied]'
+          git push origin HEAD:validation/rc2-portfolio-sidecars-payload
