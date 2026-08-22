@@ -1,6 +1,6 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.7.0',
-  frozenAtSourceCommit: '2adefd036ae510f2feff4e4d17d88b6d9eb870fb',
+  contractVersion: '1.8.0',
+  frozenAtSourceCommit: 'd258550075ea267b070236380c4094ca29d520ab',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, session monitoring, and V16.9 operational overlays while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
     'src/engine.js': '36e1309fa1e5e4640dd7ef62b7b532e459103193',
@@ -16,7 +16,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
     'monitor/session-quote.js': '56fdd6e5518b07e1545bcffebbd3ccb156f035e9',
     'public/index.html': 'b0000e97d4fbf367d7522c49da1ef064e6685c6e',
-    'public/portfolio-manager.js': '7a99eaf32be3506d26b64ce6e1c8ad065e804a56',
+    'public/portfolio-manager.js': 'c22a8f8e7c3c4291fd2ea0fb42af432d008ea947',
     'public/ui-v169.js': '8696d78e1dcf8b62a18fa92547a0b7d0a3dfbf4f',
     'public/styles-v169.css': '7194d4fdcf1b25b4cabce01e3b7ab827a5915a8b',
     'public/session-monitor-core.js': 'df353eb605877954d0efc4a37143e7a35a40b462',
