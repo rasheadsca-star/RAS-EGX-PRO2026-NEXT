@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-23T15:44:28.129Z",
+  "generatedAt": "2026-08-23T15:49:21.081Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,85 +12,169 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 3,
+  "recommendationCount": 5,
   "tickers": [
-    "AMIA",
-    "GRCA",
-    "SAIB"
+    "AALR",
+    "SPIN",
+    "MOIL",
+    "WKOL",
+    "ORHD"
   ],
   "matrix": [
     {
-      "ticker": "AMIA",
+      "ticker": "AALR",
       "correlations": {
-        "AMIA": {
+        "AALR": {
           "value": 1,
           "observations": 60
         },
-        "GRCA": {
-          "value": 0.542,
-          "observations": 53
+        "SPIN": {
+          "value": 0.226,
+          "observations": 48
         },
-        "SAIB": {
-          "value": null,
-          "observations": 12
+        "MOIL": {
+          "value": 0.28,
+          "observations": 50
+        },
+        "WKOL": {
+          "value": 0.877,
+          "observations": 54
+        },
+        "ORHD": {
+          "value": 0.097,
+          "observations": 50
         }
       }
     },
     {
-      "ticker": "GRCA",
+      "ticker": "SPIN",
       "correlations": {
-        "AMIA": {
-          "value": 0.542,
-          "observations": 53
+        "AALR": {
+          "value": 0.226,
+          "observations": 48
         },
-        "GRCA": {
+        "SPIN": {
           "value": 1,
           "observations": 60
         },
-        "SAIB": {
-          "value": null,
-          "observations": 12
+        "MOIL": {
+          "value": 0.048,
+          "observations": 49
+        },
+        "WKOL": {
+          "value": 0.23,
+          "observations": 54
+        },
+        "ORHD": {
+          "value": 0.09,
+          "observations": 49
         }
       }
     },
     {
-      "ticker": "SAIB",
+      "ticker": "MOIL",
       "correlations": {
-        "AMIA": {
-          "value": null,
-          "observations": 12
+        "AALR": {
+          "value": 0.28,
+          "observations": 50
         },
-        "GRCA": {
-          "value": null,
-          "observations": 12
+        "SPIN": {
+          "value": 0.048,
+          "observations": 49
         },
-        "SAIB": {
+        "MOIL": {
+          "value": 1,
+          "observations": 60
+        },
+        "WKOL": {
+          "value": 0.328,
+          "observations": 51
+        },
+        "ORHD": {
+          "value": 0.229,
+          "observations": 47
+        }
+      }
+    },
+    {
+      "ticker": "WKOL",
+      "correlations": {
+        "AALR": {
+          "value": 0.877,
+          "observations": 54
+        },
+        "SPIN": {
+          "value": 0.23,
+          "observations": 54
+        },
+        "MOIL": {
+          "value": 0.328,
+          "observations": 51
+        },
+        "WKOL": {
+          "value": 1,
+          "observations": 60
+        },
+        "ORHD": {
+          "value": 0.116,
+          "observations": 48
+        }
+      }
+    },
+    {
+      "ticker": "ORHD",
+      "correlations": {
+        "AALR": {
+          "value": 0.097,
+          "observations": 50
+        },
+        "SPIN": {
+          "value": 0.09,
+          "observations": 49
+        },
+        "MOIL": {
+          "value": 0.229,
+          "observations": 47
+        },
+        "WKOL": {
+          "value": 0.116,
+          "observations": 48
+        },
+        "ORHD": {
           "value": 1,
           "observations": 60
         }
       }
     }
   ],
-  "highCorrelationPairs": [],
+  "highCorrelationPairs": [
+    {
+      "left": "AALR",
+      "right": "WKOL",
+      "correlation": 0.877,
+      "observations": 54,
+      "severity": "HIGH"
+    }
+  ],
   "sectorConcentration": [
     {
       "sector": "GENERAL",
-      "count": 2,
-      "sharePct": 66.7
+      "count": 4,
+      "sharePct": 80
     },
     {
-      "sector": "BANK",
+      "sector": "REAL_ESTATE",
       "count": 1,
-      "sharePct": 33.3
+      "sharePct": 20
     }
   ],
   "summary": {
-    "highCorrelationPairCount": 0,
-    "averageHighPairCorrelation": null,
+    "highCorrelationPairCount": 1,
+    "averageHighPairCorrelation": 0.877,
     "largestSector": {
       "sector": "GENERAL",
-      "count": 2,
-      "sharePct": 66.7
+      "count": 4,
+      "sharePct": 80
     },
     "regime": "RISK_ON",
     "regimeRiskMultiplier": 1,
@@ -115,19 +199,20 @@
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": -6.67
+      "equalWeightPortfolioImpactPct": -8
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
       "labelAr": "تزامن وقف الأسهم الأعلى ارتباطًا",
       "assumedMovePct": null,
-      "equalWeightPortfolioImpactPct": 0
+      "equalWeightPortfolioImpactPct": -2.8
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 33.3
+    "positionWeightPct": 20
   },
   "warnings": [
+    "VERY_HIGH_PAIR_CORRELATION",
     "SECTOR_CONCENTRATION_ABOVE_40"
   ]
 }
