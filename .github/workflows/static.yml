@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# However, do NOT cancel in-progress runs as we want to allow production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -50,7 +50,10 @@ jobs:
           node --check preview-v16/app/launch.js
           grep -q "p2-portfolio-deep.js" preview-v16/app/launch.js
           grep -q "P2 Deep Portfolio Engine" preview-v16/app/p2-portfolio-deep.js
-          echo "P2_DEEP_PORTFOLIO_BUNDLE_PASS"
+          grep -q "p2-portfolio-deep.js" preview-v16/app/v169-p2.html
+          grep -q "id=\"p2PortfolioDeep\"" preview-v16/app/v169-p2.html
+          grep -q "جارٍ تشغيل P2 Deep Portfolio Engine" preview-v16/app/v169-p2.html
+          echo "P2_DEEP_PORTFOLIO_DIRECT_INTEGRATION_PASS"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
