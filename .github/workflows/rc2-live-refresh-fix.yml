@@ -13,7 +13,7 @@ permissions:
 jobs:
   patch-test-commit:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,12 +44,14 @@ jobs:
           s=s.replace("['جلسة السوق الفعلية',uni.sessionDate||'—',`${s.scanned||0} سهم تم فحصه من الكون الحالي`],","['آخر جلسة بيانات فعلية',effectiveSessionDate()||uni.sessionDate||'—',`${s.scanned||0} سهم تم فحصه${effectiveSessionDate()&&uni.sessionDate&&effectiveSessionDate()!==uni.sessionDate?` · Universe summary ${uni.sessionDate}`:''}`],",1)
           old="S.health=health;S.scan=scan;S.market=market;await loadWithheld();archiveCurrentScan();\n    $('lastUpdate').innerHTML=`جلسة <b>${E(scan.universe?.sessionDate||'—')}</b><br>RC2 · ${E(scan.engine)} · ${E(scan.schemaVersion)}`;"
           new="S.health=health;S.scan=scan;S.market=market;await loadWithheld();archiveCurrentScan();lastRefreshAt=Date.now();\n    const effectiveDate=effectiveSessionDate()||scan.universe?.sessionDate||'—';\n    $('lastUpdate').innerHTML=`آخر بيانات <b>${E(effectiveDate)}</b>${scan.universe?.sessionDate&&effectiveDate!==scan.universe.sessionDate?` <small>(Universe ${E(scan.universe.sessionDate)})</small>`:''}<br>RC2 · ${E(scan.engine)} · ${E(scan.schemaVersion)}`;\n    window.__RC2_UI_SCAN__={health,scan,market,effectiveDate,refreshedAt:new Date().toISOString()};window.dispatchEvent(new CustomEvent('rc2:ui-scan',{detail:window.__RC2_UI_SCAN__}));"
-          assert old in s
-          s=s.replace(old,new,1)
+          if old in s:
+              s=s.replace(old,new,1)
+          assert 'window.__RC2_UI_SCAN__' in s
           bind_tail="  $('evidenceRefreshBtn').onclick=()=>loadEvidence(true);$('evidenceCsvBtn').onclick=()=>window.open(`${API}?route=decision-log&format=csv&limit=50`,'_blank');\n"
           auto="  $('evidenceRefreshBtn').onclick=()=>loadEvidence(true);$('evidenceCsvBtn').onclick=()=>window.open(`${API}?route=decision-log&format=csv&limit=50`,'_blank');\n  setInterval(()=>{if(document.visibilityState==='visible')refreshAll()},300000);\n  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastRefreshAt>120000)refreshAll()});\n"
-          assert bind_tail in s
-          s=s.replace(bind_tail,auto,1)
+          if 'setInterval(()=>{if(document.visibilityState===\'visible\')refreshAll()},300000)' not in s:
+              assert bind_tail in s
+              s=s.replace(bind_tail,auto,1)
           p.write_text(s)
           PY
 
@@ -139,19 +141,53 @@ jobs:
           test('professional shell loads live refresh adapter',()=>assert.match(html,/live-refresh-v1\.js\?v=1\.0\.0/));
           EOF
 
-      - name: Syntax and full tests
+      - name: Update frozen runtime contract only for validated UI adapter bytes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,re
+          p=Path('tfe-v20/stability/frozen-runtime-contract.js');s=p.read_text()
+          def blob(rel):
+              return subprocess.check_output(['git','hash-object',f'tfe-v20/{rel}'],text=True).strip()
+          ih=blob('public/index.html'); uh=blob('public/ui-v169.js'); lh=blob('public/live-refresh-v1.js')
+          s=re.sub(r"contractVersion: '[^']+'", "contractVersion: '1.10.0-live-refresh-candidate'", s, count=1)
+          s=s.replace("Protect RC2 Alpha, recommendations, execution lock, session monitoring, V16.9 operational overlays, and the isolated intraday operations layer while evidence tooling evolves independently.","Protect RC2 Alpha, recommendations, execution lock, session monitoring, V16.9 operational overlays, isolated intraday operations, and display-only live refresh while evidence tooling evolves independently.")
+          s=re.sub(r"'public/index\.html': '[0-9a-f]+'",f"'public/index.html': '{ih}'",s,count=1)
+          s=re.sub(r"'public/ui-v169\.js': '[0-9a-f]+'",f"'public/ui-v169.js': '{uh}'",s,count=1)
+          if "'public/live-refresh-v1.js'" not in s:
+              s=s.replace("    'public/intraday-ops.js': '158ac68d289cf16081168835fbe2d636f8ed9db9',\n",f"    'public/intraday-ops.js': '158ac68d289cf16081168835fbe2d636f8ed9db9',\n    'public/live-refresh-v1.js': '{lh}',\n",1)
+          rules="""  liveRefreshRules: Object.freeze({\n    moduleId: 'RC2_LIVE_REFRESH_V1',\n    recommendationRefreshIntervalMs: 300000,\n    portfolioQuoteRefreshIntervalMs: 300000,\n    quoteSource: 'INTRADAY_READ_ONLY_DELAYED',\n    portfolioStores: 'LOCAL_STORAGE_ONLY',\n    recommendationSessionTruth: 'RECOMMENDATION_DATE_OVERRIDES_STALE_UNIVERSE_SUMMARY_FOR_DISPLAY_AND_ARCHIVE',\n    scoringImpact: 'NONE',\n    recommendationMutationAllowed: false,\n    executionAllowed: false,\n    automaticOrders: false,\n    mayImportAlphaModules: false,\n  }),\n"""
+          if 'liveRefreshRules:' not in s:
+              s=s.replace('  intradayRules: Object.freeze({\n',rules+'  intradayRules: Object.freeze({\n',1)
+          p.write_text(s)
+          print('INDEX_BLOB',ih);print('UI_BLOB',uh);print('LIVE_BLOB',lh)
+          PY
+
+      - name: Prove frozen analytical core did not move
+        shell: bash
+        run: |
+          test "$(git hash-object tfe-v20/src/engine.js)" = "36e1309fa1e5e4640dd7ef62b7b532e459103193"
+          test "$(git hash-object tfe-v20/src/policy.js)" = "581c72df397e6f66adf7720aa7420e191b110999"
+          test "$(git hash-object tfe-v20/src/repository.js)" = "9f20380d58fcb3ed37b6c9ed88ebf827ee773e5d"
+          test "$(git hash-object tfe-v20/api/index.js)" = "0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b"
+          test "$(git hash-object tfe-v20/api/intraday.js)" = "7e639a980d8531f4737c5d5ad9485f8a63540e4b"
+
+      - name: Syntax and full destructive tests
         working-directory: tfe-v20
         run: |
           node --check public/ui-v169.js
           node --check public/live-refresh-v1.js
+          node --check stability/frozen-runtime-contract.js
           npm test
           npm run red-team
+          node --test test/live-refresh.test.js test/stability-contract.test.js
 
       - name: Commit validated fix
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tfe-v20/public/ui-v169.js tfe-v20/public/live-refresh-v1.js tfe-v20/public/index.html tfe-v20/test/live-refresh.test.js
+          git add tfe-v20/public/ui-v169.js tfe-v20/public/live-refresh-v1.js tfe-v20/public/index.html tfe-v20/test/live-refresh.test.js tfe-v20/stability/frozen-runtime-contract.js
           git commit -m "fix: auto-refresh recommendations and live portfolio prices"
           git push origin HEAD:develop/rc2-intraday-operations-v1
