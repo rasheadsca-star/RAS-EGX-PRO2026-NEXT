@@ -1,10 +1,11 @@
 'use strict';
 (() => {
   const VERSION = '16.3.3';
-  const ASSET_BUILD = '16.3.3-portfolio-deep-20260823-r1';
-  const SW_BUILD = 'V16.3.3-PORTFOLIO-DEEP-20260823-R1';
+  const ASSET_BUILD = '16.3.3-portfolio-deep-20260823-r2';
+  const SW_BUILD = 'V16.3.3-PORTFOLIO-DEEP-20260823-R2';
   const head = document.head || document.documentElement;
   const MAIN_PORTFOLIO_KEY = 'egx-v16-professional-portfolio';
+  const ANALYZER_PORTFOLIO_KEY = 'egx-main-app-stock-analyzer-portfolio-v1';
   const DEEP_PORTFOLIO_KEY = 'egx-v137-portfolio';
   let bridgeRevision = 0;
 
@@ -53,13 +54,41 @@
     });
   }
 
-  function readMainPortfolio() {
+  function parseStorage(key, fallback) {
     try {
-      const rows = JSON.parse(localStorage.getItem(MAIN_PORTFOLIO_KEY) || '[]');
-      return Array.isArray(rows) ? rows : [];
+      const value = JSON.parse(localStorage.getItem(key) || 'null');
+      return value ?? fallback;
     } catch (_) {
-      return [];
+      return fallback;
     }
+  }
+
+  function deepPortfolioRows() {
+    const merged = new Map();
+    const mainRows = parseStorage(MAIN_PORTFOLIO_KEY, []);
+    if (Array.isArray(mainRows)) {
+      mainRows.forEach(row => {
+        const ticker = String(row?.ticker || '').trim().toUpperCase();
+        const quantity = Number(row?.quantity);
+        const averagePrice = Number(row?.entry);
+        if (ticker && Number.isFinite(quantity) && quantity > 0 && Number.isFinite(averagePrice) && averagePrice > 0) {
+          merged.set(ticker, { ticker, quantity, averagePrice, source: 'V16_PORTFOLIO' });
+        }
+      });
+    }
+
+    const analyzer = parseStorage(ANALYZER_PORTFOLIO_KEY, {});
+    if (analyzer && typeof analyzer === 'object' && !Array.isArray(analyzer)) {
+      Object.entries(analyzer).forEach(([rawTicker, position]) => {
+        if (!position?.owned) return;
+        const ticker = String(rawTicker || '').trim().toUpperCase();
+        const quantity = Number(position?.qty);
+        const averagePrice = Number(position?.avgCost);
+        if (!ticker || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(averagePrice) || averagePrice <= 0) return;
+        if (!merged.has(ticker)) merged.set(ticker, { ticker, quantity, averagePrice, source: 'STOCK_ANALYZER' });
+      });
+    }
+    return [...merged.values()];
   }
 
   function ensurePortfolioBridgeMarker() {
@@ -77,14 +106,7 @@
   }
 
   function syncPortfolioBridge() {
-    const mapped = readMainPortfolio()
-      .map(row => ({
-        ticker: String(row?.ticker || '').trim().toUpperCase(),
-        quantity: Number(row?.quantity),
-        averagePrice: Number(row?.entry)
-      }))
-      .filter(row => row.ticker && Number.isFinite(row.quantity) && row.quantity > 0 && Number.isFinite(row.averagePrice) && row.averagePrice > 0);
-
+    const mapped = deepPortfolioRows().map(({ ticker, quantity, averagePrice }) => ({ ticker, quantity, averagePrice }));
     localStorage.setItem(DEEP_PORTFOLIO_KEY, JSON.stringify(mapped));
     const marker = ensurePortfolioBridgeMarker();
     if (marker) {
@@ -106,7 +128,12 @@
     }
     document.querySelector('[data-view="portfolio"]')?.addEventListener('click', () => setTimeout(syncPortfolioBridge, 80));
     window.addEventListener('storage', event => {
-      if (event.key === MAIN_PORTFOLIO_KEY) syncPortfolioBridge();
+      if ([MAIN_PORTFOLIO_KEY, ANALYZER_PORTFOLIO_KEY].includes(event.key)) syncPortfolioBridge();
+    });
+    document.addEventListener('click', event => {
+      if (event.target.closest('#saSavePosition,#saOwnedYes,#saOwnedNo,#addPortfolioBtn,#clearPortfolioBtn,[data-r]')) {
+        setTimeout(syncPortfolioBridge, 120);
+      }
     });
   }
 
