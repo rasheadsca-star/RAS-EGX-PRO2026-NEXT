@@ -171,9 +171,15 @@ function shadowCandidates() {
 
 function publishedWarnings() {
   const official = officialSet();
+  const partialBarNoise = new Set(['LIQUIDITY_GATE_FAIL','RESEARCH_SCORE_LOW']);
   return [...state.market.values()]
     .filter((x) => official.has(String(x.ticker).toUpperCase()))
-    .filter((x) => x?.shadow?.technicalGatePass !== true || ['STALE_SESSION','STALE_INTRADAY','UNAVAILABLE'].includes(quoteFreshness(x.quote).state))
+    .filter((x) => {
+      const freshness = quoteFreshness(x.quote).state;
+      if (['STALE_SESSION','STALE_INTRADAY','UNAVAILABLE'].includes(freshness)) return true;
+      const structuralReasons = (x?.shadow?.nonQualityReasons || []).filter((reason) => !partialBarNoise.has(reason));
+      return structuralReasons.length > 0;
+    })
     .slice(0, 8);
 }
 
@@ -215,7 +221,10 @@ function computeLivePortfolio() {
     } else if (!item.sessionOk) {
       action = { ticker, action:'DATA', label:'SESSION MISMATCH — لا قرار', cls:'bad', reasons:[`جلسة التحليل ${item.data?.baseline?.sessionDate || '—'} لا تطابق جلسة RC2 ${state.officialScan?.universe?.sessionDate || '—'}.`], price:item.price, stop:n(item.holding.stop), riskKnown:false };
     } else {
-      const baseline = { ...(item.data?.baseline ?? {}), publicationEligible:item.data?.baseline?.eligible === true };
+      const officialRecommendation = (state.officialScan?.recommendations ?? []).find((row) => String(row?.ticker ?? '').toUpperCase() === ticker) ?? null;
+      const baseline = officialRecommendation
+        ? { ...officialRecommendation, publicationEligible:true }
+        : { ...(item.data?.baseline ?? {}), publicationEligible:false };
       action = assessHolding({ holding:item.holding, analysis:baseline, price:item.price, equity, maxWeightPct:p.maxWeightPct });
       action.reasons = [...(action.reasons ?? []), `سعر متابعة ${item.fresh?.labelAr || 'غير محدد'}؛ القرار تشغيلي ولا يغيّر توصية RC2 الأصلية.`];
     }
@@ -331,7 +340,7 @@ async function scanNextBatch(force = false) {
   if (!force && phase.phase !== 'OPEN') return;
   state.fullBusy = true;
   try {
-    if (state.cursor >= state.universe.length) { state.cursor = 0; state.cycle += 1; }
+    if (state.cursor >= state.universe.length) state.cursor = 0;
     const group = state.universe.slice(state.cursor, state.cursor + BATCH_SIZE);
     if (!group.length) return;
     const data = await intradayBatch(group, force);

@@ -23,7 +23,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'public/session-monitor-core.js': 'df353eb605877954d0efc4a37143e7a35a40b462',
     'public/session-monitor.js': 'cbade19b79c29837b8b5b7ed5fc11d8489bdb501',
     'public/ops-v169.js': 'be055378ed7f0aa4d6d0c4a04b9b2f7706a2b0ca',
-    'public/intraday-ops.js': '998384126362cfe509e76d8ae8b4d2c0046afaef',
+    'public/intraday-ops.js': '158ac68d289cf16081168835fbe2d636f8ed9db9',
   }),
   immutableEvidenceFiles: Object.freeze({
     'evidence/forward/2026-08-19-75aa7bd42c77.json': '4e2a3d8eddf6c6bebd820b4789c70989d5299669',

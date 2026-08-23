@@ -77,6 +77,13 @@ test('browser intraday layer rotates full market and prioritizes portfolio every
   assert.match(clientSource, /quoteFreshness/);
 });
 
+test('live portfolio ADD is gated by the official published recommendation set', () => {
+  assert.match(clientSource, /const officialRecommendation =/);
+  assert.match(clientSource, /publicationEligible:true/);
+  assert.match(clientSource, /publicationEligible:false/);
+  assert.match(clientSource, /partialBarNoise = new Set\(\['LIQUIDITY_GATE_FAIL','RESEARCH_SCORE_LOW'\]\)/);
+});
+
 test('browser intraday state remains local and has no order or write API path', () => {
   assert.match(clientSource, /localStorage\.setItem/);
   assert.equal(/method\s*:\s*['"]POST['"]/.test(clientSource), false);
