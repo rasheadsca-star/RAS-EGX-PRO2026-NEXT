@@ -7,7 +7,6 @@ function applyHeaders(res) {
   res.setHeader('x-tfe-engine', POLICY.engineId);
   res.setHeader('x-tfe-module', 'RC2_AUTO_FUNDAMENTALS_V1');
 }
-
 function send(res, status, body) {
   res.statusCode = status;
   applyHeaders(res);
@@ -15,23 +14,8 @@ function send(res, status, body) {
   res.setHeader('cache-control', 'no-store');
   res.end(JSON.stringify(body));
 }
-
-async function loadDocument() {
-  const branches = [...new Set([DATA_SOURCES.alphaDataBranch, DATA_SOURCES.overlayBranch].filter(Boolean))];
-  let lastError = null;
-  for (const branch of branches) {
-    try {
-      const document = await fetchJson(rawUrl(branch, PATH), { ttlMs: 15 * 60 * 1000 });
-      return { document, branch };
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError ?? new Error('FUNDAMENTAL_DATA_UNAVAILABLE');
-}
-
 function findRecord(document, ticker) {
-  const pools = [document?.recommendationAnalysis, document?.analysis, document?.companies, document?.rows];
+  const pools = [document?.recommendationAnalysis, document?.marketAnalysis, document?.allAnalysis, document?.analysis, document?.companies, document?.rows];
   for (const pool of pools) {
     if (!Array.isArray(pool)) continue;
     const hit = pool.find((row) => String(row?.ticker ?? '').trim().toUpperCase() === ticker);
@@ -39,14 +23,30 @@ function findRecord(document, ticker) {
   }
   return null;
 }
+async function loadTickerDocument(ticker) {
+  const branches = [...new Set([DATA_SOURCES.alphaDataBranch, DATA_SOURCES.overlayBranch].filter(Boolean))];
+  let firstLoaded = null;
+  let lastError = null;
+  for (const branch of branches) {
+    try {
+      const document = await fetchJson(rawUrl(branch, PATH), { ttlMs: 15 * 60 * 1000 });
+      if (!firstLoaded) firstLoaded = { document, branch };
+      const record = findRecord(document, ticker);
+      if (record) return { document, branch, record };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (firstLoaded) return { ...firstLoaded, record: null };
+  throw lastError ?? new Error('FUNDAMENTAL_DATA_UNAVAILABLE');
+}
 
 export default async function handler(req, res) {
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const ticker = String(url.searchParams.get('ticker') ?? '').trim().toUpperCase();
     if (!/^[A-Z0-9._-]{2,12}$/.test(ticker)) return send(res, 400, { ok: false, error: 'valid ticker is required' });
-    const { document, branch } = await loadDocument();
-    const record = findRecord(document, ticker);
+    const { document, branch, record } = await loadTickerDocument(ticker);
     return send(res, 200, {
       ok: true, module: 'RC2_AUTO_FUNDAMENTALS_V1', ticker, found: Boolean(record),
       generatedAt: document?.generatedAt ?? null, schemaVersion: document?.schemaVersion ?? null,
