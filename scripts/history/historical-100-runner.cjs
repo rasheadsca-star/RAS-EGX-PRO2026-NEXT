@@ -266,7 +266,7 @@ async function processSymbol(entry, localReference, approvedRecords) {
       updateFailed: false,
       warnings: unique([
         ...(fetched.identity?.guardedVerified ? ['guarded_identity_salvage_not_high_confidence'] : []),
-        ...(verification && !verification.matched ? [`latest_close_conflict:${verification.differencePct}%`] : []),
+        ...(verification?.matched === false ? [`latest_close_conflict:${verification.differencePct}%`] : []),
         ...merged.corporateActions.map(() => 'corporate_action_review_required'),
       ]),
       sessions: merged.sessions,
