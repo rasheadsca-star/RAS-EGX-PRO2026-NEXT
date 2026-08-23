@@ -1,12 +1,13 @@
 'use strict';
 (() => {
   const VERSION = '16.3.3';
-  const ASSET_BUILD = '16.3.3-portfolio-deep-20260823-r2';
-  const SW_BUILD = 'V16.3.3-PORTFOLIO-DEEP-20260823-R2';
+  const ASSET_BUILD = '16.3.3-portfolio-deep-20260823-r3';
+  const SW_BUILD = 'V16.3.3-PORTFOLIO-DEEP-20260823-R3';
   const head = document.head || document.documentElement;
   const MAIN_PORTFOLIO_KEY = 'egx-v16-professional-portfolio';
   const ANALYZER_PORTFOLIO_KEY = 'egx-main-app-stock-analyzer-portfolio-v1';
-  const DEEP_PORTFOLIO_KEY = 'egx-v137-portfolio';
+  const DEEP_PORTFOLIO_KEY = 'egx-v16-deep-portfolio-bridge-v1';
+  const LEGACY_DEEP_KEY_LITERAL = "const KEY='egx-v137-portfolio';";
   let bridgeRevision = 0;
 
   document.documentElement.dataset.egxVersion = VERSION;
@@ -54,6 +55,28 @@
     });
   }
 
+  async function loadIsolatedPortfolioScript(src, datasetKey) {
+    if (document.querySelector(`script[data-${datasetKey}]`)) return;
+    try {
+      const response = await fetch(`${src}${src.includes('?') ? '&' : '?'}v=${ASSET_BUILD}`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      let source = await response.text();
+      if (!source.includes(LEGACY_DEEP_KEY_LITERAL)) throw new Error('portfolio storage key contract missing');
+      source = source.replace(LEGACY_DEEP_KEY_LITERAL, `const KEY='${DEEP_PORTFOLIO_KEY}';`);
+      const blobUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+      await new Promise(resolve => {
+        const script = document.createElement('script');
+        script.src = blobUrl;
+        script.dataset[datasetKey] = 'true';
+        script.onload = () => { URL.revokeObjectURL(blobUrl); resolve(); };
+        script.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(); };
+        (document.body || document.documentElement).appendChild(script);
+      });
+    } catch (error) {
+      console.warn(`deep portfolio module failed: ${src}`, error);
+    }
+  }
+
   function parseStorage(key, fallback) {
     try {
       const value = JSON.parse(localStorage.getItem(key) || 'null');
@@ -85,7 +108,7 @@
         const quantity = Number(position?.qty);
         const averagePrice = Number(position?.avgCost);
         if (!ticker || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(averagePrice) || averagePrice <= 0) return;
-        if (!merged.has(ticker)) merged.set(ticker, { ticker, quantity, averagePrice, source: 'STOCK_ANALYZER' });
+        merged.set(ticker, { ticker, quantity, averagePrice, source: 'STOCK_ANALYZER' });
       });
     }
     return [...merged.values()];
@@ -152,8 +175,8 @@
     await loadScript('recommendation-freshness.js', 'recommendationFreshness');
     await loadScript('v16-9-basket-overlay.js', 'v169BasketOverlay');
     await loadScript('session-truth-ui.js', 'sessionTruthUi');
-    await loadScript('../../preview-v13/app/portfolio-technical-scenarios.js', 'v16PortfolioTechnicalScenarios');
-    await loadScript('../../preview-v13/app/portfolio-historical-calibration.js', 'v16PortfolioHistoricalCalibration');
+    await loadIsolatedPortfolioScript('../../preview-v13/app/portfolio-technical-scenarios.js', 'v16PortfolioTechnicalScenarios');
+    await loadIsolatedPortfolioScript('../../preview-v13/app/portfolio-historical-calibration.js', 'v16PortfolioHistoricalCalibration');
     syncPortfolioBridge();
     openRequestedView();
   };
