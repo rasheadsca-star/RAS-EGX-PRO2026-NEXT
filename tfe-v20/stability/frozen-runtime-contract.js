@@ -24,7 +24,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'public/session-monitor.js': 'cbade19b79c29837b8b5b7ed5fc11d8489bdb501',
     'public/ops-v169.js': 'be055378ed7f0aa4d6d0c4a04b9b2f7706a2b0ca',
     'public/intraday-ops.js': '158ac68d289cf16081168835fbe2d636f8ed9db9',
-    'public/live-refresh-v1.js': '64344d79f2b3b347130ebeceabfeda1194d8d4b0',
+    'public/live-refresh-v1.js': '6f12f48ff9dacf0968699299ae854eb15b6258df',
   }),
   immutableEvidenceFiles: Object.freeze({
     'evidence/forward/2026-08-19-75aa7bd42c77.json': '4e2a3d8eddf6c6bebd820b4789c70989d5299669',
@@ -141,6 +141,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     recommendationRefreshIntervalMs: 300000,
     portfolioQuoteRefreshIntervalMs: 300000,
     quoteSource: 'INTRADAY_READ_ONLY_DELAYED',
+    portfolioPriceFallback: 'READ_ONLY_HISTORY_LAST_CLOSE_EXPLICITLY_LABELED',
     portfolioStores: 'LOCAL_STORAGE_ONLY',
     recommendationSessionTruth: 'RECOMMENDATION_DATE_OVERRIDES_STALE_UNIVERSE_SUMMARY_FOR_DISPLAY_AND_ARCHIVE',
     scoringImpact: 'NONE',
