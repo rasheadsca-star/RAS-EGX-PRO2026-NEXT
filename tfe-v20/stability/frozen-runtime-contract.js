@@ -18,7 +18,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'api/intraday.js': '7e639a980d8531f4737c5d5ad9485f8a63540e4b',
     'monitor/session-quote.js': '56fdd6e5518b07e1545bcffebbd3ccb156f035e9',
     'public/index.html': 'dda4c567fb92c30d361b5b464fc2cafa07586735',
-    'public/portfolio-manager.js': 'ddccbc17e609991207bb3f942d80de974a4bc03b',
+    'public/portfolio-manager.js': 'b73dd374401006e82d38d32d48f8680d7cfed788',
     'public/portfolio-manager-core.js': 'c22a8f8e7c3c4291fd2ea0fb42af432d008ea947',
     'public/portfolio-deep-analysis.js': '05b9b4136f2254520816b1ac2ab86ad509d181ed',
     'public/fundamental-auto.js': 'bf0556b2973ed348b78eea2d9ea76e7eb9684c2c',
