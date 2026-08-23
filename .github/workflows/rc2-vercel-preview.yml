@@ -1,11 +1,9 @@
 name: RC2 Vercel Preview
 
 on:
-  pull_request:
-    branches:
-      - develop/rc2-intraday-operations-v1
+  push:
+    branches: [main]
     paths:
-      - 'tfe-v20/**'
       - '.github/workflows/rc2-vercel-preview.yml'
 
 permissions:
@@ -19,8 +17,11 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
       VERCEL_PROJECT_ID: prj_gXmmVe1QqGFJ9nsv30uu0emLqIdY
+      RC2_REF: develop/rc2-intraday-operations-v1
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RC2_REF }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -31,6 +32,13 @@ jobs:
             echo "VERCEL_TOKEN_MISSING"
             exit 2
           fi
+      - name: Validate exact RC2 runtime
+        working-directory: tfe-v20
+        run: |
+          node --check public/portfolio-manager-core.js
+          node --check public/portfolio-manager.js
+          node --check public/portfolio-deep-analysis.js
+          node --test test/portfolio-deep-analysis.test.js test/portfolio-manager.test.js test/stability-contract.test.js
       - name: Install pinned Vercel CLI
         run: npm install --global vercel@48.10.0
       - name: Link exact Vercel project locally
