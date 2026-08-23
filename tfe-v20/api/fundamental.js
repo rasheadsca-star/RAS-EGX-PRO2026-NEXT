@@ -15,7 +15,7 @@ function send(res, status, body) {
   res.end(JSON.stringify(body));
 }
 function findRecord(document, ticker) {
-  const pools = [document?.recommendationAnalysis, document?.marketAnalysis, document?.allAnalysis, document?.analysis, document?.companies, document?.rows];
+  const pools = [document?.recommendationAnalysis, document?.records, document?.marketAnalysis, document?.allAnalysis, document?.analysis, document?.companies, document?.rows];
   for (const pool of pools) {
     if (!Array.isArray(pool)) continue;
     const hit = pool.find((row) => String(row?.ticker ?? '').trim().toUpperCase() === ticker);
