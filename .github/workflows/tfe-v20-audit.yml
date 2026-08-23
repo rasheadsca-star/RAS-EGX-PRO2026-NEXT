@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop/v20-integrated-decision-platform
+      - develop/rc2-intraday-operations-v1
     paths:
       - 'tfe-v20/**'
       - '.github/workflows/tfe-v20-audit.yml'
@@ -46,7 +47,10 @@ jobs:
           node --check public/ui-v169.js
           node --check public/session-monitor-core.js
           node --check public/session-monitor.js
+          node --check public/portfolio-manager-core.js
           node --check public/portfolio-manager.js
+          node --check public/portfolio-deep-analysis.js
+          node --check public/live-refresh-v1.js
           node --check public/intraday-ops.js
           node --check public/ops-v169.js
           node --check stability/frozen-runtime-contract.js
@@ -62,6 +66,8 @@ jobs:
           node --check scripts/long-history-validation.mjs
       - name: Full functional and destructive tests
         run: npm test
+      - name: Deep portfolio isolation test
+        run: node --test test/portfolio-deep-analysis.test.js test/portfolio-manager.test.js test/stability-contract.test.js
       - name: Independent red-team stability gate
         run: npm run red-team
       - name: Stage exact runtime artifact
