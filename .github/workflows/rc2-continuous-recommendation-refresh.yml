@@ -1,0 +1,105 @@
+name: RC2 Continuous Recommendation Refresh
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rc2-continuous-recommendation-refresh.yml"
+  schedule:
+    - cron: "8,23,38,53 6-18 * * 0-4"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rc2-continuous-recommendation-refresh
+  cancel-in-progress: true
+
+env:
+  RC2_PRODUCTION_URL: "https://egx-tfe-v20-fusion-rc2.vercel.app"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Resolve Cairo operating window
+        id: window
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const eventName = String(process.env.EVENT_NAME || '');
+          const p = new Intl.DateTimeFormat('en-GB', {
+            timeZone: 'Africa/Cairo', weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+          }).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
+          const minute = Number(p.hour) * 60 + Number(p.minute);
+          const tradingDay = ['Sunday','Monday','Tuesday','Wednesday','Thursday'].includes(p.weekday);
+          const scheduledWindow = tradingDay && minute >= 9 * 60 + 30 && minute <= 20 * 60 + 45;
+          const run = eventName === 'workflow_dispatch' || eventName === 'push' || scheduledWindow;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `run=${run}\ncairo=${p.weekday}_${p.hour}:${p.minute}\n`);
+          console.log(JSON.stringify({ cairo: `${p.weekday} ${p.hour}:${p.minute}`, run, eventName }));
+          NODE
+
+      - name: Recompute and validate RC2 production recommendations
+        if: steps.window.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ok=0
+          for attempt in 1 2 3; do
+            stamp="$(date +%s)"
+            if curl --fail --silent --show-error --max-time 180 \
+              "$RC2_PRODUCTION_URL/api/index?route=scan&limit=20&t=$stamp" -o /tmp/rc2-scan.json \
+              && curl --fail --silent --show-error --max-time 60 \
+              "$RC2_PRODUCTION_URL/api/index?route=market-index&t=$stamp" -o /tmp/rc2-market.json; then
+              if node - <<'NODE'
+              const fs = require('fs');
+              const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
+              const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
+              const fail = (m) => { console.error(m); process.exit(1); };
+              if (scan?.ok !== true) fail('RC2 scan is not OK');
+              if (scan?.engine !== 'TFE_V20_FUSION_RC2') fail(`Unexpected engine: ${scan?.engine}`);
+              if (!Array.isArray(scan?.recommendations)) fail('Recommendations array missing');
+              if (scan?.permissions?.executionAllowed !== false) fail('Execution must remain blocked');
+              if (scan?.permissions?.automaticOrders !== false) fail('Automatic orders must remain blocked');
+              if (market?.ok !== true || !Array.isArray(market?.symbols)) fail('Market index is not valid');
+              if (scan?.universe?.sessionDate && market?.sessionDate && scan.universe.sessionDate !== market.sessionDate) {
+                fail(`Session mismatch: scan=${scan.universe.sessionDate}, market=${market.sessionDate}`);
+              }
+              const summary = {
+                refreshedAt: new Date().toISOString(),
+                engine: scan.engine,
+                sourceCommit: scan.sourceCommit ?? null,
+                sessionDate: scan.universe?.sessionDate ?? market.sessionDate ?? null,
+                scanned: scan.summary?.scanned ?? null,
+                publicationEligibleTotal: scan.summary?.publicationEligibleTotal ?? null,
+                returned: scan.summary?.returned ?? scan.recommendations.length,
+                tickers: scan.recommendations.map(x => x.ticker),
+                executionAllowed: scan.permissions.executionAllowed,
+                automaticOrders: scan.permissions.automaticOrders,
+                marketSymbols: market.symbols.length,
+                scoringModelChanged: false
+              };
+              console.log(`RC2_CONTINUOUS_REFRESH_PASS:${JSON.stringify(summary)}`);
+              NODE
+              then
+                ok=1
+                break
+              fi
+            fi
+            echo "RC2 refresh attempt $attempt failed; retrying..."
+            sleep 45
+          done
+          [ "$ok" -eq 1 ] || { echo "RC2 continuous refresh failed after retries"; exit 1; }
+
+      - name: Confirm refresh contract
+        if: steps.window.outputs.run == 'true'
+        run: |
+          echo "DATA SOURCE: main exact-fresh production pipeline"
+          echo "RECOMMENDATIONS: recomputed by TFE_V20_FUSION_RC2"
+          echo "CADENCE: every 15 minutes during Cairo operating window"
+          echo "FINANCIAL IMPACT ON RECOMMENDATIONS: NONE"
+          echo "EXECUTION: BLOCKED"
