@@ -1,4 +1,4 @@
-name: RC2 Live Refresh Fix
+name: RC2 Live Refresh Validation
 on:
   push:
     branches: [develop/rc2-intraday-operations-v1]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: write
 jobs:
-  patch-test-commit:
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -16,60 +16,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Patch fallback deterministically
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          p=Path('tfe-v20/public/live-refresh-v1.js');s=p.read_text()
-          if "const API='/api/index';" not in s:
-              s=s.replace("const INTRADAY_API='/api/intraday';", "const INTRADAY_API='/api/intraday';\nconst API='/api/index';",1)
-          replacement="""async function historyFallback(ticker){
-  const q=new URLSearchParams({route:'history',ticker,limit:'3',t:String(Date.now())});
-  const r=await fetch(`${API}?${q}`,{cache:'no-store'}),d=await r.json().catch(()=>({}));
-  if(!r.ok||!d.ok)throw new Error(d.error||`HISTORY_HTTP_${r.status}`);
-  const bar=Array.isArray(d.bars)?d.bars.at(-1):null;
-  const price=n(bar?.close),date=bar?.date||d.lastSession||null;
-  if(!(price>0)||!date)throw new Error('HISTORY_CLOSE_UNAVAILABLE');
-  return{ticker,quote:{price,open:n(bar?.open),high:n(bar?.high),low:n(bar?.low),volume:n(bar?.volume),sourceSessionDate:date,sourceMarketTime:'14:30',sourceMarketMinutes:870,delayedMinutes:0,fetchedAt:new Date().toISOString(),source:'HISTORY_LAST_CLOSE'},fallback:'HISTORY_LAST_CLOSE'};
-}
-async function quotesFor(tickers){
-  const map=new Map(),errors=[];
-  for(const group of chunks(tickers,10)){
-    try{const d=await intradayBatch(group);for(const x of d.results||[])if(x?.ticker)map.set(String(x.ticker).toUpperCase(),x)}catch{}
-  }
-  const missing=tickers.filter(t=>!map.has(t));
-  const fallback=await Promise.all(missing.map(async ticker=>{try{return await historyFallback(ticker)}catch(e){errors.push({ticker,error:e.message});return null}}));
-  for(const x of fallback)if(x?.ticker)map.set(x.ticker,x);
-  return{map,errors};
-}
-function ensureStyle()"""
-          s,nsub=re.subn(r"async function quotesFor\(tickers\)\{.*?\n\}\nfunction ensureStyle\(\)",replacement,s,flags=re.S)
-          assert nsub==1, f'quotesFor replace={nsub}'
-          s=s.replace("['DELAYED_LIVE','LAGGING','CLOSED_SESSION'].includes(fresh.state)","['DELAYED_LIVE','LAGGING','CLOSED_SESSION','PRE_OPEN_REFERENCE','MARKET_CLOSED'].includes(fresh.state)",1)
-          s=s.replace("${esc(fresh.labelAr||'غير متاح')}<br>","${esc(r?.fallback==='HISTORY_LAST_CLOSE'?'آخر إغلاق متاح من History':fresh.labelAr||'غير متاح')}<br>",1)
-          p.write_text(s)
-          PY
-      - name: Extend tests and contract
+      - name: Freeze exact live adapter hash and add targeted tests
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import subprocess,re
-          t=Path('tfe-v20/test/live-refresh.test.js');s=t.read_text()
-          if 'portfolio pricing falls back' not in s:
-              s += "\ntest('portfolio pricing falls back to explicit history close when intraday source is unavailable',()=>{assert.match(live,/async function historyFallback/);assert.match(live,/HISTORY_LAST_CLOSE/);assert.match(live,/route:'history'/);assert.match(live,/sourceMarketMinutes:870/)});\ntest('reference close is displayable outside active intraday feed and stays explicitly labeled',()=>{assert.match(live,/PRE_OPEN_REFERENCE/);assert.match(live,/MARKET_CLOSED/);assert.match(live,/آخر إغلاق متاح من History/)});\n"
-          t.write_text(s)
-          c=Path('tfe-v20/stability/frozen-runtime-contract.js');x=c.read_text()
+          live=Path('tfe-v20/public/live-refresh-v1.js').read_text()
+          required=['historyFallback','HISTORY_LAST_CLOSE',"route:'history'",'HISTORY_CURRENT_BAR_NOT_USED_DURING_OPEN',"AUTO_REFRESH_MS=300_000",'recommendationMutationAllowed=false','executionAllowed=false']
+          for x in required: assert x in live,x
           h=subprocess.check_output(['git','hash-object','tfe-v20/public/live-refresh-v1.js'],text=True).strip()
-          x=re.sub(r"'public/live-refresh-v1\.js': '[0-9a-f]+'",f"'public/live-refresh-v1.js': '{h}'",x,count=1)
-          if 'portfolioPriceFallback:' not in x:
-              x=x.replace("    quoteSource: 'INTRADAY_READ_ONLY_DELAYED',","    quoteSource: 'INTRADAY_READ_ONLY_DELAYED',\n    portfolioPriceFallback: 'READ_ONLY_HISTORY_LAST_CLOSE_EXPLICITLY_LABELED',",1)
-          c.write_text(x)
-          print('LIVE_BLOB='+h)
+          assert h=='6f12f48ff9dacf0968699299ae854eb15b6258df',h
+          c=Path('tfe-v20/stability/frozen-runtime-contract.js');s=c.read_text()
+          s=re.sub(r"'public/live-refresh-v1\.js': '[0-9a-f]+'",f"'public/live-refresh-v1.js': '{h}'",s,count=1)
+          if 'portfolioPriceFallback:' not in s:
+              s=s.replace("    quoteSource: 'INTRADAY_READ_ONLY_DELAYED',","    quoteSource: 'INTRADAY_READ_ONLY_DELAYED',\n    portfolioPriceFallback: 'READ_ONLY_HISTORY_LAST_CLOSE_EXPLICITLY_LABELED',",1)
+          c.write_text(s)
+          t=Path('tfe-v20/test/live-refresh-fallback.test.js')
+          t.write_text("""import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { readFileSync } from 'node:fs';\nconst live=readFileSync(new URL('../public/live-refresh-v1.js',import.meta.url),'utf8');\ntest('intraday pricing has explicit completed-history fallback',()=>{assert.match(live,/async function historyFallback/);assert.match(live,/HISTORY_LAST_CLOSE/);assert.match(live,/route:'history'/);assert.match(live,/sourceMarketMinutes:870/)});\ntest('current history bar cannot impersonate intraday live price while market is open',()=>assert.match(live,/HISTORY_CURRENT_BAR_NOT_USED_DURING_OPEN/));\ntest('portfolio fallback remains display only and execution blocked',()=>{assert.match(live,/scoringImpact=NONE/);assert.match(live,/recommendationMutationAllowed=false/);assert.match(live,/executionAllowed=false/);assert.doesNotMatch(live,/from ['\\\"]\.\.\\/src\\/(engine|policy|confidence)/)});\ntest('both local portfolio stores are repriced automatically every five minutes',()=>{assert.match(live,/egx-tfe-rc2-v169-eod-manager/);assert.match(live,/egx-tfe-rc2-v169-portfolio/);assert.match(live,/AUTO_REFRESH_MS=300_000/)});\n""")
           PY
-      - name: Frozen core invariants
+      - name: Frozen analytical core invariants
         shell: bash
         run: |
           test "$(git hash-object tfe-v20/src/engine.js)" = 36e1309fa1e5e4640dd7ef62b7b532e459103193
@@ -84,12 +50,12 @@ function ensureStyle()"""
           node --check stability/frozen-runtime-contract.js
           npm test
           npm run red-team
-          node --test test/live-refresh.test.js test/stability-contract.test.js
-      - name: Commit validated fallback
+          node --test test/live-refresh-fallback.test.js test/live-refresh.test.js test/stability-contract.test.js
+      - name: Commit validated contract and tests
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tfe-v20/public/live-refresh-v1.js tfe-v20/test/live-refresh.test.js tfe-v20/stability/frozen-runtime-contract.js
-          git commit -m 'fix: fallback portfolio pricing to latest completed close'
+          git add tfe-v20/stability/frozen-runtime-contract.js tfe-v20/test/live-refresh-fallback.test.js
+          git commit -m 'test: freeze and validate portfolio last-close fallback'
           git push origin HEAD:develop/rc2-intraday-operations-v1
