@@ -45,16 +45,27 @@ function recPresentation(x){
 }
 function byTicker(t){return A(S.scan?.recommendations).find(x=>x.ticker===t)||S.withheld.find(x=>x.ticker===t)||null}
 function marketMeta(t){return A(S.market?.symbols).find(x=>x.ticker===t)||null}
+function effectiveSessionDate(){
+  const dates=[S.scan?.universe?.sessionDate,S.market?.sessionDate,...A(S.scan?.recommendations).map(x=>x?.sessionDate),...S.withheld.map(x=>x?.sessionDate)].filter(Boolean).sort();
+  return dates.at(-1)||null;
+}
+let lastRefreshAt=0;
 
 function archiveCurrentScan(){
-  if(!S.scan?.universe?.sessionDate)return;
+  if(!S.scan)return;
   const existing=new Set(S.archive.map(x=>`${x.sessionDate}|${x.ticker}`));
+  const universeDate=S.scan?.universe?.sessionDate||null;
   let changed=false;
   for(const x of A(S.scan.recommendations)){
-    const key=`${S.scan.universe.sessionDate}|${x.ticker}`;
+    const sessionDate=x.sessionDate||universeDate;if(!sessionDate)continue;
+    const key=`${sessionDate}|${x.ticker}`;
+    if(universeDate&&sessionDate!==universeDate&&!existing.has(key)){
+      const wrong=S.archive.find(r=>r.ticker===x.ticker&&r.sessionDate===universeDate&&r.sourceCommit==null&&(r.outcome==='OPEN'||!r.outcome)&&N(r.entryLow)===N(x.tradePlan?.entryLow)&&N(r.entryHigh)===N(x.tradePlan?.entryHigh)&&N(r.stop)===N(x.tradePlan?.stop)&&N(r.target1)===N(x.tradePlan?.target1));
+      if(wrong){existing.delete(`${wrong.sessionDate}|${wrong.ticker}`);wrong.sessionDate=sessionDate;existing.add(key);changed=true;continue}
+    }
     if(existing.has(key))continue;
     S.archive.push({
-      sessionDate:S.scan.universe.sessionDate,
+      sessionDate,
       firstSeenAt:S.scan.generatedAt||new Date().toISOString(),
       ticker:x.ticker,
       decision:x.decision,
@@ -70,7 +81,7 @@ function archiveCurrentScan(){
       sourceCommit:null,
       outcome:'OPEN'
     });
-    changed=true;
+    existing.add(key);changed=true;
   }
   if(changed){S.archive.sort((a,b)=>String(b.sessionDate).localeCompare(String(a.sessionDate))||String(a.ticker).localeCompare(String(b.ticker)));save(K.archive,S.archive)}
 }
@@ -79,7 +90,7 @@ function readiness(){
   const s=S.scan?.summary||{};
   const uni=S.scan?.universe||{};
   const safe=S.health?.policy?.permissions||{};
-  const freshness=uni.sessionDate&&S.market?.sessionDate&&uni.sessionDate===S.market.sessionDate?100:70;
+  const currentSession=effectiveSessionDate();const freshness=currentSession&&S.market?.sessionDate&&currentSession===S.market.sessionDate?100:70;
   const breadth=s.scanned&&uni.currentVerifiedCandidates?C(s.scanned/uni.currentVerifiedCandidates*100):0;
   const safety=safe.executionAllowed===false&&safe.automaticOrders===false&&safe.productionAllocation===false?100:0;
   const evidence=S.sim?.summary?C((N(S.sim.summary.wilson95LowerTarget1Pct)||0)*1.25):45;
@@ -103,7 +114,7 @@ function renderTruth(){
   if(!S.scan)return;
   const s=S.scan.summary||{},uni=S.scan.universe||{},sim=S.sim?.summary||{};
   const cards=[
-    ['جلسة السوق الفعلية',uni.sessionDate||'—',`${s.scanned||0} سهم تم فحصه من الكون الحالي`],
+    ['آخر جلسة بيانات فعلية',effectiveSessionDate()||uni.sessionDate||'—',`${s.scanned||0} سهم تم فحصه${effectiveSessionDate()&&uni.sessionDate&&effectiveSessionDate()!==uni.sessionDate?` · Universe summary ${uni.sessionDate}`:''}`],
     ['مرشحو RC2 المنشورون',F(s.publicationEligibleTotal,0),`${F(s.technicalEligibleTotal,0)} مؤهلين فنيًا · ${F(s.withheldForPriceReconciliation,0)} موقوف للمصالحة`],
     ['T1 Historical',sim.target1Pct==null?'جارٍ القياس':P(sim.target1Pct),sim.entered?`${F(sim.entered,0)} صفقة · PF ${F(sim.profitFactor,2)}`:'الدليل التاريخي منفصل عن التوصية الحالية'],
     ['صلاحية التنفيذ','BLOCKED','researchOnly=true · automaticOrders=false'],
@@ -269,8 +280,10 @@ async function refreshAll(){
   $('lastUpdate').textContent='جارٍ تحديث RC2…';
   try{
     const [health,scan,market]=await Promise.all([api('health'),api('scan',{limit:50}),api('market-index')]);
-    S.health=health;S.scan=scan;S.market=market;await loadWithheld();archiveCurrentScan();
-    $('lastUpdate').innerHTML=`جلسة <b>${E(scan.universe?.sessionDate||'—')}</b><br>RC2 · ${E(scan.engine)} · ${E(scan.schemaVersion)}`;
+    S.health=health;S.scan=scan;S.market=market;await loadWithheld();archiveCurrentScan();lastRefreshAt=Date.now();
+    const effectiveDate=effectiveSessionDate()||scan.universe?.sessionDate||'—';
+    $('lastUpdate').innerHTML=`آخر بيانات <b>${E(effectiveDate)}</b>${scan.universe?.sessionDate&&effectiveDate!==scan.universe.sessionDate?` <small>(Universe ${E(scan.universe.sessionDate)})</small>`:''}<br>RC2 · ${E(scan.engine)} · ${E(scan.schemaVersion)}`;
+    window.__RC2_UI_SCAN__={health,scan,market,effectiveDate,refreshedAt:new Date().toISOString()};window.dispatchEvent(new CustomEvent('rc2:ui-scan',{detail:window.__RC2_UI_SCAN__}));
     renderReady();renderTruth();renderRecs();renderMarket();populateFundamentalTickers();renderPortfolio();
     if(!S.selected&&scan.recommendations?.[0])selectTicker(scan.recommendations[0].ticker);else if(S.selected)renderSelected();
     loadEvidence(false);
@@ -287,6 +300,8 @@ function bind(){
   ['portfolioRiskLimit','portfolioPositionLimit','strategyExposureLimit'].forEach(id=>$(id).oninput=()=>{S.settings[id]=N($(id).value);save(K.settings,S.settings);renderPortfolio()});
   $('fundamentalTicker').onchange=loadFundForm;['revenueGrowth','profitGrowth','roe','debtEquity','pe','fairValue','positiveCfo','auditedData','fundamentalNotes'].forEach(id=>$(id).addEventListener('input',renderFundScore));$('saveFundamentalBtn').onclick=saveFund;
   $('evidenceRefreshBtn').onclick=()=>loadEvidence(true);$('evidenceCsvBtn').onclick=()=>window.open(`${API}?route=decision-log&format=csv&limit=50`,'_blank');
+  setInterval(()=>{if(document.visibilityState==='visible')refreshAll()},300000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastRefreshAt>120000)refreshAll()});
 }
 
 bind();refreshAll();
