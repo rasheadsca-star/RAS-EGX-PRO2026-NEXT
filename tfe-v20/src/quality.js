@@ -97,7 +97,10 @@ export function assessDataQuality({
   if (hardWarning) reasons.push(`HARD_WARNING:${hardWarning}`);
   const reportedConflictPct = parseLatestConflictPct(warningText);
   const latestPriceTruth = validateLatestPriceTruth({ bars, priceTruthLatest });
-  const priceReconciliationResolved = reportedConflictPct !== null && latestPriceTruth.resolved;
+  const priceReconciliationResolved = reportedConflictPct !== null
+    && reportedConflictPct >= POLICY.quality.conflictBlockPct
+    && officiallyVerifiedLatestSession !== true
+    && latestPriceTruth.resolved;
   const conflictPct = priceReconciliationResolved ? null : reportedConflictPct;
   if (priceReconciliationResolved) reviewFlags.push('PRICE_TRUTH_RECONCILIATION_RESOLVED');
   if (conflictPct !== null && conflictPct >= POLICY.quality.conflictReviewPct) reviewFlags.push('LOCAL_REFERENCE_CLOSE_CONFLICT_REVIEW');
