@@ -1,3 +1,4 @@
+// Validation-only branch marker: exercises the exact RC2 deep portfolio runtime.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
