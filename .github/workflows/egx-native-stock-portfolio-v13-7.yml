@@ -2,8 +2,15 @@ name: EGX Native Stock Intelligence & Portfolio — V13.7
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/egx-native-stock-portfolio-v13-7.yml"
+      - "scripts/quant/v13-7-stock-intelligence.cjs"
+      - "scripts/quant/v13-7-acceptance.cjs"
   schedule:
-    - cron: "15 15 * * 0-4"
+    # 13:30 UTC = 16:30 Cairo during DST and 15:30 Cairo otherwise.
+    # Both are safely post-close for EGX and materially earlier than the old 18:15 Cairo refresh.
+    - cron: "30 13 * * 0-4"
 
 permissions:
   contents: write
