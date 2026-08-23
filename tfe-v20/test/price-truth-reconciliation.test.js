@@ -29,7 +29,7 @@ const confirmedTruth = {
   confidence: 86,
 };
 
-test('session-confirmed latest price truth resolves stale local-reference publication hold', () => {
+test('session-confirmed latest price truth resolves non-official publication hold', () => {
   const quality = assessDataQuality({
     bars: bars(),
     warnings: ['latest_close_conflict:27.6461%'],
@@ -83,4 +83,37 @@ test('low-confidence or non-independent truth cannot bypass hold', () => {
     assert.equal(quality.publicationHold, true);
     assert.equal(quality.priceReconciliationResolved, false);
   }
+});
+
+test('review-only conflict below the publication threshold is never auto-resolved', () => {
+  const quality = assessDataQuality({
+    bars: bars(),
+    warnings: ['latest_close_conflict:1.0705%'],
+    expectedSessionDate: '2026-08-23',
+    symbolVerified: true,
+    symbolVerification: staleIdentityEvidence,
+    officiallyVerifiedLatestSession: false,
+    priceTruthLatest: confirmedTruth,
+  });
+  assert.equal(quality.publicationHold, false);
+  assert.equal(quality.priceReconciliationResolved, false);
+  assert.equal(quality.reportedConflictPct, 1.0705);
+  assert.equal(quality.conflictPct, 1.0705);
+  assert.ok(!quality.reviewFlags.includes('PRICE_TRUTH_RECONCILIATION_RESOLVED'));
+});
+
+test('officially verified latest session can never be overridden by secondary price truth', () => {
+  const quality = assessDataQuality({
+    bars: bars(),
+    warnings: ['latest_close_conflict:27.6461%'],
+    expectedSessionDate: '2026-08-23',
+    symbolVerified: true,
+    symbolVerification: staleIdentityEvidence,
+    officiallyVerifiedLatestSession: true,
+    priceTruthLatest: confirmedTruth,
+  });
+  assert.equal(quality.priceReconciliationResolved, false);
+  assert.equal(quality.publicationHold, true);
+  assert.equal(quality.publicationHoldReason, 'PRICE_RECONCILIATION_REQUIRED');
+  assert.equal(quality.conflictPct, 27.6461);
 });
