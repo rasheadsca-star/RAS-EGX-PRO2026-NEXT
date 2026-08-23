@@ -7,6 +7,8 @@ on:
       - ".github/workflows/egx-native-stock-portfolio-v13-7.yml"
       - "scripts/quant/v13-7-stock-intelligence.cjs"
       - "scripts/quant/v13-7-acceptance.cjs"
+      - "preview-v13/app/portfolio.html"
+      - "preview-v13/app/portfolio-technical-scenarios.js"
   schedule:
     # 13:30 UTC = 16:30 Cairo during DST and 15:30 Cairo otherwise.
     # Both are safely post-close for EGX and materially earlier than the old 18:15 Cairo refresh.
@@ -41,6 +43,7 @@ jobs:
       - name: Build native stock intelligence
         run: |
           set -euo pipefail
+          node --check preview-v13/app/portfolio-technical-scenarios.js
           node scripts/quant/v13-7-stock-intelligence.cjs
           node scripts/quant/v13-7-acceptance.cjs
       - name: Commit V13.7 outputs
