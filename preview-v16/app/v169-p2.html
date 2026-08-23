@@ -22,7 +22,7 @@
   </main>
   <script>
   (async()=>{
-    const BUILD='16.9.2-main-app-readiness-v2-inline-20260817-2256';
+    const BUILD='16.9.2-main-app-readiness-v2-inline-20260823-p2deep-r5';
 
     function readinessInlineBoot(){
       'use strict';
@@ -141,9 +141,13 @@
     </article>`;
     html=html.replace(readinessMarker,`${readinessV2}<article class="panel readiness-panel" style="display:none!important" aria-hidden="true">`);
 
+    const portfolioEnd='<tbody id="portfolioRows"></tbody></table></div></article></section>';
+    if(!html.includes(portfolioEnd))throw new Error('تعذر تثبيت محلل المحفظة العميق: portfolio marker missing');
+    html=html.replace(portfolioEnd,`<tbody id="portfolioRows"></tbody></table></div></article><article id="p2PortfolioDeep" class="panel"><div style="padding:18px;text-align:right"><h2 style="margin:0 0 8px">التحليل الفني العميق للمحفظة</h2><p style="margin:0;color:#9fb9c9">جارٍ تشغيل P2 Deep Portfolio Engine…</p></div></article></section>`);
+
     const marker='<script src="app.js?v=16.1.0"><\/script>';
     const inlineReadiness='<script>('+readinessInlineBoot.toString()+')();<\/script>';
-    const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script><script src="v16-9-basket-overlay.js?v=${BUILD}" data-main-app-basket-direct="true"><\/script><script src="main-app-governance-overlay.js?v=${BUILD}"><\/script><script src="main-app-consensus-overlay.js?v=${BUILD}"><\/script>${inlineReadiness}<script src="stock-analyzer.js?v=${BUILD}"><\/script><script src="stock-analyzer-chart.js?v=${BUILD}"><\/script><script src="stock-analyzer-decision.js?v=${BUILD}"><\/script>`;
+    const replacement=`<script src="decision-source.js?v=${BUILD}"><\/script><script src="app.js?v=${BUILD}"><\/script><script src="v16-9-basket-overlay.js?v=${BUILD}" data-main-app-basket-direct="true"><\/script><script src="main-app-governance-overlay.js?v=${BUILD}"><\/script><script src="main-app-consensus-overlay.js?v=${BUILD}"><\/script>${inlineReadiness}<script src="stock-analyzer.js?v=${BUILD}"><\/script><script src="stock-analyzer-chart.js?v=${BUILD}"><\/script><script src="stock-analyzer-decision.js?v=${BUILD}"><\/script><script src="p2-portfolio-deep.js?v=${BUILD}"><\/script>`;
     if(!html.includes(marker))throw new Error('تعذر تثبيت طبقات MAIN APP: app.js marker missing');
     html=html.replace(marker,replacement)
       .replaceAll('V16.1','MAIN APP · V16.9.2')
