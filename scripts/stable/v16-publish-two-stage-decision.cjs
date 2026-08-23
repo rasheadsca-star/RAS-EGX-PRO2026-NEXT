@@ -4,7 +4,8 @@ const path = require('path');
 
 const ROOT = process.env.GITHUB_WORKSPACE || process.cwd();
 const researchPath = path.join(ROOT, 'data/research/v16-two-stage-recommendations.json');
-const decisionPath = path.join(ROOT, 'data/stable/v15-practical-decision.json');
+const legacyDecisionPath = path.join(ROOT, 'data/stable/v15-practical-decision.json');
+const decisionPath = path.join(ROOT, 'data/stable/v16-two-stage-decision.json');
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -18,7 +19,7 @@ function writeJson(file, data) {
 }
 
 const research = readJson(researchPath);
-const previous = readJson(decisionPath);
+const previous = fs.existsSync(decisionPath) ? readJson(decisionPath) : readJson(legacyDecisionPath);
 const recommendations = Array.isArray(research.newRecommendations) ? research.newRecommendations : [];
 
 if (recommendations.length < 2) {
@@ -69,31 +70,31 @@ const mapped = recommendations.map((item, index) => ({
   rsi14: item.rsi14,
   averageTurnover20Egp: item.averageTurnover20Egp,
   currentSessionEligible: true,
-  referenceOnly: false,
-  status: 'TWO_STAGE_CANDIDATE_PENDING_OPEN_CONFIRMATION',
+  referenceOnly: true,
+  status: 'TWO_STAGE_RESEARCH_CANDIDATE',
   statusAr: item.category.startsWith('PRIMARY')
-    ? 'فرصة أساسية من المحرك الاحتمالي ثنائي المرحلة وتحتاج تأكيد الافتتاح'
+    ? 'فرصة بحثية أساسية من المحرك الاحتمالي ثنائي المرحلة'
     : item.category === 'CONDITIONAL'
-      ? 'فرصة مشروطة تُستخدم عند عدم تفعيل إحدى الفرص الأساسية'
-      : 'فرصة احتياطية من المحرك الاحتمالي ثنائي المرحلة'
+      ? 'فرصة بحثية مشروطة من المحرك الاحتمالي ثنائي المرحلة'
+      : 'فرصة بحثية احتياطية من المحرك الاحتمالي ثنائي المرحلة'
 }));
 
 const output = {
   ...previous,
-  schemaVersion: '16.5.0',
+  schemaVersion: '16.5.0-two-stage-sidecar',
   generatedAt: new Date().toISOString(),
   sessionDate: research.sessionDate,
-  mode: 'V16_TWO_STAGE_PROBABILISTIC_PRODUCTION',
+  mode: 'V16_TWO_STAGE_PROBABILISTIC_RESEARCH_SIDECAR',
   practicalReady: true,
   professionalEvidenceReady: false,
   evidenceTier: 'PILOT_WALK_FORWARD_TWO_STAGE',
-  status: 'TWO_STAGE_PRODUCTION_CANDIDATES_AVAILABLE',
-  statusAr: 'تم اعتماد المحرك الاحتمالي ثنائي المرحلة كمصدر توصيات التطبيق مع استمرار المتابعة بنظام Pilot',
+  status: 'TWO_STAGE_RESEARCH_CANDIDATES_AVAILABLE',
+  statusAr: 'نتائج المحرك الاحتمالي ثنائي المرحلة محفوظة كمسار بحثي مستقل ولا تستبدل قرار MAIN APP.',
   selectedModel: {
     id: 'V16_TWO_STAGE_PROBABILISTIC',
     labelAr: 'المحرك الاحتمالي ثنائي المرحلة',
     profile: 'PROBABILISTIC_EXECUTION',
-    watchOnly: false,
+    watchOnly: true,
     validationPassed: true,
     testPassed: true,
     pilotPassed: true,
@@ -113,11 +114,13 @@ const output = {
   ],
   recommendations: mapped,
   predictionWatchList: research.predictionWatchList || [],
-  sourceResearchFile: 'data/research/v16-two-stage-recommendations.json'
+  sourceResearchFile: 'data/research/v16-two-stage-recommendations.json',
+  protectedMainAppDecisionPath: 'data/stable/v16-main-app-current.json'
 };
 
 writeJson(decisionPath, output);
 console.log(JSON.stringify({
   published: mapped.map(x => ({ rank: x.rank, ticker: x.ticker, category: x.category })),
-  output: 'data/stable/v15-practical-decision.json'
+  output: 'data/stable/v16-two-stage-decision.json',
+  mainAppProtected: true
 }, null, 2));
