@@ -6,8 +6,9 @@ const api = readFileSync(new URL('../api/fundamental.js', import.meta.url), 'utf
 const ui = readFileSync(new URL('../public/fundamental-auto.js', import.meta.url), 'utf8');
 const wrapper = readFileSync(new URL('../public/portfolio-manager.js', import.meta.url), 'utf8');
 
-test('fundamental endpoint is read-only and source-explicit', () => {
+test('fundamental endpoint is read-only, source-explicit, and searches full-market records', () => {
   assert.match(api, /v16-fundamental-analysis\.json/);
+  assert.match(api, /document\?\.records/);
   assert.match(api, /scoringImpact:\s*'NONE'/);
   assert.match(api, /recommendationMutationAllowed:\s*false/);
   assert.match(api, /executionAllowed:\s*false/);
