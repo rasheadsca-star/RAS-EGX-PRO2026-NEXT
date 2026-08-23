@@ -1,5 +1,5 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.13.0-price-truth-reconciliation',
+  contractVersion: '1.13.1-price-truth-reconciliation-hardening',
   frozenAtSourceCommit: '9725620bcb5946cc416548fb61d3a6253641abbb',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, evidence-backed price reconciliation, session monitoring, V16.9 operational overlays, isolated intraday operations, display-only live refresh, deep portfolio analytics, and automatic supplemental fundamental analysis while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
@@ -10,7 +10,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'src/originalScore.js': 'e7bb02b9057c7c6067cfd03b7d5d7a7573833cf9',
     'src/originalIndicators.js': 'a80822553ed82d19cead096be0e975dd733c812b',
     'src/math.js': 'f9254c53763082a8778e3c87c1a14db9bfb156be',
-    'src/quality.js': '1daffedb2d226c6a861e5e688d0ec99c891c8c22',
+    'src/quality.js': '602bd8ae12297008049f558defb2a38824a42749',
     'src/repository.js': '9f20380d58fcb3ed37b6c9ed88ebf827ee773e5d',
     'api/index.js': '0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b',
     'api/fundamental.js': 'f69d926f37b9807c3bd8099bf6f289bb8a621208',
@@ -39,7 +39,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     quality: Object.freeze({ hardBlockWarnings: Object.freeze(['corporate_action_review_required','not_officially_verified','historical_seed_not_officially_verified']), conflictReviewPct: 5, conflictBlockPct: 20 }),
     permissions: Object.freeze({ researchOnly: true, executionAllowed: false, productionAllocation: false, automaticOrders: false, automaticChampionPromotion: false }),
   }),
-  priceReconciliationRules: Object.freeze({ mode: 'EVIDENCE_BACKED_SESSION_TRUTH_ONLY', minimumConfidence: 80, maximumCloseDifferencePct: 0.25, requiredSessionMatch: true, requiredIndependentSource: 'MUBASHER_OR_EGX_OR_INVESTING', requiredValidation: 'SESSION_CONFIRMED_OR_OFFICIALLY_VERIFIED_OR_CROSS_VERIFIED', mayChangeTechnicalScore: false, mayChangeFusionWeights: false, mayBypassHardWarnings: false, staleOrMismatchedTruthFailsClosed: true }),
+  priceReconciliationRules: Object.freeze({ mode: 'EVIDENCE_BACKED_SESSION_TRUTH_ONLY', minimumReportedConflictPct: 20, minimumConfidence: 80, maximumCloseDifferencePct: 0.25, requiredSessionMatch: true, requiredIndependentSource: 'MUBASHER_OR_EGX_OR_INVESTING', requiredValidation: 'SESSION_CONFIRMED_OR_OFFICIALLY_VERIFIED_OR_CROSS_VERIFIED', officiallyVerifiedSessionMayBeOverridden: false, mayChangeTechnicalScore: false, mayChangeFusionWeights: false, mayBypassHardWarnings: false, staleOrMismatchedTruthFailsClosed: true }),
   recordedAcceptanceBaseline: Object.freeze({ sessionDate: '2026-08-19', scanned: 188, technicalEligibleTotal: 4, publicationEligibleTotal: 3, withheldForPriceReconciliation: 1, recommendations: Object.freeze([Object.freeze({ ticker: 'COPR', rank: 1, fusionRank: 80.7, researchScore: 80.7, technicalScore: 84.1 }),Object.freeze({ ticker: 'FAIT', rank: 2, fusionRank: 76.5, researchScore: 76.5, technicalScore: 81.2 }),Object.freeze({ ticker: 'MPCO', rank: 3, fusionRank: 75.7, researchScore: 75.7, technicalScore: 72.4 })]), withheld: Object.freeze({ ticker: 'MILS', conflictPct: 46.7911, holdReason: 'PRICE_RECONCILIATION_REQUIRED' }), simulator: Object.freeze({ symbolsCompleted: 188, entered: 64, target1Pct: 73.4, stopPct: 18.8, positivePct: 73.4, avgNetPct: 1.23, profitFactor: 2.33, wilson95LowerTarget1Pct: 61.5 }) }),
   sidecarRules: Object.freeze({ scoringImpact: 'NONE', mayImportFrozenCore: true, frozenCoreMayImportSidecars: false, productionScanMayCallSidecars: false, uiBootMayCallSidecars: false, automaticPromotionFromSidecarEvidence: false }),
   monitorRules: Object.freeze({ monitorId: 'SESSION_MONITOR_V1', pollingMs: 300000, timeZone: 'Africa/Cairo', expectedSessionOpen: '10:00', expectedSessionClose: '14:30', source: 'MUBASHER_DELAYED_15_MIN', sourceDelayMinutes: 15, monitorOnly: true, scoringImpact: 'NONE', recommendationMutationAllowed: false, executionAllowed: false, importsAlphaModules: false, productionScanCalled: false, historyEndpointReadOnly: true, staleSourceMustNotClaimLive: true }),
