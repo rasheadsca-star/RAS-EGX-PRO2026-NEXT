@@ -1,0 +1,120 @@
+name: RC2 Intraday Hardening
+
+on:
+  push:
+    branches:
+      - develop/rc2-intraday-operations-v1
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop/rc2-intraday-operations-v1
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply guarded intraday hardening
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tfe-v20/public/intraday-ops.js')
+          s=p.read_text()
+
+          old="""function publishedWarnings() {
+            const official = officialSet();
+            return [...state.market.values()]
+              .filter((x) => official.has(String(x.ticker).toUpperCase()))
+              .filter((x) => x?.shadow?.technicalGatePass !== true || ['STALE_SESSION','STALE_INTRADAY','UNAVAILABLE'].includes(quoteFreshness(x.quote).state))
+              .slice(0, 8);
+          }"""
+          new="""function publishedWarnings() {
+            const official = officialSet();
+            const partialBarNoise = new Set(['LIQUIDITY_GATE_FAIL','RESEARCH_SCORE_LOW']);
+            return [...state.market.values()]
+              .filter((x) => official.has(String(x.ticker).toUpperCase()))
+              .filter((x) => {
+                const freshness = quoteFreshness(x.quote).state;
+                if (['STALE_SESSION','STALE_INTRADAY','UNAVAILABLE'].includes(freshness)) return true;
+                const structuralReasons = (x?.shadow?.nonQualityReasons || []).filter((reason) => !partialBarNoise.has(reason));
+                return structuralReasons.length > 0;
+              })
+              .slice(0, 8);
+          }"""
+          if old in s:
+              s=s.replace(old,new,1)
+          elif "partialBarNoise = new Set(['LIQUIDITY_GATE_FAIL','RESEARCH_SCORE_LOW'])" not in s:
+              raise SystemExit('publishedWarnings guard target not found')
+
+          old="""      const baseline = { ...(item.data?.baseline ?? {}), publicationEligible:item.data?.baseline?.eligible === true };
+                action = assessHolding({ holding:item.holding, analysis:baseline, price:item.price, equity, maxWeightPct:p.maxWeightPct });"""
+          new="""      const officialRecommendation = (state.officialScan?.recommendations ?? []).find((row) => String(row?.ticker ?? '').toUpperCase() === ticker) ?? null;
+                const baseline = officialRecommendation
+                  ? { ...officialRecommendation, publicationEligible:true }
+                  : { ...(item.data?.baseline ?? {}), publicationEligible:false };
+                action = assessHolding({ holding:item.holding, analysis:baseline, price:item.price, equity, maxWeightPct:p.maxWeightPct });"""
+          if old in s:
+              s=s.replace(old,new,1)
+          elif 'const officialRecommendation =' not in s:
+              raise SystemExit('portfolio publication gate target not found')
+
+          old="if (state.cursor >= state.universe.length) { state.cursor = 0; state.cycle += 1; }"
+          new="if (state.cursor >= state.universe.length) state.cursor = 0;"
+          if old in s:
+              s=s.replace(old,new,1)
+          elif new not in s:
+              raise SystemExit('cycle counter target not found')
+          p.write_text(s)
+
+          t=Path('tfe-v20/test/intraday-ops.test.js')
+          ts=t.read_text()
+          marker="""test('browser intraday state remains local and has no order or write API path', () => {"""
+          addition="""test('live portfolio ADD is gated by the official published recommendation set', () => {
+            assert.match(clientSource, /const officialRecommendation =/);
+            assert.match(clientSource, /publicationEligible:true/);
+            assert.match(clientSource, /publicationEligible:false/);
+            assert.match(clientSource, /partialBarNoise = new Set\(\['LIQUIDITY_GATE_FAIL','RESEARCH_SCORE_LOW'\]\)/);
+          });
+
+          """
+          if addition.strip() not in ts:
+              if marker not in ts: raise SystemExit('test insertion target not found')
+              ts=ts.replace(marker,addition+marker,1)
+              t.write_text(ts)
+          PY
+
+          NEW_BLOB=$(git hash-object tfe-v20/public/intraday-ops.js)
+          python - "$NEW_BLOB" <<'PY'
+          from pathlib import Path
+          import sys,re
+          h=sys.argv[1]
+          p=Path('tfe-v20/stability/frozen-runtime-contract.js')
+          s=p.read_text()
+          s2=re.sub(r"('public/intraday-ops\.js': ')[0-9a-f]{40}(')",r'\g<1>'+h+r'\2',s,count=1)
+          if s2==s and h not in s: raise SystemExit('contract intraday hash target not found')
+          p.write_text(s2)
+          PY
+      - name: Syntax and full tests
+        working-directory: tfe-v20
+        run: |
+          node --check public/intraday-ops.js
+          node --check api/intraday.js
+          npm test
+          npm run red-team
+      - name: Commit only after successful validation
+        run: |
+          git config user.name 'rc2-validation-bot'
+          git config user.email 'rc2-validation-bot@users.noreply.github.com'
+          git add tfe-v20/public/intraday-ops.js tfe-v20/test/intraday-ops.test.js tfe-v20/stability/frozen-runtime-contract.js
+          if git diff --cached --quiet; then
+            echo 'RC2_INTRADAY_HARDENING_ALREADY_APPLIED'
+            exit 0
+          fi
+          git commit -m 'fix(rc2): harden intraday portfolio publication gate'
+          git push origin HEAD:develop/rc2-intraday-operations-v1
