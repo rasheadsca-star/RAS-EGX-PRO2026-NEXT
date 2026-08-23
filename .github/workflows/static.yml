@@ -43,6 +43,15 @@ jobs:
           fi
           echo "PAGES_SECRET_GUARD_PASS"
 
+      - name: Validate MAIN APP P2 deep portfolio bundle
+        run: |
+          set -euo pipefail
+          node --check preview-v16/app/p2-portfolio-deep.js
+          node --check preview-v16/app/launch.js
+          grep -q "p2-portfolio-deep.js" preview-v16/app/launch.js
+          grep -q "P2 Deep Portfolio Engine" preview-v16/app/p2-portfolio-deep.js
+          echo "P2_DEEP_PORTFOLIO_BUNDLE_PASS"
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
