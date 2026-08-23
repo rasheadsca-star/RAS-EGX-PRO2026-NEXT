@@ -1,14 +1,9 @@
 'use strict';
 (() => {
   const VERSION = '16.3.3';
-  const ASSET_BUILD = '16.3.3-portfolio-deep-20260823-r3';
-  const SW_BUILD = 'V16.3.3-PORTFOLIO-DEEP-20260823-R3';
+  const ASSET_BUILD = '16.3.3-p2-deep-portfolio-20260823-r4';
+  const SW_BUILD = 'V16.3.3-P2-DEEP-PORTFOLIO-20260823-R4';
   const head = document.head || document.documentElement;
-  const MAIN_PORTFOLIO_KEY = 'egx-v16-professional-portfolio';
-  const ANALYZER_PORTFOLIO_KEY = 'egx-main-app-stock-analyzer-portfolio-v1';
-  const DEEP_PORTFOLIO_KEY = 'egx-v16-deep-portfolio-bridge-v1';
-  const LEGACY_DEEP_KEY_LITERAL = "const KEY='egx-v137-portfolio';";
-  let bridgeRevision = 0;
 
   document.documentElement.dataset.egxVersion = VERSION;
   document.title = document.title.replace(/V16(?:\.\d+)?/g, `V${VERSION}`);
@@ -55,111 +50,6 @@
     });
   }
 
-  async function loadIsolatedPortfolioScript(src, datasetKey) {
-    if (document.querySelector(`script[data-${datasetKey}]`)) return;
-    try {
-      const response = await fetch(`${src}${src.includes('?') ? '&' : '?'}v=${ASSET_BUILD}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      let source = await response.text();
-      if (!source.includes(LEGACY_DEEP_KEY_LITERAL)) throw new Error('portfolio storage key contract missing');
-      source = source.replace(LEGACY_DEEP_KEY_LITERAL, `const KEY='${DEEP_PORTFOLIO_KEY}';`);
-      const blobUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
-      await new Promise(resolve => {
-        const script = document.createElement('script');
-        script.src = blobUrl;
-        script.dataset[datasetKey] = 'true';
-        script.onload = () => { URL.revokeObjectURL(blobUrl); resolve(); };
-        script.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(); };
-        (document.body || document.documentElement).appendChild(script);
-      });
-    } catch (error) {
-      console.warn(`deep portfolio module failed: ${src}`, error);
-    }
-  }
-
-  function parseStorage(key, fallback) {
-    try {
-      const value = JSON.parse(localStorage.getItem(key) || 'null');
-      return value ?? fallback;
-    } catch (_) {
-      return fallback;
-    }
-  }
-
-  function deepPortfolioRows() {
-    const merged = new Map();
-    const mainRows = parseStorage(MAIN_PORTFOLIO_KEY, []);
-    if (Array.isArray(mainRows)) {
-      mainRows.forEach(row => {
-        const ticker = String(row?.ticker || '').trim().toUpperCase();
-        const quantity = Number(row?.quantity);
-        const averagePrice = Number(row?.entry);
-        if (ticker && Number.isFinite(quantity) && quantity > 0 && Number.isFinite(averagePrice) && averagePrice > 0) {
-          merged.set(ticker, { ticker, quantity, averagePrice, source: 'V16_PORTFOLIO' });
-        }
-      });
-    }
-
-    const analyzer = parseStorage(ANALYZER_PORTFOLIO_KEY, {});
-    if (analyzer && typeof analyzer === 'object' && !Array.isArray(analyzer)) {
-      Object.entries(analyzer).forEach(([rawTicker, position]) => {
-        if (!position?.owned) return;
-        const ticker = String(rawTicker || '').trim().toUpperCase();
-        const quantity = Number(position?.qty);
-        const averagePrice = Number(position?.avgCost);
-        if (!ticker || !Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(averagePrice) || averagePrice <= 0) return;
-        merged.set(ticker, { ticker, quantity, averagePrice, source: 'STOCK_ANALYZER' });
-      });
-    }
-    return [...merged.values()];
-  }
-
-  function ensurePortfolioBridgeMarker() {
-    let marker = document.getElementById('rows');
-    if (marker) return marker;
-    const view = document.getElementById('view-portfolio');
-    if (!view) return null;
-    const tablePanel = [...view.querySelectorAll('.panel')].find(panel => panel.querySelector('#portfolioRows')) || view;
-    marker = document.createElement('span');
-    marker.id = 'rows';
-    marker.hidden = true;
-    marker.setAttribute('aria-hidden', 'true');
-    tablePanel.appendChild(marker);
-    return marker;
-  }
-
-  function syncPortfolioBridge() {
-    const mapped = deepPortfolioRows().map(({ ticker, quantity, averagePrice }) => ({ ticker, quantity, averagePrice }));
-    localStorage.setItem(DEEP_PORTFOLIO_KEY, JSON.stringify(mapped));
-    const marker = ensurePortfolioBridgeMarker();
-    if (marker) {
-      bridgeRevision += 1;
-      marker.textContent = `${bridgeRevision}|${mapped.map(x => `${x.ticker}:${x.quantity}:${x.averagePrice}`).join('|')}`;
-    }
-  }
-
-  function installPortfolioBridge() {
-    syncPortfolioBridge();
-    const portfolioRows = document.getElementById('portfolioRows');
-    if (portfolioRows && !portfolioRows.dataset.deepPortfolioBridge) {
-      portfolioRows.dataset.deepPortfolioBridge = 'true';
-      new MutationObserver(() => syncPortfolioBridge()).observe(portfolioRows, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
-    }
-    document.querySelector('[data-view="portfolio"]')?.addEventListener('click', () => setTimeout(syncPortfolioBridge, 80));
-    window.addEventListener('storage', event => {
-      if ([MAIN_PORTFOLIO_KEY, ANALYZER_PORTFOLIO_KEY].includes(event.key)) syncPortfolioBridge();
-    });
-    document.addEventListener('click', event => {
-      if (event.target.closest('#saSavePosition,#saOwnedYes,#saOwnedNo,#addPortfolioBtn,#clearPortfolioBtn,[data-r]')) {
-        setTimeout(syncPortfolioBridge, 120);
-      }
-    });
-  }
-
   const openRequestedView = () => {
     const params = new URLSearchParams(location.search);
     const requested = params.get('view');
@@ -170,14 +60,11 @@
 
   const start = async () => {
     await refreshServiceWorker();
-    installPortfolioBridge();
     await loadScript('v16-3.js', 'v163');
     await loadScript('recommendation-freshness.js', 'recommendationFreshness');
     await loadScript('v16-9-basket-overlay.js', 'v169BasketOverlay');
     await loadScript('session-truth-ui.js', 'sessionTruthUi');
-    await loadIsolatedPortfolioScript('../../preview-v13/app/portfolio-technical-scenarios.js', 'v16PortfolioTechnicalScenarios');
-    await loadIsolatedPortfolioScript('../../preview-v13/app/portfolio-historical-calibration.js', 'v16PortfolioHistoricalCalibration');
-    syncPortfolioBridge();
+    await loadScript('p2-portfolio-deep.js', 'p2PortfolioDeep');
     openRequestedView();
   };
 
