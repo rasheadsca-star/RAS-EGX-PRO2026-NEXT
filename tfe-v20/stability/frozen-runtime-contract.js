@@ -13,7 +13,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'src/quality.js': 'c0b423e7b055ba3ab27b27d689b451b910999821',
     'src/repository.js': '9f20380d58fcb3ed37b6c9ed88ebf827ee773e5d',
     'api/index.js': '0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b',
-    'api/fundamental.js': 'eb7bd2db03c5975bc2aaed6511948130c5b2b450',
+    'api/fundamental.js': '97a05487b9ac84692dcdbd4b906018c8f138adff',
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
     'api/intraday.js': '7e639a980d8531f4737c5d5ad9485f8a63540e4b',
     'monitor/session-quote.js': '56fdd6e5518b07e1545bcffebbd3ccb156f035e9',
