@@ -1,6 +1,6 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
   contractVersion: '1.12.0-auto-fundamentals-display',
-  frozenAtSourceCommit: '69a16836c313a41e3e1bac389c2c4115264e53c7',
+  frozenAtSourceCommit: '9725620bcb5946cc416548fb61d3a6253641abbb',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, session monitoring, V16.9 operational overlays, isolated intraday operations, display-only live refresh, deep portfolio analytics, and automatic supplemental fundamental analysis while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
     'src/engine.js': '36e1309fa1e5e4640dd7ef62b7b532e459103193',
@@ -13,7 +13,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'src/quality.js': 'c0b423e7b055ba3ab27b27d689b451b910999821',
     'src/repository.js': '9f20380d58fcb3ed37b6c9ed88ebf827ee773e5d',
     'api/index.js': '0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b',
-    'api/fundamental.js': '72e03c3742fa840f9dd546bba0676f784670c751',
+    'api/fundamental.js': 'eb7bd2db03c5975bc2aaed6511948130c5b2b450',
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
     'api/intraday.js': '7e639a980d8531f4737c5d5ad9485f8a63540e4b',
     'monitor/session-quote.js': '56fdd6e5518b07e1545bcffebbd3ccb156f035e9',
