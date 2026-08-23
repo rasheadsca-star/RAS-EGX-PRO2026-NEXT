@@ -1,21 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 const deep=readFileSync(new URL('../public/portfolio-deep-analysis.js',import.meta.url),'utf8');
 const wrapper=readFileSync(new URL('../public/portfolio-manager.js',import.meta.url),'utf8');
 const core=readFileSync(new URL('../public/portfolio-manager-core.js',import.meta.url));
 
 function gitBlobSha(buffer){
-  const { createHash } = requireHash();
   const header=Buffer.from(`blob ${buffer.length}\0`);
   return createHash('sha1').update(header).update(buffer).digest('hex');
 }
-function requireHash(){
-  return globalThis.__deepCrypto;
-}
-
-await import('node:crypto').then(m=>{ globalThis.__deepCrypto=m; });
 
 test('wrapper preserves original portfolio manager and loads deep display module',()=>{
   assert.match(wrapper,/export \* from '\.\/portfolio-manager-core\.js/);
@@ -25,7 +20,7 @@ test('wrapper preserves original portfolio manager and loads deep display module
 
 test('deep portfolio layer is read-only and cannot import Alpha or enable execution',()=>{
   assert.match(deep,/egx-tfe-rc2-v169-eod-manager/);
-  assert.match(deep,/route=history|route,\.\.\.params/);
+  assert.match(deep,/route,\.\.\.params/);
   assert.equal(/src\/(engine|policy|confidence|originalScore|originalIndicators|repository)/.test(deep),false);
   assert.equal(/executionAllowed\s*[:=]\s*true/i.test(deep),false);
   assert.equal(/automaticOrders\s*[:=]\s*true/i.test(deep),false);
