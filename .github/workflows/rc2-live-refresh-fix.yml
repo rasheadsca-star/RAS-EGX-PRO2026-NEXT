@@ -1,0 +1,157 @@
+name: RC2 Live Refresh Fix
+
+on:
+  push:
+    branches:
+      - develop/rc2-intraday-operations-v1
+    paths:
+      - .github/workflows/rc2-live-refresh-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop/rc2-intraday-operations-v1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Patch UI session truth and auto refresh
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('tfe-v20/public/ui-v169.js')
+          s=p.read_text()
+          anchor="function marketMeta(t){return A(S.market?.symbols).find(x=>x.ticker===t)||null}\n"
+          helper="""function marketMeta(t){return A(S.market?.symbols).find(x=>x.ticker===t)||null}\nfunction effectiveSessionDate(){\n  const dates=[S.scan?.universe?.sessionDate,S.market?.sessionDate,...A(S.scan?.recommendations).map(x=>x?.sessionDate),...S.withheld.map(x=>x?.sessionDate)].filter(Boolean).sort();\n  return dates.at(-1)||null;\n}\nlet lastRefreshAt=0;\n"""
+          if 'function effectiveSessionDate()' not in s:
+              assert anchor in s
+              s=s.replace(anchor,helper,1)
+          new_archive="""function archiveCurrentScan(){\n  if(!S.scan)return;\n  const existing=new Set(S.archive.map(x=>`${x.sessionDate}|${x.ticker}`));\n  const universeDate=S.scan?.universe?.sessionDate||null;\n  let changed=false;\n  for(const x of A(S.scan.recommendations)){\n    const sessionDate=x.sessionDate||universeDate;if(!sessionDate)continue;\n    const key=`${sessionDate}|${x.ticker}`;\n    if(universeDate&&sessionDate!==universeDate&&!existing.has(key)){\n      const wrong=S.archive.find(r=>r.ticker===x.ticker&&r.sessionDate===universeDate&&r.sourceCommit==null&&(r.outcome==='OPEN'||!r.outcome)&&N(r.entryLow)===N(x.tradePlan?.entryLow)&&N(r.entryHigh)===N(x.tradePlan?.entryHigh)&&N(r.stop)===N(x.tradePlan?.stop)&&N(r.target1)===N(x.tradePlan?.target1));\n      if(wrong){existing.delete(`${wrong.sessionDate}|${wrong.ticker}`);wrong.sessionDate=sessionDate;existing.add(key);changed=true;continue}\n    }\n    if(existing.has(key))continue;\n    S.archive.push({\n      sessionDate,\n      firstSeenAt:S.scan.generatedAt||new Date().toISOString(),\n      ticker:x.ticker,\n      decision:x.decision,\n      publicationState:x.publicationState,\n      price:x.price,\n      entryLow:x.tradePlan?.entryLow,\n      entryHigh:x.tradePlan?.entryHigh,\n      stop:x.tradePlan?.stop,\n      target1:x.tradePlan?.target1,\n      target2:x.tradePlan?.target2,\n      fusionRank:x.scores?.fusionRank,\n      wilson:x.historicalConfidence?.confidenceWilsonLower95Pct,\n      sourceCommit:null,\n      outcome:'OPEN'\n    });\n    existing.add(key);changed=true;\n  }\n  if(changed){S.archive.sort((a,b)=>String(b.sessionDate).localeCompare(String(a.sessionDate))||String(a.ticker).localeCompare(String(b.ticker)));save(K.archive,S.archive)}\n}\n\nfunction readiness(){"""
+          s2,n=re.subn(r"function archiveCurrentScan\(\)\{.*?\n\}\n\nfunction readiness\(\)\{",new_archive,s,flags=re.S)
+          assert n==1, n
+          s=s2
+          s=s.replace("const freshness=uni.sessionDate&&S.market?.sessionDate&&uni.sessionDate===S.market.sessionDate?100:70;","const currentSession=effectiveSessionDate();const freshness=currentSession&&S.market?.sessionDate&&currentSession===S.market.sessionDate?100:70;",1)
+          s=s.replace("['جلسة السوق الفعلية',uni.sessionDate||'—',`${s.scanned||0} سهم تم فحصه من الكون الحالي`],","['آخر جلسة بيانات فعلية',effectiveSessionDate()||uni.sessionDate||'—',`${s.scanned||0} سهم تم فحصه${effectiveSessionDate()&&uni.sessionDate&&effectiveSessionDate()!==uni.sessionDate?` · Universe summary ${uni.sessionDate}`:''}`],",1)
+          old="S.health=health;S.scan=scan;S.market=market;await loadWithheld();archiveCurrentScan();\n    $('lastUpdate').innerHTML=`جلسة <b>${E(scan.universe?.sessionDate||'—')}</b><br>RC2 · ${E(scan.engine)} · ${E(scan.schemaVersion)}`;"
+          new="S.health=health;S.scan=scan;S.market=market;await loadWithheld();archiveCurrentScan();lastRefreshAt=Date.now();\n    const effectiveDate=effectiveSessionDate()||scan.universe?.sessionDate||'—';\n    $('lastUpdate').innerHTML=`آخر بيانات <b>${E(effectiveDate)}</b>${scan.universe?.sessionDate&&effectiveDate!==scan.universe.sessionDate?` <small>(Universe ${E(scan.universe.sessionDate)})</small>`:''}<br>RC2 · ${E(scan.engine)} · ${E(scan.schemaVersion)}`;\n    window.__RC2_UI_SCAN__={health,scan,market,effectiveDate,refreshedAt:new Date().toISOString()};window.dispatchEvent(new CustomEvent('rc2:ui-scan',{detail:window.__RC2_UI_SCAN__}));"
+          assert old in s
+          s=s.replace(old,new,1)
+          bind_tail="  $('evidenceRefreshBtn').onclick=()=>loadEvidence(true);$('evidenceCsvBtn').onclick=()=>window.open(`${API}?route=decision-log&format=csv&limit=50`,'_blank');\n"
+          auto="  $('evidenceRefreshBtn').onclick=()=>loadEvidence(true);$('evidenceCsvBtn').onclick=()=>window.open(`${API}?route=decision-log&format=csv&limit=50`,'_blank');\n  setInterval(()=>{if(document.visibilityState==='visible')refreshAll()},300000);\n  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastRefreshAt>120000)refreshAll()});\n"
+          assert bind_tail in s
+          s=s.replace(bind_tail,auto,1)
+          p.write_text(s)
+          PY
+
+      - name: Add isolated live portfolio adapter
+        shell: bash
+        run: |
+          cat > tfe-v20/public/live-refresh-v1.js <<'EOF'
+          import { marketPhase, quoteFreshness } from './session-monitor-core.js';
+
+          const INTRADAY_API='/api/intraday';
+          const AUTO_REFRESH_MS=300_000;
+          const EOD_KEY='egx-tfe-rc2-v169-eod-manager';
+          const EXP_KEY='egx-tfe-rc2-v169-portfolio';
+          const PANEL_ID='rc2LivePortfolioPanel';
+          const BANNER_ID='rc2LiveRefreshBanner';
+          const n=v=>Number.isFinite(Number(v))?Number(v):null;
+          const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+          const fmt=(v,d=3)=>n(v)===null?'—':Number(v).toLocaleString('en-GB',{maximumFractionDigits:d});
+          const pct=v=>n(v)===null?'—':`${fmt(v,2)}%`;
+          const money=v=>n(v)===null?'—':`${Number(v).toLocaleString('en-GB',{maximumFractionDigits:0})} ج.م`;
+          const load=(k,f)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??f}catch{return f}};
+          let latestScan=window.__RC2_UI_SCAN__?.scan||null,latestEffectiveDate=window.__RC2_UI_SCAN__?.effectiveDate||null,busy=false,lastQuoteAt=0,lastPmRun=0;
+
+          function holdings(){
+            const rows=[];
+            const eod=load(EOD_KEY,{});
+            for(const h of Array.isArray(eod.holdings)?eod.holdings:[])if(h?.ticker&&n(h.qty)>0&&n(h.avgCost)>0)rows.push({source:'مدير المحفظة',ticker:String(h.ticker).toUpperCase(),qty:n(h.qty),avg:n(h.avgCost),stop:n(h.stop)});
+            const exp=load(EXP_KEY,[]);
+            for(const h of Array.isArray(exp)?exp:[])if(h?.ticker&&n(h.qty)>0&&n(h.entry)>0)rows.push({source:'المحفظة التجريبية',ticker:String(h.ticker).toUpperCase(),qty:n(h.qty),avg:n(h.entry),stop:n(h.stop),id:h.id});
+            return rows;
+          }
+          function uniqueTickers(rows){return [...new Set(rows.map(x=>x.ticker).filter(Boolean))]}
+          function chunks(a,size=10){const out=[];for(let i=0;i<a.length;i+=size)out.push(a.slice(i,i+size));return out}
+          async function intradayBatch(tickers){
+            const q=new URLSearchParams({tickers:tickers.join(','),t:String(Date.now())});
+            const r=await fetch(`${INTRADAY_API}?${q}`,{cache:'no-store'}),d=await r.json().catch(()=>({}));
+            if(!r.ok||!d.ok)throw new Error(d.error||`INTRADAY_HTTP_${r.status}`);return d;
+          }
+          async function quotesFor(tickers){
+            const map=new Map(),errors=[];
+            for(const group of chunks(tickers,10)){
+              try{const d=await intradayBatch(group);for(const x of d.results||[])if(x?.ticker)map.set(String(x.ticker).toUpperCase(),x);for(const e of d.errors||[])errors.push(e)}catch(e){errors.push({error:e.message,tickers:group})}
+            }
+            return{map,errors};
+          }
+          function ensureStyle(){if(document.getElementById('rc2LiveRefreshStyle'))return;const x=document.createElement('style');x.id='rc2LiveRefreshStyle';x.textContent=`#${BANNER_ID},#${PANEL_ID}{border-color:#287e79;background:linear-gradient(145deg,#08252d,#091b29)}#${BANNER_ID}{margin:0 0 14px;padding:12px 14px}#${BANNER_ID} .lr-row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}#${BANNER_ID} .lr-recs{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.lr-chip{padding:5px 8px;border:1px solid #2d6c72;border-radius:999px;font-size:10px}.lr-chip.good{color:#caffdf;border-color:#2d7b5b}.lr-chip.warn{color:#ffe2a2;border-color:#86682d}#${PANEL_ID}{margin:0 0 14px}#${PANEL_ID} .lr-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}#${PANEL_ID} .lr-k{padding:9px;border:1px solid #24485b;border-radius:9px;background:#071923}#${PANEL_ID} .lr-k small{display:block;color:#8faabb;font-size:9px}#${PANEL_ID} table small{color:#91adbd}.lr-good{color:#72e4ab}.lr-bad{color:#ff8d98}.lr-warn{color:#ffd77e}@media(max-width:780px){#${PANEL_ID} .lr-kpis{grid-template-columns:1fr 1fr}}`;document.head.appendChild(x)}
+          function ensureBanner(){ensureStyle();let p=document.getElementById(BANNER_ID);if(p)return p;p=document.createElement('article');p.id=BANNER_ID;p.className='panel';const dash=document.getElementById('view-dashboard');const hero=dash?.querySelector('.hero-grid');if(hero)hero.insertAdjacentElement('afterend',p);else dash?.prepend(p);return p}
+          function ensurePanel(){ensureStyle();let p=document.getElementById(PANEL_ID);if(p)return p;p=document.createElement('article');p.id=PANEL_ID;p.className='panel';const v=document.getElementById('view-portfolio');const pm=document.getElementById('pmDesk');if(pm)pm.insertAdjacentElement('afterend',p);else v?.prepend(p);return p}
+          function effectiveDate(scan){const dates=[scan?.universe?.sessionDate,...(scan?.recommendations||[]).map(x=>x?.sessionDate)].filter(Boolean).sort();return dates.at(-1)||null}
+          function renderBanner(){const p=ensureBanner(),scan=latestScan,date=latestEffectiveDate||effectiveDate(scan),recs=(scan?.recommendations||[]).slice(0,8),universe=scan?.universe?.sessionDate;p.innerHTML=`<div class="lr-row"><div><b>المزامنة التلقائية مفعلة</b><div><small>آخر بيانات فعلية: ${esc(date||'—')}${universe&&date&&universe!==date?` · Universe summary ${esc(universe)}`:''} · كل 5 دقائق</small></div></div><button class="btn" id="lrRefreshNow">تحديث الآن</button></div><div class="lr-recs">${recs.length?recs.map(r=>`<span class="lr-chip good"><b>${esc(r.ticker)}</b> ${fmt(r.price,4)} · Fusion ${fmt(r.scores?.fusionRank,1)} · ${esc(r.sessionDate||date||'—')}</span>`).join(''):'<span class="lr-chip warn">لا توجد توصيات منشورة في آخر Scan.</span>'}</div>`;p.querySelector('#lrRefreshNow').onclick=()=>document.getElementById('refreshBtn')?.click()}
+          function renderPortfolio(rows,q){const p=ensurePanel(),now=new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});let priced=0,total=0,cost=0;const body=rows.map(h=>{const r=q.map.get(h.ticker),fresh=quoteFreshness(r?.quote),price=['DELAYED_LIVE','LAGGING','CLOSED_SESSION'].includes(fresh.state)?n(r?.quote?.price):null,value=price>0?h.qty*price:null,pnl=price>0&&h.avg>0?(price/h.avg-1)*100:null,pnlCash=value!==null?value-h.qty*h.avg:null;if(value!==null){priced++;total+=value;cost+=h.qty*h.avg}return`<tr><td><b>${esc(h.ticker)}</b><br><small>${esc(h.source)}</small></td><td>${fmt(price,4)}</td><td>${fmt(h.avg,4)}</td><td>${fmt(h.qty,0)}</td><td>${money(value)}</td><td class="${pnl>0?'lr-good':pnl<0?'lr-bad':''}">${pct(pnl)}<br><small>${money(pnlCash)}</small></td><td>${fmt(h.stop,4)}</td><td><small>${esc(fresh.labelAr||'غير متاح')}<br>${esc(r?.quote?.sourceSessionDate||'—')} ${esc(r?.quote?.sourceMarketTime||'')}</small></td></tr>`}).join('');const totalPnl=priced?total-cost:null;p.innerHTML=`<div class="panel-head split"><div><h2>المحفظة — أسعار ونتائج محدثة</h2><p>أسعار متابعة متأخرة تقريبًا 15 دقيقة / إغلاق الجلسة، للعرض وإدارة المخاطر فقط.</p></div><span class="badge neutral">آخر تحديث ${esc(now)}</span></div><div class="lr-kpis"><div class="lr-k"><small>المراكز</small><b>${rows.length}</b></div><div class="lr-k"><small>مراكز مسعّرة</small><b>${priced}/${rows.length}</b></div><div class="lr-k"><small>القيمة الحالية المعروفة</small><b>${money(priced?total:null)}</b></div><div class="lr-k"><small>P/L المعروف</small><b class="${totalPnl>0?'lr-good':totalPnl<0?'lr-bad':''}">${money(totalPnl)}</b></div></div>${rows.length?`<div class="table-wrap"><table><thead><tr><th>السهم</th><th>السعر الحالي</th><th>متوسط/مرجع الدخول</th><th>الكمية</th><th>القيمة</th><th>P/L</th><th>Stop</th><th>المصدر</th></tr></thead><tbody>${body}</tbody></table></div>`:'<div class="rc2-note">لا توجد مراكز محفوظة حاليًا.</div>'}${q.errors.length?`<div class="rc2-note">تعذر تسعير بعض الرموز؛ لم يتم اختراع سعر بديل.</div>`:''}<div class="rc2-note">scoringImpact=NONE · recommendationMutationAllowed=false · executionAllowed=false</div>`}
+          async function refreshQuotes(){if(busy)return;busy=true;try{const rows=holdings(),tickers=uniqueTickers(rows),q=tickers.length?await quotesFor(tickers):{map:new Map(),errors:[]};lastQuoteAt=Date.now();renderPortfolio(rows,q);renderBanner();const phase=marketPhase();if(phase.phase==='POST_CLOSE'&&Date.now()-lastPmRun>600000){const b=document.getElementById('pmRun');if(b&&!b.disabled){lastPmRun=Date.now();b.click()}}}catch(e){const p=ensurePanel();p.innerHTML=`<div class="rc2-note">تعذر تحديث أسعار المحفظة: ${esc(e.message)}. لا توجد أسعار مفترضة.</div>`}finally{busy=false}}
+          window.addEventListener('rc2:ui-scan',e=>{latestScan=e.detail?.scan||latestScan;latestEffectiveDate=e.detail?.effectiveDate||effectiveDate(latestScan);renderBanner();if(Date.now()-lastQuoteAt>60000)void refreshQuotes()});
+          window.addEventListener('storage',e=>{if([EOD_KEY,EXP_KEY].includes(e.key))void refreshQuotes()});
+          document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-lastQuoteAt>120000)void refreshQuotes()});
+          setInterval(()=>{if(document.visibilityState==='visible')void refreshQuotes()},AUTO_REFRESH_MS);
+          if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>void refreshQuotes(),1800),{once:true});else setTimeout(()=>void refreshQuotes(),1800);
+          EOF
+
+      - name: Load adapter from V16.9 shell
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tfe-v20/public/index.html');s=p.read_text()
+          old='  <script type="module" src="intraday-ops.js?v=1.0.0"></script>\n'
+          new=old+'  <script type="module" src="live-refresh-v1.js?v=1.0.0"></script>\n'
+          assert old in s
+          if 'live-refresh-v1.js' not in s:s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+
+      - name: Add refresh safety tests
+        shell: bash
+        run: |
+          cat > tfe-v20/test/live-refresh.test.js <<'EOF'
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import { readFileSync } from 'node:fs';
+          const ui=readFileSync(new URL('../public/ui-v169.js',import.meta.url),'utf8');
+          const live=readFileSync(new URL('../public/live-refresh-v1.js',import.meta.url),'utf8');
+          const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+          test('recommendation session date wins over stale universe date in local archive',()=>{assert.match(ui,/const sessionDate=x\.sessionDate\|\|universeDate/);assert.match(ui,/function effectiveSessionDate\(\)/)});
+          test('V16.9 automatically refreshes RC2 every five minutes without cache',()=>{assert.match(ui,/setInterval\(\(\)=>\{if\(document\.visibilityState==='visible'\)refreshAll\(\)\},300000\)/);assert.match(ui,/cache:'no-store'/)});
+          test('live portfolio adapter prices both portfolio stores from intraday API',()=>{assert.match(live,/\/api\/intraday/);assert.match(live,/egx-tfe-rc2-v169-eod-manager/);assert.match(live,/egx-tfe-rc2-v169-portfolio/);assert.match(live,/AUTO_REFRESH_MS=300_000/)});
+          test('live refresh is display-only and cannot enable execution or mutate recommendations',()=>{assert.match(live,/scoringImpact=NONE/);assert.match(live,/recommendationMutationAllowed=false/);assert.match(live,/executionAllowed=false/);assert.doesNotMatch(live,/from ['"]\.\.\/src\/(engine|policy|confidence)/)});
+          test('professional shell loads live refresh adapter',()=>assert.match(html,/live-refresh-v1\.js\?v=1\.0\.0/));
+          EOF
+
+      - name: Syntax and full tests
+        working-directory: tfe-v20
+        run: |
+          node --check public/ui-v169.js
+          node --check public/live-refresh-v1.js
+          npm test
+          npm run red-team
+
+      - name: Commit validated fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tfe-v20/public/ui-v169.js tfe-v20/public/live-refresh-v1.js tfe-v20/public/index.html tfe-v20/test/live-refresh.test.js
+          git commit -m "fix: auto-refresh recommendations and live portfolio prices"
+          git push origin HEAD:develop/rc2-intraday-operations-v1
