@@ -1,18 +1,18 @@
-# تقرير جلسة 2026-08-20
+# تقرير جلسة 2026-08-24
 
 - حالة التشغيل: **يحتاج متابعة**
-- الأول فنيًا: **MPCO**
-- أول B للمراقبة: **MPCO**
+- الأول فنيًا: **SCEM**
+- أول B للمراقبة: **SCEM**
 - الجاهز ورقيًا: **لا يوجد**
-- إشارات جديدة: **23**
-- دخول جديد: **20**
-- صفقات مغلقة: **19**
-- منتهية دون دخول: **6**
+- إشارات جديدة: **20**
+- دخول جديد: **0**
+- صفقات مغلقة: **5**
+- منتهية دون دخول: **0**
 
 ## حالة الاستراتيجيات
 
 - breakout: ACTIVE_PAPER — صفقات مغلقة 54, PF 1.7657, Average R 0.3603
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 244, PF 1.5234, Average R 0.2618
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 245, PF 1.538, Average R 0.268
 - pullback: RESEARCH_ONLY — صفقات مغلقة 14, PF 4.1915, Average R 0.7905
 
 ## ملاحظات التشغيل
@@ -21,4 +21,4 @@
 - تحذير: 38 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `cd08c028ad6d60cc3c876b4c522d0fff7ed89bdecc9fc84a42877a5d9a2a8c05`
+بصمة التقرير: `ac1e0c8747e9e2671ffaa8eaa5f9f026dcbfdb66bbe8a445fbec5095dd741832`
