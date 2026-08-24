@@ -102,7 +102,10 @@ function bind(){
   window.addEventListener('rc2:ui-scan',()=>setTimeout(render,50));window.addEventListener('rc2:session-monitor',()=>setTimeout(render,50));
   window.addEventListener('storage',e=>{if([EXP_PORTFOLIO_KEY,EOD_PORTFOLIO_KEY].includes(e.key))setTimeout(render,50)});
   document.querySelector('.tab[data-view="operations"]')?.addEventListener('click',()=>{activateView('operations');setTimeout(render,80)});
-  let timer=null;const observer=new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(render,180)});observer.observe(document.body,{childList:true,subtree:true});
+  let timer=null;const observer=new MutationObserver(records=>{
+    const external=records.some(r=>{const t=r.target;return !(t instanceof Element) || !t.closest(`#${VIEW_ID}`)});
+    if(!external)return;clearTimeout(timer);timer=setTimeout(render,180);
+  });observer.observe(document.body,{childList:true,subtree:true});
 }
 function start(){ensureShell();ensureStyle();bind();render();setTimeout(render,1600)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
