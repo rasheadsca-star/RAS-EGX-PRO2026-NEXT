@@ -17,6 +17,9 @@ Every major stage returns `pass`, `score`, `reasonCodes`, `raw`, and `timestamp`
 ## No fabrication
 Missing fundamentals/catalysts stay `null`/`UNKNOWN`, never zero-filled. If 252 sessions are unavailable, the Trend/RS hard gate fails. Extended stocks return `WAIT FOR NEW SETUP`, not BUY.
 
+## 252-session completion gate
+SMA200, R252 and 52-week calculations are enabled only when the stock has at least **252 real daily sessions** after adjusted-price normalization. The scanner first tries the isolated V17 long-history store, then the equivalent Yahoo 10-year daily source, and appends the latest repository sessions. Missing history remains an explicit failure; it is never synthesized.
+
 ## Run
 ```bash
 npm test
