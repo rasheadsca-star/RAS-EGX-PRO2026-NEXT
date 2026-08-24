@@ -10,13 +10,14 @@ on:
       - "data/stable/v16-ls1-policy.json"
       - "data/stable/v16-active-position-manager-policy.json"
       - "preview-v16/app/v16-9-active-position-manager.js"
+      - "preview-v16/app/v16-9-position-advisory-core.js"
       - "preview-v16/app/decision-source.js"
       - "main-app-ls1.html"
       - ".github/workflows/main-app-intraday-ls1.yml"
   schedule:
-    # Ten-minute market management cadence. Broad UTC window covers Cairo
+    # Five-minute market-management cadence. Broad UTC window covers Cairo
     # UTC+2 / UTC+3; the engines remain fail-closed outside valid session evidence.
-    - cron: "*/10 7-12 * * 0-4"
+    - cron: "*/5 7-12 * * 0-4"
     # Dedicated late-session final-check coverage for both Cairo UTC offsets.
     - cron: "25 10-12 * * 0-4"
 
