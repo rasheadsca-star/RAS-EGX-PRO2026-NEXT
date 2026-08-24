@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import { trendTemplate, rsRaw, liquidityEngine, dataIntegrity, entryEngine } from '../src/features.js';
+const bars=(n=300,{start=10,step=.03,volume=2_000_000,lastBoost=1}={})=>Array.from({length:n},(_,i)=>{const close=start+i*step+(Math.sin(i/4)*.08),date=new Date(Date.UTC(2025,0,1+i)).toISOString().slice(0,10);return{date,open:close*.995,high:close*1.01,low:close*.99,close,volume:i===n-1?volume*lastBoost:volume,valueTraded:close*volume,adjustmentFactor:1}});
+test('trend template passes a mature rising trend',()=>{const r=trendTemplate(bars());assert.equal(r.pass,true);assert.ok(r.raw.SMA50>r.raw.SMA150);assert.ok(r.raw.SMA150>r.raw.SMA200);});
+test('RS raw is not RSI and requires 252-session return',()=>{const r=rsRaw(bars(320));assert.ok(Number.isFinite(r.raw));assert.ok(Number.isFinite(r.returns.R252));});
+test('liquidity gate rejects practically untradeable stock',()=>{const r=liquidityEngine(bars(300,{volume:100}));assert.equal(r.pass,false);assert.equal(r.raw.category,'DANGEROUS');});
+test('stale data cannot pass data gate',()=>{const b=bars();const s={rows:b,entry:{summary:{lastSession:'2026-12-31',warnings:[]},fundamentals:null,longHistory:null},meta:{}};const r=dataIntegrity(s);assert.equal(r.pass,false);assert.ok(r.reasonCodes.includes('STALE_DATA'));});
+test('extended stock is DO NOT CHASE',()=>{const b=bars();const p={raw:{pivot_price:b.at(-1).close/1.08}},v={raw:{AvgVolume20:2_000_000}},t={pass:true},rs={pass:true};const e=entryEngine(b,p,v,t,rs);assert.equal(e.raw.status,'EXTENDED');assert.equal(e.raw.do_not_chase,true);});

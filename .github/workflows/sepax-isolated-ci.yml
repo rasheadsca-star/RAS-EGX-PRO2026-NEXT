@@ -1,0 +1,74 @@
+name: SEPA-X Isolated CI and Market Scan
+
+on:
+  push:
+    branches:
+      - develop/sepax-isolated-v1
+    paths:
+      - 'sepa-x/**'
+      - '.github/workflows/sepax-isolated-ci.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '30 13 * * 0-4'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sepax-isolated-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-and-scan:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop/sepax-isolated-v1
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify frozen RC2 files are untouched by branch diff
+        shell: bash
+        run: |
+          git fetch origin 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9 --depth=1
+          BAD="$(git diff --name-only 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9...HEAD | grep '^tfe-v20/' || true)"
+          if [ -n "$BAD" ]; then
+            echo "RC2_MUTATION_DETECTED"
+            echo "$BAD"
+            exit 1
+          fi
+
+      - name: Run unit, golden, isolation and integration tests
+        working-directory: sepa-x
+        run: npm test
+
+      - name: Run real full-market scan
+        working-directory: sepa-x
+        env:
+          NODE_OPTIONS: --max-old-space-size=2048
+        run: npm run scan
+
+      - name: Run acceptance gates
+        working-directory: sepa-x
+        run: npm run acceptance
+
+      - name: Commit real scan evidence only
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sepa-x/data/current-scan.json sepa-x/data/recommendation-history.json sepa-x/data/engine-errors.json sepa-x/data/state-transitions.json
+          if git diff --cached --quiet; then
+            echo "No scan evidence changes to commit."
+          else
+            git commit -m "chore(sepa-x): refresh real market scan [skip ci]"
+            git push origin HEAD:develop/sepax-isolated-v1
+          fi
