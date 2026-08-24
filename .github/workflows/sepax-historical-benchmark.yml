@@ -1,0 +1,97 @@
+name: SEPA-X Historical Benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop/sepax-isolated-v1
+    paths:
+      - 'sepa-x/src/**'
+      - 'sepa-x/scripts/**'
+      - 'sepa-x/test/**'
+      - 'sepa-x/package.json'
+      - '.github/workflows/sepax-historical-benchmark.yml'
+
+permissions:
+  contents: read
+
+env:
+  V169_FROZEN_BRANCH: release/MAIN-APP-v16.9.2-frozen-20260816
+  RC2_SIM_URL: https://egx-tfe-v20-fusion-rc2.vercel.app/api/index?route=simulate&scope=market&symbols=220
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Isolation guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9 -- tfe-v20/
+          echo 'RC2 frozen runtime untouched.'
+
+      - name: SEPA-X tests
+        working-directory: sepa-x
+        run: npm test
+
+      - name: Run point-in-time historical simulator
+        working-directory: sepa-x
+        run: npm run backtest:historical -- --step=3 --signals=80 --min-universe=60
+
+      - name: Fetch frozen RC2 native historical evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p sepa-x/data/research
+          curl --fail --location --retry 4 --retry-all-errors --max-time 180 "$RC2_SIM_URL" -o sepa-x/data/research/rc2-simulate.json
+          node -e "const x=require('./sepa-x/data/research/rc2-simulate.json'); if(!x.ok||!x.summary||!x.summary.entered) process.exit(2); console.log(x.summary)"
+
+      - name: Load exact frozen V16.9 walk-forward evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$V169_FROZEN_BRANCH:refs/remotes/origin/$V169_FROZEN_BRANCH"
+          git show "refs/remotes/origin/$V169_FROZEN_BRANCH:data/research/v16-v169-basket-engine.json" > sepa-x/data/research/v16-v169-basket-engine.json
+          node -e "const x=require('./sepa-x/data/research/v16-v169-basket-engine.json'); if(!x.productionEligible||!x.blockedWalkForwardMetrics) process.exit(2); console.log(x.blockedWalkForwardMetrics)"
+
+      - name: Compare SEPA-X vs RC2 vs V16.9
+        working-directory: sepa-x
+        run: npm run compare:engines
+
+      - name: Print concise benchmark
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const s=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-simulator-summary.json'));
+          const c=JSON.parse(fs.readFileSync('sepa-x/data/research/engine-comparison.json'));
+          console.log('SEPA_X_SUMMARY='+JSON.stringify(s.summary));
+          console.log('OVERALL_VERDICT='+c.overallVerdict);
+          console.log('DIMENSIONS='+JSON.stringify(c.dimensions));
+          NODE
+          cat sepa-x/docs/ENGINE_COMPARISON_REPORT.md
+
+      - name: Upload benchmark evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepax-historical-benchmark
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            sepa-x/data/research/historical-simulator.json
+            sepa-x/data/research/historical-simulator-summary.json
+            sepa-x/data/research/rc2-simulate.json
+            sepa-x/data/research/v16-v169-basket-engine.json
+            sepa-x/data/research/engine-comparison.json
+            sepa-x/docs/ENGINE_COMPARISON_REPORT.md
