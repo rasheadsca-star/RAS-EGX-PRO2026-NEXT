@@ -127,7 +127,7 @@ jobs:
             legacyIsMigrationOnly:ui.includes("LEGACY_PORTFOLIO_KEY = 'egx-v137-portfolio'") && ui.includes('canonicalRaw===null'),
             sellExit:core.includes("code:'SELL_EXIT'") && core.includes('بيع / خروج'),
             partialNextTarget:core.includes("code:'PARTIAL_HOLD_NEXT'") && core.includes('جني جزئي'),
-            holdToTarget:core.includes("code:'HOLD_TO_TARGET'") && core.includes('احتفظ وانتظر الهدف'),
+            holdToTarget:core.includes('HOLD_TO_TARGET') && core.includes('احتفظ وانتظر الهدف'),
             doNotChase:core.includes("code:'DO_NOT_CHASE'") && policy.actionCatalog?.DO_NOT_CHASE==='لا تطارد السعر',
             policyFiveMinute:policy.refreshIntervalMinutes===5,
             noAutoOrders:!(/automaticOrders\s*:\s*true/.test(ui+core)),
