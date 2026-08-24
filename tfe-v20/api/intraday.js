@@ -136,8 +136,16 @@ function runtimeSourceCommit() {
   return process.env.VERCEL_GIT_COMMIT_SHA || process.env.GITHUB_SHA || process.env.TFE_SOURCE_COMMIT || null;
 }
 
+function setCors(res) {
+  res.setHeader('access-control-allow-origin', '*');
+  res.setHeader('access-control-allow-methods', 'GET, OPTIONS');
+  res.setHeader('access-control-allow-headers', 'Cache-Control, Content-Type');
+  res.setHeader('access-control-max-age', '600');
+}
+
 function send(res, status, body) {
   res.statusCode = status;
+  setCors(res);
   res.setHeader('content-type', 'application/json; charset=utf-8');
   res.setHeader('cache-control', 'no-store');
   res.setHeader('x-tfe-engine', POLICY.engineId);
@@ -147,6 +155,12 @@ function send(res, status, body) {
 }
 
 export default async function handler(req, res) {
+  if (String(req.method || 'GET').toUpperCase() === 'OPTIONS') {
+    res.statusCode = 204;
+    setCors(res);
+    res.setHeader('cache-control', 'no-store');
+    return res.end();
+  }
   try {
     const url = new URL(req.url, `https://${req.headers.host}`);
     const tickers = normalizeTickerList(url.searchParams.get('tickers'));
@@ -184,6 +198,7 @@ export default async function handler(req, res) {
       publicationAllowed: false,
       executionAllowed: false,
       automaticOrders: false,
+      corsReadOnly: true,
       disclaimer: 'Intraday shadow analysis uses an incomplete delayed daily bar for operational monitoring only. It cannot create, replace, rank, or mutate official RC2 recommendations; official signals remain end-of-session decisions from completed bars.',
     });
   } catch (error) {
