@@ -21,9 +21,9 @@ export function dataIntegrity(stock,cfg=DEFAULT_CONFIG){
   const fundamentalFreshness=fundamentalUnavailable?35:(entry.fundamentals?.publicationDate?100:60);
   const corporateActionIntegrity=corpReview?40:(factorJumps.length?75:100);
   let confidence=weightedAvailable([[freshness?100:0,30],[historyCompleteness,25],[priceIntegrity,15],[volumeIntegrity,10],[fundamentalFreshness,5],[corporateActionIntegrity,15]])??0;
-  const reasons=[]; if(!freshness)reasons.push('STALE_DATA');if(!enough)reasons.push('INSUFFICIENT_252_SESSION_HISTORY');if(priceIntegrity<95)reasons.push('PRICE_INTEGRITY_FAIL');if(corpReview)reasons.push('CORPORATE_ACTION_REVIEW_REQUIRED');if(fundamentalUnavailable)reasons.push('FUNDAMENTALS_UNAVAILABLE_CONFIDENCE_PENALTY');
+  const reasons=[]; if(!freshness)reasons.push('STALE_DATA');if(!enough)reasons.push('INSUFFICIENT_253_SESSION_HISTORY_FOR_R252');if(priceIntegrity<95)reasons.push('PRICE_INTEGRITY_FAIL');if(corpReview)reasons.push('CORPORATE_ACTION_REVIEW_REQUIRED');if(fundamentalUnavailable)reasons.push('FUNDAMENTALS_UNAVAILABLE_CONFIDENCE_PENALTY');
   const pass=freshness&&enough&&priceIntegrity>=95&&!corpReview&&confidence>=cfg.gates.minDataConfidence;
-  return gate(pass,confidence,reasons,{data_freshness:freshness?100:0,history_completeness:round(historyCompleteness,1),price_integrity:round(priceIntegrity,1),volume_integrity:round(volumeIntegrity,1),fundamental_freshness:fundamentalFreshness,corporate_action_integrity:corporateActionIntegrity,latest,expected,sessionCount:rows.length,factorJumps});
+  return gate(pass,confidence,reasons,{data_freshness:freshness?100:0,history_completeness:round(historyCompleteness,1),price_integrity:round(priceIntegrity,1),volume_integrity:round(volumeIntegrity,1),fundamental_freshness:fundamentalFreshness,corporate_action_integrity:corporateActionIntegrity,latest,expected,sessionCount:rows.length,requiredSessionCount:cfg.market.requiredHistorySessions,longHistorySource:meta.longHistorySource??null,longHistoryRange:meta.longHistoryRange??null,longHistoryCoverageStart:meta.longHistoryCoverageStart??null,longHistoryCoverageEnd:meta.longHistoryCoverageEnd??null,overlapReconciliation:meta.overlapReconciliation??null,factorJumps});
 }
 
 export function liquidityEngine(bars,cfg=DEFAULT_CONFIG){
