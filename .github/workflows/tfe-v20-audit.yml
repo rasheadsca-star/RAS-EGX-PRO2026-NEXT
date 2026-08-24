@@ -55,6 +55,7 @@ jobs:
           node --check public/live-refresh-v1.js
           node --check public/intraday-ops.js
           node --check public/ops-v169.js
+          node --check public/rc2-ops-center.js
           node --check stability/frozen-runtime-contract.js
           node --check sidecars/forward-evidence.js
           node --check sidecars/data-verification.js
@@ -69,7 +70,7 @@ jobs:
       - name: Full functional and destructive tests
         run: npm test
       - name: Display-layer isolation tests
-        run: node --test test/portfolio-deep-analysis.test.js test/fundamental-auto.test.js test/portfolio-manager.test.js test/stability-contract.test.js
+        run: node --test test/portfolio-deep-analysis.test.js test/fundamental-auto.test.js test/portfolio-manager.test.js test/ops-center.test.js test/stability-contract.test.js
       - name: Independent red-team stability gate
         run: npm run red-team
       - name: Stage exact runtime artifact
