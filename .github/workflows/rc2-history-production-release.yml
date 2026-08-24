@@ -6,6 +6,9 @@ on:
       - develop/rc2-intraday-operations-v1
     paths:
       - '.github/workflows/rc2-history-production-release.yml'
+  pull_request:
+    branches:
+      - develop/rc2-intraday-operations-v1
 
 permissions:
   contents: read
@@ -22,6 +25,7 @@ env:
 
 jobs:
   release:
+    if: github.event_name == 'push' || github.head_ref == 'release/rc2-history-production-20260824'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
