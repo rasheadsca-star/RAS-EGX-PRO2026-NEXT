@@ -7,7 +7,7 @@ const freeze = (x) => {
 
 export const DEFAULT_CONFIG = freeze({
   engineId: 'SEPA_X_ENGINE_V1',
-  schemaVersion: '1.0.1',
+  schemaVersion: '1.1.0',
   researchOnly: true,
   permissions: {
     executionAllowed: false,
@@ -57,6 +57,21 @@ export const DEFAULT_CONFIG = freeze({
     preferredRewardRisk: 2,
     eliteRewardRisk: 3,
     defaultRiskPerTradePct: 1,
+  },
+  concentration: {
+    baseCount: 3,
+    maxCount: 5,
+    minFinalScore: 74,
+    minConfidenceScore: 65,
+    minRewardRisk: 2,
+    expansionMinFinalScore: 80,
+    expansionMinConfidenceScore: 72,
+    expansionMinRewardRisk: 2.25,
+    expansionMaxConvictionGap: 6,
+    targetRMultiples: [2, 3, 4],
+    entryExpirySessions: 3,
+    maxHoldSessions: 20,
+    sameBarAmbiguity: 'STOP_FIRST',
   },
   gates: {
     minDataConfidence: 60,
