@@ -36,3 +36,9 @@ test('existing add-on wrapper still loads deep portfolio and automatic fundament
   assert.ok(wrapper.includes('portfolio-deep-analysis.js?v=20260823-deep2'));
   assert.ok(wrapper.includes('fundamental-auto.js?v=20260823-fund2'));
 });
+
+test('operations center observer ignores self-render mutations', async () => {
+  const center = await source('public/rc2-ops-center.js');
+  assert.ok(center.includes('!t.closest(`#${VIEW_ID}`)'));
+  assert.ok(center.includes('if(!external)return'));
+});
