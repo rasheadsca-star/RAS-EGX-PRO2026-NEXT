@@ -1,9 +1,10 @@
 export const n = (v) => {
+  if (v === null || v === undefined || v === '') return null;
   const x = Number(v);
   return Number.isFinite(x) ? x : null;
 };
 export const clamp = (x, lo=0, hi=100) => Math.max(lo, Math.min(hi, Number(x) || 0));
-export const round = (x, d=2) => Number.isFinite(Number(x)) ? Number(Number(x).toFixed(d)) : null;
+export const round = (x, d=2) => (x !== null && x !== undefined && x !== '' && Number.isFinite(Number(x))) ? Number(Number(x).toFixed(d)) : null;
 export const mean = (xs) => {
   const a = xs.map(n).filter(Number.isFinite);
   return a.length ? a.reduce((s,x)=>s+x,0)/a.length : null;

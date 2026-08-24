@@ -78,8 +78,8 @@ export const DEFAULT_CONFIG = freeze({
   },
   cache: {
     ttlMs: 5 * 60 * 1000,
-    timeoutMs: 12_000,
-    retries: 2,
-    concurrency: 10,
+    timeoutMs: 18_000,
+    retries: 3,
+    concurrency: 4,
   },
 });
