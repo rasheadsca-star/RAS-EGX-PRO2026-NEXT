@@ -6,9 +6,9 @@ export function concentrationPolicy(cfg={}){
   return {
     baseCount:3,
     maxCount:5,
-    minFinalScore:74,
-    minConfidenceScore:65,
+    requireCleanEngineGates:true,
     minRewardRisk:2,
+    maxRiskPct:8,
     expansionMinFinalScore:80,
     expansionMinConfidenceScore:72,
     expansionMinRewardRisk:2.25,
@@ -36,8 +36,7 @@ function entryBounds(row){
 export function buildTargetPlan(row,cfg={}){
   const bounds=entryBounds(row),stop=Number(row?.stop_loss);
   if(!bounds||!Number.isFinite(stop))return {valid:false,reason:'TARGET_PLAN_INPUT_MISSING'};
-  const entry=Number(bounds.high);
-  const risk=entry-stop;
+  const entry=Number(bounds.high),risk=entry-stop;
   if(!(entry>0&&risk>0))return {valid:false,reason:'TARGET_PLAN_INVALID_RISK'};
   const multiples=Array.isArray(cfg?.targetRMultiples)&&cfg.targetRMultiples.length?cfg.targetRMultiples:[2,3,4];
   const targets=multiples.map((r,i)=>({id:`T${i+1}`,r:Number(r),price:round(entry+Number(r)*risk,4),gainPct:round(Number(r)*risk/entry*100,2)}));
@@ -45,10 +44,8 @@ export function buildTargetPlan(row,cfg={}){
 }
 
 export function concentrationScore(row){
-  const status=String(row?.status||'');
-  const statusScore=({'READY NOW':100,'BREAKOUT CONFIRMED':98,'NEAR PIVOT':82})[status]??0;
-  const rr=finite(row?.reward_risk)?clamp(Number(row.reward_risk)/4*100):0;
-  const vcp=finite(row?.vcp?.quality)?clamp(row.vcp.quality):0;
+  const status=String(row?.status||''),statusScore=({'READY NOW':100,'BREAKOUT CONFIRMED':98,'NEAR PIVOT':82})[status]??0;
+  const rr=finite(row?.reward_risk)?clamp(Number(row.reward_risk)/4*100):0,vcp=finite(row?.vcp?.quality)?clamp(row.vcp.quality):0;
   return round(.34*clamp(row?.final_score)+.20*clamp(row?.confidence_score)+.14*clamp(row?.rs_percentile)+.12*statusScore+.10*vcp+.10*rr,1);
 }
 
@@ -56,28 +53,20 @@ function rejectionReason(row,cfg){
   if(!row)return 'ROW_MISSING';
   if(!['READY NOW','BREAKOUT CONFIRMED','NEAR PIVOT'].includes(row.status))return 'STATUS_NOT_ACTIONABLE';
   if(String(row.action||'').includes('WAIT')||row?.audit_stages?.entry?.raw?.do_not_chase===true)return 'WAIT_OR_DO_NOT_CHASE';
-  if(!finite(row.final_score)||Number(row.final_score)<cfg.minFinalScore)return 'FINAL_SCORE_LOW';
-  if(!finite(row.confidence_score)||Number(row.confidence_score)<cfg.minConfidenceScore)return 'CONFIDENCE_LOW';
+  const failed=Array.isArray(row.failed_rules)?row.failed_rules:[];
+  if(cfg.requireCleanEngineGates&&failed.length)return `ENGINE_GATE:${failed[0]}`;
   if(!finite(row.reward_risk)||Number(row.reward_risk)<cfg.minRewardRisk)return 'RR_LOW';
-  const plan=buildTargetPlan(row,cfg);
-  if(!plan.valid)return plan.reason||'TARGET_PLAN_INVALID';
+  if(finite(row.risk_pct)&&Number(row.risk_pct)>cfg.maxRiskPct)return 'RISK_TOO_WIDE';
+  const plan=buildTargetPlan(row,cfg);if(!plan.valid)return plan.reason||'TARGET_PLAN_INVALID';
   return null;
 }
 
 function hardCandidate(row,cfg){return rejectionReason(row,cfg)===null;}
 
 export function explainConcentrationPool(rows=[],cfg={}){
-  const policy=concentrationPolicy(cfg),rejections={},statusCounts={};let eligible=0;
-  const top=[];
-  for(const row of rows||[]){
-    statusCounts[row?.status||'UNKNOWN']=(statusCounts[row?.status||'UNKNOWN']||0)+1;
-    const reason=rejectionReason(row,policy);
-    if(reason)rejections[reason]=(rejections[reason]||0)+1;else eligible++;
-    top.push({symbol:row?.symbol,status:row?.status,finalScore:finite(row?.final_score)?Number(row.final_score):null,confidence:finite(row?.confidence_score)?Number(row.confidence_score):null,rr:finite(row?.reward_risk)?Number(row.reward_risk):null,rs:finite(row?.rs_percentile)?Number(row.rs_percentile):null,vcp:finite(row?.vcp?.quality)?Number(row.vcp.quality):null,rejection:reason,conviction:concentrationScore(row)});
-  }
-  top.sort((a,b)=>(b.conviction??-1)-(a.conviction??-1));
-  const numeric=(field)=>top.map(x=>x[field]).filter(finite).map(Number);
-  const max=(field)=>{const a=numeric(field);return a.length?Math.max(...a):null;};
+  const policy=concentrationPolicy(cfg),rejections={},statusCounts={};let eligible=0;const top=[];
+  for(const row of rows||[]){statusCounts[row?.status||'UNKNOWN']=(statusCounts[row?.status||'UNKNOWN']||0)+1;const reason=rejectionReason(row,policy);if(reason)rejections[reason]=(rejections[reason]||0)+1;else eligible++;top.push({symbol:row?.symbol,status:row?.status,finalScore:finite(row?.final_score)?Number(row.final_score):null,confidence:finite(row?.confidence_score)?Number(row.confidence_score):null,rr:finite(row?.reward_risk)?Number(row.reward_risk):null,riskPct:finite(row?.risk_pct)?Number(row.risk_pct):null,rs:finite(row?.rs_percentile)?Number(row.rs_percentile):null,vcp:finite(row?.vcp?.quality)?Number(row.vcp.quality):null,rejection:reason,conviction:concentrationScore(row)});}
+  top.sort((a,b)=>(b.conviction??-1)-(a.conviction??-1));const numeric=(field)=>top.map(x=>x[field]).filter(finite).map(Number),max=(field)=>{const a=numeric(field);return a.length?Math.max(...a):null;};
   return {total:(rows||[]).length,eligible,statusCounts,rejections,maxima:{finalScore:max('finalScore'),confidence:max('confidence'),rr:max('rr'),rs:max('rs'),vcp:max('vcp')},topRejected:top.slice(0,10)};
 }
 
