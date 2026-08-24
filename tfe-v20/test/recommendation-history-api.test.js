@@ -19,7 +19,7 @@ test('complete recommendation history is read-only and cannot change RC2 decisio
 });
 
 test('published history and historical replay are explicitly separated', () => {
-  assert.match(api, /Published RC2 snapshots persisted from production\/immutable evidence/);
+  assert.match(api, /Actual RC2 snapshots persisted from production\/immutable evidence/);
   assert.match(api, /Historical backtest signals generated with no-lookahead rules/);
   assert.match(api, /HISTORICAL_REPLAY_NOT_LIVE_PUBLISHED/);
   assert.match(ui, /Published RC2/);
