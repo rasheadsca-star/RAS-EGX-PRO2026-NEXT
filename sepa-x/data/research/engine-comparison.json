@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "sepax-engine-comparison.1",
+  "generatedAt": "2026-08-24T22:02:52.435Z",
+  "overallVerdict": "NO_SINGLE_UNIVERSAL_WINNER",
+  "recommendation": "Use the engine according to horizon: RC2 for conservative target precision, V16.9 for one-session basket ranking, and SEPA-X only for larger 2R+ objectives if its retrospective evidence is adequate.",
+  "comparabilityWarning": "The three engines do not optimize the same target or holding horizon. Raw target-hit percentages must not be compared as if their objectives were identical.",
+  "engines": {
+    "SEPA-X": {
+      "objective": "Concentrated 3 or 5 high-conviction stocks; 2R/3R/4R targets",
+      "sampleAdequacy": "LIMITED",
+      "signalDates": 80,
+      "entered": 0,
+      "target1Definition": "2R",
+      "target1HitPct": null,
+      "target2HitPct": null,
+      "target3HitPct": null,
+      "positivePct": null,
+      "averageNetPct": 0,
+      "expectancyR": 0,
+      "profitFactor": null,
+      "maxDrawdownPct": 0,
+      "method": "Point-in-time market replay; current fundamentals/catalysts excluded; market-wide RS recomputed."
+    },
+    "RC2": {
+      "objective": "Precision structural trade plan",
+      "sampleAdequacy": "STRONG",
+      "entered": 67,
+      "target1Definition": "0.8R precision target capped by structural resistance",
+      "target1HitPct": 76.1,
+      "positivePct": 76.1,
+      "averageNetPct": 1.32,
+      "profitFactor": 2.48,
+      "wilson95LowerTarget1Pct": 64.7,
+      "maxHoldSessions": 10,
+      "method": "Recorded full-market history; next-session entry; no lookahead; STOP_FIRST."
+    },
+    "V16.9": {
+      "objective": "Top-gainer equal-weight 3–5 stock basket; one-session holding",
+      "sampleAdequacy": "STRONG",
+      "sessions": 35,
+      "target1Definition": "Frozen comparison artifact reports next-session return, not target-hit rate",
+      "target1HitPct": null,
+      "sessionWinRatePct": 54.286,
+      "averageNetPct": 1.3651,
+      "profitFactor": 2.176,
+      "compoundedNetReturnPct": 54.547,
+      "maxDrawdownPct": -10.877,
+      "averageTop10Hits": 0.8,
+      "method": "Blocked walk-forward: basket size chosen from prior 8 sessions and fixed for next 5; 0.60% cost."
+    }
+  },
+  "dimensions": {
+    "targetPrecision": {
+      "winner": "RC2",
+      "note": "Not a like-for-like target: SEPA-X T1 is 2R, RC2 T1 is approximately 0.8R capped by structural resistance; V16.9 frozen artifact does not publish a target-hit rate."
+    },
+    "shortHorizonRanking": {
+      "winner": "V16.9",
+      "note": "V16.9 is explicitly a blocked walk-forward top-gainer basket with one-session holding."
+    },
+    "nativeProfitFactor": {
+      "winner": "RC2",
+      "note": "Native profit factors use different holding periods and objectives; use as supporting evidence only."
+    },
+    "largeTargetOpportunity": {
+      "winner": "INSUFFICIENT_SEPA_X_EVIDENCE",
+      "note": "SEPA-X uniquely evaluates 2R/3R/4R targets in this benchmark."
+    },
+    "conservativeTargetEvidence": {
+      "winner": "RC2",
+      "note": "RC2 supplies a Wilson 95% lower confidence bound for Target1 hit rate."
+    }
+  }
+}
