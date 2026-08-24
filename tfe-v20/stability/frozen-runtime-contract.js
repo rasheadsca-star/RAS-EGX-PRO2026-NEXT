@@ -1,5 +1,5 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.14.0-v169-all-ops-center',
+  contractVersion: '1.14.1-v169-all-ops-center-hardened',
   frozenAtSourceCommit: '9725620bcb5946cc416548fb61d3a6253641abbb',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, evidence-backed price reconciliation, session monitoring, the consolidated V16.9 RC2 Operations Center, operational overlays, isolated intraday operations, display-only live refresh, deep portfolio analytics, and automatic supplemental fundamental analysis while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
@@ -22,7 +22,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'public/portfolio-manager-core.js': 'c22a8f8e7c3c4291fd2ea0fb42af432d008ea947',
     'public/portfolio-deep-analysis.js': '05b9b4136f2254520816b1ac2ab86ad509d181ed',
     'public/fundamental-auto.js': 'bf0556b2973ed348b78eea2d9ea76e7eb9684c2c',
-    'public/rc2-ops-center.js': '85132dd46cf2da2ba5ae0457383c24a6bcf9e755',
+    'public/rc2-ops-center.js': 'cf37e40cc4024a76132ff1217008258b22de7909',
     'public/ui-v169.js': 'c1463f0c181eea5699a310446410fbb924632afd',
     'public/styles-v169.css': '7194d4fdcf1b25b4cabce01e3b7ab827a5915a8b',
     'public/session-monitor-core.js': 'df353eb605877954d0efc4a37143e7a35a40b462',
