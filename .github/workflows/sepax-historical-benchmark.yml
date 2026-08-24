@@ -49,6 +49,10 @@ jobs:
         working-directory: sepa-x
         run: npm run backtest:historical -- --step=3 --signals=80 --min-universe=60
 
+      - name: Diagnose historical hard gates
+        working-directory: sepa-x
+        run: node scripts/historical-diagnostics.mjs
+
       - name: Fetch frozen RC2 native historical evidence
         shell: bash
         run: |
@@ -76,9 +80,11 @@ jobs:
           const fs=require('fs');
           const s=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-simulator-summary.json'));
           const c=JSON.parse(fs.readFileSync('sepa-x/data/research/engine-comparison.json'));
+          const d=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-diagnostics.json'));
           console.log('SEPA_X_SUMMARY='+JSON.stringify(s.summary));
           console.log('OVERALL_VERDICT='+c.overallVerdict);
           console.log('DIMENSIONS='+JSON.stringify(c.dimensions));
+          console.log('HARD_GATE_DIAGNOSTICS='+JSON.stringify(d.reports.map(x=>({date:x.date,market:x.market?.Regime||x.market?.regime,statuses:x.statuses,reasons:x.hardReasonCounts,eligible:x.concentration?.eligible,maxima:x.concentration?.maxima}))));
           NODE
           cat sepa-x/docs/ENGINE_COMPARISON_REPORT.md
 
@@ -91,6 +97,7 @@ jobs:
           path: |
             sepa-x/data/research/historical-simulator.json
             sepa-x/data/research/historical-simulator-summary.json
+            sepa-x/data/research/historical-diagnostics.json
             sepa-x/data/research/rc2-simulate.json
             sepa-x/data/research/v16-v169-basket-engine.json
             sepa-x/data/research/engine-comparison.json
@@ -104,6 +111,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add sepa-x/data/research/historical-simulator.json \
                   sepa-x/data/research/historical-simulator-summary.json \
+                  sepa-x/data/research/historical-diagnostics.json \
                   sepa-x/data/research/rc2-simulate.json \
                   sepa-x/data/research/v16-v169-basket-engine.json \
                   sepa-x/data/research/engine-comparison.json \
