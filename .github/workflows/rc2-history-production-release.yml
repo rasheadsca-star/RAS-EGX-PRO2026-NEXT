@@ -1,0 +1,115 @@
+name: RC2 History Production Release
+
+on:
+  push:
+    branches:
+      - develop/rc2-intraday-operations-v1
+    paths:
+      - '.github/workflows/rc2-history-production-release.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rc2-history-production-release
+  cancel-in-progress: false
+
+env:
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_gXmmVe1QqGFJ9nsv30uu0emLqIdY
+  RC2_PRODUCTION_URL: https://egx-tfe-v20-fusion-rc2.vercel.app
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require production deploy credential
+        run: |
+          set -euo pipefail
+          test -n "${VERCEL_TOKEN:-}" || { echo 'VERCEL_TOKEN_MISSING'; exit 2; }
+
+      - name: Re-run RC2 functional and red-team gates
+        working-directory: tfe-v20
+        run: |
+          set -euo pipefail
+          npm test
+          npm run red-team
+          node --check api/recommendation-history.js
+          node --check src/recommendationHistory.js
+          node --check public/recommendation-history-ui.js
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@48.10.0
+
+      - name: Link exact Vercel project
+        working-directory: tfe-v20
+        run: |
+          set -euo pipefail
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+
+      - name: Deploy audited RC2 to production
+        id: deploy
+        working-directory: tfe-v20
+        run: |
+          set -euo pipefail
+          URL="$(vercel deploy --prod --yes --token "$VERCEL_TOKEN")"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "RC2_PRODUCTION_DEPLOYMENT=$URL"
+
+      - name: Verify production history and safety contract
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if curl -fsSL --max-time 180 "$RC2_PRODUCTION_URL/api/recommendation-history?scope=published&t=$(date +%s)" -o /tmp/history.json \
+              && curl -fsSL --max-time 180 "$RC2_PRODUCTION_URL/api/index?route=scan&limit=20&t=$(date +%s)" -o /tmp/scan.json \
+              && curl -fsSL --max-time 60 "$RC2_PRODUCTION_URL/portfolio-manager.js?t=$(date +%s)" -o /tmp/portfolio-manager.js; then
+              node - <<'NODE'
+              const fs=require('fs');
+              const h=JSON.parse(fs.readFileSync('/tmp/history.json','utf8'));
+              const s=JSON.parse(fs.readFileSync('/tmp/scan.json','utf8'));
+              const loader=fs.readFileSync('/tmp/portfolio-manager.js','utf8');
+              const fail=m=>{console.error(m);process.exit(1)};
+              if(h?.ok!==true) fail('HISTORY_API_NOT_OK');
+              if(h?.engine!=='TFE_V20_FUSION_RC2') fail(`HISTORY_ENGINE_MISMATCH:${h?.engine}`);
+              if(!Array.isArray(h?.published?.rows)) fail('PUBLISHED_HISTORY_ROWS_MISSING');
+              if(!h?.published?.summary) fail('PUBLISHED_HISTORY_SUMMARY_MISSING');
+              if(h?.separation?.scoringImpact!=='NONE') fail('HISTORY_SCORING_IMPACT_CHANGED');
+              if(h?.separation?.recommendationMutationAllowed!==false) fail('HISTORY_RECOMMENDATION_MUTATION_ENABLED');
+              if(h?.separation?.executionAllowed!==false) fail('HISTORY_EXECUTION_ENABLED');
+              if(s?.ok!==true || s?.engine!=='TFE_V20_FUSION_RC2') fail('SCAN_NOT_OK');
+              if(s?.permissions?.executionAllowed!==false || s?.permissions?.automaticOrders!==false) fail('EXECUTION_LOCK_BROKEN');
+              if(!loader.includes('recommendation-history-ui.js')) fail('HISTORY_UI_LOADER_MISSING');
+              console.log('RC2_HISTORY_PRODUCTION_PASS:'+JSON.stringify({
+                historyRows:h.published.rows.length,
+                summary:h.published.summary,
+                archive:h.published.archive,
+                scanSession:s.universe?.sessionDate??null,
+                recommendations:(s.recommendations||[]).map(x=>x.ticker),
+                executionAllowed:s.permissions.executionAllowed,
+                automaticOrders:s.permissions.automaticOrders
+              }));
+              NODE
+              exit 0
+            fi
+            sleep 20
+          done
+          echo 'RC2_HISTORY_PRODUCTION_SMOKE_FAILED'
+          exit 1
+
+      - name: Release summary
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          echo "Production deployment: $DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "Production alias: $RC2_PRODUCTION_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "History API + UI + execution lock verified." >> "$GITHUB_STEP_SUMMARY"
