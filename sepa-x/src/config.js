@@ -7,7 +7,7 @@ const freeze = (x) => {
 
 export const DEFAULT_CONFIG = freeze({
   engineId: 'SEPA_X_ENGINE_V1',
-  schemaVersion: '1.0.0',
+  schemaVersion: '1.0.1',
   researchOnly: true,
   permissions: {
     executionAllowed: false,
@@ -19,9 +19,13 @@ export const DEFAULT_CONFIG = freeze({
     currency: 'EGP',
     timeZone: 'Africa/Cairo',
     benchmarkYahooSymbol: '^CASE30',
-    requiredHistorySessions: 252,
+    // R252 compares the current close with the close 252 sessions ago,
+    // therefore at least 253 observations are required.
+    requiredHistorySessions: 253,
+    longHistoryRange: '10y',
     staleSessionTolerance: 0,
     universeSourceBranch: 'main',
+    longHistorySourceBranch: 'main',
     repo: 'rasheadsca-star/RAS-EGX-PRO2026-NEXT',
     liquidity: {
       acceptableMedianTurnover20: 1_000_000,
