@@ -4,7 +4,7 @@
 - الأول فنيًا: **SCEM**
 - أول B للمراقبة: **SCEM**
 - الجاهز ورقيًا: **لا يوجد**
-- إشارات جديدة: **20**
+- إشارات جديدة: **23**
 - دخول جديد: **0**
 - صفقات مغلقة: **5**
 - منتهية دون دخول: **0**
@@ -21,4 +21,4 @@
 - تحذير: 38 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `46ee8f3af5bdc8fea946cb4924d37a9ffb4afd8cacfb1f4ac2e0f1d9f9cba512`
+بصمة التقرير: `4e74eb6643d3e797cdfc858efbd3c9af790b3c705050e2aedd1c70a6016b6405`
