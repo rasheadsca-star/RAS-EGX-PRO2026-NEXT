@@ -49,7 +49,8 @@ export const maxDrawdown = (xs) => {
 export const weightedAvailable = (parts) => {
   let num=0, den=0;
   for(const [value,weight] of parts){
-    if(Number.isFinite(Number(value))){num+=Number(value)*weight;den+=weight;}
+    const v=n(value),w=n(weight);
+    if(Number.isFinite(v)&&Number.isFinite(w)&&w>0){num+=v*w;den+=w;}
   }
   return den ? num/den : null;
 };
