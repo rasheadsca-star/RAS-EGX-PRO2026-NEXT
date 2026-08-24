@@ -1,7 +1,7 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.14.1-v169-all-ops-center-hardened',
+  contractVersion: '1.14.2-main-app-intraday-cors-readonly',
   frozenAtSourceCommit: '9725620bcb5946cc416548fb61d3a6253641abbb',
-  purpose: 'Protect RC2 Alpha, recommendations, execution lock, evidence-backed price reconciliation, session monitoring, the consolidated V16.9 RC2 Operations Center, operational overlays, isolated intraday operations, display-only live refresh, deep portfolio analytics, and automatic supplemental fundamental analysis while evidence tooling evolves independently.',
+  purpose: 'Protect RC2 Alpha, recommendations, execution lock, evidence-backed price reconciliation, session monitoring, the consolidated V16.9 RC2 Operations Center, operational overlays, isolated intraday operations, read-only cross-origin quote transport for MAIN APP, display-only live refresh, deep portfolio analytics, and automatic supplemental fundamental analysis while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
     'src/engine.js': 'ea35fe61dbe39bdaa4ccce1967cb71694868155b',
     'src/policy.js': '581c72df397e6f66adf7720aa7420e191b110999',
@@ -15,7 +15,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'api/index.js': '0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b',
     'api/fundamental.js': 'f69d926f37b9807c3bd8099bf6f289bb8a621208',
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
-    'api/intraday.js': '7e639a980d8531f4737c5d5ad9485f8a63540e4b',
+    'api/intraday.js': '3ab2e690540419ee9c255fd1de39e5ff3c03478c',
     'monitor/session-quote.js': '0c6ebfe8f6d6481207b53a723f21d2f316dce047',
     'public/index.html': 'dda4c567fb92c30d361b5b464fc2cafa07586735',
     'public/portfolio-manager.js': '977e8d8277a3b2a592436947d0aac9d7c1b9d88f',
@@ -49,5 +49,5 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
   liveRefreshRules: Object.freeze({ moduleId: 'RC2_LIVE_REFRESH_V1', recommendationRefreshIntervalMs: 300000, portfolioQuoteRefreshIntervalMs: 300000, quoteSource: 'INTRADAY_READ_ONLY_DELAYED', portfolioPriceFallback: 'READ_ONLY_HISTORY_LAST_CLOSE_EXPLICITLY_LABELED', portfolioStores: 'LOCAL_STORAGE_ONLY', recommendationSessionTruth: 'RECOMMENDATION_DATE_OVERRIDES_STALE_UNIVERSE_SUMMARY_FOR_DISPLAY_AND_ARCHIVE', scoringImpact: 'NONE', recommendationMutationAllowed: false, executionAllowed: false, automaticOrders: false, mayImportAlphaModules: false }),
   deepPortfolioRules: Object.freeze({ moduleId: 'RC2_DEEP_PORTFOLIO_ANALYSIS_V1', storageSource: 'LOCAL_STORAGE_EOD_MANAGER_ONLY', historySource: 'READ_ONLY_HISTORY_ENDPOINT', chart: 'OHLCV_CANDLES_80_SESSIONS', indicators: 'EMA20_EMA50_SMA50_SMA200_RSI14_MACD_ATR14_VOLUME_MOMENTUM_FIBONACCI_SWINGS', calibration: 'WALK_FORWARD_SIMILAR_STATE_1_3_5_SESSIONS', portfolioAggregation: 'MARKET_VALUE_WEIGHTED_DISPLAY_ONLY', scoringImpact: 'NONE', recommendationMutationAllowed: false, executionAllowed: false, automaticOrders: false, mayImportAlphaModules: false }),
   fundamentalRules: Object.freeze({ moduleId: 'RC2_AUTO_FUNDAMENTALS_V1', dataSource: 'data/stable/v16-fundamental-analysis.json', sourcePreference: 'ALPHA_DATA_BRANCH_THEN_OVERLAY_FALLBACK', uiMode: 'AUTOMATIC_READ_ONLY_WITH_OPTIONAL_LOCAL_MANUAL_OVERRIDE', valuationMethod: 'RELATIVE_PEER_VALUATION_NOT_DCF', sourceTransparencyRequired: true, autoPersistToLocalStorage: false, scoringImpact: 'NONE', recommendationMutationAllowed: false, publicationMutationAllowed: false, executionAllowed: false, automaticOrders: false, mayImportAlphaModules: false }),
-  intradayRules: Object.freeze({ moduleId: 'RC2_INTRADAY_OPERATIONS_V1', source: 'MUBASHER_DELAYED_15_MIN', sourceDelayMinutes: 15, fullMarketBatchSize: 10, fullMarketBatchIntervalMs: 45000, priorityPortfolioIntervalMs: 300000, postCloseOfficialRescanMs: 600000, provisionalOnly: true, incompleteDailyBar: true, scoringImpact: 'NONE', recommendationMutationAllowed: false, publicationAllowed: false, executionAllowed: false, automaticOrders: false, officialSignalTiming: 'COMPLETED_DAILY_BAR_ONLY', portfolioStorage: 'LOCAL_STORAGE_ONLY', sessionMismatchMustFailClosed: true }),
+  intradayRules: Object.freeze({ moduleId: 'RC2_INTRADAY_OPERATIONS_V1', source: 'MUBASHER_DELAYED_15_MIN', sourceDelayMinutes: 15, fullMarketBatchSize: 10, fullMarketBatchIntervalMs: 45000, priorityPortfolioIntervalMs: 300000, postCloseOfficialRescanMs: 600000, provisionalOnly: true, incompleteDailyBar: true, scoringImpact: 'NONE', recommendationMutationAllowed: false, publicationAllowed: false, executionAllowed: false, automaticOrders: false, officialSignalTiming: 'COMPLETED_DAILY_BAR_ONLY', portfolioStorage: 'LOCAL_STORAGE_ONLY', sessionMismatchMustFailClosed: true, corsReadOnly: true, corsAllowedMethods: 'GET_OPTIONS', corsMayMutateRecommendations: false, corsMayExecuteOrders: false }),
 });
