@@ -212,6 +212,23 @@
   </section>
 </div>
 <div class="toast" id="toast"></div>
+<script>
+(async()=>{
+  try{
+    const u='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/develop/sepax-isolated-v1/sepa-x/public/app.js?ui_boot=3';
+    const r=await fetch(u,{cache:'no-store'});
+    if(!r.ok) throw new Error('UI_BOOT_'+r.status);
+    const js=await r.text();
+    (0,eval)(js);
+  }catch(e){
+    const last=document.getElementById('lastUpdate');
+    const grid=document.getElementById('recommendationGrid');
+    if(last) last.textContent='تعذر تشغيل واجهة البيانات';
+    if(grid) grid.innerHTML='<div class="empty">تعذر تشغيل JavaScript الخاص بالواجهة. أعد تحميل الصفحة.</div>';
+    console.error('SEPA-X bootstrap error',e);
+  }
+})();
+</script>
 <script type="module" src="/app.js?v=2"></script>
 </body>
 </html>
