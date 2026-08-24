@@ -87,21 +87,34 @@ export class MarketDataProvider {
     for(const rows of sets)for(const x of this.adjustRows(rows||[]))m.set(x.date,x);
     return [...m.values()].sort((a,b)=>a.date.localeCompare(b.date));
   }
+  appendRefreshOnly(primaryRows=[],refreshRows=[]){
+    const primary=this.adjustRows(primaryRows),refresh=this.adjustRows(refreshRows);
+    if(!primary.length)return refresh;
+    const lastPrimary=primary.at(-1).date;
+    return this.mergeRows(primary,refresh.filter(x=>x.date>lastPrimary));
+  }
   async loadStock(entry){
     const errors=[]; let short=null,originalLong=null,yahoo=null;
     try{short=await this.loadShortHistory(entry.ticker);}catch(e){errors.push(`SHORT_HISTORY:${e.message}`);}
     try{originalLong=await this.loadOriginalLongHistory(entry.ticker);}catch(e){
-      // The original long-history working store is not always committed. This is expected;
-      // fall through to the exact same 10y Yahoo source used by the original recovery engine.
+      // The original V17 long-history store is a build workspace and is not always committed.
+      // If absent, use the exact same Yahoo 10y retrieval source used by that engine.
       if(!String(e.message).includes('HTTP_404'))errors.push(`ORIGINAL_LONG_HISTORY:${e.message}`);
     }
     const originalRows=originalLong?.sessions||originalLong?.rows||[];
-    if(originalRows.length<this.cfg.market.requiredHistorySessions){
+    const originalUsable=originalRows.length>=this.cfg.market.requiredHistorySessions;
+    if(!originalUsable){
       const ys=entry.yahooSymbol||entry.yahooAlternative||`${entry.ticker}.CA`;
       try{yahoo=await this.loadYahooHistory(ys,this.cfg.market.longHistoryRange||'10y');}catch(e){errors.push(`LONG_HISTORY:${e.message}`);}
     }
-    const rows=this.mergeRows(originalRows,yahoo?.rows||[],short?.sessions||short?.rows||[]);
-    const longSource=originalRows.length>=this.cfg.market.requiredHistorySessions?'ORIGINAL_V17_LONG_HISTORY_STORE':(yahoo?.rows?.length?'ORIGINAL_V17_EQUIVALENT_YAHOO_10Y':'UNAVAILABLE');
+    const canonicalLongRows=originalUsable?originalRows:(yahoo?.rows||[]);
+    const refreshRows=short?.sessions||short?.rows||[];
+    const rows=this.appendRefreshOnly(canonicalLongRows,refreshRows);
+    const longSource=originalUsable?'ORIGINAL_V17_LONG_HISTORY_STORE':(yahoo?.rows?.length?'ORIGINAL_V17_EQUIVALENT_YAHOO_10Y':'UNAVAILABLE');
+    const canonicalAdjusted=this.adjustRows(canonicalLongRows), shortAdjusted=this.adjustRows(refreshRows);
+    const overlapDate=canonicalAdjusted.at(-1)?.date&&shortAdjusted.some(x=>x.date===canonicalAdjusted.at(-1).date)?canonicalAdjusted.at(-1).date:null;
+    const overlapLong=overlapDate?canonicalAdjusted.find(x=>x.date===overlapDate):null, overlapShort=overlapDate?shortAdjusted.find(x=>x.date===overlapDate):null;
+    const overlapCloseDiffPct=overlapLong?.close&&overlapShort?.close?Math.abs(overlapShort.close/overlapLong.close-1)*100:null;
     return {
       entry,rows,errors,
       meta:{
@@ -113,7 +126,10 @@ export class MarketDataProvider {
         fundamentalsAsOf:entry.fundamentals?.publicationDate||entry.fundamentals?.latestReportingPeriod||null,
         longHistorySource:longSource,
         longHistoryRange:yahoo?.range||originalLong?.requestedRange||null,
+        longHistoryCoverageStart:canonicalAdjusted[0]?.date||null,
+        longHistoryCoverageEnd:canonicalAdjusted.at(-1)?.date||null,
         sessionCount:rows.length,
+        overlapReconciliation:{date:overlapDate,longClose:overlapLong?.close??null,shortClose:overlapShort?.close??null,differencePct:Number.isFinite(overlapCloseDiffPct)?Number(overlapCloseDiffPct.toFixed(4)):null}
       }
     };
   }
