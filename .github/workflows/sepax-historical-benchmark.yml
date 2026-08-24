@@ -13,7 +13,7 @@ on:
       - '.github/workflows/sepax-historical-benchmark.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   V169_FROZEN_BRANCH: release/MAIN-APP-v16.9.2-frozen-20260816
@@ -95,3 +95,28 @@ jobs:
             sepa-x/data/research/v16-v169-basket-engine.json
             sepa-x/data/research/engine-comparison.json
             sepa-x/docs/ENGINE_COMPARISON_REPORT.md
+
+      - name: Persist benchmark evidence to isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add sepa-x/data/research/historical-simulator.json \
+                  sepa-x/data/research/historical-simulator-summary.json \
+                  sepa-x/data/research/rc2-simulate.json \
+                  sepa-x/data/research/v16-v169-basket-engine.json \
+                  sepa-x/data/research/engine-comparison.json \
+                  sepa-x/docs/ENGINE_COMPARISON_REPORT.md
+          if git diff --cached --quiet; then
+            echo 'Benchmark evidence unchanged.'
+            exit 0
+          fi
+          git commit -m 'data(sepa-x): persist historical benchmark evidence'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin develop/sepax-isolated-v1 && git push origin HEAD:develop/sepax-isolated-v1; then
+              exit 0
+            fi
+            [ "$attempt" = 3 ] && exit 1
+            sleep $((attempt * 8))
+          done
