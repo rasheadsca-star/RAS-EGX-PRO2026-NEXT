@@ -34,42 +34,89 @@ export function stripHtml(html = '') {
     .trim();
 }
 
-export function parseMarketTimestamp(label, now = new Date()) {
-  const m = String(label ?? '').match(/(\d{1,2})\s+([A-Za-z]+)(?:\s+(20\d{2}))?\s+(\d{1,2}):(\d{2})\s+(AM|PM)/i);
-  if (!m) return { sourceSessionDate: null, sourceMarketTime: null, sourceMarketMinutes: null };
-  const day = Number(m[1]);
-  const month = MONTHS[m[2].toLowerCase()] ?? null;
-  if (!month) return { sourceSessionDate: null, sourceMarketTime: null, sourceMarketMinutes: null };
-  let year = m[3] ? Number(m[3]) : now.getUTCFullYear();
-  let hour = Number(m[4]) % 12;
-  if (m[6].toUpperCase() === 'PM') hour += 12;
-  const minute = Number(m[5]);
-  const candidate = new Date(Date.UTC(year, month - 1, day));
-  const nowDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  if (!m[3] && candidate.getTime() - nowDay.getTime() > 45 * 86400000) year -= 1;
-  const sourceSessionDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+function cairoDate(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const get = type => parts.find((part) => part.type === type)?.value ?? null;
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  return year && month && day ? `${year}-${month}-${day}` : null;
+}
+
+function parseClock(hourText, minuteText, meridiem) {
+  let hour = Number(hourText) % 12;
+  if (String(meridiem).toUpperCase() === 'PM') hour += 12;
+  const minute = Number(minuteText);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute) || minute < 0 || minute > 59) return null;
   return {
-    sourceSessionDate,
     sourceMarketTime: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
     sourceMarketMinutes: hour * 60 + minute,
   };
 }
 
+export function parseMarketTimestamp(label, now = new Date()) {
+  const value = String(label ?? '');
+
+  const dated = value.match(/(\d{1,2})\s+([A-Za-z]+)(?:\s+(20\d{2}))?\s+(\d{1,2}):(\d{2})\s+(AM|PM)/i);
+  if (dated) {
+    const day = Number(dated[1]);
+    const month = MONTHS[dated[2].toLowerCase()] ?? null;
+    const clock = parseClock(dated[4], dated[5], dated[6]);
+    if (!month || !clock) return { sourceSessionDate: null, sourceMarketTime: null, sourceMarketMinutes: null };
+
+    const cairoToday = cairoDate(now);
+    const cairoYear = Number(cairoToday?.slice(0, 4)) || now.getUTCFullYear();
+    let year = dated[3] ? Number(dated[3]) : cairoYear;
+    const candidate = new Date(Date.UTC(year, month - 1, day));
+    const nowDay = cairoToday ? new Date(`${cairoToday}T00:00:00Z`) : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    if (!dated[3] && candidate.getTime() - nowDay.getTime() > 45 * 86400000) year -= 1;
+
+    return {
+      sourceSessionDate: `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+      ...clock,
+    };
+  }
+
+  const timeOnly = value.match(/(\d{1,2}):(\d{2})\s+(AM|PM)/i);
+  if (timeOnly) {
+    const clock = parseClock(timeOnly[1], timeOnly[2], timeOnly[3]);
+    return {
+      sourceSessionDate: cairoDate(now),
+      ...(clock ?? { sourceMarketTime: null, sourceMarketMinutes: null }),
+    };
+  }
+
+  return { sourceSessionDate: null, sourceMarketTime: null, sourceMarketMinutes: null };
+}
+
 export function parseMubasherStockPage(html, ticker, now = new Date()) {
   const text = stripHtml(html);
-  const main = text.match(/Last update:\s*(\d{1,2}\s+[A-Za-z]+(?:\s+20\d{2})?\s+\d{1,2}:\d{2}\s+(?:AM|PM)\s+market time\.?)\s+([-+]?\d[\d,]*(?:\.\d+)?)\s+([-+]?\d[\d,]*(?:\.\d+)?)\s+([-+]?\d[\d,]*(?:\.\d+)?%)/i);
-  if (!main) throw new Error('QUOTE_HEADER_NOT_FOUND');
-  const tail = text.slice((main.index ?? 0) + main[0].length);
+
+  const header = text.match(/Last update:\s*((?:\d{1,2}\s+[A-Za-z]+(?:\s+20\d{2})?\s+)?\d{1,2}:\d{2}\s+(?:AM|PM)\s+market time\.?)/i);
+  if (!header) throw new Error('QUOTE_HEADER_NOT_FOUND');
+
+  const quoteStart = (header.index ?? 0) + header[0].length;
+  const quoteText = text.slice(quoteStart);
+  const numbers = quoteText.match(/^\s*([-+]?\d[\d,]*(?:\.\d+)?)\s+([-+]?\d[\d,]*(?:\.\d+)?)\s+([-+]?\d[\d,]*(?:\.\d+)?%)/i);
+  if (!numbers) throw new Error('QUOTE_VALUES_NOT_FOUND');
+
+  const tail = quoteText.slice(numbers[0].length);
   const after = label => {
     const r = new RegExp(`${label}\\s+([-+]?\\d[\\d,]*(?:\\.\\d+)?)`, 'i').exec(tail);
     return r ? num(r[1]) : null;
   };
-  const stamp = parseMarketTimestamp(main[1], now);
+
+  const stamp = parseMarketTimestamp(header[1], now);
   const quote = {
     ticker: String(ticker ?? '').trim().toUpperCase(),
-    price: num(main[2]),
-    change: num(main[3]),
-    changePct: num(main[4]),
+    price: num(numbers[1]),
+    change: num(numbers[2]),
+    changePct: num(numbers[3]),
     open: after('Open'),
     previousClose: after('Previous Close'),
     high: after('High'),
@@ -82,6 +129,8 @@ export function parseMubasherStockPage(html, ticker, now = new Date()) {
     scoringImpact: 'NONE',
     monitorOnly: true,
   };
+
+  if (!quote.sourceSessionDate || quote.sourceMarketMinutes === null) throw new Error('QUOTE_TIMESTAMP_INCOMPLETE');
   if (!(quote.price > 0) || !(quote.high > 0) || !(quote.low > 0) || !(quote.open > 0)) throw new Error('QUOTE_OHLC_INCOMPLETE');
   if (quote.high < Math.max(quote.open, quote.price) || quote.low > Math.min(quote.open, quote.price)) throw new Error('QUOTE_OHLC_INVALID');
   return quote;
@@ -100,7 +149,7 @@ async function fetchText(url) {
         'accept-language': 'en-US,en;q=0.9',
         'cache-control': 'no-cache',
         pragma: 'no-cache',
-        'user-agent': 'Mozilla/5.0 EGX-TFE-RC2-Session-Monitor/1.0',
+        'user-agent': 'Mozilla/5.0 EGX-TFE-RC2-Session-Monitor/1.1',
       },
     });
     if (!response.ok) throw new Error(`HTTP_${response.status}`);
