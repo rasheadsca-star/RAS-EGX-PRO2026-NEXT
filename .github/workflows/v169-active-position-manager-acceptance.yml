@@ -6,6 +6,7 @@ on:
       - "scripts/stable/v16-active-position-manager.cjs"
       - "data/stable/v16-active-position-manager-policy.json"
       - "preview-v16/app/v16-9-active-position-manager.js"
+      - "preview-v16/app/v16-9-position-advisory-core.js"
       - "preview-v16/app/decision-source.js"
       - ".github/workflows/main-app-intraday-ls1.yml"
       - ".github/workflows/v169-active-position-manager-acceptance.yml"
@@ -27,6 +28,7 @@ jobs:
           set -euo pipefail
           node --check scripts/stable/v16-active-position-manager.cjs
           node --check preview-v16/app/v16-9-active-position-manager.js
+          node --check preview-v16/app/v16-9-position-advisory-core.js
           node --check preview-v16/app/decision-source.js
           node -e "JSON.parse(require('fs').readFileSync('data/stable/v16-active-position-manager-policy.json','utf8')); console.log('policy ok')"
 
@@ -53,7 +55,7 @@ jobs:
             noAutomaticOrders:out.governance?.automaticOrders===false,
             targetIsNotSilentLongTerm:out.interpretation?.repeatedAfterTarget==='NEW_CYCLE_NOT_AUTOMATIC_LONG_TERM',
             localPortfolioOnly:out.portfolioPersonalization?.localOnly===true,
-            tenMinuteCadence:out.refreshIntervalMinutes===10,
+            fiveMinuteCadence:out.refreshIntervalMinutes===5,
             allRowsHaveActions:(out.recommendations||[]).every(r=>r.action?.code && r.action?.automaticOrder===false),
             currentMarketSessionContract:out.sessionContract?.managementSessionIsCurrentMarketSession===true,
             signalAndManagementSeparated:out.sessionContract?.nextSessionMayDifferFromSignalDate===true,
@@ -107,24 +109,28 @@ jobs:
           mv /tmp/position-market.json data/market.json
           mv /tmp/position-ls1.json data/stable/v16-ls1-late-session-opportunities.json
 
-      - name: Verify ten-minute workflow and UI action vocabulary
+      - name: Verify five-minute backend and live advisory vocabulary
         run: |
           set -euo pipefail
           node - <<'NODE'
           const fs=require('fs');
           const workflow=fs.readFileSync('.github/workflows/main-app-intraday-ls1.yml','utf8');
           const ui=fs.readFileSync('preview-v16/app/v16-9-active-position-manager.js','utf8');
+          const core=fs.readFileSync('preview-v16/app/v16-9-position-advisory-core.js','utf8');
           const policy=JSON.parse(fs.readFileSync('data/stable/v16-active-position-manager-policy.json','utf8'));
           const checks={
-            cadence:workflow.includes('*/10 7-12 * * 0-4'),
+            backendFiveMinuteCadence:workflow.includes('*/5 7-12 * * 0-4'),
+            clientFiveMinuteCadence:/REFRESH_MS = 5 \* 60 \* 1000/.test(ui),
             workflowBuildsManager:workflow.includes('v16-active-position-manager.cjs'),
             workflowPublishesManager:workflow.includes('v16-active-position-manager.json'),
-            portfolioKey:ui.includes('egx-v137-portfolio'),
-            sellLabel:ui.includes('بيع / خروج'),
-            reduceLabel:ui.includes('خفف / ثبت الربح'),
-            addLabel:ui.includes('زود كمية بحذر'),
-            reentryLabel:policy.actionCatalog?.REENTER==='إعادة دخول',
-            doNotChase:policy.actionCatalog?.DO_NOT_CHASE==='لا تطارد السعر',
+            canonicalPortfolioKey:ui.includes("CANONICAL_PORTFOLIO_KEY = 'egx-v16-professional-portfolio'"),
+            legacyIsMigrationOnly:ui.includes("LEGACY_PORTFOLIO_KEY = 'egx-v137-portfolio'") && ui.includes('canonicalRaw===null'),
+            sellExit:core.includes("code:'SELL_EXIT'") && core.includes('بيع / خروج'),
+            partialNextTarget:core.includes("code:'PARTIAL_HOLD_NEXT'") && core.includes('جني جزئي'),
+            holdToTarget:core.includes("code:'HOLD_TO_TARGET'") && core.includes('احتفظ وانتظر الهدف'),
+            doNotChase:core.includes("code:'DO_NOT_CHASE'") && policy.actionCatalog?.DO_NOT_CHASE==='لا تطارد السعر',
+            policyFiveMinute:policy.refreshIntervalMinutes===5,
+            noAutoOrders:!(/automaticOrders\s*:\s*true/.test(ui+core)),
           };
           console.log(checks);
           if(Object.values(checks).some(v=>v!==true)) process.exit(1);
