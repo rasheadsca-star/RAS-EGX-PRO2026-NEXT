@@ -7,6 +7,7 @@ export function concentrationPolicy(cfg={}){
     baseCount:3,
     maxCount:5,
     requireCleanEngineGates:true,
+    allowBear:false,
     minRewardRisk:2,
     maxRiskPct:8,
     expansionMinFinalScore:80,
@@ -52,6 +53,7 @@ export function concentrationScore(row){
 function rejectionReason(row,cfg){
   if(!row)return 'ROW_MISSING';
   if(!['READY NOW','BREAKOUT CONFIRMED','NEAR PIVOT'].includes(row.status))return 'STATUS_NOT_ACTIONABLE';
+  if(cfg.allowBear===false&&String(row.market_regime||'').toUpperCase()==='BEAR')return 'MARKET_BEAR';
   if(String(row.action||'').includes('WAIT')||row?.audit_stages?.entry?.raw?.do_not_chase===true)return 'WAIT_OR_DO_NOT_CHASE';
   const failed=Array.isArray(row.failed_rules)?row.failed_rules:[];
   if(cfg.requireCleanEngineGates&&failed.length)return `ENGINE_GATE:${failed[0]}`;
@@ -65,7 +67,7 @@ function hardCandidate(row,cfg){return rejectionReason(row,cfg)===null;}
 
 export function explainConcentrationPool(rows=[],cfg={}){
   const policy=concentrationPolicy(cfg),rejections={},statusCounts={};let eligible=0;const top=[];
-  for(const row of rows||[]){statusCounts[row?.status||'UNKNOWN']=(statusCounts[row?.status||'UNKNOWN']||0)+1;const reason=rejectionReason(row,policy);if(reason)rejections[reason]=(rejections[reason]||0)+1;else eligible++;top.push({symbol:row?.symbol,status:row?.status,finalScore:finite(row?.final_score)?Number(row.final_score):null,confidence:finite(row?.confidence_score)?Number(row.confidence_score):null,rr:finite(row?.reward_risk)?Number(row.reward_risk):null,riskPct:finite(row?.risk_pct)?Number(row.risk_pct):null,rs:finite(row?.rs_percentile)?Number(row.rs_percentile):null,vcp:finite(row?.vcp?.quality)?Number(row.vcp.quality):null,rejection:reason,conviction:concentrationScore(row)});}
+  for(const row of rows||[]){statusCounts[row?.status||'UNKNOWN']=(statusCounts[row?.status||'UNKNOWN']||0)+1;const reason=rejectionReason(row,policy);if(reason)rejections[reason]=(rejections[reason]||0)+1;else eligible++;top.push({symbol:row?.symbol,status:row?.status,marketRegime:row?.market_regime??null,finalScore:finite(row?.final_score)?Number(row.final_score):null,confidence:finite(row?.confidence_score)?Number(row.confidence_score):null,rr:finite(row?.reward_risk)?Number(row.reward_risk):null,riskPct:finite(row?.risk_pct)?Number(row.risk_pct):null,rs:finite(row?.rs_percentile)?Number(row.rs_percentile):null,vcp:finite(row?.vcp?.quality)?Number(row.vcp.quality):null,rejection:reason,conviction:concentrationScore(row)});}
   top.sort((a,b)=>(b.conviction??-1)-(a.conviction??-1));const numeric=(field)=>top.map(x=>x[field]).filter(finite).map(Number),max=(field)=>{const a=numeric(field);return a.length?Math.max(...a):null;};
   return {total:(rows||[]).length,eligible,statusCounts,rejections,maxima:{finalScore:max('finalScore'),confidence:max('confidence'),rr:max('rr'),rs:max('rs'),vcp:max('vcp')},topRejected:top.slice(0,10)};
 }
