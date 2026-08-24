@@ -1,1 +1,217 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SEPA-X Opportunity Engine</title><link rel="stylesheet" href="/styles.css"></head><body><main><header><div><small>ISOLATED ENGINE • RESEARCH ONLY</small><h1>SEPA‑X</h1><p>محرك فرص منفصل بالكامل عن RC2</p></div><div id="market" class="pill">تحميل حالة السوق…</div></header><section><h2>TOP 5 NOW</h2><div id="top" class="grid"></div></section><section class="cols"><div><h2>NEAR BREAKOUT</h2><div id="near"></div></div><div><h2>STRONG BUT EXTENDED</h2><div id="extended"></div></div></section><section><h2>MARKET COVERAGE</h2><pre id="coverage"></pre></section></main><script type="module" src="/app.js"></script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071521">
+  <meta name="description" content="SEPA-X isolated EGX superperformance opportunity engine">
+  <title>SEPA-X — EGX Opportunity Engine</title>
+  <link rel="stylesheet" href="/styles.css?v=2">
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">SX</div>
+      <div>
+        <h1>SEPA‑X <span>EGX Opportunity Engine</span></h1>
+        <p>واجهة احترافية مستوحاة من تجربة RC2 مع الإبقاء على منطق اختيار SEPA‑X كما هو.</p>
+        <div class="runtime-strip">
+          <span class="runtime-chip good">Trend Template</span>
+          <span class="runtime-chip good">Market‑Wide RS</span>
+          <span class="runtime-chip good">VCP + Pivot</span>
+          <span class="runtime-chip warn">Research Only</span>
+          <span class="runtime-chip good safety-lock">RC2 Isolated</span>
+        </div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="last-update" id="lastUpdate">جارٍ قراءة آخر Scan…</div>
+      <button class="btn primary" id="refreshBtn">تحديث العرض</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="التنقل الرئيسي">
+    <button class="tab active" data-view="dashboard">لوحة القرار</button>
+    <button class="tab" data-view="market">بحث السوق</button>
+    <button class="tab" data-view="portfolio">المحفظة والمخاطر</button>
+    <button class="tab" data-view="fundamentals">التحليل المالي</button>
+    <button class="tab" data-view="evidence">السجل والاختبارات</button>
+  </nav>
+
+  <main>
+    <section class="view active" id="view-dashboard">
+      <div class="hero-grid">
+        <article class="panel readiness-panel">
+          <div class="panel-head">
+            <div>
+              <h2>جاهزية SEPA‑X</h2>
+              <p>جودة التغطية التاريخية، حالة السوق، وعدد الأسهم التي وصلت إلى مرحلة الفحص الفني الكامل.</p>
+            </div>
+            <span class="badge" id="engineBadge">جارٍ التقييم</span>
+          </div>
+          <div class="readiness-body">
+            <div class="gauge" id="readinessGauge"><strong>—</strong><span>تغطية Core</span></div>
+            <div class="readiness-breakdown" id="readinessBreakdown"></div>
+          </div>
+          <div class="professional-verdict" id="professionalVerdict">جارٍ تحميل حالة السوق…</div>
+        </article>
+
+        <article class="panel truth-panel">
+          <div class="panel-head"><div><h2>حقيقة السوق والبيانات</h2><p>لا توجد قيم مصطنعة؛ أي نقص في البيانات يظهر كـ Unknown أو Source Failure.</p></div></div>
+          <div class="truth-grid" id="truthGrid"></div>
+        </article>
+      </div>
+
+      <article class="panel">
+        <div class="panel-head split">
+          <div>
+            <h2>أفضل الفرص وفق SEPA‑X</h2>
+            <p>Data → Liquidity → Trend Template → RS → VCP → Pivot → Entry Readiness → Risk / R:R.</p>
+          </div>
+          <div class="filters">
+            <select id="recommendationFilter" class="control">
+              <option value="all">كل الفرص الحالية</option>
+              <option value="ready">Ready / Breakout</option>
+              <option value="near">Near Pivot</option>
+              <option value="forming">Forming Leaders</option>
+              <option value="extended">Strong But Extended</option>
+            </select>
+            <button class="btn" id="exportBtn">CSV</button>
+          </div>
+        </div>
+        <div class="engine-note">هذه الواجهة لا تغيّر Score أو Ranking أو قواعد الاختيار. كل حالة ودرجة معروضة هي ناتج SEPA‑X الحالي، والـExtended يظل «WAIT FOR NEW SETUP» ولا يتحول إلى شراء.</div>
+        <div class="recommendation-grid" id="recommendationGrid"></div>
+      </article>
+
+      <article class="panel" id="selectedPanel">
+        <div class="panel-head split">
+          <div>
+            <h2 id="selectedTitle">تفاصيل السهم</h2>
+            <p id="selectedSubtitle">اختر سهمًا من البطاقات أو بحث السوق لعرض Trend / RS / VCP / Pivot / Risk.</p>
+          </div>
+          <div class="selected-actions">
+            <span class="badge neutral" id="selectedDecision">غير محدد</span>
+            <button class="btn" id="openModalBtn" disabled>فتح نافذة التفاصيل</button>
+          </div>
+        </div>
+        <div class="selected-layout">
+          <div>
+            <div class="chart-box" id="structureChart"><div class="empty">اختر سهمًا لعرض خريطة السعر الفنية.</div></div>
+            <div class="chart-legend" id="chartLegend" hidden>
+              <span class="legend-line price"><i></i>Price</span>
+              <span class="legend-line pivot"><i></i>Pivot</span>
+              <span class="legend-line stop"><i></i>Stop</span>
+              <span class="legend-line sma"><i></i>SMA200</span>
+            </div>
+            <div class="analysis-columns">
+              <div class="analysis-card"><h3>Trend + Relative Strength</h3><div id="technicalDetail"></div></div>
+              <div class="analysis-card"><h3>VCP + Entry Readiness</h3><div id="setupDetail"></div></div>
+              <div class="analysis-card"><h3>المخاطر والخطة</h3><div id="riskDetail"></div></div>
+            </div>
+          </div>
+          <aside class="position-box">
+            <h3>حاسبة حجم المركز</h3>
+            <label>رأس المال<input id="capitalInput" type="number" min="0" step="1000" value="100000"></label>
+            <label>المخاطرة القصوى للصفقة %<input id="riskPctInput" type="number" min="0.1" max="3" step="0.1" value="0.5"></label>
+            <label>الحد الأقصى لوزن السهم %<input id="maxWeightInput" type="number" min="1" max="30" step="1" value="10"></label>
+            <div class="position-result" id="positionResult"></div>
+            <button class="btn good full" id="addPortfolioBtn" disabled>إضافة للمحفظة التجريبية</button>
+            <div class="fundamental-disclaimer">الحاسبة والمحفظة محليتان فقط ولا تدخلان في SEPA‑X ولا ترسلان أوامر تداول.</div>
+          </aside>
+        </div>
+      </article>
+    </section>
+
+    <section class="view" id="view-market">
+      <article class="panel">
+        <div class="panel-head"><div><h2>بحث شامل لكل السوق</h2><p>بحث بالرمز أو اسم الشركة مع Rank وRS والحالة والقرب من Pivot.</p></div></div>
+        <div class="market-toolbar">
+          <input class="control search-input" id="marketSearch" placeholder="ابحث بالرمز أو اسم الشركة — مثال ETEL أو Telecom Egypt">
+          <select class="control" id="marketScope">
+            <option value="all">كل السوق</option>
+            <option value="top">Top / Ready / Near</option>
+            <option value="forming">Forming</option>
+            <option value="extended">Extended</option>
+            <option value="history">Core History Complete</option>
+          </select>
+          <select class="control" id="marketSort">
+            <option value="rank">Market Rank</option>
+            <option value="score">Score</option>
+            <option value="rs">RS</option>
+            <option value="rr">R:R</option>
+          </select>
+        </div>
+        <div class="market-head market-row"><b>السهم</b><b>الشركة</b><b>Rank</b><b>Score</b><b>RS</b><b>الحالة</b><b>Pivot / R:R</b></div>
+        <div class="market-results" id="marketResults"></div>
+      </article>
+    </section>
+
+    <section class="view" id="view-portfolio">
+      <div class="portfolio-grid">
+        <article class="panel">
+          <div class="panel-head"><div><h2>ملخص المحفظة التجريبية</h2><p>متابعة محلية للتعرض والمخاطرة فقط.</p></div></div>
+          <div class="portfolio-summary" id="portfolioSummary"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h2>سياسة المخاطر المحلية</h2><p>لا تدخل في ترتيب أو اختيار SEPA‑X.</p></div></div>
+          <div class="policy-form">
+            <label>أقصى مخاطرة إجمالية %<input id="portfolioRiskLimit" type="number" min="0.5" max="10" step="0.5" value="2"></label>
+            <label>أقصى عدد مراكز<input id="portfolioPositionLimit" type="number" min="1" max="20" step="1" value="5"></label>
+            <label>أقصى وزن للسهم %<input id="portfolioWeightLimit" type="number" min="1" max="50" step="1" value="15"></label>
+          </div>
+        </article>
+      </div>
+      <article class="panel">
+        <div class="panel-head split"><div><h2>المراكز التجريبية</h2><p>محفوظة في المتصفح فقط.</p></div><button class="btn danger" id="clearPortfolioBtn">مسح المحفظة</button></div>
+        <div class="table-wrap"><table><thead><tr><th>السهم</th><th>الحالة</th><th>الدخول</th><th>الوقف</th><th>الكمية</th><th>قيمة المركز</th><th>الخطر</th><th>R:R</th><th></th></tr></thead><tbody id="portfolioRows"></tbody></table></div>
+      </article>
+    </section>
+
+    <section class="view" id="view-fundamentals">
+      <div class="fundamental-layout">
+        <article class="panel">
+          <div class="panel-head"><div><h2>البيانات المالية والمحفزات</h2><p>عرض مباشر لما يعرفه المحرك فقط؛ Unknown لا يتحول إلى Zero.</p></div></div>
+          <div id="fundamentalSource" class="fundamental-score-card"><div class="empty">اختر سهمًا أولًا.</div></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h2>مذكرة بحث محلية</h2><p>ملاحظاتك لا يقرأها المحرك ولا تغير التوصيات.</p></div></div>
+          <div class="fundamental-form">
+            <label>السهم<input id="noteTicker" readonly></label>
+            <label class="wide">ملاحظات<textarea id="researchNotes" rows="10" placeholder="أضف ملاحظاتك اليدوية هنا…"></textarea></label>
+            <button class="btn primary" id="saveNoteBtn">حفظ محلي</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="view" id="view-evidence">
+      <div class="evidence-grid">
+        <article class="panel">
+          <div class="panel-head"><div><h2>أداء سجل التوصيات</h2><p>Win rate / expectancy / profit factor من السجل المتاح فقط.</p></div></div>
+          <div class="evidence-summary" id="performanceSummary"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><h2>حالة Backtest</h2><p>يُعرض الوضع الحقيقي ولا يتم اختلاق Backtest غير موجود.</p></div></div>
+          <div class="confidence-box" id="backtestStatus"></div>
+        </article>
+      </div>
+      <article class="panel">
+        <div class="panel-head split"><div><h2>السجل الحي</h2><p>آخر التوصيات والانتقالات المسجلة.</p></div><div class="evidence-actions"><button class="btn" data-evidence="history">التوصيات</button><button class="btn" data-evidence="transitions">الانتقالات</button><button class="btn" data-evidence="errors">أخطاء المصادر</button></div></div>
+        <div id="evidenceTable" class="table-wrap"><div class="empty">اختر نوع السجل.</div></div>
+      </article>
+    </section>
+  </main>
+</div>
+
+<div class="modal" id="stockModal" aria-hidden="true">
+  <div class="modal-backdrop" data-close-modal></div>
+  <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head"><div><h2 id="modalTitle">تفاصيل السهم</h2><p id="modalSubtitle"></p></div><button class="icon-btn" data-close-modal>×</button></div>
+    <div id="modalBody"></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<script type="module" src="/app.js?v=2"></script>
+</body>
+</html>
