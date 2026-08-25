@@ -1,6 +1,8 @@
 const finite=(v)=>Number.isFinite(Number(v));
 const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
 const round=(v,d=2)=>finite(v)?Number(Number(v).toFixed(d)):null;
+const ACTIONABLE_STATUSES=new Set(['READY NOW','BREAKOUT CONFIRMED','NEAR PIVOT']);
+const CORPORATE_ACTION_REVIEW='CORPORATE_ACTION_REVIEW_REQUIRED';
 
 export function concentrationPolicy(cfg={}){
   return {
@@ -50,17 +52,33 @@ export function concentrationScore(row){
   return round(.34*clamp(row?.final_score)+.20*clamp(row?.confidence_score)+.14*clamp(row?.rs_percentile)+.12*statusScore+.10*vcp+.10*rr,1);
 }
 
-function rejectionReason(row,cfg){
+function baseSafetyReason(row,cfg){
   if(!row)return 'ROW_MISSING';
-  if(!['READY NOW','BREAKOUT CONFIRMED','NEAR PIVOT'].includes(row.status))return 'STATUS_NOT_ACTIONABLE';
+  if(!ACTIONABLE_STATUSES.has(row.status))return 'STATUS_NOT_ACTIONABLE';
   if(cfg.allowBear===false&&String(row.market_regime||'').toUpperCase()==='BEAR')return 'MARKET_BEAR';
   if(String(row.action||'').includes('WAIT')||row?.audit_stages?.entry?.raw?.do_not_chase===true)return 'WAIT_OR_DO_NOT_CHASE';
-  const failed=Array.isArray(row.failed_rules)?row.failed_rules:[];
-  if(cfg.requireCleanEngineGates&&failed.length)return `ENGINE_GATE:${failed[0]}`;
+  return null;
+}
+
+function riskPlanReason(row,cfg){
   if(!finite(row.reward_risk)||Number(row.reward_risk)<cfg.minRewardRisk)return 'RR_LOW';
   if(finite(row.risk_pct)&&Number(row.risk_pct)>cfg.maxRiskPct)return 'RISK_TOO_WIDE';
   const plan=buildTargetPlan(row,cfg);if(!plan.valid)return plan.reason||'TARGET_PLAN_INVALID';
   return null;
+}
+
+function rejectionReason(row,cfg){
+  const base=baseSafetyReason(row,cfg);if(base)return base;
+  const failed=Array.isArray(row.failed_rules)?row.failed_rules:[];
+  if(cfg.requireCleanEngineGates&&failed.length)return `ENGINE_GATE:${failed[0]}`;
+  return riskPlanReason(row,cfg);
+}
+
+function reviewCandidateReason(row,cfg){
+  const base=baseSafetyReason(row,cfg);if(base)return base;
+  const failed=[...new Set((Array.isArray(row.failed_rules)?row.failed_rules:[]).filter(Boolean))];
+  if(failed.length!==1||failed[0]!==CORPORATE_ACTION_REVIEW)return 'NOT_CORPORATE_ACTION_ONLY';
+  return riskPlanReason(row,cfg);
 }
 
 function hardCandidate(row,cfg){return rejectionReason(row,cfg)===null;}
@@ -80,4 +98,21 @@ export function selectConcentratedRecommendations(rows=[],cfg={}){
   const extras=ranked.slice(policy.baseCount,policy.maxCount).filter(x=>Number(x.final_score)>=policy.expansionMinFinalScore&&Number(x.confidence_score)>=policy.expansionMinConfidenceScore&&Number(x.reward_risk)>=policy.expansionMinRewardRisk&&['READY NOW','BREAKOUT CONFIRMED'].includes(x.status)&&anchor-Number(x.concentration_score)<=policy.expansionMaxConvictionGap);
   const selected=extras.length>=2?[...base,...extras.slice(0,2)]:base;
   return selected.map((x,i)=>({...x,conviction_rank:i+1}));
+}
+
+export function selectReviewQueue(rows=[],cfg={}){
+  const policy=concentrationPolicy(cfg);
+  return (rows||[])
+    .filter(row=>reviewCandidateReason(row,policy)===null)
+    .map(row=>({...row,
+      concentration_score:concentrationScore(row),
+      target_plan:buildTargetPlan(row,policy),
+      review_required:true,
+      execution_allowed:false,
+      review_reason:CORPORATE_ACTION_REVIEW,
+      review_action:'VERIFY CORPORATE ACTION BEFORE EXECUTION'
+    }))
+    .sort((a,b)=>(b.concentration_score??-1)-(a.concentration_score??-1)||(b.final_score??-1)-(a.final_score??-1)||(b.confidence_score??-1)-(a.confidence_score??-1)||a.symbol.localeCompare(b.symbol))
+    .slice(0,policy.maxCount)
+    .map((row,i)=>({...row,review_rank:i+1}));
 }
