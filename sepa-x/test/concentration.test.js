@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildTargetPlan, selectConcentratedRecommendations, selectReviewQueue } from '../src/concentration.js';
 
-const row=(symbol,{score=90,confidence=85,rr=3,status='READY NOW',vcp=80,rs=90,entry=100,stop=95,riskPct=null,failedRules=[]}={})=>({
+const row=(symbol,{score=90,confidence=85,rr=3,status='READY NOW',vcp=80,rs=90,entry=100,stop=95,riskPct=null,failedRules=[],fundamentalsPass=true}={})=>({
   symbol,final_score:score,confidence_score:confidence,reward_risk:rr,status,action:'BUY',rs_percentile:rs,
   vcp:{quality:vcp},entry_zone:[entry,entry],stop_loss:stop,risk_pct:riskPct,failed_rules:failedRules,
-  audit_stages:{entry:{raw:{do_not_chase:false}}}
+  audit_stages:{entry:{raw:{do_not_chase:false}},fundamentals:{pass:fundamentalsPass}}
 });
 
 test('target plan produces 2R 3R 4R objectives',()=>{
@@ -45,8 +45,20 @@ test('corporate-action-only blocker enters review queue but is never executable'
   assert.equal(out[0].review_rank,1);
 });
 
+test('SCTS-like fundamentals confidence penalty is nonblocking only inside review queue',()=>{
+  const out=selectReviewQueue([row('SCTS',{rr:3.57,riskPct:3.45,failedRules:['CORPORATE_ACTION_REVIEW_REQUIRED','FUNDAMENTALS_UNAVAILABLE_CONFIDENCE_PENALTY'],fundamentalsPass:true})]);
+  assert.equal(out.length,1);
+  assert.equal(out[0].symbol,'SCTS');
+  assert.equal(out[0].execution_allowed,false);
+});
+
 test('review queue rejects candidates with any additional engine blocker',()=>{
   const out=selectReviewQueue([row('BAD',{failedRules:['CORPORATE_ACTION_REVIEW_REQUIRED','STALE_DATA']})]);
+  assert.equal(out.length,0);
+});
+
+test('review queue rejects confidence penalty when fundamentals stage itself fails',()=>{
+  const out=selectReviewQueue([row('BADF',{failedRules:['CORPORATE_ACTION_REVIEW_REQUIRED','FUNDAMENTALS_UNAVAILABLE_CONFIDENCE_PENALTY'],fundamentalsPass:false})]);
   assert.equal(out.length,0);
 });
 
