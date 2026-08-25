@@ -12,6 +12,7 @@ const readHistory=()=>readJson('recommendation-history.json',null);
 const readHistoricalSimulator=()=>readJson('research/historical-simulator-summary.json',null);
 const readComparison=()=>readJson('research/engine-comparison.json',null);
 const send=(res,status,obj)=>{res.statusCode=status;res.setHeader('content-type','application/json; charset=utf-8');res.setHeader('cache-control','no-store');res.end(JSON.stringify(obj));};
+const sendAsset=(res,status,body,contentType)=>{res.statusCode=status;res.setHeader('content-type',contentType);res.setHeader('cache-control','public, max-age=60, s-maxage=300, stale-while-revalidate=86400');res.end(body);};
 const concentrated=(scan)=>{
   if(Array.isArray(scan?.top_recommendations)&&scan.top_recommendations.length)return scan.top_recommendations.slice(0,5);
   if(Array.isArray(scan?.all)&&scan.all.length)return selectConcentratedRecommendations(scan.all,DEFAULT_CONFIG.concentration);
@@ -24,12 +25,15 @@ const GITHUB_SCAN_URL=`${GITHUB_DATA_BASE}/current-scan.json`;
 const GITHUB_HISTORY_URL=`${GITHUB_DATA_BASE}/recommendation-history.json`;
 const GITHUB_HISTORICAL_URL=`${GITHUB_DATA_BASE}/research/historical-simulator-summary.json`;
 const GITHUB_COMPARISON_URL=`${GITHUB_DATA_BASE}/research/engine-comparison.json`;
+const UI_SNAPSHOT_SHA='d1422408d2481ee45dd679b87d137ee8ad32151c';
+const GITHUB_PUBLIC_BASE=`https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/${UI_SNAPSHOT_SHA}/sepa-x/public`;
 const LIVE_SCAN_URL='https://egx-sepa-x-live-runner.vercel.app/api/live';
 const REMOTE_TTL_MS=45_000;
 const EVIDENCE_TTL_MS=300_000;
 let remoteCache={scan:null,source:null,expiresAt:0};
 let remoteInFlight=null;
 const evidenceCache=new Map();
+const assetCache=new Map();
 
 const looksLikeScan=(x)=>Boolean(x&&typeof x==='object'&&Array.isArray(x.all)&&x.market_coverage&&x.market_status);
 const unwrapLiveScan=(payload)=>[
@@ -41,14 +45,24 @@ const unwrapLiveScan=(payload)=>[
   payload
 ].find(looksLikeScan)||null;
 
-async function fetchJsonDocument(url,{timeoutMs=20_000,errorPrefix='REMOTE_JSON'}={}){
+async function fetchDocument(url,{timeoutMs=20_000,errorPrefix='REMOTE'}={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
-    const response=await fetch(url,{cache:'no-store',signal:controller.signal,headers:{accept:'application/json'}});
+    const response=await fetch(url,{cache:'no-store',signal:controller.signal});
     if(!response.ok)throw new Error(`${errorPrefix}_HTTP_${response.status}`);
-    return await response.json();
+    return response;
   }finally{clearTimeout(timer);}
+}
+
+async function fetchJsonDocument(url,{timeoutMs=20_000,errorPrefix='REMOTE_JSON'}={}){
+  const response=await fetchDocument(url,{timeoutMs,errorPrefix});
+  return response.json();
+}
+
+async function fetchTextDocument(url,{timeoutMs=12_000,errorPrefix='REMOTE_ASSET'}={}){
+  const response=await fetchDocument(url,{timeoutMs,errorPrefix});
+  return response.text();
 }
 
 async function fetchJsonWithTimeout(url,{timeoutMs=20_000,unwrap=x=>x,errorPrefix='REMOTE_SCAN'}={}){
@@ -56,6 +70,14 @@ async function fetchJsonWithTimeout(url,{timeoutMs=20_000,unwrap=x=>x,errorPrefi
   const scan=unwrap(payload);
   if(!looksLikeScan(scan))throw new Error(`${errorPrefix}_INVALID_PAYLOAD`);
   return scan;
+}
+
+async function loadUiAsset(key,file){
+  const cached=assetCache.get(key);
+  if(cached)return cached;
+  const body=await fetchTextDocument(`${GITHUB_PUBLIC_BASE}/${file}`,{errorPrefix:`GITHUB_UI_${key.toUpperCase()}`});
+  assetCache.set(key,body);
+  return body;
 }
 
 async function loadEvidence(key,localValue,url,fallback=null){
@@ -107,6 +129,16 @@ export default async function handler(req,res){
   const u=new URL(req.url,'http://localhost');
   const route=(u.searchParams.get('route')||u.pathname.replace(/^\/+/, '')).replace(/^api\/index\/?/,'');
 
+  const ui={
+    'ui/index':['index.html','text/html; charset=utf-8'],
+    'ui/app':['app.js','text/javascript; charset=utf-8'],
+    'ui/styles':['styles.css','text/css; charset=utf-8']
+  }[route];
+  if(ui){
+    try{return sendAsset(res,200,await loadUiAsset(route,ui[0]),ui[1]);}
+    catch(error){return send(res,503,{ok:false,error:'UI_SNAPSHOT_UNAVAILABLE',asset:ui[0],source:'GITHUB_IMMUTABLE_SNAPSHOT',sourceError:String(error?.message||error)});}
+  }
+
   if(route==='backtest'||route==='engine/backtest'){
     const historical=await loadHistorical();
     if(!historical.value)return send(res,503,{ok:false,error:'HISTORICAL_SIMULATOR_RESULT_NOT_AVAILABLE',source:historical.source,sourceError:historical.error,frameworkReady:true,lookAheadGuard:true,walkForward:true,execution:false});
@@ -126,6 +158,8 @@ export default async function handler(req,res){
       ok:true,
       engineId:'SEPA_X_ENGINE_V1',
       isolatedFromRc2:true,
+      uiSource:'GITHUB_IMMUTABLE_SNAPSHOT',
+      uiSnapshotSha:UI_SNAPSHOT_SHA,
       scanAvailable:Boolean(scan),
       scanSource,
       scanError:scan?null:scanError,
