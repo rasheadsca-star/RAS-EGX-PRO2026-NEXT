@@ -1,49 +1,52 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-08-25T10:57:28.621Z",
+  "generatedAt": "2026-08-25T11:47:41.711Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-08-24",
-  "professionalReadinessScore": 79,
-  "foundationQualityScore": 95.6,
-  "stage": "ADVANCED_PILOT",
-  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 86.7,
+  "stage": "PILOT",
+  "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "LIVE_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 25,
-      "scorePct": 100,
+      "points": 16.11,
+      "scorePct": 64.4,
       "details": {
-        "currentExecutionGrade": true,
+        "currentExecutionGrade": false,
         "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 99.5,
+        "currentSourceSessionEvidenceCoveragePct": 1.9,
         "publishedDecisionEvidenceCoveragePct": 97.2,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 184,
-        "currentAcceptedRows": 214,
-        "verifiedRows": 215,
+        "currentAcceptedRows": 0,
+        "verifiedRows": 184,
         "inputRows": 215,
-        "evidenceCoveragePct": 100,
-        "verifiedRowsRatioPct": 100,
-        "currentSourceHealth": "EXECUTION_GRADE",
-        "rawCurrentSourceSessionEvidenceCoveragePct": 99.5,
-        "rawCurrentSessionEvidenceRows": 214,
-        "professionalExecutionEligibleCoveragePct": 100,
-        "professionalUniverseDispositionCoveragePct": 100,
-        "executionEligibleUniverseRows": 214,
-        "executionEligibleAcceptedRows": 214,
-        "verifiedIneligibleRows": 1,
-        "verifiedIneligibleTickers": [
-          "DCCC"
-        ],
-        "verifiedDispositionRows": 215,
-        "professionalCoverageComplete": true,
-        "rawCoverageDiagnosticRetained": true
+        "evidenceCoveragePct": 97.2,
+        "verifiedRowsRatioPct": 85.6,
+        "currentSourceHealth": "BLOCKED"
       },
-      "requirements": []
+      "requirements": [
+        {
+          "code": "EXECUTION_GRADE",
+          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+          "hard": true
+        },
+        {
+          "code": "SOURCE_EVIDENCE_100",
+          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.2% إلى 100%",
+          "hard": false
+        },
+        {
+          "code": "VERIFIED_ROWS_100",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 184/215",
+          "hard": false
+        }
+      ]
     },
     {
       "id": "V169_WALK_FORWARD",
@@ -133,21 +136,18 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": true,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
     {
-      "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 13 والمتبقي 7",
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
       "hard": true,
-      "axis": "V169_LIVE_FORWARD"
-    }
-  ],
-  "softGaps": [],
-  "requirementsTo100": [
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "LIVE_MIN_RESOLVED_SESSIONS",
       "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 13 والمتبقي 7",
@@ -155,19 +155,58 @@
       "axis": "V169_LIVE_FORWARD"
     }
   ],
+  "softGaps": [
+    {
+      "code": "SOURCE_EVIDENCE_100",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.2% إلى 100%",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "VERIFIED_ROWS_100",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 184/215",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    }
+  ],
+  "requirementsTo100": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 13 والمتبقي 7",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "SOURCE_EVIDENCE_100",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.2% إلى 100%",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
+    {
+      "code": "VERIFIED_ROWS_100",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 184/215",
+      "hard": false,
+      "axis": "DATA_SESSION_INTEGRITY"
+    }
+  ],
   "interpretation": {
     "scoreMeaningAr": "يقيس جاهزية MAIN APP التشغيلية والمهنية وجودة الأدلة، وليس احتمال نجاح التوصية القادمة.",
     "accuracyMeaningAr": "لا يرفع ترتيب الأسهم أو Alpha تلقائيًا. أي تغيير في الترتيب يتطلب Challenger/Ablation واختبارًا خارج العينة قبل الترقية.",
     "qualityImpactAr": "يرفع جودة التطبيق فعليًا عبر منع الادعاء المهني عند نقص البيانات أو السجل الحي، وإظهار الفجوات القابلة للقياس بدل درجة تجميلية.",
-    "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا.",
-    "professionalCoverageMeaningAr": "تغطية 100% المهنية تعني أن كل سهم صالح للتنفيذ لديه سعر جلسة موثق، وكل صف غير صالح للتنفيذ لديه سبب عزل موثق؛ ولا تعني اختلاق سعر جلسة لصف لم يتداول أو لم تتوفر له أدلة جلسة."
+    "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-08-25T08:57:41.895Z",
+    "priceTruthGeneratedAt": "2026-08-25T11:47:40.339Z",
     "basketGeneratedAt": "2026-08-24T21:03:16.354018+00:00",
     "liveGeneratedAt": "2026-08-24T21:03:20.947895+00:00",
-    "canonicalSnapshotHash": "cab3662d1bf7fdbee88fa95152575c43b4bcce02831d4cf82fd8cee26d518060",
-    "consensusGeneratedAt": "2026-08-25T10:57:26.785Z",
+    "canonicalSnapshotHash": "aaf3e59e31559e18b4f45d08ac1ea121803e30cbede9b4855983f49d22c4094b",
+    "consensusGeneratedAt": "2026-08-25T11:47:40.602Z",
     "intelligenceSnapshotGeneratedAt": "2026-08-25T08:57:40.462Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -200,12 +239,7 @@
         "لا يتم حذف أو تعديل أي جلسة خاسرة بعد النشر.",
         "الترقية أو الإيقاف يعتمد على السجل الحي الكامل بعد التكاليف."
       ]
-    },
-    "marketUniverseDispositionGeneratedAt": "2026-08-25T08:57:41.944Z",
-    "professionalCoverageGeneratedAt": "2026-08-25T08:57:41.944Z",
-    "rawMarketSessionEvidenceCoveragePct": 99.5,
-    "professionalExecutionEligibleCoveragePct": 100,
-    "professionalUniverseDispositionCoveragePct": 100
+    }
   },
-  "readinessHash": "abccb2975a62d6836b5941902645c0b1a981ee56a3bf6575e4b3a311db6f485d"
+  "readinessHash": "8ad1caded97333475345cf40328e311b24fbb0a0801c2c22616dcaa994fc5360"
 }
