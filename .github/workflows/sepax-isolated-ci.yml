@@ -38,13 +38,24 @@ jobs:
       - name: Verify frozen RC2 files are untouched by branch diff
         shell: bash
         run: |
-          git fetch origin 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9 --depth=1
-          BAD="$(git diff --name-only 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9...HEAD | grep '^tfe-v20/' || true)"
+          RC2_BASE="66b2ac2bc63fe144d5d30d3d304350a6c0d04da9"
+          git fetch origin "$RC2_BASE" --depth=1
+          git cat-file -e "$RC2_BASE^{commit}"
+          git cat-file -e "HEAD^{commit}"
+          CHANGED="$(git diff --name-only "$RC2_BASE" HEAD)"
+          BAD="$(printf '%s\n' "$CHANGED" | grep '^tfe-v20/' || true)"
           if [ -n "$BAD" ]; then
             echo "RC2_MUTATION_DETECTED"
             echo "$BAD"
             exit 1
           fi
+          echo "RC2_FROZEN_DIFF_PASS"
+
+      - name: Verify API and browser JavaScript syntax
+        working-directory: sepa-x
+        run: |
+          node --check api/index.js
+          node --check public/app.js
 
       - name: Run unit, golden, isolation and integration tests
         working-directory: sepa-x
