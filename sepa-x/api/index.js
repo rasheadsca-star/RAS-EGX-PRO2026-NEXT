@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { performanceAnalytics } from '../src/performance.js';
 import { DEFAULT_CONFIG } from '../src/config.js';
-import { selectConcentratedRecommendations } from '../src/concentration.js';
+import { selectConcentratedRecommendations, selectReviewQueue } from '../src/concentration.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const readJson=(name,fallback=null)=>{try{return JSON.parse(fs.readFileSync(path.join(root,'data',name),'utf8'));}catch{return fallback;}};
@@ -17,6 +17,7 @@ const concentrated=(scan)=>{
   if(Array.isArray(scan?.all)&&scan.all.length)return selectConcentratedRecommendations(scan.all,DEFAULT_CONFIG.concentration);
   return Array.isArray(scan?.top5_now)?scan.top5_now.slice(0,5):[];
 };
+const reviewQueue=(scan)=>Array.isArray(scan?.all)&&scan.all.length?selectReviewQueue(scan.all,DEFAULT_CONFIG.concentration):[];
 
 const LIVE_SCAN_URL='https://egx-sepa-x-live-runner.vercel.app/api/live';
 const LIVE_TTL_MS=45_000;
@@ -58,8 +59,8 @@ async function fetchLiveScan(){
 async function loadScan(){
   const local=load();
   if(local)return {scan:local,source:'LOCAL_CURRENT_SCAN',error:null};
-  try{return {scan:await fetchLiveScan(),source:'LIVE_RUNNER',error:null};}
-  catch(error){return {scan:null,source:'UNAVAILABLE',error:String(error?.message||error)};}
+  try{return {scan:await fetchLiveScan(),source:'LIVE_RUNNER',error:null};
+  }catch(error){return {scan:null,source:'UNAVAILABLE',error:String(error?.message||error)};}
 }
 
 export default async function handler(req,res){
@@ -101,12 +102,13 @@ export default async function handler(req,res){
   }
 
   if(!scan)return send(res,503,{ok:false,error:'NO_SCAN_AVAILABLE',scanSource,scanError,message:'Live SEPA-X scan is temporarily unavailable. No mock data is served.'});
-  const top=concentrated(scan);
+  const top=concentrated(scan),review=reviewQueue(scan);
 
-  if(route==='scan')return send(res,200,{engineId:scan.engineId,generatedAt:scan.generatedAt,scan_source:scanSource,market_status:scan.market_status,market_coverage:scan.market_coverage,concentration_policy:scan.concentration_policy||{mode:'TOP_3_OR_5_HIGH_CONVICTION',selected:top.length,baseCount:3,maxCount:5},no_high_conviction_setup:top.length<3});
+  if(route==='scan')return send(res,200,{engineId:scan.engineId,generatedAt:scan.generatedAt,scan_source:scanSource,market_status:scan.market_status,market_coverage:scan.market_coverage,concentration_policy:scan.concentration_policy||{mode:'TOP_3_OR_5_HIGH_CONVICTION',selected:top.length,baseCount:3,maxCount:5},review_required_count:review.length,no_high_conviction_setup:top.length<3});
   if(route==='universe')return send(res,200,{count:(scan.all||[]).length,rows:(scan.all||[]).map(x=>({symbol:x.symbol,name:x.name,rank:x.market_rank,percentile:x.market_percentile,status:x.status,action:x.action,score:x.final_score,rs:x.rs_percentile,pivot:x.pivot,distance:x.distance_to_pivot_pct,rr:x.reward_risk,classification:x.classification,historyComplete:Boolean(x.history_metrics?.complete)}))});
-  if(route==='opportunities')return send(res,200,{top,near:scan.near_breakout||[],forming:scan.forming_leaders||[],extended:scan.strong_but_extended||[],near_miss:scan.near_miss||[],policy:{baseCount:3,maxCount:5,paddingLowQualityCandidates:false,targetRMultiples:[2,3,4]}});
+  if(route==='opportunities')return send(res,200,{top,review,near:scan.near_breakout||[],forming:scan.forming_leaders||[],extended:scan.strong_but_extended||[],near_miss:scan.near_miss||[],policy:{baseCount:3,maxCount:5,paddingLowQualityCandidates:false,targetRMultiples:[2,3,4],reviewQueueExecutionAllowed:false}});
   if(route==='opportunities/top')return send(res,200,top);
+  if(route==='opportunities/review')return send(res,200,review);
   if(route==='opportunities/near')return send(res,200,scan.near_breakout||[]);
   if(route==='opportunities/watch'||route==='opportunities/forming')return send(res,200,scan.forming_leaders||[]);
   if(route==='opportunities/extended')return send(res,200,scan.strong_but_extended||[]);
