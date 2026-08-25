@@ -3,44 +3,22 @@ const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
 const round=(v,d=2)=>finite(v)?Number(Number(v).toFixed(d)):null;
 const ACTIONABLE_STATUSES=new Set(['READY NOW','BREAKOUT CONFIRMED','NEAR PIVOT']);
 const CORPORATE_ACTION_REVIEW='CORPORATE_ACTION_REVIEW_REQUIRED';
+const REVIEW_NONBLOCKING_CODES=new Set(['FUNDAMENTALS_UNAVAILABLE_CONFIDENCE_PENALTY']);
 
 export function concentrationPolicy(cfg={}){
-  return {
-    baseCount:3,
-    maxCount:5,
-    requireCleanEngineGates:true,
-    allowBear:false,
-    minRewardRisk:2,
-    maxRiskPct:8,
-    expansionMinFinalScore:80,
-    expansionMinConfidenceScore:72,
-    expansionMinRewardRisk:2.25,
-    expansionMaxConvictionGap:6,
-    targetRMultiples:[2,3,4],
-    ...cfg,
-  };
+  return {baseCount:3,maxCount:5,requireCleanEngineGates:true,allowBear:false,minRewardRisk:2,maxRiskPct:8,expansionMinFinalScore:80,expansionMinConfidenceScore:72,expansionMinRewardRisk:2.25,expansionMaxConvictionGap:6,targetRMultiples:[2,3,4],...cfg};
 }
 
 function entryBounds(row){
   const z=row?.entry_zone;
-  if(Array.isArray(z)){
-    const vals=z.map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
-    if(vals.length)return {low:vals[0],high:vals.at(-1)};
-  }
-  if(z&&typeof z==='object'){
-    const low=Number(z.low??z.from??z.min),high=Number(z.high??z.to??z.max);
-    if(Number.isFinite(low)||Number.isFinite(high))return {low:Number.isFinite(low)?low:high,high:Number.isFinite(high)?high:low};
-  }
-  const p=Number(row?.pivot),last=Number(row?.last_price);
-  const ref=Number.isFinite(p)?p:last;
-  return Number.isFinite(ref)?{low:ref,high:ref}:null;
+  if(Array.isArray(z)){const vals=z.map(Number).filter(Number.isFinite).sort((a,b)=>a-b);if(vals.length)return {low:vals[0],high:vals.at(-1)};}
+  if(z&&typeof z==='object'){const low=Number(z.low??z.from??z.min),high=Number(z.high??z.to??z.max);if(Number.isFinite(low)||Number.isFinite(high))return {low:Number.isFinite(low)?low:high,high:Number.isFinite(high)?high:low};}
+  const p=Number(row?.pivot),last=Number(row?.last_price),ref=Number.isFinite(p)?p:last;return Number.isFinite(ref)?{low:ref,high:ref}:null;
 }
 
 export function buildTargetPlan(row,cfg={}){
-  const bounds=entryBounds(row),stop=Number(row?.stop_loss);
-  if(!bounds||!Number.isFinite(stop))return {valid:false,reason:'TARGET_PLAN_INPUT_MISSING'};
-  const entry=Number(bounds.high),risk=entry-stop;
-  if(!(entry>0&&risk>0))return {valid:false,reason:'TARGET_PLAN_INVALID_RISK'};
+  const bounds=entryBounds(row),stop=Number(row?.stop_loss);if(!bounds||!Number.isFinite(stop))return {valid:false,reason:'TARGET_PLAN_INPUT_MISSING'};
+  const entry=Number(bounds.high),risk=entry-stop;if(!(entry>0&&risk>0))return {valid:false,reason:'TARGET_PLAN_INVALID_RISK'};
   const multiples=Array.isArray(cfg?.targetRMultiples)&&cfg.targetRMultiples.length?cfg.targetRMultiples:[2,3,4];
   const targets=multiples.map((r,i)=>({id:`T${i+1}`,r:Number(r),price:round(entry+Number(r)*risk,4),gainPct:round(Number(r)*risk/entry*100,2)}));
   return {valid:true,entryLow:round(bounds.low,4),entryHigh:round(bounds.high,4),referenceEntry:round(entry,4),stopLoss:round(stop,4),riskPerShare:round(risk,4),riskPct:round(risk/entry*100,2),targets,primaryTarget:targets[0]||null,secondaryTarget:targets[1]||null,stretchTarget:targets[2]||null};
@@ -59,28 +37,24 @@ function baseSafetyReason(row,cfg){
   if(String(row.action||'').includes('WAIT')||row?.audit_stages?.entry?.raw?.do_not_chase===true)return 'WAIT_OR_DO_NOT_CHASE';
   return null;
 }
-
 function riskPlanReason(row,cfg){
   if(!finite(row.reward_risk)||Number(row.reward_risk)<cfg.minRewardRisk)return 'RR_LOW';
   if(finite(row.risk_pct)&&Number(row.risk_pct)>cfg.maxRiskPct)return 'RISK_TOO_WIDE';
-  const plan=buildTargetPlan(row,cfg);if(!plan.valid)return plan.reason||'TARGET_PLAN_INVALID';
-  return null;
+  const plan=buildTargetPlan(row,cfg);if(!plan.valid)return plan.reason||'TARGET_PLAN_INVALID';return null;
 }
-
 function rejectionReason(row,cfg){
   const base=baseSafetyReason(row,cfg);if(base)return base;
-  const failed=Array.isArray(row.failed_rules)?row.failed_rules:[];
-  if(cfg.requireCleanEngineGates&&failed.length)return `ENGINE_GATE:${failed[0]}`;
-  return riskPlanReason(row,cfg);
+  const failed=Array.isArray(row.failed_rules)?row.failed_rules:[];if(cfg.requireCleanEngineGates&&failed.length)return `ENGINE_GATE:${failed[0]}`;return riskPlanReason(row,cfg);
 }
-
 function reviewCandidateReason(row,cfg){
   const base=baseSafetyReason(row,cfg);if(base)return base;
   const failed=[...new Set((Array.isArray(row.failed_rules)?row.failed_rules:[]).filter(Boolean))];
-  if(failed.length!==1||failed[0]!==CORPORATE_ACTION_REVIEW)return 'NOT_CORPORATE_ACTION_ONLY';
+  if(!failed.includes(CORPORATE_ACTION_REVIEW))return 'CORPORATE_ACTION_REVIEW_MISSING';
+  const additionalBlocking=failed.filter(code=>code!==CORPORATE_ACTION_REVIEW&&!REVIEW_NONBLOCKING_CODES.has(code));
+  if(additionalBlocking.length)return `ADDITIONAL_BLOCKER:${additionalBlocking[0]}`;
+  if(row?.audit_stages?.fundamentals?.pass===false)return 'FUNDAMENTALS_STAGE_BLOCKED';
   return riskPlanReason(row,cfg);
 }
-
 function hardCandidate(row,cfg){return rejectionReason(row,cfg)===null;}
 
 export function explainConcentrationPool(rows=[],cfg={}){
@@ -96,23 +70,10 @@ export function selectConcentratedRecommendations(rows=[],cfg={}){
   if(ranked.length<=policy.baseCount)return ranked.slice(0,policy.baseCount).map((x,i)=>({...x,conviction_rank:i+1}));
   const base=ranked.slice(0,policy.baseCount),anchor=base.at(-1)?.concentration_score??0;
   const extras=ranked.slice(policy.baseCount,policy.maxCount).filter(x=>Number(x.final_score)>=policy.expansionMinFinalScore&&Number(x.confidence_score)>=policy.expansionMinConfidenceScore&&Number(x.reward_risk)>=policy.expansionMinRewardRisk&&['READY NOW','BREAKOUT CONFIRMED'].includes(x.status)&&anchor-Number(x.concentration_score)<=policy.expansionMaxConvictionGap);
-  const selected=extras.length>=2?[...base,...extras.slice(0,2)]:base;
-  return selected.map((x,i)=>({...x,conviction_rank:i+1}));
+  const selected=extras.length>=2?[...base,...extras.slice(0,2)]:base;return selected.map((x,i)=>({...x,conviction_rank:i+1}));
 }
 
 export function selectReviewQueue(rows=[],cfg={}){
   const policy=concentrationPolicy(cfg);
-  return (rows||[])
-    .filter(row=>reviewCandidateReason(row,policy)===null)
-    .map(row=>({...row,
-      concentration_score:concentrationScore(row),
-      target_plan:buildTargetPlan(row,policy),
-      review_required:true,
-      execution_allowed:false,
-      review_reason:CORPORATE_ACTION_REVIEW,
-      review_action:'VERIFY CORPORATE ACTION BEFORE EXECUTION'
-    }))
-    .sort((a,b)=>(b.concentration_score??-1)-(a.concentration_score??-1)||(b.final_score??-1)-(a.final_score??-1)||(b.confidence_score??-1)-(a.confidence_score??-1)||a.symbol.localeCompare(b.symbol))
-    .slice(0,policy.maxCount)
-    .map((row,i)=>({...row,review_rank:i+1}));
+  return (rows||[]).filter(row=>reviewCandidateReason(row,policy)===null).map(row=>({...row,concentration_score:concentrationScore(row),target_plan:buildTargetPlan(row,policy),review_required:true,execution_allowed:false,review_reason:CORPORATE_ACTION_REVIEW,review_action:'VERIFY CORPORATE ACTION BEFORE EXECUTION'})).sort((a,b)=>(b.concentration_score??-1)-(a.concentration_score??-1)||(b.final_score??-1)-(a.final_score??-1)||(b.confidence_score??-1)-(a.confidence_score??-1)||a.symbol.localeCompare(b.symbol)).slice(0,policy.maxCount).map((row,i)=>({...row,review_rank:i+1}));
 }
