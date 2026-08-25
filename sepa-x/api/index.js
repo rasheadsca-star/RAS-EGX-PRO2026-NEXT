@@ -19,10 +19,11 @@ const concentrated=(scan)=>{
 };
 const reviewQueue=(scan)=>Array.isArray(scan?.all)&&scan.all.length?selectReviewQueue(scan.all,DEFAULT_CONFIG.concentration):[];
 
+const GITHUB_SCAN_URL='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/develop/sepax-isolated-v1/sepa-x/data/current-scan.json';
 const LIVE_SCAN_URL='https://egx-sepa-x-live-runner.vercel.app/api/live';
-const LIVE_TTL_MS=45_000;
-let liveCache={scan:null,expiresAt:0};
-let liveInFlight=null;
+const REMOTE_TTL_MS=45_000;
+let remoteCache={scan:null,source:null,expiresAt:0};
+let remoteInFlight=null;
 
 const looksLikeScan=(x)=>Boolean(x&&typeof x==='object'&&Array.isArray(x.all)&&x.market_coverage&&x.market_status);
 const unwrapLiveScan=(payload)=>[
@@ -34,33 +35,43 @@ const unwrapLiveScan=(payload)=>[
   payload
 ].find(looksLikeScan)||null;
 
-async function fetchLiveScan(){
-  if(liveCache.scan&&Date.now()<liveCache.expiresAt)return liveCache.scan;
-  if(liveInFlight)return liveInFlight;
-  liveInFlight=(async()=>{
-    const controller=new AbortController();
-    const timer=setTimeout(()=>controller.abort(),45_000);
+async function fetchJsonWithTimeout(url,{timeoutMs=20_000,unwrap=x=>x,errorPrefix='REMOTE_SCAN'}={}){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(url,{cache:'no-store',signal:controller.signal,headers:{accept:'application/json'}});
+    if(!response.ok)throw new Error(`${errorPrefix}_HTTP_${response.status}`);
+    const payload=await response.json();
+    const scan=unwrap(payload);
+    if(!looksLikeScan(scan))throw new Error(`${errorPrefix}_INVALID_PAYLOAD`);
+    return scan;
+  }finally{clearTimeout(timer);}
+}
+
+async function fetchRemoteScan(){
+  if(remoteCache.scan&&Date.now()<remoteCache.expiresAt)return {scan:remoteCache.scan,source:remoteCache.source};
+  if(remoteInFlight)return remoteInFlight;
+  remoteInFlight=(async()=>{
+    const errors=[];
     try{
-      const response=await fetch(LIVE_SCAN_URL,{cache:'no-store',signal:controller.signal});
-      if(!response.ok)throw new Error(`LIVE_SCAN_HTTP_${response.status}`);
-      const payload=await response.json();
-      const scan=unwrapLiveScan(payload);
-      if(!scan)throw new Error('LIVE_SCAN_INVALID_PAYLOAD');
-      liveCache={scan,expiresAt:Date.now()+LIVE_TTL_MS};
-      return scan;
-    }finally{
-      clearTimeout(timer);
-      liveInFlight=null;
-    }
+      const scan=await fetchJsonWithTimeout(GITHUB_SCAN_URL,{errorPrefix:'GITHUB_SCAN'});
+      remoteCache={scan,source:'GITHUB_BRANCH_SNAPSHOT',expiresAt:Date.now()+REMOTE_TTL_MS};
+      return {scan,source:remoteCache.source,error:null};
+    }catch(error){errors.push(String(error?.message||error));}
+    try{
+      const scan=await fetchJsonWithTimeout(LIVE_SCAN_URL,{timeoutMs:45_000,unwrap:unwrapLiveScan,errorPrefix:'LIVE_SCAN'});
+      remoteCache={scan,source:'LIVE_RUNNER',expiresAt:Date.now()+REMOTE_TTL_MS};
+      return {scan,source:remoteCache.source,error:null};
+    }catch(error){errors.push(String(error?.message||error));}
+    return {scan:null,source:'UNAVAILABLE',error:errors.join(' | ')||'REMOTE_SCAN_UNAVAILABLE'};
   })();
-  return liveInFlight;
+  try{return await remoteInFlight;}finally{remoteInFlight=null;}
 }
 
 async function loadScan(){
   const local=load();
   if(local)return {scan:local,source:'LOCAL_CURRENT_SCAN',error:null};
-  try{return {scan:await fetchLiveScan(),source:'LIVE_RUNNER',error:null};
-  }catch(error){return {scan:null,source:'UNAVAILABLE',error:String(error?.message||error)};}
+  return fetchRemoteScan();
 }
 
 export default async function handler(req,res){
