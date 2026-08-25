@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-08-24T21:00:52.280Z",
+  "generatedAt": "2026-08-25T07:56:19.870Z",
   "expectedSession": "2026-08-24",
   "ready": true,
   "executionGrade": true,
@@ -13,11 +13,21 @@
     "preciseSource": true,
     "realFetch": true,
     "inputRows": 215,
-    "verifiedExpectedSessionRows": 209,
-    "sourceSessionEvidenceCoveragePct": 97.21
+    "verifiedExpectedSessionRows": 214,
+    "sourceSessionEvidenceCoveragePct": 99.5,
+    "primaryVerifiedExpectedSessionRows": 209,
+    "secondSourceVerifiedSessionRows": 5,
+    "secondSourceVerifiedSessionTickers": [
+      "ARVA",
+      "DEIN",
+      "MEGM",
+      "RAKT",
+      "SEIGA"
+    ],
+    "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 208,
-  "rejectedRows": 7,
+  "acceptedRows": 214,
+  "rejectedRows": 1,
   "droppedRows": 0,
   "updatedHistoryFiles": 184,
   "missingHistoryFiles": [
@@ -448,59 +458,189 @@
       "jumpPct": 5.05,
       "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
       "warnings": []
+    },
+    {
+      "ticker": "ARVA",
+      "date": "2026-08-24",
+      "close": 15.38,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-24",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 2.536,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "MEGM",
+      "date": "2026-08-24",
+      "close": 12.54,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-24",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 41.069,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "DEIN",
+      "date": "2026-08-24",
+      "close": 10.35,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-24",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 9.952,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "EOSB",
+      "date": "2026-08-24",
+      "close": 1.57,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-24",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "SEIGA",
+      "date": "2026-08-24",
+      "close": 0.95,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-24",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 469.474,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "RAKT",
+      "date": "2026-08-24",
+      "close": 22.25,
+      "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+      "originalRejectReason": "SOURCE_SESSION_UNKNOWN",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-08-24",
+      "sourceSessionEvidence": "independent_second_source_stockanalysis_egx_history_exact_session_replacement",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
-    {
-      "rejected": true,
-      "ticker": "ARVA",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2026-08-16",
-      "expectedSession": "2026-08-24"
-    },
-    {
-      "rejected": true,
-      "ticker": "MEGM",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2022-04-28",
-      "expectedSession": "2026-08-24"
-    },
     {
       "rejected": true,
       "ticker": "DCCC",
       "reason": "SOURCE_SESSION_MISMATCH",
       "sourceSessionDate": "2008-04-07",
       "expectedSession": "2026-08-24"
-    },
-    {
-      "rejected": true,
-      "ticker": "DEIN",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2026-06-25",
-      "expectedSession": "2026-08-24"
-    },
-    {
-      "rejected": true,
-      "ticker": "EOSB",
-      "reason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
-      "close": 1.57,
-      "previousTrustedClose": 1,
-      "jumpPct": 57,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-08-24"
-    },
-    {
-      "rejected": true,
-      "ticker": "SEIGA",
-      "reason": "SOURCE_SESSION_MISMATCH",
-      "sourceSessionDate": "2002-02-05",
-      "expectedSession": "2026-08-24"
-    },
-    {
-      "rejected": true,
-      "ticker": "RAKT",
-      "reason": "SOURCE_SESSION_UNKNOWN"
     }
   ],
-  "sampleDropped": []
+  "sampleDropped": [],
+  "secondSourceReconciliation": {
+    "enabled": true,
+    "failClosed": true,
+    "expectedSession": "2026-08-24",
+    "targetRejectedRowsThisRun": 7,
+    "resolverApprovedRowsThisRun": 6,
+    "recoveredRowsThisRun": 6,
+    "unresolvedRows": 1,
+    "recoveredTickersThisRun": [
+      "ARVA",
+      "MEGM",
+      "DEIN",
+      "EOSB",
+      "SEIGA",
+      "RAKT"
+    ],
+    "cumulativeSecondSourceSessionTickers": [
+      "ARVA",
+      "DEIN",
+      "MEGM",
+      "RAKT",
+      "SEIGA"
+    ],
+    "unresolvedTickers": [
+      "DCCC"
+    ],
+    "historyResults": [
+      {
+        "ticker": "ARVA",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 15.38,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "MEGM",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 12.54,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "DEIN",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 10.35,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "EOSB",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 1.57,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "SEIGA",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 0.95,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "RAKT",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 22.25,
+        "mode": "SECOND_SOURCE_EXACT_SESSION_REPLACEMENT",
+        "createdHistorySeed": false
+      }
+    ],
+    "changesAlphaOrRanking": false,
+    "changesEntryStopTargetAllocation": false
+  },
+  "professionalCoverage": {
+    "schemaVersion": "16.9.2-professional-market-coverage-v1",
+    "generatedAt": "2026-08-25T07:56:19.925Z",
+    "rawUniverseRows": 215,
+    "rawSessionEvidenceRows": 214,
+    "rawSessionEvidenceCoveragePct": 99.5,
+    "acceptedCurrentSessionPriceRows": 214,
+    "verifiedIneligibleRows": 1,
+    "verifiedIneligibleTickers": [
+      "DCCC"
+    ],
+    "executionEligibleUniverseRows": 214,
+    "executionEligibleAcceptedRows": 214,
+    "executionEligibleCoveragePct": 100,
+    "verifiedDispositionRows": 215,
+    "universeDispositionCoveragePct": 100,
+    "unresolvedRows": 0,
+    "complete": true,
+    "failClosed": true,
+    "noSyntheticPrices": true,
+    "dispositionEvidencePath": "data/stable/v16-market-universe-disposition.json"
+  }
 }
