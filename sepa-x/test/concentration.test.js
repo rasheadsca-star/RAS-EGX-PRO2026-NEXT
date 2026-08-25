@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildTargetPlan, selectConcentratedRecommendations } from '../src/concentration.js';
+import { buildTargetPlan, selectConcentratedRecommendations, selectReviewQueue } from '../src/concentration.js';
 
-const row=(symbol,{score=90,confidence=85,rr=3,status='READY NOW',vcp=80,rs=90,entry=100,stop=95}={})=>({
+const row=(symbol,{score=90,confidence=85,rr=3,status='READY NOW',vcp=80,rs=90,entry=100,stop=95,riskPct=null,failedRules=[]}={})=>({
   symbol,final_score:score,confidence_score:confidence,reward_risk:rr,status,action:'BUY',rs_percentile:rs,
-  vcp:{quality:vcp},entry_zone:[entry,entry],stop_loss:stop,audit_stages:{entry:{raw:{do_not_chase:false}}}
+  vcp:{quality:vcp},entry_zone:[entry,entry],stop_loss:stop,risk_pct:riskPct,failed_rules:failedRules,
+  audit_stages:{entry:{raw:{do_not_chase:false}}}
 });
 
 test('target plan produces 2R 3R 4R objectives',()=>{
@@ -32,4 +33,27 @@ test('extended and weak reward/risk stocks are never padded into top set',()=>{
   const rows=[row('A'),row('B'),row('C'),row('X',{status:'EXTENDED'}),row('Y',{rr:1.2})];
   const out=selectConcentratedRecommendations(rows);
   assert.deepEqual(out.map(x=>x.symbol).sort(),['A','B','C']);
+});
+
+test('corporate-action-only blocker enters review queue but is never executable',()=>{
+  const out=selectReviewQueue([row('SCTS',{rr:3.57,riskPct:3.45,failedRules:['CORPORATE_ACTION_REVIEW_REQUIRED']})]);
+  assert.equal(out.length,1);
+  assert.equal(out[0].symbol,'SCTS');
+  assert.equal(out[0].review_required,true);
+  assert.equal(out[0].execution_allowed,false);
+  assert.equal(out[0].review_reason,'CORPORATE_ACTION_REVIEW_REQUIRED');
+  assert.equal(out[0].review_rank,1);
+});
+
+test('review queue rejects candidates with any additional engine blocker',()=>{
+  const out=selectReviewQueue([row('BAD',{failedRules:['CORPORATE_ACTION_REVIEW_REQUIRED','STALE_DATA']})]);
+  assert.equal(out.length,0);
+});
+
+test('review queue still enforces reward risk and maximum risk width',()=>{
+  const out=selectReviewQueue([
+    row('LOWRR',{rr:1.2,failedRules:['CORPORATE_ACTION_REVIEW_REQUIRED']}),
+    row('WIDE',{rr:3,riskPct:9.2,failedRules:['CORPORATE_ACTION_REVIEW_REQUIRED']})
+  ]);
+  assert.equal(out.length,0);
 });
