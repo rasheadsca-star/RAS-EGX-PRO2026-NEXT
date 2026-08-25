@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: sepax-isolated-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   validate-and-scan:
@@ -70,5 +70,11 @@ jobs:
             echo "No scan evidence changes to commit."
           else
             git commit -m "chore(sepa-x): refresh real market scan [skip ci]"
+            git fetch origin develop/sepax-isolated-v1
+            if ! git rebase origin/develop/sepax-isolated-v1; then
+              git rebase --abort || true
+              echo "A newer branch state conflicts with this generated scan. Skipping stale scan push."
+              exit 0
+            fi
             git push origin HEAD:develop/sepax-isolated-v1
           fi
