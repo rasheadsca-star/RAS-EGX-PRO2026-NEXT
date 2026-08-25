@@ -8,7 +8,7 @@ import { selectConcentratedRecommendations, selectReviewQueue } from '../src/con
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const readJson=(name,fallback=null)=>{try{return JSON.parse(fs.readFileSync(path.join(root,'data',name),'utf8'));}catch{return fallback;}};
 const load=()=>readJson('current-scan.json',null);
-const readHistory=()=>readJson('recommendation-history.json',{runs:[],recommendations:[]});
+const readHistory=()=>readJson('recommendation-history.json',null);
 const readHistoricalSimulator=()=>readJson('research/historical-simulator-summary.json',null);
 const readComparison=()=>readJson('research/engine-comparison.json',null);
 const send=(res,status,obj)=>{res.statusCode=status;res.setHeader('content-type','application/json; charset=utf-8');res.setHeader('cache-control','no-store');res.end(JSON.stringify(obj));};
@@ -19,11 +19,17 @@ const concentrated=(scan)=>{
 };
 const reviewQueue=(scan)=>Array.isArray(scan?.all)&&scan.all.length?selectReviewQueue(scan.all,DEFAULT_CONFIG.concentration):[];
 
-const GITHUB_SCAN_URL='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/develop/sepax-isolated-v1/sepa-x/data/current-scan.json';
+const GITHUB_DATA_BASE='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/develop/sepax-isolated-v1/sepa-x/data';
+const GITHUB_SCAN_URL=`${GITHUB_DATA_BASE}/current-scan.json`;
+const GITHUB_HISTORY_URL=`${GITHUB_DATA_BASE}/recommendation-history.json`;
+const GITHUB_HISTORICAL_URL=`${GITHUB_DATA_BASE}/research/historical-simulator-summary.json`;
+const GITHUB_COMPARISON_URL=`${GITHUB_DATA_BASE}/research/engine-comparison.json`;
 const LIVE_SCAN_URL='https://egx-sepa-x-live-runner.vercel.app/api/live';
 const REMOTE_TTL_MS=45_000;
+const EVIDENCE_TTL_MS=300_000;
 let remoteCache={scan:null,source:null,expiresAt:0};
 let remoteInFlight=null;
+const evidenceCache=new Map();
 
 const looksLikeScan=(x)=>Boolean(x&&typeof x==='object'&&Array.isArray(x.all)&&x.market_coverage&&x.market_status);
 const unwrapLiveScan=(payload)=>[
@@ -35,17 +41,36 @@ const unwrapLiveScan=(payload)=>[
   payload
 ].find(looksLikeScan)||null;
 
-async function fetchJsonWithTimeout(url,{timeoutMs=20_000,unwrap=x=>x,errorPrefix='REMOTE_SCAN'}={}){
+async function fetchJsonDocument(url,{timeoutMs=20_000,errorPrefix='REMOTE_JSON'}={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const response=await fetch(url,{cache:'no-store',signal:controller.signal,headers:{accept:'application/json'}});
     if(!response.ok)throw new Error(`${errorPrefix}_HTTP_${response.status}`);
-    const payload=await response.json();
-    const scan=unwrap(payload);
-    if(!looksLikeScan(scan))throw new Error(`${errorPrefix}_INVALID_PAYLOAD`);
-    return scan;
+    return await response.json();
   }finally{clearTimeout(timer);}
+}
+
+async function fetchJsonWithTimeout(url,{timeoutMs=20_000,unwrap=x=>x,errorPrefix='REMOTE_SCAN'}={}){
+  const payload=await fetchJsonDocument(url,{timeoutMs,errorPrefix});
+  const scan=unwrap(payload);
+  if(!looksLikeScan(scan))throw new Error(`${errorPrefix}_INVALID_PAYLOAD`);
+  return scan;
+}
+
+async function loadEvidence(key,localValue,url,fallback=null){
+  if(localValue!==null&&localValue!==undefined)return {value:localValue,source:'LOCAL_BUNDLE',error:null};
+  const cached=evidenceCache.get(key);
+  if(cached&&Date.now()<cached.expiresAt)return {value:cached.value,source:cached.source,error:null};
+  try{
+    const value=await fetchJsonDocument(url,{timeoutMs:12_000,errorPrefix:`GITHUB_${key.toUpperCase()}`});
+    if(!value||typeof value!=='object')throw new Error(`GITHUB_${key.toUpperCase()}_INVALID_PAYLOAD`);
+    const source='GITHUB_BRANCH_SNAPSHOT';
+    evidenceCache.set(key,{value,source,expiresAt:Date.now()+EVIDENCE_TTL_MS});
+    return {value,source,error:null};
+  }catch(error){
+    return {value:fallback,source:'UNAVAILABLE',error:String(error?.message||error)};
+  }
 }
 
 async function fetchRemoteScan(){
@@ -74,42 +99,57 @@ async function loadScan(){
   return fetchRemoteScan();
 }
 
+const loadHistory=()=>loadEvidence('history',readHistory(),GITHUB_HISTORY_URL,{runs:[],recommendations:[]});
+const loadHistorical=()=>loadEvidence('historical_simulator',readHistoricalSimulator(),GITHUB_HISTORICAL_URL,null);
+const loadComparison=()=>loadEvidence('engine_comparison',readComparison(),GITHUB_COMPARISON_URL,null);
+
 export default async function handler(req,res){
   const u=new URL(req.url,'http://localhost');
   const route=(u.searchParams.get('route')||u.pathname.replace(/^\/+/, '')).replace(/^api\/index\/?/,'');
-  const historical=readHistoricalSimulator(),comparison=readComparison();
 
   if(route==='backtest'||route==='engine/backtest'){
-    if(!historical)return send(res,503,{ok:false,error:'HISTORICAL_SIMULATOR_RESULT_NOT_AVAILABLE',frameworkReady:true,lookAheadGuard:true,walkForward:true,execution:false});
-    return send(res,200,{ok:true,...historical});
+    const historical=await loadHistorical();
+    if(!historical.value)return send(res,503,{ok:false,error:'HISTORICAL_SIMULATOR_RESULT_NOT_AVAILABLE',source:historical.source,sourceError:historical.error,frameworkReady:true,lookAheadGuard:true,walkForward:true,execution:false});
+    return send(res,200,{...historical.value,ok:true,source:historical.source});
   }
   if(route==='engine/comparison'||route==='comparison'){
-    if(!comparison)return send(res,503,{ok:false,error:'ENGINE_COMPARISON_NOT_AVAILABLE'});
-    return send(res,200,{ok:true,...comparison});
+    const comparison=await loadComparison();
+    if(!comparison.value)return send(res,503,{ok:false,error:'ENGINE_COMPARISON_NOT_AVAILABLE',source:comparison.source,sourceError:comparison.error});
+    return send(res,200,{...comparison.value,ok:true,source:comparison.source});
   }
 
   const {scan,source:scanSource,error:scanError}=await loadScan();
 
-  if(route==='health'||route==='engine/health')return send(res,200,{
-    ok:true,
-    engineId:'SEPA_X_ENGINE_V1',
-    isolatedFromRc2:true,
-    scanAvailable:Boolean(scan),
-    scanSource,
-    scanError:scan?null:scanError,
-    historicalSimulatorAvailable:Boolean(historical),
-    comparisonAvailable:Boolean(comparison),
-    fullMarket:Boolean(scan?.market_coverage?.TotalListed&&scan?.market_coverage?.TotalEligible===scan?.market_coverage?.TotalListed),
-    generatedAt:scan?.generatedAt||null,
-    completeCoreHistory:scan?.market_coverage?.CompleteSMA200R252Week52??null,
-    totalListed:scan?.market_coverage?.TotalListed??null,
-    concentrationPolicy:DEFAULT_CONFIG.concentration
-  });
+  if(route==='health'||route==='engine/health'){
+    const [historical,comparison]=await Promise.all([loadHistorical(),loadComparison()]);
+    return send(res,200,{
+      ok:true,
+      engineId:'SEPA_X_ENGINE_V1',
+      isolatedFromRc2:true,
+      scanAvailable:Boolean(scan),
+      scanSource,
+      scanError:scan?null:scanError,
+      historicalSimulatorAvailable:Boolean(historical.value),
+      historicalSimulatorSource:historical.source,
+      historicalSimulatorError:historical.value?null:historical.error,
+      comparisonAvailable:Boolean(comparison.value),
+      comparisonSource:comparison.source,
+      comparisonError:comparison.value?null:comparison.error,
+      fullMarket:Boolean(scan?.market_coverage?.TotalListed&&scan?.market_coverage?.TotalEligible===scan?.market_coverage?.TotalListed),
+      generatedAt:scan?.generatedAt||null,
+      completeCoreHistory:scan?.market_coverage?.CompleteSMA200R252Week52??null,
+      totalListed:scan?.market_coverage?.TotalListed??null,
+      concentrationPolicy:DEFAULT_CONFIG.concentration
+    });
+  }
 
-  if(route==='engine/performance'){const hist=readHistory();return send(res,200,performanceAnalytics(hist));}
+  if(route==='engine/performance'){
+    const history=await loadHistory();
+    return send(res,200,{...performanceAnalytics(history.value||{runs:[],recommendations:[]}),source:history.source,sourceError:history.error});
+  }
   if(route==='engine/history'){
-    const hist=readHistory();
-    return send(res,200,{runs:(hist.runs||[]).slice(-50).reverse(),recommendations:(hist.recommendations||[]).slice(-300).reverse(),count:(hist.recommendations||[]).length});
+    const history=await loadHistory(),hist=history.value||{runs:[],recommendations:[]};
+    return send(res,200,{runs:(hist.runs||[]).slice(-50).reverse(),recommendations:(hist.recommendations||[]).slice(-300).reverse(),count:(hist.recommendations||[]).length,source:history.source,sourceError:history.error});
   }
 
   if(!scan)return send(res,503,{ok:false,error:'NO_SCAN_AVAILABLE',scanSource,scanError,message:'Live SEPA-X scan is temporarily unavailable. No mock data is served.'});
@@ -132,6 +172,9 @@ export default async function handler(req,res){
   const m=route.match(/^stock\/([^/]+)\/analysis$/);
   if(m){const x=(scan.all||[]).find(r=>r.symbol===m[1].toUpperCase());return x?send(res,200,x):send(res,404,{error:'SYMBOL_NOT_FOUND'});}
   const h=route.match(/^stock\/([^/]+)\/history$/);
-  if(h){const symbol=h[1].toUpperCase(),hist=readHistory();return send(res,200,{symbol,history:(hist.recommendations||[]).filter(r=>r.symbol===symbol).slice(-200).reverse()});}
+  if(h){
+    const symbol=h[1].toUpperCase(),history=await loadHistory(),hist=history.value||{runs:[],recommendations:[]};
+    return send(res,200,{symbol,history:(hist.recommendations||[]).filter(r=>r.symbol===symbol).slice(-200).reverse(),source:history.source,sourceError:history.error});
+  }
   return send(res,404,{error:'ROUTE_NOT_FOUND',route});
 }
