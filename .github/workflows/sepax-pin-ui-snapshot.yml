@@ -1,0 +1,49 @@
+name: SEPA-X Pin UI Snapshot
+
+on:
+  push:
+    branches:
+      - develop/sepax-isolated-v1
+    paths:
+      - .github/workflows/sepax-pin-ui-snapshot.yml
+
+permissions:
+  contents: write
+
+jobs:
+  pin-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop/sepax-isolated-v1
+          fetch-depth: 0
+
+      - name: Pin UI snapshot containing recommendation trade plans
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="sepa-x/api/index.js"
+          old="d1422408d2481ee45dd679b87d137ee8ad32151c"
+          new="2b8db70ae9a83c1ae40db6c03199bf43d7ae0c1a"
+          grep -q "const UI_SNAPSHOT_SHA='$old';" "$file"
+          sed -i "s/const UI_SNAPSHOT_SHA='$old';/const UI_SNAPSHOT_SHA='$new';/" "$file"
+          grep -q "const UI_SNAPSHOT_SHA='$new';" "$file"
+          node --check "$file"
+          git diff --check
+          git diff --exit-code -- tfe-v20
+
+      - name: Commit isolated API snapshot pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- sepa-x/api/index.js; then
+            echo "No snapshot update required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sepa-x/api/index.js
+          git commit -m "fix(sepa-x): serve recommendation plan UI snapshot"
+          git push origin HEAD:develop/sepax-isolated-v1
