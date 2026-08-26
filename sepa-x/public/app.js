@@ -1,73 +1,124 @@
-if(globalThis.__SEPA_X_UI_BOOTED__){
-  console.debug('SEPA-X UI already booted; duplicate bootstrap skipped.');
-}else{
-globalThis.__SEPA_X_UI_BOOTED__=true;
-const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-const num=(v,d=1)=>Number.isFinite(Number(v))?Number(v).toFixed(d):'—';
-const pct=v=>Number.isFinite(Number(v))?`${Number(v).toFixed(1)}%`:'—';
-const ratio=v=>Number.isFinite(Number(v))?`${Number(v).toFixed(2)}R`:'—';
-const dateFmt=v=>{if(!v)return'—';try{return new Intl.DateTimeFormat('ar-EG',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Cairo'}).format(new Date(v));}catch{return v;}};
-const get=async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error(`${url}: ${r.status}`);return r.json();};
-const state={scan:null,market:null,coverage:null,opps:{top:[],review:[],near:[],forming:[],extended:[],near_miss:[]},universe:[],selected:null,performance:null,backtest:null,portfolio:JSON.parse(localStorage.getItem('sepax_portfolio')||'[]'),notes:JSON.parse(localStorage.getItem('sepax_notes')||'{}'),displayed:[]};
+(()=>{
+  const boot=()=>{
+    const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const num=(v,d=2)=>Number.isFinite(Number(v))?Number(v).toFixed(d):'—';
+    const pct=v=>Number.isFinite(Number(v))?`${Number(v).toFixed(2)}%`:'—';
+    const outcomeLabel=v=>v==='TARGET1'?'حقق T1':v==='STOP'?'ضرب الوقف':v==='TIME_EXIT'?'خروج زمني':String(v||'—');
+    const outcomeTone=v=>v==='TARGET1'?'bt-good':v==='STOP'?'bt-bad':'bt-warn';
 
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
-function tone(status){if(['READY NOW','BREAKOUT CONFIRMED'].includes(status))return'good';if(status==='NEAR PIVOT'||status==='FORMING'||status==='REVIEW REQUIRED')return'warn';if(status==='EXTENDED'||status==='FAILED BREAKOUT'||status==='AVOID')return'bad';return'neutral'}
-function metric(label,value,sub=''){return `<div class="truth-card"><small>${esc(label)}</small><b>${esc(value)}</b><span>${esc(sub)}</span></div>`}
-function detail(label,value,cls=''){return `<div class="detail-row"><span>${esc(label)}</span><b class="${cls}">${esc(value)}</b></div>`}
-function summary(label,value){return `<div class="summary-card"><small>${esc(label)}</small><b>${esc(value)}</b></div>`}
-function stagePass(v){return v===true?'PASS':v===false?'FAIL':'UNKNOWN'}
-function uniqueBySymbol(rows){const m=new Map();for(const x of rows||[])if(x?.symbol&&!m.has(x.symbol))m.set(x.symbol,x);return [...m.values()]}
-function isReviewRequired(x){return Boolean(x?.review_required||x?.execution_allowed===false&&x?.review_reason==='CORPORATE_ACTION_REVIEW_REQUIRED'||(state.opps.review||[]).some(r=>r.symbol===x?.symbol));}
+    if(!document.getElementById('sepaxBacktestInlineStyles')){
+      const style=document.createElement('style');
+      style.id='sepaxBacktestInlineStyles';
+      style.textContent=`
+        #backtestTradesPanel{border:1px solid #246789!important;box-shadow:0 0 0 1px rgba(77,182,255,.08),0 18px 50px rgba(0,0,0,.18)}
+        .bt-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+        .bt-head h2{margin:0 0 6px}.bt-head p{margin:0;color:#91afc0;line-height:1.7}
+        .bt-badge{display:inline-flex;align-items:center;padding:7px 11px;border-radius:999px;background:#123f32;color:#78f0b8;font-weight:800;font-size:12px}
+        .bt-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px;margin:14px 0}
+        .bt-summary>div{border:1px solid #1c4058;background:#081b29;border-radius:10px;padding:11px}.bt-summary small{display:block;color:#86a7ba;margin-bottom:5px}.bt-summary b{font-size:18px}
+        .bt-tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.bt-tools input,.bt-tools select,.bt-tools button{border:1px solid #28506a;background:#071923;color:#eef7fb;border-radius:9px;padding:9px 11px}.bt-tools button{cursor:pointer;background:#123b54;font-weight:800}
+        .bt-legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0 12px;color:#95afbd;font-size:12px}.bt-entry{color:#55bdff!important}.bt-stop{color:#ff7181!important}.bt-target{color:#55e7a1!important}
+        .bt-table-wrap{overflow:auto;border:1px solid #1c4058;border-radius:11px;background:#071923}.bt-table{width:100%;min-width:1140px;border-collapse:collapse}.bt-table th,.bt-table td{padding:11px 9px;border-bottom:1px solid #153448;text-align:right;white-space:nowrap}.bt-table th{position:sticky;top:0;background:#0c2a3d;z-index:1;color:#d7edf7}.bt-table td small{display:block;color:#829faf;margin-top:4px}.bt-table .price{font-size:16px;font-weight:900}.bt-pill{display:inline-block;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900}.bt-good{background:#123f32;color:#78f0b8}.bt-bad{background:#4a1c26;color:#ff9dac}.bt-warn{background:#473b14;color:#ffe080}.bt-empty{padding:26px;text-align:center;color:#8facbd}
+        #backtestQuickTab{border-color:#2a8dbd!important;color:#dff5ff!important;background:linear-gradient(180deg,#123b54,#0b293b)!important;font-weight:900!important}
+      `;
+      document.head.appendChild(style);
+    }
 
-function activateView(name){$$('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view===name));$$('.view').forEach(x=>x.classList.toggle('active',x.id===`view-${name}`));if(name==='market')renderMarket();if(name==='portfolio')renderPortfolio();if(name==='fundamentals')renderFundamentals();if(name==='evidence')renderEvidenceSummary();}
-$$('.tab').forEach(b=>b.addEventListener('click',()=>activateView(b.dataset.view)));
-const recommendationFilter=$('#recommendationFilter');
-if(recommendationFilter&&!recommendationFilter.querySelector('option[value="review"]')){const o=document.createElement('option');o.value='review';o.textContent='Review Required — مراجعة مطلوبة';recommendationFilter.insertBefore(o,recommendationFilter.querySelector('option[value="near"]'));}
+    const evidence=document.getElementById('view-evidence');
+    if(!evidence)return;
 
-function renderHeader(){const m=state.market||{},c=state.coverage||{};$('#lastUpdate').innerHTML=`آخر Scan: <b>${dateFmt(m.LastUpdate||state.scan?.generatedAt)}</b><br>${c.SuccessfullyAnalyzed??'—'} analyzed / ${c.TotalListed??'—'} listed`;}
-function renderReadiness(){const c=state.coverage||{},m=state.market||{};const total=Math.max(1,Number(c.TotalListed)||1),core=Number(c.CompleteSMA200R252Week52)||0,score=Math.round(core/total*100);const g=$('#readinessGauge');g.style.background=`conic-gradient(var(--green) ${score*3.6}deg,#17344a 0)`;g.innerHTML=`<strong>${score}</strong><span>تغطية Core</span>`;
-  const rows=[['Analyzed',c.SuccessfullyAnalyzed],['252 + SMA200 + R252 + 52W',core],['Trend Template',c.PassedTrendTemplate],['RS ≥ 70',c.HighRSStocks],['Valid VCP',c.ValidVCP]];$('#readinessBreakdown').innerHTML=rows.map(([l,v])=>{const p=Math.min(100,Math.round((Number(v)||0)/total*100));return `<div class="breakdown-row"><span>${esc(l)}</span><div class="bar"><i style="width:${p}%"></i></div><b>${v??'—'}</b></div>`}).join('');
-  const badge=$('#engineBadge');badge.textContent=state.scan?'LIVE FULL-MARKET':'NO SCAN';badge.className=`badge ${state.scan?'good':'bad'}`;const regime=m.Regime||'UNKNOWN';const v=$('#professionalVerdict');v.className=`professional-verdict ${regime==='BEAR'?'bad':['CAUTION','NEUTRAL'].includes(regime)?'warn':'good'}`;v.innerHTML=`حالة السوق: <b>${esc(regime)}</b> • مستوى المخاطر: <b>${esc(m.RiskLevel||'UNKNOWN')}</b>. اختيار الأسهم يظل خاضعًا لنفس Gates وRanking الخاصة بـSEPA‑X بدون أي تدخل من الواجهة.`;
-}
-function renderTruth(){const c=state.coverage||{},m=state.market||{},b=m.Breadth||{};$('#truthGrid').innerHTML=[metric('Market Regime',m.Regime||'UNKNOWN',m.RiskLevel||''),metric('Breadth > SMA200',pct(b.pct_stocks_gt_sma200),'من الأسهم المحللة'),metric('Core History Complete',`${c.CompleteSMA200R252Week52??'—'} / ${c.TotalListed??'—'}`,'252 جلسة + SMA200 + R252 + 52W'),metric('Ready / Near',`${(c.ReadyNow||0)+(c.BreakoutConfirmed||0)} / ${c.NearPivot||0}`,'Ready+Breakout / Near Pivot'),metric('Review Required',state.opps.review?.length||0,'مراجعة Corporate Action قبل أي تنفيذ')].join('')}
+    if(!document.getElementById('backtestQuickTab')){
+      const evidenceTab=document.querySelector('.tab[data-view="evidence"]');
+      if(evidenceTab&&evidenceTab.parentElement){
+        const quick=document.createElement('button');
+        quick.id='backtestQuickTab';
+        quick.className='tab';
+        quick.type='button';
+        quick.textContent='الدخول / الوقف / الأهداف';
+        quick.addEventListener('click',()=>{
+          evidenceTab.click();
+          setTimeout(()=>document.getElementById('backtestTradesPanel')?.scrollIntoView({behavior:'smooth',block:'start'}),80);
+        });
+        evidenceTab.parentElement.insertBefore(quick,evidenceTab);
+      }
+    }
 
-function recommendationRows(){const f=$('#recommendationFilter').value;let rows=[];if(f==='ready')rows=(state.opps.top||[]).filter(x=>['READY NOW','BREAKOUT CONFIRMED'].includes(x.status));else if(f==='review')rows=state.opps.review||[];else if(f==='near')rows=state.opps.near||[];else if(f==='forming')rows=state.opps.forming||[];else if(f==='extended')rows=state.opps.extended||[];else rows=uniqueBySymbol([...(state.opps.top||[]),...(state.opps.review||[]),...(state.opps.near||[]),...(state.opps.forming||[]),...(state.opps.extended||[])]).slice(0,15);return rows}
-function recCard(x){const review=isReviewRequired(x),t=review?'warn':tone(x.status),trend=x.trend_template?.passed,vcp=x.vcp?.detected,rr=Number(x.reward_risk),reviewNote=review?'<div class="engine-note" style="margin:10px 0 0">مراجعة Corporate Action مطلوبة — التنفيذ غير مسموح حتى التحقق.</div>':'';return `<article class="rec-card ${state.selected?.symbol===x.symbol?'selected':''}" data-symbol="${esc(x.symbol)}"><div class="rec-rank">${x.market_rank??'—'}</div><h3>${esc(x.symbol)}</h3><div class="rec-name">${esc(x.name||'')}</div><div class="tag-row"><span class="tag ${t}">${esc(x.status||'UNKNOWN')}</span>${review?'<span class="tag warn">REVIEW REQUIRED</span>':''}<span class="tag neutral">${esc(x.classification||'')}</span></div><div class="rec-metrics"><div class="mini">Score<b>${num(x.final_score)}</b></div><div class="mini">RS Percentile<b>${num(x.rs_percentile)}</b></div><div class="mini">Pivot<b>${num(x.pivot,2)}</b></div><div class="mini">Distance<b>${pct(x.distance_to_pivot_pct)}</b></div><div class="mini">Risk<b>${pct(x.risk_pct)}</b></div><div class="mini">R:R<b>${ratio(x.reward_risk)}</b></div></div><div class="gate-list"><div class="gate ${trend?'pass':'fail'}"><span>Trend Template</span><b>${trend?'PASS':'FAIL'}</b></div><div class="gate ${vcp?'pass':'warn'}"><span>VCP</span><b>${vcp?'VALID':'FORMING / NO'}</b></div><div class="gate ${rr>=2?'pass':'warn'}"><span>Reward / Risk</span><b>${ratio(x.reward_risk)}</b></div></div>${reviewNote}<div class="rec-verdict ${t}">${esc(review?x.review_action||'VERIFY CORPORATE ACTION BEFORE EXECUTION':x.action||'WATCH')}</div><button class="btn" data-open-symbol="${esc(x.symbol)}">عرض التحليل</button></article>`}
-function renderRecommendations(){state.displayed=recommendationRows();$('#recommendationGrid').innerHTML=state.displayed.length?state.displayed.map(recCard).join(''):'<div class="empty">لا توجد فرص في هذا التصنيف حاليًا.</div>';$$('[data-open-symbol]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();selectSymbol(b.dataset.openSymbol,true)}));$$('.rec-card').forEach(c=>c.addEventListener('click',()=>selectSymbol(c.dataset.symbol,false)))}
-$('#recommendationFilter').addEventListener('change',renderRecommendations);
+    let panel=document.getElementById('backtestTradesPanel');
+    if(!panel){
+      panel=document.createElement('article');
+      panel.id='backtestTradesPanel';
+      panel.className='panel';
+      panel.innerHTML=`
+        <div class="bt-head">
+          <div><h2>تفاصيل صفقات Backtest — الدخول والوقف والأهداف</h2><p>الأسعار الفعلية المستخدمة في المحاكاة التاريخية: Entry ثم Stop Loss ثم T1 / T2 / T3، مع نتيجة الصفقة وتاريخ الخروج.</p></div>
+          <span class="bt-badge">POINT-IN-TIME • NO LOOK-AHEAD</span>
+        </div>
+        <div id="btInlineSummary" class="bt-summary"><div><small>الحالة</small><b>جارٍ التحميل…</b></div></div>
+        <div class="bt-tools">
+          <input id="btSymbolFilter" placeholder="فلتر بالسهم — مثال ETEL" autocomplete="off">
+          <select id="btOutcomeFilter"><option value="ALL">كل النتائج</option><option value="TARGET1">حقق T1</option><option value="STOP">ضرب الوقف</option><option value="TIME_EXIT">خروج زمني</option></select>
+          <button id="btRefreshBtn" type="button">تحديث الصفقات</button>
+        </div>
+        <div class="bt-legend"><span><b class="bt-entry">ENTRY</b> نقطة الدخول</span><span><b class="bt-stop">STOP</b> وقف الخسارة</span><span><b class="bt-target">T1 / T2 / T3</b> الأهداف</span></div>
+        <div id="btInlineTable" class="bt-table-wrap"><div class="bt-empty">جارٍ تحميل تفاصيل الصفقات…</div></div>`;
+      const grid=evidence.querySelector('.evidence-grid');
+      if(grid)grid.insertAdjacentElement('afterend',panel);else evidence.prepend(panel);
+    }
 
-async function selectSymbol(symbol,scroll=true){try{const x=await get(`/stock/${encodeURIComponent(symbol)}/analysis`),review=(state.opps.review||[]).find(r=>r.symbol===symbol);state.selected=review?{...x,...review}:x;renderRecommendations();renderSelected();renderFundamentals();if(scroll){activateView('dashboard');$('#selectedPanel').scrollIntoView({behavior:'smooth',block:'start'})}}catch(e){toast(`تعذر تحميل ${symbol}`)}}
-function structureChart(x){const h=x.history_metrics||{},lo=Number(h.low52w),hi=Number(h.high52w),price=Number(x.last_price),pivot=Number(x.pivot),stop=Number(x.stop_loss),sma=Number(h.SMA200);if(!Number.isFinite(lo)||!Number.isFinite(hi)||hi<=lo)return '<div class="empty">لا توجد بيانات 52W كافية للرسم.</div>';const pos=v=>Math.max(0,Math.min(100,(v-lo)/(hi-lo)*100));const line=(v,cls,label)=>Number.isFinite(v)?`<i class="price-line ${cls}" style="right:${pos(v)}%" data-label="${esc(label)} ${num(v,2)}"></i>`:'';return `<div class="structure-wrap"><div class="structure-title"><span>خريطة البنية السعرية داخل نطاق 52 أسبوعًا</span><b>${esc(x.symbol)}</b></div><div class="structure-axis"><div class="structure-grid"></div>${line(price,'price','Price')}${line(pivot,'pivot','Pivot')}${line(stop,'stop','Stop')}${line(sma,'sma','SMA200')}<span class="range-label low">52W Low ${num(lo,2)}</span><span class="range-label high">52W High ${num(hi,2)}</span></div></div>`}
-function renderSelected(){const x=state.selected;if(!x){return}const review=isReviewRequired(x);$('#selectedTitle').textContent=`${x.symbol} — ${x.name||''}`;$('#selectedSubtitle').textContent=`Rank #${x.market_rank??'—'} • Score ${num(x.final_score)} • RS ${num(x.rs_percentile)} • ${review?'REVIEW REQUIRED':x.action||''}`;const d=$('#selectedDecision');d.textContent=review?'REVIEW REQUIRED':x.status||'UNKNOWN';d.className=`badge ${review?'warn':tone(x.status)}`;$('#openModalBtn').disabled=false;$('#addPortfolioBtn').disabled=review;$('#addPortfolioBtn').textContent=review?'التنفيذ معطل لحين المراجعة':'إضافة للمحفظة التجريبية';$('#structureChart').innerHTML=structureChart(x);$('#chartLegend').hidden=false;
-  const h=x.history_metrics||{},tt=x.trend_template||{},v=x.vcp||{},vol=x.volume||{};$('#technicalDetail').innerHTML=[detail('Trend Template',tt.passed?'PASS':'FAIL',tt.passed?'green':'red'),detail('RS Percentile',num(x.rs_percentile)),detail('Market Rank',`#${x.market_rank??'—'}`),detail('SMA50',num(tt.raw?.SMA50,2)),detail('SMA150',num(tt.raw?.SMA150,2)),detail('SMA200',num(h.SMA200,2)),detail('52W High',num(h.high52w,2)),detail('52W Low',num(h.low52w,2))].join('');
-  $('#setupDetail').innerHTML=[detail('Status',x.status||'—',tone(x.status)==='good'?'green':tone(x.status)==='bad'?'red':'amber'),detail('Pivot',num(x.pivot,2)),detail('Distance to Pivot',pct(x.distance_to_pivot_pct)),detail('VCP Quality',num(v.quality)),detail('Contractions',v.contractions?.length??'—'),detail('Volume Dry-Up',num(vol.dry_up_score)),detail('Breakout Volume',num(vol.breakout_ratio,2)),detail('Confidence',num(x.confidence_score))].join('');
-  $('#riskDetail').innerHTML=(review?'<div class="engine-note" style="margin:0 0 12px">Corporate Action Review Required — لا يسمح بالتنفيذ أو إضافة مركز قبل التحقق.</div>':'')+[detail('Entry Zone',Array.isArray(x.entry_zone)?x.entry_zone.map(z=>num(z,2)).join(' – '):x.entry_zone||'—'),detail('Stop Loss',num(x.stop_loss,2),'red'),detail('Initial Risk',pct(x.risk_pct)),detail('Reward / Risk',ratio(x.reward_risk),Number(x.reward_risk)>=2?'green':'amber'),detail('Action',review?x.review_action||'VERIFY CORPORATE ACTION BEFORE EXECUTION':x.action||'—'),detail('Invalidation',x.invalidation||'—')].join('');updatePosition();$('#noteTicker').value=x.symbol;$('#researchNotes').value=state.notes[x.symbol]||''}
+    let allTrades=[];
+    let report=null;
 
-function updatePosition(){const x=state.selected;if(!x){$('#positionResult').innerHTML='<div class="empty">اختر سهمًا.</div>';return}if(isReviewRequired(x)){$('#positionResult').innerHTML='<div class="warning-box">حساب المركز معطل لهذه الفرصة حتى اكتمال مراجعة Corporate Action.</div>';$('#addPortfolioBtn').dataset.qty='0';return}const capital=Number($('#capitalInput').value)||0,riskPct=(Number($('#riskPctInput').value)||0)/100,maxWeight=(Number($('#maxWeightInput').value)||0)/100,entry=Number(x.last_price),stop=Number(x.stop_loss),perShare=Math.max(0,entry-stop),riskBudget=capital*riskPct,maxValue=capital*maxWeight,byRisk=perShare>0?Math.floor(riskBudget/perShare):0,byWeight=entry>0?Math.floor(maxValue/entry):0,qty=Math.max(0,Math.min(byRisk,byWeight)),value=qty*entry,risk=qty*perShare;$('#positionResult').innerHTML=[detail('سعر الحساب',num(entry,2)),detail('الخطر/سهم',num(perShare,2)),detail('الكمية',qty.toLocaleString('en-US')),detail('قيمة المركز',num(value,0)),detail('الخطر النقدي',num(risk,0))].join('');$('#addPortfolioBtn').dataset.qty=String(qty)}
-['#capitalInput','#riskPctInput','#maxWeightInput'].forEach(s=>$(s).addEventListener('input',updatePosition));
-$('#addPortfolioBtn').addEventListener('click',()=>{const x=state.selected,qty=Number($('#addPortfolioBtn').dataset.qty)||0;if(isReviewRequired(x))return toast('هذه الفرصة قيد مراجعة Corporate Action والتنفيذ معطل');if(!x||qty<=0)return toast('لا توجد كمية صالحة للإضافة');state.portfolio=state.portfolio.filter(p=>p.symbol!==x.symbol);state.portfolio.push({symbol:x.symbol,name:x.name,status:x.status,entry:Number(x.last_price),stop:Number(x.stop_loss),qty,rr:Number(x.reward_risk),addedAt:new Date().toISOString()});localStorage.setItem('sepax_portfolio',JSON.stringify(state.portfolio));toast(`تمت إضافة ${x.symbol} للمحفظة التجريبية`);renderPortfolio()});
+    const render=()=>{
+      const q=String(document.getElementById('btSymbolFilter')?.value||'').trim().toUpperCase();
+      const outcome=String(document.getElementById('btOutcomeFilter')?.value||'ALL');
+      let rows=allTrades;
+      if(q)rows=rows.filter(t=>String(t.symbol||'').toUpperCase().includes(q));
+      if(outcome!=='ALL')rows=rows.filter(t=>String(t.outcome||'')===outcome);
+      const box=document.getElementById('btInlineTable');
+      if(!box)return;
+      if(!rows.length){box.innerHTML='<div class="bt-empty">لا توجد صفقات مطابقة للفلتر.</div>';return;}
+      box.innerHTML=`<table class="bt-table"><thead><tr><th>الإشارة</th><th>السهم</th><th>ENTRY</th><th>STOP</th><th>T1</th><th>T2</th><th>T3</th><th>الخروج</th><th>النتيجة</th></tr></thead><tbody>${rows.map(t=>`<tr>
+        <td><b>${esc(t.signalDate||'—')}</b><small>${esc(t.status||'')}</small></td>
+        <td><b>${esc(t.symbol||'—')}</b><small>Rank #${esc(t.rank??'—')}</small></td>
+        <td><b class="price bt-entry">${num(t.entryPrice)}</b><small>${esc(t.entryDate||'—')}</small></td>
+        <td><b class="price bt-stop">${num(t.stopLoss)}</b><small>Risk ${pct(t.riskPct)}</small></td>
+        <td><b class="price bt-target">${num(t.target1)}</b><small>${t.target1Hit?'✓ تحقق':''}</small></td>
+        <td><b class="price bt-target">${num(t.target2)}</b><small>${t.target2Hit?'✓ تحقق':''}</small></td>
+        <td><b class="price bt-target">${num(t.target3)}</b><small>${t.target3Hit?'✓ تحقق':''}</small></td>
+        <td><span class="bt-pill ${outcomeTone(t.outcome)}">${esc(outcomeLabel(t.outcome))}</span><small>${esc(t.exitDate||'—')}</small></td>
+        <td><b class="${Number(t.netPct)>=0?'bt-entry':'bt-stop'}">${pct(t.netPct)}</b><small>${num(t.netR)}R • ${esc(t.holdingSessions??'—')} جلسة</small></td>
+      </tr>`).join('')}</tbody></table>`;
+    };
 
-function renderMarket(){let rows=[...state.universe],q=$('#marketSearch').value.trim().toLowerCase(),scope=$('#marketScope').value,sort=$('#marketSort').value;if(q)rows=rows.filter(x=>`${x.symbol} ${x.name}`.toLowerCase().includes(q));if(scope==='top')rows=rows.filter(x=>['READY NOW','BREAKOUT CONFIRMED','NEAR PIVOT'].includes(x.status));if(scope==='forming')rows=rows.filter(x=>x.status==='FORMING');if(scope==='extended')rows=rows.filter(x=>x.status==='EXTENDED');if(scope==='history')rows=rows.filter(x=>x.historyComplete);if(sort==='score')rows.sort((a,b)=>(b.score??-1)-(a.score??-1));else if(sort==='rs')rows.sort((a,b)=>(b.rs??-1)-(a.rs??-1));else if(sort==='rr')rows.sort((a,b)=>(b.rr??-1)-(a.rr??-1));else rows.sort((a,b)=>(a.rank??9999)-(b.rank??9999));$('#marketResults').innerHTML=rows.length?rows.map(x=>`<div class="market-row" data-market-symbol="${esc(x.symbol)}"><b class="blue">${esc(x.symbol)}</b><span>${esc(x.name||'')}</span><b>#${x.rank??'—'}</b><b>${num(x.score)}</b><b>${num(x.rs)}</b><span class="tag ${tone(x.status)}">${esc(x.status||'UNKNOWN')}</span><span>Pivot ${num(x.pivot,2)} • ${ratio(x.rr)}</span></div>`).join(''):'<div class="empty">لا توجد نتائج مطابقة.</div>';$$('[data-market-symbol]').forEach(r=>r.addEventListener('click',()=>selectSymbol(r.dataset.marketSymbol,true)))}
-['#marketSearch','#marketScope','#marketSort'].forEach(s=>$(s).addEventListener(s==='#marketSearch'?'input':'change',renderMarket));
+    const loadTrades=async()=>{
+      const box=document.getElementById('btInlineTable');
+      if(box)box.innerHTML='<div class="bt-empty">جارٍ تحميل تفاصيل الصفقات…</div>';
+      try{
+        const r=await fetch('/backtest/trades',{cache:'no-store'});
+        if(!r.ok)throw new Error(`HTTP ${r.status}`);
+        report=await r.json();
+        allTrades=Array.isArray(report.trades)?report.trades.filter(t=>t.entered===true):[];
+        const s=report.summary||{};
+        const summary=document.getElementById('btInlineSummary');
+        if(summary)summary.innerHTML=`
+          <div><small>الصفقات المنفذة</small><b>${esc(report.count??allTrades.length)}</b></div>
+          <div><small>إيجابي</small><b>${pct(s.positivePct)}</b></div>
+          <div><small>T1 Hit</small><b>${pct(s.target1HitPct)}</b></div>
+          <div><small>Profit Factor</small><b>${num(s.profitFactor,3)}</b></div>
+          <div><small>Expectancy</small><b>${num(s.expectancyR,3)}R</b></div>
+          <div><small>Generated</small><b style="font-size:13px">${esc(String(report.generatedAt||'—').slice(0,10))}</b></div>`;
+        render();
+      }catch(e){
+        if(box)box.innerHTML=`<div class="bt-empty">تعذر تحميل تفاصيل Backtest: ${esc(e.message)}</div>`;
+      }
+    };
 
-function renderPortfolio(){const rows=state.portfolio,totalValue=rows.reduce((s,p)=>s+p.entry*p.qty,0),totalRisk=rows.reduce((s,p)=>s+Math.max(0,(p.entry-p.stop)*p.qty),0),capital=Number($('#capitalInput').value)||100000,riskPct=capital?totalRisk/capital*100:0;$('#portfolioSummary').innerHTML=[summary('عدد المراكز',rows.length),summary('قيمة المراكز',num(totalValue,0)),summary('الخطر المفتوح',`${num(totalRisk,0)} (${num(riskPct,2)}%)`)].join('');$('#portfolioRows').innerHTML=rows.length?rows.map((p,i)=>`<tr><td><b>${esc(p.symbol)}</b></td><td>${esc(p.status)}</td><td>${num(p.entry,2)}</td><td>${num(p.stop,2)}</td><td>${p.qty.toLocaleString('en-US')}</td><td>${num(p.entry*p.qty,0)}</td><td>${num(Math.max(0,(p.entry-p.stop)*p.qty),0)}</td><td>${ratio(p.rr)}</td><td><button class="btn danger" data-remove-pos="${i}">حذف</button></td></tr>`).join(''):'<tr><td colspan="9"><div class="empty">المحفظة التجريبية فارغة.</div></td></tr>';$$('[data-remove-pos]').forEach(b=>b.addEventListener('click',()=>{state.portfolio.splice(Number(b.dataset.removePos),1);localStorage.setItem('sepax_portfolio',JSON.stringify(state.portfolio));renderPortfolio()}))}
-$('#clearPortfolioBtn').addEventListener('click',()=>{state.portfolio=[];localStorage.setItem('sepax_portfolio','[]');renderPortfolio();toast('تم مسح المحفظة التجريبية')});
+    document.getElementById('btSymbolFilter')?.addEventListener('input',render);
+    document.getElementById('btOutcomeFilter')?.addEventListener('change',render);
+    document.getElementById('btRefreshBtn')?.addEventListener('click',loadTrades);
+    loadTrades();
+  };
 
-function renderFundamentals(){const x=state.selected;if(!x){$('#fundamentalSource').innerHTML='<div class="empty">اختر سهمًا من لوحة القرار أو بحث السوق.</div>';return}const f=x.fundamentals||{},c=x.catalyst||null,stage=x.audit_stages?.fundamentals||{};$('#fundamentalSource').innerHTML=`<div class="truth-grid">${metric('Fundamental Status',f.status||f.availability||'UNKNOWN',stage.reasonCodes?.join(', ')||'')}${metric('Fundamental Score',num(stage.score),'Null يعني غير متاح وليس صفرًا')}${metric('Catalyst',c?.type||c?.title||'UNKNOWN',c?.date||'لا يوجد حدث موثق')}${metric('Data As Of',dateFmt(x.fundamentals_as_of),'مصدر المحرك')}</div><div class="engine-note">هذه البيانات مساعدة داخل SEPA‑X حسب توافر المصدر. نقص البيانات لا يتم تعويضه بقيم افتراضية.</div>`;$('#noteTicker').value=x.symbol;$('#researchNotes').value=state.notes[x.symbol]||''}
-$('#saveNoteBtn').addEventListener('click',()=>{if(!state.selected)return toast('اختر سهمًا أولًا');state.notes[state.selected.symbol]=$('#researchNotes').value;localStorage.setItem('sepax_notes',JSON.stringify(state.notes));toast('تم حفظ المذكرة محليًا')});
-
-function renderEvidenceSummary(){const p=state.performance||{},b=state.backtest||{};$('#performanceSummary').innerHTML=[summary('Recommendations',p.totalRecommendations??'—'),summary('Resolved',p.resolved??'—'),summary('Win Rate',p.winRate==null?'—':pct(p.winRate*100)),summary('Expectancy',p.expectancy==null?'—':`${num(p.expectancy,2)}R`),summary('Profit Factor',num(p.profitFactor,2)),summary('Top 5 Precision',p.top5Precision==null?'—':pct(p.top5Precision*100))].join('');const ready=b.status&&String(b.status).includes('FRAMEWORK_READY');$('#backtestStatus').innerHTML=`<span class="badge ${ready?'warn':'bad'}">${esc(b.status||'UNKNOWN')}</span><div class="confidence-progress"><i style="width:${ready?55:20}%"></i></div>${detail('Look-ahead Guard',b.lookAheadGuard?'ENABLED':'UNKNOWN',b.lookAheadGuard?'green':'amber')}${detail('Walk-Forward',b.walkForward?'SUPPORTED':'UNKNOWN',b.walkForward?'green':'amber')}${detail('Execution',b.execution===false?'DISABLED':'UNKNOWN','green')}<div class="engine-note" style="margin:12px 0 0">لا يتم عرض نتائج P&L تاريخية غير منفذة. هذا يحافظ على سلامة القياس بدل اختلاق Backtest.</div>`}
-async function loadEvidence(kind){const box=$('#evidenceTable');box.innerHTML='<div class="empty">جارٍ التحميل…</div>';try{if(kind==='history'){const d=await get('/engine/history'),rows=d.recommendations||[];box.innerHTML=rows.length?`<table><thead><tr><th>السهم</th><th>الحالة</th><th>Score</th><th>Rank</th><th>Pivot</th><th>Stop</th><th>1R/2R/3R</th><th>وقت الإشارة</th></tr></thead><tbody>${rows.slice(0,200).map(r=>`<tr><td><b>${esc(r.symbol)}</b></td><td>${esc(r.status||'')}</td><td>${num(r.score)}</td><td>#${r.rank??'—'}</td><td>${num(r.pivot,2)}</td><td>${num(r.stop,2)}</td><td>${r.hit_1R?'✓':'—'} / ${r.hit_2R?'✓':'—'} / ${r.hit_3R?'✓':'—'}</td><td>${dateFmt(r.timestamp)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">لا يوجد سجل توصيات بعد.</div>'}else if(kind==='transitions'){const d=await get('/engine/transitions'),rows=d.transitions||[];box.innerHTML=rows.length?`<table><thead><tr><th>السهم</th><th>من</th><th>إلى</th><th>الوقت</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${esc(r.symbol)}</b></td><td>${esc(r.from)}</td><td>${esc(r.to)}</td><td>${dateFmt(r.timestamp)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">لا توجد انتقالات حالة مسجلة.</div>'}else{const d=await get('/engine/errors'),rows=d.errors||[];box.innerHTML=`<div class="warning-box">عدد سجلات المصدر/الجودة: ${d.count??rows.length}. وجود خطأ مصدر لا يعني استخدام قيمة وهمية؛ السهم يظل ناقص التغطية أو يُرفض حسب البوابة.</div>${rows.length?`<table><thead><tr><th>السهم</th><th>المرحلة</th><th>الكود</th><th>الرسالة</th></tr></thead><tbody>${rows.slice(0,200).map(r=>`<tr><td>${esc(r.symbol)}</td><td>${esc(r.engine_stage)}</td><td>${esc(r.error_code)}</td><td>${esc(r.error_message)}</td></tr>`).join('')}</tbody></table>`:''}`}}catch(e){box.innerHTML=`<div class="empty">تعذر تحميل السجل: ${esc(e.message)}</div>`}}
-$$('[data-evidence]').forEach(b=>b.addEventListener('click',()=>loadEvidence(b.dataset.evidence)));
-
-function openModal(){const x=state.selected;if(!x)return;const review=isReviewRequired(x);$('#modalTitle').textContent=`${x.symbol} — ${x.name||''}`;$('#modalSubtitle').textContent=`${review?'REVIEW REQUIRED':x.status} • ${review?x.review_action||'VERIFY CORPORATE ACTION BEFORE EXECUTION':x.action} • Rank #${x.market_rank??'—'}`;const stages=x.audit_stages||{},cards=Object.entries(stages).map(([k,v])=>`<div class="stage-card"><b><span>${esc(k.replaceAll('_',' ').toUpperCase())}</span><span class="${v?.pass===true?'green':v?.pass===false?'red':'amber'}">${stagePass(v?.pass)}</span></b><p>Score: ${num(v?.score)}<br>${esc((v?.reasonCodes||[]).join(' • ')||'No reason codes')}</p></div>`).join('');$('#modalBody').innerHTML=`${review?'<div class="warning-box">Corporate Action Review Required — execution is disabled until verification is complete.</div>':''}<div class="modal-grid">${metric('Final Score',num(x.final_score),x.classification||'')}${metric('RS Percentile',num(x.rs_percentile),'Market-wide percentile')}${metric('Pivot',num(x.pivot,2),pct(x.distance_to_pivot_pct)+' away')}${metric('Reward / Risk',ratio(x.reward_risk),pct(x.risk_pct)+' initial risk')}</div><div class="modal-section"><h3>Why selected / current interpretation</h3><div class="engine-note" style="margin:0">${esc(Array.isArray(x.why_selected)?x.why_selected.join(' • '):x.why_selected||x.action||'—')}</div></div><div class="modal-section"><h3>Audit Stages</h3><div class="stage-grid">${cards}</div></div><div class="modal-section"><h3>Failed / blocking rules</h3><div class="reason-list">${(x.failed_rules||[]).length?(x.failed_rules||[]).map(r=>`<span class="reason-code">${esc(r)}</span>`).join(''):'<span class="tag good">No blocking rules recorded</span>'}</div></div>`;$('#stockModal').classList.add('open');$('#stockModal').setAttribute('aria-hidden','false')}
-function closeModal(){$('#stockModal').classList.remove('open');$('#stockModal').setAttribute('aria-hidden','true')}
-$('#openModalBtn').addEventListener('click',openModal);$$('[data-close-modal]').forEach(x=>x.addEventListener('click',closeModal));document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
-
-$('#exportBtn').addEventListener('click',()=>{const rows=state.displayed;if(!rows.length)return toast('لا توجد بيانات للتصدير');const cols=['symbol','name','status','action','review_required','execution_allowed','review_reason','market_rank','final_score','rs_percentile','pivot','distance_to_pivot_pct','risk_pct','reward_risk'];const csv=[cols.join(','),...rows.map(r=>cols.map(k=>`"${String(r[k]??'').replaceAll('"','""')}"`).join(','))].join('\n');const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`SEPA-X-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(a.href)});
-
-async function loadCore(){document.body.classList.add('loading');try{const [scan,opps,universe,performance,backtest]=await Promise.all([get('/scan'),get('/opportunities'),get('/universe'),get('/engine/performance').catch(()=>null),get('/backtest').catch(()=>null)]);state.scan=scan;state.market=scan.market_status;state.coverage=scan.market_coverage;state.opps=opps;state.universe=universe.rows||[];state.performance=performance;state.backtest=backtest;renderHeader();renderReadiness();renderTruth();renderRecommendations();renderMarket();renderPortfolio();renderEvidenceSummary();if(!state.selected){const first=(opps.top||[])[0]||(opps.review||[])[0]||(opps.near||[])[0]||(opps.forming||[])[0];if(first)await selectSymbol(first.symbol,false)}else await selectSymbol(state.selected.symbol,false)}catch(e){$('#recommendationGrid').innerHTML=`<div class="empty">تعذر تحميل SEPA‑X: ${esc(e.message)}</div>`;$('#lastUpdate').textContent='تعذر الاتصال ببيانات المحرك';toast('تعذر تحديث بيانات SEPA‑X')}finally{document.body.classList.remove('loading')}}
-$('#refreshBtn').addEventListener('click',loadCore);
-loadCore();
-}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});
+  else boot();
+})();
