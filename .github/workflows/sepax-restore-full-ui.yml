@@ -1,0 +1,102 @@
+name: SEPA-X Restore Full UI
+
+on:
+  push:
+    branches:
+      - develop/sepax-isolated-v1
+    paths:
+      - .github/workflows/sepax-restore-full-ui.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore-and-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop/sepax-isolated-v1
+          fetch-depth: 0
+
+      - name: Restore full application and merge recommendation trade plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show d1422408d2481ee45dd679b87d137ee8ad32151c:sepa-x/public/app.js > sepa-x/public/app.js
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('sepa-x/public/app.js')
+          s=p.read_text()
+          anchor="function isReviewRequired(x){return Boolean(x?.review_required||x?.execution_allowed===false&&x?.review_reason==='CORPORATE_ACTION_REVIEW_REQUIRED'||(state.opps.review||[]).some(r=>r.symbol===x?.symbol));}\n"
+          assert anchor in s, 'helper anchor not found'
+          helper=r'''
+function entryBounds(x){
+  const z=x?.entry_zone;
+  if(Array.isArray(z)){
+    const a=z.map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+    if(a.length)return {low:a[0],high:a[a.length-1]};
+  }
+  if(z&&typeof z==='object'){
+    const lo=Number(z.from??z.low??z.min),hi=Number(z.to??z.high??z.max);
+    if(Number.isFinite(lo)||Number.isFinite(hi))return {low:Number.isFinite(lo)?lo:hi,high:Number.isFinite(hi)?hi:lo};
+  }
+  const pivot=Number(x?.pivot),last=Number(x?.last_price),v=Number.isFinite(pivot)?pivot:last;
+  return Number.isFinite(v)?{low:v,high:v}:null;
+}
+function recommendationTradePlan(x){
+  const tp=x?.target_plan;
+  if(tp?.valid){
+    return {valid:true,entryLow:Number(tp.entryLow),entryHigh:Number(tp.entryHigh),referenceEntry:Number(tp.referenceEntry),stopLoss:Number(tp.stopLoss),riskPct:Number(tp.riskPct),targets:Array.isArray(tp.targets)?tp.targets:[]};
+  }
+  const z=entryBounds(x),stop=Number(x?.stop_loss);
+  if(!z||!Number.isFinite(stop))return {valid:false};
+  const ref=Number(z.high),risk=ref-stop;
+  if(!(ref>0&&risk>0))return {valid:false};
+  return {valid:true,entryLow:z.low,entryHigh:z.high,referenceEntry:ref,stopLoss:stop,riskPct:risk/ref*100,targets:[2,3,4].map((r,i)=>({id:`T${i+1}`,r,price:ref+r*risk}))};
+}
+function formatEntryZone(x){const z=entryBounds(x);return z?`${num(z.low,2)} – ${num(z.high,2)}`:'—'}
+function tradePlanHtml(x,review){
+  const p=recommendationTradePlan(x);if(!p.valid)return '<div class="rec-plan-missing">لا توجد خطة سعرية مكتملة لهذا السهم حاليًا.</div>';
+  const t=[0,1,2].map(i=>p.targets?.[i]||{}),zone=Math.abs(p.entryHigh-p.entryLow)<1e-9?num(p.entryHigh,2):`${num(p.entryLow,2)} – ${num(p.entryHigh,2)}`;
+  const note=review?'REVIEW REQUIRED — المستويات للمتابعة فقط والتنفيذ معطل حتى مراجعة Corporate Action.':(x?.execution_allowed===false?'مستويات متابعة فقط — التنفيذ غير مسموح حاليًا.':'خطة السعر الحالية: الدخول داخل المنطقة فقط مع الالتزام بالوقف والأهداف.');
+  return `<div class="rec-plan-inline"><div class="rec-plan-title"><b>خطة الصفقة السعرية</b><span>ENTRY • STOP • T1 • T2 • T3</span></div><div class="rec-plan-entry-zone"><span>ENTRY ZONE</span><b>${esc(zone)}</b><em>مرجع ${num(p.referenceEntry,2)}</em></div><div class="rec-plan-grid"><div class="rec-plan-cell entry"><small>ENTRY REF</small><b>${num(p.referenceEntry,2)}</b></div><div class="rec-plan-cell stop"><small>STOP LOSS</small><b>${num(p.stopLoss,2)}</b></div><div class="rec-plan-cell target"><small>T1 • ${t[0].r??2}R</small><b>${num(t[0].price,2)}</b></div><div class="rec-plan-cell target"><small>T2 • ${t[1].r??3}R</small><b>${num(t[1].price,2)}</b></div><div class="rec-plan-cell target"><small>T3 • ${t[2].r??4}R</small><b>${num(t[2].price,2)}</b></div></div><div class="rec-plan-foot"><span>Initial Risk <strong>${pct(Number.isFinite(Number(x?.risk_pct))?x.risk_pct:p.riskPct)}</strong></span><span>Engine R:R <strong>${ratio(x?.reward_risk)}</strong></span></div><div class="rec-plan-note ${review?'warn':'ok'}">${esc(note)}</div></div>`;
+}
+'''
+          s=s.replace(anchor,anchor+helper,1)
+          needle='${reviewNote}<div class="rec-verdict'
+          assert s.count(needle)==1, f'recCard insertion anchor count={s.count(needle)}'
+          s=s.replace(needle,'${reviewNote}${tradePlanHtml(x,review)}<div class="rec-verdict',1)
+          old="detail('Entry Zone',Array.isArray(x.entry_zone)?x.entry_zone.map(z=>num(z,2)).join(' – '):x.entry_zone||'—')"
+          if old in s:s=s.replace(old,"detail('Entry Zone',formatEntryZone(x))",1)
+          p.write_text(s)
+          PY
+
+          cat >> sepa-x/public/styles.css <<'CSS'
+
+/* SEPA-X recommendation trade plan — merged into full UI */
+.rec-plan-inline{margin:12px 0 10px;padding:12px;border:1px solid #24506b;border-radius:12px;background:linear-gradient(180deg,rgba(8,33,49,.96),rgba(6,27,41,.96))}
+.rec-plan-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;flex-wrap:wrap}.rec-plan-title b{font-size:13px;color:#e7f7ff}.rec-plan-title span{font-size:10px;font-weight:900;border-radius:999px;padding:4px 7px;background:#123b54;color:#bfe9ff}
+.rec-plan-entry-zone{margin:0 0 7px;padding:8px 9px;border-radius:9px;background:#0a2232;border:1px solid #1e4a64;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.rec-plan-entry-zone span{font-size:10px;color:#8eafc0;font-weight:800}.rec-plan-entry-zone b{color:#55bdff;font-size:16px}.rec-plan-entry-zone em{font-size:10px;color:#9bb4c2;font-style:normal}
+.rec-plan-grid{display:grid;grid-template-columns:repeat(5,minmax(72px,1fr));gap:6px}.rec-plan-cell{min-width:0;padding:8px 7px;border:1px solid #173d55;border-radius:9px;background:#071923;text-align:center}.rec-plan-cell small{display:block;color:#86a8ba;font-size:9px;font-weight:800;margin-bottom:4px}.rec-plan-cell b{display:block;font-size:14px;white-space:nowrap}.rec-plan-cell.entry b{color:#55bdff}.rec-plan-cell.stop b{color:#ff7181}.rec-plan-cell.target b{color:#55e7a1}
+.rec-plan-foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;color:#91acbb;font-size:10px}.rec-plan-foot strong{color:#e4f5fc}.rec-plan-note{margin-top:8px;padding:7px 9px;border-radius:8px;font-size:10px;font-weight:800;line-height:1.55}.rec-plan-note.ok{background:#113c30;color:#79eeb9}.rec-plan-note.warn{background:#463b17;color:#ffe180}.rec-plan-missing{margin:10px 0;padding:10px;border:1px dashed #315268;border-radius:9px;color:#91acbb;font-size:11px;text-align:center}
+@media(max-width:720px){.rec-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rec-plan-grid .target:last-child{grid-column:span 2}}
+CSS
+          node --check sepa-x/public/app.js
+          git diff --check
+          git diff --exit-code -- tfe-v20
+          grep -q "function renderRecommendations" sepa-x/public/app.js
+          grep -q "ENTRY ZONE" sepa-x/public/app.js
+          grep -q "STOP LOSS" sepa-x/public/app.js
+          grep -q "T3" sepa-x/public/app.js
+
+      - name: Commit merged full UI
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sepa-x/public/app.js sepa-x/public/styles.css
+          git commit -m "fix(sepa-x): merge trade plans into full recommendation UI"
+          git push origin HEAD:develop/sepax-isolated-v1
