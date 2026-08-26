@@ -1,24 +1,24 @@
-# تقرير جلسة 2026-08-25
+# تقرير جلسة 2026-08-26
 
 - حالة التشغيل: **يحتاج متابعة**
-- الأول فنيًا: **COSG**
-- أول B للمراقبة: **COSG**
+- الأول فنيًا: **ZMID**
+- أول B للمراقبة: **ZMID**
 - الجاهز ورقيًا: **لا يوجد**
-- إشارات جديدة: **26**
+- إشارات جديدة: **20**
 - دخول جديد: **24**
-- صفقات مغلقة: **18**
+- صفقات مغلقة: **16**
 - منتهية دون دخول: **0**
 
 ## حالة الاستراتيجيات
 
-- breakout: ACTIVE_LIMITED — صفقات مغلقة 60, PF 1.6712, Average R 0.3231
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 271, PF 1.4381, Average R 0.2235
+- breakout: ACTIVE_LIMITED — صفقات مغلقة 61, PF 1.725, Average R 0.3432
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 272, PF 1.4403, Average R 0.2239
 - pullback: RESEARCH_ONLY — صفقات مغلقة 14, PF 4.1915, Average R 0.7905
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 94.64%, below preferred 98%.
+- تحذير: Data coverage is 94.79%, below preferred 98%.
 - تحذير: 38 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `977e75447d95912b49fc30120e4fb1fa6c73fe450ce5ac50b57966fe62f509cd`
+بصمة التقرير: `00f9bcd94128f2b93739fed59dca5b8371a8cfe820bcc872a0b4d920bf07e3ec`
