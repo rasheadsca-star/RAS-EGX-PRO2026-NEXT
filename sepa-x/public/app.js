@@ -71,8 +71,7 @@
       if(!symbol)return;
       const row=recommendationRows.get(symbol);
       if(!row)return;
-      const old=card.querySelector('.rec-plan-inline');
-      if(old)old.remove();
+      if(card.querySelector('.rec-plan-inline'))return;
       const plan=buildPlan(row);
       const wrap=document.createElement('div');
       wrap.className='rec-plan-inline';
