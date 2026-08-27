@@ -107,24 +107,40 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          SNAPSHOT=/tmp/sepax-benchmark-evidence
+          rm -rf "$SNAPSHOT"
+          mkdir -p "$SNAPSHOT/sepa-x/data/research" "$SNAPSHOT/sepa-x/docs"
+          cp sepa-x/data/research/historical-simulator.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/historical-simulator-summary.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/historical-diagnostics.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/rc2-simulate.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/v16-v169-basket-engine.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/engine-comparison.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/docs/ENGINE_COMPARISON_REPORT.md "$SNAPSHOT/sepa-x/docs/"
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add sepa-x/data/research/historical-simulator.json \
-                  sepa-x/data/research/historical-simulator-summary.json \
-                  sepa-x/data/research/historical-diagnostics.json \
-                  sepa-x/data/research/rc2-simulate.json \
-                  sepa-x/data/research/v16-v169-basket-engine.json \
-                  sepa-x/data/research/engine-comparison.json \
-                  sepa-x/docs/ENGINE_COMPARISON_REPORT.md
-          if git diff --cached --quiet; then
-            echo 'Benchmark evidence unchanged.'
-            exit 0
-          fi
-          git commit -m 'data(sepa-x): persist historical benchmark evidence'
-          for attempt in 1 2 3; do
-            if git pull --rebase origin develop/sepax-isolated-v1 && git push origin HEAD:develop/sepax-isolated-v1; then
+
+          for attempt in 1 2 3 4; do
+            git fetch origin develop/sepax-isolated-v1
+            git reset --hard origin/develop/sepax-isolated-v1
+            cp -R "$SNAPSHOT/sepa-x/data/research/." sepa-x/data/research/
+            cp "$SNAPSHOT/sepa-x/docs/ENGINE_COMPARISON_REPORT.md" sepa-x/docs/ENGINE_COMPARISON_REPORT.md
+            git add sepa-x/data/research/historical-simulator.json \
+                    sepa-x/data/research/historical-simulator-summary.json \
+                    sepa-x/data/research/historical-diagnostics.json \
+                    sepa-x/data/research/rc2-simulate.json \
+                    sepa-x/data/research/v16-v169-basket-engine.json \
+                    sepa-x/data/research/engine-comparison.json \
+                    sepa-x/docs/ENGINE_COMPARISON_REPORT.md
+            if git diff --cached --quiet; then
+              echo 'Benchmark evidence unchanged.'
               exit 0
             fi
-            [ "$attempt" = 3 ] && exit 1
-            sleep $((attempt * 8))
+            git commit -m 'data(sepa-x): persist historical benchmark evidence [skip ci]'
+            if git push origin HEAD:develop/sepax-isolated-v1; then
+              exit 0
+            fi
+            [ "$attempt" = 4 ] && exit 1
+            sleep $((attempt * 6))
           done
