@@ -21,7 +21,10 @@ function structuralResistance(row,entry){
     row?.audit_stages?.risk?.raw?.nearest_resistance,
     row?.nearest_resistance,
     row?.audit_stages?.risk?.raw?.technical_projection,
-  ].map(Number).filter(v=>Number.isFinite(v)&&v>entry);
+  ]
+    .filter(v=>v!==null&&v!==undefined&&v!=='')
+    .map(Number)
+    .filter(v=>Number.isFinite(v)&&v>entry);
   return candidates.length?Math.min(...candidates):null;
 }
 
@@ -29,8 +32,8 @@ export function buildTargetPlan(row,cfg={}){
   const bounds=entryBounds(row),stop=Number(row?.stop_loss);if(!bounds||!Number.isFinite(stop))return {valid:false,reason:'TARGET_PLAN_INPUT_MISSING'};
   const entry=Number(bounds.high),risk=entry-stop;if(!(entry>0&&risk>0))return {valid:false,reason:'TARGET_PLAN_INVALID_RISK'};
   const requestedPrecisionR=finite(cfg?.precisionTargetR)?Math.max(.1,Number(cfg.precisionTargetR)):.8;
-  const rawPrecision=entry+requestedPrecisionR*risk,resistance=structuralResistance(row,entry),precisionPrice=finite(resistance)?Math.min(rawPrecision,resistance):rawPrecision,actualPrecisionR=(precisionPrice-entry)/risk;
-  const precisionTarget={id:'P1',requestedR:round(requestedPrecisionR,2),r:round(actualPrecisionR,3),price:round(precisionPrice,4),gainPct:round((precisionPrice-entry)/entry*100,2),structuralCap:round(resistance,4),cappedByResistance:finite(resistance)&&resistance<rawPrecision};
+  const rawPrecision=entry+requestedPrecisionR*risk,resistance=structuralResistance(row,entry),hasResistance=resistance!==null&&Number.isFinite(resistance),precisionPrice=hasResistance?Math.min(rawPrecision,resistance):rawPrecision,actualPrecisionR=(precisionPrice-entry)/risk;
+  const precisionTarget={id:'P1',requestedR:round(requestedPrecisionR,2),r:round(actualPrecisionR,3),price:round(precisionPrice,4),gainPct:round((precisionPrice-entry)/entry*100,2),structuralCap:hasResistance?round(resistance,4):null,cappedByResistance:hasResistance&&resistance<rawPrecision};
   const multiples=Array.isArray(cfg?.targetRMultiples)&&cfg.targetRMultiples.length?cfg.targetRMultiples:[2,3,4];
   const targets=multiples.map((r,i)=>({id:`T${i+1}`,r:Number(r),price:round(entry+Number(r)*risk,4),gainPct:round(Number(r)*risk/entry*100,2)}));
   return {valid:true,entryLow:round(bounds.low,4),entryHigh:round(bounds.high,4),referenceEntry:round(entry,4),stopLoss:round(stop,4),riskPerShare:round(risk,4),riskPct:round(risk/entry*100,2),precisionTarget,targets,primaryTarget:targets[0]||null,secondaryTarget:targets[1]||null,stretchTarget:targets[2]||null};
