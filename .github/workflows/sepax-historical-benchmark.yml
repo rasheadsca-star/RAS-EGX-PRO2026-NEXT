@@ -8,6 +8,7 @@ on:
     paths:
       - 'sepa-x/src/**'
       - 'sepa-x/scripts/**'
+      - 'sepa-x/research-tools/**'
       - 'sepa-x/test/**'
       - 'sepa-x/package.json'
       - '.github/workflows/sepax-historical-benchmark.yml'
@@ -73,6 +74,10 @@ jobs:
         working-directory: sepa-x
         run: node scripts/precision-challenger-validation.mjs
 
+      - name: Run preregistered research walk-forward evaluator
+        working-directory: sepa-x
+        run: node research-tools/research-walkforward.mjs
+
       - name: Load exact frozen V16.9 walk-forward evidence
         shell: bash
         run: |
@@ -95,6 +100,7 @@ jobs:
           const g=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-geometry-historical.json'));
           const q=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-challenger-validation.json'));
           const lab=JSON.parse(fs.readFileSync('sepa-x/data/research/strategy-lab-v2-historical.json'));
+          const w=JSON.parse(fs.readFileSync('sepa-x/data/research/research-walkforward.json'));
           const c=JSON.parse(fs.readFileSync('sepa-x/data/research/engine-comparison.json'));
           const d=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-diagnostics.json'));
           console.log('SEPA_X_SUMMARY='+JSON.stringify(s.summary));
@@ -116,6 +122,9 @@ jobs:
           console.log('PRECISION_CHALLENGER_V3_HOLDOUT='+JSON.stringify(q.variants.v3.holdout));
           console.log('PRECISION_CHALLENGER_V3_SENSITIVITY='+JSON.stringify(q.variants.v3.sensitivity));
           console.log('PRECISION_CHALLENGER_V3_GATE='+JSON.stringify(q.v3PromotionGate));
+          console.log('RESEARCH_WALKFORWARD_OOS='+JSON.stringify(w.oosSummary));
+          console.log('RESEARCH_WALKFORWARD_FOLDS='+JSON.stringify(w.folds));
+          console.log('RESEARCH_WALKFORWARD_GATE='+JSON.stringify(w.gate));
           console.log('OVERALL_VERDICT='+c.overallVerdict);
           console.log('DIMENSIONS='+JSON.stringify(c.dimensions));
           console.log('HARD_GATE_DIAGNOSTICS='+JSON.stringify(d.reports.map(x=>({date:x.date,market:x.market?.Regime||x.market?.regime,statuses:x.statuses,reasons:x.hardReasonCounts,eligible:x.concentration?.eligible,maxima:x.concentration?.maxima}))));
@@ -135,6 +144,7 @@ jobs:
             sepa-x/data/research/precision-geometry-historical.json
             sepa-x/data/research/precision-challenger-validation.json
             sepa-x/data/research/strategy-lab-v2-historical.json
+            sepa-x/data/research/research-walkforward.json
             sepa-x/data/research/historical-diagnostics.json
             sepa-x/data/research/rc2-simulate.json
             sepa-x/data/research/v16-v169-basket-engine.json
@@ -154,6 +164,7 @@ jobs:
           cp sepa-x/data/research/precision-geometry-historical.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/precision-challenger-validation.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/strategy-lab-v2-historical.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/research-walkforward.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/historical-diagnostics.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/rc2-simulate.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/v16-v169-basket-engine.json "$SNAPSHOT/sepa-x/data/research/"
@@ -174,6 +185,7 @@ jobs:
                     sepa-x/data/research/precision-geometry-historical.json \
                     sepa-x/data/research/precision-challenger-validation.json \
                     sepa-x/data/research/strategy-lab-v2-historical.json \
+                    sepa-x/data/research/research-walkforward.json \
                     sepa-x/data/research/historical-diagnostics.json \
                     sepa-x/data/research/rc2-simulate.json \
                     sepa-x/data/research/v16-v169-basket-engine.json \
