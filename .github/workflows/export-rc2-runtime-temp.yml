@@ -1,0 +1,25 @@
+name: Export RC2 Runtime Temp
+
+on:
+  push:
+    branches:
+      - codex/export-rc2-runtime-20260827
+    paths:
+      - .github/workflows/export-rc2-runtime-temp.yml
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export tfe-v20 runtime source
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc2-runtime-source
+          path: tfe-v20/
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: true
