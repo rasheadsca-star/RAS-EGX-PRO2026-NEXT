@@ -212,6 +212,14 @@ function summarizeTrades(trades,signals){
   };
 }
 
+export function selectTailAnchoredSignalDates(eligibleDates,stepSessions=1,maxSignalDates=1){
+  const step=Math.max(1,Math.floor(Number(stepSessions)||1));
+  const limit=Math.max(1,Math.floor(Number(maxSignalDates)||1));
+  const selected=[];
+  for(let i=eligibleDates.length-1;i>=0&&selected.length<limit;i-=step)selected.push(eligibleDates[i]);
+  return selected.reverse();
+}
+
 export async function runHistoricalSimulator({
   config=DEFAULT_CONFIG,provider=new MarketDataProvider(config),dataset=null,maxSymbols=null,minUniverse=60,stepSessions=5,maxSignalDates=120,
   entryExpirySessions=config.concentration?.entryExpirySessions??3,maxHoldSessions=config.concentration?.maxHoldSessions??20,roundTripCostPct=0.60,onProgress=null,
@@ -229,7 +237,7 @@ export async function runHistoricalSimulator({
     }
     return mature>=minUniverse&&future>=Math.min(minUniverse,mature);
   });
-  const stepped=eligibleDates.filter((_,i)=>i%Math.max(1,stepSessions)===0).slice(-Math.max(1,maxSignalDates));
+  const stepped=selectTailAnchoredSignalDates(eligibleDates,stepSessions,maxSignalDates);
   const trades=[],signals=[];
   for(let di=0;di<stepped.length;di++){
     const asOf=stepped[di];
@@ -243,9 +251,9 @@ export async function runHistoricalSimulator({
   }
   const summary=summarizeTrades(trades,signals);
   return {
-    schemaVersion:'sepa-x-historical-simulator.3',engineId:config.engineId,generatedAt:new Date().toISOString(),researchOnly:true,
-    methodology:{pointInTime:true,noLookahead:true,currentFundamentalsExcluded:true,currentCatalystsExcluded:true,marketWideRSRecomputedEachSignalDate:true,entryAfterSignal:true,entryExpirySessions,maxHoldSessions,sameBarAmbiguity:'STOP_FIRST',roundTripCostPct,precisionTargetR:config.concentration?.precisionTargetR??.8,precisionTargetSeparateFromPrimary:true,targetRMultiples:config.concentration?.targetRMultiples??[2,3,4],signalFrequency:`every ${stepSessions} common sessions`,maxSignalDates,strategyLabMode:'CHALLENGER',strategyPromotionRequiresValidation:true},
-    dataset:{symbolsRequested:data.requested,symbolsLoaded:data.loaded,historyErrors:data.errors.length,latestCommonDate:latestCommon,commonDates:allDates.length,eligibleSignalDates:eligibleDates.length},
+    schemaVersion:'sepa-x-historical-simulator.4',engineId:config.engineId,generatedAt:new Date().toISOString(),researchOnly:true,
+    methodology:{pointInTime:true,noLookahead:true,currentFundamentalsExcluded:true,currentCatalystsExcluded:true,marketWideRSRecomputedEachSignalDate:true,entryAfterSignal:true,entryExpirySessions,maxHoldSessions,sameBarAmbiguity:'STOP_FIRST',roundTripCostPct,precisionTargetR:config.concentration?.precisionTargetR??.8,precisionTargetSeparateFromPrimary:true,targetRMultiples:config.concentration?.targetRMultiples??[2,3,4],signalFrequency:`every ${stepSessions} common sessions, tail-anchored`,signalSampling:'TAIL_ANCHORED_FROM_LATEST_ELIGIBLE_SESSION',nestedSampleInvariant:true,maxSignalDates,strategyLabMode:'CHALLENGER',strategyPromotionRequiresValidation:true},
+    dataset:{symbolsRequested:data.requested,symbolsLoaded:data.loaded,historyErrors:data.errors.length,latestCommonDate:latestCommon,commonDates:allDates.length,eligibleSignalDates:eligibleDates.length,signalSampleStart:stepped[0]??null,signalSampleEnd:stepped.at(-1)??null},
     summary,signals,trades,errors:data.errors,
   };
 }
