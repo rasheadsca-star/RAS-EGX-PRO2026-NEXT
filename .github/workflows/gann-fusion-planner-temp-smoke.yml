@@ -1,0 +1,21 @@
+name: Gann Fusion Planner Temp Smoke
+on:
+  push:
+    branches:
+      - feature/gann-fusion-clear-next-session-dashboard
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse new planner files
+        run: |
+          node --check gann-fusion-x/engine/planner.js
+          node --check gann-fusion-x/app/session-dashboard.js
+          node --check gann-fusion-x/app/features.js
+          node --check gann-fusion-x/app/app-live.js
+      - name: Planner smoke assertions
+        run: node gann-fusion-x/tests/planner-smoke.cjs
