@@ -58,6 +58,14 @@ jobs:
         working-directory: sepa-x
         run: node scripts/strategy-lab-v2-historical.mjs
 
+      - name: Run preregistered retest walk-forward
+        working-directory: sepa-x
+        run: node scripts/strategy-lab-v2-walkforward.mjs
+
+      - name: Run FULL_STRUCTURE V3 robustness suite
+        working-directory: sepa-x
+        run: node scripts/strategy-lab-v3-robustness.mjs
+
       - name: Diagnose historical hard gates
         working-directory: sepa-x
         run: node scripts/historical-diagnostics.mjs
@@ -97,37 +105,23 @@ jobs:
           const fs=require('fs');
           const s=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-simulator-summary.json'));
           const p=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-execution-benchmark.json'));
-          const g=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-geometry-historical.json'));
           const q=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-challenger-validation.json'));
           const lab=JSON.parse(fs.readFileSync('sepa-x/data/research/strategy-lab-v2-historical.json'));
+          const rw=JSON.parse(fs.readFileSync('sepa-x/data/research/strategy-lab-v2-walkforward.json'));
+          const v3=JSON.parse(fs.readFileSync('sepa-x/data/research/strategy-lab-v3-robustness.json'));
           const w=JSON.parse(fs.readFileSync('sepa-x/data/research/research-walkforward.json'));
           const c=JSON.parse(fs.readFileSync('sepa-x/data/research/engine-comparison.json'));
-          const d=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-diagnostics.json'));
           console.log('SEPA_X_SUMMARY='+JSON.stringify(s.summary));
           console.log('EXECUTED_P1_10='+JSON.stringify(p.executedRiskP1.tenSessions));
-          console.log('EXECUTED_P1_20='+JSON.stringify(p.executedRiskP1.twentySessions));
-          console.log('P1_TEMPORAL_10='+JSON.stringify(p.executedRiskP1.temporal10));
-          console.log('P1_R_SWEEP='+JSON.stringify(p.rSweepExecuted));
-          console.log('STRUCTURAL_PRECISION_FROZEN_CONTROL='+JSON.stringify({generatedAt:g.generatedAt,summary:g.summary,candidateCoverage:g.candidateCoverage}));
-          console.log('STRATEGY_LAB_V2_DATASET='+JSON.stringify(lab.dataset));
           console.log('RETEST_RECLAIM_V2='+JSON.stringify(lab.results.retestReclaimV2));
-          console.log('CYCLE_PATTERN_SIMILARITY='+JSON.stringify(lab.results.cyclePatternSimilarity));
-          console.log('RETEST_CYCLE_ENSEMBLE='+JSON.stringify(lab.results.ensemble));
-          console.log('PRECISION_CHALLENGER_DATASET='+JSON.stringify(q.dataset));
-          console.log('PRECISION_CHALLENGER_V2='+JSON.stringify(q.variants.v2.summary));
-          console.log('PRECISION_CHALLENGER_V2_TEMPORAL='+JSON.stringify(q.variants.v2.temporal));
-          console.log('PRECISION_CHALLENGER_V2_GATE='+JSON.stringify(q.promotionGate));
-          console.log('PRECISION_CHALLENGER_V3='+JSON.stringify(q.variants.v3.summary));
-          console.log('PRECISION_CHALLENGER_V3_TEMPORAL='+JSON.stringify(q.variants.v3.temporal));
-          console.log('PRECISION_CHALLENGER_V3_HOLDOUT='+JSON.stringify(q.variants.v3.holdout));
-          console.log('PRECISION_CHALLENGER_V3_SENSITIVITY='+JSON.stringify(q.variants.v3.sensitivity));
+          console.log('RETEST_WALKFORWARD='+JSON.stringify(rw.discoveryLeader));
+          console.log('RETEST_WALKFORWARD_GATE='+JSON.stringify(rw.promotionGate));
+          console.log('FULL_STRUCTURE_V3_ROBUSTNESS='+JSON.stringify(v3.temporal));
+          console.log('FULL_STRUCTURE_V3_COST_STRESS='+JSON.stringify(v3.costStress));
+          console.log('FULL_STRUCTURE_V3_GATE='+JSON.stringify(v3.robustnessGate));
           console.log('PRECISION_CHALLENGER_V3_GATE='+JSON.stringify(q.v3PromotionGate));
           console.log('RESEARCH_WALKFORWARD_OOS='+JSON.stringify(w.oosSummary));
-          console.log('RESEARCH_WALKFORWARD_FOLDS='+JSON.stringify(w.folds));
-          console.log('RESEARCH_WALKFORWARD_GATE='+JSON.stringify(w.gate));
           console.log('OVERALL_VERDICT='+c.overallVerdict);
-          console.log('DIMENSIONS='+JSON.stringify(c.dimensions));
-          console.log('HARD_GATE_DIAGNOSTICS='+JSON.stringify(d.reports.map(x=>({date:x.date,market:x.market?.Regime||x.market?.regime,statuses:x.statuses,reasons:x.hardReasonCounts,eligible:x.concentration?.eligible,maxima:x.concentration?.maxima}))));
           NODE
           cat sepa-x/docs/ENGINE_COMPARISON_REPORT.md
 
@@ -144,6 +138,8 @@ jobs:
             sepa-x/data/research/precision-geometry-historical.json
             sepa-x/data/research/precision-challenger-validation.json
             sepa-x/data/research/strategy-lab-v2-historical.json
+            sepa-x/data/research/strategy-lab-v2-walkforward.json
+            sepa-x/data/research/strategy-lab-v3-robustness.json
             sepa-x/data/research/research-walkforward.json
             sepa-x/data/research/historical-diagnostics.json
             sepa-x/data/research/rc2-simulate.json
@@ -158,47 +154,19 @@ jobs:
           SNAPSHOT=/tmp/sepax-benchmark-evidence
           rm -rf "$SNAPSHOT"
           mkdir -p "$SNAPSHOT/sepa-x/data/research" "$SNAPSHOT/sepa-x/docs"
-          cp sepa-x/data/research/historical-simulator.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/historical-simulator-summary.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/precision-execution-benchmark.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/precision-geometry-historical.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/precision-challenger-validation.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/strategy-lab-v2-historical.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/research-walkforward.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/historical-diagnostics.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/rc2-simulate.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/v16-v169-basket-engine.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/data/research/engine-comparison.json "$SNAPSHOT/sepa-x/data/research/"
-          cp sepa-x/docs/ENGINE_COMPARISON_REPORT.md "$SNAPSHOT/sepa-x/docs/"
-
+          for f in historical-simulator.json historical-simulator-summary.json precision-execution-benchmark.json precision-geometry-historical.json precision-challenger-validation.json strategy-lab-v2-historical.json strategy-lab-v2-walkforward.json strategy-lab-v3-robustness.json research-walkforward.json historical-diagnostics.json rc2-simulate.json v16-v169-basket-engine.json engine-comparison.json; do cp "sepa-x/data/research/$f" "$SNAPSHOT/sepa-x/data/research/"; done
+          cp sepa-x/docs/ENGINE_COMPARISON_REPORT.md "$SNAPSHOT/sepa-x/docs/ENGINE_COMPARISON_REPORT.md"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-
           for attempt in 1 2 3 4; do
             git fetch origin develop/sepax-isolated-v1
             git reset --hard origin/develop/sepax-isolated-v1
             cp -R "$SNAPSHOT/sepa-x/data/research/." sepa-x/data/research/
             cp "$SNAPSHOT/sepa-x/docs/ENGINE_COMPARISON_REPORT.md" sepa-x/docs/ENGINE_COMPARISON_REPORT.md
-            git add sepa-x/data/research/historical-simulator.json \
-                    sepa-x/data/research/historical-simulator-summary.json \
-                    sepa-x/data/research/precision-execution-benchmark.json \
-                    sepa-x/data/research/precision-geometry-historical.json \
-                    sepa-x/data/research/precision-challenger-validation.json \
-                    sepa-x/data/research/strategy-lab-v2-historical.json \
-                    sepa-x/data/research/research-walkforward.json \
-                    sepa-x/data/research/historical-diagnostics.json \
-                    sepa-x/data/research/rc2-simulate.json \
-                    sepa-x/data/research/v16-v169-basket-engine.json \
-                    sepa-x/data/research/engine-comparison.json \
-                    sepa-x/docs/ENGINE_COMPARISON_REPORT.md
-            if git diff --cached --quiet; then
-              echo 'Benchmark evidence unchanged.'
-              exit 0
-            fi
+            git add sepa-x/data/research/historical-simulator.json sepa-x/data/research/historical-simulator-summary.json sepa-x/data/research/precision-execution-benchmark.json sepa-x/data/research/precision-geometry-historical.json sepa-x/data/research/precision-challenger-validation.json sepa-x/data/research/strategy-lab-v2-historical.json sepa-x/data/research/strategy-lab-v2-walkforward.json sepa-x/data/research/strategy-lab-v3-robustness.json sepa-x/data/research/research-walkforward.json sepa-x/data/research/historical-diagnostics.json sepa-x/data/research/rc2-simulate.json sepa-x/data/research/v16-v169-basket-engine.json sepa-x/data/research/engine-comparison.json sepa-x/docs/ENGINE_COMPARISON_REPORT.md
+            if git diff --cached --quiet; then echo 'Benchmark evidence unchanged.'; exit 0; fi
             git commit -m 'data(sepa-x): persist historical benchmark evidence [skip ci]'
-            if git push origin HEAD:develop/sepax-isolated-v1; then
-              exit 0
-            fi
+            if git push origin HEAD:develop/sepax-isolated-v1; then exit 0; fi
             [ "$attempt" = 4 ] && exit 1
             sleep $((attempt * 6))
           done
