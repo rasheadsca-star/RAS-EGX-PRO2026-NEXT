@@ -18,7 +18,7 @@ const weights = [
 function fundamentalScore(v){
   if(!v) return 50;
   const q = String(v.fundamentalQuality||'').toUpperCase();
-  return q==='VERY_STRONG'?92:q==='STRONG'?84:q==='GOOD'?76:q==='IMPROVING'?66:55;
+  return q==='VERY_STRONG'?92:q==='STRONG'?84:q==='STRONG_WITH_LEVERAGE'?72:q==='GOOD'?76:q==='IMPROVING'?66:q==='TURNAROUND_BUT_EXPENSIVE'?58:q==='TURNAROUND_PARTIAL'?55:q==='PARTIAL_POSITIVE'?52:50;
 }
 function verificationInfo(sym){ return state.verified.get(String(sym).toUpperCase()) || null; }
 function momentumScore(r){
@@ -45,18 +45,20 @@ function externalScore(r){
 function revisedDecision(r){
   const v=verificationInfo(r.symbol);
   const verified = v && ['VERIFIED','VERIFIED_HIGH'].includes(v.verification?.status);
-  const strongFund = v && ['STRONG','VERY_STRONG'].includes(String(v.fundamentalQuality||''));
-  const trend=Number(r?.trend_template?.score||0), rs=Number(r?.rs_percentile||0), rr=Number(r?.reward_risk||0), entry=Number(r?.entry_readiness_score||0);
+  const fq=String(v?.fundamentalQuality||'').toUpperCase();
+  const strongFund = fq==='VERY_STRONG' || fq==='STRONG' || fq==='STRONG_WITH_LEVERAGE';
+  const trend=Number(r?.trend_template?.score||0), rs=Number(r?.rs_percentile||0), rr=Number(r?.reward_risk||0), entry=Number(r?.entry_readiness_score||0), riskPct=Number(r?.risk_pct||99);
+  const riskAcceptable = Number.isFinite(riskPct) && riskPct<=8;
   const status=String(r?.status||'').toUpperCase(), action=String(r?.action||'').toUpperCase();
   const score=externalScore(r);
   if(status.includes('FAILED')) return strongFund?'WATCH — EXCELLENT FUNDAMENTALS / WRONG ENTRY':'AVOID — FAILED BREAKOUT';
   if(status.includes('EXTENDED')) return 'WATCH — WAIT FOR PULLBACK';
   if(trend<60 || rs<20 || action==='AVOID') return strongFund?'WATCH — FUNDAMENTALS STRONG / TECHNICAL WEAK':'AVOID — TECHNICAL EDGE WEAK';
-  if(entry>=75 && trend>=85 && rs>=70 && rr>=2){
+  if(entry>=75 && trend>=85 && rs>=70 && rr>=2 && riskAcceptable){
     if(verified && strongFund && score>=82) return score>=90?'A+ — EXCEPTIONAL OPPORTUNITY':'A — STRONG OPPORTUNITY';
     return 'B+ — TACTICAL / FUNDAMENTALS UNVERIFIED';
   }
-  if(status.includes('NEAR')) return verified?'WATCH — VERIFIED / WAIT TRIGGER':'WATCH — NEAR TRIGGER';
+  if(status.includes('NEAR')) return verified?(riskAcceptable?'WATCH — VERIFIED / WAIT TRIGGER':'WATCH — VERIFIED / RISK WIDE / WAIT TRIGGER'):(riskAcceptable?'WATCH — NEAR TRIGGER':'WATCH — NEAR TRIGGER / RISK WIDE');
   return verified?'WATCH — VERIFIED QUALITY':'WATCH — FORMING';
 }
 function decisionClass(d){ return d.startsWith('A')||d.startsWith('B+')?'actionable':d.startsWith('AVOID')?'avoid':'watch'; }
@@ -67,9 +69,9 @@ function breakoutState(r){
   if(status.includes('EXTENDED')) return {key:'EXTENDED',label:'ممتد — لا تطارد',tone:'watch'};
   const p=Number(r.last_price), pivot=Number(r.pivot), dist=Math.abs(Number(r.distance_to_pivot_pct));
   const br=Number(r?.volume?.breakout_ratio || r?.audit_stages?.entry?.raw?.breakout_volume_ratio || 0);
-  const retest=!!r?.strategy_lab?.structure_retest?.pass;
+  const breakoutRetest=!!r?.strategy_lab?.structure_retest?.raw?.resistance?.pass || String(r?.strategy_lab?.best_strategy_status||'').toUpperCase()==='BREAKOUT_RETEST_CONFIRMED';
   if(Number.isFinite(p)&&Number.isFinite(pivot)&&p>=pivot){
-    if(br>=1.4 && retest) return {key:'CONFIRMED',label:'اختراق مؤكد',tone:'actionable'};
+    if(br>=1.4 && breakoutRetest) return {key:'CONFIRMED',label:'اختراق مؤكد',tone:'actionable'};
     if(br>=1.4) return {key:'TRIGGERED_VOLUME',label:'اختراق بحجم — انتظار Retest',tone:'actionable'};
     return {key:'TRIGGERED',label:'تجاوز Pivot — غير مؤكد',tone:'watch'};
   }
@@ -173,6 +175,7 @@ function renderWatch(){
   $('breakoutSummary').innerHTML=`${summary(counts.CONFIRMED,'Triggered')}${summary(counts.NEAR,'Near Pivot')}${summary(counts.FAILED,'Failed')}${summary(state.watch.size,'Total Watch')}`;
   $('watchGrid').innerHTML=state.watch.size?(rows.length?rows.map(watchCard).join(''):'<div class="empty">جاري فحص قائمة المراقبة…</div>'):'<div class="empty">قائمة المراقبة فارغة. أضف سهمًا من لوحة الفرص.</div>';
   document.querySelectorAll('.remove-watch').forEach(b=>b.onclick=()=>toggleWatch(b.dataset.symbol));
+  document.querySelectorAll('#watchGrid .details').forEach(b=>b.onclick=()=>openDetails(b.dataset.symbol));
 }
 function summary(n,l){return `<div class="summary-box"><b>${n}</b><small>${l}</small></div>`}
 function watchCard(r){
