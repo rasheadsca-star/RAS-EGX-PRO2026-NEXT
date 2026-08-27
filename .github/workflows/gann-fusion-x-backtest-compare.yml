@@ -1,0 +1,36 @@
+name: Gann Fusion X Backtest Compare
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'gann-fusion-x/scripts/backtest-compare.cjs'
+      - '.github/workflows/gann-fusion-x-backtest-compare.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run 3-session walk-forward comparison
+        run: node gann-fusion-x/scripts/backtest-compare.cjs
+      - name: Show summary
+        run: cat gann-fusion-x/data/backtest-comparison.md
+      - name: Upload comparison artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gann-fusion-x-backtest-comparison
+          path: |
+            gann-fusion-x/data/backtest-comparison.json
+            gann-fusion-x/data/backtest-comparison.md
+          retention-days: 14
