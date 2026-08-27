@@ -4,7 +4,7 @@ const num = (v,d=1) => Number.isFinite(Number(v)) ? Number(v).toFixed(d) : '—'
 const esc = (s='') => String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
 const state = {
-  market: [], verified: new Map(), verifiedRaw: null, currentView: 'near',
+  market: [], verified: new Map(), verifiedRaw: null, currentView: 'recommendations',
   watch: new Set(JSON.parse(localStorage.getItem('sx-watch') || '["ETEL"]')),
   watchData: new Map(), lastStates: JSON.parse(localStorage.getItem('sx-watch-states') || '{}'),
   refreshTimer: null, detailsCache: new Map()
@@ -53,7 +53,12 @@ function revisedDecision(r){
   const score=externalScore(r);
   if(status.includes('FAILED')) return strongFund?'WATCH — EXCELLENT FUNDAMENTALS / WRONG ENTRY':'AVOID — FAILED BREAKOUT';
   if(status.includes('EXTENDED')) return 'WATCH — WAIT FOR PULLBACK';
-  if(trend<60 || rs<20 || action==='AVOID') return strongFund?'WATCH — FUNDAMENTALS STRONG / TECHNICAL WEAK':'AVOID — TECHNICAL EDGE WEAK';
+  if(trend<60 || rs<20) return strongFund?'WATCH — FUNDAMENTALS STRONG / TECHNICAL WEAK':'AVOID — TECHNICAL EDGE WEAK';
+  if(action==='AVOID'){
+    if(status.includes('NEAR')) return verified?'WATCH — VERIFIED / SOURCE AVOID / WAIT TRIGGER':'WATCH — SOURCE AVOID / WAIT TRIGGER';
+    if(status.includes('FORMING')) return verified?'WATCH — VERIFIED / FORMING SETUP':'WATCH — FORMING SETUP';
+    return strongFund?'WATCH — FUNDAMENTALS STRONG / WAIT BETTER SETUP':'WATCH — SOURCE AVOID / WAIT BETTER SETUP';
+  }
   if(entry>=75 && trend>=85 && rs>=70 && rr>=2 && riskAcceptable){
     if(verified && strongFund && score>=82) return score>=90?'A+ — EXCEPTIONAL OPPORTUNITY':'A — STRONG OPPORTUNITY';
     return 'B+ — TACTICAL / FUNDAMENTALS UNVERIFIED';
@@ -88,21 +93,27 @@ async function fetchJSON(url){
   const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(`${r.status}`); return r.json();
 }
 async function loadVerified(){
-  const d=await fetchJSON('/data/verified.json'); state.verifiedRaw=d; state.verified.clear();
+  const d=window.__VERIFIED__ || await fetchJSON('/data/verified.json'); state.verifiedRaw=d; state.verified.clear();
   for(const r of d.records||[]) state.verified.set(r.symbol,r);
   renderAudit();
 }
 async function loadMarket(view=state.currentView){
   state.currentView=view; $('opportunityGrid').innerHTML='<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
   try{
-    const d=await fetchJSON(`/sx/opportunities/${encodeURIComponent(view)}`);
-    state.market=Array.isArray(d)?d:(d.data||[]);
+    if(view==='recommendations'){
+      const d=await fetchJSON('/api/top5');
+      state.market=Array.isArray(d)?d:(d.rows||d.data||[]);
+      if(state.market.length!==5) throw new Error(`TOP5_COUNT_${state.market.length}`);
+    }else{
+      const d=await fetchJSON(`/api/opportunities?view=${encodeURIComponent(view)}`);
+      state.market=Array.isArray(d)?d:(d.rows||d.data||[]);
+    }
     renderMarket(); updateMarketHero(); setUpdated();
   }catch(e){ $('opportunityGrid').innerHTML='<div class="empty">تعذر قراءة SEPA-X حاليًا. أعد المحاولة.</div>'; $('sourceBadge').className='pill red'; $('sourceBadge').textContent='المصدر غير متاح'; }
 }
 async function getStock(symbol,force=false){
   symbol=String(symbol).toUpperCase(); if(!force&&state.detailsCache.has(symbol)) return state.detailsCache.get(symbol);
-  const d=await fetchJSON(`/sx/stock/${encodeURIComponent(symbol)}/analysis`); state.detailsCache.set(symbol,d); return d;
+  const d=await fetchJSON(`/api/stock?symbol=${encodeURIComponent(symbol)}`); state.detailsCache.set(symbol,d); return d;
 }
 function renderMarket(){
   const decision=$('decisionFilter').value, minRS=Number($('rsFilter').value||0), verifiedOnly=$('verifiedOnly').checked;
@@ -110,16 +121,21 @@ function renderMarket(){
   if(verifiedOnly) rows=rows.filter(r=>['VERIFIED','VERIFIED_HIGH'].includes(verificationInfo(r.symbol)?.verification?.status));
   rows=rows.filter(r=>{ const dc=decisionClass(revisedDecision(r)); return decision==='ALL'||decision===dc.toUpperCase()||(decision==='WATCH'&&dc==='watch')||(decision==='AVOID'&&dc==='avoid'); });
   rows.sort((a,b)=>externalScore(b)-externalScore(a));
-  $('resultCount').textContent=`${rows.length} سهم`;
-  $('opportunityGrid').innerHTML=rows.length?rows.map(stockCard).join(''):'<div class="empty">لا توجد نتائج وفق الفلاتر الحالية.</div>';
+  if(state.currentView==='recommendations' && decision==='ALL'){
+    const preferred=rows.filter(r=>decisionClass(revisedDecision(r))!=='avoid');
+    const fallback=rows.filter(r=>decisionClass(revisedDecision(r))==='avoid');
+    rows=[...preferred,...fallback].slice(0,5);
+  }
+  $('resultCount').textContent=state.currentView==='recommendations'&&decision==='ALL'?`Top ${rows.length}`:`${rows.length} سهم`;
+  $('opportunityGrid').innerHTML=rows.length?rows.map((r,i)=>stockCard(r,i)).join(''):'<div class="empty">لا توجد نتائج وفق الفلاتر الحالية.</div>';
   bindCardActions();
 }
-function stockCard(r){
+function stockCard(r,rank=null){
   const v=verificationInfo(r.symbol), ver=v?.verification?.status||'UNVERIFIED', conf=v?.verification?.confidence??0;
   const dec=revisedDecision(r), dc=decisionClass(dec), score=externalScore(r), br=breakoutState(r);
   const accent=dc==='actionable'?'#39e58c':dc==='avoid'?'#ff6b6b':'#f2bd4b';
   return `<article class="stock-card" style="--accent:${accent}">
-    <div class="stock-head"><div><div class="stock-symbol">${esc(r.symbol)}</div><div class="stock-name">${esc(r.name||'')}</div></div><span class="classification ${dc==='watch'?'watch':dc==='avoid'?'avoid':''}">${esc(dec.split(' — ')[0])}</span></div>
+    <div class="stock-head"><div><div class="stock-symbol">${rank!==null?`#${rank+1} `:''}${esc(r.symbol)}</div><div class="stock-name">${esc(r.name||'')}</div></div><span class="classification ${dc==='watch'?'watch':dc==='avoid'?'avoid':''}">${esc(dec.split(' — ')[0])}</span></div>
     <div class="stock-score-row"><div class="score-cell"><b>${num(score,1)}</b><small>External Score</small></div><div class="score-cell"><b>${num(r.last_price,2)}</b><small>السعر</small></div><div class="score-cell"><b>${num(r.pivot,2)}</b><small>Pivot</small></div></div>
     ${progress('Trend',r?.trend_template?.score||0)}${progress('RS',r?.rs_percentile||0)}${progress('Entry',r?.entry_readiness_score||0)}
     <div class="decision-box"><b>${esc(dec)}</b><br>${esc(br.label)} • R/R ${num(r.reward_risk,2)} • Fund ${esc(ver)} ${conf?conf+'%':''}</div>
@@ -132,13 +148,14 @@ function bindCardActions(){
   document.querySelectorAll('.watch').forEach(b=>b.onclick=()=>toggleWatch(b.dataset.symbol));
 }
 function updateMarketHero(){
-  const all=[...state.market].sort((a,b)=>externalScore(b)-externalScore(a)), best=all[0]; if(!best)return;
+  const all=[...state.market].sort((a,b)=>externalScore(b)-externalScore(a)), best=all.find(x=>decisionClass(revisedDecision(x))!=='avoid')||all[0]; if(!best)return;
   $('heroSymbol').textContent=best.symbol; $('heroTitle').textContent=best.name||revisedDecision(best);
   $('heroMetrics').innerHTML=`<span class="pill ok">Score ${num(externalScore(best),1)}</span><span class="pill">RS ${num(best.rs_percentile,0)}</span><span class="pill">Pivot ${num(best.pivot,2)}</span><span class="pill">R/R ${num(best.reward_risk,2)}</span>`;
   $('heroDetailsBtn').onclick=()=>openDetails(best.symbol); $('heroWatchBtn').onclick=()=>toggleWatch(best.symbol);
-  const action=all.filter(x=>decisionClass(revisedDecision(x))==='actionable').length, watch=all.filter(x=>decisionClass(revisedDecision(x))==='watch').length, avoid=all.length-action-watch;
-  $('marketState').textContent=action?'توجد فرص مشروطة':'سوق انتقائي — لا مطاردة';
-  $('marketCounters').innerHTML=`<div class="mini-metric"><b>${action}</b><small>قابل للتنفيذ</small></div><div class="mini-metric"><b>${watch}</b><small>مراقبة</small></div><div class="mini-metric"><b>${avoid}</b><small>تجنب</small></div><div class="mini-metric"><b>${all.length}</b><small>المفحوص</small></div>`;
+  const action=all.filter(x=>decisionClass(revisedDecision(x))==='actionable').length, watch=all.filter(x=>decisionClass(revisedDecision(x))==='watch').length, avoid=all.filter(x=>decisionClass(revisedDecision(x))==='avoid').length;
+  const recommendations=all.filter(x=>decisionClass(revisedDecision(x))!=='avoid').slice(0,5);
+  $('marketState').textContent=`${action} دخول مشروط الآن • ${Math.max(0,recommendations.length-action)} انتظار/مراقبة`;
+  $('marketCounters').innerHTML=`<div class="mini-metric"><b>${recommendations.length}</b><small>Top Recommendations</small></div><div class="mini-metric"><b>${action}</b><small>Action Now</small></div><div class="mini-metric"><b>${watch}</b><small>Wait / Watch</small></div><div class="mini-metric"><b>${avoid}</b><small>Avoid</small></div>`;
 }
 async function openDetails(symbol){
   $('dialogSymbol').textContent=symbol; $('dialogName').textContent='تحميل التحليل الحي…'; $('dialogBody').innerHTML='<div class="skeleton"></div>'; $('detailsDialog').showModal();
@@ -191,7 +208,7 @@ function renderAudit(){
   $('auditTable').innerHTML=rows.map(v=>{const x=v.verification||{};return `<article class="audit-row"><div class="sym">${esc(v.symbol)}</div><div class="desc"><b>${esc(v.fundamentalQuality||'UNKNOWN')}</b><br>${esc(v.rationale||'')}</div><div><span class="pill ${x.status==='VERIFIED_HIGH'?'ok':x.status==='VERIFIED'?'':'warning'}">${esc(x.status||'UNVERIFIED')}</span></div><div class="pct">${x.confidence??0}%</div><div>${esc(x.model||'—')}</div></article>`}).join('');
 }
 function renderWeights(){ $('weightsChart').innerHTML=weights.map(([n,w])=>`<div class="weight-row"><span>${n}</span><span class="bar"><span style="width:${w*5}%"></span></span><b>${w}%</b></div>`).join(''); }
-function setUpdated(){ $('lastUpdate').textContent=`آخر فحص ${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`; $('sourceBadge').className='pill ok'; $('sourceBadge').textContent='SEPA-X • READ ONLY'; }
+function setUpdated(){ $('lastUpdate').textContent=`آخر فحص ${new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`; $('sourceBadge').className='pill ok'; $('sourceBadge').textContent='PUBLIC FEED • READ ONLY'; }
 
 async function doSearch(){ const s=$('symbolSearch').value.trim().toUpperCase();if(!s)return;await openDetails(s); }
 async function enableNotifications(){
@@ -210,7 +227,7 @@ function setupEvents(){
 async function init(){
   renderWeights(); setupEvents(); saveWatch();
   try{await loadVerified()}catch(e){toast('تعذر تحميل سجل التحقق المالي','warn')}
-  await loadMarket('near'); await refreshWatch();
+  await loadMarket('recommendations'); await refreshWatch();
   state.refreshTimer=setInterval(()=>refreshWatch(),30000);
 }
 init();
