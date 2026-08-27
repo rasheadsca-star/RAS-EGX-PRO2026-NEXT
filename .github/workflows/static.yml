@@ -16,7 +16,7 @@ permissions:
   id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow production deployments to complete.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -55,13 +55,40 @@ jobs:
           grep -q "جارٍ تشغيل P2 Deep Portfolio Engine" preview-v16/app/v169-p2.html
           echo "P2_DEEP_PORTFOLIO_DIRECT_INTEGRATION_PASS"
 
+      - name: Checkout isolated SEPA-X source
+        uses: actions/checkout@v4
+        with:
+          ref: develop/sepax-isolated-v1
+          path: .sepax-pages-source
+          fetch-depth: 1
+
+      - name: Setup Node for SEPA-X
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate isolated SEPA-X
+        working-directory: .sepax-pages-source/sepa-x
+        run: npm test
+
+      - name: Build SEPA-X static Pages snapshot
+        run: |
+          set -euo pipefail
+          rm -rf "$GITHUB_WORKSPACE/sepax"
+          node "$GITHUB_WORKSPACE/.sepax-pages-source/sepa-x/scripts/build-github-pages.mjs" "$GITHUB_WORKSPACE/sepax"
+          test -f "$GITHUB_WORKSPACE/sepax/index.html"
+          test -f "$GITHUB_WORKSPACE/sepax/scan/index.html"
+          test -f "$GITHUB_WORKSPACE/sepax/pages-manifest.json"
+          node -e "const m=require('./sepax/pages-manifest.json'); if(!m.symbols||m.symbols<1) process.exit(1); console.log('SEPA_X_PAGES_BUILD_PASS',m.symbols,m.scanGeneratedAt)"
+          rm -rf "$GITHUB_WORKSPACE/.sepax-pages-source"
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire tracked working tree only after the sensitive-file guard passes.
+          # Upload entire tracked working tree plus the generated /sepax static snapshot.
           path: '.'
 
       - name: Deploy to GitHub Pages
