@@ -15,6 +15,7 @@ const finite=v=>Number.isFinite(Number(v));
 const round=(v,d=3)=>finite(v)?Number(Number(v).toFixed(d)):null;
 const avg=xs=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;
 const wilson=(k,n,z=1.96)=>{if(!n)return null;const p=k/n,den=1+z*z/n;return Math.max(0,(p+z*z/(2*n)-z*Math.sqrt((p*(1-p)+z*z/(4*n))/n))/den)*100;};
+const V3_DISCOVERY_WINDOW_START='2021-08-09';
 
 function deoverlap(rows){
   const ordered=[...rows].sort((a,b)=>String(a.signalDate).localeCompare(String(b.signalDate))||String(a.symbol).localeCompare(String(b.symbol)));
@@ -71,22 +72,27 @@ function leaveOneSymbolOut(rows){
   };
 }
 
-const entered=historical.trades.filter(x=>x.entered===true);
+const regimeByDate=new Map((historical.signals||[]).map(s=>[String(s.date||s.signalDate||''),s.marketRegime??null]));
+const entered=historical.trades.filter(x=>x.entered===true).map(t=>({...t,marketRegime:t.marketRegime??regimeByDate.get(String(t.signalDate))??null}));
 const variants={
   baseline:entered,
   v1:entered.filter(t=>t.bestStrategy!=='VCP_COMPRESSION'&&Number(t.strategyConfirmationCount)>=2),
   v2:entered.filter(t=>t.bestStrategy==='PIVOT_BREAKOUT'&&Number(t.strategyConfirmationCount)>=2),
+  v3:entered.filter(t=>t.bestStrategy==='PIVOT_BREAKOUT'&&Number(t.strategyConfirmationCount)>=2&&Boolean(t.marketRegime)&&t.marketRegime!=='NEUTRAL'),
 };
 for(const k of Object.keys(variants))variants[k]=deoverlap(variants[k]);
 
 const signature={
   dataset:historical.dataset,
   methodology:historical.methodology,
-  signalDates:(historical.signals||[]).map(x=>x.date||x.signalDate||x.asOf||x),
+  signalDates:(historical.signals||[]).map(x=>[x.date||x.signalDate||x.asOf||x,x.marketRegime??null]),
   trades:historical.trades.map(t=>[t.symbol,t.signalDate,t.entered,t.entryDate??null,t.entryPrice??null,t.stopLoss??null,t.precisionTarget??null,t.bestStrategy??null,t.strategyConfirmationCount??null]),
 };
 const datasetFingerprint=crypto.createHash('sha256').update(JSON.stringify(signature)).digest('hex');
 const v2Summary=summary(variants.v2),v2Temporal=temporal(variants.v2),v2Sensitivity=leaveOneSymbolOut(variants.v2);
+const v3Summary=summary(variants.v3),v3Temporal=temporal(variants.v3),v3Sensitivity=leaveOneSymbolOut(variants.v3);
+const v3OlderHoldout=variants.v3.filter(t=>String(t.signalDate)<V3_DISCOVERY_WINDOW_START);
+const v3DiscoveryWindow=variants.v3.filter(t=>String(t.signalDate)>=V3_DISCOVERY_WINDOW_START);
 const yearChecks=Object.values(v2Temporal.byYear).filter(x=>x.entered>=8);
 const rc2Reference={
   entered:rc2?.summary?.entered??67,
@@ -117,8 +123,36 @@ const checks={
 const allPass=Object.values(checks).every(Boolean);
 const promotionState=!checks.sampleSize?'INSUFFICIENT_EVIDENCE':allPass?'READY_FOR_MANUAL_PROMOTION_REVIEW':'CHALLENGER_REJECTED_BY_VALIDATION';
 
+const v3Criteria={
+  minimumDeoverlappedTrades:40,
+  minimumOlderHoldoutTrades:12,
+  minimumHitPct:74,
+  minimumWilson95LowerHitPct:60,
+  minimumHalfHitPct:65,
+  minimumOlderHoldoutHitPct:65,
+  minimumDiscoveryWindowHitPct:70,
+  minimumExpectancyR:.5,
+  minimumProfitFactor:2,
+  maximumSingleSymbolTradeSharePct:15,
+};
+const olderSummary=summary(v3OlderHoldout),discoverySummary=summary(v3DiscoveryWindow);
+const v3Checks={
+  sampleSize:v3Summary.entered>=v3Criteria.minimumDeoverlappedTrades,
+  olderHoldoutSize:olderSummary.entered>=v3Criteria.minimumOlderHoldoutTrades,
+  hitRate:finite(v3Summary.hitPct)&&v3Summary.hitPct>=v3Criteria.minimumHitPct,
+  wilsonLower:finite(v3Summary.wilson95LowerHitPct)&&v3Summary.wilson95LowerHitPct>=v3Criteria.minimumWilson95LowerHitPct,
+  temporalHalves:[v3Temporal.firstHalf,v3Temporal.lastHalf].every(x=>x.entered>0&&finite(x.hitPct)&&x.hitPct>=v3Criteria.minimumHalfHitPct),
+  olderHoldout:finite(olderSummary.hitPct)&&olderSummary.hitPct>=v3Criteria.minimumOlderHoldoutHitPct,
+  discoveryWindow:finite(discoverySummary.hitPct)&&discoverySummary.hitPct>=v3Criteria.minimumDiscoveryWindowHitPct,
+  expectancy:finite(v3Summary.expectancyR)&&v3Summary.expectancyR>=v3Criteria.minimumExpectancyR,
+  profitFactor:(v3Summary.profitFactor==='INF')||(finite(v3Summary.profitFactor)&&v3Summary.profitFactor>=v3Criteria.minimumProfitFactor),
+  symbolConcentration:finite(v3Sensitivity.maximumSingleSymbolTradeSharePct)&&v3Sensitivity.maximumSingleSymbolTradeSharePct<=v3Criteria.maximumSingleSymbolTradeSharePct,
+};
+const v3AllPass=Object.values(v3Checks).every(Boolean);
+const v3PromotionState=!v3Checks.sampleSize||!v3Checks.olderHoldoutSize?'INSUFFICIENT_EVIDENCE':v3AllPass?'READY_FOR_MANUAL_PROMOTION_REVIEW':'CHALLENGER_REJECTED_BY_VALIDATION';
+
 const report={
-  schemaVersion:'sepa-x-precision-challenger-validation.1',
+  schemaVersion:'sepa-x-precision-challenger-validation.2',
   generatedAt:new Date().toISOString(),
   researchOnly:true,
   promotionAllowed:false,
@@ -126,6 +160,9 @@ const report={
   definition:{
     v1:'bestStrategy != VCP_COMPRESSION AND strategyConfirmationCount >= 2',
     v2:'bestStrategy == PIVOT_BREAKOUT AND strategyConfirmationCount >= 2',
+    v3:'V2 AND marketRegime is known AND marketRegime != NEUTRAL',
+    v3DiscoveryWindowStart:V3_DISCOVERY_WINDOW_START,
+    v3Preregistration:'V3 rule and holdout cutoff were fixed after the 400-signal discovery benchmark and before expanding to older signal dates.',
     deoverlap:'ignore a repeated signal for the same symbol while its previously counted trade is still open',
   },
   dataset:{...historical.dataset,signalDates:historical.summary?.signalDates??null,datasetFingerprint,previousFingerprint:previous?.dataset?.datasetFingerprint??null,datasetChangedSincePrevious:Boolean(previous?.dataset?.datasetFingerprint&&previous.dataset.datasetFingerprint!==datasetFingerprint)},
@@ -134,8 +171,10 @@ const report={
     baseline:{summary:summary(variants.baseline),temporal:temporal(variants.baseline)},
     v1:{summary:summary(variants.v1),temporal:temporal(variants.v1),sensitivity:leaveOneSymbolOut(variants.v1)},
     v2:{summary:v2Summary,temporal:v2Temporal,sensitivity:v2Sensitivity},
+    v3:{summary:v3Summary,temporal:v3Temporal,sensitivity:v3Sensitivity,holdout:{cutoff:V3_DISCOVERY_WINDOW_START,olderUnseen:olderSummary,discoveryWindow:discoverySummary}},
   },
   promotionGate:{criteria,checks,state:promotionState,manualPromotionRequired:true,comparisonNote:'RC2 remains the conservative benchmark; this gate only decides whether V2 has enough internal evidence to be reviewed, never auto-promotes it.'},
+  v3PromotionGate:{criteria:v3Criteria,checks:v3Checks,state:v3PromotionState,manualPromotionRequired:true,comparisonNote:'V3 was preregistered after the 400-signal discovery run. Older dates added by the expanded benchmark are reported separately as an unseen historical holdout. No automatic promotion is permitted.'},
 };
 fs.writeFileSync(path.join(research,'precision-challenger-validation.json'),JSON.stringify(report,null,2)+'\n');
-console.log(JSON.stringify({dataset:report.dataset,v2:report.variants.v2.summary,promotionGate:report.promotionGate},null,2));
+console.log(JSON.stringify({dataset:report.dataset,v2:report.variants.v2.summary,v2PromotionGate:report.promotionGate,v3:report.variants.v3.summary,v3Holdout:report.variants.v3.holdout,v3PromotionGate:report.v3PromotionGate},null,2));
