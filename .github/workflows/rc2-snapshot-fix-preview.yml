@@ -1,0 +1,63 @@
+name: RC2 Snapshot Fix Preview
+
+on:
+  push:
+    branches:
+      - release/rc2-snapshot-date-fix-20260827
+    paths:
+      - '.github/workflows/rc2-snapshot-fix-preview.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rc2-snapshot-fix-preview
+  cancel-in-progress: true
+
+env:
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_gXmmVe1QqGFJ9nsv30uu0emLqIdY
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify credential
+        run: test -n "${VERCEL_TOKEN:-}" || { echo VERCEL_TOKEN_MISSING; exit 2; }
+
+      - name: Run RC2 tests
+        working-directory: tfe-v20
+        run: |
+          npm test
+          node --check public/snapshot-date-fix.js
+          node --check public/portfolio-manager.js
+
+      - name: Install matching Vercel CLI
+        run: npm install --global vercel@59.3.0
+
+      - name: Link exact production project
+        working-directory: tfe-v20
+        run: |
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+
+      - name: Deploy preview
+        id: deploy
+        working-directory: tfe-v20
+        run: |
+          set -euo pipefail
+          URL="$(vercel deploy --yes --token "$VERCEL_TOKEN")"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "PREVIEW_URL=$URL"
+
+      - name: Summary
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+        run: echo "Preview deployment: $PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
