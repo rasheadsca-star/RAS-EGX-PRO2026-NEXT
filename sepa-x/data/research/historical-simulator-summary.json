@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "sepa-x-historical-simulator.2",
+  "schemaVersion": "sepa-x-historical-simulator.3",
   "engineId": "SEPA_X_ENGINE_V1",
-  "generatedAt": "2026-08-27T12:12:29.552Z",
+  "generatedAt": "2026-08-27T12:39:33.978Z",
   "methodology": {
     "pointInTime": true,
     "noLookahead": true,
@@ -13,6 +13,8 @@
     "maxHoldSessions": 20,
     "sameBarAmbiguity": "STOP_FIRST",
     "roundTripCostPct": 0.6,
+    "precisionTargetR": 0.8,
+    "precisionTargetSeparateFromPrimary": true,
     "targetRMultiples": [
       2,
       3,
@@ -29,135 +31,239 @@
     "historyErrors": 87,
     "latestCommonDate": "2026-08-26",
     "commonDates": 2453,
-    "eligibleSignalDates": 2098
+    "eligibleSignalDates": 2099
   },
   "summary": {
     "signalDates": 200,
-    "entered": 53,
-    "expired": 114,
-    "target1HitPct": 39.6,
-    "target2HitPct": 22.6,
-    "target3HitPct": 11.3,
-    "stopBeforeTarget1Pct": 47.2,
-    "positivePct": 45.3,
-    "averageNetPct": 2.074,
-    "medianNetPct": -2.186,
-    "expectancyR": 0.368,
-    "profitFactor": 1.708,
-    "averageHoldingSessions": 9.7,
-    "basketSessions": 41,
-    "basketWinRatePct": 51.2,
-    "compoundedBasketReturnPct": 139.03,
-    "maximumBasketDrawdownPct": -25.4,
+    "entered": 47,
+    "expired": 108,
+    "precisionTargetHitPct": 46.8,
+    "stopBeforePrecisionTargetPct": 48.9,
+    "precisionTargetCappedByResistancePct": 0,
+    "target1HitPct": 34,
+    "target2HitPct": 21.3,
+    "target3HitPct": 8.5,
+    "stopBeforeTarget1Pct": 53.2,
+    "positivePct": 44.7,
+    "averageNetPct": 0.789,
+    "medianNetPct": -4.083,
+    "expectancyR": 0.153,
+    "profitFactor": 1.248,
+    "averageHoldingSessions": 8.55,
+    "basketSessions": 36,
+    "basketWinRatePct": 50,
+    "compoundedBasketReturnPct": 46.32,
+    "maximumBasketDrawdownPct": -27.14,
     "convictionCalibration": {
       "80-89": {
-        "entered": 29,
-        "target1Hits": 11,
-        "target1HitRatePct": 37.9
+        "entered": 25,
+        "target1Hits": 7,
+        "precisionTargetHits": 9,
+        "target1HitRatePct": 28,
+        "precisionTargetHitRatePct": 36
       },
       "70-79": {
-        "entered": 23,
-        "target1Hits": 9,
-        "target1HitRatePct": 39.1
+        "entered": 20,
+        "target1Hits": 7,
+        "precisionTargetHits": 11,
+        "target1HitRatePct": 35,
+        "precisionTargetHitRatePct": 55
       },
       "60-69": {
-        "entered": 1,
-        "target1Hits": 1,
-        "target1HitRatePct": 100
+        "entered": 2,
+        "target1Hits": 2,
+        "precisionTargetHits": 2,
+        "target1HitRatePct": 100,
+        "precisionTargetHitRatePct": 100
       }
     },
     "strategyBreakdown": {
-      "VCP_COMPRESSION": {
-        "entered": 10,
-        "target1HitPct": 20,
-        "target2HitPct": 20,
-        "target3HitPct": 10,
-        "stopBeforeTarget1Pct": 70,
-        "positivePct": 20,
-        "expectancyR": -0.331
-      },
       "PIVOT_BREAKOUT": {
-        "entered": 38,
-        "target1HitPct": 44.7,
-        "target2HitPct": 26.3,
-        "target3HitPct": 13.2,
-        "stopBeforeTarget1Pct": 42.1,
-        "positivePct": 52.6,
-        "expectancyR": 0.565
+        "entered": 32,
+        "precisionTargetHitPct": 43.8,
+        "target1HitPct": 31.3,
+        "target2HitPct": 21.9,
+        "target3HitPct": 9.4,
+        "stopBeforePrecisionTargetPct": 50,
+        "stopBeforeTarget1Pct": 56.3,
+        "positivePct": 40.6,
+        "expectancyR": 0.081
       },
-      "BREAKOUT_RETEST": {
-        "entered": 1,
-        "target1HitPct": 100,
-        "target2HitPct": 0,
-        "target3HitPct": 0,
-        "stopBeforeTarget1Pct": 0,
-        "positivePct": 100,
-        "expectancyR": 1.899
+      "VCP_COMPRESSION": {
+        "entered": 6,
+        "precisionTargetHitPct": 50,
+        "target1HitPct": 50,
+        "target2HitPct": 33.3,
+        "target3HitPct": 16.7,
+        "stopBeforePrecisionTargetPct": 50,
+        "stopBeforeTarget1Pct": 50,
+        "positivePct": 50,
+        "expectancyR": 0.422
       },
-      "SUPPORT_RECLAIM": {
-        "entered": 3,
+      "HISTORICAL_CYCLE": {
+        "entered": 2,
+        "precisionTargetHitPct": 50,
         "target1HitPct": 0,
         "target2HitPct": 0,
         "target3HitPct": 0,
-        "stopBeforeTarget1Pct": 66.7,
-        "positivePct": 0,
-        "expectancyR": -0.821
+        "stopBeforePrecisionTargetPct": 50,
+        "stopBeforeTarget1Pct": 50,
+        "positivePct": 50,
+        "expectancyR": -0.218
       },
-      "HISTORICAL_CYCLE": {
-        "entered": 1,
-        "target1HitPct": 100,
+      "SUPPORT_RECLAIM": {
+        "entered": 5,
+        "precisionTargetHitPct": 60,
+        "target1HitPct": 40,
+        "target2HitPct": 20,
+        "target3HitPct": 0,
+        "stopBeforePrecisionTargetPct": 40,
+        "stopBeforeTarget1Pct": 40,
+        "positivePct": 60,
+        "expectancyR": 0.348
+      },
+      "BREAKOUT_RETEST": {
+        "entered": 2,
+        "precisionTargetHitPct": 50,
+        "target1HitPct": 50,
         "target2HitPct": 0,
         "target3HitPct": 0,
-        "stopBeforeTarget1Pct": 0,
-        "positivePct": 100,
-        "expectancyR": 1.919
+        "stopBeforePrecisionTargetPct": 50,
+        "stopBeforeTarget1Pct": 50,
+        "positivePct": 50,
+        "expectancyR": 0.384
       }
     },
     "strategyConditions": {
       "breakoutRetestConfirmed": {
-        "entered": 3,
-        "target1HitPct": 66.7,
-        "target2HitPct": 33.3,
-        "target3HitPct": 33.3,
-        "stopBeforeTarget1Pct": 0,
-        "positivePct": 100,
-        "expectancyR": 1.503
+        "entered": 4,
+        "precisionTargetHitPct": 50,
+        "target1HitPct": 25,
+        "target2HitPct": 0,
+        "target3HitPct": 0,
+        "stopBeforePrecisionTargetPct": 50,
+        "stopBeforeTarget1Pct": 50,
+        "positivePct": 50,
+        "expectancyR": 0.089
       },
       "supportReclaimConfirmed": {
-        "entered": 25,
-        "target1HitPct": 32,
-        "target2HitPct": 16,
-        "target3HitPct": 8,
-        "stopBeforeTarget1Pct": 52,
-        "positivePct": 40,
-        "expectancyR": 0.161
+        "entered": 23,
+        "precisionTargetHitPct": 47.8,
+        "target1HitPct": 34.8,
+        "target2HitPct": 17.4,
+        "target3HitPct": 13,
+        "stopBeforePrecisionTargetPct": 52.2,
+        "stopBeforeTarget1Pct": 52.2,
+        "positivePct": 47.8,
+        "expectancyR": 0.184
       },
       "historicalCycleAligned": {
-        "entered": 15,
-        "target1HitPct": 40,
-        "target2HitPct": 26.7,
-        "target3HitPct": 13.3,
-        "stopBeforeTarget1Pct": 46.7,
-        "positivePct": 53.3,
-        "expectancyR": 0.404
+        "entered": 14,
+        "precisionTargetHitPct": 42.9,
+        "target1HitPct": 35.7,
+        "target2HitPct": 14.3,
+        "target3HitPct": 7.1,
+        "stopBeforePrecisionTargetPct": 57.1,
+        "stopBeforeTarget1Pct": 57.1,
+        "positivePct": 42.9,
+        "expectancyR": 0.103
       },
       "multiStrategyConfirmation": {
-        "entered": 32,
-        "target1HitPct": 40.6,
-        "target2HitPct": 25,
-        "target3HitPct": 12.5,
-        "stopBeforeTarget1Pct": 46.9,
-        "positivePct": 50,
-        "expectancyR": 0.448
+        "entered": 26,
+        "precisionTargetHitPct": 46.2,
+        "target1HitPct": 34.6,
+        "target2HitPct": 23.1,
+        "target3HitPct": 15.4,
+        "stopBeforePrecisionTargetPct": 53.8,
+        "stopBeforeTarget1Pct": 57.7,
+        "positivePct": 42.3,
+        "expectancyR": 0.123
       },
       "noRetestConfirmation": {
-        "entered": 26,
-        "target1HitPct": 42.3,
-        "target2HitPct": 26.9,
-        "target3HitPct": 11.5,
-        "stopBeforeTarget1Pct": 46.2,
-        "positivePct": 46.2,
-        "expectancyR": 0.448
+        "entered": 22,
+        "precisionTargetHitPct": 50,
+        "target1HitPct": 36.4,
+        "target2HitPct": 27.3,
+        "target3HitPct": 4.5,
+        "stopBeforePrecisionTargetPct": 40.9,
+        "stopBeforeTarget1Pct": 50,
+        "positivePct": 45.5,
+        "expectancyR": 0.238
+      },
+      "precisionChallenger": {
+        "entered": 24,
+        "precisionTargetHitPct": 45.8,
+        "target1HitPct": 33.3,
+        "target2HitPct": 20.8,
+        "target3HitPct": 12.5,
+        "stopBeforePrecisionTargetPct": 54.2,
+        "stopBeforeTarget1Pct": 58.3,
+        "positivePct": 41.7,
+        "expectancyR": 0.09
+      }
+    },
+    "precisionChallengerDefinition": {
+      "bestStrategyMustNotEqual": "VCP_COMPRESSION",
+      "minimumStrategyConfirmations": 2,
+      "activationStatus": "CHALLENGER_ONLY_NOT_ELIGIBILITY_GATE"
+    },
+    "precisionChallengerTemporalValidation": {
+      "firstHalf": {
+        "entered": 12,
+        "precisionTargetHitPct": 41.7,
+        "target1HitPct": 33.3,
+        "target2HitPct": 25,
+        "target3HitPct": 8.3,
+        "stopBeforePrecisionTargetPct": 58.3,
+        "stopBeforeTarget1Pct": 58.3,
+        "positivePct": 41.7,
+        "expectancyR": 0.132
+      },
+      "lastHalf": {
+        "entered": 12,
+        "precisionTargetHitPct": 50,
+        "target1HitPct": 33.3,
+        "target2HitPct": 16.7,
+        "target3HitPct": 16.7,
+        "stopBeforePrecisionTargetPct": 50,
+        "stopBeforeTarget1Pct": 58.3,
+        "positivePct": 41.7,
+        "expectancyR": 0.049
+      },
+      "byYear": {
+        "2024": {
+          "entered": 8,
+          "precisionTargetHitPct": 62.5,
+          "target1HitPct": 50,
+          "target2HitPct": 37.5,
+          "target3HitPct": 12.5,
+          "stopBeforePrecisionTargetPct": 37.5,
+          "stopBeforeTarget1Pct": 37.5,
+          "positivePct": 62.5,
+          "expectancyR": 0.762
+        },
+        "2025": {
+          "entered": 7,
+          "precisionTargetHitPct": 28.6,
+          "target1HitPct": 14.3,
+          "target2HitPct": 14.3,
+          "target3HitPct": 14.3,
+          "stopBeforePrecisionTargetPct": 71.4,
+          "stopBeforeTarget1Pct": 71.4,
+          "positivePct": 28.6,
+          "expectancyR": -0.436
+        },
+        "2026": {
+          "entered": 9,
+          "precisionTargetHitPct": 44.4,
+          "target1HitPct": 33.3,
+          "target2HitPct": 11.1,
+          "target3HitPct": 11.1,
+          "stopBeforePrecisionTargetPct": 55.6,
+          "stopBeforeTarget1Pct": 66.7,
+          "positivePct": 33.3,
+          "expectancyR": -0.097
+        }
       }
     }
   }
