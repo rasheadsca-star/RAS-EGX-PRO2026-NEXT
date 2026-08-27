@@ -7,7 +7,7 @@ const freeze = (x) => {
 
 export const DEFAULT_CONFIG = freeze({
   engineId: 'SEPA_X_ENGINE_V1',
-  schemaVersion: '1.2.0',
+  schemaVersion: '1.3.0',
   researchOnly: true,
   permissions: {
     executionAllowed: false,
@@ -68,6 +68,9 @@ export const DEFAULT_CONFIG = freeze({
     expansionMinConfidenceScore: 72,
     expansionMinRewardRisk: 2.25,
     expansionMaxConvictionGap: 6,
+    // P1 is a separate conservative profit-taking objective used for precision benchmarking.
+    // T1/T2/T3 remain unchanged at 2R/3R/4R.
+    precisionTargetR: 0.8,
     targetRMultiples: [2, 3, 4],
     entryExpirySessions: 3,
     maxHoldSessions: 20,
