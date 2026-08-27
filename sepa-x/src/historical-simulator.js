@@ -143,7 +143,7 @@ function evaluatePick(rec,fullBars,signalDate,policy){
   return {
     symbol:rec.symbol,signalDate,rank:rec.conviction_rank,conviction:rec.concentration_score,status:rec.status,...tag,
     entered:true,entryDate:entry.date,entryPrice:round(entry.price,4),stopLoss:round(stop,4),riskPct:round(risk/entry.price*100,2),
-    precisionTarget:precision?.price??null,precisionTargetR:precision?.r??null,precisionTargetRequestedR:precision?.requestedR??null,precisionTargetCappedByResistance:Boolean(precision?.cappedByResistance),precisionTargetHit:precisionHit,precisionTargetHitDate,
+    precisionTarget:precision?.price??null,precisionTargetR:precision?.r??null,precisionTargetRequestedR:precision?.requestedR??null,precisionTargetCappedByResistance:Boolean(precision?.cappedByResistance),precisionTargetHit:precisionHit,precisionTargetHitDate:precisionHitDate,
     target1:targets[0]?.price??null,target2:targets[1]?.price??null,target3:targets[2]?.price??null,
     target1Hit:Boolean(hit[0]),target2Hit:Boolean(hit[1]),target3Hit:Boolean(hit[2]),target1HitDate:hitDate[0],target2HitDate:hitDate[1],target3HitDate:hitDate[2],
     stopHit:stopIndex!=null,stopDate,outcome,exitDate:fullBars[exitIndex]?.date??null,netPct:round(netPct,3),netR:round(netR,3),holdingSessions:exitIndex-entry.index+1,
