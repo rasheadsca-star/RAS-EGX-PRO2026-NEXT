@@ -2,6 +2,7 @@
 const assert=require('assert');
 const P=require('../engine/planner.js');
 assert.equal(P.nextEgxSession('2026-08-27'),'2026-08-30','EGX weekend must skip Friday/Saturday');
+assert.equal(P.nextEgxSession('2026-08-30'),'2026-08-31','normal trading day should advance one day');
 const fake={ticker:'TEST',nameAr:'اختبار',close:100,score:82,classification:{code:'BREAKOUT_WATCH'},parts:{gannTime:{score:85,active:true},gannPrice:{score:78},trend:{score:80},relativeStrength:{score:72},breakout:{score:82,near:true,confirmed:false},volume:{score:75,confirmed:true},momentum:{score:70,overheated:false},fundamentals:{score:76},marketRegime:{score:80,regime:'RISK_ON'}},plan:{entryLow:99,entryHigh:101,trigger:101,stopLoss:96,target1:108,target2:112,rr:1.75,atr14:2.2},marketMeta:{liquidityPercentile:70}};
 for(const h of ['speculative','medium','long']){
   const p=P.buildPlan(fake,h,{portfolioValue:100000,riskPct:.5,verifiedFundamentals:true});
