@@ -7,7 +7,7 @@ const freeze = (x) => {
 
 export const DEFAULT_CONFIG = freeze({
   engineId: 'SEPA_X_ENGINE_V1',
-  schemaVersion: '1.1.1',
+  schemaVersion: '1.2.0',
   researchOnly: true,
   permissions: {
     executionAllowed: false,
@@ -72,6 +72,33 @@ export const DEFAULT_CONFIG = freeze({
     entryExpirySessions: 3,
     maxHoldSessions: 20,
     sameBarAmbiguity: 'STOP_FIRST',
+  },
+  strategies: {
+    // New strategy engines start as challengers: they are measured and surfaced,
+    // but do not override the existing eligibility gates until historical validation promotes them.
+    challengerMode: true,
+    structureRetest: {
+      lookbackSessions: 140,
+      breakoutSearchSessions: 12,
+      retestWindowSessions: 8,
+      supportSearchSessions: 10,
+      levelTolerancePct: 1.2,
+      levelToleranceAtr: 0.45,
+      breakoutBufferAtr: 0.15,
+      minBreakoutVolumeRatio: 1.2,
+      maxRetestCloseBelowPct: 0.5,
+      minTouches: 2,
+    },
+    historicalCycle: {
+      maxLookbackSessions: 900,
+      swingRadius: 3,
+      minBottomSeparationSessions: 15,
+      maxCycleSessions: 180,
+      minAdvancePct: 8,
+      minSamples: 3,
+      maxSamples: 12,
+      minAlignmentScore: 60,
+    },
   },
   gates: {
     minDataConfidence: 60,
