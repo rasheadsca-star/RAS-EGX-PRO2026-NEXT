@@ -88,6 +88,20 @@ export function selectConcentratedRecommendations(rows=[],cfg={}){
   const selected=extras.length>=2?[...base,...extras.slice(0,2)]:base;return selected.map((x,i)=>({...x,conviction_rank:i+1}));
 }
 
+export function selectHistoricalResearchPool(rows=[],cfg={},options={}){
+  const policy=concentrationPolicy(cfg),maxPerSignal=Math.max(1,Math.floor(Number(options.maxPerSignal??10)||10)),maxFailedRules=Math.max(0,Math.floor(Number(options.maxFailedRules??2)||0)),minFinalScore=finite(options.minFinalScore)?Number(options.minFinalScore):60;
+  const researchPolicy={...policy,minRewardRisk:Math.min(policy.minRewardRisk,1.5),maxRiskPct:Math.max(policy.maxRiskPct,10),requireCleanEngineGates:false};
+  return (rows||[]).filter(row=>{
+    if(!row||!ACTIONABLE_STATUSES.has(row.status))return false;
+    if(researchPolicy.allowBear===false&&String(row.market_regime||'').toUpperCase()==='BEAR')return false;
+    if(String(row.action||'').includes('WAIT')||row?.audit_stages?.entry?.raw?.do_not_chase===true)return false;
+    if(Number(row.final_score??0)<minFinalScore)return false;
+    const failed=[...new Set((Array.isArray(row.failed_rules)?row.failed_rules:[]).filter(Boolean))];
+    if(failed.includes(CORPORATE_ACTION_REVIEW)||failed.length>maxFailedRules)return false;
+    return riskPlanReason(row,researchPolicy)===null;
+  }).map(row=>({...row,concentration_score:concentrationScore(row),target_plan:buildTargetPlan(row,researchPolicy),research_only:true,execution_allowed:false,research_failed_rules:[...(row.failed_rules||[])],research_failed_rule_count:(row.failed_rules||[]).length})).sort((a,b)=>(b.concentration_score??-1)-(a.concentration_score??-1)||(b.final_score??-1)-(a.final_score??-1)||(b.confidence_score??-1)-(a.confidence_score??-1)||a.symbol.localeCompare(b.symbol)).slice(0,maxPerSignal).map((row,i)=>({...row,research_rank:i+1}));
+}
+
 export function selectReviewQueue(rows=[],cfg={}){
   const policy=concentrationPolicy(cfg);
   return (rows||[]).filter(row=>reviewCandidateReason(row,policy)===null).map(row=>({...row,concentration_score:concentrationScore(row),target_plan:buildTargetPlan(row,policy),review_required:true,execution_allowed:false,review_reason:CORPORATE_ACTION_REVIEW,review_action:'VERIFY CORPORATE ACTION BEFORE EXECUTION'})).sort((a,b)=>(b.concentration_score??-1)-(a.concentration_score??-1)||(b.final_score??-1)-(a.final_score??-1)||(b.confidence_score??-1)-(a.confidence_score??-1)||a.symbol.localeCompare(b.symbol)).slice(0,policy.maxCount).map((row,i)=>({...row,review_rank:i+1}));
