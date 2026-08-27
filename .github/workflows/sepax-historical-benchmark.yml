@@ -45,17 +45,13 @@ jobs:
         working-directory: sepa-x
         run: npm test
 
-      - name: Run expanded point-in-time historical simulator
+      - name: Run full-history point-in-time simulator
         working-directory: sepa-x
-        run: npm run backtest:historical -- --step=3 --signals=400 --min-universe=60
+        run: npm run backtest:historical -- --step=3 --signals=700 --min-universe=60
 
       - name: Benchmark P1 from actual execution risk
         working-directory: sepa-x
         run: node scripts/precision-execution-benchmark.mjs
-
-      - name: Benchmark structural precision geometry
-        working-directory: sepa-x
-        run: node scripts/precision-geometry-historical.mjs
 
       - name: Diagnose historical hard gates
         working-directory: sepa-x
@@ -69,7 +65,7 @@ jobs:
           curl --fail --location --retry 4 --retry-all-errors --max-time 180 "$RC2_SIM_URL" -o sepa-x/data/research/rc2-simulate.json
           node -e "const x=require('./sepa-x/data/research/rc2-simulate.json'); if(!x.ok||!x.summary||!x.summary.entered) process.exit(2); console.log(x.summary)"
 
-      - name: Validate precision challenger
+      - name: Validate precision challengers V2 and preregistered V3
         working-directory: sepa-x
         run: node scripts/precision-challenger-validation.mjs
 
@@ -101,14 +97,16 @@ jobs:
           console.log('EXECUTED_P1_20='+JSON.stringify(p.executedRiskP1.twentySessions));
           console.log('P1_TEMPORAL_10='+JSON.stringify(p.executedRiskP1.temporal10));
           console.log('P1_R_SWEEP='+JSON.stringify(p.rSweepExecuted));
-          console.log('STRUCTURAL_PRECISION_COVERAGE='+JSON.stringify(g.candidateCoverage));
-          console.log('STRUCTURAL_PRECISION_SUMMARY='+JSON.stringify(g.summary));
-          console.log('STRUCTURAL_PRECISION_TEMPORAL='+JSON.stringify(g.temporal));
+          console.log('STRUCTURAL_PRECISION_FROZEN_CONTROL='+JSON.stringify({generatedAt:g.generatedAt,summary:g.summary,candidateCoverage:g.candidateCoverage}));
           console.log('PRECISION_CHALLENGER_DATASET='+JSON.stringify(q.dataset));
           console.log('PRECISION_CHALLENGER_V2='+JSON.stringify(q.variants.v2.summary));
           console.log('PRECISION_CHALLENGER_V2_TEMPORAL='+JSON.stringify(q.variants.v2.temporal));
-          console.log('PRECISION_CHALLENGER_V2_SENSITIVITY='+JSON.stringify(q.variants.v2.sensitivity));
-          console.log('PRECISION_CHALLENGER_PROMOTION_GATE='+JSON.stringify(q.promotionGate));
+          console.log('PRECISION_CHALLENGER_V2_GATE='+JSON.stringify(q.promotionGate));
+          console.log('PRECISION_CHALLENGER_V3='+JSON.stringify(q.variants.v3.summary));
+          console.log('PRECISION_CHALLENGER_V3_TEMPORAL='+JSON.stringify(q.variants.v3.temporal));
+          console.log('PRECISION_CHALLENGER_V3_HOLDOUT='+JSON.stringify(q.variants.v3.holdout));
+          console.log('PRECISION_CHALLENGER_V3_SENSITIVITY='+JSON.stringify(q.variants.v3.sensitivity));
+          console.log('PRECISION_CHALLENGER_V3_GATE='+JSON.stringify(q.v3PromotionGate));
           console.log('OVERALL_VERDICT='+c.overallVerdict);
           console.log('DIMENSIONS='+JSON.stringify(c.dimensions));
           console.log('HARD_GATE_DIAGNOSTICS='+JSON.stringify(d.reports.map(x=>({date:x.date,market:x.market?.Regime||x.market?.regime,statuses:x.statuses,reasons:x.hardReasonCounts,eligible:x.concentration?.eligible,maxima:x.concentration?.maxima}))));
