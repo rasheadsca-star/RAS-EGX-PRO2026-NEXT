@@ -45,9 +45,9 @@ jobs:
         working-directory: sepa-x
         run: npm test
 
-      - name: Run point-in-time historical simulator
+      - name: Run expanded point-in-time historical simulator
         working-directory: sepa-x
-        run: npm run backtest:historical -- --step=3 --signals=200 --min-universe=60
+        run: npm run backtest:historical -- --step=3 --signals=400 --min-universe=60
 
       - name: Benchmark P1 from actual execution risk
         working-directory: sepa-x
@@ -69,6 +69,10 @@ jobs:
           curl --fail --location --retry 4 --retry-all-errors --max-time 180 "$RC2_SIM_URL" -o sepa-x/data/research/rc2-simulate.json
           node -e "const x=require('./sepa-x/data/research/rc2-simulate.json'); if(!x.ok||!x.summary||!x.summary.entered) process.exit(2); console.log(x.summary)"
 
+      - name: Validate precision challenger
+        working-directory: sepa-x
+        run: node scripts/precision-challenger-validation.mjs
+
       - name: Load exact frozen V16.9 walk-forward evidence
         shell: bash
         run: |
@@ -89,6 +93,7 @@ jobs:
           const s=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-simulator-summary.json'));
           const p=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-execution-benchmark.json'));
           const g=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-geometry-historical.json'));
+          const q=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-challenger-validation.json'));
           const c=JSON.parse(fs.readFileSync('sepa-x/data/research/engine-comparison.json'));
           const d=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-diagnostics.json'));
           console.log('SEPA_X_SUMMARY='+JSON.stringify(s.summary));
@@ -99,6 +104,11 @@ jobs:
           console.log('STRUCTURAL_PRECISION_COVERAGE='+JSON.stringify(g.candidateCoverage));
           console.log('STRUCTURAL_PRECISION_SUMMARY='+JSON.stringify(g.summary));
           console.log('STRUCTURAL_PRECISION_TEMPORAL='+JSON.stringify(g.temporal));
+          console.log('PRECISION_CHALLENGER_DATASET='+JSON.stringify(q.dataset));
+          console.log('PRECISION_CHALLENGER_V2='+JSON.stringify(q.variants.v2.summary));
+          console.log('PRECISION_CHALLENGER_V2_TEMPORAL='+JSON.stringify(q.variants.v2.temporal));
+          console.log('PRECISION_CHALLENGER_V2_SENSITIVITY='+JSON.stringify(q.variants.v2.sensitivity));
+          console.log('PRECISION_CHALLENGER_PROMOTION_GATE='+JSON.stringify(q.promotionGate));
           console.log('OVERALL_VERDICT='+c.overallVerdict);
           console.log('DIMENSIONS='+JSON.stringify(c.dimensions));
           console.log('HARD_GATE_DIAGNOSTICS='+JSON.stringify(d.reports.map(x=>({date:x.date,market:x.market?.Regime||x.market?.regime,statuses:x.statuses,reasons:x.hardReasonCounts,eligible:x.concentration?.eligible,maxima:x.concentration?.maxima}))));
@@ -116,6 +126,7 @@ jobs:
             sepa-x/data/research/historical-simulator-summary.json
             sepa-x/data/research/precision-execution-benchmark.json
             sepa-x/data/research/precision-geometry-historical.json
+            sepa-x/data/research/precision-challenger-validation.json
             sepa-x/data/research/historical-diagnostics.json
             sepa-x/data/research/rc2-simulate.json
             sepa-x/data/research/v16-v169-basket-engine.json
@@ -133,6 +144,7 @@ jobs:
           cp sepa-x/data/research/historical-simulator-summary.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/precision-execution-benchmark.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/precision-geometry-historical.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/precision-challenger-validation.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/historical-diagnostics.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/rc2-simulate.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/v16-v169-basket-engine.json "$SNAPSHOT/sepa-x/data/research/"
@@ -151,6 +163,7 @@ jobs:
                     sepa-x/data/research/historical-simulator-summary.json \
                     sepa-x/data/research/precision-execution-benchmark.json \
                     sepa-x/data/research/precision-geometry-historical.json \
+                    sepa-x/data/research/precision-challenger-validation.json \
                     sepa-x/data/research/historical-diagnostics.json \
                     sepa-x/data/research/rc2-simulate.json \
                     sepa-x/data/research/v16-v169-basket-engine.json \
