@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "sepa-x-historical-simulator.1",
+  "schemaVersion": "sepa-x-historical-simulator.2",
   "engineId": "SEPA_X_ENGINE_V1",
-  "generatedAt": "2026-08-27T12:03:39.162Z",
+  "generatedAt": "2026-08-27T12:12:29.552Z",
   "methodology": {
     "pointInTime": true,
     "noLookahead": true,
@@ -19,7 +19,9 @@
       4
     ],
     "signalFrequency": "every 3 common sessions",
-    "maxSignalDates": 200
+    "maxSignalDates": 200,
+    "strategyLabMode": "CHALLENGER",
+    "strategyPromotionRequiresValidation": true
   },
   "dataset": {
     "symbolsRequested": 242,
@@ -27,41 +29,135 @@
     "historyErrors": 87,
     "latestCommonDate": "2026-08-26",
     "commonDates": 2453,
-    "eligibleSignalDates": 2099
+    "eligibleSignalDates": 2098
   },
   "summary": {
     "signalDates": 200,
-    "entered": 47,
-    "expired": 108,
-    "target1HitPct": 34,
-    "target2HitPct": 21.3,
-    "target3HitPct": 8.5,
-    "stopBeforeTarget1Pct": 53.2,
-    "positivePct": 44.7,
-    "averageNetPct": 0.789,
-    "medianNetPct": -4.083,
-    "expectancyR": 0.153,
-    "profitFactor": 1.248,
-    "averageHoldingSessions": 8.55,
-    "basketSessions": 36,
-    "basketWinRatePct": 50,
-    "compoundedBasketReturnPct": 46.32,
-    "maximumBasketDrawdownPct": -27.14,
+    "entered": 53,
+    "expired": 114,
+    "target1HitPct": 39.6,
+    "target2HitPct": 22.6,
+    "target3HitPct": 11.3,
+    "stopBeforeTarget1Pct": 47.2,
+    "positivePct": 45.3,
+    "averageNetPct": 2.074,
+    "medianNetPct": -2.186,
+    "expectancyR": 0.368,
+    "profitFactor": 1.708,
+    "averageHoldingSessions": 9.7,
+    "basketSessions": 41,
+    "basketWinRatePct": 51.2,
+    "compoundedBasketReturnPct": 139.03,
+    "maximumBasketDrawdownPct": -25.4,
     "convictionCalibration": {
       "80-89": {
-        "entered": 25,
-        "target1Hits": 7,
-        "target1HitRatePct": 28
+        "entered": 29,
+        "target1Hits": 11,
+        "target1HitRatePct": 37.9
       },
       "70-79": {
-        "entered": 20,
-        "target1Hits": 7,
-        "target1HitRatePct": 35
+        "entered": 23,
+        "target1Hits": 9,
+        "target1HitRatePct": 39.1
       },
       "60-69": {
-        "entered": 2,
-        "target1Hits": 2,
+        "entered": 1,
+        "target1Hits": 1,
         "target1HitRatePct": 100
+      }
+    },
+    "strategyBreakdown": {
+      "VCP_COMPRESSION": {
+        "entered": 10,
+        "target1HitPct": 20,
+        "target2HitPct": 20,
+        "target3HitPct": 10,
+        "stopBeforeTarget1Pct": 70,
+        "positivePct": 20,
+        "expectancyR": -0.331
+      },
+      "PIVOT_BREAKOUT": {
+        "entered": 38,
+        "target1HitPct": 44.7,
+        "target2HitPct": 26.3,
+        "target3HitPct": 13.2,
+        "stopBeforeTarget1Pct": 42.1,
+        "positivePct": 52.6,
+        "expectancyR": 0.565
+      },
+      "BREAKOUT_RETEST": {
+        "entered": 1,
+        "target1HitPct": 100,
+        "target2HitPct": 0,
+        "target3HitPct": 0,
+        "stopBeforeTarget1Pct": 0,
+        "positivePct": 100,
+        "expectancyR": 1.899
+      },
+      "SUPPORT_RECLAIM": {
+        "entered": 3,
+        "target1HitPct": 0,
+        "target2HitPct": 0,
+        "target3HitPct": 0,
+        "stopBeforeTarget1Pct": 66.7,
+        "positivePct": 0,
+        "expectancyR": -0.821
+      },
+      "HISTORICAL_CYCLE": {
+        "entered": 1,
+        "target1HitPct": 100,
+        "target2HitPct": 0,
+        "target3HitPct": 0,
+        "stopBeforeTarget1Pct": 0,
+        "positivePct": 100,
+        "expectancyR": 1.919
+      }
+    },
+    "strategyConditions": {
+      "breakoutRetestConfirmed": {
+        "entered": 3,
+        "target1HitPct": 66.7,
+        "target2HitPct": 33.3,
+        "target3HitPct": 33.3,
+        "stopBeforeTarget1Pct": 0,
+        "positivePct": 100,
+        "expectancyR": 1.503
+      },
+      "supportReclaimConfirmed": {
+        "entered": 25,
+        "target1HitPct": 32,
+        "target2HitPct": 16,
+        "target3HitPct": 8,
+        "stopBeforeTarget1Pct": 52,
+        "positivePct": 40,
+        "expectancyR": 0.161
+      },
+      "historicalCycleAligned": {
+        "entered": 15,
+        "target1HitPct": 40,
+        "target2HitPct": 26.7,
+        "target3HitPct": 13.3,
+        "stopBeforeTarget1Pct": 46.7,
+        "positivePct": 53.3,
+        "expectancyR": 0.404
+      },
+      "multiStrategyConfirmation": {
+        "entered": 32,
+        "target1HitPct": 40.6,
+        "target2HitPct": 25,
+        "target3HitPct": 12.5,
+        "stopBeforeTarget1Pct": 46.9,
+        "positivePct": 50,
+        "expectancyR": 0.448
+      },
+      "noRetestConfirmation": {
+        "entered": 26,
+        "target1HitPct": 42.3,
+        "target2HitPct": 26.9,
+        "target3HitPct": 11.5,
+        "stopBeforeTarget1Pct": 46.2,
+        "positivePct": 46.2,
+        "expectancyR": 0.448
       }
     }
   }
