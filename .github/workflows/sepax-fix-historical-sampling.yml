@@ -1,0 +1,95 @@
+name: SEPA-X Fix Historical Sampling
+
+on:
+  push:
+    branches:
+      - develop/sepax-isolated-v1
+    paths:
+      - '.github/workflows/sepax-fix-historical-sampling.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch historical sampling and add regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('sepa-x/src/historical-simulator.js')
+          s=p.read_text()
+          old="  const stepped=eligibleDates.filter((_,i)=>i%Math.max(1,stepSessions)===0).slice(-Math.max(1,maxSignalDates));"
+          helper="""export function selectTailAnchoredSignalDates(eligibleDates,stepSessions=1,maxSignalDates=1){
+            const step=Math.max(1,Math.floor(Number(stepSessions)||1));
+            const limit=Math.max(1,Math.floor(Number(maxSignalDates)||1));
+            const selected=[];
+            for(let i=eligibleDates.length-1;i>=0&&selected.length<limit;i-=step)selected.push(eligibleDates[i]);
+            return selected.reverse();
+          }
+
+          """
+          marker="export async function runHistoricalSimulator({"
+          if old not in s:
+            raise SystemExit('OLD_SAMPLING_LINE_NOT_FOUND')
+          if 'selectTailAnchoredSignalDates' not in s:
+            if marker not in s: raise SystemExit('SIMULATOR_MARKER_NOT_FOUND')
+            s=s.replace(marker,helper+marker,1)
+          s=s.replace(old,"  const stepped=selectTailAnchoredSignalDates(eligibleDates,stepSessions,maxSignalDates);",1)
+          s=s.replace("schemaVersion:'sepa-x-historical-simulator.3'","schemaVersion:'sepa-x-historical-simulator.4'",1)
+          old_method="signalFrequency:`every ${stepSessions} common sessions`,maxSignalDates,strategyLabMode:'CHALLENGER'"
+          new_method="signalFrequency:`every ${stepSessions} common sessions, tail-anchored`,signalSampling:'TAIL_ANCHORED_FROM_LATEST_ELIGIBLE_SESSION',nestedSampleInvariant:true,maxSignalDates,strategyLabMode:'CHALLENGER'"
+          if old_method not in s: raise SystemExit('METHODOLOGY_MARKER_NOT_FOUND')
+          s=s.replace(old_method,new_method,1)
+          old_dataset="dataset:{symbolsRequested:data.requested,symbolsLoaded:data.loaded,historyErrors:data.errors.length,latestCommonDate:latestCommon,commonDates:allDates.length,eligibleSignalDates:eligibleDates.length},"
+          new_dataset="dataset:{symbolsRequested:data.requested,symbolsLoaded:data.loaded,historyErrors:data.errors.length,latestCommonDate:latestCommon,commonDates:allDates.length,eligibleSignalDates:eligibleDates.length,signalSampleStart:stepped[0]??null,signalSampleEnd:stepped.at(-1)??null},"
+          if old_dataset not in s: raise SystemExit('DATASET_MARKER_NOT_FOUND')
+          s=s.replace(old_dataset,new_dataset,1)
+          p.write_text(s)
+          PY
+
+          cat > sepa-x/test/historical-sampling.test.js <<'EOF'
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import { selectTailAnchoredSignalDates } from '../src/historical-simulator.js';
+
+          const dates=n=>Array.from({length:n},(_,i)=>`D${String(i+1).padStart(3,'0')}`);
+
+          test('tail-anchored signal samples are nested when maxSignalDates expands',()=>{
+            const eligible=dates(60);
+            const small=selectTailAnchoredSignalDates(eligible,3,8);
+            const large=selectTailAnchoredSignalDates(eligible,3,15);
+            assert.deepEqual(large.slice(-small.length),small);
+            assert.equal(small.at(-1),eligible.at(-1));
+          });
+
+          test('adding an older eligible date does not phase-shift the recent sample',()=>{
+            const eligible=dates(60);
+            const shifted=['D000',...eligible];
+            const before=selectTailAnchoredSignalDates(eligible,3,12);
+            const after=selectTailAnchoredSignalDates(shifted,3,12);
+            assert.deepEqual(after,before);
+          });
+          EOF
+
+          node --check sepa-x/src/historical-simulator.js
+          cd sepa-x && npm test
+
+      - name: Commit fix and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/sepax-fix-historical-sampling.yml
+          git add sepa-x/src/historical-simulator.js sepa-x/test/historical-sampling.test.js
+          git commit -m 'fix(sepa-x): make historical sampling tail anchored'
+          git push origin HEAD:develop/sepax-isolated-v1
