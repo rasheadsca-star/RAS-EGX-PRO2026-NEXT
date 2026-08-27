@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { selectTailAnchoredSignalDates } from '../src/historical-simulator.js';
 
+// Regression guard: expanding the benchmark must preserve the recent sample exactly.
 const dates=n=>Array.from({length:n},(_,i)=>`D${String(i+1).padStart(3,'0')}`);
 
 test('tail-anchored signal samples are nested when maxSignalDates expands',()=>{
