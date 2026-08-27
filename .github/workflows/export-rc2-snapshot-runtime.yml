@@ -1,0 +1,25 @@
+name: Export RC2 Snapshot Runtime
+
+on:
+  push:
+    branches:
+      - release/rc2-snapshot-date-fix-20260827
+    paths:
+      - '.github/workflows/export-rc2-snapshot-runtime.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload runtime source
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc2-snapshot-runtime
+          path: tfe-v20/
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: false
