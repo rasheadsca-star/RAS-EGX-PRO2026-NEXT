@@ -67,6 +67,10 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=2048
         run: npm run scan
 
+      - name: Track FULL_STRUCTURE V3 prospective shadow
+        working-directory: sepa-x
+        run: node scripts/forward-shadow-v3.mjs
+
       - name: Run acceptance gates
         working-directory: sepa-x
         run: npm run acceptance
@@ -76,7 +80,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add sepa-x/data/current-scan.json sepa-x/data/recommendation-history.json sepa-x/data/engine-errors.json sepa-x/data/state-transitions.json
+          git add sepa-x/data/current-scan.json sepa-x/data/recommendation-history.json sepa-x/data/engine-errors.json sepa-x/data/state-transitions.json sepa-x/data/research/full-structure-v3-forward.json
           if git diff --cached --quiet; then
             echo "No scan evidence changes to commit."
           else
