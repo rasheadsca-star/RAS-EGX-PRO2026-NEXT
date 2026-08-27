@@ -1,8 +1,9 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/api/index?route=ui/index" },
+    { "source": "/", "destination": "/api/shell" },
     { "source": "/app.js", "destination": "/api/index?route=ui/app" },
     { "source": "/styles.css", "destination": "/api/index?route=ui/styles" },
+    { "source": "/portfolio/intelligence", "destination": "/api/portfolio" },
     { "source": "/scan", "destination": "/api/index?route=scan" },
     { "source": "/universe", "destination": "/api/index?route=universe" },
     { "source": "/opportunities", "destination": "/api/index?route=opportunities" },
@@ -32,6 +33,8 @@
     { "source": "/stock/:symbol/history", "destination": "/api/index?route=stock/:symbol/history" }
   ],
   "functions": {
-    "api/index.js": { "maxDuration": 60 }
+    "api/index.js": { "maxDuration": 60 },
+    "api/portfolio.js": { "maxDuration": 30 },
+    "api/shell.js": { "maxDuration": 10 }
   }
 }
