@@ -49,6 +49,10 @@ jobs:
         working-directory: sepa-x
         run: npm run backtest:historical -- --step=3 --signals=200 --min-universe=60
 
+      - name: Benchmark P1 from actual execution risk
+        working-directory: sepa-x
+        run: node scripts/precision-execution-benchmark.mjs
+
       - name: Diagnose historical hard gates
         working-directory: sepa-x
         run: node scripts/historical-diagnostics.mjs
@@ -79,9 +83,14 @@ jobs:
           node - <<'NODE'
           const fs=require('fs');
           const s=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-simulator-summary.json'));
+          const p=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-execution-benchmark.json'));
           const c=JSON.parse(fs.readFileSync('sepa-x/data/research/engine-comparison.json'));
           const d=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-diagnostics.json'));
           console.log('SEPA_X_SUMMARY='+JSON.stringify(s.summary));
+          console.log('EXECUTED_P1_10='+JSON.stringify(p.executedRiskP1.tenSessions));
+          console.log('EXECUTED_P1_20='+JSON.stringify(p.executedRiskP1.twentySessions));
+          console.log('P1_TEMPORAL_10='+JSON.stringify(p.executedRiskP1.temporal10));
+          console.log('P1_R_SWEEP='+JSON.stringify(p.rSweepExecuted));
           console.log('OVERALL_VERDICT='+c.overallVerdict);
           console.log('DIMENSIONS='+JSON.stringify(c.dimensions));
           console.log('HARD_GATE_DIAGNOSTICS='+JSON.stringify(d.reports.map(x=>({date:x.date,market:x.market?.Regime||x.market?.regime,statuses:x.statuses,reasons:x.hardReasonCounts,eligible:x.concentration?.eligible,maxima:x.concentration?.maxima}))));
@@ -97,6 +106,7 @@ jobs:
           path: |
             sepa-x/data/research/historical-simulator.json
             sepa-x/data/research/historical-simulator-summary.json
+            sepa-x/data/research/precision-execution-benchmark.json
             sepa-x/data/research/historical-diagnostics.json
             sepa-x/data/research/rc2-simulate.json
             sepa-x/data/research/v16-v169-basket-engine.json
@@ -112,6 +122,7 @@ jobs:
           mkdir -p "$SNAPSHOT/sepa-x/data/research" "$SNAPSHOT/sepa-x/docs"
           cp sepa-x/data/research/historical-simulator.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/historical-simulator-summary.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/precision-execution-benchmark.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/historical-diagnostics.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/rc2-simulate.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/v16-v169-basket-engine.json "$SNAPSHOT/sepa-x/data/research/"
@@ -128,6 +139,7 @@ jobs:
             cp "$SNAPSHOT/sepa-x/docs/ENGINE_COMPARISON_REPORT.md" sepa-x/docs/ENGINE_COMPARISON_REPORT.md
             git add sepa-x/data/research/historical-simulator.json \
                     sepa-x/data/research/historical-simulator-summary.json \
+                    sepa-x/data/research/precision-execution-benchmark.json \
                     sepa-x/data/research/historical-diagnostics.json \
                     sepa-x/data/research/rc2-simulate.json \
                     sepa-x/data/research/v16-v169-basket-engine.json \
