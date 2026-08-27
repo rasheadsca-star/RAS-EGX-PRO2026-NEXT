@@ -1,0 +1,99 @@
+name: SEPA-X Strategy Lab V2
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop/sepax-isolated-v1
+    paths:
+      - 'sepa-x/src/strategy-lab-v2.js'
+      - 'sepa-x/scripts/strategy-lab-v2-historical.mjs'
+      - 'sepa-x/scripts/strategy-lab-v2-walkforward.mjs'
+      - 'sepa-x/test/strategy-lab-v2.test.js'
+      - '.github/workflows/sepax-strategy-lab-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Isolation guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9 -- tfe-v20/
+          echo 'RC2 frozen runtime untouched.'
+
+      - name: SEPA-X tests
+        working-directory: sepa-x
+        run: npm test
+
+      - name: Run independent V2 strategy benchmark
+        working-directory: sepa-x
+        run: node scripts/strategy-lab-v2-historical.mjs
+
+      - name: Run preregistered retest walk-forward
+        working-directory: sepa-x
+        run: node scripts/strategy-lab-v2-walkforward.mjs
+
+      - name: Print strategy decision
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const h=JSON.parse(fs.readFileSync('sepa-x/data/research/strategy-lab-v2-historical.json'));
+          const w=JSON.parse(fs.readFileSync('sepa-x/data/research/strategy-lab-v2-walkforward.json'));
+          console.log('RETEST_V2='+JSON.stringify(h.results.retestReclaimV2));
+          console.log('CYCLE_SIMILARITY='+JSON.stringify(h.results.cyclePatternSimilarity));
+          console.log('ENSEMBLE='+JSON.stringify(h.results.ensemble));
+          console.log('DISCOVERY_LEADER='+JSON.stringify(w.discoveryLeader));
+          console.log('PROMOTION_GATE='+JSON.stringify(w.promotionGate));
+          NODE
+
+      - name: Upload strategy evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepax-strategy-lab-v2
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            sepa-x/data/research/strategy-lab-v2-historical.json
+            sepa-x/data/research/strategy-lab-v2-walkforward.json
+
+      - name: Persist strategy evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          SNAP=/tmp/sepax-strategy-lab-v2
+          rm -rf "$SNAP"
+          mkdir -p "$SNAP"
+          cp sepa-x/data/research/strategy-lab-v2-historical.json "$SNAP/"
+          cp sepa-x/data/research/strategy-lab-v2-walkforward.json "$SNAP/"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4; do
+            git fetch origin develop/sepax-isolated-v1
+            git reset --hard origin/develop/sepax-isolated-v1
+            mkdir -p sepa-x/data/research
+            cp "$SNAP/strategy-lab-v2-historical.json" sepa-x/data/research/
+            cp "$SNAP/strategy-lab-v2-walkforward.json" sepa-x/data/research/
+            git add sepa-x/data/research/strategy-lab-v2-historical.json sepa-x/data/research/strategy-lab-v2-walkforward.json
+            if git diff --cached --quiet; then exit 0; fi
+            git commit -m 'data(sepa-x): persist strategy lab V2 evidence [skip ci]'
+            if git push origin HEAD:develop/sepax-isolated-v1; then exit 0; fi
+            [ "$attempt" = 4 ] && exit 1
+            sleep $((attempt * 5))
+          done
