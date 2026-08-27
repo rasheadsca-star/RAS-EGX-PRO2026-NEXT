@@ -2,17 +2,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildTargetPlan, selectConcentratedRecommendations, selectReviewQueue } from '../src/concentration.js';
 
-const row=(symbol,{score=90,confidence=85,rr=3,status='READY NOW',vcp=80,rs=90,entry=100,stop=95,riskPct=null,failedRules=[],fundamentalsPass=true}={})=>({
+const row=(symbol,{score=90,confidence=85,rr=3,status='READY NOW',vcp=80,rs=90,entry=100,stop=95,riskPct=null,failedRules=[],fundamentalsPass=true,nearestResistance=null}={})=>({
   symbol,final_score:score,confidence_score:confidence,reward_risk:rr,status,action:'BUY',rs_percentile:rs,
   vcp:{quality:vcp},entry_zone:[entry,entry],stop_loss:stop,risk_pct:riskPct,failed_rules:failedRules,
-  audit_stages:{entry:{raw:{do_not_chase:false}},fundamentals:{pass:fundamentalsPass}}
+  audit_stages:{entry:{raw:{do_not_chase:false}},fundamentals:{pass:fundamentalsPass},risk:{raw:{nearest_resistance:nearestResistance}}}
 });
 
-test('target plan produces 2R 3R 4R objectives',()=>{
-  const p=buildTargetPlan(row('AAA'),{targetRMultiples:[2,3,4]});
+test('target plan keeps 2R 3R 4R objectives and adds separate 0.8R precision target',()=>{
+  const p=buildTargetPlan(row('AAA'),{precisionTargetR:.8,targetRMultiples:[2,3,4]});
   assert.equal(p.valid,true);
   assert.deepEqual(p.targets.map(x=>x.price),[110,115,120]);
   assert.deepEqual(p.targets.map(x=>x.r),[2,3,4]);
+  assert.equal(p.precisionTarget.id,'P1');
+  assert.equal(p.precisionTarget.price,104);
+  assert.equal(p.precisionTarget.r,.8);
+  assert.equal(p.precisionTarget.cappedByResistance,false);
+});
+
+test('precision target respects closer structural resistance without changing T1 T2 T3',()=>{
+  const p=buildTargetPlan(row('CAP',{nearestResistance:102.5}),{precisionTargetR:.8,targetRMultiples:[2,3,4]});
+  assert.equal(p.precisionTarget.price,102.5);
+  assert.equal(p.precisionTarget.r,.5);
+  assert.equal(p.precisionTarget.structuralCap,102.5);
+  assert.equal(p.precisionTarget.cappedByResistance,true);
+  assert.deepEqual(p.targets.map(x=>x.price),[110,115,120]);
 });
 
 test('selector defaults to three when only one extra is strong',()=>{
@@ -27,6 +40,7 @@ test('selector expands to five only when both extra names are strong',()=>{
   const out=selectConcentratedRecommendations(rows);
   assert.equal(out.length,5);
   assert.ok(out.every(x=>x.target_plan?.primaryTarget?.r===2));
+  assert.ok(out.every(x=>x.target_plan?.precisionTarget?.requestedR===.8));
 });
 
 test('extended and weak reward/risk stocks are never padded into top set',()=>{
