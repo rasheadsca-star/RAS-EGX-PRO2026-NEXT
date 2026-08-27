@@ -30,7 +30,8 @@ jobs:
           node-version: '22'
 
       - name: Verify credential
-        run: test -n "${VERCEL_TOKEN:-}" || { echo VERCEL_TOKEN_MISSING; exit 2; }
+        run: |
+          test -n "${VERCEL_TOKEN:-}" || { echo VERCEL_TOKEN_MISSING; exit 2; }
 
       - name: Run RC2 tests
         working-directory: tfe-v20
@@ -40,7 +41,8 @@ jobs:
           node --check public/portfolio-manager.js
 
       - name: Install matching Vercel CLI
-        run: npm install --global vercel@59.3.0
+        run: |
+          npm install --global vercel@59.3.0
 
       - name: Link exact production project
         working-directory: tfe-v20
@@ -60,4 +62,5 @@ jobs:
       - name: Summary
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.url }}
-        run: echo "Preview deployment: $PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Preview deployment: $PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
