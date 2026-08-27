@@ -16,6 +16,7 @@ test('target plan keeps 2R 3R 4R objectives and adds separate 0.8R precision tar
   assert.equal(p.precisionTarget.id,'P1');
   assert.equal(p.precisionTarget.price,104);
   assert.equal(p.precisionTarget.r,.8);
+  assert.equal(p.precisionTarget.requestedR,.8);
   assert.equal(p.precisionTarget.cappedByResistance,false);
 });
 
@@ -26,6 +27,14 @@ test('precision target respects closer structural resistance without changing T1
   assert.equal(p.precisionTarget.structuralCap,102.5);
   assert.equal(p.precisionTarget.cappedByResistance,true);
   assert.deepEqual(p.targets.map(x=>x.price),[110,115,120]);
+});
+
+test('resistance above raw precision objective does not stretch P1 beyond requested 0.8R',()=>{
+  const p=buildTargetPlan(row('FAR',{nearestResistance:118}),{precisionTargetR:.8,targetRMultiples:[2,3,4]});
+  assert.equal(p.precisionTarget.price,104);
+  assert.equal(p.precisionTarget.r,.8);
+  assert.equal(p.precisionTarget.structuralCap,118);
+  assert.equal(p.precisionTarget.cappedByResistance,false);
 });
 
 test('selector defaults to three when only one extra is strong',()=>{
