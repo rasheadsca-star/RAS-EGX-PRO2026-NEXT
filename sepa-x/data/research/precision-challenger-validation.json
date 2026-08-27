@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "sepa-x-precision-challenger-validation.2",
-  "generatedAt": "2026-08-27T14:42:57.791Z",
+  "schemaVersion": "sepa-x-precision-challenger-validation.3",
+  "generatedAt": "2026-08-27T14:43:26.591Z",
   "researchOnly": true,
   "promotionAllowed": false,
   "automaticEligibilityImpact": "NONE",
@@ -9,7 +9,9 @@
     "v2": "bestStrategy == PIVOT_BREAKOUT AND strategyConfirmationCount >= 2",
     "v3": "V2 AND marketRegime is known AND marketRegime != NEUTRAL",
     "v3DiscoveryWindowStart": "2021-08-09",
-    "v3Preregistration": "V3 rule and holdout cutoff were fixed after the 400-signal discovery benchmark and before expanding to older signal dates.",
+    "v3Preregistration": "Legacy V3 experiment is invalidated because its original discovery/expansion benchmark used phase-unstable index-anchored sampling. Current deterministic results are descriptive only.",
+    "v3LegacyExperimentInvalidated": true,
+    "v3InvalidatedReason": "INVALIDATED_BY_SAMPLING_PHASE_BUG: the original 400-signal and 700-signal benchmarks used index-anchored modulo sampling and had zero shared signal dates after the eligible-date count shifted. V3 remains descriptive only and cannot be promoted from that experiment.",
     "deoverlap": "ignore a repeated signal for the same symbol while its previously counted trade is still open"
   },
   "dataset": {
@@ -22,7 +24,7 @@
     "signalSampleStart": "2017-12-27",
     "signalSampleEnd": "2026-07-21",
     "signalDates": 700,
-    "datasetFingerprint": "22befeebd053762d9dccd05cd9af27724d44f0a98c05a51ad74650cd1e16af5a",
+    "datasetFingerprint": "19f0465750746e3a3485e0e5e248d95c0a114f6234239280469cbe5c43d25073",
     "previousFingerprint": "6bf47356fd9405c4a76e205456bc7429102809cf5401f807445cea2c9f7b83b8",
     "datasetChangedSincePrevious": true
   },
@@ -35,38 +37,38 @@
   "variants": {
     "baseline": {
       "summary": {
-        "entered": 68,
-        "uniqueSymbols": 56,
-        "hitPct": 54.4,
-        "wilson95LowerHitPct": 42.7,
-        "stopBeforeTargetPct": 36.8,
-        "positivePct": 44.1,
-        "averageNetPct": 1.766,
-        "expectancyR": 0.459,
-        "profitFactor": 1.632
+        "entered": 69,
+        "uniqueSymbols": 57,
+        "hitPct": 53.6,
+        "wilson95LowerHitPct": 42,
+        "stopBeforeTargetPct": 37.7,
+        "positivePct": 43.5,
+        "averageNetPct": 1.644,
+        "expectancyR": 0.436,
+        "profitFactor": 1.577
       },
       "temporal": {
         "firstHalf": {
           "entered": 34,
           "uniqueSymbols": 29,
-          "hitPct": 47.1,
-          "wilson95LowerHitPct": 31.5,
-          "stopBeforeTargetPct": 41.2,
-          "positivePct": 41.2,
-          "averageNetPct": 1.337,
-          "expectancyR": 0.53,
-          "profitFactor": 1.483
+          "hitPct": 44.1,
+          "wilson95LowerHitPct": 28.9,
+          "stopBeforeTargetPct": 44.1,
+          "positivePct": 38.2,
+          "averageNetPct": 0.748,
+          "expectancyR": 0.42,
+          "profitFactor": 1.252
         },
         "lastHalf": {
-          "entered": 34,
-          "uniqueSymbols": 31,
-          "hitPct": 61.8,
-          "wilson95LowerHitPct": 45,
-          "stopBeforeTargetPct": 32.4,
-          "positivePct": 47.1,
-          "averageNetPct": 2.196,
-          "expectancyR": 0.388,
-          "profitFactor": 1.78
+          "entered": 35,
+          "uniqueSymbols": 32,
+          "hitPct": 62.9,
+          "wilson95LowerHitPct": 46.3,
+          "stopBeforeTargetPct": 31.4,
+          "positivePct": 48.6,
+          "averageNetPct": 2.514,
+          "expectancyR": 0.453,
+          "profitFactor": 1.919
         },
         "byYear": {
           "2018": {
@@ -87,9 +89,9 @@
             "wilson95LowerHitPct": 3.6,
             "stopBeforeTargetPct": 60,
             "positivePct": 20,
-            "averageNetPct": -2.35,
-            "expectancyR": -0.61,
-            "profitFactor": 0.238
+            "averageNetPct": -2.385,
+            "expectancyR": -0.609,
+            "profitFactor": 0.235
           },
           "2020": {
             "entered": 2,
@@ -114,15 +116,15 @@
             "profitFactor": 2.98
           },
           "2022": {
-            "entered": 4,
-            "uniqueSymbols": 4,
-            "hitPct": 75,
-            "wilson95LowerHitPct": 30.1,
-            "stopBeforeTargetPct": 25,
-            "positivePct": 75,
-            "averageNetPct": 4.888,
-            "expectancyR": 2.504,
-            "profitFactor": 4.434
+            "entered": 5,
+            "uniqueSymbols": 5,
+            "hitPct": 60,
+            "wilson95LowerHitPct": 23.1,
+            "stopBeforeTargetPct": 40,
+            "positivePct": 60,
+            "averageNetPct": 2.605,
+            "expectancyR": 1.783,
+            "profitFactor": 2.066
           },
           "2023": {
             "entered": 8,
@@ -179,9 +181,9 @@
         "wilson95LowerHitPct": 51.5,
         "stopBeforeTargetPct": 24.3,
         "positivePct": 59.5,
-        "averageNetPct": 4.117,
-        "expectancyR": 1.03,
-        "profitFactor": 3.041
+        "averageNetPct": 4.077,
+        "expectancyR": 1.021,
+        "profitFactor": 2.982
       },
       "temporal": {
         "firstHalf": {
@@ -191,9 +193,9 @@
           "wilson95LowerHitPct": 38.6,
           "stopBeforeTargetPct": 22.2,
           "positivePct": 55.6,
-          "averageNetPct": 3.606,
-          "expectancyR": 1.199,
-          "profitFactor": 3.191
+          "averageNetPct": 3.524,
+          "expectancyR": 1.181,
+          "profitFactor": 3.039
         },
         "lastHalf": {
           "entered": 19,
@@ -225,8 +227,8 @@
             "wilson95LowerHitPct": 0,
             "stopBeforeTargetPct": 50,
             "positivePct": 0,
-            "averageNetPct": -2.678,
-            "expectancyR": -0.631,
+            "averageNetPct": -3.416,
+            "expectancyR": -0.796,
             "profitFactor": 0
           },
           "2020": {
@@ -319,9 +321,9 @@
           "wilson95LowerHitPct": 47.9,
           "stopBeforeTargetPct": 26.5,
           "positivePct": 55.9,
-          "averageNetPct": 3.33,
-          "expectancyR": 0.866,
-          "profitFactor": 2.517
+          "averageNetPct": 3.287,
+          "expectancyR": 0.856,
+          "profitFactor": 2.468
         },
         "worstExpectancyCase": {
           "symbol": "COSG",
@@ -331,9 +333,9 @@
           "wilson95LowerHitPct": 47.9,
           "stopBeforeTargetPct": 26.5,
           "positivePct": 55.9,
-          "averageNetPct": 3.33,
-          "expectancyR": 0.866,
-          "profitFactor": 2.517
+          "averageNetPct": 3.287,
+          "expectancyR": 0.856,
+          "profitFactor": 2.468
         }
       }
     },
@@ -345,9 +347,9 @@
         "wilson95LowerHitPct": 52,
         "stopBeforeTargetPct": 22.9,
         "positivePct": 60,
-        "averageNetPct": 4.181,
-        "expectancyR": 1.042,
-        "profitFactor": 3.206
+        "averageNetPct": 4.139,
+        "expectancyR": 1.032,
+        "profitFactor": 3.136
       },
       "temporal": {
         "firstHalf": {
@@ -357,9 +359,9 @@
           "wilson95LowerHitPct": 36,
           "stopBeforeTargetPct": 23.5,
           "positivePct": 52.9,
-          "averageNetPct": 2.979,
-          "expectancyR": 1.11,
-          "profitFactor": 2.709
+          "averageNetPct": 2.892,
+          "expectancyR": 1.09,
+          "profitFactor": 2.58
         },
         "lastHalf": {
           "entered": 18,
@@ -391,8 +393,8 @@
             "wilson95LowerHitPct": 0,
             "stopBeforeTargetPct": 50,
             "positivePct": 0,
-            "averageNetPct": -2.678,
-            "expectancyR": -0.631,
+            "averageNetPct": -3.416,
+            "expectancyR": -0.796,
             "profitFactor": 0
           },
           "2020": {
@@ -485,9 +487,9 @@
           "wilson95LowerHitPct": 49.6,
           "stopBeforeTargetPct": 24.2,
           "positivePct": 57.6,
-          "averageNetPct": 3.683,
-          "expectancyR": 0.925,
-          "profitFactor": 2.832
+          "averageNetPct": 3.638,
+          "expectancyR": 0.915,
+          "profitFactor": 2.77
         },
         "worstExpectancyCase": {
           "symbol": "DOMT",
@@ -497,46 +499,46 @@
           "wilson95LowerHitPct": 50.8,
           "stopBeforeTargetPct": 23.5,
           "positivePct": 58.8,
-          "averageNetPct": 4.149,
-          "expectancyR": 0.917,
-          "profitFactor": 3.126
+          "averageNetPct": 4.106,
+          "expectancyR": 0.907,
+          "profitFactor": 3.058
         }
       }
     },
     "v3": {
       "summary": {
-        "entered": 22,
-        "uniqueSymbols": 22,
-        "hitPct": 77.3,
-        "wilson95LowerHitPct": 56.6,
-        "stopBeforeTargetPct": 22.7,
-        "positivePct": 68.2,
-        "averageNetPct": 5.346,
-        "expectancyR": 1.265,
-        "profitFactor": 3.994
+        "entered": 23,
+        "uniqueSymbols": 23,
+        "hitPct": 73.9,
+        "wilson95LowerHitPct": 53.5,
+        "stopBeforeTargetPct": 21.7,
+        "positivePct": 65.2,
+        "averageNetPct": 5.031,
+        "expectancyR": 1.19,
+        "profitFactor": 3.811
       },
       "temporal": {
         "firstHalf": {
           "entered": 11,
           "uniqueSymbols": 11,
-          "hitPct": 81.8,
-          "wilson95LowerHitPct": 52.3,
-          "stopBeforeTargetPct": 18.2,
-          "positivePct": 72.7,
-          "averageNetPct": 5.736,
-          "expectancyR": 1.437,
-          "profitFactor": 5.263
-        },
-        "lastHalf": {
-          "entered": 11,
-          "uniqueSymbols": 11,
           "hitPct": 72.7,
           "wilson95LowerHitPct": 43.4,
-          "stopBeforeTargetPct": 27.3,
+          "stopBeforeTargetPct": 18.2,
           "positivePct": 63.6,
-          "averageNetPct": 4.956,
-          "expectancyR": 1.092,
-          "profitFactor": 3.227
+          "averageNetPct": 5.127,
+          "expectancyR": 1.333,
+          "profitFactor": 4.379
+        },
+        "lastHalf": {
+          "entered": 12,
+          "uniqueSymbols": 12,
+          "hitPct": 75,
+          "wilson95LowerHitPct": 46.8,
+          "stopBeforeTargetPct": 25,
+          "positivePct": 66.7,
+          "averageNetPct": 4.943,
+          "expectancyR": 1.058,
+          "profitFactor": 3.423
         },
         "byYear": {
           "2018": {
@@ -551,14 +553,14 @@
             "profitFactor": 0
           },
           "2019": {
-            "entered": 1,
-            "uniqueSymbols": 1,
+            "entered": 2,
+            "uniqueSymbols": 2,
             "hitPct": 0,
             "wilson95LowerHitPct": 0,
-            "stopBeforeTargetPct": 100,
+            "stopBeforeTargetPct": 50,
             "positivePct": 0,
-            "averageNetPct": -4.943,
-            "expectancyR": -1.138,
+            "averageNetPct": -3.416,
+            "expectancyR": -0.796,
             "profitFactor": 0
           },
           "2022": {
@@ -619,44 +621,44 @@
         }
       },
       "sensitivity": {
-        "symbols": 22,
-        "maximumSingleSymbolTradeSharePct": 4.5,
+        "symbols": 23,
+        "maximumSingleSymbolTradeSharePct": 4.3,
         "worstHitCase": {
           "symbol": "MBSC",
-          "entered": 21,
-          "uniqueSymbols": 21,
-          "hitPct": 76.2,
-          "wilson95LowerHitPct": 54.9,
-          "stopBeforeTargetPct": 23.8,
-          "positivePct": 66.7,
-          "averageNetPct": 5.224,
-          "expectancyR": 1.137,
-          "profitFactor": 3.793
+          "entered": 22,
+          "uniqueSymbols": 22,
+          "hitPct": 72.7,
+          "wilson95LowerHitPct": 51.8,
+          "stopBeforeTargetPct": 22.7,
+          "positivePct": 63.6,
+          "averageNetPct": 4.901,
+          "expectancyR": 1.064,
+          "profitFactor": 3.619
         },
         "worstExpectancyCase": {
           "symbol": "MBSC",
-          "entered": 21,
-          "uniqueSymbols": 21,
-          "hitPct": 76.2,
-          "wilson95LowerHitPct": 54.9,
-          "stopBeforeTargetPct": 23.8,
-          "positivePct": 66.7,
-          "averageNetPct": 5.224,
-          "expectancyR": 1.137,
-          "profitFactor": 3.793
+          "entered": 22,
+          "uniqueSymbols": 22,
+          "hitPct": 72.7,
+          "wilson95LowerHitPct": 51.8,
+          "stopBeforeTargetPct": 22.7,
+          "positivePct": 63.6,
+          "averageNetPct": 4.901,
+          "expectancyR": 1.064,
+          "profitFactor": 3.619
         }
       },
       "holdout": {
         "cutoff": "2021-08-09",
         "olderUnseen": {
-          "entered": 2,
-          "uniqueSymbols": 2,
-          "hitPct": 50,
-          "wilson95LowerHitPct": 9.5,
-          "stopBeforeTargetPct": 50,
+          "entered": 3,
+          "uniqueSymbols": 3,
+          "hitPct": 33.3,
+          "wilson95LowerHitPct": 6.1,
+          "stopBeforeTargetPct": 33.3,
           "positivePct": 0,
-          "averageNetPct": -4.151,
-          "expectancyR": -1.178,
+          "averageNetPct": -3.397,
+          "expectancyR": -0.937,
           "profitFactor": 0
         },
         "discoveryWindow": {
@@ -714,7 +716,7 @@
     "checks": {
       "sampleSize": false,
       "olderHoldoutSize": false,
-      "hitRate": true,
+      "hitRate": false,
       "wilsonLower": false,
       "temporalHalves": true,
       "olderHoldout": false,
@@ -723,8 +725,10 @@
       "profitFactor": true,
       "symbolConcentration": true
     },
-    "state": "INSUFFICIENT_EVIDENCE",
+    "state": "INVALIDATED_BY_SAMPLING_PHASE_BUG",
     "manualPromotionRequired": true,
-    "comparisonNote": "V3 was preregistered after the 400-signal discovery run. Older dates added by the expanded benchmark are reported separately as an unseen historical holdout. No automatic promotion is permitted."
+    "legacyExperimentInvalidated": true,
+    "invalidatedReason": "INVALIDATED_BY_SAMPLING_PHASE_BUG: the original 400-signal and 700-signal benchmarks used index-anchored modulo sampling and had zero shared signal dates after the eligible-date count shifted. V3 remains descriptive only and cannot be promoted from that experiment.",
+    "comparisonNote": "INVALIDATED_BY_SAMPLING_PHASE_BUG: the original 400-signal and 700-signal benchmarks used index-anchored modulo sampling and had zero shared signal dates after the eligible-date count shifted. V3 remains descriptive only and cannot be promoted from that experiment."
   }
 }

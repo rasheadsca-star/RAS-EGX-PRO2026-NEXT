@@ -1,6 +1,6 @@
 # SEPA-X vs RC2 vs V16.9 — Evidence Report
 
-Generated: 2026-08-27T14:42:58.346Z
+Generated: 2026-08-27T14:43:27.124Z
 
 ## Verdict
 
@@ -14,7 +14,7 @@ Use the engine according to horizon: RC2 for conservative target precision, V16.
 
 | Engine | Evidence sample | Target / horizon | Hit / Win | Avg net | Profit Factor | Drawdown |
 |---|---:|---|---:|---:|---:|---:|
-| SEPA-X | 81 entered / 700 signal dates | T1=2R, T2=3R, T3=4R; max 20 sessions | T1 37.0%; T2 22.2%; T3 12.3% | 1.60% | 1.57 | -30.65% |
+| SEPA-X | 81 entered / 700 signal dates | T1=2R, T2=3R, T3=4R; max 20 sessions | T1 37.0%; T2 22.2%; T3 12.3% | 1.52% | 1.53 | -30.65% |
 | RC2 | 67 entered | T1≈0.8R capped by resistance; max 10 sessions | T1 76.1%; Wilson lower 64.7% | 1.32% | 2.44 | N/A in native API summary |
 | V16.9 | 35 blocked OOS sessions | 1-session equal-weight basket | Win 54.3% | 1.37% | 2.18 | -10.88% |
 
@@ -23,8 +23,8 @@ Use the engine according to horizon: RC2 for conservative target precision, V16.
 - 2R hit rate: **37.0%**
 - 3R hit rate: **22.2%**
 - 4R hit rate: **12.3%**
-- Expectancy: **0.40R**
-- Stop before 2R: **44.4%**
+- Expectancy: **0.39R**
+- Stop before 2R: **45.7%**
 
 ## Interpretation
 
