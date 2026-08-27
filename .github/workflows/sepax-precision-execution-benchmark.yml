@@ -1,0 +1,84 @@
+name: SEPA-X Precision Execution Benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop/sepax-isolated-v1
+    paths:
+      - 'sepa-x/scripts/precision-execution-benchmark.mjs'
+      - '.github/workflows/sepax-precision-execution-benchmark.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  precision-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout isolated branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Isolation guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code 66b2ac2bc63fe144d5d30d3d304350a6c0d04da9 -- tfe-v20/
+          echo 'RC2 frozen runtime untouched.'
+
+      - name: Run executed-risk P1 benchmark
+        working-directory: sepa-x
+        run: node scripts/precision-execution-benchmark.mjs
+
+      - name: Validate benchmark evidence
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const x=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-execution-benchmark.json'));
+          if(!x?.executedRiskP1?.tenSessions?.entered) process.exit(2);
+          console.log('EXECUTED_P1_10='+JSON.stringify(x.executedRiskP1.tenSessions));
+          console.log('EXECUTED_P1_20='+JSON.stringify(x.executedRiskP1.twentySessions));
+          console.log('TEMPORAL_10='+JSON.stringify(x.executedRiskP1.temporal10));
+          console.log('R_SWEEP='+JSON.stringify(x.rSweepExecuted));
+          NODE
+
+      - name: Upload precision evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sepax-precision-execution-benchmark
+          if-no-files-found: error
+          retention-days: 30
+          path: sepa-x/data/research/precision-execution-benchmark.json
+
+      - name: Persist precision evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp sepa-x/data/research/precision-execution-benchmark.json /tmp/precision-execution-benchmark.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3 4; do
+            git fetch origin develop/sepax-isolated-v1
+            git reset --hard origin/develop/sepax-isolated-v1
+            cp /tmp/precision-execution-benchmark.json sepa-x/data/research/precision-execution-benchmark.json
+            git add sepa-x/data/research/precision-execution-benchmark.json
+            if git diff --cached --quiet; then
+              echo 'Precision evidence unchanged.'
+              exit 0
+            fi
+            git commit -m 'data(sepa-x): persist precision execution benchmark [skip ci]'
+            if git push origin HEAD:develop/sepax-isolated-v1; then
+              exit 0
+            fi
+            [ "$attempt" = 4 ] && exit 1
+            sleep $((attempt * 6))
+          done
