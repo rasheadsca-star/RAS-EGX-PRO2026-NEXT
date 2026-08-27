@@ -16,6 +16,7 @@ const round=(v,d=3)=>finite(v)?Number(Number(v).toFixed(d)):null;
 const avg=xs=>xs.length?xs.reduce((a,b)=>a+b,0)/xs.length:null;
 const wilson=(k,n,z=1.96)=>{if(!n)return null;const p=k/n,den=1+z*z/n;return Math.max(0,(p+z*z/(2*n)-z*Math.sqrt((p*(1-p)+z*z/(4*n))/n))/den)*100;};
 const V3_DISCOVERY_WINDOW_START='2021-08-09';
+const V3_LEGACY_EXPERIMENT_INVALIDATED_REASON='INVALIDATED_BY_SAMPLING_PHASE_BUG: the original 400-signal and 700-signal benchmarks used index-anchored modulo sampling and had zero shared signal dates after the eligible-date count shifted. V3 remains descriptive only and cannot be promoted from that experiment.';
 
 function deoverlap(rows){
   const ordered=[...rows].sort((a,b)=>String(a.signalDate).localeCompare(String(b.signalDate))||String(a.symbol).localeCompare(String(b.symbol)));
@@ -148,11 +149,10 @@ const v3Checks={
   profitFactor:(v3Summary.profitFactor==='INF')||(finite(v3Summary.profitFactor)&&v3Summary.profitFactor>=v3Criteria.minimumProfitFactor),
   symbolConcentration:finite(v3Sensitivity.maximumSingleSymbolTradeSharePct)&&v3Sensitivity.maximumSingleSymbolTradeSharePct<=v3Criteria.maximumSingleSymbolTradeSharePct,
 };
-const v3AllPass=Object.values(v3Checks).every(Boolean);
-const v3PromotionState=!v3Checks.sampleSize||!v3Checks.olderHoldoutSize?'INSUFFICIENT_EVIDENCE':v3AllPass?'READY_FOR_MANUAL_PROMOTION_REVIEW':'CHALLENGER_REJECTED_BY_VALIDATION';
+const v3PromotionState='INVALIDATED_BY_SAMPLING_PHASE_BUG';
 
 const report={
-  schemaVersion:'sepa-x-precision-challenger-validation.2',
+  schemaVersion:'sepa-x-precision-challenger-validation.3',
   generatedAt:new Date().toISOString(),
   researchOnly:true,
   promotionAllowed:false,
@@ -162,7 +162,9 @@ const report={
     v2:'bestStrategy == PIVOT_BREAKOUT AND strategyConfirmationCount >= 2',
     v3:'V2 AND marketRegime is known AND marketRegime != NEUTRAL',
     v3DiscoveryWindowStart:V3_DISCOVERY_WINDOW_START,
-    v3Preregistration:'V3 rule and holdout cutoff were fixed after the 400-signal discovery benchmark and before expanding to older signal dates.',
+    v3Preregistration:'Legacy V3 experiment is invalidated because its original discovery/expansion benchmark used phase-unstable index-anchored sampling. Current deterministic results are descriptive only.',
+    v3LegacyExperimentInvalidated:true,
+    v3InvalidatedReason:V3_LEGACY_EXPERIMENT_INVALIDATED_REASON,
     deoverlap:'ignore a repeated signal for the same symbol while its previously counted trade is still open',
   },
   dataset:{...historical.dataset,signalDates:historical.summary?.signalDates??null,datasetFingerprint,previousFingerprint:previous?.dataset?.datasetFingerprint??null,datasetChangedSincePrevious:Boolean(previous?.dataset?.datasetFingerprint&&previous.dataset.datasetFingerprint!==datasetFingerprint)},
@@ -174,7 +176,7 @@ const report={
     v3:{summary:v3Summary,temporal:v3Temporal,sensitivity:v3Sensitivity,holdout:{cutoff:V3_DISCOVERY_WINDOW_START,olderUnseen:olderSummary,discoveryWindow:discoverySummary}},
   },
   promotionGate:{criteria,checks,state:promotionState,manualPromotionRequired:true,comparisonNote:'RC2 remains the conservative benchmark; this gate only decides whether V2 has enough internal evidence to be reviewed, never auto-promotes it.'},
-  v3PromotionGate:{criteria:v3Criteria,checks:v3Checks,state:v3PromotionState,manualPromotionRequired:true,comparisonNote:'V3 was preregistered after the 400-signal discovery run. Older dates added by the expanded benchmark are reported separately as an unseen historical holdout. No automatic promotion is permitted.'},
+  v3PromotionGate:{criteria:v3Criteria,checks:v3Checks,state:v3PromotionState,manualPromotionRequired:true,legacyExperimentInvalidated:true,invalidatedReason:V3_LEGACY_EXPERIMENT_INVALIDATED_REASON,comparisonNote:V3_LEGACY_EXPERIMENT_INVALIDATED_REASON},
 };
 fs.writeFileSync(path.join(research,'precision-challenger-validation.json'),JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify({dataset:report.dataset,v2:report.variants.v2.summary,v2PromotionGate:report.promotionGate,v3:report.variants.v3.summary,v3Holdout:report.variants.v3.holdout,v3PromotionGate:report.v3PromotionGate},null,2));
