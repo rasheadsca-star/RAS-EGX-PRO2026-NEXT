@@ -22,7 +22,7 @@ env:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Checkout isolated branch
         uses: actions/checkout@v4
@@ -52,6 +52,10 @@ jobs:
       - name: Benchmark P1 from actual execution risk
         working-directory: sepa-x
         run: node scripts/precision-execution-benchmark.mjs
+
+      - name: Benchmark retest reclaim and cycle similarity challengers
+        working-directory: sepa-x
+        run: node scripts/strategy-lab-v2-historical.mjs
 
       - name: Diagnose historical hard gates
         working-directory: sepa-x
@@ -90,6 +94,7 @@ jobs:
           const p=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-execution-benchmark.json'));
           const g=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-geometry-historical.json'));
           const q=JSON.parse(fs.readFileSync('sepa-x/data/research/precision-challenger-validation.json'));
+          const lab=JSON.parse(fs.readFileSync('sepa-x/data/research/strategy-lab-v2-historical.json'));
           const c=JSON.parse(fs.readFileSync('sepa-x/data/research/engine-comparison.json'));
           const d=JSON.parse(fs.readFileSync('sepa-x/data/research/historical-diagnostics.json'));
           console.log('SEPA_X_SUMMARY='+JSON.stringify(s.summary));
@@ -98,6 +103,10 @@ jobs:
           console.log('P1_TEMPORAL_10='+JSON.stringify(p.executedRiskP1.temporal10));
           console.log('P1_R_SWEEP='+JSON.stringify(p.rSweepExecuted));
           console.log('STRUCTURAL_PRECISION_FROZEN_CONTROL='+JSON.stringify({generatedAt:g.generatedAt,summary:g.summary,candidateCoverage:g.candidateCoverage}));
+          console.log('STRATEGY_LAB_V2_DATASET='+JSON.stringify(lab.dataset));
+          console.log('RETEST_RECLAIM_V2='+JSON.stringify(lab.results.retestReclaimV2));
+          console.log('CYCLE_PATTERN_SIMILARITY='+JSON.stringify(lab.results.cyclePatternSimilarity));
+          console.log('RETEST_CYCLE_ENSEMBLE='+JSON.stringify(lab.results.ensemble));
           console.log('PRECISION_CHALLENGER_DATASET='+JSON.stringify(q.dataset));
           console.log('PRECISION_CHALLENGER_V2='+JSON.stringify(q.variants.v2.summary));
           console.log('PRECISION_CHALLENGER_V2_TEMPORAL='+JSON.stringify(q.variants.v2.temporal));
@@ -125,6 +134,7 @@ jobs:
             sepa-x/data/research/precision-execution-benchmark.json
             sepa-x/data/research/precision-geometry-historical.json
             sepa-x/data/research/precision-challenger-validation.json
+            sepa-x/data/research/strategy-lab-v2-historical.json
             sepa-x/data/research/historical-diagnostics.json
             sepa-x/data/research/rc2-simulate.json
             sepa-x/data/research/v16-v169-basket-engine.json
@@ -143,6 +153,7 @@ jobs:
           cp sepa-x/data/research/precision-execution-benchmark.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/precision-geometry-historical.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/precision-challenger-validation.json "$SNAPSHOT/sepa-x/data/research/"
+          cp sepa-x/data/research/strategy-lab-v2-historical.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/historical-diagnostics.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/rc2-simulate.json "$SNAPSHOT/sepa-x/data/research/"
           cp sepa-x/data/research/v16-v169-basket-engine.json "$SNAPSHOT/sepa-x/data/research/"
@@ -162,6 +173,7 @@ jobs:
                     sepa-x/data/research/precision-execution-benchmark.json \
                     sepa-x/data/research/precision-geometry-historical.json \
                     sepa-x/data/research/precision-challenger-validation.json \
+                    sepa-x/data/research/strategy-lab-v2-historical.json \
                     sepa-x/data/research/historical-diagnostics.json \
                     sepa-x/data/research/rc2-simulate.json \
                     sepa-x/data/research/v16-v169-basket-engine.json \
