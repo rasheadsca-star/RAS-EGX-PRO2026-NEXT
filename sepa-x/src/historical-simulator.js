@@ -24,7 +24,6 @@ function stripPointInTimeUnsafe(entry){
     industry:entry.industry??null,
     active:entry.active!==false,
     yahooSymbol:entry.yahooSymbol??entry.yahooAlternative??null,
-    // Current fundamentals/news are deliberately excluded from historical replay.
     fundamentals:null,
     news:null,
     summary:null,
@@ -87,20 +86,36 @@ function fillPrice(bar,plan){
   return null;
 }
 
+function strategyTag(rec){
+  const lab=rec?.strategy_lab||{},structure=lab?.structure_retest?.raw||{},cycle=lab?.historical_cycle||{};
+  return {
+    bestStrategy:lab.best_strategy??null,
+    bestStrategyScore:lab.best_strategy_score??null,
+    strategyEdgeScore:lab.strategy_edge_score??null,
+    strategyConfirmationCount:Number(lab.confirmation_count??0),
+    strategyTrustedForPromotion:lab.trusted_for_promotion??lab.trustedForPromotion??null,
+    breakoutRetestConfirmed:Boolean(structure?.resistance?.pass),
+    supportReclaimConfirmed:Boolean(structure?.support?.pass),
+    historicalCycleAligned:Boolean(cycle?.pass),
+    cycleAlignmentScore:cycle?.raw?.cycle_alignment_score??cycle?.score??null,
+    cycleSamples:cycle?.raw?.samples??null,
+  };
+}
+
 function evaluatePick(rec,fullBars,signalDate,policy){
-  const plan=rec.target_plan;
-  if(!plan?.valid)return {symbol:rec.symbol,signalDate,entered:false,outcome:'INVALID_PLAN'};
+  const tag=strategyTag(rec),plan=rec.target_plan;
+  if(!plan?.valid)return {symbol:rec.symbol,signalDate,entered:false,outcome:'INVALID_PLAN',...tag};
   const signalIndex=upperBoundDate(fullBars,signalDate)-1;
-  if(signalIndex<0)return {symbol:rec.symbol,signalDate,entered:false,outcome:'NO_SIGNAL_BAR'};
+  if(signalIndex<0)return {symbol:rec.symbol,signalDate,entered:false,outcome:'NO_SIGNAL_BAR',...tag};
   let entry=null;
   const entryEnd=Math.min(fullBars.length-1,signalIndex+policy.entryExpirySessions);
   for(let j=signalIndex+1;j<=entryEnd;j++){
     const p=fillPrice(fullBars[j],plan);
     if(p!=null){entry={index:j,price:p,date:fullBars[j].date};break;}
   }
-  if(!entry)return {symbol:rec.symbol,signalDate,entered:false,outcome:'EXPIRED',conviction:rec.concentration_score,rank:rec.conviction_rank};
+  if(!entry)return {symbol:rec.symbol,signalDate,entered:false,outcome:'EXPIRED',conviction:rec.concentration_score,rank:rec.conviction_rank,...tag};
   const stop=Number(plan.stopLoss),risk=entry.price-stop;
-  if(!(risk>0))return {symbol:rec.symbol,signalDate,entered:false,outcome:'INVALID_ENTRY_RISK'};
+  if(!(risk>0))return {symbol:rec.symbol,signalDate,entered:false,outcome:'INVALID_ENTRY_RISK',...tag};
   const targets=(plan.targets||[]).map(x=>({...x,price:Number(x.price)})).filter(x=>finite(x.price));
   const hit=new Array(targets.length).fill(false),hitDate=new Array(targets.length).fill(null);
   const maxExit=Math.min(fullBars.length-1,entry.index+policy.maxHoldSessions-1);
@@ -119,7 +134,7 @@ function evaluatePick(rec,fullBars,signalDate,policy){
   const grossPct=(exitPrice-entry.price)/entry.price*100,netPct=grossPct-policy.roundTripCostPct;
   const costR=(entry.price*policy.roundTripCostPct/100)/risk,netR=(exitPrice-entry.price)/risk-costR;
   return {
-    symbol:rec.symbol,signalDate,rank:rec.conviction_rank,conviction:rec.concentration_score,status:rec.status,
+    symbol:rec.symbol,signalDate,rank:rec.conviction_rank,conviction:rec.concentration_score,status:rec.status,...tag,
     entered:true,entryDate:entry.date,entryPrice:round(entry.price,4),stopLoss:round(stop,4),riskPct:round(risk/entry.price*100,2),
     target1:targets[0]?.price??null,target2:targets[1]?.price??null,target3:targets[2]?.price??null,
     target1Hit:Boolean(hit[0]),target2Hit:Boolean(hit[1]),target3Hit:Boolean(hit[2]),target1HitDate:hitDate[0],target2HitDate:hitDate[1],target3HitDate:hitDate[2],
@@ -128,6 +143,10 @@ function evaluatePick(rec,fullBars,signalDate,policy){
 }
 
 function maxDrawdown(returns){let equity=1,peak=1,max=0;for(const r of returns){equity*=1+r/100;peak=Math.max(peak,equity);max=Math.min(max,(equity/peak-1)*100);}return max;}
+function conditionSummary(xs){
+  if(!xs.length)return {entered:0,target1HitPct:null,target2HitPct:null,target3HitPct:null,stopBeforeTarget1Pct:null,positivePct:null,expectancyR:null};
+  return {entered:xs.length,target1HitPct:round(xs.filter(x=>x.target1Hit).length/xs.length*100,1),target2HitPct:round(xs.filter(x=>x.target2Hit).length/xs.length*100,1),target3HitPct:round(xs.filter(x=>x.target3Hit).length/xs.length*100,1),stopBeforeTarget1Pct:round(xs.filter(x=>x.stopHit&&!x.target1Hit).length/xs.length*100,1),positivePct:round(xs.filter(x=>Number(x.netPct)>0).length/xs.length*100,1),expectancyR:round(avg(xs.map(x=>Number(x.netR))),3)};
+}
 
 function summarizeTrades(trades,signals){
   const entered=trades.filter(x=>x.entered),expired=trades.filter(x=>x.outcome==='EXPIRED');
@@ -139,6 +158,16 @@ function summarizeTrades(trades,signals){
   const bins={};
   for(const t of entered){const lo=Math.floor((Number(t.conviction)||0)/10)*10,key=`${lo}-${lo+9}`;bins[key]??={entered:0,target1Hits:0};bins[key].entered++;if(t.target1Hit)bins[key].target1Hits++;}
   for(const v of Object.values(bins))v.target1HitRatePct=round(v.target1Hits/Math.max(1,v.entered)*100,1);
+  const strategyBreakdown={};
+  for(const t of entered){const k=t.bestStrategy||'UNCLASSIFIED';(strategyBreakdown[k]??=[]).push(t);}
+  for(const [k,xs] of Object.entries(strategyBreakdown))strategyBreakdown[k]=conditionSummary(xs);
+  const strategyConditions={
+    breakoutRetestConfirmed:conditionSummary(entered.filter(x=>x.breakoutRetestConfirmed)),
+    supportReclaimConfirmed:conditionSummary(entered.filter(x=>x.supportReclaimConfirmed)),
+    historicalCycleAligned:conditionSummary(entered.filter(x=>x.historicalCycleAligned)),
+    multiStrategyConfirmation:conditionSummary(entered.filter(x=>Number(x.strategyConfirmationCount)>=2)),
+    noRetestConfirmation:conditionSummary(entered.filter(x=>!x.breakoutRetestConfirmed&&!x.supportReclaimConfirmed)),
+  };
   return {
     signalDates:signals.length,entered:entered.length,expired:expired.length,
     target1HitPct:entered.length?round(entered.filter(x=>x.target1Hit).length/entered.length*100,1):null,
@@ -151,7 +180,7 @@ function summarizeTrades(trades,signals){
     averageHoldingSessions:round(avg(entered.map(x=>Number(x.holdingSessions))),2),
     basketSessions:sessionReturns.length,basketWinRatePct:sessionReturns.length?round(sessionReturns.filter(x=>x>0).length/sessionReturns.length*100,1):null,
     compoundedBasketReturnPct:round((equity-1)*100,2),maximumBasketDrawdownPct:round(maxDrawdown(sessionReturns),2),
-    convictionCalibration:bins,
+    convictionCalibration:bins,strategyBreakdown,strategyConditions,
   };
 }
 
@@ -181,13 +210,13 @@ export async function runHistoricalSimulator({
     let scan;
     try{scan=await scanMarket({provider:replayProvider,config});}catch(error){signals.push({date:asOf,error:error.message,selected:[]});continue;}
     const selected=selectConcentratedRecommendations(scan.all||[],config.concentration);
-    signals.push({date:asOf,marketRegime:scan.market_status?.Regime??null,selected:selected.map(x=>({symbol:x.symbol,rank:x.conviction_rank,conviction:x.concentration_score,status:x.status,target1:x.target_plan?.primaryTarget?.price??null,rr:x.reward_risk}))});
+    signals.push({date:asOf,marketRegime:scan.market_status?.Regime??null,selected:selected.map(x=>({symbol:x.symbol,rank:x.conviction_rank,conviction:x.concentration_score,status:x.status,target1:x.target_plan?.primaryTarget?.price??null,rr:x.reward_risk,...strategyTag(x)}))});
     for(const rec of selected){const full=data.histories.get(rec.symbol)||[];trades.push(evaluatePick(rec,full,asOf,{entryExpirySessions,maxHoldSessions,roundTripCostPct}));}
   }
   const summary=summarizeTrades(trades,signals);
   return {
-    schemaVersion:'sepa-x-historical-simulator.1',engineId:config.engineId,generatedAt:new Date().toISOString(),researchOnly:true,
-    methodology:{pointInTime:true,noLookahead:true,currentFundamentalsExcluded:true,currentCatalystsExcluded:true,marketWideRSRecomputedEachSignalDate:true,entryAfterSignal:true,entryExpirySessions,maxHoldSessions,sameBarAmbiguity:'STOP_FIRST',roundTripCostPct,targetRMultiples:config.concentration?.targetRMultiples??[2,3,4],signalFrequency:`every ${stepSessions} common sessions`,maxSignalDates},
+    schemaVersion:'sepa-x-historical-simulator.2',engineId:config.engineId,generatedAt:new Date().toISOString(),researchOnly:true,
+    methodology:{pointInTime:true,noLookahead:true,currentFundamentalsExcluded:true,currentCatalystsExcluded:true,marketWideRSRecomputedEachSignalDate:true,entryAfterSignal:true,entryExpirySessions,maxHoldSessions,sameBarAmbiguity:'STOP_FIRST',roundTripCostPct,targetRMultiples:config.concentration?.targetRMultiples??[2,3,4],signalFrequency:`every ${stepSessions} common sessions`,maxSignalDates,strategyLabMode:'CHALLENGER',strategyPromotionRequiresValidation:true},
     dataset:{symbolsRequested:data.requested,symbolsLoaded:data.loaded,historyErrors:data.errors.length,latestCommonDate:latestCommon,commonDates:allDates.length,eligibleSignalDates:eligibleDates.length},
     summary,signals,trades,errors:data.errors,
   };
