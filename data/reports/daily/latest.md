@@ -11,14 +11,14 @@
 
 ## حالة الاستراتيجيات
 
-- breakout: ACTIVE_LIMITED — صفقات مغلقة 61, PF 1.725, Average R 0.3432
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 272, PF 1.4403, Average R 0.2239
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 282, PF 1.4013, Average R 0.2029
+- breakout: RESEARCH_ONLY — صفقات مغلقة 63, PF 1.6672, Average R 0.3164
 - pullback: RESEARCH_ONLY — صفقات مغلقة 14, PF 4.1915, Average R 0.7905
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 94.79%, below preferred 98%.
+- تحذير: Data coverage is 94.64%, below preferred 98%.
 - تحذير: 38 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `f858fccb737555b7b6e7cb4e37a2778b9634f263bdfa7f674310508ddc26d1d7`
+بصمة التقرير: `3150837fa6ad9706f3f03643ca6a5c8870877b5032b4337ea3bcfd980ae6fb7e`
