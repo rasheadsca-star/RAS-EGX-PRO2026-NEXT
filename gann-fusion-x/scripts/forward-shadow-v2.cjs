@@ -69,7 +69,7 @@ function gannSource(readiness,marketDate){
   }
   return{engine:'GANN_FUSION_X_V1',date,generatedAt:readiness?.generatedAt||null,fresh,status:fresh?'FRESH_READY_GATED':'BLOCKED_READINESS_OR_SESSION',rows,readinessSummary:readiness?.dataReadinessSummary||null};
 }
-const keyOf=(session,engine,ticker)=>`${session}|${engine}|${ticker}`;
+const keyOf=(session,engine,ticker,evidenceSchema=null)=>[session,engine,ticker,evidenceSchema].filter(Boolean).join('|');
 function isStrictGannSignal(s){
   return s?.engine==='GANN_FUSION_X_V1'&&s?.forwardEligibilitySchema==='v2-ready-only'&&s?.dataReadiness?.status==='READY'&&s?.dataReadiness?.decisionDate===s?.signalSession&&Array.isArray(s?.dataReadiness?.missing)&&s.dataReadiness.missing.length===0&&s?.action==='ACTIONABLE'&&num(s?.portfolioPct)>0;
 }
@@ -114,7 +114,7 @@ function main(){
   const sources=[v16Source(read(path.join(ROOT,'data','stable','v16-main-app-current.json'),{})||{},market.date),sepaSource(sepaRaw,market.date),gannSource(readiness,market.date)];
   const existing=new Set(ledger.signals.map(s=>s.key));let addedSignals=0;
   for(const src of sources.filter(s=>s.fresh))for(const r of src.rows){
-    const key=keyOf(src.date,src.engine,r.ticker);if(existing.has(key))continue;
+    const key=keyOf(src.date,src.engine,r.ticker,r.forwardEligibilitySchema||null);if(existing.has(key))continue;
     ledger.signals.push({key,recordedAt:new Date().toISOString(),signalSession:src.date,sourceGeneratedAt:src.generatedAt||null,engine:src.engine,ticker:r.ticker,nameAr:r.nameAr||'',rank:r.rank,score:r.score??null,action:r.action||null,entryLow:r.entryLow,entryHigh:r.entryHigh,stopLoss:r.stopLoss,target1:r.target1,target2:r.target2??null,target3:r.target3??null,portfolioPct:r.portfolioPct??null,forwardEligibilitySchema:r.forwardEligibilitySchema||null,dataReadiness:r.dataReadiness||null,meta:r.meta||null});
     existing.add(key);addedSignals++;
   }
