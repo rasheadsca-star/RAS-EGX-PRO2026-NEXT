@@ -1,0 +1,32 @@
+name: GANN Regime Gate Challenger
+on:
+  push:
+    branches:
+      - feature/gann-regime-gate-challenger-v1
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          node --check gann-fusion-x/engine/regime-gate.js
+          node --check gann-fusion-x/scripts/backtest-regime-challenger.cjs
+      - name: Run fixed-rule 60-session challenger
+        run: node gann-fusion-x/scripts/backtest-regime-challenger.cjs
+      - name: Show report
+        run: cat gann-fusion-x/data/regime-challenger-backtest.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gann-regime-gate-challenger-v1
+          path: |
+            gann-fusion-x/data/regime-challenger-backtest.json
+            gann-fusion-x/data/regime-challenger-backtest.md
+          retention-days: 14
