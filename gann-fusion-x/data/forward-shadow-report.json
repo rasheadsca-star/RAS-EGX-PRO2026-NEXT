@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "gann-fusion-x-forward-shadow-report-v3-unified-funnel",
-  "generatedAt": "2026-08-28T01:05:25.459Z",
+  "schemaVersion": "gann-fusion-x-forward-shadow-report-v4-ready-only-null-safe",
+  "generatedAt": "2026-08-28T21:33:12.431Z",
   "marketSession": "2026-08-27",
   "sourceStatus": {
     "V16_9_LIVE": {
@@ -18,20 +18,23 @@
     "GANN_FUSION_X_V1": {
       "session": "2026-08-27",
       "fresh": true,
-      "status": "FRESH",
-      "signals": 3,
-      "funnel": {
-        "ACTIONABLE": 7,
-        "WATCH": 65,
-        "REJECTED": 84
-      },
-      "history": {
-        "freshCount": 156,
-        "total": 199,
-        "coveragePct": 78.4,
-        "freshEnough": true,
-        "dominantLastSession": "2026-08-27",
-        "dominantCount": 156
+      "status": "FRESH_READY_GATED",
+      "signals": 2,
+      "readinessSummary": {
+        "analyzedReady": 4,
+        "analyzedIncomplete": 209,
+        "downgraded": 0,
+        "actionableAfterGate": 2,
+        "decisionDate": "2026-08-27",
+        "activeUniverse": 225,
+        "universeReady": 4,
+        "quarantined": 221,
+        "researchRecovered": 14,
+        "liquidityKnown": 170,
+        "riskKnown": 170,
+        "fundamentalsVerified": 4,
+        "rankedUniverse": 4,
+        "minHistorySessions": 21
       }
     }
   },
@@ -101,9 +104,142 @@
     ],
     "GANN_FUSION_X_V1": [
       {
+        "ticker": "COMI",
+        "nameAr": "البنك التجاري الدولي - مصر",
+        "rank": 1,
+        "score": 74.2,
+        "action": "ACTIONABLE",
+        "entryLow": 139.3108,
+        "entryHigh": 143.06,
+        "stopLoss": 135.35,
+        "target1": 156.77,
+        "target2": 162.482,
+        "target3": 165.9832,
+        "portfolioPct": 9.88,
+        "forwardEligibilitySchema": "v2-ready-only",
+        "dataReadiness": {
+          "status": "READY",
+          "decisionDate": "2026-08-27",
+          "checks": {
+            "priceKnown": true,
+            "historyFresh": true,
+            "liquidityKnown": true,
+            "riskKnown": true,
+            "moneyFlowKnown": true,
+            "fundamentalsVerified": true
+          },
+          "missing": [],
+          "dataQuality": {
+            "asOf": "2026-08-27",
+            "liquidityPercentile": 98.8,
+            "riskScore": 27,
+            "riskLabelAr": "مخاطر منخفضة نسبيًا",
+            "liquidityProvenance": {
+              "method": "EMPIRICAL_CDF_AVG_TURNOVER_20",
+              "asOf": "2026-08-27",
+              "sessionsUsed": 20,
+              "engineVolumeWindowSessions": 21,
+              "source": "PRIMARY",
+              "explicitZeroVolumeSessions": 0,
+              "missingValuesSynthesized": false
+            },
+            "riskProvenance": {
+              "method": "OHLCV_CORE_RISK_V1",
+              "asOf": "2026-08-27",
+              "returnSessionsUsed": 20,
+              "maxDrawdownLookbackSessions": 100,
+              "source": "PRIMARY",
+              "components": {
+                "volatility20Pct": 0.643,
+                "downsideDeviation20Pct": 0.318,
+                "var95OneDayPct": 0.999,
+                "maxDrawdown100Pct": 18.036,
+                "liquidityPercentile": 98.8
+              },
+              "missingValuesSynthesized": false
+            },
+            "enrichmentMissing": []
+          },
+          "provenance": {
+            "marketIndex": "data/quant/market-search-index-v13-17.json",
+            "primaryHistory": "data/history/COMI.json",
+            "researchHistory": null,
+            "dataQualityEnrichment": "gann-fusion-x/data/data-quality-enrichment-v1.json",
+            "sepaFundamentals": {
+              "score": 92,
+              "verified": true,
+              "verification": {
+                "symbol": "COMI",
+                "fundamentalQuality": "VERY_STRONG",
+                "classification": "WATCH_WRONG_ENTRY",
+                "decision": "WAIT_RECLAIM_140",
+                "rationale": "Bank fundamentals are very strong, but breakout failed and RR/RS are currently weak.",
+                "verification": {
+                  "status": "VERIFIED",
+                  "confidence": 82,
+                  "model": "BANK",
+                  "freshness": {
+                    "ok": true,
+                    "ageDays": 21,
+                    "reason": null
+                  },
+                  "completeness": {
+                    "required": [
+                      "roe",
+                      "roa",
+                      "capitalAdequacy",
+                      "nplRatio",
+                      "nim",
+                      "costToIncome",
+                      "netProfitGrowth",
+                      "loanGrowth",
+                      "depositGrowth",
+                      "peRatio",
+                      "pbRatio"
+                    ],
+                    "present": [
+                      "roe",
+                      "roa",
+                      "capitalAdequacy",
+                      "nplRatio",
+                      "nim",
+                      "costToIncome",
+                      "netProfitGrowth",
+                      "peRatio",
+                      "pbRatio"
+                    ],
+                    "missing": [
+                      "loanGrowth",
+                      "depositGrowth"
+                    ],
+                    "pct": 82
+                  }
+                }
+              },
+              "qualityLabel": "VERY_STRONG"
+            },
+            "moneyFlow": "MARKET_INDEX"
+          }
+        },
+        "meta": {
+          "decision": {
+            "code": "ACTIONABLE",
+            "ar": "قابل للدخول بشروط الخطة",
+            "tone": "positive",
+            "order": 2,
+            "reasonCode": "ELIGIBLE",
+            "reasonAr": "نافذة Gann نشطة والسعر داخل 4% من نقطة التفعيل؛ لا دخول قبل Trigger وسيولة داعمة."
+          },
+          "reasonCode": "ELIGIBLE",
+          "reasonAr": "نافذة Gann نشطة والسعر داخل 4% من نقطة التفعيل؛ لا دخول قبل Trigger وسيولة داعمة.",
+          "readinessSchema": "gann-fusion-x-data-readiness-v1.4-risk-liquidity-ranking"
+        }
+      },
+      {
         "ticker": "ETEL",
         "nameAr": "المصرية للاتصالات",
-        "score": 68.8,
+        "rank": 2,
+        "score": 68.9,
         "action": "ACTIONABLE",
         "entryLow": 115.9411,
         "entryHigh": 120.48,
@@ -112,6 +248,115 @@
         "target2": 142.12,
         "target3": 145.7863,
         "portfolioPct": 7.45,
+        "forwardEligibilitySchema": "v2-ready-only",
+        "dataReadiness": {
+          "status": "READY",
+          "decisionDate": "2026-08-27",
+          "checks": {
+            "priceKnown": true,
+            "historyFresh": true,
+            "liquidityKnown": true,
+            "riskKnown": true,
+            "moneyFlowKnown": true,
+            "fundamentalsVerified": true
+          },
+          "missing": [],
+          "dataQuality": {
+            "asOf": "2026-08-27",
+            "liquidityPercentile": 91.2,
+            "riskScore": 50,
+            "riskLabelAr": "مخاطر متوسطة",
+            "liquidityProvenance": {
+              "method": "EMPIRICAL_CDF_AVG_TURNOVER_20",
+              "asOf": "2026-08-27",
+              "sessionsUsed": 20,
+              "engineVolumeWindowSessions": 21,
+              "source": "PRIMARY",
+              "explicitZeroVolumeSessions": 0,
+              "missingValuesSynthesized": false
+            },
+            "riskProvenance": {
+              "method": "OHLCV_CORE_RISK_V1",
+              "asOf": "2026-08-27",
+              "returnSessionsUsed": 20,
+              "maxDrawdownLookbackSessions": 100,
+              "source": "PRIMARY",
+              "components": {
+                "volatility20Pct": 2.832,
+                "downsideDeviation20Pct": 0.918,
+                "var95OneDayPct": 1.716,
+                "maxDrawdown100Pct": 16.305,
+                "liquidityPercentile": 91.2
+              },
+              "missingValuesSynthesized": false
+            },
+            "enrichmentMissing": []
+          },
+          "provenance": {
+            "marketIndex": "data/quant/market-search-index-v13-17.json",
+            "primaryHistory": "data/history/ETEL.json",
+            "researchHistory": null,
+            "dataQualityEnrichment": "gann-fusion-x/data/data-quality-enrichment-v1.json",
+            "sepaFundamentals": {
+              "score": 84,
+              "verified": true,
+              "verification": {
+                "symbol": "ETEL",
+                "fundamentalQuality": "STRONG",
+                "classification": "A_CONDITIONAL",
+                "decision": "WATCH_TRIGGER_120",
+                "rationale": "Strong verified financial momentum + strong trend/RS; buy only after valid trigger/retest because current production stop is wide.",
+                "verification": {
+                  "status": "VERIFIED",
+                  "confidence": 77,
+                  "model": "GENERAL",
+                  "freshness": {
+                    "ok": true,
+                    "ageDays": 14,
+                    "reason": null
+                  },
+                  "completeness": {
+                    "required": [
+                      "roe",
+                      "operatingCashFlow",
+                      "freeCashFlow",
+                      "debtToEquity",
+                      "currentRatio",
+                      "cash",
+                      "totalDebt",
+                      "revenueGrowth",
+                      "netProfitGrowth",
+                      "eps",
+                      "peRatio",
+                      "pbRatio",
+                      "evEbitda"
+                    ],
+                    "present": [
+                      "roe",
+                      "operatingCashFlow",
+                      "freeCashFlow",
+                      "debtToEquity",
+                      "currentRatio",
+                      "revenueGrowth",
+                      "netProfitGrowth",
+                      "peRatio",
+                      "pbRatio",
+                      "evEbitda"
+                    ],
+                    "missing": [
+                      "cash",
+                      "totalDebt",
+                      "eps"
+                    ],
+                    "pct": 77
+                  }
+                }
+              },
+              "qualityLabel": "STRONG"
+            },
+            "moneyFlow": "MARKET_INDEX"
+          }
+        },
         "meta": {
           "decision": {
             "code": "ACTIONABLE",
@@ -119,81 +364,28 @@
             "tone": "positive",
             "order": 2,
             "reasonCode": "ELIGIBLE",
-            "reasonAr": "مرشح مشروط بتفعيل نقطة الدخول."
+            "reasonAr": "نافذة Gann نشطة والسعر داخل 4% من نقطة التفعيل؛ لا دخول قبل Trigger وسيولة داعمة."
           },
           "reasonCode": "ELIGIBLE",
-          "reasonAr": "مرشح مشروط بتفعيل نقطة الدخول.",
-          "liquidityPercentile": null,
-          "liquidityKnown": false,
-          "fundamentalScore": 84,
-          "fundamentalsVerified": true
-        },
-        "rank": 1
-      },
-      {
-        "ticker": "COMI",
-        "nameAr": "البنك التجاري الدولي - مصر",
-        "score": 67.6,
-        "action": "ACTIONABLE",
-        "entryLow": 139.3108,
-        "entryHigh": 143.06,
-        "stopLoss": 135.35,
-        "target1": 156.77,
-        "target2": 162.482,
-        "target3": 165.9832,
-        "portfolioPct": 7.48,
-        "meta": {
-          "decision": {
-            "code": "ACTIONABLE",
-            "ar": "قابل للدخول بشروط الخطة",
-            "tone": "positive",
-            "order": 2,
-            "reasonCode": "ELIGIBLE",
-            "reasonAr": "مرشح مشروط بتفعيل نقطة الدخول."
-          },
-          "reasonCode": "ELIGIBLE",
-          "reasonAr": "مرشح مشروط بتفعيل نقطة الدخول.",
-          "liquidityPercentile": null,
-          "liquidityKnown": false,
-          "fundamentalScore": 92,
-          "fundamentalsVerified": true
-        },
-        "rank": 2
-      },
-      {
-        "ticker": "ATQA",
-        "nameAr": "مصر الوطنية للصلب عتاقة",
-        "score": 65.1,
-        "action": "ACTIONABLE",
-        "entryLow": 11.4954,
-        "entryHigh": 11.7468,
-        "stopLoss": 10.78,
-        "target1": 13.54,
-        "target2": 14.276,
-        "target3": 14.7807,
-        "portfolioPct": 6.9,
-        "meta": {
-          "decision": {
-            "code": "ACTIONABLE",
-            "ar": "قابل للدخول بشروط الخطة",
-            "tone": "positive",
-            "order": 2,
-            "reasonCode": "ELIGIBLE",
-            "reasonAr": "مرشح مشروط بتفعيل نقطة الدخول."
-          },
-          "reasonCode": "ELIGIBLE",
-          "reasonAr": "مرشح مشروط بتفعيل نقطة الدخول.",
-          "liquidityPercentile": null,
-          "liquidityKnown": false,
-          "fundamentalScore": 50,
-          "fundamentalsVerified": false
-        },
-        "rank": 3
+          "reasonAr": "نافذة Gann نشطة والسعر داخل 4% من نقطة التفعيل؛ لا دخول قبل Trigger وسيولة داعمة.",
+          "readinessSchema": "gann-fusion-x-data-readiness-v1.4-risk-liquidity-ranking"
+        }
       }
     ]
   },
-  "status": "BLOCKED_SOURCE_STALE",
-  "consensus": [],
+  "status": "COLLECTION_PENDING",
+  "gannForwardValidation": {
+    "status": "COLLECTION_PENDING",
+    "promotionAllowed": false,
+    "performanceClaimAllowed": false,
+    "automaticPromotion": false,
+    "eligibleSignals": 2,
+    "validEvaluatedOutcomes": 0,
+    "evaluatedForwardSessions": 0,
+    "minimumForwardSessionsRequired": 20,
+    "legacyGannSignalsExcluded": 3,
+    "pointInTimeReadinessRequired": true
+  },
   "diagnosticOverlap": [
     {
       "ticker": "ETEL",
@@ -209,33 +401,54 @@
       "signalsIssued": 3,
       "evaluated": 0,
       "filled": 0,
-      "positiveRatePct": 0,
-      "averageNetPct": 0,
-      "profitFactor": 0,
-      "targetHitPct": 0,
-      "stopHitPct": 0
+      "positiveRatePct": null,
+      "averageNetPct": null,
+      "profitFactor": null,
+      "targetHitPct": null,
+      "stopHitPct": null,
+      "totalRecordedSignals": 3,
+      "legacySignalsExcluded": 0,
+      "evidenceScope": "DIAGNOSTIC_SHADOW"
     },
     "GANN_FUSION_X_V1": {
-      "signalsIssued": 3,
+      "signalsIssued": 2,
       "evaluated": 0,
       "filled": 0,
-      "positiveRatePct": 0,
-      "averageNetPct": 0,
-      "profitFactor": 0,
-      "targetHitPct": 0,
-      "stopHitPct": 0
+      "positiveRatePct": null,
+      "averageNetPct": null,
+      "profitFactor": null,
+      "targetHitPct": null,
+      "stopHitPct": null,
+      "totalRecordedSignals": 5,
+      "legacySignalsExcluded": 3,
+      "evidenceScope": "READY_ONLY_V2"
     }
   },
   "forwardSessions": [
     "2026-08-27"
   ],
+  "evaluatedForwardSessions": [],
   "minimumForwardSessionsForPromotion": 20,
+  "policy": {
+    "holdingSessions": 3,
+    "roundTripCostPct": 0.6,
+    "sameBarTargetStop": "STOP_CONSERVATIVE",
+    "appendOnlySignals": true,
+    "appendOnlyOutcomes": true,
+    "captureOnlyWhenSourceSessionEqualsMarketSession": true,
+    "consensusRequiresAllSourcesFresh": true,
+    "minimumForwardSessionsForPromotion": 20,
+    "gannPromotionEvidence": "READY_ONLY_V2",
+    "automaticPromotion": false,
+    "missingValuesRemainUnknown": true,
+    "entryStrictlyAfterSignal": true
+  },
   "notesAr": [
-    "GANN Forward وSnapshot يستخدمان نفس Planner ونفس تعريف ACTIONABLE/WATCH/REJECTED.",
-    "لا يسجل GANN كإشارة Forward إلا ACTIONABLE ومن جلسة مساوية لجلسة السوق.",
-    "القيم المفقودة مثل liquidityPercentile تظل Unknown ولا تتحول إلى صفر.",
-    "تأخر OHLCV يظهر كـ STALE_HISTORY ولا يفسر على أنه عدم وجود فرص.",
-    "SEPA Shadow يستخدم Pivot + risk_pct + reward_risk لاشتقاق مستويات اختبار قابلة للمقارنة، وليس تنفيذًا أصليًا من SEPA.",
-    "التقييم بعد 3 جلسات وتكلفة 0.6% وStop-first عند غموض نفس الشمعة."
+    "GANN Forward يلتقط فقط dailyTop الناتج من Data Readiness Gate ولا يعيد حساب المحرك بشكل مستقل.",
+    "أي GANN signal جديد يجب أن يحمل READY snapshot في نفس signalSession وأن يكون ACTIONABLE وبحجم تنفيذ موجب.",
+    "إشارات GANN القديمة تبقى في ledger دون حذف، لكنها مستبعدة من دليل الترقية إذا لم تحمل مخطط READY_ONLY_V2.",
+    "القيم المفقودة تظل null/Unknown؛ UNFILLED لا ينتج عائدًا رقميًا، ولا يستخدم Profit Factor قيمة بديلة مصطنعة.",
+    "كل تقييم يبدأ من جلسة لاحقة فعليًا لجلسة الإشارة؛ لا تستخدم شمعة الإشارة في الدخول أو الخروج.",
+    "حتى اكتمال الحد الأدنى من جلسات Forward الحقيقية تكون الحالة COLLECTION_PENDING ولا يوجد ادعاء أداء أو ترقية تلقائية."
   ]
 }
