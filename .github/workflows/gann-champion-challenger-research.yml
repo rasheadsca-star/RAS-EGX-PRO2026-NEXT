@@ -8,12 +8,16 @@ on:
       - 'gann-fusion-x/scripts/champion-challenger-tournament.cjs'
       - 'gann-fusion-x/scripts/fundamentals-pit-archive.cjs'
       - 'gann-fusion-x/scripts/tournament-integrity-check.cjs'
+      - 'gann-fusion-x/scripts/data-quality-enrichment.cjs'
+      - 'gann-fusion-x/scripts/data-readiness-gate.cjs'
+      - 'scripts/research/deep-data-completion-audit.cjs'
+      - 'scripts/research/research-history-repair-v1.cjs'
       - 'gann-fusion-x/data/forward-shadow-ledger.json'
-      - 'gann-fusion-x/data/data-readiness-current-v1.json'
       - 'data/stable/v16-main-app-current.json'
       - 'data/stable/v16-fundamental-analysis.json'
       - 'data/fundamentals/v16-fundamental-raw.json'
       - 'data/quant/market-search-index-v13-17.json'
+      - 'data/history/**'
       - '.github/workflows/gann-champion-challenger-research.yml'
   workflow_dispatch:
 
@@ -27,7 +31,10 @@ concurrency:
 jobs:
   tournament:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
+    env:
+      DEEP_DATA_LIVE_STARTA: 'false'
+      DEEP_DATA_STARTA_LIMIT: '0'
     steps:
       - name: Checkout exact research commit
         uses: actions/checkout@v4
@@ -39,6 +46,10 @@ jobs:
           node-version: '24'
       - name: Syntax check tournament stack
         run: |
+          node --check scripts/research/deep-data-completion-audit.cjs
+          node --check scripts/research/research-history-repair-v1.cjs
+          node --check gann-fusion-x/scripts/data-quality-enrichment.cjs
+          node --check gann-fusion-x/scripts/data-readiness-gate.cjs
           node --check gann-fusion-x/scripts/forward-shadow-v2.cjs
           node --check gann-fusion-x/scripts/champion-challenger-tournament.cjs
           node --check gann-fusion-x/scripts/fundamentals-pit-archive.cjs
@@ -46,6 +57,15 @@ jobs:
       - name: Refresh SEPA read-only mirror in runner
         continue-on-error: true
         run: node gann-fusion-x/scripts/sync-sepa.cjs
+      - name: Rebuild exact point-in-time readiness state
+        run: |
+          set -euo pipefail
+          node scripts/research/deep-data-completion-audit.cjs
+          node scripts/research/research-history-repair-v1.cjs
+          node gann-fusion-x/scripts/data-quality-enrichment.cjs
+          node gann-fusion-x/scripts/data-readiness-gate.cjs
+          test -f gann-fusion-x/data/data-readiness-current-v1.json
+          echo 'POINT_IN_TIME_READINESS_REBUILT'
       - name: Capture fresh same-rule forward evidence
         run: node gann-fusion-x/scripts/forward-shadow-v2.cjs
       - name: Seal point-in-time fundamentals snapshot
