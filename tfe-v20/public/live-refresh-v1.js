@@ -100,10 +100,31 @@ function effectiveDate(scan){
   const dates=[scan?.universe?.sessionDate,...(scan?.recommendations||[]).map(x=>x?.sessionDate)].filter(Boolean).sort();
   return dates.at(-1)||null;
 }
+function latestArchivedSnapshotDate(){
+  try {
+    const rows=JSON.parse(localStorage.getItem('egx-tfe-rc2-v169-forward-archive')||'[]');
+    return Array.isArray(rows)?rows.map(x=>x?.sessionDate).filter(Boolean).sort().at(-1)||null:null;
+  } catch { return null; }
+}
+function renderSessionFreshness(){
+  const box=document.getElementById('opsFreshness'),scan=latestScan;if(!box||!scan)return;
+  const dataSession=effectiveDate(scan),snapshot=latestArchivedSnapshotDate();
+  const published=Number(scan?.publicationEligibleTotal??scan?.summary?.publicationEligibleTotal??scan?.universe?.publicationEligibleTotal??(scan?.recommendations||[]).length);
+  if(!dataSession||!(snapshot&&dataSession>snapshot))return;
+  const phase=marketPhase();
+  const none=Number.isFinite(published)&&published===0;
+  const label=none?`جلسة ${dataSession}: لا توصيات جديدة`:`جلسة البيانات ${dataSession}`;
+  const detail=none
+    ?`تم تحديث وفحص جلسة ${dataSession}؛ 0 سهم اجتاز بوابات النشر. Snapshot ${snapshot} سجل متابعة تاريخي فقط. السوق مغلق الآن (${phase.phase}).`
+    :`جلسة البيانات ${dataSession} أحدث من Snapshot ${snapshot}. لا يُعرض السجل القديم كتوصية حالية؛ حالة السوق ${phase.phase}.`;
+  box.innerHTML=`<div class="ops-head"><div><h3>حداثة التوصية</h3><p>فصل واضح بين جلسة البيانات وآخر Snapshot منشور.</p></div><span class="ops-pill ${none?'warn':'neutral'}">${esc(label)}</span></div><div class="ops-note ${none?'warn':''}">${esc(detail)}</div>`;
+}
+
 function renderBanner(){
   const p=ensureBanner(),scan=latestScan,date=latestEffectiveDate||effectiveDate(scan),recs=(scan?.recommendations||[]).slice(0,8),universe=scan?.universe?.sessionDate;
   p.innerHTML=`<div class="lr-row"><div><b>المزامنة التلقائية مفعلة</b><div><small>آخر بيانات فعلية: ${esc(date||'—')}${universe&&date&&universe!==date?` · Universe summary ${esc(universe)}`:''} · تحديث كل 5 دقائق</small></div></div><button class="btn" id="lrRefreshNow">تحديث الآن</button></div><div class="lr-recs">${recs.length?recs.map(r=>`<span class="lr-chip good"><b>${esc(r.ticker)}</b> ${fmt(r.price,4)} · Fusion ${fmt(r.scores?.fusionRank,1)} · ${esc(r.sessionDate||date||'—')}</span>`).join(''):'<span class="lr-chip warn">لا توجد توصيات منشورة في آخر Scan.</span>'}</div>`;
   p.querySelector('#lrRefreshNow').onclick=()=>document.getElementById('refreshBtn')?.click();
+  renderSessionFreshness();
 }
 function usablePrice(result){
   const fresh=quoteFreshness(result?.quote);
