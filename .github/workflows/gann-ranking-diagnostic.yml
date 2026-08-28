@@ -1,0 +1,17 @@
+name: GANN Ranking Diagnostic
+on:
+  push:
+    branches:
+      - feature/gann-execution-quality-ranking-v2
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and inspect all speculative ACTIONABLE candidates
+        run: node gann-fusion-x/scripts/ranking-diagnostic.cjs
