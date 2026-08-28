@@ -9,11 +9,12 @@ const failedRequests = [];
 const essentialFailures = [];
 const essentialPatterns = [
   '/gann-fusion-x/engine/planner.js',
+  '/gann-fusion-x/engine/entry-timing.js',
   '/gann-fusion-x/app/session-dashboard.js',
   '/data/quant/market-search-index-v13-17.json',
   '/gann-fusion-x/data/sepa-x-snapshot.json'
 ];
-const result = { ok:false, url, title:null, viewTitle:null, sessionBadge:null, funnelText:null, actionable:false, watch:false, rejected:false, etel:false, dialogOpened:false, analyzedText:null, consoleErrors:[], failedRequests:[], essentialFailures:[] };
+const result = { ok:false, url, title:null, viewTitle:null, sessionBadge:null, funnelText:null, actionable:false, watch:false, rejected:false, timingGrade:false, timingText:null, etel:false, dialogOpened:false, analyzedText:null, consoleErrors:[], failedRequests:[], essentialFailures:[] };
 
 (async()=>{
   const browser = await chromium.launch({headless:true});
@@ -29,6 +30,7 @@ const result = { ok:false, url, title:null, viewTitle:null, sessionBadge:null, f
   if(!response || !response.ok()) throw new Error(`navigation HTTP ${response?.status()||'NO_RESPONSE'}`);
   await page.waitForFunction(()=>document.querySelector('#viewTitle')?.textContent?.includes('Funnel'),null,{timeout:180000});
   await page.waitForFunction(()=>document.body.innerText.includes('ACTIONABLE') && document.body.innerText.includes('WATCH') && document.body.innerText.includes('REJECTED'),null,{timeout:180000});
+  await page.waitForFunction(()=>/[ABC]\s*—\s*(دخول|انتظار)/.test(document.body.innerText),null,{timeout:180000});
   await page.waitForFunction(()=>document.body.innerText.includes('ETEL'),null,{timeout:180000});
   result.title = await page.title();
   result.viewTitle = (await page.locator('#viewTitle').innerText()).trim();
@@ -38,6 +40,9 @@ const result = { ok:false, url, title:null, viewTitle:null, sessionBadge:null, f
   result.actionable = body.includes('ACTIONABLE');
   result.watch = body.includes('WATCH');
   result.rejected = body.includes('REJECTED');
+  const timingMatch=body.match(/([ABC])\s*—\s*((?:دخول|انتظار)[^\n]{0,100})/);
+  result.timingGrade=Boolean(timingMatch);
+  result.timingText=timingMatch?`${timingMatch[1]} — ${timingMatch[2].trim()}`:null;
   result.etel = body.includes('ETEL');
   const analyzedMatch = body.match(/Full Market Scan\s*([\d٠-٩]+)/);
   result.analyzedText = analyzedMatch ? analyzedMatch[1] : null;
@@ -52,7 +57,7 @@ const result = { ok:false, url, title:null, viewTitle:null, sessionBadge:null, f
   result.essentialFailures = essentialFailures;
   if(fatal.length) throw new Error(`page errors: ${fatal.join(' | ')}`);
   if(essentialFailures.length) throw new Error(`essential request failures: ${essentialFailures.join(' | ')}`);
-  if(!result.viewTitle.includes('Funnel') || !result.actionable || !result.watch || !result.rejected || !result.etel || !result.dialogOpened) throw new Error('required UI assertions failed');
+  if(!result.viewTitle.includes('Funnel') || !result.actionable || !result.watch || !result.rejected || !result.timingGrade || !result.etel || !result.dialogOpened) throw new Error('required UI assertions failed');
   result.ok = true;
   console.log(JSON.stringify(result,null,2));
   await browser.close();
