@@ -19,6 +19,7 @@ jobs:
         run: |
           node --check scripts/research/deep-data-completion-audit.cjs
           node --check gann-fusion-x/scripts/sync-sepa.cjs
+          node --check gann-fusion-x/review/data-completion-destroyer.cjs
       - name: Refresh full SEPA read-only mirror in workspace
         run: node gann-fusion-x/scripts/sync-sepa.cjs
       - name: Run deep completeness audit and Starta fallback diagnostics
@@ -26,9 +27,30 @@ jobs:
           DEEP_DATA_LIVE_STARTA: 'true'
           DEEP_DATA_STARTA_LIMIT: '60'
         run: node scripts/research/deep-data-completion-audit.cjs
-      - name: Show audit summary
+      - name: Developer evidence summary
         run: cat gann-fusion-x/data/deep-data-completion-audit-v1.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload audit evidence
+      - name: Destroyer adversarial review
+        id: destroyer
+        continue-on-error: true
+        run: node gann-fusion-x/review/data-completion-destroyer.cjs
+      - name: Destroyer findings summary
+        if: always()
+        run: |
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          cat gann-fusion-x/data/data-completion-destroyer-v1.md >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Enforce destroyer gate
+        if: always()
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='gann-fusion-x/data/data-completion-destroyer-v1.json';
+          if(!fs.existsSync(p)) throw new Error('Destroyer report missing');
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor},null,2));
+          if(!r.passed) process.exit(1);
+          NODE
+      - name: Upload audit and destroyer evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: deep-data-completion-audit-v1
@@ -36,4 +58,6 @@ jobs:
           path: |
             gann-fusion-x/data/deep-data-completion-audit-v1.json
             gann-fusion-x/data/deep-data-completion-audit-v1.md
+            gann-fusion-x/data/data-completion-destroyer-v1.json
+            gann-fusion-x/data/data-completion-destroyer-v1.md
             gann-fusion-x/data/sepa-x-snapshot.json
