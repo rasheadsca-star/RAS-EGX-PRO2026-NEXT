@@ -1,0 +1,55 @@
+name: RC2 Browser Consistency
+
+on:
+  push:
+    branches:
+      - develop/rc2-intraday-operations-v1
+    paths:
+      - 'tfe-v20/**'
+      - '.github/workflows/rc2-browser-consistency-smoke.yml'
+  pull_request:
+    branches:
+      - research/rc2-validation-base-20260829
+    paths:
+      - 'tfe-v20/**'
+      - '.github/workflows/rc2-browser-consistency-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-consistency:
+    name: browser-consistency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright browser engines
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium firefox webkit
+
+      - name: Syntax check browser smoke
+        run: node --check tfe-v20/scripts/browser-consistency-smoke.cjs
+
+      - name: Run deterministic Chromium Firefox WebKit consistency smoke
+        env:
+          RC2_BROWSER_ENGINES: chromium,firefox,webkit
+        run: |
+          mkdir -p tfe-v20/evidence/browser
+          node tfe-v20/scripts/browser-consistency-smoke.cjs | tee tfe-v20/evidence/browser/browser-consistency.json
+
+      - name: Upload browser consistency evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc2-browser-consistency-${{ github.sha }}
+          path: tfe-v20/evidence/browser/browser-consistency.json
+          if-no-files-found: warn
+          retention-days: 14
