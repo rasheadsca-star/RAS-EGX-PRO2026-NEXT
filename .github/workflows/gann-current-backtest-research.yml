@@ -1,0 +1,29 @@
+name: GANN Current Retrospective Research
+on:
+  push:
+    branches:
+      - research/gann-current-backtest-20260828
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: node --check gann-fusion-x/scripts/backtest-compare-current.cjs
+      - name: Run current-production retrospective comparison
+        run: node gann-fusion-x/scripts/backtest-compare-current.cjs
+      - name: Show report
+        run: cat gann-fusion-x/data/backtest-comparison.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gann-current-retrospective-comparison
+          path: |
+            gann-fusion-x/data/backtest-comparison.json
+            gann-fusion-x/data/backtest-comparison.md
+          retention-days: 14
