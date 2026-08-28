@@ -62,12 +62,13 @@ test('basket allocation stays local and bounded by existing UI risk inputs',asyn
   assert.equal(/broker|placeOrder|submitOrder|executeTrade/i.test(ops),false);
 });
 
-test('recommendation freshness distinguishes the latest data session from an older frozen snapshot',async()=>{
-  const ops=await source('public/ops-v169.js');
-  assert.ok(ops.includes('__RC2_UI_SCAN__'));
-  assert.ok(ops.includes('publicationEligibleTotal'));
-  assert.ok(ops.includes('لا توصيات جديدة'));
-  assert.ok(ops.includes('0 سهم اجتاز بوابات النشر'));
-  assert.ok(ops.includes('سجل متابعة تاريخي فقط'));
-  assert.equal(ops.includes('آخر إشارة مجمدة ${session}. حالة السوق الحالية ${phase.phase}.'),false,'STALE_SNAPSHOT_MUST_NOT_BE_PRESENTED_AS_CURRENT_SESSION');
+test('non-frozen live-refresh overlay distinguishes latest data from historical snapshot',async()=>{
+  const [ops,refresh]=await Promise.all([source('public/ops-v169.js'),source('public/live-refresh-v1.js')]);
+  assert.equal(ops.includes('__RC2_UI_SCAN__'),false,'FROZEN_OPS_MUST_REMAIN_UNCHANGED');
+  assert.ok(refresh.includes('__RC2_UI_SCAN__'));
+  assert.ok(refresh.includes('publicationEligibleTotal'));
+  assert.ok(refresh.includes('لا توصيات جديدة'));
+  assert.ok(refresh.includes('0 سهم اجتاز بوابات النشر'));
+  assert.ok(refresh.includes('سجل متابعة تاريخي فقط'));
+  assert.ok(refresh.includes('renderSessionFreshness'));
 });
