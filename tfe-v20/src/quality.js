@@ -7,7 +7,8 @@ export function normalizeBars(rows = []) {
   for (const row of rows) {
     const date = String(row.date ?? row.sessionDate ?? '').slice(0, 10);
     const open = toNum(row.open), high = toNum(row.high), low = toNum(row.low), close = toNum(row.close);
-    const volume = Math.max(0, toNum(row.volume) ?? 0);
+    const rawVolume = toNum(row.volume);
+    const volume = rawVolume === null ? null : Math.max(0, rawVolume);
     const valueTraded = toNum(row.valueTraded ?? row.turnover);
     const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
     const validOhlc = [open, high, low, close].every((x) => Number.isFinite(x) && x > 0)
@@ -16,6 +17,73 @@ export function normalizeBars(rows = []) {
     byDate.set(date, { date, open, high, low, close, volume, valueTraded });
   }
   return { bars: [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)), rejected };
+}
+
+function knownTurnover(bar) {
+  if (Number.isFinite(bar?.valueTraded)) return bar.valueTraded;
+  if (Number.isFinite(bar?.volume) && Number.isFinite(bar?.close)) return bar.close * bar.volume;
+  return null;
+}
+
+export function assessDataReadiness({
+  bars = [],
+  normalizedRejected = 0,
+  updateFailed = false,
+  staleData = false,
+  expectedSessionDate = null,
+  symbolVerified = null,
+  symbolVerification = null,
+  requireVerifiedIdentity = false,
+  requireAllVolume = false,
+} = {}) {
+  const reasons = [];
+  const lastDate = bars.at(-1)?.date ?? null;
+  const liquidityBars = requireAllVolume ? bars : bars.slice(-20);
+  const missingVolumeCount = liquidityBars.filter((x) => !Number.isFinite(x?.volume)).length;
+  const missingTurnoverCount = liquidityBars.filter((x) => !Number.isFinite(knownTurnover(x))).length;
+  const volumeCoveragePct = liquidityBars.length ? (liquidityBars.length - missingVolumeCount) / liquidityBars.length * 100 : 0;
+  const turnoverCoveragePct = liquidityBars.length ? (liquidityBars.length - missingTurnoverCount) / liquidityBars.length * 100 : 0;
+  const identityVerified = symbolVerified === true || symbolVerification?.verified === true;
+  const identityExplicitlyFailed = symbolVerified === false || symbolVerification?.verified === false;
+
+  if (normalizedRejected > 0) reasons.push('INVALID_OHLC_INPUT');
+  if (bars.length < POLICY.minBars) reasons.push('INSUFFICIENT_HISTORY');
+  if (updateFailed) reasons.push('UPDATE_FAILED');
+  if (staleData) reasons.push('STALE_DATA_FLAG');
+  if (expectedSessionDate && (!lastDate || lastDate < expectedSessionDate)) reasons.push('SESSION_BEHIND_REFERENCE');
+  if (identityExplicitlyFailed) reasons.push('SYMBOL_IDENTITY_UNVERIFIED');
+  else if (requireVerifiedIdentity && !identityVerified) reasons.push('SYMBOL_IDENTITY_NOT_VERIFIED');
+  if (missingVolumeCount > 0) reasons.push('VOLUME_DATA_INCOMPLETE');
+  if (missingTurnoverCount > 0) reasons.push('TURNOVER_DATA_INCOMPLETE');
+
+  const uniqueReasons = [...new Set(reasons)];
+  const ready = uniqueReasons.length === 0;
+  return {
+    state: ready ? 'READY' : 'BLOCKED',
+    readyForRanking: ready,
+    readyForBacktest: ready,
+    reasons: uniqueReasons,
+    requiredHistorySessions: POLICY.minBars,
+    availableSessions: bars.length,
+    lastSession: lastDate,
+    expectedSessionDate: expectedSessionDate ?? null,
+    ohlcReady: normalizedRejected === 0,
+    rejectedInputRows: normalizedRejected,
+    freshnessReady: !updateFailed && !staleData && (!expectedSessionDate || Boolean(lastDate && lastDate >= expectedSessionDate)),
+    updateReady: !updateFailed,
+    sessionReady: !expectedSessionDate || Boolean(lastDate && lastDate >= expectedSessionDate),
+    identityRequired: requireVerifiedIdentity,
+    identityReady: identityExplicitlyFailed ? false : (requireVerifiedIdentity ? identityVerified : true),
+    volumeReady: missingVolumeCount === 0,
+    turnoverReady: missingTurnoverCount === 0,
+    volumeCoveragePct: round(volumeCoveragePct, 1),
+    turnoverCoveragePct: round(turnoverCoveragePct, 1),
+    coverageSessions: liquidityBars.length,
+    coverageMode: requireAllVolume ? 'FULL_BACKTEST_HISTORY' : 'LATEST_20_SESSIONS',
+    missingVolumeCount,
+    missingTurnoverCount,
+    missingDataPolicy: 'UNKNOWN_NEVER_COERCED_TO_ZERO',
+  };
 }
 
 export function parseLatestConflictPct(warnings = []) {
