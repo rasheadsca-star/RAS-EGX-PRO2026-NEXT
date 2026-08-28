@@ -1,0 +1,37 @@
+name: GANN Regime Gate V2 Backtest
+on:
+  push:
+    branches:
+      - feature/gann-regime-gate-v2-deterioration
+    paths:
+      - 'gann-fusion-x/engine/regime-gate-v2.js'
+      - 'gann-fusion-x/scripts/backtest-regime-v2.cjs'
+      - '.github/workflows/gann-regime-v2-backtest.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          node --check gann-fusion-x/engine/regime-gate-v2.js
+          node --check gann-fusion-x/scripts/backtest-regime-v2.cjs
+      - name: Run 60-session plus 30-30 backtest
+        run: node gann-fusion-x/scripts/backtest-regime-v2.cjs
+      - name: Show report
+        run: cat gann-fusion-x/data/regime-v2-backtest.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gann-regime-gate-v2-backtest
+          path: |
+            gann-fusion-x/data/regime-v2-backtest.json
+            gann-fusion-x/data/regime-v2-backtest.md
+          retention-days: 14
