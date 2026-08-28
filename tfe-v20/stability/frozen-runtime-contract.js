@@ -1,6 +1,6 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
   contractVersion: '1.16.0-data-readiness-gate',
-  frozenAtSourceCommit: '27f4660e74ae3517a67b00c028f4d086bcbd6204',
+  frozenAtSourceCommit: '1442e2f155b37a1fa573a5dadbdc99a9c7e12981',
   purpose: 'Protect RC2 Alpha, recommendations, execution lock, strict fail-closed data readiness, evidence-backed price reconciliation, session monitoring, the consolidated V16.9 RC2 Operations Center, operational overlays, isolated intraday operations, read-only cross-origin quote transport for MAIN APP, complete recommendation-history reporting with strict Published-vs-Replay separation, display-only live refresh, deep portfolio analytics, and automatic supplemental fundamental analysis while evidence tooling evolves independently.',
   criticalFiles: Object.freeze({
     'src/engine.js': 'f291a85cdc1f0b7d10e68737aea4631b85ab254a',
@@ -13,7 +13,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'src/math.js': 'f9254c53763082a8778e3c87c1a14db9bfb156be',
     'src/quality.js': '664c8f1b7d8f4700fb3496579abbbc651272be80',
     'src/repository.js': 'c6f917b5278c191d17cb241b3a2c00ef4cbb4394',
-    'api/index.js': '0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b',
+    'api/index.js': '028cb1694b729dd7a093635c951194b9737dd76a',
     'api/fundamental.js': 'f69d926f37b9807c3bd8099bf6f289bb8a621208',
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
     'api/intraday.js': '3ab2e690540419ee9c255fd1de39e5ff3c03478c',
@@ -43,7 +43,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     quality: Object.freeze({ hardBlockWarnings: Object.freeze(['corporate_action_review_required','not_officially_verified','historical_seed_not_officially_verified']), conflictReviewPct: 5, conflictBlockPct: 20 }),
     permissions: Object.freeze({ researchOnly: true, executionAllowed: false, productionAllocation: false, automaticOrders: false, automaticChampionPromotion: false }),
   }),
-  dataReadinessRules: Object.freeze({ mode: 'FAIL_CLOSED_BEFORE_SCORING', missingDataPolicy: 'UNKNOWN_NEVER_COERCED_TO_ZERO', currentSignalVolumeCoverage: 'LATEST_20_SESSIONS_COMPLETE', backtestVolumeCoverage: 'FULL_HISTORY_COMPLETE', historicalConfidenceVolumeCoverage: 'FULL_HISTORY_COMPLETE', historicalConfidenceIncompleteAction: 'NEUTRAL_ZERO_WEIGHT_NOT_ZERO_SCORE', turnoverFallback: 'VALUE_TRADED_ELSE_CLOSE_TIMES_KNOWN_VOLUME', missingTurnoverMayBecomeZero: false, fallbackDiscoveryMayEnterRanking: false, staleDataMayEnterRanking: false, updateFailedMayEnterRanking: false, currentRankingRequiresVerifiedIdentity: true, backtestIncompleteDataAction: 'SKIP_NOT_SCORE', completeDataAlphaMustRemainUnchanged: true }),
+  dataReadinessRules: Object.freeze({ mode: 'FAIL_CLOSED_BEFORE_SCORING', missingDataPolicy: 'UNKNOWN_NEVER_COERCED_TO_ZERO', currentSignalVolumeCoverage: 'LATEST_20_SESSIONS_COMPLETE', backtestVolumeCoverage: 'FULL_HISTORY_COMPLETE', historicalConfidenceVolumeCoverage: 'FULL_HISTORY_COMPLETE', historicalConfidenceIncompleteAction: 'NEUTRAL_ZERO_WEIGHT_NOT_ZERO_SCORE', turnoverFallback: 'VALUE_TRADED_ELSE_CLOSE_TIMES_KNOWN_VOLUME', missingTurnoverMayBecomeZero: false, fallbackDiscoveryMayEnterRanking: false, staleDataMayEnterRanking: false, updateFailedMayEnterRanking: false, currentRankingRequiresVerifiedIdentity: true, dataNotReadyClassification: 'SEPARATE_NOT_REJECTED', backtestIncompleteDataAction: 'SKIP_NOT_SCORE', incompleteBacktestCountsAsCompleted: false, completeDataAlphaMustRemainUnchanged: true }),
   priceReconciliationRules: Object.freeze({ mode: 'EVIDENCE_BACKED_SESSION_TRUTH_ONLY', minimumReportedConflictPct: 20, minimumConfidence: 80, maximumCloseDifferencePct: 0.25, requiredSessionMatch: true, requiredIndependentSource: 'MUBASHER_OR_EGX_OR_INVESTING', requiredValidation: 'SESSION_CONFIRMED_OR_OFFICIALLY_VERIFIED_OR_CROSS_VERIFIED', officiallyVerifiedSessionMayBeOverridden: false, mayChangeTechnicalScore: false, mayChangeFusionWeights: false, mayBypassHardWarnings: false, staleOrMismatchedTruthFailsClosed: true }),
   recordedAcceptanceBaseline: Object.freeze({ sessionDate: '2026-08-19', scanned: 188, technicalEligibleTotal: 4, publicationEligibleTotal: 3, withheldForPriceReconciliation: 1, recommendations: Object.freeze([Object.freeze({ ticker: 'COPR', rank: 1, fusionRank: 80.7, researchScore: 80.7, technicalScore: 84.1 }),Object.freeze({ ticker: 'FAIT', rank: 2, fusionRank: 76.5, researchScore: 76.5, technicalScore: 81.2 }),Object.freeze({ ticker: 'MPCO', rank: 3, fusionRank: 75.7, researchScore: 75.7, technicalScore: 72.4 })]), withheld: Object.freeze({ ticker: 'MILS', conflictPct: 46.7911, holdReason: 'PRICE_RECONCILIATION_REQUIRED' }), simulator: Object.freeze({ symbolsCompleted: 188, entered: 64, target1Pct: 73.4, stopPct: 18.8, positivePct: 73.4, avgNetPct: 1.23, profitFactor: 2.33, wilson95LowerTarget1Pct: 61.5 }) }),
   sidecarRules: Object.freeze({ scoringImpact: 'NONE', mayImportFrozenCore: true, frozenCoreMayImportSidecars: false, productionScanMayCallSidecars: false, uiBootMayCallSidecars: false, automaticPromotionFromSidecarEvidence: false }),
