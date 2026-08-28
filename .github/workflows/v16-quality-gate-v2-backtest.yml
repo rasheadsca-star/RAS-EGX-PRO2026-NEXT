@@ -1,0 +1,61 @@
+name: V16 Quality Gate V2 Backtest
+on:
+  push:
+    branches:
+      - research/v16-quality-gate-v2-20260828
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
+          python -m py_compile scripts/research/apply-v16-quality-gate-v2.py
+          node --check gann-fusion-x/scripts/run-consensus-v16-quality-gate-v2.cjs
+      - name: Build strict V16 walk-forward with data-availability warmup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/research/consensus-v16-qualified-walkforward.py')
+          s=p.read_text(encoding='utf-8')
+          old='WARMUP_SESSIONS = 20'
+          if s.count(old) != 1:
+              raise SystemExit('Expected exactly one V16 warmup constant')
+          p.write_text(s.replace(old,'WARMUP_SESSIONS = 11'),encoding='utf-8')
+          PY
+          python scripts/research/consensus-v16-qualified-walkforward.py
+      - name: Apply locked V16 quality qualification gate V2
+        run: python scripts/research/apply-v16-quality-gate-v2.py
+      - name: Run quality-gated consensus challenger V2
+        run: node gann-fusion-x/scripts/run-consensus-v16-quality-gate-v2.cjs
+      - name: Assert exactly 60 evaluation sessions
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='gann-fusion-x/data/consensus-v16-quality-gate-v2-backtest.json';
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          if(!Array.isArray(r.dates) || r.dates.length!==60){
+            throw new Error(`EXPECTED_EXACTLY_60_EVALUATION_SESSIONS_GOT_${r.dates?.length}`);
+          }
+          console.log(`Validated ${r.dates.length} evaluation sessions: ${r.dates[0]} to ${r.dates.at(-1)}`);
+          NODE
+      - name: Show report
+        run: cat gann-fusion-x/data/consensus-v16-quality-gate-v2-backtest.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: v16-quality-gate-v2-backtest
+          path: |
+            data/research/consensus-v16-qualified-walkforward.json
+            gann-fusion-x/data/consensus-v16-quality-gate-v2-backtest.json
+            gann-fusion-x/data/consensus-v16-quality-gate-v2-backtest.md
+          retention-days: 14
