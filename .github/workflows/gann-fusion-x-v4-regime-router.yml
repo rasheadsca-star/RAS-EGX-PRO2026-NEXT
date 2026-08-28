@@ -1,0 +1,35 @@
+name: Gann Fusion X V4 Regime Router
+
+on:
+  push:
+    branches: [feature/gann-fusion-x-v4-regime-router]
+    paths:
+      - 'gann-fusion-x/scripts/backtest-v4-regime-router.cjs'
+      - '.github/workflows/gann-fusion-x-v4-regime-router.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  router:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check
+        run: node --check gann-fusion-x/scripts/backtest-v4-regime-router.cjs
+      - name: Run V4 regime router gate
+        run: node gann-fusion-x/scripts/backtest-v4-regime-router.cjs
+      - name: Show result
+        run: cat gann-fusion-x/data/backtest-v4-router.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gann-fusion-x-v4-router
+          path: |
+            gann-fusion-x/data/backtest-v4-router.json
+            gann-fusion-x/data/backtest-v4-router.md
+          retention-days: 14
