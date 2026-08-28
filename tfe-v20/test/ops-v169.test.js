@@ -61,3 +61,13 @@ test('basket allocation stays local and bounded by existing UI risk inputs',asyn
   assert.ok(ops.includes('Equal-risk local planner'));
   assert.equal(/broker|placeOrder|submitOrder|executeTrade/i.test(ops),false);
 });
+
+test('recommendation freshness distinguishes the latest data session from an older frozen snapshot',async()=>{
+  const ops=await source('public/ops-v169.js');
+  assert.ok(ops.includes('__RC2_UI_SCAN__'));
+  assert.ok(ops.includes('publicationEligibleTotal'));
+  assert.ok(ops.includes('لا توصيات جديدة'));
+  assert.ok(ops.includes('0 سهم اجتاز بوابات النشر'));
+  assert.ok(ops.includes('سجل متابعة تاريخي فقط'));
+  assert.equal(ops.includes('آخر إشارة مجمدة ${session}. حالة السوق الحالية ${phase.phase}.'),false,'STALE_SNAPSHOT_MUST_NOT_BE_PRESENTED_AS_CURRENT_SESSION');
+});
