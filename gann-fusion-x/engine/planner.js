@@ -1,40 +1,225 @@
-(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.GFXPlanner=api;})(typeof self!=='undefined'?self:this,function(){'use strict';
+(function(root,factory){
+const api=factory();
+if(typeof module==='object'&&module.exports)module.exports=api;
+else root.GFXPlanner=api;
+})(typeof self!=='undefined'?self:this,function(){
+'use strict';
+
 const PROFILES={
   speculative:{code:'SPEC',labelAr:'مضاربي 1–3 جلسات',holdingAr:'من جلسة إلى 3 جلسات',defaultRiskPct:.5,maxAllocationPct:10,stopMode:'INTRADAY',entryParts:[60,40],exitParts:[35,35,30]},
   medium:{code:'MED',labelAr:'استثمار متوسط الأجل',holdingAr:'من 2 إلى 8 أسابيع',defaultRiskPct:.65,maxAllocationPct:15,stopMode:'DAILY_CLOSE',entryParts:[40,30,30],exitParts:[25,25,50]},
   long:{code:'LONG',labelAr:'استثمار طويل الأجل',holdingAr:'من 3 إلى 12 شهرًا',defaultRiskPct:.75,maxAllocationPct:20,stopMode:'WEEKLY_CLOSE',entryParts:[30,30,40],exitParts:[20,25,55]}
 };
-const DECISIONS={ACTIONABLE:{code:'ACTIONABLE',ar:'قابل للدخول بشروط الخطة',tone:'positive',order:2},WATCH:{code:'WATCH',ar:'مراقبة — لم تكتمل شروط الدخول',tone:'warn',order:1},REJECTED:{code:'REJECTED',ar:'مرفوض حاليًا',tone:'danger',order:0}};
+const DECISIONS={
+  ACTIONABLE:{code:'ACTIONABLE',ar:'قابل للدخول بشروط الخطة',tone:'positive',order:2},
+  WATCH:{code:'WATCH',ar:'مراقبة — لم تكتمل شروط الدخول',tone:'warn',order:1},
+  REJECTED:{code:'REJECTED',ar:'مرفوض حاليًا',tone:'danger',order:0}
+};
 const clamp=(n,a=0,b=100)=>Math.max(a,Math.min(b,Number(n)||0));
 const round=(n,d=2)=>{const p=10**d;return Math.round((Number(n)||0)*p)/p};
 const result=(eligible,code,reasonAr)=>({eligible,code,reasonAr});
-function nextEgxSession(date){if(!date)return null;const d=new Date(String(date)+'T12:00:00Z');do{d.setUTCDate(d.getUTCDate()+1)}while([5,6].includes(d.getUTCDay()));return d.toISOString().slice(0,10)}
-function normalizedRiskScore(rr){return rr>=2.5?100:rr>=2?90:rr>=1.6?78:rr>=1.3?65:rr>=1.15?52:30}
-function horizonScore(a,horizon,verifiedFundamentals=false){const p=a.parts||{},rr=normalizedRiskScore(a.plan?.rr||0);if(horizon==='speculative')return round(clamp(a.score*.28+(p.gannTime?.score||0)*.16+(p.breakout?.score||0)*.18+(p.volume?.score||0)*.14+(p.momentum?.score||0)*.10+(p.relativeStrength?.score||0)*.07+rr*.07),1);if(horizon==='medium')return round(clamp(a.score*.25+(p.trend?.score||0)*.20+(p.relativeStrength?.score||0)*.13+(p.fundamentals?.score||0)*.20+(p.marketRegime?.score||0)*.10+rr*.07+(p.gannPrice?.score||0)*.05),1);return round(clamp(a.score*.18+(p.fundamentals?.score||0)*.31+(verifiedFundamentals?8:0)+(p.trend?.score||0)*.18+(p.relativeStrength?.score||0)*.10+(p.marketRegime?.score||0)*.10+(p.gannPrice?.score||0)*.05),1)}
-function levels(a,horizon){const base=a.plan||{},entryLow=Number(base.entryLow||a.close),entryHigh=Number(base.entryHigh||base.trigger||a.close),entry=(entryLow+entryHigh)/2,atr=Math.max(Number(base.atr14)||entry*.02,.01);let stop=Number(base.stopLoss)||entry-Math.max(atr*1.2,entry*.025);if(horizon==='medium')stop=Math.min(stop,entry-Math.max(atr*2,entry*.05));if(horizon==='long')stop=Math.min(stop,entry-Math.max(atr*3,entry*.08));stop=Math.max(.01,stop);const r=Math.max(entry-stop,entry*.005);let mult=[1.3,2.2,3.1];if(horizon==='medium')mult=[1.8,2.8,4];if(horizon==='long')mult=[2.2,3.6,5.2];const t1=Math.max(Number(base.target1)||0,entry+r*mult[0]);const t2=Math.max(Number(base.target2)||0,t1+r*.5,entry+r*mult[1]);const t3=Math.max(t2+r*.6,entry+r*mult[2]);return{entryLow:round(entryLow,4),entryHigh:round(entryHigh,4),referenceEntry:round(entry,4),trigger:round(Number(base.trigger||entryHigh),4),stopLoss:round(stop,4),target1:round(t1,4),target2:round(t2,4),target3:round(t3,4),riskPct:round((entry-stop)/entry*100,2),rr1:round((t1-entry)/r,2),rr2:round((t2-entry)/r,2),rr3:round((t3-entry)/r,2),atr14:round(atr,4)}}
-function liquidityInfo(a){const raw=a.marketMeta?.liquidityPercentile,known=raw!==null&&raw!==undefined&&raw!==''&&Number.isFinite(Number(raw)),percentile=known?Number(raw):null;return{known,percentile,acceptable:!known||percentile>=20}}
-function eligibility(a,horizon,verifiedFundamentals=false){const p=a.parts||{},lv=levels(a,horizon),fresh=!['WAIT_DATA','DATA_BLOCKED'].includes(a.classification?.code),liq=liquidityInfo(a);if(!fresh)return result(false,'DATA_INVALID','البيانات غير صالحة لإصدار خطة دخول.');if(!liq.acceptable)return result(false,'LOW_LIQUIDITY','السيولة منخفضة بالنسبة للسوق.');if(horizon==='speculative'){
-  if(p.marketRegime?.regime==='RISK_OFF')return result(false,'MARKET_RISK_OFF','السوق العام دفاعي؛ لا تُفتح مضاربة جديدة ضمن الخطة.');
-  if(a.score<68)return result(false,'FUSION_LT_68','Fusion أقل من الحد المطلوب للمضاربة.');
-  if(!(p.breakout?.confirmed||p.breakout?.near||p.gannTime?.active))return result(false,'NO_CATALYST','لا يوجد محفز اختراق أو نافذة Gann واضحة للجلسات القريبة.');
-  if(p.momentum?.overheated)return result(false,'OVERHEATED','السهم ساخن سعريًا؛ تجنب المطاردة.');
-  if(lv.riskPct>8)return result(false,'RISK_TOO_WIDE','مسافة الوقف واسعة للمضاربة القصيرة.');
-  return result(true,'ELIGIBLE',p.breakout?.confirmed?'اختراق متحقق ويحتاج استمرار السيولة.':'مرشح مشروط بتفعيل نقطة الدخول.');
- }
- if(horizon==='medium'){
-  if(a.score<64||Number(p.trend?.score||0)<60||Number(p.fundamentals?.score||0)<52)return result(false,'MEDIUM_QUALITY','الاتجاه/الجودة غير كافيين لبناء مركز متوسط.');
-  if(lv.riskPct>15)return result(false,'MEDIUM_RISK_TOO_WIDE','الوقف الهيكلي بعيد بصورة غير مناسبة.');
-  return result(true,'ELIGIBLE','اتجاه وجودة مقبولان مع بناء مركز تدريجي.');
- }
- if(Number(p.fundamentals?.score||0)<68||Number(p.trend?.score||0)<58)return result(false,'LONG_QUALITY','الجودة الأساسية أو الاتجاه لا يبرران مركزًا طويل الأجل.');
- if(!verifiedFundamentals)return result(false,'LONG_UNVERIFIED','الاستثمار الطويل يتطلب تحققًا ماليًا موثقًا في هذا الإصدار.');
- return result(true,'ELIGIBLE','جودة أساسية موثقة واتجاه مناسب للبناء التدريجي.');
+
+function nextEgxSession(date){
+  if(!date)return null;
+  const d=new Date(String(date)+'T12:00:00Z');
+  do{d.setUTCDate(d.getUTCDate()+1)}while([5,6].includes(d.getUTCDay()));
+  return d.toISOString().slice(0,10);
 }
-function decisionFor(a,horizon,elig,score){if(elig.eligible)return{...DECISIONS.ACTIONABLE,reasonCode:elig.code,reasonAr:elig.reasonAr};const hard=new Set(['DATA_INVALID','LOW_LIQUIDITY','RISK_TOO_WIDE','MEDIUM_RISK_TOO_WIDE']);let d=hard.has(elig.code)?DECISIONS.REJECTED:DECISIONS.WATCH;if(elig.code==='FUSION_LT_68'&&Number(a.score)<60)d=DECISIONS.REJECTED;if(elig.code==='MEDIUM_QUALITY'&&score<58)d=DECISIONS.REJECTED;if(elig.code==='LONG_QUALITY'&&score<55)d=DECISIONS.REJECTED;return{...d,reasonCode:elig.code,reasonAr:elig.reasonAr}}
-function positionSize({portfolioValue=0,riskPct,entry,stop,maxAllocationPct}){const pv=Math.max(0,Number(portfolioValue)||0),rp=Math.max(.05,Number(riskPct)||.5),e=Number(entry),s=Number(stop),dist=Math.max(e-s,.0001),stopPct=dist/e*100,riskBasedPct=rp/stopPct*100,allocationPct=Math.max(0,Math.min(maxAllocationPct,riskBasedPct)),capital=pv?pv*allocationPct/100:0,shares=pv?Math.floor(capital/e):null,actualCapital=shares==null?null:round(shares*e,2),actualPct=pv&&shares!=null?round(actualCapital/pv*100,2):round(allocationPct,2);return{riskBudgetPct:round(rp,2),stopPct:round(stopPct,2),allocationPct:actualPct,capital:actualCapital,shares}}
-function effectiveAllocationCap(a,profile){const adjustments=[],liq=liquidityInfo(a),regime=a.parts?.marketRegime?.regime;let factor=1;if(!liq.known){factor*=.75;adjustments.push('خفض 25% لأن تصنيف السيولة النسبي غير متاح.')}else if(liq.percentile<40){factor*=.75;adjustments.push('خفض 25% لأن السيولة دون المتوسط.')}if(regime==='RISK_OFF'){factor*=.5;adjustments.push('خفض 50% لأن السوق دفاعي.')}else if(regime==='SIDEWAYS'){factor*=.75;adjustments.push('خفض 25% لأن السوق عرضي.')}else if(regime==='POSITIVE'){factor*=.9;adjustments.push('خفض 10% لأن السوق إيجابي بحذر.')}return{capPct:round(profile.maxAllocationPct*factor,2),adjustments}}
-function entryPlan(a,horizon,lv){const trigger=lv.trigger;if(horizon==='speculative')return[`لا دخول تلقائي مع جرس الافتتاح؛ راقب ثبات السعر حول ${trigger}.`,`ألغِ المطاردة إذا افتتح السهم أعلى من ${round(lv.entryHigh*1.03,4)} تقريبًا (أكثر من 3% فوق الحد الأعلى للدخول).`,`الدخول الأول ${PROFILES.speculative.entryParts[0]}% من الحجم المخطط فقط بعد تفعيل الشرط السعري مع سيولة داعمة.`,`أضف ${PROFILES.speculative.entryParts[1]}% فقط إذا حافظ السهم على الاختراق/إعادة الاختبار ولم يكسر نطاق الدخول ${lv.entryLow}–${lv.entryHigh}.`];if(horizon==='medium')return[`ابدأ ${PROFILES.medium.entryParts[0]}% من الحجم داخل نطاق ${lv.entryLow}–${lv.entryHigh} أو بعد إعادة اختبار ناجحة.`,`لا تطارد افتتاحًا أعلى من ${round(lv.entryHigh*1.05,4)} تقريبًا؛ انتظر Pullback يعيد R/R للمستوى المقبول.`,`أضف ${PROFILES.medium.entryParts[1]}% بعد جلسة تأكيد اتجاه، ثم ${PROFILES.medium.entryParts[2]}% فقط إذا استمر السهم أعلى الدعم ولم تتدهور السوق.`];return[`ابنِ المركز على 3 دفعات ${PROFILES.long.entryParts.join('% / ')}% بدل الشراء مرة واحدة.`,`لا تبدأ دفعة جديدة بعد فجوة صاعدة كبيرة؛ الأفضل انتظار منطقة قيمة/دعم أو ثبات أسبوعي.`,`الدفعة الأولى قرب نطاق القيمة/الدعم، والثانية بعد ثبات أسبوعي، والثالثة بعد تأكيد نمو الاتجاه دون تدهور مالي.`,`أي تغير جوهري سلبي في الأساسيات يلغي خطة الإضافة حتى لو ظل السعر صاعدًا.`]}
-function exitPlan(horizon,lv){if(horizon==='speculative')return[`وقف خسارة كامل عند ${lv.stopLoss}؛ لا توسّع الوقف بعد الدخول.`,`عند الهدف 1 (${lv.target1}) خفّض 35% وانقل حماية الباقي قرب سعر الدخول.`,`عند الهدف 2 (${lv.target2}) خفّض 35%، واترك 30% للهدف 3 (${lv.target3}) أو Trailing Stop.`,`Time Stop: إذا لم يظهر Follow-through خلال 3 جلسات، أعد تقييم الصفقة حتى لو لم يُضرب الوقف.`];if(horizon==='medium')return[`الوقف الهيكلي ${lv.stopLoss} ويُراقب أساسًا على الإغلاق اليومي.`,`الهدف 1 ${lv.target1}: خفّض 25%، الهدف 2 ${lv.target2}: خفّض 25%.`,`اترك 50% للهدف 3 ${lv.target3} مع رفع الوقف أسفل قاع/متوسط مناسب مع تقدم الاتجاه.`];return[`الوقف الاستثماري ${lv.stopLoss} أوسع عمدًا ويُراجع على الإغلاق الأسبوعي مع الأساسيات.`,`الهدف 1 ${lv.target1}: خفّض 20% فقط إذا أصبح التقييم/الزخم ممتدًا.`,`الهدف 2 ${lv.target2}: خفّض 25%؛ واترك 55% للهدف 3 ${lv.target3} أو استمرار الاتجاه طويل الأجل.`,`خروج مبكر إذا حدث كسر جوهري في الربحية/التدفقات/المديونية حتى قبل الوقف السعري.`]}
-function buildPlan(a,horizon,opts={}){const profile=PROFILES[horizon],verifiedFundamentals=Boolean(opts.verifiedFundamentals),lv=levels(a,horizon),elig=eligibility(a,horizon,verifiedFundamentals),score=horizonScore(a,horizon,verifiedFundamentals),decision=decisionFor(a,horizon,elig,score),riskPct=Number(opts.riskPct??profile.defaultRiskPct),cap=effectiveAllocationCap(a,profile),size=positionSize({portfolioValue:opts.portfolioValue,riskPct,entry:lv.referenceEntry,stop:lv.stopLoss,maxAllocationPct:cap.capPct});size.baseMaxAllocationPct=profile.maxAllocationPct;size.effectiveMaxAllocationPct=cap.capPct;size.adjustmentsAr=cap.adjustments;let actionAr=decision.ar;if(elig.eligible&&horizon==='speculative')actionAr=a.parts?.breakout?.confirmed?'دخول مشروط بعد ثبات الاختراق':'دخول فقط بعد تفعيل الاختراق';if(elig.eligible&&horizon==='medium')actionAr='تجميع تدريجي على تأكيدات';if(elig.eligible&&horizon==='long')actionAr='بناء مركز استثماري تدريجي';return{ticker:a.ticker,nameAr:a.nameAr,horizon,profile,score,eligible:elig.eligible,reasonAr:elig.reasonAr,reasonCode:elig.code,decision,actionAr,sessionDate:a.sessionDate,nextSession:nextEgxSession(a.sessionDate),levels:lv,size,entryPlan:entryPlan(a,horizon,lv),exitPlan:exitPlan(horizon,lv),analysis:a}}
+function normalizedRiskScore(rr){return rr>=2.5?100:rr>=2?90:rr>=1.6?78:rr>=1.3?65:rr>=1.15?52:30}
+function horizonScore(a,horizon,verifiedFundamentals=false){
+  const p=a.parts||{},rr=normalizedRiskScore(a.plan?.rr||0);
+  if(horizon==='speculative')return round(clamp(a.score*.28+(p.gannTime?.score||0)*.16+(p.breakout?.score||0)*.18+(p.volume?.score||0)*.14+(p.momentum?.score||0)*.10+(p.relativeStrength?.score||0)*.07+rr*.07),1);
+  if(horizon==='medium')return round(clamp(a.score*.25+(p.trend?.score||0)*.20+(p.relativeStrength?.score||0)*.13+(p.fundamentals?.score||0)*.20+(p.marketRegime?.score||0)*.10+rr*.07+(p.gannPrice?.score||0)*.05),1);
+  return round(clamp(a.score*.18+(p.fundamentals?.score||0)*.31+(verifiedFundamentals?8:0)+(p.trend?.score||0)*.18+(p.relativeStrength?.score||0)*.10+(p.marketRegime?.score||0)*.10+(p.gannPrice?.score||0)*.05),1);
+}
+function levels(a,horizon){
+  const base=a.plan||{},entryLow=Number(base.entryLow||a.close),entryHigh=Number(base.entryHigh||base.trigger||a.close),entry=(entryLow+entryHigh)/2,atr=Math.max(Number(base.atr14)||entry*.02,.01);
+  let stop=Number(base.stopLoss)||entry-Math.max(atr*1.2,entry*.025);
+  if(horizon==='medium')stop=Math.min(stop,entry-Math.max(atr*2,entry*.05));
+  if(horizon==='long')stop=Math.min(stop,entry-Math.max(atr*3,entry*.08));
+  stop=Math.max(.01,stop);
+  const r=Math.max(entry-stop,entry*.005);
+  let mult=[1.3,2.2,3.1];
+  if(horizon==='medium')mult=[1.8,2.8,4];
+  if(horizon==='long')mult=[2.2,3.6,5.2];
+  const t1=Math.max(Number(base.target1)||0,entry+r*mult[0]);
+  const t2=Math.max(Number(base.target2)||0,t1+r*.5,entry+r*mult[1]);
+  const t3=Math.max(t2+r*.6,entry+r*mult[2]);
+  return{entryLow:round(entryLow,4),entryHigh:round(entryHigh,4),referenceEntry:round(entry,4),trigger:round(Number(base.trigger||entryHigh),4),stopLoss:round(stop,4),target1:round(t1,4),target2:round(t2,4),target3:round(t3,4),riskPct:round((entry-stop)/entry*100,2),rr1:round((t1-entry)/r,2),rr2:round((t2-entry)/r,2),rr3:round((t3-entry)/r,2),atr14:round(atr,4)};
+}
+function liquidityInfo(a){
+  const raw=a.marketMeta?.liquidityPercentile,known=raw!==null&&raw!==undefined&&raw!==''&&Number.isFinite(Number(raw)),percentile=known?Number(raw):null;
+  return{known,percentile,acceptable:!known||percentile>=20};
+}
+function triggerDistancePct(a,lv){
+  const raw=a.parts?.breakout?.distancePct;
+  if(raw!==null&&raw!==undefined&&raw!==''&&Number.isFinite(Number(raw)))return Math.abs(Number(raw));
+  const trigger=Number(lv?.trigger),close=Number(a.close||lv?.referenceEntry);
+  return trigger>0&&close>0?Math.abs((close/trigger-1)*100):null;
+}
+function triggerReadinessScore(a,lv){
+  const p=a.parts||{},b=p.breakout||{};
+  if(b.confirmed)return 100;
+  const d=triggerDistancePct(a,lv),proximity=d===null?50:clamp(100-d*12),base=clamp(b.score??50);
+  let score=proximity*.6+base*.4;
+  if(b.near)score=Math.max(score,85);
+  return round(clamp(score),1);
+}
+function stopEfficiencyScore(riskPct){return round(clamp(140-Number(riskPct||0)*10),1)}
+function rrExecutionScore(rr){
+  const x=Number(rr||0);
+  return x>=3?100:x>=2.5?90:x>=2?80:x>=1.6?70:x>=1.3?60:40;
+}
+function momentumTemperatureScore(p){
+  const rsi=Number(p?.rsi14),raw=clamp(p?.score??50);
+  let temperature=40;
+  if(Number.isFinite(rsi)){
+    if(rsi>=50&&rsi<=72)temperature=100;
+    else if(rsi>=45&&rsi<50)temperature=85;
+    else if(rsi>72&&rsi<=78)temperature=80;
+    else if(rsi>78&&rsi<=82)temperature=55;
+    else if(rsi>=40&&rsi<45)temperature=70;
+  }
+  return round((temperature+raw)/2,1);
+}
+function dataConfidenceScore(a,verifiedFundamentals=false){
+  const liq=liquidityInfo(a);
+  return 50+(liq.known?25:0)+(verifiedFundamentals?25:0);
+}
+function executionQuality(a,horizon,verifiedFundamentals=false,lvInput=null){
+  const base=horizonScore(a,horizon,verifiedFundamentals);
+  if(horizon!=='speculative')return{score:base,rankScore:base,tier:'STRUCTURAL',tierAr:'ترتيب هيكلي',triggerDistancePct:null,components:{horizonScore:base}};
+  const p=a.parts||{},lv=lvInput||levels(a,horizon),distance=triggerDistancePct(a,lv);
+  const components={
+    triggerReadiness:triggerReadinessScore(a,lv),
+    volumeConfirmation:clamp(p.volume?.score??50),
+    stopEfficiency:stopEfficiencyScore(lv.riskPct),
+    rewardRisk:rrExecutionScore(lv.rr1),
+    momentumTemperature:momentumTemperatureScore(p.momentum||{}),
+    relativeStrength:clamp(p.relativeStrength?.score??50),
+    moneyFlowQuality:clamp(a.marketMeta?.moneyFlowQualityScore??50),
+    gannTiming:clamp(p.gannTime?.score??50),
+    dataConfidence:dataConfidenceScore(a,verifiedFundamentals)
+  };
+  const score=round(clamp(
+    components.triggerReadiness*.24+
+    components.volumeConfirmation*.18+
+    components.stopEfficiency*.14+
+    components.rewardRisk*.12+
+    components.momentumTemperature*.08+
+    components.relativeStrength*.08+
+    components.moneyFlowQuality*.06+
+    components.gannTiming*.05+
+    components.dataConfidence*.05
+  ),1);
+  const rankScore=round(score*.70+base*.30,1);
+  let tier='EARLY_SETUP',tierAr='إعداد مبكر — انتظر اقتراب التفعيل';
+  if(score>=70&&distance!==null&&distance<=2.5&&p.volume?.confirmed){tier='READY_NEAR_TRIGGER';tierAr='جاهزية تنفيذ مرتفعة قرب التفعيل';}
+  else if(score>=58&&distance!==null&&distance<=4){tier='CONDITIONAL_READY';tierAr='جاهزية مشروطة — لا دخول قبل Trigger';}
+  return{score,rankScore,tier,tierAr,triggerDistancePct:distance===null?null:round(distance,2),components:{...components,horizonScore:base}};
+}
+function eligibility(a,horizon,verifiedFundamentals=false){
+  const p=a.parts||{},lv=levels(a,horizon),fresh=!['WAIT_DATA','DATA_BLOCKED'].includes(a.classification?.code),liq=liquidityInfo(a);
+  if(!fresh)return result(false,'DATA_INVALID','البيانات غير صالحة لإصدار خطة دخول.');
+  if(!liq.acceptable)return result(false,'LOW_LIQUIDITY','السيولة منخفضة بالنسبة للسوق.');
+  if(horizon==='speculative'){
+    if(p.marketRegime?.regime==='RISK_OFF')return result(false,'MARKET_RISK_OFF','السوق العام دفاعي؛ لا تُفتح مضاربة جديدة ضمن الخطة.');
+    if(a.score<68)return result(false,'FUSION_LT_68','Fusion أقل من الحد المطلوب للمضاربة.');
+    if(!(p.breakout?.confirmed||p.breakout?.near||p.gannTime?.active))return result(false,'NO_CATALYST','لا يوجد محفز اختراق أو نافذة Gann واضحة للجلسات القريبة.');
+    if(p.momentum?.overheated)return result(false,'OVERHEATED','السهم ساخن سعريًا؛ تجنب المطاردة.');
+    if(lv.riskPct>8)return result(false,'RISK_TOO_WIDE','مسافة الوقف واسعة للمضاربة القصيرة.');
+    const distance=triggerDistancePct(a,lv);
+    if(!p.breakout?.confirmed&&!p.breakout?.near&&distance!==null&&distance>4)return result(false,'TOO_EARLY_FROM_TRIGGER','السعر ما زال بعيدًا أكثر من 4% عن نقطة التفعيل؛ يُراقب ولا يُعامل كفرصة دخول الآن.');
+    if(p.breakout?.confirmed)return result(true,'ELIGIBLE','اختراق متحقق ويحتاج استمرار السيولة.');
+    if(p.breakout?.near)return result(true,'ELIGIBLE','السعر قريب من نقطة التفعيل؛ الدخول فقط بعد تأكيد الاختراق والسيولة.');
+    return result(true,'ELIGIBLE','نافذة Gann نشطة والسعر داخل 4% من نقطة التفعيل؛ لا دخول قبل Trigger وسيولة داعمة.');
+  }
+  if(horizon==='medium'){
+    if(a.score<64||Number(p.trend?.score||0)<60||Number(p.fundamentals?.score||0)<52)return result(false,'MEDIUM_QUALITY','الاتجاه/الجودة غير كافيين لبناء مركز متوسط.');
+    if(lv.riskPct>15)return result(false,'MEDIUM_RISK_TOO_WIDE','الوقف الهيكلي بعيد بصورة غير مناسبة.');
+    return result(true,'ELIGIBLE','اتجاه وجودة مقبولان مع بناء مركز تدريجي.');
+  }
+  if(Number(p.fundamentals?.score||0)<68||Number(p.trend?.score||0)<58)return result(false,'LONG_QUALITY','الجودة الأساسية أو الاتجاه لا يبرران مركزًا طويل الأجل.');
+  if(!verifiedFundamentals)return result(false,'LONG_UNVERIFIED','الاستثمار الطويل يتطلب تحققًا ماليًا موثقًا في هذا الإصدار.');
+  return result(true,'ELIGIBLE','جودة أساسية موثقة واتجاه مناسب للبناء التدريجي.');
+}
+function decisionFor(a,horizon,elig,score){
+  if(elig.eligible)return{...DECISIONS.ACTIONABLE,reasonCode:elig.code,reasonAr:elig.reasonAr};
+  const hard=new Set(['DATA_INVALID','LOW_LIQUIDITY','RISK_TOO_WIDE','MEDIUM_RISK_TOO_WIDE']);
+  let d=hard.has(elig.code)?DECISIONS.REJECTED:DECISIONS.WATCH;
+  if(elig.code==='FUSION_LT_68'&&Number(a.score)<60)d=DECISIONS.REJECTED;
+  if(elig.code==='MEDIUM_QUALITY'&&score<58)d=DECISIONS.REJECTED;
+  if(elig.code==='LONG_QUALITY'&&score<55)d=DECISIONS.REJECTED;
+  return{...d,reasonCode:elig.code,reasonAr:elig.reasonAr};
+}
+function positionSize({portfolioValue=0,riskPct,entry,stop,maxAllocationPct}){
+  const pv=Math.max(0,Number(portfolioValue)||0),rp=Math.max(.05,Number(riskPct)||.5),e=Number(entry),s=Number(stop),dist=Math.max(e-s,.0001),stopPct=dist/e*100,riskBasedPct=rp/stopPct*100,allocationPct=Math.max(0,Math.min(maxAllocationPct,riskBasedPct)),capital=pv?pv*allocationPct/100:0,shares=pv?Math.floor(capital/e):null,actualCapital=shares==null?null:round(shares*e,2),actualPct=pv&&shares!=null?round(actualCapital/pv*100,2):round(allocationPct,2);
+  return{riskBudgetPct:round(rp,2),stopPct:round(stopPct,2),allocationPct:actualPct,capital:actualCapital,shares};
+}
+function effectiveAllocationCap(a,profile){
+  const adjustments=[],liq=liquidityInfo(a),regime=a.parts?.marketRegime?.regime;
+  let factor=1;
+  if(!liq.known){factor*=.75;adjustments.push('خفض 25% لأن تصنيف السيولة النسبي غير متاح.');}
+  else if(liq.percentile<40){factor*=.75;adjustments.push('خفض 25% لأن السيولة دون المتوسط.');}
+  if(regime==='RISK_OFF'){factor*=.5;adjustments.push('خفض 50% لأن السوق دفاعي.');}
+  else if(regime==='SIDEWAYS'){factor*=.75;adjustments.push('خفض 25% لأن السوق عرضي.');}
+  else if(regime==='POSITIVE'){factor*=.9;adjustments.push('خفض 10% لأن السوق إيجابي بحذر.');}
+  return{capPct:round(profile.maxAllocationPct*factor,2),adjustments};
+}
+function entryPlan(a,horizon,lv){
+  const trigger=lv.trigger;
+  if(horizon==='speculative')return[
+    `لا دخول تلقائي مع جرس الافتتاح؛ راقب ثبات السعر حول ${trigger}.`,
+    `ألغِ المطاردة إذا افتتح السهم أعلى من ${round(lv.entryHigh*1.03,4)} تقريبًا (أكثر من 3% فوق الحد الأعلى للدخول).`,
+    `الدخول الأول ${PROFILES.speculative.entryParts[0]}% من الحجم المخطط فقط بعد تفعيل الشرط السعري مع سيولة داعمة.`,
+    `أضف ${PROFILES.speculative.entryParts[1]}% فقط إذا حافظ السهم على الاختراق/إعادة الاختبار ولم يكسر نطاق الدخول ${lv.entryLow}–${lv.entryHigh}.`
+  ];
+  if(horizon==='medium')return[
+    `ابدأ ${PROFILES.medium.entryParts[0]}% من الحجم داخل نطاق ${lv.entryLow}–${lv.entryHigh} أو بعد إعادة اختبار ناجحة.`,
+    `لا تطارد افتتاحًا أعلى من ${round(lv.entryHigh*1.05,4)} تقريبًا؛ انتظر Pullback يعيد R/R للمستوى المقبول.`,
+    `أضف ${PROFILES.medium.entryParts[1]}% بعد جلسة تأكيد اتجاه، ثم ${PROFILES.medium.entryParts[2]}% فقط إذا استمر السهم أعلى الدعم ولم تتدهور السوق.`
+  ];
+  return[
+    `ابنِ المركز على 3 دفعات ${PROFILES.long.entryParts.join('% / ')}% بدل الشراء مرة واحدة.`,
+    `لا تبدأ دفعة جديدة بعد فجوة صاعدة كبيرة؛ الأفضل انتظار منطقة قيمة/دعم أو ثبات أسبوعي.`,
+    `الدفعة الأولى قرب نطاق القيمة/الدعم، والثانية بعد ثبات أسبوعي، والثالثة بعد تأكيد نمو الاتجاه دون تدهور مالي.`,
+    `أي تغير جوهري سلبي في الأساسيات يلغي خطة الإضافة حتى لو ظل السعر صاعدًا.`
+  ];
+}
+function exitPlan(horizon,lv){
+  if(horizon==='speculative')return[
+    `وقف خسارة كامل عند ${lv.stopLoss}؛ لا توسّع الوقف بعد الدخول.`,
+    `عند الهدف 1 (${lv.target1}) خفّض 35% وانقل حماية الباقي قرب سعر الدخول.`,
+    `عند الهدف 2 (${lv.target2}) خفّض 35%، واترك 30% للهدف 3 (${lv.target3}) أو Trailing Stop.`,
+    `Time Stop: إذا لم يظهر Follow-through خلال 3 جلسات، أعد تقييم الصفقة حتى لو لم يُضرب الوقف.`
+  ];
+  if(horizon==='medium')return[
+    `الوقف الهيكلي ${lv.stopLoss} ويُراقب أساسًا على الإغلاق اليومي.`,
+    `الهدف 1 ${lv.target1}: خفّض 25%، الهدف 2 ${lv.target2}: خفّض 25%.`,
+    `اترك 50% للهدف 3 ${lv.target3} مع رفع الوقف أسفل قاع/متوسط مناسب مع تقدم الاتجاه.`
+  ];
+  return[
+    `الوقف الاستثماري ${lv.stopLoss} أوسع عمدًا ويُراجع على الإغلاق الأسبوعي مع الأساسيات.`,
+    `الهدف 1 ${lv.target1}: خفّض 20% فقط إذا أصبح التقييم/الزخم ممتدًا.`,
+    `الهدف 2 ${lv.target2}: خفّض 25%؛ واترك 55% للهدف 3 ${lv.target3} أو استمرار الاتجاه طويل الأجل.`,
+    `خروج مبكر إذا حدث كسر جوهري في الربحية/التدفقات/المديونية حتى قبل الوقف السعري.`
+  ];
+}
+function buildPlan(a,horizon,opts={}){
+  const profile=PROFILES[horizon],verifiedFundamentals=Boolean(opts.verifiedFundamentals),lv=levels(a,horizon),elig=eligibility(a,horizon,verifiedFundamentals),baseScore=horizonScore(a,horizon,verifiedFundamentals),execution=executionQuality(a,horizon,verifiedFundamentals,lv),score=horizon==='speculative'?execution.rankScore:baseScore,decision=decisionFor(a,horizon,elig,score),riskPct=Number(opts.riskPct??profile.defaultRiskPct),cap=effectiveAllocationCap(a,profile),size=positionSize({portfolioValue:opts.portfolioValue,riskPct,entry:lv.referenceEntry,stop:lv.stopLoss,maxAllocationPct:cap.capPct});
+  size.baseMaxAllocationPct=profile.maxAllocationPct;
+  size.effectiveMaxAllocationPct=cap.capPct;
+  size.adjustmentsAr=cap.adjustments;
+  let actionAr=decision.ar;
+  if(elig.eligible&&horizon==='speculative'){
+    if(a.parts?.breakout?.confirmed)actionAr='دخول مشروط بعد ثبات الاختراق';
+    else if(a.parts?.breakout?.near)actionAr='قريب من التفعيل — دخول بعد التأكيد';
+    else actionAr='انتظار Trigger ثم دخول مشروط';
+  }
+  if(elig.eligible&&horizon==='medium')actionAr='تجميع تدريجي على تأكيدات';
+  if(elig.eligible&&horizon==='long')actionAr='بناء مركز استثماري تدريجي';
+  return{ticker:a.ticker,nameAr:a.nameAr,horizon,profile,score,horizonScore:baseScore,executionQuality:execution.score,rankScore:execution.rankScore,executionTier:execution.tier,executionTierAr:execution.tierAr,executionComponents:execution.components,triggerDistancePct:execution.triggerDistancePct,eligible:elig.eligible,reasonAr:elig.reasonAr,reasonCode:elig.code,decision,actionAr,sessionDate:a.sessionDate,nextSession:nextEgxSession(a.sessionDate),levels:lv,size,entryPlan:entryPlan(a,horizon,lv),exitPlan:exitPlan(horizon,lv),analysis:a};
+}
 function buildAll(a,opts={}){return['speculative','medium','long'].map(h=>buildPlan(a,h,opts))}
-return{PROFILES,DECISIONS,nextEgxSession,horizonScore,levels,liquidityInfo,eligibility,decisionFor,positionSize,effectiveAllocationCap,buildPlan,buildAll};});
+return{PROFILES,DECISIONS,nextEgxSession,horizonScore,levels,liquidityInfo,triggerDistancePct,triggerReadinessScore,stopEfficiencyScore,rrExecutionScore,momentumTemperatureScore,dataConfidenceScore,executionQuality,eligibility,decisionFor,positionSize,effectiveAllocationCap,buildPlan,buildAll};
+});
