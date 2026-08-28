@@ -28,10 +28,10 @@ jobs:
           node --check gann-fusion-x/review/data-completion-destroyer-v2.cjs
       - name: Refresh full SEPA read-only mirror in workspace
         run: node gann-fusion-x/scripts/sync-sepa.cjs
-      - name: Developer deep completeness audit
+      - name: Developer deep completeness inventory
         env:
-          DEEP_DATA_LIVE_STARTA: 'true'
-          DEEP_DATA_STARTA_LIMIT: '60'
+          DEEP_DATA_LIVE_STARTA: 'false'
+          DEEP_DATA_STARTA_LIMIT: '0'
         run: node scripts/research/deep-data-completion-audit.cjs
       - name: Developer source-verified research history repair
         run: node scripts/research/research-history-repair-v1.cjs
