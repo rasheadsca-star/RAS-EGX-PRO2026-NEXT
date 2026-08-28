@@ -74,8 +74,33 @@ jobs:
       - name: Browser consistency smoke
         if: steps.live_destroyer.outcome == 'success'
         run: |
+          set -euo pipefail
           python3 -m http.server 4173 --directory . >/tmp/gfx-live-ui-http.log 2>&1 &
-          node gann-fusion-x/scripts/live-ui-browser-check.cjs
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:4173/gann-fusion-x/app/index-v1.html >/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo 'Live UI test server exited before becoming ready'
+              cat /tmp/gfx-live-ui-http.log || true
+              exit 1
+            fi
+            sleep 0.25
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo 'Live UI test server did not become ready'
+            cat /tmp/gfx-live-ui-http.log || true
+            exit 1
+          fi
+          if ! node gann-fusion-x/scripts/live-ui-browser-check.cjs; then
+            echo 'Browser smoke failed; HTTP server log follows'
+            cat /tmp/gfx-live-ui-http.log || true
+            exit 1
+          fi
       - name: Live UI findings summary
         if: always()
         run: cat gann-fusion-x/data/live-ui-production-destroyer-v1.md >> "$GITHUB_STEP_SUMMARY" || true
@@ -100,6 +125,7 @@ jobs:
             gann-fusion-x/data/live-ui-current-v1.json
             gann-fusion-x/data/live-ui-production-destroyer-v1.json
             gann-fusion-x/data/live-ui-production-destroyer-v1.md
+            gann-fusion-x/data/live-ui-browser-check-v1.json
             gann-fusion-x/data/data-readiness-current-v1.json
             gann-fusion-x/data/forward-shadow-report.json
             gann-fusion-x/data/forward-shadow-destroyer-v1.json
