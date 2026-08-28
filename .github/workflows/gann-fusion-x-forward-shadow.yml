@@ -2,7 +2,7 @@ name: Gann Fusion X Forward Shadow
 
 on:
   push:
-    branches: [feature/gann-fusion-x-forward-shadow]
+    branches: [main, feature/gann-fusion-x-forward-shadow]
     paths:
       - 'gann-fusion-x/scripts/forward-shadow-v2.cjs'
       - 'gann-fusion-x/scripts/forward-shadow-check.cjs'
@@ -35,7 +35,7 @@ jobs:
         run: |
           node --check gann-fusion-x/scripts/forward-shadow-v2.cjs
           node --check gann-fusion-x/scripts/forward-shadow-check.cjs
-      - name: Refresh SEPA read-only mirror
+      - name: Refresh SEPA read-only mirror in runner
         continue-on-error: true
         run: node gann-fusion-x/scripts/sync-sepa.cjs
       - name: Capture only fresh forward signals and evaluate matured outcomes
@@ -45,12 +45,13 @@ jobs:
       - name: Commit forward evidence when changed
         shell: bash
         run: |
-          if git diff --quiet -- gann-fusion-x/data/forward-shadow-ledger.json gann-fusion-x/data/forward-shadow-report.json gann-fusion-x/data/sepa-x-snapshot.json; then
-            echo 'No new forward evidence.'
+          git checkout -- gann-fusion-x/data/sepa-x-snapshot.json || true
+          if git diff --quiet -- gann-fusion-x/data/forward-shadow-ledger.json gann-fusion-x/data/forward-shadow-report.json; then
+            echo 'No new forward evidence or status change.'
             exit 0
           fi
           git config user.name 'gann-fusion-shadow-bot'
           git config user.email 'actions@users.noreply.github.com'
-          git add gann-fusion-x/data/forward-shadow-ledger.json gann-fusion-x/data/forward-shadow-report.json gann-fusion-x/data/sepa-x-snapshot.json
+          git add gann-fusion-x/data/forward-shadow-ledger.json gann-fusion-x/data/forward-shadow-report.json
           git commit -m 'data(gann): append fresh forward shadow evidence'
           git push
