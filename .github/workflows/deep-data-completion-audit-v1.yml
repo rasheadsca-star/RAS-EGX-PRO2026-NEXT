@@ -26,8 +26,13 @@ jobs:
           node --check gann-fusion-x/scripts/data-quality-enrichment.cjs
           node --check gann-fusion-x/scripts/build-snapshot.cjs
           node --check gann-fusion-x/scripts/data-readiness-gate.cjs
+          node --check gann-fusion-x/engine/math.js
+          node --check gann-fusion-x/engine/indicators.js
+          node --check gann-fusion-x/engine/fusion.js
+          node --check gann-fusion-x/engine/planner.js
           node --check gann-fusion-x/review/data-completion-destroyer.cjs
           node --check gann-fusion-x/review/data-completion-destroyer-v2.cjs
+          node --check gann-fusion-x/review/engine-destroyer-v1.cjs
       - name: Refresh full SEPA read-only mirror in workspace
         run: node gann-fusion-x/scripts/sync-sepa.cjs
       - name: Developer deep completeness inventory
@@ -64,11 +69,17 @@ jobs:
         id: destroyer_v2
         continue-on-error: true
         run: node gann-fusion-x/review/data-completion-destroyer-v2.cjs
+      - name: Engine Destroyer V1 adversarial review
+        id: engine_destroyer_v1
+        continue-on-error: true
+        run: node gann-fusion-x/review/engine-destroyer-v1.cjs
       - name: Destroyer findings summary
         if: always()
         run: |
           echo '' >> "$GITHUB_STEP_SUMMARY"
           cat gann-fusion-x/data/data-completion-destroyer-v2.md >> "$GITHUB_STEP_SUMMARY" || true
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          cat gann-fusion-x/data/engine-destroyer-v1.md >> "$GITHUB_STEP_SUMMARY" || true
       - name: Enforce Destroyer V2 gate
         if: always()
         run: |
@@ -76,6 +87,17 @@ jobs:
           const fs=require('fs');
           const p='gann-fusion-x/data/data-completion-destroyer-v2.json';
           if(!fs.existsSync(p)) throw new Error('Destroyer V2 report missing');
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor,summary:r.summary},null,2));
+          if(!r.passed) process.exit(1);
+          NODE
+      - name: Enforce Engine Destroyer V1 gate
+        if: always()
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='gann-fusion-x/data/engine-destroyer-v1.json';
+          if(!fs.existsSync(p)) throw new Error('Engine Destroyer V1 report missing');
           const r=JSON.parse(fs.readFileSync(p,'utf8'));
           console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor,summary:r.summary},null,2));
           if(!r.passed) process.exit(1);
@@ -97,4 +119,6 @@ jobs:
             gann-fusion-x/data/data-completion-destroyer-v1.md
             gann-fusion-x/data/data-completion-destroyer-v2.json
             gann-fusion-x/data/data-completion-destroyer-v2.md
+            gann-fusion-x/data/engine-destroyer-v1.json
+            gann-fusion-x/data/engine-destroyer-v1.md
             gann-fusion-x/data/sepa-x-snapshot.json
