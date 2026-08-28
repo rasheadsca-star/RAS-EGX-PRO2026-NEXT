@@ -9,7 +9,7 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,38 +18,62 @@ jobs:
       - name: Syntax
         run: |
           node --check scripts/research/deep-data-completion-audit.cjs
+          node --check scripts/research/research-history-repair-v1.cjs
           node --check gann-fusion-x/scripts/sync-sepa.cjs
+          node --check gann-fusion-x/scripts/data-readiness-gate.cjs
           node --check gann-fusion-x/review/data-completion-destroyer.cjs
+          node --check gann-fusion-x/review/data-completion-destroyer-v2.cjs
       - name: Refresh full SEPA read-only mirror in workspace
         run: node gann-fusion-x/scripts/sync-sepa.cjs
-      - name: Run deep completeness audit and Starta fallback diagnostics
+      - name: Developer deep completeness audit
         env:
           DEEP_DATA_LIVE_STARTA: 'true'
           DEEP_DATA_STARTA_LIMIT: '60'
         run: node scripts/research/deep-data-completion-audit.cjs
+      - name: Developer source-verified research history repair
+        run: node scripts/research/research-history-repair-v1.cjs
+      - name: Developer strict data readiness gate
+        run: node gann-fusion-x/scripts/data-readiness-gate.cjs
       - name: Developer evidence summary
-        run: cat gann-fusion-x/data/deep-data-completion-audit-v1.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Destroyer adversarial review
-        id: destroyer
+        if: always()
+        run: |
+          cat gann-fusion-x/data/deep-data-completion-audit-v1.md >> "$GITHUB_STEP_SUMMARY" || true
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs=require('fs');
+          for(const p of ['gann-fusion-x/data/research-history-repair-v1.json','gann-fusion-x/data/data-readiness-current-v1.json']){
+            if(!fs.existsSync(p)) continue;
+            const r=JSON.parse(fs.readFileSync(p,'utf8'));
+            console.log(`## ${p}`);
+            console.log('```json');
+            console.log(JSON.stringify(r.dataReadinessSummary||{targets:r.targets,readyForResearch:r.readyForResearch,quarantined:r.quarantined,fetchFailed:r.fetchFailed},null,2));
+            console.log('```');
+          }
+          NODE
+      - name: Destroyer V1 legacy adversarial snapshot
         continue-on-error: true
         run: node gann-fusion-x/review/data-completion-destroyer.cjs
+      - name: Destroyer V2 decision-aware adversarial review
+        id: destroyer_v2
+        continue-on-error: true
+        run: node gann-fusion-x/review/data-completion-destroyer-v2.cjs
       - name: Destroyer findings summary
         if: always()
         run: |
           echo '' >> "$GITHUB_STEP_SUMMARY"
-          cat gann-fusion-x/data/data-completion-destroyer-v1.md >> "$GITHUB_STEP_SUMMARY" || true
-      - name: Enforce destroyer gate
+          cat gann-fusion-x/data/data-completion-destroyer-v2.md >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Enforce Destroyer V2 gate
         if: always()
         run: |
           node - <<'NODE'
           const fs=require('fs');
-          const p='gann-fusion-x/data/data-completion-destroyer-v1.json';
-          if(!fs.existsSync(p)) throw new Error('Destroyer report missing');
+          const p='gann-fusion-x/data/data-completion-destroyer-v2.json';
+          if(!fs.existsSync(p)) throw new Error('Destroyer V2 report missing');
           const r=JSON.parse(fs.readFileSync(p,'utf8'));
-          console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor},null,2));
+          console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor,summary:r.summary},null,2));
           if(!r.passed) process.exit(1);
           NODE
-      - name: Upload audit and destroyer evidence
+      - name: Upload developer and destroyer evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -58,6 +82,11 @@ jobs:
           path: |
             gann-fusion-x/data/deep-data-completion-audit-v1.json
             gann-fusion-x/data/deep-data-completion-audit-v1.md
+            gann-fusion-x/data/research-history-repair-v1.json
+            gann-fusion-x/data/research-history/*.json
+            gann-fusion-x/data/data-readiness-current-v1.json
             gann-fusion-x/data/data-completion-destroyer-v1.json
             gann-fusion-x/data/data-completion-destroyer-v1.md
+            gann-fusion-x/data/data-completion-destroyer-v2.json
+            gann-fusion-x/data/data-completion-destroyer-v2.md
             gann-fusion-x/data/sepa-x-snapshot.json
