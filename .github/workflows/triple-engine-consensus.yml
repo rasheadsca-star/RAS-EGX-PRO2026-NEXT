@@ -1,0 +1,60 @@
+name: Triple Engine Research Consensus
+
+on:
+  pull_request:
+    paths:
+      - 'triple-engine/**'
+      - '.github/workflows/triple-engine-consensus.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Syntax checks
+        run: |
+          node --check triple-engine/build-consensus.cjs
+          node --check triple-engine/test-consensus.cjs
+
+      - name: Missing-data static guard
+        run: |
+          if grep -REn 'volume\s*\|\|\s*0|volume\s*\?\?\s*0' triple-engine; then
+            echo 'Missing volume must never be coerced to zero in the triple-engine layer.'
+            exit 1
+          fi
+
+      - name: Build and validate same-session consensus
+        run: node triple-engine/test-consensus.cjs
+
+      - name: Validate generated contract
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='triple-engine/data/current.json';
+          if(!fs.existsSync(p)) throw new Error('current.json was not generated');
+          const d=JSON.parse(fs.readFileSync(p,'utf8'));
+          if(d.mode!=='RESEARCH_SHADOW_ONLY') throw new Error('research mode lock failed');
+          if(d.executionLocks?.executionAllowed!==false) throw new Error('execution must stay disabled');
+          if(d.executionLocks?.automaticOrders!==false) throw new Error('automatic orders must stay disabled');
+          if((d.threeOfThree||[]).length && !d.allSourcesFresh) throw new Error('3/3 cannot exist with stale sources');
+          console.log(JSON.stringify({marketSession:d.marketSession,dataReadiness:d.dataReadiness,sources:d.sources,threeOfThree:(d.threeOfThree||[]).map(x=>x.ticker),twoOfThree:(d.twoOfThree||[]).map(x=>x.ticker)},null,2));
+          NODE
+
+      - name: Upload exact consensus artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: triple-engine-consensus-${{ github.sha }}
+          path: triple-engine/data/current.json
+          if-no-files-found: error
+          retention-days: 14
