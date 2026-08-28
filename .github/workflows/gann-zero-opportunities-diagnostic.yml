@@ -1,0 +1,23 @@
+name: Gann Zero Opportunities Diagnostic
+
+on:
+  push:
+    branches: [diagnostic/gann-zero-opportunities-20260828]
+    paths:
+      - 'gann-fusion-x/scripts/diagnose-zero-opportunities.cjs'
+      - '.github/workflows/gann-zero-opportunities-diagnostic.yml'
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check
+        run: node --check gann-fusion-x/scripts/diagnose-zero-opportunities.cjs
+      - name: Diagnose funnel
+        run: node gann-fusion-x/scripts/diagnose-zero-opportunities.cjs
