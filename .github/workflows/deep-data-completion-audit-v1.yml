@@ -23,6 +23,8 @@ jobs:
           node --check scripts/research/deep-data-completion-audit.cjs
           node --check scripts/research/research-history-repair-v1.cjs
           node --check gann-fusion-x/scripts/sync-sepa.cjs
+          node --check gann-fusion-x/scripts/data-quality-enrichment.cjs
+          node --check gann-fusion-x/scripts/build-snapshot.cjs
           node --check gann-fusion-x/scripts/data-readiness-gate.cjs
           node --check gann-fusion-x/review/data-completion-destroyer.cjs
           node --check gann-fusion-x/review/data-completion-destroyer-v2.cjs
@@ -35,6 +37,8 @@ jobs:
         run: node scripts/research/deep-data-completion-audit.cjs
       - name: Developer source-verified research history repair
         run: node scripts/research/research-history-repair-v1.cjs
+      - name: Developer OHLCV liquidity and risk enrichment
+        run: node gann-fusion-x/scripts/data-quality-enrichment.cjs
       - name: Developer strict data readiness gate
         run: node gann-fusion-x/scripts/data-readiness-gate.cjs
       - name: Developer evidence summary
@@ -44,12 +48,12 @@ jobs:
           echo '' >> "$GITHUB_STEP_SUMMARY"
           node - <<'NODE' >> "$GITHUB_STEP_SUMMARY"
           const fs=require('fs');
-          for(const p of ['gann-fusion-x/data/research-history-repair-v1.json','gann-fusion-x/data/data-readiness-current-v1.json']){
+          for(const p of ['gann-fusion-x/data/research-history-repair-v1.json','gann-fusion-x/data/data-quality-enrichment-v1.json','gann-fusion-x/data/data-readiness-current-v1.json']){
             if(!fs.existsSync(p)) continue;
             const r=JSON.parse(fs.readFileSync(p,'utf8'));
             console.log(`## ${p}`);
             console.log('```json');
-            console.log(JSON.stringify(r.dataReadinessSummary||{targets:r.targets,readyForResearch:r.readyForResearch,quarantined:r.quarantined,fetchFailed:r.fetchFailed},null,2));
+            console.log(JSON.stringify(r.dataReadinessSummary||r.counts||{targets:r.targets,readyForResearch:r.readyForResearch,quarantined:r.quarantined,fetchFailed:r.fetchFailed},null,2));
             console.log('```');
           }
           NODE
@@ -87,6 +91,7 @@ jobs:
             gann-fusion-x/data/deep-data-completion-audit-v1.md
             gann-fusion-x/data/research-history-repair-v1.json
             gann-fusion-x/data/research-history/*.json
+            gann-fusion-x/data/data-quality-enrichment-v1.json
             gann-fusion-x/data/data-readiness-current-v1.json
             gann-fusion-x/data/data-completion-destroyer-v1.json
             gann-fusion-x/data/data-completion-destroyer-v1.md
