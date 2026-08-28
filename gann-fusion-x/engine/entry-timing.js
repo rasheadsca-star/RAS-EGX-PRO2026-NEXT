@@ -46,7 +46,8 @@ function classify(plan){
   }
 
   const insideEntry=entryLow>0&&entryHigh>0&&close>=entryLow*.995&&close<=entryHigh*1.005;
-  if(breakoutConfirmed&&volumeConfirmed&&insideEntry){
+  const atOrAboveTrigger=trigger>0&&close>=trigger*.995;
+  if(breakoutConfirmed&&volumeConfirmed&&insideEntry&&atOrAboveTrigger){
     return{
       grade:'A',mode:'ENTER_ON_CONFIRMATION',headlineAr:'A — دخول مشروط الآن',shortAr:`تنفيذ فقط مع استمرار الثبات فوق ${round(trigger)}`,
       instructionAr:`التوقيت مناسب للتنفيذ المشروط إذا استمر السعر فوق Trigger ${round(trigger)} وبقيت السيولة داعمة؛ التنفيذ يكون داخل نطاق ${round(entryLow)}–${round(entryHigh)} دون مطاردة.`,
