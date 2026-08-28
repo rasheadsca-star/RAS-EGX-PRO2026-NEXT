@@ -121,28 +121,53 @@ function currentHistoryCandidates(summary, snapshot) {
     });
 }
 
+function numericTurnover(value) {
+  const n = Number(value);
+  return value !== null && value !== undefined && value !== '' && Number.isFinite(n) ? n : null;
+}
+
 function fallbackDiscoveryCandidates(snapshot) {
-  if (Array.isArray(snapshot?.publishedCandidates)) return snapshot.publishedCandidates;
+  if (Array.isArray(snapshot?.publishedCandidates)) return snapshot.publishedCandidates.map((x) => ({ ...x, discoveryOnly: true }));
   if (Array.isArray(snapshot?.rows)) {
-    return snapshot.rows
+    return [...snapshot.rows]
       .filter((x) => x.liquidityExecutionEligible !== false && x.price > 0)
-      .sort((a,b) => (b.turnover ?? 0) - (a.turnover ?? 0))
+      .sort((a,b) => {
+        const at = numericTurnover(a.turnover), bt = numericTurnover(b.turnover);
+        if (at === null && bt === null) return String(a.ticker ?? '').localeCompare(String(b.ticker ?? ''));
+        if (at === null) return 1;
+        if (bt === null) return -1;
+        return bt - at || String(a.ticker ?? '').localeCompare(String(b.ticker ?? ''));
+      })
       .slice(0, 80)
-      .map((x, i) => ({ ticker: x.ticker, nameAr: x.nameAr, nameEn: x.nameEn, rank: i + 1 }));
+      .map((x, i) => ({ ticker: x.ticker, nameAr: x.nameAr, nameEn: x.nameEn, rank: i + 1, discoveryOnly: true, turnoverKnown: numericTurnover(x.turnover) !== null }));
   }
   return [];
 }
 
+export function selectUniverseCandidates(historySummary, snapshot) {
+  const candidates = currentHistoryCandidates(historySummary, snapshot);
+  const discoveryOnlyCandidates = fallbackDiscoveryCandidates(snapshot);
+  return {
+    candidates,
+    discoveryOnlyCandidates,
+    universeMode: candidates.length ? 'CURRENT_HISTORY_FULL_MARKET_WITH_V20_NATIVE_OVERLAY' : 'DATA_READINESS_BLOCKED_NO_CURRENT_HISTORY',
+    readinessGate: {
+      failClosed: true,
+      fallbackMayEnterRanking: false,
+      currentHistoryCandidates: candidates.length,
+      discoveryOnlyCandidates: discoveryOnlyCandidates.length,
+    },
+  };
+}
+
 export async function loadUniverse() {
   const [snapshot, historySummary] = await Promise.all([loadDiscoverySnapshot(), loadHistorySummary()]);
-  const fresh = currentHistoryCandidates(historySummary, snapshot);
-  const candidates = fresh.length ? fresh : fallbackDiscoveryCandidates(snapshot);
+  const selection = selectUniverseCandidates(historySummary, snapshot);
   return {
     snapshot,
     historySummary,
-    candidates,
+    ...selection,
     expectedSessionDate: historySummary?.latestMarketSession ?? snapshot?.sessionDate ?? null,
-    universeMode: fresh.length ? 'CURRENT_HISTORY_FULL_MARKET_WITH_V20_NATIVE_OVERLAY' : 'V20_NATIVE_FALLBACK',
     dataSources: DATA_SOURCES,
   };
 }
