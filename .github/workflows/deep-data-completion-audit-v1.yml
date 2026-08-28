@@ -1,0 +1,39 @@
+name: Deep Data Completion Audit V1
+on:
+  push:
+    branches:
+      - research/data-completion-deep-repair-v1-20260828
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          node --check scripts/research/deep-data-completion-audit.cjs
+          node --check gann-fusion-x/scripts/sync-sepa.cjs
+      - name: Refresh full SEPA read-only mirror in workspace
+        run: node gann-fusion-x/scripts/sync-sepa.cjs
+      - name: Run deep completeness audit and Starta fallback diagnostics
+        env:
+          DEEP_DATA_LIVE_STARTA: 'true'
+          DEEP_DATA_STARTA_LIMIT: '60'
+        run: node scripts/research/deep-data-completion-audit.cjs
+      - name: Show audit summary
+        run: cat gann-fusion-x/data/deep-data-completion-audit-v1.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: deep-data-completion-audit-v1
+          retention-days: 30
+          path: |
+            gann-fusion-x/data/deep-data-completion-audit-v1.json
+            gann-fusion-x/data/deep-data-completion-audit-v1.md
+            gann-fusion-x/data/sepa-x-snapshot.json
