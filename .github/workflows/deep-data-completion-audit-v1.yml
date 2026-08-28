@@ -33,6 +33,7 @@ jobs:
           node --check gann-fusion-x/review/data-completion-destroyer.cjs
           node --check gann-fusion-x/review/data-completion-destroyer-v2.cjs
           node --check gann-fusion-x/review/engine-destroyer-v1.cjs
+          node --check gann-fusion-x/review/ranking-destroyer-v1.cjs
       - name: Refresh full SEPA read-only mirror in workspace
         run: node gann-fusion-x/scripts/sync-sepa.cjs
       - name: Developer deep completeness inventory
@@ -73,6 +74,10 @@ jobs:
         id: engine_destroyer_v1
         continue-on-error: true
         run: node gann-fusion-x/review/engine-destroyer-v1.cjs
+      - name: Ranking Destroyer V1 adversarial review
+        id: ranking_destroyer_v1
+        continue-on-error: true
+        run: node gann-fusion-x/review/ranking-destroyer-v1.cjs
       - name: Destroyer findings summary
         if: always()
         run: |
@@ -80,6 +85,8 @@ jobs:
           cat gann-fusion-x/data/data-completion-destroyer-v2.md >> "$GITHUB_STEP_SUMMARY" || true
           echo '' >> "$GITHUB_STEP_SUMMARY"
           cat gann-fusion-x/data/engine-destroyer-v1.md >> "$GITHUB_STEP_SUMMARY" || true
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          cat gann-fusion-x/data/ranking-destroyer-v1.md >> "$GITHUB_STEP_SUMMARY" || true
       - name: Enforce Destroyer V2 gate
         if: always()
         run: |
@@ -98,6 +105,17 @@ jobs:
           const fs=require('fs');
           const p='gann-fusion-x/data/engine-destroyer-v1.json';
           if(!fs.existsSync(p)) throw new Error('Engine Destroyer V1 report missing');
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor,summary:r.summary},null,2));
+          if(!r.passed) process.exit(1);
+          NODE
+      - name: Enforce Ranking Destroyer V1 gate
+        if: always()
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='gann-fusion-x/data/ranking-destroyer-v1.json';
+          if(!fs.existsSync(p)) throw new Error('Ranking Destroyer V1 report missing');
           const r=JSON.parse(fs.readFileSync(p,'utf8'));
           console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor,summary:r.summary},null,2));
           if(!r.passed) process.exit(1);
@@ -121,4 +139,6 @@ jobs:
             gann-fusion-x/data/data-completion-destroyer-v2.md
             gann-fusion-x/data/engine-destroyer-v1.json
             gann-fusion-x/data/engine-destroyer-v1.md
+            gann-fusion-x/data/ranking-destroyer-v1.json
+            gann-fusion-x/data/ranking-destroyer-v1.md
             gann-fusion-x/data/sepa-x-snapshot.json
