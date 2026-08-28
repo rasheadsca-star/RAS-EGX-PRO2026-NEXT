@@ -1,57 +1,138 @@
-name: RC2 Promote Production Once
+name: RC2 Safe Exact Preview Promotion
 
 on:
-  push:
-    branches:
-      - develop/rc2-intraday-operations-v1
-    paths:
-      - .github/workflows/rc2-promote-production-once.yml
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: Exact Vercel preview deployment URL (never the production alias)
+        required: true
+        type: string
+      deployment_id:
+        description: Exact Vercel deployment id (dpl_...)
+        required: true
+        type: string
+      expected_commit:
+        description: Exact 40-character Git commit SHA validated by CI
+        required: true
+        type: string
+      approval_phrase:
+        description: Type PROMOTE_RC2_EXACT_VALIDATED_PREVIEW after owner approval
+        required: true
+        type: string
 
 permissions:
-  contents: write
+  contents: read
+  checks: read
 
 jobs:
   promote:
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
+    name: exact-preview-promotion
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
     env:
       VERCEL_PROJECT_ID: prj_gXmmVe1QqGFJ9nsv30uu0emLqIdY
       VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
-      VERCEL_DEPLOYMENT_ID: dpl_Crmbz1tyf9BCRZmbUZQ7UJ6dggYq
-      EXPECTED_COMMIT: 6cae8b9e0d99a0da7f40c015e745b4e35adc5eac
-      PREVIEW_URL: https://egx-tfe-v20-fusion-rc2-hzzpw9097-steverabin38-1168s-projects.vercel.app
       PROD_URL: https://egx-tfe-v20-fusion-rc2.vercel.app
+      PREVIEW_URL: ${{ inputs.preview_url }}
+      VERCEL_DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      APPROVAL_PHRASE: ${{ inputs.approval_phrase }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
+      GH_TOKEN: ${{ github.token }}
+
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: develop/rc2-intraday-operations-v1
-
-      - id: token
-        name: Require Vercel token
+      - name: Validate manual approval and immutable inputs
         shell: bash
         run: |
-          test -n "$VERCEL_TOKEN" || { echo 'VERCEL_TOKEN secret is not configured'; exit 2; }
-
-      - id: preview
-        name: Verify validated preview provenance
-        shell: bash
-        run: |
+          set -euo pipefail
+          test "$APPROVAL_PHRASE" = 'PROMOTE_RC2_EXACT_VALIDATED_PREVIEW' || { echo 'Explicit owner approval phrase missing'; exit 2; }
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo 'expected_commit must be a full 40-character SHA'; exit 2; }
+          [[ "$VERCEL_DEPLOYMENT_ID" =~ ^dpl_[A-Za-z0-9]+$ ]] || { echo 'invalid deployment id'; exit 2; }
           node - <<'NODE'
-          const expected = process.env.EXPECTED_COMMIT;
-          const url = `${process.env.PREVIEW_URL}/api/index?route=health`;
-          const res = await fetch(url, { redirect: 'follow' });
-          if (!res.ok) throw new Error(`preview health ${res.status}`);
-          const body = await res.json();
-          if (body.sourceCommit !== expected) throw new Error(`preview commit mismatch: ${body.sourceCommit}`);
-          if (body?.policy?.permissions?.executionAllowed !== false) throw new Error('execution lock missing');
-          console.log(`PREVIEW_OK:${body.sourceCommit}`);
+          const u = new URL(process.env.PREVIEW_URL);
+          if (u.protocol !== 'https:') throw new Error('preview_url must use HTTPS');
+          if (u.hostname === 'egx-tfe-v20-fusion-rc2.vercel.app') throw new Error('production alias is forbidden as preview input');
+          if (!/^egx-tfe-v20-fusion-rc2-[a-z0-9]+-steverabin38-1168s-projects\.vercel\.app$/i.test(u.hostname)) {
+            throw new Error(`unexpected preview hostname: ${u.hostname}`);
+          }
+          if (u.pathname !== '/' || u.search || u.hash) throw new Error('preview_url must be the bare deployment origin');
+          NODE
+
+      - name: Checkout exact validated commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_commit }}
+          fetch-depth: 1
+
+      - name: Assert checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_COMMIT" || { echo "checkout mismatch: $actual"; exit 3; }
+
+      - name: Require successful browser-consistency check on exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${EXPECTED_COMMIT}/check-runs?per_page=100" \
+            > /tmp/check-runs.json
+          jq -e '[.check_runs[] | select(.name == "browser-consistency" and .conclusion == "success")] | length > 0' /tmp/check-runs.json >/dev/null \
+            || { echo 'No successful browser-consistency check exists for EXPECTED_COMMIT'; jq '.check_runs[] | {name,status,conclusion,head_sha}' /tmp/check-runs.json; exit 4; }
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Chromium for live preview acceptance
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Live preview browser smoke against exact SHA
+        env:
+          RC2_SMOKE_URL: ${{ inputs.preview_url }}
+          RC2_EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          RC2_BROWSER_ENGINES: chromium
+        run: node tfe-v20/scripts/browser-consistency-smoke.cjs
+
+      - name: Require Vercel API credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VERCEL_TOKEN" || { echo 'VERCEL_TOKEN secret is not configured; promotion remains blocked'; exit 5; }
+
+      - name: Verify exact preview deployment metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const deploymentId = process.env.VERCEL_DEPLOYMENT_ID;
+          const projectId = process.env.VERCEL_PROJECT_ID;
+          const teamId = process.env.VERCEL_ORG_ID;
+          const expectedHost = new URL(process.env.PREVIEW_URL).hostname;
+          const res = await fetch(`https://api.vercel.com/v13/deployments/${deploymentId}?teamId=${teamId}`, {
+            headers:{authorization:`Bearer ${process.env.VERCEL_TOKEN}`}
+          });
+          if (!res.ok) throw new Error(`deployment metadata HTTP ${res.status}`);
+          const d = await res.json();
+          if (d.id !== deploymentId) throw new Error(`deployment id mismatch: ${d.id}`);
+          if (d.projectId && d.projectId !== projectId) throw new Error(`project mismatch: ${d.projectId}`);
+          if (d.readyState !== 'READY' && d.state !== 'READY') throw new Error(`deployment not READY: ${d.readyState || d.state}`);
+          if (d.target === 'production') throw new Error('input deployment is already production; refusing promote workflow');
+          if (d.url !== expectedHost) throw new Error(`preview URL mismatch: api=${d.url} input=${expectedHost}`);
+          console.log(`PREVIEW_DEPLOYMENT_OK:${deploymentId}:${expectedHost}`);
           NODE
 
       - id: promote
-        name: Promote exact preview without rebuild
+        name: Promote exact validated preview without rebuild
         shell: bash
         run: |
+          set -euo pipefail
           code=$(curl -sS -o /tmp/promote.out -w '%{http_code}' \
             -X POST \
             -H "Authorization: Bearer $VERCEL_TOKEN" \
@@ -59,40 +140,40 @@ jobs:
           cat /tmp/promote.out
           case "$code" in
             200|201|202) echo "PROMOTE_ACCEPTED:$code" ;;
-            *) echo "PROMOTE_FAILED:$code"; exit 3 ;;
+            *) echo "PROMOTE_FAILED:$code"; exit 6 ;;
           esac
 
       - id: verify
-        name: Verify production provenance
+        name: Verify production reached exact validated SHA
         shell: bash
         run: |
+          set -euo pipefail
           node - <<'NODE'
           const expected = process.env.EXPECTED_COMMIT;
           const url = `${process.env.PROD_URL}/api/index?route=health`;
           let last = '';
           for (let i = 0; i < 30; i++) {
             try {
-              const res = await fetch(`${url}&t=${Date.now()}`, { cache:'no-store' });
+              const res = await fetch(`${url}&t=${Date.now()}`, {cache:'no-store'});
               if (res.ok) {
                 const body = await res.json();
                 last = body.sourceCommit || '';
-                if (last === expected) {
+                const p = body?.policy?.permissions || {};
+                if (last === expected && p.executionAllowed === false && p.automaticOrders === false && p.productionAllocation === false) {
                   console.log(`PRODUCTION_OK:${last}`);
                   process.exit(0);
                 }
               }
             } catch {}
-            await new Promise(r => setTimeout(r, 4000));
+            await new Promise((r)=>setTimeout(r,4000));
           }
-          throw new Error(`production did not reach expected commit; last=${last}`);
+          throw new Error(`production did not reach exact validated commit; last=${last}`);
           NODE
 
-      - name: Persist non-secret promotion status
+      - name: Build non-secret promotion evidence
         if: always()
         shell: bash
         env:
-          TOKEN_OUTCOME: ${{ steps.token.outcome }}
-          PREVIEW_OUTCOME: ${{ steps.preview.outcome }}
           PROMOTE_OUTCOME: ${{ steps.promote.outcome }}
           VERIFY_OUTCOME: ${{ steps.verify.outcome }}
         run: |
@@ -102,14 +183,18 @@ jobs:
             "recordedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "deploymentId": "$VERCEL_DEPLOYMENT_ID",
             "expectedCommit": "$EXPECTED_COMMIT",
-            "tokenStep": "$TOKEN_OUTCOME",
-            "previewStep": "$PREVIEW_OUTCOME",
+            "previewUrl": "$PREVIEW_URL",
             "promoteStep": "$PROMOTE_OUTCOME",
-            "verifyStep": "$VERIFY_OUTCOME"
+            "verifyStep": "$VERIFY_OUTCOME",
+            "workflowRunId": "$GITHUB_RUN_ID"
           }
           EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tfe-v20/evidence/ops/production-promote-status.json
-          git commit -m "ops: record production promotion result" || exit 0
-          git push origin HEAD:develop/rc2-intraday-operations-v1
+
+      - name: Upload promotion evidence without mutating Git
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc2-production-promotion-${{ github.run_id }}
+          path: tfe-v20/evidence/ops/production-promote-status.json
+          if-no-files-found: warn
+          retention-days: 30
