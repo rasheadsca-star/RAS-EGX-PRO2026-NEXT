@@ -16,16 +16,16 @@ jobs:
       - name: Syntax
         run: |
           node --check gann-fusion-x/engine/regime-gate-v3-pure.js
-          node --check gann-fusion-x/scripts/backtest-regime-v3-pure-final.cjs
-      - name: Run deterministic pure gate backtest
-        run: node gann-fusion-x/scripts/backtest-regime-v3-pure-final.cjs
+          node --check gann-fusion-x/scripts/validate-regime-v3-pure.cjs
+      - name: Run strict pure gate validation
+        run: node gann-fusion-x/scripts/validate-regime-v3-pure.cjs
       - name: Show report
-        run: cat gann-fusion-x/data/regime-v3-pure-backtest.md
+        run: cat gann-fusion-x/data/regime-v3-pure-validation.md
       - name: Upload evidence
         uses: actions/upload-artifact@v4
         with:
-          name: gann-regime-v3-pure-backtest
+          name: gann-regime-v3-pure-validation
           path: |
-            gann-fusion-x/data/regime-v3-pure-backtest.json
-            gann-fusion-x/data/regime-v3-pure-backtest.md
+            gann-fusion-x/data/regime-v3-pure-validation.json
+            gann-fusion-x/data/regime-v3-pure-validation.md
           retention-days: 14
