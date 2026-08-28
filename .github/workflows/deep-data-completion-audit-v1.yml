@@ -4,6 +4,9 @@ on:
     branches:
       - research/data-completion-deep-repair-v1-20260828
   workflow_dispatch:
+concurrency:
+  group: deep-data-completion-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
