@@ -1,8 +1,8 @@
-name: Consensus Pipeline V1 Backtest
+name: Consensus Pipeline V2 Backtest
 on:
   push:
     branches:
-      - research/consensus-pipeline-v1-20260828
+      - research/consensus-pipeline-v2-20260828
 jobs:
   test:
     runs-on: ubuntu-24.04
@@ -18,20 +18,20 @@ jobs:
           node-version: '24'
       - name: Syntax
         run: |
-          python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
-          node --check gann-fusion-x/scripts/run-consensus-pipeline-v1.cjs
-      - name: Build uncapped V16 walk-forward qualification
-        run: python scripts/research/consensus-v16-qualified-walkforward.py
-      - name: Run V16-SEPA intersection plus GANN timing
-        run: node gann-fusion-x/scripts/run-consensus-pipeline-v1.cjs
+          python -m py_compile scripts/research/run-consensus-v16-qualified-walkforward-v2.py
+          node --check gann-fusion-x/scripts/run-consensus-pipeline-v2.cjs
+      - name: Build strict V16 walk-forward for 60 evaluable sessions
+        run: python scripts/research/run-consensus-v16-qualified-walkforward-v2.py
+      - name: Run V16-SEPA intersection plus isolated GANN timing
+        run: node gann-fusion-x/scripts/run-consensus-pipeline-v2.cjs
       - name: Show report
-        run: cat gann-fusion-x/data/consensus-pipeline-v1-backtest.md
+        run: cat gann-fusion-x/data/consensus-pipeline-v2-backtest.md
       - name: Upload evidence
         uses: actions/upload-artifact@v4
         with:
-          name: consensus-pipeline-v1-backtest
+          name: consensus-pipeline-v2-backtest
           path: |
             data/research/consensus-v16-qualified-walkforward.json
-            gann-fusion-x/data/consensus-pipeline-v1-backtest.json
-            gann-fusion-x/data/consensus-pipeline-v1-backtest.md
+            gann-fusion-x/data/consensus-pipeline-v2-backtest.json
+            gann-fusion-x/data/consensus-pipeline-v2-backtest.md
           retention-days: 14
