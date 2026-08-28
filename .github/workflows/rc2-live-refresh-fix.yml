@@ -1,0 +1,61 @@
+name: RC2 Live Refresh Validation
+on:
+  push:
+    branches: [develop/rc2-intraday-operations-v1]
+    paths: [.github/workflows/rc2-live-refresh-fix.yml]
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop/rc2-intraday-operations-v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Freeze exact live adapter hash and add targeted tests
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,re
+          live=Path('tfe-v20/public/live-refresh-v1.js').read_text()
+          required=['historyFallback','HISTORY_LAST_CLOSE',"route:'history'",'HISTORY_CURRENT_BAR_NOT_USED_DURING_OPEN',"AUTO_REFRESH_MS=300_000",'recommendationMutationAllowed=false','executionAllowed=false']
+          for x in required: assert x in live,x
+          h=subprocess.check_output(['git','hash-object','tfe-v20/public/live-refresh-v1.js'],text=True).strip()
+          assert h=='6f12f48ff9dacf0968699299ae854eb15b6258df',h
+          c=Path('tfe-v20/stability/frozen-runtime-contract.js');s=c.read_text()
+          s=re.sub(r"'public/live-refresh-v1\.js': '[0-9a-f]+'",f"'public/live-refresh-v1.js': '{h}'",s,count=1)
+          if 'portfolioPriceFallback:' not in s:
+              s=s.replace("    quoteSource: 'INTRADAY_READ_ONLY_DELAYED',","    quoteSource: 'INTRADAY_READ_ONLY_DELAYED',\n    portfolioPriceFallback: 'READ_ONLY_HISTORY_LAST_CLOSE_EXPLICITLY_LABELED',",1)
+          c.write_text(s)
+          t=Path('tfe-v20/test/live-refresh-fallback.test.js')
+          t.write_text("""import test from 'node:test';\nimport assert from 'node:assert/strict';\nimport { readFileSync } from 'node:fs';\nconst live=readFileSync(new URL('../public/live-refresh-v1.js',import.meta.url),'utf8');\ntest('intraday pricing has explicit completed-history fallback',()=>{assert.match(live,/async function historyFallback/);assert.match(live,/HISTORY_LAST_CLOSE/);assert.match(live,/route:'history'/);assert.match(live,/sourceMarketMinutes:870/)});\ntest('current history bar cannot impersonate intraday live price while market is open',()=>assert.match(live,/HISTORY_CURRENT_BAR_NOT_USED_DURING_OPEN/));\ntest('portfolio fallback remains display only and execution blocked',()=>{assert.match(live,/scoringImpact=NONE/);assert.match(live,/recommendationMutationAllowed=false/);assert.match(live,/executionAllowed=false/);assert.doesNotMatch(live,/from ['\\\"]\.\.\\/src\\/(engine|policy|confidence)/)});\ntest('both local portfolio stores are repriced automatically every five minutes',()=>{assert.match(live,/egx-tfe-rc2-v169-eod-manager/);assert.match(live,/egx-tfe-rc2-v169-portfolio/);assert.match(live,/AUTO_REFRESH_MS=300_000/)});\n""")
+          PY
+      - name: Frozen analytical core invariants
+        shell: bash
+        run: |
+          test "$(git hash-object tfe-v20/src/engine.js)" = 36e1309fa1e5e4640dd7ef62b7b532e459103193
+          test "$(git hash-object tfe-v20/src/policy.js)" = 581c72df397e6f66adf7720aa7420e191b110999
+          test "$(git hash-object tfe-v20/src/repository.js)" = 9f20380d58fcb3ed37b6c9ed88ebf827ee773e5d
+          test "$(git hash-object tfe-v20/api/index.js)" = 0abac132c2dc3a6d8f40c086082d6b8ea62b2e6b
+          test "$(git hash-object tfe-v20/api/intraday.js)" = 7e639a980d8531f4737c5d5ad9485f8a63540e4b
+      - name: Full validation
+        working-directory: tfe-v20
+        run: |
+          node --check public/live-refresh-v1.js
+          node --check stability/frozen-runtime-contract.js
+          npm test
+          npm run red-team
+          node --test test/live-refresh-fallback.test.js test/live-refresh.test.js test/stability-contract.test.js
+      - name: Commit validated contract and tests
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tfe-v20/stability/frozen-runtime-contract.js tfe-v20/test/live-refresh-fallback.test.js
+          git commit -m 'test: freeze and validate portfolio last-close fallback'
+          git push origin HEAD:develop/rc2-intraday-operations-v1

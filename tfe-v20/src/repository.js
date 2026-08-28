@@ -1,3 +1,5 @@
+import { POLICY } from './policy.js';
+
 const REPO = 'rasheadsca-star/RAS-EGX-PRO2026-NEXT';
 const ALPHA_DATA_BRANCH = process.env.TFE_ALPHA_DATA_BRANCH || 'main';
 const OVERLAY_BRANCH = process.env.TFE_OVERLAY_BRANCH || 'develop/v20-integrated-decision-platform';
@@ -102,11 +104,35 @@ function nativeCandidateMap(snapshot) {
   return map;
 }
 
+function historyReadinessReasons(x, latestMarketSession) {
+  const reasons = [];
+  if (x?.symbolVerified !== true) reasons.push('SYMBOL_IDENTITY_NOT_VERIFIED');
+  if ((x?.availableSessions ?? 0) < POLICY.minBars) reasons.push('INSUFFICIENT_HISTORY');
+  if (x?.staleData) reasons.push('STALE_DATA_FLAG');
+  if (x?.updateFailed) reasons.push('UPDATE_FAILED');
+  if (!latestMarketSession || x?.lastSession !== latestMarketSession) reasons.push('SESSION_BEHIND_REFERENCE');
+  return reasons;
+}
+
+function historyReadinessAssessment(summary) {
+  if (!Array.isArray(summary?.symbols)) return [];
+  const latest = summary.latestMarketSession ?? null;
+  return summary.symbols.map((x) => ({
+    ticker: x.ticker,
+    companyNameAr: x.companyNameAr ?? null,
+    companyNameEn: x.companyNameEn ?? null,
+    availableSessions: x.availableSessions ?? 0,
+    lastSession: x.lastSession ?? null,
+    expectedSessionDate: latest,
+    reasonCodes: historyReadinessReasons(x, latest),
+  }));
+}
+
 function currentHistoryCandidates(summary, snapshot) {
   if (!Array.isArray(summary?.symbols) || !summary.latestMarketSession) return [];
   const nativeMap = nativeCandidateMap(snapshot);
   return summary.symbols
-    .filter((x) => x.symbolVerified === true && (x.availableSessions ?? 0) >= 60 && !x.staleData && !x.updateFailed && x.lastSession === summary.latestMarketSession)
+    .filter((x) => historyReadinessReasons(x, summary.latestMarketSession).length === 0)
     .map((x) => {
       const native = nativeMap.get(String(x.ticker).toUpperCase());
       return {
@@ -121,28 +147,57 @@ function currentHistoryCandidates(summary, snapshot) {
     });
 }
 
+function numericTurnover(value) {
+  const n = Number(value);
+  return value !== null && value !== undefined && value !== '' && Number.isFinite(n) ? n : null;
+}
+
 function fallbackDiscoveryCandidates(snapshot) {
-  if (Array.isArray(snapshot?.publishedCandidates)) return snapshot.publishedCandidates;
+  if (Array.isArray(snapshot?.publishedCandidates)) return snapshot.publishedCandidates.map((x) => ({ ...x, discoveryOnly: true }));
   if (Array.isArray(snapshot?.rows)) {
-    return snapshot.rows
+    return [...snapshot.rows]
       .filter((x) => x.liquidityExecutionEligible !== false && x.price > 0)
-      .sort((a,b) => (b.turnover ?? 0) - (a.turnover ?? 0))
+      .sort((a,b) => {
+        const at = numericTurnover(a.turnover), bt = numericTurnover(b.turnover);
+        if (at === null && bt === null) return String(a.ticker ?? '').localeCompare(String(b.ticker ?? ''));
+        if (at === null) return 1;
+        if (bt === null) return -1;
+        return bt - at || String(a.ticker ?? '').localeCompare(String(b.ticker ?? ''));
+      })
       .slice(0, 80)
-      .map((x, i) => ({ ticker: x.ticker, nameAr: x.nameAr, nameEn: x.nameEn, rank: i + 1 }));
+      .map((x, i) => ({ ticker: x.ticker, nameAr: x.nameAr, nameEn: x.nameEn, rank: i + 1, discoveryOnly: true, turnoverKnown: numericTurnover(x.turnover) !== null }));
   }
   return [];
 }
 
+export function selectUniverseCandidates(historySummary, snapshot) {
+  const candidates = currentHistoryCandidates(historySummary, snapshot);
+  const discoveryOnlyCandidates = fallbackDiscoveryCandidates(snapshot);
+  const readinessAssessment = historyReadinessAssessment(historySummary);
+  const readinessExcludedCandidates = readinessAssessment.filter((x) => x.reasonCodes.length > 0);
+  return {
+    candidates,
+    discoveryOnlyCandidates,
+    readinessExcludedCandidates,
+    universeMode: candidates.length ? 'CURRENT_HISTORY_FULL_MARKET_WITH_V20_NATIVE_OVERLAY' : 'DATA_READINESS_BLOCKED_NO_CURRENT_HISTORY',
+    readinessGate: {
+      failClosed: true,
+      fallbackMayEnterRanking: false,
+      currentHistoryCandidates: candidates.length,
+      readinessExcludedBeforeScan: readinessExcludedCandidates.length,
+      discoveryOnlyCandidates: discoveryOnlyCandidates.length,
+    },
+  };
+}
+
 export async function loadUniverse() {
   const [snapshot, historySummary] = await Promise.all([loadDiscoverySnapshot(), loadHistorySummary()]);
-  const fresh = currentHistoryCandidates(historySummary, snapshot);
-  const candidates = fresh.length ? fresh : fallbackDiscoveryCandidates(snapshot);
+  const selection = selectUniverseCandidates(historySummary, snapshot);
   return {
     snapshot,
     historySummary,
-    candidates,
+    ...selection,
     expectedSessionDate: historySummary?.latestMarketSession ?? snapshot?.sessionDate ?? null,
-    universeMode: fresh.length ? 'CURRENT_HISTORY_FULL_MARKET_WITH_V20_NATIVE_OVERLAY' : 'V20_NATIVE_FALLBACK',
     dataSources: DATA_SOURCES,
   };
 }

@@ -1,6 +1,6 @@
 import { POLICY } from './policy.js';
 import { analyzeTickerBase } from './engine.js';
-import { normalizeBars } from './quality.js';
+import { normalizeBars, assessDataReadiness } from './quality.js';
 import { round, avg } from './math.js';
 
 function fill(bar,plan){
@@ -11,8 +11,26 @@ function fill(bar,plan){
   return null;
 }
 
-export function backtestHistory({ticker,rows,minBars=POLICY.minBars}){
-  const bars=normalizeBars(rows).bars,trades=[],expired=[];
+export function backtestHistory({ticker,rows,minBars=POLICY.minBars,historyMeta={}}){
+  const normalized=normalizeBars(rows),bars=normalized.bars,trades=[],expired=[];
+  const dataReadiness=assessDataReadiness({
+    bars,
+    normalizedRejected:normalized.rejected,
+    updateFailed:historyMeta.updateFailed,
+    staleData:historyMeta.staleData,
+    symbolVerified:historyMeta.symbolVerified,
+    symbolVerification:historyMeta.symbolVerification,
+    requireVerifiedIdentity:historyMeta.symbolVerified !== undefined || historyMeta.symbolVerification !== undefined,
+    requireAllVolume:true,
+  });
+  if(!dataReadiness.readyForBacktest){
+    return {
+      ...summarizeBacktest([],[]),
+      dataReadiness,
+      skipped:true,
+      skipReason:'DATA_NOT_READY',
+    };
+  }
   let i=minBars-1;
   while(i<bars.length-1){
     const a=analyzeTickerBase({ticker,rows:bars.slice(0,i+1),historyMeta:{warnings:[]},expectedSessionDate:null,includeOverlay:false});
@@ -46,7 +64,7 @@ export function backtestHistory({ticker,rows,minBars=POLICY.minBars}){
     });
     i=exit.j+1;
   }
-  return summarizeBacktest(trades,expired);
+  return {...summarizeBacktest(trades,expired),dataReadiness,skipped:false,skipReason:null};
 }
 
 export function summarizeBacktest(trades,expired=[]){

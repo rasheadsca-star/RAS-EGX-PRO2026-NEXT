@@ -1,0 +1,224 @@
+name: RC2 Exact Preview Validation
+
+on:
+  push:
+    branches:
+      - develop/rc2-intraday-operations-v1
+    paths:
+      - 'tfe-v20/**'
+      - '.github/workflows/rc2-browser-consistency-smoke.yml'
+      - '.github/workflows/rc2-exact-preview-rollout.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: rc2-exact-preview-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  VERCEL_PROJECT_ID: prj_gXmmVe1QqGFJ9nsv30uu0emLqIdY
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  PRODUCTION_ALIAS_HOST: egx-tfe-v20-fusion-rc2.vercel.app
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  exact-preview-validation:
+    name: exact-preview-validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout exact push SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Assert research branch and exact checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = 'develop/rc2-intraday-operations-v1' || { echo 'Research branch mismatch'; exit 2; }
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$GITHUB_SHA" || { echo "Checkout SHA mismatch: actual=$actual expected=$GITHUB_SHA"; exit 2; }
+          test "$GITHUB_REF_NAME" != 'main'
+          test "$GITHUB_REF_NAME" != 'release/rc2-frozen'
+          echo "EXACT_CANDIDATE_SHA=$GITHUB_SHA"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Exact-candidate functional suite
+        working-directory: tfe-v20
+        run: npm test
+
+      - name: Exact-candidate independent red-team gate
+        working-directory: tfe-v20
+        run: npm run red-team
+
+      - name: Install deterministic browser engines
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium firefox webkit
+
+      - name: Deterministic Chromium Firefox WebKit consistency gate
+        env:
+          RC2_BROWSER_ENGINES: chromium,firefox,webkit
+        run: node tfe-v20/scripts/browser-consistency-smoke.cjs
+
+      - name: Require Vercel deployment credential before any deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VERCEL_TOKEN" || { echo 'VERCEL_TOKEN is missing; fail closed before deployment'; exit 3; }
+
+      - name: Pull exact project preview configuration
+        working-directory: tfe-v20
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vercel@59.7.0 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Build immutable preview artifact
+        working-directory: tfe-v20
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vercel@59.7.0 build --token="$VERCEL_TOKEN"
+
+      - id: deploy
+        name: Deploy PREVIEW only with exact source SHA
+        working-directory: tfe-v20
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vercel@59.7.0 deploy --prebuilt --yes --token="$VERCEL_TOKEN" --env "TFE_SOURCE_COMMIT=$GITHUB_SHA" | tee /tmp/vercel-preview.out
+          PREVIEW_URL="$(grep -Eo 'https://[^[:space:]]+\.vercel\.app' /tmp/vercel-preview.out | tail -n 1 | tr -d '\r')"
+          test -n "$PREVIEW_URL" || { echo 'Could not capture Vercel preview URL'; cat /tmp/vercel-preview.out; exit 4; }
+          node - "$PREVIEW_URL" <<'NODE'
+          const raw = process.argv[2];
+          const u = new URL(raw);
+          if (u.protocol !== 'https:') throw new Error('Preview URL must use HTTPS');
+          if (u.hostname === process.env.PRODUCTION_ALIAS_HOST) throw new Error('Production alias returned by preview deploy');
+          if (!u.hostname.endsWith('.vercel.app')) throw new Error(`Unexpected preview host: ${u.hostname}`);
+          if (u.pathname !== '/' || u.search || u.hash) throw new Error('Preview URL must be a bare origin');
+          NODE
+          echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          echo "PREVIEW_URL=$PREVIEW_URL"
+
+      - id: metadata
+        name: Require READY preview metadata and forbid production target
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const host = new URL(process.env.PREVIEW_URL).hostname;
+          const endpoint = `https://api.vercel.com/v13/deployments/${host}?teamId=${process.env.VERCEL_ORG_ID}&withGitRepoInfo=true`;
+          const res = await fetch(endpoint,{headers:{authorization:`Bearer ${process.env.VERCEL_TOKEN}`}});
+          if (!res.ok) throw new Error(`Vercel deployment metadata HTTP ${res.status}`);
+          const d = await res.json();
+          const projectId = d.projectId || d.project?.id || null;
+          if (d.url !== host) throw new Error(`Preview host mismatch api=${d.url} expected=${host}`);
+          if (projectId && projectId !== process.env.VERCEL_PROJECT_ID) throw new Error(`Project mismatch ${projectId}`);
+          if ((d.readyState || d.state) !== 'READY') throw new Error(`Preview not READY: ${d.readyState || d.state}`);
+          if (d.target != null) throw new Error(`Preview target must be null; actual=${d.target}`);
+          if (!/^dpl_[A-Za-z0-9]+$/.test(d.id || '')) throw new Error(`Invalid deployment id: ${d.id}`);
+          const aliases = Array.isArray(d.alias) ? d.alias : [];
+          if (aliases.includes(process.env.PRODUCTION_ALIAS_HOST)) throw new Error('Preview owns production alias; refusing validation');
+          const out = {
+            deploymentId:d.id,
+            previewUrl:process.env.PREVIEW_URL,
+            target:d.target ?? null,
+            readyState:d.readyState || d.state,
+            projectId,
+            gitSource:d.gitSource || null,
+            candidateSha:process.env.GITHUB_SHA,
+            productionMutationAllowed:false
+          };
+          fs.writeFileSync('/tmp/preview-metadata.json',JSON.stringify(out,null,2)+'\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`deployment_id=${d.id}\n`);
+          console.log(JSON.stringify(out,null,2));
+          NODE
+
+      - id: oidc
+        name: Mint ephemeral GitHub OIDC token for protected-preview access
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken();
+            core.setSecret(token);
+            core.setOutput('token', token);
+
+      - name: Live browser smoke against exact preview SHA
+        env:
+          RC2_SMOKE_URL: ${{ steps.deploy.outputs.preview_url }}
+          RC2_EXPECTED_COMMIT: ${{ github.sha }}
+          RC2_BROWSER_ENGINES: chromium
+          RC2_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+        run: |
+          set -euo pipefail
+          node tfe-v20/scripts/browser-consistency-smoke.cjs | tee /tmp/live-preview-smoke.json
+
+      - name: Recheck exact deployment after live validation
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          DEPLOYMENT_ID: ${{ steps.metadata.outputs.deployment_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const host = new URL(process.env.PREVIEW_URL).hostname;
+          const res = await fetch(`https://api.vercel.com/v13/deployments/${process.env.DEPLOYMENT_ID}?teamId=${process.env.VERCEL_ORG_ID}`,{
+            headers:{authorization:`Bearer ${process.env.VERCEL_TOKEN}`}
+          });
+          if (!res.ok) throw new Error(`Post-smoke metadata HTTP ${res.status}`);
+          const d = await res.json();
+          if (d.id !== process.env.DEPLOYMENT_ID) throw new Error('Deployment ID changed');
+          if (d.url !== host) throw new Error(`Deployment URL changed api=${d.url} expected=${host}`);
+          if ((d.readyState || d.state) !== 'READY') throw new Error(`Deployment is no longer READY: ${d.readyState || d.state}`);
+          if (d.target != null) throw new Error(`Deployment is no longer preview: target=${d.target}`);
+          if ((d.alias || []).includes(process.env.PRODUCTION_ALIAS_HOST)) throw new Error('Production alias unexpectedly assigned');
+          console.log(`EXACT_PREVIEW_VALIDATED_NO_PROMOTION:${d.id}:${host}:${process.env.GITHUB_SHA}`);
+          NODE
+
+      - name: Build immutable preview-validation evidence
+        if: always()
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
+          DEPLOYMENT_ID: ${{ steps.metadata.outputs.deployment_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rc2-preview-evidence
+          cp /tmp/preview-metadata.json /tmp/rc2-preview-evidence/preview-metadata.json 2>/dev/null || true
+          cp /tmp/live-preview-smoke.json /tmp/rc2-preview-evidence/live-preview-smoke.json 2>/dev/null || true
+          cat > /tmp/rc2-preview-evidence/validation-status.json <<EOF
+          {
+            "recordedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "candidateSha": "$GITHUB_SHA",
+            "branch": "$GITHUB_REF_NAME",
+            "previewUrl": "$PREVIEW_URL",
+            "deploymentId": "$DEPLOYMENT_ID",
+            "workflowRunId": "$GITHUB_RUN_ID",
+            "gitMutation": false,
+            "productionMutation": false,
+            "promotionAttempted": false,
+            "previewProtectionAuth": "github-oidc"
+          }
+          EOF
+
+      - name: Upload preview-validation evidence without mutating Git
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rc2-exact-preview-validation-${{ github.sha }}
+          path: /tmp/rc2-preview-evidence
+          if-no-files-found: warn
+          retention-days: 30

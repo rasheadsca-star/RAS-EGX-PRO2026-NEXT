@@ -32,19 +32,23 @@ function logInternal(scope, error, context = null) {
   console.error(`[${scope}]${payload}`, error?.stack ?? error?.message ?? error);
 }
 
-function withPublicationGate(result) {
+export function withPublicationGate(result) {
   const technicalEligible = Boolean(result?.eligible);
   const publicationHold = Boolean(result?.quality?.publicationHold);
+  const dataNotReady = Array.isArray(result?.reasonCodes) && result.reasonCodes.includes('DATA_NOT_READY');
   const publicationEligible = technicalEligible && !publicationHold;
   return {
     ...result,
     technicalEligible,
     publicationEligible,
-    publicationState: publicationHold
-      ? 'PRICE_RECONCILIATION_REQUIRED'
-      : publicationEligible
-        ? 'RESEARCH_CANDIDATE'
-        : 'REJECTED',
+    dataNotReady,
+    publicationState: dataNotReady
+      ? 'DATA_NOT_READY'
+      : publicationHold
+        ? 'PRICE_RECONCILIATION_REQUIRED'
+        : publicationEligible
+          ? 'RESEARCH_CANDIDATE'
+          : 'REJECTED',
   };
 }
 
@@ -122,7 +126,7 @@ async function historySeries(ticker, limit = 120) {
 }
 
 async function scan(outputLimit = 20) {
-  const [{ snapshot, historySummary, candidates, expectedSessionDate, universeMode }, v17] = await Promise.all([loadUniverse(), loadV17()]);
+  const [{ snapshot, historySummary, candidates, discoveryOnlyCandidates = [], readinessExcludedCandidates = [], expectedSessionDate, universeMode }, v17] = await Promise.all([loadUniverse(), loadV17()]);
   const results = [];
   for (let i = 0; i < candidates.length; i += 16) {
     const batch = await Promise.all(candidates.slice(i, i + 16).map(async (d) => {
@@ -141,7 +145,8 @@ async function scan(outputLimit = 20) {
   const technicalEligible = results.filter((x) => x.technicalEligible);
   const publishable = results.filter((x) => x.publicationEligible);
   const withheld = results.filter((x) => x.technicalEligible && !x.publicationEligible);
-  const rejected = results.filter((x) => !x.technicalEligible);
+  const dataNotReady = results.filter((x) => x.publicationState === 'DATA_NOT_READY');
+  const rejected = results.filter((x) => !x.technicalEligible && x.publicationState !== 'DATA_NOT_READY');
   const allRanked = rankAnalyses(publishable);
   const recommendations = allRanked.slice(0, outputLimit);
 
@@ -162,12 +167,19 @@ async function scan(outputLimit = 20) {
       missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
       historicalConfidenceMethod: 'WILSON_95_LOWER_BOUND_WITH_WEIGHT_SCALED_BY_SAMPLE_RELIABILITY',
       minimumHistoricalTradesForFullWeight: POLICY.minHistoricalTrades,
+      dataReadinessGate: 'FAIL_CLOSED_BEFORE_SCORING',
+      dataNotReadyIsRejection: false,
     },
     universe: {
       mode: universeMode,
       sessionDate: expectedSessionDate,
       historySummaryGeneratedAt: historySummary?.generatedAt ?? null,
       currentVerifiedCandidates: candidates.length,
+      readinessExcludedBeforeScan: readinessExcludedCandidates.length,
+      readinessExclusionReasonCounts: reasonCounts(readinessExcludedCandidates),
+      readinessExcludedSample: readinessExcludedCandidates.slice(0, 40),
+      discoveryOnlyCandidates: discoveryOnlyCandidates.length,
+      fallbackMayEnterRanking: false,
       alphaDataBranch: DATA_SOURCES.alphaDataBranch,
       overlayBranch: DATA_SOURCES.overlayBranch,
       v20NativeSourceEngine: snapshot?.engineId ?? snapshot?.schemaVersion ?? 'V20_CURRENT_MARKET',
@@ -180,6 +192,9 @@ async function scan(outputLimit = 20) {
       technicalEligibleTotal: technicalEligible.length,
       publicationEligibleTotal: allRanked.length,
       withheldForPriceReconciliation: withheld.length,
+      dataNotReadyScanned: dataNotReady.length,
+      dataNotReadyBeforeScan: readinessExcludedCandidates.length,
+      dataNotReadyTotal: dataNotReady.length + readinessExcludedCandidates.length,
       returned: recommendations.length,
       rejected: rejected.length,
     },
@@ -191,6 +206,13 @@ async function scan(outputLimit = 20) {
       conflictPct: x.quality?.conflictPct ?? null,
       holdReason: x.quality?.publicationHoldReason ?? 'PRICE_RECONCILIATION_REQUIRED',
     })),
+    dataReadinessReasonCounts: reasonCounts(dataNotReady),
+    dataNotReadySample: dataNotReady.slice(0, 40).map((x) => ({
+      ticker: x.ticker,
+      reasonCodes: x.reasonCodes ?? [],
+      readiness: x.dataReadiness ?? null,
+      error: x.error ?? null,
+    })),
     rejectionReasonCounts: reasonCounts(rejected),
     rejectedSample: rejected.slice(0, 40).map((x) => ({ ticker: x.ticker, reasonCodes: x.reasonCodes ?? [], quality: x.quality?.state ?? null, reviewFlags: x.quality?.reviewFlags ?? [], error: x.error ?? null })),
   };
@@ -199,7 +221,7 @@ async function scan(outputLimit = 20) {
 async function simulateMarket(maxSymbols = 220) {
   const { candidates } = await loadUniverse();
   const selected = candidates.slice(0, Math.max(1, Math.min(220, maxSymbols)));
-  const allTrades = [], allExpired = [], perTicker = [], errors = [];
+  const allTrades = [], allExpired = [], perTicker = [], errors = [], dataNotReady = [];
   for (let i = 0; i < selected.length; i += 16) {
     const batch = await Promise.all(selected.slice(i, i + 16).map(async (d) => {
       try {
@@ -213,6 +235,10 @@ async function simulateMarket(maxSymbols = 220) {
     }));
     for (const r of batch) {
       if (r.error) { errors.push({ ticker: r.ticker, error: r.error }); continue; }
+      if (r.bt.skipped) {
+        dataNotReady.push({ ticker: r.ticker, reason: r.bt.skipReason ?? 'DATA_NOT_READY', readiness: r.bt.dataReadiness ?? null });
+        continue;
+      }
       allTrades.push(...r.bt.trades);
       allExpired.push(...r.bt.expired.map((x) => ({ ticker: r.ticker, ...x })));
       perTicker.push({ ticker: r.ticker, ...r.bt.summary });
@@ -235,9 +261,13 @@ async function simulateMarket(maxSymbols = 220) {
       costPct: POLICY.roundTripCostPct,
       presentDayQualityWarningsExcludedFromPastSignals: true,
       alphaDataBranch: DATA_SOURCES.alphaDataBranch,
+      dataReadinessGate: 'FULL_HISTORY_FAIL_CLOSED',
+      incompleteHistoryAction: 'SKIP_NOT_ZERO_SCORE',
     },
     symbolsRequested: selected.length,
     symbolsCompleted: perTicker.length,
+    symbolsDataNotReady: dataNotReady.length,
+    dataNotReady,
     errors,
     summary: aggregate,
     perTicker: perTicker.filter((x) => x.entered > 0).sort((a,b) => (b.target1Pct ?? -1) - (a.target1Pct ?? -1) || b.entered - a.entered),
@@ -331,6 +361,8 @@ export default async function handler(req, res) {
       dataSources: DATA_SOURCES,
       invariant: 'RESEARCH_ONLY_EXECUTION_BLOCKED',
       technicalCore: 'ORIGINAL_SCOREBARS_PRESERVED',
+      dataReadinessGate: 'FAIL_CLOSED_UNKNOWN_NEVER_ZERO',
+      dataNotReadyIsRejection: false,
       historicalConfidence: 'WILSON_AFTER_HARD_GATES_WITH_EVIDENCE_AWARE_WEIGHTING',
       missingHistoricalEvidence: 'NEUTRAL_NOT_ZERO',
       decisionLog: 'AVAILABLE',
@@ -377,7 +409,7 @@ export default async function handler(req, res) {
       }
       const ticker = String(url.searchParams.get('ticker') ?? 'ETEL').trim().toUpperCase();
       const h = await loadHistory(ticker);
-      return json(res, 200, { ok: true, engine: POLICY.engineId, sourceCommit: runtimeSourceCommit(), ticker, methodology: { technicalCore: 'ORIGINAL_SCOREBARS_SMA50_SMA200_RSI14_MACD_ATR_VOLUME', noLookahead: true, entryAfterSignal: true, sameBarAmbiguity: 'STOP_FIRST', costPct: POLICY.roundTripCostPct, presentDayQualityWarningsExcludedFromPastSignals: true, alphaDataBranch: DATA_SOURCES.alphaDataBranch }, ...backtestHistory({ ticker, rows: h.rows, historyMeta: h.meta }) });
+      return json(res, 200, { ok: true, engine: POLICY.engineId, sourceCommit: runtimeSourceCommit(), ticker, methodology: { technicalCore: 'ORIGINAL_SCOREBARS_SMA50_SMA200_RSI14_MACD_ATR_VOLUME', noLookahead: true, entryAfterSignal: true, sameBarAmbiguity: 'STOP_FIRST', costPct: POLICY.roundTripCostPct, presentDayQualityWarningsExcludedFromPastSignals: true, alphaDataBranch: DATA_SOURCES.alphaDataBranch, dataReadinessGate: 'FULL_HISTORY_FAIL_CLOSED', incompleteHistoryAction: 'SKIP_NOT_ZERO_SCORE' }, ...backtestHistory({ ticker, rows: h.rows, historyMeta: h.meta }) });
     }
     const limit = Math.max(5, Math.min(50, Number(url.searchParams.get('limit') ?? 20) || 20));
     return json(res, 200, await scan(limit));

@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const ui=readFileSync(new URL('../public/ui-v169.js',import.meta.url),'utf8');
+const live=readFileSync(new URL('../public/live-refresh-v1.js',import.meta.url),'utf8');
+const html=readFileSync(new URL('../public/index.html',import.meta.url),'utf8');
+test('recommendation session date wins over stale universe date in local archive',()=>{assert.match(ui,/const sessionDate=x\.sessionDate\|\|universeDate/);assert.match(ui,/function effectiveSessionDate\(\)/)});
+test('V16.9 automatically refreshes RC2 every five minutes without cache',()=>{assert.match(ui,/setInterval\(\(\)=>\{if\(document\.visibilityState==='visible'\)refreshAll\(\)\},300000\)/);assert.match(ui,/cache:'no-store'/)});
+test('live portfolio adapter prices both portfolio stores from intraday API',()=>{assert.match(live,/\/api\/intraday/);assert.match(live,/egx-tfe-rc2-v169-eod-manager/);assert.match(live,/egx-tfe-rc2-v169-portfolio/);assert.match(live,/AUTO_REFRESH_MS=300_000/)});
+test('live refresh is display-only and cannot enable execution or mutate recommendations',()=>{assert.match(live,/scoringImpact=NONE/);assert.match(live,/recommendationMutationAllowed=false/);assert.match(live,/executionAllowed=false/);assert.doesNotMatch(live,/from ['"]\.\.\/src\/(engine|policy|confidence)/)});
+test('professional shell loads live refresh adapter',()=>assert.match(html,/live-refresh-v1\.js\?v=1\.0\.0/));
