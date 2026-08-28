@@ -1,0 +1,108 @@
+name: Publish Triple Engine to GitHub Pages
+
+on:
+  push:
+    branches:
+      - research/triple-engine-consensus-v1
+    paths:
+      - 'triple-engine/**'
+      - '.github/workflows/triple-engine-pages-publish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current main site
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site
+          fetch-depth: 1
+
+      - name: Checkout Triple Engine research source
+        uses: actions/checkout@v4
+        with:
+          ref: research/triple-engine-consensus-v1
+          path: triple-source
+          fetch-depth: 1
+
+      - name: Secret guard
+        run: |
+          set -euo pipefail
+          test ! -e site/.env
+          test ! -e site/.project-config.json
+          if git -C site ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo 'Tracked .env is forbidden from Pages'
+            exit 1
+          fi
+
+      - name: Validate Triple Engine snapshot
+        run: |
+          set -euo pipefail
+          test -f triple-source/triple-engine/index.html
+          test -f triple-source/triple-engine/data/current.json
+          node - <<'NODE'
+          const d=require('./triple-source/triple-engine/data/current.json');
+          if(d.mode!=='RESEARCH_SHADOW_ONLY') throw new Error('research lock missing');
+          if(d.executionLocks?.executionAllowed!==false) throw new Error('execution must remain disabled');
+          if(d.marketSession!=='2026-08-27') throw new Error('unexpected market session');
+          console.log('TRIPLE_ENGINE_PAGES_SNAPSHOT_PASS',d.marketSession,d.dataReadiness?.ready,d.dataReadiness?.quarantined);
+          NODE
+
+      - name: Rebuild existing SEPA-X Pages content
+        uses: actions/checkout@v4
+        with:
+          ref: develop/sepax-isolated-v1
+          path: sepax-source
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate isolated SEPA-X
+        working-directory: sepax-source/sepa-x
+        run: npm test
+
+      - name: Build existing SEPA-X site exactly as current Pages workflow
+        run: |
+          set -euo pipefail
+          rm -rf "$GITHUB_WORKSPACE/site/sepax"
+          node "$GITHUB_WORKSPACE/sepax-source/sepa-x/scripts/build-github-pages.mjs" "$GITHUB_WORKSPACE/site/sepax"
+          test -f "$GITHUB_WORKSPACE/site/sepax/index.html"
+          rm -rf "$GITHUB_WORKSPACE/sepax-source"
+
+      - name: Overlay Triple Engine only
+        run: |
+          set -euo pipefail
+          rm -rf "$GITHUB_WORKSPACE/site/triple-engine"
+          cp -a "$GITHUB_WORKSPACE/triple-source/triple-engine" "$GITHUB_WORKSPACE/site/triple-engine"
+          rm -rf "$GITHUB_WORKSPACE/triple-source"
+          test -f "$GITHUB_WORKSPACE/site/triple-engine/index.html"
+          test -f "$GITHUB_WORKSPACE/site/triple-engine/data/current.json"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload complete Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
