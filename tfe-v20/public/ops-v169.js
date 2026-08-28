@@ -58,12 +58,29 @@ function ensureShell(){
   if(ev&&!document.getElementById('opsRegimeEvidence'))ev.insertAdjacentHTML('afterbegin',`<article class="panel" id="opsRegimeEvidence"><div class="panel-head"><div><h2>Market Regime — Evidence Only</h2><p>واجهة Bull / Sideways / Bear منفصلة عن Alpha. لا تغيّر المخاطرة أو التوصيات تلقائيًا.</p></div><span class="badge neutral">scoringImpact = NONE</span></div><div style="padding:12px" id="opsRegimeBody"></div></article>`);
 }
 
+function currentScanMeta(){
+  const payload=window.__RC2_UI_SCAN__||{};
+  const scan=payload.scan||{};
+  const dataSession=payload.effectiveDate||scan?.universe?.sessionDate||null;
+  const published=n(scan?.summary?.publicationEligibleTotal)??(Array.isArray(scan?.recommendations)?scan.recommendations.length:null);
+  return{dataSession,published};
+}
+
 function freshnessModel(){
   const signals=latestSignals();const phase=marketPhase();const session=signals[0]?.sessionDate||null;
-  if(!session)return{cls:'warn',label:'لا توجد إشارة مجمدة',detail:'في انتظار أول Recommendation Snapshot.'};
-  if(session===phase.date)return{cls:'good',label:'إشارة جلسة اليوم',detail:`الإشارة ${session} والمتابعة الحالية ${phase.phase}.`};
+  const {dataSession,published}=currentScanMeta();
+  if(!session){
+    if(dataSession&&published===0)return{cls:'neutral',label:`جلسة ${dataSession}: لا توصيات`,detail:`بيانات جلسة ${dataSession} محدثة، لكن 0 سهم اجتاز جميع بوابات النشر؛ لا توجد توصية مجمدة جديدة.`};
+    return{cls:'warn',label:'لا توجد إشارة مجمدة',detail:'في انتظار أول Recommendation Snapshot.'};
+  }
+  if(dataSession&&session<dataSession){
+    const phaseNote=phase.phase==='WEEKEND'?`السوق مغلق الآن (${phase.date})`:`حالة السوق الآن ${phase.phase}`;
+    if(published===0)return{cls:'neutral',label:`جلسة ${dataSession}: لا توصيات جديدة`,detail:`تم تحديث وفحص جلسة ${dataSession}، لكن 0 سهم اجتاز بوابات النشر. Snapshot ${session} سجل متابعة تاريخي فقط؛ ${phaseNote}.`};
+    return{cls:'warn',label:'Snapshot أقدم من جلسة البيانات',detail:`جلسة البيانات ${dataSession} أحدث من Snapshot ${session}. لا يُعرض القديم كتوصية حالية؛ ${phaseNote}.`};
+  }
+  if(session===dataSession||(!dataSession&&session===phase.date))return{cls:'good',label:`Snapshot جلسة ${session}`,detail:`الإشارة متطابقة مع آخر جلسة بيانات مكتملة. حالة المتابعة ${phase.phase}.`};
   if(session<phase.date&&phase.phase==='OPEN')return{cls:'good',label:'إشارة مجمدة تحت المتابعة',detail:`خطة ${session} تُتابع الآن في جلسة ${phase.date}; لا يعاد حساب Alpha داخل الجلسة.`};
-  if(session<phase.date)return{cls:'neutral',label:'إشارة سابقة — Reference/Tracking',detail:`آخر إشارة مجمدة ${session}. حالة السوق الحالية ${phase.phase}.`};
+  if(session<phase.date)return{cls:'neutral',label:'إشارة سابقة — Reference/Tracking',detail:`Snapshot ${session} سجل متابعة فقط. السوق مغلق الآن بتاريخ ${phase.date} (${phase.phase}).`};
   return{cls:'bad',label:'تاريخ الإشارة غير متسق',detail:`Signal ${session} > Cairo ${phase.date}`};
 }
 
