@@ -1,0 +1,56 @@
+name: Gann Fusion X Forward Shadow
+
+on:
+  push:
+    branches: [feature/gann-fusion-x-forward-shadow]
+    paths:
+      - 'gann-fusion-x/scripts/forward-shadow.cjs'
+      - 'gann-fusion-x/scripts/forward-shadow-check.cjs'
+      - 'gann-fusion-x/data/forward-shadow-ledger.json'
+      - '.github/workflows/gann-fusion-x-forward-shadow.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '15 13 * * 0-4'
+    - cron: '15 15 * * 0-4'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gann-fusion-x-forward-shadow
+  cancel-in-progress: false
+
+jobs:
+  shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check
+        run: |
+          node --check gann-fusion-x/scripts/forward-shadow.cjs
+          node --check gann-fusion-x/scripts/forward-shadow-check.cjs
+      - name: Refresh SEPA read-only mirror
+        continue-on-error: true
+        run: node gann-fusion-x/scripts/sync-sepa.cjs
+      - name: Capture signals and evaluate matured outcomes
+        run: node gann-fusion-x/scripts/forward-shadow.cjs
+      - name: Validate append-only ledger structure
+        run: node gann-fusion-x/scripts/forward-shadow-check.cjs
+      - name: Commit forward evidence when changed
+        shell: bash
+        run: |
+          if git diff --quiet -- gann-fusion-x/data/forward-shadow-ledger.json gann-fusion-x/data/forward-shadow-report.json gann-fusion-x/data/sepa-x-snapshot.json; then
+            echo 'No new forward evidence.'
+            exit 0
+          fi
+          git config user.name 'gann-fusion-shadow-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add gann-fusion-x/data/forward-shadow-ledger.json gann-fusion-x/data/forward-shadow-report.json gann-fusion-x/data/sepa-x-snapshot.json
+          git commit -m 'data(gann): append forward shadow evidence'
+          git push
