@@ -1,0 +1,90 @@
+name: Forward Shadow Audit V1
+on:
+  push:
+    branches:
+      - research/data-completion-deep-repair-v1-20260828
+  workflow_dispatch:
+concurrency:
+  group: forward-shadow-audit-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          node --check scripts/research/deep-data-completion-audit.cjs
+          node --check scripts/research/research-history-repair-v1.cjs
+          node --check gann-fusion-x/scripts/sync-sepa.cjs
+          node --check gann-fusion-x/scripts/data-quality-enrichment.cjs
+          node --check gann-fusion-x/scripts/build-snapshot.cjs
+          node --check gann-fusion-x/scripts/data-readiness-gate.cjs
+          node --check gann-fusion-x/scripts/forward-shadow-v2.cjs
+          node --check gann-fusion-x/scripts/forward-shadow-check.cjs
+          node --check gann-fusion-x/review/data-completion-destroyer-v2.cjs
+          node --check gann-fusion-x/review/engine-destroyer-v1.cjs
+          node --check gann-fusion-x/review/ranking-destroyer-v1.cjs
+          node --check gann-fusion-x/review/forward-shadow-destroyer-v1.cjs
+      - name: Refresh SEPA read-only mirror
+        run: node gann-fusion-x/scripts/sync-sepa.cjs
+      - name: Deep inventory
+        env:
+          DEEP_DATA_LIVE_STARTA: 'false'
+          DEEP_DATA_STARTA_LIMIT: '0'
+        run: node scripts/research/deep-data-completion-audit.cjs
+      - name: Verified research history repair
+        run: node scripts/research/research-history-repair-v1.cjs
+      - name: OHLCV liquidity and risk enrichment
+        run: node gann-fusion-x/scripts/data-quality-enrichment.cjs
+      - name: Strict data readiness gate
+        run: node gann-fusion-x/scripts/data-readiness-gate.cjs
+      - name: Data Destroyer V2
+        run: node gann-fusion-x/review/data-completion-destroyer-v2.cjs
+      - name: Engine Destroyer V1
+        run: node gann-fusion-x/review/engine-destroyer-v1.cjs
+      - name: Ranking Destroyer V1
+        run: node gann-fusion-x/review/ranking-destroyer-v1.cjs
+      - name: Developer forward shadow capture
+        run: node gann-fusion-x/scripts/forward-shadow-v2.cjs
+      - name: Forward ledger structural check
+        run: node gann-fusion-x/scripts/forward-shadow-check.cjs
+      - name: Forward Shadow Destroyer V1
+        id: forward_destroyer
+        continue-on-error: true
+        run: node gann-fusion-x/review/forward-shadow-destroyer-v1.cjs
+      - name: Forward findings summary
+        if: always()
+        run: cat gann-fusion-x/data/forward-shadow-destroyer-v1.md >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Enforce Forward Shadow Destroyer V1 gate
+        if: always()
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='gann-fusion-x/data/forward-shadow-destroyer-v1.json';
+          if(!fs.existsSync(p)) throw new Error('Forward Shadow Destroyer V1 report missing');
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          console.log(JSON.stringify({passed:r.passed,critical:r.critical,major:r.major,minor:r.minor,summary:r.summary},null,2));
+          if(!r.passed) process.exit(1);
+          NODE
+      - name: Upload forward evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forward-shadow-audit-v1
+          retention-days: 30
+          path: |
+            gann-fusion-x/data/forward-shadow-ledger.json
+            gann-fusion-x/data/forward-shadow-report.json
+            gann-fusion-x/data/forward-shadow-destroyer-v1.json
+            gann-fusion-x/data/forward-shadow-destroyer-v1.md
+            gann-fusion-x/data/data-completion-destroyer-v2.json
+            gann-fusion-x/data/engine-destroyer-v1.json
+            gann-fusion-x/data/ranking-destroyer-v1.json
+            gann-fusion-x/data/data-readiness-current-v1.json
