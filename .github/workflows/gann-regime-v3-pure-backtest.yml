@@ -1,0 +1,31 @@
+name: GANN Regime Gate V3 Pure Backtest
+on:
+  push:
+    branches:
+      - feature/gann-regime-gate-v3-pure
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          node --check gann-fusion-x/engine/regime-gate-v3-pure.js
+          node --check gann-fusion-x/scripts/backtest-regime-v3-pure.cjs
+      - name: Run pure gate backtest
+        run: node gann-fusion-x/scripts/backtest-regime-v3-pure.cjs
+      - name: Show report
+        run: cat gann-fusion-x/data/regime-v3-pure-backtest.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gann-regime-v3-pure-backtest
+          path: |
+            gann-fusion-x/data/regime-v3-pure-backtest.json
+            gann-fusion-x/data/regime-v3-pure-backtest.md
+          retention-days: 14
