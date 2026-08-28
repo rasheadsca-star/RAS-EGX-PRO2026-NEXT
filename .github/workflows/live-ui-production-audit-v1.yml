@@ -1,20 +1,27 @@
 name: Live UI Production Audit V1
+
 on:
   push:
     branches:
       - research/data-completion-deep-repair-v1-20260828
   workflow_dispatch:
+
 concurrency:
   group: live-ui-production-audit-${{ github.ref }}
   cancel-in-progress: true
+
 permissions:
   contents: read
+
 jobs:
   audit:
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
@@ -69,10 +76,16 @@ jobs:
       - name: Install Playwright Chromium
         if: steps.live_destroyer.outcome == 'success'
         run: |
-          npm install --no-save playwright@1.55.0
-          npx playwright install --with-deps chromium
+          set -euo pipefail
+          mkdir -p /tmp/gfx-playwright
+          npm install --prefix /tmp/gfx-playwright --no-save playwright@1.55.0
+          /tmp/gfx-playwright/node_modules/.bin/playwright install --with-deps chromium
       - name: Browser consistency smoke
         if: steps.live_destroyer.outcome == 'success'
+        env:
+          NODE_PATH: /tmp/gfx-playwright/node_modules
+          GANN_FUSION_UI_URL: http://127.0.0.1:4173/gann-fusion-x/app/index-v1.html
+          GANN_FUSION_AUDIT_REPORT: gann-fusion-x/data/live-ui-browser-check-v1.json
         run: |
           set -euo pipefail
           python3 -m http.server 4173 --directory . >/tmp/gfx-live-ui-http.log 2>&1 &
@@ -80,7 +93,7 @@ jobs:
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           ready=0
           for i in $(seq 1 40); do
-            if curl -fsS http://127.0.0.1:4173/gann-fusion-x/app/index-v1.html >/dev/null; then
+            if curl -fsS "$GANN_FUSION_UI_URL" >/dev/null; then
               ready=1
               break
             fi
