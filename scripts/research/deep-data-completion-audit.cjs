@@ -8,6 +8,8 @@ const read=(p,d=null)=>{try{return JSON.parse(fs.readFileSync(p,'utf8'))}catch{r
 const round=(n,d=2)=>Number.isFinite(Number(n))?Number(Number(n).toFixed(d)):null;
 const median=a=>{const s=a.filter(Number.isFinite).sort((x,y)=>x-y);if(!s.length)return null;const m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2};
 const pctRank=(v,arr)=>{const s=arr.filter(Number.isFinite).sort((a,b)=>a-b);if(!s.length||!Number.isFinite(v))return null;let below=0,equal=0;for(const x of s){if(x<v)below++;else if(x===v)equal++;}return round((below+0.5*equal)/s.length*100,1)};
+
+async function main(){
 const summary=read(path.join(DATA,'history-summary.json'),{});
 const market=read(path.join(DATA,'quant','market-search-index-v13-17.json'),{});
 const symbolMapRaw=read(path.join(DATA,'symbol-map.json'),{});
@@ -44,7 +46,7 @@ if(LIVE){
       const last=f.rows.at(-1)||null,first=f.rows[0]||null;
       const overlapDates=new Set(existing.map(x=>x.date));
       const overlap=f.rows.filter(x=>overlapDates.has(x.date));
-      let closeDiffs=[];const oldBy=new Map(existing.map(x=>[x.date,x]));
+      const closeDiffs=[];const oldBy=new Map(existing.map(x=>[x.date,x]));
       for(const x of overlap){const o=oldBy.get(x.date);if(Number(o?.close)>0&&Number(x.close)>0)closeDiffs.push(Math.abs(Number(o.close)-Number(x.close))/Number(o.close)*100)}
       const medDiff=median(closeDiffs);
       starta.push({ticker,status:'FETCHED',identityVerified:Boolean(f.identity?.verified),exactSymbol:Boolean(f.identity?.exactSymbol),exactIsin:Boolean(f.identity?.exactIsin),nameSimilarity:f.identity?.nameSimilarity??null,rows:f.rows.length,firstDate:first?.date||null,lastDate:last?.date||null,latestReached:last?.date===latest,overlapRows:overlap.length,medianOverlapCloseDiffPct:round(medDiff,3),sourceUrl:f.sourceUrl||null,warnings:f.identity?.warnings||[]});
@@ -64,3 +66,5 @@ for(const x of starta)md+=`| ${x.ticker} | ${x.status} | ${x.identityVerified??'
 md+=`\n## Liquidity recovery\n\nMissing vendor liquidity percentile: **${report.counts.missingLiquidityPercentile}**. Recoverable deterministically from existing OHLCV: **${liquidityRecoverable.length}**.\n\nThis is a research audit only; no production files were altered.\n`;
 fs.writeFileSync(path.join(OUT,'deep-data-completion-audit-v1.md'),md);
 console.log(JSON.stringify({latest,counts:report.counts,failedOrStale:failedOrStale.map(x=>({ticker:x.ticker,sessions:x.sessions,last:x.lastSession,lag:x.lagCalendarDays,failed:x.failed,stale:x.staleData})),starta:starta.map(x=>({ticker:x.ticker,status:x.status,identity:x.identityVerified,rows:x.rows,last:x.lastDate,latest:x.latestReached,overlap:x.overlapRows,diff:x.medianOverlapCloseDiffPct}))},null,2));
+}
+main().catch(e=>{console.error(e.stack||e);process.exit(1)});
