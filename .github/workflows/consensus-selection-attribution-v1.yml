@@ -1,0 +1,70 @@
+name: Consensus Selection Attribution V1
+on:
+  push:
+    branches:
+      - research/consensus-selection-attribution-v1-20260828
+jobs:
+  study:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
+          python -m py_compile scripts/research/apply-v16-quality-gate-v2.py
+          node --check gann-fusion-x/scripts/run-consensus-v16-quality-gate-v2.cjs
+          node --check gann-fusion-x/scripts/run-consensus-selection-attribution-source-v1.cjs
+          node --check gann-fusion-x/scripts/analyze-consensus-selection-attribution-v1.cjs
+      - name: Build strict V16 walk-forward with 60-session eligibility warmup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/research/consensus-v16-qualified-walkforward.py')
+          s=p.read_text(encoding='utf-8')
+          old='WARMUP_SESSIONS = 20'
+          if s.count(old) != 1:
+              raise SystemExit('Expected exactly one V16 warmup constant')
+          p.write_text(s.replace(old,'WARMUP_SESSIONS = 11'),encoding='utf-8')
+          PY
+          python scripts/research/consensus-v16-qualified-walkforward.py
+      - name: Apply locked V16 Quality Gate V2
+        run: python scripts/research/apply-v16-quality-gate-v2.py
+      - name: Rebuild locked V2 baseline
+        run: node gann-fusion-x/scripts/run-consensus-v16-quality-gate-v2.cjs
+      - name: Capture attribution rows without changing selection
+        run: node gann-fusion-x/scripts/run-consensus-selection-attribution-source-v1.cjs
+      - name: Analyze First30 Last30 and 60-session attribution
+        run: node gann-fusion-x/scripts/analyze-consensus-selection-attribution-v1.cjs
+      - name: Assert strict invariants
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='gann-fusion-x/data/consensus-selection-attribution-v1.json';
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          if(!r.validation?.passed) throw new Error('ATTRIBUTION_VALIDATION_FAILED');
+          if(r.validation.exactly60Sessions!==true) throw new Error('EXPECTED_60_SESSIONS');
+          if(r.validation.poolCountMatchesBaseline!==true) throw new Error('POOL_COUNT_MISMATCH');
+          console.log(`Validated ${r.baseline.candidates} unchanged consensus opportunities across 60 sessions.`);
+          NODE
+      - name: Show study report
+        run: cat gann-fusion-x/data/consensus-selection-attribution-v1.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: consensus-selection-attribution-v1
+          path: |
+            data/research/consensus-v16-qualified-walkforward.json
+            gann-fusion-x/data/consensus-v16-quality-gate-v2-backtest.json
+            gann-fusion-x/data/consensus-selection-attribution-v1-source.json
+            gann-fusion-x/data/consensus-selection-attribution-v1-rows.json
+            gann-fusion-x/data/consensus-selection-attribution-v1.json
+            gann-fusion-x/data/consensus-selection-attribution-v1.md
+          retention-days: 14
