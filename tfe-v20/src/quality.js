@@ -26,6 +26,45 @@ export function parseLatestConflictPct(warnings = []) {
   return null;
 }
 
+export function validateLatestPriceTruth({ bars = [], priceTruthLatest = null } = {}) {
+  const last = bars.at(-1) ?? null;
+  const truth = priceTruthLatest && typeof priceTruthLatest === 'object' ? priceTruthLatest : null;
+  const lastDate = last?.date ?? null;
+  const truthDate = String(truth?.sourceSessionDate ?? truth?.date ?? '').slice(0, 10) || null;
+  const lastClose = toNum(last?.close);
+  const truthClose = toNum(truth?.close);
+  const confidence = toNum(truth?.confidence) ?? 0;
+  const validationStatus = String(truth?.validationStatus ?? '');
+  const source = String(truth?.source ?? '');
+  const closeDiffPct = lastClose && truthClose
+    ? Math.abs(lastClose - truthClose) / lastClose * 100
+    : null;
+  const sessionConfirmed = /(?:session_confirmed|officially_verified_latest_close|cross_verified_latest_close)/i.test(validationStatus);
+  const independentSource = /(mubasher|egx|investing)/i.test(source);
+  const resolved = Boolean(
+    lastDate &&
+    truthDate === lastDate &&
+    lastClose > 0 &&
+    truthClose > 0 &&
+    closeDiffPct !== null &&
+    closeDiffPct <= 0.25 &&
+    confidence >= 80 &&
+    sessionConfirmed &&
+    independentSource
+  );
+  return {
+    resolved,
+    lastDate,
+    truthDate,
+    lastClose,
+    truthClose,
+    closeDiffPct: closeDiffPct === null ? null : round(closeDiffPct, 4),
+    confidence,
+    validationStatus: validationStatus || null,
+    source: source || null,
+  };
+}
+
 export function assessDataQuality({
   bars,
   warnings = [],
@@ -35,6 +74,7 @@ export function assessDataQuality({
   symbolVerified = null,
   symbolVerification = null,
   officiallyVerifiedLatestSession = null,
+  priceTruthLatest = null,
 } = {}) {
   const reasons = [];
   const reviewFlags = [];
@@ -55,7 +95,14 @@ export function assessDataQuality({
   const warningText = warnings.map(String);
   const hardWarning = POLICY.quality.hardBlockWarnings.find((needle) => warningText.some((w) => w.includes(needle)));
   if (hardWarning) reasons.push(`HARD_WARNING:${hardWarning}`);
-  const conflictPct = parseLatestConflictPct(warningText);
+  const reportedConflictPct = parseLatestConflictPct(warningText);
+  const latestPriceTruth = validateLatestPriceTruth({ bars, priceTruthLatest });
+  const priceReconciliationResolved = reportedConflictPct !== null
+    && reportedConflictPct >= POLICY.quality.conflictBlockPct
+    && officiallyVerifiedLatestSession !== true
+    && latestPriceTruth.resolved;
+  const conflictPct = priceReconciliationResolved ? null : reportedConflictPct;
+  if (priceReconciliationResolved) reviewFlags.push('PRICE_TRUTH_RECONCILIATION_RESOLVED');
   if (conflictPct !== null && conflictPct >= POLICY.quality.conflictReviewPct) reviewFlags.push('LOCAL_REFERENCE_CLOSE_CONFLICT_REVIEW');
   const publicationHold = conflictPct !== null && conflictPct >= POLICY.quality.conflictBlockPct;
   if (publicationHold) reviewFlags.push('HIGH_LOCAL_REFERENCE_CONFLICT_REVIEW');
@@ -79,6 +126,9 @@ export function assessDataQuality({
     publicationHoldReason: publicationHold ? 'PRICE_RECONCILIATION_REQUIRED' : null,
     warnings: warningText,
     conflictPct,
+    reportedConflictPct,
+    priceReconciliationResolved,
+    latestPriceTruth,
     identityDiffPct,
     identityMaxDiffPct,
     identityReferenceDivergence,

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop/v20-integrated-decision-platform
+      - develop/rc2-intraday-operations-v1
     paths:
       - 'tfe-v20/**'
       - '.github/workflows/tfe-v20-audit.yml'
@@ -37,15 +38,27 @@ jobs:
           node --check src/decisionLog.js
           node --check src/engine.js
           node --check src/backtest.js
+          node --check src/recommendationHistory.js
           node --check src/repository.js
           node --check src/ablation.js
           node --check api/index.js
+          node --check api/fundamental.js
           node --check api/session-monitor.js
+          node --check api/intraday.js
+          node --check api/recommendation-history.js
           node --check monitor/session-quote.js
           node --check public/ui-v169.js
           node --check public/session-monitor-core.js
           node --check public/session-monitor.js
+          node --check public/portfolio-manager-core.js
+          node --check public/portfolio-manager.js
+          node --check public/portfolio-deep-analysis.js
+          node --check public/fundamental-auto.js
+          node --check public/recommendation-history-ui.js
+          node --check public/live-refresh-v1.js
+          node --check public/intraday-ops.js
           node --check public/ops-v169.js
+          node --check public/rc2-ops-center.js
           node --check stability/frozen-runtime-contract.js
           node --check sidecars/forward-evidence.js
           node --check sidecars/data-verification.js
@@ -59,6 +72,8 @@ jobs:
           node --check scripts/long-history-validation.mjs
       - name: Full functional and destructive tests
         run: npm test
+      - name: Display-layer isolation tests
+        run: node --test test/portfolio-deep-analysis.test.js test/fundamental-auto.test.js test/portfolio-manager.test.js test/ops-center.test.js test/recommendation-history.test.js test/recommendation-history-api.test.js test/stability-contract.test.js
       - name: Independent red-team stability gate
         run: npm run red-team
       - name: Stage exact runtime artifact
