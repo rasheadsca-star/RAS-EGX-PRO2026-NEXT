@@ -1,0 +1,79 @@
+name: Consensus Trigger Distance Forward V1
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 15 * * 0-4'
+  push:
+    branches:
+      - research/consensus-trigger-distance-forward-v1-20260828
+    paths:
+      - '.github/workflows/consensus-trigger-distance-forward-v1.yml'
+      - 'gann-fusion-x/scripts/run-consensus-trigger-distance-forward-v1.cjs'
+      - 'gann-fusion-x/data/consensus-trigger-distance-forward-v1-preregistration-20260828.md'
+
+jobs:
+  forward-shadow:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Refresh market history from main in workspace only
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main -- data/history || true
+          git checkout origin/main -- data/quant || true
+          git checkout origin/main -- data/stable || true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Syntax
+        run: |
+          python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
+          python -m py_compile scripts/research/apply-v16-quality-gate-v2.py
+          node --check gann-fusion-x/scripts/run-consensus-trigger-distance-forward-v1.cjs
+
+      - name: Build strict V16 walk-forward with frozen availability warmup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/research/consensus-v16-qualified-walkforward.py')
+          s=p.read_text(encoding='utf-8')
+          old='WARMUP_SESSIONS = 20'
+          if s.count(old) != 1:
+              raise SystemExit('Expected exactly one V16 warmup constant')
+          p.write_text(s.replace(old,'WARMUP_SESSIONS = 11'),encoding='utf-8')
+          PY
+          python scripts/research/consensus-v16-qualified-walkforward.py
+
+      - name: Apply locked V16 Quality Gate V2
+        run: python scripts/research/apply-v16-quality-gate-v2.py
+
+      - name: Run frozen forward trigger-distance shadow
+        run: node gann-fusion-x/scripts/run-consensus-trigger-distance-forward-v1.cjs
+
+      - name: Show evidence in workflow summary
+        run: cat gann-fusion-x/data/consensus-trigger-distance-forward-v1-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload forward evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: consensus-trigger-distance-forward-v1
+          path: |
+            data/research/consensus-v16-qualified-walkforward.json
+            gann-fusion-x/data/consensus-trigger-distance-forward-v1-source.json
+            gann-fusion-x/data/consensus-trigger-distance-forward-v1-report.json
+            gann-fusion-x/data/consensus-trigger-distance-forward-v1-report.md
+            gann-fusion-x/data/consensus-trigger-distance-forward-v1-report.html
+            gann-fusion-x/data/consensus-trigger-distance-forward-v1-preregistration-20260828.md
+          retention-days: 30
