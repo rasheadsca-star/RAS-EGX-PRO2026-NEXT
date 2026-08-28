@@ -1,36 +1,33 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Static Pages deployment guarded by engine/data/browser release gates.
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     steps:
-      - name: Checkout
+      - name: Checkout exact release commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
 
       - name: Enforce Pages secret guard
         run: |
@@ -62,7 +59,7 @@ jobs:
           path: .sepax-pages-source
           fetch-depth: 1
 
-      - name: Setup Node for SEPA-X
+      - name: Setup Node for release gates
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -82,15 +79,134 @@ jobs:
           node -e "const m=require('./sepax/pages-manifest.json'); if(!m.symbols||m.symbols<1) process.exit(1); console.log('SEPA_X_PAGES_BUILD_PASS',m.symbols,m.scanGeneratedAt)"
           rm -rf "$GITHUB_WORKSPACE/.sepax-pages-source"
 
+      - name: Validate Gann Fusion X release syntax
+        run: |
+          set -euo pipefail
+          node --check scripts/research/deep-data-completion-audit.cjs
+          node --check scripts/research/research-history-repair-v1.cjs
+          node --check gann-fusion-x/scripts/sync-sepa.cjs
+          node --check gann-fusion-x/scripts/data-quality-enrichment.cjs
+          node --check gann-fusion-x/scripts/data-readiness-gate.cjs
+          node --check gann-fusion-x/scripts/forward-shadow-v2.cjs
+          node --check gann-fusion-x/scripts/forward-shadow-check.cjs
+          node --check gann-fusion-x/scripts/publish-live-ui-snapshot.cjs
+          node --check gann-fusion-x/scripts/live-ui-browser-check.cjs
+          node --check gann-fusion-x/app/app.js
+          node --check gann-fusion-x/review/data-completion-destroyer-v2.cjs
+          node --check gann-fusion-x/review/engine-destroyer-v1.cjs
+          node --check gann-fusion-x/review/ranking-destroyer-v1.cjs
+          node --check gann-fusion-x/review/forward-shadow-destroyer-v1.cjs
+          node --check gann-fusion-x/review/live-ui-production-destroyer-v1.cjs
+
+      - name: Build exact Gann Fusion X release candidate
+        env:
+          DEEP_DATA_LIVE_STARTA: 'false'
+          DEEP_DATA_STARTA_LIMIT: '0'
+        run: |
+          set -euo pipefail
+          node gann-fusion-x/scripts/sync-sepa.cjs
+          node scripts/research/deep-data-completion-audit.cjs
+          node scripts/research/research-history-repair-v1.cjs
+          node gann-fusion-x/scripts/data-quality-enrichment.cjs
+          node gann-fusion-x/scripts/data-readiness-gate.cjs
+          node gann-fusion-x/review/data-completion-destroyer-v2.cjs
+          node gann-fusion-x/review/engine-destroyer-v1.cjs
+          node gann-fusion-x/review/ranking-destroyer-v1.cjs
+          node gann-fusion-x/scripts/forward-shadow-v2.cjs
+          node gann-fusion-x/scripts/forward-shadow-check.cjs
+          node gann-fusion-x/review/forward-shadow-destroyer-v1.cjs
+          node gann-fusion-x/scripts/publish-live-ui-snapshot.cjs
+          node gann-fusion-x/review/live-ui-production-destroyer-v1.cjs
+          echo "GANN_FUSION_RELEASE_DATA_ENGINE_FORWARD_GATES_PASS"
+
+      - name: Install isolated Playwright Chromium
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/gfx-playwright
+          npm install --prefix /tmp/gfx-playwright --no-save playwright@1.55.0
+          /tmp/gfx-playwright/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Pre-deploy browser gate
+        env:
+          NODE_PATH: /tmp/gfx-playwright/node_modules
+          GANN_FUSION_UI_URL: http://127.0.0.1:4173/gann-fusion-x/app/index-v1.html
+          GANN_FUSION_AUDIT_REPORT: /tmp/gann-fusion-predeploy-browser.json
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory . >/tmp/gfx-pages-predeploy-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for i in $(seq 1 40); do
+            if curl -fsS "$GANN_FUSION_UI_URL" >/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/gfx-pages-predeploy-http.log || true
+              exit 1
+            fi
+            sleep 0.25
+          done
+          test "$ready" -eq 1
+          node gann-fusion-x/scripts/live-ui-browser-check.cjs
+          echo "GANN_FUSION_PREDEPLOY_BROWSER_GATE_PASS"
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire tracked working tree plus the generated /sepax static snapshot.
           path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Post-deploy exact snapshot and browser smoke
+        env:
+          NODE_PATH: /tmp/gfx-playwright/node_modules
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          page_root="${PAGE_URL%/}"
+          html_url="$page_root/gann-fusion-x/app/index-v1.html?sha=$GITHUB_SHA"
+          json_url="$page_root/gann-fusion-x/data/live-ui-current-v1.json?sha=$GITHUB_SHA"
+          ready=0
+          for i in $(seq 1 60); do
+            if curl -fsS "$html_url" >/dev/null && curl -fsS "$json_url" -o /tmp/gann-fusion-live-ui-current-v1.json; then
+              if cmp -s gann-fusion-x/data/live-ui-current-v1.json /tmp/gann-fusion-live-ui-current-v1.json; then
+                ready=1
+                break
+              fi
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            echo "POSTDEPLOY_SNAPSHOT_PARITY_FAILED"
+            exit 1
+          fi
+          GANN_FUSION_UI_URL="$html_url" \
+          GANN_FUSION_AUDIT_REPORT=/tmp/gann-fusion-postdeploy-browser.json \
+          node gann-fusion-x/scripts/live-ui-browser-check.cjs
+          echo "GANN_FUSION_POSTDEPLOY_PARITY_AND_BROWSER_PASS"
+
+      - name: Upload Gann Fusion X release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gann-fusion-x-pages-release-evidence
+          retention-days: 30
+          path: |
+            gann-fusion-x/data/live-ui-current-v1.json
+            gann-fusion-x/data/live-ui-production-destroyer-v1.json
+            gann-fusion-x/data/live-ui-production-destroyer-v1.md
+            gann-fusion-x/data/data-readiness-current-v1.json
+            gann-fusion-x/data/forward-shadow-report.json
+            gann-fusion-x/data/forward-shadow-destroyer-v1.json
+            gann-fusion-x/data/data-completion-destroyer-v2.json
+            gann-fusion-x/data/engine-destroyer-v1.json
+            gann-fusion-x/data/ranking-destroyer-v1.json
+            /tmp/gann-fusion-predeploy-browser.json
+            /tmp/gann-fusion-postdeploy-browser.json
