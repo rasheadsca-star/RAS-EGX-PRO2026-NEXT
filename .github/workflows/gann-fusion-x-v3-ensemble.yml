@@ -1,0 +1,38 @@
+name: Gann Fusion X V3 Ensemble Gate
+
+on:
+  push:
+    branches: [feature/gann-fusion-x-v3-ensemble-gate]
+    paths:
+      - 'gann-fusion-x/engine/fusion-v3.js'
+      - 'gann-fusion-x/scripts/backtest-v3-ensemble.cjs'
+      - '.github/workflows/gann-fusion-x-v3-ensemble.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ensemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check
+        run: |
+          node --check gann-fusion-x/engine/fusion-v3.js
+          node --check gann-fusion-x/scripts/backtest-v3-ensemble.cjs
+      - name: Run V3 120-session gate
+        run: node gann-fusion-x/scripts/backtest-v3-ensemble.cjs
+      - name: Show result
+        run: cat gann-fusion-x/data/backtest-v3-comparison.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gann-fusion-x-v3-ensemble
+          path: |
+            gann-fusion-x/data/backtest-v3-comparison.json
+            gann-fusion-x/data/backtest-v3-comparison.md
+          retention-days: 14
