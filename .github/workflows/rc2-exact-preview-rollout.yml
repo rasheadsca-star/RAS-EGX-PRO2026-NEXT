@@ -1,4 +1,4 @@
-name: RC2 Exact Preview Rollout
+name: RC2 Exact Preview Validation
 
 on:
   push:
@@ -15,18 +15,18 @@ permissions:
   id-token: write
 
 concurrency:
-  group: rc2-exact-preview-rollout-${{ github.ref }}
+  group: rc2-exact-preview-validation-${{ github.ref }}
   cancel-in-progress: false
 
 env:
   VERCEL_PROJECT_ID: prj_gXmmVe1QqGFJ9nsv30uu0emLqIdY
   VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
-  PROD_URL: https://egx-tfe-v20-fusion-rc2.vercel.app
+  PRODUCTION_ALIAS_HOST: egx-tfe-v20-fusion-rc2.vercel.app
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
 jobs:
-  exact-rollout:
-    name: exact-preview-live-gate-and-promote
+  exact-preview-validation:
+    name: exact-preview-validation
     runs-on: ubuntu-24.04
     timeout-minutes: 35
 
@@ -103,8 +103,9 @@ jobs:
           const raw = process.argv[2];
           const u = new URL(raw);
           if (u.protocol !== 'https:') throw new Error('Preview URL must use HTTPS');
-          if (u.hostname === 'egx-tfe-v20-fusion-rc2.vercel.app') throw new Error('Production alias returned by preview deploy');
+          if (u.hostname === process.env.PRODUCTION_ALIAS_HOST) throw new Error('Production alias returned by preview deploy');
           if (!u.hostname.endsWith('.vercel.app')) throw new Error(`Unexpected preview host: ${u.hostname}`);
+          if (u.pathname !== '/' || u.search || u.hash) throw new Error('Preview URL must be a bare origin');
           NODE
           echo "preview_url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
           echo "PREVIEW_URL=$PREVIEW_URL"
@@ -130,7 +131,7 @@ jobs:
           if (d.target != null) throw new Error(`Preview target must be null; actual=${d.target}`);
           if (!/^dpl_[A-Za-z0-9]+$/.test(d.id || '')) throw new Error(`Invalid deployment id: ${d.id}`);
           const aliases = Array.isArray(d.alias) ? d.alias : [];
-          if (aliases.includes('egx-tfe-v20-fusion-rc2.vercel.app')) throw new Error('Preview already owns production alias; refusing rollout');
+          if (aliases.includes(process.env.PRODUCTION_ALIAS_HOST)) throw new Error('Preview owns production alias; refusing validation');
           const out = {
             deploymentId:d.id,
             previewUrl:process.env.PREVIEW_URL,
@@ -138,7 +139,8 @@ jobs:
             readyState:d.readyState || d.state,
             projectId,
             gitSource:d.gitSource || null,
-            candidateSha:process.env.GITHUB_SHA
+            candidateSha:process.env.GITHUB_SHA,
+            productionMutationAllowed:false
           };
           fs.writeFileSync('/tmp/preview-metadata.json',JSON.stringify(out,null,2)+'\n');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,`deployment_id=${d.id}\n`);
@@ -164,7 +166,7 @@ jobs:
           set -euo pipefail
           node tfe-v20/scripts/browser-consistency-smoke.cjs | tee /tmp/live-preview-smoke.json
 
-      - name: Recheck exact deployment immediately before promotion
+      - name: Recheck exact deployment after live validation
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
           DEPLOYMENT_ID: ${{ steps.metadata.outputs.deployment_id }}
@@ -176,104 +178,47 @@ jobs:
           const res = await fetch(`https://api.vercel.com/v13/deployments/${process.env.DEPLOYMENT_ID}?teamId=${process.env.VERCEL_ORG_ID}`,{
             headers:{authorization:`Bearer ${process.env.VERCEL_TOKEN}`}
           });
-          if (!res.ok) throw new Error(`Pre-promote metadata HTTP ${res.status}`);
+          if (!res.ok) throw new Error(`Post-smoke metadata HTTP ${res.status}`);
           const d = await res.json();
           if (d.id !== process.env.DEPLOYMENT_ID) throw new Error('Deployment ID changed');
           if (d.url !== host) throw new Error(`Deployment URL changed api=${d.url} expected=${host}`);
           if ((d.readyState || d.state) !== 'READY') throw new Error(`Deployment is no longer READY: ${d.readyState || d.state}`);
           if (d.target != null) throw new Error(`Deployment is no longer preview: target=${d.target}`);
-          if ((d.alias || []).includes('egx-tfe-v20-fusion-rc2.vercel.app')) throw new Error('Production alias unexpectedly assigned before promotion');
-          console.log(`PRE_PROMOTE_EXACT_PREVIEW_OK:${d.id}:${host}:${process.env.GITHUB_SHA}`);
+          if ((d.alias || []).includes(process.env.PRODUCTION_ALIAS_HOST)) throw new Error('Production alias unexpectedly assigned');
+          console.log(`EXACT_PREVIEW_VALIDATED_NO_PROMOTION:${d.id}:${host}:${process.env.GITHUB_SHA}`);
           NODE
 
-      - id: promote
-        name: Promote exact validated preview without rebuild
-        env:
-          DEPLOYMENT_ID: ${{ steps.metadata.outputs.deployment_id }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          code="$(curl -sS -o /tmp/promote.out -w '%{http_code}' \
-            -X POST \
-            -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/promote/$DEPLOYMENT_ID?teamId=$VERCEL_ORG_ID")"
-          cat /tmp/promote.out
-          case "$code" in
-            200|201|202) echo "PROMOTE_ACCEPTED:$code:$DEPLOYMENT_ID" ;;
-            *) echo "PROMOTE_FAILED:$code"; exit 6 ;;
-          esac
-
-      - id: verify
-        name: Verify production reached exact validated SHA with execution locked
-        env:
-          RC2_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          node - <<'NODE'
-          const expected = process.env.GITHUB_SHA;
-          const base = process.env.PROD_URL;
-          const oidc = process.env.RC2_TRUSTED_OIDC_TOKEN;
-          let last = null;
-          for (let i=0;i<35;i++) {
-            try {
-              const headers = {'cache-control':'no-cache'};
-              if (oidc) headers['x-vercel-trusted-oidc-idp-token'] = oidc;
-              const res = await fetch(`${base}/api/index?route=health&t=${Date.now()}`,{headers,cache:'no-store',redirect:'follow'});
-              if (res.ok) {
-                const body = await res.json();
-                last = body;
-                const p = body?.policy?.permissions || {};
-                if (body?.ok === true && body.sourceCommit === expected &&
-                    p.executionAllowed === false && p.automaticOrders === false &&
-                    p.productionAllocation === false && p.automaticChampionPromotion === false) {
-                  console.log(`PRODUCTION_EXACT_SHA_LOCKED_OK:${expected}`);
-                  process.exit(0);
-                }
-              }
-            } catch (e) {
-              last = {error:String(e)};
-            }
-            await new Promise((r)=>setTimeout(r,4000));
-          }
-          console.error(JSON.stringify({expected,last},null,2));
-          throw new Error('Production did not converge to the exact validated SHA with all execution locks closed');
-          NODE
-
-      - name: Build immutable rollout evidence
+      - name: Build immutable preview-validation evidence
         if: always()
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
           DEPLOYMENT_ID: ${{ steps.metadata.outputs.deployment_id }}
-          PROMOTE_OUTCOME: ${{ steps.promote.outcome }}
-          VERIFY_OUTCOME: ${{ steps.verify.outcome }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/rc2-rollout-evidence
-          cp /tmp/preview-metadata.json /tmp/rc2-rollout-evidence/preview-metadata.json 2>/dev/null || true
-          cp /tmp/live-preview-smoke.json /tmp/rc2-rollout-evidence/live-preview-smoke.json 2>/dev/null || true
-          cat > /tmp/rc2-rollout-evidence/rollout-status.json <<EOF
+          mkdir -p /tmp/rc2-preview-evidence
+          cp /tmp/preview-metadata.json /tmp/rc2-preview-evidence/preview-metadata.json 2>/dev/null || true
+          cp /tmp/live-preview-smoke.json /tmp/rc2-preview-evidence/live-preview-smoke.json 2>/dev/null || true
+          cat > /tmp/rc2-preview-evidence/validation-status.json <<EOF
           {
             "recordedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "candidateSha": "$GITHUB_SHA",
             "branch": "$GITHUB_REF_NAME",
             "previewUrl": "$PREVIEW_URL",
             "deploymentId": "$DEPLOYMENT_ID",
-            "promoteOutcome": "$PROMOTE_OUTCOME",
-            "verifyOutcome": "$VERIFY_OUTCOME",
             "workflowRunId": "$GITHUB_RUN_ID",
             "gitMutation": false,
-            "rebuildDuringPromotion": false,
+            "productionMutation": false,
+            "promotionAttempted": false,
             "previewProtectionAuth": "github-oidc"
           }
           EOF
 
-      - name: Upload rollout evidence without mutating Git
+      - name: Upload preview-validation evidence without mutating Git
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: rc2-exact-rollout-${{ github.sha }}
-          path: /tmp/rc2-rollout-evidence
+          name: rc2-exact-preview-validation-${{ github.sha }}
+          path: /tmp/rc2-preview-evidence
           if-no-files-found: warn
           retention-days: 30
