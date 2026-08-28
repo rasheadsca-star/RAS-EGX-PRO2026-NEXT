@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'gann-fusion-x/scripts/backtest-compare.cjs'
+      - 'gann-fusion-x/scripts/backtest-compare-current.cjs'
+      - 'gann-fusion-x/engine/planner.js'
+      - 'gann-fusion-x/engine/entry-timing.js'
       - '.github/workflows/gann-fusion-x-backtest-compare.yml'
   workflow_dispatch:
 
@@ -22,14 +25,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Run 3-session walk-forward comparison
-        run: node gann-fusion-x/scripts/backtest-compare.cjs
+      - name: Run current-production 3-session walk-forward comparison
+        run: node gann-fusion-x/scripts/backtest-compare-current.cjs
       - name: Show summary
         run: cat gann-fusion-x/data/backtest-comparison.md
       - name: Upload comparison artifact
         uses: actions/upload-artifact@v4
         with:
-          name: gann-fusion-x-backtest-comparison
+          name: gann-fusion-x-backtest-comparison-current
           path: |
             gann-fusion-x/data/backtest-comparison.json
             gann-fusion-x/data/backtest-comparison.md
