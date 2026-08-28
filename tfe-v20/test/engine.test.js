@@ -6,6 +6,7 @@ import { analyzeTicker, rankAnalyses, blendFusionScore } from '../src/engine.js'
 import { backtestHistory, summarizeBacktest } from '../src/backtest.js';
 import { scoreBars as originalScoreBars } from '../src/originalScore.js';
 import { selectUniverseCandidates } from '../src/repository.js';
+import { withPublicationGate } from '../api/index.js';
 
 function bars(n=100,{start=20,drift=.11,vol=1_500_000,noise=.18}={}){
   const out=[]; let p=start; const d=new Date('2026-01-01T00:00:00Z');
@@ -34,6 +35,8 @@ test('quality accepts guarded identity reconciliation',()=>{const q=assessDataQu
 test('readiness fails when latest scoring window has unknown volume',()=>{const x=normalizeBars(bars(100)).bars;x[95].volume=null;const r=assessDataReadiness({bars:x});assert.equal(r.readyForRanking,false);assert.ok(r.reasons.includes('VOLUME_DATA_INCOMPLETE'));assert.equal(r.missingDataPolicy,'UNKNOWN_NEVER_COERCED_TO_ZERO')});
 test('historical readiness is stricter than current signal readiness for old missing volume',()=>{const x=normalizeBars(bars(100)).bars;x[30].volume=null;const current=assessDataReadiness({bars:x,requireAllVolume:false});const historical=assessDataReadiness({bars:x,requireAllVolume:true});assert.equal(current.readyForRanking,true);assert.equal(historical.readyForBacktest,false);assert.ok(historical.reasons.includes('VOLUME_DATA_INCOMPLETE'))});
 test('missing historical evidence is neutral in fusion rather than zero-scored',()=>{const b=blendFusionScore(81.4,{confidenceWilsonLower95Pct:null,sampleReliability:0});assert.equal(b.fusionRank,81.4);assert.equal(b.researchWeight,1);assert.equal(b.historicalWeight,0)});
+test('data-not-ready is withheld from ranking without being labeled rejected',()=>{const x=withPublicationGate({ticker:'MISS',eligible:false,reasonCodes:['DATA_NOT_READY','VOLUME_DATA_INCOMPLETE']});assert.equal(x.publicationEligible,false);assert.equal(x.dataNotReady,true);assert.equal(x.publicationState,'DATA_NOT_READY')});
+test('ordinary failed hard gate remains rejected',()=>{const x=withPublicationGate({ticker:'LOW',eligible:false,reasonCodes:['CORE_SCORE_LOW']});assert.equal(x.dataNotReady,false);assert.equal(x.publicationState,'REJECTED')});
 test('analysis always research only',()=>{const a=analyzeTicker({ticker:'TEST',rows:bars(100),historyMeta:{warnings:[]}});assert.equal(a.permissions.executionAllowed,false);assert.equal(a.researchOnly,true)});
 test('analysis requires ticker',()=>assert.throws(()=>analyzeTicker({rows:bars(100)}),/TICKER_REQUIRED/));
 test('short history returns no recommendation',()=>{const a=analyzeTicker({ticker:'X',rows:bars(30)});assert.equal(a.eligible,false);assert.equal(a.decision,'NO_RECOMMENDATION')});
