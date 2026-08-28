@@ -1,0 +1,41 @@
+name: Gann Fusion X V2 Challenger
+
+on:
+  push:
+    branches: [feature/gann-fusion-x-v2-challenger]
+    paths:
+      - 'gann-fusion-x/engine/fusion-v2.js'
+      - 'gann-fusion-x/scripts/backtest-v2-challenger.cjs'
+      - '.github/workflows/gann-fusion-x-v2-challenger.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  challenger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check
+        run: |
+          node --check gann-fusion-x/engine/fusion-v2.js
+          node --check gann-fusion-x/scripts/backtest-v2-challenger.cjs
+      - name: Run V2 walk-forward gate
+        run: node gann-fusion-x/scripts/backtest-v2-challenger.cjs
+      - name: Show comparison
+        run: cat gann-fusion-x/data/backtest-v2-comparison.md
+      - name: Upload V2 comparison artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gann-fusion-x-v2-challenger
+          path: |
+            gann-fusion-x/data/backtest-v2-comparison.json
+            gann-fusion-x/data/backtest-v2-comparison.md
+          retention-days: 14
