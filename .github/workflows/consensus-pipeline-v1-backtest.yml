@@ -1,0 +1,37 @@
+name: Consensus Pipeline V1 Backtest
+on:
+  push:
+    branches:
+      - research/consensus-pipeline-v1-20260828
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
+          node --check gann-fusion-x/scripts/backtest-consensus-pipeline-v1.cjs
+      - name: Build uncapped V16 walk-forward qualification
+        run: python scripts/research/consensus-v16-qualified-walkforward.py
+      - name: Run V16-SEPA intersection plus GANN timing
+        run: node gann-fusion-x/scripts/backtest-consensus-pipeline-v1.cjs
+      - name: Show report
+        run: cat gann-fusion-x/data/consensus-pipeline-v1-backtest.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: consensus-pipeline-v1-backtest
+          path: |
+            data/research/consensus-v16-qualified-walkforward.json
+            gann-fusion-x/data/consensus-pipeline-v1-backtest.json
+            gann-fusion-x/data/consensus-pipeline-v1-backtest.md
+          retention-days: 14
