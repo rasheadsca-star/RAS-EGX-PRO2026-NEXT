@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: rc2-exact-preview-rollout-${{ github.ref }}
@@ -22,7 +23,6 @@ env:
   VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
   PROD_URL: https://egx-tfe-v20-fusion-rc2.vercel.app
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-  VERCEL_PROTECTION_BYPASS: ${{ secrets.VERCEL_PROTECTION_BYPASS }}
 
 jobs:
   exact-rollout:
@@ -70,12 +70,11 @@ jobs:
           RC2_BROWSER_ENGINES: chromium,firefox,webkit
         run: node tfe-v20/scripts/browser-consistency-smoke.cjs
 
-      - name: Require preview credentials before any deployment
+      - name: Require Vercel deployment credential before any deployment
         shell: bash
         run: |
           set -euo pipefail
           test -n "$VERCEL_TOKEN" || { echo 'VERCEL_TOKEN is missing; fail closed before deployment'; exit 3; }
-          test -n "$VERCEL_PROTECTION_BYPASS" || { echo 'VERCEL_PROTECTION_BYPASS is missing; live protected-preview verification cannot be proven'; exit 3; }
 
       - name: Pull exact project preview configuration
         working-directory: tfe-v20
@@ -146,11 +145,21 @@ jobs:
           console.log(JSON.stringify(out,null,2));
           NODE
 
+      - id: oidc
+        name: Mint ephemeral GitHub OIDC token for protected-preview access
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken();
+            core.setSecret(token);
+            core.setOutput('token', token);
+
       - name: Live browser smoke against exact preview SHA
         env:
           RC2_SMOKE_URL: ${{ steps.deploy.outputs.preview_url }}
           RC2_EXPECTED_COMMIT: ${{ github.sha }}
           RC2_BROWSER_ENGINES: chromium
+          RC2_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
         run: |
           set -euo pipefail
           node tfe-v20/scripts/browser-consistency-smoke.cjs | tee /tmp/live-preview-smoke.json
@@ -196,21 +205,20 @@ jobs:
 
       - id: verify
         name: Verify production reached exact validated SHA with execution locked
+        env:
+          RC2_TRUSTED_OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
         shell: bash
         run: |
           set -euo pipefail
           node - <<'NODE'
           const expected = process.env.GITHUB_SHA;
           const base = process.env.PROD_URL;
-          const bypass = process.env.VERCEL_PROTECTION_BYPASS;
+          const oidc = process.env.RC2_TRUSTED_OIDC_TOKEN;
           let last = null;
           for (let i=0;i<35;i++) {
             try {
               const headers = {'cache-control':'no-cache'};
-              if (bypass) {
-                headers['x-vercel-protection-bypass'] = bypass;
-                headers['x-vercel-set-bypass-cookie'] = 'true';
-              }
+              if (oidc) headers['x-vercel-trusted-oidc-idp-token'] = oidc;
               const res = await fetch(`${base}/api/index?route=health&t=${Date.now()}`,{headers,cache:'no-store',redirect:'follow'});
               if (res.ok) {
                 const body = await res.json();
@@ -256,7 +264,8 @@ jobs:
             "verifyOutcome": "$VERIFY_OUTCOME",
             "workflowRunId": "$GITHUB_RUN_ID",
             "gitMutation": false,
-            "rebuildDuringPromotion": false
+            "rebuildDuringPromotion": false,
+            "previewProtectionAuth": "github-oidc"
           }
           EOF
 
