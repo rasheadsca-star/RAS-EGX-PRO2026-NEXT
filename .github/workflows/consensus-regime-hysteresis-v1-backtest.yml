@@ -1,0 +1,63 @@
+name: Consensus Regime Hysteresis V1 Backtest
+on:
+  push:
+    branches:
+      - research/consensus-regime-hysteresis-v1-20260828
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax
+        run: |
+          python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
+          python -m py_compile scripts/research/apply-v16-quality-gate-v2.py
+          node --check gann-fusion-x/scripts/run-consensus-v16-quality-gate-v2.cjs
+          node --check gann-fusion-x/scripts/run-consensus-regime-hysteresis-v1.cjs
+          node --check gann-fusion-x/scripts/validate-consensus-regime-hysteresis-v1.cjs
+      - name: Build strict V16 walk-forward with data-availability warmup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/research/consensus-v16-qualified-walkforward.py')
+          s=p.read_text(encoding='utf-8')
+          old='WARMUP_SESSIONS = 20'
+          if s.count(old) != 1:
+              raise SystemExit('Expected exactly one V16 warmup constant')
+          p.write_text(s.replace(old,'WARMUP_SESSIONS = 11'),encoding='utf-8')
+          PY
+          python scripts/research/consensus-v16-qualified-walkforward.py
+      - name: Apply locked V16 Quality Gate V2
+        run: python scripts/research/apply-v16-quality-gate-v2.py
+      - name: Run locked V2 baseline
+        run: node gann-fusion-x/scripts/run-consensus-v16-quality-gate-v2.cjs
+      - name: Run Regime Hysteresis V1 challenger
+        run: node gann-fusion-x/scripts/run-consensus-regime-hysteresis-v1.cjs
+      - name: Validate invariants and locked acceptance
+        run: node gann-fusion-x/scripts/validate-consensus-regime-hysteresis-v1.cjs
+      - name: Show evidence
+        run: |
+          cat gann-fusion-x/data/consensus-regime-hysteresis-v1-evidence.md
+          echo
+          cat gann-fusion-x/data/consensus-regime-hysteresis-v1-backtest.md
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: consensus-regime-hysteresis-v1-backtest
+          path: |
+            data/research/consensus-v16-qualified-walkforward.json
+            gann-fusion-x/data/consensus-v16-quality-gate-v2-backtest.json
+            gann-fusion-x/data/consensus-v16-quality-gate-v2-backtest.md
+            gann-fusion-x/data/consensus-regime-hysteresis-v1-backtest.json
+            gann-fusion-x/data/consensus-regime-hysteresis-v1-backtest.md
+            gann-fusion-x/data/consensus-regime-hysteresis-v1-evidence.json
+            gann-fusion-x/data/consensus-regime-hysteresis-v1-evidence.md
+          retention-days: 14
