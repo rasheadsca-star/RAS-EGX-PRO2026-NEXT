@@ -126,7 +126,7 @@ async function historySeries(ticker, limit = 120) {
 }
 
 async function scan(outputLimit = 20) {
-  const [{ snapshot, historySummary, candidates, discoveryOnlyCandidates = [], expectedSessionDate, universeMode }, v17] = await Promise.all([loadUniverse(), loadV17()]);
+  const [{ snapshot, historySummary, candidates, discoveryOnlyCandidates = [], readinessExcludedCandidates = [], expectedSessionDate, universeMode }, v17] = await Promise.all([loadUniverse(), loadV17()]);
   const results = [];
   for (let i = 0; i < candidates.length; i += 16) {
     const batch = await Promise.all(candidates.slice(i, i + 16).map(async (d) => {
@@ -175,6 +175,9 @@ async function scan(outputLimit = 20) {
       sessionDate: expectedSessionDate,
       historySummaryGeneratedAt: historySummary?.generatedAt ?? null,
       currentVerifiedCandidates: candidates.length,
+      readinessExcludedBeforeScan: readinessExcludedCandidates.length,
+      readinessExclusionReasonCounts: reasonCounts(readinessExcludedCandidates),
+      readinessExcludedSample: readinessExcludedCandidates.slice(0, 40),
       discoveryOnlyCandidates: discoveryOnlyCandidates.length,
       fallbackMayEnterRanking: false,
       alphaDataBranch: DATA_SOURCES.alphaDataBranch,
@@ -189,7 +192,9 @@ async function scan(outputLimit = 20) {
       technicalEligibleTotal: technicalEligible.length,
       publicationEligibleTotal: allRanked.length,
       withheldForPriceReconciliation: withheld.length,
-      dataNotReady: dataNotReady.length,
+      dataNotReadyScanned: dataNotReady.length,
+      dataNotReadyBeforeScan: readinessExcludedCandidates.length,
+      dataNotReadyTotal: dataNotReady.length + readinessExcludedCandidates.length,
       returned: recommendations.length,
       rejected: rejected.length,
     },
