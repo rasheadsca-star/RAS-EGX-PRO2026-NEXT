@@ -7,12 +7,14 @@ on:
     paths:
       - 'tfe-v20/**'
       - '.github/workflows/rc2-browser-consistency-smoke.yml'
+      - '.github/workflows/rc2-promote-production-once.yml'
   pull_request:
     branches:
       - research/rc2-validation-base-20260829
     paths:
       - 'tfe-v20/**'
       - '.github/workflows/rc2-browser-consistency-smoke.yml'
+      - '.github/workflows/rc2-promote-production-once.yml'
   workflow_dispatch:
 
 permissions:
@@ -22,13 +24,21 @@ jobs:
   browser-consistency:
     name: browser-consistency
     runs-on: ubuntu-24.04
-    timeout-minutes: 18
+    timeout-minutes: 22
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Exact-candidate functional suite
+        working-directory: tfe-v20
+        run: npm test
+
+      - name: Exact-candidate independent red-team gate
+        working-directory: tfe-v20
+        run: npm run red-team
 
       - name: Install Playwright browser engines
         run: |
