@@ -9,6 +9,20 @@ function replaceOnce(from,to,label){const n=text.split(from).length-1;if(n!==1)t
 
 // Locked V16 Quality Gate V2 methodology. No stock is added, removed or reranked here.
 replaceOnce(",'','## Acceptance'];for(const [k,v]", ",'','## Acceptance');for(const [k,v]", 'REPORT_BRACKET');
+
+// Carry point-in-time explanatory features through the unchanged intersection BEFORE
+// the locked level rewrite touches the same GANN candidate expression.
+replaceOnce(
+  "gannTimingScore:null,timing:null,levels:s.levels",
+  "gannTimingScore:null,timing:null,v16Meta:v.meta,sepaMeta:s.meta,sepaActionable:s.actionable,gannMeta:null,levels:s.levels",
+  'NO_GANN_META'
+);
+replaceOnce(
+  "gannTimingScore:g.score,timing:g.timing,levels:g.levels",
+  "gannTimingScore:g.score,timing:g.timing,v16Meta:v.meta,sepaMeta:s.meta,sepaActionable:s.actionable,gannMeta:{gannTimeScore:g.analysis.parts?.gannTime?.score??null,volumeConfirmed:Boolean(g.analysis.parts?.volume?.confirmed),volumeScore:g.analysis.parts?.volume?.score??null,breakoutConfirmed:Boolean(g.analysis.parts?.breakout?.confirmed),breakoutNear:Boolean(g.analysis.parts?.breakout?.near),breakoutScore:g.analysis.parts?.breakout?.score??null,momentumOverheated:Boolean(g.analysis.parts?.momentum?.overheated),momentumScore:g.analysis.parts?.momentum?.score??null},levels:g.levels",
+  'GANN_META'
+);
+
 replaceOnce("levels:g.levels,sourceScale:'adjusted',gate", "levels:{...s.levels},gannPlanLevels:{...g.plan.levels},sourceScale:'adjusted',gate", 'BASE_LEVELS');
 replaceOnce(
   "const timed=common.map(x=>({...x,engine:'CONSENSUS_GANN_TIMED',sizeMultiplier:x.gannAvailable?1:0}));",
@@ -19,18 +33,6 @@ replaceOnce(
   "const final=common.map(x=>({...x,engine:'CONSENSUS_FINAL',sizeMultiplier:x.gate.sizeMultiplier,gateAction:x.gate.action}));",
   "const final=timed.map(x=>({...x,engine:'CONSENSUS_FINAL',sizeMultiplier:x.gate.sizeMultiplier,gateAction:x.gate.action}));",
   'FINAL_STAGE'
-);
-
-// Carry point-in-time explanatory features through the unchanged intersection.
-replaceOnce(
-  "gannTimingScore:null,timing:null,levels:s.levels",
-  "gannTimingScore:null,timing:null,v16Meta:v.meta,sepaMeta:s.meta,sepaActionable:s.actionable,gannMeta:null,levels:s.levels",
-  'NO_GANN_META'
-);
-replaceOnce(
-  "gannTimingScore:g.score,timing:g.timing,levels:g.levels",
-  "gannTimingScore:g.score,timing:g.timing,v16Meta:v.meta,sepaMeta:s.meta,sepaActionable:s.actionable,gannMeta:{gannTimeScore:g.analysis.parts?.gannTime?.score??null,volumeConfirmed:Boolean(g.analysis.parts?.volume?.confirmed),volumeScore:g.analysis.parts?.volume?.score??null,breakoutConfirmed:Boolean(g.analysis.parts?.breakout?.confirmed),breakoutNear:Boolean(g.analysis.parts?.breakout?.near),breakoutScore:g.analysis.parts?.breakout?.score??null,momentumOverheated:Boolean(g.analysis.parts?.momentum?.overheated),momentumScore:g.analysis.parts?.momentum?.score??null},levels:g.levels",
-  'GANN_META'
 );
 
 const inject=`
