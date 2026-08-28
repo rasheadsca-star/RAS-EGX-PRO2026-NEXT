@@ -12,6 +12,7 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const LIVE_URL = String(process.env.RC2_SMOKE_URL || '').trim().replace(/\/$/, '');
 const EXPECTED_COMMIT = String(process.env.RC2_EXPECTED_COMMIT || '').trim();
 const BYPASS = String(process.env.VERCEL_PROTECTION_BYPASS || '').trim();
+const TRUSTED_OIDC = String(process.env.RC2_TRUSTED_OIDC_TOKEN || '').trim();
 const ENGINE_NAMES = String(process.env.RC2_BROWSER_ENGINES || 'chromium,firefox,webkit')
   .split(',').map((x) => x.trim()).filter(Boolean);
 const ENGINES = { chromium, firefox, webkit };
@@ -57,6 +58,7 @@ function headers() {
     out['x-vercel-protection-bypass'] = BYPASS;
     out['x-vercel-set-bypass-cookie'] = 'true';
   }
+  if (TRUSTED_OIDC) out['x-vercel-trusted-oidc-idp-token'] = TRUSTED_OIDC;
   return out;
 }
 
