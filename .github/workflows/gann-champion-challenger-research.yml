@@ -1,0 +1,71 @@
+name: GANN Champion Challenger Research
+
+on:
+  push:
+    branches: [research/data-completion-deep-repair-v1-20260828]
+    paths:
+      - 'gann-fusion-x/scripts/forward-shadow-v2.cjs'
+      - 'gann-fusion-x/scripts/champion-challenger-tournament.cjs'
+      - 'gann-fusion-x/scripts/fundamentals-pit-archive.cjs'
+      - 'gann-fusion-x/scripts/tournament-integrity-check.cjs'
+      - 'gann-fusion-x/data/forward-shadow-ledger.json'
+      - 'gann-fusion-x/data/data-readiness-current-v1.json'
+      - 'data/stable/v16-main-app-current.json'
+      - 'data/stable/v16-fundamental-analysis.json'
+      - 'data/fundamentals/v16-fundamental-raw.json'
+      - 'data/quant/market-search-index-v13-17.json'
+      - '.github/workflows/gann-champion-challenger-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gann-champion-challenger-research
+  cancel-in-progress: false
+
+jobs:
+  tournament:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact research commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check tournament stack
+        run: |
+          node --check gann-fusion-x/scripts/forward-shadow-v2.cjs
+          node --check gann-fusion-x/scripts/champion-challenger-tournament.cjs
+          node --check gann-fusion-x/scripts/fundamentals-pit-archive.cjs
+          node --check gann-fusion-x/scripts/tournament-integrity-check.cjs
+      - name: Refresh SEPA read-only mirror in runner
+        continue-on-error: true
+        run: node gann-fusion-x/scripts/sync-sepa.cjs
+      - name: Capture fresh same-rule forward evidence
+        run: node gann-fusion-x/scripts/forward-shadow-v2.cjs
+      - name: Seal point-in-time fundamentals snapshot
+        run: node gann-fusion-x/scripts/fundamentals-pit-archive.cjs
+      - name: Update champion challenger tournament
+        run: node gann-fusion-x/scripts/champion-challenger-tournament.cjs
+      - name: Verify immutable evidence
+        run: node gann-fusion-x/scripts/tournament-integrity-check.cjs
+      - name: Commit research evidence only
+        shell: bash
+        run: |
+          git checkout -- gann-fusion-x/data/sepa-x-snapshot.json || true
+          git config user.name 'gann-tournament-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add gann-fusion-x/data/forward-shadow-ledger.json gann-fusion-x/data/forward-shadow-report.json || true
+          git add gann-fusion-x/data/champion-challenger-ledger.json gann-fusion-x/data/champion-challenger-report.json || true
+          git add gann-fusion-x/data/fundamentals-pit/manifest.json gann-fusion-x/data/fundamentals-pit/*.json || true
+          if git diff --cached --quiet; then
+            echo 'No new tournament or point-in-time evidence.'
+            exit 0
+          fi
+          git commit -m 'data(gann): seal champion challenger evidence'
+          git push origin HEAD:research/data-completion-deep-repair-v1-20260828
