@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { POLICY } from '../src/policy.js';
 import { normalizeBars, assessDataQuality, assessDataReadiness, parseLatestConflictPct } from '../src/quality.js';
-import { analyzeTicker, rankAnalyses } from '../src/engine.js';
+import { analyzeTicker, rankAnalyses, blendFusionScore } from '../src/engine.js';
 import { backtestHistory, summarizeBacktest } from '../src/backtest.js';
 import { scoreBars as originalScoreBars } from '../src/originalScore.js';
 import { selectUniverseCandidates } from '../src/repository.js';
@@ -32,6 +32,8 @@ test('normal verified identity divergence is review evidence not a false hard bl
 test('explicit symbol identity failure blocks research',()=>{const q=assessDataQuality({bars:bars(80),symbolVerified:false,symbolVerification:{verified:false}});assert.equal(q.state,'BLOCKED');assert.ok(q.reasons.includes('SYMBOL_IDENTITY_UNVERIFIED'))});
 test('quality accepts guarded identity reconciliation',()=>{const q=assessDataQuality({bars:bars(80),symbolVerified:true,symbolVerification:{verified:true,guardedVerified:true,evidence:{localDifferencePct:12,guardedMaxDifferencePct:8}}});assert.notEqual(q.state,'BLOCKED')});
 test('readiness fails when latest scoring window has unknown volume',()=>{const x=normalizeBars(bars(100)).bars;x[95].volume=null;const r=assessDataReadiness({bars:x});assert.equal(r.readyForRanking,false);assert.ok(r.reasons.includes('VOLUME_DATA_INCOMPLETE'));assert.equal(r.missingDataPolicy,'UNKNOWN_NEVER_COERCED_TO_ZERO')});
+test('historical readiness is stricter than current signal readiness for old missing volume',()=>{const x=normalizeBars(bars(100)).bars;x[30].volume=null;const current=assessDataReadiness({bars:x,requireAllVolume:false});const historical=assessDataReadiness({bars:x,requireAllVolume:true});assert.equal(current.readyForRanking,true);assert.equal(historical.readyForBacktest,false);assert.ok(historical.reasons.includes('VOLUME_DATA_INCOMPLETE'))});
+test('missing historical evidence is neutral in fusion rather than zero-scored',()=>{const b=blendFusionScore(81.4,{confidenceWilsonLower95Pct:null,sampleReliability:0});assert.equal(b.fusionRank,81.4);assert.equal(b.researchWeight,1);assert.equal(b.historicalWeight,0)});
 test('analysis always research only',()=>{const a=analyzeTicker({ticker:'TEST',rows:bars(100),historyMeta:{warnings:[]}});assert.equal(a.permissions.executionAllowed,false);assert.equal(a.researchOnly,true)});
 test('analysis requires ticker',()=>assert.throws(()=>analyzeTicker({rows:bars(100)}),/TICKER_REQUIRED/));
 test('short history returns no recommendation',()=>{const a=analyzeTicker({ticker:'X',rows:bars(30)});assert.equal(a.eligible,false);assert.equal(a.decision,'NO_RECOMMENDATION')});
