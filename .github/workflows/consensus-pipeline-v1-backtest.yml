@@ -19,11 +19,11 @@ jobs:
       - name: Syntax
         run: |
           python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
-          node --check gann-fusion-x/scripts/backtest-consensus-pipeline-v1.cjs
+          node --check gann-fusion-x/scripts/run-consensus-pipeline-v1.cjs
       - name: Build uncapped V16 walk-forward qualification
         run: python scripts/research/consensus-v16-qualified-walkforward.py
       - name: Run V16-SEPA intersection plus GANN timing
-        run: node gann-fusion-x/scripts/backtest-consensus-pipeline-v1.cjs
+        run: node gann-fusion-x/scripts/run-consensus-pipeline-v1.cjs
       - name: Show report
         run: cat gann-fusion-x/data/consensus-pipeline-v1-backtest.md
       - name: Upload evidence
