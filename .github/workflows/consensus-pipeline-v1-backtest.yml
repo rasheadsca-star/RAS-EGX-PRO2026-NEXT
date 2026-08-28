@@ -18,12 +18,33 @@ jobs:
           node-version: '24'
       - name: Syntax
         run: |
-          python -m py_compile scripts/research/run-consensus-v16-qualified-walkforward-v2.py
+          python -m py_compile scripts/research/consensus-v16-qualified-walkforward.py
           node --check gann-fusion-x/scripts/run-consensus-pipeline-v2.cjs
-      - name: Build strict V16 walk-forward for 60 evaluable sessions
-        run: python scripts/research/run-consensus-v16-qualified-walkforward-v2.py
+      - name: Build strict V16 walk-forward with data-availability warmup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/research/consensus-v16-qualified-walkforward.py')
+          s=p.read_text(encoding='utf-8')
+          old='WARMUP_SESSIONS = 20'
+          if s.count(old) != 1:
+              raise SystemExit('Expected exactly one V16 warmup constant')
+          p.write_text(s.replace(old,'WARMUP_SESSIONS = 11'),encoding='utf-8')
+          PY
+          python scripts/research/consensus-v16-qualified-walkforward.py
       - name: Run V16-SEPA intersection plus isolated GANN timing
         run: node gann-fusion-x/scripts/run-consensus-pipeline-v2.cjs
+      - name: Assert exactly 60 evaluation sessions
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const p='gann-fusion-x/data/consensus-pipeline-v2-backtest.json';
+          const r=JSON.parse(fs.readFileSync(p,'utf8'));
+          if(!Array.isArray(r.dates) || r.dates.length!==60){
+            throw new Error(`EXPECTED_EXACTLY_60_EVALUATION_SESSIONS_GOT_${r.dates?.length}`);
+          }
+          console.log(`Validated ${r.dates.length} evaluation sessions: ${r.dates[0]} to ${r.dates.at(-1)}`);
+          NODE
       - name: Show report
         run: cat gann-fusion-x/data/consensus-pipeline-v2-backtest.md
       - name: Upload evidence
