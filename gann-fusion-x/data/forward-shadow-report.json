@@ -1,15 +1,38 @@
 {
-  "schemaVersion": "gann-fusion-x-forward-shadow-report-v1",
-  "generatedAt": "2026-08-28T00:20:06.499Z",
-  "sessions": {
-    "market": "2026-08-27",
-    "v16": "2026-08-26",
-    "sepa": "2026-08-27",
-    "gann": "2026-08-27"
+  "schemaVersion": "gann-fusion-x-forward-shadow-report-v2",
+  "generatedAt": "2026-08-28T00:21:57.668Z",
+  "marketSession": "2026-08-27",
+  "sourceStatus": {
+    "V16_9_LIVE": {
+      "session": "2026-08-26",
+      "fresh": false,
+      "status": "STALE_SESSION",
+      "signals": 0
+    },
+    "SEPA_X_LIVE_SHADOW": {
+      "session": "2026-08-27",
+      "fresh": true,
+      "status": "FRESH",
+      "signals": 3
+    },
+    "GANN_FUSION_X_V1": {
+      "session": "2026-08-27",
+      "fresh": true,
+      "status": "FRESH",
+      "signals": 0,
+      "history": {
+        "freshCount": 156,
+        "total": 199,
+        "coveragePct": 78.4,
+        "freshEnough": true,
+        "dominantLastSession": "2026-08-27",
+        "dominantCount": 156
+      }
+    }
   },
-  "sameSession": false,
-  "status": "BLOCKED_SESSION_MISMATCH",
+  "status": "BLOCKED_SOURCE_STALE",
   "consensus": [],
+  "diagnosticOverlap": [],
   "summary": {
     "V16_9_LIVE": {
       "signalsIssued": 3,
@@ -38,10 +61,9 @@
   ],
   "minimumForwardSessionsForPromotion": 20,
   "notesAr": [
-    "V16 يسجل بمستوياته التنفيذية الأصلية.",
-    "SEPA يسجل من لقطة Stable الحية؛ مستويات الاختبار مشتقة من Pivot + risk_pct + reward_risk وتظل موسومة Shadow وليست سجل تنفيذ SEPA أصليًا.",
-    "Gann Fusion X يسجل باستخدام الكود الحالي وبيانات الجلسة فقط.",
-    "لا توجد توصية مشتركة قابلة للعرض إذا اختلف تاريخ الجلسة بين المصادر.",
-    "التقييم بعد ثلاث جلسات وبصافي تكلفة 0.6% ومعاملة target+stop في الجلسة نفسها كوقف تحفظيًا."
+    "لا يسجل أي مصدر كتوصية Forward إلا إذا كانت جلسته مساوية لجلسة السوق الحالية وقت التسجيل.",
+    "تأخر OHLCV يظهر كـ STALE_HISTORY ولا يفسر على أنه عدم وجود فرص.",
+    "SEPA Shadow يستخدم Pivot + risk_pct + reward_risk لاشتقاق مستويات اختبار قابلة للمقارنة، وليس تنفيذًا أصليًا من SEPA.",
+    "التقييم بعد 3 جلسات وتكلفة 0.6% وStop-first عند غموض نفس الشمعة."
   ]
 }
