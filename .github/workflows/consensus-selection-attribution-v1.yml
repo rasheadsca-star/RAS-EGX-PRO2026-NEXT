@@ -22,7 +22,7 @@ jobs:
           python -m py_compile scripts/research/apply-v16-quality-gate-v2.py
           node --check gann-fusion-x/scripts/run-consensus-v16-quality-gate-v2.cjs
           node --check gann-fusion-x/scripts/run-consensus-selection-attribution-source-v1.cjs
-          node --check gann-fusion-x/scripts/analyze-consensus-selection-attribution-v1.cjs
+          node --check gann-fusion-x/scripts/analyze-consensus-selection-attribution-v1-fixed.cjs
       - name: Build strict V16 walk-forward with 60-session eligibility warmup
         run: |
           python - <<'PY'
@@ -42,7 +42,7 @@ jobs:
       - name: Capture attribution rows without changing selection
         run: node gann-fusion-x/scripts/run-consensus-selection-attribution-source-v1.cjs
       - name: Analyze First30 Last30 and 60-session attribution
-        run: node gann-fusion-x/scripts/analyze-consensus-selection-attribution-v1.cjs
+        run: node gann-fusion-x/scripts/analyze-consensus-selection-attribution-v1-fixed.cjs
       - name: Assert strict invariants
         run: |
           node - <<'NODE'
