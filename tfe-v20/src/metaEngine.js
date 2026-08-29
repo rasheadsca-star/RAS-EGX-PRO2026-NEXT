@@ -72,13 +72,13 @@ function engineReliability(engine) {
 
 function capWeights(items, policy) {
   if (!items.length) return items;
-  let total = items.reduce((s, x) => s + x.rawWeight, 0);
-  if (!(total > 0)) return items.map(x => ({ ...x, weight: 0 }));
-  let weighted = items.map(x => ({ ...x, weight: x.rawWeight / total }));
+  const totalRaw = items.reduce((s, x) => s + x.rawWeight, 0);
+  if (!(totalRaw > 0)) return items.map(x => ({ ...x, weight: 0 }));
 
-  weighted = weighted.map(x => ({ ...x, weight: Math.min(x.weight, policy.maxSingleEngineWeight) }));
-  total = weighted.reduce((s, x) => s + x.weight, 0);
-  if (total > 0) weighted = weighted.map(x => ({ ...x, weight: x.weight / total }));
+  let weighted = items.map(x => ({
+    ...x,
+    weight: Math.min(x.rawWeight / totalRaw, policy.maxSingleEngineWeight)
+  }));
 
   const families = new Map();
   for (const x of weighted) {
@@ -96,8 +96,7 @@ function capWeights(items, policy) {
     weighted = weighted.map(x => ids.has(x.id) ? ({ ...x, weight: x.weight * scale }) : x);
   }
 
-  total = weighted.reduce((s, x) => s + x.weight, 0);
-  return total > 0 ? weighted.map(x => ({ ...x, weight: x.weight / total })) : weighted;
+  return weighted;
 }
 
 function marketRegimeMultiplier(regime) {
@@ -142,13 +141,11 @@ export function analyzeMetaOpportunity(input, customPolicy = {}) {
   }).filter(x => x.rawWeight > 0);
 
   const weighted = capWeights(prepared, policy);
-  const totalWeight = weighted.reduce((s, x) => s + x.weight, 0);
-  const consensusScore = totalWeight > 0
-    ? weighted.reduce((s, x) => s + x.signalScore * x.weight, 0) / totalWeight
-    : 50;
-  const evidenceReliability = totalWeight > 0
-    ? weighted.reduce((s, x) => s + x.reliability * x.weight, 0) / totalWeight
-    : 0;
+  const allocatedWeight = clamp(weighted.reduce((s, x) => s + x.weight, 0), 0, 1);
+  const abstentionWeight = clamp(1 - allocatedWeight, 0, 1);
+
+  const consensusScore = weighted.reduce((s, x) => s + x.signalScore * x.weight, 0) + 50 * abstentionWeight;
+  const evidenceReliability = weighted.reduce((s, x) => s + x.reliability * x.weight, 0);
   const independentFamilyCount = new Set(weighted.filter(x => x.weight >= 0.10).map(x => x.family)).size;
 
   const regimeMultiplier = marketRegimeMultiplier(input?.marketRegime);
@@ -172,7 +169,9 @@ export function analyzeMetaOpportunity(input, customPolicy = {}) {
     blocking,
     independentFamilyCount,
     evidenceReliability: round(evidenceReliability, 3),
-    netEdgeAfterCostsPct: round(netEdgeAfterCosts, 3)
+    netEdgeAfterCostsPct: round(netEdgeAfterCosts, 3),
+    allocatedEngineWeight: round(allocatedWeight, 3),
+    abstentionWeight: round(abstentionWeight, 3)
   };
 
   const decision = classify(metaScore, gates, policy);
@@ -185,7 +184,8 @@ export function analyzeMetaOpportunity(input, customPolicy = {}) {
       edgeComponent: round(edgeComponent, 1),
       executionQuality: round(executionQuality, 1),
       evidenceReliability: round(evidenceReliability * 100, 1),
-      regimeMultiplier
+      regimeMultiplier,
+      abstentionWeight: round(abstentionWeight, 3)
     },
     gates,
     engineContributions: weighted
@@ -206,9 +206,9 @@ export function analyzeMetaOpportunity(input, customPolicy = {}) {
     },
     methodology: {
       missingEvidence: 'LOW_WEIGHT_NOT_NEGATIVE_SIGNAL',
-      correlatedEngines: 'FAMILY_WEIGHT_CAPPED',
+      correlatedEngines: 'FAMILY_WEIGHT_CAPPED_WITH_NEUTRAL_ABSTENTION_MASS',
       transactionCosts: 'DEDUCTED_BEFORE_EDGE_GATE',
-      abstention: 'EXPLICIT_NO_TRADE',
+      abstention: 'EXPLICIT_NO_TRADE_AND_NEUTRAL_UNALLOCATED_WEIGHT',
       evidenceClasses: 'FRESH_FORWARD_GT_WALK_FORWARD_GT_RETROSPECTIVE_GT_PROXY'
     }
   };
