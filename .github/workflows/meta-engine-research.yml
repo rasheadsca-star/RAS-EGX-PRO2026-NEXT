@@ -11,12 +11,14 @@ on:
       - 'tfe-v20/src/rawPullbackExpert.js'
       - 'tfe-v20/src/breadthRegimeExposure.js'
       - 'tfe-v20/sidecars/fresh-forward-ledger.js'
+      - 'tfe-v20/sidecars/fresh-forward-quality.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/test/raw-pullback-expert.test.js'
       - 'tfe-v20/test/breadth-regime-exposure.test.js'
       - 'tfe-v20/test/fresh-forward-ledger.test.js'
+      - 'tfe-v20/test/fresh-forward-quality.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
       - 'tfe-v20/scripts/fresh-forward-*.mjs'
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
@@ -37,12 +39,14 @@ on:
       - 'tfe-v20/src/rawPullbackExpert.js'
       - 'tfe-v20/src/breadthRegimeExposure.js'
       - 'tfe-v20/sidecars/fresh-forward-ledger.js'
+      - 'tfe-v20/sidecars/fresh-forward-quality.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/test/raw-pullback-expert.test.js'
       - 'tfe-v20/test/breadth-regime-exposure.test.js'
       - 'tfe-v20/test/fresh-forward-ledger.test.js'
+      - 'tfe-v20/test/fresh-forward-quality.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
       - 'tfe-v20/scripts/fresh-forward-*.mjs'
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
@@ -97,6 +101,9 @@ jobs:
 
       - name: Run fresh forward ledger integrity tests
         run: node --test test/fresh-forward-ledger.test.js
+
+      - name: Run fresh forward source-quality guard tests
+        run: node --test test/fresh-forward-quality.test.js
 
       - name: Verify committed fresh forward snapshots are untampered
         run: node scripts/fresh-forward-verify.mjs
