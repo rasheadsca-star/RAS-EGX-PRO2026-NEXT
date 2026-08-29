@@ -19,7 +19,7 @@ on:
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
       - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
-      - 'tfe-v20/scripts/v16-loss-anatomy-audit.mjs'
+      - 'tfe-v20/scripts/v16-loss-anatomy-*.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -41,7 +41,7 @@ on:
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
       - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
-      - 'tfe-v20/scripts/v16-loss-anatomy-audit.mjs'
+      - 'tfe-v20/scripts/v16-loss-anatomy-*.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -121,6 +121,9 @@ jobs:
 
       - name: Diagnose V16 loss anatomy
         run: node scripts/v16-loss-anatomy-audit.mjs
+
+      - name: Enforce V16 anatomy validity guard
+        run: node scripts/v16-loss-anatomy-validity-guard.mjs
 
       - name: Audit outcome-blind V16 entry heat filter
         run: node scripts/meta-entry-quality-audit.mjs
