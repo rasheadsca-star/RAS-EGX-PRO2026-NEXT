@@ -98,18 +98,17 @@ export function expertReliability(expert = {}) {
 
 function signalDirection(signal = '') {
   const s = String(signal).toUpperCase();
-  if (['STRONG_BUY', 'BUY', 'RESEARCH_BUY_ZONE', 'ENTER'].includes(s)) return 1;
-  if (['READY', 'NEAR_ENTRY', 'RESEARCH_PENDING_PULLBACK', 'PENDING_PULLBACK'].includes(s)) return 0.75;
+  if (['STRONG_BUY', 'BUY', 'RESEARCH_BUY_ZONE', 'ENTER', 'ACTIONABLE'].includes(s)) return 1;
+  if (['READY', 'NEAR_ENTRY', 'RESEARCH_PENDING_PULLBACK', 'PENDING_PULLBACK', 'WATCH TRIGGER'].includes(s)) return 0.75;
   if (['WATCH', 'HOLD', 'WAIT'].includes(s)) return 0.25;
   if (['SELL', 'EXIT', 'STRONG_SELL'].includes(s)) return -1;
-  if (['REJECT', 'AVOID'].includes(s)) return -0.5;
+  if (['REJECT', 'REJECTED', 'AVOID'].includes(s)) return -0.5;
   return 0;
 }
 
 function expertContribution(expert) {
   const reliability = expertReliability(expert);
   const direction = signalDirection(expert.signal ?? expert.decision);
-  // Scores are not assumed to be calibrated across engines. They only adjust conviction within a narrow band.
   const score01 = hasNumber(expert.score) ? clamp(Number(expert.score) / 100) : 0.50;
   const conviction = 0.70 + 0.30 * score01;
   const weight = conviction * reliability.reliability;
@@ -156,16 +155,24 @@ function regimeFactor(regime = 'NEUTRAL') {
 function hardGate(candidate) {
   const quality = candidate.quality ?? {};
   const liquidity = candidate.liquidity ?? {};
-  const plan = candidate.tradePlan ?? {};
+  const plan = candidate.tradePlan ?? null;
   const reasons = [];
+
   if (quality.state === 'BLOCKED' || quality.staleData === true) reasons.push('DATA_QUALITY_BLOCKED');
-  if (hasNumber(quality.score) && Number(quality.score) < META_POLICY.minDataQuality) reasons.push('DATA_QUALITY_LOW');
-  if (hasNumber(liquidity.score) && Number(liquidity.score) < META_POLICY.minLiquidityScore) reasons.push('LIQUIDITY_LOW');
-  if (hasNumber(plan.structuralNetRR) && Number(plan.structuralNetRR) < META_POLICY.minStructuralNetRR) reasons.push('STRUCTURAL_RR_LOW');
-  if (plan.alignmentState && ['DO_NOT_CHASE', 'BELOW_ENTRY_WAIT'].includes(String(plan.alignmentState).toUpperCase())) reasons.push(String(plan.alignmentState).toUpperCase());
-  if ([plan.entryLow, plan.entryHigh, plan.stop, plan.target1].some((x) => x !== undefined) &&
-      !([plan.entryLow, plan.entryHigh, plan.stop, plan.target1].every(hasNumber) && Number(plan.stop) < Number(plan.entryHigh) && Number(plan.target1) > Number(plan.entryLow))) {
-    reasons.push('INVALID_TRADE_PLAN');
+  if (!hasNumber(quality.score)) reasons.push('DATA_QUALITY_UNKNOWN');
+  else if (Number(quality.score) < META_POLICY.minDataQuality) reasons.push('DATA_QUALITY_LOW');
+
+  if (!hasNumber(liquidity.score)) reasons.push('LIQUIDITY_UNKNOWN');
+  else if (Number(liquidity.score) < META_POLICY.minLiquidityScore) reasons.push('LIQUIDITY_LOW');
+
+  if (!plan) {
+    reasons.push('TRADE_PLAN_UNAVAILABLE');
+  } else {
+    const required = [plan.entryLow, plan.entryHigh, plan.stop, plan.target1];
+    if (!required.every(hasNumber) || !(Number(plan.stop) < Number(plan.entryHigh) && Number(plan.target1) > Number(plan.entryLow))) reasons.push('INVALID_TRADE_PLAN');
+    if (!hasNumber(plan.structuralNetRR)) reasons.push('STRUCTURAL_RR_UNKNOWN');
+    else if (Number(plan.structuralNetRR) < META_POLICY.minStructuralNetRR) reasons.push('STRUCTURAL_RR_LOW');
+    if (plan.alignmentState && ['DO_NOT_CHASE', 'BELOW_ENTRY_WAIT'].includes(String(plan.alignmentState).toUpperCase())) reasons.push(String(plan.alignmentState).toUpperCase());
   }
   return reasons;
 }
@@ -187,10 +194,10 @@ export function evaluateMetaCandidate(candidate = {}) {
   const avgReliability = families.length ? families.reduce((s, x) => s + x.reliability, 0) / families.length : 0;
   const directionalEdge = totalWeight ? signed / totalWeight : 0;
 
-  const qualityScore = hasNumber(candidate.quality?.score) ? clamp(Number(candidate.quality.score) / 100) : 0.82;
-  const liquidityScore = hasNumber(candidate.liquidity?.score) ? clamp(Number(candidate.liquidity.score) / 100) : 0.75;
-  const rr = hasNumber(candidate.tradePlan?.structuralNetRR) ? Number(candidate.tradePlan.structuralNetRR) : 1;
-  const rrFactor = clamp((rr - 0.50) / 1.50, 0.25, 1);
+  const qualityScore = hasNumber(candidate.quality?.score) ? clamp(Number(candidate.quality.score) / 100) : 0;
+  const liquidityScore = hasNumber(candidate.liquidity?.score) ? clamp(Number(candidate.liquidity.score) / 100) : 0;
+  const rr = hasNumber(candidate.tradePlan?.structuralNetRR) ? Number(candidate.tradePlan.structuralNetRR) : 0;
+  const rrFactor = hasNumber(candidate.tradePlan?.structuralNetRR) ? clamp((rr - 0.50) / 1.50, 0.25, 1) : 0;
   const marketFactor = regimeFactor(candidate.market?.regime);
   const regimeConfidence = hasNumber(candidate.market?.confidence) ? 0.7 + 0.3 * clamp(Number(candidate.market.confidence) / 100) : 0.88;
 
@@ -222,9 +229,9 @@ export function evaluateMetaCandidate(candidate = {}) {
     independentFamilyCount: families.length,
     averageExpertReliability: round(avgReliability, 4),
     context: {
-      dataQuality: round(qualityScore * 100, 1),
-      liquidity: round(liquidityScore * 100, 1),
-      structuralNetRR: round(rr, 3),
+      dataQuality: hasNumber(candidate.quality?.score) ? round(qualityScore * 100, 1) : null,
+      liquidity: hasNumber(candidate.liquidity?.score) ? round(liquidityScore * 100, 1) : null,
+      structuralNetRR: hasNumber(candidate.tradePlan?.structuralNetRR) ? round(rr, 3) : null,
       marketRegime: candidate.market?.regime ?? 'UNKNOWN',
       contextFactor: round(contextFactor, 4),
     },
@@ -234,6 +241,7 @@ export function evaluateMetaCandidate(candidate = {}) {
     tradePlan: candidate.tradePlan ?? null,
     methodology: {
       missingEvidence: 'OMITTED_NOT_ZERO',
+      missingTradeCriticalInputs: 'FAIL_CLOSED_NO_TRADE',
       evidenceWeighting: 'FRESH_FORWARD_GT_WALK_FORWARD_GT_RETROSPECTIVE_GT_PROXY',
       engineScores: 'DAMPED_CONVICTION_ONLY_NOT_CROSS_ENGINE_CALIBRATION',
       correlatedExperts: 'COLLAPSED_TO_ENGINE_FAMILY_CAP',
