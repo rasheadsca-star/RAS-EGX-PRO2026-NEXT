@@ -1,0 +1,36 @@
+name: EGX Meta Engine Research Validation
+
+on:
+  push:
+    branches:
+      - research/egx-meta-engine-v1-20260829
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-meta-engine:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run TFE and Meta tests
+        run: node --test test/*.test.js
+      - name: Build current Meta snapshot
+        run: node scripts/meta-current.mjs
+      - name: Validate generated snapshot exists
+        run: test -s evidence/meta/current-meta-snapshot.json
+      - name: Upload research snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-meta-engine-current-snapshot
+          path: tfe-v20/evidence/meta/current-meta-snapshot.json
+          if-no-files-found: error
