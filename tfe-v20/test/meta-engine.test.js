@@ -7,8 +7,8 @@ const quality = { score: 95, state: 'READY', staleData: false };
 const liquidity = { score: 90 };
 const market = { regime: 'BULL', confidence: 90 };
 
-function expert(id, signal, evidenceClass, score = 85, oos = {}) {
-  return { id, signal, evidenceClass, score, dataQuality: 95, oos };
+function expert(id, signal, evidenceClass, score = 85, oos = {}, extra = {}) {
+  return { id, signal, evidenceClass, score, dataQuality: 95, oos, ...extra };
 }
 
 test('hard data-quality block cannot be bypassed by unanimous bullish experts', () => {
@@ -78,6 +78,52 @@ test('missing third engine is not treated as a negative vote', () => {
   });
   assert.equal(two.edgeScore, three.edgeScore);
   assert.equal(two.agreement, three.agreement);
+});
+
+test('correlated variants from the same engine family do not satisfy independence gate', () => {
+  const result = evaluateMetaCandidate({
+    ticker: 'AAA', quality, liquidity, market, tradePlan: plan,
+    experts: [
+      expert('TFE_CORE', 'BUY', 'FRESH_INDEPENDENT_FORWARD', 95, {}, { family: 'TFE_V20' }),
+      expert('V20_NATIVE', 'BUY', 'EXACT_WALK_FORWARD', 97, {}, { family: 'TFE_V20' }),
+    ],
+  });
+  assert.equal(result.independentFamilyCount, 1);
+  assert.equal(result.decision, 'NO_TRADE');
+  assert.ok(result.blocks.includes('INSUFFICIENT_INDEPENDENT_EXPERTS'));
+});
+
+test('same-family duplicate signal is capped rather than double counted', () => {
+  const one = evaluateMetaCandidate({
+    ticker: 'AAA', quality, liquidity, market, tradePlan: plan,
+    experts: [
+      expert('TFE_CORE', 'BUY', 'FRESH_INDEPENDENT_FORWARD', 95, {}, { family: 'TFE_V20' }),
+      expert('SEPA', 'BUY', 'EXACT_WALK_FORWARD', 90, {}, { family: 'SEPA' }),
+    ],
+  });
+  const duplicated = evaluateMetaCandidate({
+    ticker: 'AAA', quality, liquidity, market, tradePlan: plan,
+    experts: [
+      expert('TFE_CORE', 'BUY', 'FRESH_INDEPENDENT_FORWARD', 95, {}, { family: 'TFE_V20' }),
+      expert('V20_NATIVE', 'BUY', 'EXACT_WALK_FORWARD', 99, {}, { family: 'TFE_V20' }),
+      expert('SEPA', 'BUY', 'EXACT_WALK_FORWARD', 90, {}, { family: 'SEPA' }),
+    ],
+  });
+  assert.equal(one.independentFamilyCount, duplicated.independentFamilyCount);
+  assert.ok(Math.abs(one.edgeScore - duplicated.edgeScore) < 1.5);
+});
+
+test('engine score scale is damped and cannot dominate evidence reliability', () => {
+  const result = evaluateMetaCandidate({
+    ticker: 'AAA', quality, liquidity, market, tradePlan: plan,
+    experts: [
+      expert('A', 'BUY', 'EXACT_WALK_FORWARD', 100),
+      expert('B', 'BUY', 'EXACT_WALK_FORWARD', 0),
+    ],
+  });
+  const a = result.experts.find((x) => x.id === 'A');
+  const b = result.experts.find((x) => x.id === 'B');
+  assert.ok(a.weight / b.weight < 1.5);
 });
 
 test('ranking favors actionable decision then edge/confidence', () => {
