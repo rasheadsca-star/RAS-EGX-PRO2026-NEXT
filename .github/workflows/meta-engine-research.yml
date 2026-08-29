@@ -24,16 +24,21 @@ on:
 permissions:
   contents: read
 
+env:
+  LEGACY_EVIDENCE_COMMIT: 34218d27a36d2c916961a54573477f47f124416a
+
 jobs:
   validate-meta-engine:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: tfe-v20
     steps:
       - name: Checkout research branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Node 20
         uses: actions/setup-node@v4
@@ -48,6 +53,16 @@ jobs:
 
       - name: Run same-session live shadow
         run: node scripts/meta-live-shadow.mjs
+
+      - name: Run pinned Gann-SEPA-V16 walk-forward comparison
+        run: |
+          cd ..
+          git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- gann-fusion-x
+          mkdir -p data/stable tfe-v20/reports
+          git show "$LEGACY_EVIDENCE_COMMIT:data/stable/v16-v169-live-evaluation.json" > data/stable/v16-v169-live-evaluation.json
+          node gann-fusion-x/scripts/backtest-compare.cjs
+          cp gann-fusion-x/data/backtest-comparison.json tfe-v20/reports/legacy-expert-walkforward.json
 
       - name: Record inherited V20 audit without hiding it
         id: inherited
