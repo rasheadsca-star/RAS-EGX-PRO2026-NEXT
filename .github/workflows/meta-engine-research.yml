@@ -6,7 +6,9 @@ on:
       - agent/egx-meta-engine-v1-20260829
     paths:
       - 'tfe-v20/src/metaEngine.js'
+      - 'tfe-v20/src/metaEngineV2.js'
       - 'tfe-v20/test/meta-engine.test.js'
+      - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
@@ -16,7 +18,9 @@ on:
       - develop/v20-integrated-decision-platform
     paths:
       - 'tfe-v20/src/metaEngine.js'
+      - 'tfe-v20/src/metaEngineV2.js'
       - 'tfe-v20/test/meta-engine.test.js'
+      - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
@@ -28,11 +32,12 @@ permissions:
 
 env:
   LEGACY_EVIDENCE_COMMIT: 34218d27a36d2c916961a54573477f47f124416a
+  V19_EVIDENCE_COMMIT: 1b8e3d15f54c7d1811b760c4f07d86d6df213606
 
 jobs:
   validate-meta-engine:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: tfe-v20
@@ -47,8 +52,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Run meta-engine destructive tests
+      - name: Run meta-engine V1 destructive tests
         run: node --test test/meta-engine.test.js
+
+      - name: Run meta-engine V2 lineage destructive tests
+        run: node --test test/meta-engine-v2.test.js
 
       - name: Run frozen-ledger benchmark
         run: node scripts/meta-ledger-benchmark.mjs
@@ -61,8 +69,30 @@ jobs:
           cd ..
           git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
           git checkout "$LEGACY_EVIDENCE_COMMIT" -- gann-fusion-x data/history
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- \
+            scripts/research/v16-probabilistic-model-impact.py \
+            scripts/research/v16-two-stage-predictor.py \
+            scripts/research/v16-v169-basket-engine.py \
+            scripts/research/v16-v169-target-hit-audit.py
           mkdir -p data/stable tfe-v20/reports
           git show "$LEGACY_EVIDENCE_COMMIT:data/stable/v16-v169-live-evaluation.json" > data/stable/v16-v169-live-evaluation.json
+
+      - name: Materialize pinned V19 research lineage
+        run: |
+          cd ..
+          git fetch origin "$V19_EVIDENCE_COMMIT" --depth=1
+          git checkout "$V19_EVIDENCE_COMMIT" -- scripts/v19
+
+      - name: Replay older V16-V19 agreement outside reused V19 holdout
+        run: |
+          cd ..
+          python scripts/research/v16-v169-basket-engine.py
+          sed -i 's/AUDIT_SESSIONS = 20/AUDIT_SESSIONS = 999/' scripts/research/v16-v169-target-hit-audit.py
+          python scripts/research/v16-v169-target-hit-audit.py
+          sed -i 's/dev_results\[-25:\]/dev_results/g' scripts/v19/native-challenger-v6.py
+          python scripts/v19/native-challenger-v6.py
+          cd tfe-v20
+          node scripts/meta-v19-development-consensus-audit.mjs
 
       - name: Run pinned Gann-SEPA-V16 walk-forward comparison
         run: |
