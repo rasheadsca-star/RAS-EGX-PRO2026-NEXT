@@ -12,8 +12,8 @@ function makeDoc(ticker, count = 110, futureExtra = 0, opts = {}) {
     const date = new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10);
     const trend = i < count - 8 ? 0.22 : i < count - 2 ? -0.65 : 0.9;
     close = Math.max(5, close * (1 + trend / 100));
-    const high = close * (i < count - 2 ? 1.01 : 1.008);
-    const low = close * 0.992;
+    const high = close * (i < count - 2 ? 1.01 : 1.004);
+    const low = close * 0.99;
     sessions.push({ date, open: close * 0.997, high, low, close, adjustedClose: close, volume: 1_000_000 + i * 1000 });
   }
   return { ticker, sessions };
@@ -34,6 +34,7 @@ test('future bars cannot change an earlier pullback snapshot', () => {
   const date = signalDate(base);
   const a = buildRawPullbackSnapshot([base], date);
   const b = buildRawPullbackSnapshot([extended], date);
+  assert.ok(a.ranked.length > 0, 'fixture must produce a real eligible pullback');
   assert.deepEqual(a.ranked, b.ranked);
   assert.deepEqual(a.universe, b.universe);
 });
@@ -67,8 +68,8 @@ test('ranking is deterministic with ticker tie break', () => {
   const date = signalDate(a);
   const first = buildRawPullbackSnapshot([b, a], date).ranked.map(x => x.ticker);
   const second = buildRawPullbackSnapshot([a, b], date).ranked.map(x => x.ticker);
-  assert.deepEqual(first, second);
-  assert.deepEqual(first, [...first].sort());
+  assert.deepEqual(first, ['AAA', 'BBB']);
+  assert.deepEqual(second, first);
 });
 
 test('pullback policy is fixed and outcome-free', () => {
@@ -77,6 +78,8 @@ test('pullback policy is fixed and outcome-free', () => {
   assert.equal(RAW_PULLBACK_POLICY.maximumPullbackDepth, 0.12);
   assert.equal(RAW_PULLBACK_POLICY.minimumCloseLocation, 0.60);
   assert.equal(RAW_PULLBACK_POLICY.confirmationScore, 70);
-  const snap = buildRawPullbackSnapshot([makeDoc('AAA')], signalDate(makeDoc('AAA')));
+  const doc = makeDoc('AAA');
+  const snap = buildRawPullbackSnapshot([doc], signalDate(doc));
+  assert.ok(snap.ranked.length > 0);
   assert.equal(snap.policy.outcomeInputs, false);
 });
