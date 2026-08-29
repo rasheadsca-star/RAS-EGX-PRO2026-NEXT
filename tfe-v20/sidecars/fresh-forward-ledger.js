@@ -303,16 +303,37 @@ function returnMetrics(returns) {
   };
 }
 
+function vetoMetrics(rows) {
+  const returns = rows.map((row) => Number(row.netReturnPct)).filter(Number.isFinite);
+  const avoidedLossPct = returns.filter((value) => value < 0).reduce((sum, value) => sum + Math.abs(value), 0);
+  const missedGainPct = returns.filter((value) => value > 0).reduce((sum, value) => sum + value, 0);
+  const lossesAvoided = returns.filter((value) => value < 0).length;
+  const gainsMissed = returns.filter((value) => value > 0).length;
+  return {
+    resolvedVetoes: returns.length,
+    lossesAvoided,
+    gainsMissed,
+    flatOutcomes: returns.filter((value) => value === 0).length,
+    lossAvoidanceHitRatePct: returns.length ? round(lossesAvoided / returns.length * 100, 2) : null,
+    avoidedLossPct: round(avoidedLossPct, 4),
+    missedGainPct: round(missedGainPct, 4),
+    counterfactualNetBenefitPct: round(avoidedLossPct - missedGainPct, 4),
+    averageCounterfactualBenefitPct: returns.length ? round((avoidedLossPct - missedGainPct) / returns.length, 4) : null,
+  };
+}
+
 export function summarizeFreshForward(results) {
   const rows = Array.isArray(results) ? results : [];
   const entered = rows.filter((row) => !['WAITING_FOR_NEXT_SESSION', 'NO_ENTRY_NEXT_SESSION'].includes(row.status));
   const resolved = entered.filter((row) => row.resolved === true);
   const primary = resolved.filter((row) => String(row.category ?? '').startsWith('PRIMARY'));
   const metaReady = primary.filter((row) => ['BUY', 'READY'].includes(row.metaDecision));
+  const metaNoTrade = primary.filter((row) => row.metaDecision === 'NO_TRADE');
   return {
-    schemaVersion: 'egx.fresh-forward-ledger.summary.1',
+    schemaVersion: 'egx.fresh-forward-ledger.summary.2',
     policyHash: sha256(FRESH_FORWARD_POLICY),
     scoringImpact: 'NONE',
+    promotionEligible: false,
     all: {
       signals: rows.length,
       entered: entered.length,
@@ -330,6 +351,10 @@ export function summarizeFreshForward(results) {
       resolved: metaReady.length,
       metrics: returnMetrics(metaReady.map((row) => Number(row.netReturnPct))),
       note: 'Shadow cohort only. No positive alpha weight or production authority is granted by this summary.',
+    },
+    metaNoTradeVetoOnV16Primary: {
+      ...vetoMetrics(metaNoTrade),
+      note: 'Counterfactual abstention value only: a positive benefit means NO_TRADE avoided more V16 loss than gain; it is not alpha and grants no authority.',
     },
   };
 }
