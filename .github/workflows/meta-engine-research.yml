@@ -19,6 +19,7 @@ on:
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
       - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
+      - 'tfe-v20/scripts/v16-loss-anatomy-audit.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -40,6 +41,7 @@ on:
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
       - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
+      - 'tfe-v20/scripts/v16-loss-anatomy-audit.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -116,6 +118,9 @@ jobs:
           python scripts/research/v16-v169-basket-engine.py
           sed -i 's/AUDIT_SESSIONS = 20/AUDIT_SESSIONS = 999/' scripts/research/v16-v169-target-hit-audit.py
           python scripts/research/v16-v169-target-hit-audit.py
+
+      - name: Diagnose V16 loss anatomy
+        run: node scripts/v16-loss-anatomy-audit.mjs
 
       - name: Audit outcome-blind V16 entry heat filter
         run: node scripts/meta-entry-quality-audit.mjs
