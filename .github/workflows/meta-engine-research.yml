@@ -10,17 +10,21 @@ on:
       - 'tfe-v20/src/rawMomentumExpert.js'
       - 'tfe-v20/src/rawPullbackExpert.js'
       - 'tfe-v20/src/breadthRegimeExposure.js'
+      - 'tfe-v20/sidecars/fresh-forward-ledger.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/test/raw-pullback-expert.test.js'
       - 'tfe-v20/test/breadth-regime-exposure.test.js'
+      - 'tfe-v20/test/fresh-forward-ledger.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
+      - 'tfe-v20/scripts/fresh-forward-*.mjs'
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
       - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
       - 'tfe-v20/scripts/v16-loss-anatomy-*.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
+      - 'tfe-v20/forward-ledger/**'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
   pull_request:
@@ -32,17 +36,21 @@ on:
       - 'tfe-v20/src/rawMomentumExpert.js'
       - 'tfe-v20/src/rawPullbackExpert.js'
       - 'tfe-v20/src/breadthRegimeExposure.js'
+      - 'tfe-v20/sidecars/fresh-forward-ledger.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/test/raw-pullback-expert.test.js'
       - 'tfe-v20/test/breadth-regime-exposure.test.js'
+      - 'tfe-v20/test/fresh-forward-ledger.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
+      - 'tfe-v20/scripts/fresh-forward-*.mjs'
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
       - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
       - 'tfe-v20/scripts/v16-loss-anatomy-*.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
+      - 'tfe-v20/forward-ledger/**'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
   workflow_dispatch:
@@ -86,6 +94,12 @@ jobs:
 
       - name: Run breadth regime exposure leakage tests
         run: node --test test/breadth-regime-exposure.test.js
+
+      - name: Run fresh forward ledger integrity tests
+        run: node --test test/fresh-forward-ledger.test.js
+
+      - name: Verify committed fresh forward snapshots are untampered
+        run: node scripts/fresh-forward-verify.mjs
 
       - name: Run frozen-ledger benchmark
         run: node scripts/meta-ledger-benchmark.mjs
