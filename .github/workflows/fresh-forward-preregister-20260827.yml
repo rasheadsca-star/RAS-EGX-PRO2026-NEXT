@@ -1,0 +1,50 @@
+name: Fresh Forward Preregister 2026-08-27
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - '.github/workflows/fresh-forward-preregister-20260827.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  freeze-pre-outcome-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build same-reference-date Meta Shadow
+        run: node scripts/meta-live-shadow.mjs
+
+      - name: Freeze first forward snapshot before next EGX open
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          NEXT_TRADING_SESSION_DATE: '2026-08-30'
+          NEXT_SESSION_OPEN_AT: '2026-08-30T07:00:00.000Z'
+          SOURCE_DECLARED_DATE_STATUS: 'EGX_CLOSED_HOLIDAY_REFERENCE_DATE'
+          MARKET_CALENDAR_EVIDENCE_JSON: '[{"url":"https://www.masrawy.com/news/news_economy/details/2026/8/24/3037667","note":"EGX announced 27-Aug-2026 holiday and resumption Sunday 30-Aug-2026"},{"url":"https://www.tradinghours.com/markets/egx","note":"EGX normal Sunday-Thursday opening shown as 10:00 Cairo time"}]'
+        run: node scripts/fresh-forward-capture.mjs reports/meta-live-shadow.json
+
+      - name: Verify captured snapshot integrity
+        run: node scripts/fresh-forward-verify.mjs reports/fresh-forward-ledger
+
+      - name: Upload immutable preregistration artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-forward-preregister-2026-08-27
+          path: tfe-v20/reports/fresh-forward-ledger/*.json
+          if-no-files-found: error
+          retention-days: 90
