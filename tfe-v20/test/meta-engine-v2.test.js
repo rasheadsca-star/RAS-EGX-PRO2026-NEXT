@@ -8,7 +8,7 @@ const base = {
 };
 
 const v16 = {
-  id: 'V16_9', role: 'PRIMARY_ALPHA', lineageStatus: 'SHARED_RESEARCH_LINEAGE',
+  id: 'V16_9', role: 'PRIMARY_ALPHA', lineageStatus: 'INDEPENDENT',
   lineageGroup: 'V16_RESEARCH_LINEAGE', signalDate: '2026-08-27',
   evidenceClass: 'WALK_FORWARD_POINT_IN_TIME', signalScore: 88, priorWeight: 1,
   sampleSize: 55, hitRatePct: 40
@@ -21,11 +21,14 @@ const v19 = {
   sampleSize: 52, hitRatePct: 34.62
 };
 
-test('V19 shared lineage is capped and never counted as a fresh independent family', () => {
+test('V16 counts as one independent family while V19 shared lineage adds no second family', () => {
   const r = analyzeMetaOpportunityV2({ ...base, engines: [v16, v19] });
-  assert.equal(r.gates.freshIndependentFamilyCount, 0);
+  assert.equal(r.gates.freshIndependentFamilyCount, 1);
+  assert.equal(r.gates.independentFamilyCount, 1);
   assert.equal(r.governance.promotionEligible, false);
   assert.equal(r.lineageAudit.find(x => x.id === 'V19_V6').alphaPriorWeight, 0.25);
+  assert.equal(r.engineContributions.find(x => x.id === 'V16_9').family, 'LINEAGE:V16_RESEARCH_LINEAGE');
+  assert.equal(r.engineContributions.find(x => x.id === 'V19_V6').family, 'LINEAGE:V16_RESEARCH_LINEAGE');
 });
 
 test('Gann and SEPA diagnostic engines have exactly zero alpha weight', () => {
@@ -61,6 +64,7 @@ test('same underlying method aliases receive zero alpha independence', () => {
   };
   const r = analyzeMetaOpportunityV2({ ...base, engines: [v16, alias] });
   assert.equal(r.lineageAudit.find(x => x.id === 'V17_ALIAS').alphaPriorWeight, 0);
+  assert.equal(r.gates.freshIndependentFamilyCount, 1);
 });
 
 test('missing primary alpha forces NO_TRADE', () => {
@@ -78,16 +82,16 @@ test('future or mismatched timestamps cannot manufacture confirmation', () => {
   const future = { ...v19, signalDate: '2026-08-28' };
   const r = analyzeMetaOpportunityV2({ ...base, engines: [v16, future] });
   assert.equal(r.lineageAudit.find(x => x.id === 'V19_V6').alphaPriorWeight, 0);
+  assert.equal(r.gates.freshIndependentFamilyCount, 1);
 });
 
-test('fresh independent family accounting ignores shared-lineage engines', () => {
-  const primaryIndependent = { ...v16, lineageStatus: 'INDEPENDENT', family: 'V16_PRIMARY' };
+test('one genuinely fresh independent expert plus V16 reaches two families while V19 does not add a third', () => {
   const independent = {
     id: 'RAW_A', role: 'CONFIRMATORY_ALPHA', lineageStatus: 'INDEPENDENT', family: 'RAW_A',
     signalDate: '2026-08-27', evidenceClass: 'FRESH_FORWARD_INDEPENDENT', signalScore: 99,
     priorWeight: 1, sampleSize: 50, hitRatePct: 60
   };
-  const r = analyzeMetaOpportunityV2({ ...base, engines: [primaryIndependent, independent, v19] });
+  const r = analyzeMetaOpportunityV2({ ...base, engines: [v16, independent, v19] });
   assert.equal(r.gates.freshIndependentFamilyCount, 2);
   assert.equal(r.lineageAudit.find(x => x.id === 'V19_V6').lineageStatus, 'SHARED_RESEARCH_LINEAGE');
 });
