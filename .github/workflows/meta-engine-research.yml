@@ -1,0 +1,59 @@
+name: Meta Engine Research
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/src/metaEngine.js'
+      - 'tfe-v20/test/meta-engine.test.js'
+      - 'tfe-v20/scripts/meta-*.mjs'
+      - 'tfe-v20/research/**'
+      - '.github/workflows/meta-engine-research.yml'
+  pull_request:
+    branches:
+      - develop/v20-integrated-decision-platform
+    paths:
+      - 'tfe-v20/src/metaEngine.js'
+      - 'tfe-v20/test/meta-engine.test.js'
+      - 'tfe-v20/scripts/meta-*.mjs'
+      - 'tfe-v20/research/**'
+      - '.github/workflows/meta-engine-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-meta-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run full TFE test suite including meta red-team tests
+        run: npm test
+
+      - name: Run frozen-ledger benchmark
+        run: node scripts/meta-ledger-benchmark.mjs
+
+      - name: Run same-session live shadow
+        run: node scripts/meta-live-shadow.mjs
+
+      - name: Upload research reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meta-engine-research-reports
+          path: tfe-v20/reports/*.json
+          if-no-files-found: warn
+          retention-days: 14
