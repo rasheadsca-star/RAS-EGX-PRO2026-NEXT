@@ -138,6 +138,15 @@ jobs:
             echo 'No new preregistration snapshot produced in this run.'
           fi
 
+      - name: Upload preregistered forward snapshot immediately
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-forward-preregister-2026-08-27
+          path: tfe-v20/reports/fresh-forward-ledger/*.json
+          if-no-files-found: warn
+          retention-days: 90
+
       - name: Materialize pinned legacy evidence snapshot
         run: |
           cd ..
@@ -223,15 +232,6 @@ jobs:
       - name: Build compact research verdict
         if: always()
         run: node scripts/meta-research-verdict.mjs
-
-      - name: Upload preregistered forward snapshot
-        if: always() && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: fresh-forward-preregister-2026-08-27
-          path: tfe-v20/reports/fresh-forward-ledger/*.json
-          if-no-files-found: warn
-          retention-days: 90
 
       - name: Upload research reports
         if: always()
