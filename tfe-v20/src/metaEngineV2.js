@@ -1,7 +1,7 @@
 import { analyzeMetaOpportunity, rankMetaOpportunities } from './metaEngine.js';
 
 const DEFAULT_V2_POLICY = Object.freeze({
-  sharedResearchLineagePriorWeightCap: 0.25,
+  sharedResearchLineagePriorWeightCap: 0,
   sameUnderlyingMethodPriorWeightCap: 0,
   diagnosticPriorWeightCap: 0,
   riskOnlyPriorWeightCap: 0,
@@ -87,6 +87,7 @@ export function analyzeMetaOpportunityV2(input, customPolicy = {}) {
     const role = upper(engine.role, ROLE.CONFIRMATORY_ALPHA);
     const lineage = upper(engine.lineageStatus, LINEAGE.UNVERIFIED);
     const sessionAligned = exactSessionAligned(engine, signalDate);
+    const canonicalFamily = canonicalLineageFamily(engine, role, lineage);
     let priorWeight = preparedPriorWeight(engine, role, lineage, policy);
     const exclusionReasons = [];
 
@@ -97,12 +98,13 @@ export function analyzeMetaOpportunityV2(input, customPolicy = {}) {
     if (role === ROLE.DIAGNOSTIC_ONLY) exclusionReasons.push('DIAGNOSTIC_ZERO_ALPHA_WEIGHT');
     if (role === ROLE.RISK_ONLY) exclusionReasons.push('RISK_ONLY_ZERO_ALPHA_WEIGHT');
     if (lineage === LINEAGE.SAME_UNDERLYING_METHOD) exclusionReasons.push('SAME_UNDERLYING_METHOD_ZERO_INDEPENDENCE');
-    if (lineage === LINEAGE.SHARED_RESEARCH_LINEAGE) exclusionReasons.push('SHARED_RESEARCH_LINEAGE_CAPPED');
+    if (lineage === LINEAGE.SHARED_RESEARCH_LINEAGE) exclusionReasons.push('SHARED_RESEARCH_LINEAGE_ZERO_ALPHA_AFTER_FAILED_OOS_REPLAY');
 
     lineageAudit.push({
       id: String(engine.id || 'UNKNOWN'),
       role,
       lineageStatus: lineage,
+      canonicalFamily,
       sessionAligned,
       alphaPriorWeight: priorWeight,
       exclusionReasons
@@ -113,7 +115,7 @@ export function analyzeMetaOpportunityV2(input, customPolicy = {}) {
       ...engine,
       priorWeight,
       freshness: sessionAligned ? finite(engine.freshness, 1) : 0,
-      family: canonicalLineageFamily(engine, role, lineage)
+      family: canonicalFamily
     });
   }
 
@@ -159,7 +161,7 @@ export function analyzeMetaOpportunityV2(input, customPolicy = {}) {
       promotionReason: promotionEligible
         ? 'BUY_WITH_AT_LEAST_TWO_FRESH_INDEPENDENT_FAMILIES'
         : 'RESEARCH_ONLY_UNTIL_FRESH_INDEPENDENT_EVIDENCE_PASSES',
-      v19Treatment: 'CONFIRMATORY_SHARED_RESEARCH_LINEAGE_NOT_SECOND_INDEPENDENT_FAMILY',
+      v19Treatment: 'DIAGNOSTIC_ONLY_ZERO_ALPHA_AFTER_OLDER_DEVELOPMENT_REPLAY_FAILED',
       gannTreatment: 'DIAGNOSTIC_ONLY_ZERO_ALPHA_WEIGHT',
       sepaTreatment: 'DIAGNOSTIC_ONLY_ZERO_ALPHA_WEIGHT',
       fundamentalsNewsTreatment: 'RISK_ONLY_NEVER_POSITIVE_ALPHA'
