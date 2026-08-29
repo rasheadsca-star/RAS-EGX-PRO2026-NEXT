@@ -1,0 +1,79 @@
+name: V16 Downside Fragility Research
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/src/downsideFragilityExpert.js'
+      - 'tfe-v20/test/downside-fragility-expert.test.js'
+      - 'tfe-v20/scripts/v16-downside-fragility-audit.mjs'
+      - 'tfe-v20/research/V16_DOWNSIDE_FRAGILITY_EXPERT_CONTRACT.md'
+      - '.github/workflows/v16-downside-fragility-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LEGACY_EVIDENCE_COMMIT: 34218d27a36d2c916961a54573477f47f124416a
+
+jobs:
+  audit-downside-fragility:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Destroy signal/execution leakage paths
+        run: node --test test/downside-fragility-expert.test.js
+
+      - name: Materialize pinned V16 evidence and history
+        run: |
+          cd ..
+          git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- data/history
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- \
+            scripts/research/v16-v169-basket-engine.py \
+            scripts/research/v16-v169-target-hit-audit.py
+
+      - name: Rebuild exact 45-session V16 target-hit audit
+        run: |
+          cd ..
+          python scripts/research/v16-v169-basket-engine.py
+          sed -i 's/AUDIT_SESSIONS = 20/AUDIT_SESSIONS = 999/' scripts/research/v16-v169-target-hit-audit.py
+          python scripts/research/v16-v169-target-hit-audit.py
+
+      - name: Run one-shot targeted downside fragility audit
+        run: node scripts/v16-downside-fragility-audit.mjs
+
+      - name: Assert zero authority regardless of retrospective result
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('reports/v16-downside-fragility-audit.json','utf8'));
+          if (x.governance.scoringImpact !== 'NONE') throw new Error('SCORING_IMPACT_CHANGED');
+          if (x.governance.alphaWeight !== 0) throw new Error('ALPHA_WEIGHT_CHANGED');
+          if (x.governance.productionAuthority !== false) throw new Error('PRODUCTION_AUTHORITY_CHANGED');
+          if (x.governance.promotionEligible !== false) throw new Error('PROMOTION_ELIGIBILITY_CHANGED');
+          if (x.governance.freshForwardLedgerChanged !== false) throw new Error('FORWARD_LEDGER_MUTATION_CLAIM');
+          NODE
+
+      - name: Upload targeted research report
+        uses: actions/upload-artifact@v4
+        with:
+          name: v16-downside-fragility-research
+          path: tfe-v20/reports/v16-downside-fragility-audit.json
+          if-no-files-found: error
+          retention-days: 30
