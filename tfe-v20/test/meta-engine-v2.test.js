@@ -21,14 +21,17 @@ const v19 = {
   sampleSize: 52, hitRatePct: 34.62
 };
 
-test('V16 counts as one independent family while V19 shared lineage adds no second family', () => {
+test('V16 counts as one independent family while failed-replay V19 has zero alpha', () => {
   const r = analyzeMetaOpportunityV2({ ...base, engines: [v16, v19] });
   assert.equal(r.gates.freshIndependentFamilyCount, 1);
   assert.equal(r.gates.independentFamilyCount, 1);
   assert.equal(r.governance.promotionEligible, false);
-  assert.equal(r.lineageAudit.find(x => x.id === 'V19_V6').alphaPriorWeight, 0.25);
+  const a = r.lineageAudit.find(x => x.id === 'V19_V6');
+  assert.equal(a.alphaPriorWeight, 0);
+  assert.equal(a.canonicalFamily, 'LINEAGE:V16_RESEARCH_LINEAGE');
+  assert.ok(a.exclusionReasons.includes('SHARED_RESEARCH_LINEAGE_ZERO_ALPHA_AFTER_FAILED_OOS_REPLAY'));
+  assert.equal(r.engineContributions.some(x => x.id === 'V19_V6'), false);
   assert.equal(r.engineContributions.find(x => x.id === 'V16_9').family, 'LINEAGE:V16_RESEARCH_LINEAGE');
-  assert.equal(r.engineContributions.find(x => x.id === 'V19_V6').family, 'LINEAGE:V16_RESEARCH_LINEAGE');
 });
 
 test('Gann and SEPA diagnostic engines have exactly zero alpha weight', () => {
@@ -85,7 +88,7 @@ test('future or mismatched timestamps cannot manufacture confirmation', () => {
   assert.equal(r.gates.freshIndependentFamilyCount, 1);
 });
 
-test('one genuinely fresh independent expert plus V16 reaches two families while V19 does not add a third', () => {
+test('one genuinely fresh independent expert plus V16 reaches two families while V19 adds none', () => {
   const independent = {
     id: 'RAW_A', role: 'CONFIRMATORY_ALPHA', lineageStatus: 'INDEPENDENT', family: 'RAW_A',
     signalDate: '2026-08-27', evidenceClass: 'FRESH_FORWARD_INDEPENDENT', signalScore: 99,
@@ -93,5 +96,5 @@ test('one genuinely fresh independent expert plus V16 reaches two families while
   };
   const r = analyzeMetaOpportunityV2({ ...base, engines: [v16, independent, v19] });
   assert.equal(r.gates.freshIndependentFamilyCount, 2);
-  assert.equal(r.lineageAudit.find(x => x.id === 'V19_V6').lineageStatus, 'SHARED_RESEARCH_LINEAGE');
+  assert.equal(r.lineageAudit.find(x => x.id === 'V19_V6').alphaPriorWeight, 0);
 });
