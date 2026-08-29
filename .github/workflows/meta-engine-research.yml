@@ -37,12 +37,15 @@ jobs:
         run: node scripts/current-universe-scan.mjs
       - name: Run point-in-time plan construction ablation
         run: node scripts/plan-ablation.mjs
+      - name: Audit baseline winner loser features
+        run: node scripts/baseline-feature-audit.mjs
       - name: Validate generated research evidence
         run: |
           test -s evidence/meta/current-meta-snapshot.json
           test -s evidence/meta/current-meta-review.json
           test -s evidence/meta/current-universe-scan.json
           test -s evidence/meta/plan-ablation.json
+          test -s evidence/meta/baseline-feature-audit.json
       - name: Upload research evidence
         uses: actions/upload-artifact@v4
         with:
@@ -52,4 +55,5 @@ jobs:
             tfe-v20/evidence/meta/current-meta-review.json
             tfe-v20/evidence/meta/current-universe-scan.json
             tfe-v20/evidence/meta/plan-ablation.json
+            tfe-v20/evidence/meta/baseline-feature-audit.json
           if-no-files-found: error
