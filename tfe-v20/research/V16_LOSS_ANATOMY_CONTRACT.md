@@ -97,15 +97,29 @@ Already tested/rejected families are locked:
 - `RAW_MOMENTUM`: the independent raw momentum V1 expert failed its preregistered retrospective gate. Anatomy may describe momentum/trend effects but may not retune that V1 policy on these outcomes.
 - `RAW_PULLBACK`: raw pullback V1 failed its frozen research gate. Anatomy may describe pullback-like effects but may not retune that V1 policy on these outcomes.
 
+## Post-destructive-review validity correction: derived-feature degeneracy
+
+This validity guard was added after the destructive review of the first anatomy output. It is **not a performance threshold and is not permitted to alter outcomes, bins, feature values, or effect sizes**. Its sole purpose is to reject a purportedly new family when the apparent variables are algebraic transforms of the same frozen construction and therefore do not represent independent decision degrees of freedom.
+
+The first anatomy output exposed this issue in `GEOMETRY`: the V16 source constructs entry width, stop distance and target distance from the same ATR using fixed multipliers (`0.16`, `0.90`, `1.20`). Dividing those frozen levels by an independently recomputed anatomy ATR can make all three normalized values move together because of ATR implementation/rounding differences. Such movement is a measurement identity artifact, not evidence that wider/narrower recommendation geometry has incremental alpha.
+
+The geometry family is therefore ineligible for a new-candidate recommendation when all of the following identity checks hold:
+- stop-distance / entry-width is within 5% of `0.90 / 0.16 = 5.625` at both q33 and q67;
+- target-distance / entry-width is within 5% of `1.20 / 0.16 = 7.5` at both q33 and q67;
+- structural-RR q67 minus q33 is at most `0.01`, showing the underlying reward/risk construction is effectively constant.
+
+When triggered, the original descriptive effect remains visible and is labeled `STABLE_BUT_FORMULA_DERIVED_ARTIFACT`, but `candidateEligibility=false`. This correction cannot make a losing rule look better; it can only remove a non-independent false-positive family from candidate generation.
+
 ## New-candidate rule
 
 At most one new research family may be recommended after this audit, and only if:
 - it contains at least one `STABLE_DIAGNOSTIC_PATTERN`,
 - it is not one of the locked/rejected families above,
+- it is not excluded by a validity/identity guard such as formula-derived degeneracy,
 - its strongest feature is directionally stable in >=2/3 folds,
 - the proposed next experiment can be specified without selecting an outcome-optimized cutoff.
 
-If no unlocked family satisfies these conditions, disposition must be:
+If no unlocked independent family satisfies these conditions, disposition must be:
 `NO_NEW_RETROSPECTIVE_RULE_MOVE_TO_FRESH_FORWARD_EVIDENCE`.
 
 Even if one unlocked family qualifies, this audit does **not** grant alpha weight or production authority. The next experiment must be separately preregistered before its first outcome run.
