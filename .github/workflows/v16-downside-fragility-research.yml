@@ -39,14 +39,18 @@ jobs:
       - name: Destroy signal/execution leakage paths
         run: node --test test/downside-fragility-expert.test.js
 
-      - name: Materialize pinned V16 evidence and history
+      - name: Materialize complete pinned V16 evidence lineage
         run: |
           cd ..
           git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
-          git checkout "$LEGACY_EVIDENCE_COMMIT" -- data/history
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- gann-fusion-x data/history
           git checkout "$LEGACY_EVIDENCE_COMMIT" -- \
+            scripts/research/v16-probabilistic-model-impact.py \
+            scripts/research/v16-two-stage-predictor.py \
             scripts/research/v16-v169-basket-engine.py \
             scripts/research/v16-v169-target-hit-audit.py
+          mkdir -p data/stable tfe-v20/reports
+          git show "$LEGACY_EVIDENCE_COMMIT:data/stable/v16-v169-live-evaluation.json" > data/stable/v16-v169-live-evaluation.json
 
       - name: Rebuild exact 45-session V16 target-hit audit
         run: |
