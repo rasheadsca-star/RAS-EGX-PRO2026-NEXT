@@ -4,9 +4,17 @@ import { buildFreshForwardSnapshot, sha256 } from '../sidecars/fresh-forward-led
 
 const reportPath = process.argv[2] || 'reports/meta-live-shadow.json';
 const nextSessionOpenAt = process.env.NEXT_SESSION_OPEN_AT;
+const nextTradingSessionDate = process.env.NEXT_TRADING_SESSION_DATE || null;
+const sourceDeclaredDateStatus = process.env.SOURCE_DECLARED_DATE_STATUS || 'UNVERIFIED';
 const sourceCommit = process.env.SOURCE_COMMIT || process.env.GITHUB_SHA;
 if (!nextSessionOpenAt) throw new Error('NEXT_SESSION_OPEN_AT_REQUIRED');
 if (!sourceCommit) throw new Error('SOURCE_COMMIT_REQUIRED');
+
+let calendarEvidence = [];
+if (process.env.MARKET_CALENDAR_EVIDENCE_JSON) {
+  calendarEvidence = JSON.parse(process.env.MARKET_CALENDAR_EVIDENCE_JSON);
+  if (!Array.isArray(calendarEvidence)) throw new Error('MARKET_CALENDAR_EVIDENCE_MUST_BE_ARRAY');
+}
 
 const metaText = await fs.readFile(path.resolve(reportPath), 'utf8');
 const meta = JSON.parse(metaText);
@@ -55,6 +63,12 @@ const snapshot = buildFreshForwardSnapshot({
   sources,
   v16Payload: v16,
   metaShadowPayload: meta,
+  marketCalendar: {
+    timeZone: 'Africa/Cairo',
+    sourceDeclaredDateStatus,
+    nextTradingSessionDate,
+    evidence: calendarEvidence,
+  },
 });
 
 const outDir = path.resolve('reports/fresh-forward-ledger');
@@ -65,6 +79,9 @@ console.log(JSON.stringify({
   ok: true,
   status: snapshot.status,
   signalSessionDate: snapshot.signalSessionDate,
+  signalDateSemantics: snapshot.signalDateSemantics,
+  sourceDeclaredDateStatus: snapshot.marketCalendar.sourceDeclaredDateStatus,
+  nextTradingSessionDate: snapshot.marketCalendar.nextTradingSessionDate,
   capturedAt: snapshot.capturedAt,
   nextSessionOpenAt: snapshot.nextSessionOpenAt,
   sourceCommit: snapshot.sourceCommit,
