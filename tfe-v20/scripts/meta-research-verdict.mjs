@@ -21,27 +21,30 @@ function pick(obj, paths) {
 }
 
 const raw = read('raw-momentum-expert-audit.json');
+const pullback = read('raw-pullback-expert-audit.json');
 const v19 = read('meta-v19-development-consensus-audit.json');
 const entry = read('meta-entry-quality-audit.json');
 const legacy = read('legacy-expert-veto-audit.json');
 const inherited = read('inherited-v20-blocker.json');
 
 const rawPass = Boolean(raw?.passesRetrospectiveGate);
+const pullbackPass = Boolean(pullback?.passesInternalResearchGate);
 const v19Pass = Boolean(v19?.supportsConfirmatoryHypothesis);
 const entryPass = Boolean(entry?.promotion?.eligible || entry?.supportsRiskGate);
 
 const promotionBlockers = [];
 if (inherited) promotionBlockers.push('INHERITED_V20_BASELINE_BLOCKER');
 if (!rawPass) promotionBlockers.push('RAW_MOMENTUM_RETROSPECTIVE_GATE_NOT_PASSED');
+if (pullback && !pullbackPass) promotionBlockers.push('RAW_PULLBACK_INTERNAL_RESEARCH_GATE_NOT_PASSED');
 if (v19 && !v19Pass) promotionBlockers.push('V19_CONFIRMATORY_HYPOTHESIS_NOT_REPRODUCED');
 if (entry && !entryPass) promotionBlockers.push('ENTRY_QUALITY_RULE_NOT_ROBUST');
 
-// A failed candidate-performance gate is not itself a Critical/High implementation defect.
-// Keep that distinction explicit so destructive-review severity is not inflated.
+// Candidate-performance failures are not Critical/High implementation defects.
+// Keep destructive-review severity separate from research promotion blockers.
 const openCriticalHigh = inherited ? ['INHERITED_V20_BASELINE_BLOCKER'] : [];
 
 const verdict = {
-  schemaVersion: 'meta-research-verdict-v2',
+  schemaVersion: 'meta-research-verdict-v3',
   generatedAt: new Date().toISOString(),
   branch: process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || 'agent/egx-meta-engine-v1-20260829',
   headSha: process.env.GITHUB_SHA || null,
@@ -63,6 +66,18 @@ const verdict = {
     standaloneValidation: raw.standalone?.validation || null,
     confirmationValidation: raw.confirmation?.validation || null,
     preregisteredChecks: raw.preregisteredChecks || null
+  } : null,
+  rawPullbackExpert: pullback ? {
+    evidenceClass: pullback.evidenceClass || null,
+    independentGeneration: pullback.lineage?.independentGeneration ?? null,
+    historicalWindowAlreadyObservedByResearchProgram: pullback.governance?.historicalWindowAlreadyObservedByResearchProgram ?? null,
+    passesInternalResearchGate: pullbackPass,
+    disposition: pullback.disposition || null,
+    standaloneDevelopment: pullback.standalone?.development || null,
+    standaloneDiagnostic: pullback.standalone?.diagnostic || null,
+    confirmationDiagnostic: pullback.confirmation?.diagnostic || null,
+    internalResearchChecks: pullback.internalResearchChecks || null,
+    promotionEligible: false
   } : null,
   v19OlderDevelopmentReplay: v19 ? {
     evidenceClass: v19.evidenceClass || null,
@@ -90,9 +105,11 @@ const verdict = {
   inheritedBlocker: inherited,
   promotionBlockers,
   openCriticalHigh,
-  finalResearchDisposition: rawPass
-    ? 'KEEP_V16_CHAMPION_RAW_MOMENTUM_REQUIRES_FRESH_FORWARD_PROOF'
-    : 'KEEP_V16_CHAMPION_REJECT_RAW_MOMENTUM_V1_ALPHA_WEIGHT',
+  finalResearchDisposition: pullbackPass
+    ? 'KEEP_V16_CHAMPION_PULLBACK_MAY_ENTER_FRESH_FORWARD_SHADOW_ONLY'
+    : rawPass
+      ? 'KEEP_V16_CHAMPION_RAW_MOMENTUM_REQUIRES_FRESH_FORWARD_PROOF'
+      : 'KEEP_V16_CHAMPION_NO_CHALLENGER_HAS_EARNED_POSITIVE_ALPHA_WEIGHT',
   reason: 'No challenger is promoted from reused or retrospective evidence. V16 remains champion until superiority is demonstrated on fresh point-in-time evidence under identical execution and cost assumptions.'
 };
 
