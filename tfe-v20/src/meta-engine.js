@@ -5,7 +5,7 @@ const hasNumber = (x) => x !== null && x !== undefined && x !== '' && Number.isF
 export const META_POLICY = Object.freeze({
   engineId: 'EGX_META_ENGINE_V1',
   researchOnly: true,
-  minExperts: 2,
+  minIndependentFamilies: 2,
   minDataQuality: 70,
   minLiquidityScore: 55,
   minStructuralNetRR: 0.70,
@@ -74,7 +74,6 @@ export function expertReliability(expert = {}) {
   const pfScore = profitFactor == null ? null : clamp(profitFactor / 2);
   const avgNetScore = avgNetPct == null ? null : clamp(0.5 + avgNetPct / 8);
 
-  // Missing statistical evidence is omitted, never converted to a fabricated zero.
   const statistical = normalizedMetricBlend([
     { value: sampleReliability, weight: 0.25 },
     { value: targetWilson, weight: 0.25 },
@@ -110,9 +109,38 @@ function signalDirection(signal = '') {
 function expertContribution(expert) {
   const reliability = expertReliability(expert);
   const direction = signalDirection(expert.signal ?? expert.decision);
-  const score = hasNumber(expert.score) ? clamp(Number(expert.score) / 100) : 0.70;
-  const contribution = direction * score * reliability.reliability;
-  return { ...reliability, direction, normalizedScore: score, contribution };
+  // Scores are not assumed to be calibrated across engines. They only adjust conviction within a narrow band.
+  const score01 = hasNumber(expert.score) ? clamp(Number(expert.score) / 100) : 0.50;
+  const conviction = 0.70 + 0.30 * score01;
+  const weight = conviction * reliability.reliability;
+  return { ...reliability, direction, score01: round(score01, 4), conviction: round(conviction, 4), weight: round(weight, 6), contribution: direction * weight };
+}
+
+function aggregateIndependentFamilies(contributions) {
+  const groups = new Map();
+  for (const item of contributions.filter((x) => x.direction !== 0 && x.reliability > 0)) {
+    const family = String(item.family ?? item.id ?? 'UNKNOWN').toUpperCase();
+    if (!groups.has(family)) groups.set(family, []);
+    groups.get(family).push(item);
+  }
+  const families = [];
+  for (const [family, members] of groups.entries()) {
+    const totalMemberWeight = members.reduce((s, x) => s + x.weight, 0);
+    const maxWeight = Math.max(...members.map((x) => x.weight));
+    const directionalMean = totalMemberWeight ? members.reduce((s, x) => s + x.direction * x.weight, 0) / totalMemberWeight : 0;
+    const signs = new Set(members.map((x) => Math.sign(x.direction)).filter(Boolean));
+    families.push({
+      family,
+      memberCount: members.length,
+      memberIds: members.map((x) => x.id),
+      intraFamilyConflict: signs.size > 1,
+      weight: maxWeight,
+      direction: directionalMean,
+      contribution: directionalMean * maxWeight,
+      reliability: Math.max(...members.map((x) => x.reliability)),
+    });
+  }
+  return families;
 }
 
 function regimeFactor(regime = 'NEUTRAL') {
@@ -147,15 +175,16 @@ export function evaluateMetaCandidate(candidate = {}) {
   const blocks = hardGate(candidate);
   const contributions = experts.map((expert) => ({
     id: expert.id ?? expert.name ?? 'EXPERT',
+    family: expert.family ?? expert.engineFamily ?? expert.id ?? expert.name ?? 'UNKNOWN',
     signal: expert.signal ?? expert.decision ?? 'UNKNOWN',
     ...expertContribution(expert),
   }));
-  const active = contributions.filter((x) => x.direction !== 0 && x.reliability > 0);
-  const totalWeight = active.reduce((s, x) => s + Math.abs(x.normalizedScore * x.reliability), 0);
-  const signed = active.reduce((s, x) => s + x.contribution, 0);
+  const families = aggregateIndependentFamilies(contributions);
+  const totalWeight = families.reduce((s, x) => s + Math.abs(x.weight), 0);
+  const signed = families.reduce((s, x) => s + x.contribution, 0);
   const rawAgreement = totalWeight ? Math.abs(signed) / totalWeight : 0;
   const disagreement = 1 - rawAgreement;
-  const avgReliability = active.length ? active.reduce((s, x) => s + x.reliability, 0) / active.length : 0;
+  const avgReliability = families.length ? families.reduce((s, x) => s + x.reliability, 0) / families.length : 0;
   const directionalEdge = totalWeight ? signed / totalWeight : 0;
 
   const qualityScore = hasNumber(candidate.quality?.score) ? clamp(Number(candidate.quality.score) / 100) : 0.82;
@@ -169,7 +198,7 @@ export function evaluateMetaCandidate(candidate = {}) {
   const edgeScore = 100 * directionalEdge * contextFactor;
   const confidence = 100 * (0.45 * rawAgreement + 0.25 * avgReliability + 0.15 * qualityScore + 0.15 * marketFactor);
 
-  if (active.length < META_POLICY.minExperts) blocks.push('INSUFFICIENT_INDEPENDENT_EXPERTS');
+  if (families.length < META_POLICY.minIndependentFamilies) blocks.push('INSUFFICIENT_INDEPENDENT_EXPERTS');
   if (avgReliability < META_POLICY.minAverageExpertReliability) blocks.push('EXPERT_EVIDENCE_TOO_WEAK');
   if (disagreement > META_POLICY.maxDisagreementForTrade) blocks.push('EXPERT_DISAGREEMENT_HIGH');
   if (directionalEdge <= 0) blocks.push('NON_POSITIVE_CONSENSUS_EDGE');
@@ -190,6 +219,7 @@ export function evaluateMetaCandidate(candidate = {}) {
     confidence: round(confidence, 2),
     agreement: round(rawAgreement * 100, 2),
     disagreement: round(disagreement * 100, 2),
+    independentFamilyCount: families.length,
     averageExpertReliability: round(avgReliability, 4),
     context: {
       dataQuality: round(qualityScore * 100, 1),
@@ -200,10 +230,13 @@ export function evaluateMetaCandidate(candidate = {}) {
     },
     blocks: [...new Set(blocks)],
     experts: contributions,
+    families,
     tradePlan: candidate.tradePlan ?? null,
     methodology: {
       missingEvidence: 'OMITTED_NOT_ZERO',
       evidenceWeighting: 'FRESH_FORWARD_GT_WALK_FORWARD_GT_RETROSPECTIVE_GT_PROXY',
+      engineScores: 'DAMPED_CONVICTION_ONLY_NOT_CROSS_ENGINE_CALIBRATION',
+      correlatedExperts: 'COLLAPSED_TO_ENGINE_FAMILY_CAP',
       hardRiskGatesCanBeBypassedByConsensus: false,
       abstentionAllowed: true,
       productionExecutionAllowed: false,
