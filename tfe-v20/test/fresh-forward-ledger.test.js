@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   FRESH_FORWARD_POLICY,
   buildFreshForwardSnapshot,
+  summarizeFreshForward,
   verifyFreshForwardSnapshot,
 } from '../sidecars/fresh-forward-ledger.js';
 
@@ -49,4 +50,22 @@ test('post-capture mutation is detected', () => {
 
 test('capture at or after next-session open is rejected', () => {
   assert.throws(() => buildFreshForwardSnapshot({ ...input, capturedAt: input.nextSessionOpenAt }), /CAPTURE_NOT_PRE_OUTCOME/);
+});
+
+test('NO_TRADE veto value is measured as avoided loss minus missed gain and grants no promotion', () => {
+  const summary = summarizeFreshForward([
+    { ticker: 'LOSS', category: 'PRIMARY_1', metaDecision: 'NO_TRADE', status: 'STOP', resolved: true, netReturnPct: -4 },
+    { ticker: 'GAIN', category: 'PRIMARY_2', metaDecision: 'NO_TRADE', status: 'TARGET1', resolved: true, netReturnPct: 2 },
+    { ticker: 'READY', category: 'PRIMARY_3', metaDecision: 'READY', status: 'TARGET1', resolved: true, netReturnPct: 3 },
+    { ticker: 'COND', category: 'CONDITIONAL', metaDecision: 'NO_TRADE', status: 'STOP', resolved: true, netReturnPct: -5 },
+  ]);
+  assert.equal(summary.promotionEligible, false);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.resolvedVetoes, 2);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.lossesAvoided, 1);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.gainsMissed, 1);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.lossAvoidanceHitRatePct, 50);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.avoidedLossPct, 4);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.missedGainPct, 2);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.counterfactualNetBenefitPct, 2);
+  assert.equal(summary.metaNoTradeVetoOnV16Primary.averageCounterfactualBenefitPct, 1);
 });
