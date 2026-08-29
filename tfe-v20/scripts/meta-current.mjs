@@ -27,6 +27,15 @@ function externalSignal(engineId, payload) {
   return { id: engineId, signal, score: payload.score ?? null };
 }
 
+function resistanceProvenance(analysis) {
+  const target2 = Number(analysis.tradePlan?.target2);
+  if (!Number.isFinite(target2)) return [];
+  const tolerance = Math.max(0.0001, Math.abs(target2) * 0.00001);
+  return (analysis.supportResistance?.methods ?? [])
+    .filter((m) => Number.isFinite(Number(m.resistance)) && Math.abs(Number(m.resistance) - target2) <= tolerance)
+    .map((m) => ({ name: m.name, resistance: m.resistance, weight: m.weight ?? null }));
+}
+
 function loadContext(ticker) {
   const historyPath = path.join(ROOT, 'data/history', `${ticker}.json`);
   if (!exists(historyPath)) return { status: 'HISTORY_NOT_SYNCED', analysis: null };
@@ -66,7 +75,6 @@ for (const row of triple.rows ?? []) {
     externalSignal('SEPA_X', row.engines?.SEPA_X),
     externalSignal('GANN_FUSION_X', row.engines?.GANN_FUSION_X),
     { id: 'TFE_CORE', signal: a.decision, score: a.scores?.research ?? null, dataQuality: a.quality?.score ?? null },
-    // Diagnostic only: canonical pipeline must exclude this composite from voting.
     { id: 'TRIPLE_ENGINE', signal: row.engineCount >= 2 ? 'READY' : 'WATCH', score: row.engineCount >= 2 ? 75 : 55 },
   ].filter(Boolean);
 
@@ -89,11 +97,18 @@ for (const row of triple.rows ?? []) {
       decision: a.decision,
       eligible: a.eligible,
       reasonCodes: a.reasonCodes,
+      price: a.price ?? null,
       researchScore: a.scores?.research ?? null,
       technicalScore: a.scores?.technical ?? null,
       liquidityScore: a.liquidity?.score ?? null,
       dataQualityScore: a.quality?.score ?? null,
       supportResistanceScore: a.supportResistance?.score ?? null,
+      supportResistanceMethodCount: a.supportResistance?.methodCount ?? null,
+      nearestSupport: a.supportResistance?.nearestSupport ?? null,
+      nearestResistance: a.supportResistance?.nearestResistance ?? null,
+      resistanceMethods: (a.supportResistance?.methods ?? []).map((m) => ({ name: m.name, resistance: m.resistance ?? null, support: m.support ?? null, weight: m.weight ?? null })),
+      tradePlan: a.tradePlan ?? null,
+      target2Provenance: resistanceProvenance(a),
     },
     meta: result,
   });
@@ -146,5 +161,22 @@ fs.writeFileSync(outPath, JSON.stringify(snapshot, null, 2) + '\n');
 console.log(JSON.stringify({
   marketSession: snapshot.marketSession,
   summary: snapshot.summary,
-  ranking: snapshot.evaluated.map((x) => ({ rank: x.rank, ticker: x.ticker, decision: x.meta.decision, edgeScore: x.meta.edgeScore, confidence: x.meta.confidence, blocks: x.meta.blocks })),
+  ranking: snapshot.evaluated.map((x) => ({
+    rank: x.rank,
+    ticker: x.ticker,
+    decision: x.meta.decision,
+    edgeScore: x.meta.edgeScore,
+    confidence: x.meta.confidence,
+    structuralNetRR: x.tfeContext.tradePlan?.structuralNetRR ?? null,
+    entryLow: x.tfeContext.tradePlan?.entryLow ?? null,
+    entryHigh: x.tfeContext.tradePlan?.entryHigh ?? null,
+    stop: x.tfeContext.tradePlan?.stop ?? null,
+    target1: x.tfeContext.tradePlan?.target1 ?? null,
+    target2: x.tfeContext.tradePlan?.target2 ?? null,
+    target2Provenance: x.tfeContext.target2Provenance.map((p) => p.name),
+    tfeDecision: x.tfeContext.decision,
+    tfeReasons: x.tfeContext.reasonCodes,
+    independentFamilies: x.meta.families.map((f) => `${f.family}:${f.direction.toFixed(2)}`),
+    blocks: x.meta.blocks,
+  })),
 }, null, 2));
