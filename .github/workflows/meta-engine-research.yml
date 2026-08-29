@@ -9,13 +9,16 @@ on:
       - 'tfe-v20/src/metaEngineV2.js'
       - 'tfe-v20/src/rawMomentumExpert.js'
       - 'tfe-v20/src/rawPullbackExpert.js'
+      - 'tfe-v20/src/breadthRegimeExposure.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/test/raw-pullback-expert.test.js'
+      - 'tfe-v20/test/breadth-regime-exposure.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
+      - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -27,13 +30,16 @@ on:
       - 'tfe-v20/src/metaEngineV2.js'
       - 'tfe-v20/src/rawMomentumExpert.js'
       - 'tfe-v20/src/rawPullbackExpert.js'
+      - 'tfe-v20/src/breadthRegimeExposure.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
       - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/test/raw-pullback-expert.test.js'
+      - 'tfe-v20/test/breadth-regime-exposure.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
       - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/raw-pullback-expert-audit.mjs'
+      - 'tfe-v20/scripts/breadth-regime-exposure-audit.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -76,6 +82,9 @@ jobs:
       - name: Run raw pullback expert leakage tests
         run: node --test test/raw-pullback-expert.test.js
 
+      - name: Run breadth regime exposure leakage tests
+        run: node --test test/breadth-regime-exposure.test.js
+
       - name: Run frozen-ledger benchmark
         run: node scripts/meta-ledger-benchmark.mjs
 
@@ -116,6 +125,9 @@ jobs:
 
       - name: Audit independent raw pullback timing expert
         run: node scripts/raw-pullback-expert-audit.mjs
+
+      - name: Audit independent breadth regime exposure controller
+        run: node scripts/breadth-regime-exposure-audit.mjs
 
       - name: Replay older V16-V19 agreement outside reused V19 holdout
         run: |
