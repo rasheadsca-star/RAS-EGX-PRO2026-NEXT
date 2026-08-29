@@ -46,6 +46,17 @@ jobs:
             exit 1
           fi
 
+      - name: Setup Node for Triple Engine
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Rebuild and test Triple Engine consensus
+        working-directory: triple-source
+        run: |
+          set -euo pipefail
+          node triple-engine/test-consensus.cjs
+
       - name: Validate Triple Engine snapshot
         run: |
           set -euo pipefail
@@ -55,8 +66,16 @@ jobs:
           const d=require('./triple-source/triple-engine/data/current.json');
           if(d.mode!=='RESEARCH_SHADOW_ONLY') throw new Error('research lock missing');
           if(d.executionLocks?.executionAllowed!==false) throw new Error('execution must remain disabled');
-          if(d.marketSession!=='2026-08-27') throw new Error('unexpected market session');
-          console.log('TRIPLE_ENGINE_PAGES_SNAPSHOT_PASS',d.marketSession,d.dataReadiness?.ready,d.dataReadiness?.quarantined);
+          if(!d.marketSession) throw new Error('market session missing');
+          if(d.allSourcesFresh){
+            for(const s of Object.values(d.sources||{})) if(s.session!==d.marketSession) throw new Error('source session mismatch');
+          }
+          const primary=(d.threeOfThree||[])[0]||(d.twoOfThree||[])[0];
+          if(primary?.engines?.GANN_FUSION_X?.present&&primary.engines.GANN_FUSION_X.decision==='ACTIONABLE'){
+            const p=primary.consensusPlan;
+            if(!p||p.completeness!=='FULL') throw new Error('primary actionable recommendation missing full plan');
+          }
+          console.log('TRIPLE_ENGINE_PAGES_SNAPSHOT_PASS',d.marketSession,d.dataReadiness?.ready,d.dataReadiness?.quarantined,primary?.ticker,primary?.consensusPlan?.source);
           NODE
 
       - name: Rebuild existing SEPA-X Pages content
@@ -65,11 +84,6 @@ jobs:
           ref: develop/sepax-isolated-v1
           path: sepax-source
           fetch-depth: 1
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
 
       - name: Validate isolated SEPA-X
         working-directory: sepax-source/sepa-x
