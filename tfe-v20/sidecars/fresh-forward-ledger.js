@@ -12,6 +12,8 @@ export const FRESH_FORWARD_POLICY = Object.freeze({
   productionAuthority: false,
 });
 
+const SIGNAL_DATE_SEMANTICS = 'SOURCE_DECLARED_REFERENCE_DATE_NOT_ASSUMED_TRADING_SESSION';
+
 const round = (value, digits = 4) => {
   const number = Number(value);
   return Number.isFinite(number) ? Number(number.toFixed(digits)) : null;
@@ -76,6 +78,26 @@ function validateGeometry(signal) {
   );
 }
 
+function normalizeMarketCalendar(marketCalendar, signalSessionDate, nextSessionOpenAt) {
+  const nextTradingSessionDate = marketCalendar?.nextTradingSessionDate ?? null;
+  if (nextTradingSessionDate && !/^\d{4}-\d{2}-\d{2}$/.test(String(nextTradingSessionDate))) {
+    throw new Error('INVALID_NEXT_TRADING_SESSION_DATE');
+  }
+  return {
+    timeZone: marketCalendar?.timeZone ?? 'Africa/Cairo',
+    sourceDeclaredDate: signalSessionDate,
+    sourceDeclaredDateStatus: marketCalendar?.sourceDeclaredDateStatus ?? 'UNVERIFIED',
+    nextTradingSessionDate,
+    nextSessionOpenAt,
+    evidence: Array.isArray(marketCalendar?.evidence)
+      ? marketCalendar.evidence.map((row) => ({
+          url: row?.url ?? null,
+          note: row?.note ?? null,
+        })).filter((row) => row.url)
+      : [],
+  };
+}
+
 export function buildFreshForwardSnapshot({
   signalSessionDate,
   capturedAt,
@@ -84,6 +106,7 @@ export function buildFreshForwardSnapshot({
   sources,
   v16Payload,
   metaShadowPayload,
+  marketCalendar = null,
 }) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(signalSessionDate ?? ''))) {
     throw new Error('INVALID_SIGNAL_SESSION_DATE');
@@ -124,13 +147,16 @@ export function buildFreshForwardSnapshot({
   }
 
   const policyHash = sha256(FRESH_FORWARD_POLICY);
+  const calendar = normalizeMarketCalendar(marketCalendar, signalSessionDate, new Date(nextOpenMs).toISOString());
   const payload = {
-    schemaVersion: 'egx.fresh-forward-ledger.snapshot.1',
+    schemaVersion: 'egx.fresh-forward-ledger.snapshot.2',
     status: 'FROZEN_PRE_OUTCOME_FORWARD_EVIDENCE',
     researchOnly: true,
     immutable: true,
     scoringImpact: 'NONE',
     signalSessionDate,
+    signalDateSemantics: SIGNAL_DATE_SEMANTICS,
+    marketCalendar: calendar,
     capturedAt: new Date(captureMs).toISOString(),
     nextSessionOpenAt: new Date(nextOpenMs).toISOString(),
     capturedBeforeNextSessionOpen: true,
@@ -149,12 +175,15 @@ export function buildFreshForwardSnapshot({
 
 export function verifyFreshForwardSnapshot(snapshot) {
   const errors = [];
-  if (snapshot?.schemaVersion !== 'egx.fresh-forward-ledger.snapshot.1') errors.push('SCHEMA');
+  if (snapshot?.schemaVersion !== 'egx.fresh-forward-ledger.snapshot.2') errors.push('SCHEMA');
   if (snapshot?.immutable !== true || snapshot?.researchOnly !== true || snapshot?.scoringImpact !== 'NONE') errors.push('LOCKS');
+  if (snapshot?.signalDateSemantics !== SIGNAL_DATE_SEMANTICS) errors.push('SIGNAL_DATE_SEMANTICS');
   if (snapshot?.capturedBeforeNextSessionOpen !== true) errors.push('PRE_OUTCOME_FLAG');
   const captureMs = Date.parse(snapshot?.capturedAt);
   const nextOpenMs = Date.parse(snapshot?.nextSessionOpenAt);
   if (!Number.isFinite(captureMs) || !Number.isFinite(nextOpenMs) || captureMs >= nextOpenMs) errors.push('TIMING');
+  if (snapshot?.marketCalendar?.nextSessionOpenAt !== snapshot?.nextSessionOpenAt) errors.push('CALENDAR_OPEN_MISMATCH');
+  if (snapshot?.marketCalendar?.sourceDeclaredDate !== snapshot?.signalSessionDate) errors.push('CALENDAR_SOURCE_DATE_MISMATCH');
   if (snapshot?.policyHash !== sha256(FRESH_FORWARD_POLICY)) errors.push('POLICY_HASH');
   if (canonicalJson(snapshot?.policy) !== canonicalJson(FRESH_FORWARD_POLICY)) errors.push('POLICY_MUTATION');
   if (snapshot?.sourceBundleHash !== sha256(snapshot?.sources ?? {})) errors.push('SOURCE_BUNDLE_HASH');
@@ -193,6 +222,7 @@ export function evaluateFreshForwardSignal(signal, bars, { asOfDate = null } = {
   const base = {
     ticker: signal.ticker,
     signalDate: signal.sessionDate,
+    signalDateSemantics: SIGNAL_DATE_SEMANTICS,
     category: signal.category ?? null,
     metaDecision: signal.metaShadow?.decision ?? null,
     policyHash: sha256(FRESH_FORWARD_POLICY),
