@@ -28,17 +28,20 @@ jobs:
         run: node scripts/meta-current.mjs
       - name: Run destructive review
         run: node scripts/meta-review.mjs
-      - name: Load latest research history universe for isolated ablation
+      - name: Load latest research history universe for isolated research
         working-directory: .
         run: |
           git fetch origin research/triple-engine-consensus-v1 --depth=1
           git checkout FETCH_HEAD -- data/history
+      - name: Scan full current universe with TFE gates
+        run: node scripts/current-universe-scan.mjs
       - name: Run point-in-time plan construction ablation
         run: node scripts/plan-ablation.mjs
       - name: Validate generated research evidence
         run: |
           test -s evidence/meta/current-meta-snapshot.json
           test -s evidence/meta/current-meta-review.json
+          test -s evidence/meta/current-universe-scan.json
           test -s evidence/meta/plan-ablation.json
       - name: Upload research evidence
         uses: actions/upload-artifact@v4
@@ -47,5 +50,6 @@ jobs:
           path: |
             tfe-v20/evidence/meta/current-meta-snapshot.json
             tfe-v20/evidence/meta/current-meta-review.json
+            tfe-v20/evidence/meta/current-universe-scan.json
             tfe-v20/evidence/meta/plan-ablation.json
           if-no-files-found: error
