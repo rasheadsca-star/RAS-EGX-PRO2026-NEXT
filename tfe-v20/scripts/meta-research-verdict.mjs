@@ -11,17 +11,9 @@ function read(name) {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return null; }
 }
 
-function pick(obj, paths) {
-  for (const p of paths) {
-    let cur = obj;
-    for (const part of p.split('.')) cur = cur?.[part];
-    if (cur !== undefined && cur !== null) return cur;
-  }
-  return null;
-}
-
 const raw = read('raw-momentum-expert-audit.json');
 const pullback = read('raw-pullback-expert-audit.json');
+const breadth = read('breadth-regime-exposure-audit.json');
 const v19 = read('meta-v19-development-consensus-audit.json');
 const entry = read('meta-entry-quality-audit.json');
 const legacy = read('legacy-expert-veto-audit.json');
@@ -29,6 +21,7 @@ const inherited = read('inherited-v20-blocker.json');
 
 const rawPass = Boolean(raw?.passesRetrospectiveGate);
 const pullbackPass = Boolean(pullback?.passesInternalResearchGate);
+const breadthPass = Boolean(breadth?.passesInternalResearchGate);
 const v19Pass = Boolean(v19?.supportsConfirmatoryHypothesis);
 const entryPass = Boolean(entry?.promotion?.eligible || entry?.supportsRiskGate);
 
@@ -36,6 +29,7 @@ const promotionBlockers = [];
 if (inherited) promotionBlockers.push('INHERITED_V20_BASELINE_BLOCKER');
 if (!rawPass) promotionBlockers.push('RAW_MOMENTUM_RETROSPECTIVE_GATE_NOT_PASSED');
 if (pullback && !pullbackPass) promotionBlockers.push('RAW_PULLBACK_INTERNAL_RESEARCH_GATE_NOT_PASSED');
+if (breadth && !breadthPass) promotionBlockers.push('BREADTH_REGIME_EXPOSURE_V1_GATE_NOT_PASSED');
 if (v19 && !v19Pass) promotionBlockers.push('V19_CONFIRMATORY_HYPOTHESIS_NOT_REPRODUCED');
 if (entry && !entryPass) promotionBlockers.push('ENTRY_QUALITY_RULE_NOT_ROBUST');
 
@@ -44,7 +38,7 @@ if (entry && !entryPass) promotionBlockers.push('ENTRY_QUALITY_RULE_NOT_ROBUST')
 const openCriticalHigh = inherited ? ['INHERITED_V20_BASELINE_BLOCKER'] : [];
 
 const verdict = {
-  schemaVersion: 'meta-research-verdict-v3',
+  schemaVersion: 'meta-research-verdict-v4',
   generatedAt: new Date().toISOString(),
   branch: process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || 'agent/egx-meta-engine-v1-20260829',
   headSha: process.env.GITHUB_SHA || null,
@@ -55,7 +49,8 @@ const verdict = {
     v19Treatment: 'ZERO_ALPHA_WEIGHT_UNTIL_FRESH_INDEPENDENT_EVIDENCE',
     gannTreatment: 'DIAGNOSTIC_ONLY_ZERO_ALPHA_WEIGHT',
     sepaTreatment: 'DIAGNOSTIC_ONLY_ZERO_ALPHA_WEIGHT',
-    fundamentalsNewsTreatment: 'RISK_ONLY_NEVER_POSITIVE_ALPHA'
+    fundamentalsNewsTreatment: 'RISK_ONLY_NEVER_POSITIVE_ALPHA',
+    breadthRegimeTreatment: breadthPass ? 'FRESH_FORWARD_SHADOW_CANDIDATE_ONLY' : 'ZERO_PRODUCTION_AUTHORITY'
   },
   rawMomentumExpert: raw ? {
     evidenceClass: raw.evidenceClass || null,
@@ -77,6 +72,21 @@ const verdict = {
     standaloneDiagnostic: pullback.standalone?.diagnostic || null,
     confirmationDiagnostic: pullback.confirmation?.diagnostic || null,
     internalResearchChecks: pullback.internalResearchChecks || null,
+    promotionEligible: false
+  } : null,
+  breadthRegimeExposure: breadth ? {
+    evidenceClass: breadth.evidenceClass || null,
+    independentGeneration: breadth.lineage?.independentGeneration ?? null,
+    historicalWindowAlreadyObservedByResearchProgram: breadth.governance?.historicalWindowAlreadyObservedByResearchProgram ?? null,
+    passesInternalResearchGate: breadthPass,
+    disposition: breadth.disposition || null,
+    regimeCounts: breadth.regimeCounts || null,
+    reducedExposureSessions: breadth.reducedExposureSessions ?? null,
+    baseline: breadth.baseline || null,
+    controlled: breadth.controlled || null,
+    deltas: breadth.deltas || null,
+    folds: breadth.folds || null,
+    internalResearchChecks: breadth.internalResearchChecks || null,
     promotionEligible: false
   } : null,
   v19OlderDevelopmentReplay: v19 ? {
@@ -105,11 +115,13 @@ const verdict = {
   inheritedBlocker: inherited,
   promotionBlockers,
   openCriticalHigh,
-  finalResearchDisposition: pullbackPass
-    ? 'KEEP_V16_CHAMPION_PULLBACK_MAY_ENTER_FRESH_FORWARD_SHADOW_ONLY'
-    : rawPass
-      ? 'KEEP_V16_CHAMPION_RAW_MOMENTUM_REQUIRES_FRESH_FORWARD_PROOF'
-      : 'KEEP_V16_CHAMPION_NO_CHALLENGER_HAS_EARNED_POSITIVE_ALPHA_WEIGHT',
+  finalResearchDisposition: breadthPass
+    ? 'KEEP_V16_CHAMPION_BREADTH_EXPOSURE_MAY_ENTER_FRESH_FORWARD_SHADOW_ONLY'
+    : pullbackPass
+      ? 'KEEP_V16_CHAMPION_PULLBACK_MAY_ENTER_FRESH_FORWARD_SHADOW_ONLY'
+      : rawPass
+        ? 'KEEP_V16_CHAMPION_RAW_MOMENTUM_REQUIRES_FRESH_FORWARD_PROOF'
+        : 'KEEP_V16_CHAMPION_NO_CHALLENGER_HAS_EARNED_POSITIVE_ALPHA_WEIGHT',
   reason: 'No challenger is promoted from reused or retrospective evidence. V16 remains champion until superiority is demonstrated on fresh point-in-time evidence under identical execution and cost assumptions.'
 };
 
