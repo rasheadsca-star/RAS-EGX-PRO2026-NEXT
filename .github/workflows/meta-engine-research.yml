@@ -116,6 +116,10 @@ jobs:
           SOURCE_DECLARED_DATE_STATUS: 'EGX_CLOSED_HOLIDAY_REFERENCE_DATE'
           MARKET_CALENDAR_EVIDENCE_JSON: '[{"url":"https://www.masrawy.com/news/news_economy/details/2026/8/24/3037667","note":"EGX announced 27-Aug-2026 holiday and resumption Sunday 30-Aug-2026"},{"url":"https://www.tradinghours.com/markets/egx","note":"EGX normal Sunday-Thursday opening shown as 10:00 Cairo time"}]'
         run: |
+          if compgen -G 'forward-ledger/snapshots/2026-08-27-*.json' > /dev/null; then
+            echo 'Preregistration already persisted in append-only ledger; duplicate capture skipped.'
+            exit 0
+          fi
           signal_date=$(node -e "const x=require('./reports/meta-live-shadow.json'); process.stdout.write(String(x.sessionDate||''))")
           if [ "$signal_date" != '2026-08-27' ]; then
             echo "Preregistration skipped: source reference date is $signal_date, not 2026-08-27."
