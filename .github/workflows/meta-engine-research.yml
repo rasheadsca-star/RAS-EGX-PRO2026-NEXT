@@ -143,6 +143,10 @@ jobs:
           }
           JSON
 
+      - name: Build compact research verdict
+        if: always()
+        run: node scripts/meta-research-verdict.mjs
+
       - name: Upload research reports
         if: always()
         uses: actions/upload-artifact@v4
