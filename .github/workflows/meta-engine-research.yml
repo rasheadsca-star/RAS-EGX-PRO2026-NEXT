@@ -83,12 +83,19 @@ jobs:
           git fetch origin "$V19_EVIDENCE_COMMIT" --depth=1
           git checkout "$V19_EVIDENCE_COMMIT" -- scripts/v19
 
-      - name: Replay older V16-V19 agreement outside reused V19 holdout
+      - name: Build full V16 blocked walk-forward audit
         run: |
           cd ..
           python scripts/research/v16-v169-basket-engine.py
           sed -i 's/AUDIT_SESSIONS = 20/AUDIT_SESSIONS = 999/' scripts/research/v16-v169-target-hit-audit.py
           python scripts/research/v16-v169-target-hit-audit.py
+
+      - name: Audit outcome-blind V16 entry heat filter
+        run: node scripts/meta-entry-quality-audit.mjs
+
+      - name: Replay older V16-V19 agreement outside reused V19 holdout
+        run: |
+          cd ..
           sed -i 's/dev_results\[-25:\]/dev_results/g' scripts/v19/native-challenger-v6.py
           python scripts/v19/native-challenger-v6.py
           cd tfe-v20
