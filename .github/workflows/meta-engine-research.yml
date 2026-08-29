@@ -107,6 +107,37 @@ jobs:
       - name: Run same-session live shadow
         run: node scripts/meta-live-shadow.mjs
 
+      - name: Preregister first fresh forward observation
+        if: github.event_name == 'push'
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          NEXT_TRADING_SESSION_DATE: '2026-08-30'
+          NEXT_SESSION_OPEN_AT: '2026-08-30T07:00:00.000Z'
+          SOURCE_DECLARED_DATE_STATUS: 'EGX_CLOSED_HOLIDAY_REFERENCE_DATE'
+          MARKET_CALENDAR_EVIDENCE_JSON: '[{"url":"https://www.masrawy.com/news/news_economy/details/2026/8/24/3037667","note":"EGX announced 27-Aug-2026 holiday and resumption Sunday 30-Aug-2026"},{"url":"https://www.tradinghours.com/markets/egx","note":"EGX normal Sunday-Thursday opening shown as 10:00 Cairo time"}]'
+        run: |
+          signal_date=$(node -e "const x=require('./reports/meta-live-shadow.json'); process.stdout.write(String(x.sessionDate||''))")
+          if [ "$signal_date" != '2026-08-27' ]; then
+            echo "Preregistration skipped: source reference date is $signal_date, not 2026-08-27."
+            exit 0
+          fi
+          now_epoch=$(date -u +%s)
+          deadline_epoch=$(date -u -d "$NEXT_SESSION_OPEN_AT" +%s)
+          if [ "$now_epoch" -ge "$deadline_epoch" ]; then
+            echo "Preregistration skipped: pre-outcome boundary has passed."
+            exit 0
+          fi
+          node scripts/fresh-forward-capture.mjs reports/meta-live-shadow.json
+
+      - name: Verify preregistered forward observation
+        if: github.event_name == 'push'
+        run: |
+          if compgen -G 'reports/fresh-forward-ledger/*.json' > /dev/null; then
+            node scripts/fresh-forward-verify.mjs reports/fresh-forward-ledger
+          else
+            echo 'No new preregistration snapshot produced in this run.'
+          fi
+
       - name: Materialize pinned legacy evidence snapshot
         run: |
           cd ..
@@ -192,6 +223,15 @@ jobs:
       - name: Build compact research verdict
         if: always()
         run: node scripts/meta-research-verdict.mjs
+
+      - name: Upload preregistered forward snapshot
+        if: always() && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-forward-preregister-2026-08-27
+          path: tfe-v20/reports/fresh-forward-ledger/*.json
+          if-no-files-found: warn
+          retention-days: 90
 
       - name: Upload research reports
         if: always()
