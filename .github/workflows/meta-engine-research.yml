@@ -58,7 +58,7 @@ jobs:
         run: |
           cd ..
           git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
-          git checkout "$LEGACY_EVIDENCE_COMMIT" -- gann-fusion-x
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- gann-fusion-x data/history
           mkdir -p data/stable tfe-v20/reports
           git show "$LEGACY_EVIDENCE_COMMIT:data/stable/v16-v169-live-evaluation.json" > data/stable/v16-v169-live-evaluation.json
           node gann-fusion-x/scripts/backtest-compare.cjs
