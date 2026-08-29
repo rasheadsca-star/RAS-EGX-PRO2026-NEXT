@@ -43,6 +43,20 @@ test('correlated engines cannot manufacture independent consensus', () => {
   assert.notEqual(r.decision, 'BUY');
 });
 
+test('weight caps create neutral abstention mass instead of being undone by renormalization', () => {
+  const engines = [
+    { id: 'A1', family: 'TFE', signalScore: 100, evidenceClass: 'FRESH_FORWARD_INDEPENDENT', sampleSize: 200, wilsonLowerPct: 80 },
+    { id: 'A2', family: 'TFE', signalScore: 100, evidenceClass: 'FRESH_FORWARD_INDEPENDENT', sampleSize: 200, wilsonLowerPct: 80 }
+  ];
+  const r = analyzeMetaOpportunity({
+    ticker: 'TEST', dataQuality: 100, liquidityScore: 100, netRiskReward: 2, expectedEdgePct: 2,
+    marketRegime: 'NEUTRAL', engines
+  });
+  assert.ok(r.gates.allocatedEngineWeight <= 0.70 + 1e-9);
+  assert.ok(r.gates.abstentionWeight >= 0.30 - 1e-9);
+  assert.ok(r.components.consensusScore < 90);
+});
+
 test('transaction costs are deducted before the edge gate', () => {
   const r = analyzeMetaOpportunity({
     ticker: 'TEST', dataQuality: 95, liquidityScore: 90, netRiskReward: 1.8,
