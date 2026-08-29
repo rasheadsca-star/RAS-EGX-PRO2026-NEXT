@@ -7,9 +7,12 @@ on:
     paths:
       - 'tfe-v20/src/metaEngine.js'
       - 'tfe-v20/src/metaEngineV2.js'
+      - 'tfe-v20/src/rawMomentumExpert.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
+      - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
+      - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -19,9 +22,12 @@ on:
     paths:
       - 'tfe-v20/src/metaEngine.js'
       - 'tfe-v20/src/metaEngineV2.js'
+      - 'tfe-v20/src/rawMomentumExpert.js'
       - 'tfe-v20/test/meta-engine.test.js'
       - 'tfe-v20/test/meta-engine-v2.test.js'
+      - 'tfe-v20/test/raw-momentum-expert.test.js'
       - 'tfe-v20/scripts/meta-*.mjs'
+      - 'tfe-v20/scripts/raw-momentum-expert-audit.mjs'
       - 'tfe-v20/scripts/legacy-expert-veto-audit.cjs'
       - 'tfe-v20/research/**'
       - '.github/workflows/meta-engine-research.yml'
@@ -58,6 +64,9 @@ jobs:
       - name: Run meta-engine V2 lineage destructive tests
         run: node --test test/meta-engine-v2.test.js
 
+      - name: Run raw momentum expert leakage tests
+        run: node --test test/raw-momentum-expert.test.js
+
       - name: Run frozen-ledger benchmark
         run: node scripts/meta-ledger-benchmark.mjs
 
@@ -92,6 +101,9 @@ jobs:
 
       - name: Audit outcome-blind V16 entry heat filter
         run: node scripts/meta-entry-quality-audit.mjs
+
+      - name: Audit independent raw momentum expert
+        run: node scripts/raw-momentum-expert-audit.mjs
 
       - name: Replay older V16-V19 agreement outside reused V19 holdout
         run: |
