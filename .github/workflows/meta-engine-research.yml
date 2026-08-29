@@ -26,11 +26,17 @@ jobs:
         run: node --test test/*.test.js
       - name: Build current Meta snapshot
         run: node scripts/meta-current.mjs
-      - name: Validate generated snapshot exists
-        run: test -s evidence/meta/current-meta-snapshot.json
-      - name: Upload research snapshot
+      - name: Run destructive review
+        run: node scripts/meta-review.mjs
+      - name: Validate generated research evidence
+        run: |
+          test -s evidence/meta/current-meta-snapshot.json
+          test -s evidence/meta/current-meta-review.json
+      - name: Upload research evidence
         uses: actions/upload-artifact@v4
         with:
-          name: egx-meta-engine-current-snapshot
-          path: tfe-v20/evidence/meta/current-meta-snapshot.json
+          name: egx-meta-engine-research-evidence
+          path: |
+            tfe-v20/evidence/meta/current-meta-snapshot.json
+            tfe-v20/evidence/meta/current-meta-review.json
           if-no-files-found: error
