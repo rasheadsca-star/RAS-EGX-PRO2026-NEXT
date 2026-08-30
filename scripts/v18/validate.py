@@ -54,7 +54,8 @@ def walk_forward(events, minimum_train_dates=45, test_dates=10, embargo_dates=5)
         test_set=set(dates[start:start+test_dates]); train_dates=set(dates[:max(0,start-embargo_dates)])
         train=[e for e in events if e['date'] in train_dates]; test=[e for e in events if e['date'] in test_set]
         if len(train)<500 or not test: continue
-        xtr,xte,_,_=standardize([e['x'] for e in train],[e['x'] for e in test]); model=Softmax(len(xtr[0])).fit(xtr,[LABELS.index(e['outcome']['label']) for e in train],epochs=90)
+        xtr,xte,_,_=standardize([e['x'] for e in train],[e['x'] for e in test])
+        model=Softmax(len(xtr[0])).fit(xtr,[LABELS.index(e['outcome']['label']) for e in train],epochs=90)
         model_probs=[model.predict(x) for x in xte]; base=empirical(train); base_probs=[base]*len(test); mom_probs=momentum_baseline(test,base)
         predictions.extend(zip(test,model_probs,base_probs,mom_probs)); folds.append({'trainThrough':max(train_dates),'embargoFrom':dates[max(0,start-embargo_dates)],'embargoThrough':dates[start-1],'testFrom':min(test_set),'testThrough':max(test_set),'trainEvents':len(train),'testEvents':len(test),'overlap':False})
     rows=[x[0] for x in predictions]; model_probs=[x[1] for x in predictions]; base_probs=[x[2] for x in predictions]; mom_probs=[x[3] for x in predictions]

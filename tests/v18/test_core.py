@@ -3,6 +3,7 @@ from pathlib import Path
 from scripts.v18.core import *
 from scripts.v18.ledger import append, verify
 from scripts.v18.validate import momentum_baseline
+from scripts.v18.forward import freeze
 
 def rows(n=30):
     return [{'date':f'2026-07-{i+1:02d}','open':100.,'high':101.,'low':99.,'close':100.,'volume':10000.} for i in range(n)]
@@ -32,6 +33,9 @@ class V18DestructiveTests(unittest.TestCase):
     def test_research_authority_locked(self):
         r=recommendation('X','2026-01-01',(100,95,110),(.7,.1,.1,.1),.1,-.05,3)
         self.assertFalse(r['productionAuthority']); self.assertFalse(r['automaticOrders']); self.assertIn(r['decision'],DECISIONS)
+    def test_unrealistic_target_is_vetoed(self):
+        r=recommendation('X','2026-01-01',(100,95,150),(.8,.1,.1,0),.05,-.03,3)
+        self.assertEqual(r['decision'],'VETO'); self.assertIn('TARGET_EXCEEDS_MFE_ENVELOPE',r['riskFlags'])
     def test_hash_chain_detects_tampering(self):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'ledger.json'; append(p,{'experimentId':'V18-E001','verdict':'REJECTED'})
@@ -40,5 +44,9 @@ class V18DestructiveTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'ledger.json'; append(p,{'experimentId':'V18-E001'})
             with self.assertRaises(ValueError): append(p,{'experimentId':'V18-E001'})
+    def test_forward_snapshot_is_immutable(self):
+        current={'artifactHash':'A','recommendations':[{'ticker':'X','signalDate':'2026-08-30','decision':'WAIT','pTargetBeforeStop':.6,'expectedValue':.01}]}
+        _,ledger=freeze(current,{'entries':[]}); changed=json.loads(json.dumps(current)); changed['recommendations'][0]['target']=120
+        with self.assertRaises(ValueError): freeze(changed,ledger)
 
 if __name__=='__main__': unittest.main()

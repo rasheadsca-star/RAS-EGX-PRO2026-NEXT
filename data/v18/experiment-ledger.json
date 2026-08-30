@@ -1,5 +1,39 @@
 {
   "schemaVersion": "18.0.0-append-only",
-  "entries": [],
-  "ledgerHash": null
+  "entries": [
+    {
+      "experimentId": "V18-E002-TEMPERATURE-CALIBRATION",
+      "hypothesis": "Nested temperature scaling improves out-of-sample log loss without harming Brier or accuracy.",
+      "dataset": "17,369 events / 10 purged walk-forward folds",
+      "configuration": {
+        "calibrationSessions": 10,
+        "grid": [
+          0.75,
+          1.0,
+          1.25,
+          1.5,
+          2.0
+        ],
+        "embargoSessions": 5
+      },
+      "result": {
+        "accuracy": 0.539410305064954,
+        "brier": 0.5829676827474047,
+        "logLoss": 1.0262836387016208,
+        "targetECE": 0.06205448267081734
+      },
+      "baseline": {
+        "accuracy": 0.5491898992847759,
+        "brier": 0.568927442253589,
+        "logLoss": 1.0119509341182957,
+        "targetECE": 0.0454591973116066
+      },
+      "verdict": "REJECTED",
+      "retuned": false,
+      "reason": "Degraded every primary validation metric; candidate reverted.",
+      "previousHash": "GENESIS",
+      "recordHash": "51dcf69c0ed096757b1815f0818af865ba86b854e9408b751099d984389dd935"
+    }
+  ],
+  "ledgerHash": "73cb93375c1c7e0aad00ff3d0935db58383747adffd4540a996b3b8702b6c3ed"
 }

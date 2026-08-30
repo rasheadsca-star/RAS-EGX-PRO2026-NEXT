@@ -49,7 +49,8 @@ def features(rows, i):
     avg_vol=sum(r["volume"] for r in prior)/len(prior)
     turnover=[r["close"]*r["volume"] for r in prior]
     ret=lambda n: close/rows[i-n]["close"]-1
-    return [ret(1),ret(5),ret(20),close/(sum(r["close"] for r in prior)/len(prior))-1,rows[i]["volume"]/avg_vol-1 if avg_vol else 0,(a/close if a else 0),math.log1p(median(turnover))]
+    entry,stop,target=geometry(rows,i)
+    return [ret(1),ret(5),ret(20),close/(sum(r["close"] for r in prior)/len(prior))-1,rows[i]["volume"]/avg_vol-1 if avg_vol else 0,(a/close if a else 0),math.log1p(median(turnover)),(target-entry)/entry,(entry-stop)/entry]
 
 def geometry(rows, i):
     entry=rows[i]["close"]; a=atr(rows,i); prior=rows[max(0,i-20):i+1]
@@ -113,8 +114,15 @@ def target_ece(probabilities, labels, bins=10):
 def recommendation(ticker, signal_date, geom, probs, mfe, mae, hold, costs=.006, data_quality=1.0):
     entry,stop,target=geom; p=dict(zip(LABELS,probs)); gain=(target-entry)/entry; loss=(entry-stop)/entry
     ev=p["TARGET_BEFORE_STOP"]*gain-p["STOP_BEFORE_TARGET"]*loss-p["TIME_EXIT"]*costs/2-costs
+    target_distance=gain; stop_distance=loss
+    target_realistic=target_distance <= max(.03,1.5*max(0,mfe))
+    stop_realistic=stop_distance <= max(.12,2.0*abs(min(0,mae)))
     if data_quality < .8: decision="DATA_BLOCKED"
+    elif not target_realistic or not stop_realistic: decision="VETO"
     elif ev >= .01 and p["TARGET_BEFORE_STOP"] >= .52: decision="BUY_CANDIDATE"
     elif ev > 0: decision="WAIT"
     else: decision="NO_TRADE"
-    return {"ticker":ticker,"signalDate":signal_date,"entryLow":round(entry*.997,4),"entryHigh":round(entry*1.003,4),"stop":round(stop,4),"target":round(target,4),"pTargetBeforeStop":round(p["TARGET_BEFORE_STOP"],6),"pStopBeforeTarget":round(p["STOP_BEFORE_TARGET"],6),"pTimeExit":round(p["TIME_EXIT"],6),"pNoEntry":round(p["NO_ENTRY"],6),"expectedNetReturn":round(ev,6),"expectedValue":round(ev,6),"expectedMFE":round(mfe,6),"expectedMAE":round(mae,6),"expectedHoldSessions":round(hold,2),"confidence":round(max(probs)*data_quality,6),"dataQuality":round(data_quality,4),"decision":decision,"engineVersion":"V18.0.0-shadow","modelVersion":"softmax-baseline-1","featureVersion":"v18-features-1","schemaVersion":"18.0.0","productionAuthority":False,"automaticOrders":False}
+    flags=[]
+    if not target_realistic: flags.append('TARGET_EXCEEDS_MFE_ENVELOPE')
+    if not stop_realistic: flags.append('STOP_EXCEEDS_MAE_ENVELOPE')
+    return {"ticker":ticker,"signalDate":signal_date,"entryLow":round(entry*.997,4),"entryHigh":round(entry*1.003,4),"stop":round(stop,4),"target":round(target,4),"targetDistancePct":round(target_distance*100,4),"stopDistancePct":round(stop_distance*100,4),"pTargetBeforeStop":round(p["TARGET_BEFORE_STOP"],6),"pStopBeforeTarget":round(p["STOP_BEFORE_TARGET"],6),"pTimeExit":round(p["TIME_EXIT"],6),"pNoEntry":round(p["NO_ENTRY"],6),"expectedNetReturn":round(ev,6),"expectedValue":round(ev,6),"expectedMFE":round(mfe,6),"expectedMAE":round(mae,6),"expectedHoldSessions":round(hold,2),"confidence":round(max(probs)*data_quality,6),"dataQuality":round(data_quality,4),"targetRealistic":target_realistic,"stopRealistic":stop_realistic,"decision":decision,"riskFlags":flags,"engineVersion":"V18.0.0-shadow","modelVersion":"softmax-geometry-aware-2","featureVersion":"v18-features-2","schemaVersion":"18.0.0","productionAuthority":False,"automaticOrders":False}

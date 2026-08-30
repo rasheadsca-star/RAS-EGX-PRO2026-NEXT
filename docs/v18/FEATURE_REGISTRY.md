@@ -7,5 +7,7 @@
 | volume_ratio20 | session close | 20 | block | liquidity | participation |
 | atr_pct14 | session close | 14 | block | volatility | normalized risk |
 | median_turnover20 | session close | 20 | block | execution | capacity proxy |
+| target_distance | session close | structural 20 | block | geometry | target difficulty known before entry |
+| stop_distance | session close | structural 10 | block | geometry | downside distance known before entry |
 
 All values use rows at or before the signal close. No fundamental feature is admitted until publication/effective/ingestion timestamps are available.
