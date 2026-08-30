@@ -1,31 +1,73 @@
 name: Triple Engine Research Consensus
 
 on:
+  push:
+    branches:
+      - research/triple-engine-consensus-v1
+    paths:
+      - 'gann-fusion-x/scripts/sync-sepa.cjs'
+      - 'triple-engine/build-consensus.cjs'
+      - 'triple-engine/test-consensus.cjs'
+      - 'triple-engine/.post-close-refresh-trigger'
+      - '.github/workflows/triple-engine-consensus.yml'
   pull_request:
     paths:
       - 'triple-engine/**'
+      - 'gann-fusion-x/scripts/sync-sepa.cjs'
       - '.github/workflows/triple-engine-consensus.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: triple-engine-research-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  validate:
+  validate-and-refresh:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      - name: Pull latest completed market inputs into research workspace
+        if: github.event_name != 'pull_request'
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main -- \
+            data/quant/market-search-index-v13-17.json \
+            data/history-summary.json \
+            data/history \
+            data/stable/v15-practical-decision.json
+
+      - name: Resolve expected completed session
+        run: |
+          node - <<'NODE' >> "$GITHUB_ENV"
+          const d=require('./data/quant/market-search-index-v13-17.json');
+          const session=d.marketDate||d.sessionDate||d.marketSession||d.meta?.marketSession||d.analysisSession||null;
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(String(session||''))) throw new Error('MARKET_SESSION_MISSING');
+          console.log(`EXPECTED_SESSION=${session}`);
+          NODE
+
       - name: Syntax checks
         run: |
+          node --check gann-fusion-x/scripts/sync-sepa.cjs
           node --check triple-engine/build-consensus.cjs
           node --check triple-engine/test-consensus.cjs
+
+      - name: Refresh SEPA-X post-close mirror from live read-only source
+        if: github.event_name != 'pull_request'
+        env:
+          SEPA_X_BASE_URL: https://sepax-strategy-live.vercel.app
+        run: node gann-fusion-x/scripts/sync-sepa.cjs
 
       - name: Missing-data static guard
         run: |
@@ -37,7 +79,7 @@ jobs:
       - name: Build and validate same-session consensus
         run: node triple-engine/test-consensus.cjs
 
-      - name: Validate generated contract
+      - name: Validate generated contract and exact session alignment
         run: |
           node - <<'NODE'
           const fs=require('fs');
@@ -47,14 +89,34 @@ jobs:
           if(d.mode!=='RESEARCH_SHADOW_ONLY') throw new Error('research mode lock failed');
           if(d.executionLocks?.executionAllowed!==false) throw new Error('execution must stay disabled');
           if(d.executionLocks?.automaticOrders!==false) throw new Error('automatic orders must stay disabled');
+          if(d.marketSession!==process.env.EXPECTED_SESSION) throw new Error(`TRIPLE_SESSION_MISMATCH expected=${process.env.EXPECTED_SESSION} actual=${d.marketSession}`);
+          for(const [name,source] of Object.entries(d.sources||{})) {
+            if(source.session!==process.env.EXPECTED_SESSION) throw new Error(`${name}_SESSION_MISMATCH expected=${process.env.EXPECTED_SESSION} actual=${source.session}`);
+          }
+          if(!d.allSourcesFresh) throw new Error('ALL_SOURCES_MUST_BE_FRESH');
           if((d.threeOfThree||[]).length && !d.allSourcesFresh) throw new Error('3/3 cannot exist with stale sources');
           console.log(JSON.stringify({marketSession:d.marketSession,dataReadiness:d.dataReadiness,sources:d.sources,threeOfThree:(d.threeOfThree||[]).map(x=>x.ticker),twoOfThree:(d.twoOfThree||[]).map(x=>x.ticker)},null,2));
           NODE
+
+      - name: Persist post-close research snapshots on research branch
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add gann-fusion-x/data/sepa-x-snapshot.json triple-engine/data/current.json
+          if git diff --cached --quiet; then
+            echo 'No post-close snapshot changes to persist.'
+            exit 0
+          fi
+          git commit -m "Refresh Triple Engine post-close ${EXPECTED_SESSION} [skip ci]"
+          git push origin HEAD:${GITHUB_REF_NAME}
 
       - name: Upload exact consensus artifact
         uses: actions/upload-artifact@v4
         with:
           name: triple-engine-consensus-${{ github.sha }}
-          path: triple-engine/data/current.json
+          path: |
+            gann-fusion-x/data/sepa-x-snapshot.json
+            triple-engine/data/current.json
           if-no-files-found: error
           retention-days: 14
