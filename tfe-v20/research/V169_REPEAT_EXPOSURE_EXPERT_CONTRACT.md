@@ -34,18 +34,20 @@ The repeat-exposure decision itself may not use next open, next high/low/close, 
 
 ## Frozen acceptance rule
 
-The candidate is only `PROMISING_RETROSPECTIVE_SHADOW_ONLY` if **all** of the following pass:
+The candidate is only `PROMISING_RETROSPECTIVE_SHADOW_ONLY` if **all** of the following pass.
 
-### Sample / separation
+### Residual sample / separation
 
-- at least **12 executable** members flagged `REPEAT_EXPOSURE_WATCH` after considering the V16.9 execution universe;
-- flagged executable members show material adverse separation from PASS executable members by at least one of:
+The diagnostic sample is restricted to members **not vetoed by frozen RiskAlpha Stage-B**, so known gap-down recovery traps cannot be credited to this new mechanism.
+
+- at least **12 executable residual members** flagged `REPEAT_EXPOSURE_WATCH`;
+- flagged residual executable members show material adverse separation from residual PASS executable members by at least one of:
   - stop rate >= PASS stop rate + **10 percentage points**, or
   - average next-close return <= PASS average next-close return - **1.00 percentage point**;
 - split the 45 signal dates chronologically into 3 folds;
-- a fold is eligible when it contains at least **4 flagged executable** members;
+- a fold is eligible when it contains at least **4 flagged residual executable** members;
 - at least **2 eligible folds** are required;
-- at least **2 eligible folds** must show the adverse direction (higher stop rate or lower average next-close return for flagged members).
+- at least **2 eligible folds** must show the adverse direction (higher stop rate or lower average next-close return for flagged residual members).
 
 ### Incremental value over frozen RiskAlpha
 
