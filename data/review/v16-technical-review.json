@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-27T23:04:11.804Z",
+  "generatedAt": "2026-08-30T17:39:30.286Z",
   "application": "EGX Pro Professional V16.3",
   "scope": {
     "type": "TECHNICAL_ANALYSIS_ONLY",
@@ -18,19 +18,19 @@
   },
   "summary": {
     "totalChecks": 41,
-    "closedChecks": 29,
-    "openChecks": 12,
-    "blockingFindings": 12,
+    "closedChecks": 32,
+    "openChecks": 9,
+    "blockingFindings": 9,
     "severity": {
       "CRITICAL": {
         "total": 11,
-        "open": 4,
-        "closed": 7
+        "open": 3,
+        "closed": 8
       },
       "HIGH": {
         "total": 26,
-        "open": 8,
-        "closed": 18
+        "open": 6,
+        "closed": 20
       },
       "MEDIUM": {
         "total": 4,
@@ -44,9 +44,9 @@
       }
     },
     "recommendationCount": 0,
-    "selectedModelCount": 2,
+    "selectedModelCount": 3,
     "testSessions": 17,
-    "liveResolvedTrades": 147
+    "liveResolvedTrades": 155
   },
   "cycles": [
     {
@@ -58,17 +58,17 @@
           "id": "T01-1",
           "severity": "CRITICAL",
           "title": "بوابة الأسعار جاهزة للتنفيذ",
-          "status": "OPEN",
-          "evidence": "ready=false; executionGrade=false; accepted=0",
-          "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
+          "status": "CLOSED",
+          "evidence": "ready=true; executionGrade=true; accepted=208",
+          "remediation": null
         },
         {
           "id": "T01-2",
           "severity": "HIGH",
           "title": "جلسة القرار مطابقة للجلسة المتوقعة",
-          "status": "OPEN",
-          "evidence": "2026-08-27 vs 2026-08-26",
-          "remediation": "إعادة المسح من آخر جلسة مكتملة."
+          "status": "CLOSED",
+          "evidence": "2026-08-30 vs 2026-08-30",
+          "remediation": null
         }
       ]
     },
@@ -136,7 +136,7 @@
           "severity": "MEDIUM",
           "title": "حالة السوق تدخل في تفسير الاتجاه",
           "status": "CLOSED",
-          "evidence": "regime=NEUTRAL; analyzed=156",
+          "evidence": "regime=RISK_ON; analyzed=187",
           "remediation": null
         }
       ]
@@ -181,9 +181,9 @@
           "id": "T06-2",
           "severity": "HIGH",
           "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
-          "status": "OPEN",
-          "evidence": "acceptedRows=0",
-          "remediation": "حجب المسح عند ضعف التغطية."
+          "status": "CLOSED",
+          "evidence": "acceptedRows=208",
+          "remediation": null
         }
       ]
     },
@@ -266,7 +266,7 @@
           "severity": "CRITICAL",
           "title": "محرك حالة السوق ينتج معامل مخاطرة صالحًا",
           "status": "CLOSED",
-          "evidence": "regime=NEUTRAL; multiplier=0.65",
+          "evidence": "regime=RISK_ON; multiplier=1",
           "remediation": null
         },
         {
@@ -312,7 +312,7 @@
           "severity": "CRITICAL",
           "title": "الفترات منفصلة ومرتبة زمنيًا",
           "status": "CLOSED",
-          "evidence": "{\"development\":{\"sessions\":34,\"from\":\"2026-05-14\",\"to\":\"2026-07-01\"},\"validation\":{\"sessions\":17,\"from\":\"2026-07-05\",\"to\":\"2026-07-27\"},\"test\":{\"sessions\":17,\"from\":\"2026-07-28\",\"to\":\"2026-08-19\"},\"professionalMinimumTestSessions\":20,\"sampleSufficientForProfessionalClaim\":false}",
+          "evidence": "{\"development\":{\"sessions\":35,\"from\":\"2026-05-14\",\"to\":\"2026-07-05\"},\"validation\":{\"sessions\":17,\"from\":\"2026-07-06\",\"to\":\"2026-07-28\"},\"test\":{\"sessions\":17,\"from\":\"2026-07-29\",\"to\":\"2026-08-20\"},\"professionalMinimumTestSessions\":20,\"sampleSufficientForProfessionalClaim\":false}",
           "remediation": null
         },
         {
@@ -320,7 +320,7 @@
           "severity": "HIGH",
           "title": "كل نموذج مختار اجتاز التحقق والاختبار",
           "status": "CLOSED",
-          "evidence": "TREND_RESUMPTION:true/true, PRE_BREAKOUT_ACCUMULATION:true/true",
+          "evidence": "TREND_RESUMPTION:true/true, PRE_BREAKOUT_ACCUMULATION:true/true, REVERSAL_CONFIRMATION:true/true",
           "remediation": null
         }
       ]
@@ -412,7 +412,7 @@
           "severity": "CRITICAL",
           "title": "الجاهزية المهنية مرتبطة بـ100 صفقة و90 يومًا",
           "status": "CLOSED",
-          "evidence": "resolved=147; days=25; ready=false",
+          "evidence": "resolved=155; days=28; ready=false",
           "remediation": null
         }
       ]
@@ -458,7 +458,7 @@
           "severity": "HIGH",
           "title": "نتيجة التوصية لا تُحذف عند الفشل",
           "status": "CLOSED",
-          "evidence": "records=190",
+          "evidence": "records=194",
           "remediation": null
         }
       ]
@@ -512,7 +512,7 @@
           "severity": "HIGH",
           "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
           "status": "OPEN",
-          "evidence": "recs=0; source=false; plans=true",
+          "evidence": "recs=0; source=true; plans=true",
           "remediation": "حجب الإصدار الفني وإعادة البناء."
         }
       ]
@@ -520,22 +520,6 @@
   ],
   "openFindings": [
     {
-      "id": "T01-1",
-      "severity": "CRITICAL",
-      "title": "بوابة الأسعار جاهزة للتنفيذ",
-      "status": "OPEN",
-      "evidence": "ready=false; executionGrade=false; accepted=0",
-      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
-    },
-    {
-      "id": "T01-2",
-      "severity": "HIGH",
-      "title": "جلسة القرار مطابقة للجلسة المتوقعة",
-      "status": "OPEN",
-      "evidence": "2026-08-27 vs 2026-08-26",
-      "remediation": "إعادة المسح من آخر جلسة مكتملة."
-    },
-    {
       "id": "T03-1",
       "severity": "HIGH",
       "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
@@ -550,14 +534,6 @@
       "status": "OPEN",
       "evidence": "",
       "remediation": "نقل السهم إلى المراقبة."
-    },
-    {
-      "id": "T06-2",
-      "severity": "HIGH",
-      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
-      "status": "OPEN",
-      "evidence": "acceptedRows=0",
-      "remediation": "حجب المسح عند ضعف التغطية."
     },
     {
       "id": "T07-1",
@@ -612,28 +588,12 @@
       "severity": "HIGH",
       "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
       "status": "OPEN",
-      "evidence": "recs=0; source=false; plans=true",
+      "evidence": "recs=0; source=true; plans=true",
       "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
   "blockingFindings": [
     {
-      "id": "T01-1",
-      "severity": "CRITICAL",
-      "title": "بوابة الأسعار جاهزة للتنفيذ",
-      "status": "OPEN",
-      "evidence": "ready=false; executionGrade=false; accepted=0",
-      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
-    },
-    {
-      "id": "T01-2",
-      "severity": "HIGH",
-      "title": "جلسة القرار مطابقة للجلسة المتوقعة",
-      "status": "OPEN",
-      "evidence": "2026-08-27 vs 2026-08-26",
-      "remediation": "إعادة المسح من آخر جلسة مكتملة."
-    },
-    {
       "id": "T03-1",
       "severity": "HIGH",
       "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
@@ -648,14 +608,6 @@
       "status": "OPEN",
       "evidence": "",
       "remediation": "نقل السهم إلى المراقبة."
-    },
-    {
-      "id": "T06-2",
-      "severity": "HIGH",
-      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
-      "status": "OPEN",
-      "evidence": "acceptedRows=0",
-      "remediation": "حجب المسح عند ضعف التغطية."
     },
     {
       "id": "T07-1",
@@ -710,7 +662,7 @@
       "severity": "HIGH",
       "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
       "status": "OPEN",
-      "evidence": "recs=0; source=false; plans=true",
+      "evidence": "recs=0; source=true; plans=true",
       "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
