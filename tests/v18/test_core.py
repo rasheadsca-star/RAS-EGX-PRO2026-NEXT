@@ -2,6 +2,7 @@ import unittest, tempfile, json
 from pathlib import Path
 from scripts.v18.core import *
 from scripts.v18.ledger import append, verify
+from scripts.v18.validate import momentum_baseline
 
 def rows(n=30):
     return [{'date':f'2026-07-{i+1:02d}','open':100.,'high':101.,'low':99.,'close':100.,'volume':10000.} for i in range(n)]
@@ -22,6 +23,12 @@ class V18DestructiveTests(unittest.TestCase):
         self.assertEqual(label_event(r,20)['label'],'NO_ENTRY')
     def test_probabilities_sum_to_one(self):
         p=Softmax(2).predict([0,0]); self.assertAlmostEqual(sum(p),1)
+    def test_calibration_metrics_are_exact_for_perfect_predictions(self):
+        p=[[1,0,0,0],[0,1,0,0]]; y=[0,1]
+        self.assertEqual(brier(p,y),0); self.assertEqual(target_ece(p,y),0)
+    def test_momentum_baseline_is_a_probability_distribution(self):
+        e={'x':[0,0,.1,0,0,0,0]}; p=momentum_baseline([e],[.3,.2,.49,.01])[0]
+        self.assertAlmostEqual(sum(p),1); self.assertGreater(p[0],.3)
     def test_research_authority_locked(self):
         r=recommendation('X','2026-01-01',(100,95,110),(.7,.1,.1,.1),.1,-.05,3)
         self.assertFalse(r['productionAuthority']); self.assertFalse(r['automaticOrders']); self.assertIn(r['decision'],DECISIONS)

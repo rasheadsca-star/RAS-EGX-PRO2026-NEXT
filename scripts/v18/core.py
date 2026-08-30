@@ -62,14 +62,14 @@ def label_event(rows, i, horizon=5, no_gap_down_fill=True):
     entry,stop,target=geometry(rows,i); future=rows[i+1:i+1+horizon]
     if not future: return None
     if no_gap_down_fill and future[0]["open"] < stop:
-        return {"label":"NO_ENTRY","entry":entry,"stop":stop,"target":target,"mfe":0,"mae":0,"held":0}
+        return {"label":"NO_ENTRY","entry":entry,"stop":stop,"target":target,"mfe":0,"mae":0,"held":0,"grossReturn":0.0}
     mfe=mae=0.0
     for held,r in enumerate(future,1):
         mfe=max(mfe,(r["high"]-entry)/entry); mae=min(mae,(r["low"]-entry)/entry)
         # Conservative same-bar ambiguity.
-        if r["low"] <= stop: return {"label":"STOP_BEFORE_TARGET","entry":entry,"stop":stop,"target":target,"mfe":mfe,"mae":mae,"held":held}
-        if r["high"] >= target: return {"label":"TARGET_BEFORE_STOP","entry":entry,"stop":stop,"target":target,"mfe":mfe,"mae":mae,"held":held}
-    return {"label":"TIME_EXIT","entry":entry,"stop":stop,"target":target,"mfe":mfe,"mae":mae,"held":len(future)}
+        if r["low"] <= stop: return {"label":"STOP_BEFORE_TARGET","entry":entry,"stop":stop,"target":target,"mfe":mfe,"mae":mae,"held":held,"grossReturn":stop/entry-1}
+        if r["high"] >= target: return {"label":"TARGET_BEFORE_STOP","entry":entry,"stop":stop,"target":target,"mfe":mfe,"mae":mae,"held":held,"grossReturn":target/entry-1}
+    return {"label":"TIME_EXIT","entry":entry,"stop":stop,"target":target,"mfe":mfe,"mae":mae,"held":len(future),"grossReturn":future[-1]["close"]/entry-1}
 
 class Softmax:
     def __init__(self,n_features): self.w=[[0.0]*(n_features+1) for _ in LABELS]
@@ -97,6 +97,18 @@ def standardize(train, test):
 
 def brier(probabilities, labels):
     return sum(sum((p[k]-(1 if y==k else 0))**2 for k in range(len(LABELS))) for p,y in zip(probabilities,labels))/len(labels)
+
+def log_loss(probabilities, labels):
+    return -sum(math.log(max(1e-12,p[y])) for p,y in zip(probabilities,labels))/len(labels)
+
+def target_ece(probabilities, labels, bins=10):
+    result=0.0; n=len(labels)
+    for b in range(bins):
+        lo,hi=b/bins,(b+1)/bins
+        idx=[i for i,p in enumerate(probabilities) if lo <= p[0] < hi or (b==bins-1 and p[0]==1)]
+        if idx:
+            result += len(idx)/n*abs(sum(probabilities[i][0] for i in idx)/len(idx)-sum(labels[i]==0 for i in idx)/len(idx))
+    return result
 
 def recommendation(ticker, signal_date, geom, probs, mfe, mae, hold, costs=.006, data_quality=1.0):
     entry,stop,target=geom; p=dict(zip(LABELS,probs)); gain=(target-entry)/entry; loss=(entry-stop)/entry

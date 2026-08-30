@@ -14,6 +14,7 @@ jobs:
         with: { python-version: '3.12' }
       - run: python -m unittest discover -s tests/v18 -p 'test_*.py'
       - run: python scripts/v18/run.py
+      - run: python scripts/v18/validate.py
       - run: |
           python - <<'PY'
           import json
@@ -21,4 +22,7 @@ jobs:
           assert x['mode']=='RESEARCH_SHADOW_ONLY'
           assert all(not r['productionAuthority'] and not r['automaticOrders'] for r in x['recommendations'])
           assert x['artifactHash']
+          w=json.load(open('data/v18/walk-forward-validation.json'))
+          assert w['protocol']['embargoSessions'] >= 5
+          assert w['formalGate']['pass'] is False
           PY
