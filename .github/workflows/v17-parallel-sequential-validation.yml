@@ -1,0 +1,70 @@
+name: V17 Parallel Sequential Validation
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/src/v17ParallelSequentialValidation.js'
+      - 'tfe-v20/test/v17-parallel-sequential-validation.test.js'
+      - 'tfe-v20/scripts/v17-freeze-parallel-cohort.mjs'
+      - 'tfe-v20/research/V17_PARALLEL_SEQUENTIAL_VALIDATION_CONTRACT.md'
+      - 'tfe-v20/forward-ledger/snapshots/**'
+      - '.github/workflows/v17-parallel-sequential-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-parallel-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run destructive parallel validation tests
+        working-directory: tfe-v20
+        run: node --test test/v17-parallel-sequential-validation.test.js
+
+      - name: Freeze 30-Aug parallel cohort from immutable snapshot
+        working-directory: tfe-v20
+        env:
+          EXPECTED_SIGNAL_DATE: '2026-08-30'
+        run: node scripts/v17-freeze-parallel-cohort.mjs
+
+      - name: Enforce research-only and stopping boundaries
+        working-directory: tfe-v20
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync('reports/v17-parallel-cohort.json','utf8'));
+          const c = report.cohort;
+          if (report.researchOnly !== true || report.productionAuthority !== false) throw new Error('REPORT_AUTHORITY_INVALID');
+          if (c.status !== 'FROZEN_PRE_OUTCOME_PARALLEL_COHORT') throw new Error('COHORT_NOT_FROZEN');
+          if (c.signalSessionDate !== '2026-08-30') throw new Error('WRONG_SIGNAL_COHORT');
+          if (c.nextTradingSessionDate !== '2026-08-31') throw new Error('WRONG_NEXT_SESSION');
+          if (c.sourceSnapshotHash !== '89a9e2ae85a94b6a18ffeb08daff691577db452dd10abd2b7de9e352a188573e') throw new Error('SOURCE_SNAPSHOT_DRIFT');
+          if (Object.keys(c.arms).join(',') !== 'V16_CONTROL,V17_A,V17_B,V17_C') throw new Error('ARM_SET_DRIFT');
+          if (c.sequential.hardMaxCohorts !== 40) throw new Error('HARD_CAP_DRIFT');
+          if (c.sequential.formalSuperiorityProbability !== 0.99) throw new Error('FORMAL_THRESHOLD_DRIFT');
+          for (const arm of Object.values(c.arms)) {
+            if (arm.policy.maxPositions > 2) throw new Error('POSITION_CAP_BREACH');
+          }
+          console.log('V17 parallel contract frozen and zero-authority.');
+          NODE
+
+      - name: Upload parallel cohort artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v17-parallel-sequential-cohort-2026-08-30
+          path: |
+            tfe-v20/reports/v17-parallel-cohort.json
+            tfe-v20/reports/v17-parallel-dashboard.html
+          retention-days: 90
