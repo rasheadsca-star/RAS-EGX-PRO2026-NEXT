@@ -27,6 +27,7 @@ concurrency:
 jobs:
   validate-and-refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v4
@@ -63,12 +64,6 @@ jobs:
           node --check triple-engine/build-consensus.cjs
           node --check triple-engine/test-consensus.cjs
 
-      - name: Refresh SEPA-X post-close mirror from live read-only source
-        if: github.event_name != 'pull_request'
-        env:
-          SEPA_X_BASE_URL: https://sepax-strategy-live.vercel.app
-        run: node gann-fusion-x/scripts/sync-sepa.cjs
-
       - name: Missing-data static guard
         run: |
           if grep -REn 'volume\s*\|\|\s*0|volume\s*\?\?\s*0' triple-engine; then
@@ -76,7 +71,36 @@ jobs:
             exit 1
           fi
 
-      - name: Build and validate same-session consensus
+      - name: Refresh sources and build exact same-session consensus with bounded retry
+        if: github.event_name != 'pull_request'
+        env:
+          SEPA_X_BASE_URL: https://sepax-strategy-live.vercel.app
+        run: |
+          set -u
+          max_attempts=6
+          sleep_seconds=300
+
+          for attempt in $(seq 1 "$max_attempts"); do
+            echo "Triple post-close attempt ${attempt}/${max_attempts}; expected session=${EXPECTED_SESSION}"
+
+            if node gann-fusion-x/scripts/sync-sepa.cjs \
+              && node triple-engine/test-consensus.cjs \
+              && node -e "const fs=require('fs'); const d=JSON.parse(fs.readFileSync('triple-engine/data/current.json','utf8')); const expected=process.env.EXPECTED_SESSION; const sources=Object.entries(d.sources||{}); const ok=d.mode==='RESEARCH_SHADOW_ONLY' && d.marketSession===expected && d.allSourcesFresh===true && sources.length===3 && sources.every(([,s])=>s.session===expected && s.fresh===true); if(!ok){console.error(JSON.stringify({expected,marketSession:d.marketSession,allSourcesFresh:d.allSourcesFresh,sources:d.sources},null,2)); process.exit(1);} console.log('SAME_SESSION_READY', expected);"; then
+              echo "Triple consensus aligned successfully on ${EXPECTED_SESSION}."
+              break
+            fi
+
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "Triple consensus could not align all sources to ${EXPECTED_SESSION} after ${max_attempts} attempts. Failing closed."
+              exit 1
+            fi
+
+            echo "A source is not ready yet. Retrying in ${sleep_seconds}s without changing thresholds or using stale data."
+            sleep "$sleep_seconds"
+          done
+
+      - name: Build research consensus for pull-request validation
+        if: github.event_name == 'pull_request'
         run: node triple-engine/test-consensus.cjs
 
       - name: Validate generated contract and exact session alignment
@@ -90,12 +114,16 @@ jobs:
           if(d.executionLocks?.executionAllowed!==false) throw new Error('execution must stay disabled');
           if(d.executionLocks?.automaticOrders!==false) throw new Error('automatic orders must stay disabled');
           if(d.marketSession!==process.env.EXPECTED_SESSION) throw new Error(`TRIPLE_SESSION_MISMATCH expected=${process.env.EXPECTED_SESSION} actual=${d.marketSession}`);
-          for(const [name,source] of Object.entries(d.sources||{})) {
+          const sources=Object.entries(d.sources||{});
+          if(sources.length!==3) throw new Error(`EXPECTED_THREE_SOURCES actual=${sources.length}`);
+          for(const [name,source] of sources) {
             if(source.session!==process.env.EXPECTED_SESSION) throw new Error(`${name}_SESSION_MISMATCH expected=${process.env.EXPECTED_SESSION} actual=${source.session}`);
+            if(source.fresh!==true) throw new Error(`${name}_MUST_BE_FRESH`);
           }
           if(!d.allSourcesFresh) throw new Error('ALL_SOURCES_MUST_BE_FRESH');
+          if(d.consensusStatus!=='ELIGIBLE_SAME_SESSION') throw new Error(`CONSENSUS_NOT_ELIGIBLE status=${d.consensusStatus}`);
           if((d.threeOfThree||[]).length && !d.allSourcesFresh) throw new Error('3/3 cannot exist with stale sources');
-          console.log(JSON.stringify({marketSession:d.marketSession,dataReadiness:d.dataReadiness,sources:d.sources,threeOfThree:(d.threeOfThree||[]).map(x=>x.ticker),twoOfThree:(d.twoOfThree||[]).map(x=>x.ticker)},null,2));
+          console.log(JSON.stringify({marketSession:d.marketSession,consensusStatus:d.consensusStatus,dataReadiness:d.dataReadiness,sources:d.sources,threeOfThree:(d.threeOfThree||[]).map(x=>x.ticker),twoOfThree:(d.twoOfThree||[]).map(x=>x.ticker)},null,2));
           NODE
 
       - name: Persist post-close research snapshots on research branch
