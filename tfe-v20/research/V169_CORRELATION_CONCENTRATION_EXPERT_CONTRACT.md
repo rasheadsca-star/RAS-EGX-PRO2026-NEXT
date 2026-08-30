@@ -41,13 +41,14 @@ The candidate is only `PROMISING_RETROSPECTIVE_SHADOW_ONLY` if **all** of the fo
 ### Sample / separation
 
 - at least **8** flagged `CORRELATED_BASKET_WATCH` sessions;
+- because the research target is the **32 residual STOPs after the frozen RiskAlpha Stage-B guard**, member stop-rate separation is measured only on executable members that **survive RiskAlpha Stage-B**; the correlation classification itself remains signal-time only and cannot see the Stage-B result;
 - flagged sessions show material adverse separation from PASS sessions by at least one of:
-  - member stop rate >= PASS stop rate + **10 percentage points**, or
-  - average session net return <= PASS average session net return - **1.00 percentage point**;
+  - residual member stop rate >= PASS residual member stop rate + **10 percentage points**, or
+  - RiskAlpha-adjusted average session net return <= PASS RiskAlpha-adjusted average session net return - **1.00 percentage point**;
 - split the 45 signal dates chronologically into 3 folds;
 - a fold is eligible when it contains at least **2** flagged sessions;
 - at least **2 eligible folds** are required;
-- at least **2 eligible folds** must show the adverse direction (higher stop rate or lower average session return for flagged sessions).
+- at least **2 eligible folds** must show the adverse direction (higher residual stop rate or lower RiskAlpha-adjusted average session return for flagged sessions).
 
 ### Incremental value over frozen RiskAlpha
 
