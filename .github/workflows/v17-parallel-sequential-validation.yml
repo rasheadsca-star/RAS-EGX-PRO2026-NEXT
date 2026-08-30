@@ -33,13 +33,11 @@ jobs:
         working-directory: tfe-v20
         run: node --test test/v17-parallel-sequential-validation.test.js
 
-      - name: Freeze 30-Aug parallel cohort from immutable snapshot
+      - name: Freeze latest immutable forward snapshot into parallel cohort
         working-directory: tfe-v20
-        env:
-          EXPECTED_SIGNAL_DATE: '2026-08-30'
         run: node scripts/v17-freeze-parallel-cohort.mjs
 
-      - name: Enforce research-only and stopping boundaries
+      - name: Enforce frozen arm contract and zero authority
         working-directory: tfe-v20
         run: |
           node --input-type=module <<'NODE'
@@ -48,22 +46,26 @@ jobs:
           const c = report.cohort;
           if (report.researchOnly !== true || report.productionAuthority !== false) throw new Error('REPORT_AUTHORITY_INVALID');
           if (c.status !== 'FROZEN_PRE_OUTCOME_PARALLEL_COHORT') throw new Error('COHORT_NOT_FROZEN');
-          if (c.signalSessionDate !== '2026-08-30') throw new Error('WRONG_SIGNAL_COHORT');
-          if (c.nextTradingSessionDate !== '2026-08-31') throw new Error('WRONG_NEXT_SESSION');
-          if (c.sourceSnapshotHash !== '89a9e2ae85a94b6a18ffeb08daff691577db452dd10abd2b7de9e352a188573e') throw new Error('SOURCE_SNAPSHOT_DRIFT');
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(c.signalSessionDate || '')) throw new Error('SIGNAL_DATE_INVALID');
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(c.nextTradingSessionDate || '')) throw new Error('NEXT_SESSION_INVALID');
+          if (!/^[a-f0-9]{64}$/.test(c.sourceSnapshotHash || '')) throw new Error('SOURCE_SNAPSHOT_HASH_INVALID');
+          if (c.contractHash !== 'ec702d2052d1ef8b1247b8c2a2c0f3c3777048fd54fc05ab733604b6f6a4eee4') throw new Error('PARALLEL_CONTRACT_DRIFT');
           if (Object.keys(c.arms).join(',') !== 'V16_CONTROL,V17_A,V17_B,V17_C') throw new Error('ARM_SET_DRIFT');
           if (c.sequential.hardMaxCohorts !== 40) throw new Error('HARD_CAP_DRIFT');
           if (c.sequential.formalSuperiorityProbability !== 0.99) throw new Error('FORMAL_THRESHOLD_DRIFT');
+          if (c.sequential.earlyPositiveProbability !== 0.975) throw new Error('EARLY_POSITIVE_DRIFT');
+          if (c.sequential.earlyFutilityProbability !== 0.10) throw new Error('EARLY_FUTILITY_DRIFT');
           for (const arm of Object.values(c.arms)) {
             if (arm.policy.maxPositions > 2) throw new Error('POSITION_CAP_BREACH');
+            if (!Array.isArray(arm.candidateTickers)) throw new Error('CANDIDATE_SET_INVALID');
           }
-          console.log('V17 parallel contract frozen and zero-authority.');
+          console.log(`V17 parallel cohort ${c.signalSessionDate} frozen under immutable contract ${c.contractHash}.`);
           NODE
 
       - name: Upload parallel cohort artifact
         uses: actions/upload-artifact@v4
         with:
-          name: v17-parallel-sequential-cohort-2026-08-30
+          name: v17-parallel-sequential-cohort-${{ github.sha }}
           path: |
             tfe-v20/reports/v17-parallel-cohort.json
             tfe-v20/reports/v17-parallel-dashboard.html
