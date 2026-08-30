@@ -88,3 +88,5 @@ The audit is invalid if any of the following occurs:
 - no production deployment
 
 Even a retrospective pass remains zero-weight shadow evidence and requires separately preregistered fresh-forward confirmation.
+
+Trigger note: the one-shot run is launched only after this contract and all numeric thresholds above were frozen; this line changes no semantics.
