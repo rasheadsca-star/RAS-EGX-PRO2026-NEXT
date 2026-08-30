@@ -3,7 +3,7 @@ from pathlib import Path
 from scripts.v18.core import *
 from scripts.v18.ledger import append, verify
 from scripts.v18.validate import momentum_baseline
-from scripts.v18.forward import freeze
+from scripts.v18.forward import freeze, verify_ledger
 
 def rows(n=30):
     return [{'date':f'2026-07-{i+1:02d}','open':100.,'high':101.,'low':99.,'close':100.,'volume':10000.} for i in range(n)]
@@ -48,5 +48,6 @@ class V18DestructiveTests(unittest.TestCase):
         current={'artifactHash':'A','recommendations':[{'ticker':'X','signalDate':'2026-08-30','decision':'WAIT','pTargetBeforeStop':.6,'expectedValue':.01}]}
         _,ledger=freeze(current,{'entries':[]}); changed=json.loads(json.dumps(current)); changed['recommendations'][0]['target']=120
         with self.assertRaises(ValueError): freeze(changed,ledger)
+        self.assertTrue(verify_ledger(ledger)); ledger['entries'][0]['portfolioDecision']='BUY'; self.assertFalse(verify_ledger(ledger))
 
 if __name__=='__main__': unittest.main()

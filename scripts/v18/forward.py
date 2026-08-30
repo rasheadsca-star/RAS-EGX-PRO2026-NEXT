@@ -18,8 +18,24 @@ def freeze(current, ledger):
     ledger['schemaVersion']='18.0.0-forward-append-only'; ledger['ledgerHash']=canonical_hash(entries)
     return payload,ledger
 
+def verify_ledger(ledger):
+    entries=ledger.get('entries',[])
+    if ledger.get('ledgerHash')!=canonical_hash(entries): return False
+    for entry in entries:
+        body={k:v for k,v in entry.items() if k!='snapshotHash'}
+        if entry.get('snapshotHash')!=canonical_hash(body): return False
+    return True
+
 def main():
-    current=json.loads((ROOT/'data/v18/current.json').read_text()); path=ROOT/'data/v18/forward-ledger.json'
+    path=ROOT/'data/v18/forward-ledger.json'
+    if '--verify' in sys.argv:
+        ledger=json.loads(path.read_text())
+        if not verify_ledger(ledger): raise ValueError('INVALID_FORWARD_HASH_CHAIN')
+        for snapshot in ledger.get('entries',[]):
+            out=ROOT/'data/v18/forward'/f"{snapshot['signalId'].replace(':','_')}.json"
+            if not out.exists() or json.loads(out.read_text()).get('snapshotHash')!=snapshot.get('snapshotHash'): raise ValueError('FORWARD_SNAPSHOT_MISMATCH')
+        print(json.dumps({'verified':True,'entries':len(ledger.get('entries',[])),'ledgerHash':ledger['ledgerHash']},indent=2)); return
+    current=json.loads((ROOT/'data/v18/current.json').read_text())
     ledger=json.loads(path.read_text()) if path.exists() else {'schemaVersion':'18.0.0-forward-append-only','entries':[]}
     snapshot,ledger=freeze(current,ledger); path.write_text(json.dumps(ledger,ensure_ascii=False,indent=2)+'\n')
     out=ROOT/'data/v18/forward'/f"{snapshot['signalId'].replace(':','_')}.json"; out.parent.mkdir(parents=True,exist_ok=True)
