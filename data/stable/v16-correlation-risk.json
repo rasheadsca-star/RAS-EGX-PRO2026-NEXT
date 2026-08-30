@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-30T17:38:20.348Z",
+  "generatedAt": "2026-08-30T17:42:55.496Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,15 +12,162 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 0,
-  "tickers": [],
-  "matrix": [],
+  "recommendationCount": 5,
+  "tickers": [
+    "ARAB",
+    "AIFI",
+    "RTVC",
+    "EEII",
+    "MFPC"
+  ],
+  "matrix": [
+    {
+      "ticker": "ARAB",
+      "correlations": {
+        "ARAB": {
+          "value": 1,
+          "observations": 60
+        },
+        "AIFI": {
+          "value": 0.075,
+          "observations": 52
+        },
+        "RTVC": {
+          "value": -0.026,
+          "observations": 53
+        },
+        "EEII": {
+          "value": 0.024,
+          "observations": 53
+        },
+        "MFPC": {
+          "value": 0.083,
+          "observations": 51
+        }
+      }
+    },
+    {
+      "ticker": "AIFI",
+      "correlations": {
+        "ARAB": {
+          "value": 0.075,
+          "observations": 52
+        },
+        "AIFI": {
+          "value": 1,
+          "observations": 60
+        },
+        "RTVC": {
+          "value": 0.084,
+          "observations": 55
+        },
+        "EEII": {
+          "value": -0.008,
+          "observations": 55
+        },
+        "MFPC": {
+          "value": 0.193,
+          "observations": 51
+        }
+      }
+    },
+    {
+      "ticker": "RTVC",
+      "correlations": {
+        "ARAB": {
+          "value": -0.026,
+          "observations": 53
+        },
+        "AIFI": {
+          "value": 0.084,
+          "observations": 55
+        },
+        "RTVC": {
+          "value": 1,
+          "observations": 60
+        },
+        "EEII": {
+          "value": 0.255,
+          "observations": 54
+        },
+        "MFPC": {
+          "value": 0.185,
+          "observations": 50
+        }
+      }
+    },
+    {
+      "ticker": "EEII",
+      "correlations": {
+        "ARAB": {
+          "value": 0.024,
+          "observations": 53
+        },
+        "AIFI": {
+          "value": -0.008,
+          "observations": 55
+        },
+        "RTVC": {
+          "value": 0.255,
+          "observations": 54
+        },
+        "EEII": {
+          "value": 1,
+          "observations": 60
+        },
+        "MFPC": {
+          "value": 0.138,
+          "observations": 51
+        }
+      }
+    },
+    {
+      "ticker": "MFPC",
+      "correlations": {
+        "ARAB": {
+          "value": 0.083,
+          "observations": 51
+        },
+        "AIFI": {
+          "value": 0.193,
+          "observations": 51
+        },
+        "RTVC": {
+          "value": 0.185,
+          "observations": 50
+        },
+        "EEII": {
+          "value": 0.138,
+          "observations": 51
+        },
+        "MFPC": {
+          "value": 1,
+          "observations": 60
+        }
+      }
+    }
+  ],
   "highCorrelationPairs": [],
-  "sectorConcentration": [],
+  "sectorConcentration": [
+    {
+      "sector": "GENERAL",
+      "count": 4,
+      "sharePct": 80
+    },
+    {
+      "sector": "غير مصنف",
+      "count": 1,
+      "sharePct": 20
+    }
+  ],
   "summary": {
     "highCorrelationPairCount": 0,
     "averageHighPairCorrelation": null,
-    "largestSector": null,
+    "largestSector": {
+      "sector": "GENERAL",
+      "count": 4,
+      "sharePct": 80
+    },
     "regime": "RISK_ON",
     "regimeRiskMultiplier": 1,
     "suggestedMaximumPositions": 5,
@@ -32,19 +179,19 @@
       "id": "MARKET_GAP_5",
       "labelAr": "فجوة سوقية -5%",
       "assumedMovePct": -5,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -5
     },
     {
       "id": "RISK_OFF_8",
       "labelAr": "صدمة سوق دفاعي -8%",
       "assumedMovePct": -8,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -8
     },
     {
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -8
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
@@ -54,7 +201,9 @@
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 0
+    "positionWeightPct": 20
   },
-  "warnings": []
+  "warnings": [
+    "SECTOR_CONCENTRATION_ABOVE_40"
+  ]
 }
