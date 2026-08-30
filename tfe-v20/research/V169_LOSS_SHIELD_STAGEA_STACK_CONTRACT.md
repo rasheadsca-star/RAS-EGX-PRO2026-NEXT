@@ -75,3 +75,7 @@ The test is invalid if any of the following occurs:
 - no production deployment
 
 Even if the Combined arm looks stronger retrospectively, it remains zero-weight shadow evidence until separately preregistered fresh forward evidence supports it.
+
+## Execution record
+
+The one-shot CI execution is triggered only after this contract and its workflow are both present on the research branch. This line records initiation of the preregistered test and changes no analytical rule or threshold.
