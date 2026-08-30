@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-08-27T23:02:59.805Z",
+  "generatedAt": "2026-08-30T15:21:17.174Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,39 +12,139 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 0,
-  "tickers": [],
-  "matrix": [],
+  "recommendationCount": 4,
+  "tickers": [
+    "DAPH",
+    "GTWL",
+    "GRCA",
+    "AXPH"
+  ],
+  "matrix": [
+    {
+      "ticker": "DAPH",
+      "correlations": {
+        "DAPH": {
+          "value": 1,
+          "observations": 60
+        },
+        "GTWL": {
+          "value": 0.132,
+          "observations": 55
+        },
+        "GRCA": {
+          "value": 0.231,
+          "observations": 54
+        },
+        "AXPH": {
+          "value": 0.206,
+          "observations": 55
+        }
+      }
+    },
+    {
+      "ticker": "GTWL",
+      "correlations": {
+        "DAPH": {
+          "value": 0.132,
+          "observations": 55
+        },
+        "GTWL": {
+          "value": 1,
+          "observations": 60
+        },
+        "GRCA": {
+          "value": -0.065,
+          "observations": 55
+        },
+        "AXPH": {
+          "value": 0.049,
+          "observations": 54
+        }
+      }
+    },
+    {
+      "ticker": "GRCA",
+      "correlations": {
+        "DAPH": {
+          "value": 0.231,
+          "observations": 54
+        },
+        "GTWL": {
+          "value": -0.065,
+          "observations": 55
+        },
+        "GRCA": {
+          "value": 1,
+          "observations": 60
+        },
+        "AXPH": {
+          "value": 0.166,
+          "observations": 54
+        }
+      }
+    },
+    {
+      "ticker": "AXPH",
+      "correlations": {
+        "DAPH": {
+          "value": 0.206,
+          "observations": 55
+        },
+        "GTWL": {
+          "value": 0.049,
+          "observations": 54
+        },
+        "GRCA": {
+          "value": 0.166,
+          "observations": 54
+        },
+        "AXPH": {
+          "value": 1,
+          "observations": 60
+        }
+      }
+    }
+  ],
   "highCorrelationPairs": [],
-  "sectorConcentration": [],
+  "sectorConcentration": [
+    {
+      "sector": "GENERAL",
+      "count": 4,
+      "sharePct": 100
+    }
+  ],
   "summary": {
     "highCorrelationPairCount": 0,
     "averageHighPairCorrelation": null,
-    "largestSector": null,
-    "regime": "NEUTRAL",
-    "regimeRiskMultiplier": 0.65,
-    "suggestedMaximumPositions": 3,
-    "suggestedMaximumSingleSectorPct": 30,
-    "suggestedMaximumOpenRiskPct": 1.3
+    "largestSector": {
+      "sector": "GENERAL",
+      "count": 4,
+      "sharePct": 100
+    },
+    "regime": "RISK_ON",
+    "regimeRiskMultiplier": 1,
+    "suggestedMaximumPositions": 5,
+    "suggestedMaximumSingleSectorPct": 40,
+    "suggestedMaximumOpenRiskPct": 2
   },
   "stressScenarios": [
     {
       "id": "MARKET_GAP_5",
       "labelAr": "فجوة سوقية -5%",
       "assumedMovePct": -5,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -5
     },
     {
       "id": "RISK_OFF_8",
       "labelAr": "صدمة سوق دفاعي -8%",
       "assumedMovePct": -8,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -8
     },
     {
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -10
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
@@ -54,7 +154,9 @@
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 0
+    "positionWeightPct": 25
   },
-  "warnings": []
+  "warnings": [
+    "SECTOR_CONCENTRATION_ABOVE_40"
+  ]
 }
