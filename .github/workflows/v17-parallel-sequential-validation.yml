@@ -8,8 +8,11 @@ on:
       - 'tfe-v20/src/v17ParallelSequentialValidation.js'
       - 'tfe-v20/test/v17-parallel-sequential-validation.test.js'
       - 'tfe-v20/scripts/v17-freeze-parallel-cohort.mjs'
+      - 'tfe-v20/scripts/v17-evaluate-parallel-cohort.mjs'
+      - 'tfe-v20/scripts/v17-sequential-evidence-report.mjs'
       - 'tfe-v20/research/V17_PARALLEL_SEQUENTIAL_VALIDATION_CONTRACT.md'
       - 'tfe-v20/forward-ledger/snapshots/**'
+      - 'tfe-v20/parallel-validation/results/**'
       - '.github/workflows/v17-parallel-sequential-validation.yml'
   workflow_dispatch:
 
@@ -62,11 +65,33 @@ jobs:
           console.log(`V17 parallel cohort ${c.signalSessionDate} frozen under immutable contract ${c.contractHash}.`);
           NODE
 
-      - name: Upload parallel cohort artifact
+      - name: Recompute sequential evidence from append-only completed results
+        working-directory: tfe-v20
+        run: node scripts/v17-sequential-evidence-report.mjs
+
+      - name: Enforce sequential evidence zero authority
+        working-directory: tfe-v20
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync('reports/v17-sequential-evidence.json','utf8'));
+          if (report.researchOnly !== true || report.productionAuthority !== false || report.automaticPromotion !== false) throw new Error('SEQUENTIAL_AUTHORITY_INVALID');
+          if (report.evidence?.hardMaxCohorts !== 40) throw new Error('SEQUENTIAL_HARD_CAP_DRIFT');
+          for (const [id, arm] of Object.entries(report.evidence?.challengers || {})) {
+            const allowed = new Set(['INSUFFICIENT_EVIDENCE','CONTINUE_FROZEN_TEST','EARLY_POSITIVE_RESEARCH_EVIDENCE','EARLY_FUTILITY','FORMAL_RESEARCH_CHALLENGER_PASS','NO_MATERIAL_EDGE_UNDER_FROZEN_CONTRACT']);
+            if (!allowed.has(arm.status)) throw new Error(`UNKNOWN_SEQUENTIAL_STATUS:${id}:${arm.status}`);
+            if (arm.productionAuthority !== false) throw new Error(`ARM_AUTHORITY_INVALID:${id}`);
+          }
+          console.log(`Sequential evidence recomputed from ${report.completedResultCount} completed cohort result(s).`);
+          NODE
+
+      - name: Upload parallel cohort and sequential evidence artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: v17-parallel-sequential-cohort-${{ github.sha }}
+          name: v17-parallel-sequential-${{ github.sha }}
           path: |
             tfe-v20/reports/v17-parallel-cohort.json
             tfe-v20/reports/v17-parallel-dashboard.html
+            tfe-v20/reports/v17-sequential-evidence.json
+            tfe-v20/reports/v17-sequential-evidence-dashboard.html
           retention-days: 90
