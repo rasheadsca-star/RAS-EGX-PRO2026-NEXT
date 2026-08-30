@@ -1,0 +1,91 @@
+name: V16.9 Liquidity Compression Research
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/scripts/v169-liquidity-compression-audit.mjs'
+      - 'tfe-v20/research/V169_LIQUIDITY_COMPRESSION_EXPERT_CONTRACT.md'
+      - 'tfe-v20/src/v169RiskAlphaChallenger.js'
+      - '.github/workflows/v169-liquidity-compression-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LEGACY_EVIDENCE_COMMIT: 34218d27a36d2c916961a54573477f47f124416a
+
+jobs:
+  one-shot-liquidity-compression-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lock frozen policy and syntax
+        run: |
+          node --check scripts/v169-liquidity-compression-audit.mjs
+          node --check src/v169RiskAlphaChallenger.js
+
+      - name: Materialize exact pinned 45-session evidence lineage
+        run: |
+          cd ..
+          git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- \
+            scripts/research/v16-probabilistic-model-impact.py \
+            scripts/research/v16-two-stage-predictor.py \
+            scripts/research/v16-v169-basket-engine.py \
+            scripts/research/v16-v169-target-hit-audit.py \
+            data/history
+          mkdir -p data/stable data/research tfe-v20/reports
+          git show "$LEGACY_EVIDENCE_COMMIT:data/stable/v16-v169-live-evaluation.json" > data/stable/v16-v169-live-evaluation.json
+
+      - name: Rebuild exact V16.9 comparison basis
+        run: |
+          cd ..
+          python scripts/research/v16-v169-basket-engine.py
+          sed -i 's/AUDIT_SESSIONS = 20/AUDIT_SESSIONS = 999/' scripts/research/v16-v169-target-hit-audit.py
+          python scripts/research/v16-v169-target-hit-audit.py
+
+      - name: Run preregistered liquidity compression test
+        run: node scripts/v169-liquidity-compression-audit.mjs
+
+      - name: Assert frozen governance and residual basis
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('reports/v169-liquidity-compression-audit.json','utf8'));
+          if (x.source.sessions !== 45) throw new Error(`EVIDENCE_WINDOW_CHANGED:${x.source.sessions}`);
+          if (x.source.residualRiskAlphaStops !== 32) throw new Error(`RESIDUAL_STOP_BASIS_CHANGED:${x.source.residualRiskAlphaStops}`);
+          if (x.frozenPolicy.recentSessions !== 5) throw new Error('RECENT_WINDOW_CHANGED');
+          if (x.frozenPolicy.baselineSessions !== 20) throw new Error('BASELINE_WINDOW_CHANGED');
+          if (x.frozenPolicy.compressionRatioThreshold !== 0.60) throw new Error('LIQUIDITY_THRESHOLD_CHANGED');
+          if (x.governance.champion !== 'V16.9') throw new Error('CHAMPION_CHANGED');
+          if (x.governance.scoringImpact !== 'NONE') throw new Error('SCORING_IMPACT_CHANGED');
+          if (x.governance.alphaWeight !== 0) throw new Error('ALPHA_WEIGHT_CHANGED');
+          if (x.governance.productionAuthority !== false) throw new Error('PRODUCTION_AUTHORITY_CHANGED');
+          if (x.governance.liquidityThresholdRetuned !== false) throw new Error('LIQUIDITY_RETUNED');
+          if (x.governance.freshForwardLedgerChanged !== false) throw new Error('FORWARD_LEDGER_CHANGED');
+          if (x.arms?.length !== 4) throw new Error('FOUR_ARMS_REQUIRED');
+          NODE
+
+      - name: Upload exact one-shot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v169-liquidity-compression-research
+          path: tfe-v20/reports/v169-liquidity-compression-audit.json
+          if-no-files-found: error
+          retention-days: 30
