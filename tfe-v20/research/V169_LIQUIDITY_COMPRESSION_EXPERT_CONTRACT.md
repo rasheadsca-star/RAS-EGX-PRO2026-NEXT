@@ -78,3 +78,5 @@ Invalid if:
 - PR #68 remains Draft/Open/Unmerged
 - no `main` mutation
 - no production deployment
+
+Trigger note: the one-shot run is launched only after every numeric rule above was frozen; this line changes no semantics.
