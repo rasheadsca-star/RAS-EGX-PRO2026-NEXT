@@ -345,13 +345,38 @@ export class EgxMarketDataStore {
     const validation = validateSessionManifest(manifest);
     if (!validation.valid) throw new Error(`INVALID_SESSION_MANIFEST:${validation.errors.join(',')}`);
     if (typeof manifest.sourceManifest !== 'string') throw new Error('SESSION_MANIFEST_SOURCE_MUST_BE_HASH');
-    const sm=this.db.prepare('SELECT 1 AS ok FROM source_manifests WHERE source_manifest_hash=?').get(manifest.sourceManifest);
+    const sm=this.db.prepare('SELECT payload_json FROM source_manifests WHERE source_manifest_hash=?').get(manifest.sourceManifest);
     if (!sm) throw new Error('SESSION_MANIFEST_SOURCE_NOT_FOUND');
-    const raw=this.db.prepare('SELECT 1 AS ok FROM acquisition_runs WHERE content_hash=? AND finalized_at IS NOT NULL').get(manifest.rawDataVersion);
+    const raw=this.db.prepare('SELECT expected_session,content_hash,finalized_at FROM acquisition_runs WHERE content_hash=? AND finalized_at IS NOT NULL').get(manifest.rawDataVersion);
     if (!raw) throw new Error('SESSION_MANIFEST_RAW_VERSION_NOT_FOUND');
-    const norm=this.db.prepare('SELECT market_session FROM data_snapshots WHERE content_hash=? AND finalized_at IS NOT NULL').get(manifest.normalizedDataVersion);
+    if (raw.expected_session!==manifest.marketSession) throw new Error('SESSION_MANIFEST_RAW_SESSION_MISMATCH');
+    const norm=this.db.prepare('SELECT data_snapshot_id,market_session,source_manifest_hash,ingestion_mode,content_hash,finalized_at FROM data_snapshots WHERE content_hash=? AND finalized_at IS NOT NULL').get(manifest.normalizedDataVersion);
     if (!norm) throw new Error('SESSION_MANIFEST_NORMALIZED_VERSION_NOT_FOUND');
     if (norm.market_session !== manifest.marketSession) throw new Error('SESSION_MANIFEST_MARKET_SESSION_MISMATCH');
+    if (norm.source_manifest_hash !== manifest.sourceManifest) throw new Error('SESSION_MANIFEST_SOURCE_SNAPSHOT_MISMATCH');
+    if (norm.ingestion_mode !== manifest.authorityMode) throw new Error(`SESSION_MANIFEST_AUTHORITY_MODE_MISMATCH:${manifest.authorityMode}:${norm.ingestion_mode}`);
+    if (manifest.authorityMode==='CERTIFIED_PRODUCTION') {
+      const sourceManifest=JSON.parse(sm.payload_json);
+      if(!validCertifiedSourceManifest(sourceManifest)) throw new Error('SESSION_MANIFEST_PRODUCTION_SOURCE_NOT_CERTIFIED');
+      if(sourceManifest.session!==manifest.marketSession) throw new Error('SESSION_MANIFEST_PRODUCTION_SOURCE_SESSION_MISMATCH');
+      const current=this.db.prepare(`SELECT n.ticker,n.session,n.open,n.high,n.low,n.close,n.volume,n.source_manifest_hash,n.certified_reconciliation_manifest_hash,n.primary_observation_certificate_hash,
+          c.source_manifest_hash AS reconciliation_source_manifest_hash,c.ticker AS reconciliation_ticker,c.session AS reconciliation_session,c.primary_observation_certificate_hash AS reconciliation_primary_certificate_hash,c.payload_json AS reconciliation_payload_json
+        FROM normalized_bars n LEFT JOIN certified_reconciliations c ON c.reconciliation_manifest_hash=n.certified_reconciliation_manifest_hash
+        WHERE n.data_snapshot_id=? AND n.session=? ORDER BY n.ticker`).all(norm.data_snapshot_id,manifest.marketSession);
+      if(!current.length) throw new Error('SESSION_MANIFEST_PRODUCTION_CURRENT_BARS_MISSING');
+      for(const row of current){
+        if(!HEX64.test(String(row.certified_reconciliation_manifest_hash??''))||!HEX64.test(String(row.primary_observation_certificate_hash??''))) throw new Error(`SESSION_MANIFEST_UNCERTIFIED_CURRENT_BAR:${row.ticker}`);
+        if(row.source_manifest_hash!==manifest.sourceManifest||row.reconciliation_source_manifest_hash!==manifest.sourceManifest) throw new Error(`SESSION_MANIFEST_CURRENT_BAR_SOURCE_MISMATCH:${row.ticker}`);
+        if(row.reconciliation_ticker!==row.ticker||row.reconciliation_session!==row.session) throw new Error(`SESSION_MANIFEST_RECONCILIATION_IDENTITY_MISMATCH:${row.ticker}`);
+        if(row.reconciliation_primary_certificate_hash!==row.primary_observation_certificate_hash) throw new Error(`SESSION_MANIFEST_PRIMARY_CERTIFICATE_MISMATCH:${row.ticker}`);
+        if(!row.reconciliation_payload_json) throw new Error(`SESSION_MANIFEST_RECONCILIATION_MISSING:${row.ticker}`);
+        const reconciliation=JSON.parse(row.reconciliation_payload_json);
+        if(!validCertifiedSourceManifest(reconciliation)||reconciliation.manifestHash!==row.certified_reconciliation_manifest_hash) throw new Error(`SESSION_MANIFEST_RECONCILIATION_INVALID:${row.ticker}`);
+        const barHash=sha256({ticker:row.ticker,session:row.session,open:row.open,high:row.high,low:row.low,close:row.close,volume:row.volume});
+        if(reconciliation.authoritativeBarHash!==barHash) throw new Error(`SESSION_MANIFEST_CURRENT_BAR_HASH_MISMATCH:${row.ticker}`);
+        if(reconciliation.primaryObservationCertificateHash!==row.primary_observation_certificate_hash) throw new Error(`SESSION_MANIFEST_CURRENT_BAR_CERTIFICATE_MISMATCH:${row.ticker}`);
+      }
+    }
     this.db.prepare(`INSERT OR IGNORE INTO session_manifests
       (snapshot_hash,market_session,engine_version,config_version,commit_hash,generated_at,payload_json)
       VALUES (?,?,?,?,?,?,?)`)
