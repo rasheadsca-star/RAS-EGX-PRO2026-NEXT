@@ -19,7 +19,9 @@ on:
       - 'tests/research-feature-engine.test.mjs'
       - 'tests/research-ui-summary.test.mjs'
       - 'package.json'
+      - 'index.html'
       - '.github/workflows/egx-one-research-refresh.yml'
+      - '.github/workflows/egx-one-production-ui-deploy.yml'
   schedule:
     - cron: '15 14 * * 0-4'
 
@@ -33,7 +35,11 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
+    env:
+      VERCEL_PROJECT_ID: prj_R9NlULz7vTKPEWeoVB9vnRaanqFo
+      VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -155,13 +161,15 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/research/live data/research/features data/research/ui
-          if git diff --cached --quiet; then echo 'No research snapshot change.'; exit 0; fi
-          git commit -m "Refresh EGX ONE research market feature and UI snapshots"
-          for attempt in 1 2 3; do
-            if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
-            [ "$attempt" = 3 ] && exit 1
-            sleep $((attempt*5))
-          done
+          if git diff --cached --quiet; then echo 'No research snapshot change.'; else
+            git commit -m "Refresh EGX ONE research market feature and UI snapshots"
+            for attempt in 1 2 3; do
+              if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then break; fi
+              [ "$attempt" = 3 ] && exit 1
+              sleep $((attempt*5))
+            done
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: egx-one-research-market-features-ui
@@ -170,3 +178,70 @@ jobs:
             data/research/features/latest.json
             data/research/ui/latest.json
           if-no-files-found: error
+
+      - name: Prepare minimal Vercel bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/egx-one-live
+          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/.vercel
+          cp index.html /tmp/egx-one-live/index.html
+          cp data/research/ui/latest.json /tmp/egx-one-live/data/research/ui/latest.json
+          printf '%s\n' '{"cleanUrls":true,"trailingSlash":false}' > /tmp/egx-one-live/vercel.json
+          printf '%s\n' '{"projectId":"'"$VERCEL_PROJECT_ID"'","orgId":"'"$VERCEL_ORG_ID"'"}' > /tmp/egx-one-live/.vercel/project.json
+
+      - name: Check Vercel deploy credential
+        id: deploy_auth
+        shell: bash
+        run: |
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'DEPLOYMENT_BLOCKED:VERCEL_TOKEN_MISSING'
+          else
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+            echo 'VERCEL_DEPLOY_CREDENTIAL:AVAILABLE'
+          fi
+
+      - name: Install pinned Vercel CLI
+        if: steps.deploy_auth.outputs.available == 'true'
+        run: npm install --global vercel@59.10.0
+
+      - name: Deploy Research UI to existing production project
+        if: steps.deploy_auth.outputs.available == 'true'
+        id: production_deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN" --cwd /tmp/egx-one-live | tail -n 1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "PRODUCTION_DEPLOYMENT_URL:$url"
+
+      - name: Verify deployed Research authority boundary
+        if: steps.deploy_auth.outputs.available == 'true'
+        env:
+          URL: ${{ steps.production_deploy.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          html="$(curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/")"
+          printf '%s' "$html" | grep -q 'Research Analytics'
+          printf '%s' "$html" | grep -q 'PRODUCTION LOCKED'
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/ui/latest.json" > /tmp/deployed-ui.json
+          node - <<'NODE'
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/deployed-ui.json','utf8'));
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notARecommendation!==true)throw new Error('DEPLOYED_UI_AUTHORITY_BOUNDARY_FAILED');
+          if(x.authority?.researchStrategy!==false||x.authority?.productionPhase4!==false||x.authority?.automaticOrders!==false)throw new Error('DEPLOYED_UI_PREMATURE_AUTHORITY');
+          console.log(`DEPLOYED_RESEARCH_UI_VERIFIED:${x.session}:${x.uiSnapshotHash}`);
+          NODE
+
+      - name: Report deploy state
+        shell: bash
+        env:
+          AUTH: ${{ steps.deploy_auth.outputs.available }}
+          URL: ${{ steps.production_deploy.outputs.url }}
+        run: |
+          if [ "$AUTH" = 'true' ]; then
+            echo "DEPLOY_STATE:VERIFIED:${URL}"
+          else
+            echo 'DEPLOY_STATE:BLOCKED:VERCEL_TOKEN_MISSING'
+          fi
