@@ -1,0 +1,11 @@
+import test from'node:test';import assert from'node:assert/strict';import{evaluatePhase3Gate}from'../src/phase3-gate.js';
+const universe={state:'READY',asOfDate:'2026-08-31',total:2,rows:[{ticker:'ABUK'},{ticker:'COMI'}]};
+const registry={total:2,counts:{READY:2},rows:[{ticker:'ABUK',readiness:'READY'},{ticker:'COMI',readiness:'READY'}]};
+const sessionAuthority={state:'READY',currentSession:'2026-08-31'};
+const plans=[{ticker:'ABUK',state:'READY'},{ticker:'COMI',state:'READY'}];
+test('phase 3 passes only when universe session registry readiness and acquisition all agree',()=>{const r=evaluatePhase3Gate({universe,registry,sessionAuthority,acquisitionPlans:plans});assert.equal(r.verdict,'PASS');assert.equal(r.baselineAuthorized,true)});
+test('universe incompleteness prevents baseline',()=>assert.equal(evaluatePhase3Gate({universe:{...universe,state:'UNIVERSE_INCOMPLETE'},registry,sessionAuthority,acquisitionPlans:plans}).baselineAuthorized,false));
+test('stale or conflict state blocks phase 3',()=>{const r=evaluatePhase3Gate({universe,registry:{...registry,counts:{READY:1,STALE:1},rows:[registry.rows[0],{ticker:'COMI',readiness:'STALE'}]},sessionAuthority,acquisitionPlans:plans});assert.equal(r.verdict,'FAIL');assert.ok(r.blockers.includes('COMI:STALE'))});
+test('explicit illiquidity is a warning not a data-integrity blocker',()=>{const r=evaluatePhase3Gate({universe,registry:{...registry,counts:{READY:1,ILLIQUID:1},rows:[registry.rows[0],{ticker:'COMI',readiness:'ILLIQUID'}]},sessionAuthority,acquisitionPlans:plans});assert.equal(r.verdict,'PASS');assert.ok(r.warnings.includes('COMI:ILLIQUID'))});
+test('missing authoritative acquisition plan blocks otherwise ready symbol',()=>{const r=evaluatePhase3Gate({universe,registry,sessionAuthority,acquisitionPlans:[plans[0]]});assert.equal(r.verdict,'FAIL');assert.ok(r.blockers.includes('COMI:ACQUISITION_PLAN:MISSING'))});
+test('session mismatch blocks phase 3',()=>assert.equal(evaluatePhase3Gate({universe,registry,sessionAuthority:{state:'READY',currentSession:'2026-08-30'},acquisitionPlans:plans}).verdict,'FAIL'));
