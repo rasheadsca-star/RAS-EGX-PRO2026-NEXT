@@ -1,0 +1,3 @@
+import { validateBars } from './readiness.js';
+import { sha256 } from './hash.js';
+export function buildUniverseRegistry(symbols,context={}){const rows=symbols.map(s=>{const readiness=validateBars(s.bars,{...context,conflict:s.conflict,suspended:s.suspended,corporateActionReview:s.corporateActionReview});return Object.freeze({ticker:s.ticker,companyName:s.companyName??null,readiness:readiness.state,reasons:readiness.reasons,lastSession:s.bars?.at(-1)?.session??null,historyCount:s.bars?.length??0,sourceStatus:s.sourceStatus??'UNKNOWN'})}).sort((a,b)=>a.ticker.localeCompare(b.ticker));const counts=rows.reduce((a,r)=>(a[r.readiness]=(a[r.readiness]||0)+1,a),{});return Object.freeze({version:sha256(rows),total:rows.length,counts,rows})}

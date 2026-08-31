@@ -1,60 +1,16 @@
-# EGX Full CI/CD Production System
+# EGX ONE
+Unified Production-Grade Egyptian Exchange Decision Engine — clean-room foundation.
 
-Live-ready Egyptian market trading-intelligence dashboard.
+Current milestone: Phase 0/1 foundation. This branch is intentionally isolated from all legacy runtime code. Legacy engines are forensic/research inputs only.
 
-## What this is
-- Node.js + Express backend
-- Socket.IO real-time stream
-- Browser dashboard
-- AI-style signals: BUY / HOLD / REDUCE
-- Portfolio allocation simulation
-- Render deployment ready
-- GitHub Actions CI ready
+## Non-negotiable invariants
+- One market data truth and one immutable session snapshot per scan.
+- Data Readiness blocks all features/ranking/recommendations.
+- Missing data is UNKNOWN, never fabricated zero.
+- Deterministic output for identical data/config/code.
+- No forced Top 5 and NO_TRADE is valid.
+- No auto-trading.
+- Forward evidence starts only after freeze and is append-only.
 
-## What this is not
-This is not a licensed broker, not a trading execution system, and not financial advice.
-It uses simulated/live-ready data until you connect a licensed market data or broker API.
-
-## Run locally
-
-```bash
-npm install
-npm start
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
-## Deploy on Render
-
-Use:
-
-```text
-Build Command: npm install
-Start Command: npm start
-Health Check Path: /health
-```
-
-Or deploy using `render.yaml`.
-
-## GitHub CI/CD
-
-The package includes:
-
-```text
-.github/workflows/ci.yml
-.github/workflows/release-source.yml
-```
-
-Push to `main` to validate the project.
-Create a tag like `v1.0.0` to generate a GitHub Release source zip.
-
-## Recommended next live-data upgrade
-
-Replace `produceSnapshot()` in `server/index.js` with:
-- licensed EGX data provider
-- broker API
-- Mubasher-compatible lawful API/feed
+## Run
+`npm test`
