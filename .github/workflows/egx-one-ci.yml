@@ -5,10 +5,18 @@ on:
   pull_request:
     branches: ['main']
 jobs:
-  test:
+  test-and-forensic-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with: {node-version: 20}
       - run: npm test
+      - name: Full-universe legacy forensic audit
+        run: npm run audit:legacy
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-phase0-data-audit
+          path: artifacts/*
