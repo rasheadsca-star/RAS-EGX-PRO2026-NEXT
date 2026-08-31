@@ -12,6 +12,13 @@ function scanForbidden(value,path='root'){
     scanForbidden(item,`${path}.${key}`);
   }
 }
+function cleanDisplayName(value){
+  const text=String(value??'').replace(/\s+/g,' ').trim();
+  if(!text||text.length<2||text.length>180)return null;
+  if(/(?:AdSlot|End AdSlot|-->|<!--|###\s*Size|\[\[?\d{2,3},|^['"`\s]*\d{1,3},\d{1,3}\]|\]\]\s*End)/i.test(text))return null;
+  if(/[<>]{1,}/.test(text))return null;
+  return text;
+}
 
 export function buildResearchUiSummary(featureSnapshot,liveSnapshot){
   if(featureSnapshot?.authorityMode!=='RESEARCH'||featureSnapshot?.researchOnly!==true||featureSnapshot?.productionAuthority!==false)throw new Error('RESEARCH_UI_FEATURE_AUTHORITY_INVALID');
@@ -23,10 +30,13 @@ export function buildResearchUiSummary(featureSnapshot,liveSnapshot){
     const technical=groupPayload(record,'TECHNICAL');
     const liquidity=groupPayload(record,'LIQUIDITY');
     const corporate=groupPayload(record,'CORPORATE_ACTIONS');
+    const companyNameAr=cleanDisplayName(record.companyNameAr);
+    const companyNameEn=cleanDisplayName(record.companyNameEn);
     return {
       ticker:String(record.ticker??'').toUpperCase(),
-      companyNameAr:record.companyNameAr??null,
-      companyNameEn:record.companyNameEn??null,
+      displayName:companyNameAr??companyNameEn??null,
+      companyNameAr,
+      companyNameEn,
       state:record.state??'SOURCE_UNAVAILABLE',
       featureReady:record.featureReady===true,
       metrics:record.featureReady===true?{
@@ -51,7 +61,7 @@ export function buildResearchUiSummary(featureSnapshot,liveSnapshot){
 
   const boards=featureSnapshot.descriptiveLeaderboards??{};
   const summary={
-    schemaVersion:'egx-one-research-ui-summary-1',
+    schemaVersion:'egx-one-research-ui-summary-2',
     authorityMode:'RESEARCH',
     researchOnly:true,
     productionAuthority:false,
