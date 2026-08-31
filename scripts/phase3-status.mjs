@@ -1,0 +1,9 @@
+import fs from'node:fs';import path from'node:path';import{adaptEgxNewsRecord}from'../src/egx-official-adapter.js';import{buildAuthoritativeUniverse}from'../src/universe-authority.js';import{evaluatePhase3Gate}from'../src/phase3-gate.js';import{sha256}from'../src/hash.js';
+const root=process.cwd();const fixture=JSON.parse(fs.readFileSync(path.join(root,'evidence/official/egx-beta-identity-sample-2026-08-31.json'),'utf8'));
+const adapted=fixture.records.map(r=>adaptEgxNewsRecord(r,{sourceId:fixture.source.id}));
+const identityEvidence=adapted.filter(x=>x.state==='READY').map(x=>x.evidence);
+const ignored=adapted.filter(x=>x.state==='IGNORED_NON_EQUITY').length;
+const universe=buildAuthoritativeUniverse(identityEvidence,{asOfDate:fixture.asOfDate,requireSnapshot:true});
+const gate=evaluatePhase3Gate({universe,registry:null,sessionAuthority:null,acquisitionPlans:[]});
+const report={schemaVersion:'egx-one-phase3-status-1',generatedFrom:'reproducible_checked_in_official_identity_sample',asOfDate:fixture.asOfDate,officialEvidence:{source:fixture.source,identityEquities:identityEvidence.length,ignoredNonEquity:ignored,exhaustive:fixture.exhaustive,evidenceHash:sha256(fixture)},universe:{state:universe.state,reasons:universe.reasons,total:universe.total},phase3:{verdict:gate.verdict,baselineAuthorized:gate.baselineAuthorized,blockers:gate.blockers},interpretation:'Architecture is test-passing, but Phase 3 remains FAIL until an exhaustive official EGX universe snapshot and authoritative current-session acquisition are available. Identity/disclosure evidence is intentionally insufficient.'};
+fs.mkdirSync(path.join(root,'artifacts'),{recursive:true});fs.writeFileSync(path.join(root,'artifacts/phase3-current-status.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));

@@ -1,13 +1,30 @@
-CURRENT PHASE: Phase 1/2/3 data foundation; Baseline Engine is deliberately blocked.
+# EGX ONE — Current Status
 
-BUILDER STATUS: Clean-room branch established. Contracts, Session Manifest, Session Authority, deterministic Universe Registry, fail-closed Data Readiness, source reconciliation, corporate-action review, point-in-time fundamentals, Acquisition/Raw/Normalized immutable lineage, complete Recommendation Contract, append-only Recommendation Ledger, append-only Evidence Store, Authoritative Universe Contract, and current-session Acquisition Policy are implemented.
+## CURRENT PHASE
+**Phase 1/2/3 — Data Foundation.** Baseline Engine remains deliberately unauthorized until the Phase 3 hard gate returns `PASS` on real production evidence.
 
-DESTRUCTIVE REVIEW STATUS: Legacy data foundation rejected. The CI failure on commit bcea05ce was traced to an invalid test fixture (close above high), not a reconciliation-engine taxonomy defect; the fixture is repaired so `DATA_CONFLICT` is tested with valid OHLC. Universe authority now distinguishes identity evidence from exhaustive inclusion evidence and blocks ticker/ISIN conflicts, declared-total mismatch, future-effective listings, and public-only current-session sourcing.
+## BUILDER STATUS
+Clean-room branch is active. Implemented controls include immutable acquisition/raw/normalized/session lineage, Session Authority, deterministic Universe Registry, Authoritative Universe Contract, current-session Acquisition Policy, source reconciliation, corporate-action review, point-in-time fundamentals, complete Recommendation Contract, append-only Recommendation Ledger, append-only Evidence Store, and Phase 3 Baseline Authorization Gate.
 
-TEST STATUS: Local suite expanded to 37/37 PASS. Remote CI for bcea05ce failed 25/26 because of the invalid fixture; a corrected commit has been pushed and requires CI confirmation together with this increment.
+An official-EGX adapter now distinguishes equity (`EGS...`) from debt (`EGB...`), accepts disclosure/listing news as identity/effective-date evidence only, and requires an explicitly exhaustive official listed-securities snapshot or daily bulletin before universe completeness can become `READY`.
 
-EVIDENCE CREATED: Phase-0 GitHub Actions artifact from run 33405582865, artifact 9763008313; legacy audit outcome READY=0/242, BLOCKED=242 with explicit classifications. Official EGX public web evidence confirms current listing/disclosure identifiers use Reuters codes and ISINs and that listing status can change intramonth (for example FCMI transitioned to the Main Market effective 25-Aug-2026), which is why universe membership is effective-dated.
+## DESTRUCTIVE REVIEW STATUS
+Legacy data remains rejected as production truth. The frozen legacy audit still reports `READY=0/242`. The earlier remote-CI reconciliation failure was traced to an invalid test fixture (`close > high`), not to a reconciliation taxonomy defect; it was repaired and remote CI subsequently passed.
 
-BLOCKERS: acquiring an exhaustive machine-readable official EGX listed-securities snapshot/daily bulletin for the current session; fresh current OHLCV from an authoritative primary plus independent cross-check; corporate-action provenance; 42 legacy source-history failures; production-persistent EGX-specific database binding. Existing unrelated Supabase projects remain untouched.
+## TEST STATUS
+- Remote CI run `33408678468`: **SUCCESS**, 43/43 tests on commit `0f43a98aa855cff1bf46df63ab5414d73ebec8e0`.
+- Current local clean-room suite after official-EGX adapter: **48/48 PASS**.
+- The Phase 3 status script is a separate operational verdict and is intentionally allowed to report `FAIL` without making code CI fail; CI success means the controls work, not that market data is production-ready.
 
-NEXT EXECUTABLE STEP: pass CI with the repaired reconciliation fixture and new universe/acquisition contracts; then implement the official EGX adapter against a reproducible listed-securities snapshot or daily bulletin and rerun Full-Universe Data Readiness. Do not start baseline until Phase 3 passes.
+## CURRENT PHASE 3 VERDICT
+**FAIL — baselineAuthorized=false.** Reproducible checked-in official identity evidence from the EGX site yields `UNIVERSE_INCOMPLETE` with reason `NO_EXHAUSTIVE_OFFICIAL_SNAPSHOT`. No stale or legacy fallback is allowed.
+
+## BLOCKERS
+1. Reproducible exhaustive official EGX listed-equities snapshot or daily bulletin for the target session.
+2. Authoritative current-session OHLCV primary source plus independent cross-check.
+3. Full current Universe Registry/Data Readiness run on that evidence.
+4. Corporate-action provenance for suspicious discontinuities.
+5. Production-persistent EGX-specific database binding; unrelated Supabase projects remain untouched.
+
+## NEXT EXECUTABLE STEP
+Locate/ingest the exhaustive official EGX securities snapshot/bulletin through the official adapter, freeze its source hash and universe version, then run acquisition + reconciliation + Full-Universe Data Readiness. **Do not start Baseline until Phase 3 passes.**

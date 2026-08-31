@@ -15,10 +15,13 @@ jobs:
         run: git fetch --no-tags --depth=1 origin 35dd08a6c2e4e3f9565161bbf4d8560b8748d7b7
       - uses: actions/setup-node@v4
         with: {node-version: 24}
-      - run: npm test
+      - name: Clean-room contract tests
+        run: npm test
+      - name: Current Phase 3 operational verdict
+        run: npm run status:phase3
       - name: Full-universe legacy forensic audit
         run: npm run audit:legacy
       - uses: actions/upload-artifact@v4
         with:
-          name: egx-one-phase0-data-audit
+          name: egx-one-forensic-and-phase3-evidence
           path: artifacts/*
