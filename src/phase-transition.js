@@ -1,19 +1,12 @@
 import { sha256 } from './hash.js';
+import { validateRegistrySnapshot } from './registry-manifest.js';
 const HEX64=/^[0-9a-f]{64}$/i;
 export const PHASES=Object.freeze({DATA:'PHASE_3_DATA_READINESS',BASELINE:'PHASE_4_BASELINE'});
 
 export function fullUniverseReportHash(report){
   if(!report||typeof report!=='object') return null;
   const observationCertificateHashes=[...(report.observationCertificateHashes??[])].sort();
-  return sha256({
-    session:report.session,
-    calendarVersion:report.calendarVersion,
-    universeVersion:report.universeVersion,
-    registryVersion:report.registryVersion,
-    phase3:report.phase3,
-    coverage:report.coverage,
-    observationCertificateHashes
-  });
+  return sha256({session:report.session,calendarVersion:report.calendarVersion,universeVersion:report.universeVersion,registryVersion:report.registryVersion,phase3:report.phase3,coverage:report.coverage,observationCertificateHashes});
 }
 
 export function verifyFullUniverseReport(fullUniverseReport){
@@ -25,6 +18,9 @@ export function verifyFullUniverseReport(fullUniverseReport){
   if(fullUniverseReport.phase3?.baselineAuthorized!==true) reasons.push('PHASE3_BASELINE_NOT_AUTHORIZED');
   for(const key of ['session','calendarVersion','universeVersion','registryVersion']) if(!fullUniverseReport[key]) reasons.push(`FULL_UNIVERSE_REPORT_MISSING:${key}`);
   if(!fullUniverseReport.coverage||typeof fullUniverseReport.coverage!=='object') reasons.push('FULL_UNIVERSE_REPORT_COVERAGE_MISSING');
+  const registryValidation=validateRegistrySnapshot(fullUniverseReport.registry);
+  if(!registryValidation.valid) reasons.push(...registryValidation.reasons.map(x=>`FULL_UNIVERSE_REPORT_${x}`));
+  else if(fullUniverseReport.registry.version!==fullUniverseReport.registryVersion) reasons.push('FULL_UNIVERSE_REPORT_REGISTRY_VERSION_MISMATCH');
   const observationCertificateHashes=fullUniverseReport.observationCertificateHashes??[];
   if(!Array.isArray(observationCertificateHashes)) reasons.push('INVALID_OBSERVATION_CERTIFICATE_HASHES');
   else for(const hash of observationCertificateHashes) if(!HEX64.test(String(hash??''))) reasons.push('INVALID_OBSERVATION_CERTIFICATE_HASH');
@@ -47,8 +43,7 @@ export function assertBaselineAuthorization(authorization,fullUniverseReport){
   if(!verification.valid) throw new Error(`BASELINE_SOURCE_REPORT_INVALID:${verification.reasons.join('|')}`);
   if(authorization.targetPhase!==PHASES.BASELINE||authorization.sourcePhase!==PHASES.DATA) throw new Error('BASELINE_AUTHORIZATION_PHASE_MISMATCH');
   if(authorization.sourceReportHash!==fullUniverseReport.reportHash) throw new Error('BASELINE_AUTHORIZATION_REPORT_MISMATCH');
-  for(const [key,reportKey] of [['session','session'],['calendarVersion','calendarVersion'],['universeVersion','universeVersion'],['registryVersion','registryVersion']])
-    if(authorization[key]!==fullUniverseReport[reportKey]) throw new Error(`BASELINE_AUTHORIZATION_${key.toUpperCase()}_MISMATCH`);
+  for(const key of ['session','calendarVersion','universeVersion','registryVersion']) if(authorization[key]!==fullUniverseReport[key]) throw new Error(`BASELINE_AUTHORIZATION_${key.toUpperCase()}_MISMATCH`);
   const payload={schemaVersion:authorization.schemaVersion,sourcePhase:authorization.sourcePhase,targetPhase:authorization.targetPhase,sourceReportHash:authorization.sourceReportHash,session:authorization.session,calendarVersion:authorization.calendarVersion,universeVersion:authorization.universeVersion,registryVersion:authorization.registryVersion};
   if(authorization.authorizationToken!==sha256(payload)) throw new Error('BASELINE_AUTHORIZATION_TAMPERED');
   return true;
