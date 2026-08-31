@@ -10,13 +10,16 @@ on:
       - 'src/research-legacy-market-import.js'
       - 'src/research-current-session.js'
       - 'src/research-feature-engine.js'
+      - 'src/research-strategy-engine.js'
       - 'src/research-ui-summary.js'
       - 'scripts/research-refresh-live.mjs'
       - 'scripts/research-build-features.mjs'
+      - 'scripts/research-build-strategy.mjs'
       - 'scripts/research-build-ui-summary.mjs'
       - 'tests/research-live-adapters.test.mjs'
       - 'tests/research-current-session.test.mjs'
       - 'tests/research-feature-engine.test.mjs'
+      - 'tests/research-strategy-engine.test.mjs'
       - 'tests/research-ui-summary.test.mjs'
       - 'package.json'
       - 'index.html'
@@ -35,7 +38,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
       VERCEL_PROJECT_ID: prj_R9NlULz7vTKPEWeoVB9vnRaanqFo
       VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
@@ -101,8 +104,7 @@ jobs:
           LEGACY_SHA: ${{ steps.legacy_market.outputs.sha }}
         run: |
           node - <<'NODE'
-          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/live/latest.json','utf8'));
-          const fail=m=>{throw new Error(m)};
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/live/latest.json','utf8'));const fail=m=>{throw new Error(m)};
           if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false)fail('RESEARCH_LIVE_AUTHORITY_BOUNDARY_FAILED');
           if(x.expectedSession!==process.env.EXPECTED||x.targetSession!==process.env.EXPECTED)fail('EXPECTED_SESSION_BINDING_FAILED');
           if(x.legacyMarketManifest?.legacyCommit!==process.env.LEGACY_SHA)fail('LEGACY_MARKET_COMMIT_BINDING_FAILED');
@@ -119,50 +121,70 @@ jobs:
           RESEARCH_LEADERBOARD_LIMIT: 10
         run: npm run research:features
 
-      - name: Enforce feature and strategy boundary
+      - name: Enforce feature boundary before strategy
         env:
           EXPECTED: ${{ steps.expected.outputs.session }}
         run: |
           node - <<'NODE'
-          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/features/latest.json','utf8'));
-          const fail=m=>{throw new Error(m)};
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/features/latest.json','utf8'));const fail=m=>{throw new Error(m)};
           if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false)fail('RESEARCH_FEATURE_AUTHORITY_BOUNDARY_FAILED');
           if(x.signalSession!==process.env.EXPECTED)fail('FEATURE_SESSION_BINDING_FAILED');
-          if(x.phaseBoundary?.researchStrategyAuthorized!==false||x.phaseBoundary?.productionPhase4Authorized!==false||x.phaseBoundary?.recommendationAuthorized!==false)fail('PREMATURE_STRATEGY_AUTHORIZATION');
-          if(x.descriptiveLeaderboards?.combinedOpportunityScore!==null)fail('COMBINED_OPPORTUNITY_SCORE_FORBIDDEN');
+          if(x.phaseBoundary?.productionPhase4Authorized!==false||x.phaseBoundary?.recommendationAuthorized!==false)fail('PREMATURE_PRODUCTION_AUTHORIZATION');
+          if(x.descriptiveLeaderboards?.combinedOpportunityScore!==null)fail('COMBINED_OPPORTUNITY_SCORE_FORBIDDEN_AT_FEATURE_LAYER');
           if(x.featureReadiness==='PASS'&&x.counts.featureCoveragePct<70)fail('FALSE_FEATURE_READINESS_PASS');
           if(!x.snapshotHash||!x.parentResearchSnapshotHash)fail('FEATURE_LINEAGE_HASH_MISSING');
-          console.log(`RESEARCH_FEATURE_STATUS:${JSON.stringify({readiness:x.featureReadiness,reasons:x.featureReadinessReasons,counts:x.counts,snapshotHash:x.snapshotHash,phaseBoundary:x.phaseBoundary,leaderboards:x.descriptiveLeaderboards})}`);
+          console.log(`RESEARCH_FEATURE_STATUS:${JSON.stringify({readiness:x.featureReadiness,reasons:x.featureReadinessReasons,counts:x.counts,snapshotHash:x.snapshotHash})}`);
           NODE
 
-      - name: Build research UI summary
-        run: npm run research:ui
+      - name: Build training-selected out-of-sample research strategy
+        env:
+          RESEARCH_STRATEGY_COST_BPS: 25
+          RESEARCH_OOS_MIN_TRIGGERED: 30
+          RESEARCH_OOS_MIN_T1_HIT_RATE: 45
+          RESEARCH_OOS_MIN_EXPECTANCY_R: 0.15
+          RESEARCH_OOS_MIN_PROFIT_FACTOR: 1.2
+          RESEARCH_RECOMMENDATION_LIMIT: 12
+        run: npm run research:strategy
 
-      - name: Enforce research UI boundary
+      - name: Enforce out-of-sample strategy gate
         env:
           EXPECTED: ${{ steps.expected.outputs.session }}
         run: |
           node - <<'NODE'
-          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/ui/latest.json','utf8'));
-          const fail=m=>{throw new Error(m)};
-          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notARecommendation!==true)fail('RESEARCH_UI_AUTHORITY_BOUNDARY_FAILED');
-          if(x.session!==process.env.EXPECTED)fail('RESEARCH_UI_SESSION_BINDING_FAILED');
-          if(x.authority?.researchStrategy!==false||x.authority?.productionPhase4!==false||x.authority?.automaticOrders!==false)fail('RESEARCH_UI_PREMATURE_AUTHORITY');
-          const forbidden=['decision','decisionCode','entry','entryLow','entryHigh','entryExpiry','stop','target','target1','target2','grossRiskReward','netRiskReward','opportunityScore','combinedOpportunityScore'];
-          const text=JSON.stringify(x);for(const key of forbidden){if(new RegExp(`"${key}"\\s*:`).test(text))fail(`RESEARCH_UI_FORBIDDEN_FIELD:${key}`)}
-          if(!x.uiSnapshotHash)fail('RESEARCH_UI_HASH_MISSING');
-          console.log(`RESEARCH_UI_STATUS:${JSON.stringify({session:x.session,counts:x.counts,authority:x.authority,uiSnapshotHash:x.uiSnapshotHash})}`);
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/strategy/latest.json','utf8'));const fail=m=>{throw new Error(m)};
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notProductionRecommendation!==true||x.automaticOrders!==false)fail('RESEARCH_STRATEGY_AUTHORITY_BOUNDARY_FAILED');
+          if(x.signalSession!==process.env.EXPECTED)fail('RESEARCH_STRATEGY_SESSION_BINDING_FAILED');
+          if(x.authority?.productionPhase4!==false||x.authority?.productionRecommendations!==false||x.authority?.automaticOrders!==false)fail('RESEARCH_STRATEGY_PREMATURE_PRODUCTION_AUTHORITY');
+          console.log(`RESEARCH_STRATEGY_VALIDATION:${JSON.stringify({selectedPreset:x.validation?.selectedPreset,accepted:x.validation?.accepted,reasons:x.validation?.reasons,training:x.validation?.selectedTraining,outOfSample:x.validation?.selectedOutOfSample,counts:x.counts,strategySnapshotHash:x.strategySnapshotHash})}`);
+          if(x.validation?.accepted!==true)fail(`RESEARCH_STRATEGY_OOS_REJECTED:${(x.validation?.reasons||[]).join(',')}`);
+          if(!Array.isArray(x.recommendations)||x.recommendations.length<1)fail('NO_PUBLISHED_RESEARCH_RECOMMENDATIONS');
+          for(const r of x.recommendations){if(!['BUY_CANDIDATE','WAIT_FOR_ENTRY'].includes(r.decision)||r.executableResearchPlan!==true||!(r.stop<r.entryLow&&r.entryLow<=r.entryHigh&&r.entryHigh<r.target1&&r.target1<r.target2)||r.productionAuthority!==false||r.automaticOrders!==false)fail(`INVALID_RESEARCH_PLAN:${r.ticker}`)}
           NODE
 
-      - name: Commit research market feature and UI snapshots
+      - name: Build non-executable descriptive UI summary
+        run: npm run research:ui
+
+      - name: Enforce descriptive UI boundary
+        env:
+          EXPECTED: ${{ steps.expected.outputs.session }}
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/ui/latest.json','utf8'));const fail=m=>{throw new Error(m)};
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notARecommendation!==true)fail('RESEARCH_UI_AUTHORITY_BOUNDARY_FAILED');
+          if(x.session!==process.env.EXPECTED)fail('RESEARCH_UI_SESSION_BINDING_FAILED');
+          const forbidden=['decision','decisionCode','entry','entryLow','entryHigh','entryExpiry','stop','target','target1','target2','grossRiskReward','netRiskReward','opportunityScore','combinedOpportunityScore'];const text=JSON.stringify(x);for(const key of forbidden){if(new RegExp(`"${key}"\\s*:`).test(text))fail(`RESEARCH_UI_FORBIDDEN_FIELD:${key}`)}
+          if(!x.uiSnapshotHash)fail('RESEARCH_UI_HASH_MISSING');
+          NODE
+
+      - name: Commit research market feature strategy and UI snapshots
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/live data/research/features data/research/ui
+          git add data/research/live data/research/features data/research/strategy data/research/ui
           if git diff --cached --quiet; then echo 'No research snapshot change.'; else
-            git commit -m "Refresh EGX ONE research market feature and UI snapshots"
+            git commit -m "Refresh EGX ONE research market feature strategy and UI snapshots"
             for attempt in 1 2 3; do
               if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then break; fi
               [ "$attempt" = 3 ] && exit 1
@@ -172,10 +194,11 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: egx-one-research-market-features-ui
+          name: egx-one-research-market-strategy-ui
           path: |
             data/research/live/latest.json
             data/research/features/latest.json
+            data/research/strategy/latest.json
             data/research/ui/latest.json
           if-no-files-found: error
 
@@ -184,9 +207,10 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf /tmp/egx-one-live
-          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/.vercel
+          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/data/research/strategy /tmp/egx-one-live/.vercel
           cp index.html /tmp/egx-one-live/index.html
           cp data/research/ui/latest.json /tmp/egx-one-live/data/research/ui/latest.json
+          cp data/research/strategy/latest.json /tmp/egx-one-live/data/research/strategy/latest.json
           printf '%s\n' '{"cleanUrls":true,"trailingSlash":false}' > /tmp/egx-one-live/vercel.json
           printf '%s\n' '{"projectId":"'"$VERCEL_PROJECT_ID"'","orgId":"'"$VERCEL_ORG_ID"'"}' > /tmp/egx-one-live/.vercel/project.json
 
@@ -194,19 +218,13 @@ jobs:
         id: deploy_auth
         shell: bash
         run: |
-          if [ -z "${VERCEL_TOKEN:-}" ]; then
-            echo 'available=false' >> "$GITHUB_OUTPUT"
-            echo 'DEPLOYMENT_BLOCKED:VERCEL_TOKEN_MISSING'
-          else
-            echo 'available=true' >> "$GITHUB_OUTPUT"
-            echo 'VERCEL_DEPLOY_CREDENTIAL:AVAILABLE'
-          fi
+          if [ -z "${VERCEL_TOKEN:-}" ]; then echo 'available=false' >> "$GITHUB_OUTPUT";echo 'DEPLOYMENT_BLOCKED:VERCEL_TOKEN_MISSING';else echo 'available=true' >> "$GITHUB_OUTPUT";fi
 
       - name: Install pinned Vercel CLI
         if: steps.deploy_auth.outputs.available == 'true'
         run: npm install --global vercel@59.10.0
 
-      - name: Deploy Research UI to existing production project
+      - name: Deploy Research recommendations to existing production project
         if: steps.deploy_auth.outputs.available == 'true'
         id: production_deploy
         shell: bash
@@ -216,22 +234,18 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "PRODUCTION_DEPLOYMENT_URL:$url"
 
-      - name: Verify deployed Research authority boundary
+      - name: Verify deployed research recommendation boundary
         if: steps.deploy_auth.outputs.available == 'true'
         env:
           URL: ${{ steps.production_deploy.outputs.url }}
         shell: bash
         run: |
           set -euo pipefail
-          html="$(curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/")"
-          printf '%s' "$html" | grep -q 'Research Analytics'
-          printf '%s' "$html" | grep -q 'PRODUCTION LOCKED'
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/ui/latest.json" > /tmp/deployed-ui.json
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/strategy/latest.json" > /tmp/deployed-strategy.json
           node - <<'NODE'
-          const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/deployed-ui.json','utf8'));
-          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notARecommendation!==true)throw new Error('DEPLOYED_UI_AUTHORITY_BOUNDARY_FAILED');
-          if(x.authority?.researchStrategy!==false||x.authority?.productionPhase4!==false||x.authority?.automaticOrders!==false)throw new Error('DEPLOYED_UI_PREMATURE_AUTHORITY');
-          console.log(`DEPLOYED_RESEARCH_UI_VERIFIED:${x.session}:${x.uiSnapshotHash}`);
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/deployed-strategy.json','utf8'));
+          if(x.authorityMode!=='RESEARCH'||x.productionAuthority!==false||x.automaticOrders!==false||x.validation?.accepted!==true||!x.recommendations?.length)throw new Error('DEPLOYED_RESEARCH_RECOMMENDATION_BOUNDARY_FAILED');
+          console.log(`DEPLOYED_RESEARCH_STRATEGY_VERIFIED:${x.signalSession}:${x.strategySnapshotHash}:${x.recommendations.length}`);
           NODE
 
       - name: Report deploy state
@@ -240,8 +254,4 @@ jobs:
           AUTH: ${{ steps.deploy_auth.outputs.available }}
           URL: ${{ steps.production_deploy.outputs.url }}
         run: |
-          if [ "$AUTH" = 'true' ]; then
-            echo "DEPLOY_STATE:VERIFIED:${URL}"
-          else
-            echo 'DEPLOY_STATE:BLOCKED:VERCEL_TOKEN_MISSING'
-          fi
+          if [ "$AUTH" = 'true' ]; then echo "DEPLOY_STATE:VERIFIED:${URL}";else echo 'DEPLOY_STATE:BLOCKED:VERCEL_TOKEN_MISSING';fi
