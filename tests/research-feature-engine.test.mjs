@@ -34,9 +34,15 @@ test('quarantined history sessions are excluded',()=>{
   assert.equal(r.state,'INSUFFICIENT_HISTORY');
 });
 
-test('large unexplained close jump triggers corporate action review',()=>{
+test('large unexplained current close jump triggers corporate action review',()=>{
   const r=buildResearchFeatureRecord({ticker:'TEST',history:makeHistory({n:80}),currentRecord:current(250),signalSession:'2026-08-31',decisionCutoff:'2026-08-31T20:00:00Z'});
   assert.equal(r.featureReady,false);assert.equal(r.state,'CORPORATE_ACTION_REVIEW');
+});
+
+test('historical discontinuity inside feature lookback triggers corporate action review',()=>{
+  const h=makeHistory({n:80});const i=55;const base=h.sessions[i].close;h.sessions[i]={...h.sessions[i],open:base*4.9,high:base*5.1,low:base*4.8,close:base*5};
+  const r=buildResearchFeatureRecord({ticker:'TEST',history:h,currentRecord:current(),signalSession:'2026-08-31',decisionCutoff:'2026-08-31T20:00:00Z'});
+  assert.equal(r.featureReady,false);assert.equal(r.state,'CORPORATE_ACTION_REVIEW');assert.ok(r.groups.find(g=>g.name==='CORPORATE_ACTIONS').payload.historicalDiscontinuities.length>0);
 });
 
 test('descriptive leaderboards expose no combined opportunity score',()=>{

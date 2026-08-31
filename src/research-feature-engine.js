@@ -3,7 +3,7 @@ import { validateFeatureBundle } from './feature-bundle-gate.js';
 
 const TECHNICAL_VERSION='research-technical-v1';
 const LIQUIDITY_VERSION='research-liquidity-v1';
-const CORPORATE_ACTION_VERSION='research-ca-jump-guard-v1';
+const CORPORATE_ACTION_VERSION='research-ca-jump-guard-v2';
 
 function finite(v){return Number.isFinite(Number(v))?Number(v):null}
 function validBar(b){const o=finite(b?.open),h=finite(b?.high),l=finite(b?.low),c=finite(b?.close),v=finite(b?.volume);return Boolean(b&&/^\d{4}-\d{2}-\d{2}$/.test(String(b.session??''))&&o!==null&&h!==null&&l!==null&&c!==null&&v!==null&&o>0&&h>0&&l>0&&c>0&&v>=0&&h>=Math.max(o,c)&&l<=Math.min(o,c)&&h>=l)}
@@ -15,6 +15,7 @@ function stdev(values){if(values.length<2)return null;const m=avg(values),v=avg(
 function rsi(closes,n=14){if(closes.length<n+1)return null;let g=0,l=0;for(let i=closes.length-n;i<closes.length;i++){const d=closes[i]-closes[i-1];if(d>0)g+=d;else l-=d}g/=n;l/=n;if(l===0)return g===0?50:100;return 100-(100/(1+g/l))}
 function atr(bars,n=14){if(bars.length<n+1)return null;const tr=[];for(let i=bars.length-n;i<bars.length;i++){const b=bars[i],p=bars[i-1];tr.push(Math.max(b.high-b.low,Math.abs(b.high-p.close),Math.abs(b.low-p.close)))}return avg(tr)}
 function pct(a,b){return Number.isFinite(a)&&Number.isFinite(b)&&b!==0?(a/b-1)*100:null}
+function discontinuities(bars,thresholdPct,lookback=60){const scan=bars.slice(-(lookback+1)),out=[];for(let i=1;i<scan.length;i++){const change=pct(scan[i].close,scan[i-1].close);if(Number.isFinite(change)&&Math.abs(change)>thresholdPct)out.push({fromSession:scan[i-1].session,toSession:scan[i].session,fromClose:round(scan[i-1].close),toClose:round(scan[i].close),changePct:round(change)})}return out}
 
 export function buildResearchFeatureRecord({ticker,history,currentRecord,signalSession,decisionCutoff,minPriorSessions=60,corporateActionJumpPct=20.5}={}){
   const id=String(ticker??'').trim().toUpperCase();
@@ -34,14 +35,14 @@ export function buildResearchFeatureRecord({ticker,history,currentRecord,signalS
   const technical={close:round(current.close),sma20:round(sma(closes,20)),sma50:round(sma(closes,50)),rsi14:round(rsi(closes,14)),atr14:round(a14),atrPct:round(a14/current.close*100),momentum20Pct:round(pct(current.close,bars.at(-21)?.close)),momentum60Pct:round(pct(current.close,bars.at(-61)?.close)),closeVsSma20Pct:round(pct(current.close,sma(closes,20))),closeVsSma50Pct:round(pct(current.close,sma(closes,50))),distanceToPrior20dHighPct:round(pct(current.close,priorHigh20)),breakoutAbovePrior20dHigh:Boolean(priorHigh20!==null&&current.close>priorHigh20),realizedVol20Pct:round(stdev(returns20)*Math.sqrt(252)*100)};
   const priorVolumes=prior20.map(b=>b.volume),priorValues=prior20.map(b=>b.close*b.volume),avgVolume20=avg(priorVolumes);
   const liquidity={volume:current.volume,avgVolume20:round(avgVolume20,2),relativeVolume20:round(avgVolume20>0?current.volume/avgVolume20:null),medianTradedValue20:round(median(priorValues),2),avgTradedValue20:round(avg(priorValues),2),currentTradedValue:round(current.close*current.volume,2)};
-  const jumpPct=pct(current.close,prev.close),caReview=Math.abs(jumpPct??0)>corporateActionJumpPct;
-  const corporateActions={previousSession:prev.session,previousClose:round(prev.close),currentClose:round(current.close),closeJumpPct:round(jumpPct),reviewThresholdPct:corporateActionJumpPct,reviewRequired:caReview};
+  const currentJumpPct=pct(current.close,prev.close),historyDiscontinuities=discontinuities(prior,corporateActionJumpPct,60),currentJumpReview=Math.abs(currentJumpPct??0)>corporateActionJumpPct,caReview=currentJumpReview||historyDiscontinuities.length>0;
+  const corporateActions={previousSession:prev.session,previousClose:round(prev.close),currentClose:round(current.close),closeJumpPct:round(currentJumpPct),reviewThresholdPct:corporateActionJumpPct,currentJumpReviewRequired:currentJumpReview,historicalDiscontinuityLookback:60,historicalDiscontinuities:historyDiscontinuities,reviewRequired:caReview};
   const historyVersion=history?.metadata?.datasetHash??history?.provenance?.sourceFileHash??sha256(prior);
   const currentVersion=current.rowHash??sha256(current),availableAt=String(decisionCutoff),sourceVersion=sha256({historyVersion,currentVersion});
   const groups=[
     {name:'TECHNICAL',state:'READY',asOfSession:signalSession,availableAt,sourceVersion,featureVersion:TECHNICAL_VERSION,payloadHash:sha256(technical),payload:technical},
     {name:'LIQUIDITY',state:'READY',asOfSession:signalSession,availableAt,sourceVersion,featureVersion:LIQUIDITY_VERSION,payloadHash:sha256(liquidity),payload:liquidity},
-    {name:'CORPORATE_ACTIONS',state:caReview?'CORPORATE_ACTION_REVIEW':'READY',asOfSession:signalSession,availableAt,sourceVersion:sha256({previousSession:prev.session,currentVersion}),featureVersion:CORPORATE_ACTION_VERSION,payloadHash:sha256(corporateActions),payload:corporateActions}
+    {name:'CORPORATE_ACTIONS',state:caReview?'CORPORATE_ACTION_REVIEW':'READY',asOfSession:signalSession,availableAt,sourceVersion:sha256({previousSession:prev.session,currentVersion,historyDiscontinuities}),featureVersion:CORPORATE_ACTION_VERSION,payloadHash:sha256(corporateActions),payload:corporateActions}
   ];
   const gate=validateFeatureBundle({groups},{signalSession,decisionCutoff});
   const payload={ticker:id,signalSession,priorSessions:prior.length,groups,gate:{state:gate.state,ready:gate.ready,reasons:gate.reasons,manifestHash:gate.manifestHash}};
