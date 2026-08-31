@@ -9,9 +9,13 @@ on:
       - 'src/research-live-adapters.js'
       - 'src/research-legacy-market-import.js'
       - 'src/research-current-session.js'
+      - 'src/research-feature-engine.js'
       - 'scripts/research-refresh-live.mjs'
+      - 'scripts/research-build-features.mjs'
       - 'tests/research-live-adapters.test.mjs'
       - 'tests/research-current-session.test.mjs'
+      - 'tests/research-feature-engine.test.mjs'
+      - 'package.json'
       - '.github/workflows/egx-one-research-refresh.yml'
   schedule:
     - cron: '15 14 * * 0-4'
@@ -98,15 +102,39 @@ jobs:
           console.log(`RESEARCH_LIVE_STATUS:${JSON.stringify({readiness:x.researchDataReadiness,reasons:x.readinessReasons,counts:x.counts,snapshotHash:x.snapshotHash,legacyMarketCommit:x.legacyMarketManifest?.legacyCommit})}`);
           NODE
 
-      - name: Commit research market snapshot
+      - name: Build point-in-time research feature snapshot
+        env:
+          RESEARCH_FEATURE_MIN_PRIOR_SESSIONS: 60
+          RESEARCH_FEATURE_MIN_COVERAGE_PCT: 70
+          RESEARCH_CA_JUMP_REVIEW_PCT: 20.5
+          RESEARCH_LEADERBOARD_LIMIT: 10
+        run: npm run research:features
+
+      - name: Enforce feature and strategy boundary
+        env:
+          EXPECTED: ${{ steps.expected.outputs.session }}
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/features/latest.json','utf8'));
+          const fail=m=>{throw new Error(m)};
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false)fail('RESEARCH_FEATURE_AUTHORITY_BOUNDARY_FAILED');
+          if(x.signalSession!==process.env.EXPECTED)fail('FEATURE_SESSION_BINDING_FAILED');
+          if(x.phaseBoundary?.researchStrategyAuthorized!==false||x.phaseBoundary?.productionPhase4Authorized!==false||x.phaseBoundary?.recommendationAuthorized!==false)fail('PREMATURE_STRATEGY_AUTHORIZATION');
+          if(x.descriptiveLeaderboards?.combinedOpportunityScore!==null)fail('COMBINED_OPPORTUNITY_SCORE_FORBIDDEN');
+          if(x.featureReadiness==='PASS'&&x.counts.featureCoveragePct<70)fail('FALSE_FEATURE_READINESS_PASS');
+          if(!x.snapshotHash||!x.parentResearchSnapshotHash)fail('FEATURE_LINEAGE_HASH_MISSING');
+          console.log(`RESEARCH_FEATURE_STATUS:${JSON.stringify({readiness:x.featureReadiness,reasons:x.featureReadinessReasons,counts:x.counts,snapshotHash:x.snapshotHash,phaseBoundary:x.phaseBoundary,leaderboards:x.descriptiveLeaderboards})}`);
+          NODE
+
+      - name: Commit research market and feature snapshots
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/live
-          if git diff --cached --quiet; then echo 'No research market change.'; exit 0; fi
-          git commit -m "Refresh EGX ONE research market snapshot"
+          git add data/research/live data/research/features
+          if git diff --cached --quiet; then echo 'No research market or feature change.'; exit 0; fi
+          git commit -m "Refresh EGX ONE research market and feature snapshots"
           for attempt in 1 2 3; do
             if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
             [ "$attempt" = 3 ] && exit 1
@@ -114,6 +142,8 @@ jobs:
           done
       - uses: actions/upload-artifact@v4
         with:
-          name: egx-one-research-market-snapshot
-          path: data/research/live/latest.json
+          name: egx-one-research-market-and-features
+          path: |
+            data/research/live/latest.json
+            data/research/features/latest.json
           if-no-files-found: error
