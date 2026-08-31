@@ -5,9 +5,13 @@ on:
   push:
     branches: ['egx-one/**']
     paths:
+      - 'src/research-source-policy.js'
       - 'src/research-live-adapters.js'
+      - 'src/research-legacy-market-import.js'
+      - 'src/research-current-session.js'
       - 'scripts/research-refresh-live.mjs'
       - 'tests/research-live-adapters.test.mjs'
+      - 'tests/research-current-session.test.mjs'
       - '.github/workflows/egx-one-research-refresh.yml'
   schedule:
     - cron: '15 14 * * 0-4'
@@ -33,21 +37,67 @@ jobs:
           node-version: 24
       - name: Verify clean-room contracts
         run: npm test
-      - name: Refresh Yahoo and Mubasher research observations
+
+      - name: Capture exact legacy market snapshot as research input
+        id: legacy_market
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin main
+          sha="$(git rev-parse FETCH_HEAD)"
+          git show "$sha:data/market.json" > /tmp/egx-one-legacy-market.json
+          test -s /tmp/egx-one-legacy-market.json
+          file_hash="$(sha256sum /tmp/egx-one-legacy-market.json | awk '{print $1}')"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "file_hash=$file_hash" >> "$GITHUB_OUTPUT"
+          echo "LEGACY_MARKET_CAPTURE:${sha}:${file_hash}"
+
+      - name: Resolve expected Cairo research session
+        id: expected
+        shell: bash
+        run: |
+          set -euo pipefail
+          session="$(node - <<'NODE'
+          const fs=require('fs');
+          const explicit=String(process.env.RESEARCH_EXPECTED_SESSION||'').trim();
+          if(/^\d{4}-\d{2}-\d{2}$/.test(explicit)){console.log(explicit);process.exit(0)}
+          const status=JSON.parse(fs.readFileSync('status.json','utf8'));
+          if(/^\d{4}-\d{2}-\d{2}$/.test(String(status.marketSession||''))){console.log(status.marketSession);process.exit(0)}
+          throw new Error('expected research session unavailable');
+          NODE
+          )"
+          echo "session=$session" >> "$GITHUB_OUTPUT"
+          echo "EXPECTED_RESEARCH_SESSION:$session"
+
+      - name: Refresh Yahoo Mubasher and imported current market evidence
         env:
+          RESEARCH_EXPECTED_SESSION: ${{ steps.expected.outputs.session }}
+          LEGACY_MARKET_SNAPSHOT_PATH: /tmp/egx-one-legacy-market.json
+          LEGACY_MARKET_COMMIT: ${{ steps.legacy_market.outputs.sha }}
           RESEARCH_REFRESH_CONCURRENCY: 6
           RESEARCH_SOURCE_TIMEOUT_MS: 16000
           RESEARCH_CLOSE_CONFLICT_PCT: 1
           RESEARCH_VOLUME_CONFLICT_PCT: 20
+          RESEARCH_MIN_COVERAGE_PCT: 70
+          RESEARCH_MAX_CONFLICT_PCT: 10
         run: npm run research:refresh
-      - name: Enforce research-only output boundary
+
+      - name: Enforce research current-session boundary
+        env:
+          EXPECTED: ${{ steps.expected.outputs.session }}
+          LEGACY_SHA: ${{ steps.legacy_market.outputs.sha }}
         run: |
           node - <<'NODE'
           const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/live/latest.json','utf8'));
-          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false)throw new Error('RESEARCH_LIVE_AUTHORITY_BOUNDARY_FAILED');
-          if(!x.snapshotHash||!x.targetSession)throw new Error('RESEARCH_LIVE_SNAPSHOT_INCOMPLETE');
-          console.log(`RESEARCH_LIVE_STATUS:${JSON.stringify({readiness:x.researchDataReadiness,counts:x.counts,snapshotHash:x.snapshotHash})}`);
+          const fail=m=>{throw new Error(m)};
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false)fail('RESEARCH_LIVE_AUTHORITY_BOUNDARY_FAILED');
+          if(x.expectedSession!==process.env.EXPECTED||x.targetSession!==process.env.EXPECTED)fail('EXPECTED_SESSION_BINDING_FAILED');
+          if(x.legacyMarketManifest?.legacyCommit!==process.env.LEGACY_SHA)fail('LEGACY_MARKET_COMMIT_BINDING_FAILED');
+          if(!x.snapshotHash)fail('RESEARCH_LIVE_SNAPSHOT_HASH_MISSING');
+          if(x.researchDataReadiness==='PASS'&&x.counts.currentSessionCoveragePct<70)fail('FALSE_RESEARCH_READINESS_PASS');
+          console.log(`RESEARCH_LIVE_STATUS:${JSON.stringify({readiness:x.researchDataReadiness,reasons:x.readinessReasons,counts:x.counts,snapshotHash:x.snapshotHash,legacyMarketCommit:x.legacyMarketManifest?.legacyCommit})}`);
           NODE
+
       - name: Commit research market snapshot
         shell: bash
         run: |

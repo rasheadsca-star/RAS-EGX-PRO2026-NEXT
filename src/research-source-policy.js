@@ -2,6 +2,7 @@ export const RESEARCH_AUTHORITY_MODE='RESEARCH';
 
 export const RESEARCH_SOURCE_POLICY=Object.freeze({
   LEGACY_IMPORT:Object.freeze({sourceClass:'LEGACY_IMPORT',providerGroup:'LEGACY_ARCHIVE',researchPrimary:true,researchCrossCheck:false,productionAuthority:false,description:'Immutable migration seed from legacy EGX engines'}),
+  LEGACY_MARKET_IMPORT:Object.freeze({sourceClass:'LEGACY_MARKET_SNAPSHOT',providerGroup:'MUBASHER',researchPrimary:true,researchCrossCheck:false,productionAuthority:false,description:'Exact-commit legacy market snapshot, imported as research evidence only'}),
   YAHOO_RESEARCH:Object.freeze({sourceClass:'PUBLIC_HISTORY',providerGroup:'YAHOO',researchPrimary:true,researchCrossCheck:true,productionAuthority:false,description:'Yahoo Finance OHLCV for research continuity only'}),
   MUBASHER_RESEARCH:Object.freeze({sourceClass:'PUBLIC_MARKET',providerGroup:'MUBASHER',researchPrimary:true,researchCrossCheck:true,productionAuthority:false,description:'Mubasher Egypt market/session evidence for research cross-checking'})
 });
