@@ -6,7 +6,17 @@ function parseUrl(value){try{return new URL(value)}catch{return null}}
 function provider(policy,receipt){return policy?.providerGroup??receipt?.providerGroup??receipt?.sourceId??null}
 function officialEgxHost(host){return host==='egx.com.eg'||host.endsWith('.egx.com.eg')}
 
-export function validateSourceReceipt(receipt,{policy=null,calendarEntry=null,decisionTime=null,maxLagMinutes=360}={}){
+export function verifyReceiptContent(receipt,rawPayload){
+  if(rawPayload===undefined||rawPayload===null) return {state:'BLOCKED',reasons:['RAW_PAYLOAD_REQUIRED'],computedHash:null};
+  const computedHash=sha256(rawPayload);
+  const claimed=String(receipt?.contentHash??'').toLowerCase();
+  const reasons=[];
+  if(!HEX64.test(claimed)) reasons.push('INVALID_CONTENT_HASH');
+  else if(computedHash!==claimed) reasons.push('CONTENT_HASH_MISMATCH');
+  return {state:reasons.length?'BLOCKED':'READY',reasons,computedHash};
+}
+
+export function validateSourceReceipt(receipt,{policy=null,calendarEntry=null,decisionTime=null,maxLagMinutes=360,rawPayload}={}){
   const reasons=[];
   if(!receipt?.sourceId) reasons.push('MISSING_SOURCE_ID');
   if(!receipt?.sourceClass) reasons.push('MISSING_SOURCE_CLASS');
@@ -16,6 +26,7 @@ export function validateSourceReceipt(receipt,{policy=null,calendarEntry=null,de
   if(!receipt?.session) reasons.push('MISSING_SESSION');
   if(!receipt?.provenanceKind) reasons.push('MISSING_PROVENANCE_KIND');
   if(!HEX64.test(String(receipt?.contentHash??''))) reasons.push('INVALID_CONTENT_HASH');
+  if(rawPayload!==undefined){const contentCheck=verifyReceiptContent(receipt,rawPayload);for(const reason of contentCheck.reasons)if(!reasons.includes(reason))reasons.push(reason)}
   if(policy?.sourceClass&&receipt?.sourceClass!==policy.sourceClass) reasons.push('SOURCE_CLASS_POLICY_MISMATCH');
   if(policy?.providerGroup&&receipt?.providerGroup!==policy.providerGroup) reasons.push('PROVIDER_GROUP_POLICY_MISMATCH');
   const url=parseUrl(receipt?.sourceUrl);
