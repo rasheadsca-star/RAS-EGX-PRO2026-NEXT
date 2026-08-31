@@ -1,54 +1,8 @@
+import { verifyMarketObservationCertificate } from './market-observation-certification.js';
 const BLOCKING_READINESS=new Set(['BLOCKED','STALE','DATA_CONFLICT','CORPORATE_ACTION_REVIEW','SOURCE_UNAVAILABLE']);
 const VALID_NONTRADABLE=new Set(['SUSPENDED','ILLIQUID','INSUFFICIENT_HISTORY']);
 const HEX64=/^[0-9a-f]{64}$/i;
-
-export function evaluatePhase3Gate({universe,registry,sessionAuthority,acquisitionPlans=[],sourceReceipts=[]}={}){
-  const blockers=[]; const warnings=[];
-  if(!universe||universe.state!=='READY') blockers.push(`UNIVERSE:${universe?.state??'MISSING'}`);
-  if(!sessionAuthority||sessionAuthority.state!=='READY') blockers.push(`SESSION_AUTHORITY:${sessionAuthority?.state??'MISSING'}`);
-  if(!registry) blockers.push('REGISTRY:MISSING');
-  if(blockers.length) return verdict(blockers,warnings,registry);
-
-  const uTickers=universe.rows.map(x=>x.ticker).sort();
-  const rTickers=registry.rows.map(x=>x.ticker).sort();
-  if(universe.total!==registry.total) blockers.push(`UNIVERSE_REGISTRY_TOTAL_MISMATCH:${universe.total}:${registry.total}`);
-  if(JSON.stringify(uTickers)!==JSON.stringify(rTickers)) blockers.push('UNIVERSE_REGISTRY_TICKER_MISMATCH');
-  if(universe.asOfDate&&sessionAuthority.currentSession&&universe.asOfDate!==sessionAuthority.currentSession) blockers.push(`UNIVERSE_SESSION_MISMATCH:${universe.asOfDate}:${sessionAuthority.currentSession}`);
-
-  const planByTicker=new Map(acquisitionPlans.map(x=>[x.ticker,x]));
-  const receiptByKey=new Map(sourceReceipts.map(x=>[`${x.ticker}|${x.sourceId}`,x]));
-  for(const row of registry.rows){
-    if(BLOCKING_READINESS.has(row.readiness)) blockers.push(`${row.ticker}:${row.readiness}`);
-    else if(VALID_NONTRADABLE.has(row.readiness)) warnings.push(`${row.ticker}:${row.readiness}`);
-    else if(row.readiness!=='READY') blockers.push(`${row.ticker}:UNKNOWN_READINESS:${row.readiness}`);
-    if(row.readiness!=='SUSPENDED'){
-      const plan=planByTicker.get(row.ticker);
-      if(!plan||plan.state!=='READY'){
-        blockers.push(`${row.ticker}:ACQUISITION_PLAN:${plan?.state??'MISSING'}`);
-        continue;
-      }
-      validateRuntimeEvidence(row.ticker,plan,receiptByKey,sessionAuthority.currentSession,blockers);
-    }
-  }
-  return verdict(blockers,warnings,registry);
-}
-
-function validateRuntimeEvidence(ticker,plan,receiptByKey,currentSession,blockers){
-  if(!plan.primary||!Array.isArray(plan.crossChecks)||!plan.providerGroups?.primary||!Array.isArray(plan.providerGroups?.crossChecks)){
-    blockers.push(`${ticker}:ACQUISITION_PLAN:PROVENANCE_INCOMPLETE`);return;
-  }
-  const primary=receiptByKey.get(`${ticker}|${plan.primary}`);
-  if(!validReceipt(primary,currentSession)) blockers.push(`${ticker}:PRIMARY_SOURCE_RECEIPT:${primary?.state??'MISSING'}`);
-  else if(primary.providerGroup!==plan.providerGroups.primary) blockers.push(`${ticker}:PRIMARY_PROVIDER_MISMATCH`);
-  let crossReady=false;
-  for(let i=0;i<plan.crossChecks.length;i++){
-    const sourceId=plan.crossChecks[i],receipt=receiptByKey.get(`${ticker}|${sourceId}`),expectedProvider=plan.providerGroups.crossChecks[i];
-    if(validReceipt(receipt,currentSession)&&receipt.providerGroup===expectedProvider&&receipt.providerGroup!==primary?.providerGroup){crossReady=true;break}
-  }
-  if(!crossReady) blockers.push(`${ticker}:INDEPENDENT_CROSSCHECK_RECEIPT:MISSING`);
-}
-function validReceipt(receipt,currentSession){return receipt?.state==='READY'&&receipt.session===currentSession&&HEX64.test(String(receipt.receiptHash??''))&&Boolean(receipt.providerGroup)}
-function verdict(blockers,warnings,registry){
-  const counts=registry?.counts??{};
-  return Object.freeze({phase:'PHASE_3_DATA_READINESS',verdict:blockers.length?'FAIL':'PASS',baselineAuthorized:blockers.length===0,blockers:[...new Set(blockers)].sort(),warnings:[...new Set(warnings)].sort(),readinessCounts:counts,readyCount:counts.READY??0,total:registry?.total??0});
-}
+export function evaluatePhase3Gate({universe,registry,sessionAuthority,acquisitionPlans=[],sourceReceipts=[]}={}){const blockers=[],warnings=[];if(!universe||universe.state!=='READY')blockers.push(`UNIVERSE:${universe?.state??'MISSING'}`);if(!sessionAuthority||sessionAuthority.state!=='READY')blockers.push(`SESSION_AUTHORITY:${sessionAuthority?.state??'MISSING'}`);if(!registry)blockers.push('REGISTRY:MISSING');if(blockers.length)return verdict(blockers,warnings,registry);const uTickers=universe.rows.map(x=>x.ticker).sort(),rTickers=registry.rows.map(x=>x.ticker).sort();if(universe.total!==registry.total)blockers.push(`UNIVERSE_REGISTRY_TOTAL_MISMATCH:${universe.total}:${registry.total}`);if(JSON.stringify(uTickers)!==JSON.stringify(rTickers))blockers.push('UNIVERSE_REGISTRY_TICKER_MISMATCH');if(universe.asOfDate&&sessionAuthority.currentSession&&universe.asOfDate!==sessionAuthority.currentSession)blockers.push(`UNIVERSE_SESSION_MISMATCH:${universe.asOfDate}:${sessionAuthority.currentSession}`);const planByTicker=new Map(acquisitionPlans.map(x=>[x.ticker,x])),receiptByKey=new Map(sourceReceipts.map(x=>[`${x.ticker}|${x.sourceId}`,x]));for(const row of registry.rows){if(BLOCKING_READINESS.has(row.readiness))blockers.push(`${row.ticker}:${row.readiness}`);else if(VALID_NONTRADABLE.has(row.readiness))warnings.push(`${row.ticker}:${row.readiness}`);else if(row.readiness!=='READY')blockers.push(`${row.ticker}:UNKNOWN_READINESS:${row.readiness}`);if(row.readiness!=='SUSPENDED'){const plan=planByTicker.get(row.ticker);if(!plan||plan.state!=='READY'){blockers.push(`${row.ticker}:ACQUISITION_PLAN:${plan?.state??'MISSING'}`);continue}validateRuntimeEvidence(row.ticker,plan,receiptByKey,sessionAuthority.currentSession,blockers)}}return verdict(blockers,warnings,registry)}
+function validateRuntimeEvidence(ticker,plan,receiptByKey,currentSession,blockers){if(!plan.primary||!Array.isArray(plan.crossChecks)||!plan.providerGroups?.primary||!Array.isArray(plan.providerGroups?.crossChecks)){blockers.push(`${ticker}:ACQUISITION_PLAN:PROVENANCE_INCOMPLETE`);return}const primary=receiptByKey.get(`${ticker}|${plan.primary}`);if(!validReceipt(primary,currentSession,ticker,plan.primary,plan))blockers.push(`${ticker}:PRIMARY_SOURCE_RECEIPT:${primary?.state??'MISSING'}`);else if(primary.providerGroup!==plan.providerGroups.primary)blockers.push(`${ticker}:PRIMARY_PROVIDER_MISMATCH`);let crossReady=false;for(let i=0;i<plan.crossChecks.length;i++){const sourceId=plan.crossChecks[i],receipt=receiptByKey.get(`${ticker}|${sourceId}`),expectedProvider=plan.providerGroups.crossChecks[i];if(validReceipt(receipt,currentSession,ticker,sourceId,plan)&&receipt.providerGroup===expectedProvider&&receipt.providerGroup!==primary?.providerGroup){crossReady=true;break}}if(!crossReady)blockers.push(`${ticker}:INDEPENDENT_CROSSCHECK_RECEIPT:MISSING`)}
+function validReceipt(receipt,currentSession,ticker,sourceId,plan){if(!(receipt?.state==='READY'&&receipt.session===currentSession&&HEX64.test(String(receipt.receiptHash??''))&&Boolean(receipt.providerGroup)&&HEX64.test(String(receipt.observationCertificateHash??''))&&HEX64.test(String(receipt.observationBarHash??''))))return false;return verifyMarketObservationCertificate(receipt,{ticker,session:currentSession,sourceId,acquisitionPlan:plan}).state==='READY'}
+function verdict(blockers,warnings,registry){const counts=registry?.counts??{};return Object.freeze({phase:'PHASE_3_DATA_READINESS',verdict:blockers.length?'FAIL':'PASS',baselineAuthorized:blockers.length===0,blockers:[...new Set(blockers)].sort(),warnings:[...new Set(warnings)].sort(),readinessCounts:counts,readyCount:counts.READY??0,total:registry?.total??0})}
