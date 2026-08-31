@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import{assessCorporateActionRisk}from'../src/corporate-actions.js';
+test('large unexplained jump requires review',()=>assert.equal(assessCorporateActionRisk(10,13,'2026-08-31').status,'CORPORATE_ACTION_REVIEW'));
+test('verified action explains suspicious jump without silent normalization',()=>{const event={actionId:'CA1',ticker:'AAA',effectiveSession:'2026-08-31',actionType:'STOCK_SPLIT',source:'EGX',verifiedAt:'2026-08-31T15:00:00+03:00'};const r=assessCorporateActionRisk(10,13,'2026-08-31',[event]);assert.equal(r.status,'VERIFIED_ACTION');assert.deepEqual(r.actions,['CA1'])});

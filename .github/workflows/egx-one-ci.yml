@@ -10,7 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
+      - name: Fetch frozen legacy evidence commit only
+        run: git fetch --no-tags --depth=1 origin 35dd08a6c2e4e3f9565161bbf4d8560b8748d7b7
       - uses: actions/setup-node@v4
         with: {node-version: 24}
       - run: npm test

@@ -1,13 +1,13 @@
-CURRENT PHASE: Phase 1/2/3 foundation after Phase 0 destructive audit.
+CURRENT PHASE: Phase 1/2/3 data foundation; Baseline Engine is deliberately blocked.
 
-BUILDER STATUS: Clean-room branch established. Contracts frozen. Session Manifest, deterministic Universe Registry, fail-closed Data Readiness Gate, Session Authority, SQLite EGX Market Data Store, append-only Recommendation Ledger and append-only Evidence Store implemented.
+BUILDER STATUS: Clean-room branch established. Contracts, Session Manifest, Session Authority, deterministic Universe Registry, fail-closed Data Readiness, source reconciliation, corporate-action review, point-in-time fundamentals, Acquisition/Raw/Normalized immutable lineage, complete Recommendation Contract, append-only Recommendation Ledger, and append-only Evidence Store are implemented.
 
-DESTRUCTIVE REVIEW STATUS: Legacy data foundation rejected. Baseline/strategy research is blocked until independent data readiness passes.
+DESTRUCTIVE REVIEW STATUS: Legacy data foundation rejected. A sequencing defect in the first SSOT design was found and repaired: raw and normalized truth now freeze before and are referenced by the final Session Manifest. Recommendation records can no longer be incomplete or session-misaligned.
 
-TEST STATUS: Local foundation 14/14 PASS. CI Phase-0 run 33404958158 PASS operationally; audit outcome READY=0/242 for legacy inputs.
+TEST STATUS: Clean-room local suite 26/26 PASS. Last remote CI before this increment: 14/14 PASS plus full-universe forensic audit. This increment requires remote CI revalidation.
 
-EVIDENCE CREATED: Phase-0 audit artifact ID 9762768822, digest sha256:da18ff5b236f1aff026d4d6c4ea8f321d2b8a0423feae8f775ba2aaf04ca7efe.
+EVIDENCE CREATED: Phase-0 GitHub Actions artifact from run 33405582865, artifact 9763008313; legacy audit outcome READY=0/242, BLOCKED=242 with explicit classifications.
 
-BLOCKERS: authoritative EGX session calendar; reliable source reconciliation for 242-symbol registry; corporate-action verification; unavailable source history for 42 symbols; legacy session/date defects.
+BLOCKERS: authoritative official EGX universe reconstruction; fresh current OHLCV acquisition and source reconciliation; corporate-action provenance; 42 legacy source-history failures; production-persistent EGX-specific database binding. Existing unrelated Supabase projects were not modified.
 
-NEXT EXECUTABLE STEP: Build independent acquisition/source-manifest pipeline into EGX Market Data Store, reconcile latest completed session, then rerun full-universe readiness. Do not start baseline until the data phase passes.
+NEXT EXECUTABLE STEP: Push and revalidate the repaired data lineage in CI; then build independent acquisition/source-manifest adapters and reconstruct the current universe from official EGX listing evidence. Do not start baseline until Phase 3 passes.
