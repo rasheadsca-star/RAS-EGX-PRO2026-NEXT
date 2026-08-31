@@ -1,0 +1,106 @@
+name: EGX ONE Production UI Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/clean-room-v0']
+    paths:
+      - 'index.html'
+      - 'data/research/ui/latest.json'
+      - '.github/workflows/egx-one-production-ui-deploy.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: egx-one-production-ui-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      VERCEL_PROJECT_ID: prj_R9NlULz7vTKPEWeoVB9vnRaanqFo
+      VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+
+      - name: Build minimal production UI bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/egx-one-live
+          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/.vercel
+          cp index.html /tmp/egx-one-live/index.html
+          cp data/research/ui/latest.json /tmp/egx-one-live/data/research/ui/latest.json
+          printf '%s\n' '{"cleanUrls":true,"trailingSlash":false}' > /tmp/egx-one-live/vercel.json
+          printf '%s\n' '{"projectId":"'"$VERCEL_PROJECT_ID"'","orgId":"'"$VERCEL_ORG_ID"'"}' > /tmp/egx-one-live/.vercel/project.json
+          test -s /tmp/egx-one-live/index.html
+          test -s /tmp/egx-one-live/data/research/ui/latest.json
+
+      - name: Verify deploy credential availability
+        id: auth
+        shell: bash
+        run: |
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'DEPLOYMENT_BLOCKED:VERCEL_TOKEN_MISSING'
+          else
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+            echo 'VERCEL_DEPLOY_CREDENTIAL:AVAILABLE'
+          fi
+
+      - name: Install pinned Vercel CLI
+        if: steps.auth.outputs.available == 'true'
+        run: npm install --global vercel@59.10.0
+
+      - name: Deploy same EGX ONE project to production
+        if: steps.auth.outputs.available == 'true'
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN" --cwd /tmp/egx-one-live | tail -n 1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "PRODUCTION_DEPLOYMENT_URL:$url"
+
+      - name: Verify deployed authority-safe UI
+        if: steps.auth.outputs.available == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          html="$(curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/")"
+          printf '%s' "$html" | grep -q 'Research Analytics'
+          printf '%s' "$html" | grep -q 'PRODUCTION LOCKED'
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/ui/latest.json" > /tmp/ui.json
+          node - <<'NODE'
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/ui.json','utf8'));
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notARecommendation!==true)throw new Error('DEPLOYED_UI_AUTHORITY_BOUNDARY_FAILED');
+          if(x.authority?.researchStrategy!==false||x.authority?.productionPhase4!==false||x.authority?.automaticOrders!==false)throw new Error('DEPLOYED_UI_PREMATURE_AUTHORITY');
+          console.log(`DEPLOYED_RESEARCH_UI_VERIFIED:${x.session}:${x.uiSnapshotHash}`);
+          NODE
+
+      - name: Deployment summary
+        shell: bash
+        env:
+          AUTH: ${{ steps.auth.outputs.available }}
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          if [ "$AUTH" = 'true' ]; then
+            echo '## EGX ONE Production UI Deploy' >> "$GITHUB_STEP_SUMMARY"
+            echo "- Status: VERIFIED" >> "$GITHUB_STEP_SUMMARY"
+            echo "- URL: ${URL}" >> "$GITHUB_STEP_SUMMARY"
+            echo '- Authority: RESEARCH_ONLY / Production Phase 4 LOCKED' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## EGX ONE Production UI Deploy' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Status: BLOCKED' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Reason: VERCEL_TOKEN_MISSING' >> "$GITHUB_STEP_SUMMARY"
+            echo '- No project or deployment was created.' >> "$GITHUB_STEP_SUMMARY"
+          fi
