@@ -3,6 +3,7 @@ import { sha256, canonicalize } from './hash.js';
 import { validateSessionManifest } from './session-manifest.js';
 import { validateRecommendationContract } from './recommendation-contract.js';
 import { reconcileCertifiedObservations } from './reconciliation.js';
+import { assertBaselineAuthorization } from './phase-transition.js';
 import { EVIDENCE } from './contracts.js';
 
 const INGESTION_MODES=new Set(['RESEARCH','CERTIFIED_PRODUCTION']);
@@ -17,6 +18,9 @@ export class EgxMarketDataStore {
   constructor(path=':memory:') {
     this.db = new DatabaseSync(path);
     this.db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
+    this.db.function('egx_baseline_auth_valid',{deterministic:true},(authorizationJson,reportJson)=>{
+      try{return assertBaselineAuthorization(JSON.parse(authorizationJson),JSON.parse(reportJson))?1:0}catch{return 0}
+    });
     this.#init();
   }
 
@@ -43,8 +47,7 @@ export class EgxMarketDataStore {
         payload_json TEXT NOT NULL,
         FOREIGN KEY(acquisition_id) REFERENCES acquisition_runs(acquisition_id)
       );
-      CREATE INDEX IF NOT EXISTS raw_bars_acquisition_ticker_session
-        ON raw_bars(acquisition_id,ticker,session);
+      CREATE INDEX IF NOT EXISTS raw_bars_acquisition_ticker_session ON raw_bars(acquisition_id,ticker,session);
       CREATE TABLE IF NOT EXISTS source_manifests (
         source_manifest_hash TEXT PRIMARY KEY,
         payload_json TEXT NOT NULL,
@@ -93,6 +96,8 @@ export class EgxMarketDataStore {
         snapshot_hash TEXT PRIMARY KEY,
         market_session TEXT NOT NULL,
         authority_mode TEXT NOT NULL DEFAULT 'RESEARCH',
+        calendar_version TEXT,
+        universe_version TEXT,
         engine_version TEXT NOT NULL,
         config_version TEXT NOT NULL,
         commit_hash TEXT NOT NULL,
@@ -110,6 +115,17 @@ export class EgxMarketDataStore {
         source_status TEXT NOT NULL,
         PRIMARY KEY(universe_version,ticker)
       );
+      CREATE TABLE IF NOT EXISTS baseline_authorizations (
+        authorization_token TEXT PRIMARY KEY,
+        source_report_hash TEXT NOT NULL,
+        session TEXT NOT NULL,
+        calendar_version TEXT NOT NULL,
+        universe_version TEXT NOT NULL,
+        registry_version TEXT NOT NULL,
+        payload_json TEXT NOT NULL,
+        source_report_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
       CREATE TABLE IF NOT EXISTS recommendation_ledger (
         recommendation_id TEXT PRIMARY KEY,
         snapshot_hash TEXT NOT NULL,
@@ -117,6 +133,7 @@ export class EgxMarketDataStore {
         ticker TEXT NOT NULL,
         decision TEXT NOT NULL,
         authority_mode TEXT NOT NULL DEFAULT 'RESEARCH',
+        baseline_authorization_token TEXT,
         payload_json TEXT NOT NULL,
         created_at TEXT NOT NULL,
         FOREIGN KEY(snapshot_hash) REFERENCES session_manifests(snapshot_hash)
@@ -150,105 +167,63 @@ export class EgxMarketDataStore {
         payload_json TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS fundamentals_asof_idx ON fundamentals(ticker,available_from);
-      CREATE TRIGGER IF NOT EXISTS acquisition_frozen_update
-      BEFORE UPDATE ON acquisition_runs WHEN OLD.content_hash IS NOT NULL BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_ACQUISITION');
-      END;
-      CREATE TRIGGER IF NOT EXISTS acquisition_no_delete
-      BEFORE DELETE ON acquisition_runs BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_ACQUISITION');
-      END;
-      CREATE TRIGGER IF NOT EXISTS data_snapshot_frozen_update
-      BEFORE UPDATE ON data_snapshots WHEN OLD.content_hash IS NOT NULL BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_DATA_SNAPSHOT');
-      END;
-      CREATE TRIGGER IF NOT EXISTS data_snapshot_no_delete
-      BEFORE DELETE ON data_snapshots BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_DATA_SNAPSHOT');
-      END;
-      CREATE TRIGGER IF NOT EXISTS session_manifest_no_update
-      BEFORE UPDATE ON session_manifests BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_SESSION_MANIFEST');
-      END;
-      CREATE TRIGGER IF NOT EXISTS session_manifest_no_delete
-      BEFORE DELETE ON session_manifests BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_SESSION_MANIFEST');
-      END;
-      CREATE TRIGGER IF NOT EXISTS recommendation_no_update
-      BEFORE UPDATE ON recommendation_ledger BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_RECOMMENDATION_LEDGER');
-      END;
-      CREATE TRIGGER IF NOT EXISTS recommendation_no_delete
-      BEFORE DELETE ON recommendation_ledger BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_RECOMMENDATION_LEDGER');
-      END;
-      CREATE TRIGGER IF NOT EXISTS evidence_no_update
-      BEFORE UPDATE ON evidence_store BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_EVIDENCE_STORE');
-      END;
-      CREATE TRIGGER IF NOT EXISTS evidence_no_delete
-      BEFORE DELETE ON evidence_store BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_EVIDENCE_STORE');
-      END;
-      CREATE TRIGGER IF NOT EXISTS source_manifest_no_update
-      BEFORE UPDATE ON source_manifests BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_SOURCE_MANIFEST');
-      END;
-      CREATE TRIGGER IF NOT EXISTS source_manifest_no_delete
-      BEFORE DELETE ON source_manifests BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_SOURCE_MANIFEST');
-      END;
-      CREATE TRIGGER IF NOT EXISTS certified_reconciliation_no_update
-      BEFORE UPDATE ON certified_reconciliations BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_CERTIFIED_RECONCILIATION');
-      END;
-      CREATE TRIGGER IF NOT EXISTS certified_reconciliation_no_delete
-      BEFORE DELETE ON certified_reconciliations BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_CERTIFIED_RECONCILIATION');
-      END;
+      CREATE TRIGGER IF NOT EXISTS acquisition_frozen_update BEFORE UPDATE ON acquisition_runs WHEN OLD.content_hash IS NOT NULL BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_ACQUISITION'); END;
+      CREATE TRIGGER IF NOT EXISTS acquisition_no_delete BEFORE DELETE ON acquisition_runs BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_ACQUISITION'); END;
+      CREATE TRIGGER IF NOT EXISTS data_snapshot_frozen_update BEFORE UPDATE ON data_snapshots WHEN OLD.content_hash IS NOT NULL BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_DATA_SNAPSHOT'); END;
+      CREATE TRIGGER IF NOT EXISTS data_snapshot_no_delete BEFORE DELETE ON data_snapshots BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_DATA_SNAPSHOT'); END;
+      CREATE TRIGGER IF NOT EXISTS session_manifest_no_update BEFORE UPDATE ON session_manifests BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_SESSION_MANIFEST'); END;
+      CREATE TRIGGER IF NOT EXISTS session_manifest_no_delete BEFORE DELETE ON session_manifests BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_SESSION_MANIFEST'); END;
+      CREATE TRIGGER IF NOT EXISTS baseline_authorization_no_update BEFORE UPDATE ON baseline_authorizations BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_BASELINE_AUTHORIZATION'); END;
+      CREATE TRIGGER IF NOT EXISTS baseline_authorization_no_delete BEFORE DELETE ON baseline_authorizations BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_BASELINE_AUTHORIZATION'); END;
+      CREATE TRIGGER IF NOT EXISTS baseline_authorization_valid_insert BEFORE INSERT ON baseline_authorizations WHEN egx_baseline_auth_valid(NEW.payload_json,NEW.source_report_json)<>1 BEGIN SELECT RAISE(ABORT, 'INVALID_BASELINE_AUTHORIZATION'); END;
+      CREATE TRIGGER IF NOT EXISTS recommendation_no_update BEFORE UPDATE ON recommendation_ledger BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_RECOMMENDATION_LEDGER'); END;
+      CREATE TRIGGER IF NOT EXISTS recommendation_no_delete BEFORE DELETE ON recommendation_ledger BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_RECOMMENDATION_LEDGER'); END;
+      CREATE TRIGGER IF NOT EXISTS evidence_no_update BEFORE UPDATE ON evidence_store BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_EVIDENCE_STORE'); END;
+      CREATE TRIGGER IF NOT EXISTS evidence_no_delete BEFORE DELETE ON evidence_store BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_EVIDENCE_STORE'); END;
+      CREATE TRIGGER IF NOT EXISTS source_manifest_no_update BEFORE UPDATE ON source_manifests BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_SOURCE_MANIFEST'); END;
+      CREATE TRIGGER IF NOT EXISTS source_manifest_no_delete BEFORE DELETE ON source_manifests BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_SOURCE_MANIFEST'); END;
+      CREATE TRIGGER IF NOT EXISTS certified_reconciliation_no_update BEFORE UPDATE ON certified_reconciliations BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_CERTIFIED_RECONCILIATION'); END;
+      CREATE TRIGGER IF NOT EXISTS certified_reconciliation_no_delete BEFORE DELETE ON certified_reconciliations BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_CERTIFIED_RECONCILIATION'); END;
     `);
     this.#ensureColumn('data_snapshots','ingestion_mode',"TEXT NOT NULL DEFAULT 'RESEARCH'");
     this.#ensureColumn('normalized_bars','certified_reconciliation_manifest_hash','TEXT');
     this.#ensureColumn('normalized_bars','primary_observation_certificate_hash','TEXT');
     this.#ensureColumn('session_manifests','authority_mode',"TEXT NOT NULL DEFAULT 'RESEARCH'");
+    this.#ensureColumn('session_manifests','calendar_version','TEXT');
+    this.#ensureColumn('session_manifests','universe_version','TEXT');
     this.#ensureColumn('recommendation_ledger','authority_mode',"TEXT NOT NULL DEFAULT 'RESEARCH'");
+    this.#ensureColumn('recommendation_ledger','baseline_authorization_token','TEXT');
     this.db.exec(`
-      CREATE TRIGGER IF NOT EXISTS raw_bar_frozen_update
-      BEFORE UPDATE ON raw_bars WHEN (SELECT content_hash FROM acquisition_runs WHERE acquisition_id=OLD.acquisition_id) IS NOT NULL BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_RAW_BAR');
-      END;
-      CREATE TRIGGER IF NOT EXISTS raw_bar_frozen_delete
-      BEFORE DELETE ON raw_bars WHEN (SELECT content_hash FROM acquisition_runs WHERE acquisition_id=OLD.acquisition_id) IS NOT NULL BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_RAW_BAR');
-      END;
-      CREATE TRIGGER IF NOT EXISTS normalized_bar_frozen_update
-      BEFORE UPDATE ON normalized_bars WHEN (SELECT content_hash FROM data_snapshots WHERE data_snapshot_id=OLD.data_snapshot_id) IS NOT NULL BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_NORMALIZED_BAR');
-      END;
-      CREATE TRIGGER IF NOT EXISTS normalized_bar_frozen_delete
-      BEFORE DELETE ON normalized_bars WHEN (SELECT content_hash FROM data_snapshots WHERE data_snapshot_id=OLD.data_snapshot_id) IS NOT NULL BEGIN
-        SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_NORMALIZED_BAR');
-      END;
-      CREATE TRIGGER IF NOT EXISTS normalized_current_production_guard
-      BEFORE INSERT ON normalized_bars
+      CREATE TRIGGER IF NOT EXISTS raw_bar_frozen_update BEFORE UPDATE ON raw_bars WHEN (SELECT content_hash FROM acquisition_runs WHERE acquisition_id=OLD.acquisition_id) IS NOT NULL BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_RAW_BAR'); END;
+      CREATE TRIGGER IF NOT EXISTS raw_bar_frozen_delete BEFORE DELETE ON raw_bars WHEN (SELECT content_hash FROM acquisition_runs WHERE acquisition_id=OLD.acquisition_id) IS NOT NULL BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_RAW_BAR'); END;
+      CREATE TRIGGER IF NOT EXISTS normalized_bar_frozen_update BEFORE UPDATE ON normalized_bars WHEN (SELECT content_hash FROM data_snapshots WHERE data_snapshot_id=OLD.data_snapshot_id) IS NOT NULL BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_NORMALIZED_BAR'); END;
+      CREATE TRIGGER IF NOT EXISTS normalized_bar_frozen_delete BEFORE DELETE ON normalized_bars WHEN (SELECT content_hash FROM data_snapshots WHERE data_snapshot_id=OLD.data_snapshot_id) IS NOT NULL BEGIN SELECT RAISE(ABORT, 'IMMUTABLE_FINALIZED_NORMALIZED_BAR'); END;
+      CREATE TRIGGER IF NOT EXISTS normalized_current_production_guard BEFORE INSERT ON normalized_bars
       WHEN (SELECT ingestion_mode FROM data_snapshots WHERE data_snapshot_id=NEW.data_snapshot_id)='CERTIFIED_PRODUCTION'
        AND NEW.session=(SELECT market_session FROM data_snapshots WHERE data_snapshot_id=NEW.data_snapshot_id)
        AND (NEW.certified_reconciliation_manifest_hash IS NULL OR NEW.primary_observation_certificate_hash IS NULL)
-      BEGIN
-        SELECT RAISE(ABORT, 'CERTIFIED_PRODUCTION_CURRENT_BAR_REQUIRES_CERTIFIED_LINEAGE');
-      END;
-      CREATE TRIGGER IF NOT EXISTS recommendation_authority_guard
-      BEFORE INSERT ON recommendation_ledger
+      BEGIN SELECT RAISE(ABORT, 'CERTIFIED_PRODUCTION_CURRENT_BAR_REQUIRES_CERTIFIED_LINEAGE'); END;
+      CREATE TRIGGER IF NOT EXISTS recommendation_authority_guard BEFORE INSERT ON recommendation_ledger
       WHEN COALESCE((SELECT authority_mode FROM session_manifests WHERE snapshot_hash=NEW.snapshot_hash),'MISSING')<>NEW.authority_mode
-      BEGIN
-        SELECT RAISE(ABORT, 'RECOMMENDATION_AUTHORITY_MODE_MISMATCH');
-      END;
-      CREATE TRIGGER IF NOT EXISTS recommendation_session_guard
-      BEFORE INSERT ON recommendation_ledger
+      BEGIN SELECT RAISE(ABORT, 'RECOMMENDATION_AUTHORITY_MODE_MISMATCH'); END;
+      CREATE TRIGGER IF NOT EXISTS recommendation_session_guard BEFORE INSERT ON recommendation_ledger
       WHEN COALESCE((SELECT market_session FROM session_manifests WHERE snapshot_hash=NEW.snapshot_hash),'MISSING')<>NEW.signal_session
-      BEGIN
-        SELECT RAISE(ABORT, 'RECOMMENDATION_SESSION_MISMATCH');
-      END;
+      BEGIN SELECT RAISE(ABORT, 'RECOMMENDATION_SESSION_MISMATCH'); END;
+      CREATE TRIGGER IF NOT EXISTS production_recommendation_baseline_guard BEFORE INSERT ON recommendation_ledger
+      WHEN NEW.authority_mode='CERTIFIED_PRODUCTION' AND (
+        NEW.baseline_authorization_token IS NULL OR
+        NOT EXISTS (
+          SELECT 1 FROM baseline_authorizations b JOIN session_manifests s ON s.snapshot_hash=NEW.snapshot_hash
+          WHERE b.authorization_token=NEW.baseline_authorization_token
+            AND b.session=NEW.signal_session
+            AND b.calendar_version=s.calendar_version
+            AND b.universe_version=s.universe_version
+        )
+      )
+      BEGIN SELECT RAISE(ABORT, 'PRODUCTION_RECOMMENDATION_REQUIRES_BASELINE_AUTHORIZATION'); END;
+      CREATE TRIGGER IF NOT EXISTS production_recommendation_payload_auth_guard BEFORE INSERT ON recommendation_ledger
+      WHEN NEW.authority_mode='CERTIFIED_PRODUCTION' AND COALESCE(json_extract(NEW.payload_json,'$.baselineAuthorizationToken'),'')<>COALESCE(NEW.baseline_authorization_token,'')
+      BEGIN SELECT RAISE(ABORT, 'RECOMMENDATION_BASELINE_AUTHORIZATION_PAYLOAD_MISMATCH'); END;
     `);
   }
 
@@ -256,8 +231,7 @@ export class EgxMarketDataStore {
 
   startAcquisition({acquisitionId,expectedSession,startedAt}) {
     if (!acquisitionId || !expectedSession || !startedAt) throw new Error('INVALID_ACQUISITION_RUN');
-    this.db.prepare(`INSERT INTO acquisition_runs(acquisition_id,expected_session,started_at) VALUES (?,?,?)`)
-      .run(acquisitionId,expectedSession,startedAt);
+    this.db.prepare(`INSERT INTO acquisition_runs(acquisition_id,expected_session,started_at) VALUES (?,?,?)`).run(acquisitionId,expectedSession,startedAt);
     return acquisitionId;
   }
 
@@ -266,9 +240,7 @@ export class EgxMarketDataStore {
     if (!acq) throw new Error('UNKNOWN_ACQUISITION');
     if (acq.content_hash) throw new Error('ACQUISITION_ALREADY_FINALIZED');
     const rawHash = sha256({acquisitionId,ticker,session,sourceId,payload});
-    this.db.prepare(`INSERT OR IGNORE INTO raw_bars
-      (raw_hash,acquisition_id,ticker,session,source_id,payload_json) VALUES (?,?,?,?,?,?)`)
-      .run(rawHash,acquisitionId,ticker,session,sourceId,canonicalize(payload));
+    this.db.prepare(`INSERT OR IGNORE INTO raw_bars(raw_hash,acquisition_id,ticker,session,source_id,payload_json) VALUES (?,?,?,?,?,?)`).run(rawHash,acquisitionId,ticker,session,sourceId,canonicalize(payload));
     return rawHash;
   }
 
@@ -286,9 +258,7 @@ export class EgxMarketDataStore {
   putSourceManifest(payload, createdAt=new Date().toISOString()) {
     if(payload?.mode==='CERTIFIED_PRODUCTION'&&!validCertifiedSourceManifest(payload)) throw new Error('INVALID_CERTIFIED_PRODUCTION_SOURCE_MANIFEST');
     const hash = sha256(payload);
-    this.db.prepare(`INSERT OR IGNORE INTO source_manifests
-      (source_manifest_hash,payload_json,created_at) VALUES (?,?,?)`)
-      .run(hash, canonicalize(payload), createdAt);
+    this.db.prepare(`INSERT OR IGNORE INTO source_manifests(source_manifest_hash,payload_json,created_at) VALUES (?,?,?)`).run(hash, canonicalize(payload), createdAt);
     return hash;
   }
 
@@ -302,8 +272,7 @@ export class EgxMarketDataStore {
       if(!validCertifiedSourceManifest(payload)) throw new Error('PRODUCTION_SNAPSHOT_REQUIRES_CERTIFIED_SOURCE_MANIFEST');
       if(payload.session!==marketSession) throw new Error('PRODUCTION_SOURCE_MANIFEST_SESSION_MISMATCH');
     }
-    this.db.prepare(`INSERT INTO data_snapshots(data_snapshot_id,market_session,source_manifest_hash,ingestion_mode,created_at) VALUES (?,?,?,?,?)`)
-      .run(dataSnapshotId,marketSession,sourceManifestHash,mode,createdAt);
+    this.db.prepare(`INSERT INTO data_snapshots(data_snapshot_id,market_session,source_manifest_hash,ingestion_mode,created_at) VALUES (?,?,?,?,?)`).run(dataSnapshotId,marketSession,sourceManifestHash,mode,createdAt);
     return dataSnapshotId;
   }
 
@@ -313,10 +282,7 @@ export class EgxMarketDataStore {
     if (volume !== null && (!Number.isFinite(volume) || volume < 0)) throw new Error('INVALID_NORMALIZED_VOLUME');
     const row = {dataSnapshotId,ticker,session,open,high,low,close,volume,sourceManifestHash,certifiedReconciliationManifestHash,primaryObservationCertificateHash};
     const rowHash=sha256(row);
-    this.db.prepare(`INSERT INTO normalized_bars
-      (data_snapshot_id,ticker,session,open,high,low,close,volume,source_manifest_hash,certified_reconciliation_manifest_hash,primary_observation_certificate_hash,row_hash)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(dataSnapshotId,ticker,session,open,high,low,close,volume,sourceManifestHash,certifiedReconciliationManifestHash,primaryObservationCertificateHash,rowHash);
+    this.db.prepare(`INSERT INTO normalized_bars(data_snapshot_id,ticker,session,open,high,low,close,volume,source_manifest_hash,certified_reconciliation_manifest_hash,primary_observation_certificate_hash,row_hash) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(dataSnapshotId,ticker,session,open,high,low,close,volume,sourceManifestHash,certifiedReconciliationManifestHash,primaryObservationCertificateHash,rowHash);
     return rowHash;
   }
 
@@ -345,10 +311,7 @@ export class EgxMarketDataStore {
     const primaryCertificateHash=primaryEntry?.runtimeReceipt?.observationCertificateHash??null;
     if(!HEX64.test(String(primaryCertificateHash??''))||primaryCertificateHash!==reconciliation.sourceManifest.primaryObservationCertificateHash) throw new Error('PRIMARY_OBSERVATION_CERTIFICATE_MISMATCH');
     const reconciliationManifestHash=reconciliation.sourceManifest.manifestHash;
-    this.db.prepare(`INSERT OR IGNORE INTO certified_reconciliations
-      (reconciliation_manifest_hash,source_manifest_hash,ticker,session,primary_source_id,primary_observation_certificate_hash,payload_json,created_at)
-      VALUES (?,?,?,?,?,?,?,?)`)
-      .run(reconciliationManifestHash,snap.source_manifest_hash,reconciliation.authoritative.ticker,reconciliation.authoritative.session,reconciliation.authoritative.sourceId,primaryCertificateHash,canonicalize(reconciliation.sourceManifest),snap.created_at);
+    this.db.prepare(`INSERT OR IGNORE INTO certified_reconciliations(reconciliation_manifest_hash,source_manifest_hash,ticker,session,primary_source_id,primary_observation_certificate_hash,payload_json,created_at) VALUES (?,?,?,?,?,?,?,?)`).run(reconciliationManifestHash,snap.source_manifest_hash,reconciliation.authoritative.ticker,reconciliation.authoritative.session,reconciliation.authoritative.sourceId,primaryCertificateHash,canonicalize(reconciliation.sourceManifest),snap.created_at);
     const a=reconciliation.authoritative;
     return this.#insertNormalizedBar({dataSnapshotId,ticker:a.ticker,session:a.session,open:a.open,high:a.high,low:a.low,close:a.close,volume:a.volume??null,sourceManifestHash:snap.source_manifest_hash,certifiedReconciliationManifestHash:reconciliationManifestHash,primaryObservationCertificateHash:primaryCertificateHash});
   }
@@ -383,10 +346,7 @@ export class EgxMarketDataStore {
       const sourceManifest=JSON.parse(sm.payload_json);
       if(!validCertifiedSourceManifest(sourceManifest)) throw new Error('SESSION_MANIFEST_PRODUCTION_SOURCE_NOT_CERTIFIED');
       if(sourceManifest.session!==manifest.marketSession) throw new Error('SESSION_MANIFEST_PRODUCTION_SOURCE_SESSION_MISMATCH');
-      const current=this.db.prepare(`SELECT n.ticker,n.session,n.open,n.high,n.low,n.close,n.volume,n.source_manifest_hash,n.certified_reconciliation_manifest_hash,n.primary_observation_certificate_hash,
-          c.source_manifest_hash AS reconciliation_source_manifest_hash,c.ticker AS reconciliation_ticker,c.session AS reconciliation_session,c.primary_observation_certificate_hash AS reconciliation_primary_certificate_hash,c.payload_json AS reconciliation_payload_json
-        FROM normalized_bars n LEFT JOIN certified_reconciliations c ON c.reconciliation_manifest_hash=n.certified_reconciliation_manifest_hash
-        WHERE n.data_snapshot_id=? AND n.session=? ORDER BY n.ticker`).all(norm.data_snapshot_id,manifest.marketSession);
+      const current=this.db.prepare(`SELECT n.ticker,n.session,n.open,n.high,n.low,n.close,n.volume,n.source_manifest_hash,n.certified_reconciliation_manifest_hash,n.primary_observation_certificate_hash,c.source_manifest_hash AS reconciliation_source_manifest_hash,c.ticker AS reconciliation_ticker,c.session AS reconciliation_session,c.primary_observation_certificate_hash AS reconciliation_primary_certificate_hash,c.payload_json AS reconciliation_payload_json FROM normalized_bars n LEFT JOIN certified_reconciliations c ON c.reconciliation_manifest_hash=n.certified_reconciliation_manifest_hash WHERE n.data_snapshot_id=? AND n.session=? ORDER BY n.ticker`).all(norm.data_snapshot_id,manifest.marketSession);
       if(!current.length) throw new Error('SESSION_MANIFEST_PRODUCTION_CURRENT_BARS_MISSING');
       for(const row of current){
         if(!HEX64.test(String(row.certified_reconciliation_manifest_hash??''))||!HEX64.test(String(row.primary_observation_certificate_hash??''))) throw new Error(`SESSION_MANIFEST_UNCERTIFIED_CURRENT_BAR:${row.ticker}`);
@@ -401,91 +361,77 @@ export class EgxMarketDataStore {
         if(reconciliation.primaryObservationCertificateHash!==row.primary_observation_certificate_hash) throw new Error(`SESSION_MANIFEST_CURRENT_BAR_CERTIFICATE_MISMATCH:${row.ticker}`);
       }
     }
-    this.db.prepare(`INSERT OR IGNORE INTO session_manifests
-      (snapshot_hash,market_session,authority_mode,engine_version,config_version,commit_hash,generated_at,payload_json)
-      VALUES (?,?,?,?,?,?,?,?)`)
-      .run(manifest.snapshotHash,manifest.marketSession,manifest.authorityMode,manifest.engineVersion,manifest.configVersion,
-        manifest.commitHash,manifest.generatedAt,canonicalize(manifest));
+    this.db.prepare(`INSERT OR IGNORE INTO session_manifests(snapshot_hash,market_session,authority_mode,calendar_version,universe_version,engine_version,config_version,commit_hash,generated_at,payload_json) VALUES (?,?,?,?,?,?,?,?,?,?)`).run(manifest.snapshotHash,manifest.marketSession,manifest.authorityMode,manifest.exchangeCalendarVersion,manifest.universeVersion,manifest.engineVersion,manifest.configVersion,manifest.commitHash,manifest.generatedAt,canonicalize(manifest));
     return manifest.snapshotHash;
   }
 
   putUniverseRegistry(registry) {
-    const insert=this.db.prepare(`INSERT INTO universe_registry
-      (universe_version,ticker,company_name,readiness,reasons_json,last_session,history_count,source_status)
-      VALUES (?,?,?,?,?,?,?,?)`);
+    const insert=this.db.prepare(`INSERT INTO universe_registry(universe_version,ticker,company_name,readiness,reasons_json,last_session,history_count,source_status) VALUES (?,?,?,?,?,?,?,?)`);
     this.db.exec('BEGIN IMMEDIATE');
-    try {
-      for (const row of registry.rows) insert.run(registry.version,row.ticker,row.companyName,row.readiness,
-        canonicalize(row.reasons),row.lastSession,row.historyCount,row.sourceStatus);
-      this.db.exec('COMMIT');
-    } catch (e) { this.db.exec('ROLLBACK'); throw e; }
+    try {for (const row of registry.rows) insert.run(registry.version,row.ticker,row.companyName,row.readiness,canonicalize(row.reasons),row.lastSession,row.historyCount,row.sourceStatus);this.db.exec('COMMIT');}
+    catch (e) { this.db.exec('ROLLBACK'); throw e; }
     return registry.version;
+  }
+
+  putBaselineAuthorization({authorization,fullUniverseReport,createdAt=new Date().toISOString()}) {
+    assertBaselineAuthorization(authorization,fullUniverseReport);
+    if(!HEX64.test(String(authorization.authorizationToken??''))) throw new Error('INVALID_BASELINE_AUTHORIZATION_TOKEN');
+    const payloadJson=canonicalize(authorization),reportJson=canonicalize(fullUniverseReport);
+    this.db.prepare(`INSERT OR IGNORE INTO baseline_authorizations(authorization_token,source_report_hash,session,calendar_version,universe_version,registry_version,payload_json,source_report_json,created_at) VALUES (?,?,?,?,?,?,?,?,?)`).run(authorization.authorizationToken,authorization.sourceReportHash,authorization.session,authorization.calendarVersion,authorization.universeVersion,authorization.registryVersion,payloadJson,reportJson,createdAt);
+    const stored=this.db.prepare('SELECT payload_json,source_report_json FROM baseline_authorizations WHERE authorization_token=?').get(authorization.authorizationToken);
+    if(!stored||stored.payload_json!==payloadJson||stored.source_report_json!==reportJson) throw new Error('BASELINE_AUTHORIZATION_COLLISION');
+    return authorization.authorizationToken;
   }
 
   #appendRecommendation(record,authorityMode) {
     validateRecommendationContract(record);
     const mode=String(authorityMode??'').toUpperCase();
     if(!INGESTION_MODES.has(mode)) throw new Error(`INVALID_RECOMMENDATION_AUTHORITY_MODE:${mode}`);
-    const manifest=this.db.prepare('SELECT market_session,authority_mode FROM session_manifests WHERE snapshot_hash=?').get(record.snapshotHash);
+    const manifest=this.db.prepare('SELECT market_session,authority_mode,calendar_version,universe_version FROM session_manifests WHERE snapshot_hash=?').get(record.snapshotHash);
     if (!manifest) throw new Error('RECOMMENDATION_SNAPSHOT_NOT_FOUND');
     if (manifest.market_session !== record.signalSession) throw new Error('RECOMMENDATION_SESSION_MISMATCH');
     if (manifest.authority_mode !== mode) throw new Error(`RECOMMENDATION_AUTHORITY_MODE_MISMATCH:${mode}:${manifest.authority_mode}`);
-    this.db.prepare(`INSERT INTO recommendation_ledger
-      (recommendation_id,snapshot_hash,signal_session,ticker,decision,authority_mode,payload_json,created_at)
-      VALUES (?,?,?,?,?,?,?,?)`)
-      .run(record.recommendationId,record.snapshotHash,record.signalSession,record.ticker,record.decision,mode,
-        canonicalize(record),record.createdAt);
+    let baselineAuthorizationToken=null;
+    if(mode==='CERTIFIED_PRODUCTION'){
+      baselineAuthorizationToken=record.baselineAuthorizationToken??null;
+      if(!HEX64.test(String(baselineAuthorizationToken??''))) throw new Error('PRODUCTION_RECOMMENDATION_REQUIRES_BASELINE_AUTHORIZATION');
+      const baseline=this.db.prepare('SELECT * FROM baseline_authorizations WHERE authorization_token=?').get(baselineAuthorizationToken);
+      if(!baseline) throw new Error('BASELINE_AUTHORIZATION_NOT_FOUND');
+      if(baseline.session!==record.signalSession) throw new Error('RECOMMENDATION_BASELINE_SESSION_MISMATCH');
+      if(baseline.calendar_version!==manifest.calendar_version) throw new Error('RECOMMENDATION_BASELINE_CALENDAR_MISMATCH');
+      if(baseline.universe_version!==manifest.universe_version) throw new Error('RECOMMENDATION_BASELINE_UNIVERSE_MISMATCH');
+      assertBaselineAuthorization(JSON.parse(baseline.payload_json),JSON.parse(baseline.source_report_json));
+    } else if(record.baselineAuthorizationToken) throw new Error('RESEARCH_RECOMMENDATION_CANNOT_CLAIM_BASELINE_AUTHORIZATION');
+    this.db.prepare(`INSERT INTO recommendation_ledger(recommendation_id,snapshot_hash,signal_session,ticker,decision,authority_mode,baseline_authorization_token,payload_json,created_at) VALUES (?,?,?,?,?,?,?,?,?)`).run(record.recommendationId,record.snapshotHash,record.signalSession,record.ticker,record.decision,mode,baselineAuthorizationToken,canonicalize(record),record.createdAt);
     return record.recommendationId;
   }
 
-  appendRecommendation(record) {
-    return this.#appendRecommendation(record,'CERTIFIED_PRODUCTION');
-  }
-
-  appendResearchRecommendation(record) {
-    return this.#appendRecommendation(record,'RESEARCH');
-  }
+  appendRecommendation(record) { return this.#appendRecommendation(record,'CERTIFIED_PRODUCTION'); }
+  appendResearchRecommendation(record) { return this.#appendRecommendation(record,'RESEARCH'); }
 
   appendEvidence(record) {
-    for (const k of ['evidenceId','evidenceType','engineVersion','configHash','createdAt'])
-      if (!record[k]) throw new Error(`EVIDENCE_MISSING:${k}`);
+    for (const k of ['evidenceId','evidenceType','engineVersion','configHash','createdAt']) if (!record[k]) throw new Error(`EVIDENCE_MISSING:${k}`);
     if (!Object.values(EVIDENCE).includes(record.evidenceType)) throw new Error(`INVALID_EVIDENCE_TYPE:${record.evidenceType}`);
     const artifactHash=sha256(record.payload);
-    this.db.prepare(`INSERT INTO evidence_store
-      (evidence_id,evidence_type,engine_version,config_hash,payload_json,artifact_hash,created_at)
-      VALUES (?,?,?,?,?,?,?)`)
-      .run(record.evidenceId,record.evidenceType,record.engineVersion,record.configHash,
-        canonicalize(record.payload),artifactHash,record.createdAt);
+    this.db.prepare(`INSERT INTO evidence_store(evidence_id,evidence_type,engine_version,config_hash,payload_json,artifact_hash,created_at) VALUES (?,?,?,?,?,?,?)`).run(record.evidenceId,record.evidenceType,record.engineVersion,record.configHash,canonicalize(record.payload),artifactHash,record.createdAt);
     return artifactHash;
   }
 
   appendCorporateAction(record) {
-    for (const k of ['actionId','ticker','effectiveSession','actionType','source','verifiedAt'])
-      if (!record[k]) throw new Error(`CORPORATE_ACTION_MISSING:${k}`);
-    this.db.prepare(`INSERT INTO corporate_actions
-      (action_id,ticker,effective_session,action_type,source,verified_at,payload_json) VALUES (?,?,?,?,?,?,?)`)
-      .run(record.actionId,record.ticker,record.effectiveSession,record.actionType,record.source,record.verifiedAt,canonicalize(record));
+    for (const k of ['actionId','ticker','effectiveSession','actionType','source','verifiedAt']) if (!record[k]) throw new Error(`CORPORATE_ACTION_MISSING:${k}`);
+    this.db.prepare(`INSERT INTO corporate_actions(action_id,ticker,effective_session,action_type,source,verified_at,payload_json) VALUES (?,?,?,?,?,?,?)`).run(record.actionId,record.ticker,record.effectiveSession,record.actionType,record.source,record.verifiedAt,canonicalize(record));
     return record.actionId;
   }
 
   appendFundamental(record) {
-    for (const k of ['fundamentalId','ticker','reportPeriod','publicationDate','availableFrom','source','verifiedAt'])
-      if (!record[k]) throw new Error(`FUNDAMENTAL_MISSING:${k}`);
+    for (const k of ['fundamentalId','ticker','reportPeriod','publicationDate','availableFrom','source','verifiedAt']) if (!record[k]) throw new Error(`FUNDAMENTAL_MISSING:${k}`);
     const publication=Date.parse(record.publicationDate),available=Date.parse(record.availableFrom);
     if (!Number.isFinite(publication) || !Number.isFinite(available)) throw new Error('INVALID_FUNDAMENTAL_TIMESTAMPS');
     if (available < publication) throw new Error('FUNDAMENTAL_AVAILABLE_BEFORE_PUBLICATION');
-    this.db.prepare(`INSERT INTO fundamentals
-      (fundamental_id,ticker,report_period,publication_date,available_from,source,verified_at,payload_json) VALUES (?,?,?,?,?,?,?,?)`)
-      .run(record.fundamentalId,record.ticker,record.reportPeriod,record.publicationDate,record.availableFrom,record.source,record.verifiedAt,canonicalize(record));
+    this.db.prepare(`INSERT INTO fundamentals(fundamental_id,ticker,report_period,publication_date,available_from,source,verified_at,payload_json) VALUES (?,?,?,?,?,?,?,?)`).run(record.fundamentalId,record.ticker,record.reportPeriod,record.publicationDate,record.availableFrom,record.source,record.verifiedAt,canonicalize(record));
     return record.fundamentalId;
   }
 
-  fundamentalsAsOf(ticker, asOf) {
-    return this.db.prepare(`SELECT * FROM fundamentals WHERE ticker=? AND available_from<=? ORDER BY available_from DESC`).all(ticker,asOf);
-  }
-
-  dataSnapshotBars(dataSnapshotId,ticker=null) {
-    if (ticker) return this.db.prepare(`SELECT * FROM normalized_bars WHERE data_snapshot_id=? AND ticker=? ORDER BY session`).all(dataSnapshotId,ticker);
-    return this.db.prepare(`SELECT * FROM normalized_bars WHERE data_snapshot_id=? ORDER BY ticker,session`).all(dataSnapshotId);
-  }
+  fundamentalsAsOf(ticker, asOf) { return this.db.prepare(`SELECT * FROM fundamentals WHERE ticker=? AND available_from<=? ORDER BY available_from DESC`).all(ticker,asOf); }
+  dataSnapshotBars(dataSnapshotId,ticker=null) { if (ticker) return this.db.prepare(`SELECT * FROM normalized_bars WHERE data_snapshot_id=? AND ticker=? ORDER BY session`).all(dataSnapshotId,ticker);return this.db.prepare(`SELECT * FROM normalized_bars WHERE data_snapshot_id=? ORDER BY ticker,session`).all(dataSnapshotId); }
 }
