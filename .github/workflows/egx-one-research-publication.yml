@@ -1,0 +1,68 @@
+name: EGX ONE Research Publication
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/clean-room-v0']
+    paths:
+      - 'src/research-publication.js'
+      - 'scripts/research-build-publication.mjs'
+      - 'tests/research-publication.test.mjs'
+      - 'package.json'
+      - '.github/workflows/egx-one-research-publication.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-one-research-publication
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify full contract suite
+        run: npm test
+      - name: Build hash-bound research publication
+        run: npm run research:publish
+      - name: Verify publication authority and lineage
+        run: |
+          node - <<'NODE'
+          import fs from 'node:fs';
+          import {verifyResearchPublication} from './src/research-publication.js';
+          const p=JSON.parse(fs.readFileSync('data/research/published/latest.json','utf8'));
+          const s=JSON.parse(fs.readFileSync('data/research/strategy/latest.json','utf8'));
+          if(!verifyResearchPublication(p))throw new Error('PUBLICATION_VERIFY_FAILED');
+          if(p.sourceStrategySnapshotHash!==s.strategySnapshotHash)throw new Error('PUBLICATION_STRATEGY_LINEAGE_MISMATCH');
+          if(p.signalSession!==s.signalSession)throw new Error('PUBLICATION_SESSION_MISMATCH');
+          if(p.productionAuthority!==false||p.automaticOrders!==false)throw new Error('PUBLICATION_PREMATURE_AUTHORITY');
+          console.log(`RESEARCH_PUBLICATION_VERIFIED:${p.signalSession}:${p.publicationHash}:${p.counts.recommendations}`);
+          NODE
+      - name: Commit publication snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/published
+          if git diff --cached --quiet; then echo 'No publication change.'; exit 0; fi
+          git commit -m 'Publish EGX ONE validated research recommendations snapshot'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
+            [ "$attempt" = 3 ] && exit 1
+            sleep $((attempt*4))
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-research-publication
+          path: data/research/published/latest.json
+          if-no-files-found: error
