@@ -38,17 +38,21 @@ export function admitOfficialArtifact({artifact,rawBytes,sourceReceipt,calendarE
   return Object.freeze({state:reasons.length?'BLOCKED':'READY_FOR_SCHEMA_VALIDATION',reasons:[...new Set(reasons)].sort(),...normalized,admissionHash,schemaVerified:false,scopeVerified:false,universeAuthorityEligible:false,ohlcvAuthorityEligible:false});
 }
 
-export function bindExtractionManifest(admission,{extractorId,extractorVersion,schemaId,rowCount,outputHash,sourceAdmissionHash}={}){
+export function bindExtractionManifest(admission,{extractorId,extractorVersion,schemaId,rowCount,outputHash,extractedOutput,sourceAdmissionHash}={}){
   const reasons=[];
   if(admission?.state!=='READY_FOR_SCHEMA_VALIDATION') reasons.push('ARTIFACT_NOT_ADMITTED');
   if(!extractorId) reasons.push('MISSING_EXTRACTOR_ID');
   if(!extractorVersion) reasons.push('MISSING_EXTRACTOR_VERSION');
   if(!schemaId) reasons.push('MISSING_SCHEMA_ID');
   if(!Number.isInteger(rowCount)||rowCount<0) reasons.push('INVALID_ROW_COUNT');
-  if(!/^[0-9a-f]{64}$/i.test(String(outputHash??''))) reasons.push('INVALID_OUTPUT_HASH');
+  if(extractedOutput===undefined||extractedOutput===null) reasons.push('EXTRACTED_OUTPUT_REQUIRED');
+  const computedOutputHash=extractedOutput===undefined||extractedOutput===null?null:sha256(extractedOutput);
+  if(outputHash!==undefined&&!/^[0-9a-f]{64}$/i.test(String(outputHash??''))) reasons.push('INVALID_OUTPUT_HASH');
+  if(outputHash!==undefined&&computedOutputHash&&String(outputHash).toLowerCase()!==computedOutputHash) reasons.push('OUTPUT_HASH_MISMATCH');
+  if(Array.isArray(extractedOutput)&&Number.isInteger(rowCount)&&rowCount!==extractedOutput.length) reasons.push('ROW_COUNT_MISMATCH');
   if(sourceAdmissionHash!==admission?.admissionHash) reasons.push('ADMISSION_HASH_MISMATCH');
   if(reasons.length)return Object.freeze({state:'BLOCKED',reasons:[...new Set(reasons)].sort(),manifest:null});
-  const manifest={sourceAdmissionHash,sourceContentHash:admission.contentHash,extractorId,extractorVersion,schemaId,rowCount,outputHash:String(outputHash).toLowerCase()};
+  const manifest={sourceAdmissionHash,sourceContentHash:admission.contentHash,extractorId,extractorVersion,schemaId,rowCount,outputHash:computedOutputHash};
   manifest.manifestHash=sha256(manifest);
   return Object.freeze({state:'READY_FOR_SEMANTIC_VALIDATION',reasons:[],manifest:Object.freeze(manifest),universeAuthorityEligible:false,ohlcvAuthorityEligible:false});
 }
