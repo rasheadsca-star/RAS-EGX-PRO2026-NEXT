@@ -1,0 +1,69 @@
+name: EGX ONE Research Market Refresh
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/**']
+    paths:
+      - 'src/research-live-adapters.js'
+      - 'scripts/research-refresh-live.mjs'
+      - 'tests/research-live-adapters.test.mjs'
+      - '.github/workflows/egx-one-research-refresh.yml'
+  schedule:
+    - cron: '15 14 * * 0-4'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-one-research-market-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify clean-room contracts
+        run: npm test
+      - name: Refresh Yahoo and Mubasher research observations
+        env:
+          RESEARCH_REFRESH_CONCURRENCY: 6
+          RESEARCH_SOURCE_TIMEOUT_MS: 16000
+          RESEARCH_CLOSE_CONFLICT_PCT: 1
+          RESEARCH_VOLUME_CONFLICT_PCT: 20
+        run: npm run research:refresh
+      - name: Enforce research-only output boundary
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/live/latest.json','utf8'));
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false)throw new Error('RESEARCH_LIVE_AUTHORITY_BOUNDARY_FAILED');
+          if(!x.snapshotHash||!x.targetSession)throw new Error('RESEARCH_LIVE_SNAPSHOT_INCOMPLETE');
+          console.log(`RESEARCH_LIVE_STATUS:${JSON.stringify({readiness:x.researchDataReadiness,counts:x.counts,snapshotHash:x.snapshotHash})}`);
+          NODE
+      - name: Commit research market snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/live
+          if git diff --cached --quiet; then echo 'No research market change.'; exit 0; fi
+          git commit -m "Refresh EGX ONE research market snapshot"
+          for attempt in 1 2 3; do
+            if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
+            [ "$attempt" = 3 ] && exit 1
+            sleep $((attempt*5))
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-research-market-snapshot
+          path: data/research/live/latest.json
+          if-no-files-found: error
