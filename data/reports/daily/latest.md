@@ -1,24 +1,24 @@
-# تقرير جلسة 2026-08-30
+# تقرير جلسة 2026-08-31
 
 - حالة التشغيل: **يحتاج متابعة**
-- الأول فنيًا: **KWIN**
-- أول B للمراقبة: **KWIN**
+- الأول فنيًا: **ETEL**
+- أول B للمراقبة: **ETEL**
 - الجاهز ورقيًا: **لا يوجد**
 - إشارات جديدة: **20**
-- دخول جديد: **4**
-- صفقات مغلقة: **12**
+- دخول جديد: **21**
+- صفقات مغلقة: **26**
 - منتهية دون دخول: **0**
 
 ## حالة الاستراتيجيات
 
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 292, PF 1.4021, Average R 0.2036
-- breakout: RESEARCH_ONLY — صفقات مغلقة 64, PF 1.6106, Average R 0.2951
-- pullback: RESEARCH_ONLY — صفقات مغلقة 15, PF 4.7021, Average R 0.8558
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 316, PF 1.3558, Average R 0.1835
+- breakout: RESEARCH_ONLY — صفقات مغلقة 67, PF 1.6625, Average R 0.3162
+- pullback: RESEARCH_ONLY — صفقات مغلقة 16, PF 4.8831, Average R 0.8416
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 97.32%, below preferred 98%.
+- تحذير: Data coverage is 95.98%, below preferred 98%.
 - تحذير: 39 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `8ce3e93738afae4ea7f14ebd369267c4da38a1ea2c82db8cc52ef63a9f35cc15`
+بصمة التقرير: `b92d91da9e69002569f8c324c0e0f60b51f777faca2efac8bd8100106426db8f`
