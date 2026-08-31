@@ -1,0 +1,94 @@
+name: EGX ONE Research History Migration
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/**']
+    paths:
+      - 'src/research-source-policy.js'
+      - 'src/research-history-import.js'
+      - 'scripts/research-migrate-legacy-history.mjs'
+      - 'tests/research-source-policy.test.mjs'
+      - 'tests/research-history-import.test.mjs'
+      - '.github/workflows/egx-one-research-history-migrate.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-one-research-history-migration-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LEGACY_SEED_COMMIT: '0b4cb244dcea90f68c8808a824a0e4d0c3e05b1e'
+  LEGACY_IMPORT_AT: '2026-08-31T20:00:51Z'
+
+jobs:
+  migrate-research-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Contract tests before migration
+        run: npm test
+
+      - name: Fetch exact legacy research seed only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$LEGACY_SEED_COMMIT"
+          rm -rf /tmp/egx-one-legacy-seed
+          mkdir -p /tmp/egx-one-legacy-seed
+          git archive "$LEGACY_SEED_COMMIT" data/history | tar -x -C /tmp/egx-one-legacy-seed
+          test -d /tmp/egx-one-legacy-seed/data/history
+
+      - name: Migrate legacy histories into research warehouse
+        env:
+          LEGACY_HISTORY_COMMIT: ${{ env.LEGACY_SEED_COMMIT }}
+          LEGACY_HISTORY_DIR: /tmp/egx-one-legacy-seed/data/history
+        run: npm run research:migrate-history
+
+      - name: Assert research warehouse boundary
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const index=JSON.parse(fs.readFileSync('data/research/history-index.json','utf8'));
+          if(index.authorityMode!=='RESEARCH'||index.researchOnly!==true||index.productionAuthority!==false) throw new Error('RESEARCH_BOUNDARY_FAILED');
+          if(index.source.legacyCommit!==process.env.LEGACY_SEED_COMMIT.toLowerCase()) throw new Error('LEGACY_COMMIT_MISMATCH');
+          if(index.counts.importedTickers<100) throw new Error(`INSUFFICIENT_IMPORTED_TICKERS:${index.counts.importedTickers}`);
+          if(index.counts.totalSessions<1000) throw new Error(`INSUFFICIENT_IMPORTED_SESSIONS:${index.counts.totalSessions}`);
+          console.log(`RESEARCH_WAREHOUSE_READY:${JSON.stringify(index.counts)}`);
+          NODE
+
+      - name: Commit normalized research warehouse
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/history data/research/history-index.json data/research/migration-errors.json
+          if git diff --cached --quiet; then
+            echo 'Research warehouse already matches exact seed; no commit required.'
+            exit 0
+          fi
+          git commit -m 'Import legacy histories into EGX ONE research warehouse'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin "$GITHUB_REF_NAME" && git push origin HEAD:"$GITHUB_REF_NAME"; then exit 0; fi
+            [ "$attempt" = 3 ] && exit 1
+            sleep $((attempt * 5))
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-research-history-migration
+          path: |
+            data/research/history-index.json
+            data/research/migration-errors.json
+          if-no-files-found: error

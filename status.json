@@ -4,6 +4,13 @@
   "asOf": "2026-08-31T20:45:00Z",
   "marketSession": "2026-08-31",
   "timezone": "Africa/Cairo",
+  "build": {
+    "branch": "egx-one/clean-room-v0",
+    "lastPublishedSourceCommit": "a802d4a121b5e6b7be15cca201fa3037e3991a3f",
+    "lastPublishedCiRun": 33433324824,
+    "coreIntegrityEvidence": {"pass": 169, "total": 169, "fail": 0},
+    "latestResearchWarehouseChange": "PENDING_CI"
+  },
   "authority": {
     "interface": "LIVE",
     "phase0": "PASS_WITH_CONDITIONS",
@@ -18,8 +25,10 @@
   "researchMode": {
     "state": "BUILDING_WAREHOUSE",
     "authorityMode": "RESEARCH",
+    "researchOnly": true,
     "productionAuthority": false,
     "historySeedCommit": "0b4cb244dcea90f68c8808a824a0e4d0c3e05b1e",
+    "historySeedCapturedAt": "2026-08-31T20:00:51Z",
     "sources": ["LEGACY_IMPORT", "YAHOO_RESEARCH", "MUBASHER_RESEARCH"],
     "next": "MIGRATE_HISTORY_THEN_LIVE_REFRESH"
   },
@@ -28,5 +37,53 @@
     "REGISTRY:MISSING",
     "SESSION_AUTHORITY:MISSING",
     "CURRENT_SESSION_CERTIFIED_OHLCV:MISSING"
+  ],
+  "officialEvidence": {
+    "source": "Egyptian Exchange official website",
+    "url": "https://beta.egx.com.eg/en",
+    "identityOnly": [
+      {"ticker": "VERT", "isin": "EGS74801C019", "status": "IDENTITY_VERIFIED_ONLY"},
+      {"ticker": "AIH", "isin": "EGS21351C019", "status": "IDENTITY_VERIFIED_ONLY"}
+    ],
+    "ignoredNonEquity": 1,
+    "exhaustive": false
+  },
+  "marketReference": {
+    "role": "REFERENCE_ONLY_NOT_PRODUCTION_AUTHORITY",
+    "session": "2026-08-31",
+    "egx30": {"value": 54866.04, "changePct": -0.13},
+    "egx70": {"value": 20893.38, "changePct": -2.06},
+    "egx100": {"value": 27262.44, "changePct": -1.51},
+    "tradedSecurities": 224,
+    "advancers": 85,
+    "decliners": 128,
+    "unchanged": 11,
+    "turnoverEgpBn": 18.237,
+    "marketCapEgpTn": 4.287,
+    "sources": [
+      {"name": "Arab Finance", "url": "https://www.arabfinance.com/en/news/newdetails/egx-closes-monday-august-31-on-varied-note"},
+      {"name": "Mubasher", "url": "https://www.mubasher.info/news/4666023"}
+    ]
+  },
+  "legacyForensic": {
+    "universe": 242,
+    "ready": 0,
+    "blocked": 242,
+    "counts": {"BLOCKED": 162, "SOURCE_UNAVAILABLE": 42, "DATA_CONFLICT": 22, "CORPORATE_ACTION_REVIEW": 7, "STALE": 9}
+  },
+  "lineage": [
+    "OFFICIAL_ARTIFACT",
+    "EXTRACTION",
+    "SCHEMA_ATTESTATION",
+    "SCOPE_ATTESTATION",
+    "UNIVERSE_CERTIFICATE",
+    "CERTIFIED_UNIVERSE",
+    "REGISTRY",
+    "MARKET_OBSERVATION_CERTIFICATES",
+    "CERTIFIED_RECONCILIATION",
+    "SESSION_MANIFEST",
+    "PHASE3_REPORT",
+    "BASELINE_AUTHORIZATION",
+    "PRODUCTION_RECOMMENDATION"
   ]
 }
