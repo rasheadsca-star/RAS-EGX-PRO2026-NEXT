@@ -92,6 +92,7 @@ export class EgxMarketDataStore {
       CREATE TABLE IF NOT EXISTS session_manifests (
         snapshot_hash TEXT PRIMARY KEY,
         market_session TEXT NOT NULL,
+        authority_mode TEXT NOT NULL DEFAULT 'RESEARCH',
         engine_version TEXT NOT NULL,
         config_version TEXT NOT NULL,
         commit_hash TEXT NOT NULL,
@@ -115,6 +116,7 @@ export class EgxMarketDataStore {
         signal_session TEXT NOT NULL,
         ticker TEXT NOT NULL,
         decision TEXT NOT NULL,
+        authority_mode TEXT NOT NULL DEFAULT 'RESEARCH',
         payload_json TEXT NOT NULL,
         created_at TEXT NOT NULL,
         FOREIGN KEY(snapshot_hash) REFERENCES session_manifests(snapshot_hash)
@@ -164,6 +166,14 @@ export class EgxMarketDataStore {
       BEFORE DELETE ON data_snapshots BEGIN
         SELECT RAISE(ABORT, 'IMMUTABLE_DATA_SNAPSHOT');
       END;
+      CREATE TRIGGER IF NOT EXISTS session_manifest_no_update
+      BEFORE UPDATE ON session_manifests BEGIN
+        SELECT RAISE(ABORT, 'IMMUTABLE_SESSION_MANIFEST');
+      END;
+      CREATE TRIGGER IF NOT EXISTS session_manifest_no_delete
+      BEFORE DELETE ON session_manifests BEGIN
+        SELECT RAISE(ABORT, 'IMMUTABLE_SESSION_MANIFEST');
+      END;
       CREATE TRIGGER IF NOT EXISTS recommendation_no_update
       BEFORE UPDATE ON recommendation_ledger BEGIN
         SELECT RAISE(ABORT, 'IMMUTABLE_RECOMMENDATION_LEDGER');
@@ -200,6 +210,8 @@ export class EgxMarketDataStore {
     this.#ensureColumn('data_snapshots','ingestion_mode',"TEXT NOT NULL DEFAULT 'RESEARCH'");
     this.#ensureColumn('normalized_bars','certified_reconciliation_manifest_hash','TEXT');
     this.#ensureColumn('normalized_bars','primary_observation_certificate_hash','TEXT');
+    this.#ensureColumn('session_manifests','authority_mode',"TEXT NOT NULL DEFAULT 'RESEARCH'");
+    this.#ensureColumn('recommendation_ledger','authority_mode',"TEXT NOT NULL DEFAULT 'RESEARCH'");
     this.db.exec(`
       CREATE TRIGGER IF NOT EXISTS raw_bar_frozen_update
       BEFORE UPDATE ON raw_bars WHEN (SELECT content_hash FROM acquisition_runs WHERE acquisition_id=OLD.acquisition_id) IS NOT NULL BEGIN
@@ -224,6 +236,18 @@ export class EgxMarketDataStore {
        AND (NEW.certified_reconciliation_manifest_hash IS NULL OR NEW.primary_observation_certificate_hash IS NULL)
       BEGIN
         SELECT RAISE(ABORT, 'CERTIFIED_PRODUCTION_CURRENT_BAR_REQUIRES_CERTIFIED_LINEAGE');
+      END;
+      CREATE TRIGGER IF NOT EXISTS recommendation_authority_guard
+      BEFORE INSERT ON recommendation_ledger
+      WHEN COALESCE((SELECT authority_mode FROM session_manifests WHERE snapshot_hash=NEW.snapshot_hash),'MISSING')<>NEW.authority_mode
+      BEGIN
+        SELECT RAISE(ABORT, 'RECOMMENDATION_AUTHORITY_MODE_MISMATCH');
+      END;
+      CREATE TRIGGER IF NOT EXISTS recommendation_session_guard
+      BEFORE INSERT ON recommendation_ledger
+      WHEN COALESCE((SELECT market_session FROM session_manifests WHERE snapshot_hash=NEW.snapshot_hash),'MISSING')<>NEW.signal_session
+      BEGIN
+        SELECT RAISE(ABORT, 'RECOMMENDATION_SESSION_MISMATCH');
       END;
     `);
   }
@@ -378,9 +402,9 @@ export class EgxMarketDataStore {
       }
     }
     this.db.prepare(`INSERT OR IGNORE INTO session_manifests
-      (snapshot_hash,market_session,engine_version,config_version,commit_hash,generated_at,payload_json)
-      VALUES (?,?,?,?,?,?,?)`)
-      .run(manifest.snapshotHash,manifest.marketSession,manifest.engineVersion,manifest.configVersion,
+      (snapshot_hash,market_session,authority_mode,engine_version,config_version,commit_hash,generated_at,payload_json)
+      VALUES (?,?,?,?,?,?,?,?)`)
+      .run(manifest.snapshotHash,manifest.marketSession,manifest.authorityMode,manifest.engineVersion,manifest.configVersion,
         manifest.commitHash,manifest.generatedAt,canonicalize(manifest));
     return manifest.snapshotHash;
   }
@@ -398,17 +422,28 @@ export class EgxMarketDataStore {
     return registry.version;
   }
 
-  appendRecommendation(record) {
+  #appendRecommendation(record,authorityMode) {
     validateRecommendationContract(record);
-    const manifest=this.db.prepare('SELECT market_session FROM session_manifests WHERE snapshot_hash=?').get(record.snapshotHash);
+    const mode=String(authorityMode??'').toUpperCase();
+    if(!INGESTION_MODES.has(mode)) throw new Error(`INVALID_RECOMMENDATION_AUTHORITY_MODE:${mode}`);
+    const manifest=this.db.prepare('SELECT market_session,authority_mode FROM session_manifests WHERE snapshot_hash=?').get(record.snapshotHash);
     if (!manifest) throw new Error('RECOMMENDATION_SNAPSHOT_NOT_FOUND');
     if (manifest.market_session !== record.signalSession) throw new Error('RECOMMENDATION_SESSION_MISMATCH');
+    if (manifest.authority_mode !== mode) throw new Error(`RECOMMENDATION_AUTHORITY_MODE_MISMATCH:${mode}:${manifest.authority_mode}`);
     this.db.prepare(`INSERT INTO recommendation_ledger
-      (recommendation_id,snapshot_hash,signal_session,ticker,decision,payload_json,created_at)
-      VALUES (?,?,?,?,?,?,?)`)
-      .run(record.recommendationId,record.snapshotHash,record.signalSession,record.ticker,record.decision,
+      (recommendation_id,snapshot_hash,signal_session,ticker,decision,authority_mode,payload_json,created_at)
+      VALUES (?,?,?,?,?,?,?,?)`)
+      .run(record.recommendationId,record.snapshotHash,record.signalSession,record.ticker,record.decision,mode,
         canonicalize(record),record.createdAt);
     return record.recommendationId;
+  }
+
+  appendRecommendation(record) {
+    return this.#appendRecommendation(record,'CERTIFIED_PRODUCTION');
+  }
+
+  appendResearchRecommendation(record) {
+    return this.#appendRecommendation(record,'RESEARCH');
   }
 
   appendEvidence(record) {
