@@ -14,6 +14,10 @@ class V18DestructiveTests(unittest.TestCase):
     def test_duplicate_session_fails_closed(self):
         r=rows(25); s={'ticker':'X','symbolVerified':True,'sessions':r+r[:1]}
         self.assertIn('DUPLICATE_SESSION',data_gate(s,1)['reasons'])
+    def test_stale_last_session_fails_closed(self):
+        s={'ticker':'X','symbolVerified':True,'sessions':rows(30)}
+        gate=data_gate(s,1,required_last_session='2026-08-30')
+        self.assertEqual(gate['status'],'DATA_BLOCKED'); self.assertIn('STALE_OHLCV',gate['reasons'])
     def test_bad_ohlc_is_rejected(self):
         r=rows(1)[0]; r['high']=98; self.assertFalse(valid_session(r))
     def test_same_bar_is_stop_first(self):
@@ -47,13 +51,13 @@ class V18DestructiveTests(unittest.TestCase):
     def test_forward_snapshot_is_immutable(self):
         current={
             'artifactHash':'A',
-            'model':{'id':'softmax-baseline-1'},
+            'model':{'id':'softmax-geometry-aware-2'},
             'recommendations':[{
                 'ticker':'X','signalDate':'2026-08-30','decision':'WAIT',
                 'entryLow':99,'entryHigh':101,'stop':95,'target':110,
                 'pTargetBeforeStop':.6,'pStopBeforeTarget':.2,'pTimeExit':.1,'pNoEntry':.1,
                 'expectedValue':.01,'targetRealistic':True,'stopRealistic':True,
-                'modelVersion':'v18-probability-baseline-1','featureVersion':'v18-features-1'
+                'modelVersion':'softmax-geometry-aware-2','featureVersion':'v18-features-2'
             }],
             'dataReadiness':[{'ticker':'X','lastSession':'2026-08-30'}]
         }
