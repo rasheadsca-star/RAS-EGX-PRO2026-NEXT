@@ -23,3 +23,17 @@ The **EGX Market Data Store** is the only authoritative engine input. Legacy JSO
 
 ## Point-in-time fundamentals
 Each fundamental record stores `reportPeriod`, `publicationDate`, `availableFrom`, `source`, and `verifiedAt`. Historical evaluation at time T may retrieve only records with `availableFrom <= T`. `availableFrom` cannot precede `publicationDate`.
+
+## Authoritative Universe Contract
+- A legacy ticker list is never sufficient evidence that a security is active.
+- Production universe membership requires exhaustive official EGX inclusion evidence such as an official listed-securities snapshot or official daily bulletin.
+- Corporate disclosures/listing news may prove identity or effective-date changes, but cannot by themselves prove universe completeness.
+- Ticker↔ISIN conflicts are `DATA_CONFLICT` and block the universe.
+- Universe membership is point-in-time: evidence effective after the requested `asOfDate` is excluded.
+- A declared official total, when present, must equal the canonical member count or the universe remains `UNIVERSE_INCOMPLETE`.
+
+## Current-session Acquisition Policy
+- Current production OHLCV requires an authoritative primary source (`OFFICIAL_EXCHANGE` or explicitly configured `LICENSED_EOD`).
+- A public market page can cross-check but cannot silently become the current-session primary authority.
+- Yahoo is history/backfill-only for EGX ONE unless independently re-qualified under a new evidence gate.
+- A daily EOD observation captured before the official session close is blocked as `PRE_CLOSE_DAILY_BAR`.
