@@ -1,4 +1,46 @@
 import { READINESS } from './contracts.js';
-export function validateBars(bars,{latestSession,minHistory=100,conflict=false,suspended=false,corporateActionReview=false,minMedianTurnover=0}={}){const errors=[];if(!Array.isArray(bars)||bars.length===0)return result(READINESS.SOURCE_UNAVAILABLE,['no_bars']);const seen=new Set();let last=null;for(const[i,b]of bars.entries()){if(!b?.session||seen.has(b.session))errors.push(`duplicate_or_missing_session:${i}`);seen.add(b?.session);for(const k of['open','high','low','close'])if(!(Number.isFinite(b?.[k])&&b[k]>0))errors.push(`invalid_${k}:${i}`);if(Number.isFinite(b?.high)&&Number.isFinite(b?.open)&&b.high<b.open)errors.push(`high_lt_open:${i}`);if(Number.isFinite(b?.high)&&Number.isFinite(b?.close)&&b.high<b.close)errors.push(`high_lt_close:${i}`);if(Number.isFinite(b?.low)&&Number.isFinite(b?.open)&&b.low>b.open)errors.push(`low_gt_open:${i}`);if(Number.isFinite(b?.low)&&Number.isFinite(b?.close)&&b.low>b.close)errors.push(`low_gt_close:${i}`);if(Number.isFinite(b?.high)&&Number.isFinite(b?.low)&&b.high<b.low)errors.push(`high_lt_low:${i}`);if(b?.volume!==undefined&&(!Number.isFinite(b.volume)||b.volume<0))errors.push(`invalid_volume:${i}`);last=b}if(errors.length)return result(READINESS.BLOCKED,errors);if(corporateActionReview)return result(READINESS.CORPORATE_ACTION_REVIEW,['corporate_action_unverified']);if(conflict)return result(READINESS.DATA_CONFLICT,['cross_source_conflict']);if(suspended)return result(READINESS.SUSPENDED,['suspended']);if(latestSession&&last?.session!==latestSession)return result(READINESS.STALE,[`last_session:${last?.session}`]);if(bars.length<minHistory)return result(READINESS.INSUFFICIENT_HISTORY,[`history:${bars.length}<${minHistory}`]);if(minMedianTurnover>0){const t=bars.map(b=>(b.close||0)*(b.volume||0)).sort((a,b)=>a-b);const med=t[Math.floor(t.length/2)]??0;if(med<minMedianTurnover)return result(READINESS.ILLIQUID,[`median_turnover:${med}`])}return result(READINESS.READY,[])}
-function result(state,reasons){return{state,reasons,ready:state===READINESS.READY}}
-export function assertReady(readiness){if(!readiness?.ready)throw new Error(`DATA_READINESS_BLOCK:${readiness?.state??'UNKNOWN'}`);return true}
+
+export function validateBars(bars, {latestSession, minHistory=100, conflict=false, suspended=false, corporateActionReview=false, minMedianTurnover=0, allowedSessions=null}={}) {
+  const errors=[];
+  if (!Array.isArray(bars) || bars.length===0) return result(READINESS.SOURCE_UNAVAILABLE,['no_bars']);
+  const allowed=allowedSessions instanceof Set?allowedSessions:(Array.isArray(allowedSessions)?new Set(allowedSessions):null);
+  const seen=new Set();
+  let last=null; let previousSession='';
+  for (const [i,b] of bars.entries()) {
+    const session=b?.session;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(session??''))) errors.push(`invalid_session:${i}`);
+    if (!session || seen.has(session)) errors.push(`duplicate_or_missing_session:${i}`);
+    seen.add(session);
+    if (session && previousSession && session<=previousSession) errors.push(`non_monotonic_session:${i}`);
+    if (session) previousSession=session;
+    if (session && latestSession && session>latestSession) errors.push(`future_session:${i}:${session}`);
+    if (session && allowed && !allowed.has(session)) errors.push(`non_exchange_session:${i}:${session}`);
+    for (const k of ['open','high','low','close']) if (!(Number.isFinite(b?.[k]) && b[k] > 0)) errors.push(`invalid_${k}:${i}`);
+    if (Number.isFinite(b?.high) && Number.isFinite(b?.open) && b.high < b.open) errors.push(`high_lt_open:${i}`);
+    if (Number.isFinite(b?.high) && Number.isFinite(b?.close) && b.high < b.close) errors.push(`high_lt_close:${i}`);
+    if (Number.isFinite(b?.low) && Number.isFinite(b?.open) && b.low > b.open) errors.push(`low_gt_open:${i}`);
+    if (Number.isFinite(b?.low) && Number.isFinite(b?.close) && b.low > b.close) errors.push(`low_gt_close:${i}`);
+    if (Number.isFinite(b?.high) && Number.isFinite(b?.low) && b.high < b.low) errors.push(`high_lt_low:${i}`);
+    if (b?.volume !== undefined && (!Number.isFinite(b.volume) || b.volume < 0)) errors.push(`invalid_volume:${i}`);
+    last=b;
+  }
+  if (errors.length) return result(READINESS.BLOCKED,errors);
+  if (corporateActionReview) return result(READINESS.CORPORATE_ACTION_REVIEW,['corporate_action_unverified']);
+  if (conflict) return result(READINESS.DATA_CONFLICT,['cross_source_conflict']);
+  if (suspended) return result(READINESS.SUSPENDED,['suspended']);
+  if (latestSession && last?.session !== latestSession) return result(READINESS.STALE,[`last_session:${last?.session}`]);
+  if (bars.length < minHistory) return result(READINESS.INSUFFICIENT_HISTORY,[`history:${bars.length}<${minHistory}`]);
+  if (minMedianTurnover > 0) {
+    const t=bars.map(b => (b.close||0)*(b.volume||0)).sort((a,b)=>a-b);
+    const med=t[Math.floor(t.length/2)] ?? 0;
+    if (med < minMedianTurnover) return result(READINESS.ILLIQUID,[`median_turnover:${med}`]);
+  }
+  return result(READINESS.READY,[]);
+}
+
+function result(state,reasons){ return {state,reasons,ready:state===READINESS.READY}; }
+
+export function assertReady(readiness){
+  if (!readiness?.ready) throw new Error(`DATA_READINESS_BLOCK:${readiness?.state ?? 'UNKNOWN'}`);
+  return true;
+}

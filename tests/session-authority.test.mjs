@@ -1,5 +1,7 @@
-import test from 'node:test';import assert from 'node:assert/strict';import{latestCompletedSession,assessSessionDataAvailability}from'../src/session-authority.js';
+import test from 'node:test';import assert from'node:assert/strict';import{latestCompletedSession,assessSessionDataAvailability,resolveSessionAuthority,validateExchangeCalendar}from'../src/session-authority.js';
 const cal={version:'egx-test-v1',sessions:[{session:'2026-08-30',closeAt:'2026-08-30T14:30:00+03:00'},{session:'2026-08-31',closeAt:'2026-08-31T14:30:00+03:00'}]};
-test('calendar not wall date determines completed session',()=>assert.equal(latestCompletedSession(cal,'2026-08-31T12:00:00+03:00'),'2026-08-30'));
+test('calendar, not wall date, determines completed session',()=>assert.equal(latestCompletedSession(cal,'2026-08-31T12:00:00+03:00'),'2026-08-30'));
 test('latest completed session after close is current session',()=>assert.equal(latestCompletedSession(cal,'2026-08-31T15:00:00+03:00'),'2026-08-31'));
 test('missing current data returns DATA_NOT_READY without stale fallback',()=>assert.deepEqual(assessSessionDataAvailability({calendar:cal,now:'2026-08-31T15:00:00+03:00',availableSessions:['2026-08-30']}),{engineState:'DATA_NOT_READY',expectedSession:'2026-08-31',latestVerifiedSession:'2026-08-30',reason:'LATEST_SESSION_DATA_MISSING'}));
+test('canonical session authority carries calendar version',()=>assert.deepEqual(resolveSessionAuthority({calendar:cal,now:'2026-08-31T15:00:00+03:00',availableSessions:['2026-08-31']}),{state:'READY',currentSession:'2026-08-31',latestVerifiedSession:'2026-08-31',calendarVersion:'egx-test-v1',reason:null}));
+test('calendar close timestamp must belong to its declared session',()=>assert.throws(()=>validateExchangeCalendar({version:'x',sessions:[{session:'2026-08-31',closeAt:'2026-09-01T00:01:00+03:00'}]}),/CALENDAR_CLOSE_SESSION_DATE_MISMATCH/));
