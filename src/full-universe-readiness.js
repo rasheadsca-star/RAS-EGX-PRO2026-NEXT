@@ -3,7 +3,7 @@ import { evaluatePhase3Gate } from './phase3-gate.js';
 import { sha256 } from './hash.js';
 import { validateExchangeCalendar } from './session-authority.js';
 
-export function runFullUniverseReadiness({universe,sessionAuthority,exchangeCalendar,barsByTicker={},flagsByTicker={},acquisitionPlans=[],minHistory=100,minMedianTurnover=0}={}){
+export function runFullUniverseReadiness({universe,sessionAuthority,exchangeCalendar,barsByTicker={},flagsByTicker={},acquisitionPlans=[],sourceReceipts=[],minHistory=100,minMedianTurnover=0}={}){
   const structural=[];
   if(!universe||universe.state!=='READY') structural.push(`UNIVERSE:${universe?.state??'MISSING'}`);
   if(!sessionAuthority||sessionAuthority.state!=='READY'||!sessionAuthority.currentSession) structural.push(`SESSION_AUTHORITY:${sessionAuthority?.state??'MISSING'}`);
@@ -16,7 +16,7 @@ export function runFullUniverseReadiness({universe,sessionAuthority,exchangeCale
   if(extras.length) structural.push(`DATA_OUTSIDE_UNIVERSE:${extras.join(',')}`);
 
   if(structural.length){
-    const phase3=evaluatePhase3Gate({universe,registry:null,sessionAuthority,acquisitionPlans});
+    const phase3=evaluatePhase3Gate({universe,registry:null,sessionAuthority,acquisitionPlans,sourceReceipts});
     return freeze({state:'FAIL',structuralBlockers:structural.sort(),registry:null,phase3,coverage:null,reportHash:null});
   }
 
@@ -26,7 +26,7 @@ export function runFullUniverseReadiness({universe,sessionAuthority,exchangeCale
     return {ticker:member.ticker,companyName:member.companyName??null,bars:barsByTicker[member.ticker]??[],sourceStatus:flags.sourceStatus??'UNKNOWN',conflict:flags.conflict===true,suspended:flags.suspended===true,corporateActionReview:flags.corporateActionReview===true};
   });
   const registry=buildUniverseRegistry(symbols,{latestSession:sessionAuthority.currentSession,minHistory,minMedianTurnover,allowedSessions});
-  const phase3=evaluatePhase3Gate({universe,registry,sessionAuthority,acquisitionPlans});
+  const phase3=evaluatePhase3Gate({universe,registry,sessionAuthority,acquisitionPlans,sourceReceipts});
   const covered=registry.rows.filter(r=>r.readiness!=='SOURCE_UNAVAILABLE').length;
   const coverage={universeTotal:universe.total,registryTotal:registry.total,withAnyBars:covered,missingBars:registry.total-covered,ready:registry.counts.READY??0,readinessCounts:registry.counts};
   const report={state:phase3.verdict==='PASS'?'PASS':'FAIL',session:sessionAuthority.currentSession,calendarVersion:exchangeCalendar.version,universeVersion:universe.version??null,registryVersion:registry.version,structuralBlockers:[],registry,phase3,coverage};
