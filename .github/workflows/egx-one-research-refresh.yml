@@ -10,11 +10,14 @@ on:
       - 'src/research-legacy-market-import.js'
       - 'src/research-current-session.js'
       - 'src/research-feature-engine.js'
+      - 'src/research-ui-summary.js'
       - 'scripts/research-refresh-live.mjs'
       - 'scripts/research-build-features.mjs'
+      - 'scripts/research-build-ui-summary.mjs'
       - 'tests/research-live-adapters.test.mjs'
       - 'tests/research-current-session.test.mjs'
       - 'tests/research-feature-engine.test.mjs'
+      - 'tests/research-ui-summary.test.mjs'
       - 'package.json'
       - '.github/workflows/egx-one-research-refresh.yml'
   schedule:
@@ -126,15 +129,34 @@ jobs:
           console.log(`RESEARCH_FEATURE_STATUS:${JSON.stringify({readiness:x.featureReadiness,reasons:x.featureReadinessReasons,counts:x.counts,snapshotHash:x.snapshotHash,phaseBoundary:x.phaseBoundary,leaderboards:x.descriptiveLeaderboards})}`);
           NODE
 
-      - name: Commit research market and feature snapshots
+      - name: Build research UI summary
+        run: npm run research:ui
+
+      - name: Enforce research UI boundary
+        env:
+          EXPECTED: ${{ steps.expected.outputs.session }}
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/ui/latest.json','utf8'));
+          const fail=m=>{throw new Error(m)};
+          if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notARecommendation!==true)fail('RESEARCH_UI_AUTHORITY_BOUNDARY_FAILED');
+          if(x.session!==process.env.EXPECTED)fail('RESEARCH_UI_SESSION_BINDING_FAILED');
+          if(x.authority?.researchStrategy!==false||x.authority?.productionPhase4!==false||x.authority?.automaticOrders!==false)fail('RESEARCH_UI_PREMATURE_AUTHORITY');
+          const forbidden=['decision','decisionCode','entry','entryLow','entryHigh','entryExpiry','stop','target','target1','target2','grossRiskReward','netRiskReward','opportunityScore','combinedOpportunityScore'];
+          const text=JSON.stringify(x);for(const key of forbidden){if(new RegExp(`"${key}"\\s*:`).test(text))fail(`RESEARCH_UI_FORBIDDEN_FIELD:${key}`)}
+          if(!x.uiSnapshotHash)fail('RESEARCH_UI_HASH_MISSING');
+          console.log(`RESEARCH_UI_STATUS:${JSON.stringify({session:x.session,counts:x.counts,authority:x.authority,uiSnapshotHash:x.uiSnapshotHash})}`);
+          NODE
+
+      - name: Commit research market feature and UI snapshots
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/live data/research/features
-          if git diff --cached --quiet; then echo 'No research market or feature change.'; exit 0; fi
-          git commit -m "Refresh EGX ONE research market and feature snapshots"
+          git add data/research/live data/research/features data/research/ui
+          if git diff --cached --quiet; then echo 'No research snapshot change.'; exit 0; fi
+          git commit -m "Refresh EGX ONE research market feature and UI snapshots"
           for attempt in 1 2 3; do
             if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
             [ "$attempt" = 3 ] && exit 1
@@ -142,8 +164,9 @@ jobs:
           done
       - uses: actions/upload-artifact@v4
         with:
-          name: egx-one-research-market-and-features
+          name: egx-one-research-market-features-ui
           path: |
             data/research/live/latest.json
             data/research/features/latest.json
+            data/research/ui/latest.json
           if-no-files-found: error

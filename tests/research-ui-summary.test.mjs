@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { buildResearchUiSummary,assertResearchUiSummary } from '../src/research-ui-summary.js';
+
+function feature(){return{authorityMode:'RESEARCH',researchOnly:true,productionAuthority:false,signalSession:'2026-08-31',featureReadiness:'PASS',snapshotHash:'feature-hash',parentResearchSnapshotHash:'market-hash',historyIndexHash:'history-hash',counts:{universe:2,currentSessionReady:2,featureReady:1,corporateActionReview:1,insufficientHistory:0,sourceUnavailable:0,featureCoveragePct:50},phaseBoundary:{researchFeaturesAuthorized:true,researchStrategyAuthorized:false,productionPhase4Authorized:false,recommendationAuthorized:false},descriptiveLeaderboards:{combinedOpportunityScore:null,rankingAuthority:'DESCRIPTIVE_ONLY_NOT_STRATEGY',momentum20:[{ticker:'AAA',value:12,metric:'momentum20Pct'}],relativeVolume20:[],liquidity20:[],lowestAtrPct:[]},records:[{ticker:'AAA',companyNameAr:'ألف',state:'FEATURE_READY',featureReady:true,groups:[{name:'TECHNICAL',payload:{close:10,momentum20Pct:12,momentum60Pct:20,rsi14:55,atrPct:2,closeVsSma20Pct:3,closeVsSma50Pct:4,breakoutAbovePrior20dHigh:false}},{name:'LIQUIDITY',payload:{relativeVolume20:1.5,medianTradedValue20:100000,currentTradedValue:120000}},{name:'CORPORATE_ACTIONS',payload:{historicalDiscontinuities:[],currentJumpReviewRequired:false}}]},{ticker:'BBB',state:'CORPORATE_ACTION_REVIEW',featureReady:false,groups:[{name:'CORPORATE_ACTIONS',payload:{historicalDiscontinuities:[{changePct:50}],currentJumpReviewRequired:false}}]}]}}
+function live(){return{authorityMode:'RESEARCH',researchOnly:true,productionAuthority:false,expectedSession:'2026-08-31',counts:{currentSessionCoveragePct:81.59}}}
+
+test('research UI summary exposes diagnostics without strategy fields',()=>{const x=buildResearchUiSummary(feature(),live());assert.equal(x.symbols.length,2);assert.equal(x.symbols[0].metrics.rsi14,55);assert.equal(x.symbols[1].review.historicalDiscontinuities,1);assert.equal(x.authority.researchStrategy,false);assert.equal(x.notARecommendation,true);assertResearchUiSummary(x)});
+
+test('research UI summary strips combined score from leaderboards',()=>{const x=buildResearchUiSummary(feature(),live());assert.equal('combinedOpportunityScore' in x.leaderboards,false);assert.equal(x.leaderboards.rankingAuthority,'DESCRIPTIVE_ONLY_NOT_STRATEGY')});
+
+test('UI summary rejects mismatched sessions',()=>{const l=live();l.expectedSession='2026-08-30';assert.throws(()=>buildResearchUiSummary(feature(),l),/RESEARCH_UI_SESSION_MISMATCH/)});
+
+test('UI assertion rejects executable fields',()=>{const x=structuredClone(buildResearchUiSummary(feature(),live()));x.symbols[0].entryLow=9;const {uiSnapshotHash,...rest}=x;x.uiSnapshotHash='bad';assert.throws(()=>assertResearchUiSummary(x),/RESEARCH_UI_FORBIDDEN_FIELD/)});
