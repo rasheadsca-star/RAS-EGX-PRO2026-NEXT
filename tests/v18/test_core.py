@@ -45,7 +45,18 @@ class V18DestructiveTests(unittest.TestCase):
             p=Path(d)/'ledger.json'; append(p,{'experimentId':'V18-E001'})
             with self.assertRaises(ValueError): append(p,{'experimentId':'V18-E001'})
     def test_forward_snapshot_is_immutable(self):
-        current={'artifactHash':'A','recommendations':[{'ticker':'X','signalDate':'2026-08-30','decision':'WAIT','pTargetBeforeStop':.6,'expectedValue':.01}]}
+        current={
+            'artifactHash':'A',
+            'model':{'id':'softmax-baseline-1'},
+            'recommendations':[{
+                'ticker':'X','signalDate':'2026-08-30','decision':'WAIT',
+                'entryLow':99,'entryHigh':101,'stop':95,'target':110,
+                'pTargetBeforeStop':.6,'pStopBeforeTarget':.2,'pTimeExit':.1,'pNoEntry':.1,
+                'expectedValue':.01,'targetRealistic':True,'stopRealistic':True,
+                'modelVersion':'v18-probability-baseline-1','featureVersion':'v18-features-1'
+            }],
+            'dataReadiness':[{'ticker':'X','lastSession':'2026-08-30'}]
+        }
         _,ledger=freeze(current,{'entries':[]}); changed=json.loads(json.dumps(current)); changed['recommendations'][0]['target']=120
         with self.assertRaises(ValueError): freeze(changed,ledger)
         self.assertTrue(verify_ledger(ledger)); ledger['entries'][0]['portfolioDecision']='BUY'; self.assertFalse(verify_ledger(ledger))
