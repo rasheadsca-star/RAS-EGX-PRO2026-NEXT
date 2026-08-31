@@ -11,6 +11,10 @@ Current milestone: Phase 0/1 foundation. This branch is intentionally isolated f
 - No forced Top 5 and NO_TRADE is valid.
 - No auto-trading.
 - Forward evidence starts only after freeze and is append-only.
+- Legacy/Yahoo/Mubasher migration is RESEARCH_ONLY and cannot grant Production Authority.
 
 ## Run
 `npm test`
+
+## Research warehouse migration
+`LEGACY_HISTORY_COMMIT=<exact-sha> LEGACY_HISTORY_DIR=<dir> npm run research:migrate-history`
