@@ -3,7 +3,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.v18.qualify import evaluate_next_session, evaluate_v18_shadow
+from scripts.v18.qualify import (
+    _promotion_contract_gate,
+    evaluate_next_session,
+    evaluate_v18_shadow,
+)
 
 
 class QualificationTests(unittest.TestCase):
@@ -26,6 +30,30 @@ class QualificationTests(unittest.TestCase):
         }
         row.update(kwargs)
         return row
+
+    def contracted_entry(self):
+        return {
+            "signalId": "2026-08-30:V18_SHADOW:V18.0.0",
+            "sessionDate": "2026-08-30",
+            "portfolioDecision": "SHADOW_CANDIDATES_ONLY",
+            "productionAuthority": False,
+            "selections": [self.selection()],
+            "executionPolicy": {
+                "entry": "NEXT_SESSION_OPEN_INSIDE_FROZEN_ENTRY_RANGE",
+                "maxHoldingSessions": 1,
+                "sameSessionTargetStop": "CONSERVATIVE_STOP_FIRST",
+                "transactionCostPct": 0.6,
+            },
+            "portfolioAllocationPolicy": {
+                "method": "EQUAL_WEIGHT_BUY_CANDIDATES",
+                "candidateTickers": ["TEST"],
+            },
+            "sourceSessionEvidence": {
+                "requiredSession": "2026-08-30",
+                "allSelectionsAligned": True,
+            },
+            "modelLineage": {"explicitlyLinked": True},
+        }
 
     def test_same_session_ambiguity_is_stop(self):
         row = evaluate_next_session(
@@ -83,20 +111,24 @@ class QualificationTests(unittest.TestCase):
             root = Path(tmp)
             (root / "data/history").mkdir(parents=True)
             (root / "data/history/TEST.json").write_text(json.dumps(self.history()))
-            ledger = {
-                "entries": [
-                    {
-                        "signalId": "x",
-                        "sessionDate": "2026-08-30",
-                        "portfolioDecision": "SHADOW_CANDIDATES_ONLY",
-                        "productionAuthority": False,
-                        "selections": [self.selection()],
-                    }
-                ]
-            }
+            ledger = {"entries": [self.contracted_entry()]}
             cohorts, _, promotion = evaluate_v18_shadow(root, ledger)
             self.assertEqual(len(promotion), 1)
             self.assertTrue(cohorts[0]["promotionResolved"])
+
+    def test_complete_promotion_contract_passes(self):
+        gate = _promotion_contract_gate({"entries": [self.contracted_entry()]}, 0.6)
+        self.assertTrue(gate["passed"])
+        self.assertEqual(gate["violations"], [])
+
+    def test_missing_holding_policy_fails_contract(self):
+        entry = self.contracted_entry()
+        entry["executionPolicy"].pop("maxHoldingSessions")
+        gate = _promotion_contract_gate({"entries": [entry]}, 0.6)
+        self.assertFalse(gate["passed"])
+        self.assertTrue(
+            any("MISSING_FROZEN_HOLDING_POLICY" in item for item in gate["violations"])
+        )
 
 
 if __name__ == "__main__":
