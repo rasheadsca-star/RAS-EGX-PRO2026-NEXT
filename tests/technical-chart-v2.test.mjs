@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-await import('../technical-chart-v2.js');
+await import('../technical-chart-v2-core.js');
 const T=globalThis.EGXOneTechnicalV2;
 assert.ok(T,'API missing');
 const bars=[];
@@ -33,4 +33,4 @@ const dirty=T.normalizeBars([{close:10},{open:9,high:8,low:11,close:10,volume:-2
 assert.equal(dirty.length,2);
 assert.ok(dirty[1].high>=dirty[1].close&&dirty[1].low<=dirty[1].open);
 assert.equal(dirty[1].volume,0);
-console.log('technical-chart-v2 tests: PASS');
+console.log('technical-chart-v2-core tests: PASS');

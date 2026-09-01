@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+await import('../technical-chart-v2.js');
+const L=globalThis.EGXOneTechnicalV2Loader;
+assert.ok(L,'bundle loader missing');
+assert.equal(L.CONTRACT.scoringImpact,'NONE');
+assert.equal(L.CONTRACT.recommendationMutationAllowed,false);
+assert.equal(L.CONTRACT.executionAllowed,false);
+assert.match(L.CORE,/technical-chart-v2-core\.js/);
+assert.match(L.KPI,/realized-kpi\.js/);
+console.log('technical-chart-v2 loader tests: PASS');
