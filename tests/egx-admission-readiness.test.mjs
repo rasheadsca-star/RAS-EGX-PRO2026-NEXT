@@ -40,7 +40,9 @@ test('current blockers are explicit and cannot be hidden by green CI',()=>{
     'CERTIFIED_HISTORICAL_OHLCV_LINEAGE_INCOMPLETE',
     'IMMUTABLE_PRODUCTION_REGISTRY_MISSING'
   ]);
-  assert.equal(report.verifiedCi.pass,320);
+  assert.equal(report.verifiedCi.tests,328);
+  assert.equal(report.verifiedCi.pass,328);
+  assert.equal(report.verifiedCi.fail,0);
   assert.equal(report.authoritativePhase3Status.verdict,'FAIL');
   assert.deepEqual(r.authoritativePhase3Blockers,['REGISTRY:MISSING','SESSION_AUTHORITY:MISSING','UNIVERSE:UNIVERSE_INCOMPLETE']);
 });
