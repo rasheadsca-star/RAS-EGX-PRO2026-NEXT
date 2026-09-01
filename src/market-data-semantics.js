@@ -22,20 +22,30 @@ export function validateOhlcvGeometry(bar){
   });
 }
 
-export function assessProviderOhlcvSemantics({provider,samples=[],declaredFields=false,sourceRole='RESEARCH'}={}){
+export function assessProviderOhlcvSemantics({
+  provider,
+  samples=[],
+  declaredFields=false,
+  fieldSemanticsVerified=false,
+  syntheticFieldEvidence=false,
+  sourceRole='RESEARCH'
+}={}){
   const evaluated=(Array.isArray(samples)?samples:[]).map(sample=>Object.freeze({
     id:String(sample?.id??sample?.session??''),
     ...validateOhlcvGeometry(sample?.bar??sample)
   }));
   const contradictions=evaluated.filter(x=>!x.valid);
   let state='INSUFFICIENT_SEMANTIC_EVIDENCE';
-  if(contradictions.length) state='OHLCV_SEMANTICS_CONTRADICTED';
-  else if(declaredFields&&evaluated.length) state='TRUE_OHLCV_RESEARCH_ELIGIBLE';
+  if(syntheticFieldEvidence) state='SYNTHETIC_OHLC_FIELDS_REJECTED';
+  else if(contradictions.length) state='OHLCV_SEMANTICS_CONTRADICTED';
+  else if(declaredFields&&fieldSemanticsVerified&&evaluated.length) state='TRUE_OHLCV_RESEARCH_ELIGIBLE';
   const trueOhlcvEligible=state==='TRUE_OHLCV_RESEARCH_ELIGIBLE';
   return Object.freeze({
     provider:String(provider??'UNKNOWN'),
     sourceRole,
     declaredFields:Boolean(declaredFields),
+    fieldSemanticsVerified:Boolean(fieldSemanticsVerified),
+    syntheticFieldEvidence:Boolean(syntheticFieldEvidence),
     sampleCount:evaluated.length,
     contradictionCount:contradictions.length,
     state,
