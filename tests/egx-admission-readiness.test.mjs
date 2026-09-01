@@ -10,6 +10,7 @@ test('checked-in readiness snapshot is internally valid but blocked before Phase
   assert.equal(r.state,'BLOCKED_BEFORE_PHASE3_PASS');
   assert.equal(r.invariantReady,true);
   assert.equal(r.phase3EvaluationEligible,false);
+  assert.equal(r.licensedDatasetEvidenceComplete,false);
   assert.equal(r.productionAuthority,false);
   assert.equal(r.baselineAuthorized,false);
   assert.equal(r.phase4Open,false);
@@ -55,12 +56,24 @@ test('claiming common share class from Stock schedule invalidates readiness snap
   assert.equal(r.invariantReasons.includes('STOCK_SCHEDULE_COMMON_SHARE_INFERENCE_FORBIDDEN'),true);
 });
 
-test('claiming licensed dataset admission without entitlement and raw receipt is rejected',()=>{
+test('claiming licensed dataset admission without the complete evidence chain is rejected',()=>{
   const bad=structuredClone(report);
   bad.licensedEod.datasetAdmissionReady=true;
+  bad.licensedEod.rawDatasetReceiptPresent=true;
+  bad.licensedEod.licenseEntitlementReceiptPresent=true;
+  bad.licensedEod.permittedApplicationUseReceiptPresent=true;
   const r=assessEgxAdmissionReadiness(bad);
   assert.equal(r.state,'INVALID_READINESS_SNAPSHOT');
-  assert.equal(r.invariantReasons.includes('LICENSED_DATASET_READY_WITHOUT_REQUIRED_RECEIPTS'),true);
+  assert.equal(r.invariantReasons.includes('LICENSED_DATASET_READY_WITHOUT_COMPLETE_EVIDENCE_CHAIN'),true);
+  assert.equal(r.prerequisiteGates.licensedEodDatasetAdmissionReady,false);
+});
+
+test('historical lineage cannot be ready before licensed dataset admission is ready',()=>{
+  const bad=structuredClone(report);
+  bad.licensedEod.historicalLineageReady=true;
+  const r=assessEgxAdmissionReadiness(bad);
+  assert.equal(r.state,'INVALID_READINESS_SNAPSHOT');
+  assert.equal(r.invariantReasons.includes('HISTORICAL_LINEAGE_READY_WITHOUT_DATASET_ADMISSION'),true);
 });
 
 test('public research or synthetic OHLC cannot silently become production evidence',()=>{
@@ -86,9 +99,12 @@ test('hypothetical prerequisite-complete readiness only becomes eligible for Pha
   ready.securityEligibility.eligibleSecurityPolicyReady=true;
   ready.sessionResearchReconciliation.productionTrueOhlcvCoverageReady=true;
   ready.licensedEod.datasetAdmissionReady=true;
-  ready.licensedEod.rawDatasetReceiptPresent=true;
   ready.licensedEod.licenseEntitlementReceiptPresent=true;
   ready.licensedEod.permittedApplicationUseReceiptPresent=true;
+  ready.licensedEod.rawDatasetReceiptPresent=true;
+  ready.licensedEod.sessionBoundExactUniverseDatasetPresent=true;
+  ready.licensedEod.trueFieldSemanticsReceiptPresent=true;
+  ready.licensedEod.independentDatasetCrossCheckReceiptPresent=true;
   ready.licensedEod.historicalLineageReady=true;
   ready.authoritativePhase3Status.blockers=[];
   ready.readinessBlockers=[];
@@ -96,6 +112,7 @@ test('hypothetical prerequisite-complete readiness only becomes eligible for Pha
   assert.equal(r.state,'ELIGIBLE_FOR_PHASE3_GATE_EVALUATION');
   assert.equal(r.invariantReady,true);
   assert.equal(r.phase3EvaluationEligible,true);
+  assert.equal(r.licensedDatasetEvidenceComplete,true);
   assert.equal(r.productionAuthority,false);
   assert.equal(r.baselineAuthorized,false);
   assert.equal(r.phase4Open,false);
