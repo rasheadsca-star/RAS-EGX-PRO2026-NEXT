@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import {classifySessionObservationAvailability} from '../src/market-data-semantics.js';
 
 const SESSION='2026-08-31';
 const BASE='https://beta.egx.com.eg/api/bff/egx/';
@@ -93,20 +94,26 @@ async function one(c){
   }
   const close=sessionRow?precisionCompatible(c.egxClose,sessionRow.closeText):{compatible:false,providerDecimals:null,delta:null,tolerance:null};
   const volumeExact=Boolean(sessionRow&&Number.isFinite(c.egxVolume)&&sessionRow.volume===c.egxVolume);
-  return {...c,mubasherPage:{httpStatus:page.httpStatus,bytes:page.bytes,sha256:page.sha256},mubasherH1:h1,pageTickerMatch,complementExact,identityReady,identityMethod,historyUrl:historyUrl||null,historicalReceipt:{httpStatus:hist.httpStatus,bytes:hist.bytes,sha256:hist.sha256},sessionRow,closePrecisionCompatible:close.compatible,closeDelta:close.delta,closeTolerance:close.tolerance,providerCloseDecimals:close.providerDecimals,volumeExact,sessionCloseVolumeReconciled:Boolean(identityReady&&sessionRow&&close.compatible&&volumeExact),trueOhlcvEligible:false};
+  const sessionAvailability=classifySessionObservationAvailability({officialVolume:c.egxVolume,independentBar:sessionRow});
+  return {...c,mubasherPage:{httpStatus:page.httpStatus,bytes:page.bytes,sha256:page.sha256},mubasherH1:h1,pageTickerMatch,complementExact,identityReady,identityMethod,historyUrl:historyUrl||null,historicalReceipt:{httpStatus:hist.httpStatus,bytes:hist.bytes,sha256:hist.sha256},sessionRow,sessionAvailability,closePrecisionCompatible:close.compatible,closeDelta:close.delta,closeTolerance:close.tolerance,providerCloseDecimals:close.providerDecimals,volumeExact,sessionCloseVolumeReconciled:Boolean(identityReady&&sessionRow&&close.compatible&&volumeExact),trueOhlcvEligible:false};
 }
 
 const results=new Array(candidates.length); let index=0;
 async function worker(){while(true){const i=index++; if(i>=candidates.length)return; results[i]=await one(candidates[i]);}}
 await Promise.all(Array.from({length:12},()=>worker()));
 
-const missingSession=results.filter(x=>!x.sessionRow).map(x=>x.ticker);
+const missingSessionRows=results.filter(x=>!x.sessionRow).map(x=>({ticker:x.ticker,isin:x.isin,name:x.name,egxClose:x.egxClose,egxVolume:x.egxVolume,lastTradeDate:x.lastTradeDate,availability:x.sessionAvailability}));
+const missingSession=missingSessionRows.map(x=>x.ticker);
 const unresolvedIdentity=results.filter(x=>!x.identityReady).map(x=>x.ticker);
 const closeExact=results.filter(x=>x.sessionRow&&x.closeDelta===0).length;
 const closePrecisionOnly=results.filter(x=>x.sessionRow&&x.closeDelta>0&&x.closePrecisionCompatible).map(x=>({ticker:x.ticker,egxClose:x.egxClose,providerClose:x.sessionRow.close,delta:x.closeDelta,tolerance:x.closeTolerance}));
+const noTradeMissing=missingSessionRows.filter(x=>x.availability.state==='NO_TRADE_SESSION_EVIDENCE');
+const positiveTradeBarMissing=missingSessionRows.filter(x=>x.availability.state==='TRADED_SESSION_BAR_MISSING');
+const microTradeBarMissing=positiveTradeBarMissing.filter(x=>x.availability.liquidityBand==='MICRO_TRADE');
 const report={
-  schemaVersion:'egx-session-close-volume-audit-1',
+  schemaVersion:'egx-session-close-volume-audit-2',
   generatedAt:new Date().toISOString(),session:SESSION,
+  candidateUniverse:'EGX_A_B_C_STOCK_SCHEDULE_EQUITY_FAMILY_NOT_COMMON_SHARE_CLASS_PROOF',
   officialReceipts:{
     stockInfo:{httpStatus:info.httpStatus,bytes:info.bytes,sha256:info.sha256},
     stockCategories:{httpStatus:cats.httpStatus,bytes:cats.bytes,sha256:cats.sha256}
@@ -116,6 +123,7 @@ const report={
     mubasherRole:'INDEPENDENT_CLOSE_VOLUME_HISTORY_AND_IDENTITY_CROSSCHECK',
     closeRule:'EXACT_OR_WITHIN_HALF_OF_PROVIDER_LAST_DECIMAL_UNIT',
     volumeRule:'EXACT_INTEGER_EQUALITY',
+    missingSessionRule:'ZERO_OFFICIAL_VOLUME_IS_NO_TRADE_EVIDENCE; POSITIVE_OFFICIAL_VOLUME_REQUIRES_TRUE_SESSION_BAR; NEVER_SYNTHESIZE_OHLC',
     trueOhlcvEligible:false,
     productionAuthority:false
   },
@@ -128,15 +136,30 @@ const report={
     closeExact,
     closePrecisionCompatible:results.filter(x=>x.sessionRow&&x.closePrecisionCompatible).length,
     volumeExact:results.filter(x=>x.volumeExact).length,
-    sessionCloseVolumeReconciled:results.filter(x=>x.sessionCloseVolumeReconciled).length
+    sessionCloseVolumeReconciled:results.filter(x=>x.sessionCloseVolumeReconciled).length,
+    missingSessionRows:missingSessionRows.length,
+    noTradeMissingSessionRows:noTradeMissing.length,
+    positiveTradeBarMissing:positiveTradeBarMissing.length,
+    microTradeBarMissing:microTradeBarMissing.length
   },
-  unresolvedIdentity,missingSession,closePrecisionOnly,
-  sessionFailures:results.filter(x=>!x.sessionCloseVolumeReconciled).map(x=>({ticker:x.ticker,isin:x.isin,identityReady:x.identityReady,identityMethod:x.identityMethod,pageStatus:x.mubasherPage.httpStatus,historyStatus:x.historicalReceipt.httpStatus,sessionRow:x.sessionRow,egxClose:x.egxClose,egxVolume:x.egxVolume,closePrecisionCompatible:x.closePrecisionCompatible,closeDelta:x.closeDelta,closeTolerance:x.closeTolerance,volumeExact:x.volumeExact})),
+  unresolvedIdentity,missingSession,missingSessionRows,closePrecisionOnly,
+  sessionFailures:results.filter(x=>!x.sessionCloseVolumeReconciled).map(x=>({ticker:x.ticker,isin:x.isin,identityReady:x.identityReady,identityMethod:x.identityMethod,pageStatus:x.mubasherPage.httpStatus,historyStatus:x.historicalReceipt.httpStatus,sessionRow:x.sessionRow,sessionAvailability:x.sessionAvailability,egxClose:x.egxClose,egxVolume:x.egxVolume,closePrecisionCompatible:x.closePrecisionCompatible,closeDelta:x.closeDelta,closeTolerance:x.closeTolerance,volumeExact:x.volumeExact})),
   results,
   productionAuthority:false,
   phase4Open:false
 };
-const checks={candidateCount213:report.counts.candidates===213,identity213:report.counts.identityReady===213,sessionRows204:report.counts.sessionRows===204,closeCompatible204:report.counts.closePrecisionCompatible===204,volumeExact204:report.counts.volumeExact===204,reconciled204:report.counts.sessionCloseVolumeReconciled===204,missingSession9:report.missingSession.length===9};
+const checks={
+  candidateCount213:report.counts.candidates===213,
+  identity213:report.counts.identityReady===213,
+  sessionRows204:report.counts.sessionRows===204,
+  closeCompatible204:report.counts.closePrecisionCompatible===204,
+  volumeExact204:report.counts.volumeExact===204,
+  reconciled204:report.counts.sessionCloseVolumeReconciled===204,
+  missingSession9:report.counts.missingSessionRows===9,
+  noTradeMissing1:report.counts.noTradeMissingSessionRows===1,
+  positiveTradeBarMissing8:report.counts.positiveTradeBarMissing===8,
+  microTradeBarMissing4:report.counts.microTradeBarMissing===4
+};
 report.checks=checks;
 report.verdict=Object.values(checks).every(Boolean)?'PASS_SESSION_CLOSE_VOLUME_RESEARCH_RECONCILIATION':'FAIL_CLOSED';
 fs.writeFileSync(OUT,JSON.stringify(report,null,2));
