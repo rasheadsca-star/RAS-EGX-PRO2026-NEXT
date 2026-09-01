@@ -1,0 +1,16 @@
+#!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
+import { sha256 } from '../src/hash.js';
+import { runHistoricalMarketSimulator, compareWithLegacyEngines } from '../src/research-historical-simulator.js';
+
+const ROOT=process.cwd(),read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+const indexPath=path.join(ROOT,'data','research','history-index.json'),strategyPath=path.join(ROOT,'data','research','strategy','latest.json');
+if(!fs.existsSync(indexPath)||!fs.existsSync(strategyPath))throw new Error('SIMULATOR_INPUTS_MISSING');
+const index=read(indexPath),strategy=read(strategyPath);if(index.authorityMode!=='RESEARCH'||index.productionAuthority!==false)throw new Error('SIMULATOR_HISTORY_AUTHORITY_INVALID');if(strategy.authorityMode!=='RESEARCH'||strategy.validation?.accepted!==true)throw new Error('SIMULATOR_STRATEGY_NOT_ACCEPTED');
+const histories=[];for(const r of index.records??[]){const p=path.join(ROOT,'data','research',String(r.file));if(!fs.existsSync(p))continue;const h=read(p);if(h.ticker!==r.ticker||h.researchOnly!==true||h.productionAuthority!==false)throw new Error(`SIMULATOR_HISTORY_LINEAGE_INVALID:${r.ticker}`);histories.push(h)}
+const presetId=String(strategy.validation?.selectedPreset??'CONTROLLED_PULLBACK'),simulation=runHistoricalMarketSimulator({histories,presetId,costBps:25,maxRecommendationsPerSession:12,minNetRiskReward:1.2});
+let legacyV169=null,gannComparison=null;const v169Path=process.env.LEGACY_V169_LEDGER_PATH,gannPath=process.env.LEGACY_GANN_COMPARE_PATH;if(v169Path&&fs.existsSync(v169Path))legacyV169=read(v169Path);if(gannPath&&fs.existsSync(gannPath))gannComparison=read(gannPath);
+const legacyComparison=compareWithLegacyEngines({simulation,legacyV169,gannComparison});const stable={...simulation,lineage:{historyIndexHash:sha256(index),strategySnapshotHash:strategy.strategySnapshotHash??null,presetId,legacyEvidence:{v16_9:legacyV169?'EXACT_LOGGED_LEDGER':'NOT_LOADED',gannFusionX:gannComparison?'RECONSTRUCTED_FROM_FROZEN_CODE':'NOT_LOADED',sepaX:gannComparison?'RECONSTRUCTED_PROXY_FROM_FROZEN_CODE':'NOT_LOADED'}},legacyComparison};const output={...stable,artifactHash:sha256(stable),generatedAt:`${simulation.lastHistorySession??'1970-01-01'}T23:59:59Z`};
+const outDir=path.join(ROOT,'data','research','simulator');fs.mkdirSync(outDir,{recursive:true});fs.writeFileSync(path.join(outDir,'latest.json'),JSON.stringify(output,null,2)+'\n');
+console.log(JSON.stringify({presetId,historyTickers:simulation.historyTickers,historySessions:simulation.historySessions,plans:simulation.performance.allDailySignals.plans,triggered:simulation.performance.allDailySignals.triggered,target1HitRatePct:simulation.performance.allDailySignals.target1HitRatePct,stopRatePct:simulation.performance.allDailySignals.stopRatePct,expectancyR:simulation.performance.allDailySignals.expectancyR,profitFactor:simulation.performance.allDailySignals.profitFactor,averageNetReturnPct:simulation.performance.allDailySignals.averageNetReturnPct,commonV16Dates:legacyComparison.commonDates.length,artifactHash:output.artifactHash},null,2));

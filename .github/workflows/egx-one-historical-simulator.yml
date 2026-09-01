@@ -1,0 +1,78 @@
+name: EGX ONE Historical Simulator
+on:
+  workflow_dispatch:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - 'src/research-historical-simulator.js'
+      - 'src/research-strategy-engine.js'
+      - 'src/research-feature-engine.js'
+      - 'scripts/research-run-historical-simulator.mjs'
+      - 'tests/research-historical-simulator.test.mjs'
+      - 'data/research/history/**'
+      - 'data/research/history-index.json'
+      - 'data/research/strategy/latest.json'
+      - 'package.json'
+      - '.github/workflows/egx-one-historical-simulator.yml'
+permissions:
+  contents: write
+jobs:
+  simulate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify clean-room contracts
+        run: npm test
+      - name: Materialize frozen legacy comparison evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          LEGACY_COMMIT=35dd08a6c2e4e3f9565161bbf4d8560b8748d7b7
+          git fetch origin "$LEGACY_COMMIT" --depth=1
+          rm -rf /tmp/egx-one-legacy && mkdir -p /tmp/egx-one-legacy
+          git archive "$LEGACY_COMMIT" data/history data/stable/v16-v169-live-evaluation.json gann-fusion-x | tar -x -C /tmp/egx-one-legacy
+          node /tmp/egx-one-legacy/gann-fusion-x/scripts/backtest-compare.cjs
+          test -s /tmp/egx-one-legacy/data/stable/v16-v169-live-evaluation.json
+          test -s /tmp/egx-one-legacy/gann-fusion-x/data/backtest-comparison.json
+      - name: Run point-in-time market replay
+        env:
+          LEGACY_V169_LEDGER_PATH: /tmp/egx-one-legacy/data/stable/v16-v169-live-evaluation.json
+          LEGACY_GANN_COMPARE_PATH: /tmp/egx-one-legacy/gann-fusion-x/data/backtest-comparison.json
+        run: npm run research:simulate
+      - name: Verify simulator artifact boundaries
+        run: |
+          node - <<'NODE'
+          import fs from 'node:fs';
+          const x=JSON.parse(fs.readFileSync('data/research/simulator/latest.json','utf8'));
+          if(x.authorityMode!=='RESEARCH'||x.productionAuthority!==false||x.forwardEvidence!==false||x.automaticOrders!==false)throw new Error('SIMULATOR_AUTHORITY_BOUNDARY_FAILED');
+          if(x.sameBarTargetStop!=='STOP_FIRST'||x.lookaheadForbidden!==true)throw new Error('SIMULATOR_CONSERVATIVE_POLICY_FAILED');
+          if(x.legacyComparison?.v16_9?.evidenceGrade!=='EXACT_LOGGED_LEDGER')throw new Error('V169_EXACT_EVIDENCE_MISSING');
+          if(x.legacyComparison?.gannFusionX?.evidenceGrade!=='RECONSTRUCTED_FROM_FROZEN_CODE')throw new Error('GANN_RECONSTRUCTION_MISSING');
+          if(x.legacyComparison?.sepaX?.evidenceGrade!=='RECONSTRUCTED_PROXY_FROM_FROZEN_CODE')throw new Error('SEPA_PROXY_MISSING');
+          console.log(`SIMULATOR_VERIFIED:${x.artifactHash}:${x.performance.allDailySignals.plans}`);
+          NODE
+      - name: Commit deterministic simulator snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/simulator/latest.json
+          if git diff --cached --quiet; then echo 'No simulator change.'; exit 0; fi
+          git commit -m 'Publish EGX ONE historical simulator snapshot'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
+            [ "$attempt" = 3 ] && exit 1
+            sleep $((attempt*4))
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-historical-simulator
+          path: data/research/simulator/latest.json
+          if-no-files-found: error
