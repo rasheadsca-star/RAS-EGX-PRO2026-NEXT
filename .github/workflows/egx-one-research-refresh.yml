@@ -25,9 +25,7 @@ on:
       - 'tests/research-publication.test.mjs'
       - 'tests/research-ui-summary.test.mjs'
       - 'package.json'
-      - 'index.html'
       - '.github/workflows/egx-one-research-refresh.yml'
-      - '.github/workflows/egx-one-production-ui-deploy.yml'
   schedule:
     - cron: '15 14 * * 0-4'
 
@@ -42,18 +40,16 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    env:
-      VERCEL_PROJECT_ID: prj_R9NlULz7vTKPEWeoVB9vnRaanqFo
-      VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: egx-one/clean-room-v0
           fetch-depth: 1
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+
       - name: Verify clean-room contracts
         run: npm test
 
@@ -148,7 +144,7 @@ jobs:
           if(x.legacyMarketManifest?.legacyCommit!==process.env.LEGACY_SHA)fail('LEGACY_MARKET_COMMIT_BINDING_FAILED');
           if(!x.snapshotHash)fail('RESEARCH_LIVE_SNAPSHOT_HASH_MISSING');
           if(x.researchDataReadiness==='PASS'&&x.counts.currentSessionCoveragePct<70)fail('FALSE_RESEARCH_READINESS_PASS');
-          console.log(`RESEARCH_LIVE_STATUS:${JSON.stringify({readiness:x.researchDataReadiness,reasons:x.readinessReasons,counts:x.counts,snapshotHash:x.snapshotHash,legacyMarketCommit:x.legacyMarketManifest?.legacyCommit})}`);
+          console.log(`RESEARCH_LIVE_STATUS:${JSON.stringify({readiness:x.researchDataReadiness,reasons:x.readinessReasons,counts:x.counts,snapshotHash:x.snapshotHash})}`);
           NODE
 
       - name: Build point-in-time research feature snapshot
@@ -171,7 +167,6 @@ jobs:
           if(x.descriptiveLeaderboards?.combinedOpportunityScore!==null)fail('COMBINED_OPPORTUNITY_SCORE_FORBIDDEN_AT_FEATURE_LAYER');
           if(x.featureReadiness==='PASS'&&x.counts.featureCoveragePct<70)fail('FALSE_FEATURE_READINESS_PASS');
           if(!x.snapshotHash||!x.parentResearchSnapshotHash)fail('FEATURE_LINEAGE_HASH_MISSING');
-          console.log(`RESEARCH_FEATURE_STATUS:${JSON.stringify({readiness:x.featureReadiness,reasons:x.featureReadinessReasons,counts:x.counts,snapshotHash:x.snapshotHash})}`);
           NODE
 
       - name: Build training-selected out-of-sample research strategy
@@ -193,13 +188,13 @@ jobs:
           if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notProductionRecommendation!==true||x.automaticOrders!==false)fail('RESEARCH_STRATEGY_AUTHORITY_BOUNDARY_FAILED');
           if(x.signalSession!==process.env.EXPECTED)fail('RESEARCH_STRATEGY_SESSION_BINDING_FAILED');
           if(x.authority?.productionPhase4!==false||x.authority?.productionRecommendations!==false||x.authority?.automaticOrders!==false)fail('RESEARCH_STRATEGY_PREMATURE_PRODUCTION_AUTHORITY');
-          console.log(`RESEARCH_STRATEGY_VALIDATION:${JSON.stringify({selectedPreset:x.validation?.selectedPreset,accepted:x.validation?.accepted,reasons:x.validation?.reasons,training:x.validation?.selectedTraining,outOfSample:x.validation?.selectedOutOfSample,counts:x.counts,strategySnapshotHash:x.strategySnapshotHash})}`);
           if(x.validation?.accepted!==true)fail(`RESEARCH_STRATEGY_OOS_REJECTED:${(x.validation?.reasons||[]).join(',')}`);
           if(!Array.isArray(x.recommendations)||x.recommendations.length<1)fail('NO_PUBLISHED_RESEARCH_RECOMMENDATIONS');
           for(const r of x.recommendations){if(!['BUY_CANDIDATE','WAIT_FOR_ENTRY'].includes(r.decision)||r.executableResearchPlan!==true||!(r.stop<r.entryLow&&r.entryLow<=r.entryHigh&&r.entryHigh<r.target1&&r.target1<r.target2)||r.productionAuthority!==false||r.automaticOrders!==false)fail(`INVALID_RESEARCH_PLAN:${r.ticker}`)}
+          console.log(`RESEARCH_STRATEGY_VALIDATION:${JSON.stringify({accepted:x.validation?.accepted,outOfSample:x.validation?.selectedOutOfSample,counts:x.counts,strategySnapshotHash:x.strategySnapshotHash})}`);
           NODE
 
-      - name: Build hash-bound research publication from the same strategy snapshot
+      - name: Build hash-bound research publication from same strategy snapshot
         run: npm run research:publish
 
       - name: Enforce publication session and strategy lineage
@@ -217,7 +212,6 @@ jobs:
           if(p.sourceStrategySnapshotHash!==s.strategySnapshotHash)fail('PUBLICATION_STRATEGY_LINEAGE_MISMATCH');
           if(p.productionAuthority!==false||p.automaticOrders!==false||p.authorityMode!=='RESEARCH')fail('PUBLICATION_PREMATURE_AUTHORITY');
           if((p.recommendations||[]).length!==(s.recommendations||[]).length)fail('PUBLICATION_RECOMMENDATION_COUNT_MISMATCH');
-          console.log(`RESEARCH_PUBLICATION_VERIFIED:${p.signalSession}:${p.publicationHash}:${p.sourceStrategySnapshotHash}:${p.counts?.recommendations}`);
           NODE
 
       - name: Build non-executable descriptive UI summary
@@ -231,18 +225,21 @@ jobs:
           const fs=require('fs');const x=JSON.parse(fs.readFileSync('data/research/ui/latest.json','utf8'));const fail=m=>{throw new Error(m)};
           if(x.authorityMode!=='RESEARCH'||x.researchOnly!==true||x.productionAuthority!==false||x.notARecommendation!==true)fail('RESEARCH_UI_AUTHORITY_BOUNDARY_FAILED');
           if(x.session!==process.env.EXPECTED)fail('RESEARCH_UI_SESSION_BINDING_FAILED');
-          const forbidden=['decision','decisionCode','entry','entryLow','entryHigh','entryExpiry','stop','target','target1','target2','grossRiskReward','netRiskReward','opportunityScore','combinedOpportunityScore'];const text=JSON.stringify(x);for(const key of forbidden){if(new RegExp(`"${key}"\\s*:`).test(text))fail(`RESEARCH_UI_FORBIDDEN_FIELD:${key}`)}
+          const forbidden=['decision','decisionCode','entry','entryLow','entryHigh','entryExpiry','stop','target','target1','target2','grossRiskReward','netRiskReward','opportunityScore','combinedOpportunityScore'];
+          const text=JSON.stringify(x);for(const key of forbidden){if(new RegExp(`"${key}"\\s*:`).test(text))fail(`RESEARCH_UI_FORBIDDEN_FIELD:${key}`)}
           if(!x.uiSnapshotHash)fail('RESEARCH_UI_HASH_MISSING');
           NODE
 
-      - name: Commit atomic research market feature strategy publication and UI snapshots
+      - name: Commit atomic research snapshots only
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/research/live data/research/features data/research/strategy data/research/published data/research/ui
-          if git diff --cached --quiet; then echo 'No research snapshot change.'; else
+          if git diff --cached --quiet; then
+            echo 'No research snapshot change.'
+          else
             git commit -m "Refresh EGX ONE atomic research recommendations snapshot"
             for attempt in 1 2 3; do
               if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then break; fi
@@ -262,65 +259,13 @@ jobs:
             data/research/ui/latest.json
           if-no-files-found: error
 
-      - name: Prepare minimal Vercel bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf /tmp/egx-one-live
-          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/data/research/strategy /tmp/egx-one-live/data/research/published /tmp/egx-one-live/.vercel
-          cp index.html /tmp/egx-one-live/index.html
-          cp data/research/ui/latest.json /tmp/egx-one-live/data/research/ui/latest.json
-          cp data/research/strategy/latest.json /tmp/egx-one-live/data/research/strategy/latest.json
-          cp data/research/published/latest.json /tmp/egx-one-live/data/research/published/latest.json
-          printf '%s\n' '{"cleanUrls":true,"trailingSlash":false}' > /tmp/egx-one-live/vercel.json
-          printf '%s\n' '{"projectId":"'"$VERCEL_PROJECT_ID"'","orgId":"'"$VERCEL_ORG_ID"'"}' > /tmp/egx-one-live/.vercel/project.json
-
-      - name: Check Vercel deploy credential
-        id: deploy_auth
-        shell: bash
-        run: |
-          if [ -z "${VERCEL_TOKEN:-}" ]; then echo 'available=false' >> "$GITHUB_OUTPUT";echo 'DEPLOYMENT_BLOCKED:VERCEL_TOKEN_MISSING';else echo 'available=true' >> "$GITHUB_OUTPUT";fi
-
-      - name: Install pinned Vercel CLI
-        if: steps.deploy_auth.outputs.available == 'true'
-        run: npm install --global vercel@59.10.0
-
-      - name: Deploy Research recommendations to existing production project
-        if: steps.deploy_auth.outputs.available == 'true'
-        id: production_deploy
-        shell: bash
-        run: |
-          set -euo pipefail
-          url="$(vercel deploy --prod --yes --token="$VERCEL_TOKEN" --cwd /tmp/egx-one-live | tail -n 1)"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "PRODUCTION_DEPLOYMENT_URL:$url"
-
-      - name: Verify deployed research recommendation boundary and freshness
-        if: steps.deploy_auth.outputs.available == 'true'
+      - name: Report refresh handoff
         env:
-          URL: ${{ steps.production_deploy.outputs.url }}
-          EXPECTED: ${{ steps.expected.outputs.session }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/strategy/latest.json" > /tmp/deployed-strategy.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/published/latest.json" > /tmp/deployed-publication.json
-          node - <<'NODE'
-          const fs=require('fs');
-          const s=JSON.parse(fs.readFileSync('/tmp/deployed-strategy.json','utf8'));
-          const p=JSON.parse(fs.readFileSync('/tmp/deployed-publication.json','utf8'));
-          if(s.authorityMode!=='RESEARCH'||s.productionAuthority!==false||s.automaticOrders!==false||s.validation?.accepted!==true||!s.recommendations?.length)throw new Error('DEPLOYED_RESEARCH_RECOMMENDATION_BOUNDARY_FAILED');
-          if(s.signalSession!==process.env.EXPECTED||p.signalSession!==process.env.EXPECTED)throw new Error('DEPLOYED_RESEARCH_SESSION_STALE');
-          if(p.sourceStrategySnapshotHash!==s.strategySnapshotHash)throw new Error('DEPLOYED_PUBLICATION_STRATEGY_LINEAGE_MISMATCH');
-          if(p.productionAuthority!==false||p.automaticOrders!==false||p.authorityMode!=='RESEARCH')throw new Error('DEPLOYED_PUBLICATION_AUTHORITY_BOUNDARY_FAILED');
-          console.log(`DEPLOYED_RESEARCH_STRATEGY_VERIFIED:${s.signalSession}:${s.strategySnapshotHash}:${s.recommendations.length}:${p.publicationHash}`);
-          NODE
-
-      - name: Report deploy state
-        shell: bash
-        env:
-          AUTH: ${{ steps.deploy_auth.outputs.available }}
-          URL: ${{ steps.production_deploy.outputs.url }}
           EXPECTED: ${{ steps.expected.outputs.session }}
         run: |
-          if [ "$AUTH" = 'true' ]; then echo "DEPLOY_STATE:VERIFIED:${EXPECTED}:${URL}";else echo 'DEPLOY_STATE:BLOCKED:VERCEL_TOKEN_MISSING';fi
+          echo "RESEARCH_REFRESH_VERIFIED:${EXPECTED}"
+          echo "LIVE_DEPLOYMENT_DELEGATED:EGX_ONE_PRODUCTION_UI_DEPLOY"
+          echo '## EGX ONE Research Refresh' >> "$GITHUB_STEP_SUMMARY"
+          echo "- Session: ${EXPECTED}" >> "$GITHUB_STEP_SUMMARY"
+          echo '- Research snapshots: VERIFIED' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Vercel deploy: delegated to the single complete Production UI Deploy workflow' >> "$GITHUB_STEP_SUMMARY"
