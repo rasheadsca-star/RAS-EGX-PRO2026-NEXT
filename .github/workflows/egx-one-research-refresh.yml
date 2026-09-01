@@ -188,9 +188,9 @@ jobs:
         env:
           EXPECTED: ${{ steps.expected.outputs.session }}
         run: |
-          node - <<'NODE'
-          const fs=require('fs');
-          const {verifyResearchPublication}=await import('./src/research-publication.js');
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import {verifyResearchPublication} from './src/research-publication.js';
           const p=JSON.parse(fs.readFileSync('data/research/published/latest.json','utf8'));
           const s=JSON.parse(fs.readFileSync('data/research/strategy/latest.json','utf8'));
           const fail=m=>{throw new Error(m)};
