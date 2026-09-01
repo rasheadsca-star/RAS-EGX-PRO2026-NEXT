@@ -15,11 +15,12 @@ test('unified UI consumes clean-room research publication simulator and regime e
 });
 
 test('regime confidence remains advisory and cannot silently replace baseline recommendation set',()=>{
-  for(const marker of ['baselineRecommendationSetUnchanged','changesPublishedDecision','GUARD WOULD SKIP','Regime Challenger','Forward Shadow Ledger','DISABLED_PENDING_FORWARD_VALIDATION'])assert.ok(html.includes(marker),`missing regime guard marker ${marker}`);
+  for(const marker of ['baselineRecommendationSetUnchanged','GUARD WOULD SKIP','Regime Challenger','Forward Shadow Ledger','DISABLED_PENDING_FORWARD_VALIDATION'])assert.ok(html.includes(marker),`missing regime guard marker ${marker}`);
   assert.ok(html.includes('ليس احتمال نجاح'));
   assert.ok(html.includes('NOT success probability'));
   assert.ok(!/\.filter\([^\n]*regimeFilterWouldAccept/.test(html),'UI must not filter published recommendations by challenger acceptance');
   assert.ok(html.includes("(PUB?.recommendations||[]).map(recCard)"),'published recommendation set must render directly');
+  assert.ok(html.includes("CTX&&CTX.baselineRecommendationSetUnchanged!==true"),'UI must fail closed if context claims baseline mutation');
 });
 
 test('unified UI keeps production and automatic-order boundaries explicit',()=>{
