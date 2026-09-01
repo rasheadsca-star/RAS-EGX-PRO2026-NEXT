@@ -49,7 +49,16 @@ export function assessEgxAdmissionReadiness(report={}){
   const licensed=report?.licensedEod??{};
   const capabilityReady=licensed.providerCapabilityReady===true&&licensed.egxCapabilityPublished===true&&licensed.historicalEodOhlcCapabilityPublished===true;
   if(!capabilityReady) reasons.push('LICENSED_EOD_CAPABILITY_NOT_READY');
-  if(licensed.datasetAdmissionReady===true&&(licensed.rawDatasetReceiptPresent!==true||licensed.licenseEntitlementReceiptPresent!==true||licensed.permittedApplicationUseReceiptPresent!==true)) reasons.push('LICENSED_DATASET_READY_WITHOUT_REQUIRED_RECEIPTS');
+  const licensedDatasetEvidenceComplete=[
+    'licenseEntitlementReceiptPresent',
+    'permittedApplicationUseReceiptPresent',
+    'rawDatasetReceiptPresent',
+    'sessionBoundExactUniverseDatasetPresent',
+    'trueFieldSemanticsReceiptPresent',
+    'independentDatasetCrossCheckReceiptPresent'
+  ].every(key=>licensed?.[key]===true);
+  if(licensed.datasetAdmissionReady===true&&!licensedDatasetEvidenceComplete) reasons.push('LICENSED_DATASET_READY_WITHOUT_COMPLETE_EVIDENCE_CHAIN');
+  if(licensed.historicalLineageReady===true&&licensed.datasetAdmissionReady!==true) reasons.push('HISTORICAL_LINEAGE_READY_WITHOUT_DATASET_ADMISSION');
 
   const phase3=report?.authoritativePhase3Status??{};
   if(!['FAIL','PASS'].includes(phase3.verdict)) reasons.push('PHASE3_VERDICT_REQUIRED');
@@ -63,8 +72,8 @@ export function assessEgxAdmissionReadiness(report={}){
     eligibleSecurityPolicyReady:security.eligibleSecurityPolicyReady===true,
     productionSessionAuthorityReady:actualBlockers.includes('SESSION_AUTHORITY:MISSING')===false,
     productionTrueOhlcvCurrentCoverageReady:session.productionTrueOhlcvCoverageReady===true,
-    licensedEodDatasetAdmissionReady:licensed.datasetAdmissionReady===true,
-    certifiedHistoricalLineageReady:licensed.historicalLineageReady===true,
+    licensedEodDatasetAdmissionReady:licensed.datasetAdmissionReady===true&&licensedDatasetEvidenceComplete,
+    certifiedHistoricalLineageReady:licensed.historicalLineageReady===true&&licensed.datasetAdmissionReady===true&&licensedDatasetEvidenceComplete,
     immutableProductionRegistryReady:actualBlockers.includes('REGISTRY:MISSING')===false
   });
   const phase3EvaluationEligible=Object.values(prerequisiteGates).every(Boolean);
@@ -102,6 +111,7 @@ export function assessEgxAdmissionReadiness(report={}){
       positiveVolumeTrueBarMissing:missing,
       licensedProviderCapabilityReady:capabilityReady
     }),
+    licensedDatasetEvidenceComplete,
     productionAuthority:false,
     baselineAuthorized:false,
     phase4Open:false
