@@ -42,6 +42,7 @@ test('current blockers are explicit and cannot be hidden by green CI',()=>{
   ]);
   assert.equal(report.verifiedCi.pass,320);
   assert.equal(report.authoritativePhase3Status.verdict,'FAIL');
+  assert.deepEqual(r.authoritativePhase3Blockers,['REGISTRY:MISSING','SESSION_AUTHORITY:MISSING','UNIVERSE:UNIVERSE_INCOMPLETE']);
 });
 
 test('claiming common share class from Stock schedule invalidates readiness snapshot',()=>{
@@ -77,7 +78,7 @@ test('readiness blocker list must exactly reflect computed prerequisite failures
   assert.equal(r.invariantReasons.some(x=>x.startsWith('READINESS_BLOCKERS_UNDERDECLARED:')),true);
 });
 
-test('even a hypothetical prerequisite-complete readiness object only becomes eligible for Phase 3 evaluation, never Production authority',()=>{
+test('hypothetical prerequisite-complete readiness only becomes eligible for Phase 3 gate evaluation, never Production authority',()=>{
   const ready=structuredClone(report);
   ready.officialListingEvidence.certifiedExhaustiveEligibleUniverseReady=true;
   ready.securityEligibility.eligibleSecurityPolicyReady=true;
@@ -90,8 +91,11 @@ test('even a hypothetical prerequisite-complete readiness object only becomes el
   ready.authoritativePhase3Status.blockers=[];
   ready.readinessBlockers=[];
   const r=assessEgxAdmissionReadiness(ready);
-  assert.equal(r.state,'INVALID_READINESS_SNAPSHOT');
+  assert.equal(r.state,'ELIGIBLE_FOR_PHASE3_GATE_EVALUATION');
+  assert.equal(r.invariantReady,true);
+  assert.equal(r.phase3EvaluationEligible,true);
   assert.equal(r.productionAuthority,false);
+  assert.equal(r.baselineAuthorized,false);
   assert.equal(r.phase4Open,false);
-  assert.equal(r.invariantReasons.includes('PHASE3_BLOCKER_MISSING:REGISTRY:MISSING'),true);
+  assert.equal(r.authoritativePhase3Verdict,'FAIL');
 });
