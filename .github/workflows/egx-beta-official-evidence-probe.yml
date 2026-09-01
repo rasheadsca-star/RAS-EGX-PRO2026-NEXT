@@ -1,0 +1,86 @@
+name: EGX Official BFF Evidence Probe
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+permissions:
+  contents: read
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - name: Capture official BFF evidence with raw hashes
+        shell: bash
+        run: |
+          set -u
+          mkdir -p artifacts/egx-official-bff-evidence
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,json,hashlib,datetime
+          base='https://beta.egx.com.eg/api/bff/egx/'
+          ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          captured=datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z')
+          probes=[
+            {'name':'market-status','method':'GET','url':base+'market-status','referer':'https://beta.egx.com.eg/en'},
+            {'name':'vert-price-volume-30','method':'GET','url':base+'price-volume-points?isin=EGS74801C019&date=30','referer':'https://beta.egx.com.eg/en/market/market-watch'},
+            {'name':'aih-price-volume-30','method':'GET','url':base+'price-volume-points?isin=EGS21351C019&date=30','referer':'https://beta.egx.com.eg/en/market/market-watch'},
+            {'name':'market-watch-volume','method':'GET','url':base+'market-watch?Page=1&PageSize=5&SortBy=Volume&SortDescending=true','referer':'https://beta.egx.com.eg/en/market/market-watch'},
+            {'name':'global-search-vert','method':'POST','url':base+'global-search','referer':'https://beta.egx.com.eg/en','json':{'q':'VERT','locale':'en-US','types':['listed-stock','sme-stock'],'page':1,'pageSize':20}},
+            {'name':'global-search-aih','method':'POST','url':base+'global-search','referer':'https://beta.egx.com.eg/en','json':{'q':'AIH','locale':'en-US','types':['listed-stock','sme-stock'],'page':1,'pageSize':20}},
+          ]
+          rows=[]
+          for i,p in enumerate(probes):
+              body=Path(f'artifacts/egx-official-bff-evidence/{i:02d}-{p["name"]}.body')
+              hdr=Path(f'artifacts/egx-official-bff-evidence/{i:02d}-{p["name"]}.headers')
+              cmd=['curl','-L','-sS','--compressed','--connect-timeout','5','--max-time','18','-A',ua,'-H','Accept: application/json','-H','x-egx-bff-request: 1','-H',f'Referer: {p["referer"]}','-D',str(hdr),'-o',str(body),'-w','%{http_code}',p['url']]
+              if p['method']=='POST':
+                  payload=json.dumps(p['json'],separators=(',',':'))
+                  cmd[1:1]=['-X','POST']
+                  cmd[1:1]=['-H','Content-Type: application/json','--data-binary',payload]
+              proc=subprocess.run(cmd,capture_output=True,text=True)
+              data=body.read_bytes() if body.exists() else b''
+              header_text=hdr.read_text(errors='replace') if hdr.exists() else ''
+              ctype=''
+              for line in header_text.splitlines():
+                  if line.lower().startswith('content-type:'): ctype=line.split(':',1)[1].strip()
+              parsed=None;json_ok=False
+              if data:
+                  try: parsed=json.loads(data.decode());json_ok=True
+                  except: pass
+              rows.append({
+                  'name':p['name'],'method':p['method'],'url':p['url'],'capturedAt':captured,
+                  'status':(proc.stdout or '').strip() or 'CURL_FAILED','contentType':ctype,'bytes':len(data),
+                  'contentHash':hashlib.sha256(data).hexdigest() if data else None,'jsonValid':json_ok,
+                  'topLevelKeys':sorted(parsed.keys()) if isinstance(parsed,dict) else None,
+                  'success':parsed.get('success') if isinstance(parsed,dict) else None,
+                  'message':parsed.get('message') if isinstance(parsed,dict) else None,
+                  'dataShape':('array' if isinstance(parsed,list) else 'object' if isinstance(parsed,dict) else None),
+                  'preview':data[:8000].decode(errors='replace')
+              })
+          Path('artifacts/egx-official-bff-evidence/receipts.json').write_text(json.dumps(rows,indent=2,ensure_ascii=False))
+          Path('artifacts/egx-official-bff-evidence/captured-at.txt').write_text(captured+'\n')
+          print(json.dumps(rows,indent=2,ensure_ascii=False))
+          PY
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=json.load(open('artifacts/egx-official-bff-evidence/receipts.json'))
+          report={'readyJson':[],'failed':[],'observations':[]}
+          for r in rows:
+              ok=r['status']=='200' and r['jsonValid'] and not (r['success'] is False)
+              (report['readyJson'] if ok else report['failed']).append(r['name'])
+              report['observations'].append({'name':r['name'],'status':r['status'],'jsonValid':r['jsonValid'],'success':r['success'],'bytes':r['bytes'],'contentHash':r['contentHash'],'message':r['message']})
+          Path('artifacts/egx-official-bff-evidence/summary.json').write_text(json.dumps(report,indent=2))
+          print('\n=== SUMMARY ===')
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-official-bff-evidence
+          path: artifacts/egx-official-bff-evidence/*
+          if-no-files-found: error
