@@ -8,12 +8,13 @@ const SIGNAL='2026-08-31';
 const SNAP='prod-feature-snapshot';
 const NORMALIZED=sha256('normalized-production-snapshot');
 const CURRENT_CERT=sha256('current-market-observation-certificate');
+const OFFICIAL_PARSER='OFFICIAL_EGX_JSON_BAR_V1';
 
 function historical(session,close){
   const bar={ticker:'VERT',session,open:close-0.2,high:close+0.4,low:close-0.5,close,volume:100000};
   const raw={...bar,kind:'official-eod'};
   const receipt={sourceId:'OFFICIAL_EGX',sourceClass:'OFFICIAL_EXCHANGE',providerGroup:'EGX',sourceUrl:'https://beta.egx.com.eg/downloads/history.csv',session,capturedAt:`${session}T15:00:00Z`,provenanceKind:'DIRECT_FILE',contentHash:sha256(raw)};
-  return createHistoricalObservationLineage({dataSnapshotId:SNAP,bar,receipt,rawPayload:raw,parserId:'egx-eod-csv',parserVersion:'1'});
+  return createHistoricalObservationLineage({dataSnapshotId:SNAP,bar,receipt,rawPayload:raw,parserId:OFFICIAL_PARSER,parserVersion:'1'});
 }
 
 const c27=historical('2026-08-27',10.1);
