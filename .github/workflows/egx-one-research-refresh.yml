@@ -11,15 +11,18 @@ on:
       - 'src/research-current-session.js'
       - 'src/research-feature-engine.js'
       - 'src/research-strategy-engine.js'
+      - 'src/research-publication.js'
       - 'src/research-ui-summary.js'
       - 'scripts/research-refresh-live.mjs'
       - 'scripts/research-build-features.mjs'
       - 'scripts/research-build-strategy.mjs'
+      - 'scripts/research-build-publication.mjs'
       - 'scripts/research-build-ui-summary.mjs'
       - 'tests/research-live-adapters.test.mjs'
       - 'tests/research-current-session.test.mjs'
       - 'tests/research-feature-engine.test.mjs'
       - 'tests/research-strategy-engine.test.mjs'
+      - 'tests/research-publication.test.mjs'
       - 'tests/research-ui-summary.test.mjs'
       - 'package.json'
       - 'index.html'
@@ -68,7 +71,7 @@ jobs:
           echo "file_hash=$file_hash" >> "$GITHUB_OUTPUT"
           echo "LEGACY_MARKET_CAPTURE:${sha}:${file_hash}"
 
-      - name: Resolve expected Cairo research session
+      - name: Resolve expected Cairo research session from exact imported market snapshot
         id: expected
         shell: bash
         run: |
@@ -77,9 +80,26 @@ jobs:
           const fs=require('fs');
           const explicit=String(process.env.RESEARCH_EXPECTED_SESSION||'').trim();
           if(/^\d{4}-\d{2}-\d{2}$/.test(explicit)){console.log(explicit);process.exit(0)}
+          const market=JSON.parse(fs.readFileSync('/tmp/egx-one-legacy-market.json','utf8'));
+          const rows=Array.isArray(market.rows)?market.rows:[];
+          if(!rows.length)throw new Error('imported market snapshot has no rows');
+          const dates=[];
+          for(const row of rows){
+            const d=String(row?.marketSessionDate||row?.sourceSessionDate||'').trim();
+            if(/^\d{4}-\d{2}-\d{2}$/.test(d))dates.push(d);
+          }
+          if(!dates.length)throw new Error('imported market snapshot has no session evidence');
+          const counts=new Map();
+          for(const d of dates)counts.set(d,(counts.get(d)||0)+1);
+          const ranked=[...counts.entries()].sort((a,b)=>b[1]-a[1]||b[0].localeCompare(a[0]));
+          const [winner,winnerCount]=ranked[0];
+          const quorum=winnerCount/dates.length;
+          if(quorum<0.70)throw new Error(`research session quorum below 70%: ${winnerCount}/${dates.length}`);
           const status=JSON.parse(fs.readFileSync('status.json','utf8'));
-          if(/^\d{4}-\d{2}-\d{2}$/.test(String(status.marketSession||''))){console.log(status.marketSession);process.exit(0)}
-          throw new Error('expected research session unavailable');
+          const prior=String(status.marketSession||'').trim();
+          if(/^\d{4}-\d{2}-\d{2}$/.test(prior)&&winner<prior)throw new Error(`research session regression: ${winner} < ${prior}`);
+          console.error(`RESEARCH_SESSION_EVIDENCE:${JSON.stringify({winner,winnerCount,datedRows:dates.length,quorumPct:Number((quorum*100).toFixed(2)),priorStatusSession:prior||null,marketGeneratedAt:market.generatedAt||null,marketUpdatedAt:market.updatedAt||null})}`);
+          console.log(winner);
           NODE
           )"
           echo "session=$session" >> "$GITHUB_OUTPUT"
@@ -161,6 +181,27 @@ jobs:
           for(const r of x.recommendations){if(!['BUY_CANDIDATE','WAIT_FOR_ENTRY'].includes(r.decision)||r.executableResearchPlan!==true||!(r.stop<r.entryLow&&r.entryLow<=r.entryHigh&&r.entryHigh<r.target1&&r.target1<r.target2)||r.productionAuthority!==false||r.automaticOrders!==false)fail(`INVALID_RESEARCH_PLAN:${r.ticker}`)}
           NODE
 
+      - name: Build hash-bound research publication from the same strategy snapshot
+        run: npm run research:publish
+
+      - name: Enforce publication session and strategy lineage
+        env:
+          EXPECTED: ${{ steps.expected.outputs.session }}
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const {verifyResearchPublication}=await import('./src/research-publication.js');
+          const p=JSON.parse(fs.readFileSync('data/research/published/latest.json','utf8'));
+          const s=JSON.parse(fs.readFileSync('data/research/strategy/latest.json','utf8'));
+          const fail=m=>{throw new Error(m)};
+          if(!verifyResearchPublication(p))fail('PUBLICATION_VERIFY_FAILED');
+          if(p.signalSession!==process.env.EXPECTED||p.signalSession!==s.signalSession)fail('PUBLICATION_SESSION_MISMATCH');
+          if(p.sourceStrategySnapshotHash!==s.strategySnapshotHash)fail('PUBLICATION_STRATEGY_LINEAGE_MISMATCH');
+          if(p.productionAuthority!==false||p.automaticOrders!==false||p.authorityMode!=='RESEARCH')fail('PUBLICATION_PREMATURE_AUTHORITY');
+          if((p.recommendations||[]).length!==(s.recommendations||[]).length)fail('PUBLICATION_RECOMMENDATION_COUNT_MISMATCH');
+          console.log(`RESEARCH_PUBLICATION_VERIFIED:${p.signalSession}:${p.publicationHash}:${p.sourceStrategySnapshotHash}:${p.counts?.recommendations}`);
+          NODE
+
       - name: Build non-executable descriptive UI summary
         run: npm run research:ui
 
@@ -176,15 +217,15 @@ jobs:
           if(!x.uiSnapshotHash)fail('RESEARCH_UI_HASH_MISSING');
           NODE
 
-      - name: Commit research market feature strategy and UI snapshots
+      - name: Commit atomic research market feature strategy publication and UI snapshots
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/live data/research/features data/research/strategy data/research/ui
+          git add data/research/live data/research/features data/research/strategy data/research/published data/research/ui
           if git diff --cached --quiet; then echo 'No research snapshot change.'; else
-            git commit -m "Refresh EGX ONE research market feature strategy and UI snapshots"
+            git commit -m "Refresh EGX ONE atomic research recommendations snapshot"
             for attempt in 1 2 3; do
               if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then break; fi
               [ "$attempt" = 3 ] && exit 1
@@ -194,11 +235,12 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: egx-one-research-market-strategy-ui
+          name: egx-one-research-market-strategy-publication-ui
           path: |
             data/research/live/latest.json
             data/research/features/latest.json
             data/research/strategy/latest.json
+            data/research/published/latest.json
             data/research/ui/latest.json
           if-no-files-found: error
 
@@ -207,10 +249,11 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf /tmp/egx-one-live
-          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/data/research/strategy /tmp/egx-one-live/.vercel
+          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/data/research/strategy /tmp/egx-one-live/data/research/published /tmp/egx-one-live/.vercel
           cp index.html /tmp/egx-one-live/index.html
           cp data/research/ui/latest.json /tmp/egx-one-live/data/research/ui/latest.json
           cp data/research/strategy/latest.json /tmp/egx-one-live/data/research/strategy/latest.json
+          cp data/research/published/latest.json /tmp/egx-one-live/data/research/published/latest.json
           printf '%s\n' '{"cleanUrls":true,"trailingSlash":false}' > /tmp/egx-one-live/vercel.json
           printf '%s\n' '{"projectId":"'"$VERCEL_PROJECT_ID"'","orgId":"'"$VERCEL_ORG_ID"'"}' > /tmp/egx-one-live/.vercel/project.json
 
@@ -234,18 +277,25 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "PRODUCTION_DEPLOYMENT_URL:$url"
 
-      - name: Verify deployed research recommendation boundary
+      - name: Verify deployed research recommendation boundary and freshness
         if: steps.deploy_auth.outputs.available == 'true'
         env:
           URL: ${{ steps.production_deploy.outputs.url }}
+          EXPECTED: ${{ steps.expected.outputs.session }}
         shell: bash
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/strategy/latest.json" > /tmp/deployed-strategy.json
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/published/latest.json" > /tmp/deployed-publication.json
           node - <<'NODE'
-          const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/deployed-strategy.json','utf8'));
-          if(x.authorityMode!=='RESEARCH'||x.productionAuthority!==false||x.automaticOrders!==false||x.validation?.accepted!==true||!x.recommendations?.length)throw new Error('DEPLOYED_RESEARCH_RECOMMENDATION_BOUNDARY_FAILED');
-          console.log(`DEPLOYED_RESEARCH_STRATEGY_VERIFIED:${x.signalSession}:${x.strategySnapshotHash}:${x.recommendations.length}`);
+          const fs=require('fs');
+          const s=JSON.parse(fs.readFileSync('/tmp/deployed-strategy.json','utf8'));
+          const p=JSON.parse(fs.readFileSync('/tmp/deployed-publication.json','utf8'));
+          if(s.authorityMode!=='RESEARCH'||s.productionAuthority!==false||s.automaticOrders!==false||s.validation?.accepted!==true||!s.recommendations?.length)throw new Error('DEPLOYED_RESEARCH_RECOMMENDATION_BOUNDARY_FAILED');
+          if(s.signalSession!==process.env.EXPECTED||p.signalSession!==process.env.EXPECTED)throw new Error('DEPLOYED_RESEARCH_SESSION_STALE');
+          if(p.sourceStrategySnapshotHash!==s.strategySnapshotHash)throw new Error('DEPLOYED_PUBLICATION_STRATEGY_LINEAGE_MISMATCH');
+          if(p.productionAuthority!==false||p.automaticOrders!==false||p.authorityMode!=='RESEARCH')throw new Error('DEPLOYED_PUBLICATION_AUTHORITY_BOUNDARY_FAILED');
+          console.log(`DEPLOYED_RESEARCH_STRATEGY_VERIFIED:${s.signalSession}:${s.strategySnapshotHash}:${s.recommendations.length}:${p.publicationHash}`);
           NODE
 
       - name: Report deploy state
@@ -253,5 +303,6 @@ jobs:
         env:
           AUTH: ${{ steps.deploy_auth.outputs.available }}
           URL: ${{ steps.production_deploy.outputs.url }}
+          EXPECTED: ${{ steps.expected.outputs.session }}
         run: |
-          if [ "$AUTH" = 'true' ]; then echo "DEPLOY_STATE:VERIFIED:${URL}";else echo 'DEPLOY_STATE:BLOCKED:VERCEL_TOKEN_MISSING';fi
+          if [ "$AUTH" = 'true' ]; then echo "DEPLOY_STATE:VERIFIED:${EXPECTED}:${URL}";else echo 'DEPLOY_STATE:BLOCKED:VERCEL_TOKEN_MISSING';fi
