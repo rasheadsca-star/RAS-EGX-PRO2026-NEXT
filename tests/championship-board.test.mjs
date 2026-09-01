@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 await import('../championship-board.js');
 const B=globalThis.EGXOneChampionshipBoard;
@@ -56,6 +57,26 @@ test('date-aligned outcome comparison awards exactly one independent point',()=>
   assert.equal(c.metrics.find(x=>x.id==='failure').qualified,false);
   assert.equal(c.metrics.find(x=>x.id==='avgNet').qualified,false);
   assert.equal(c.costComparable,false);
+});
+
+test('real simulator artifact agrees with common-date session summaries',()=>{
+  const sim=JSON.parse(fs.readFileSync(new URL('../data/research/simulator/latest.json',import.meta.url),'utf8'));
+  const c=B.buildComparison(sim,{resolutions:[]});
+  const dates=new Set(sim.legacyComparison.commonDates);
+  const sessions=(sim.performance?.allDailySignals?.sessions||[]).filter(s=>dates.has(s.session));
+  const targets=sessions.reduce((n,s)=>n+Number(s.targetHits||0),0);
+  const stops=sessions.reduce((n,s)=>n+Number(s.stops||0),0);
+  const triggered=sessions.reduce((n,s)=>n+Number(s.triggered||0),0);
+  assert.equal(c.current.commonSignalDates,sim.legacyComparison.commonDates.length);
+  assert.equal(c.current.targetHits,targets);
+  assert.equal(c.current.stopHits,stops);
+  assert.equal(c.current.timeouts,triggered-targets-stops);
+  assert.equal(c.current.resolvedMembers,targets+stops);
+  assert.equal(c.v16.evidenceGrade,'EXACT_LOGGED_LEDGER');
+  assert.equal(c.sameDateScope,true);
+  assert.equal(c.costComparable,false);
+  const expectedLeader=c.current.targetHitRatePct>c.v16.targetHitRatePct?'EGX ONE':c.current.targetHitRatePct<c.v16.targetHitRatePct?'V16.9 EGX PRO':'TIE';
+  assert.equal(c.score.leader,expectedLeader);
 });
 
 test('missing exact/date-aligned evidence produces N/A leader and no fabricated point',()=>{
