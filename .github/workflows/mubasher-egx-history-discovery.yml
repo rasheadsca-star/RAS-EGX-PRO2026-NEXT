@@ -1,0 +1,66 @@
+name: Mubasher EGX Historical OHLCV Discovery
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/mubasher-egx-history-discovery.yml
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Capture MTIE page scripts and chart/API callsites
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/mubasher-history/scripts
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,re,json,hashlib,urllib.parse,datetime,time
+          OUT=Path('artifacts/mubasher-history'); S=OUT/'scripts'
+          page='https://english.mubasher.info/markets/EGX/stocks/MTIE'
+          ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          def get(url,path):
+              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','8','--max-time','35','--retry','3','--retry-all-errors','--retry-delay','1','-A',ua,'-H','Accept: text/html,application/javascript,application/json,*/*;q=0.8','-D',str(path)+'.headers','-o',str(path),'-w','%{http_code}|%{url_effective}|%{content_type}',url],capture_output=True,text=True)
+              raw=path.read_bytes() if path.exists() else b''; parts=(p.stdout or '').split('|',2)
+              return {'url':url,'status':parts[0] if parts else '','effectiveUrl':parts[1] if len(parts)>1 else '', 'contentType':parts[2] if len(parts)>2 else '', 'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,'stderr':p.stderr[-1200:] if p.stderr else ''}
+          pf=OUT/'mtie.html'; page_rec=get(page,pf); html=pf.read_text(errors='ignore') if pf.exists() else ''
+          urls=[]
+          for src in re.findall(r'(?i)<script[^>]+src=["\']([^"\']+)["\']',html):
+              u=urllib.parse.urljoin(page_rec.get('effectiveUrl') or page,src)
+              if u not in urls: urls.append(u)
+          receipts=[]; hits=[]; literals=set()
+          tokens=['chart','histor','ohlc','open','high','low','volume','timeseries','time-series','candlestick','stock-prices','price-history','market-data','api/','/api','graphql','series']
+          url_re=re.compile(r'https?://[^"\'<>\\\s]+|/[A-Za-z0-9_./?=&%{}:-]{5,180}')
+          for i,u in enumerate(urls):
+              f=S/f'{i:03d}.js'; rec=get(u,f); receipts.append(rec); txt=f.read_text(errors='ignore') if f.exists() else ''
+              low=txt.lower()
+              for token in tokens:
+                  start=0; count=0
+                  while True:
+                      pos=low.find(token,start)
+                      if pos<0 or count>=30: break
+                      ctx=txt[max(0,pos-1000):min(len(txt),pos+2200)]
+                      if any(k in ctx.lower() for k in ('http','api','chart','price','volume','series','market')):
+                          hits.append({'script':u,'token':token,'context':ctx})
+                      start=pos+len(token); count+=1
+              for m in url_re.finditer(txt):
+                  val=m.group(0)
+                  lv=val.lower()
+                  if any(k in lv for k in ('api','chart','histor','price','stock','market','series','quote')): literals.add(val[:300])
+              time.sleep(.1)
+          report={'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),'page':page_rec,'scriptCount':len(urls),'scriptReceipts':receipts,'hits':hits,'urlLiterals':sorted(literals),'productionAuthority':False,'independentProvider':'MUBASHER'}
+          (OUT/'discovery.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps({'page':page_rec,'scriptCount':len(urls),'failedScripts':sum(1 for r in receipts if r['status']!='200'),'hitCount':len(hits),'literalCount':len(literals),'sampleLiterals':sorted(literals)[:80]},ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mubasher-egx-history-discovery
+          path: artifacts/mubasher-history/**/*
+          if-no-files-found: error
