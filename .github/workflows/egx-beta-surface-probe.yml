@@ -1,64 +1,10 @@
 name: EGX Official Beta Surface Probe
 on:
-  push:
-    branches: [egx-one/clean-room-v0]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   probe:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: egx-one/clean-room-v0
-          fetch-depth: 1
-      - name: Probe public EGX beta frontend assets
-        shell: bash
-        run: |
-          set -u
-          mkdir -p artifacts/egx-beta-probe /tmp/egx-js
-          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
-          HOME_URL='https://beta.egx.com.eg/en'
-          curl -L -sS --compressed -A "$UA" -D artifacts/egx-beta-probe/home.headers -o artifacts/egx-beta-probe/home.html -w '%{http_code}\n' "$HOME_URL" > artifacts/egx-beta-probe/home.status || true
-          python - <<'PY'
-          from pathlib import Path
-          import re, urllib.parse, json
-          base='https://beta.egx.com.eg/en'
-          text=Path('artifacts/egx-beta-probe/home.html').read_text(errors='replace') if Path('artifacts/egx-beta-probe/home.html').exists() else ''
-          scripts=[]
-          for pattern in [r'<script[^>]+src=["\']([^"\']+)',r'<link[^>]+href=["\']([^"\']+)["\'][^>]+as=["\']script']:
-              for x in re.findall(pattern,text,re.I):
-                  u=urllib.parse.urljoin(base,x)
-                  if u not in scripts:scripts.append(u)
-          Path('artifacts/egx-beta-probe/scripts.json').write_text(json.dumps(scripts,indent=2))
-          print('scripts',len(scripts))
-          PY
-          python - <<'PY'
-          from pathlib import Path
-          import json, subprocess, re, urllib.parse, hashlib
-          scripts=json.loads(Path('artifacts/egx-beta-probe/scripts.json').read_text())
-          rows=[]; candidates=set()
-          for i,u in enumerate(scripts[:150]):
-              out=Path(f'/tmp/egx-js/{i}.js'); hdr=Path(f'/tmp/egx-js/{i}.headers')
-              p=subprocess.run(['curl','-L','-sS','--compressed','-A','Mozilla/5.0','-D',str(hdr),'-o',str(out),'-w','%{http_code}',u],capture_output=True,text=True)
-              status=(p.stdout or '').strip(); data=out.read_text(errors='replace') if out.exists() else ''
-              rows.append({'url':u,'status':status,'bytes':len(data),'sha256':hashlib.sha256(data.encode()).hexdigest() if data else None})
-              for m in re.findall(r'''(?i)(?:https?://[^"'`\\\s]+|/[A-Za-z0-9_./?=&%{}:-]{4,})''',data):
-                  low=m.lower()
-                  if any(k in low for k in ('api','market','stock','share','securit','index','indice','constitu','ticker','summary','trade','quote','ohlc','price')):
-                      candidates.add(m[:500])
-          Path('artifacts/egx-beta-probe/script-fetches.json').write_text(json.dumps(rows,indent=2))
-          Path('artifacts/egx-beta-probe/candidate-routes.txt').write_text('\n'.join(sorted(candidates)))
-          print('candidate_routes',len(candidates))
-          PY
-          {
-            echo '=== HOME STATUS ==='; cat artifacts/egx-beta-probe/home.status 2>/dev/null || true
-            echo '=== SCRIPT COUNT ==='; python -c "import json;print(len(json.load(open('artifacts/egx-beta-probe/scripts.json'))))"
-            echo '=== CANDIDATE ROUTES ==='; sed -n '1,250p' artifacts/egx-beta-probe/candidate-routes.txt
-          } | tee artifacts/egx-beta-probe/summary.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: egx-official-beta-surface-probe
-          path: artifacts/egx-beta-probe/*
-          if-no-files-found: error
+      - run: echo 'Superseded by bounded EGX beta probe.'
