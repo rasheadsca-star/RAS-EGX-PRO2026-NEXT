@@ -1,0 +1,67 @@
+name: EGX ONE Regime and Forward Shadow
+on:
+  workflow_dispatch:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - 'src/research-market-regime.js'
+      - 'src/research-forward-shadow-ledger.js'
+      - 'scripts/research-build-regime-shadow.mjs'
+      - 'tests/research-market-regime.test.mjs'
+      - 'tests/research-forward-shadow-ledger.test.mjs'
+      - 'data/research/ui/latest.json'
+      - 'data/research/published/latest.json'
+      - 'package.json'
+      - '.github/workflows/egx-one-regime-shadow.yml'
+permissions:
+  contents: write
+concurrency:
+  group: egx-one-regime-shadow
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify clean-room contracts
+        run: npm test
+      - name: Build current regime and forward shadow ledger
+        run: npm run research:regime-shadow
+      - name: Verify authority boundaries
+        run: |
+          node - <<'NODE'
+          import fs from 'node:fs';
+          import { verifyForwardShadowLedger } from './src/research-forward-shadow-ledger.js';
+          const r=JSON.parse(fs.readFileSync('data/research/regime/latest.json','utf8'));
+          const l=JSON.parse(fs.readFileSync('data/research/shadow-ledger/latest.json','utf8'));
+          if(r.authorityMode!=='RESEARCH'||r.productionAuthority!==false||r.classificationPolicy!=='FIXED_EX_ANTE_BREADTH_POLICY_V1_NOT_OUTCOME_TUNED')throw new Error('REGIME_AUTHORITY_BOUNDARY_FAILED');
+          if(!verifyForwardShadowLedger(l)||l.forwardEvidence!==false||l.productionAuthority!==false)throw new Error('SHADOW_LEDGER_BOUNDARY_FAILED');
+          console.log(`REGIME_SHADOW_VERIFIED:${r.session}:${r.regime}:${l.entries.length}:${l.ledgerHash}`);
+          NODE
+      - name: Commit deterministic regime and shadow snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/regime data/research/shadow-ledger
+          if git diff --cached --quiet; then echo 'No regime/shadow change.'; exit 0; fi
+          git commit -m 'Publish EGX ONE regime and forward shadow snapshots'
+          for attempt in 1 2 3; do
+            if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
+            [ "$attempt" = 3 ] && exit 1
+            sleep $((attempt*4))
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-regime-shadow
+          path: |
+            data/research/regime/latest.json
+            data/research/shadow-ledger/latest.json
+          if-no-files-found: error

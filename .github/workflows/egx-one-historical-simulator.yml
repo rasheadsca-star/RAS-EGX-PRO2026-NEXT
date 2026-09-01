@@ -7,8 +7,10 @@ on:
       - 'src/research-historical-simulator.js'
       - 'src/research-strategy-engine.js'
       - 'src/research-feature-engine.js'
+      - 'src/research-market-regime.js'
       - 'scripts/research-run-historical-simulator.mjs'
       - 'tests/research-historical-simulator.test.mjs'
+      - 'tests/research-market-regime.test.mjs'
       - 'data/research/history/**'
       - 'data/research/history-index.json'
       - 'data/research/strategy/latest.json'
@@ -52,10 +54,11 @@ jobs:
           const x=JSON.parse(fs.readFileSync('data/research/simulator/latest.json','utf8'));
           if(x.authorityMode!=='RESEARCH'||x.productionAuthority!==false||x.forwardEvidence!==false||x.automaticOrders!==false)throw new Error('SIMULATOR_AUTHORITY_BOUNDARY_FAILED');
           if(x.sameBarTargetStop!=='STOP_FIRST'||x.lookaheadForbidden!==true)throw new Error('SIMULATOR_CONSERVATIVE_POLICY_FAILED');
+          if(x.regimeChallenger?.status!=='SHADOW_CHALLENGER_NOT_AUTO_PROMOTED'||x.regimeChallenger?.policy!=='FIXED_EX_ANTE_BREADTH_POLICY_V1_NOT_OUTCOME_TUNED')throw new Error('REGIME_CHALLENGER_BOUNDARY_FAILED');
           if(x.legacyComparison?.v16_9?.evidenceGrade!=='EXACT_LOGGED_LEDGER')throw new Error('V169_EXACT_EVIDENCE_MISSING');
           if(x.legacyComparison?.gannFusionX?.evidenceGrade!=='RECONSTRUCTED_FROM_FROZEN_CODE')throw new Error('GANN_RECONSTRUCTION_MISSING');
           if(x.legacyComparison?.sepaX?.evidenceGrade!=='RECONSTRUCTED_PROXY_FROM_FROZEN_CODE')throw new Error('SEPA_PROXY_MISSING');
-          console.log(`SIMULATOR_VERIFIED:${x.artifactHash}:${x.performance.allDailySignals.plans}`);
+          console.log(`SIMULATOR_VERIFIED:${x.artifactHash}:${x.performance.allDailySignals.plans}:REGIME:${x.regimeChallenger.performance.allDailySignals.plans}`);
           NODE
       - name: Commit deterministic simulator snapshot
         shell: bash
