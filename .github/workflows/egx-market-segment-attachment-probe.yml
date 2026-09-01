@@ -41,14 +41,11 @@ jobs:
               f=OUT/f'page-{i}.html'; rec=get(url,f); page_receipts.append(rec)
               txt=f.read_text(errors='ignore') if f.exists() else ''
               base=rec.get('effectiveUrl') or url
-              for attr,val in re.findall(r'(?i)(?:href|src)\s*=\s*["\']([^"\']+)["\']',txt):
-                  pass
               for val in re.findall(r'(?i)(?:href|src)\s*=\s*["\']([^"\']+)["\']',txt):
                   u=urllib.parse.urljoin(base,val.strip())
                   low=u.lower()
                   if any(x in low for x in ('.pdf','.xlsx','.xls','.csv','.docx','.doc','attachment','download','uploads','upload','files/')):
                       if u not in candidates: candidates.append(u)
-              # URLs embedded in scripts / JSON
               for val in re.findall(r'https?://[^"\'<>\s]+',txt):
                   val=val.replace('&amp;','&')
                   low=val.lower()
@@ -63,7 +60,6 @@ jobs:
               rec=get(u,f,'*/*'); rec['localFile']=str(f); file_receipts.append(rec)
               time.sleep(.15)
 
-          # preserve human-readable text excerpts around market segment terms
           excerpts=[]
           terms=['Most Active','Medium Activity','Inactive','SME','TAMAYUZ','NILE','نشاط','تميز','بورصة النيل','غير نشطة']
           for i in range(len(seeds)):
