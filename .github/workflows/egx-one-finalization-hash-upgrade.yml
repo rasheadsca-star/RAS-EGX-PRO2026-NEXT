@@ -1,0 +1,39 @@
+name: EGX ONE SSOT Finalization Hash Upgrade
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+permissions:
+  contents: write
+jobs:
+  upgrade:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - name: Bind first finalization hashes to exact persisted rows
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('src/market-data-store.js');s=p.read_text()
+          old="    this.db.function('egx_normalized_bar_hash_valid',{deterministic:true},(rowHash,dataSnapshotId,ticker,session,open,high,low,close,volume,sourceManifestHash,certifiedReconciliationManifestHash,primaryObservationCertificateHash)=>{try{return sha256({dataSnapshotId,ticker,session,open:Number(open),high:Number(high),low:Number(low),close:Number(close),volume:volume==null?null:Number(volume),sourceManifestHash,certifiedReconciliationManifestHash:certifiedReconciliationManifestHash??null,primaryObservationCertificateHash:primaryObservationCertificateHash??null})===rowHash?1:0}catch{return 0}});\n    this.#init();"
+          new="    this.db.function('egx_normalized_bar_hash_valid',{deterministic:true},(rowHash,dataSnapshotId,ticker,session,open,high,low,close,volume,sourceManifestHash,certifiedReconciliationManifestHash,primaryObservationCertificateHash)=>{try{return sha256({dataSnapshotId,ticker,session,open:Number(open),high:Number(high),low:Number(low),close:Number(close),volume:volume==null?null:Number(volume),sourceManifestHash,certifiedReconciliationManifestHash:certifiedReconciliationManifestHash??null,primaryObservationCertificateHash:primaryObservationCertificateHash??null})===rowHash?1:0}catch{return 0}});\n    this.db.function('egx_acquisition_finalization_valid',{deterministic:true},(contentHash,acquisitionId,expectedSession,rowsJson)=>{try{const rows=JSON.parse(rowsJson);return Array.isArray(rows)&&rows.length>0&&sha256({acquisitionId,expectedSession,rows})===contentHash?1:0}catch{return 0}});\n    this.db.function('egx_data_snapshot_finalization_valid',{deterministic:true},(contentHash,dataSnapshotId,marketSession,sourceManifestHash,ingestionMode,rowsJson)=>{try{const rows=JSON.parse(rowsJson);return Array.isArray(rows)&&rows.length>0&&sha256({dataSnapshotId,marketSession,sourceManifestHash,ingestionMode,rows})===contentHash?1:0}catch{return 0}});\n    this.#init();"
+          if old not in s: raise SystemExit('finalization UDF anchor not found')
+          s=s.replace(old,new,1)
+          old="      CREATE TRIGGER IF NOT EXISTS raw_bar_hash_guard BEFORE INSERT ON raw_bars WHEN egx_raw_bar_hash_valid(NEW.raw_hash,NEW.acquisition_id,NEW.ticker,NEW.session,NEW.source_id,NEW.payload_json)<>1 BEGIN SELECT RAISE(ABORT,'INVALID_RAW_BAR_HASH'); END;"
+          new="      CREATE TRIGGER IF NOT EXISTS acquisition_insert_unfinalized BEFORE INSERT ON acquisition_runs WHEN NEW.content_hash IS NOT NULL OR NEW.finalized_at IS NOT NULL BEGIN SELECT RAISE(ABORT,'ACQUISITION_MUST_START_UNFINALIZED'); END;\n      CREATE TRIGGER IF NOT EXISTS acquisition_metadata_immutable BEFORE UPDATE OF acquisition_id,expected_session,started_at ON acquisition_runs WHEN NEW.acquisition_id<>OLD.acquisition_id OR NEW.expected_session<>OLD.expected_session OR NEW.started_at<>OLD.started_at BEGIN SELECT RAISE(ABORT,'IMMUTABLE_ACQUISITION_METADATA'); END;\n      CREATE TRIGGER IF NOT EXISTS acquisition_finalize_guard BEFORE UPDATE OF content_hash,finalized_at ON acquisition_runs WHEN OLD.content_hash IS NULL AND (NEW.content_hash IS NOT NULL OR NEW.finalized_at IS NOT NULL) AND (NEW.content_hash IS NULL OR NEW.finalized_at IS NULL OR egx_acquisition_finalization_valid(NEW.content_hash,NEW.acquisition_id,NEW.expected_session,(SELECT json_group_array(json_object('raw_hash',raw_hash,'ticker',ticker,'session',session,'source_id',source_id,'payload_json',payload_json)) FROM (SELECT raw_hash,ticker,session,source_id,payload_json FROM raw_bars WHERE acquisition_id=NEW.acquisition_id ORDER BY ticker,session,source_id,raw_hash)))<>1) BEGIN SELECT RAISE(ABORT,'INVALID_ACQUISITION_FINALIZATION_HASH'); END;\n      CREATE TRIGGER IF NOT EXISTS data_snapshot_insert_unfinalized BEFORE INSERT ON data_snapshots WHEN NEW.content_hash IS NOT NULL OR NEW.finalized_at IS NOT NULL BEGIN SELECT RAISE(ABORT,'DATA_SNAPSHOT_MUST_START_UNFINALIZED'); END;\n      CREATE TRIGGER IF NOT EXISTS data_snapshot_metadata_immutable BEFORE UPDATE OF data_snapshot_id,market_session,source_manifest_hash,ingestion_mode,created_at ON data_snapshots WHEN NEW.data_snapshot_id<>OLD.data_snapshot_id OR NEW.market_session<>OLD.market_session OR NEW.source_manifest_hash<>OLD.source_manifest_hash OR NEW.ingestion_mode<>OLD.ingestion_mode OR NEW.created_at<>OLD.created_at BEGIN SELECT RAISE(ABORT,'IMMUTABLE_DATA_SNAPSHOT_METADATA'); END;\n      CREATE TRIGGER IF NOT EXISTS data_snapshot_finalize_guard BEFORE UPDATE OF content_hash,finalized_at ON data_snapshots WHEN OLD.content_hash IS NULL AND (NEW.content_hash IS NOT NULL OR NEW.finalized_at IS NOT NULL) AND (NEW.content_hash IS NULL OR NEW.finalized_at IS NULL OR egx_data_snapshot_finalization_valid(NEW.content_hash,NEW.data_snapshot_id,NEW.market_session,NEW.source_manifest_hash,NEW.ingestion_mode,(SELECT json_group_array(json_object('ticker',ticker,'session',session,'open',open,'high',high,'low',low,'close',close,'volume',volume,'source_manifest_hash',source_manifest_hash,'certified_reconciliation_manifest_hash',certified_reconciliation_manifest_hash,'primary_observation_certificate_hash',primary_observation_certificate_hash,'row_hash',row_hash)) FROM (SELECT ticker,session,open,high,low,close,volume,source_manifest_hash,certified_reconciliation_manifest_hash,primary_observation_certificate_hash,row_hash FROM normalized_bars WHERE data_snapshot_id=NEW.data_snapshot_id ORDER BY ticker,session)))<>1) BEGIN SELECT RAISE(ABORT,'INVALID_DATA_SNAPSHOT_FINALIZATION_HASH'); END;\n      CREATE TRIGGER IF NOT EXISTS raw_bar_hash_guard BEFORE INSERT ON raw_bars WHEN egx_raw_bar_hash_valid(NEW.raw_hash,NEW.acquisition_id,NEW.ticker,NEW.session,NEW.source_id,NEW.payload_json)<>1 BEGIN SELECT RAISE(ABORT,'INVALID_RAW_BAR_HASH'); END;"
+          if old not in s: raise SystemExit('finalization trigger anchor not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Commit finalization integrity upgrade
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/market-data-store.js
+          git commit -m 'Bind SSOT finalization hashes to exact persisted rows'
+          git pull --rebase origin egx-one/clean-room-v0
+          git push origin HEAD:egx-one/clean-room-v0
