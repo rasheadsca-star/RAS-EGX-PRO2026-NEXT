@@ -1,7 +1,7 @@
 export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
-  contractVersion: '1.9.0',
+  contractVersion: '1.9.1-release-ui',
   frozenAtSourceCommit: 'd258550075ea267b070236380c4094ca29d520ab',
-  purpose: 'Protect the accepted RC2 Alpha, recommendations, execution lock and monitoring baseline while separately freezing approved zero-authority UI extensions.',
+  purpose: 'Protect the accepted RC2 Alpha, recommendations, execution lock and monitoring baseline while separately freezing the isolated zero-authority technical-visualization release.',
   criticalFiles: Object.freeze({
     'src/engine.js': '36e1309fa1e5e4640dd7ef62b7b532e459103193',
     'src/policy.js': '581c72df397e6f66adf7720aa7420e191b110999',
@@ -16,7 +16,8 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     'api/session-monitor.js': '1677ad7b2d9e530ec167095b95e2fd21168bd591',
     'monitor/session-quote.js': '56fdd6e5518b07e1545bcffebbd3ccb156f035e9',
     'public/index.html': 'b0000e97d4fbf367d7522c49da1ef064e6685c6e',
-    'public/portfolio-manager.js': '0d4e7d569c839647e0b6cb2e7fe82349ad265f1f',
+    'public/portfolio-manager-core.js': 'c22a8f8e7c3c4291fd2ea0fb42af432d008ea947',
+    'public/portfolio-manager.js': '20ac330f94d3ffd3944e42597945b7ec90f0d6c7',
     'public/snapshot-date-fix.js': '0618fb6395bd48c660eb91e17dd8cf1a7d73c50b',
     'public/technical-analysis-tools.js': '350b05a6a3f253faf44533f7747e03bba9095953',
     'public/ui-v169.js': '8696d78e1dcf8b62a18fa92547a0b7d0a3dfbf4f',
@@ -29,6 +30,7 @@ export const FROZEN_RUNTIME_CONTRACT = Object.freeze({
     acceptedDate: '2026-09-01',
     moduleId: 'V16_9_TECHNICAL_VISUALIZATION_EXTENSION_V1',
     loader: 'public/portfolio-manager.js',
+    baselineCore: 'public/portfolio-manager-core.js',
     historyRouteOnly: true,
     maxHistorySessions: 260,
     scoringImpact: 'NONE',
