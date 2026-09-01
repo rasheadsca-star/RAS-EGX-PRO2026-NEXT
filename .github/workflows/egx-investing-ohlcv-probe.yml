@@ -1,0 +1,91 @@
+name: EGX Investing True OHLCV Probe
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-investing-ohlcv-probe.yml
+      - scripts/egx-investing-ohlcv-probe.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe MTIE search and completed-session OHLCV
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/investing-ohlcv
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          curl -L -sS --compressed --connect-timeout 10 --max-time 30 \
+            -A "$UA" -H 'domain-id: www' -H 'accept: application/json, text/plain, */*' \
+            'https://api.investing.com/api/search/v2/search?q=MTIE' \
+            -o artifacts/investing-ohlcv/search.json -w '%{http_code}\n' | tee artifacts/investing-ohlcv/search.status
+          python - <<'PY'
+          import json, pathlib
+          p=pathlib.Path('artifacts/investing-ohlcv/search.json')
+          raw=p.read_text(errors='replace')
+          print('SEARCH_HEAD',raw[:4000])
+          try: data=json.loads(raw)
+          except Exception: raise SystemExit('search json parse failed')
+          candidates=[]
+          def walk(x):
+            if isinstance(x,dict):
+              keys={str(k).lower():v for k,v in x.items()}
+              txt=json.dumps(x,ensure_ascii=False).upper()
+              if 'MTIE' in txt: candidates.append(x)
+              for v in x.values(): walk(v)
+            elif isinstance(x,list):
+              for v in x: walk(v)
+          walk(data)
+          pathlib.Path('artifacts/investing-ohlcv/candidates.json').write_text(json.dumps(candidates,ensure_ascii=False,indent=2))
+          pair=None
+          for x in candidates:
+            m={str(k).lower():v for k,v in x.items()}
+            if str(m.get('symbol') or m.get('ticker') or '').upper()=='MTIE':
+              pair=m.get('pair_id') or m.get('pairid') or m.get('id') or m.get('instrument_id')
+              if pair: break
+          if not pair:
+            for x in candidates:
+              m={str(k).lower():v for k,v in x.items()}
+              pair=m.get('pair_id') or m.get('pairid') or m.get('instrument_id')
+              if pair: break
+          if not pair: raise SystemExit('pair id not found')
+          pathlib.Path('artifacts/investing-ohlcv/pair.txt').write_text(str(pair))
+          print('PAIR',pair)
+          PY
+          PAIR="$(cat artifacts/investing-ohlcv/pair.txt)"
+          curl -L -sS --compressed --connect-timeout 10 --max-time 30 \
+            -A "$UA" -H 'domain-id: www' -H 'accept: application/json, text/plain, */*' \
+            "https://api.investing.com/api/financialdata/historical/${PAIR}?start-date=2026-08-31&end-date=2026-08-31&time-frame=Daily&add-missing-rows=false" \
+            -o artifacts/investing-ohlcv/history.json -w '%{http_code}\n' | tee artifacts/investing-ohlcv/history.status
+          python - <<'PY'
+          import json,pathlib
+          raw=pathlib.Path('artifacts/investing-ohlcv/history.json').read_text(errors='replace')
+          print('HISTORY',raw[:6000])
+          d=json.loads(raw)
+          rows=d.get('data') if isinstance(d,dict) else None
+          if not isinstance(rows,list) or not rows: raise SystemExit('no historical rows')
+          r=rows[0]
+          def num(k):
+            v=r.get(k)
+            if v is None:return None
+            return float(str(v).replace(',',''))
+          bar={'open':num('last_open'),'high':num('last_max'),'low':num('last_min'),'close':num('last_close'),'volume':num('volume')}
+          ok=all(v is not None for v in bar.values()) and bar['high']>=max(bar['open'],bar['close']) and bar['low']<=min(bar['open'],bar['close']) and bar['volume']>=0
+          out={'pairId':pathlib.Path('artifacts/investing-ohlcv/pair.txt').read_text(),'row':r,'bar':bar,'ohlcvGeometryValid':ok,'productionAuthority':False}
+          pathlib.Path('artifacts/investing-ohlcv/report.json').write_text(json.dumps(out,ensure_ascii=False,indent=2))
+          print(json.dumps(out,ensure_ascii=False,indent=2))
+          if not ok: raise SystemExit('OHLCV geometry invalid')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-investing-ohlcv-probe
+          path: artifacts/investing-ohlcv/*
+          if-no-files-found: warn
