@@ -1,15 +1,17 @@
 {
-  "schemaVersion": "egx-one-runtime-status-2",
+  "schemaVersion": "egx-one-runtime-status-3",
   "product": "EGX ONE",
-  "asOf": "2026-08-31T20:45:00Z",
+  "asOf": "2026-09-01T05:45:00Z",
   "marketSession": "2026-08-31",
   "timezone": "Africa/Cairo",
   "build": {
     "branch": "egx-one/clean-room-v0",
-    "lastPublishedSourceCommit": "a802d4a121b5e6b7be15cca201fa3037e3991a3f",
-    "lastPublishedCiRun": 33433324824,
-    "coreIntegrityEvidence": {"pass": 169, "total": 169, "fail": 0},
-    "latestResearchWarehouseChange": "PENDING_CI"
+    "lastVerifiedSourceCommit": "7dfdefeeccdc67063dc9f3ce91efaff80479f950",
+    "lastVerifiedCiRun": 33474773025,
+    "coreIntegrityEvidence": {"pass": 271, "total": 271, "fail": 0},
+    "artifactId": 9787759927,
+    "artifactSha256": "200220ac45fe387d4bdcede115b265aa70548a480330c0062fbf7c17a88f8f86",
+    "phase3StatusSchema": "egx-one-phase3-status-10"
   },
   "authority": {
     "interface": "LIVE",
@@ -23,20 +25,32 @@
     "automaticOrders": false
   },
   "researchMode": {
-    "state": "BUILDING_WAREHOUSE",
+    "state": "ACTIVE",
     "authorityMode": "RESEARCH",
     "researchOnly": true,
     "productionAuthority": false,
-    "historySeedCommit": "0b4cb244dcea90f68c8808a824a0e4d0c3e05b1e",
-    "historySeedCapturedAt": "2026-08-31T20:00:51Z",
     "sources": ["LEGACY_IMPORT", "YAHOO_RESEARCH", "MUBASHER_RESEARCH"],
-    "next": "MIGRATE_HISTORY_THEN_LIVE_REFRESH"
+    "publicAndHistoryOnlySourcesMayAuthorizeProduction": false
+  },
+  "productionIntegrity": {
+    "certifiedUniverseRequired": true,
+    "certifiedCurrentSessionReconciliationRequired": true,
+    "certifiedHistoricalLineageRequired": true,
+    "historicalAuthorityClasses": ["OFFICIAL_EXCHANGE", "LICENSED_EOD"],
+    "publicMarketHistoricalAuthorityAllowed": false,
+    "historyOnlyHistoricalAuthorityAllowed": false,
+    "futureBarsAllowedInProductionSnapshot": false,
+    "rawRowHashVerifiedAtSqlAdmission": true,
+    "normalizedRowHashVerifiedAtSqlAdmission": true,
+    "aggregateFinalizationHashRecomputedFromPersistedRows": true,
+    "directSqlProductionBypassTests": "PASS"
   },
   "blockers": [
     "NO_EXHAUSTIVE_OFFICIAL_SNAPSHOT",
     "REGISTRY:MISSING",
     "SESSION_AUTHORITY:MISSING",
-    "CURRENT_SESSION_CERTIFIED_OHLCV:MISSING"
+    "CURRENT_SESSION_CERTIFIED_OHLCV:MISSING",
+    "CERTIFIED_PRODUCTION_HISTORY_SOURCE:MISSING"
   ],
   "officialEvidence": {
     "source": "Egyptian Exchange official website",
@@ -46,7 +60,9 @@
       {"ticker": "AIH", "isin": "EGS21351C019", "status": "IDENTITY_VERIFIED_ONLY"}
     ],
     "ignoredNonEquity": 1,
-    "exhaustive": false
+    "exhaustive": false,
+    "indexConstituentEndpointState": "ZERO_CONSTITUENTS_RETURNED",
+    "bulletinRetrievalState": "BLOCKED_BY_SITE_JAVASCRIPT_OR_WAF"
   },
   "marketReference": {
     "role": "REFERENCE_ONLY_NOT_PRODUCTION_AUTHORITY",
@@ -59,11 +75,7 @@
     "decliners": 128,
     "unchanged": 11,
     "turnoverEgpBn": 18.237,
-    "marketCapEgpTn": 4.287,
-    "sources": [
-      {"name": "Arab Finance", "url": "https://www.arabfinance.com/en/news/newdetails/egx-closes-monday-august-31-on-varied-note"},
-      {"name": "Mubasher", "url": "https://www.mubasher.info/news/4666023"}
-    ]
+    "marketCapEgpTn": 4.287
   },
   "legacyForensic": {
     "universe": 242,
@@ -79,6 +91,7 @@
     "UNIVERSE_CERTIFICATE",
     "CERTIFIED_UNIVERSE",
     "REGISTRY",
+    "HISTORICAL_OBSERVATION_LINEAGE",
     "MARKET_OBSERVATION_CERTIFICATES",
     "CERTIFIED_RECONCILIATION",
     "SESSION_MANIFEST",
