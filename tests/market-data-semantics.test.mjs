@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateOhlcvGeometry,assessProviderOhlcvSemantics,classifyMarketDataFieldRole} from '../src/market-data-semantics.js';
+import {validateOhlcvGeometry,assessProviderOhlcvSemantics,classifyMarketDataFieldRole,classifySessionObservationAvailability} from '../src/market-data-semantics.js';
 
 test('valid completed-session OHLCV geometry is accepted structurally',()=>{
   const r=validateOhlcvGeometry({open:8.43,high:8.63,low:8.43,close:8.49,volume:4240000});
@@ -65,4 +65,30 @@ test('official EGX stock-chart synthetic last-price OHLC placeholders are reject
   assert.equal(a.trueOhlcvEligible,false);
   assert.equal(a.productionAuthority,false);
   assert.equal(classifyMarketDataFieldRole({provider:'EGX_FRONTEND_STOCK_CHART_ADAPTER',semanticAssessment:a}).role,'CLOSE_VOLUME_OR_IDENTITY_CROSSCHECK_ONLY');
+});
+
+test('zero official volume is classified as no-trade evidence and never causes a synthetic flat OHLC bar',()=>{
+  const r=classifySessionObservationAvailability({officialVolume:0,independentBar:null});
+  assert.equal(r.state,'NO_TRADE_SESSION_EVIDENCE');
+  assert.equal(r.trueTradeBarExpected,false);
+  assert.equal(r.liquidityBand,'NO_TRADE');
+  assert.equal(r.maySynthesizeOhlc,false);
+  assert.equal(r.productionAuthority,false);
+});
+
+test('positive micro-volume with no independent bar remains a missing true traded-session bar',()=>{
+  const r=classifySessionObservationAvailability({officialVolume:3,independentBar:null});
+  assert.equal(r.state,'TRADED_SESSION_BAR_MISSING');
+  assert.equal(r.trueTradeBarExpected,true);
+  assert.equal(r.liquidityBand,'MICRO_TRADE');
+  assert.deepEqual(r.reasons,['POSITIVE_OFFICIAL_VOLUME_REQUIRES_TRUE_SESSION_BAR']);
+  assert.equal(r.maySynthesizeOhlc,false);
+});
+
+test('positive official volume with a public row is present but not semantically certified by availability alone',()=>{
+  const r=classifySessionObservationAvailability({officialVolume:1216953,independentBar:{close:17}});
+  assert.equal(r.state,'TRADED_SESSION_BAR_PRESENT_UNVERIFIED');
+  assert.equal(r.trueTradeBarExpected,true);
+  assert.equal(r.liquidityBand,'TRADED');
+  assert.equal(r.productionAuthority,false);
 });
