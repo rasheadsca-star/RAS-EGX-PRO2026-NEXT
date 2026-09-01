@@ -13,7 +13,7 @@ jobs:
   discover:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - name: Extract listed-stocks frontend callsites
         shell: bash
@@ -22,51 +22,53 @@ jobs:
           mkdir -p artifacts/egx-listed-universe/scripts
           python - <<'PY'
           from pathlib import Path
-          import subprocess,re,json,hashlib,datetime
+          import subprocess,re,json,hashlib,datetime,time
           from urllib.parse import urljoin
 
           out=Path('artifacts/egx-listed-universe'); scripts_dir=out/'scripts'
           page='https://beta.egx.com.eg/en/listed/stocks'
           ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
           def curl(url,path):
-              proc=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','25','-A',ua,'-H','Accept: text/html,application/javascript,application/json;q=0.9,*/*;q=0.8','-o',str(path),'-w','%{http_code}',url],capture_output=True,text=True)
+              cmd=['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','30','--retry','4','--retry-all-errors','--retry-delay','1','-A',ua,'-H','Accept: text/html,application/javascript,application/json;q=0.9,*/*;q=0.8','-o',str(path),'-w','%{http_code}',url]
+              proc=subprocess.run(cmd,capture_output=True,text=True)
               raw=path.read_bytes() if path.exists() else b''
-              return {'url':url,'status':(proc.stdout or '').strip(),'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,'stderr':proc.stderr[-1000:]}
+              return {'url':url,'status':(proc.stdout or '').strip(),'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,'stderr':proc.stderr[-2000:]}
           p=out/'listed-stocks.html'; page_receipt=curl(page,p)
           html=p.read_text(errors='ignore') if p.exists() else ''
           srcs=[]
           for src in re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',html,re.I):
               u=urljoin(page,src)
               if u not in srcs: srcs.append(u)
-          script_receipts=[]; callsites=[]; module_hits=[]; api_literals=[]
-          call_re=re.compile(r'egxBff(Get|Post)\)\(?(?:"|\')([^"\']+)(?:"|\')')
-          loose_re=re.compile(r'egxBff(?:Get|Post)\s*\(\s*["\']([^"\']+)["\']')
-          endpoint_lit=re.compile(r'["\']([a-zA-Z0-9][a-zA-Z0-9_./?-]{2,80})["\']')
+          script_receipts=[]; callsites=[]; module_hits=[]; api_literals=[]; helper_schema=[]
+          bff_call=re.compile(r'egxBff(Get|Post)\)\(\s*["\']([^"\']+)["\']')
           for i,u in enumerate(srcs):
               f=scripts_dir/f'{i:03d}.js'; rec=curl(u,f); script_receipts.append(rec)
               txt=f.read_text(errors='ignore') if f.exists() else ''
+              for m in bff_call.finditer(txt):
+                  callsites.append({'script':u,'method':m.group(1).upper(),'endpoint':m.group(2),'context':txt[max(0,m.start()-700):min(len(txt),m.end()+1400)]})
               for token in ('listed','stock','security','securities','asset','market-watch','price-volume-points','227555','/api/bff/egx/'):
                   pos=0
                   while True:
                       pos=txt.lower().find(token.lower(),pos)
                       if pos<0: break
-                      context=txt[max(0,pos-500):min(len(txt),pos+1000)]
+                      context=txt[max(0,pos-700):min(len(txt),pos+1600)]
                       if token=='227555': module_hits.append({'script':u,'token':token,'context':context})
                       elif token=='/api/bff/egx/': api_literals.append({'script':u,'context':context})
                       elif 'egxBff' in context or token in ('market-watch','price-volume-points'):
                           callsites.append({'script':u,'token':token,'context':context})
                       pos+=max(1,len(token))
-              for m in loose_re.finditer(txt):
-                  callsites.append({'script':u,'token':'egxBffCall','endpoint':m.group(1),'context':txt[max(0,m.start()-600):min(len(txt),m.end()+1000)]})
-          # de-duplicate by script/token/endpoint/context hash
+              if 'normalizeStocks' in txt or ('LAST_CP' in txt and 'LAST_VOL' in txt and 'MARKET_CAP' in txt):
+                  helper_schema.append({'script':u,'context':txt[max(0,txt.find('LAST_CP')-2500):min(len(txt),txt.find('LAST_CP')+8000)]})
+              time.sleep(.15)
           seen=set(); unique=[]
           for x in callsites:
-              key=(x.get('script'),x.get('token'),x.get('endpoint'),hashlib.sha256(x.get('context','').encode()).hexdigest())
+              key=(x.get('script'),x.get('method'),x.get('endpoint'),x.get('token'),hashlib.sha256(x.get('context','').encode()).hexdigest())
               if key not in seen: seen.add(key); unique.append(x)
-          report={'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),'page':page_receipt,'scriptCount':len(srcs),'scripts':script_receipts,'callsites':unique,'module227555Hits':module_hits,'apiBffLiterals':api_literals,'productionAuthority':False,'phase4Open':False}
+          failed=[r for r in script_receipts if r['status']!='200' or not r['bytes']]
+          report={'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),'page':page_receipt,'scriptCount':len(srcs),'scripts':script_receipts,'failedScripts':failed,'callsites':unique,'module227555Hits':module_hits,'apiBffLiterals':api_literals,'listedStockHelperSchema':helper_schema,'productionAuthority':False,'phase4Open':False}
           (out/'discovery.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
           (out/'script-urls.json').write_text(json.dumps(srcs,indent=2))
-          print(json.dumps({'page':page_receipt,'scriptCount':len(srcs),'callsiteCount':len(unique),'module227555Hits':len(module_hits),'apiBffLiterals':len(api_literals),'productionAuthority':False,'phase4Open':False},indent=2))
+          print(json.dumps({'page':page_receipt,'scriptCount':len(srcs),'failedScripts':len(failed),'bffEndpoints':sorted({x.get('endpoint') for x in unique if x.get('endpoint')}),'callsiteCount':len(unique),'listedStockHelperSchema':len(helper_schema),'productionAuthority':False,'phase4Open':False},indent=2))
           PY
       - uses: actions/upload-artifact@v4
         with:
