@@ -1,0 +1,81 @@
+name: EGX ONE Forward Shadow Resolver
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/clean-room-v0']
+    paths:
+      - 'data/research/live/sessions/*.json'
+      - 'data/research/shadow-ledger/policies/*.json'
+      - 'src/research-forward-shadow-resolver.js'
+      - 'scripts/research-resolve-forward-shadow.mjs'
+      - '.github/workflows/egx-one-forward-resolve.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-one-forward-shadow-resolver
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify clean-room contracts
+        run: npm test
+      - name: Resolve frozen forward plans from future session snapshots only
+        run: npm run research:forward-resolve
+      - name: Enforce forward resolution boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import {verifyForwardShadowLedger} from './src/research-forward-shadow-ledger.js';
+          import {verifyForwardResolution} from './src/research-forward-shadow-resolver.js';
+          const ledger=JSON.parse(fs.readFileSync('data/research/shadow-ledger/latest.json','utf8'));
+          if(!verifyForwardShadowLedger(ledger))throw new Error('FORWARD_LEDGER_VERIFY_FAILED');
+          for(const r of ledger.resolutions||[]){
+            if(!verifyForwardResolution(r))throw new Error(`FORWARD_RESOLUTION_VERIFY_FAILED:${r?.ticker||'UNKNOWN'}`);
+            if(String(r.terminalSession)<=String(r.signalSession))throw new Error(`FORWARD_SAME_OR_PRIOR_SESSION_RESOLUTION:${r.signalSession}:${r.terminalSession}`);
+            if(r.evidenceGrade!=='FORWARD_SHADOW_FROZEN'||r.evidenceClass!=='FUTURE_READY_RESEARCH_SESSION_SNAPSHOTS_ONLY')throw new Error(`FORWARD_EVIDENCE_GRADE_FAILED:${r.ticker}`);
+            if(r.sameBarAmbiguity!=='STOP_FIRST')throw new Error(`FORWARD_STOP_FIRST_FAILED:${r.ticker}`);
+          }
+          const current=ledger.entries.at(-1)||null;
+          const resolvedCurrent=(ledger.resolutions||[]).filter(r=>r.signalSession===current?.signalSession);
+          console.log(`FORWARD_RESOLVER_VERIFIED:SESSIONS=${ledger.entries.length}:CURRENT=${current?.signalSession||'NONE'}:CURRENT_PLANS=${current?.plans?.length||0}:CURRENT_RESOLUTIONS=${resolvedCurrent.length}:TOTAL_RESOLUTIONS=${ledger.resolutions.length}`);
+          NODE
+      - name: Commit newly resolved outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/shadow-ledger/latest.json
+          if git diff --cached --quiet; then
+            echo 'No forward outcome change.'
+          else
+            git commit -m 'Resolve EGX ONE forward shadow outcomes'
+            for attempt in 1 2 3; do
+              if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then break; fi
+              [ "$attempt" = 3 ] && exit 1
+              sleep $((attempt*5))
+            done
+          fi
+      - name: Upload forward ledger evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-forward-resolutions
+          path: |
+            data/research/shadow-ledger/latest.json
+            data/research/shadow-ledger/policies/*.json
+          if-no-files-found: error
