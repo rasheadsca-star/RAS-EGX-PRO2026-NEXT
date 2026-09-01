@@ -55,6 +55,40 @@ export function assessProviderOhlcvSemantics({
   });
 }
 
+export function classifySessionObservationAvailability({officialVolume,independentBar=null,microTradeThreshold=1000}={}){
+  const volume=finiteNumber(officialVolume);
+  const barPresent=Boolean(independentBar&&typeof independentBar==='object');
+  let state='OFFICIAL_SESSION_VOLUME_UNRESOLVED';
+  let trueTradeBarExpected=false;
+  let liquidityBand='UNRESOLVED';
+  const reasons=[];
+
+  if(volume===null) reasons.push('MISSING_OFFICIAL_VOLUME');
+  else if(volume<0) reasons.push('INVALID_NEGATIVE_OFFICIAL_VOLUME');
+  else if(volume===0){
+    state='NO_TRADE_SESSION_EVIDENCE';
+    liquidityBand='NO_TRADE';
+    trueTradeBarExpected=false;
+    if(barPresent) reasons.push('INDEPENDENT_BAR_PRESENT_DESPITE_ZERO_OFFICIAL_VOLUME_REQUIRES_RECONCILIATION');
+  } else {
+    trueTradeBarExpected=true;
+    liquidityBand=volume<=Math.max(1,Number(microTradeThreshold)||1000)?'MICRO_TRADE':'TRADED';
+    state=barPresent?'TRADED_SESSION_BAR_PRESENT_UNVERIFIED':'TRADED_SESSION_BAR_MISSING';
+    if(!barPresent) reasons.push('POSITIVE_OFFICIAL_VOLUME_REQUIRES_TRUE_SESSION_BAR');
+  }
+
+  return Object.freeze({
+    state,
+    officialVolume:volume,
+    independentBarPresent:barPresent,
+    trueTradeBarExpected,
+    liquidityBand,
+    maySynthesizeOhlc:false,
+    productionAuthority:false,
+    reasons:Object.freeze(reasons)
+  });
+}
+
 export function classifyMarketDataFieldRole({provider,semanticAssessment}={}){
   const p=String(provider??'UNKNOWN').toUpperCase();
   if(semanticAssessment?.trueOhlcvEligible) return Object.freeze({provider:p,role:'RESEARCH_TRUE_OHLCV_CANDIDATE',productionAuthority:false});
