@@ -1,0 +1,156 @@
+name: EGX Listed Stock Admission Candidate
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-listed-stock-admission-candidate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Capture stock-info full payload and identity receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/egx-listed-stock-admission
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,json,hashlib,datetime,re,time
+          from urllib.parse import urlencode
+
+          OUT=Path('artifacts/egx-listed-stock-admission')
+          BASE='https://beta.egx.com.eg/api/bff/egx/'
+          REF='https://beta.egx.com.eg/en/listed/stocks'
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          captured=datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z')
+
+          def request(name,endpoint,params=None):
+              url=BASE+endpoint+(('?'+urlencode(params)) if params else '')
+              body=OUT/f'{name}.body'; hdr=OUT/f'{name}.headers'
+              cmd=['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','30','--retry','3','--retry-all-errors','--retry-delay','1',
+                   '-A',UA,'-H','Accept: application/json','-H','x-egx-bff-request: 1','-H',f'Referer: {REF}',
+                   '-D',str(hdr),'-o',str(body),'-w','%{http_code}',url]
+              proc=subprocess.run(cmd,capture_output=True,text=True)
+              raw=body.read_bytes() if body.exists() else b''
+              try: parsed=json.loads(raw.decode()) if raw else None
+              except Exception: parsed=None
+              return {'name':name,'endpoint':endpoint,'params':params or {},'url':url,'status':(proc.stdout or '').strip() or 'CURL_FAILED','bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,'parsed':parsed,'stderr':proc.stderr[-2000:] if proc.stderr else ''}
+
+          info=request('stock-info-full','stock-info')
+          cats=request('stock-categories','stock-categories')
+          ai_isin='EGS21351C019'
+          ai=request('stock-info-aih-isin','stock-info',{'Isin':ai_isin})
+
+          env=info['parsed'] if isinstance(info['parsed'],dict) else {}
+          rows=env.get('data') if isinstance(env.get('data'),list) else []
+          cat_env=cats['parsed'] if isinstance(cats['parsed'],dict) else {}
+          cat_data=cat_env.get('data') if isinstance(cat_env.get('data'),dict) else {}
+
+          def map_ci(row): return {str(k).lower():v for k,v in row.items()} if isinstance(row,dict) else {}
+          def pick(row,*keys):
+              m=map_ci(row)
+              for k in keys:
+                  v=m.get(k.lower())
+                  if v not in (None,''): return v
+              return None
+
+          identities=[]; missing_isin=[]; missing_symbol=[]; bad_isin=[]
+          field_union=set(); last_trade_dates=[]; positive_volume=0; zero_volume=0; nonzero_price=0
+          for i,row in enumerate(rows):
+              if not isinstance(row,dict):
+                  missing_isin.append(i); continue
+              field_union.update(row.keys())
+              isin=str(pick(row,'ISIN','isin') or '').strip().upper()
+              symbol=str(pick(row,'REUTERS','reuters','SYMBOL_CODE','symbolCode') or '').strip().upper()
+              if not isin: missing_isin.append(i)
+              elif not re.fullmatch(r'[A-Z]{2}[A-Z0-9]{9}[0-9]',isin): bad_isin.append({'index':i,'isin':isin})
+              if not symbol: missing_symbol.append(i)
+              identities.append({'index':i,'isin':isin or None,'symbol':symbol or None})
+              ltd=pick(row,'LAST_TRADE_DATE','lastTradeDate')
+              if ltd: last_trade_dates.append(str(ltd))
+              vol=pick(row,'LAST_VOL','lastVolume','tradedVolume')
+              try:
+                  v=float(vol)
+                  positive_volume += int(v>0); zero_volume += int(v==0)
+              except Exception: pass
+              px=pick(row,'LAST_CP','lastPrice','closePrice')
+              try: nonzero_price += int(float(px)>0)
+              except Exception: pass
+
+          isins=[x['isin'] for x in identities if x['isin']]
+          symbols=[x['symbol'] for x in identities if x['symbol']]
+          dupe_isins=sorted({x for x in isins if isins.count(x)>1})
+          dupe_symbols=sorted({x for x in symbols if symbols.count(x)>1})
+          cat_counts={k:len(v) for k,v in cat_data.items() if isinstance(v,list)}
+
+          ai_env=ai['parsed'] if isinstance(ai['parsed'],dict) else {}
+          ai_rows=ai_env.get('data') if isinstance(ai_env.get('data'),list) else []
+          full_ai=[x for x in identities if x['isin']==ai_isin]
+          filter_ai=[]
+          for row in ai_rows:
+              isin=str(pick(row,'ISIN','isin') or '').strip().upper()
+              sym=str(pick(row,'REUTERS','reuters','SYMBOL_CODE','symbolCode') or '').strip().upper()
+              filter_ai.append({'isin':isin or None,'symbol':sym or None})
+
+          schema_ready=(info['status']=='200' and env.get('success') is True and isinstance(env.get('data'),list) and len(rows)>0 and not missing_isin and not bad_isin and not dupe_isins)
+          filter_consistent=(ai['status']=='200' and ai_env.get('success') is True and len(filter_ai)>0 and len(full_ai)>0 and any(x['isin']==ai_isin for x in filter_ai))
+
+          report={
+            'capturedAt':captured,
+            'source':'OFFICIAL_EGX_BFF',
+            'surface':'https://beta.egx.com.eg/en/listed/stocks',
+            'callsiteEvidence':{
+              'fullFetch':'egxBffGet("stock-info") with no parameters',
+              'categoryFetch':'egxBffGet("stock-categories") with no parameters',
+              'clientPagination':'local array slicing after full fetch',
+              'scopeLabel':'All Listed Securities / Listed Stocks Information'
+            },
+            'stockInfo':{
+              'httpStatus':info['status'],'success':env.get('success'),'message':env.get('message'),'rowCount':len(rows),'outerTotalCount':env.get('totalCount'),'sha256':info['sha256'],'bytes':info['bytes'],
+              'fieldUnion':sorted(field_union),'missingIsinCount':len(missing_isin),'badIsinCount':len(bad_isin),'duplicateIsinCount':len(dupe_isins),'duplicateIsins':dupe_isins[:50],
+              'missingSymbolCount':len(missing_symbol),'duplicateSymbolCount':len(dupe_symbols),'duplicateSymbols':dupe_symbols[:50],
+              'lastTradeDateCount':len(last_trade_dates),'latestLastTradeDate':max(last_trade_dates) if last_trade_dates else None,
+              'positiveVolumeCount':positive_volume,'zeroVolumeCount':zero_volume,'nonzeroPriceCount':nonzero_price
+            },
+            'stockCategories':{'httpStatus':cats['status'],'success':cat_env.get('success'),'message':cat_env.get('message'),'sha256':cats['sha256'],'bytes':cats['bytes'],'categoryCounts':cat_counts},
+            'identityFilterCrossCheck':{'isin':ai_isin,'httpStatus':ai['status'],'success':ai_env.get('success'),'filteredRowCount':len(ai_rows),'fullPayloadMatches':full_ai,'filteredIdentities':filter_ai,'consistent':filter_consistent,'sha256':ai['sha256']},
+            'admission':{
+              'schemaReady':schema_ready,
+              'fullCallsitePayloadCaptured':info['status']=='200' and len(rows)>0,
+              'scopeClassification':'OFFICIAL_LISTED_STOCKS_PAGE_RESULT_SET' if schema_ready else 'UNRESOLVED',
+              'allListedEquitiesProven':False,
+              'independentScopeCrossCheckComplete':False,
+              'ohlcvComplete':False,
+              'sessionReconciliationComplete':False,
+              'productionAuthority':False,
+              'phase4Open':False
+            },
+            'blockers':[]
+          }
+          if not schema_ready: report['blockers'].append('stock-info full-payload schema/identity validation failed.')
+          if not filter_consistent: report['blockers'].append('Filtered stock-info identity does not reconcile with full payload.')
+          report['blockers'] += [
+            'Need independent/external reconciliation before certifying exhaustive all-listed-equities scope.',
+            'Listed stock summary and price-volume-points do not prove full OHLCV.',
+            'Need explicit session-bound post-close market observation reconciliation.'
+          ]
+
+          receipts=[]
+          for r in (info,cats,ai): receipts.append({k:v for k,v in r.items() if k!='parsed'})
+          (OUT/'receipts.json').write_text(json.dumps(receipts,indent=2,ensure_ascii=False))
+          (OUT/'stock-info-identities.json').write_text(json.dumps(identities,indent=2,ensure_ascii=False))
+          (OUT/'admission-report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
+          print(json.dumps(report,indent=2,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-listed-stock-admission-candidate
+          path: artifacts/egx-listed-stock-admission/**/*
+          if-no-files-found: error
