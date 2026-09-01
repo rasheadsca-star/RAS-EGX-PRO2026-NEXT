@@ -52,9 +52,9 @@ export function assessEgxAdmissionReadiness(report={}){
   if(licensed.datasetAdmissionReady===true&&(licensed.rawDatasetReceiptPresent!==true||licensed.licenseEntitlementReceiptPresent!==true||licensed.permittedApplicationUseReceiptPresent!==true)) reasons.push('LICENSED_DATASET_READY_WITHOUT_REQUIRED_RECEIPTS');
 
   const phase3=report?.authoritativePhase3Status??{};
-  if(phase3.verdict!=='FAIL') reasons.push('CHECKED_IN_READINESS_SNAPSHOT_MUST_NOT_CLAIM_PHASE3_PASS');
+  if(!['FAIL','PASS'].includes(phase3.verdict)) reasons.push('PHASE3_VERDICT_REQUIRED');
+  if(phase3.verdict==='PASS'&&(report.productionAuthority!==true||report.baselineAuthorized!==true)) reasons.push('PHASE3_PASS_CANNOT_EXIST_IN_RESEARCH_READINESS_SNAPSHOT');
   const actualBlockers=Array.isArray(phase3.blockers)?phase3.blockers:[];
-  for(const required of ['REGISTRY:MISSING','SESSION_AUTHORITY:MISSING','UNIVERSE:UNIVERSE_INCOMPLETE']) if(!actualBlockers.includes(required)) reasons.push(`PHASE3_BLOCKER_MISSING:${required}`);
 
   const prerequisiteGates=Object.freeze({
     independentIdentityReady:identityReady,
@@ -91,6 +91,8 @@ export function assessEgxAdmissionReadiness(report={}){
     phase3EvaluationEligible,
     prerequisiteGates,
     readinessBlockers:Object.freeze(readinessBlockers),
+    authoritativePhase3Verdict:phase3.verdict??null,
+    authoritativePhase3Blockers:Object.freeze(actualBlockers),
     invariantReasons:Object.freeze(uniq(reasons)),
     researchProgress:Object.freeze({
       candidateCount,
