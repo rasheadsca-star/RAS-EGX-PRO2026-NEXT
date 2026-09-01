@@ -1,93 +1,73 @@
 {
   "schemaVersion": "16.3.9-source-session-quorum-6-explicit-stale-minority-quarantine",
-  "checkedAt": "2026-09-01T12:34:19.213Z",
+  "checkedAt": "2026-09-01T15:15:16.979Z",
   "expectedSession": "2026-09-01",
   "cairoDate": "2026-09-01",
-  "cairoTime": "15:34",
+  "cairoTime": "18:15",
   "sameDayAfterClose": true,
   "marketFetchDate": "2026-09-01",
   "marketSource": "mubasher_symbol_pages_precise_enriched",
   "totalRows": 216,
-  "explicitExpectedRows": 208,
-  "explicitCoveragePct": 96.3,
-  "explicitQuorumPassed": true,
-  "timeOnlyCandidates": 0,
-  "candidateCoveragePct": 0,
-  "recoveredSourceMarketTimeRows": 0,
-  "recoveryAttemptedRows": 0,
-  "recoveryFailures": [],
-  "inferenceQuorumPassed": false,
-  "minimumQuorum": 80,
-  "minimumCoveragePct": 80,
-  "explicitMismatches": 7,
-  "explicitMismatchPct": 3.24,
-  "maximumExplicitMismatchPct": 5,
-  "explicitConflictQuarantinePassed": true,
-  "quarantinedExplicitMismatchRows": 7,
-  "quarantinedExplicitMismatches": [
+  "explicitExpectedRows": 0,
+  "explicitCoveragePct": 0,
+  "explicitQuorumPassed": false,
+  "timeOnlyCandidates": 208,
+  "candidateCoveragePct": 96.3,
+  "recoveredSourceMarketTimeRows": 208,
+  "recoveryAttemptedRows": 215,
+  "recoveryFailures": [
     {
       "symbol": "ARVA",
-      "sourceSessionDate": "2026-08-16",
-      "sourceMarketTime": null,
-      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ARVA/",
-      "executionEligible": false,
-      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+      "ok": false,
+      "reason": "MARKET_TIME_NOT_FOUND"
     },
     {
       "symbol": "MEGM",
-      "sourceSessionDate": "2022-04-28",
-      "sourceMarketTime": null,
-      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
-      "executionEligible": false,
-      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+      "ok": false,
+      "reason": "MARKET_TIME_NOT_FOUND"
     },
     {
       "symbol": "DCCC",
-      "sourceSessionDate": "2008-04-07",
-      "sourceMarketTime": null,
-      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DCCC/",
-      "executionEligible": false,
-      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+      "ok": false,
+      "reason": "MARKET_TIME_NOT_FOUND"
     },
     {
       "symbol": "SEIGA",
-      "sourceSessionDate": "2002-02-05",
-      "sourceMarketTime": null,
-      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
-      "executionEligible": false,
-      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+      "ok": false,
+      "reason": "MARKET_TIME_NOT_FOUND"
     },
     {
       "symbol": "ESRS",
-      "sourceSessionDate": "2026-08-31",
-      "sourceMarketTime": null,
-      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ESRS/",
-      "executionEligible": false,
-      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+      "ok": false,
+      "reason": "MARKET_TIME_NOT_FOUND"
     },
     {
       "symbol": "IRAX",
-      "sourceSessionDate": "2026-08-26",
-      "sourceMarketTime": null,
-      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/IRAX/",
-      "executionEligible": false,
-      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+      "ok": false,
+      "reason": "MARKET_TIME_NOT_FOUND"
     },
     {
       "symbol": "TORA",
-      "sourceSessionDate": "2026-08-31",
-      "sourceMarketTime": null,
-      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/TORA/",
-      "executionEligible": false,
-      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+      "ok": false,
+      "reason": "MARKET_TIME_NOT_FOUND"
     }
   ],
+  "inferenceQuorumPassed": true,
+  "minimumQuorum": 80,
+  "minimumCoveragePct": 80,
+  "explicitMismatches": 0,
+  "explicitMismatchPct": 0,
+  "maximumExplicitMismatchPct": 5,
+  "explicitConflictQuarantinePassed": true,
+  "quarantinedExplicitMismatchRows": 0,
+  "quarantinedExplicitMismatches": [],
   "quorumPassed": true,
-  "mode": "EXPLICIT_SOURCE_SESSION_EVIDENCE_WITH_STALE_MINORITY_QUARANTINE",
-  "promotedRows": 0,
+  "mode": "TIME_ONLY_CROSS_SYMBOL_INFERENCE",
+  "promotedRows": 208,
   "candidateDiagnostics": {
     "reasonCounts": {
-      "HAS_EXPLICIT_SOURCE_DATE": 215,
+      "ELIGIBLE_TIME_ONLY_MUBASHER_ROW": 208,
+      "INVALID_SOURCE_MARKET_TIME": 7,
       "NOT_MUBASHER_EGX_STOCK_ROW": 1
     },
     "samples": [
@@ -95,96 +75,104 @@
         "symbol": "OCDI",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:28 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 808,
+          "fetchedDate": "2026-09-01"
         }
       },
       {
         "symbol": "ISMQ",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:28 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 808,
+          "fetchedDate": "2026-09-01"
         }
       },
       {
         "symbol": "SVCE",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 809,
+          "fetchedDate": "2026-09-01"
         }
       },
       {
         "symbol": "RUBX",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:14 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 794,
+          "fetchedDate": "2026-09-01"
         }
       },
       {
         "symbol": "NIPH",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 809,
+          "fetchedDate": "2026-09-01"
         }
       },
       {
         "symbol": "BONY",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:28 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 808,
+          "fetchedDate": "2026-09-01"
         }
       },
       {
         "symbol": "HRHO",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:28 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 808,
+          "fetchedDate": "2026-09-01"
         }
       },
       {
         "symbol": "PRDC",
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
-        "sourceSessionDate": "2026-09-01",
-        "updatedAt": "2026-09-01T12:33:05.399Z",
+        "sourceSessionDate": null,
+        "updatedAt": "2026-09-01T15:13:59.003Z",
         "classification": {
-          "eligible": false,
-          "reason": "HAS_EXPLICIT_SOURCE_DATE",
-          "explicit": "2026-09-01"
+          "eligible": true,
+          "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
+          "minutes": 809,
+          "fetchedDate": "2026-09-01"
         }
       }
     ]
