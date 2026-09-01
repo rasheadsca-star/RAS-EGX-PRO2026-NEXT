@@ -1,0 +1,86 @@
+name: EGX Frontend Market Data Endpoint Discovery
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-frontend-endpoint-discovery.yml
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download current EGX frontend bundles and discover BFF market-data calls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/egx-frontend-discovery/js
+          python - <<'PY'
+          import re,subprocess,pathlib,json,hashlib,html,urllib.parse,datetime
+          ROOT='https://beta.egx.com.eg'
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          out=pathlib.Path('artifacts/egx-frontend-discovery'); jsdir=out/'js'
+          pages=['/en','/en/market/market-watch','/en/listed/stocks','/en/market/indices/overview?index=CASE30']
+          receipts=[]; scripts=set()
+          def get(url,path):
+            p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','8','--max-time','30','-A',UA,'-o',str(path),'-w','%{http_code}|%{url_effective}|%{content_type}',url],capture_output=True,text=True)
+            raw=path.read_bytes() if path.exists() else b''; parts=(p.stdout or '').split('|',2)
+            return {'url':url,'status':parts[0] if parts else '', 'effectiveUrl':parts[1] if len(parts)>1 else '', 'contentType':parts[2] if len(parts)>2 else '', 'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None}
+          for i,page in enumerate(pages):
+            f=out/f'page-{i}.html'; rec=get(ROOT+page,f); receipts.append(rec)
+            txt=f.read_text(errors='ignore') if f.exists() else ''
+            for src in re.findall(r'<script[^>]+src=["\']([^"\']+)["\']',txt,re.I):
+              scripts.add(urllib.parse.urljoin(ROOT,html.unescape(src)))
+          alltext=[]
+          for i,url in enumerate(sorted(scripts)):
+            f=jsdir/f'{i:03d}.js'; rec=get(url,f); receipts.append(rec)
+            if rec['status']=='200' and rec['bytes']<10_000_000:
+              alltext.append((url,f.read_text(errors='ignore')))
+          direct=[]; contexts=[]; keywords=('price-volume-points','market-watch','open','high','low','close','volume','candle','candlestick','histor','daily','ohlc','chart','stock-info')
+          endpoint_patterns=[
+            r'/api/bff/egx/[A-Za-z0-9_?=&${}./:-]+',
+            r'api/bff/egx/[A-Za-z0-9_?=&${}./:-]+',
+            r'["\']([a-z][a-z0-9-]{2,60})(?:\?[^"\']*)?["\']'
+          ]
+          seen=set()
+          for url,txt in alltext:
+            for m in re.finditer(r'(?:/api/bff/egx/|api/bff/egx/)[A-Za-z0-9_?=&${}./:-]+',txt):
+              val=m.group(0)
+              if val not in seen: seen.add(val); direct.append({'bundle':url,'value':val})
+            lowtxt=txt.lower()
+            for kw in keywords:
+              start=0
+              while True:
+                idx=lowtxt.find(kw,start)
+                if idx<0: break
+                frag=txt[max(0,idx-350):min(len(txt),idx+500)]
+                sig=hashlib.sha256(frag.encode()).hexdigest()
+                if sig not in seen:
+                  seen.add(sig); contexts.append({'bundle':url,'keyword':kw,'context':frag})
+                start=idx+len(kw)
+                if len(contexts)>1000: break
+              if len(contexts)>1000: break
+          # Mine quoted endpoint-like tokens only from contexts to avoid noise.
+          tokens=set()
+          for c in contexts:
+            for q in re.findall(r'["\']([A-Za-z][A-Za-z0-9-]{2,60})["\']',c['context']):
+              ql=q.lower()
+              if any(k in ql for k in ('price','volume','market','stock','chart','history','historical','candle','trade','session','daily')): tokens.add(q)
+          report={'generatedAt':datetime.datetime.now(datetime.timezone.utc).isoformat(),'pageCount':len(pages),'scriptCount':len(scripts),'receipts':receipts,'directBffStrings':direct,'endpointLikeTokens':sorted(tokens,key=str.lower),'contexts':contexts[:1000]}
+          (out/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps({k:v for k,v in report.items() if k!='contexts' and k!='receipts'},ensure_ascii=False,indent=2))
+          print('--- HIGH SIGNAL CONTEXTS ---')
+          for c in contexts:
+            lc=c['context'].lower()
+            if any(k in lc for k in ('price-volume-points','candlestick','candle','ohlc','historical-price','price-history','daily-price')):
+              print('\n',c['keyword'],c['bundle'],'\n',c['context'][:1200])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-frontend-endpoint-discovery
+          path: artifacts/egx-frontend-discovery/report.json
+          if-no-files-found: error
