@@ -1,91 +1,10 @@
 name: EGX Official BFF Callsites Probe
 on:
-  push:
-    branches: [egx-one/clean-room-v0]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   probe:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 4
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: egx-one/clean-room-v0
-          fetch-depth: 1
-      - name: Enumerate explicit BFF calls and capture market-watch responses
-        shell: bash
-        run: |
-          set -u
-          mkdir -p artifacts/egx-bff-callsites /tmp/egx-callsite-js
-          python - <<'PY'
-          from pathlib import Path
-          import subprocess,json,re,urllib.parse,concurrent.futures,hashlib
-          ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
-          pages=['https://beta.egx.com.eg/en/listed/stocks','https://beta.egx.com.eg/en/market/market-watch','https://beta.egx.com.eg/en']
-          scripts=[];page_rows=[]
-          for i,u in enumerate(pages):
-              out=Path(f'artifacts/egx-bff-callsites/page-{i}.html')
-              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','5','--max-time','18','-A',ua,'-o',str(out),'-w','%{http_code}',u],capture_output=True,text=True)
-              data=out.read_text(errors='replace') if out.exists() else ''
-              page_rows.append({'url':u,'status':(p.stdout or '').strip() or 'CURL_FAILED','bytes':len(data),'sha256':hashlib.sha256(data.encode()).hexdigest() if data else None})
-              for x in re.findall(r'<script[^>]+src=["\']([^"\']+)',data,re.I):
-                  su=urllib.parse.urljoin(u,x)
-                  if su not in scripts:scripts.append(su)
-          Path('artifacts/egx-bff-callsites/pages.json').write_text(json.dumps(page_rows,indent=2));Path('artifacts/egx-bff-callsites/scripts.json').write_text(json.dumps(scripts,indent=2))
-          def fetch(item):
-              i,u=item;out=Path(f'/tmp/egx-callsite-js/{i}.js')
-              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','4','--max-time','10','-A',ua,'-o',str(out),'-w','%{http_code}',u],capture_output=True,text=True)
-              return u,(p.stdout or '').strip(),out.read_text(errors='replace') if out.exists() else ''
-          calls=[]
-          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
-              rows=list(ex.map(fetch,enumerate(scripts[:120])))
-          patterns=[('GET',re.compile(r'egxBffGet\)\("([^"]+)"\s*,?([^;]{0,900})')),('POST',re.compile(r'egxBffPost\)\("([^"]+)"\s*,?([^;]{0,900})'))]
-          for u,status,data in rows:
-              for method,pat in patterns:
-                  for m in pat.finditer(data):
-                      calls.append({'script':u,'status':status,'method':method,'endpoint':m.group(1),'context':data[max(0,m.start()-800):min(len(data),m.start()+2200)]})
-          unique=[];seen=set()
-          for c in calls:
-              key=(c['method'],c['endpoint'],c['context'])
-              if key in seen:continue
-              seen.add(key);unique.append(c)
-          Path('artifacts/egx-bff-callsites/callsites.json').write_text(json.dumps(unique,indent=2))
-          endpoints=sorted({(c['method'],c['endpoint']) for c in unique})
-          Path('artifacts/egx-bff-callsites/endpoints.json').write_text(json.dumps([{'method':m,'endpoint':e} for m,e in endpoints],indent=2))
-          print('scripts',len(scripts),'callsites',len(unique),'endpoints',len(endpoints))
-          PY
-          python - <<'PY'
-          from pathlib import Path
-          import subprocess,json,hashlib
-          base='https://beta.egx.com.eg/api/bff/egx/market-watch'
-          ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
-          queries=[
-            'Page=1&PageSize=10&SortBy=value&SortDescending=true',
-            'Page=1&PageSize=10&Search=VERT&SortBy=value&SortDescending=true',
-            'Page=1&PageSize=5&IsinList=EGS74801C019',
-          ]
-          rows=[]
-          for i,q in enumerate(queries):
-              u=base+'?'+q;body=Path(f'artifacts/egx-bff-callsites/market-{i}.body');hdr=Path(f'artifacts/egx-bff-callsites/market-{i}.headers')
-              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','5','--max-time','18','-A',ua,'-H','Accept: application/json','-H','x-egx-bff-request: 1','-H','Referer: https://beta.egx.com.eg/en/market/market-watch','-D',str(hdr),'-o',str(body),'-w','%{http_code}',u],capture_output=True,text=True)
-              data=body.read_bytes() if body.exists() else b''
-              rows.append({'url':u,'status':(p.stdout or '').strip() or 'CURL_FAILED','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest() if data else None,'preview':data[:12000].decode(errors='replace')})
-          Path('artifacts/egx-bff-callsites/market-watch-probes.json').write_text(json.dumps(rows,indent=2))
-          PY
-          {
-            echo '=== ENDPOINTS ==='; cat artifacts/egx-bff-callsites/endpoints.json
-            echo '=== MARKET WATCH PROBES ==='; cat artifacts/egx-bff-callsites/market-watch-probes.json
-            echo '=== CALLSITES ==='; python - <<'PY'
-          import json
-          for c in json.load(open('artifacts/egx-bff-callsites/callsites.json')):
-              print('\n',c['method'],c['endpoint'],c['script'])
-              print(c['context'][:3000])
-          PY
-          } | tee artifacts/egx-bff-callsites/summary.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: egx-official-bff-callsites
-          path: artifacts/egx-bff-callsites/*
-          if-no-files-found: error
+      - run: echo 'Completed evidence run 33476075959; manual-only now.'
