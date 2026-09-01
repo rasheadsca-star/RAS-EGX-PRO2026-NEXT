@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "egx-official-frontend-market-data-semantics-1",
+  "asOfDate": "2026-09-01",
+  "source": "EGX_PUBLIC_FRONTEND_NEXTJS",
+  "authorityMode": "OFFICIAL_INTERFACE_SEMANTICS_EVIDENCE_ONLY",
+  "productionAuthority": false,
+  "discoveryRun": 33487911736,
+  "discoveryArtifact": {
+    "artifactId": 9792572490,
+    "zipSha256": "ad53d28e8b44fde052bb0e851fd47a2515645f2badb2c39458cb4999efc120a9"
+  },
+  "bundles": {
+    "historicalChart": {
+      "url": "https://beta.egx.com.eg/_next/static/chunks/b8bb0ee1644c3220.js",
+      "sha256": "af60e7228ec53b6d4f3f503500f9666b02f045e0b268ab57c7c58ecd18798f8b",
+      "observedCall": "egxBffGet(\"price-volume-points\",{isin:stock.isin,date:days})",
+      "observedHistoricalFields": ["tradeDate", "closePrice", "tradeVolume"],
+      "role": "OFFICIAL_CLOSE_VOLUME_HISTORY_INTERFACE"
+    },
+    "stockChartAdapter": {
+      "url": "https://beta.egx.com.eg/_next/static/chunks/d76dd7eea9d414c7.js",
+      "sha256": "44c4e3b49e837c6a94386780c6af2d3c5adca4f78350c666c502e5dfeaf06ef0",
+      "adapter": "toStockChartPayload",
+      "observedMapping": {
+        "lastPrice": "lastPrice",
+        "closePrice": "lastPrice",
+        "openPrice": "lastPrice",
+        "prevClose": "lastPrice",
+        "high": "lastPrice",
+        "low": "lastPrice",
+        "volume": "tradedVolume"
+      },
+      "syntheticFields": ["openPrice", "prevClose", "high", "low"],
+      "trueOhlcvEligible": false,
+      "reason": "OHLC_SHAPED_FIELDS_ARE_SYNTHETIC_LAST_PRICE_PLACEHOLDERS"
+    }
+  },
+  "policy": {
+    "priceVolumePointsMayProvide": ["SESSION_DATE", "CLOSE", "VOLUME"],
+    "priceVolumePointsMayNotAuthorize": ["TRUE_OPEN", "TRUE_HIGH", "TRUE_LOW", "TRUE_OHLCV"],
+    "stockChartAdapterMayNotAuthorize": ["TRUE_OPEN", "TRUE_HIGH", "TRUE_LOW", "PREVIOUS_CLOSE"],
+    "requiredForTrueOhlcv": [
+      "DECLARED_OHLCV_FIELDS",
+      "VERIFIED_FIELD_SEMANTICS",
+      "NON_SYNTHETIC_SOURCE_EVIDENCE",
+      "VALID_OHLCV_GEOMETRY",
+      "SESSION_BOUND_RECEIPT"
+    ]
+  }
+}
