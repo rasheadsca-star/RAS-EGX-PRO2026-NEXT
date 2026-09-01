@@ -7,22 +7,29 @@ on:
     paths:
       - 'index.html'
       - 'technical-chart-v2.js'
+      - 'technical-chart-v2-core.js'
+      - 'technical-chart-v21-alignment.js'
+      - 'realized-kpi.js'
+      - 'scripts/prepare-egx-one-live-bundle.sh'
+      - 'data/research/live/latest.json'
       - 'data/research/ui/latest.json'
       - 'data/research/strategy/latest.json'
       - 'data/research/published/latest.json'
+      - 'data/research/simulator/latest.json'
+      - 'data/research/shadow-ledger/latest.json'
       - '.github/workflows/egx-one-production-ui-deploy.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: egx-one-production-ui-deploy
+  group: egx-one-production-deploy
   cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       VERCEL_PROJECT_ID: prj_R9NlULz7vTKPEWeoVB9vnRaanqFo
       VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
@@ -33,33 +40,15 @@ jobs:
           ref: egx-one/clean-room-v0
           fetch-depth: 1
 
-      - name: Build session-bound production UI bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf /tmp/egx-one-live
-          mkdir -p /tmp/egx-one-live/data/research/ui /tmp/egx-one-live/data/research/strategy /tmp/egx-one-live/data/research/published /tmp/egx-one-live/.vercel
-          cp index.html /tmp/egx-one-live/index.html
-          cp technical-chart-v2.js /tmp/egx-one-live/technical-chart-v2.js
-          cp data/research/ui/latest.json /tmp/egx-one-live/data/research/ui/latest.json
-          cp data/research/strategy/latest.json /tmp/egx-one-live/data/research/strategy/latest.json
-          cp data/research/published/latest.json /tmp/egx-one-live/data/research/published/latest.json
-          printf '%s\n' '{"cleanUrls":true,"trailingSlash":false}' > /tmp/egx-one-live/vercel.json
-          printf '%s\n' '{"projectId":"'"$VERCEL_PROJECT_ID"'","orgId":"'"$VERCEL_ORG_ID"'"}' > /tmp/egx-one-live/.vercel/project.json
-          test -s /tmp/egx-one-live/index.html
-          test -s /tmp/egx-one-live/technical-chart-v2.js
-          test -s /tmp/egx-one-live/data/research/ui/latest.json
-          test -s /tmp/egx-one-live/data/research/strategy/latest.json
-          test -s /tmp/egx-one-live/data/research/published/latest.json
-          node - <<'NODE'
-          const s=require('/tmp/egx-one-live/data/research/strategy/latest.json');
-          const p=require('/tmp/egx-one-live/data/research/published/latest.json');
-          const u=require('/tmp/egx-one-live/data/research/ui/latest.json');
-          if(s.signalSession!==p.signalSession||s.signalSession!==u.session)throw new Error('BUNDLE_SESSION_MISMATCH');
-          if(s.productionAuthority!==false||s.automaticOrders!==false||p.productionAuthority!==false||p.automaticOrders!==false||u.productionAuthority!==false)throw new Error('BUNDLE_AUTHORITY_BOUNDARY_FAILED');
-          if(!Array.isArray(s.recommendations)||!s.recommendations.length)throw new Error('BUNDLE_RECOMMENDATIONS_MISSING');
-          console.log(`BUNDLE_SESSION:${s.signalSession}:RECS:${s.recommendations.length}`);
-          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify clean-room contracts
+        run: npm test
+
+      - name: Build and verify complete session-bound live bundle
+        run: bash scripts/prepare-egx-one-live-bundle.sh /tmp/egx-one-live
 
       - name: Verify deploy credential availability
         id: auth
@@ -77,7 +66,7 @@ jobs:
         if: steps.auth.outputs.available == 'true'
         run: npm install --global vercel@59.10.0
 
-      - name: Deploy same EGX ONE project to production
+      - name: Deploy complete EGX ONE bundle to production
         if: steps.auth.outputs.available == 'true'
         id: deploy
         shell: bash
@@ -87,34 +76,45 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "PRODUCTION_DEPLOYMENT_URL:$url"
 
-      - name: Verify deployed session authority-safe UI and Technical V2
+      - name: Verify live recommendations chart V2.1 KPI and authority boundary
         if: steps.auth.outputs.available == 'true'
         env:
           URL: ${{ steps.deploy.outputs.url }}
         shell: bash
         run: |
           set -euo pipefail
-          html="$(curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/")"
-          printf '%s' "$html" | grep -q 'Unified Decision Center'
-          printf '%s' "$html" | grep -q 'PRODUCTION LOCKED'
-          printf '%s' "$html" | grep -q 'technical-chart-v2.js'
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/technical-chart-v2.js" > /tmp/tech.js
-          grep -q 'EGXOneTechnicalV2' /tmp/tech.js
-          grep -q 'TECHNICAL VISUALIZATION V2' /tmp/tech.js
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/ui/latest.json" > /tmp/ui.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/strategy/latest.json" > /tmp/strategy.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/published/latest.json" > /tmp/published.json
-          node - <<'NODE'
-          const fs=require('fs');
-          const u=JSON.parse(fs.readFileSync('/tmp/ui.json','utf8'));
-          const s=JSON.parse(fs.readFileSync('/tmp/strategy.json','utf8'));
-          const p=JSON.parse(fs.readFileSync('/tmp/published.json','utf8'));
-          if(u.authorityMode!=='RESEARCH'||u.researchOnly!==true||u.productionAuthority!==false||u.notARecommendation!==true)throw new Error('DEPLOYED_UI_AUTHORITY_BOUNDARY_FAILED');
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/technical-chart-v2.js" -o /tmp/chart-loader.js
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/technical-chart-v2-core.js" -o /tmp/chart-core.js
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/technical-chart-v21-alignment.js" -o /tmp/chart-align.js
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/realized-kpi.js" -o /tmp/realized-kpi.js
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/live/latest.json" -o /tmp/research-live.json
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/ui/latest.json" -o /tmp/research-ui.json
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/strategy/latest.json" -o /tmp/research-strategy.json
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/published/latest.json" -o /tmp/research-published.json
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/simulator/latest.json" -o /tmp/research-simulator.json
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/shadow-ledger/latest.json" -o /tmp/research-shadow.json
+          grep -q 'EGXOneTechnicalV2Loader' /tmp/chart-loader.js
+          grep -q 'EGXOneTechnicalV21' /tmp/chart-align.js
+          grep -q 'READY_RESEARCH_EXACT_SESSION_ONLY' /tmp/chart-align.js
+          grep -q 'EGXOneRealizedKPI' /tmp/realized-kpi.js
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const l=JSON.parse(fs.readFileSync('/tmp/research-live.json','utf8'));
+          const u=JSON.parse(fs.readFileSync('/tmp/research-ui.json','utf8'));
+          const s=JSON.parse(fs.readFileSync('/tmp/research-strategy.json','utf8'));
+          const p=JSON.parse(fs.readFileSync('/tmp/research-published.json','utf8'));
+          const sim=JSON.parse(fs.readFileSync('/tmp/research-simulator.json','utf8'));
+          const shadow=JSON.parse(fs.readFileSync('/tmp/research-shadow.json','utf8'));
+          if(s.signalSession!==u.session||s.signalSession!==p.signalSession||s.signalSession!==l.expectedSession||s.signalSession!==l.targetSession)throw new Error('DEPLOYED_SESSION_MISMATCH');
           if(s.authorityMode!=='RESEARCH'||s.productionAuthority!==false||s.automaticOrders!==false||s.validation?.accepted!==true||!s.recommendations?.length)throw new Error('DEPLOYED_STRATEGY_BOUNDARY_FAILED');
+          if(u.authorityMode!=='RESEARCH'||u.productionAuthority!==false||u.notARecommendation!==true)throw new Error('DEPLOYED_UI_BOUNDARY_FAILED');
           if(p.authorityMode!=='RESEARCH'||p.productionAuthority!==false||p.automaticOrders!==false)throw new Error('DEPLOYED_PUBLICATION_BOUNDARY_FAILED');
-          if(s.signalSession!==p.signalSession||s.signalSession!==u.session)throw new Error('DEPLOYED_SESSION_MISMATCH');
+          if(l.authorityMode!=='RESEARCH'||l.productionAuthority!==false)throw new Error('DEPLOYED_LIVE_BOUNDARY_FAILED');
+          if(shadow.productionAuthority!==false||shadow.automaticOrders!==false)throw new Error('DEPLOYED_SHADOW_BOUNDARY_FAILED');
           if(p.sourceStrategySnapshotHash!==s.strategySnapshotHash)throw new Error('DEPLOYED_LINEAGE_MISMATCH');
-          console.log(`DEPLOYED_EGX_ONE_VERIFIED:${s.signalSession}:${s.recommendations.length}:${s.strategySnapshotHash}`);
+          const x=sim.performance?.allDailySignals;
+          if(!x||x.triggered!==450||x.target1OrBetter!==243||x.stops!==157||x.timeouts!==50)throw new Error('DEPLOYED_KPI_BASELINE_MISMATCH');
+          console.log(`DEPLOYED_EGX_ONE_COMPLETE_VERIFIED:${s.signalSession}:${s.recommendations.length}:TARGET=${x.target1HitRatePct}:STOP=${x.stopRatePct}`);
           NODE
 
       - name: Deployment summary
@@ -123,15 +123,15 @@ jobs:
           AUTH: ${{ steps.auth.outputs.available }}
           URL: ${{ steps.deploy.outputs.url }}
         run: |
+          echo '## EGX ONE Production Deploy' >> "$GITHUB_STEP_SUMMARY"
           if [ "$AUTH" = 'true' ]; then
-            echo '## EGX ONE Production UI Deploy' >> "$GITHUB_STEP_SUMMARY"
             echo '- Status: VERIFIED' >> "$GITHUB_STEP_SUMMARY"
             echo "- URL: ${URL}" >> "$GITHUB_STEP_SUMMARY"
-            echo '- Technical chart: V2' >> "$GITHUB_STEP_SUMMARY"
-            echo '- Authority: RESEARCH_ONLY / Production Phase 4 LOCKED' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Chart: V2.1 current-session fail-closed alignment' >> "$GITHUB_STEP_SUMMARY"
+            echo '- KPI: day-by-day realized Target / Stop / Timeout' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Authority: RESEARCH_ONLY / Production LOCKED / Automatic Orders DISABLED' >> "$GITHUB_STEP_SUMMARY"
           else
-            echo '## EGX ONE Production UI Deploy' >> "$GITHUB_STEP_SUMMARY"
-            echo '- Status: BLOCKED' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Status: DEPLOYMENT BLOCKED' >> "$GITHUB_STEP_SUMMARY"
             echo '- Reason: VERCEL_TOKEN_MISSING' >> "$GITHUB_STEP_SUMMARY"
-            echo '- Build remains ready for direct connected Vercel deployment.' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Complete bundle and tests remain ready for connected direct deployment.' >> "$GITHUB_STEP_SUMMARY"
           fi
