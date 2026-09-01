@@ -1,106 +1,10 @@
 name: EGX Official Beta Route Context Probe
 on:
-  push:
-    branches: [egx-one/clean-room-v0]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   probe:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: egx-one/clean-room-v0
-          fetch-depth: 1
-      - name: Extract exact BFF route context and safe public responses
-        shell: bash
-        run: |
-          set -u
-          mkdir -p artifacts/egx-beta-route-context /tmp/egx-route-js
-          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
-          HOME_URL='https://beta.egx.com.eg/en'
-          curl -L -sS --compressed --connect-timeout 5 --max-time 15 -A "$UA" -o artifacts/egx-beta-route-context/home.html "$HOME_URL" || true
-          python - <<'PY'
-          from pathlib import Path
-          import re,json,urllib.parse
-          t=Path('artifacts/egx-beta-route-context/home.html').read_text(errors='replace') if Path('artifacts/egx-beta-route-context/home.html').exists() else ''
-          scripts=[]
-          for x in re.findall(r'<script[^>]+src=["\']([^"\']+)',t,re.I):
-              u=urllib.parse.urljoin('https://beta.egx.com.eg/en',x)
-              if u not in scripts:scripts.append(u)
-          Path('artifacts/egx-beta-route-context/scripts.json').write_text(json.dumps(scripts,indent=2))
-          print('scripts',len(scripts))
-          PY
-          python - <<'PY'
-          from pathlib import Path
-          import json,subprocess,concurrent.futures,re
-          scripts=json.loads(Path('artifacts/egx-beta-route-context/scripts.json').read_text())[:60]
-          needles=['/api/bff/egx/','/listed/stocks?','/market/market-watch?','/market-watch','/listed/stocks']
-          def fetch(item):
-              i,u=item; out=Path(f'/tmp/egx-route-js/{i}.js')
-              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','4','--max-time','10','-A','Mozilla/5.0','-o',str(out),'-w','%{http_code}',u],capture_output=True,text=True)
-              return i,u,(p.stdout or '').strip(),out.read_text(errors='replace') if out.exists() else ''
-          rows=[]
-          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-              for i,u,status,data in ex.map(fetch,enumerate(scripts)):
-                  hits=[]
-                  for needle in needles:
-                      start=0
-                      while True:
-                          j=data.find(needle,start)
-                          if j<0:break
-                          a=max(0,j-1800);b=min(len(data),j+2600)
-                          hits.append({'needle':needle,'offset':j,'context':data[a:b]})
-                          start=j+len(needle)
-                  if hits: rows.append({'script':u,'status':status,'hits':hits})
-          Path('artifacts/egx-beta-route-context/route-context.json').write_text(json.dumps(rows,indent=2))
-          # Pull URL/path-like literals from hit contexts, preserving query templates.
-          candidates=set()
-          for row in rows:
-              for hit in row['hits']:
-                  c=hit['context']
-                  for m in re.findall(r'''(?i)(?:https?://[^"'`\\\s]+|/[A-Za-z0-9_./?=&%${}():,-]{4,})''',c):
-                      if any(k in m.lower() for k in ('api/bff/egx','listed/stocks','market/market-watch','market-watch')): candidates.add(m[:800])
-          Path('artifacts/egx-beta-route-context/context-candidates.txt').write_text('\n'.join(sorted(candidates)))
-          print('context_hits',sum(len(r['hits']) for r in rows),'candidate_literals',len(candidates))
-          PY
-          # Safe GET probes only; no auth/captcha bypass and strict timeouts.
-          python - <<'PY'
-          from pathlib import Path
-          import subprocess,json,hashlib
-          base='https://beta.egx.com.eg'
-          urls=[
-            base+'/api/bff/egx/listed/stocks',
-            base+'/api/bff/egx/listed/stocks?lang=en',
-            base+'/api/bff/egx/market/market-watch',
-            base+'/api/bff/egx/market/market-watch?lang=en',
-            base+'/api/bff/egx/market-watch',
-          ]
-          rows=[]
-          for i,u in enumerate(urls):
-              body=Path(f'artifacts/egx-beta-route-context/probe-{i}.body');hdr=Path(f'artifacts/egx-beta-route-context/probe-{i}.headers')
-              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','4','--max-time','12','-A','Mozilla/5.0','-H','Accept: application/json','-D',str(hdr),'-o',str(body),'-w','%{http_code}',u],capture_output=True,text=True)
-              data=body.read_bytes() if body.exists() else b''
-              rows.append({'url':u,'status':(p.stdout or '').strip() or 'CURL_FAILED','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest() if data else None,'preview':data[:1500].decode(errors='replace')})
-          Path('artifacts/egx-beta-route-context/public-probes.json').write_text(json.dumps(rows,indent=2))
-          PY
-          {
-            echo '=== CONTEXT CANDIDATES ==='; cat artifacts/egx-beta-route-context/context-candidates.txt
-            echo '=== PUBLIC PROBES ==='; cat artifacts/egx-beta-route-context/public-probes.json
-            echo '=== ROUTE CONTEXT SUMMARY ==='; python - <<'PY'
-          import json
-          rows=json.load(open('artifacts/egx-beta-route-context/route-context.json'))
-          for r in rows:
-              print('SCRIPT',r['script'],'HITS',len(r['hits']))
-              for h in r['hits']:
-                  print('\n---',h['needle'],'@',h['offset'],'---')
-                  print(h['context'][:4400])
-          PY
-          } | tee artifacts/egx-beta-route-context/summary.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: egx-official-beta-route-context
-          path: artifacts/egx-beta-route-context/*
-          if-no-files-found: error
+      - run: echo 'Completed evidence run 33475788171; manual-only now.'
