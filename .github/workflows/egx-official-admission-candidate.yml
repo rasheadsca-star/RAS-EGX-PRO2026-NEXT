@@ -1,0 +1,203 @@
+name: EGX Official Admission Candidate Probe
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-official-admission-candidate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+
+      - name: Capture exact market-watch result set and pagination receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/egx-official-admission/market-watch
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, json, hashlib, datetime, math, time
+          from urllib.parse import urlencode
+
+          OUT=Path('artifacts/egx-official-admission')
+          MW=OUT/'market-watch'
+          base='https://beta.egx.com.eg/api/bff/egx/'
+          ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          captured=datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z')
+
+          def request(name, url, referer='https://beta.egx.com.eg/en/market/market-watch'):
+              body=OUT/f'{name}.body'
+              hdr=OUT/f'{name}.headers'
+              cmd=['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','25',
+                   '-A',ua,'-H','Accept: application/json','-H','x-egx-bff-request: 1',
+                   '-H',f'Referer: {referer}','-D',str(hdr),'-o',str(body),'-w','%{http_code}',url]
+              proc=subprocess.run(cmd,capture_output=True,text=True)
+              raw=body.read_bytes() if body.exists() else b''
+              parsed=None
+              try:
+                  parsed=json.loads(raw.decode()) if raw else None
+              except Exception:
+                  pass
+              return {
+                  'name':name,'url':url,'capturedAt':captured,
+                  'status':(proc.stdout or '').strip() or 'CURL_FAILED',
+                  'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,
+                  'jsonValid':isinstance(parsed,(dict,list)),'parsed':parsed,
+                  'stderr':proc.stderr[-2000:] if proc.stderr else ''
+              }
+
+          status=request('market-status',base+'market-status','https://beta.egx.com.eg/en')
+
+          exact_q={'Page':1,'PageSize':10,'SortBy':'Volume','SortDescending':'true'}
+          first=request('market-watch/page-001',base+'market-watch?'+urlencode(exact_q))
+
+          p=first['parsed'] if isinstance(first['parsed'],dict) else {}
+          inner=p.get('data') if isinstance(p.get('data'),dict) else {}
+          rows=inner.get('data') if isinstance(inner.get('data'),list) else []
+          inner_total=inner.get('totalCount')
+          outer_total=p.get('totalCount')
+          total=inner_total if isinstance(inner_total,int) else outer_total if isinstance(outer_total,int) else None
+          page_size=inner.get('pageSize') if isinstance(inner.get('pageSize'),int) else p.get('pageSize')
+          total_pages=inner.get('totalPages') if isinstance(inner.get('totalPages'),int) else p.get('totalPages')
+
+          page_receipts=[]
+          all_rows=[]
+          first_receipt={k:v for k,v in first.items() if k!='parsed'}
+          first_receipt.update({'rowCount':len(rows),'innerTotalCount':inner_total,'outerTotalCount':outer_total,
+                                'reportedPageSize':page_size,'reportedTotalPages':total_pages})
+          page_receipts.append(first_receipt)
+          all_rows.extend(rows)
+
+          # Only paginate when page 1 is internally coherent enough to proceed.
+          pagination_attempted=False
+          if first['status']=='200' and isinstance(total,int) and total>=0 and rows and (page_size or 10):
+              pagination_attempted=True
+              effective_size=10
+              pages=math.ceil(total/effective_size) if total else 1
+              pages=max(1,min(pages,100))
+              for page in range(2,pages+1):
+                  q={'Page':page,'PageSize':10,'SortBy':'Volume','SortDescending':'true'}
+                  r=request(f'market-watch/page-{page:03d}',base+'market-watch?'+urlencode(q))
+                  rp=r['parsed'] if isinstance(r['parsed'],dict) else {}
+                  ri=rp.get('data') if isinstance(rp.get('data'),dict) else {}
+                  rrows=ri.get('data') if isinstance(ri.get('data'),list) else []
+                  rec={k:v for k,v in r.items() if k!='parsed'}
+                  rec.update({'rowCount':len(rrows),'innerTotalCount':ri.get('totalCount'),
+                              'outerTotalCount':rp.get('totalCount'),'reportedPageSize':ri.get('pageSize') or rp.get('pageSize'),
+                              'reportedTotalPages':ri.get('totalPages') or rp.get('totalPages')})
+                  page_receipts.append(rec)
+                  all_rows.extend(rrows)
+                  time.sleep(0.12)
+
+          def values(field):
+              return [x.get(field) for x in all_rows if isinstance(x,dict) and x.get(field) not in (None,'')]
+          def dup_count(vals):
+              return len(vals)-len(set(map(str,vals)))
+
+          volumes=[]
+          for x in all_rows:
+              if not isinstance(x,dict):
+                  continue
+              for k in ('tradeVolume','totalVolume','volume'):
+                  if isinstance(x.get(k),(int,float)):
+                      volumes.append(x[k]); break
+
+          asset_classes=sorted({str(x.get('assetClass')) for x in all_rows if isinstance(x,dict) and x.get('assetClass') not in (None,'')})
+          markets=sorted({str(x.get('marketName')) for x in all_rows if isinstance(x,dict) and x.get('marketName') not in (None,'')})
+          ticker_vals=values('tickerSymbol')
+          isin_vals=values('isinCode')
+          asset_vals=values('assetId')
+
+          stable_total=all(
+              (r.get('innerTotalCount') in (None,total) and r.get('outerTotalCount') in (None,total))
+              for r in page_receipts
+          ) if total is not None else False
+
+          exact_page_coherent=(
+              first['status']=='200' and isinstance(p,dict) and p.get('success') is True and
+              isinstance(total,int) and isinstance(rows,list) and
+              not (len(rows)==0 and total>0)
+          )
+          full_pagination_complete=(
+              pagination_attempted and stable_total and isinstance(total,int) and len(all_rows)==total
+          )
+
+          # Scope is intentionally fail-closed. BFF result-set count is NOT called all equities or traded universe
+          # until independently reconciled with a separate source.
+          if not exact_page_coherent:
+              scope_class='SCHEMA_OR_RESPONSE_INCOHERENT'
+          elif full_pagination_complete:
+              scope_class='BFF_MARKET_WATCH_RESULT_SET'
+          else:
+              scope_class='UNRESOLVED_SUBSET'
+
+          status_payload=status['parsed'] if isinstance(status['parsed'],dict) else {}
+          status_data=status_payload.get('data') if isinstance(status_payload.get('data'),dict) else {}
+
+          report={
+              'capturedAt':captured,
+              'productionAuthority':False,
+              'phase4Open':False,
+              'query':exact_q,
+              'marketStatus':{
+                  'status':status_data.get('status'),'statusDate':status_data.get('statusDate'),
+                  'httpStatus':status['status'],'sha256':status['sha256']
+              },
+              'page1':{
+                  'httpStatus':first['status'],'success':p.get('success') if isinstance(p,dict) else None,
+                  'message':p.get('message') if isinstance(p,dict) else None,
+                  'rowCount':len(rows),'innerTotalCount':inner_total,'outerTotalCount':outer_total,
+                  'reportedPageSize':page_size,'reportedTotalPages':total_pages,'sha256':first['sha256']
+              },
+              'pagination':{
+                  'attempted':pagination_attempted,'pagesCaptured':len(page_receipts),
+                  'rowsCaptured':len(all_rows),'reportedTotalCount':total,'stableTotalCount':stable_total,
+                  'complete':full_pagination_complete
+              },
+              'identity':{
+                  'assetIdCount':len(asset_vals),'assetIdDuplicates':dup_count(asset_vals),
+                  'tickerCount':len(ticker_vals),'tickerDuplicates':dup_count(ticker_vals),
+                  'isinCount':len(isin_vals),'isinDuplicates':dup_count(isin_vals)
+              },
+              'scopeSignals':{
+                  'assetClasses':asset_classes,'marketNames':markets,
+                  'volumeObservedCount':len(volumes),'zeroVolumeCount':sum(1 for v in volumes if v==0),
+                  'positiveVolumeCount':sum(1 for v in volumes if v>0)
+              },
+              'scopeClassification':scope_class,
+              'claims':{
+                  'allEgxEquities':False,
+                  'tradedSessionUniverse':False,
+                  'independentCrossCheckComplete':False
+              },
+              'blockers':[]
+          }
+          if not exact_page_coherent:
+              report['blockers'].append('Exact Page=1/PageSize=10 response is internally incoherent or empty while totalCount > 0.')
+          if not full_pagination_complete:
+              report['blockers'].append('Full pagination is not proven complete.')
+          report['blockers'].append('Independent non-BFF scope cross-check is still required before any all-equities or traded-universe claim.')
+
+          (OUT/'market-watch-page-receipts.json').write_text(json.dumps(page_receipts,indent=2,ensure_ascii=False))
+          (OUT/'market-watch-rows.json').write_text(json.dumps(all_rows,indent=2,ensure_ascii=False))
+          (OUT/'admission-report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False))
+          (OUT/'captured-at.txt').write_text(captured+'\n')
+          print(json.dumps(report,indent=2,ensure_ascii=False))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-official-admission-candidate
+          path: artifacts/egx-official-admission/**/*
+          if-no-files-found: error
