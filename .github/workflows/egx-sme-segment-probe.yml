@@ -1,0 +1,67 @@
+name: EGX SME Segment Probe
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-sme-segment-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Capture SME identities and segment flags
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/egx-sme-segments/raw
+          python - <<'PY'
+          from pathlib import Path
+          from concurrent.futures import ThreadPoolExecutor,as_completed
+          import subprocess,json,hashlib,datetime,urllib.parse
+          OUT=Path('artifacts/egx-sme-segments'); RAW=OUT/'raw'
+          BASE='https://beta.egx.com.eg/api/bff/egx/'
+          REF='https://beta.egx.com.eg/en/listed/stocks'
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          def req(endpoint,path):
+              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','25','--retry','3','--retry-all-errors','--retry-delay','1','-A',UA,'-H','Accept: application/json','-H','x-egx-bff-request: 1','-H',f'Referer: {REF}','-o',str(path),'-w','%{http_code}',BASE+endpoint],capture_output=True,text=True)
+              raw=path.read_bytes() if path.exists() else b''
+              try: parsed=json.loads(raw.decode())
+              except Exception: parsed=None
+              return {'url':BASE+endpoint,'status':(p.stdout or '').strip(),'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,'parsed':parsed,'stderr':p.stderr[-1000:] if p.stderr else ''}
+          cats=req('stock-categories',OUT/'stock-categories.json')
+          data=cats['parsed'].get('data') if isinstance(cats['parsed'],dict) else {}
+          sme=data.get('sme') if isinstance(data,dict) else []
+          def one(x):
+              m={str(k).lower():v for k,v in x.items()}; isin=str(m.get('symbol_code') or '').strip().upper(); name=str(m.get('name') or '').strip()
+              f=RAW/f'{isin}.json'; r=req('stock-info?'+urllib.parse.urlencode({'Isin':isin}),f)
+              env=r['parsed'] if isinstance(r['parsed'],dict) else {}; rows=env.get('data') if isinstance(env.get('data'),list) else []
+              row=rows[0] if rows and isinstance(rows[0],dict) else {}; ci={str(k).lower():v for k,v in row.items()}
+              return {'isin':isin,'categoryName':name,'httpStatus':r['status'],'sha256':r['sha256'],'rowCount':len(rows),'reuters':ci.get('reuters'),'name':ci.get('name'),'schedule':ci.get('schedule'),'lastTradeDate':ci.get('last_trade_date'),'lastClose':ci.get('last_cp'),'lastVolume':ci.get('last_vol'),'intraday':ci.get('intraday'),'egxNilex':ci.get('egx_nilex'),'tamayouz':ci.get('tamayouz'),'nile':ci.get('nile'),'listingDate':ci.get('listing_date'),'fullRow':row}
+          results=[]
+          with ThreadPoolExecutor(max_workers=8) as ex:
+              futs=[ex.submit(one,x) for x in sme]
+              for f in as_completed(futs): results.append(f.result())
+          results.sort(key=lambda x:x['isin'])
+          def yes(v): return str(v or '').strip().upper() in ('Y','YES','1','TRUE')
+          for x in results:
+              if yes(x['tamayouz']): x['segment']='TAMAYUZ'
+              elif yes(x['nile']) or yes(x['egxNilex']): x['segment']='NILE'
+              else: x['segment']='UNRESOLVED'
+          counts={k:sum(1 for x in results if x['segment']==k) for k in ('TAMAYUZ','NILE','UNRESOLVED')}
+          report={'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),'categorySmeCount':len(sme),'lookupCount':len(results),'lookup200':sum(1 for x in results if x['httpStatus']=='200'),'lookupRows':sum(1 for x in results if x['rowCount']>0),'counts':counts,'allSegmented':counts['UNRESOLVED']==0 and len(results)==len(sme),'productionAuthority':False,'phase4Open':False,'results':[{k:v for k,v in x.items() if k!='fullRow'} for x in results]}
+          (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
+          (OUT/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-sme-segment-probe
+          path: artifacts/egx-sme-segments/**/*
+          if-no-files-found: error
