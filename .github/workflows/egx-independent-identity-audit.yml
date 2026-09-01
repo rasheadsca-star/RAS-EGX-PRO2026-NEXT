@@ -1,0 +1,30 @@
+name: EGX Independent Identity Complement Audit
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - data/research/egx-independent-identity-evidence-2026-09-01.json
+      - scripts/egx-independent-identity-audit.mjs
+      - .github/workflows/egx-independent-identity-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Compare exact independent mappings with current official BFF
+        run: node scripts/egx-independent-identity-audit.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-independent-identity-audit
+          path: artifacts/egx-independent-identity-audit.json
+          if-no-files-found: warn
