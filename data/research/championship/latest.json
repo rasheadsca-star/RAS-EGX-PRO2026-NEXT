@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "egx-one-championship-evidence-1",
+  "authorityMode": "RESEARCH",
+  "researchOnly": true,
+  "productionAuthority": false,
+  "automaticOrders": false,
+  "recommendationMutationAllowed": false,
+  "championshipStatus": "PENDING_COMMON_DATE_EVIDENCE",
+  "leader": "PENDING",
+  "scoring": {
+    "qualifiedMetrics": 0,
+    "egxOne": 0,
+    "v16_9": 0,
+    "rule": "ONLY_AUDITABLE_APPLES_TO_APPLES_COMMON_DATE_METRICS_SCORE"
+  },
+  "commonDateComparison": {
+    "qualified": false,
+    "reason": "NO_AUDITABLE_APPLES_TO_APPLES_COMMON_DATE_ARTIFACT",
+    "targetHitRatePct": {
+      "egxOne": null,
+      "v16_9": null
+    }
+  },
+  "reference": {
+    "v16_9": {
+      "label": "V16.9 EGX PRO",
+      "evidenceGrade": "HISTORICAL_NEXT_SESSION_DAILY_OHLC_AUDIT_REFERENCE_ONLY",
+      "sourceCommit": "75fcf2e765bc50231bc1a96e79a94ee8997358b4",
+      "sourceFile": "data/research/v16-v169-target-hit-audit.json",
+      "method": "Exact V16.9 walk-forward ranking and dynamic basket-size selection; target/stop audited from next-session raw daily OHLC.",
+      "auditWindow": {
+        "requestedSessions": 20,
+        "completedSessions": 20,
+        "fromSignalDate": "2026-08-04",
+        "toSignalDate": "2026-08-31",
+        "lastOutcomeDate": "2026-09-01"
+      },
+      "selectionCount": 65,
+      "executableByOpenRuleCount": 53,
+      "targetTouchRateOfExecutablePct": 52.83,
+      "conservativeTargetHitRateOfExecutablePct": 37.74,
+      "ambiguousTargetAndStopSameDayCount": 8,
+      "stopTouchedCount": 15,
+      "basketReturnMetrics": {
+        "sessions": 20,
+        "averageNetReturnPct": 2.0506,
+        "medianNetReturnPct": 0.7775,
+        "winningSessionPct": 60.0,
+        "profitFactor": 3.212,
+        "compoundedNetReturnPct": 47.135,
+        "maximumDrawdownPct": -7.478,
+        "bestSessionPct": 10.015,
+        "worstSessionPct": -4.754
+      },
+      "limitations": [
+        "REFERENCE_ONLY_NOT_SCOREABLE_AGAINST_EGX_ONE_WITHOUT_COMMON_DATE_POLICY_ARTIFACT",
+        "DAILY_OHLC_CANNOT_ORDER_TARGET_AND_STOP_INTRADAY",
+        "INTRADAY_LIQUIDITY_RULE_NOT_EXACTLY_TESTABLE_FROM_DAILY_DATA"
+      ]
+    }
+  }
+}
