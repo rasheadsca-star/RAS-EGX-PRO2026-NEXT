@@ -1,0 +1,85 @@
+name: EGX Market Segment Attachment Probe
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-market-segment-attachment-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Capture announcement pages and attachments
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/egx-market-segments/files
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,re,json,hashlib,datetime,urllib.parse,time
+
+          OUT=Path('artifacts/egx-market-segments'); FILES=OUT/'files'
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          seeds=[
+            'https://www.sigma-cap.com/main/news_page_exact?newsId=46079222&newsType=EGX',
+            'https://www.okazinvest.com/okaz/newDetails.aspx?id=1262678&nb=2',
+          ]
+          def get(url,path,accept='text/html,application/xhtml+xml,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*;q=0.8'):
+              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','35','--retry','3','--retry-all-errors','--retry-delay','1','-A',UA,'-H',f'Accept: {accept}','-D',str(path)+'.headers','-o',str(path),'-w','%{http_code}|%{url_effective}|%{content_type}',url],capture_output=True,text=True)
+              raw=path.read_bytes() if path.exists() else b''
+              parts=(p.stdout or '').split('|',2)
+              return {'requestedUrl':url,'status':parts[0] if parts else '','effectiveUrl':parts[1] if len(parts)>1 else '', 'contentType':parts[2] if len(parts)>2 else '', 'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,'stderr':p.stderr[-1500:] if p.stderr else ''}
+
+          page_receipts=[]; candidates=[]
+          for i,url in enumerate(seeds):
+              f=OUT/f'page-{i}.html'; rec=get(url,f); page_receipts.append(rec)
+              txt=f.read_text(errors='ignore') if f.exists() else ''
+              base=rec.get('effectiveUrl') or url
+              for attr,val in re.findall(r'(?i)(?:href|src)\s*=\s*["\']([^"\']+)["\']',txt):
+                  pass
+              for val in re.findall(r'(?i)(?:href|src)\s*=\s*["\']([^"\']+)["\']',txt):
+                  u=urllib.parse.urljoin(base,val.strip())
+                  low=u.lower()
+                  if any(x in low for x in ('.pdf','.xlsx','.xls','.csv','.docx','.doc','attachment','download','uploads','upload','files/')):
+                      if u not in candidates: candidates.append(u)
+              # URLs embedded in scripts / JSON
+              for val in re.findall(r'https?://[^"\'<>\s]+',txt):
+                  val=val.replace('&amp;','&')
+                  low=val.lower()
+                  if any(x in low for x in ('.pdf','.xlsx','.xls','.csv','.docx','.doc','attachment','download')) and val not in candidates:
+                      candidates.append(val)
+
+          file_receipts=[]
+          for i,u in enumerate(candidates[:100]):
+              ext=Path(urllib.parse.urlparse(u).path).suffix.lower()
+              if ext not in ('.pdf','.xlsx','.xls','.csv','.docx','.doc'): ext='.bin'
+              f=FILES/f'{i:03d}{ext}'
+              rec=get(u,f,'*/*'); rec['localFile']=str(f); file_receipts.append(rec)
+              time.sleep(.15)
+
+          # preserve human-readable text excerpts around market segment terms
+          excerpts=[]
+          terms=['Most Active','Medium Activity','Inactive','SME','TAMAYUZ','NILE','نشاط','تميز','بورصة النيل','غير نشطة']
+          for i in range(len(seeds)):
+              f=OUT/f'page-{i}.html'; txt=f.read_text(errors='ignore') if f.exists() else ''
+              cleaned=re.sub(r'<script[\s\S]*?</script>|<style[\s\S]*?</style>',' ',txt,flags=re.I)
+              cleaned=re.sub(r'<[^>]+>',' ',cleaned); cleaned=re.sub(r'\s+',' ',cleaned)
+              for term in terms:
+                  pos=cleaned.lower().find(term.lower())
+                  if pos>=0: excerpts.append({'page':i,'term':term,'text':cleaned[max(0,pos-700):pos+2200]})
+
+          report={'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),'pages':page_receipts,'candidateLinks':candidates,'files':file_receipts,'excerpts':excerpts,'productionAuthority':False,'phase4Open':False}
+          (OUT/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps({'pages':page_receipts,'candidateCount':len(candidates),'downloadedCount':len(file_receipts),'successfulFiles':sum(1 for x in file_receipts if x['status']=='200' and x['bytes']>0),'contentTypes':sorted({x['contentType'] for x in file_receipts}),'productionAuthority':False,'phase4Open':False},ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-market-segment-attachments
+          path: artifacts/egx-market-segments/**/*
+          if-no-files-found: error
