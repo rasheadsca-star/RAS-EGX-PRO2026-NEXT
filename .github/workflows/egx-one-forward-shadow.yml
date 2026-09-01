@@ -1,0 +1,98 @@
+name: EGX ONE Forward Shadow Freeze
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/clean-room-v0']
+    paths:
+      - 'data/research/published/latest.json'
+      - 'data/research/ui/latest.json'
+      - 'src/research-forward-shadow-ledger.js'
+      - 'scripts/research-build-regime-shadow.mjs'
+      - 'tests/research-forward-shadow-ledger.test.mjs'
+      - '.github/workflows/egx-one-forward-shadow.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-one-forward-shadow-freeze
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify clean-room contracts
+        run: npm test
+
+      - name: Freeze current publication into forward shadow
+        run: npm run research:regime-shadow
+
+      - name: Enforce immutable forward boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          import {verifyForwardShadowLedger} from './src/research-forward-shadow-ledger.js';
+          const publication=JSON.parse(fs.readFileSync('data/research/published/latest.json','utf8'));
+          const ledger=JSON.parse(fs.readFileSync('data/research/shadow-ledger/latest.json','utf8'));
+          if(!verifyForwardShadowLedger(ledger))throw new Error('FORWARD_LEDGER_VERIFY_FAILED');
+          if(ledger.authorityMode!=='RESEARCH'||ledger.researchOnly!==true||ledger.productionAuthority!==false||ledger.automaticOrders!==false||ledger.forwardEvidence!==false)throw new Error('FORWARD_LEDGER_AUTHORITY_BOUNDARY_FAILED');
+          const eligible=publication.signalSession>ledger.startAfterSession;
+          const entry=ledger.entries.find(x=>x.signalSession===publication.signalSession);
+          if(eligible&&!entry)throw new Error('CURRENT_PUBLICATION_NOT_FROZEN');
+          if(entry){
+            if(entry.publicationHash!==publication.publicationHash||entry.sourceStrategySnapshotHash!==publication.sourceStrategySnapshotHash)throw new Error('FORWARD_ENTRY_PUBLICATION_LINEAGE_MISMATCH');
+            if(entry.resolutionState!=='PENDING')throw new Error('NEW_FORWARD_ENTRY_PREMATURELY_RESOLVED');
+            if((entry.plans||[]).length!==(publication.recommendations||[]).length)throw new Error('FORWARD_ENTRY_PLAN_COUNT_MISMATCH');
+            for(const p of entry.plans){
+              const source=publication.recommendations.find(x=>x.ticker===p.ticker);
+              if(!source||source.planHash!==p.planHash)throw new Error(`FORWARD_PLAN_HASH_MISMATCH:${p.ticker}`);
+            }
+          }
+          for(const r of ledger.resolutions||[]){
+            const terminal=String(r.terminalSession||r.resolutionSession||'');
+            const signal=String(r.signalSession||'');
+            if(terminal&&signal&&terminal<=signal)throw new Error(`FORWARD_LOOKAHEAD_OR_SAME_SESSION_RESOLUTION:${signal}:${terminal}`);
+          }
+          console.log(`FORWARD_SHADOW_VERIFIED:START_AFTER=${ledger.startAfterSession}:SESSIONS=${ledger.entries.length}:CURRENT=${publication.signalSession}:CURRENT_PLANS=${entry?.plans?.length||0}:RESOLUTIONS=${ledger.resolutions.length}`);
+          NODE
+
+      - name: Commit regime context and forward ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/regime data/research/context data/research/shadow-ledger
+          if git diff --cached --quiet; then
+            echo 'No forward-shadow change.'
+          else
+            git commit -m 'Freeze EGX ONE publication into forward shadow'
+            for attempt in 1 2 3; do
+              if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then break; fi
+              [ "$attempt" = 3 ] && exit 1
+              sleep $((attempt*5))
+            done
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-forward-shadow-ledger
+          path: |
+            data/research/regime/latest.json
+            data/research/context/latest.json
+            data/research/shadow-ledger/latest.json
+          if-no-files-found: error
