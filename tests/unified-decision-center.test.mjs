@@ -9,11 +9,17 @@ test('unified decision center contains migrated legacy feature surfaces',()=>{
   for(const marker of ['Top Opportunities','Full-Market Search','Portfolio Lifecycle','Decision Journal','Price Alerts','Historical Point‑in‑Time Simulator','Engine Comparison','Support / Resistance','Data Quality','Lineage & Authority'])assert.ok(html.includes(marker),`missing marker ${marker}`);
 });
 
-test('unified UI consumes clean-room research publication and simulator snapshots',()=>{
-  assert.ok(html.includes("data/research/published/latest.json"));
-  assert.ok(html.includes("data/research/ui/latest.json"));
-  assert.ok(html.includes("data/research/simulator/latest.json"));
-  assert.ok(html.includes("data/research/history/${s.ticker}.json"));
+test('unified UI consumes clean-room research publication simulator and regime evidence',()=>{
+  for(const feed of ['data/research/published/latest.json','data/research/ui/latest.json','data/research/simulator/latest.json','data/research/regime/latest.json','data/research/context/latest.json','data/research/regime/evaluation.json','data/research/shadow-ledger/latest.json'])assert.ok(html.includes(feed),`missing feed ${feed}`);
+  assert.ok(html.includes('data/research/history/${s.ticker}.json'));
+});
+
+test('regime confidence remains advisory and cannot silently replace baseline recommendation set',()=>{
+  for(const marker of ['baselineRecommendationSetUnchanged','changesPublishedDecision','GUARD WOULD SKIP','Regime Challenger','Forward Shadow Ledger','DISABLED_PENDING_FORWARD_VALIDATION'])assert.ok(html.includes(marker),`missing regime guard marker ${marker}`);
+  assert.ok(html.includes('ليس احتمال نجاح'));
+  assert.ok(html.includes('NOT success probability'));
+  assert.ok(!/\.filter\([^\n]*regimeFilterWouldAccept/.test(html),'UI must not filter published recommendations by challenger acceptance');
+  assert.ok(html.includes("(PUB?.recommendations||[]).map(recCard)"),'published recommendation set must render directly');
 });
 
 test('unified UI keeps production and automatic-order boundaries explicit',()=>{
