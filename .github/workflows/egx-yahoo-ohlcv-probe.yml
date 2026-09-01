@@ -1,0 +1,66 @@
+name: EGX Yahoo Session OHLCV Probe
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-yahoo-ohlcv-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Capture MTIE completed-session Yahoo chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/yahoo-ohlcv
+          P1=$(date -u -d '2026-08-30 00:00:00' +%s)
+          P2=$(date -u -d '2026-09-02 00:00:00' +%s)
+          URL="https://query1.finance.yahoo.com/v8/finance/chart/MTIE.CA?period1=${P1}&period2=${P2}&interval=1d&events=history&includeAdjustedClose=true"
+          code=$(curl -L -sS --compressed --connect-timeout 10 --max-time 30 \
+            -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36' \
+            -H 'accept: application/json,text/plain,*/*' -o artifacts/yahoo-ohlcv/MTIE.CA.json -w '%{http_code}' "$URL")
+          printf '%s\n' "$code" | tee artifacts/yahoo-ohlcv/status.txt
+          python - <<'PY'
+          import json,pathlib,hashlib,datetime
+          from zoneinfo import ZoneInfo
+          p=pathlib.Path('artifacts/yahoo-ohlcv/MTIE.CA.json'); raw=p.read_bytes()
+          out={'httpStatus':pathlib.Path('artifacts/yahoo-ohlcv/status.txt').read_text().strip(),'sha256':hashlib.sha256(raw).hexdigest(),'bytes':len(raw),'provider':'YAHOO_FINANCE_CHART','sourceRole':'RESEARCH_HISTORY_ONLY','productionAuthority':False}
+          try: d=json.loads(raw)
+          except Exception as e:
+            out['state']='INVALID_JSON';out['error']=repr(e);pathlib.Path('artifacts/yahoo-ohlcv/report.json').write_text(json.dumps(out,indent=2));print(json.dumps(out,indent=2));raise
+          chart=d.get('chart') or {}; err=chart.get('error'); results=chart.get('result') or []
+          if err or not results:
+            out['state']='SOURCE_UNAVAILABLE';out['providerError']=err;pathlib.Path('artifacts/yahoo-ohlcv/report.json').write_text(json.dumps(out,indent=2));print(json.dumps(out,indent=2));raise SystemExit(1)
+          r=results[0]; meta=r.get('meta') or {}; tz=meta.get('exchangeTimezoneName') or 'Africa/Cairo'; timestamps=r.get('timestamp') or []; q=((r.get('indicators') or {}).get('quote') or [{}])[0]
+          rows=[]
+          zone=ZoneInfo(tz)
+          for i,ts in enumerate(timestamps):
+            def at(k):
+              arr=q.get(k) or []
+              return arr[i] if i<len(arr) else None
+            session=datetime.datetime.fromtimestamp(ts,datetime.timezone.utc).astimezone(zone).date().isoformat()
+            rows.append({'session':session,'timestamp':ts,'open':at('open'),'high':at('high'),'low':at('low'),'close':at('close'),'volume':at('volume')})
+          target=next((x for x in rows if x['session']=='2026-08-31'),None)
+          out.update({'symbol':meta.get('symbol'),'exchangeName':meta.get('exchangeName'),'fullExchangeName':meta.get('fullExchangeName'),'exchangeTimezoneName':tz,'currency':meta.get('currency'),'rows':rows,'sessionRow':target})
+          if not target: out['state']='SESSION_MISSING';ok=False
+          else:
+            vals=[target.get(k) for k in ('open','high','low','close','volume')]; finite=all(isinstance(v,(int,float)) for v in vals)
+            ok=finite and target['high']>=max(target['open'],target['close']) and target['low']<=min(target['open'],target['close']) and target['volume']>=0
+            out['state']='RESEARCH_TRUE_OHLCV_CANDIDATE' if ok else 'OHLCV_GEOMETRY_INVALID'
+          out['ohlcvGeometryValid']=bool(ok)
+          pathlib.Path('artifacts/yahoo-ohlcv/report.json').write_text(json.dumps(out,ensure_ascii=False,indent=2))
+          print(json.dumps(out,ensure_ascii=False,indent=2))
+          if not ok: raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-yahoo-ohlcv-probe
+          path: artifacts/yahoo-ohlcv/*
+          if-no-files-found: warn
