@@ -1,0 +1,105 @@
+name: EGX ONE — Integrate Technical Chart V2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/clean-room-v0']
+    paths:
+      - '.github/workflows/egx-one-integrate-technical-v2.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-one-integrate-technical-v2
+  cancel-in-progress: true
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Restore last full unified UI and inject Technical Chart V2
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_COMMIT='723d6880f6ae97d1a198cc713ec15cf0f4a2d59d'
+          git fetch --no-tags origin "$BASE_COMMIT"
+          git show "$BASE_COMMIT:index.html" > /tmp/egx-one-full.html
+          test -s /tmp/egx-one-full.html
+          node - <<'NODE'
+          const fs=require('fs');
+          const src=fs.readFileSync('/tmp/egx-one-full.html','utf8');
+          const required=[
+            'data-view="today"',
+            'data-view="market"',
+            'data-view="symbol"',
+            'data-view="portfolio"',
+            'data-view="journal"',
+            'data-view="alerts"',
+            'data-view="sim"',
+            'data-view="compare"',
+            'data-view="audit"',
+            'data/research/published/latest.json',
+            'data/research/ui/latest.json',
+            'baselineRecommendationSetUnchanged',
+            'PUB.productionAuthority!==false',
+            'EGX_ONE_PORTFOLIO_V1',
+            'EGX_ONE_JOURNAL_V1',
+            'EGX_ONE_ALERTS_V1',
+            'PRODUCTION LOCKED',
+            'Automatic Orders: DISABLED'
+          ];
+          for(const marker of required){if(!src.includes(marker))throw new Error(`BASE_UI_CONTRACT_MISSING:${marker}`)}
+          const tag='<script src="/technical-chart-v2.js?v=20260901-v2"></script>';
+          let out=src.replace(/\s*<script src="\/technical-chart-v2\.js[^>]*><\/script>/g,'');
+          if(!out.includes('</body>'))throw new Error('BASE_UI_BODY_CLOSE_MISSING');
+          out=out.replace('</body>',`${tag}\n</body>`);
+          fs.writeFileSync('index.html',out);
+          if((out.match(/technical-chart-v2\.js/g)||[]).length!==1)throw new Error('TECH_V2_SCRIPT_TAG_COUNT_INVALID');
+          console.log('FULL_UI_RESTORED_AND_TECH_V2_INJECTED');
+          NODE
+
+      - name: Validate technical module syntax and contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check technical-chart-v2.js
+          grep -q 'EGXOneTechnicalV2' technical-chart-v2.js
+          grep -q 'regressionChannel' technical-chart-v2.js
+          grep -q 'fibonacci' technical-chart-v2.js
+          grep -q 'pivotLevels' technical-chart-v2.js
+          grep -q 'TECHNICAL VISUALIZATION V2' technical-chart-v2.js
+          grep -q 'technical-chart-v2.js?v=20260901-v2' index.html
+
+      - name: Run complete clean-room test suite before commit
+        run: npm test
+
+      - name: Commit integrated full UI only after green tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'No index change required.'
+          else
+            git commit -m 'Integrate Technical Chart V2 into full EGX ONE UI'
+            for attempt in 1 2 3; do
+              if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then
+                break
+              fi
+              [ "$attempt" = 3 ] && exit 1
+              sleep $((attempt*4))
+            done
+          fi
