@@ -1,39 +1,10 @@
-name: EGX ONE SSOT Row Hash Upgrade
+name: EGX ONE SSOT Row Hash Upgrade (completed)
 on:
-  push:
-    branches: [egx-one/clean-room-v0]
+  workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
-  upgrade:
-    if: github.actor != 'github-actions[bot]'
+  completed:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: egx-one/clean-room-v0
-          fetch-depth: 1
-      - name: Add deterministic raw and normalized row-hash admission guards
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p=Path('src/market-data-store.js');s=p.read_text()
-          old="    this.db.function('egx_certified_reconciliation_bar_valid',{deterministic:true},(payloadJson,reconciliationManifestHash,sourceManifestHash,ticker,session,primarySourceId,primaryObservationCertificateHash,open,high,low,close,volume)=>{try{return reconciliationEnvelopeMatchesRow(JSON.parse(payloadJson),{reconciliationManifestHash,sourceManifestHash,ticker,session,primarySourceId,primaryObservationCertificateHash,bar:{open:Number(open),high:Number(high),low:Number(low),close:Number(close),volume:volume==null?null:Number(volume)}})?1:0}catch{return 0}});\n    this.#init();"
-          new="    this.db.function('egx_certified_reconciliation_bar_valid',{deterministic:true},(payloadJson,reconciliationManifestHash,sourceManifestHash,ticker,session,primarySourceId,primaryObservationCertificateHash,open,high,low,close,volume)=>{try{return reconciliationEnvelopeMatchesRow(JSON.parse(payloadJson),{reconciliationManifestHash,sourceManifestHash,ticker,session,primarySourceId,primaryObservationCertificateHash,bar:{open:Number(open),high:Number(high),low:Number(low),close:Number(close),volume:volume==null?null:Number(volume)}})?1:0}catch{return 0}});\n    this.db.function('egx_raw_bar_hash_valid',{deterministic:true},(rawHash,acquisitionId,ticker,session,sourceId,payloadJson)=>{try{return sha256({acquisitionId,ticker,session,sourceId,payload:JSON.parse(payloadJson)})===rawHash?1:0}catch{return 0}});\n    this.db.function('egx_normalized_bar_hash_valid',{deterministic:true},(rowHash,dataSnapshotId,ticker,session,open,high,low,close,volume,sourceManifestHash,certifiedReconciliationManifestHash,primaryObservationCertificateHash)=>{try{return sha256({dataSnapshotId,ticker,session,open:Number(open),high:Number(high),low:Number(low),close:Number(close),volume:volume==null?null:Number(volume),sourceManifestHash,certifiedReconciliationManifestHash:certifiedReconciliationManifestHash??null,primaryObservationCertificateHash:primaryObservationCertificateHash??null})===rowHash?1:0}catch{return 0}});\n    this.#init();"
-          if old not in s: raise SystemExit('UDF insertion anchor not found')
-          s=s.replace(old,new,1)
-          old="      CREATE TRIGGER IF NOT EXISTS raw_bar_frozen_update BEFORE UPDATE ON raw_bars WHEN (SELECT content_hash FROM acquisition_runs WHERE acquisition_id=OLD.acquisition_id) IS NOT NULL BEGIN SELECT RAISE(ABORT,'IMMUTABLE_FINALIZED_RAW_BAR'); END;"
-          new="      CREATE TRIGGER IF NOT EXISTS raw_bar_hash_guard BEFORE INSERT ON raw_bars WHEN egx_raw_bar_hash_valid(NEW.raw_hash,NEW.acquisition_id,NEW.ticker,NEW.session,NEW.source_id,NEW.payload_json)<>1 BEGIN SELECT RAISE(ABORT,'INVALID_RAW_BAR_HASH'); END;\n      CREATE TRIGGER IF NOT EXISTS normalized_bar_hash_guard BEFORE INSERT ON normalized_bars WHEN egx_normalized_bar_hash_valid(NEW.row_hash,NEW.data_snapshot_id,NEW.ticker,NEW.session,NEW.open,NEW.high,NEW.low,NEW.close,NEW.volume,NEW.source_manifest_hash,NEW.certified_reconciliation_manifest_hash,NEW.primary_observation_certificate_hash)<>1 BEGIN SELECT RAISE(ABORT,'INVALID_NORMALIZED_BAR_HASH'); END;\n      CREATE TRIGGER IF NOT EXISTS raw_bar_frozen_update BEFORE UPDATE ON raw_bars WHEN (SELECT content_hash FROM acquisition_runs WHERE acquisition_id=OLD.acquisition_id) IS NOT NULL BEGIN SELECT RAISE(ABORT,'IMMUTABLE_FINALIZED_RAW_BAR'); END;"
-          if old not in s: raise SystemExit('trigger insertion anchor not found')
-          p.write_text(s.replace(old,new,1))
-          PY
-      - name: Commit row-hash integrity upgrade
-        shell: bash
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add src/market-data-store.js
-          git commit -m 'Verify raw and normalized row hashes at SQL admission'
-          git pull --rebase origin egx-one/clean-room-v0
-          git push origin HEAD:egx-one/clean-room-v0
+      - run: echo 'Raw and normalized row-hash admission guards already applied; workflow intentionally disabled.'
