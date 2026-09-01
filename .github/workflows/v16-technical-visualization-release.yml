@@ -1,0 +1,32 @@
+name: V16 Technical Visualization Release
+
+on:
+  push:
+    branches:
+      - release/v16.9-technical-visualization-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check UI release
+        run: |
+          node --check public/portfolio-manager.js
+          node --check public/snapshot-date-fix.js
+          node --check public/technical-analysis-tools.js
+          node --check stability/frozen-runtime-contract.js
+      - name: Full functional and destructive tests
+        run: npm test
+      - name: Independent red-team stability gate
+        run: npm run red-team
