@@ -10,7 +10,7 @@ test('valid completed-session OHLCV geometry is accepted structurally',()=>{
 
 test('Mubasher observed MTIE row cannot be admitted as true OHLCV when open is below low',()=>{
   const a=assessProviderOhlcvSemantics({
-    provider:'MUBASHER_PUBLIC_HISTORY',declaredFields:true,
+    provider:'MUBASHER_PUBLIC_HISTORY',declaredFields:true,fieldSemanticsVerified:true,
     samples:[{id:'MTIE:2026-08-31',bar:{open:8.41,high:8.63,low:8.43,close:8.49,volume:4240038}}]
   });
   assert.equal(a.state,'OHLCV_SEMANTICS_CONTRADICTED');
@@ -20,14 +20,14 @@ test('Mubasher observed MTIE row cannot be admitted as true OHLCV when open is b
 });
 
 test('StockAnalysis-style previous-close-as-open contradiction is also blocked provider-independently',()=>{
-  const a=assessProviderOhlcvSemantics({provider:'STOCKANALYSIS_PUBLIC',declaredFields:true,samples:[
+  const a=assessProviderOhlcvSemantics({provider:'STOCKANALYSIS_PUBLIC',declaredFields:true,fieldSemanticsVerified:true,samples:[
     {id:'MTIE:2026-08-31',bar:{open:8.41,high:8.63,low:8.43,close:8.49,volume:4240000}}
   ]});
   assert.equal(a.trueOhlcvEligible,false);
 });
 
-test('coherent Investing MTIE sample is research eligible but never gains production authority',()=>{
-  const a=assessProviderOhlcvSemantics({provider:'INVESTING_PUBLIC_WEB',declaredFields:true,samples:[
+test('coherent Investing MTIE sample is research eligible only when field semantics are verified and never gains production authority',()=>{
+  const a=assessProviderOhlcvSemantics({provider:'INVESTING_PUBLIC_WEB',declaredFields:true,fieldSemanticsVerified:true,samples:[
     {id:'MTIE:2026-08-31',bar:{open:8.43,high:8.63,low:8.43,close:8.49,volume:4240000}}
   ]});
   assert.equal(a.state,'TRUE_OHLCV_RESEARCH_ELIGIBLE');
@@ -36,10 +36,33 @@ test('coherent Investing MTIE sample is research eligible but never gains produc
   assert.equal(classifyMarketDataFieldRole({provider:'INVESTING_PUBLIC_WEB',semanticAssessment:a}).role,'RESEARCH_TRUE_OHLCV_CANDIDATE');
 });
 
-test('declared field semantics are mandatory even when geometry happens to look valid',()=>{
-  const a=assessProviderOhlcvSemantics({provider:'UNKNOWN',declaredFields:false,samples:[
+test('declared field names alone are insufficient when their semantics have not been verified',()=>{
+  const a=assessProviderOhlcvSemantics({provider:'UNKNOWN',declaredFields:true,fieldSemanticsVerified:false,samples:[
     {id:'x',bar:{open:10,high:12,low:9,close:11,volume:5}}
   ]});
   assert.equal(a.state,'INSUFFICIENT_SEMANTIC_EVIDENCE');
   assert.equal(a.trueOhlcvEligible,false);
+});
+
+test('undeclared fields are insufficient even when geometry happens to look valid',()=>{
+  const a=assessProviderOhlcvSemantics({provider:'UNKNOWN',declaredFields:false,fieldSemanticsVerified:true,samples:[
+    {id:'x',bar:{open:10,high:12,low:9,close:11,volume:5}}
+  ]});
+  assert.equal(a.state,'INSUFFICIENT_SEMANTIC_EVIDENCE');
+  assert.equal(a.trueOhlcvEligible,false);
+});
+
+test('official EGX stock-chart synthetic last-price OHLC placeholders are rejected even when geometry is valid',()=>{
+  const a=assessProviderOhlcvSemantics({
+    provider:'EGX_FRONTEND_STOCK_CHART_ADAPTER',
+    declaredFields:true,
+    fieldSemanticsVerified:false,
+    syntheticFieldEvidence:true,
+    samples:[{id:'synthetic-placeholder',bar:{open:10,high:10,low:10,close:10,volume:100}}]
+  });
+  assert.equal(a.evaluated[0].valid,true);
+  assert.equal(a.state,'SYNTHETIC_OHLC_FIELDS_REJECTED');
+  assert.equal(a.trueOhlcvEligible,false);
+  assert.equal(a.productionAuthority,false);
+  assert.equal(classifyMarketDataFieldRole({provider:'EGX_FRONTEND_STOCK_CHART_ADAPTER',semanticAssessment:a}).role,'CLOSE_VOLUME_OR_IDENTITY_CROSSCHECK_ONLY');
 });
