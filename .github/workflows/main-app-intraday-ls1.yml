@@ -63,6 +63,7 @@ jobs:
           node --check scripts/fetch-market-data.js
           node --check scripts/stable/v15-missing-symbol-fallback.cjs
           node --check scripts/intraday/v13-12-intraday-monitor.cjs
+          node --check scripts/stable/v16-source-session-quorum.cjs
           node --check scripts/stable/v16-ls1-late-session-opportunity.cjs
           node --check scripts/stable/v16-active-position-manager.cjs
           node -e "JSON.parse(require('fs').readFileSync('data/stable/v16-ls1-policy.json','utf8')); console.log('LS1 policy JSON OK')"
@@ -80,6 +81,17 @@ jobs:
           # Source failure never fails open. Downstream layers inspect same-session
           # evidence and downgrade/withhold actions when current truth is absent.
           exit 0
+
+      - name: Restore explicit same-session evidence after intraday refresh
+        shell: bash
+        run: |
+          set +e
+          node scripts/stable/v16-source-session-quorum.cjs
+          SESSION_CODE=$?
+          set -e
+          if [ "$SESSION_CODE" -ne 0 ] && [ "$SESSION_CODE" -ne 2 ]; then exit "$SESSION_CODE"; fi
+          test -s data/stable/v16-source-session-quorum-report.json
+          echo "source_session_quorum_exit=$SESSION_CODE"
 
       - name: Rebuild intraday monitor
         run: node scripts/intraday/v13-12-intraday-monitor.cjs
@@ -118,6 +130,7 @@ jobs:
             data/source-gateway-report.json \
             data/session-calendar.json \
             data/intraday \
+            data/stable/v16-source-session-quorum-report.json \
             data/stable/v16-ls1-late-session-opportunities.json \
             data/stable/v16-ls1-history.json \
             data/stable/v16-active-position-manager.json || true
