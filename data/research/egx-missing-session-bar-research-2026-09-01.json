@@ -1,0 +1,213 @@
+{
+  "schemaVersion": "egx-missing-session-bar-research-1",
+  "session": "2026-08-31",
+  "capturedAt": "2026-09-01",
+  "authorityMode": "RESEARCH_TRIAGE_ONLY",
+  "productionAuthority": false,
+  "phase4Open": false,
+  "policy": {
+    "manualOrSearchIndexedWebObservationsAreRawReceipts": false,
+    "roundedVolumeMaySatisfyExactVolume": false,
+    "flatCarryForwardPriceWithoutVolumeProvesTradeBar": false,
+    "crossProviderFieldSplicingMayCreateProductionOhlcv": false,
+    "conflictingOpenBlocksTrueOhlcv": true
+  },
+  "records": [
+    {
+      "ticker": "AMII",
+      "isin": "EGS3E1E1C013",
+      "officialEgx": {"close": 14.93, "volume": 1882835},
+      "state": "RESEARCH_OHLC_CONFLICT_OPEN",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "ARAB_FINANCE_PUBLIC",
+          "role": "IDENTITY_CLOSE",
+          "url": "https://arabfinance.com/ar/home/companyprofile/amii",
+          "observed": {"isin": "EGS3E1E1C013", "ticker": "AMII", "close": 14.93}
+        },
+        {
+          "provider": "INVESTING_PUBLIC_WEB",
+          "role": "HISTORICAL_OHLC_ROUNDED_VOLUME",
+          "url": "https://www.investing.com/equities/arab-valves-company-historical-data",
+          "observed": {"session": "2026-08-31", "open": 15.36, "high": 15.5, "low": 14.9, "close": 14.93, "volumeText": "1.88M"}
+        },
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "CURRENT_SESSION_OVERVIEW",
+          "url": "https://stockanalysis.com/quote/egx/AMII/",
+          "observed": {"sessionLabel": "At close: Aug 31, 2026", "open": 15.2, "previousClose": 15.2, "dayLow": 14.9, "dayHigh": 15.5, "close": 14.93, "volume": 1882835}
+        }
+      ],
+      "blockers": ["OPEN_CONFLICT_15.36_VS_15.20", "INVESTING_VOLUME_ROUNDED", "NO_RAW_LICENSED_OR_OFFICIAL_TRUE_OHLCV_RECEIPT"]
+    },
+    {
+      "ticker": "GOUR",
+      "isin": "EGS540S1C014",
+      "officialEgx": {"close": 17.0, "volume": 1216953},
+      "state": "RESEARCH_OHL_SUPPORTED_CLOSE_VOLUME_CROSSCHECKED_BUT_NOT_ADMITTED",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "ARAB_FINANCE_PUBLIC",
+          "role": "IDENTITY_CLOSE",
+          "url": "https://www.arabfinance.com/ar/home/companyprofile/gour",
+          "observed": {"isin": "EGS540S1C014", "ticker": "GOUR", "close": 17.0}
+        },
+        {
+          "provider": "INVESTING_PUBLIC_WEB",
+          "role": "HISTORICAL_OHLC_ROUNDED_VOLUME",
+          "url": "https://in.investing.com/equities/gourmet-egyptcom-foods-historical-data",
+          "observed": {"session": "2026-08-31", "open": 16.32, "high": 17.0, "low": 16.26, "close": 17.0, "volumeText": "1.22M"}
+        },
+        {
+          "provider": "MARKETSCREENER_PUBLIC",
+          "role": "EXACT_EOD_CLOSE_VOLUME_CROSSCHECK",
+          "url": "https://www.marketscreener.com/quote/stock/GOURMET-EGYPT-COM-FOODS-202707313/",
+          "observed": {"session": "2026-08-31", "close": 17.0, "volume": 1216953, "quoteLabel": "End-of-day quote Egyptian Exchange"}
+        }
+      ],
+      "blockers": ["OHLC_FIELDS_NOT_IN_EXACT_VOLUME_CROSSCHECK_RECEIPT", "INVESTING_VOLUME_ROUNDED", "NO_RAW_LICENSED_OR_OFFICIAL_TRUE_OHLCV_RECEIPT"]
+    },
+    {
+      "ticker": "DEIN",
+      "isin": "EGS63031C016",
+      "officialEgx": {"close": 10.34545, "volume": 3},
+      "state": "MICRO_TRADE_FLAT_PUBLIC_PRICE_WITH_VOLUME_MISSING",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "INVESTING_PUBLIC_WEB",
+          "role": "FLAT_PRICE_WITHOUT_VOLUME",
+          "url": "https://au.investing.com/equities/delta-insur-historical-data",
+          "observed": {"session": "2026-08-31", "open": 10.35, "high": 10.35, "low": 10.35, "close": 10.35, "volume": null}
+        },
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "STALE_HISTORY",
+          "url": "https://stockanalysis.com/quote/egx/DEIN/history/",
+          "observed": {"latestHistoricalRow": "2026-08-26", "volume": null}
+        }
+      ],
+      "blockers": ["OFFICIAL_POSITIVE_VOLUME_3_BUT_PUBLIC_VOLUME_MISSING", "CANNOT_DISTINGUISH_TRUE_FLAT_TRADE_FROM_CARRY_FORWARD", "NO_RAW_TRUE_OHLCV_RECEIPT"]
+    },
+    {
+      "ticker": "ICLE",
+      "isin": "EGS67001C015",
+      "officialEgx": {"close": 15.76, "volume": 3},
+      "state": "MICRO_TRADE_PUBLIC_HISTORY_SESSION_ROW_MISSING",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "STALE_OR_INCOMPLETE_HISTORY",
+          "url": "https://stockanalysis.com/quote/egx/ICLE/history/",
+          "observed": {"pageSessionLabel": "At close: Aug 31, 2026", "latestHistoricalRow": "2026-08-26"}
+        },
+        {
+          "provider": "INVESTING_PUBLIC_WEB",
+          "role": "SESSION_ROW_MISSING",
+          "url": "https://in.investing.com/equities/international-company-for-leasing-historical-data",
+          "observed": {"latestVisibleHistoricalRow": "2026-08-30", "flatPrice": 15.76, "volume": null}
+        }
+      ],
+      "blockers": ["OFFICIAL_POSITIVE_VOLUME_3", "NO_2026_08_31_PUBLIC_HISTORICAL_ROW", "NO_RAW_TRUE_OHLCV_RECEIPT"]
+    },
+    {
+      "ticker": "MEGM",
+      "isin": "EGS3C001C012",
+      "officialEgx": {"close": 12.54, "volume": 25118197},
+      "state": "TRADED_SESSION_PUBLIC_HISTORY_STALE_OR_INCOMPLETE",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "CURRENT_OVERVIEW_WITHOUT_BAR",
+          "url": "https://stockanalysis.com/quote/egx/MEGM/",
+          "observed": {"sessionLabel": "At close: Aug 31, 2026", "close": 12.54, "open": null, "dayRange": null, "volume": null}
+        },
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "STALE_HISTORY",
+          "url": "https://stockanalysis.com/quote/egx/MEGM/history/",
+          "observed": {"latestHistoricalRow": "2026-08-26", "volume": null}
+        }
+      ],
+      "blockers": ["OFFICIAL_POSITIVE_VOLUME_25118197_WITHOUT_PUBLIC_SESSION_BAR", "PUBLIC_HISTORY_STALE_OR_CARRY_FORWARD", "NO_RAW_TRUE_OHLCV_RECEIPT"]
+    },
+    {
+      "ticker": "NDRL",
+      "isin": "EGS735N2C012",
+      "officialEgx": {"close": 4.69, "volume": 100},
+      "state": "MICRO_TRADE_PUBLIC_HISTORY_STALE_OR_CARRY_FORWARD",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "STALE_HISTORY",
+          "url": "https://stockanalysis.com/quote/egx/NDRL/history/",
+          "observed": {"latestVisibleHistoricalRow": "2026-08-26", "flatPrice": 4.69, "volume": null}
+        },
+        {
+          "provider": "INVESTING_PUBLIC_WEB",
+          "role": "STALE_HISTORY",
+          "url": "https://www.investing.com/equities/national-drilling-historical-data",
+          "observed": {"latestMeaningfulTradeVisible": "2026-05-06", "volumeText": "0.10K"}
+        }
+      ],
+      "blockers": ["OFFICIAL_POSITIVE_VOLUME_100", "NO_2026_08_31_PUBLIC_TRUE_BAR", "NO_RAW_TRUE_OHLCV_RECEIPT"]
+    },
+    {
+      "ticker": "SEIGA",
+      "isin": "EGS67032C010",
+      "officialEgx": {"close": 0.95, "volume": 157},
+      "state": "MICRO_TRADE_PUBLIC_HISTORY_STALE_OR_CARRY_FORWARD",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "STALE_FLAT_HISTORY",
+          "url": "https://stockanalysis.com/quote/egx/SEIGA/history/",
+          "observed": {"latestVisibleRows": "August 2026 before session", "flatPrice": 0.95, "volume": null}
+        },
+        {
+          "provider": "MARKETSCREENER_PUBLIC",
+          "role": "STALE_EXACT_IDENTITY_QUOTE",
+          "url": "https://sa.marketscreener.com/quote/stock/SAUDI-EGYPTIAN-INVESTMENT-45475461/quotes/",
+          "observed": {"ticker": "SEIGA", "currency": "USD", "price": 0.95, "latestVisibleDate": "2026-08-13", "volumeValue": 0}
+        }
+      ],
+      "blockers": ["OFFICIAL_POSITIVE_VOLUME_157", "PUBLIC_SERIES_STALE", "SEIG_AND_SEIGA_ARE_DISTINCT_INSTRUMENTS_DO_NOT_CROSS_MAP", "NO_RAW_TRUE_OHLCV_RECEIPT"]
+    },
+    {
+      "ticker": "SPHT",
+      "isin": "EGS70H02C014",
+      "officialEgx": {"close": 1.91, "volume": 5000},
+      "state": "TRADED_SESSION_FLAT_PUBLIC_PRICE_WITH_VOLUME_MISSING",
+      "trueOhlcvResearchEligible": false,
+      "evidence": [
+        {
+          "provider": "INVESTING_PUBLIC_WEB",
+          "role": "FLAT_PRICE_WITHOUT_VOLUME",
+          "url": "https://sa.investing.com/equities/el-shams-pyramids-h-t-proj.-historical-data",
+          "observed": {"session": "2026-08-31", "open": 1.91, "high": 1.91, "low": 1.91, "close": 1.91, "volume": null}
+        },
+        {
+          "provider": "STOCKANALYSIS_SPGMI_PUBLIC_WEB",
+          "role": "STALE_HISTORY",
+          "url": "https://stockanalysis.com/quote/egx/SPHT/history/",
+          "observed": {"pageSessionLabel": "At close: Aug 31, 2026", "latestHistoricalRow": "2026-08-26", "flatPrice": 1.91, "volume": null}
+        }
+      ],
+      "blockers": ["OFFICIAL_POSITIVE_VOLUME_5000_BUT_PUBLIC_VOLUME_MISSING", "CANNOT_TREAT_CARRY_FORWARD_FLAT_PRICE_AS_TRADE_BAR", "NO_RAW_TRUE_OHLCV_RECEIPT"]
+    }
+  ],
+  "summary": {
+    "positiveVolumeMissingBars": 8,
+    "productionTrueOhlcvReady": 0,
+    "openConflict": 1,
+    "ohlSingleProviderWithExactCloseVolumeCrosscheck": 1,
+    "microTradeWithoutAdmissibleBar": 4,
+    "staleOrIncompletePublicHistory": 6
+  }
+}
