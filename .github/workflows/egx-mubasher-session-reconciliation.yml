@@ -1,6 +1,8 @@
 # Evidence-only run. Production authority remains disabled.
 # Important: Mubasher historical CSV is NOT admitted as true OHLCV because observed
 # provider-declared Open values can fall outside provider-declared High/Low.
+# Important: EGX Stock schedule + A/B/C membership proves an equity-family tradable-board
+# candidate set; it does NOT prove ordinary/common share class.
 name: EGX Mubasher Completed Session Reconciliation
 
 on:
@@ -18,7 +20,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
-      - name: Capture official candidates and independent Mubasher close-volume history
+      - name: Capture official equity-family candidates and independent Mubasher close-volume history
         shell: bash
         run: |
           set -euo pipefail
@@ -153,7 +155,7 @@ jobs:
           results.sort(key=lambda x:x['ticker'])
 
           counts={
-            'officialTradableOrdinaryEgyptianCandidates':len(candidates),
+            'officialAbcStockScheduleEquityFamilyCandidates':len(candidates),
             'mubasherPage200':sum(1 for x in results if x.get('mubasherPage',{}).get('status')=='200'),
             'identityReadyByTickerNameGate':sum(1 for x in results if x.get('identityReady')),
             'historicalUrlFound':sum(1 for x in results if x.get('historicalUrl')),
@@ -167,9 +169,10 @@ jobs:
           }
           failures=[{'ticker':x['ticker'],'isin':x['isin'],'name':x['name'],'identityReady':x.get('identityReady'),'pageStatus':x.get('mubasherPage',{}).get('status'),'mubasherH1':x.get('mubasherH1'),'nameScore':x.get('nameScore'),'historicalUrl':bool(x.get('historicalUrl')),'historyStatus':(x.get('historicalReceipt') or {}).get('status'),'sessionRow':x.get('sessionRow'),'egxClose':x.get('egxClose'),'egxVolume':x.get('egxVolume'),'closeMatch':x.get('closeMatch'),'closeDelta':x.get('closeDelta'),'volumeMatch':x.get('volumeMatch'),'volumeDelta':x.get('volumeDelta'),'error':x.get('error')} for x in results if not x.get('sessionCloseVolumeReconciled')]
           report={
-            'schemaVersion':'egx-mubasher-close-volume-reconciliation-2',
+            'schemaVersion':'egx-mubasher-close-volume-reconciliation-3',
             'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),
             'session':SESSION,
+            'candidateUniverse':'EGX_A_B_C_STOCK_SCHEDULE_EQUITY_FAMILY_NOT_COMMON_SHARE_CLASS_PROOF',
             'officialReceipts':{'stockInfo':{k:v for k,v in info.items() if k!='parsed'},'stockCategories':{k:v for k,v in cats.items() if k!='parsed'}},
             'providerIndependence':{'primaryCandidate':'OFFICIAL_EGX_BFF','crossCheck':'MUBASHER','sameProvider':False},
             'semanticPolicy':{
