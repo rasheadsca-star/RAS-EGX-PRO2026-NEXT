@@ -17,6 +17,7 @@ cp technical-chart-v2.js "$OUT/technical-chart-v2.js"
 cp technical-chart-v2-core.js "$OUT/technical-chart-v2-core.js"
 cp technical-chart-v21-alignment.js "$OUT/technical-chart-v21-alignment.js"
 cp realized-kpi.js "$OUT/realized-kpi.js"
+cp championship-board.js "$OUT/championship-board.js"
 cp data/research/ui/latest.json "$OUT/data/research/ui/latest.json"
 cp data/research/strategy/latest.json "$OUT/data/research/strategy/latest.json"
 cp data/research/published/latest.json "$OUT/data/research/published/latest.json"
@@ -50,6 +51,7 @@ for f in \
   technical-chart-v2-core.js \
   technical-chart-v21-alignment.js \
   realized-kpi.js \
+  championship-board.js \
   data/research/ui/latest.json \
   data/research/strategy/latest.json \
   data/research/published/latest.json \
@@ -87,7 +89,7 @@ if(policy.strategySnapshotHash!==s.strategySnapshotHash||policy.authorityMode!==
 const perf=sim.performance?.allDailySignals;
 if(!perf||!Number.isFinite(perf.triggered)||!Number.isFinite(perf.target1OrBetter)||!Number.isFinite(perf.stops)||!Number.isFinite(perf.timeouts))throw new Error('BUNDLE_SIMULATOR_PERFORMANCE_MISSING');
 const files=[
-  'index.html','technical-chart-v2.js','technical-chart-v2-core.js','technical-chart-v21-alignment.js','realized-kpi.js',
+  'index.html','technical-chart-v2.js','technical-chart-v2-core.js','technical-chart-v21-alignment.js','realized-kpi.js','championship-board.js',
   'data/research/ui/latest.json','data/research/strategy/latest.json','data/research/published/latest.json','data/research/simulator/latest.json',
   'data/research/shadow-ledger/latest.json','data/research/live/latest.json',policyPath,'vercel.json'
 ];
@@ -95,7 +97,7 @@ const fileHashes=Object.fromEntries(files.map(file=>[file,{sha256:sha(file),byte
 const body={
   schemaVersion:'egx-one-production-bundle-manifest-1',authorityMode:'RESEARCH',researchOnly:true,productionAuthority:false,automaticOrders:false,
   sourceCommit,signalSession:s.signalSession,strategySnapshotHash:s.strategySnapshotHash,publicationHash:p.publicationHash??null,forwardPolicyHash:policy.policyHash,
-  chartContract:'TECHNICAL_CHART_V2_1_SESSION_ALIGNMENT',chartCurrentBarPolicy:'READY_RESEARCH_EXACT_SESSION_ONLY',kpiContract:'REALIZED_OUTCOMES_KPI_V1',
+  chartContract:'TECHNICAL_CHART_V2_1_SESSION_ALIGNMENT',chartCurrentBarPolicy:'READY_RESEARCH_EXACT_SESSION_ONLY',kpiContract:'REALIZED_OUTCOMES_KPI_V1',championshipContract:'EGX_ONE_CHAMPIONSHIP_BOARD',
   forwardResolution:{sameBarAmbiguity:policy.sameBarAmbiguity,costAssumptionBps:policy.costAssumptionBps,costConvention:policy.costConvention,fillConvention:policy.fillConvention},
   files:fileHashes
 };
@@ -106,11 +108,15 @@ console.log(`EGX_ONE_BUNDLE_VERIFIED:SESSION=${s.signalSession}:RECS=${s.recomme
 NODE
 
 grep -q 'EGXOneTechnicalV2Loader' "$OUT/technical-chart-v2.js"
+grep -q 'championship-board.js' "$OUT/technical-chart-v2.js"
 grep -q 'EGXOneTechnicalV2' "$OUT/technical-chart-v2-core.js"
 grep -q 'EGXOneTechnicalV21' "$OUT/technical-chart-v21-alignment.js"
 grep -q 'READY_RESEARCH_EXACT_SESSION_ONLY' "$OUT/technical-chart-v21-alignment.js"
 grep -q 'EGXOneRealizedKPI' "$OUT/realized-kpi.js"
 grep -q "scoringImpact:'NONE'" "$OUT/realized-kpi.js"
+grep -q 'EGXOneChampionshipBoard' "$OUT/championship-board.js"
+grep -q "productionAuthority:false" "$OUT/championship-board.js"
+grep -q "scoringImpact:'NONE'" "$OUT/championship-board.js"
 test -s "$OUT/egx-one-production-manifest.json"
 
 echo "EGX_ONE_COMPLETE_LIVE_BUNDLE_READY:$OUT"
