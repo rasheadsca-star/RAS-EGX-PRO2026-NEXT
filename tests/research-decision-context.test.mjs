@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { buildResearchPublication } from '../src/research-publication.js';
+import { classifyResearchMarketRegime } from '../src/research-market-regime.js';
+import { buildResearchDecisionContext, verifyResearchDecisionContext } from '../src/research-decision-context.js';
+
+function strategy(){return{authorityMode:'RESEARCH',researchOnly:true,productionAuthority:false,automaticOrders:false,signalSession:'2026-08-31',strategySnapshotHash:'a'.repeat(64),validation:{accepted:true,selectedPreset:'CONTROLLED_PULLBACK',method:'TRAIN_THEN_OOS',selectedOutOfSample:{triggered:100,target1OrBetter:55,target1HitRatePct:55,stops:30,stopRatePct:30,expectancyR:.3,profitFactor:1.8}},authority:{researchRecommendations:true},recommendations:[{ticker:'TEST',companyNameAr:'شركة اختبار',decision:'BUY_CANDIDATE',executableResearchPlan:true,authorityMode:'RESEARCH',researchOnly:true,productionAuthority:false,automaticOrders:false,qualityScore:88,entryLow:10,entryHigh:10.1,stop:9.6,target1:10.8,target2:11.4,netRiskReward:1.3,entryExpirySessions:4,horizonSessions:12,planHash:'b'.repeat(64),diagnostics:{close:10.05,rsi14:60,atrPct:2,momentum20Pct:8,relativeVolume20:1.4,medianTradedValue20:20_000_000,distanceToPrior20dHighPct:-2}}]}}
+function regime(){const rows=Array.from({length:40},(_,i)=>({ticker:`T${i}`,momentum20Pct:5,rsi14:58,relativeVolume20:1.2,atrPct:2,trendAligned:true,aboveSma20:true,aboveSma50:true,positiveMomentum:true}));return classifyResearchMarketRegime({session:'2026-08-31',metricsRows:rows})}
+
+test('decision context adds relative confidence without changing published recommendation',()=>{const p=buildResearchPublication(strategy()),r=regime(),c=buildResearchDecisionContext({publication:p,regime:r});assert.equal(c.baselineRecommendationSetUnchanged,true);assert.equal(c.recommendations.length,p.recommendations.length);assert.equal(c.recommendations[0].planHash,p.recommendations[0].planHash);assert.equal(c.recommendations[0].changesPublishedDecision,false);assert.equal(c.recommendations[0].confidenceMeaning,'RESEARCH_RELATIVE_CONFIDENCE_INDEX_NOT_SUCCESS_PROBABILITY');assert.ok(verifyResearchDecisionContext(c,{publication:p,regime:r}))});
+
+test('decision context cannot bind publication and regime from different sessions',()=>{const p=buildResearchPublication(strategy()),r=regime(),x={...r,session:'2026-08-30'};assert.throws(()=>buildResearchDecisionContext({publication:p,regime:x}),/REGIME_INVALID|SESSION_MISMATCH/)});
+
+test('decision context tampering is detected',()=>{const p=buildResearchPublication(strategy()),r=regime(),c=buildResearchDecisionContext({publication:p,regime:r}),x=structuredClone(c);x.recommendations[0].confidenceIndex=99;assert.equal(verifyResearchDecisionContext(x,{publication:p,regime:r}),false)});

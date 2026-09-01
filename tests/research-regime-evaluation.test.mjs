@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { sha256 } from '../src/hash.js';
+import { evaluateHistoricalRegimeChallenger, verifyHistoricalRegimeEvaluation } from '../src/research-regime-evaluation.js';
+
+function simulation({guardWorse=true}={}){const base={plans:100,target1HitRatePct:55,stopRatePct:35,expectancyR:.25,averageNetReturnPct:1.1,netReturnProfitFactor:1.7,winningSessionRatePct:55,averageBasketNetPct:.6},guard=guardWorse?{plans:80,target1HitRatePct:53,stopRatePct:34,expectancyR:.2,averageNetReturnPct:1.05,netReturnProfitFactor:1.75,winningSessionRatePct:58,averageBasketNetPct:.8}:{plans:80,target1HitRatePct:57,stopRatePct:32,expectancyR:.3,averageNetReturnPct:1.3,netReturnProfitFactor:1.9,winningSessionRatePct:60,averageBasketNetPct:.9},active={...base,plans:50},guardActive={...guard,plans:40};const stable={authorityMode:'RESEARCH',productionAuthority:false,forwardEvidence:false,regimeChallenger:{status:'SHADOW_CHALLENGER_NOT_AUTO_PROMOTED',policy:'FIXED_EX_ANTE_BREADTH_POLICY_V1_NOT_OUTCOME_TUNED',performance:{allDailySignals:guard,oneActivePlanPerTicker:guardActive}},performance:{allDailySignals:base,oneActivePlanPerTicker:active},breakdowns:{byMonth:{'2026-06':{expectancyR:.01}},regimeGuardedByMonth:{'2026-06':{expectancyR:guardWorse?-.12:.05}}}};return {...stable,artifactHash:sha256(stable),generatedAt:'2026-08-31T23:59:59Z'}}
+
+test('historically weaker regime challenger is rejected as baseline replacement',()=>{const s=simulation(),e=evaluateHistoricalRegimeChallenger(s);assert.equal(e.replacementStatus,'REJECTED_AS_BASELINE_REPLACEMENT');assert.equal(e.filterUsage,'DISABLED_PENDING_FORWARD_VALIDATION');assert.equal(e.historicalScreen.monthlySignReversals.length,1);assert.ok(verifyHistoricalRegimeEvaluation(e,s))});
+
+test('even a historical screen pass requires forward validation and never auto promotes',()=>{const s=simulation({guardWorse:false}),e=evaluateHistoricalRegimeChallenger(s);assert.equal(e.replacementStatus,'HISTORICAL_SCREEN_PASS_FORWARD_VALIDATION_REQUIRED');assert.equal(e.operationalUse,'CONTEXT_AND_CONFIDENCE_ONLY');assert.equal(e.filterUsage,'DISABLED_PENDING_FORWARD_VALIDATION');assert.equal(e.forwardEvidence,false)});
+
+test('evaluation hash detects tampering',()=>{const s=simulation(),e=evaluateHistoricalRegimeChallenger(s),x=structuredClone(e);x.comparison.allDailySignals.expectancyR.delta=99;assert.equal(verifyHistoricalRegimeEvaluation(x,s),false)});

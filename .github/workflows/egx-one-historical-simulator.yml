@@ -8,10 +8,13 @@ on:
       - 'src/research-strategy-engine.js'
       - 'src/research-feature-engine.js'
       - 'src/research-market-regime.js'
+      - 'src/research-regime-evaluation.js'
       - 'src/research-forward-shadow-ledger.js'
       - 'scripts/research-run-historical-simulator.mjs'
+      - 'scripts/research-evaluate-regime.mjs'
       - 'tests/research-historical-simulator.test.mjs'
       - 'tests/research-market-regime.test.mjs'
+      - 'tests/research-regime-evaluation.test.mjs'
       - 'tests/research-forward-shadow-ledger.test.mjs'
       - 'data/research/history/**'
       - 'data/research/history-index.json'
@@ -49,28 +52,33 @@ jobs:
           LEGACY_V169_LEDGER_PATH: /tmp/egx-one-legacy/data/stable/v16-v169-live-evaluation.json
           LEGACY_GANN_COMPARE_PATH: /tmp/egx-one-legacy/gann-fusion-x/data/backtest-comparison.json
         run: npm run research:simulate
-      - name: Verify simulator artifact boundaries
+      - name: Evaluate regime challenger without auto-promotion
+        run: npm run research:regime-evaluate
+      - name: Verify simulator and challenger boundaries
         run: |
           node - <<'NODE'
           import fs from 'node:fs';
+          import {verifyHistoricalRegimeEvaluation} from './src/research-regime-evaluation.js';
           const x=JSON.parse(fs.readFileSync('data/research/simulator/latest.json','utf8'));
+          const e=JSON.parse(fs.readFileSync('data/research/regime/evaluation.json','utf8'));
           if(x.authorityMode!=='RESEARCH'||x.productionAuthority!==false||x.forwardEvidence!==false||x.automaticOrders!==false)throw new Error('SIMULATOR_AUTHORITY_BOUNDARY_FAILED');
           if(x.sameBarTargetStop!=='STOP_FIRST'||x.lookaheadForbidden!==true)throw new Error('SIMULATOR_CONSERVATIVE_POLICY_FAILED');
           if(x.regimeChallenger?.status!=='SHADOW_CHALLENGER_NOT_AUTO_PROMOTED'||x.regimeChallenger?.policy!=='FIXED_EX_ANTE_BREADTH_POLICY_V1_NOT_OUTCOME_TUNED')throw new Error('REGIME_CHALLENGER_BOUNDARY_FAILED');
+          if(!verifyHistoricalRegimeEvaluation(e,x)||e.filterUsage!=='DISABLED_PENDING_FORWARD_VALIDATION'||e.operationalUse!=='CONTEXT_AND_CONFIDENCE_ONLY')throw new Error('REGIME_EVALUATION_BOUNDARY_FAILED');
           if(x.legacyComparison?.v16_9?.evidenceGrade!=='EXACT_LOGGED_LEDGER')throw new Error('V169_EXACT_EVIDENCE_MISSING');
           if(x.legacyComparison?.gannFusionX?.evidenceGrade!=='RECONSTRUCTED_FROM_FROZEN_CODE')throw new Error('GANN_RECONSTRUCTION_MISSING');
           if(x.legacyComparison?.sepaX?.evidenceGrade!=='RECONSTRUCTED_PROXY_FROM_FROZEN_CODE')throw new Error('SEPA_PROXY_MISSING');
-          console.log(`SIMULATOR_VERIFIED:${x.artifactHash}:${x.performance.allDailySignals.plans}:REGIME:${x.regimeChallenger.performance.allDailySignals.plans}`);
+          console.log(`SIMULATOR_VERIFIED:${x.artifactHash}:${x.performance.allDailySignals.plans}:REGIME:${x.regimeChallenger.performance.allDailySignals.plans}:${e.replacementStatus}:${e.evaluationHash}`);
           NODE
-      - name: Commit deterministic simulator snapshot
+      - name: Commit deterministic simulator and evaluation snapshots
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/simulator/latest.json
-          if git diff --cached --quiet; then echo 'No simulator change.'; exit 0; fi
-          git commit -m 'Publish EGX ONE historical simulator snapshot'
+          git add data/research/simulator/latest.json data/research/regime/evaluation.json
+          if git diff --cached --quiet; then echo 'No simulator/evaluation change.'; exit 0; fi
+          git commit -m 'Publish EGX ONE simulator and regime evaluation snapshots'
           for attempt in 1 2 3; do
             if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then exit 0; fi
             [ "$attempt" = 3 ] && exit 1
@@ -79,5 +87,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: egx-one-historical-simulator
-          path: data/research/simulator/latest.json
+          path: |
+            data/research/simulator/latest.json
+            data/research/regime/evaluation.json
           if-no-files-found: error
