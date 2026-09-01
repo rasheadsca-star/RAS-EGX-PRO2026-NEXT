@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {buildEgxCategorySets,describeEgxCategoryTopology,classifyEgxListedSecurity,classifyEgxListedUniverse} from '../src/egx-listed-security-classification.js';
 
 const cats={data:{
-  categoryA:[{symboL_CODE:'EGS000000011'}],
+  categoryA:[{symboL_CODE:'EGS000000011'},{symboL_CODE:'EGS73541P048'}],
   categoryB:[{symboL_CODE:'EGS000000022'}],
   categoryC:[],
   categoryD:[{symboL_CODE:'EGS000000033'},{symboL_CODE:'EGS000000044'}],
@@ -28,14 +28,38 @@ test('category topology reports overlaps instead of allowing naive additive tota
   assert.deepEqual(t.overlaps.find(x=>x.left==='INACTIVE'&&x.right==='SME').members,['EGS000000044']);
 });
 
-test('A/B Egyptian stocks become tradable-equity candidates without production authority',()=>{
+test('A/B Egyptian stock schedule rows become tradable-equity candidates without proving common share class',()=>{
   const sets=buildEgxCategorySets(cats);
   const a=classifyEgxListedSecurity(stock('EGS000000011'),sets);
   const b=classifyEgxListedSecurity(stock('EGS000000022'),sets);
   assert.equal(a.listingState,'TRADABLE_MOST_ACTIVE');
   assert.equal(b.listingState,'TRADABLE_MEDIUM_ACTIVITY');
   assert.equal(a.productionTradableEquityCandidate,true);
+  assert.equal(a.shareClass,'UNSPECIFIED_EQUITY_SHARE_CLASS');
+  assert.equal(a.ordinaryCommonShareProven,false);
+  assert.equal(a.productionOrdinaryCommonEquityCandidate,false);
   assert.equal(a.productionAuthority,false);
+});
+
+test('preferred-share evidence keeps equity-family membership but blocks ordinary-common classification',()=>{
+  const sets=buildEgxCategorySets(cats);
+  const evidence=new Map([['EGS73541P048',{isin:'EGS73541P048',shareClass:'PREFERRED_CONFIRMED'}]]);
+  const r=classifyEgxListedSecurity(stock('EGS73541P048','Egyptian securities-Stocks',{reuters:'CCAPP.CA',name:'QALA For Financial Investments - Preferred Shares'}),sets,{shareClassEvidence:evidence});
+  assert.equal(r.instrumentClass,'EGYPTIAN_EQUITY');
+  assert.equal(r.listingState,'TRADABLE_MOST_ACTIVE');
+  assert.equal(r.shareClass,'PREFERRED_CONFIRMED');
+  assert.equal(r.preferredShareProven,true);
+  assert.equal(r.productionTradableEquityCandidate,true);
+  assert.equal(r.productionOrdinaryCommonEquityCandidate,false);
+  assert.equal(r.productionAuthority,false);
+});
+
+test('common share class is only proven by explicit evidence, never inferred from stock schedule',()=>{
+  const sets=buildEgxCategorySets(cats);
+  const evidence=new Map([['EGS000000011',{isin:'EGS000000011',shareClass:'COMMON_CONFIRMED'}]]);
+  const r=classifyEgxListedSecurity(stock('EGS000000011'),sets,{shareClassEvidence:evidence});
+  assert.equal(r.shareClass,'COMMON_CONFIRMED');
+  assert.equal(r.productionOrdinaryCommonEquityCandidate,true);
 });
 
 test('inactive stock is never tradable production candidate',()=>{
@@ -44,14 +68,14 @@ test('inactive stock is never tradable production candidate',()=>{
   assert.equal(r.productionTradableEquityCandidate,false);
 });
 
-test('unsegmented ordinary stock fails closed until temporary-listing evidence is bound',()=>{
+test('unsegmented stock-schedule row fails closed until temporary-listing evidence is bound',()=>{
   const row=stock('EGS000000055','Egyptian securities-Stocks',{intraday:'N'});
   const sets=buildEgxCategorySets(cats);
   assert.equal(classifyEgxListedSecurity(row,sets).listingState,'UNSEGMENTED_NONTRADING_LISTING_CANDIDATE');
   assert.equal(classifyEgxListedSecurity(row,sets,{temporaryListingEvidence:new Set(['EGS000000055'])}).listingState,'TEMPORARY_LISTING_CONFIRMED');
 });
 
-test('rights fund ETF and foreign equity cannot be silently counted as Egyptian common equities',()=>{
+test('rights fund ETF and foreign equity cannot be silently counted as Egyptian equities',()=>{
   const sets=buildEgxCategorySets(cats);
   assert.equal(classifyEgxListedSecurity(stock('R','Trading Rights issue'),sets).instrumentClass,'RIGHTS_ISSUE');
   assert.equal(classifyEgxListedSecurity(stock('F','Egyptian securities-Funds'),sets).instrumentClass,'FUND_CERTIFICATE');
@@ -94,4 +118,17 @@ test('universe partition accepts object evidence records and reports confirmed t
   assert.equal(r.temporaryListingConfirmedCount,1);
   assert.equal(r.unresolvedTemporaryEvidenceCount,0);
   assert.equal(r.stockInfoEquityPartition.TEMPORARY_LISTING_CONFIRMED,1);
+});
+
+test('universe share-class counts expose preferred and unresolved equity share classes separately',()=>{
+  const rows=[
+    stock('EGS000000011'),
+    stock('EGS73541P048','Egyptian securities-Stocks',{reuters:'CCAPP.CA',name:'QALA For Financial Investments - Preferred Shares'})
+  ];
+  const r=classifyEgxListedUniverse({data:rows},cats,{shareClassEvidence:[{isin:'EGS73541P048',shareClass:'PREFERRED_CONFIRMED'}]});
+  assert.equal(r.preferredShareConfirmedCount,1);
+  assert.equal(r.unresolvedEquityShareClassCount,1);
+  assert.equal(r.productionTradableEquityCandidateCount,2);
+  assert.equal(r.productionOrdinaryCommonEquityCandidateCount,0);
+  assert.deepEqual(r.invalidShareClassEvidence,[]);
 });
