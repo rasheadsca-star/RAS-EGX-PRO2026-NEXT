@@ -1,12 +1,15 @@
 import { DEFAULT_SOURCE_POLICY } from './acquisition-policy.js';
 import { validateSourceReceipt,validateIndependentReceipts } from './source-provenance.js';
 import { validateOhlcvGeometry } from './market-data-semantics.js';
+import { sha256,canonicalize } from './hash.js';
 
 const HEX64=/^[0-9a-f]{64}$/i;
 const norm=v=>String(v??'').trim().toUpperCase();
 const uniq=a=>[...new Set((Array.isArray(a)?a:[]).map(norm).filter(Boolean))].sort();
 
 export const LICENSED_EOD_ADMISSION_SCHEMA='licensed-eod-dataset-admission-1';
+export const LICENSED_EOD_ADMISSION_CERTIFICATE_SCHEMA='licensed-eod-dataset-admission-certificate-1';
+const SUPPORTED_DATASET_PARSERS=Object.freeze({LICENSED_EOD_JSON_BAR_V1:'1'});
 
 export function assessLicensedEodProviderCapability(evidence={}){
   const c=evidence?.capabilityEvidence??evidence;
@@ -19,15 +22,7 @@ export function assessLicensedEodProviderCapability(evidence={}){
   if(c?.assetClassIncludesEquities!==true) reasons.push('EQUITY_CAPABILITY_NOT_PUBLISHED');
   if(c?.aggregatedOhlcBarsPublished!==true||c?.endOfDayOhlcBarsPublished!==true) reasons.push('TRUE_OHLC_CAPABILITY_NOT_PUBLISHED');
   const capabilityReady=reasons.length===0;
-  return Object.freeze({
-    schemaVersion:LICENSED_EOD_ADMISSION_SCHEMA,
-    state:capabilityReady?'CAPABILITY_READY_DATASET_NOT_ADMITTED':'CAPABILITY_BLOCKED',
-    capabilityReady,
-    datasetReceiptReady:false,
-    downstreamLineageEligible:false,
-    productionAuthority:false,
-    reasons:Object.freeze(reasons)
-  });
+  return Object.freeze({schemaVersion:LICENSED_EOD_ADMISSION_SCHEMA,state:capabilityReady?'CAPABILITY_READY_DATASET_NOT_ADMITTED':'CAPABILITY_BLOCKED',capabilityReady,datasetReceiptReady:false,downstreamLineageEligible:false,productionAuthority:false,reasons:Object.freeze(reasons)});
 }
 
 function exactCoverage(expected,observed){
@@ -46,89 +41,93 @@ function validateLicenseEvidence(licenseEvidence,provider){
   return {ready:reasons.length===0,reasons};
 }
 
-export function assessLicensedEodDatasetCandidate({
-  capabilityEvidence,
-  licenseEvidence,
-  datasetReceipt,
-  rawPayload,
-  session,
-  expectedTradeBarIds=[],
-  bars=[],
-  parserId,
-  parserVersion,
-  fieldSemanticsVerified=false,
-  independentCrossCheckReceipt=null,
-  sourcePolicy=DEFAULT_SOURCE_POLICY
-}={}){
+function rawObject(rawPayload){if(rawPayload&&typeof rawPayload==='object'&&!Array.isArray(rawPayload))return rawPayload;if(typeof rawPayload==='string'){try{const x=JSON.parse(rawPayload);return x&&typeof x==='object'&&!Array.isArray(x)?x:null}catch{return null}}return null}
+function normalizeDatasetBar(row,defaultSession){
+  const bar={ticker:norm(row?.ticker??row?.id??row?.isin),session:String(row?.session??defaultSession??''),open:Number(row?.open),high:Number(row?.high),low:Number(row?.low),close:Number(row?.close),volume:row?.volume==null?null:Number(row.volume)};
+  return bar.ticker&&bar.session&&validateOhlcvGeometry(bar).valid?bar:null;
+}
+function datasetBarHash(bar){return sha256({ticker:bar.ticker,session:bar.session,open:bar.open,high:bar.high,low:bar.low,close:bar.close,volume:bar.volume??null})}
+export function parseLicensedEodDataset(rawPayload,{parserId,parserVersion}={}){
+  if(SUPPORTED_DATASET_PARSERS[parserId]!==String(parserVersion??''))return{state:'BLOCKED',reasons:['LICENSED_EOD_DATASET_PARSER_UNSUPPORTED'],bars:[]};
+  const raw=rawObject(rawPayload);if(!raw)return{state:'BLOCKED',reasons:['LICENSED_EOD_RAW_DATASET_INVALID'],bars:[]};
+  const rows=Array.isArray(raw.rows)?raw.rows:Array.isArray(raw.data)?raw.data:[];
+  const bars=rows.map(x=>normalizeDatasetBar(x,raw.session)).filter(Boolean).sort((a,b)=>a.ticker.localeCompare(b.ticker)||a.session.localeCompare(b.session));
+  if(!bars.length)return{state:'BLOCKED',reasons:['LICENSED_EOD_DATASET_NO_VALID_BARS'],bars:[]};
+  const ids=bars.map(x=>x.ticker);if(new Set(ids).size!==ids.length)return{state:'BLOCKED',reasons:['LICENSED_EOD_DATASET_DUPLICATE_IDENTITIES'],bars:[]};
+  return{state:'READY',reasons:[],bars};
+}
+
+export function assessLicensedEodDatasetCandidate({capabilityEvidence,licenseEvidence,datasetReceipt,rawPayload,session,expectedTradeBarIds=[],bars=[],parserId,parserVersion,fieldSemanticsVerified=false,independentCrossCheckReceipt=null,sourcePolicy=DEFAULT_SOURCE_POLICY}={}){
   const reasons=[];
   const capability=assessLicensedEodProviderCapability(capabilityEvidence??{});
   if(!capability.capabilityReady) reasons.push(...capability.reasons.map(x=>`CAPABILITY:${x}`));
-
   const provider=capabilityEvidence?.provider??null;
-  const license=validateLicenseEvidence(licenseEvidence,provider);
-  reasons.push(...license.reasons);
-
+  const license=validateLicenseEvidence(licenseEvidence,provider);reasons.push(...license.reasons);
   const policy=sourcePolicy?.LICENSED_EOD;
   let receiptCheck={state:'BLOCKED',reasons:['DATASET_RECEIPT_REQUIRED'],receipt:null};
-  if(datasetReceipt){
-    receiptCheck=validateSourceReceipt(datasetReceipt,{policy,rawPayload});
-    if(receiptCheck.state!=='READY') reasons.push(...receiptCheck.reasons.map(x=>`DATASET_RECEIPT:${x}`));
-  }else reasons.push('DATASET_RECEIPT_REQUIRED');
-
+  if(datasetReceipt){receiptCheck=validateSourceReceipt(datasetReceipt,{policy,rawPayload});if(receiptCheck.state!=='READY') reasons.push(...receiptCheck.reasons.map(x=>`DATASET_RECEIPT:${x}`));}else reasons.push('DATASET_RECEIPT_REQUIRED');
   if(!session) reasons.push('SESSION_REQUIRED');
   if(datasetReceipt?.session&&session&&datasetReceipt.session!==session) reasons.push('DATASET_SESSION_MISMATCH');
   if(!parserId||!parserVersion) reasons.push('PARSER_ID_VERSION_REQUIRED');
   if(fieldSemanticsVerified!==true) reasons.push('TRUE_OHLCV_FIELD_SEMANTICS_NOT_VERIFIED');
-
-  const normalizedBars=(Array.isArray(bars)?bars:[]).map(bar=>({
-    id:norm(bar?.id??bar?.isin??bar?.ticker),
-    session:String(bar?.session??''),
-    bar
-  }));
-  const duplicateBarIds=normalizedBars.map(x=>x.id).filter((id,i,a)=>id&&a.indexOf(id)!==i);
-  if(duplicateBarIds.length) reasons.push('DUPLICATE_BAR_IDENTITIES');
-  const invalidBars=[];
-  const wrongSessionBars=[];
-  for(const item of normalizedBars){
-    if(!item.id){invalidBars.push('MISSING_IDENTITY');continue;}
-    if(item.session!==session) wrongSessionBars.push(item.id);
-    const geometry=validateOhlcvGeometry(item.bar);
-    if(!geometry.valid) invalidBars.push(item.id);
-  }
-  if(wrongSessionBars.length) reasons.push('BAR_SESSION_MISMATCH');
-  if(invalidBars.length) reasons.push('INVALID_TRUE_OHLCV_BAR');
-
+  const normalizedBars=(Array.isArray(bars)?bars:[]).map(bar=>({id:norm(bar?.id??bar?.isin??bar?.ticker),session:String(bar?.session??''),bar}));
+  const duplicateBarIds=normalizedBars.map(x=>x.id).filter((id,i,a)=>id&&a.indexOf(id)!==i);if(duplicateBarIds.length) reasons.push('DUPLICATE_BAR_IDENTITIES');
+  const invalidBars=[],wrongSessionBars=[];
+  for(const item of normalizedBars){if(!item.id){invalidBars.push('MISSING_IDENTITY');continue;}if(item.session!==session) wrongSessionBars.push(item.id);if(!validateOhlcvGeometry(item.bar).valid) invalidBars.push(item.id);}
+  if(wrongSessionBars.length) reasons.push('BAR_SESSION_MISMATCH');if(invalidBars.length) reasons.push('INVALID_TRUE_OHLCV_BAR');
   const coverage=exactCoverage(expectedTradeBarIds,normalizedBars.map(x=>x.id));
-  if(!coverage.expected.length) reasons.push('EXPECTED_TRADE_BAR_UNIVERSE_REQUIRED');
-  if(coverage.missing.length) reasons.push('TRADE_BAR_COVERAGE_MISSING');
-  if(coverage.unexpected.length) reasons.push('TRADE_BAR_COVERAGE_UNEXPECTED');
-
+  if(!coverage.expected.length) reasons.push('EXPECTED_TRADE_BAR_UNIVERSE_REQUIRED');if(coverage.missing.length) reasons.push('TRADE_BAR_COVERAGE_MISSING');if(coverage.unexpected.length) reasons.push('TRADE_BAR_COVERAGE_UNEXPECTED');
   let independence={state:'BLOCKED',reasons:['INDEPENDENT_CROSS_CHECK_RECEIPT_REQUIRED']};
   if(receiptCheck.receipt&&independentCrossCheckReceipt){
-    independence=validateIndependentReceipts(receiptCheck.receipt,independentCrossCheckReceipt);
-    if(independence.state!=='READY') reasons.push(...independence.reasons.map(x=>`INDEPENDENCE:${x}`));
+    const crossPolicy=sourcePolicy?.[independentCrossCheckReceipt.sourceId];
+    const crossCheck=validateSourceReceipt(independentCrossCheckReceipt,{policy:crossPolicy});
+    if(crossCheck.state!=='READY')reasons.push(...crossCheck.reasons.map(x=>`CROSSCHECK_RECEIPT:${x}`));
+    else{independence=validateIndependentReceipts(receiptCheck.receipt,crossCheck.receipt);if(independence.state!=='READY') reasons.push(...independence.reasons.map(x=>`INDEPENDENCE:${x}`));}
   }else reasons.push('INDEPENDENT_CROSS_CHECK_RECEIPT_REQUIRED');
+  const uniqueReasons=[...new Set(reasons)].sort(),candidateReady=uniqueReasons.length===0;
+  return Object.freeze({schemaVersion:LICENSED_EOD_ADMISSION_SCHEMA,state:candidateReady?'READY_FOR_DOWNSTREAM_HISTORICAL_LINEAGE':'BLOCKED',candidateReady,capabilityReady:capability.capabilityReady,licenseReady:license.ready,datasetReceiptReady:receiptCheck.state==='READY',fieldSemanticsVerified:fieldSemanticsVerified===true,parserBound:Boolean(parserId&&parserVersion),exactTradeBarCoverageReady:coverage.ready,independentCrossCheckReady:independence.state==='READY',coverage:Object.freeze({expectedCount:coverage.expected.length,observedCount:coverage.observed.length,missing:Object.freeze(coverage.missing),unexpected:Object.freeze(coverage.unexpected)}),invalidBarIds:Object.freeze([...new Set(invalidBars)].sort()),wrongSessionBarIds:Object.freeze([...new Set(wrongSessionBars)].sort()),reasons:Object.freeze(uniqueReasons),downstreamLineageEligible:candidateReady,productionAuthority:false,phase4Open:false,note:'READY_FOR_DOWNSTREAM_HISTORICAL_LINEAGE is not Production authority. Each admitted bar still requires historical observation lineage/certificate verification and the normal Phase 3 gates.'});
+}
 
-  const uniqueReasons=[...new Set(reasons)].sort();
-  const candidateReady=uniqueReasons.length===0;
-  return Object.freeze({
-    schemaVersion:LICENSED_EOD_ADMISSION_SCHEMA,
-    state:candidateReady?'READY_FOR_DOWNSTREAM_HISTORICAL_LINEAGE':'BLOCKED',
-    candidateReady,
-    capabilityReady:capability.capabilityReady,
-    licenseReady:license.ready,
-    datasetReceiptReady:receiptCheck.state==='READY',
-    fieldSemanticsVerified:fieldSemanticsVerified===true,
-    parserBound:Boolean(parserId&&parserVersion),
-    exactTradeBarCoverageReady:coverage.ready,
-    independentCrossCheckReady:independence.state==='READY',
-    coverage:Object.freeze({expectedCount:coverage.expected.length,observedCount:coverage.observed.length,missing:Object.freeze(coverage.missing),unexpected:Object.freeze(coverage.unexpected)}),
-    invalidBarIds:Object.freeze([...new Set(invalidBars)].sort()),
-    wrongSessionBarIds:Object.freeze([...new Set(wrongSessionBars)].sort()),
-    reasons:Object.freeze(uniqueReasons),
-    downstreamLineageEligible:candidateReady,
-    productionAuthority:false,
-    phase4Open:false,
-    note:'READY_FOR_DOWNSTREAM_HISTORICAL_LINEAGE is not Production authority. Each admitted bar still requires historical observation lineage/certificate verification and the normal Phase 3 gates.'
-  });
+export function createLicensedEodDatasetAdmissionCertificate({capabilityEvidence,licenseEvidence,datasetReceipt,rawPayload,session,expectedTradeBarIds=[],bars=[],parserId,parserVersion,fieldSemanticsVerified=false,independentCrossCheckReceipt=null,sourcePolicy=DEFAULT_SOURCE_POLICY}={}){
+  const assessed=assessLicensedEodDatasetCandidate({capabilityEvidence,licenseEvidence,datasetReceipt,rawPayload,session,expectedTradeBarIds,bars,parserId,parserVersion,fieldSemanticsVerified,independentCrossCheckReceipt,sourcePolicy});
+  if(!assessed.candidateReady)throw new Error(`LICENSED_EOD_DATASET_NOT_ADMITTED:${assessed.reasons.join('|')}`);
+  const parsed=parseLicensedEodDataset(rawPayload,{parserId,parserVersion});if(parsed.state!=='READY')throw new Error(parsed.reasons[0]);
+  const expected=uniq(expectedTradeBarIds),parsedCoverage=exactCoverage(expected,parsed.bars.map(x=>x.ticker));if(!parsedCoverage.ready)throw new Error('LICENSED_EOD_RAW_DATASET_COVERAGE_MISMATCH');
+  const supplied=(Array.isArray(bars)?bars:[]).map(x=>normalizeDatasetBar(x,session)).filter(Boolean).sort((a,b)=>a.ticker.localeCompare(b.ticker));
+  if(canonicalize(supplied)!==canonicalize(parsed.bars))throw new Error('LICENSED_EOD_RAW_DATASET_BAR_MISMATCH');
+  const datasetCheck=validateSourceReceipt(datasetReceipt,{policy:sourcePolicy.LICENSED_EOD,rawPayload});if(datasetCheck.state!=='READY')throw new Error('LICENSED_EOD_DATASET_RECEIPT_INVALID');
+  const crossPolicy=sourcePolicy?.[independentCrossCheckReceipt?.sourceId],crossCheck=validateSourceReceipt(independentCrossCheckReceipt,{policy:crossPolicy});if(crossCheck.state!=='READY')throw new Error('LICENSED_EOD_CROSSCHECK_RECEIPT_INVALID');
+  const barProofs=parsed.bars.map(bar=>({ticker:bar.ticker,session:bar.session,barHash:datasetBarHash(bar)}));
+  const body={schemaVersion:LICENSED_EOD_ADMISSION_CERTIFICATE_SCHEMA,state:'READY_FOR_DOWNSTREAM_HISTORICAL_LINEAGE',provider:String(capabilityEvidence.provider),sourceId:'LICENSED_EOD',providerGroup:datasetCheck.receipt.providerGroup,session,datasetReceipt:datasetCheck.receipt,rawDatasetHash:datasetCheck.receipt.contentHash,licenseEvidence:{provider:String(licenseEvidence.provider),entitlementConfirmed:true,permittedApplicationUseConfirmed:true,licenseReceiptHash:String(licenseEvidence.licenseReceiptHash).toLowerCase()},parserId,parserVersion:String(parserVersion),fieldSemanticsVerified:true,expectedTradeBarIds:expected,barProofs,barProofsHash:sha256(barProofs),independentCrossCheckReceipt:crossCheck.receipt,capabilityEvidenceHash:sha256(capabilityEvidence),productionAuthority:false};
+  return Object.freeze({...body,admissionHash:sha256(body)});
+}
+
+export function verifyLicensedEodDatasetAdmissionCertificate(certificate,{rawPayload,sourcePolicy=DEFAULT_SOURCE_POLICY}={}){
+  const reasons=[];
+  if(!certificate||certificate.schemaVersion!==LICENSED_EOD_ADMISSION_CERTIFICATE_SCHEMA)return{state:'BLOCKED',reasons:['LICENSED_EOD_ADMISSION_SCHEMA_INVALID']};
+  if(certificate.state!=='READY_FOR_DOWNSTREAM_HISTORICAL_LINEAGE')reasons.push('LICENSED_EOD_ADMISSION_STATE_INVALID');
+  if(certificate.sourceId!=='LICENSED_EOD'||certificate.sourceId!==certificate.datasetReceipt?.sourceId)reasons.push('LICENSED_EOD_ADMISSION_SOURCE_MISMATCH');
+  if(certificate.providerGroup!==certificate.datasetReceipt?.providerGroup)reasons.push('LICENSED_EOD_ADMISSION_PROVIDER_GROUP_MISMATCH');
+  if(certificate.session!==certificate.datasetReceipt?.session)reasons.push('LICENSED_EOD_ADMISSION_SESSION_MISMATCH');
+  if(!HEX64.test(String(certificate.licenseEvidence?.licenseReceiptHash??''))||certificate.licenseEvidence?.entitlementConfirmed!==true||certificate.licenseEvidence?.permittedApplicationUseConfirmed!==true||norm(certificate.licenseEvidence?.provider)!==norm(certificate.provider))reasons.push('LICENSED_EOD_ADMISSION_LICENSE_INVALID');
+  const datasetCheck=validateSourceReceipt(certificate.datasetReceipt,{policy:sourcePolicy.LICENSED_EOD,rawPayload});if(datasetCheck.state!=='READY')reasons.push(...datasetCheck.reasons.map(x=>`LICENSED_EOD_DATASET:${x}`));
+  if(certificate.rawDatasetHash!==certificate.datasetReceipt?.contentHash)reasons.push('LICENSED_EOD_RAW_DATASET_HASH_MISMATCH');
+  const crossPolicy=sourcePolicy?.[certificate.independentCrossCheckReceipt?.sourceId],crossCheck=validateSourceReceipt(certificate.independentCrossCheckReceipt,{policy:crossPolicy});if(crossCheck.state!=='READY')reasons.push(...crossCheck.reasons.map(x=>`LICENSED_EOD_CROSSCHECK:${x}`));
+  else{const independent=validateIndependentReceipts(certificate.datasetReceipt,crossCheck.receipt);if(independent.state!=='READY')reasons.push(...independent.reasons.map(x=>`LICENSED_EOD_INDEPENDENCE:${x}`));}
+  if(certificate.fieldSemanticsVerified!==true)reasons.push('LICENSED_EOD_FIELD_SEMANTICS_NOT_VERIFIED');
+  const parsed=parseLicensedEodDataset(rawPayload,{parserId:certificate.parserId,parserVersion:certificate.parserVersion});if(parsed.state!=='READY')reasons.push(...parsed.reasons);
+  else{
+    if(parsed.bars.some(x=>x.session!==certificate.session))reasons.push('LICENSED_EOD_PARSED_SESSION_MISMATCH');
+    const coverage=exactCoverage(certificate.expectedTradeBarIds,parsed.bars.map(x=>x.ticker));if(!coverage.ready)reasons.push('LICENSED_EOD_ADMISSION_COVERAGE_MISMATCH');
+    const proofs=parsed.bars.map(bar=>({ticker:bar.ticker,session:bar.session,barHash:datasetBarHash(bar)}));
+    if(canonicalize(proofs)!==canonicalize(certificate.barProofs)||sha256(proofs)!==certificate.barProofsHash)reasons.push('LICENSED_EOD_ADMISSION_BAR_PROOFS_INVALID');
+  }
+  const body={...certificate};delete body.admissionHash;if(!HEX64.test(String(certificate.admissionHash??''))||sha256(body)!==certificate.admissionHash)reasons.push('LICENSED_EOD_ADMISSION_HASH_INVALID');
+  return reasons.length?{state:'BLOCKED',reasons:[...new Set(reasons)].sort()}:{state:'READY',reasons:[],admissionHash:certificate.admissionHash};
+}
+
+export function licensedEodAdmissionMatchesBar(certificate,bar,{rawPayload}={}){
+  const v=verifyLicensedEodDatasetAdmissionCertificate(certificate,{rawPayload});if(v.state!=='READY')return false;
+  const normalized=normalizeDatasetBar(bar,bar?.session);if(!normalized||normalized.session!==certificate.session)return false;
+  const proof=certificate.barProofs.find(x=>x.ticker===normalized.ticker&&x.session===normalized.session);return !!proof&&proof.barHash===datasetBarHash(normalized);
 }
