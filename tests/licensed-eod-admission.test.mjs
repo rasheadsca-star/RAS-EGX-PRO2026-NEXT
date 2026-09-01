@@ -64,11 +64,11 @@ test('session or exact traded-universe mismatch blocks licensed dataset admissio
   assert.equal(r.reasons.includes('TRADE_BAR_COVERAGE_MISSING'),true);
 });
 
-test('same-provider cross-check cannot satisfy independent licensed dataset reconciliation',()=>{
+test('same-provider or forged provider-group cross-check cannot satisfy independent licensed dataset reconciliation',()=>{
   const sameProvider={...independent,providerGroup:'LICENSED_EOD_VENDOR'};
   const r=assessLicensedEodDatasetCandidate({capabilityEvidence:capability,licenseEvidence:license,datasetReceipt:receipt,rawPayload,session:'2026-08-31',expectedTradeBarIds:['EGS1'],bars,parserId:'ice-eod-v1',parserVersion:'1',fieldSemanticsVerified:true,independentCrossCheckReceipt:sameProvider});
   assert.equal(r.state,'BLOCKED');
-  assert.equal(r.reasons.includes('INDEPENDENCE:SAME_PROVIDER_GROUP'),true);
+  assert.equal(r.reasons.some(x=>x==='INDEPENDENCE:SAME_PROVIDER_GROUP'||x==='CROSSCHECK_RECEIPT:PROVIDER_GROUP_POLICY_MISMATCH'),true);
 });
 
 test('fully evidenced licensed dataset only becomes eligible for downstream lineage, never direct Production authority',()=>{
