@@ -1,4 +1,6 @@
 # Evidence-only run. Production authority remains disabled.
+# Important: Mubasher historical CSV is NOT admitted as true OHLCV because observed
+# provider-declared Open values can fall outside provider-declared High/Low.
 name: EGX Mubasher Completed Session Reconciliation
 
 on:
@@ -16,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
-      - name: Capture official candidates and independent Mubasher historical OHLCV
+      - name: Capture official candidates and independent Mubasher close-volume history
         shell: bash
         run: |
           set -euo pipefail
@@ -24,7 +26,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from concurrent.futures import ThreadPoolExecutor, as_completed
-          import subprocess,json,re,html,hashlib,datetime,unicodedata,difflib,time
+          import subprocess,json,re,html,hashlib,datetime,unicodedata,difflib
 
           OUT=Path('artifacts/session-reconciliation'); PAGES=OUT/'pages'; HIST=OUT/'history'
           UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
@@ -72,7 +74,7 @@ jobs:
               reuters=str(r.get('reuters') or '').strip().upper(); ticker=reuters.split('.')[0] if reuters else ''
               candidates.append({'isin':isin,'ticker':ticker,'reuters':reuters,'name':str(r.get('name') or '').strip(),'board':'A' if isin in A else 'B' if isin in B else 'C','lastTradeDate':str(r.get('last_trade_date') or ''),'egxClose':r.get('last_cp'),'egxVolume':r.get('last_vol')})
 
-          STOP={'company','co','sae','sae','s','a','e','holding','holdings','for','and','the','of','egypt','egyptian','industries','industry','investment','investments','international','group','development','trading'}
+          STOP={'company','co','sae','s','a','e','holding','holdings','for','and','the','of','egypt','egyptian','industries','industry','investment','investments','international','group','development','trading'}
           def words(s):
               s=unicodedata.normalize('NFKD',str(s)).encode('ascii','ignore').decode().lower()
               toks=re.findall(r'[a-z0-9]+',s)
@@ -92,9 +94,20 @@ jobs:
                   if len(vals)<6: continue
                   d=vals[0].split('/')[0].strip()
                   try:
-                      o,h,l,c,v=map(float,vals[1:6])
+                      f1,f2,f3,close,volume=map(float,vals[1:6])
                   except Exception: continue
-                  parsed.append({'date':d,'open':o,'high':h,'low':l,'close':c,'volume':v,'rawLine':line})
+                  geometry=(f2>=max(f1,close) and f3<=min(f1,close) and volume>=0)
+                  parsed.append({
+                    'date':d,
+                    'providerDeclaredOpen':f1,
+                    'providerDeclaredHigh':f2,
+                    'providerDeclaredLow':f3,
+                    'close':close,
+                    'volume':volume,
+                    'providerDeclaredOhlcGeometryValid':geometry,
+                    'trueOhlcvEligible':False,
+                    'rawLine':line
+                  })
               return parsed
 
           def one(c):
@@ -127,8 +140,8 @@ jobs:
                   try:
                       ev=float(c['egxVolume']); volume_delta=target['volume']-ev; volume_match=abs(volume_delta)<=0.5
                   except Exception: pass
-              ohlcv_valid=bool(target and target['high']>=max(target['open'],target['close']) and target['low']<=min(target['open'],target['close']) and target['volume']>=0)
-              return {**c,'mubasherPage':prec,'mubasherH1':h1,'mubasherCompany':company,'mubasherSymbol':sym,'nameScore':round(escore,6),'tickerMatch':ticker_match,'identityReady':identity_ready,'historicalUrl':hurl,'historicalReceipt':hrec,'historyRowCount':history_count,'latestHistoricalRow':latest,'sessionRow':target,'ohlcvValid':ohlcv_valid,'closeMatch':close_match,'closeDelta':close_delta,'volumeMatch':volume_match,'volumeDelta':volume_delta,'sessionReconciled':bool(identity_ready and ohlcv_valid and close_match and volume_match)}
+              cv_reconciled=bool(identity_ready and target and close_match and volume_match)
+              return {**c,'mubasherPage':prec,'mubasherH1':h1,'mubasherCompany':company,'mubasherSymbol':sym,'nameScore':round(escore,6),'tickerMatch':ticker_match,'identityReady':identity_ready,'historicalUrl':hurl,'historicalReceipt':hrec,'historyRowCount':history_count,'latestHistoricalRow':latest,'sessionRow':target,'closeMatch':close_match,'closeDelta':close_delta,'volumeMatch':volume_match,'volumeDelta':volume_delta,'sessionCloseVolumeReconciled':cv_reconciled,'trueOhlcvEligible':False}
 
           results=[]
           with ThreadPoolExecutor(max_workers=12) as ex:
@@ -136,31 +149,39 @@ jobs:
               for fut in as_completed(futs):
                   try: results.append(fut.result())
                   except Exception as e:
-                      c=futs[fut]; results.append({**c,'error':repr(e),'identityReady':False,'sessionReconciled':False})
+                      c=futs[fut]; results.append({**c,'error':repr(e),'identityReady':False,'sessionCloseVolumeReconciled':False,'trueOhlcvEligible':False})
           results.sort(key=lambda x:x['ticker'])
 
           counts={
             'officialTradableOrdinaryEgyptianCandidates':len(candidates),
             'mubasherPage200':sum(1 for x in results if x.get('mubasherPage',{}).get('status')=='200'),
-            'identityReady':sum(1 for x in results if x.get('identityReady')),
+            'identityReadyByTickerNameGate':sum(1 for x in results if x.get('identityReady')),
             'historicalUrlFound':sum(1 for x in results if x.get('historicalUrl')),
             'historicalCsv200':sum(1 for x in results if (x.get('historicalReceipt') or {}).get('status')=='200'),
             'sessionRowFound':sum(1 for x in results if x.get('sessionRow')),
-            'validSessionOHLCV':sum(1 for x in results if x.get('ohlcvValid')),
+            'providerDeclaredGeometryValid':sum(1 for x in results if x.get('sessionRow') and x['sessionRow'].get('providerDeclaredOhlcGeometryValid')),
+            'providerDeclaredGeometryContradicted':sum(1 for x in results if x.get('sessionRow') and not x['sessionRow'].get('providerDeclaredOhlcGeometryValid')),
             'closeMatch':sum(1 for x in results if x.get('closeMatch')),
             'volumeMatch':sum(1 for x in results if x.get('volumeMatch')),
-            'sessionReconciled':sum(1 for x in results if x.get('sessionReconciled'))
+            'sessionCloseVolumeReconciled':sum(1 for x in results if x.get('sessionCloseVolumeReconciled'))
           }
-          failures=[{'ticker':x['ticker'],'isin':x['isin'],'name':x['name'],'identityReady':x.get('identityReady'),'pageStatus':x.get('mubasherPage',{}).get('status'),'mubasherH1':x.get('mubasherH1'),'nameScore':x.get('nameScore'),'historicalUrl':bool(x.get('historicalUrl')),'historyStatus':(x.get('historicalReceipt') or {}).get('status'),'sessionRow':x.get('sessionRow'),'egxClose':x.get('egxClose'),'egxVolume':x.get('egxVolume'),'closeMatch':x.get('closeMatch'),'closeDelta':x.get('closeDelta'),'volumeMatch':x.get('volumeMatch'),'volumeDelta':x.get('volumeDelta'),'error':x.get('error')} for x in results if not x.get('sessionReconciled')]
+          failures=[{'ticker':x['ticker'],'isin':x['isin'],'name':x['name'],'identityReady':x.get('identityReady'),'pageStatus':x.get('mubasherPage',{}).get('status'),'mubasherH1':x.get('mubasherH1'),'nameScore':x.get('nameScore'),'historicalUrl':bool(x.get('historicalUrl')),'historyStatus':(x.get('historicalReceipt') or {}).get('status'),'sessionRow':x.get('sessionRow'),'egxClose':x.get('egxClose'),'egxVolume':x.get('egxVolume'),'closeMatch':x.get('closeMatch'),'closeDelta':x.get('closeDelta'),'volumeMatch':x.get('volumeMatch'),'volumeDelta':x.get('volumeDelta'),'error':x.get('error')} for x in results if not x.get('sessionCloseVolumeReconciled')]
           report={
+            'schemaVersion':'egx-mubasher-close-volume-reconciliation-2',
             'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),
             'session':SESSION,
             'officialReceipts':{'stockInfo':{k:v for k,v in info.items() if k!='parsed'},'stockCategories':{k:v for k,v in cats.items() if k!='parsed'}},
             'providerIndependence':{'primaryCandidate':'OFFICIAL_EGX_BFF','crossCheck':'MUBASHER','sameProvider':False},
+            'semanticPolicy':{
+              'mubasherHistoricalRole':'CLOSE_VOLUME_AND_IDENTITY_CROSSCHECK_ONLY',
+              'trueOhlcvEligible':False,
+              'reason':'OBSERVED_PROVIDER_DECLARED_OPEN_OUTSIDE_PROVIDER_DECLARED_HIGH_LOW',
+              'doNotUseFor':['TRUE_OPEN','TRUE_HIGH','TRUE_LOW','PRODUCTION_OHLCV']
+            },
             'counts':counts,
-            'allCandidateIdentitiesIndependentlyReconciled':counts['identityReady']==len(candidates),
-            'allCandidateSessionOHLCVPresent':counts['validSessionOHLCV']==len(candidates),
-            'allCandidateCloseVolumeReconciled':counts['sessionReconciled']==len(candidates),
+            'allCandidateIdentitiesReadyByOriginalMubasherGate':counts['identityReadyByTickerNameGate']==len(candidates),
+            'allCandidateSessionRowsPresent':counts['sessionRowFound']==len(candidates),
+            'allCandidateCloseVolumeReconciled':counts['sessionCloseVolumeReconciled']==len(candidates),
             'productionAuthority':False,
             'phase4Open':False,
             'failures':failures
@@ -171,7 +192,7 @@ jobs:
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: egx-mubasher-session-reconciliation
+          name: egx-mubasher-close-volume-session-reconciliation
           path: artifacts/session-reconciliation/**/*
           if-no-files-found: error
           compression-level: 6
