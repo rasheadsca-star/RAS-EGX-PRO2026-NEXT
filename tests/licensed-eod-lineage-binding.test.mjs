@@ -29,6 +29,7 @@ function productionStore(id='licensed-history'){
   store.startDataSnapshot({dataSnapshotId:id,marketSession:MARKET_SESSION,sourceManifestHash,createdAt:'2026-08-31T15:01:00Z',ingestionMode:'CERTIFIED_PRODUCTION'});
   return {store,dataSnapshotId:id,sourceManifestHash};
 }
+function rehashAdmission(x){const body={...x};delete body.admissionHash;return{...body,admissionHash:sha256(body)}}
 
 test('fully evidenced licensed dataset creates deterministic admission bound to raw bytes coverage and bar proofs',()=>{
   const a=admission(),b=admission();
@@ -36,6 +37,8 @@ test('fully evidenced licensed dataset creates deterministic admission bound to 
   assert.equal(verifyLicensedEodDatasetAdmissionCertificate(a,{rawPayload:RAW}).state,'READY');
   assert.equal(a.barProofs.length,2);
   assert.equal(licensedEodAdmissionMatchesBar(a,BARS[1],{rawPayload:RAW}),true);
+  assert.equal(a.capabilityEvidence.provider,'ICE');
+  assert.equal(a.capabilityEvidenceHash,sha256(a.capabilityEvidence));
 });
 
 test('licensed historical lineage cannot exist without dataset admission',()=>{
@@ -65,11 +68,34 @@ test('tampered admission cannot survive without exact admission hash and bar pro
   const a=admission();
   const tampered={...a,licenseEvidence:{...a.licenseEvidence,licenseReceiptHash:'c'.repeat(64)}};
   assert.equal(verifyLicensedEodDatasetAdmissionCertificate(tampered,{rawPayload:RAW}).state,'BLOCKED');
-  const proofs={...a,barProofs:a.barProofs.map((x,i)=>i?{...x,barHash:'d'.repeat(64)}:x)};
-  const body={...proofs};delete body.admissionHash;proofs.admissionHash=sha256(body);
+  const proofs=rehashAdmission({...a,barProofs:a.barProofs.map((x,i)=>i?{...x,barHash:'d'.repeat(64)}:x)});
   const pv=verifyLicensedEodDatasetAdmissionCertificate(proofs,{rawPayload:RAW});
   assert.equal(pv.state,'BLOCKED');
   assert.ok(pv.reasons.includes('LICENSED_EOD_ADMISSION_BAR_PROOFS_INVALID'));
+});
+
+test('capability evidence is self-contained and false capability cannot survive recomputed hashes',()=>{
+  const a=admission();
+  const capabilityEvidence={...a.capabilityEvidence,capabilityEvidence:{...a.capabilityEvidence.capabilityEvidence,endOfDayOhlcBarsPublished:false}};
+  const forged=rehashAdmission({...a,capabilityEvidence,capabilityEvidenceHash:sha256(capabilityEvidence)});
+  const v=verifyLicensedEodDatasetAdmissionCertificate(forged,{rawPayload:RAW});
+  assert.equal(v.state,'BLOCKED');
+  assert.ok(v.reasons.includes('LICENSED_EOD_CAPABILITY:TRUE_OHLC_CAPABILITY_NOT_PUBLISHED'));
+});
+
+test('top-level vendor label cannot be replayed away from the frozen capability evidence',()=>{
+  const a=admission();
+  const forged=rehashAdmission({...a,provider:'OTHER_VENDOR',licenseEvidence:{...a.licenseEvidence,provider:'OTHER_VENDOR'}});
+  const v=verifyLicensedEodDatasetAdmissionCertificate(forged,{rawPayload:RAW});
+  assert.equal(v.state,'BLOCKED');
+  assert.ok(v.reasons.includes('LICENSED_EOD_CAPABILITY_PROVIDER_MISMATCH'));
+});
+
+test('missing capability evidence body cannot be replaced by its old hash alone',()=>{
+  const a=admission(),forged={...a};delete forged.capabilityEvidence;
+  const v=verifyLicensedEodDatasetAdmissionCertificate(rehashAdmission(forged),{rawPayload:RAW});
+  assert.equal(v.state,'BLOCKED');
+  assert.ok(v.reasons.includes('LICENSED_EOD_CAPABILITY_EVIDENCE_INVALID'));
 });
 
 test('licensed admission is rejected when attached to official exchange historical lineage',()=>{
