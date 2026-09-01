@@ -23,11 +23,12 @@ function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function fmt(v,suffix=''){const n=num(v);return n===null?'N/A':`${n.toFixed(2)}${suffix}`}
 
 function outcomeOf(r){
-  return String(r?.outcome||r?.outcomeState||r?.result||r?.terminalOutcome||r?.status||r?.resolution?.outcome||'').toUpperCase();
+  const raw=r?.outcome?.state??r?.outcomeState??r?.result?.state??r?.result??r?.terminalOutcome??r?.status??r?.resolution?.outcome?.state??r?.resolution?.outcome??'';
+  return String(raw||'').toUpperCase();
 }
 function signalSessionOf(r){return r?.signalSession||r?.session||r?.plan?.signalSession||r?.recommendation?.signalSession||null}
 function netReturnOf(r){
-  const candidates=[r?.netReturnPct,r?.netPct,r?.returnPct,r?.outcomeNetReturnPct,r?.resolution?.netReturnPct,r?.resultMetrics?.netReturnPct];
+  const candidates=[r?.netReturnPct,r?.outcome?.netReturnPct,r?.netPct,r?.returnPct,r?.outcomeNetReturnPct,r?.resolution?.netReturnPct,r?.resultMetrics?.netReturnPct];
   for(const v of candidates){const n=num(v);if(n!==null)return n}
   return null;
 }
@@ -179,7 +180,7 @@ async function init(){
   }catch(err){console.error('CHAMPIONSHIP_BOARD_BLOCKED',err);return null}
 }
 
-const API={CONTRACT,currentOnCommonDates,buildComparison,renderHTML,render,init};
+const API={CONTRACT,outcomeOf,signalSessionOf,netReturnOf,currentOnCommonDates,buildComparison,renderHTML,render,init};
 global.EGXOneChampionshipBoard=API;
 if(typeof document!=='undefined'){
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>init(),{once:true});else init();
