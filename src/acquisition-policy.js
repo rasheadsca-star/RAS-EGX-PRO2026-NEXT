@@ -8,6 +8,7 @@ export const SOURCE_CLASSES=Object.freeze({
 
 export const DEFAULT_SOURCE_POLICY=Object.freeze({
   OFFICIAL_EGX:{sourceClass:'OFFICIAL_EXCHANGE',providerGroup:'EGX',priority:100,mayBePrimaryCurrent:true,mayCrossCheck:true,mayAuthorizeHistoricalProduction:true},
+  OFFICIAL_EGX_BFF:{sourceClass:'OFFICIAL_EXCHANGE',providerGroup:'EGX',priority:99,mayBePrimaryCurrent:true,mayCrossCheck:true,mayAuthorizeHistoricalProduction:false},
   LICENSED_EOD:{sourceClass:'LICENSED_EOD',providerGroup:'LICENSED_EOD_VENDOR',priority:95,mayBePrimaryCurrent:true,mayCrossCheck:true,mayAuthorizeHistoricalProduction:true},
   MUBASHER:{sourceClass:'PUBLIC_MARKET',providerGroup:'MUBASHER',priority:70,mayBePrimaryCurrent:false,mayCrossCheck:true,mayAuthorizeHistoricalProduction:false},
   YAHOO:{sourceClass:'HISTORY_ONLY',providerGroup:'YAHOO',priority:40,mayBePrimaryCurrent:false,mayCrossCheck:false,mayAuthorizeHistoricalProduction:false},
