@@ -5,6 +5,11 @@ function evidenceSet(values){
   const rows=Array.isArray(values)?values:values instanceof Set?[...values]:[];
   return new Set(rows.map(v=>norm(typeof v==='object'&&v!==null?v.isin:v)).filter(Boolean));
 }
+function evidenceMap(values,key='isin'){
+  if(values instanceof Map) return new Map([...values].map(([k,v])=>[norm(k),v]));
+  const rows=Array.isArray(values)?values:[];
+  return new Map(rows.filter(v=>v&&typeof v==='object').map(v=>[norm(v[key]),v]).filter(([k])=>k));
+}
 function intersection(a,b){return [...a].filter(x=>b.has(x)).sort()}
 
 export function buildEgxCategorySets(payload){
@@ -34,7 +39,15 @@ export function describeEgxCategoryTopology(sets){
   });
 }
 
-export function classifyEgxListedSecurity(row,sets,{temporaryListingEvidence=new Set()}={}){
+function resolveShareClass(instrumentClass,isin,shareClassEvidence){
+  if(!['EGYPTIAN_EQUITY','FOREIGN_EQUITY'].includes(instrumentClass)) return 'NOT_APPLICABLE';
+  const ev=shareClassEvidence instanceof Map?shareClassEvidence.get(isin):null;
+  const declared=norm(ev?.shareClass);
+  if(['PREFERRED_CONFIRMED','COMMON_CONFIRMED'].includes(declared)) return declared;
+  return 'UNSPECIFIED_EQUITY_SHARE_CLASS';
+}
+
+export function classifyEgxListedSecurity(row,sets,{temporaryListingEvidence=new Set(),shareClassEvidence=new Map()}={}){
   const r=ci(row), isin=norm(r.isin), schedule=String(r.schedule??'').trim();
   const markets=[];
   if(sets.mostActive?.has(isin)) markets.push('MOST_ACTIVE');
@@ -52,6 +65,8 @@ export function classifyEgxListedSecurity(row,sets,{temporaryListingEvidence=new
   else if(schedule==='ETF') instrumentClass='ETF';
   else if(schedule==='Trading Rights issue') instrumentClass='RIGHTS_ISSUE';
 
+  const shareClass=resolveShareClass(instrumentClass,isin,shareClassEvidence);
+
   let listingState='UNRESOLVED';
   if(instrumentClass==='RIGHTS_ISSUE') listingState='RIGHTS';
   else if(instrumentClass==='EGYPTIAN_EQUITY'&&markets.includes('MOST_ACTIVE')) listingState='TRADABLE_MOST_ACTIVE';
@@ -64,12 +79,16 @@ export function classifyEgxListedSecurity(row,sets,{temporaryListingEvidence=new
   } else if(markets.length) listingState='LISTED_SPECIAL_INSTRUMENT';
 
   const intraday=String(r.intraday??'').toUpperCase()==='Y';
+  const tradableEquityState=['TRADABLE_MOST_ACTIVE','TRADABLE_MEDIUM_ACTIVITY','TRADABLE_MEDIUM_NO_MARGIN'].includes(listingState);
   return Object.freeze({
     isin,
     reuters:String(r.reuters??'').trim(),
     name:String(r.name??'').trim(),
     schedule,
     instrumentClass,
+    shareClass,
+    ordinaryCommonShareProven:shareClass==='COMMON_CONFIRMED',
+    preferredShareProven:shareClass==='PREFERRED_CONFIRMED',
     marketMemberships:Object.freeze(markets),
     specializedEligibility:Object.freeze(specialized),
     listingState,
@@ -77,19 +96,20 @@ export function classifyEgxListedSecurity(row,sets,{temporaryListingEvidence=new
     lastTradeDate:r.last_trade_date??null,
     lastPrice:r.last_cp??null,
     lastVolume:r.last_vol??null,
-    productionTradableEquityCandidate:
-      instrumentClass==='EGYPTIAN_EQUITY'&&['TRADABLE_MOST_ACTIVE','TRADABLE_MEDIUM_ACTIVITY','TRADABLE_MEDIUM_NO_MARGIN'].includes(listingState),
+    productionTradableEquityCandidate:instrumentClass==='EGYPTIAN_EQUITY'&&tradableEquityState,
+    productionOrdinaryCommonEquityCandidate:instrumentClass==='EGYPTIAN_EQUITY'&&tradableEquityState&&shareClass==='COMMON_CONFIRMED',
     productionAuthority:false
   });
 }
 
-export function classifyEgxListedUniverse(stockInfoPayload,categoryPayload,{temporaryListingEvidence=[],smeTamayuzEvidence=[],inferSmeNileFromComplement=false}={}){
+export function classifyEgxListedUniverse(stockInfoPayload,categoryPayload,{temporaryListingEvidence=[],smeTamayuzEvidence=[],shareClassEvidence=[],inferSmeNileFromComplement=false}={}){
   const rows=Array.isArray(stockInfoPayload?.data)?stockInfoPayload.data:[];
   const sets=buildEgxCategorySets(categoryPayload);
   const topology=describeEgxCategoryTopology(sets);
-  const tempEvidence=evidenceSet(temporaryListingEvidence), tamayuzEvidence=evidenceSet(smeTamayuzEvidence);
+  const tempEvidence=evidenceSet(temporaryListingEvidence), tamayuzEvidence=evidenceSet(smeTamayuzEvidence), shareEvidence=evidenceMap(shareClassEvidence);
   const invalidTamayuzEvidence=[...tamayuzEvidence].filter(isin=>!sets.sme.has(isin)).sort();
-  const classified=rows.map(r=>classifyEgxListedSecurity(r,sets,{temporaryListingEvidence:tempEvidence}));
+  const invalidShareClassEvidence=[...shareEvidence.keys()].filter(isin=>!rows.some(r=>norm(ci(r).isin)===isin)).sort();
+  const classified=rows.map(r=>classifyEgxListedSecurity(r,sets,{temporaryListingEvidence:tempEvidence,shareClassEvidence:shareEvidence}));
   const byIsin=new Map(classified.map(x=>[x.isin,x]));
   const smeOnly=[];
   for(const isin of [...sets.sme].sort()){
@@ -109,6 +129,7 @@ export function classifyEgxListedUniverse(stockInfoPayload,categoryPayload,{temp
   }
   const counts={}; for(const x of classified) counts[x.listingState]=(counts[x.listingState]??0)+1;
   const instruments={}; for(const x of classified) instruments[x.instrumentClass]=(instruments[x.instrumentClass]??0)+1;
+  const shareClasses={}; for(const x of classified.filter(x=>['EGYPTIAN_EQUITY','FOREIGN_EQUITY'].includes(x.instrumentClass))) shareClasses[x.shareClass]=(shareClasses[x.shareClass]??0)+1;
   const egyptianEquities=classified.filter(x=>x.instrumentClass==='EGYPTIAN_EQUITY');
   const equityPartition={}; for(const x of egyptianEquities) equityPartition[x.listingState]=(equityPartition[x.listingState]??0)+1;
   const smeSegmentCounts={}; for(const x of smeOnly) smeSegmentCounts[x.smeSegment]=(smeSegmentCounts[x.smeSegment]??0)+1;
@@ -118,14 +139,19 @@ export function classifyEgxListedUniverse(stockInfoPayload,categoryPayload,{temp
     smeOnly:Object.freeze(smeOnly),
     counts:Object.freeze(counts),
     instrumentCounts:Object.freeze(instruments),
+    shareClassCounts:Object.freeze(shareClasses),
     stockInfoEquityPartition:Object.freeze(equityPartition),
     categoryTopology:topology,
     smeSegmentCounts:Object.freeze(smeSegmentCounts),
     invalidTamayuzEvidence:Object.freeze(invalidTamayuzEvidence),
+    invalidShareClassEvidence:Object.freeze(invalidShareClassEvidence),
     stockInfoCount:rows.length,
     stockInfoEgyptianEquityCount:egyptianEquities.length,
     smeCategoryCount:sets.sme.size,
     productionTradableEquityCandidateCount:classified.filter(x=>x.productionTradableEquityCandidate).length,
+    productionOrdinaryCommonEquityCandidateCount:classified.filter(x=>x.productionOrdinaryCommonEquityCandidate).length,
+    preferredShareConfirmedCount:classified.filter(x=>x.preferredShareProven).length,
+    unresolvedEquityShareClassCount:classified.filter(x=>x.shareClass==='UNSPECIFIED_EQUITY_SHARE_CLASS').length,
     unresolvedTemporaryEvidenceCount:classified.filter(x=>x.listingState==='UNSEGMENTED_NONTRADING_LISTING_CANDIDATE').length,
     temporaryListingConfirmedCount:classified.filter(x=>x.listingState==='TEMPORARY_LISTING_CONFIRMED').length,
     productionAuthority:false
