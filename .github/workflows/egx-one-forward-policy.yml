@@ -1,0 +1,52 @@
+name: EGX ONE Forward Resolution Policy Freeze
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['egx-one/clean-room-v0']
+    paths:
+      - 'data/research/strategy/latest.json'
+      - 'src/research-forward-resolution-policy.js'
+      - 'scripts/research-freeze-forward-policy.mjs'
+      - '.github/workflows/egx-one-forward-policy.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-one-forward-resolution-policy
+  cancel-in-progress: false
+
+jobs:
+  freeze-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify contracts
+        run: npm test
+      - name: Freeze current strategy resolution policy
+        run: npm run research:forward-policy
+      - name: Commit immutable policy artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/shadow-ledger/policies
+          if git diff --cached --quiet; then
+            echo 'No forward-policy change.'
+          else
+            git commit -m 'Freeze EGX ONE forward resolution policy'
+            for attempt in 1 2 3; do
+              if git pull --rebase origin egx-one/clean-room-v0 && git push origin HEAD:egx-one/clean-room-v0; then break; fi
+              [ "$attempt" = 3 ] && exit 1
+              sleep $((attempt*5))
+            done
+          fi
