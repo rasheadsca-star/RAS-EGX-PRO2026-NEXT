@@ -1,0 +1,36 @@
+import assert from 'node:assert/strict';
+await import('../technical-chart-v2.js');
+const T=globalThis.EGXOneTechnicalV2;
+assert.ok(T,'API missing');
+const bars=[];
+for(let i=0;i<80;i++){
+  const close=100+i*.5+Math.sin(i/4);
+  bars.push({session:`2026-01-${String((i%28)+1).padStart(2,'0')}`,open:close-.2,high:close+1,low:close-1,close,volume:1000+i*10});
+}
+const n=T.normalizeBars(bars);
+assert.equal(n.length,80);
+const s20=T.sma(n.map(x=>x.close),20);
+assert.equal(s20.slice(0,19).every(x=>x===null),true);
+assert.ok(Number.isFinite(s20.at(-1)));
+const r=T.rsi(n.map(x=>x.close),14);
+assert.ok(r.at(-1)>50&&r.at(-1)<=100);
+const ch=T.regressionChannel(n.map(x=>x.close),60);
+assert.equal(ch.lookback,60);
+assert.ok(ch.slope>0);
+assert.equal(ch.center.length,60);
+assert.equal(ch.upper.length,60);
+const fib=T.fibonacci(n,60);
+assert.equal(fib.levels.length,7);
+assert.ok(fib.high>fib.low);
+assert.equal(fib.levels[0].value,fib.high);
+assert.equal(fib.levels.at(-1).value,fib.low);
+const lv=T.pivotLevels(n);
+assert.ok(Array.isArray(lv.supports)&&Array.isArray(lv.resistances));
+const summary=T.technicalSummary(n,{relativeVolume20:1.6,momentum20Pct:8,rsi14:61},null);
+assert.match(summary.trend,/صاعد|إيجابي/);
+assert.ok(summary.items.length>=5);
+const dirty=T.normalizeBars([{close:10},{open:9,high:8,low:11,close:10,volume:-2},{close:null}]);
+assert.equal(dirty.length,2);
+assert.ok(dirty[1].high>=dirty[1].close&&dirty[1].low<=dirty[1].open);
+assert.equal(dirty[1].volume,0);
+console.log('technical-chart-v2 tests: PASS');
