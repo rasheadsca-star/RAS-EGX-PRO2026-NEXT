@@ -17,6 +17,7 @@ on:
       - 'data/research/published/latest.json'
       - 'data/research/simulator/latest.json'
       - 'data/research/shadow-ledger/latest.json'
+      - 'data/research/shadow-ledger/policies/*.json'
       - '.github/workflows/egx-one-production-ui-deploy.yml'
 
 permissions:
@@ -47,8 +48,16 @@ jobs:
       - name: Verify clean-room contracts
         run: npm test
 
-      - name: Build and verify complete session-bound live bundle
+      - name: Build and verify deterministic complete live bundle
         run: bash scripts/prepare-egx-one-live-bundle.sh /tmp/egx-one-live
+
+      - name: Upload exact production-ready bundle evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-one-production-bundle-${{ github.sha }}
+          path: /tmp/egx-one-live
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Verify deploy credential availability
         id: auth
@@ -76,45 +85,53 @@ jobs:
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "PRODUCTION_DEPLOYMENT_URL:$url"
 
-      - name: Verify live recommendations chart V2.1 KPI and authority boundary
+      - name: Verify deployed bundle byte-for-byte plus authority boundary
         if: steps.auth.outputs.available == 'true'
         env:
           URL: ${{ steps.deploy.outputs.url }}
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/technical-chart-v2.js" -o /tmp/chart-loader.js
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/technical-chart-v2-core.js" -o /tmp/chart-core.js
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/technical-chart-v21-alignment.js" -o /tmp/chart-align.js
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/realized-kpi.js" -o /tmp/realized-kpi.js
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/live/latest.json" -o /tmp/research-live.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/ui/latest.json" -o /tmp/research-ui.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/strategy/latest.json" -o /tmp/research-strategy.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/published/latest.json" -o /tmp/research-published.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/simulator/latest.json" -o /tmp/research-simulator.json
-          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/data/research/shadow-ledger/latest.json" -o /tmp/research-shadow.json
-          grep -q 'EGXOneTechnicalV2Loader' /tmp/chart-loader.js
-          grep -q 'EGXOneTechnicalV21' /tmp/chart-align.js
-          grep -q 'READY_RESEARCH_EXACT_SESSION_ONLY' /tmp/chart-align.js
-          grep -q 'EGXOneRealizedKPI' /tmp/realized-kpi.js
+          rm -rf /tmp/live-verify && mkdir -p /tmp/live-verify
+          curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/egx-one-production-manifest.json" -o /tmp/live-verify/egx-one-production-manifest.json
+          while IFS= read -r file; do
+            mkdir -p "/tmp/live-verify/$(dirname "$file")"
+            curl --fail --silent --show-error --location --retry 4 --retry-delay 2 "$URL/$file" -o "/tmp/live-verify/$file"
+          done < <(node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const m=JSON.parse(fs.readFileSync('/tmp/live-verify/egx-one-production-manifest.json','utf8'));
+          for(const f of Object.keys(m.files||{}))console.log(f);
+          NODE
+          )
           node --input-type=module - <<'NODE'
           import fs from 'node:fs';
-          const l=JSON.parse(fs.readFileSync('/tmp/research-live.json','utf8'));
-          const u=JSON.parse(fs.readFileSync('/tmp/research-ui.json','utf8'));
-          const s=JSON.parse(fs.readFileSync('/tmp/research-strategy.json','utf8'));
-          const p=JSON.parse(fs.readFileSync('/tmp/research-published.json','utf8'));
-          const sim=JSON.parse(fs.readFileSync('/tmp/research-simulator.json','utf8'));
-          const shadow=JSON.parse(fs.readFileSync('/tmp/research-shadow.json','utf8'));
+          import path from 'node:path';
+          import crypto from 'node:crypto';
+          const root='/tmp/live-verify';
+          const m=JSON.parse(fs.readFileSync(path.join(root,'egx-one-production-manifest.json'),'utf8'));
+          const {bundleManifestHash,...body}=m;
+          const manifestHash=crypto.createHash('sha256').update(JSON.stringify(body)).digest('hex');
+          if(manifestHash!==bundleManifestHash)throw new Error(`DEPLOYED_MANIFEST_HASH_BAD:${manifestHash}:${bundleManifestHash}`);
+          for(const [file,expected] of Object.entries(m.files||{})){
+            const buf=fs.readFileSync(path.join(root,file));
+            const actual=crypto.createHash('sha256').update(buf).digest('hex');
+            if(actual!==expected.sha256||buf.length!==expected.bytes)throw new Error(`DEPLOYED_FILE_HASH_MISMATCH:${file}`);
+          }
+          const read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
+          const l=read('data/research/live/latest.json'),u=read('data/research/ui/latest.json'),s=read('data/research/strategy/latest.json'),p=read('data/research/published/latest.json'),sim=read('data/research/simulator/latest.json'),shadow=read('data/research/shadow-ledger/latest.json');
+          const policy=read(`data/research/shadow-ledger/policies/${s.strategySnapshotHash}.json`);
           if(s.signalSession!==u.session||s.signalSession!==p.signalSession||s.signalSession!==l.expectedSession||s.signalSession!==l.targetSession)throw new Error('DEPLOYED_SESSION_MISMATCH');
           if(s.authorityMode!=='RESEARCH'||s.productionAuthority!==false||s.automaticOrders!==false||s.validation?.accepted!==true||!s.recommendations?.length)throw new Error('DEPLOYED_STRATEGY_BOUNDARY_FAILED');
           if(u.authorityMode!=='RESEARCH'||u.productionAuthority!==false||u.notARecommendation!==true)throw new Error('DEPLOYED_UI_BOUNDARY_FAILED');
-          if(p.authorityMode!=='RESEARCH'||p.productionAuthority!==false||p.automaticOrders!==false)throw new Error('DEPLOYED_PUBLICATION_BOUNDARY_FAILED');
+          if(p.authorityMode!=='RESEARCH'||p.productionAuthority!==false||p.automaticOrders!==false||p.sourceStrategySnapshotHash!==s.strategySnapshotHash)throw new Error('DEPLOYED_PUBLICATION_BOUNDARY_FAILED');
           if(l.authorityMode!=='RESEARCH'||l.productionAuthority!==false)throw new Error('DEPLOYED_LIVE_BOUNDARY_FAILED');
           if(shadow.productionAuthority!==false||shadow.automaticOrders!==false)throw new Error('DEPLOYED_SHADOW_BOUNDARY_FAILED');
-          if(p.sourceStrategySnapshotHash!==s.strategySnapshotHash)throw new Error('DEPLOYED_LINEAGE_MISMATCH');
+          if(policy.strategySnapshotHash!==s.strategySnapshotHash||policy.sameBarAmbiguity!=='STOP_FIRST'||policy.costAssumptionBps!==25)throw new Error('DEPLOYED_FORWARD_POLICY_FAILED');
           const x=sim.performance?.allDailySignals;
           if(!x||x.triggered!==450||x.target1OrBetter!==243||x.stops!==157||x.timeouts!==50)throw new Error('DEPLOYED_KPI_BASELINE_MISMATCH');
-          console.log(`DEPLOYED_EGX_ONE_COMPLETE_VERIFIED:${s.signalSession}:${s.recommendations.length}:TARGET=${x.target1HitRatePct}:STOP=${x.stopRatePct}`);
+          const chartLoader=fs.readFileSync(path.join(root,'technical-chart-v2.js'),'utf8'),chartAlign=fs.readFileSync(path.join(root,'technical-chart-v21-alignment.js'),'utf8'),kpi=fs.readFileSync(path.join(root,'realized-kpi.js'),'utf8');
+          if(!chartLoader.includes('EGXOneTechnicalV2Loader')||!chartAlign.includes('EGXOneTechnicalV21')||!chartAlign.includes('READY_RESEARCH_EXACT_SESSION_ONLY')||!kpi.includes('EGXOneRealizedKPI'))throw new Error('DEPLOYED_UI_MODULE_CONTRACT_FAILED');
+          console.log(`DEPLOYED_EGX_ONE_COMPLETE_VERIFIED:${s.signalSession}:${s.recommendations.length}:MANIFEST=${bundleManifestHash}:TARGET=${x.target1HitRatePct}:STOP=${x.stopRatePct}`);
           NODE
 
       - name: Deployment summary
@@ -127,11 +144,13 @@ jobs:
           if [ "$AUTH" = 'true' ]; then
             echo '- Status: VERIFIED' >> "$GITHUB_STEP_SUMMARY"
             echo "- URL: ${URL}" >> "$GITHUB_STEP_SUMMARY"
+            echo '- Integrity: production manifest + SHA256 byte-for-byte verification' >> "$GITHUB_STEP_SUMMARY"
             echo '- Chart: V2.1 current-session fail-closed alignment' >> "$GITHUB_STEP_SUMMARY"
             echo '- KPI: day-by-day realized Target / Stop / Timeout' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Forward: frozen policy + shadow ledger included' >> "$GITHUB_STEP_SUMMARY"
             echo '- Authority: RESEARCH_ONLY / Production LOCKED / Automatic Orders DISABLED' >> "$GITHUB_STEP_SUMMARY"
           else
             echo '- Status: DEPLOYMENT BLOCKED' >> "$GITHUB_STEP_SUMMARY"
             echo '- Reason: VERCEL_TOKEN_MISSING' >> "$GITHUB_STEP_SUMMARY"
-            echo '- Complete bundle and tests remain ready for connected direct deployment.' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Exact production-ready bundle was still built, hashed and uploaded as a workflow artifact.' >> "$GITHUB_STEP_SUMMARY"
           fi
