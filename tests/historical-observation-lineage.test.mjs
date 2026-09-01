@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sha256, canonicalize } from '../src/hash.js';
 import { EgxMarketDataStore } from '../src/market-data-store.js';
-import { createHistoricalObservationLineage, verifyHistoricalObservationLineage, historicalLineageMatchesBar } from '../src/historical-observation-lineage.js';
+import { createHistoricalObservationLineage, verifyHistoricalObservationLineage, historicalLineageMatchesBar, historicalBarHash } from '../src/historical-observation-lineage.js';
 
 const MARKET_SESSION='2026-08-31';
 const HISTORY_SESSION='2026-08-28';
+const OFFICIAL_PARSER='OFFICIAL_EGX_JSON_BAR_V1';
 const BAR=Object.freeze({ticker:'VERT',session:HISTORY_SESSION,open:10,high:11,low:9.8,close:10.7,volume:125000});
 const RAW=Object.freeze({ticker:'VERT',session:HISTORY_SESSION,open:10,high:11,low:9.8,close:10.7,volume:125000,source:'official-eod-file'});
 
@@ -27,8 +28,8 @@ function normalizedRowHash({dataSnapshotId,sourceManifestHash,bar}){
 }
 
 test('official historical receipt produces deterministic production lineage bound to exact bar',()=>{
-  const a=createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:receipt(),rawPayload:RAW,parserId:'egx-eod-csv',parserVersion:'1'});
-  const b=createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:receipt(),rawPayload:RAW,parserId:'egx-eod-csv',parserVersion:'1'});
+  const a=createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:receipt(),rawPayload:RAW,parserId:OFFICIAL_PARSER,parserVersion:'1'});
+  const b=createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:receipt(),rawPayload:RAW,parserId:OFFICIAL_PARSER,parserVersion:'1'});
   assert.equal(a.certificateHash,b.certificateHash);
   assert.equal(verifyHistoricalObservationLineage(a).state,'READY');
   assert.equal(historicalLineageMatchesBar(a,{dataSnapshotId:'s1',...BAR}),true);
@@ -40,14 +41,22 @@ test('Yahoo and public market sources cannot authorize production history',()=>{
   assert.throws(()=>createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:receipt('MUBASHER','PUBLIC_MARKET','MUBASHER'),rawPayload:RAW,parserId:'mubasher',parserVersion:'1'}),/HISTORICAL_SOURCE_NOT_PRODUCTION_AUTHORIZED/);
 });
 
+test('official source cannot authorize production history through an unregistered parser',()=>{
+  assert.throws(()=>createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:receipt(),rawPayload:RAW,parserId:'egx-eod-csv',parserVersion:'1'}),/HISTORICAL_PARSER_UNSUPPORTED/);
+});
+
 test('historical certificate rejects raw payload tampering even when receipt metadata is otherwise valid',()=>{
   const r=receipt();
-  assert.throws(()=>createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:r,rawPayload:{...RAW,close:99},parserId:'egx-eod-csv',parserVersion:'1'}),/HISTORICAL_LINEAGE_RECEIPT_INVALID:.*CONTENT_HASH_MISMATCH/);
+  assert.throws(()=>createHistoricalObservationLineage({dataSnapshotId:'s1',bar:BAR,receipt:r,rawPayload:{...RAW,close:99},parserId:OFFICIAL_PARSER,parserVersion:'1'}),/HISTORICAL_LINEAGE_RECEIPT_INVALID:.*CONTENT_HASH_MISMATCH/);
+});
+
+test('official raw payload must deterministically reproduce the claimed historical bar',()=>{
+  assert.throws(()=>createHistoricalObservationLineage({dataSnapshotId:'s1',bar:{...BAR,close:10.8},receipt:receipt(),rawPayload:RAW,parserId:OFFICIAL_PARSER,parserVersion:'1'}),/HISTORICAL_LINEAGE_EXTRACTED_BAR_MISMATCH/);
 });
 
 test('production SSOT accepts historical bar only through certified lineage API and can finalize exact snapshot',()=>{
   const {store,sourceManifestHash,dataSnapshotId}=productionStore('hist-api');
-  const rowHash=store.putCertifiedHistoricalNormalizedBar({dataSnapshotId,bar:{...BAR},receipt:receipt(),rawPayload:RAW,parserId:'egx-eod-csv',parserVersion:'1'});
+  const rowHash=store.putCertifiedHistoricalNormalizedBar({dataSnapshotId,bar:{...BAR},receipt:receipt(),rawPayload:RAW,parserId:OFFICIAL_PARSER,parserVersion:'1'});
   assert.match(rowHash,/^[0-9a-f]{64}$/);
   const lineage=store.db.prepare('SELECT payload_json FROM historical_observation_lineage WHERE data_snapshot_id=? AND ticker=? AND session=?').get(dataSnapshotId,BAR.ticker,BAR.session);
   assert.ok(lineage);
@@ -79,9 +88,22 @@ test('direct SQL cannot plant future session bar into production snapshot',()=>{
 
 test('direct SQL cannot plant recomputed certificate around tampered raw historical payload',()=>{
   const {store,dataSnapshotId}=productionStore('tampered-cert');
-  const valid=createHistoricalObservationLineage({dataSnapshotId,bar:{...BAR},receipt:receipt(),rawPayload:RAW,parserId:'egx-eod-csv',parserVersion:'1'});
+  const valid=createHistoricalObservationLineage({dataSnapshotId,bar:{...BAR},receipt:receipt(),rawPayload:RAW,parserId:OFFICIAL_PARSER,parserVersion:'1'});
   const tampered={...valid,rawPayload:{...RAW,close:77}};
   const body={...tampered};delete body.certificateHash;
   tampered.certificateHash=sha256(body);
   assert.throws(()=>store.db.prepare(`INSERT INTO historical_observation_lineage(certificate_hash,data_snapshot_id,ticker,session,source_id,source_class,source_receipt_hash,bar_hash,payload_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)`).run(tampered.certificateHash,dataSnapshotId,tampered.ticker,tampered.session,tampered.sourceId,tampered.sourceClass,tampered.sourceReceipt.receiptHash,tampered.barHash,canonicalize(tampered),'2026-08-31T15:02:00Z'),/INVALID_HISTORICAL_LINEAGE_ROW/);
+});
+
+test('recomputed hashes cannot make a forged bar survive deterministic raw parser replay',()=>{
+  const {store,dataSnapshotId}=productionStore('forged-bar-cert');
+  const valid=createHistoricalObservationLineage({dataSnapshotId,bar:{...BAR},receipt:receipt(),rawPayload:RAW,parserId:OFFICIAL_PARSER,parserVersion:'1'});
+  const forgedBar={...valid.bar,close:10.8};
+  const forgedBarHash=historicalBarHash(forgedBar);
+  const forged={...valid,bar:forgedBar,barHash:forgedBarHash,extractionProofHash:sha256({sourceContentHash:valid.sourceReceipt.contentHash,parserId:valid.parserId,parserVersion:String(valid.parserVersion),barHash:forgedBarHash,extractedBar:{ticker:RAW.ticker,session:RAW.session,open:RAW.open,high:RAW.high,low:RAW.low,close:RAW.close,volume:RAW.volume}})};
+  const body={...forged};delete body.certificateHash;
+  forged.certificateHash=sha256(body);
+  assert.equal(verifyHistoricalObservationLineage(forged).state,'BLOCKED');
+  assert.ok(verifyHistoricalObservationLineage(forged).reasons.includes('HISTORICAL_LINEAGE_EXTRACTED_BAR_MISMATCH'));
+  assert.throws(()=>store.db.prepare(`INSERT INTO historical_observation_lineage(certificate_hash,data_snapshot_id,ticker,session,source_id,source_class,source_receipt_hash,bar_hash,payload_json,created_at) VALUES (?,?,?,?,?,?,?,?,?,?)`).run(forged.certificateHash,dataSnapshotId,forged.ticker,forged.session,forged.sourceId,forged.sourceClass,forged.sourceReceipt.receiptHash,forged.barHash,canonicalize(forged),'2026-08-31T15:02:00Z'),/INVALID_HISTORICAL_LINEAGE_ROW/);
 });
