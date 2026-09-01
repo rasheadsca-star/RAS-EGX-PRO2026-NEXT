@@ -1,66 +1,10 @@
 name: EGX Official Beta Bounded Probe
 on:
-  push:
-    branches: [egx-one/clean-room-v0]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   probe:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: egx-one/clean-room-v0
-          fetch-depth: 1
-      - name: Probe public EGX beta with strict network bounds
-        shell: bash
-        run: |
-          set -u
-          mkdir -p artifacts/egx-beta-bounded /tmp/egx-bounded
-          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
-          HOME='https://beta.egx.com.eg/en'
-          curl -L -sS --compressed --connect-timeout 5 --max-time 15 -A "$UA" -D artifacts/egx-beta-bounded/home.headers -o artifacts/egx-beta-bounded/home.html -w '%{http_code}\n' "$HOME" > artifacts/egx-beta-bounded/home.status || echo CURL_FAILED > artifacts/egx-beta-bounded/home.status
-          python - <<'PY'
-          from pathlib import Path
-          import re,json,urllib.parse
-          p=Path('artifacts/egx-beta-bounded/home.html')
-          text=p.read_text(errors='replace') if p.exists() else ''
-          scripts=[]
-          for x in re.findall(r'<script[^>]+src=["\']([^"\']+)',text,re.I):
-              u=urllib.parse.urljoin('https://beta.egx.com.eg/en',x)
-              if u not in scripts:scripts.append(u)
-          Path('artifacts/egx-beta-bounded/scripts.json').write_text(json.dumps(scripts[:60],indent=2))
-          print('scripts',len(scripts))
-          PY
-          python - <<'PY'
-          from pathlib import Path
-          import json,subprocess,re,hashlib,concurrent.futures
-          scripts=json.loads(Path('artifacts/egx-beta-bounded/scripts.json').read_text())
-          def fetch(item):
-              i,u=item; out=Path(f'/tmp/egx-bounded/{i}.js')
-              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','4','--max-time','8','-A','Mozilla/5.0','-o',str(out),'-w','%{http_code}',u],capture_output=True,text=True)
-              data=out.read_text(errors='replace') if out.exists() else ''
-              cand=set()
-              for m in re.findall(r'''(?i)(?:https?://[^"'`\\\s]+|/[A-Za-z0-9_./?=&%{}:-]{4,})''',data):
-                  low=m.lower()
-                  if any(k in low for k in ('/api','api/','market','stock','share','securit','index','indice','constitu','ticker','summary','trade','quote','ohlc','price')):cand.add(m[:500])
-              return {'url':u,'status':(p.stdout or '').strip() or 'CURL_FAILED','bytes':len(data),'sha256':hashlib.sha256(data.encode()).hexdigest() if data else None,'candidates':sorted(cand)}
-          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex: rows=list(ex.map(fetch,enumerate(scripts)))
-          Path('artifacts/egx-beta-bounded/script-fetches.json').write_text(json.dumps([{k:v for k,v in r.items() if k!='candidates'} for r in rows],indent=2))
-          allc=sorted({c for r in rows for c in r['candidates']})
-          Path('artifacts/egx-beta-bounded/candidate-routes.txt').write_text('\n'.join(allc))
-          print('candidate_routes',len(allc))
-          PY
-          {
-            echo '=== HOME STATUS ==='; cat artifacts/egx-beta-bounded/home.status
-            echo '=== SCRIPT COUNT ==='; python -c "import json;print(len(json.load(open('artifacts/egx-beta-bounded/scripts.json'))))"
-            echo '=== FETCHES ==='; cat artifacts/egx-beta-bounded/script-fetches.json
-            echo '=== CANDIDATE ROUTES ==='; sed -n '1,300p' artifacts/egx-beta-bounded/candidate-routes.txt
-          } | tee artifacts/egx-beta-bounded/summary.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: egx-official-beta-bounded-probe
-          path: artifacts/egx-beta-bounded/*
-          if-no-files-found: error
+      - run: echo 'Completed evidence run 33475613946; manual-only now.'
