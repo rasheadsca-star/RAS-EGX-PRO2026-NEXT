@@ -6,7 +6,7 @@ const TERMINAL=new Set(['TARGET1','TARGET2','STOP','TIMEOUT','NOT_TRIGGERED']);
 function validHash(v){return /^[a-f0-9]{64}$/.test(String(v??''))}
 function validDate(v){return /^\d{4}-\d{2}-\d{2}$/.test(String(v??''))}
 function finite(v){const n=Number(v);return Number.isFinite(n)?n:null}
-function round(v,d=4){return Number.isFinite(Number(v))?Number(Number(v).toFixed(d)):null}
+function round(v,d=4){if(v==null)return null;return Number.isFinite(Number(v))?Number(Number(v).toFixed(d)):null}
 function ledgerBody(x){const {ledgerHash,...body}=x;return body}
 function snapshotBody(x){const {snapshotHash,generatedAt,...body}=x;return body}
 
@@ -24,7 +24,7 @@ function resolutionBody(x){const {resolutionHash,...body}=x;return body}
 export function verifyForwardResolution(r){
   if(!r||r.authorityMode!=='RESEARCH'||r.researchOnly!==true||r.productionAuthority!==false||r.automaticOrders!==false||!TERMINAL.has(r.state)||!validDate(r.signalSession)||!validDate(r.terminalSession)||r.terminalSession<=r.signalSession||!r.ticker||!validHash(r.planHash)||!validHash(r.resolutionPolicyHash)||!validHash(r.resolutionHash)||!Array.isArray(r.sourceSessionHashes)||r.sourceSessionHashes.some(x=>!validHash(x)))return false;
   if(r.triggerSession!=null&&(!validDate(r.triggerSession)||r.triggerSession<=r.signalSession||r.triggerSession>r.terminalSession))return false;
-  if(r.state==='NOT_TRIGGERED'&&(r.triggerSession!=null||r.fill!=null||r.exit!=null||r.netReturnPct!=null))return false;
+  if(r.state==='NOT_TRIGGERED'&&(r.triggerSession!=null||r.fill!=null||r.exit!=null||r.rMultiple!=null||r.netReturnPct!=null))return false;
   if(r.state!=='NOT_TRIGGERED'&&(!(Number(r.fill)>0)||!(Number(r.exit)>0)||!Number.isFinite(Number(r.rMultiple))||!Number.isFinite(Number(r.netReturnPct))))return false;
   return sha256(resolutionBody(r))===r.resolutionHash;
 }
