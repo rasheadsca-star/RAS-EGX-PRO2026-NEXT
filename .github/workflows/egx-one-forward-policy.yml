@@ -7,7 +7,9 @@ on:
     paths:
       - 'data/research/strategy/latest.json'
       - 'src/research-forward-resolution-policy.js'
+      - 'src/research-forward-shadow-resolver.js'
       - 'scripts/research-freeze-forward-policy.mjs'
+      - 'scripts/research-resolve-forward-shadow.mjs'
       - '.github/workflows/egx-one-forward-policy.yml'
 
 permissions:
@@ -33,15 +35,26 @@ jobs:
         run: npm test
       - name: Freeze current strategy resolution policy
         run: npm run research:forward-policy
-      - name: Commit immutable policy artifact
+      - name: Verify forward resolver has policy coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$(npm run --silent research:forward-resolve)"
+          printf '%s\n' "$out"
+          if grep -q 'PENDING_POLICY_MISSING' <<<"$out"; then
+            echo 'FORWARD_POLICY_COVERAGE_FAILED:PENDING_POLICY_MISSING'
+            exit 1
+          fi
+          echo 'FORWARD_POLICY_COVERAGE:PASS'
+      - name: Commit immutable policy and any resolved forward outcomes
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/shadow-ledger/policies
+          git add data/research/shadow-ledger/policies data/research/shadow-ledger/latest.json
           if git diff --cached --quiet; then
-            echo 'No forward-policy change.'
+            echo 'No forward-policy or resolution change.'
           else
             git commit -m 'Freeze EGX ONE forward resolution policy'
             for attempt in 1 2 3; do
