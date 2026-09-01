@@ -1,0 +1,105 @@
+name: EGX Official Market Data BFF Probe
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+permissions:
+  contents: read
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-one/clean-room-v0
+          fetch-depth: 1
+      - name: Discover page-specific BFF calls and probe index-data with official web headers
+        shell: bash
+        run: |
+          set -u
+          mkdir -p artifacts/egx-market-data-probe /tmp/egx-market-js
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,json,re,urllib.parse,concurrent.futures,hashlib
+          ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          pages=[
+            'https://beta.egx.com.eg/en',
+            'https://beta.egx.com.eg/en/listed/stocks',
+            'https://beta.egx.com.eg/en/market/market-watch',
+            'https://beta.egx.com.eg/en/market/indices/overview?index=CASE30',
+          ]
+          page_rows=[]; scripts=[]
+          for i,u in enumerate(pages):
+              body=Path(f'artifacts/egx-market-data-probe/page-{i}.html');hdr=Path(f'artifacts/egx-market-data-probe/page-{i}.headers')
+              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','5','--max-time','18','-A',ua,'-D',str(hdr),'-o',str(body),'-w','%{http_code}',u],capture_output=True,text=True)
+              data=body.read_text(errors='replace') if body.exists() else ''
+              page_rows.append({'url':u,'status':(p.stdout or '').strip() or 'CURL_FAILED','bytes':len(data),'sha256':hashlib.sha256(data.encode()).hexdigest() if data else None})
+              for x in re.findall(r'<script[^>]+src=["\']([^"\']+)',data,re.I):
+                  su=urllib.parse.urljoin(u,x)
+                  if su not in scripts:scripts.append(su)
+          Path('artifacts/egx-market-data-probe/pages.json').write_text(json.dumps(page_rows,indent=2))
+          Path('artifacts/egx-market-data-probe/scripts.json').write_text(json.dumps(scripts,indent=2))
+          def fetch(item):
+              i,u=item; out=Path(f'/tmp/egx-market-js/{i}.js')
+              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','4','--max-time','10','-A',ua,'-o',str(out),'-w','%{http_code}',u],capture_output=True,text=True)
+              data=out.read_text(errors='replace') if out.exists() else ''
+              return i,u,(p.stdout or '').strip(),data
+          fetched=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+              fetched=list(ex.map(fetch,enumerate(scripts[:120])))
+          needles=['/api/bff/egx/','x-egx-bff-request','index-data','market-watch','listed-stocks','listed/stocks','stock-data','market-summary','most-active']
+          hits=[]; endpoints=set()
+          for i,u,status,data in fetched:
+              if not data:continue
+              for needle in needles:
+                  start=0
+                  while True:
+                      j=data.lower().find(needle.lower(),start)
+                      if j<0:break
+                      context=data[max(0,j-2200):min(len(data),j+3600)]
+                      hits.append({'script':u,'status':status,'needle':needle,'offset':j,'context':context})
+                      start=j+len(needle)
+              for m in re.findall(r'''/api/bff/egx/[A-Za-z0-9_./?=&%${}():,;-]+''',data): endpoints.add(m[:1000])
+          Path('artifacts/egx-market-data-probe/bff-hits.json').write_text(json.dumps(hits,indent=2))
+          Path('artifacts/egx-market-data-probe/bff-endpoints.txt').write_text('\n'.join(sorted(endpoints)))
+          print('pages',len(page_rows),'scripts',len(scripts),'hits',len(hits),'bff_endpoints',len(endpoints))
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess,json,hashlib
+          base='https://beta.egx.com.eg'
+          ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          names=['CASE30','EGX30']
+          urls=[f'{base}/api/bff/egx/index-data?interval=1&indexName={n}' for n in names]
+          rows=[]
+          for i,u in enumerate(urls):
+              body=Path(f'artifacts/egx-market-data-probe/index-{i}.body');hdr=Path(f'artifacts/egx-market-data-probe/index-{i}.headers')
+              p=subprocess.run(['curl','-L','-sS','--compressed','--connect-timeout','5','--max-time','15','-A',ua,'-H','Accept: application/json','-H','x-egx-bff-request: 1','-H','x-egx-bff-client: web','-H','Referer: https://beta.egx.com.eg/en','-D',str(hdr),'-o',str(body),'-w','%{http_code}',u],capture_output=True,text=True)
+              data=body.read_bytes() if body.exists() else b''
+              rows.append({'url':u,'status':(p.stdout or '').strip() or 'CURL_FAILED','bytes':len(data),'sha256':hashlib.sha256(data).hexdigest() if data else None,'preview':data[:7000].decode(errors='replace')})
+          Path('artifacts/egx-market-data-probe/index-probes.json').write_text(json.dumps(rows,indent=2))
+          PY
+          {
+            echo '=== PAGES ==='; cat artifacts/egx-market-data-probe/pages.json
+            echo '=== BFF ENDPOINT LITERALS ==='; cat artifacts/egx-market-data-probe/bff-endpoints.txt
+            echo '=== INDEX DATA PROBES ==='; cat artifacts/egx-market-data-probe/index-probes.json
+            echo '=== SELECTED BFF CONTEXT ==='; python - <<'PY'
+          import json
+          hits=json.load(open('artifacts/egx-market-data-probe/bff-hits.json'))
+          seen=set()
+          for h in hits:
+              key=(h['script'],h['needle'],h['offset'])
+              if key in seen:continue
+              seen.add(key)
+              if '/api/bff/egx/' in h['context'] or 'x-egx-bff-request' in h['context']:
+                  print('\nSCRIPT',h['script'],'NEEDLE',h['needle'],'OFFSET',h['offset'])
+                  print(h['context'][:5800])
+          PY
+          } | tee artifacts/egx-market-data-probe/summary.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-official-market-data-bff-probe
+          path: artifacts/egx-market-data-probe/*
+          if-no-files-found: error
