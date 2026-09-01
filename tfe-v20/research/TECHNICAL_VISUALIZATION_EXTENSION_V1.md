@@ -27,11 +27,13 @@ Add decision-support visualization without changing RC2 Alpha, FusionRank, recom
 - Core frozen chart implementation remains untouched; the feature is injected by the separately frozen UI loader.
 
 ## Certification evidence
-On functional head `1e3df61184924b191d78772780dfc1ce69e286ed`:
+Functional implementation head `1e3df61184924b191d78772780dfc1ce69e286ed` passed:
 - TFE V20 Audit run 33503947615: SUCCESS.
 - Full test suite: 213/213 PASS.
 - Independent red-team suite: 60/60 PASS.
 - Meta Engine Research run 33503947604: SUCCESS.
+
+The documentation-only follow-up commit is also required to rerun both workflows before the PR status is reported as fully green on the final head.
 
 ## Forward-evidence boundary
 This UI certification does not satisfy or bypass the separate meta-engine fresh-forward acceptance gate. PR #68 must remain Draft until that evidence contract is independently satisfied.
