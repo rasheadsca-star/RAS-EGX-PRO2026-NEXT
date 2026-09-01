@@ -10,6 +10,7 @@ on:
       - 'technical-chart-v2-core.js'
       - 'technical-chart-v21-alignment.js'
       - 'realized-kpi.js'
+      - 'championship-board.js'
       - 'scripts/prepare-egx-one-live-bundle.sh'
       - 'data/research/live/latest.json'
       - 'data/research/ui/latest.json'
@@ -50,6 +51,24 @@ jobs:
 
       - name: Build and verify deterministic complete live bundle
         run: bash scripts/prepare-egx-one-live-bundle.sh /tmp/egx-one-live
+
+      - name: Verify championship evidence before deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          await import('./championship-board.js');
+          const sim=JSON.parse(fs.readFileSync('data/research/simulator/latest.json','utf8'));
+          const shadow=JSON.parse(fs.readFileSync('data/research/shadow-ledger/latest.json','utf8'));
+          const board=globalThis.EGXOneChampionshipBoard;
+          if(!board)throw new Error('CHAMPIONSHIP_MODULE_MISSING');
+          if(board.CONTRACT.authorityMode!=='RESEARCH'||board.CONTRACT.productionAuthority!==false||board.CONTRACT.scoringImpact!=='NONE'||board.CONTRACT.automaticOrders!==false)throw new Error('CHAMPIONSHIP_AUTHORITY_BOUNDARY_FAILED');
+          const c=board.buildComparison(sim,shadow);
+          if(!c.sameDateScope||!c.exactLegacy||!c.policyAllows)throw new Error(`CHAMPIONSHIP_EVIDENCE_NOT_QUALIFIED:${JSON.stringify({sameDateScope:c.sameDateScope,exactLegacy:c.exactLegacy,policyAllows:c.policyAllows})}`);
+          if(c.score.qualifiedMetrics!==1||c.score.leader!=='EGX ONE')throw new Error(`CHAMPIONSHIP_LEADER_UNEXPECTED:${JSON.stringify(c.score)}`);
+          console.log(`CHAMPIONSHIP_VERIFIED:COMMON_DATES=${c.current.commonSignalDates}:EGX_ONE_TARGET=${c.current.targetHitRatePct}:V16_9_TARGET=${c.v16.targetHitRatePct}:LEADER=${c.score.leader}:SCORE=${c.score.current}-${c.score.v16}`);
+          NODE
 
       - name: Upload exact production-ready bundle evidence
         uses: actions/upload-artifact@v4
@@ -129,9 +148,12 @@ jobs:
           if(policy.strategySnapshotHash!==s.strategySnapshotHash||policy.sameBarAmbiguity!=='STOP_FIRST'||policy.costAssumptionBps!==25)throw new Error('DEPLOYED_FORWARD_POLICY_FAILED');
           const x=sim.performance?.allDailySignals;
           if(!x||x.triggered!==450||x.target1OrBetter!==243||x.stops!==157||x.timeouts!==50)throw new Error('DEPLOYED_KPI_BASELINE_MISMATCH');
-          const chartLoader=fs.readFileSync(path.join(root,'technical-chart-v2.js'),'utf8'),chartAlign=fs.readFileSync(path.join(root,'technical-chart-v21-alignment.js'),'utf8'),kpi=fs.readFileSync(path.join(root,'realized-kpi.js'),'utf8');
-          if(!chartLoader.includes('EGXOneTechnicalV2Loader')||!chartAlign.includes('EGXOneTechnicalV21')||!chartAlign.includes('READY_RESEARCH_EXACT_SESSION_ONLY')||!kpi.includes('EGXOneRealizedKPI'))throw new Error('DEPLOYED_UI_MODULE_CONTRACT_FAILED');
-          console.log(`DEPLOYED_EGX_ONE_COMPLETE_VERIFIED:${s.signalSession}:${s.recommendations.length}:MANIFEST=${bundleManifestHash}:TARGET=${x.target1HitRatePct}:STOP=${x.stopRatePct}`);
+          const chartLoader=fs.readFileSync(path.join(root,'technical-chart-v2.js'),'utf8'),chartAlign=fs.readFileSync(path.join(root,'technical-chart-v21-alignment.js'),'utf8'),kpi=fs.readFileSync(path.join(root,'realized-kpi.js'),'utf8'),champ=fs.readFileSync(path.join(root,'championship-board.js'),'utf8');
+          if(!chartLoader.includes('EGXOneTechnicalV2Loader')||!chartLoader.includes('championship-board.js')||!chartAlign.includes('EGXOneTechnicalV21')||!chartAlign.includes('READY_RESEARCH_EXACT_SESSION_ONLY')||!kpi.includes('EGXOneRealizedKPI')||!champ.includes('EGXOneChampionshipBoard'))throw new Error('DEPLOYED_UI_MODULE_CONTRACT_FAILED');
+          await import(`file://${path.join(root,'championship-board.js')}`);
+          const c=globalThis.EGXOneChampionshipBoard.buildComparison(sim,shadow);
+          if(!c.sameDateScope||!c.exactLegacy||!c.policyAllows||c.score.qualifiedMetrics!==1||c.score.leader!=='EGX ONE')throw new Error(`DEPLOYED_CHAMPIONSHIP_FAILED:${JSON.stringify(c.score)}`);
+          console.log(`DEPLOYED_EGX_ONE_COMPLETE_VERIFIED:${s.signalSession}:${s.recommendations.length}:MANIFEST=${bundleManifestHash}:TARGET=${x.target1HitRatePct}:STOP=${x.stopRatePct}:CHAMPION=${c.score.leader}:COMMON=${c.current.commonSignalDates}:EGX=${c.current.targetHitRatePct}:V16=${c.v16.targetHitRatePct}:SCORE=${c.score.current}-${c.score.v16}`);
           NODE
 
       - name: Deployment summary
@@ -147,6 +169,7 @@ jobs:
             echo '- Integrity: production manifest + SHA256 byte-for-byte verification' >> "$GITHUB_STEP_SUMMARY"
             echo '- Chart: V2.1 current-session fail-closed alignment' >> "$GITHUB_STEP_SUMMARY"
             echo '- KPI: day-by-day realized Target / Stop / Timeout' >> "$GITHUB_STEP_SUMMARY"
+            echo '- Championship: EGX ONE vs V16.9, auditable common-date scoring only' >> "$GITHUB_STEP_SUMMARY"
             echo '- Forward: frozen policy + shadow ledger included' >> "$GITHUB_STEP_SUMMARY"
             echo '- Authority: RESEARCH_ONLY / Production LOCKED / Automatic Orders DISABLED' >> "$GITHUB_STEP_SUMMARY"
           else
