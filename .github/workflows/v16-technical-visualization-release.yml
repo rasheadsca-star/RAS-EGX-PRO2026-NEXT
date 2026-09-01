@@ -22,6 +22,7 @@ jobs:
           node-version: '22'
       - name: Syntax check UI release
         run: |
+          node --check public/portfolio-manager-core.js
           node --check public/portfolio-manager.js
           node --check public/snapshot-date-fix.js
           node --check public/technical-analysis-tools.js
@@ -30,3 +31,16 @@ jobs:
         run: npm test
       - name: Independent red-team stability gate
         run: npm run red-team
+      - name: Stage exact runtime artifact
+        run: |
+          rm -rf runtime-artifact
+          mkdir -p runtime-artifact
+          cp package.json vercel.json runtime-artifact/
+          cp -R src api monitor public runtime-artifact/
+      - name: Upload exact runtime artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v16-technical-visualization-runtime
+          path: tfe-v20/runtime-artifact
+          if-no-files-found: error
+          retention-days: 2
