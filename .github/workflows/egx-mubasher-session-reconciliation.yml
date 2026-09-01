@@ -1,0 +1,176 @@
+name: EGX Mubasher Completed Session Reconciliation
+
+on:
+  push:
+    branches: [egx-one/clean-room-v0]
+    paths:
+      - .github/workflows/egx-mubasher-session-reconciliation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - name: Capture official candidates and independent Mubasher historical OHLCV
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/session-reconciliation/pages artifacts/session-reconciliation/history
+          python - <<'PY'
+          from pathlib import Path
+          from concurrent.futures import ThreadPoolExecutor, as_completed
+          import subprocess,json,re,html,hashlib,datetime,unicodedata,difflib,time
+
+          OUT=Path('artifacts/session-reconciliation'); PAGES=OUT/'pages'; HIST=OUT/'history'
+          UA='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/151 Safari/537.36'
+          SESSION='2026-08-31'
+          EGX_BASE='https://beta.egx.com.eg/api/bff/egx/'
+          EGX_REF='https://beta.egx.com.eg/en/listed/stocks'
+
+          def curl(url,path,referer=None,accept='*/*'):
+              cmd=['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','30','--retry','2','--retry-all-errors','--retry-delay','1','-A',UA,'-H',f'Accept: {accept}']
+              if referer: cmd += ['-H',f'Referer: {referer}']
+              cmd += ['-o',str(path),'-w','%{http_code}|%{url_effective}|%{content_type}',url]
+              p=subprocess.run(cmd,capture_output=True,text=True)
+              raw=path.read_bytes() if path.exists() else b''; parts=(p.stdout or '').split('|',2)
+              return {'requestedUrl':url,'status':parts[0] if parts else '', 'effectiveUrl':parts[1] if len(parts)>1 else '', 'contentType':parts[2] if len(parts)>2 else '', 'bytes':len(raw), 'sha256':hashlib.sha256(raw).hexdigest() if raw else None, 'stderr':p.stderr[-800:] if p.stderr else ''}
+
+          def egx_get(endpoint,path):
+              cmd=['curl','-L','-sS','--compressed','--connect-timeout','7','--max-time','30','--retry','3','--retry-all-errors','--retry-delay','1','-A',UA,'-H','Accept: application/json','-H','x-egx-bff-request: 1','-H',f'Referer: {EGX_REF}','-o',str(path),'-w','%{http_code}',EGX_BASE+endpoint]
+              p=subprocess.run(cmd,capture_output=True,text=True); raw=path.read_bytes() if path.exists() else b''
+              try: parsed=json.loads(raw.decode())
+              except Exception: parsed=None
+              return {'endpoint':endpoint,'status':(p.stdout or '').strip(),'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest() if raw else None,'parsed':parsed,'stderr':p.stderr[-800:] if p.stderr else ''}
+
+          info=egx_get('stock-info',OUT/'egx-stock-info.json')
+          cats=egx_get('stock-categories',OUT/'egx-stock-categories.json')
+          if info['status']!='200' or not isinstance(info['parsed'],dict) or not isinstance(info['parsed'].get('data'),list):
+              raise SystemExit('official stock-info unavailable')
+          if cats['status']!='200' or not isinstance(cats['parsed'],dict):
+              raise SystemExit('official stock-categories unavailable')
+
+          rows=info['parsed']['data']; cdata=cats['parsed'].get('data') or {}
+          def catset(key):
+              out=set()
+              for x in cdata.get(key) or []:
+                  if isinstance(x,dict):
+                      m={str(k).lower():v for k,v in x.items()}; v=m.get('symbol_code')
+                      if v: out.add(str(v).strip().upper())
+              return out
+          A=catset('categoryA'); B=catset('categoryB'); C=catset('categoryC')
+          def lower(row): return {str(k).lower():v for k,v in row.items()}
+          candidates=[]
+          for row in rows:
+              if not isinstance(row,dict): continue
+              r=lower(row); isin=str(r.get('isin') or '').strip().upper(); schedule=str(r.get('schedule') or '').strip()
+              if schedule!='Egyptian securities-Stocks' or isin not in (A|B|C): continue
+              reuters=str(r.get('reuters') or '').strip().upper(); ticker=reuters.split('.')[0] if reuters else ''
+              candidates.append({'isin':isin,'ticker':ticker,'reuters':reuters,'name':str(r.get('name') or '').strip(),'board':'A' if isin in A else 'B' if isin in B else 'C','lastTradeDate':str(r.get('last_trade_date') or ''),'egxClose':r.get('last_cp'),'egxVolume':r.get('last_vol')})
+
+          STOP={'company','co','sae','sae','s','a','e','holding','holdings','for','and','the','of','egypt','egyptian','industries','industry','investment','investments','international','group','development','trading'}
+          def words(s):
+              s=unicodedata.normalize('NFKD',str(s)).encode('ascii','ignore').decode().lower()
+              toks=re.findall(r'[a-z0-9]+',s)
+              return [x for x in toks if len(x)>1 and x not in STOP]
+          def name_score(a,b):
+              wa,wb=words(a),words(b); sa,sb=set(wa),set(wb)
+              jac=len(sa&sb)/len(sa|sb) if sa|sb else 0
+              seq=difflib.SequenceMatcher(None,' '.join(wa),' '.join(wb)).ratio() if wa and wb else 0
+              return max(jac,seq)
+
+          def parse_history(raw):
+              parsed=[]
+              for rawline in raw.decode(errors='ignore').splitlines():
+                  line=rawline.strip()
+                  if not line: continue
+                  vals=[x.strip() for x in line.split(',')]
+                  if len(vals)<6: continue
+                  d=vals[0].split('/')[0].strip()
+                  try:
+                      o,h,l,c,v=map(float,vals[1:6])
+                  except Exception: continue
+                  parsed.append({'date':d,'open':o,'high':h,'low':l,'close':c,'volume':v,'rawLine':line})
+              return parsed
+
+          def one(c):
+              ticker=c['ticker']; safe=re.sub(r'[^A-Za-z0-9_.-]','_',ticker)
+              page_url=f'https://english.mubasher.info/markets/EGX/stocks/{ticker}'
+              pf=PAGES/f'{safe}.html'; prec=curl(page_url,pf,accept='text/html,*/*;q=0.8')
+              txt=pf.read_text(errors='ignore') if pf.exists() else ''
+              h1m=re.search(r'<h1[^>]*>(.*?)</h1>',txt,re.I|re.S)
+              h1=html.unescape(re.sub(r'<[^>]+>',' ',h1m.group(1))).strip() if h1m else ''
+              sym=''; sm=re.search(r'\(([^()]+)\)\s*$',h1)
+              if sm: sym=sm.group(1).strip().upper()
+              titlem=re.search(r'<title>(.*?)</title>',txt,re.I|re.S); title=html.unescape(re.sub(r'<[^>]+>',' ',titlem.group(1))).strip() if titlem else ''
+              company=re.sub(r'\s*\([^()]+\)\s*$','',h1).strip() if h1 else re.sub(r'\s*-\s*Mubasher Info.*$','',title,flags=re.I).strip()
+              hm=re.search(r'historical-data-url=["\']([^"\']+)["\']',txt,re.I)
+              hurl=html.unescape(hm.group(1)).strip() if hm else ''
+              hrec=None; target=None; latest=None; history_count=0
+              if hurl:
+                  hf=HIST/f'{safe}.csv'; hrec=curl(hurl,hf,page_url,'text/csv,text/plain,*/*;q=0.8')
+                  raw=hf.read_bytes() if hf.exists() else b''; parsed=parse_history(raw); history_count=len(parsed)
+                  if parsed: latest=parsed[-1]
+                  target=next((x for x in reversed(parsed) if x['date']==SESSION),None)
+              escore=name_score(c['name'],company)
+              ticker_match=(sym==ticker) or (ticker in h1.upper())
+              identity_ready=prec['status']=='200' and ticker_match and escore>=0.45
+              close_match=volume_match=False; close_delta=None; volume_delta=None
+              if target:
+                  try:
+                      ep=float(c['egxClose']); close_delta=abs(target['close']-ep); close_match=close_delta<=max(0.005,abs(ep)*0.0005)
+                  except Exception: pass
+                  try:
+                      ev=float(c['egxVolume']); volume_delta=target['volume']-ev; volume_match=abs(volume_delta)<=0.5
+                  except Exception: pass
+              ohlcv_valid=bool(target and target['high']>=max(target['open'],target['close']) and target['low']<=min(target['open'],target['close']) and target['volume']>=0)
+              return {**c,'mubasherPage':prec,'mubasherH1':h1,'mubasherCompany':company,'mubasherSymbol':sym,'nameScore':round(escore,6),'tickerMatch':ticker_match,'identityReady':identity_ready,'historicalUrl':hurl,'historicalReceipt':hrec,'historyRowCount':history_count,'latestHistoricalRow':latest,'sessionRow':target,'ohlcvValid':ohlcv_valid,'closeMatch':close_match,'closeDelta':close_delta,'volumeMatch':volume_match,'volumeDelta':volume_delta,'sessionReconciled':bool(identity_ready and ohlcv_valid and close_match and volume_match)}
+
+          results=[]
+          with ThreadPoolExecutor(max_workers=12) as ex:
+              futs={ex.submit(one,c):c for c in candidates}
+              for fut in as_completed(futs):
+                  try: results.append(fut.result())
+                  except Exception as e:
+                      c=futs[fut]; results.append({**c,'error':repr(e),'identityReady':False,'sessionReconciled':False})
+          results.sort(key=lambda x:x['ticker'])
+
+          counts={
+            'officialTradableOrdinaryEgyptianCandidates':len(candidates),
+            'mubasherPage200':sum(1 for x in results if x.get('mubasherPage',{}).get('status')=='200'),
+            'identityReady':sum(1 for x in results if x.get('identityReady')),
+            'historicalUrlFound':sum(1 for x in results if x.get('historicalUrl')),
+            'historicalCsv200':sum(1 for x in results if (x.get('historicalReceipt') or {}).get('status')=='200'),
+            'sessionRowFound':sum(1 for x in results if x.get('sessionRow')),
+            'validSessionOHLCV':sum(1 for x in results if x.get('ohlcvValid')),
+            'closeMatch':sum(1 for x in results if x.get('closeMatch')),
+            'volumeMatch':sum(1 for x in results if x.get('volumeMatch')),
+            'sessionReconciled':sum(1 for x in results if x.get('sessionReconciled'))
+          }
+          failures=[{'ticker':x['ticker'],'isin':x['isin'],'name':x['name'],'identityReady':x.get('identityReady'),'pageStatus':x.get('mubasherPage',{}).get('status'),'mubasherH1':x.get('mubasherH1'),'nameScore':x.get('nameScore'),'historicalUrl':bool(x.get('historicalUrl')),'historyStatus':(x.get('historicalReceipt') or {}).get('status'),'sessionRow':x.get('sessionRow'),'egxClose':x.get('egxClose'),'egxVolume':x.get('egxVolume'),'closeMatch':x.get('closeMatch'),'closeDelta':x.get('closeDelta'),'volumeMatch':x.get('volumeMatch'),'volumeDelta':x.get('volumeDelta'),'error':x.get('error')} for x in results if not x.get('sessionReconciled')]
+          report={
+            'capturedAt':datetime.datetime.now(datetime.timezone.utc).isoformat().replace('+00:00','Z'),
+            'session':SESSION,
+            'officialReceipts':{'stockInfo':{k:v for k,v in info.items() if k!='parsed'},'stockCategories':{k:v for k,v in cats.items() if k!='parsed'}},
+            'providerIndependence':{'primaryCandidate':'OFFICIAL_EGX_BFF','crossCheck':'MUBASHER','sameProvider':False},
+            'counts':counts,
+            'allCandidateIdentitiesIndependentlyReconciled':counts['identityReady']==len(candidates),
+            'allCandidateSessionOHLCVPresent':counts['validSessionOHLCV']==len(candidates),
+            'allCandidateCloseVolumeReconciled':counts['sessionReconciled']==len(candidates),
+            'productionAuthority':False,
+            'phase4Open':False,
+            'failures':failures
+          }
+          (OUT/'results.json').write_text(json.dumps(results,ensure_ascii=False,indent=2))
+          (OUT/'report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2))
+          print(json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-mubasher-session-reconciliation
+          path: artifacts/session-reconciliation/**/*
+          if-no-files-found: error
+          compression-level: 6
