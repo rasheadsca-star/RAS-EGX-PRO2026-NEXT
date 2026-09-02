@@ -59,6 +59,20 @@ test('date-aligned outcome comparison awards exactly one independent point',()=>
   assert.equal(c.costComparable,false);
 });
 
+test('recommendation-number fallback derives daily rank before outcomes and stays info-only',()=>{
+  const sim={legacyComparison:{comparisonRules:{v16Comparison:'DATE_ALIGNED_POLICY_COMPARISON'},commonDates:['2026-08-04','2026-08-05'],newTechnique:{evidenceGrade:'POINT_IN_TIME_HISTORICAL_REPLAY'},v16_9:{evidenceGrade:'EXACT_LOGGED_LEDGER',commonSignalDates:2,targetHitRatePct:50,stopRatePct:50,recommendationNumberStats:{numbering:'ONE_BASED_SESSION_ORDER',byNumber:[{recommendationNumber:1,resolved:2,targetHits:0,targetHitRatePct:0},{recommendationNumber:2,resolved:2,targetHits:2,targetHitRatePct:100}],mostTargets:{recommendationNumber:2,resolved:2,targetHits:2,targetHitRatePct:100}}}},records:[{signalSession:'2026-08-04',outcome:{state:'TARGET1'}},{signalSession:'2026-08-04',outcome:{state:'STOP'}},{signalSession:'2026-08-05',outcome:{state:'TARGET2'}},{signalSession:'2026-08-05',outcome:{state:'TARGET1'}}]};
+  const c=B.buildComparison(sim,{resolutions:[]});
+  assert.equal(c.current.recommendationNumberStats.mostTargets.recommendationNumber,1);
+  assert.equal(c.current.recommendationNumberStats.mostTargets.targetHits,2);
+  assert.equal(c.v16.recommendationNumberStats.mostTargets.recommendationNumber,2);
+  assert.equal(c.score.qualifiedMetrics,1);
+  const html=B.renderHTML(c);
+  assert.match(html,/Recommendation # Performance/);
+  assert.match(html,/MOST TARGETS/);
+  assert.match(html,/Recommendation <span class="egx-rec-number">#1/);
+  assert.match(html,/Recommendation <span class="egx-rec-number">#2/);
+});
+
 test('real simulator artifact agrees with common-date session summaries',()=>{
   const sim=JSON.parse(fs.readFileSync(new URL('../data/research/simulator/latest.json',import.meta.url),'utf8'));
   const c=B.buildComparison(sim,{resolutions:[]});
