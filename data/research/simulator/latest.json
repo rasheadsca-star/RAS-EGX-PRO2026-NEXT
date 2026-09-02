@@ -76022,7 +76022,7 @@
   "simulationHash": "3bfedb8bd6ddd7c27208a600fc4c6ebacc285af0d3bf4303df01d2aa353aca84",
   "lineage": {
     "historyIndexHash": "2f2837e100dcb5e0f96e94f914bf1902fb97a76a3adf40c19ba85c3b56790686",
-    "strategySnapshotHash": "fc101e4666c78c81724c113af6e045d7760cfa6ec2de699c2cb2e5c81240168a",
+    "strategySnapshotHash": "0cfba0bb2c585d7ee1c9f6f3171ad95aedc609adeb202df5a934c9e5341db9db",
     "presetId": "CONTROLLED_PULLBACK",
     "legacyEvidence": {
       "v16_9": "EXACT_LOGGED_LEDGER",
@@ -76040,7 +76040,8 @@
       "noMissingEngineMetricFabrication": true,
       "newTechniqueHorizonSessions": 12,
       "newTechniqueRoundTripCostPct": 0.25,
-      "v16Comparison": "DATE_ALIGNED_POLICY_COMPARISON; execution horizons and costs may differ"
+      "v16Comparison": "DATE_ALIGNED_POLICY_COMPARISON; execution horizons and costs may differ",
+      "recommendationNumberDefinition": "ONE_BASED_SESSION_ORDER_PRE_OUTCOME"
     },
     "newTechnique": {
       "evidenceGrade": "POINT_IN_TIME_HISTORICAL_REPLAY",
@@ -76616,7 +76617,156 @@
             "stops": 5,
             "avgBasketNetPct": -0.4833
           }
-        ]
+        ],
+        "recommendationNumberStats": {
+          "numbering": "ONE_BASED_SESSION_ORDER",
+          "selectionRule": "MOST_TARGET_HITS_THEN_HIT_RATE_THEN_RESOLVED_THEN_LOWER_NUMBER",
+          "byNumber": [
+            {
+              "recommendationNumber": 1,
+              "sample": 7,
+              "resolved": 7,
+              "targetHits": 5,
+              "stops": 2,
+              "timeouts": 0,
+              "other": 0,
+              "targetHitRatePct": 71.43
+            },
+            {
+              "recommendationNumber": 2,
+              "sample": 7,
+              "resolved": 6,
+              "targetHits": 3,
+              "stops": 2,
+              "timeouts": 1,
+              "other": 1,
+              "targetHitRatePct": 50
+            },
+            {
+              "recommendationNumber": 3,
+              "sample": 7,
+              "resolved": 6,
+              "targetHits": 4,
+              "stops": 1,
+              "timeouts": 1,
+              "other": 1,
+              "targetHitRatePct": 66.67
+            },
+            {
+              "recommendationNumber": 4,
+              "sample": 7,
+              "resolved": 7,
+              "targetHits": 5,
+              "stops": 2,
+              "timeouts": 0,
+              "other": 0,
+              "targetHitRatePct": 71.43
+            },
+            {
+              "recommendationNumber": 5,
+              "sample": 7,
+              "resolved": 6,
+              "targetHits": 3,
+              "stops": 3,
+              "timeouts": 0,
+              "other": 1,
+              "targetHitRatePct": 50
+            },
+            {
+              "recommendationNumber": 6,
+              "sample": 7,
+              "resolved": 7,
+              "targetHits": 5,
+              "stops": 2,
+              "timeouts": 0,
+              "other": 0,
+              "targetHitRatePct": 71.43
+            },
+            {
+              "recommendationNumber": 7,
+              "sample": 7,
+              "resolved": 7,
+              "targetHits": 3,
+              "stops": 4,
+              "timeouts": 0,
+              "other": 0,
+              "targetHitRatePct": 42.86
+            },
+            {
+              "recommendationNumber": 8,
+              "sample": 7,
+              "resolved": 7,
+              "targetHits": 2,
+              "stops": 4,
+              "timeouts": 1,
+              "other": 0,
+              "targetHitRatePct": 28.57
+            },
+            {
+              "recommendationNumber": 9,
+              "sample": 7,
+              "resolved": 6,
+              "targetHits": 3,
+              "stops": 3,
+              "timeouts": 0,
+              "other": 1,
+              "targetHitRatePct": 50
+            },
+            {
+              "recommendationNumber": 10,
+              "sample": 7,
+              "resolved": 7,
+              "targetHits": 6,
+              "stops": 1,
+              "timeouts": 0,
+              "other": 0,
+              "targetHitRatePct": 85.71
+            },
+            {
+              "recommendationNumber": 11,
+              "sample": 6,
+              "resolved": 6,
+              "targetHits": 4,
+              "stops": 1,
+              "timeouts": 1,
+              "other": 0,
+              "targetHitRatePct": 66.67
+            },
+            {
+              "recommendationNumber": 12,
+              "sample": 6,
+              "resolved": 6,
+              "targetHits": 5,
+              "stops": 1,
+              "timeouts": 0,
+              "other": 0,
+              "targetHitRatePct": 83.33
+            }
+          ],
+          "mostTargets": {
+            "recommendationNumber": 10,
+            "sample": 7,
+            "resolved": 7,
+            "targetHits": 6,
+            "stops": 1,
+            "timeouts": 0,
+            "other": 0,
+            "targetHitRatePct": 85.71
+          },
+          "highestHitRate": {
+            "recommendationNumber": 10,
+            "sample": 7,
+            "resolved": 7,
+            "targetHits": 6,
+            "stops": 1,
+            "timeouts": 0,
+            "other": 0,
+            "targetHitRatePct": 85.71
+          },
+          "engine": "EGX ONE",
+          "evidenceGrade": "POINT_IN_TIME_HISTORICAL_REPLAY",
+          "definition": "Rank after the frozen daily candidate sort, before outcomes are known."
+        }
       },
       "regimeGuardedShadow": {
         "eligible": 391,
@@ -77077,7 +77227,76 @@
       "netReturnProfitFactor": 1.521,
       "estimatedRoundTripCostPct": 0.6,
       "commonSignalDates": 7,
-      "sameTickerSameDateOverlap": 0
+      "sameTickerSameDateOverlap": 0,
+      "recommendationNumberStats": {
+        "numbering": "ONE_BASED_SESSION_ORDER",
+        "selectionRule": "MOST_TARGET_HITS_THEN_HIT_RATE_THEN_RESOLVED_THEN_LOWER_NUMBER",
+        "byNumber": [
+          {
+            "recommendationNumber": 1,
+            "sample": 7,
+            "resolved": 7,
+            "targetHits": 3,
+            "stops": 4,
+            "timeouts": 0,
+            "other": 0,
+            "targetHitRatePct": 42.86
+          },
+          {
+            "recommendationNumber": 2,
+            "sample": 7,
+            "resolved": 6,
+            "targetHits": 4,
+            "stops": 2,
+            "timeouts": 0,
+            "other": 1,
+            "targetHitRatePct": 66.67
+          },
+          {
+            "recommendationNumber": 3,
+            "sample": 7,
+            "resolved": 6,
+            "targetHits": 4,
+            "stops": 2,
+            "timeouts": 0,
+            "other": 1,
+            "targetHitRatePct": 66.67
+          },
+          {
+            "recommendationNumber": 4,
+            "sample": 6,
+            "resolved": 6,
+            "targetHits": 3,
+            "stops": 3,
+            "timeouts": 0,
+            "other": 0,
+            "targetHitRatePct": 50
+          }
+        ],
+        "mostTargets": {
+          "recommendationNumber": 2,
+          "sample": 7,
+          "resolved": 6,
+          "targetHits": 4,
+          "stops": 2,
+          "timeouts": 0,
+          "other": 1,
+          "targetHitRatePct": 66.67
+        },
+        "highestHitRate": {
+          "recommendationNumber": 2,
+          "sample": 7,
+          "resolved": 6,
+          "targetHits": 4,
+          "stops": 2,
+          "timeouts": 0,
+          "other": 1,
+          "targetHitRatePct": 66.67
+        },
+        "engine": "V16.9 EGX PRO",
+        "evidenceGrade": "EXACT_LOGGED_LEDGER",
+        "definition": "1-based member order preserved inside each frozen V16.9 signal-date ledger entry."
+      }
     },
     "gannFusionX": {
       "evidenceGrade": "RECONSTRUCTED_FROM_FROZEN_CODE",
@@ -77132,8 +77351,8 @@
       "2026-08-11",
       "2026-08-12"
     ],
-    "comparisonHash": "c1b9131d3f09d7a4ed3c9ed53e6b6599ada754d5528ada43ab31d4be8e7dcf15"
+    "comparisonHash": "79f2a62ad0570c97848987804380414390db2ec5e4c37f8787d783f452119ea5"
   },
-  "artifactHash": "de9bed5234775252ee7c280b1e86b34a4ad145112294078f05e8fbc869250229",
+  "artifactHash": "ee7187623ff37a51be9f30305603f392a3eee32fb3b2a29dedffc9e6703a8a56",
   "generatedAt": "2026-08-31T23:59:59Z"
 }
