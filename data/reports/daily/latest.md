@@ -1,24 +1,24 @@
-# تقرير جلسة 2026-09-01
+# تقرير جلسة 2026-09-02
 
 - حالة التشغيل: **يحتاج متابعة**
-- الأول فنيًا: **ELKA**
+- الأول فنيًا: **CCAP**
 - أول B للمراقبة: **CCAP**
 - الجاهز ورقيًا: **لا يوجد**
 - إشارات جديدة: **20**
-- دخول جديد: **20**
-- صفقات مغلقة: **25**
-- منتهية دون دخول: **1**
+- دخول جديد: **19**
+- صفقات مغلقة: **16**
+- منتهية دون دخول: **0**
 
 ## حالة الاستراتيجيات
 
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 340, PF 1.3802, Average R 0.1933
-- breakout: RESEARCH_ONLY — صفقات مغلقة 68, PF 1.6097, Average R 0.2961
-- pullback: RESEARCH_ONLY — صفقات مغلقة 17, PF 5.1164, Average R 0.8397
+- breakout: ACTIVE_LIMITED — صفقات مغلقة 72, PF 1.7058, Average R 0.3341
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 351, PF 1.3585, Average R 0.183
+- pullback: RESEARCH_ONLY — صفقات مغلقة 18, PF 5.2711, Average R 0.8228
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 96.35%, below preferred 98%.
+- تحذير: Data coverage is 96.43%, below preferred 98%.
 - تحذير: 40 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `d157fd15c1606c040ca99fc9a93e9750b2bacc1254dddd93b8c974397504eaf3`
+بصمة التقرير: `8a894f2ad3bc117d64c0ddd3873338c0fa4b011d398384e4297f553a5498aed3`
