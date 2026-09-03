@@ -1,14 +1,14 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-09-03T19:07:24.727Z",
+  "generatedAt": "2026-09-03T19:30:32.944Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-09-03",
-  "professionalReadinessScore": 39,
-  "foundationQualityScore": 86.5,
-  "stage": "RESEARCH_ONLY",
-  "stageAr": "بحثي / مراجعة فقط",
+  "professionalReadinessScore": 79,
+  "foundationQualityScore": 88.5,
+  "stage": "ADVANCED_PILOT",
+  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
   "professionalClaimAllowed": false,
-  "capReason": "ENGINE_OR_GOVERNANCE_HARD_GATE",
+  "capReason": "LIVE_FORWARD_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
@@ -52,8 +52,8 @@
       "details": {
         "sessions": 50,
         "minimumSessions": 30,
-        "averageNetReturnPct": 1.6366,
-        "profitFactor": 2.701,
+        "averageNetReturnPct": 1.6077,
+        "profitFactor": 2.559,
         "sessionWinRatePct": 58,
         "maximumDrawdownPct": -10.877,
         "acceptanceGatePassed": true
@@ -119,25 +119,19 @@
       "id": "RISK_GOVERNANCE",
       "labelAr": "إدارة المخاطر والحوكمة",
       "weight": 10,
-      "points": 8,
-      "scorePct": 80,
+      "points": 10,
+      "scorePct": 100,
       "details": {
         "engineLocked": true,
         "canonical": true,
         "failClosed": true,
-        "immutableLedger": false,
+        "immutableLedger": true,
         "allocationGuard": true,
         "plannedAllocationPct": 50,
         "automaticOrdersDisabled": true,
         "stackPass": true
       },
-      "requirements": [
-        {
-          "code": "IMMUTABLE_LEDGER",
-          "labelAr": "عدم وجود تعارض في Immutable Signal Ledger",
-          "hard": true
-        }
-      ]
+      "requirements": []
     }
   ],
   "hardGates": {
@@ -145,7 +139,7 @@
     "dataAndSessionIntegrity": true,
     "walkForwardEvidence": true,
     "liveForwardMinimum": false,
-    "governanceAndRisk": false
+    "governanceAndRisk": true
   },
   "hardBlockers": [
     {
@@ -159,12 +153,6 @@
       "labelAr": "Profit Factor حي ≥ 1.20",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
-    },
-    {
-      "code": "IMMUTABLE_LEDGER",
-      "labelAr": "عدم وجود تعارض في Immutable Signal Ledger",
-      "hard": true,
-      "axis": "RISK_GOVERNANCE"
     }
   ],
   "softGaps": [
@@ -195,12 +183,6 @@
       "axis": "V169_LIVE_FORWARD"
     },
     {
-      "code": "IMMUTABLE_LEDGER",
-      "labelAr": "عدم وجود تعارض في Immutable Signal Ledger",
-      "hard": true,
-      "axis": "RISK_GOVERNANCE"
-    },
-    {
       "code": "SOURCE_EVIDENCE_100",
       "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 96.3% إلى 100%",
       "hard": false,
@@ -221,10 +203,10 @@
   },
   "evidence": {
     "priceTruthGeneratedAt": "2026-09-03T17:08:16.072Z",
-    "basketGeneratedAt": "2026-09-03T17:09:36.669303+00:00",
-    "liveGeneratedAt": "2026-09-03T17:09:41.595484+00:00",
-    "canonicalSnapshotHash": "3cfbc4fb70343ae2d3253c1b15da7a244fb1cd57c7195f83b02e710fa6ef0692",
-    "consensusGeneratedAt": "2026-09-03T17:08:18.075Z",
+    "basketGeneratedAt": "2026-09-03T19:28:12.681167+00:00",
+    "liveGeneratedAt": "2026-09-03T19:28:18.660455+00:00",
+    "canonicalSnapshotHash": "806bf785cb4237a5871992c6dab1db72ed57aa6d95cda848cb637f2ba510950a",
+    "consensusGeneratedAt": "2026-09-03T19:30:30.790Z",
     "intelligenceSnapshotGeneratedAt": "2026-09-03T19:07:24.599Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -259,5 +241,5 @@
       ]
     }
   },
-  "readinessHash": "42d69fd0c4e1d851aae990ebf3b05f9653cf5f328d7672025a69c36fe34278b7"
+  "readinessHash": "96af8d579541d6c36257507c40011be015a772c0c911e5718790779f41d9b5ed"
 }
