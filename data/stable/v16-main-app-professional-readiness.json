@@ -1,14 +1,14 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-09-03T17:08:19.405Z",
+  "generatedAt": "2026-09-03T19:07:24.727Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-09-03",
-  "professionalReadinessScore": 79,
-  "foundationQualityScore": 98.9,
-  "stage": "ADVANCED_PILOT",
-  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
+  "professionalReadinessScore": 39,
+  "foundationQualityScore": 86.5,
+  "stage": "RESEARCH_ONLY",
+  "stageAr": "بحثي / مراجعة فقط",
   "professionalClaimAllowed": false,
-  "capReason": "LIVE_FORWARD_HARD_GATE",
+  "capReason": "ENGINE_OR_GOVERNANCE_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
@@ -52,8 +52,8 @@
       "details": {
         "sessions": 50,
         "minimumSessions": 30,
-        "averageNetReturnPct": 1.6077,
-        "profitFactor": 2.559,
+        "averageNetReturnPct": 1.6366,
+        "profitFactor": 2.701,
         "sessionWinRatePct": 58,
         "maximumDrawdownPct": -10.877,
         "acceptanceGatePassed": true
@@ -64,23 +64,28 @@
       "id": "V169_LIVE_FORWARD",
       "labelAr": "السجل الحي / Forward لـV16.9",
       "weight": 25,
-      "points": 24.38,
-      "scorePct": 97.5,
+      "points": 14,
+      "scorePct": 56,
       "details": {
-        "resolvedSessions": 19,
+        "resolvedSessions": 8,
         "minimumResolvedSessions": 20,
-        "sampleCompletionPct": 95,
-        "winningSessionPct": 52.63,
-        "averageNetReturnPct": 0.2719,
-        "profitFactor": 1.311,
-        "maximumDrawdownPct": -11.155,
+        "sampleCompletionPct": 40,
+        "winningSessionPct": 50,
+        "averageNetReturnPct": 0.2466,
+        "profitFactor": 1.171,
+        "maximumDrawdownPct": -11.08,
         "promotionEligible": false,
         "hardGatePassed": false
       },
       "requirements": [
         {
           "code": "LIVE_MIN_RESOLVED_SESSIONS",
-          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 19 والمتبقي 1",
+          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+          "hard": true
+        },
+        {
+          "code": "LIVE_PF",
+          "labelAr": "Profit Factor حي ≥ 1.20",
           "hard": true
         }
       ]
@@ -102,7 +107,7 @@
         "consensusRegressionPassed": true,
         "persistedAuditableIntelligenceSnapshot": true,
         "intelligenceSnapshotSessionAligned": true,
-        "intelligenceSnapshotGeneratedAt": "2026-09-03T15:51:00.509Z",
+        "intelligenceSnapshotGeneratedAt": "2026-09-03T19:07:24.599Z",
         "technicalAuditCoveragePct": 100,
         "financialAuditCoveragePct": 100,
         "newsAuditCoveragePct": 100,
@@ -114,19 +119,25 @@
       "id": "RISK_GOVERNANCE",
       "labelAr": "إدارة المخاطر والحوكمة",
       "weight": 10,
-      "points": 10,
-      "scorePct": 100,
+      "points": 8,
+      "scorePct": 80,
       "details": {
         "engineLocked": true,
         "canonical": true,
         "failClosed": true,
-        "immutableLedger": true,
+        "immutableLedger": false,
         "allocationGuard": true,
         "plannedAllocationPct": 50,
         "automaticOrdersDisabled": true,
         "stackPass": true
       },
-      "requirements": []
+      "requirements": [
+        {
+          "code": "IMMUTABLE_LEDGER",
+          "labelAr": "عدم وجود تعارض في Immutable Signal Ledger",
+          "hard": true
+        }
+      ]
     }
   ],
   "hardGates": {
@@ -134,14 +145,26 @@
     "dataAndSessionIntegrity": true,
     "walkForwardEvidence": true,
     "liveForwardMinimum": false,
-    "governanceAndRisk": true
+    "governanceAndRisk": false
   },
   "hardBlockers": [
     {
       "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 19 والمتبقي 1",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "LIVE_PF",
+      "labelAr": "Profit Factor حي ≥ 1.20",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "IMMUTABLE_LEDGER",
+      "labelAr": "عدم وجود تعارض في Immutable Signal Ledger",
+      "hard": true,
+      "axis": "RISK_GOVERNANCE"
     }
   ],
   "softGaps": [
@@ -161,9 +184,21 @@
   "requirementsTo100": [
     {
       "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 19 والمتبقي 1",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "LIVE_PF",
+      "labelAr": "Profit Factor حي ≥ 1.20",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "IMMUTABLE_LEDGER",
+      "labelAr": "عدم وجود تعارض في Immutable Signal Ledger",
+      "hard": true,
+      "axis": "RISK_GOVERNANCE"
     },
     {
       "code": "SOURCE_EVIDENCE_100",
@@ -186,11 +221,11 @@
   },
   "evidence": {
     "priceTruthGeneratedAt": "2026-09-03T17:08:16.072Z",
-    "basketGeneratedAt": "2026-09-03T12:07:24.386150+00:00",
-    "liveGeneratedAt": "2026-09-03T12:07:29.873535+00:00",
-    "canonicalSnapshotHash": "806bf785cb4237a5871992c6dab1db72ed57aa6d95cda848cb637f2ba510950a",
+    "basketGeneratedAt": "2026-09-03T17:09:36.669303+00:00",
+    "liveGeneratedAt": "2026-09-03T17:09:41.595484+00:00",
+    "canonicalSnapshotHash": "3cfbc4fb70343ae2d3253c1b15da7a244fb1cd57c7195f83b02e710fa6ef0692",
     "consensusGeneratedAt": "2026-09-03T17:08:18.075Z",
-    "intelligenceSnapshotGeneratedAt": "2026-09-03T15:51:00.509Z",
+    "intelligenceSnapshotGeneratedAt": "2026-09-03T19:07:24.599Z",
     "liveReleaseLock": {
       "version": "16.9.0",
       "engine": "V16_9_EQUAL_WEIGHT_BASKET",
@@ -224,5 +259,5 @@
       ]
     }
   },
-  "readinessHash": "e788a6dfe438b26515a2f66d75efd59d0ec179d720d23cc8bd494ee7bc803594"
+  "readinessHash": "42d69fd0c4e1d851aae990ebf3b05f9653cf5f328d7672025a69c36fe34278b7"
 }
