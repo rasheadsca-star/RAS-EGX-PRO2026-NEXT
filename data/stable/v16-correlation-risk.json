@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-09-02T19:54:45.138Z",
+  "generatedAt": "2026-09-03T12:07:31.245Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,135 +12,93 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 5,
+  "recommendationCount": 4,
   "tickers": [
+    "TRTO",
     "CERA",
-    "WCDF",
-    "ALCN",
-    "SUGR",
-    "ETRS"
+    "HDBK",
+    "ICID"
   ],
   "matrix": [
     {
+      "ticker": "TRTO",
+      "correlations": {
+        "TRTO": {
+          "value": 1,
+          "observations": 60
+        },
+        "CERA": {
+          "value": 0.156,
+          "observations": 25
+        },
+        "HDBK": {
+          "value": 0.096,
+          "observations": 25
+        },
+        "ICID": {
+          "value": 0.284,
+          "observations": 25
+        }
+      }
+    },
+    {
       "ticker": "CERA",
       "correlations": {
+        "TRTO": {
+          "value": 0.156,
+          "observations": 25
+        },
         "CERA": {
           "value": 1,
           "observations": 60
         },
-        "WCDF": {
-          "value": -0.022,
-          "observations": 50
-        },
-        "ALCN": {
-          "value": 0.349,
+        "HDBK": {
+          "value": 0.125,
           "observations": 54
         },
-        "SUGR": {
-          "value": 0.135,
-          "observations": 57
-        },
-        "ETRS": {
-          "value": 0.392,
-          "observations": 53
+        "ICID": {
+          "value": 0.155,
+          "observations": 58
         }
       }
     },
     {
-      "ticker": "WCDF",
+      "ticker": "HDBK",
       "correlations": {
+        "TRTO": {
+          "value": 0.096,
+          "observations": 25
+        },
         "CERA": {
-          "value": -0.022,
-          "observations": 50
-        },
-        "WCDF": {
-          "value": 1,
-          "observations": 60
-        },
-        "ALCN": {
-          "value": 0.229,
-          "observations": 50
-        },
-        "SUGR": {
-          "value": 0.08,
-          "observations": 51
-        },
-        "ETRS": {
-          "value": -0.09,
-          "observations": 50
-        }
-      }
-    },
-    {
-      "ticker": "ALCN",
-      "correlations": {
-        "CERA": {
-          "value": 0.349,
+          "value": 0.125,
           "observations": 54
         },
-        "WCDF": {
-          "value": 0.229,
-          "observations": 50
-        },
-        "ALCN": {
+        "HDBK": {
           "value": 1,
           "observations": 60
         },
-        "SUGR": {
-          "value": -0.06,
-          "observations": 53
-        },
-        "ETRS": {
-          "value": -0.08,
-          "observations": 53
-        }
-      }
-    },
-    {
-      "ticker": "SUGR",
-      "correlations": {
-        "CERA": {
-          "value": 0.135,
-          "observations": 57
-        },
-        "WCDF": {
-          "value": 0.08,
-          "observations": 51
-        },
-        "ALCN": {
-          "value": -0.06,
-          "observations": 53
-        },
-        "SUGR": {
-          "value": 1,
-          "observations": 60
-        },
-        "ETRS": {
-          "value": 0.065,
+        "ICID": {
+          "value": 0.204,
           "observations": 54
         }
       }
     },
     {
-      "ticker": "ETRS",
+      "ticker": "ICID",
       "correlations": {
+        "TRTO": {
+          "value": 0.284,
+          "observations": 25
+        },
         "CERA": {
-          "value": 0.392,
-          "observations": 53
+          "value": 0.155,
+          "observations": 58
         },
-        "WCDF": {
-          "value": -0.09,
-          "observations": 50
-        },
-        "ALCN": {
-          "value": -0.08,
-          "observations": 53
-        },
-        "SUGR": {
-          "value": 0.065,
+        "HDBK": {
+          "value": 0.204,
           "observations": 54
         },
-        "ETRS": {
+        "ICID": {
           "value": 1,
           "observations": 60
         }
@@ -151,8 +109,13 @@
   "sectorConcentration": [
     {
       "sector": "GENERAL",
-      "count": 5,
-      "sharePct": 100
+      "count": 3,
+      "sharePct": 75
+    },
+    {
+      "sector": "BANK",
+      "count": 1,
+      "sharePct": 25
     }
   ],
   "summary": {
@@ -160,8 +123,8 @@
     "averageHighPairCorrelation": null,
     "largestSector": {
       "sector": "GENERAL",
-      "count": 5,
-      "sharePct": 100
+      "count": 3,
+      "sharePct": 75
     },
     "regime": "NEUTRAL",
     "regimeRiskMultiplier": 0.65,
@@ -186,7 +149,7 @@
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": -10
+      "equalWeightPortfolioImpactPct": -7.5
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
@@ -196,7 +159,7 @@
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 20
+    "positionWeightPct": 25
   },
   "warnings": [
     "SECTOR_CONCENTRATION_ABOVE_40"
