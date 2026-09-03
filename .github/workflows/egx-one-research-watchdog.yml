@@ -1,0 +1,60 @@
+name: EGX ONE Research Refresh Watchdog
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Cairo post-market retry window. GitHub scheduled jobs may start late,
+    # so the watchdog checks repeatedly and dispatches only when EGX ONE is stale.
+    - cron: '30 13 * * 0-4'
+    - cron: '0 14 * * 0-4'
+    - cron: '30 14 * * 0-4'
+    - cron: '0 15 * * 0-4'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: egx-one-research-refresh-watchdog
+  cancel-in-progress: false
+
+jobs:
+  ensure-current:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Compare main session with EGX ONE publication
+        id: freshness
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_session="$(node -p "JSON.parse(require('fs').readFileSync('data/stable/v16-main-app-current.json','utf8')).sessionDate")"
+          git fetch --no-tags --depth=1 origin egx-one/clean-room-v0
+          published_session="$(git show FETCH_HEAD:data/research/published/latest.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>console.log(JSON.parse(s).signalSession))")"
+          echo "main_session=$main_session" >> "$GITHUB_OUTPUT"
+          echo "published_session=$published_session" >> "$GITHUB_OUTPUT"
+          if [[ "$published_session" != "$main_session" ]]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "EGX_ONE_STALE:$published_session->$main_session"
+          else
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo "EGX_ONE_CURRENT:$published_session"
+          fi
+
+      - name: Dispatch research refresh when stale
+        if: steps.freshness.outputs.stale == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run egx-one-research-refresh.yml --ref egx-one/clean-room-v0
+
+      - name: Summary
+        run: |
+          echo '## EGX ONE Refresh Watchdog' >> "$GITHUB_STEP_SUMMARY"
+          echo "- Main session: ${{ steps.freshness.outputs.main_session }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Published session: ${{ steps.freshness.outputs.published_session }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Refresh dispatched: ${{ steps.freshness.outputs.stale }}" >> "$GITHUB_STEP_SUMMARY"
