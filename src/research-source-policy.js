@@ -1,4 +1,4 @@
-// 2026-09-01 refresh trigger: rerun EGX ONE research pipeline after confirmed main market session update.
+// 2026-09-03 refresh trigger: rerun EGX ONE research pipeline after confirmed main market session update.
 export const RESEARCH_AUTHORITY_MODE='RESEARCH';
 
 export const RESEARCH_SOURCE_POLICY=Object.freeze({
