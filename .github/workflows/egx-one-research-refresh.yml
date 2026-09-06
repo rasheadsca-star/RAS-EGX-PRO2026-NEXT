@@ -13,17 +13,20 @@ on:
       - 'src/research-strategy-engine.js'
       - 'src/research-publication.js'
       - 'src/research-ui-summary.js'
+      - 'src/research-forward-resolution-policy.js'
       - 'scripts/research-refresh-live.mjs'
       - 'scripts/research-build-features.mjs'
       - 'scripts/research-build-strategy.mjs'
       - 'scripts/research-build-publication.mjs'
       - 'scripts/research-build-ui-summary.mjs'
+      - 'scripts/research-freeze-forward-policy.mjs'
       - 'tests/research-live-adapters.test.mjs'
       - 'tests/research-current-session.test.mjs'
       - 'tests/research-feature-engine.test.mjs'
       - 'tests/research-strategy-engine.test.mjs'
       - 'tests/research-publication.test.mjs'
       - 'tests/research-ui-summary.test.mjs'
+      - 'tests/research-forward-resolution-policy.test.mjs'
       - 'package.json'
       - '.github/workflows/egx-one-research-refresh.yml'
   schedule:
@@ -31,6 +34,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: egx-one-research-market-refresh
@@ -230,15 +234,28 @@ jobs:
           if(!x.uiSnapshotHash)fail('RESEARCH_UI_HASH_MISSING');
           NODE
 
-      - name: Commit atomic research snapshots only
+      - name: Freeze forward policy for the exact strategy snapshot
+        id: policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run research:forward-policy
+          hash="$(node -p "JSON.parse(require('fs').readFileSync('data/research/strategy/latest.json','utf8')).strategySnapshotHash")"
+          file="data/research/shadow-ledger/policies/${hash}.json"
+          test -s "$file"
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "FORWARD_POLICY_ATOMIC_READY:$hash"
+
+      - name: Commit atomic research snapshots and matching forward policy
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/live data/research/features data/research/strategy data/research/published data/research/ui
+          git add data/research/live data/research/features data/research/strategy data/research/published data/research/ui data/research/shadow-ledger/policies
           if git diff --cached --quiet; then
-            echo 'No research snapshot change.'
+            echo 'No research snapshot or policy change.'
           else
             git commit -m "Refresh EGX ONE atomic research recommendations snapshot"
             for attempt in 1 2 3; do
@@ -257,15 +274,27 @@ jobs:
             data/research/strategy/latest.json
             data/research/published/latest.json
             data/research/ui/latest.json
+            ${{ steps.policy.outputs.file }}
           if-no-files-found: error
+
+      - name: Dispatch the single complete Production UI Deploy explicitly
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run egx-one-production-ui-deploy.yml --ref egx-one/clean-room-v0
+          echo 'EGX_ONE_PRODUCTION_DEPLOY_DISPATCHED'
 
       - name: Report refresh handoff
         env:
           EXPECTED: ${{ steps.expected.outputs.session }}
         run: |
           echo "RESEARCH_REFRESH_VERIFIED:${EXPECTED}"
-          echo "LIVE_DEPLOYMENT_DELEGATED:EGX_ONE_PRODUCTION_UI_DEPLOY"
+          echo "FORWARD_POLICY_VERIFIED:${{ steps.policy.outputs.hash }}"
+          echo "LIVE_DEPLOYMENT_DISPATCHED:EGX_ONE_PRODUCTION_UI_DEPLOY"
           echo '## EGX ONE Research Refresh' >> "$GITHUB_STEP_SUMMARY"
           echo "- Session: ${EXPECTED}" >> "$GITHUB_STEP_SUMMARY"
           echo '- Research snapshots: VERIFIED' >> "$GITHUB_STEP_SUMMARY"
-          echo '- Vercel deploy: delegated to the single complete Production UI Deploy workflow' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Forward policy: VERIFIED and committed atomically' >> "$GITHUB_STEP_SUMMARY"
+          echo '- Vercel deploy workflow: explicitly dispatched' >> "$GITHUB_STEP_SUMMARY"
