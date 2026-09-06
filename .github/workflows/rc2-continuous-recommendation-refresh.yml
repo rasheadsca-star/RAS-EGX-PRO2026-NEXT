@@ -54,71 +54,57 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cat > /tmp/validate-rc2.cjs <<'NODE'
+          const fs = require('fs');
+          const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
+          const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
+          const fail = (m) => { console.error(m); process.exit(1); };
+          if (scan?.ok !== true) fail('RC2 scan is not OK');
+          if (scan?.engine !== 'TFE_V20_FUSION_RC2') fail(`Unexpected engine: ${scan?.engine}`);
+          if (!Array.isArray(scan?.recommendations)) fail('Recommendations array missing');
+          if (scan?.permissions?.executionAllowed !== false) fail('Execution must remain blocked');
+          if (scan?.permissions?.automaticOrders !== false) fail('Automatic orders must remain blocked');
+          if (market?.ok !== true || !Array.isArray(market?.symbols)) fail('Market index is not valid');
+          const recDates = [...new Set(scan.recommendations.map(x => x?.sessionDate).filter(Boolean))].sort();
+          if (recDates.length > 1) fail(`Mixed recommendation sessions: ${recDates.join(',')}`);
+          const recommendationSession = recDates[0] ?? null;
+          const marketSession = market?.sessionDate ?? null;
+          const universeSession = scan?.universe?.sessionDate ?? null;
+          const effectiveSession = [recommendationSession, marketSession, universeSession].filter(Boolean).sort().at(-1) ?? null;
+          if (recommendationSession && marketSession && recommendationSession !== marketSession) {
+            fail(`Published recommendation session mismatch: rec=${recommendationSession}, market=${marketSession}`);
+          }
+          if (universeSession && effectiveSession && universeSession > effectiveSession) {
+            fail(`Universe session is unexpectedly ahead: universe=${universeSession}, effective=${effectiveSession}`);
+          }
+          if (universeSession && marketSession && universeSession !== marketSession) {
+            console.warn(`RC2_UNIVERSE_METADATA_LAG:${universeSession}->${marketSession}`);
+          }
+          const summary = {
+            refreshedAt: new Date().toISOString(), engine: scan.engine, sourceCommit: scan.sourceCommit ?? null,
+            sessionDate: effectiveSession, recommendationSessionDate: recommendationSession,
+            marketSessionDate: marketSession, universeSessionDate: universeSession,
+            scanned: scan.summary?.scanned ?? null, publicationEligibleTotal: scan.summary?.publicationEligibleTotal ?? null,
+            returned: scan.summary?.returned ?? scan.recommendations.length, tickers: scan.recommendations.map(x => x.ticker),
+            executionAllowed: scan.permissions.executionAllowed, automaticOrders: scan.permissions.automaticOrders,
+            marketSymbols: market.symbols.length, scoringModelChanged: false
+          };
+          console.log(`RC2_CONTINUOUS_REFRESH_PASS:${JSON.stringify(summary)}`);
+          NODE
+
           ok=0
           for attempt in 1 2 3; do
             stamp="$(date +%s)"
             if curl --fail --silent --show-error --max-time 180 \
               "$RC2_PRODUCTION_URL/api/index?route=scan&limit=20&t=$stamp" -o /tmp/rc2-scan.json \
               && curl --fail --silent --show-error --max-time 60 \
-              "$RC2_PRODUCTION_URL/api/index?route=market-index&t=$stamp" -o /tmp/rc2-market.json; then
-              if node - <<'NODE'
-              const fs = require('fs');
-              const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
-              const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
-              const fail = (m) => { console.error(m); process.exit(1); };
-              if (scan?.ok !== true) fail('RC2 scan is not OK');
-              if (scan?.engine !== 'TFE_V20_FUSION_RC2') fail(`Unexpected engine: ${scan?.engine}`);
-              if (!Array.isArray(scan?.recommendations)) fail('Recommendations array missing');
-              if (scan?.permissions?.executionAllowed !== false) fail('Execution must remain blocked');
-              if (scan?.permissions?.automaticOrders !== false) fail('Automatic orders must remain blocked');
-              if (market?.ok !== true || !Array.isArray(market?.symbols)) fail('Market index is not valid');
-
-              const recDates = [...new Set(scan.recommendations.map(x => x?.sessionDate).filter(Boolean))].sort();
-              if (recDates.length > 1) fail(`Mixed recommendation sessions: ${recDates.join(',')}`);
-              const recommendationSession = recDates[0] ?? null;
-              const marketSession = market?.sessionDate ?? null;
-              const universeSession = scan?.universe?.sessionDate ?? null;
-              const effectiveSession = [recommendationSession, marketSession, universeSession].filter(Boolean).sort().at(-1) ?? null;
-
-              // A published recommendation must agree with the live market session when both exist.
-              // universe.sessionDate is summary metadata and may lag while the scan already carries
-              // a newer recommendation snapshot; a lag is reported, not treated as a false outage.
-              if (recommendationSession && marketSession && recommendationSession !== marketSession) {
-                fail(`Published recommendation session mismatch: rec=${recommendationSession}, market=${marketSession}`);
-              }
-              if (universeSession && effectiveSession && universeSession > effectiveSession) {
-                fail(`Universe session is unexpectedly ahead: universe=${universeSession}, effective=${effectiveSession}`);
-              }
-              if (universeSession && marketSession && universeSession !== marketSession) {
-                console.warn(`RC2_UNIVERSE_METADATA_LAG:${universeSession}->${marketSession}`);
-              }
-
-              const summary = {
-                refreshedAt: new Date().toISOString(),
-                engine: scan.engine,
-                sourceCommit: scan.sourceCommit ?? null,
-                sessionDate: effectiveSession,
-                recommendationSessionDate: recommendationSession,
-                marketSessionDate: marketSession,
-                universeSessionDate: universeSession,
-                scanned: scan.summary?.scanned ?? null,
-                publicationEligibleTotal: scan.summary?.publicationEligibleTotal ?? null,
-                returned: scan.summary?.returned ?? scan.recommendations.length,
-                tickers: scan.recommendations.map(x => x.ticker),
-                executionAllowed: scan.permissions.executionAllowed,
-                automaticOrders: scan.permissions.automaticOrders,
-                marketSymbols: market.symbols.length,
-                scoringModelChanged: false
-              };
-              console.log(`RC2_CONTINUOUS_REFRESH_PASS:${JSON.stringify(summary)}`);
-              NODE
-              then
-                ok=1
-                break
-              fi
+              "$RC2_PRODUCTION_URL/api/index?route=market-index&t=$stamp" -o /tmp/rc2-market.json \
+              && node /tmp/validate-rc2.cjs; then
+              ok=1
+              break
             fi
             echo "RC2 refresh attempt $attempt failed; retrying..."
-            sleep 45
+            sleep 20
           done
           [ "$ok" -eq 1 ] || { echo "RC2 continuous refresh failed after retries"; exit 1; }
 
@@ -142,7 +128,6 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'changed=false\n');
             process.exit(0);
           }
-
           const recommendations = Array.isArray(scan?.recommendations) ? scan.recommendations : [];
           const recDates = [...new Set(recommendations.map(x => x?.sessionDate).filter(Boolean))].sort();
           if (recDates.length > 1) throw new Error(`ARCHIVE_MIXED_RECOMMENDATION_SESSIONS:${recDates.join(',')}`);
@@ -153,7 +138,6 @@ jobs:
             throw new Error(`ARCHIVE_RECOMMENDATION_MARKET_SESSION_MISMATCH:${recommendationSession}:${marketSession}`);
           }
           const sessionDate = recommendationSession ?? marketSession ?? universeSession ?? null;
-
           if (!sessionDate || !recommendations.length) {
             console.log('ARCHIVE_SKIP_NO_PUBLISHED_RECOMMENDATIONS');
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'changed=false\n');
@@ -173,21 +157,12 @@ jobs:
             archive.records.push({
               sourceType:'PRODUCTION_POSTCLOSE_ARCHIVE',
               verifiedFrom:`RC2 production scan ${scan.generatedAt ?? new Date().toISOString()}`,
-              sessionDate,
-              rank:x.rank ?? null,
-              ticker,
-              decision:x.decision ?? null,
-              publicationState:x.publicationState ?? 'RESEARCH_CANDIDATE',
-              price:x.price ?? null,
-              entryLow:x.tradePlan?.entryLow ?? null,
-              entryHigh:x.tradePlan?.entryHigh ?? null,
-              stop:x.tradePlan?.stop ?? null,
-              target1:x.tradePlan?.target1 ?? null,
-              target2:x.tradePlan?.target2 ?? null,
-              fusionRankScore:x.scores?.fusionRank ?? null,
-              researchScore:x.scores?.research ?? null,
-              technicalScore:x.scores?.core ?? null,
-              sourceCommit:scan.sourceCommit ?? null
+              sessionDate, rank:x.rank ?? null, ticker, decision:x.decision ?? null,
+              publicationState:x.publicationState ?? 'RESEARCH_CANDIDATE', price:x.price ?? null,
+              entryLow:x.tradePlan?.entryLow ?? null, entryHigh:x.tradePlan?.entryHigh ?? null,
+              stop:x.tradePlan?.stop ?? null, target1:x.tradePlan?.target1 ?? null, target2:x.tradePlan?.target2 ?? null,
+              fusionRankScore:x.scores?.fusionRank ?? null, researchScore:x.scores?.research ?? null,
+              technicalScore:x.scores?.core ?? null, sourceCommit:scan.sourceCommit ?? null
             });
             seen.add(key); added++;
           }
