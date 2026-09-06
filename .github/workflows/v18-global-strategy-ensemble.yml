@@ -11,6 +11,7 @@ on:
       - scripts/stable/v18-evidence-ranking.cjs
       - scripts/stable/v18-forward-ledger-seed.cjs
       - scripts/stable/v18-engine-performance-league.cjs
+      - scripts/stable/v18-recommendation-position-performance.cjs
       - scripts/stable/v18-unified-decision-center.cjs
       - scripts/stable/build-v18-decision-board.cjs
       - scripts/stable/build-v18-web-preview.cjs
@@ -45,11 +46,13 @@ jobs:
           node --check scripts/stable/v18-leadership-extension.cjs
           node --check scripts/stable/v18-evidence-ranking.cjs
           node --check scripts/stable/v18-engine-performance-league.cjs
+          node --check scripts/stable/v18-recommendation-position-performance.cjs
           node --check scripts/stable/v18-unified-decision-center.cjs
           node --check scripts/stable/build-v18-decision-board.cjs
           node --check scripts/stable/build-v18-web-preview.cjs
           node --check preview-v18/app.js
           node --check preview-v18/performance.js
+          node --check preview-v18/position-performance.js
 
       - name: Build V18.3 unified decision center
         run: node scripts/stable/build-v18-decision-board.cjs
@@ -83,6 +86,15 @@ jobs:
           for (const e of league.engines || []) {
             if (e.targetHitRateResolvedPct != null && (e.targetHitRateResolvedPct < 0 || e.targetHitRateResolvedPct > 100)) fail(`Invalid target rate: ${e.engineId}`);
             if (e.leagueRank && !e.rankingEligible) fail(`Engine ranked before minimum sample: ${e.engineId}`);
+          }
+
+          const position = out.recommendationPositionPerformance;
+          if (!position || position.schemaVersion !== '18.3.0-forward-position') fail('Recommendation-position performance missing');
+          if (position.trackingStartsOn !== '2026-09-07' || position.noBackfillBeforeStart !== true) fail('Recommendation-position tracking start/guard invalid');
+          if ((position.top10 || []).length !== 10) fail('Recommendation-position Top 10 missing');
+          for (const p of position.positions || []) {
+            if (p.targetHitRateResolvedPct != null && (p.targetHitRateResolvedPct < 0 || p.targetHitRateResolvedPct > 100)) fail(`Invalid rank target rate: #${p.recommendationNumber}`);
+            if (p.rankingEligible && p.resolvedSignals < position.rankingMinimumResolvedSignals) fail(`Rank #${p.recommendationNumber} eligible too early`);
           }
 
           const tickers = out.allCandidates.map(x => x.ticker);
@@ -135,6 +147,7 @@ jobs:
 
           const app = fs.readFileSync('preview-v18/app.js','utf8');
           if (!app.includes('renderEnginePerformanceLeague')) fail('Engine Performance League UI was not bundled');
+          if (!app.includes('renderRecommendationPositionPerformance')) fail('Recommendation-position UI was not bundled');
 
           console.log(JSON.stringify({
             schemaVersion: out.schemaVersion,
@@ -148,6 +161,9 @@ jobs:
             enginesWithSignals: league.summary.enginesWithSignals,
             resolvedReference: league.summary.totalResolvedReferenceSignals,
             engineLeague: league.engines.map(x=>({engine:x.engineId,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,rankingEligible:x.rankingEligible,status:x.status})),
+            recommendationNumberTop10: position.top10.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,eligible:x.rankingEligible})),
+            bestRecommendationNumberByTargetCount: position.bestByTargetCount,
+            bestRecommendationNumberByTargetRate: position.bestByTargetRate,
             tmghTurnover,
             comiTurnover
           }, null, 2));
@@ -160,6 +176,7 @@ jobs:
           test -s preview-v18-web/manifest.json
           grep -q '18.2.0-shadow' preview-v18-web/index.html
           grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
+          grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
 
       - name: Package static preview
         run: |
@@ -167,6 +184,7 @@ jobs:
           test -s preview-v18/styles.css
           test -s preview-v18/app.js
           test -s preview-v18/performance.js
+          test -s preview-v18/position-performance.js
           test -s preview-v18/data.json
           test -s preview-v18/forward-ledger.json
 
