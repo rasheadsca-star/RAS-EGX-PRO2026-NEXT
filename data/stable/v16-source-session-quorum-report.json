@@ -1,9 +1,9 @@
 {
   "schemaVersion": "16.3.9-source-session-quorum-6-explicit-stale-minority-quarantine",
-  "checkedAt": "2026-09-06T14:22:51.503Z",
+  "checkedAt": "2026-09-06T16:24:30.312Z",
   "expectedSession": "2026-09-06",
   "cairoDate": "2026-09-06",
-  "cairoTime": "17:22",
+  "cairoTime": "19:24",
   "sameDayAfterClose": true,
   "marketFetchDate": "2026-09-06",
   "marketSource": "mubasher_symbol_pages_precise_enriched",
@@ -13,66 +13,90 @@
   "explicitQuorumPassed": false,
   "timeOnlyCandidates": 209,
   "candidateCoveragePct": 95.87,
-  "recoveredSourceMarketTimeRows": 209,
-  "recoveryAttemptedRows": 217,
-  "recoveryFailures": [
-    {
-      "symbol": "ARVA",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "MEGM",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "DCCC",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "MMAT",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "SEIGA",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "ESRS",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "IRAX",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "TORA",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    }
-  ],
+  "recoveredSourceMarketTimeRows": 0,
+  "recoveryAttemptedRows": 0,
+  "recoveryFailures": [],
   "inferenceQuorumPassed": true,
   "minimumQuorum": 80,
   "minimumCoveragePct": 80,
-  "explicitMismatches": 0,
-  "explicitMismatchPct": 0,
+  "explicitMismatches": 8,
+  "explicitMismatchPct": 3.67,
   "maximumExplicitMismatchPct": 5,
   "explicitConflictQuarantinePassed": true,
-  "quarantinedExplicitMismatchRows": 0,
-  "quarantinedExplicitMismatches": [],
+  "quarantinedExplicitMismatchRows": 8,
+  "quarantinedExplicitMismatches": [
+    {
+      "symbol": "ARVA",
+      "sourceSessionDate": "2026-08-16",
+      "sourceMarketTime": "16 August 01:27 PM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ARVA/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "MEGM",
+      "sourceSessionDate": "2022-04-28",
+      "sourceMarketTime": "28 April 2022 11:50 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "DCCC",
+      "sourceSessionDate": "2008-04-07",
+      "sourceMarketTime": "7 April 2008 02:00 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DCCC/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "MMAT",
+      "sourceSessionDate": "2026-09-03",
+      "sourceMarketTime": "3 September 12:54 PM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MMAT/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "SEIGA",
+      "sourceSessionDate": "2002-02-05",
+      "sourceMarketTime": "5 February 2002 02:00 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "ESRS",
+      "sourceSessionDate": "2026-09-02",
+      "sourceMarketTime": "2 September 11:18 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ESRS/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "IRAX",
+      "sourceSessionDate": "2026-09-02",
+      "sourceMarketTime": "2 September 11:18 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/IRAX/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "TORA",
+      "sourceSessionDate": "2026-09-02",
+      "sourceMarketTime": "2 September 11:29 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/TORA/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    }
+  ],
   "quorumPassed": true,
-  "mode": "TIME_ONLY_CROSS_SYMBOL_INFERENCE",
+  "mode": "TIME_ONLY_CROSS_SYMBOL_INFERENCE_WITH_STALE_MINORITY_QUARANTINE",
   "promotedRows": 209,
   "candidateDiagnostics": {
     "reasonCounts": {
       "ELIGIBLE_TIME_ONLY_MUBASHER_ROW": 209,
-      "INVALID_SOURCE_MARKET_TIME": 8,
+      "HAS_EXPLICIT_SOURCE_DATE": 8,
       "NOT_MUBASHER_EGX_STOCK_ROW": 1
     },
     "samples": [
@@ -81,7 +105,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -94,7 +118,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -107,7 +131,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -120,7 +144,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:27 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -133,7 +157,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -146,7 +170,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -159,7 +183,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:28 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -172,7 +196,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-06T14:21:52.336Z",
+        "updatedAt": "2026-09-06T16:23:39.984Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
