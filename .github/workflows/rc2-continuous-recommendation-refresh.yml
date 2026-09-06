@@ -93,7 +93,8 @@ jobs:
           NODE
 
           ok=0
-          for attempt in 1 2 3; do
+          max_attempts=6
+          for attempt in $(seq 1 "$max_attempts"); do
             stamp="$(date +%s)"
             if curl --fail --silent --show-error --max-time 180 \
               "$RC2_PRODUCTION_URL/api/index?route=scan&limit=20&t=$stamp" -o /tmp/rc2-scan.json \
@@ -103,10 +104,12 @@ jobs:
               ok=1
               break
             fi
-            echo "RC2 refresh attempt $attempt failed; retrying..."
-            sleep 20
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              echo "RC2 refresh attempt $attempt failed; upstream source cache may still be propagating. Retrying in 70 seconds..."
+              sleep 70
+            fi
           done
-          [ "$ok" -eq 1 ] || { echo "RC2 continuous refresh failed after retries"; exit 1; }
+          [ "$ok" -eq 1 ] || { echo "RC2 continuous refresh failed after cache-aware retries"; exit 1; }
 
       - name: Append official post-close recommendations to durable history
         if: steps.window.outputs.run == 'true'
@@ -203,6 +206,7 @@ jobs:
           echo "DATA SOURCE: main exact-fresh production pipeline"
           echo "RECOMMENDATIONS: recomputed by TFE_V20_FUSION_RC2"
           echo "SESSION SEMANTICS: recommendation/market session is authoritative; lagging universe summary is warning-only"
+          echo "CACHE PROPAGATION: validator tolerates the upstream 5-minute repository cache window"
           echo "CADENCE: every 15 minutes during Cairo operating window"
           echo "PUBLISHED HISTORY: append-only after Cairo post-close"
           echo "FINANCIAL IMPACT ON RECOMMENDATIONS: NONE"
