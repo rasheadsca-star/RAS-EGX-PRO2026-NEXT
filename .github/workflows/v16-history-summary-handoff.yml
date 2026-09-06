@@ -1,0 +1,99 @@
+name: MAIN APP History Summary Handoff
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v16-history-summary-handoff.yml"
+  workflow_run:
+    workflows:
+      - "EGX MAIN APP V16.9.2 P2 Automatic Scan"
+    types:
+      - completed
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: main-app-history-summary-handoff
+  cancel-in-progress: true
+
+jobs:
+  rebuild-and-handoff:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Rebuild history summary from actual per-symbol histories
+        run: |
+          set -euo pipefail
+          node scripts/history/history-summary-builder.cjs
+
+      - name: Validate summary against MAIN APP canonical session
+        id: validate
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const summary = JSON.parse(fs.readFileSync('data/history-summary.json','utf8'));
+          const calendar = JSON.parse(fs.readFileSync('data/session-calendar.json','utf8'));
+          const primary = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json','utf8'));
+          const scan = JSON.parse(fs.readFileSync('data/stable/v16-immediate-scan-status.json','utf8'));
+          const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+          const mainSession = String(primary?.sessionDate || scan?.sessionDate || '').trim();
+          const historySession = String(summary?.latestMarketSession || '').trim();
+          const calendarSession = String(calendar?.latestMarketSession || '').trim();
+          if (!dateRe.test(mainSession)) throw new Error(`MAIN_SESSION_INVALID:${mainSession}`);
+          if (!dateRe.test(historySession)) throw new Error(`HISTORY_SESSION_INVALID:${historySession}`);
+          if (historySession !== calendarSession) throw new Error(`SUMMARY_CALENDAR_MISMATCH:${historySession}:${calendarSession}`);
+          if (primary?.currentSessionReady === true && historySession !== mainSession) {
+            throw new Error(`MAIN_HISTORY_SESSION_MISMATCH:${mainSession}:${historySession}`);
+          }
+          const current = (summary.symbols || []).filter(x => x?.lastSession === historySession && x?.symbolVerified === true);
+          if (current.length < 50) throw new Error(`CURRENT_HISTORY_COVERAGE_TOO_LOW:${current.length}`);
+          console.log(`MAIN_HISTORY_HANDOFF_PASS:${JSON.stringify({mainSession,historySession,currentSymbols:current.length,symbolsTotal:summary.symbolsTotal})}`);
+          NODE
+
+      - name: Commit regenerated summary and calendar
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/history-summary.json data/session-calendar.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "History summary already aligned."
+          else
+            git commit -m "Align history summary with MAIN APP canonical session"
+            for attempt in 1 2 3; do
+              if git pull --rebase -X ours origin main && git push origin HEAD:main; then
+                echo "changed=true" >> "$GITHUB_OUTPUT"
+                break
+              fi
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 6))
+            done
+          fi
+
+      - name: Dispatch RC2 refresh against aligned summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run rc2-continuous-recommendation-refresh.yml --ref main
+          echo "RC2_REFRESH_DISPATCHED_AFTER_HISTORY_HANDOFF"
