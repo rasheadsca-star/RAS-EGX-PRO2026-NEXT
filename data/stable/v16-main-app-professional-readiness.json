@@ -1,36 +1,41 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-09-03T20:03:40.061Z",
+  "generatedAt": "2026-09-06T11:45:49.774Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-09-03",
-  "professionalReadinessScore": 79,
-  "foundationQualityScore": 88.5,
-  "stage": "ADVANCED_PILOT",
-  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 90.4,
+  "stage": "PILOT",
+  "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "LIVE_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 24.53,
-      "scorePct": 98.1,
+      "points": 16.05,
+      "scorePct": 64.2,
       "details": {
-        "currentExecutionGrade": true,
+        "currentExecutionGrade": false,
         "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 96.3,
+        "currentSourceSessionEvidenceCoveragePct": 1.4,
         "publishedDecisionEvidenceCoveragePct": 96.3,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 186,
-        "currentAcceptedRows": 207,
-        "verifiedRows": 207,
+        "currentAcceptedRows": 0,
+        "verifiedRows": 186,
         "inputRows": 218,
         "evidenceCoveragePct": 96.3,
-        "verifiedRowsRatioPct": 95,
-        "currentSourceHealth": "EXECUTION_GRADE"
+        "verifiedRowsRatioPct": 85.3,
+        "currentSourceHealth": "BLOCKED"
       },
       "requirements": [
+        {
+          "code": "EXECUTION_GRADE",
+          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+          "hard": true
+        },
         {
           "code": "SOURCE_EVIDENCE_100",
           "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 96.3% إلى 100%",
@@ -38,7 +43,7 @@
         },
         {
           "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 207/218",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 186/218",
           "hard": false
         }
       ]
@@ -52,8 +57,8 @@
       "details": {
         "sessions": 50,
         "minimumSessions": 30,
-        "averageNetReturnPct": 1.6077,
-        "profitFactor": 2.559,
+        "averageNetReturnPct": 1.6366,
+        "profitFactor": 2.701,
         "sessionWinRatePct": 58,
         "maximumDrawdownPct": -10.877,
         "acceptanceGatePassed": true
@@ -64,28 +69,23 @@
       "id": "V169_LIVE_FORWARD",
       "labelAr": "السجل الحي / Forward لـV16.9",
       "weight": 25,
-      "points": 14,
-      "scorePct": 56,
+      "points": 24.38,
+      "scorePct": 97.5,
       "details": {
-        "resolvedSessions": 8,
+        "resolvedSessions": 19,
         "minimumResolvedSessions": 20,
-        "sampleCompletionPct": 40,
-        "winningSessionPct": 50,
-        "averageNetReturnPct": 0.2466,
-        "profitFactor": 1.171,
-        "maximumDrawdownPct": -11.08,
+        "sampleCompletionPct": 95,
+        "winningSessionPct": 52.63,
+        "averageNetReturnPct": 0.2719,
+        "profitFactor": 1.311,
+        "maximumDrawdownPct": -11.155,
         "promotionEligible": false,
         "hardGatePassed": false
       },
       "requirements": [
         {
           "code": "LIVE_MIN_RESOLVED_SESSIONS",
-          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
-          "hard": true
-        },
-        {
-          "code": "LIVE_PF",
-          "labelAr": "Profit Factor حي ≥ 1.20",
+          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 19 والمتبقي 1",
           "hard": true
         }
       ]
@@ -136,21 +136,21 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": true,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
     {
-      "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
       "hard": true,
-      "axis": "V169_LIVE_FORWARD"
+      "axis": "DATA_SESSION_INTEGRITY"
     },
     {
-      "code": "LIVE_PF",
-      "labelAr": "Profit Factor حي ≥ 1.20",
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 19 والمتبقي 1",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     }
@@ -164,21 +164,21 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 207/218",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 186/218",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     }
   ],
   "requirementsTo100": [
     {
-      "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
       "hard": true,
-      "axis": "V169_LIVE_FORWARD"
+      "axis": "DATA_SESSION_INTEGRITY"
     },
     {
-      "code": "LIVE_PF",
-      "labelAr": "Profit Factor حي ≥ 1.20",
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 19 والمتبقي 1",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     },
@@ -190,7 +190,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 207/218",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 186/218",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     }
@@ -202,11 +202,11 @@
     "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-09-03T20:03:36.686Z",
-    "basketGeneratedAt": "2026-09-03T19:28:12.681167+00:00",
-    "liveGeneratedAt": "2026-09-03T19:28:18.660455+00:00",
-    "canonicalSnapshotHash": "806bf785cb4237a5871992c6dab1db72ed57aa6d95cda848cb637f2ba510950a",
-    "consensusGeneratedAt": "2026-09-03T20:03:38.690Z",
+    "priceTruthGeneratedAt": "2026-09-06T11:45:48.367Z",
+    "basketGeneratedAt": "2026-09-03T20:04:54.997018+00:00",
+    "liveGeneratedAt": "2026-09-03T20:04:58.326415+00:00",
+    "canonicalSnapshotHash": "6343502b24cf4c2eb14937340bda76c6d3040f2def62a3da7f07ddc235b815ff",
+    "consensusGeneratedAt": "2026-09-06T11:45:48.622Z",
     "intelligenceSnapshotGeneratedAt": "2026-09-03T19:07:24.599Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -241,5 +241,5 @@
       ]
     }
   },
-  "readinessHash": "96af8d579541d6c36257507c40011be015a772c0c911e5718790779f41d9b5ed"
+  "readinessHash": "653c6856e85e712a9520d541a47361bdd281bc44a17ee03aa86ba08743fa4b22"
 }
