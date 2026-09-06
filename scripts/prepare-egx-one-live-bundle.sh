@@ -4,6 +4,7 @@ set -euo pipefail
 OUT="${1:-/tmp/egx-one-live}"
 rm -rf "$OUT"
 mkdir -p \
+  "$OUT/decision-lab" \
   "$OUT/data/research/ui" \
   "$OUT/data/research/strategy" \
   "$OUT/data/research/published" \
@@ -13,6 +14,7 @@ mkdir -p \
   "$OUT/.vercel"
 
 cp index.html "$OUT/index.html"
+cp decision-lab/index.html "$OUT/decision-lab/index.html"
 cp technical-chart-v2.js "$OUT/technical-chart-v2.js"
 cp technical-chart-v2-core.js "$OUT/technical-chart-v2-core.js"
 cp technical-chart-v21-alignment.js "$OUT/technical-chart-v21-alignment.js"
@@ -47,6 +49,7 @@ fi
 
 for f in \
   index.html \
+  decision-lab/index.html \
   technical-chart-v2.js \
   technical-chart-v2-core.js \
   technical-chart-v21-alignment.js \
@@ -89,7 +92,7 @@ if(policy.strategySnapshotHash!==s.strategySnapshotHash||policy.authorityMode!==
 const perf=sim.performance?.allDailySignals;
 if(!perf||!Number.isFinite(perf.triggered)||!Number.isFinite(perf.target1OrBetter)||!Number.isFinite(perf.stops)||!Number.isFinite(perf.timeouts))throw new Error('BUNDLE_SIMULATOR_PERFORMANCE_MISSING');
 const files=[
-  'index.html','technical-chart-v2.js','technical-chart-v2-core.js','technical-chart-v21-alignment.js','realized-kpi.js','championship-board.js',
+  'index.html','decision-lab/index.html','technical-chart-v2.js','technical-chart-v2-core.js','technical-chart-v21-alignment.js','realized-kpi.js','championship-board.js',
   'data/research/ui/latest.json','data/research/strategy/latest.json','data/research/published/latest.json','data/research/simulator/latest.json',
   'data/research/shadow-ledger/latest.json','data/research/live/latest.json',policyPath,'vercel.json'
 ];
@@ -97,6 +100,7 @@ const fileHashes=Object.fromEntries(files.map(file=>[file,{sha256:sha(file),byte
 const body={
   schemaVersion:'egx-one-production-bundle-manifest-1',authorityMode:'RESEARCH',researchOnly:true,productionAuthority:false,automaticOrders:false,
   sourceCommit,signalSession:s.signalSession,strategySnapshotHash:s.strategySnapshotHash,publicationHash:p.publicationHash??null,forwardPolicyHash:policy.policyHash,
+  decisionLabContract:'LIVE_FAIL_CLOSED_SAME_SESSION_V1',
   chartContract:'TECHNICAL_CHART_V2_1_SESSION_ALIGNMENT',chartCurrentBarPolicy:'READY_RESEARCH_EXACT_SESSION_ONLY',kpiContract:'REALIZED_OUTCOMES_KPI_V1',championshipContract:'EGX_ONE_CHAMPIONSHIP_BOARD',
   forwardResolution:{sameBarAmbiguity:policy.sameBarAmbiguity,costAssumptionBps:policy.costAssumptionBps,costConvention:policy.costConvention,fillConvention:policy.fillConvention},
   files:fileHashes
@@ -107,6 +111,8 @@ fs.writeFileSync(path.join(root,'egx-one-production-manifest.json'),JSON.stringi
 console.log(`EGX_ONE_BUNDLE_VERIFIED:SESSION=${s.signalSession}:RECS=${s.recommendations.length}:TRIGGERED=${perf.triggered}:TARGET=${perf.target1HitRatePct}:STOP=${perf.stopRatePct}:MANIFEST=${manifest.bundleManifestHash}`);
 NODE
 
+grep -q 'EGX ONE Decision Lab' "$OUT/decision-lab/index.html"
+grep -q 'DATA NOT READY' "$OUT/decision-lab/index.html"
 grep -q 'EGXOneTechnicalV2Loader' "$OUT/technical-chart-v2.js"
 grep -q 'championship-board.js' "$OUT/technical-chart-v2.js"
 grep -q 'EGXOneTechnicalV2' "$OUT/technical-chart-v2-core.js"
