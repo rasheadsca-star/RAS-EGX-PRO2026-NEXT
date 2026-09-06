@@ -2,16 +2,20 @@ name: EGX V16.6 Gate Diagnostic
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/research/v16-v166-gate-diagnostic.py"
+      - ".github/workflows/v16-v166-gate-diagnostic.yml"
   push:
     paths:
       - "scripts/research/v16-v166-gate-diagnostic.py"
       - ".github/workflows/v16-v166-gate-diagnostic.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: egx-v16-v166-gate-diagnostic
+  group: egx-v16-v166-gate-diagnostic-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -21,7 +25,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -30,17 +33,8 @@ jobs:
         run: python -m py_compile scripts/research/v16-v166-gate-diagnostic.py
       - name: Run diagnostic
         run: python scripts/research/v16-v166-gate-diagnostic.py
-      - name: Commit report
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/research/v16-v166-gate-diagnostic.json
-          if ! git diff --cached --quiet; then
-            git commit -m "Publish V16.6 gate diagnostic"
-            for attempt in 1 2 3; do
-              if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
-              [ "$attempt" = "3" ] && exit 1
-              sleep $((attempt * 8))
-            done
-          fi
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: v16-v166-gate-diagnostic
+          path: data/research/v16-v166-gate-diagnostic.json
