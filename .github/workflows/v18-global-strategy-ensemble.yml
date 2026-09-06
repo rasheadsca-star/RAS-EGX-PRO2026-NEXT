@@ -7,6 +7,7 @@ on:
       - v18-global-strategy-ensemble-20260906
     paths:
       - scripts/stable/v18-global-strategy-ensemble.cjs
+      - scripts/stable/v18-leadership-extension.cjs
       - scripts/stable/build-v18-decision-board.cjs
       - data/v18-global-strategy-policy.json
       - preview-v18/**
@@ -30,10 +31,11 @@ jobs:
       - name: Syntax checks
         run: |
           node --check scripts/stable/v18-global-strategy-ensemble.cjs
+          node --check scripts/stable/v18-leadership-extension.cjs
           node --check scripts/stable/build-v18-decision-board.cjs
           node --check preview-v18/app.js
 
-      - name: Build V18 decision board
+      - name: Build V18.1 decision board
         run: node scripts/stable/build-v18-decision-board.cjs
 
       - name: Regression and UI contract checks
@@ -42,13 +44,29 @@ jobs:
           const fs = require('fs');
           const p = 'preview-v18/data.json';
           const out = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (out.schemaVersion !== '18.1.0-shadow') throw new Error(`Unexpected schema ${out.schemaVersion}`);
           if (!out.sessionId) throw new Error('Missing sessionId');
           if (!Array.isArray(out.actionable)) throw new Error('Missing actionable array');
           if (!Array.isArray(out.allCandidates)) throw new Error('Missing allCandidates array');
           if ((out.counts?.canonicalStocksLoaded || 0) < 100) throw new Error('Canonical stock coverage unexpectedly low');
+          if (!out.leadershipSummary) throw new Error('Missing leadershipSummary');
+          if (!out.strategyRegimeMatrix?.RISK_ON) throw new Error('Missing strategy-regime matrix');
+          if (!out.forwardLedgerSummary?.immutableIssueSnapshots) throw new Error('Forward ledger immutability flag missing');
+          const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
+          if (!Array.isArray(ledger.entries)) throw new Error('Forward ledger entries missing');
+          const currentIssued = ledger.entries.filter(x => x.issued?.sessionId === out.sessionId);
+          if (currentIssued.length < out.actionable.length) throw new Error('Forward ledger did not capture all current actionable candidates');
           const riskOn = ['RISK_ON', 'BULLISH'].includes(String(out.marketRegime?.code || '').toUpperCase());
           if (riskOn && (out.counts?.emaMacdContinuationEligible || 0) < 2) throw new Error('Risk-on regression: expected at least two EMA-MACD continuation candidates');
           if (riskOn && out.allCandidates.length === 0) throw new Error('Risk-on regression: board cannot show zero candidates');
+          for (const row of out.allCandidates) {
+            const l = row.leadership;
+            if (l && !l.full52WeekCoverage && l.highReferenceLabel === '52_WEEK_HIGH') throw new Error(`False 52-week label on ${row.ticker}`);
+            if (String(row.tier||'').includes('TIER_A')) {
+              const realBaseSource = (row.sources||[]).some(s => !['V18_RS_LEADERSHIP_SHADOW','V18_VCP_SHADOW'].includes(s));
+              if (!realBaseSource) throw new Error(`Research-only layer created Tier A on ${row.ticker}`);
+            }
+          }
           const html = fs.readFileSync('preview-v18/index.html','utf8');
           for (const id of ['opportunityList','detailContent','zeroGuard','familyFilter','regimeScore']) {
             if (!html.includes(`id="${id}"`)) throw new Error(`Missing UI contract: ${id}`);
@@ -57,7 +75,7 @@ jobs:
           const comi = out.allCandidates.find(x => x.ticker === 'COMI');
           if (!tmgh || Number(tmgh.technical?.averageTurnover20Egp || 0) < 20000000) throw new Error('TMGH canonical turnover regression');
           if (!comi || Number(comi.technical?.averageTurnover20Egp || 0) < 20000000) throw new Error('COMI canonical turnover regression');
-          console.log(JSON.stringify({sessionId:out.sessionId,marketRegime:out.marketRegime,counts:out.counts,tmgh:{tier:tmgh.tier,score:tmgh.decisionScore,turnover:tmgh.technical.averageTurnover20Egp},comi:{tier:comi.tier,score:comi.decisionScore,turnover:comi.technical.averageTurnover20Egp},top:out.allCandidates.slice(0,10).map(x=>({ticker:x.ticker,tier:x.tier,score:x.decisionScore,sources:x.sources}))},null,2));
+          console.log(JSON.stringify({schemaVersion:out.schemaVersion,sessionId:out.sessionId,marketRegime:out.marketRegime,counts:out.counts,leadershipSummary:out.leadershipSummary,forwardLedgerSummary:out.forwardLedgerSummary,tmgh:{tier:tmgh.tier,score:tmgh.decisionScore,turnover:tmgh.technical.averageTurnover20Egp,rs:tmgh.leadership?.relativeStrengthComposite,vcp:tmgh.leadership?.vcp?.passed},comi:{tier:comi.tier,score:comi.decisionScore,turnover:comi.technical.averageTurnover20Egp,rs:comi.leadership?.relativeStrengthComposite,vcp:comi.leadership?.vcp?.passed},top:out.allCandidates.slice(0,10).map(x=>({ticker:x.ticker,tier:x.tier,score:x.decisionScore,rs:x.leadership?.relativeStrengthComposite,vcp:x.leadership?.vcp?.passed,high:x.leadership?.distanceFromAvailableHighPct,compatibility:x.regimeCompatibility?.score,sources:x.sources}))},null,2));
           NODE
 
       - name: Package static preview
@@ -66,8 +84,9 @@ jobs:
           test -s preview-v18/styles.css
           test -s preview-v18/app.js
           test -s preview-v18/data.json
+          test -s preview-v18/forward-ledger.json
 
-      - name: Upload V18 Decision Board
+      - name: Upload V18.1 Decision Board
         uses: actions/upload-artifact@v4
         with:
           name: v18-decision-board
