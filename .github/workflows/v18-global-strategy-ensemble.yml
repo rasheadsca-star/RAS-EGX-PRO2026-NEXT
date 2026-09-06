@@ -8,6 +8,7 @@ on:
     paths:
       - scripts/stable/v18-global-strategy-ensemble.cjs
       - scripts/stable/v18-leadership-extension.cjs
+      - scripts/stable/v18-evidence-ranking.cjs
       - scripts/stable/build-v18-decision-board.cjs
       - data/v18-global-strategy-policy.json
       - preview-v18/**
@@ -32,6 +33,7 @@ jobs:
         run: |
           node --check scripts/stable/v18-global-strategy-ensemble.cjs
           node --check scripts/stable/v18-leadership-extension.cjs
+          node --check scripts/stable/v18-evidence-ranking.cjs
           node --check scripts/stable/build-v18-decision-board.cjs
           node --check preview-v18/app.js
 
@@ -42,15 +44,14 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('fs');
-          const p = 'preview-v18/data.json';
-          const out = JSON.parse(fs.readFileSync(p, 'utf8'));
+          const out = JSON.parse(fs.readFileSync('preview-v18/data.json', 'utf8'));
           if (out.schemaVersion !== '18.1.0-shadow') throw new Error(`Unexpected schema ${out.schemaVersion}`);
           if (!out.sessionId) throw new Error('Missing sessionId');
-          if (!Array.isArray(out.actionable)) throw new Error('Missing actionable array');
-          if (!Array.isArray(out.allCandidates)) throw new Error('Missing allCandidates array');
+          if (!Array.isArray(out.actionable) || !Array.isArray(out.allCandidates)) throw new Error('Missing decision arrays');
           if ((out.counts?.canonicalStocksLoaded || 0) < 100) throw new Error('Canonical stock coverage unexpectedly low');
           if (!out.leadershipSummary) throw new Error('Missing leadershipSummary');
           if (!out.strategyRegimeMatrix?.RISK_ON) throw new Error('Missing strategy-regime matrix');
+          if (out.rankingPolicy?.code !== 'EVIDENCE_FIRST_THEN_SCORE') throw new Error('Evidence-first ranking missing');
           if (!out.forwardLedgerSummary?.immutableIssueSnapshots) throw new Error('Forward ledger immutability flag missing');
           const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
           if (!Array.isArray(ledger.entries)) throw new Error('Forward ledger entries missing');
@@ -67,15 +68,20 @@ jobs:
               if (!realBaseSource) throw new Error(`Research-only layer created Tier A on ${row.ticker}`);
             }
           }
+          const firstResearch = out.allCandidates.findIndex(x => String(x.tier||'').includes('TIER_B_RESEARCH'));
+          const lastTierA = out.allCandidates.reduce((idx,x,i)=>String(x.tier||'').includes('TIER_A')?i:idx,-1);
+          if (firstResearch >= 0 && lastTierA > firstResearch) throw new Error('Research Tier B ranked above Tier A');
           const html = fs.readFileSync('preview-v18/index.html','utf8');
-          for (const id of ['opportunityList','detailContent','zeroGuard','familyFilter','regimeScore']) {
-            if (!html.includes(`id="${id}"`)) throw new Error(`Missing UI contract: ${id}`);
-          }
+          for (const id of ['opportunityList','detailContent','zeroGuard','familyFilter','regimeScore']) if (!html.includes(`id="${id}"`)) throw new Error(`Missing UI contract: ${id}`);
+          const tmghCanonical = JSON.parse(fs.readFileSync('data/quant/stocks/TMGH.json','utf8'));
+          const comiCanonical = JSON.parse(fs.readFileSync('data/quant/stocks/COMI.json','utf8'));
+          const tmghTurnover = Number(tmghCanonical.indicators?.averageTurnover20Egp || 0);
+          const comiTurnover = Number(comiCanonical.indicators?.averageTurnover20Egp || 0);
+          if (tmghTurnover < 20000000) throw new Error('TMGH canonical turnover regression');
+          if (comiTurnover < 20000000) throw new Error('COMI canonical turnover regression');
           const tmgh = out.allCandidates.find(x => x.ticker === 'TMGH');
           const comi = out.allCandidates.find(x => x.ticker === 'COMI');
-          if (!tmgh || Number(tmgh.technical?.averageTurnover20Egp || 0) < 20000000) throw new Error('TMGH canonical turnover regression');
-          if (!comi || Number(comi.technical?.averageTurnover20Egp || 0) < 20000000) throw new Error('COMI canonical turnover regression');
-          console.log(JSON.stringify({schemaVersion:out.schemaVersion,sessionId:out.sessionId,marketRegime:out.marketRegime,counts:out.counts,leadershipSummary:out.leadershipSummary,forwardLedgerSummary:out.forwardLedgerSummary,tmgh:{tier:tmgh.tier,score:tmgh.decisionScore,turnover:tmgh.technical.averageTurnover20Egp,rs:tmgh.leadership?.relativeStrengthComposite,vcp:tmgh.leadership?.vcp?.passed},comi:{tier:comi.tier,score:comi.decisionScore,turnover:comi.technical.averageTurnover20Egp,rs:comi.leadership?.relativeStrengthComposite,vcp:comi.leadership?.vcp?.passed},top:out.allCandidates.slice(0,10).map(x=>({ticker:x.ticker,tier:x.tier,score:x.decisionScore,rs:x.leadership?.relativeStrengthComposite,vcp:x.leadership?.vcp?.passed,high:x.leadership?.distanceFromAvailableHighPct,compatibility:x.regimeCompatibility?.score,sources:x.sources}))},null,2));
+          console.log(JSON.stringify({schemaVersion:out.schemaVersion,sessionId:out.sessionId,marketRegime:out.marketRegime,counts:out.counts,leadershipSummary:out.leadershipSummary,forwardLedgerSummary:out.forwardLedgerSummary,rankingPolicy:out.rankingPolicy,tmgh:{tier:tmgh?.tier,score:tmgh?.decisionScore,canonicalTurnover:tmghTurnover,rs:tmgh?.leadership?.relativeStrengthComposite,vcp:tmgh?.leadership?.vcp?.passed},comi:{tier:comi?.tier,score:comi?.decisionScore,canonicalTurnover:comiTurnover,rs:comi?.leadership?.relativeStrengthComposite,vcp:comi?.leadership?.vcp?.passed},top:out.allCandidates.slice(0,12).map(x=>({evidenceRank:x.evidenceRank,rawRank:x.rank,ticker:x.ticker,tier:x.tier,score:x.decisionScore,rs:x.leadership?.relativeStrengthComposite,vcp:x.leadership?.vcp?.passed,high:x.leadership?.distanceFromAvailableHighPct,compatibility:x.regimeCompatibility?.score,sources:x.sources}))},null,2));
           NODE
 
       - name: Package static preview
