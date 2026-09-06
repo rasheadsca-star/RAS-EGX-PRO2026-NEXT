@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "egx.v169-repeat-exposure-result.1",
+  "frozenAt": "2026-08-30T18:24:16.707Z",
+  "evidenceClass": "PREREGISTERED_ONE_SHOT_RETROSPECTIVE_REPEAT_EXPOSURE_TEST",
+  "workflowRun": {
+    "id": 33327947016,
+    "commit": "f0c6f3e2f68294636d6d9862312f8d6e06cc212c",
+    "conclusion": "success",
+    "artifactId": 9736785063,
+    "artifactName": "v169-repeat-exposure-research",
+    "artifactSha256": "7c472ea019bb14292f0c6b055e120e22615e7e1181f3892b3b17ef0f6aa91d42"
+  },
+  "source": {
+    "sessions": 45,
+    "fromSignalDate": "2026-06-24",
+    "toSignalDate": "2026-08-26",
+    "lastOutcomeDate": "2026-08-27",
+    "selectedMembers": 145,
+    "residualRiskAlphaStops": 32
+  },
+  "frozenPolicy": {
+    "lookbackSignalSessions": 5,
+    "repeatAppearanceThreshold": 2,
+    "retunedAfterOutcome": false
+  },
+  "diagnostic": {
+    "flaggedResidualExecutable": 32,
+    "flaggedResidualStops": 10,
+    "flaggedResidualStopRatePct": 31.25,
+    "flaggedResidualTargets": 7,
+    "flaggedResidualTargetRatePct": 21.88,
+    "flaggedAverageNextCloseReturnPct": 1.3339,
+    "passResidualExecutable": 87,
+    "passResidualStops": 22,
+    "passResidualStopRatePct": 25.29,
+    "passResidualTargets": 30,
+    "passResidualTargetRatePct": 34.48,
+    "passAverageNextCloseReturnPct": 3.2365,
+    "stopRateSeparationPp": 5.96,
+    "averageReturnSeparationPp": -1.9026,
+    "eligibleFolds": 3,
+    "supportingFolds": 3,
+    "noLookahead": true
+  },
+  "arms": {
+    "V16_9": {
+      "averageNetReturnPct": 1.6624,
+      "profitFactor": 2.532,
+      "maximumDrawdownPct": -10.877,
+      "winningSessionPct": 55.556,
+      "stopRatePct": 28.91,
+      "targetRatePct": 28.91
+    },
+    "RiskAlpha_StageB": {
+      "averageNetReturnPct": 2.1773,
+      "profitFactor": 3.315,
+      "maximumDrawdownPct": -10.361,
+      "winningSessionPct": 60.000,
+      "stopRatePct": 26.89,
+      "targetRatePct": 31.09
+    },
+    "RepeatExposure_Only": {
+      "averageNetReturnPct": 2.1865,
+      "profitFactor": 3.533,
+      "maximumDrawdownPct": -9.298,
+      "winningSessionPct": 60.000,
+      "stopRatePct": 27.66,
+      "targetRatePct": 31.91
+    },
+    "Combined": {
+      "averageNetReturnPct": 2.5424,
+      "profitFactor": 4.411,
+      "maximumDrawdownPct": -7.266,
+      "winningSessionPct": 62.222,
+      "stopRatePct": 25.29,
+      "targetRatePct": 34.48
+    }
+  },
+  "deltaCombinedVsRiskAlpha": {
+    "averageReturnPp": 0.3651,
+    "profitFactor": 1.096,
+    "maxDrawdownImprovementPp": 3.095,
+    "residualStopRateReductionPp": 1.60,
+    "targetRateChangePp": 3.39
+  },
+  "checks": {
+    "enoughFlaggedResidualExecutable": true,
+    "materialAdverseSeparation": true,
+    "enoughEligibleFolds": true,
+    "enoughSupportingFolds": true,
+    "drawdownImproves": true,
+    "profitFactorNotWorse": true,
+    "averageReturnPreserved": true,
+    "residualStopRateImproves": false,
+    "targetRatePreserved": true,
+    "noLookahead": true
+  },
+  "retrospectiveStatus": "REJECTED_ONE_SHOT_NO_RETUNE",
+  "formalDisposition": "REJECT_REPEAT_EXPOSURE_V1_NO_RETUNE_KEEP_V16_9_CHAMPION",
+  "interpretation": "Repeat exposure shows robust adverse return separation across all three chronological folds and materially improves return, PF and drawdown when combined with RiskAlpha, but it fails the frozen residual stop-rate reduction gate. Do not retune the 5-session lookback or >=2 appearance threshold on this evidence window. Preserve as rejected diagnostic evidence only.",
+  "governance": {
+    "researchOnly": true,
+    "champion": "V16.9",
+    "scoringImpact": "NONE",
+    "alphaWeight": 0,
+    "productionAuthority": false,
+    "promotionEligible": false,
+    "riskAlphaRetuned": false,
+    "repeatExposureThresholdRetuned": false,
+    "freshForwardLedgerChanged": false,
+    "mainBranchChanged": false
+  }
+}

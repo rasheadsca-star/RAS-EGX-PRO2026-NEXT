@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "egx.v17-parallel-cohort-checkpoint.1",
+  "status": "FROZEN_PRE_OUTCOME_PARALLEL_COHORT",
+  "researchOnly": true,
+  "productionAuthority": false,
+  "automaticOrders": false,
+  "automaticPromotion": false,
+  "signalSessionDate": "2026-08-30",
+  "nextTradingSessionDate": "2026-08-31",
+  "frozenAt": "2026-08-30T20:27:04.707Z",
+  "sourceSnapshotFile": "tfe-v20/forward-ledger/snapshots/2026-08-30-89a9e2ae85a9.json",
+  "sourceSnapshotHash": "89a9e2ae85a94b6a18ffeb08daff691577db452dd10abd2b7de9e352a188573e",
+  "sourceBundleHash": "f27090d3c46c26e04d7068c1f3399f48ac09b19b8ca99619aaebeb67625a3e88",
+  "contractHash": "ec702d2052d1ef8b1247b8c2a2c0f3c3777048fd54fc05ab733604b6f6a4eee4",
+  "cohortHash": "e6e4dc94e30657d1bea77939ccfe14f9b01eaf873321d13b5e163f93c11e5248",
+  "workflowRunId": 33333667496,
+  "artifact": {
+    "id": 9738370876,
+    "name": "v17-parallel-sequential-cohort-2026-08-30",
+    "digest": "sha256:f4742aeb64b6cdbc79b00938743f11ed7677f5a097d2e5b05b2585605f3fce99"
+  },
+  "arms": {
+    "V16_CONTROL": {
+      "maxPositions": 2,
+      "gapDownPolicy": "ALLOW_SAME_SESSION_RECOVERY_ENTRY",
+      "substitution": false,
+      "candidateTickers": ["MFPC", "DAPH"]
+    },
+    "V17_A": {
+      "maxPositions": 2,
+      "gapDownPolicy": "VETO_GAP_DOWN",
+      "substitution": true,
+      "candidateTickers": ["MFPC", "DAPH", "GRCA", "BINV", "KWIN"]
+    },
+    "V17_B": {
+      "maxPositions": 2,
+      "gapDownPolicy": "VETO_GAP_DOWN",
+      "substitution": false,
+      "candidateTickers": ["MFPC", "DAPH"]
+    },
+    "V17_C": {
+      "maxPositions": 1,
+      "gapDownPolicy": "VETO_GAP_DOWN",
+      "substitution": true,
+      "candidateTickers": ["MFPC", "DAPH", "GRCA", "BINV", "KWIN"]
+    }
+  },
+  "sequential": {
+    "priorAlpha": 1,
+    "priorBeta": 1,
+    "minEarlyCohorts": 8,
+    "minEarlyDecisivePairs": 5,
+    "earlyPositiveProbability": 0.975,
+    "earlyFutilityProbability": 0.1,
+    "formalMinCohorts": 20,
+    "formalMinDecisivePairs": 10,
+    "formalSuperiorityProbability": 0.99,
+    "hardMaxCohorts": 40
+  },
+  "note": "Initial anchor frozen before the first 2026-08-31 outcome. Later cohorts must reuse the same contract hash and arm semantics; no back-fill or retuning is permitted."
+}

@@ -12,6 +12,7 @@ const setHtml=(el,html)=>{if(el&&el.innerHTML!==html)el.innerHTML=html};
 const setText=(el,text)=>{if(el&&el.textContent!==text)el.textContent=text};
 
 function archiveRows(){
+  if(typeof localStorage==='undefined')return [];
   try{
     const rows=JSON.parse(localStorage.getItem(ARCHIVE_KEY)||'[]');
     return Array.isArray(rows)?rows:[];
@@ -23,7 +24,7 @@ function latestSnapshotDate(){
 }
 
 function currentMeta(){
-  const payload=window.__RC2_UI_SCAN__||{};
+  const payload=typeof window!=='undefined'?(window.__RC2_UI_SCAN__||{}):{};
   const scan=payload.scan||{};
   const market=payload.market||{};
   const currentDate=payload.effectiveDate||scan?.universe?.sessionDate||market?.sessionDate||null;
@@ -36,6 +37,7 @@ function currentMeta(){
 }
 
 function ensureDashboardGuard(){
+  if(typeof document==='undefined')return null;
   const grid=document.getElementById('recommendationGrid');
   const panel=grid?.closest('.panel');
   if(!panel)return null;
@@ -69,10 +71,11 @@ function renderDashboardGuard(){
 }
 
 function renderMonitorGuard(){
+  if(typeof document==='undefined')return;
   const panel=document.getElementById('rc2SessionMonitorPanel');
   if(!panel)return;
   const meta=currentMeta();
-  const signals=Array.isArray(window.__RC2_SESSION_MONITOR_LAST__?.signals)?window.__RC2_SESSION_MONITOR_LAST__.signals:[];
+  const signals=typeof window!=='undefined'&&Array.isArray(window.__RC2_SESSION_MONITOR_LAST__?.signals)?window.__RC2_SESSION_MONITOR_LAST__.signals:[];
   const signalDate=signals.map(x=>x?.sessionDate).filter(Boolean).sort().at(-1)||latestSnapshotDate();
   const stale=Boolean(meta.currentDate&&signalDate&&signalDate<meta.currentDate);
   const head=panel.querySelector('.sm-head h2');
@@ -108,17 +111,18 @@ function scheduleApply(){
   queueMicrotask(()=>{scheduled=false;apply()});
 }
 
-window.addEventListener('rc2:ui-scan',scheduleApply);
-window.addEventListener('rc2:session-monitor',scheduleApply);
-window.addEventListener('storage',e=>{if(e.key===ARCHIVE_KEY)scheduleApply()});
+function bootSnapshotDateFix(){
+  window.addEventListener('rc2:ui-scan',scheduleApply);
+  window.addEventListener('rc2:session-monitor',scheduleApply);
+  window.addEventListener('storage',e=>{if(e.key===ARCHIVE_KEY)scheduleApply()});
 
-const observer=new MutationObserver(scheduleApply);
-if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',()=>{
-    observer.observe(document.body,{childList:true,subtree:true});
+  const observer=typeof MutationObserver!=='undefined'?new MutationObserver(scheduleApply):null;
+  const start=()=>{
+    if(observer&&document.body)observer.observe(document.body,{childList:true,subtree:true});
     scheduleApply();
-  },{once:true});
-}else{
-  observer.observe(document.body,{childList:true,subtree:true});
-  scheduleApply();
+  };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
 }
+
+if(typeof window!=='undefined'&&typeof document!=='undefined')bootSnapshotDateFix();

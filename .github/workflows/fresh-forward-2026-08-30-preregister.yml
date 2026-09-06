@@ -1,0 +1,101 @@
+name: Fresh Forward Preregister 2026-08-30
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/.fresh-forward-2026-08-30-trigger'
+      - '.github/workflows/fresh-forward-2026-08-30-preregister.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freeze-preopen-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify ledger implementation before capture
+        run: |
+          node --test test/fresh-forward-ledger.test.js
+          node --test test/fresh-forward-quality.test.js
+          node scripts/fresh-forward-verify.mjs
+
+      - name: Build same-session Meta shadow from canonical sources
+        run: node scripts/meta-live-shadow.mjs
+
+      - name: Assert 30-Aug source boundary before freezing
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('reports/meta-live-shadow.json','utf8'));
+          if (x.status !== 'RESEARCH_SHADOW_ONLY') throw new Error('META_NOT_RESEARCH_ONLY');
+          if (x.sessionDate !== '2026-08-30') throw new Error(`WRONG_META_SESSION:${x.sessionDate}`);
+          if (x.sourceAlignment?.v16Aligned !== true) throw new Error('V16_NOT_ALIGNED');
+          if (x.sourceAlignment?.regimeAligned !== true) throw new Error('REGIME_NOT_ALIGNED');
+          // V20 is intentionally not required to align. Its stale date must remain visible
+          // in source quality instead of being rewritten or silently substituted.
+          NODE
+
+      - name: Capture immutable pre-open snapshot for 31-Aug session
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          NEXT_TRADING_SESSION_DATE: '2026-08-31'
+          NEXT_SESSION_OPEN_AT: '2026-08-31T07:00:00.000Z'
+          SOURCE_DECLARED_DATE_STATUS: 'EGX_COMPLETED_TRADING_SESSION'
+          MARKET_CALENDAR_EVIDENCE_JSON: '[{"url":"https://www.tradinghours.com/markets/egx","note":"EGX regular schedule is Sunday-Thursday, opening 10:00 Cairo time"},{"url":"https://www.sigma-cap.com/main/news_page_exact?newsId=46079751&newsType=EGX","note":"EGX holiday notice states trading resumed Sunday 30-Aug-2026 after the 27-Aug holiday"}]'
+        run: |
+          now_epoch=$(date -u +%s)
+          deadline_epoch=$(date -u -d "$NEXT_SESSION_OPEN_AT" +%s)
+          if [ "$now_epoch" -ge "$deadline_epoch" ]; then
+            echo 'Pre-open boundary has passed; refusing retrospective capture.'
+            exit 1
+          fi
+          if compgen -G 'forward-ledger/snapshots/2026-08-30-*.json' > /dev/null; then
+            echo 'A persisted 30-Aug snapshot already exists; duplicate capture refused.'
+            exit 1
+          fi
+          node scripts/fresh-forward-capture.mjs reports/meta-live-shadow.json
+
+      - name: Verify new snapshot integrity
+        run: node scripts/fresh-forward-verify.mjs reports/fresh-forward-ledger
+
+      - name: Assert frozen authority and boundary
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const dir = 'reports/fresh-forward-ledger';
+          const files = fs.readdirSync(dir).filter(x => x.endsWith('.json'));
+          if (files.length !== 1) throw new Error(`EXPECTED_ONE_NEW_SNAPSHOT:${files.length}`);
+          const x = JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf8'));
+          if (x.signalSessionDate !== '2026-08-30') throw new Error(`WRONG_SIGNAL_DATE:${x.signalSessionDate}`);
+          if (x.marketCalendar?.nextTradingSessionDate !== '2026-08-31') throw new Error('WRONG_NEXT_SESSION');
+          if (x.capturedBeforeNextSessionOpen !== true) throw new Error('NOT_PREOPEN');
+          if (x.researchOnly !== true) throw new Error('RESEARCH_LOCK_CHANGED');
+          if (x.scoringImpact !== 'NONE') throw new Error('SCORING_AUTHORITY_CHANGED');
+          if (x.policy?.productionAuthority !== false) throw new Error('PRODUCTION_AUTHORITY_CHANGED');
+          NODE
+
+      - name: Upload exact preregistration artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-forward-preregister-2026-08-30
+          path: tfe-v20/reports/fresh-forward-ledger/*.json
+          if-no-files-found: error
+          retention-days: 90

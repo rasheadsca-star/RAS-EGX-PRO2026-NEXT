@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "egx.v169-liquidity-compression-result.1",
+  "frozenAt": "2026-08-30T18:27:55.471Z",
+  "evidenceClass": "PREREGISTERED_ONE_SHOT_RETROSPECTIVE_LIQUIDITY_COMPRESSION_TEST",
+  "workflowRun": {
+    "id": 33328122017,
+    "commit": "a382fa77f020cd2eaecd6bd93c4c7470ce1b80ef",
+    "conclusion": "success",
+    "artifactId": 9736836346,
+    "artifactName": "v169-liquidity-compression-research",
+    "artifactSha256": "c11d87a5052bbf37713df04e991ed01a3c044361b15ade95737f568580e7dc5f"
+  },
+  "source": {
+    "sessions": 45,
+    "fromSignalDate": "2026-06-24",
+    "toSignalDate": "2026-08-26",
+    "lastOutcomeDate": "2026-08-27",
+    "selectedMembers": 145,
+    "residualRiskAlphaStops": 32
+  },
+  "frozenPolicy": {
+    "recentSessions": 5,
+    "baselineSessions": 20,
+    "minimumRecentPositiveVolume": 4,
+    "minimumBaselinePositiveVolume": 15,
+    "compressionRatioThreshold": 0.60,
+    "retunedAfterOutcome": false
+  },
+  "diagnostic": {
+    "unavailableResidualMembers": 30,
+    "flaggedResidualExecutable": 4,
+    "flaggedResidualStops": 0,
+    "flaggedResidualTargets": 2,
+    "flaggedResidualStopRatePct": 0.00,
+    "flaggedResidualTargetRatePct": 50.00,
+    "flaggedAverageNextCloseReturnPct": 3.4606,
+    "passResidualExecutable": 85,
+    "passResidualStops": 28,
+    "passResidualTargets": 31,
+    "passResidualStopRatePct": 32.94,
+    "passResidualTargetRatePct": 36.47,
+    "passAverageNextCloseReturnPct": 3.1710,
+    "stopRateSeparationPp": -32.94,
+    "averageReturnSeparationPp": 0.2896,
+    "eligibleFolds": 0,
+    "supportingFolds": 0,
+    "noLookahead": true
+  },
+  "arms": {
+    "V16_9": {
+      "averageNetReturnPct": 1.6624,
+      "profitFactor": 2.532,
+      "maximumDrawdownPct": -10.877,
+      "winningSessionPct": 55.556,
+      "stopRatePct": 28.91,
+      "targetRatePct": 28.91
+    },
+    "RiskAlpha_StageB": {
+      "averageNetReturnPct": 2.1773,
+      "profitFactor": 3.315,
+      "maximumDrawdownPct": -10.361,
+      "winningSessionPct": 60.000,
+      "stopRatePct": 26.89,
+      "targetRatePct": 31.09
+    },
+    "LiquidityCompression_Only": {
+      "averageNetReturnPct": 1.7741,
+      "profitFactor": 2.635,
+      "maximumDrawdownPct": -10.877,
+      "winningSessionPct": 55.556,
+      "stopRatePct": 29.84,
+      "targetRatePct": 28.23
+    },
+    "Combined": {
+      "averageNetReturnPct": 2.3526,
+      "profitFactor": 3.501,
+      "maximumDrawdownPct": -10.361,
+      "winningSessionPct": 60.000,
+      "stopRatePct": 27.83,
+      "targetRatePct": 30.43
+    }
+  },
+  "deltaCombinedVsRiskAlpha": {
+    "averageReturnPp": 0.1753,
+    "profitFactor": 0.186,
+    "maxDrawdownImprovementPp": 0.000,
+    "residualStopRateReductionPp": -0.94,
+    "targetRateChangePp": -0.66
+  },
+  "checks": {
+    "enoughFlaggedResidualExecutable": false,
+    "materialAdverseSeparation": false,
+    "enoughEligibleFolds": false,
+    "enoughSupportingFolds": false,
+    "drawdownImproves": false,
+    "profitFactorNotWorse": true,
+    "averageReturnPreserved": true,
+    "residualStopRateImproves": false,
+    "targetRatePreserved": true,
+    "noLookahead": true
+  },
+  "retrospectiveStatus": "REJECTED_ONE_SHOT_NO_RETUNE",
+  "formalDisposition": "REJECT_LIQUIDITY_COMPRESSION_V1_NO_RETUNE_KEEP_V16_9_CHAMPION",
+  "interpretation": "The frozen liquidity-compression rule does not enrich residual losses: only four residual executable members are flagged, none are stops, and the flagged group has a higher average next-close return than PASS. The apparent return/PF lift from removing these few members does not improve drawdown and worsens stop/target rates. Do not retune the 5/20 windows or 0.60 threshold on this evidence window.",
+  "governance": {
+    "researchOnly": true,
+    "champion": "V16.9",
+    "scoringImpact": "NONE",
+    "alphaWeight": 0,
+    "productionAuthority": false,
+    "promotionEligible": false,
+    "riskAlphaRetuned": false,
+    "liquidityThresholdRetuned": false,
+    "freshForwardLedgerChanged": false,
+    "mainBranchChanged": false
+  }
+}
