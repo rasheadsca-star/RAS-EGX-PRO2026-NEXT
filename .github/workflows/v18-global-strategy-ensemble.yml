@@ -7,7 +7,9 @@ on:
       - v18-global-strategy-ensemble-20260906
     paths:
       - scripts/stable/v18-global-strategy-ensemble.cjs
+      - scripts/stable/build-v18-decision-board.cjs
       - data/v18-global-strategy-policy.json
+      - preview-v18/**
       - .github/workflows/v18-global-strategy-ensemble.yml
 
 permissions:
@@ -25,37 +27,49 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Syntax check
-        run: node --check scripts/stable/v18-global-strategy-ensemble.cjs
+      - name: Syntax checks
+        run: |
+          node --check scripts/stable/v18-global-strategy-ensemble.cjs
+          node --check scripts/stable/build-v18-decision-board.cjs
+          node --check preview-v18/app.js
 
-      - name: Build V18 shadow ensemble
-        run: node scripts/stable/v18-global-strategy-ensemble.cjs
+      - name: Build V18 decision board
+        run: node scripts/stable/build-v18-decision-board.cjs
 
-      - name: Regression checks
+      - name: Regression and UI contract checks
         run: |
           node <<'NODE'
           const fs = require('fs');
-          const p = 'data/stable/v18-global-strategy-ensemble.json';
+          const p = 'preview-v18/data.json';
           const out = JSON.parse(fs.readFileSync(p, 'utf8'));
           if (!out.sessionId) throw new Error('Missing sessionId');
           if (!Array.isArray(out.actionable)) throw new Error('Missing actionable array');
           if (!Array.isArray(out.allCandidates)) throw new Error('Missing allCandidates array');
           if ((out.counts?.canonicalStocksLoaded || 0) < 100) throw new Error('Canonical stock coverage unexpectedly low');
           const riskOn = ['RISK_ON', 'BULLISH'].includes(String(out.marketRegime?.code || '').toUpperCase());
-          if (riskOn && (out.counts?.emaMacdContinuationEligible || 0) < 2) {
-            throw new Error('Risk-on regression: expected at least two EMA-MACD continuation candidates');
+          if (riskOn && (out.counts?.emaMacdContinuationEligible || 0) < 2) throw new Error('Risk-on regression: expected at least two EMA-MACD continuation candidates');
+          if (riskOn && out.allCandidates.length === 0) throw new Error('Risk-on regression: board cannot show zero candidates');
+          const html = fs.readFileSync('preview-v18/index.html','utf8');
+          for (const id of ['opportunityList','detailContent','zeroGuard','familyFilter','regimeScore']) {
+            if (!html.includes(`id="${id}"`)) throw new Error(`Missing UI contract: ${id}`);
           }
-          console.log(JSON.stringify({
-            sessionId: out.sessionId,
-            marketRegime: out.marketRegime,
-            counts: out.counts,
-            top: out.allCandidates.slice(0, 10).map(x => ({ticker:x.ticker,tier:x.tier,score:x.decisionScore,sources:x.sources}))
-          }, null, 2));
+          const tmgh = out.allCandidates.find(x => x.ticker === 'TMGH');
+          const comi = out.allCandidates.find(x => x.ticker === 'COMI');
+          if (!tmgh || Number(tmgh.technical?.averageTurnover20Egp || 0) < 20000000) throw new Error('TMGH canonical turnover regression');
+          if (!comi || Number(comi.technical?.averageTurnover20Egp || 0) < 20000000) throw new Error('COMI canonical turnover regression');
+          console.log(JSON.stringify({sessionId:out.sessionId,marketRegime:out.marketRegime,counts:out.counts,tmgh:{tier:tmgh.tier,score:tmgh.decisionScore,turnover:tmgh.technical.averageTurnover20Egp},comi:{tier:comi.tier,score:comi.decisionScore,turnover:comi.technical.averageTurnover20Egp},top:out.allCandidates.slice(0,10).map(x=>({ticker:x.ticker,tier:x.tier,score:x.decisionScore,sources:x.sources}))},null,2));
           NODE
 
-      - name: Upload V18 output
+      - name: Package static preview
+        run: |
+          test -s preview-v18/index.html
+          test -s preview-v18/styles.css
+          test -s preview-v18/app.js
+          test -s preview-v18/data.json
+
+      - name: Upload V18 Decision Board
         uses: actions/upload-artifact@v4
         with:
-          name: v18-global-strategy-ensemble
-          path: data/stable/v18-global-strategy-ensemble.json
+          name: v18-decision-board
+          path: preview-v18/
           if-no-files-found: error
