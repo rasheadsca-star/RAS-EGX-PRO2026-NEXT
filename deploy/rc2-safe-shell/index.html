@@ -42,6 +42,13 @@
             script.src = '/snapshot-date-fix.js?v=20260828-safe2';
             doc.head.appendChild(script);
           }
+          if (!doc.getElementById('rc2NextSessionLabelScript')) {
+            const script = doc.createElement('script');
+            script.id = 'rc2NextSessionLabelScript';
+            script.type = 'module';
+            script.src = '/next-session-label.js?v=20260906-next1';
+            doc.head.appendChild(script);
+          }
         } catch (error) {
           showError('تعذر حقن طبقة تصحيح التاريخ العرضية بدون المساس بمحرك RC2.');
         }
