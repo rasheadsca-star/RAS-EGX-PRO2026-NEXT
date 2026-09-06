@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta name="description" content="EGX PRO V18 Global Strategy Ensemble — Decision Board">
+  <title>EGX PRO V18 — Global Strategy Ensemble</title>
+  <link rel="stylesheet" href="styles.css?v=18.0.0">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">V18</div>
+        <div>
+          <h1>EGX PRO <span>Global Strategy Ensemble</span></h1>
+          <p>Strategy Competition · Regime Routing · Evidence Gate · Next-Session Confirmation</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="session-box"><span>جلسة القرار</span><strong id="sessionId">—</strong></div>
+        <button id="refreshBtn" class="btn">تحديث</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-grid">
+        <article class="panel regime-panel">
+          <div class="eyebrow">MARKET REGIME</div>
+          <div class="regime-row"><div><h2 id="regimeLabel">جارٍ التحميل…</h2><p id="regimeCode">—</p></div><div class="score-ring" id="regimeScore">—</div></div>
+          <div class="regime-note" id="regimeNote"></div>
+        </article>
+
+        <article class="panel counts-panel">
+          <div class="eyebrow">MARKET COVERAGE</div>
+          <div class="metric-grid">
+            <div class="metric"><span>الأسهم Canonical</span><strong id="canonicalCount">—</strong></div>
+            <div class="metric"><span>فرص مدمجة</span><strong id="mergedCount">—</strong></div>
+            <div class="metric good"><span>Pilot / Conditional</span><strong id="actionableCount">—</strong></div>
+            <div class="metric"><span>EMA–MACD Continuation</span><strong id="emaCount">—</strong></div>
+          </div>
+        </article>
+
+        <article class="panel truth-panel">
+          <div class="eyebrow">ZERO-SIGNAL GUARD</div>
+          <div id="zeroGuard" class="truth-state">جارٍ التحقق…</div>
+          <p>لو السوق Risk-On وهناك حالات Continuation صالحة، ممنوع عرض «0 فرص» كحقيقة نهائية بدون Diagnostic.</p>
+        </article>
+      </section>
+
+      <section class="panel filters-panel">
+        <div class="filter-row">
+          <label>الفئة<select id="tierFilter"><option value="all">كل الفرص</option><option value="A">Tier A — Pilot</option><option value="B">Tier B — Conditional</option><option value="C">Tier C — Watch</option></select></label>
+          <label>العائلة<select id="familyFilter"><option value="all">كل الاستراتيجيات</option></select></label>
+          <label class="search-label">بحث<input id="searchInput" type="search" placeholder="TMGH أو التجاري الدولي"></label>
+          <label class="check"><input id="multiEngineOnly" type="checkbox"> توافق أكثر من محرك</label>
+        </div>
+      </section>
+
+      <section class="layout">
+        <article class="panel opportunities-panel">
+          <div class="panel-head"><div><div class="eyebrow">RANKED OPPORTUNITIES</div><h2>أفضل الفرص للجلسة التالية</h2></div><span id="visibleCount" class="pill">—</span></div>
+          <div id="opportunityList" class="opportunity-list"></div>
+        </article>
+
+        <aside class="panel detail-panel">
+          <div id="detailEmpty" class="empty-detail"><strong>اختر سهمًا</strong><span>لعرض سبب الاختيار، المحركات المتوافقة، البيانات الفنية وخطة التنفيذ.</span></div>
+          <div id="detailContent" hidden>
+            <div class="detail-head"><div><span id="detailTier" class="tier-badge">—</span><h2 id="detailTicker">—</h2><p id="detailName">—</p></div><div class="decision-score"><span>Decision Score</span><strong id="detailScore">—</strong></div></div>
+            <div class="detail-section"><h3>لماذا ظهر السهم؟</h3><div id="sourceChips" class="chips"></div><div id="strategyChips" class="chips secondary"></div></div>
+            <div class="detail-section"><h3>الصورة الفنية</h3><div id="technicalGrid" class="technical-grid"></div></div>
+            <div class="detail-section"><h3>EMA–MACD Continuation</h3><div id="emaConditions" class="condition-list"></div></div>
+            <div class="detail-section"><h3>خطة التنفيذ</h3><div id="executionPlan" class="execution-box"></div></div>
+            <div class="detail-section"><h3>Evidence Trace</h3><div id="evidenceTrace" class="evidence-list"></div></div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="panel architecture-panel">
+        <div class="panel-head"><div><div class="eyebrow">V18 ARCHITECTURE</div><h2>كيف يصدر القرار؟</h2></div></div>
+        <div class="pipeline">
+          <div><b>1</b><span>Canonical Data Truth</span></div><i>←</i>
+          <div><b>2</b><span>Market Regime</span></div><i>←</i>
+          <div><b>3</b><span>Strategy Farm</span></div><i>←</i>
+          <div><b>4</b><span>Confluence</span></div><i>←</i>
+          <div><b>5</b><span>Evidence Gate</span></div><i>←</i>
+          <div><b>6</b><span>Risk + Morning Confirm</span></div>
+        </div>
+        <p class="footnote">V18 Shadow: أداة بحث ودعم قرار فقط. لا أوامر تلقائية، ولا تُعرض نتائج Backtest كاحتمال نجاح مضمون.</p>
+      </section>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="app.js?v=18.0.0"></script>
+</body>
+</html>
