@@ -1,0 +1,210 @@
+name: V18.3 Unified Decision Center + Forward League Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v18-global-strategy-ensemble-20260906
+    paths:
+      - scripts/stable/v18-global-strategy-ensemble.cjs
+      - scripts/stable/v18-leadership-extension.cjs
+      - scripts/stable/v18-evidence-ranking.cjs
+      - scripts/stable/v18-forward-ledger-seed.cjs
+      - scripts/stable/v18-engine-performance-league.cjs
+      - scripts/stable/v18-recommendation-position-performance.cjs
+      - scripts/stable/v18-unified-decision-center.cjs
+      - scripts/stable/build-v18-decision-board.cjs
+      - scripts/stable/build-v18-web-preview.cjs
+      - data/v18-global-strategy-policy.json
+      - data/quant/stocks/**
+      - data/quant/daily-recommendations.json
+      - data/quant/adaptive-daily-recommendations.json
+      - data/stable/v16-market-regime.json
+      - data/stable/v15-practical-decision.json
+      - preview-v18/**
+      - .github/workflows/v18-global-strategy-ensemble.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          node --check scripts/stable/v18-forward-ledger-seed.cjs
+          node --check scripts/stable/v18-global-strategy-ensemble.cjs
+          node --check scripts/stable/v18-leadership-extension.cjs
+          node --check scripts/stable/v18-evidence-ranking.cjs
+          node --check scripts/stable/v18-engine-performance-league.cjs
+          node --check scripts/stable/v18-recommendation-position-performance.cjs
+          node --check scripts/stable/v18-unified-decision-center.cjs
+          node --check scripts/stable/build-v18-decision-board.cjs
+          node --check scripts/stable/build-v18-web-preview.cjs
+          node --check preview-v18/app.js
+          node --check preview-v18/performance.js
+          node --check preview-v18/position-performance.js
+
+      - name: Build V18.3 unified decision center
+        run: node scripts/stable/build-v18-decision-board.cjs
+
+      - name: Final coherence and forward-performance review
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const out = JSON.parse(fs.readFileSync('preview-v18/data.json', 'utf8'));
+          const fail = m => { throw new Error(m); };
+          if (out.schemaVersion !== '18.2.0-shadow') fail(`Unexpected schema ${out.schemaVersion}`);
+          if (!out.sessionId) fail('Missing sessionId');
+          if (!Array.isArray(out.allCandidates) || !Array.isArray(out.universeScreener)) fail('Missing decision/universe arrays');
+          if (out.universeScreener.length < 190) fail(`Canonical universe unexpectedly low: ${out.universeScreener.length}`);
+          if (out.universeScreener.length !== out.dataHealth?.canonicalUniverse) fail('Universe/data-health count mismatch');
+          if (out.dataHealth?.status !== 'PASS') fail('Data health did not PASS');
+          if ((out.dataHealth?.criticalFailureCount || 0) !== 0) fail('Critical integrity failure reported');
+          for (const c of out.dataHealth?.integrityChecks || []) if (c.critical && !c.passed) fail(`Critical integrity gate failed: ${c.id}`);
+          if (out.rankingPolicy?.code !== 'EVIDENCE_FIRST_THEN_SCORE') fail('Evidence-first ranking missing');
+          if (!out.strategyRegimeMatrix?.RISK_ON) fail('Strategy-regime matrix missing');
+          if (!out.forwardLedgerSummary?.immutableIssueSnapshots) fail('Forward issue snapshots are not immutable');
+          if (!out.basketCenter || !out.riskCenter || !out.evidenceCenter || !out.engineAgreement) fail('Unified centers missing');
+          if (out.riskCenter.automaticOrders !== false) fail('Automatic orders must remain disabled');
+
+          const league = out.enginePerformanceLeague;
+          if (!league || league.schemaVersion !== '18.3.0-forward-league') fail('Engine Performance League missing');
+          if (league.trackingStartsOn !== '2026-09-07') fail('Performance tracking must start on 2026-09-07');
+          if (league.noBackfillBeforeStart !== true) fail('No-backfill guard missing');
+          if ((league.engines || []).length < 9) fail('Not all engine families are represented in the league');
+          if (league.rankingMinimumResolvedSignals < 5) fail('League ranking sample gate too low');
+          for (const e of league.engines || []) {
+            if (e.targetHitRateResolvedPct != null && (e.targetHitRateResolvedPct < 0 || e.targetHitRateResolvedPct > 100)) fail(`Invalid target rate: ${e.engineId}`);
+            if (e.leagueRank && !e.rankingEligible) fail(`Engine ranked before minimum sample: ${e.engineId}`);
+          }
+
+          const position = out.recommendationPositionPerformance;
+          if (!position || position.schemaVersion !== '18.3.0-forward-position') fail('Recommendation-position performance missing');
+          if (position.trackingStartsOn !== '2026-09-07' || position.noBackfillBeforeStart !== true) fail('Recommendation-position tracking start/guard invalid');
+          if ((position.top10 || []).length !== 10) fail('Recommendation-position Top 10 missing');
+          for (const p of position.positions || []) {
+            if (p.targetHitRateResolvedPct != null && (p.targetHitRateResolvedPct < 0 || p.targetHitRateResolvedPct > 100)) fail(`Invalid rank target rate: #${p.recommendationNumber}`);
+            if (p.rankingEligible && p.resolvedSignals < position.rankingMinimumResolvedSignals) fail(`Rank #${p.recommendationNumber} eligible too early`);
+          }
+
+          const tickers = out.allCandidates.map(x => x.ticker);
+          if (new Set(tickers).size !== tickers.length) fail('Duplicate candidate ticker');
+          const universe = new Set(out.universeScreener.map(x => x.ticker));
+          for (const row of out.allCandidates) {
+            if (!universe.has(row.ticker)) fail(`Candidate outside canonical universe: ${row.ticker}`);
+            if (!Number.isFinite(Number(row.decisionScore)) || row.decisionScore < 0 || row.decisionScore > 100) fail(`Score out of range: ${row.ticker}`);
+            const l = row.leadership;
+            if (l && !l.full52WeekCoverage && l.highReferenceLabel === '52_WEEK_HIGH') fail(`False 52-week label: ${row.ticker}`);
+            if (String(row.tier || '').includes('TIER_A')) {
+              const base = (row.sources || []).some(s => !['V18_RS_LEADERSHIP_SHADOW','V18_VCP_SHADOW'].includes(s));
+              if (!base) fail(`Research-only Tier A: ${row.ticker}`);
+            }
+            const p = row.execution?.preferredPlan || {};
+            if ([p.entryLow,p.entryHigh,p.stopLoss,p.target1].every(Number.isFinite)) {
+              if (p.entryLow > p.entryHigh || p.stopLoss >= p.entryHigh || p.target1 <= p.entryLow) fail(`Invalid long plan: ${row.ticker}`);
+            }
+          }
+
+          const firstResearch = out.allCandidates.findIndex(x => String(x.tier || '').includes('TIER_B_RESEARCH'));
+          const lastTierA = out.allCandidates.reduce((n,x,i)=>String(x.tier || '').includes('TIER_A')?i:n,-1);
+          if (firstResearch >= 0 && lastTierA > firstResearch) fail('Research Tier B ranked above Tier A');
+
+          const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
+          if (!Array.isArray(ledger.entries) || ledger.entries.length < 32) fail('Persistent forward ledger entries missing');
+          if (ledger.trackingStartsOn !== '2026-09-07') fail('Ledger tracking start mismatch');
+          const currentIssued = ledger.entries.filter(x => x.issued?.sessionId === out.sessionId);
+          if (currentIssued.length < (out.actionable?.length || 0)) fail('Forward ledger did not capture current actionable set');
+          for (const e of ledger.entries) {
+            const p = e.futurePerformance;
+            if (p?.firstEvaluationSession && p.firstEvaluationSession < '2026-09-07') fail(`Backfilled future result before tracking start: ${e.id}`);
+            if (p?.status === 'AMBIGUOUS_TARGET_STOP_SAME_BAR' && p.resolved) fail(`Ambiguous bar counted as resolved: ${e.id}`);
+          }
+
+          if ((out.basketCenter.totalExposurePct || 0) > 50.0001) fail('Basket pilot exposure exceeds 50%');
+          if (!out.basketCenter.failedWeightStaysCash) fail('Failed basket weight must stay cash');
+          for (const x of out.basketCenter.recommendations || []) if (Number(x.portfolioWeightPct || 0) > Number(out.riskCenter.maximumSinglePositionPct || 12.5)) fail(`Overweight basket member: ${x.ticker}`);
+
+          const riskOn = ['RISK_ON','BULLISH'].includes(String(out.marketRegime?.code || '').toUpperCase());
+          if (riskOn && (out.counts?.emaMacdContinuationEligible || 0) < 2) fail('Risk-on regression: EMA continuation unexpectedly empty');
+          if (riskOn && out.allCandidates.length === 0) fail('Risk-on regression: zero candidates');
+
+          const tmgh = JSON.parse(fs.readFileSync('data/quant/stocks/TMGH.json','utf8'));
+          const comi = JSON.parse(fs.readFileSync('data/quant/stocks/COMI.json','utf8'));
+          const tmghTurnover = Number(tmgh.indicators?.averageTurnover20Egp || 0);
+          const comiTurnover = Number(comi.indicators?.averageTurnover20Egp || 0);
+          if (tmghTurnover < 20000000) fail('TMGH canonical turnover regression');
+          if (comiTurnover < 20000000) fail('COMI canonical turnover regression');
+
+          const app = fs.readFileSync('preview-v18/app.js','utf8');
+          if (!app.includes('renderEnginePerformanceLeague')) fail('Engine Performance League UI was not bundled');
+          if (!app.includes('renderRecommendationPositionPerformance')) fail('Recommendation-position UI was not bundled');
+
+          console.log(JSON.stringify({
+            schemaVersion: out.schemaVersion,
+            sessionId: out.sessionId,
+            dataHealth: out.dataHealth.status,
+            canonicalUniverse: out.universeScreener.length,
+            candidates: out.allCandidates.length,
+            forwardLedgerEntries: ledger.entries.length,
+            performanceTrackingStarts: league.trackingStartsOn,
+            enginesTracked: league.engines.length,
+            enginesWithSignals: league.summary.enginesWithSignals,
+            resolvedReference: league.summary.totalResolvedReferenceSignals,
+            engineLeague: league.engines.map(x=>({engine:x.engineId,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,rankingEligible:x.rankingEligible,status:x.status})),
+            recommendationNumberTop10: position.top10.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,eligible:x.rankingEligible})),
+            bestRecommendationNumberByTargetCount: position.bestByTargetCount,
+            bestRecommendationNumberByTargetRate: position.bestByTargetRate,
+            tmghTurnover,
+            comiTurnover
+          }, null, 2));
+          NODE
+
+      - name: Build standalone public web preview
+        run: |
+          node scripts/stable/build-v18-web-preview.cjs
+          test -s preview-v18-web/index.html
+          test -s preview-v18-web/manifest.json
+          grep -q '18.2.0-shadow' preview-v18-web/index.html
+          grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
+          grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
+
+      - name: Package static preview
+        run: |
+          test -s preview-v18/index.html
+          test -s preview-v18/styles.css
+          test -s preview-v18/app.js
+          test -s preview-v18/performance.js
+          test -s preview-v18/position-performance.js
+          test -s preview-v18/data.json
+          test -s preview-v18/forward-ledger.json
+
+      - name: Upload V18.3 Unified Decision Center
+        uses: actions/upload-artifact@v4
+        with:
+          name: v18-3-unified-decision-center-forward-league
+          path: |
+            preview-v18/
+            preview-v18-web/
+          if-no-files-found: error
+
+      - name: Persist validated ledger and public web preview
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f data/stable/v18-forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json
+          if git diff --cached --quiet; then
+            echo 'Ledger/web preview unchanged.'
+          else
+            git commit -m 'chore(v18): persist validated forward ledger and web preview [skip ci]'
+            git push origin HEAD:v18-global-strategy-ensemble-20260906
+          fi

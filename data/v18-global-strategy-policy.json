@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "18.1.0-shadow",
+  "mode": "GLOBAL_STRATEGY_ENSEMBLE_SHADOW",
+  "canonicalData": {
+    "stockIntelligenceDirectory": "data/quant/stocks",
+    "marketRegime": "data/stable/v16-market-regime.json",
+    "practicalDecision": "data/stable/v15-practical-decision.json",
+    "dailyRecommendations": "data/quant/daily-recommendations.json",
+    "adaptiveRecommendations": "data/quant/adaptive-daily-recommendations.json"
+  },
+  "emaMacdContinuation": {
+    "minimumAverageTurnover20Egp": 20000000,
+    "minimumVolumeRatio20": 0.6,
+    "minimumRsi14": 45,
+    "maximumRsi14": 72,
+    "minimumAtrPct": 1,
+    "maximumAtrPct": 6.5,
+    "maximumDistanceAboveSma20Pct": 8,
+    "requireCloseAboveSma20": true,
+    "requireSma20AboveSma50": true,
+    "requireMacdAboveSignal": true
+  },
+  "leadership": {
+    "minimumAverageTurnover20Egp": 20000000,
+    "minimumLeadershipScore": 80,
+    "nearHighMaximumDistancePct": 8,
+    "full52WeekMinimumSessions": 220,
+    "minimumVcpHistorySessions": 35,
+    "maximumVcpContractionRatio": 0.68,
+    "maximumVcpVolumeDryUpRatio": 0.9,
+    "vcpMaximumDistanceFromHighPct": 12,
+    "researchTierBMinimumScore": 68,
+    "minimumRegimeCompatibilityForResearchTierB": 0.75,
+    "notes": [
+      "52_WEEK_HIGH may be shown only when at least 220 sessions exist in canonical history.",
+      "With shorter history, the label must remain AVAILABLE_HISTORY_HIGH_PROXY.",
+      "Relative-strength and VCP features are research evidence and cannot create Tier A by themselves."
+    ]
+  },
+  "strategyRegimeMatrix": {
+    "RISK_ON": {
+      "PORTFOLIO_BASKET": 1.0,
+      "BREAKOUT": 1.0,
+      "MOMENTUM": 0.95,
+      "TREND_CONTINUATION": 1.0,
+      "PULLBACK": 0.9,
+      "REVERSAL": 0.45,
+      "EMA_MACD": 0.95,
+      "LEADERSHIP": 1.0,
+      "VOLATILITY_CONTRACTION": 0.95,
+      "OTHER": 0.7
+    },
+    "NEUTRAL": {
+      "PORTFOLIO_BASKET": 0.75,
+      "BREAKOUT": 0.75,
+      "MOMENTUM": 0.65,
+      "TREND_CONTINUATION": 0.8,
+      "PULLBACK": 0.85,
+      "REVERSAL": 0.7,
+      "EMA_MACD": 0.8,
+      "LEADERSHIP": 0.8,
+      "VOLATILITY_CONTRACTION": 0.85,
+      "OTHER": 0.65
+    },
+    "RISK_OFF": {
+      "PORTFOLIO_BASKET": 0.3,
+      "BREAKOUT": 0.35,
+      "MOMENTUM": 0.25,
+      "TREND_CONTINUATION": 0.4,
+      "PULLBACK": 0.5,
+      "REVERSAL": 0.8,
+      "EMA_MACD": 0.4,
+      "LEADERSHIP": 0.45,
+      "VOLATILITY_CONTRACTION": 0.55,
+      "OTHER": 0.45
+    },
+    "HIGH_VOLATILITY": {
+      "PORTFOLIO_BASKET": 0.35,
+      "BREAKOUT": 0.5,
+      "MOMENTUM": 0.4,
+      "TREND_CONTINUATION": 0.45,
+      "PULLBACK": 0.55,
+      "REVERSAL": 0.6,
+      "EMA_MACD": 0.45,
+      "LEADERSHIP": 0.55,
+      "VOLATILITY_CONTRACTION": 0.65,
+      "OTHER": 0.45
+    }
+  },
+  "decision": {
+    "tierBMinimumScore": 65,
+    "tierBConfluenceMinimumScore": 72,
+    "minimumIndependentSourcesForConfluence": 2,
+    "maximumPublishedCandidates": 60
+  },
+  "risk": {
+    "automaticOrders": false,
+    "nextSessionOpenConfirmationRequired": true,
+    "doNotChaseGapPct": 3,
+    "maximumSinglePositionPct": 12.5,
+    "notes": [
+      "V18 is an evidence-routing layer, not an execution engine.",
+      "A bullish market regime can widen opportunity discovery but never bypass liquidity, data-quality or risk gates.",
+      "Historical, validation and forward evidence remain separate.",
+      "Leadership/VCP score adjustments are capped and cannot independently create Tier A."
+    ]
+  }
+}
