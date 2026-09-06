@@ -72,14 +72,35 @@ jobs:
               if (scan?.permissions?.executionAllowed !== false) fail('Execution must remain blocked');
               if (scan?.permissions?.automaticOrders !== false) fail('Automatic orders must remain blocked');
               if (market?.ok !== true || !Array.isArray(market?.symbols)) fail('Market index is not valid');
-              if (scan?.universe?.sessionDate && market?.sessionDate && scan.universe.sessionDate !== market.sessionDate) {
-                fail(`Session mismatch: scan=${scan.universe.sessionDate}, market=${market.sessionDate}`);
+
+              const recDates = [...new Set(scan.recommendations.map(x => x?.sessionDate).filter(Boolean))].sort();
+              if (recDates.length > 1) fail(`Mixed recommendation sessions: ${recDates.join(',')}`);
+              const recommendationSession = recDates[0] ?? null;
+              const marketSession = market?.sessionDate ?? null;
+              const universeSession = scan?.universe?.sessionDate ?? null;
+              const effectiveSession = [recommendationSession, marketSession, universeSession].filter(Boolean).sort().at(-1) ?? null;
+
+              // A published recommendation must agree with the live market session when both exist.
+              // universe.sessionDate is summary metadata and may lag while the scan already carries
+              // a newer recommendation snapshot; a lag is reported, not treated as a false outage.
+              if (recommendationSession && marketSession && recommendationSession !== marketSession) {
+                fail(`Published recommendation session mismatch: rec=${recommendationSession}, market=${marketSession}`);
               }
+              if (universeSession && effectiveSession && universeSession > effectiveSession) {
+                fail(`Universe session is unexpectedly ahead: universe=${universeSession}, effective=${effectiveSession}`);
+              }
+              if (universeSession && marketSession && universeSession !== marketSession) {
+                console.warn(`RC2_UNIVERSE_METADATA_LAG:${universeSession}->${marketSession}`);
+              }
+
               const summary = {
                 refreshedAt: new Date().toISOString(),
                 engine: scan.engine,
                 sourceCommit: scan.sourceCommit ?? null,
-                sessionDate: scan.universe?.sessionDate ?? market.sessionDate ?? null,
+                sessionDate: effectiveSession,
+                recommendationSessionDate: recommendationSession,
+                marketSessionDate: marketSession,
+                universeSessionDate: universeSession,
                 scanned: scan.summary?.scanned ?? null,
                 publicationEligibleTotal: scan.summary?.publicationEligibleTotal ?? null,
                 returned: scan.summary?.returned ?? scan.recommendations.length,
@@ -109,6 +130,7 @@ jobs:
           const fs = require('fs');
           const path = 'data/rc2/recommendation-history.json';
           const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
+          const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
           const p = new Intl.DateTimeFormat('en-GB', {
             timeZone:'Africa/Cairo', weekday:'long', hour:'2-digit', minute:'2-digit', hourCycle:'h23'
           }).formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});
@@ -120,8 +142,18 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'changed=false\n');
             process.exit(0);
           }
-          const sessionDate = scan?.universe?.sessionDate ?? null;
+
           const recommendations = Array.isArray(scan?.recommendations) ? scan.recommendations : [];
+          const recDates = [...new Set(recommendations.map(x => x?.sessionDate).filter(Boolean))].sort();
+          if (recDates.length > 1) throw new Error(`ARCHIVE_MIXED_RECOMMENDATION_SESSIONS:${recDates.join(',')}`);
+          const recommendationSession = recDates[0] ?? null;
+          const marketSession = market?.sessionDate ?? null;
+          const universeSession = scan?.universe?.sessionDate ?? null;
+          if (recommendationSession && marketSession && recommendationSession !== marketSession) {
+            throw new Error(`ARCHIVE_RECOMMENDATION_MARKET_SESSION_MISMATCH:${recommendationSession}:${marketSession}`);
+          }
+          const sessionDate = recommendationSession ?? marketSession ?? universeSession ?? null;
+
           if (!sessionDate || !recommendations.length) {
             console.log('ARCHIVE_SKIP_NO_PUBLISHED_RECOMMENDATIONS');
             fs.appendFileSync(process.env.GITHUB_OUTPUT,'changed=false\n');
@@ -134,6 +166,8 @@ jobs:
           let added = 0;
           for (const x of recommendations) {
             const ticker = String(x?.ticker ?? '').trim().toUpperCase();
+            const rowSession = x?.sessionDate ?? sessionDate;
+            if (rowSession !== sessionDate) throw new Error(`ARCHIVE_ROW_SESSION_MISMATCH:${ticker}:${rowSession}:${sessionDate}`);
             const key = `${sessionDate}|${ticker}`;
             if (!ticker || seen.has(key)) continue;
             archive.records.push({
@@ -168,7 +202,7 @@ jobs:
           fs.mkdirSync('data/rc2',{recursive:true});
           fs.writeFileSync(path,JSON.stringify(archive,null,2)+'\n');
           fs.appendFileSync(process.env.GITHUB_OUTPUT,`changed=true\nadded=${added}\nsession=${sessionDate}\n`);
-          console.log(`RC2_HISTORY_ARCHIVE_APPEND:${JSON.stringify({sessionDate,added,tickers:recommendations.map(x=>x.ticker)})}`);
+          console.log(`RC2_HISTORY_ARCHIVE_APPEND:${JSON.stringify({sessionDate,added,tickers:recommendations.map(x=>x.ticker),recommendationSession,marketSession,universeSession})}`);
           NODE
 
       - name: Commit durable history snapshot
@@ -193,6 +227,7 @@ jobs:
         run: |
           echo "DATA SOURCE: main exact-fresh production pipeline"
           echo "RECOMMENDATIONS: recomputed by TFE_V20_FUSION_RC2"
+          echo "SESSION SEMANTICS: recommendation/market session is authoritative; lagging universe summary is warning-only"
           echo "CADENCE: every 15 minutes during Cairo operating window"
           echo "PUBLISHED HISTORY: append-only after Cairo post-close"
           echo "FINANCIAL IMPACT ON RECOMMENDATIONS: NONE"
