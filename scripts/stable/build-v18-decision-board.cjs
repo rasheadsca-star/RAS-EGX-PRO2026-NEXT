@@ -1,3 +1,32 @@
 #!/usr/bin/env node
 'use strict';
-const fs=require('fs');const path=require('path');const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());const engine=path.join(ROOT,'scripts/stable/v18-global-strategy-ensemble.cjs');const extension=path.join(ROOT,'scripts/stable/v18-leadership-extension.cjs');const ranking=path.join(ROOT,'scripts/stable/v18-evidence-ranking.cjs');const source=path.join(ROOT,'data/stable/v18-global-strategy-ensemble.json');const ledgerSource=path.join(ROOT,'data/stable/v18-forward-ledger.json');const outDir=path.join(ROOT,'preview-v18');const out=path.join(outDir,'data.json');const ledgerOut=path.join(outDir,'forward-ledger.json');if(!fs.existsSync(engine))throw new Error('Missing V18 engine');if(!fs.existsSync(extension))throw new Error('Missing V18.1 leadership extension');if(!fs.existsSync(ranking))throw new Error('Missing V18.1 evidence ranking');require(engine);require(extension);require(ranking);if(!fs.existsSync(source))throw new Error('V18.1 output was not generated');const data=JSON.parse(fs.readFileSync(source,'utf8'));if(!data.sessionId)throw new Error('V18.1 output missing sessionId');if(data.schemaVersion!=='18.1.0-shadow')throw new Error(`Unexpected schema ${data.schemaVersion}`);if(!Array.isArray(data.allCandidates))throw new Error('V18.1 output missing allCandidates');if(!data.leadershipSummary)throw new Error('V18.1 output missing leadershipSummary');if(!data.forwardLedgerSummary)throw new Error('V18.1 output missing forwardLedgerSummary');if(data.rankingPolicy?.code!=='EVIDENCE_FIRST_THEN_SCORE')throw new Error('V18.1 evidence ranking not applied');fs.mkdirSync(outDir,{recursive:true});fs.writeFileSync(out,`${JSON.stringify(data,null,2)}\n`,'utf8');JSON.parse(fs.readFileSync(out,'utf8'));if(fs.existsSync(ledgerSource)){fs.copyFileSync(ledgerSource,ledgerOut);JSON.parse(fs.readFileSync(ledgerOut,'utf8'));}console.log(JSON.stringify({board:'preview-v18',schemaVersion:data.schemaVersion,sessionId:data.sessionId,candidates:data.allCandidates.length,actionable:data.counts?.actionableOrConditional||0,ema:data.counts?.emaMacdContinuationEligible||0,leadership:data.counts?.leadershipResearchEligible||0,vcp:data.counts?.vcpEligible||0,ranking:data.rankingPolicy?.code,forward:data.forwardLedgerSummary},null,2));
+const fs=require('fs');
+const path=require('path');
+const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
+const engine=path.join(ROOT,'scripts/stable/v18-global-strategy-ensemble.cjs');
+const extension=path.join(ROOT,'scripts/stable/v18-leadership-extension.cjs');
+const ranking=path.join(ROOT,'scripts/stable/v18-evidence-ranking.cjs');
+const unified=path.join(ROOT,'scripts/stable/v18-unified-decision-center.cjs');
+const source=path.join(ROOT,'data/stable/v18-global-strategy-ensemble.json');
+const ledgerSource=path.join(ROOT,'data/stable/v18-forward-ledger.json');
+const outDir=path.join(ROOT,'preview-v18');
+const out=path.join(outDir,'data.json');
+const ledgerOut=path.join(outDir,'forward-ledger.json');
+for(const [file,label] of [[engine,'V18 engine'],[extension,'V18.1 leadership extension'],[ranking,'V18.1 evidence ranking'],[unified,'V18.2 unified decision center']]) if(!fs.existsSync(file))throw new Error(`Missing ${label}`);
+require(engine);
+require(extension);
+require(ranking);
+require(unified);
+if(!fs.existsSync(source))throw new Error('V18.2 output was not generated');
+const data=JSON.parse(fs.readFileSync(source,'utf8'));
+if(!data.sessionId)throw new Error('V18.2 output missing sessionId');
+if(data.schemaVersion!=='18.2.0-shadow')throw new Error(`Unexpected schema ${data.schemaVersion}`);
+if(!Array.isArray(data.allCandidates)||!Array.isArray(data.universeScreener))throw new Error('V18.2 decision/universe arrays missing');
+if(!data.leadershipSummary||!data.forwardLedgerSummary||!data.dataHealth)throw new Error('V18.2 required summaries missing');
+if(data.rankingPolicy?.code!=='EVIDENCE_FIRST_THEN_SCORE')throw new Error('V18.2 evidence ranking not applied');
+if(data.dataHealth.status!=='PASS')throw new Error('V18.2 data integrity did not pass');
+fs.mkdirSync(outDir,{recursive:true});
+fs.writeFileSync(out,`${JSON.stringify(data,null,2)}\n`,'utf8');
+JSON.parse(fs.readFileSync(out,'utf8'));
+if(fs.existsSync(ledgerSource)){fs.copyFileSync(ledgerSource,ledgerOut);JSON.parse(fs.readFileSync(ledgerOut,'utf8'));}
+console.log(JSON.stringify({board:'preview-v18',schemaVersion:data.schemaVersion,sessionId:data.sessionId,candidates:data.allCandidates.length,universe:data.universeScreener.length,actionable:data.counts?.actionableOrConditional||0,ema:data.counts?.emaMacdContinuationEligible||0,leadership:data.counts?.leadershipResearchEligible||0,vcp:data.counts?.vcpEligible||0,ranking:data.rankingPolicy?.code,features:data.featureManifest?.length||0,dataHealth:data.dataHealth?.status,forward:data.forwardLedgerSummary},null,2));
