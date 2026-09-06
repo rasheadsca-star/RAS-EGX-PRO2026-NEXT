@@ -1,4 +1,4 @@
-name: V18 Global Strategy Ensemble Validation
+name: V18.2 Unified Decision Center Validation
 
 on:
   workflow_dispatch:
@@ -9,6 +9,7 @@ on:
       - scripts/stable/v18-global-strategy-ensemble.cjs
       - scripts/stable/v18-leadership-extension.cjs
       - scripts/stable/v18-evidence-ranking.cjs
+      - scripts/stable/v18-unified-decision-center.cjs
       - scripts/stable/build-v18-decision-board.cjs
       - data/v18-global-strategy-policy.json
       - preview-v18/**
@@ -34,54 +35,98 @@ jobs:
           node --check scripts/stable/v18-global-strategy-ensemble.cjs
           node --check scripts/stable/v18-leadership-extension.cjs
           node --check scripts/stable/v18-evidence-ranking.cjs
+          node --check scripts/stable/v18-unified-decision-center.cjs
           node --check scripts/stable/build-v18-decision-board.cjs
           node --check preview-v18/app.js
 
-      - name: Build V18.1 decision board
+      - name: Build V18.2 unified decision center
         run: node scripts/stable/build-v18-decision-board.cjs
 
-      - name: Regression and UI contract checks
+      - name: Final coherence and regression review
         run: |
           node <<'NODE'
           const fs = require('fs');
           const out = JSON.parse(fs.readFileSync('preview-v18/data.json', 'utf8'));
-          if (out.schemaVersion !== '18.1.0-shadow') throw new Error(`Unexpected schema ${out.schemaVersion}`);
-          if (!out.sessionId) throw new Error('Missing sessionId');
-          if (!Array.isArray(out.actionable) || !Array.isArray(out.allCandidates)) throw new Error('Missing decision arrays');
-          if ((out.counts?.canonicalStocksLoaded || 0) < 100) throw new Error('Canonical stock coverage unexpectedly low');
-          if (!out.leadershipSummary) throw new Error('Missing leadershipSummary');
-          if (!out.strategyRegimeMatrix?.RISK_ON) throw new Error('Missing strategy-regime matrix');
-          if (out.rankingPolicy?.code !== 'EVIDENCE_FIRST_THEN_SCORE') throw new Error('Evidence-first ranking missing');
-          if (!out.forwardLedgerSummary?.immutableIssueSnapshots) throw new Error('Forward ledger immutability flag missing');
-          const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
-          if (!Array.isArray(ledger.entries)) throw new Error('Forward ledger entries missing');
-          const currentIssued = ledger.entries.filter(x => x.issued?.sessionId === out.sessionId);
-          if (currentIssued.length < out.actionable.length) throw new Error('Forward ledger did not capture all current actionable candidates');
-          const riskOn = ['RISK_ON', 'BULLISH'].includes(String(out.marketRegime?.code || '').toUpperCase());
-          if (riskOn && (out.counts?.emaMacdContinuationEligible || 0) < 2) throw new Error('Risk-on regression: expected at least two EMA-MACD continuation candidates');
-          if (riskOn && out.allCandidates.length === 0) throw new Error('Risk-on regression: board cannot show zero candidates');
+          const fail = m => { throw new Error(m); };
+          if (out.schemaVersion !== '18.2.0-shadow') fail(`Unexpected schema ${out.schemaVersion}`);
+          if (!out.sessionId) fail('Missing sessionId');
+          if (!Array.isArray(out.allCandidates) || !Array.isArray(out.universeScreener)) fail('Missing decision/universe arrays');
+          if (out.universeScreener.length < 190) fail(`Canonical universe unexpectedly low: ${out.universeScreener.length}`);
+          if (out.universeScreener.length !== out.dataHealth?.canonicalUniverse) fail('Universe/data-health count mismatch');
+          if (out.dataHealth?.status !== 'PASS') fail('Data health did not PASS');
+          if ((out.dataHealth?.criticalFailureCount || 0) !== 0) fail('Critical integrity failure reported');
+          for (const c of out.dataHealth?.integrityChecks || []) if (c.critical && !c.passed) fail(`Critical integrity gate failed: ${c.id}`);
+          if (out.rankingPolicy?.code !== 'EVIDENCE_FIRST_THEN_SCORE') fail('Evidence-first ranking missing');
+          if (!out.strategyRegimeMatrix?.RISK_ON) fail('Strategy-regime matrix missing');
+          if (!out.forwardLedgerSummary?.immutableIssueSnapshots) fail('Forward issue snapshots are not immutable');
+          if (!out.basketCenter || !out.riskCenter || !out.evidenceCenter || !out.engineAgreement) fail('Unified centers missing');
+          if (out.riskCenter.automaticOrders !== false) fail('Automatic orders must remain disabled');
+
+          const tickers = out.allCandidates.map(x => x.ticker);
+          if (new Set(tickers).size !== tickers.length) fail('Duplicate candidate ticker');
+          const universe = new Set(out.universeScreener.map(x => x.ticker));
           for (const row of out.allCandidates) {
+            if (!universe.has(row.ticker)) fail(`Candidate outside canonical universe: ${row.ticker}`);
+            if (!Number.isFinite(Number(row.decisionScore)) || row.decisionScore < 0 || row.decisionScore > 100) fail(`Score out of range: ${row.ticker}`);
             const l = row.leadership;
-            if (l && !l.full52WeekCoverage && l.highReferenceLabel === '52_WEEK_HIGH') throw new Error(`False 52-week label on ${row.ticker}`);
-            if (String(row.tier||'').includes('TIER_A')) {
-              const realBaseSource = (row.sources||[]).some(s => !['V18_RS_LEADERSHIP_SHADOW','V18_VCP_SHADOW'].includes(s));
-              if (!realBaseSource) throw new Error(`Research-only layer created Tier A on ${row.ticker}`);
+            if (l && !l.full52WeekCoverage && l.highReferenceLabel === '52_WEEK_HIGH') fail(`False 52-week label: ${row.ticker}`);
+            if (String(row.tier || '').includes('TIER_A')) {
+              const base = (row.sources || []).some(s => !['V18_RS_LEADERSHIP_SHADOW','V18_VCP_SHADOW'].includes(s));
+              if (!base) fail(`Research-only Tier A: ${row.ticker}`);
+            }
+            const p = row.execution?.preferredPlan || {};
+            if ([p.entryLow,p.entryHigh,p.stopLoss,p.target1].every(Number.isFinite)) {
+              if (p.entryLow > p.entryHigh || p.stopLoss >= p.entryHigh || p.target1 <= p.entryLow) fail(`Invalid long plan: ${row.ticker}`);
             }
           }
-          const firstResearch = out.allCandidates.findIndex(x => String(x.tier||'').includes('TIER_B_RESEARCH'));
-          const lastTierA = out.allCandidates.reduce((idx,x,i)=>String(x.tier||'').includes('TIER_A')?i:idx,-1);
-          if (firstResearch >= 0 && lastTierA > firstResearch) throw new Error('Research Tier B ranked above Tier A');
+
+          const firstResearch = out.allCandidates.findIndex(x => String(x.tier || '').includes('TIER_B_RESEARCH'));
+          const lastTierA = out.allCandidates.reduce((n,x,i)=>String(x.tier || '').includes('TIER_A')?i:n,-1);
+          if (firstResearch >= 0 && lastTierA > firstResearch) fail('Research Tier B ranked above Tier A');
+
+          const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
+          if (!Array.isArray(ledger.entries)) fail('Forward ledger entries missing');
+          const currentIssued = ledger.entries.filter(x => x.issued?.sessionId === out.sessionId);
+          if (currentIssued.length < (out.actionable?.length || 0)) fail('Forward ledger did not capture current actionable set');
+
+          if ((out.basketCenter.totalExposurePct || 0) > 50.0001) fail('Basket pilot exposure exceeds 50%');
+          if (!out.basketCenter.failedWeightStaysCash) fail('Failed basket weight must stay cash');
+          for (const x of out.basketCenter.recommendations || []) if (Number(x.portfolioWeightPct || 0) > Number(out.riskCenter.maximumSinglePositionPct || 12.5)) fail(`Overweight basket member: ${x.ticker}`);
+
+          const riskOn = ['RISK_ON','BULLISH'].includes(String(out.marketRegime?.code || '').toUpperCase());
+          if (riskOn && (out.counts?.emaMacdContinuationEligible || 0) < 2) fail('Risk-on regression: EMA continuation unexpectedly empty');
+          if (riskOn && out.allCandidates.length === 0) fail('Risk-on regression: zero candidates');
+
+          const tmgh = JSON.parse(fs.readFileSync('data/quant/stocks/TMGH.json','utf8'));
+          const comi = JSON.parse(fs.readFileSync('data/quant/stocks/COMI.json','utf8'));
+          const tmghTurnover = Number(tmgh.indicators?.averageTurnover20Egp || 0);
+          const comiTurnover = Number(comi.indicators?.averageTurnover20Egp || 0);
+          if (tmghTurnover < 20000000) fail('TMGH canonical turnover regression');
+          if (comiTurnover < 20000000) fail('COMI canonical turnover regression');
+
+          const requiredFeatures = ['EXECUTIVE_DASHBOARD','TOP_5_NOW','FULL_MARKET_SCREENER','GLOBAL_SEARCH','STOCK_DETAIL','TECHNICAL_VISUALIZATION','EMA_MACD_CONTINUATION','LEADERSHIP_RS','VCP','ENGINE_AGREEMENT','WATCH_NEAR_BLOCKED','BASKET_PORTFOLIO','PORTFOLIO_TRACKER','POSITION_SIZING','MORNING_CONFIRMATION','STRATEGY_REGIME_MATRIX','BACKTEST_EVIDENCE','FORWARD_LEDGER','DATA_HEALTH','ZERO_SIGNAL_GUARD','EXPORT_JSON_CSV','PRINT_VIEW'];
+          const features = new Set((out.featureManifest || []).filter(x=>x.enabled).map(x=>x.id));
+          for (const f of requiredFeatures) if (!features.has(f)) fail(`Missing feature: ${f}`);
+
           const html = fs.readFileSync('preview-v18/index.html','utf8');
-          for (const id of ['opportunityList','detailContent','zeroGuard','familyFilter','regimeScore']) if (!html.includes(`id="${id}"`)) throw new Error(`Missing UI contract: ${id}`);
-          const tmghCanonical = JSON.parse(fs.readFileSync('data/quant/stocks/TMGH.json','utf8'));
-          const comiCanonical = JSON.parse(fs.readFileSync('data/quant/stocks/COMI.json','utf8'));
-          const tmghTurnover = Number(tmghCanonical.indicators?.averageTurnover20Egp || 0);
-          const comiTurnover = Number(comiCanonical.indicators?.averageTurnover20Egp || 0);
-          if (tmghTurnover < 20000000) throw new Error('TMGH canonical turnover regression');
-          if (comiTurnover < 20000000) throw new Error('COMI canonical turnover regression');
-          const tmgh = out.allCandidates.find(x => x.ticker === 'TMGH');
-          const comi = out.allCandidates.find(x => x.ticker === 'COMI');
-          console.log(JSON.stringify({schemaVersion:out.schemaVersion,sessionId:out.sessionId,marketRegime:out.marketRegime,counts:out.counts,leadershipSummary:out.leadershipSummary,forwardLedgerSummary:out.forwardLedgerSummary,rankingPolicy:out.rankingPolicy,tmgh:{tier:tmgh?.tier,score:tmgh?.decisionScore,canonicalTurnover:tmghTurnover,rs:tmgh?.leadership?.relativeStrengthComposite,vcp:tmgh?.leadership?.vcp?.passed},comi:{tier:comi?.tier,score:comi?.decisionScore,canonicalTurnover:comiTurnover,rs:comi?.leadership?.relativeStrengthComposite,vcp:comi?.leadership?.vcp?.passed},top:out.allCandidates.slice(0,12).map(x=>({evidenceRank:x.evidenceRank,rawRank:x.rank,ticker:x.ticker,tier:x.tier,score:x.decisionScore,rs:x.leadership?.relativeStrengthComposite,vcp:x.leadership?.vcp?.passed,high:x.leadership?.distanceFromAvailableHighPct,compatibility:x.regimeCompatibility?.score,sources:x.sources}))},null,2));
+          const requiredIds = ['opportunityList','detailContent','zeroGuard','familyFilter','regimeScore','topFiveList','featureManifest','screenerBody','stockCenter','priceChart','leadershipBody','agreementBody','basketCards','riskCalcResult','morningResult','portfolioBody','matrixWrap','evidenceModel','ledgerBody','integrityChecks','exportJsonBtn','exportCsvBtn','printBtn'];
+          for (const id of requiredIds) if (!html.includes(`id="${id}"`)) fail(`Missing UI contract: ${id}`);
+          for (const tab of out.uiContract?.tabs || []) if (!html.includes(`data-tab="${tab}"`) || !html.includes(`data-view="${tab}"`)) fail(`Missing tab/view: ${tab}`);
+
+          console.log(JSON.stringify({
+            schemaVersion: out.schemaVersion,
+            sessionId: out.sessionId,
+            dataHealth: out.dataHealth.status,
+            canonicalUniverse: out.universeScreener.length,
+            candidates: out.allCandidates.length,
+            features: out.featureManifest.length,
+            tabs: out.uiContract.tabs.length,
+            forwardIssued: currentIssued.length,
+            basketExposurePct: out.basketCenter.totalExposurePct,
+            top5: out.topFiveNow.map(x=>({ticker:x.ticker,tier:x.tier,score:x.decisionScore})),
+            tmghTurnover,
+            comiTurnover
+          }, null, 2));
           NODE
 
       - name: Package static preview
@@ -92,9 +137,9 @@ jobs:
           test -s preview-v18/data.json
           test -s preview-v18/forward-ledger.json
 
-      - name: Upload V18.1 Decision Board
+      - name: Upload V18.2 Unified Decision Center
         uses: actions/upload-artifact@v4
         with:
-          name: v18-decision-board
+          name: v18-2-unified-decision-center
           path: preview-v18/
           if-no-files-found: error
