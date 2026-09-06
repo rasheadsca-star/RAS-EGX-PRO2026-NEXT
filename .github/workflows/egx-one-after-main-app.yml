@@ -2,6 +2,10 @@ name: EGX ONE — Refresh After MAIN APP
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/egx-one-after-main-app.yml'
   workflow_run:
     workflows: ['EGX MAIN APP V16.9.2 P2 Automatic Scan']
     types: [completed]
@@ -16,7 +20,7 @@ concurrency:
 
 jobs:
   dispatch-if-stale:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
