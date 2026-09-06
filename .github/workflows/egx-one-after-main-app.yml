@@ -1,0 +1,68 @@
+name: EGX ONE — Refresh After MAIN APP
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['EGX MAIN APP V16.9.2 P2 Automatic Scan']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: egx-one-after-main-app
+  cancel-in-progress: false
+
+jobs:
+  dispatch-if-stale:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout latest MAIN APP
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Compare completed MAIN APP session with EGX ONE publication
+        id: freshness
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_session="$(node -p "JSON.parse(require('fs').readFileSync('data/stable/v16-main-app-current.json','utf8')).sessionDate")"
+          git fetch --no-tags --depth=1 origin egx-one/clean-room-v0
+          published_session="$(git show FETCH_HEAD:data/research/published/latest.json | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>console.log(JSON.parse(s).signalSession))")"
+          echo "main_session=$main_session" >> "$GITHUB_OUTPUT"
+          echo "published_session=$published_session" >> "$GITHUB_OUTPUT"
+          if [[ "$main_session" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && [[ "$published_session" != "$main_session" ]]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "EGX_ONE_AFTER_MAIN_STALE:$published_session->$main_session"
+          else
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo "EGX_ONE_AFTER_MAIN_CURRENT:$published_session"
+          fi
+
+      - name: Dispatch EGX ONE research refresh immediately after MAIN APP
+        if: steps.freshness.outputs.stale == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run egx-one-research-refresh.yml --ref egx-one/clean-room-v0
+
+      - name: Verify dispatch request
+        if: steps.freshness.outputs.stale == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          sleep 5
+          gh run list --workflow egx-one-research-refresh.yml --branch egx-one/clean-room-v0 --limit 5 --json databaseId,status,conclusion,event,createdAt,headBranch \
+            --jq '.[] | select(.event=="workflow_dispatch") | select(.headBranch=="egx-one/clean-room-v0") | .databaseId' | head -n 1 | grep -E '^[0-9]+$'
+
+      - name: Summary
+        run: |
+          echo '## EGX ONE after MAIN APP handoff' >> "$GITHUB_STEP_SUMMARY"
+          echo "- MAIN APP session: ${{ steps.freshness.outputs.main_session }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- EGX ONE published session: ${{ steps.freshness.outputs.published_session }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Refresh dispatched: ${{ steps.freshness.outputs.stale }}" >> "$GITHUB_STEP_SUMMARY"
