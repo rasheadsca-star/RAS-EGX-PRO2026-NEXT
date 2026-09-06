@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "18.0.0-shadow",
+  "mode": "GLOBAL_STRATEGY_ENSEMBLE_SHADOW",
+  "canonicalData": {
+    "stockIntelligenceDirectory": "data/quant/stocks",
+    "marketRegime": "data/stable/v16-market-regime.json",
+    "practicalDecision": "data/stable/v15-practical-decision.json",
+    "dailyRecommendations": "data/quant/daily-recommendations.json",
+    "adaptiveRecommendations": "data/quant/adaptive-daily-recommendations.json"
+  },
+  "emaMacdContinuation": {
+    "minimumAverageTurnover20Egp": 20000000,
+    "minimumVolumeRatio20": 0.6,
+    "minimumRsi14": 45,
+    "maximumRsi14": 72,
+    "minimumAtrPct": 1,
+    "maximumAtrPct": 6.5,
+    "maximumDistanceAboveSma20Pct": 8,
+    "requireCloseAboveSma20": true,
+    "requireSma20AboveSma50": true,
+    "requireMacdAboveSignal": true
+  },
+  "decision": {
+    "tierBMinimumScore": 65,
+    "tierBConfluenceMinimumScore": 72,
+    "minimumIndependentSourcesForConfluence": 2,
+    "maximumPublishedCandidates": 25
+  },
+  "risk": {
+    "automaticOrders": false,
+    "nextSessionOpenConfirmationRequired": true,
+    "doNotChaseGapPct": 3,
+    "maximumSinglePositionPct": 12.5,
+    "notes": [
+      "V18 is an evidence-routing layer, not an execution engine.",
+      "A bullish market regime can widen opportunity discovery but never bypass liquidity, data-quality or risk gates.",
+      "Historical, validation and forward evidence remain separate."
+    ]
+  }
+}
