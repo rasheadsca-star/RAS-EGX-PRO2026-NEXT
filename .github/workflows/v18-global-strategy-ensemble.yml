@@ -1,0 +1,61 @@
+name: V18 Global Strategy Ensemble Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v18-global-strategy-ensemble-20260906
+    paths:
+      - scripts/stable/v18-global-strategy-ensemble.cjs
+      - data/v18-global-strategy-policy.json
+      - .github/workflows/v18-global-strategy-ensemble.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax check
+        run: node --check scripts/stable/v18-global-strategy-ensemble.cjs
+
+      - name: Build V18 shadow ensemble
+        run: node scripts/stable/v18-global-strategy-ensemble.cjs
+
+      - name: Regression checks
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const p = 'data/stable/v18-global-strategy-ensemble.json';
+          const out = JSON.parse(fs.readFileSync(p, 'utf8'));
+          if (!out.sessionId) throw new Error('Missing sessionId');
+          if (!Array.isArray(out.actionable)) throw new Error('Missing actionable array');
+          if (!Array.isArray(out.allCandidates)) throw new Error('Missing allCandidates array');
+          if ((out.counts?.canonicalStocksLoaded || 0) < 100) throw new Error('Canonical stock coverage unexpectedly low');
+          const riskOn = ['RISK_ON', 'BULLISH'].includes(String(out.marketRegime?.code || '').toUpperCase());
+          if (riskOn && (out.counts?.emaMacdContinuationEligible || 0) < 2) {
+            throw new Error('Risk-on regression: expected at least two EMA-MACD continuation candidates');
+          }
+          console.log(JSON.stringify({
+            sessionId: out.sessionId,
+            marketRegime: out.marketRegime,
+            counts: out.counts,
+            top: out.allCandidates.slice(0, 10).map(x => ({ticker:x.ticker,tier:x.tier,score:x.decisionScore,sources:x.sources}))
+          }, null, 2));
+          NODE
+
+      - name: Upload V18 output
+        uses: actions/upload-artifact@v4
+        with:
+          name: v18-global-strategy-ensemble
+          path: data/stable/v18-global-strategy-ensemble.json
+          if-no-files-found: error
