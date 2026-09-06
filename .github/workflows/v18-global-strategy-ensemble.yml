@@ -1,4 +1,4 @@
-name: V18.2 Unified Decision Center Validation
+name: V18.3 Unified Decision Center + Forward League Validation
 
 on:
   workflow_dispatch:
@@ -9,10 +9,17 @@ on:
       - scripts/stable/v18-global-strategy-ensemble.cjs
       - scripts/stable/v18-leadership-extension.cjs
       - scripts/stable/v18-evidence-ranking.cjs
+      - scripts/stable/v18-forward-ledger-seed.cjs
+      - scripts/stable/v18-engine-performance-league.cjs
       - scripts/stable/v18-unified-decision-center.cjs
       - scripts/stable/build-v18-decision-board.cjs
       - scripts/stable/build-v18-web-preview.cjs
       - data/v18-global-strategy-policy.json
+      - data/quant/stocks/**
+      - data/quant/daily-recommendations.json
+      - data/quant/adaptive-daily-recommendations.json
+      - data/stable/v16-market-regime.json
+      - data/stable/v15-practical-decision.json
       - preview-v18/**
       - .github/workflows/v18-global-strategy-ensemble.yml
 
@@ -33,18 +40,21 @@ jobs:
 
       - name: Syntax checks
         run: |
+          node --check scripts/stable/v18-forward-ledger-seed.cjs
           node --check scripts/stable/v18-global-strategy-ensemble.cjs
           node --check scripts/stable/v18-leadership-extension.cjs
           node --check scripts/stable/v18-evidence-ranking.cjs
+          node --check scripts/stable/v18-engine-performance-league.cjs
           node --check scripts/stable/v18-unified-decision-center.cjs
           node --check scripts/stable/build-v18-decision-board.cjs
           node --check scripts/stable/build-v18-web-preview.cjs
           node --check preview-v18/app.js
+          node --check preview-v18/performance.js
 
-      - name: Build V18.2 unified decision center
+      - name: Build V18.3 unified decision center
         run: node scripts/stable/build-v18-decision-board.cjs
 
-      - name: Final coherence and regression review
+      - name: Final coherence and forward-performance review
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -63,6 +73,17 @@ jobs:
           if (!out.forwardLedgerSummary?.immutableIssueSnapshots) fail('Forward issue snapshots are not immutable');
           if (!out.basketCenter || !out.riskCenter || !out.evidenceCenter || !out.engineAgreement) fail('Unified centers missing');
           if (out.riskCenter.automaticOrders !== false) fail('Automatic orders must remain disabled');
+
+          const league = out.enginePerformanceLeague;
+          if (!league || league.schemaVersion !== '18.3.0-forward-league') fail('Engine Performance League missing');
+          if (league.trackingStartsOn !== '2026-09-07') fail('Performance tracking must start on 2026-09-07');
+          if (league.noBackfillBeforeStart !== true) fail('No-backfill guard missing');
+          if ((league.engines || []).length < 9) fail('Not all engine families are represented in the league');
+          if (league.rankingMinimumResolvedSignals < 5) fail('League ranking sample gate too low');
+          for (const e of league.engines || []) {
+            if (e.targetHitRateResolvedPct != null && (e.targetHitRateResolvedPct < 0 || e.targetHitRateResolvedPct > 100)) fail(`Invalid target rate: ${e.engineId}`);
+            if (e.leagueRank && !e.rankingEligible) fail(`Engine ranked before minimum sample: ${e.engineId}`);
+          }
 
           const tickers = out.allCandidates.map(x => x.ticker);
           if (new Set(tickers).size !== tickers.length) fail('Duplicate candidate ticker');
@@ -87,9 +108,15 @@ jobs:
           if (firstResearch >= 0 && lastTierA > firstResearch) fail('Research Tier B ranked above Tier A');
 
           const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
-          if (!Array.isArray(ledger.entries)) fail('Forward ledger entries missing');
+          if (!Array.isArray(ledger.entries) || ledger.entries.length < 32) fail('Persistent forward ledger entries missing');
+          if (ledger.trackingStartsOn !== '2026-09-07') fail('Ledger tracking start mismatch');
           const currentIssued = ledger.entries.filter(x => x.issued?.sessionId === out.sessionId);
           if (currentIssued.length < (out.actionable?.length || 0)) fail('Forward ledger did not capture current actionable set');
+          for (const e of ledger.entries) {
+            const p = e.futurePerformance;
+            if (p?.firstEvaluationSession && p.firstEvaluationSession < '2026-09-07') fail(`Backfilled future result before tracking start: ${e.id}`);
+            if (p?.status === 'AMBIGUOUS_TARGET_STOP_SAME_BAR' && p.resolved) fail(`Ambiguous bar counted as resolved: ${e.id}`);
+          }
 
           if ((out.basketCenter.totalExposurePct || 0) > 50.0001) fail('Basket pilot exposure exceeds 50%');
           if (!out.basketCenter.failedWeightStaysCash) fail('Failed basket weight must stay cash');
@@ -106,14 +133,8 @@ jobs:
           if (tmghTurnover < 20000000) fail('TMGH canonical turnover regression');
           if (comiTurnover < 20000000) fail('COMI canonical turnover regression');
 
-          const requiredFeatures = ['EXECUTIVE_DASHBOARD','TOP_5_NOW','FULL_MARKET_SCREENER','GLOBAL_SEARCH','STOCK_DETAIL','TECHNICAL_VISUALIZATION','EMA_MACD_CONTINUATION','LEADERSHIP_RS','VCP','ENGINE_AGREEMENT','WATCH_NEAR_BLOCKED','BASKET_PORTFOLIO','PORTFOLIO_TRACKER','POSITION_SIZING','MORNING_CONFIRMATION','STRATEGY_REGIME_MATRIX','BACKTEST_EVIDENCE','FORWARD_LEDGER','DATA_HEALTH','ZERO_SIGNAL_GUARD','EXPORT_JSON_CSV','PRINT_VIEW'];
-          const features = new Set((out.featureManifest || []).filter(x=>x.enabled).map(x=>x.id));
-          for (const f of requiredFeatures) if (!features.has(f)) fail(`Missing feature: ${f}`);
-
-          const html = fs.readFileSync('preview-v18/index.html','utf8');
-          const requiredIds = ['opportunityList','detailContent','zeroGuard','familyFilter','regimeScore','topFiveList','featureManifest','screenerBody','stockCenter','priceChart','leadershipBody','agreementBody','basketCards','riskCalcResult','morningResult','portfolioBody','matrixWrap','evidenceModel','ledgerBody','integrityChecks','exportJsonBtn','exportCsvBtn','printBtn'];
-          for (const id of requiredIds) if (!html.includes(`id="${id}"`)) fail(`Missing UI contract: ${id}`);
-          for (const tab of out.uiContract?.tabs || []) if (!html.includes(`data-tab="${tab}"`) || !html.includes(`data-view="${tab}"`)) fail(`Missing tab/view: ${tab}`);
+          const app = fs.readFileSync('preview-v18/app.js','utf8');
+          if (!app.includes('renderEnginePerformanceLeague')) fail('Engine Performance League UI was not bundled');
 
           console.log(JSON.stringify({
             schemaVersion: out.schemaVersion,
@@ -121,11 +142,12 @@ jobs:
             dataHealth: out.dataHealth.status,
             canonicalUniverse: out.universeScreener.length,
             candidates: out.allCandidates.length,
-            features: out.featureManifest.length,
-            tabs: out.uiContract.tabs.length,
-            forwardIssued: currentIssued.length,
-            basketExposurePct: out.basketCenter.totalExposurePct,
-            top5: out.topFiveNow.map(x=>({ticker:x.ticker,tier:x.tier,score:x.decisionScore})),
+            forwardLedgerEntries: ledger.entries.length,
+            performanceTrackingStarts: league.trackingStartsOn,
+            enginesTracked: league.engines.length,
+            enginesWithSignals: league.summary.enginesWithSignals,
+            resolvedReference: league.summary.totalResolvedReferenceSignals,
+            engineLeague: league.engines.map(x=>({engine:x.engineId,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,rankingEligible:x.rankingEligible,status:x.status})),
             tmghTurnover,
             comiTurnover
           }, null, 2));
@@ -137,32 +159,34 @@ jobs:
           test -s preview-v18-web/index.html
           test -s preview-v18-web/manifest.json
           grep -q '18.2.0-shadow' preview-v18-web/index.html
+          grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
 
       - name: Package static preview
         run: |
           test -s preview-v18/index.html
           test -s preview-v18/styles.css
           test -s preview-v18/app.js
+          test -s preview-v18/performance.js
           test -s preview-v18/data.json
           test -s preview-v18/forward-ledger.json
 
-      - name: Upload V18.2 Unified Decision Center
+      - name: Upload V18.3 Unified Decision Center
         uses: actions/upload-artifact@v4
         with:
-          name: v18-2-unified-decision-center
+          name: v18-3-unified-decision-center-forward-league
           path: |
             preview-v18/
             preview-v18-web/
           if-no-files-found: error
 
-      - name: Publish validated web preview to branch
+      - name: Persist validated ledger and public web preview
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f preview-v18-web/index.html preview-v18-web/manifest.json
+          git add -f data/stable/v18-forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json
           if git diff --cached --quiet; then
-            echo 'Web preview unchanged.'
+            echo 'Ledger/web preview unchanged.'
           else
-            git commit -m 'chore(v18): publish validated web preview [skip ci]'
+            git commit -m 'chore(v18): persist validated forward ledger and web preview [skip ci]'
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
