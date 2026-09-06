@@ -1,20 +1,20 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-09-03T14:42:43.248Z",
+  "generatedAt": "2026-09-06T10:01:28.599Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 108,
-    "scheduled": 40,
-    "scheduledLegacy": 40,
+    "total": 109,
+    "scheduled": 41,
+    "scheduledLegacy": 41,
     "pageDeployers": 41,
     "repositoryWriters": 91,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "40 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "41 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "41 workflows can deploy GitHub Pages.",
     "91 workflows can write to the repository."
   ],
@@ -52,6 +52,16 @@
       "name": "EGX ONE Research Market Refresh",
       "schedules": [
         "15 14 * * 0-4"
+      ]
+    },
+    {
+      "filename": "egx-one-research-watchdog.yml",
+      "name": "EGX ONE Research Refresh Watchdog",
+      "schedules": [
+        "30 13 * * 0-4",
+        "0 14 * * 0-4",
+        "30 14 * * 0-4",
+        "0 15 * * 0-4"
       ]
     },
     {
@@ -527,6 +537,25 @@
       "hasPush": true,
       "deploysPages": false,
       "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-one-research-watchdog.yml",
+      "relativePath": ".github/workflows/egx-one-research-watchdog.yml",
+      "name": "EGX ONE Research Refresh Watchdog",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "30 13 * * 0-4",
+        "0 14 * * 0-4",
+        "30 14 * * 0-4",
+        "0 15 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": false,
+      "deploysPages": false,
+      "writesRepository": false,
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
