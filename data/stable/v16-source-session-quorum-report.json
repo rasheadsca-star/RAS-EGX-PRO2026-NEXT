@@ -1,9 +1,9 @@
 {
   "schemaVersion": "16.3.9-source-session-quorum-6-explicit-stale-minority-quarantine",
-  "checkedAt": "2026-09-07T15:57:53.249Z",
+  "checkedAt": "2026-09-07T18:25:11.444Z",
   "expectedSession": "2026-09-07",
   "cairoDate": "2026-09-07",
-  "cairoTime": "18:57",
+  "cairoTime": "21:25",
   "sameDayAfterClose": true,
   "marketFetchDate": "2026-09-07",
   "marketSource": "mubasher_symbol_pages_precise_enriched",
@@ -13,51 +13,66 @@
   "explicitQuorumPassed": false,
   "timeOnlyCandidates": 210,
   "candidateCoveragePct": 96.77,
-  "recoveredSourceMarketTimeRows": 210,
-  "recoveryAttemptedRows": 215,
-  "recoveryFailures": [
-    {
-      "symbol": "ARVA",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "MEGM",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "DCCC",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "MMAT",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    },
-    {
-      "symbol": "SEIGA",
-      "ok": false,
-      "reason": "MARKET_TIME_NOT_FOUND"
-    }
-  ],
+  "recoveredSourceMarketTimeRows": 0,
+  "recoveryAttemptedRows": 0,
+  "recoveryFailures": [],
   "inferenceQuorumPassed": true,
   "minimumQuorum": 80,
   "minimumCoveragePct": 80,
-  "explicitMismatches": 0,
-  "explicitMismatchPct": 0,
+  "explicitMismatches": 5,
+  "explicitMismatchPct": 2.3,
   "maximumExplicitMismatchPct": 5,
   "explicitConflictQuarantinePassed": true,
-  "quarantinedExplicitMismatchRows": 0,
-  "quarantinedExplicitMismatches": [],
+  "quarantinedExplicitMismatchRows": 5,
+  "quarantinedExplicitMismatches": [
+    {
+      "symbol": "ARVA",
+      "sourceSessionDate": "2026-08-16",
+      "sourceMarketTime": "16 August 01:27 PM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ARVA/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "MEGM",
+      "sourceSessionDate": "2022-04-28",
+      "sourceMarketTime": "28 April 2022 11:50 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "DCCC",
+      "sourceSessionDate": "2008-04-07",
+      "sourceMarketTime": "7 April 2008 02:00 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DCCC/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "MMAT",
+      "sourceSessionDate": "2026-09-03",
+      "sourceMarketTime": "3 September 12:54 PM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MMAT/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    },
+    {
+      "symbol": "SEIGA",
+      "sourceSessionDate": "2002-02-05",
+      "sourceMarketTime": "5 February 2002 02:00 AM market time",
+      "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
+      "executionEligible": false,
+      "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
+    }
+  ],
   "quorumPassed": true,
-  "mode": "TIME_ONLY_CROSS_SYMBOL_INFERENCE",
+  "mode": "TIME_ONLY_CROSS_SYMBOL_INFERENCE_WITH_STALE_MINORITY_QUARANTINE",
   "promotedRows": 210,
   "candidateDiagnostics": {
     "reasonCounts": {
       "ELIGIBLE_TIME_ONLY_MUBASHER_ROW": 210,
-      "INVALID_SOURCE_MARKET_TIME": 5,
+      "HAS_EXPLICIT_SOURCE_DATE": 5,
       "NOT_MUBASHER_EGX_STOCK_ROW": 2
     },
     "samples": [
@@ -66,7 +81,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -79,7 +94,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:27 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -92,7 +107,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -105,7 +120,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:25 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -118,7 +133,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -131,7 +146,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -144,7 +159,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:27 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
@@ -157,7 +172,7 @@
         "source": "mubasher_symbol_pages",
         "sourceMarketTime": "01:29 PM market time",
         "sourceSessionDate": null,
-        "updatedAt": "2026-09-07T15:56:56.929Z",
+        "updatedAt": "2026-09-07T18:24:02.954Z",
         "classification": {
           "eligible": true,
           "reason": "ELIGIBLE_TIME_ONLY_MUBASHER_ROW",
