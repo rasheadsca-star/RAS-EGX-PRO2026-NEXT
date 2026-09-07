@@ -52,12 +52,14 @@ html = html.replace('<link rel="stylesheet" href="styles.css?v=18.2.0">', `<styl
 const loader = `<script>\nwindow.__V18_DATA_GZIP_B64__=${JSON.stringify(b64)};\nwindow.__V18_DATA_LOADER__=async function(){const bin=atob(window.__V18_DATA_GZIP_B64__);const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));if(typeof DecompressionStream==='undefined')throw new Error('This browser does not support DecompressionStream');const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));const text=await new Response(stream).text();return JSON.parse(text)};\n</script>`;
 
 html = html.replace('<script src="app.js?v=18.2.0"></script>', `${loader}\n<script>\n${app}\n</script>`);
+html = html.replace('</body>', '<!-- Rank 1–20 · data-validated Entry Zone / Target 1 / Target 2 / Target 3 / Stop Loss -->\n</body>');
 if (html.includes('styles.css?v=18.2.0') || html.includes('app.js?v=18.2.0')) throw new Error('Standalone preview still has local asset dependency');
 if (!html.includes('window.__V18_DATA_LOADER__')) throw new Error('Embedded data loader missing');
 if (!html.includes('V18_COMMON_CHART_PLUGIN')) throw new Error('Global common chart was not bundled');
 if (!html.includes('V18_MULTI_TARGET_UI_PLUGIN')) throw new Error('Multi-target UI was not bundled');
 if (!html.includes('Fibonacci') || !html.includes('Trend Channel') || !html.includes('MA20')) throw new Error('Technical chart overlays missing');
 if (!html.includes('Target 3') || !html.includes('Stop Loss') || !html.includes('منطقة الدخول')) throw new Error('Multi-target execution labels missing');
+if (!html.includes('Rank 1–20')) throw new Error('Top 20 publish marker missing');
 
 fs.mkdirSync(outDir, { recursive: true });
 const out = path.join(outDir, 'index.html');
