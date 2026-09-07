@@ -1,0 +1,117 @@
+name: V18 External Engines Performance Comparison
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v18-global-strategy-ensemble-20260906
+    paths:
+      - data/stable/v18-external-engine-snapshots.json
+      - scripts/stable/v18-external-engine-comparison.cjs
+      - scripts/stable/build-v18-decision-board.cjs
+      - scripts/stable/build-v18-web-preview.cjs
+      - preview-v18/performance.js
+      - .github/workflows/v18-external-ema-comparison.yml
+
+permissions:
+  contents: write
+
+jobs:
+  validate-external-engines:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate adapter syntax
+        run: |
+          node --check scripts/stable/v18-external-engine-comparison.cjs
+          node --check scripts/stable/build-v18-decision-board.cjs
+          node --check scripts/stable/build-v18-web-preview.cjs
+
+      - name: Build unified comparison
+        run: node scripts/stable/build-v18-decision-board.cjs
+
+      - name: Validate all external comparison rows
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const out=JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
+          const league=out.enginePerformanceLeague;
+          if(!league || !Array.isArray(league.engines)) throw new Error('Engine Performance League missing');
+
+          const expected=[
+            ['EMA_MACD_DAILY_EXTERNAL','https://egx-ema-macd-daily.ali19891.chatgpt.site/'],
+            ['EGX_ONE_UNIFIED_EXTERNAL','https://egx-one-live.vercel.app/'],
+            ['EGX_PRO_V16_9_TECHNICAL_EXTERNAL','https://egx-v16-technical-visualization-v1.vercel.app/']
+          ];
+
+          for(const [id,url] of expected){
+            const row=league.engines.find(x=>x.engineId===id);
+            if(!row) throw new Error(`${id} missing from Engine Performance League`);
+            if(row.externalIndependent!==true) throw new Error(`${id} must remain independently tracked in performance comparison`);
+            if(row.sourceUrl!==url) throw new Error(`${id} source URL mismatch: ${row.sourceUrl}`);
+            if(row.trackingStartsOn!=='2026-09-07') throw new Error(`${id} tracking start mismatch`);
+            if(row.status==='NO_PUBLISHED_SIGNALS' && !Number.isFinite(Number(row.issuedSignals))) throw new Error(`${id} invalid published-signal state`);
+          }
+
+          const registry=out.externalEngineRegistry;
+          if(!registry || !Array.isArray(registry.engines)) throw new Error('External engine registry missing');
+          for(const [id] of expected){
+            const r=registry.engines.find(x=>x.engineId===id);
+            if(!r) throw new Error(`${id} missing from external engine registry`);
+          }
+
+          if((league.summary?.externalIndependentEngines||0)!==expected.length) {
+            throw new Error(`Expected ${expected.length} external comparison rows; got ${league.summary?.externalIndependentEngines}`);
+          }
+          if((league.engines||[]).length < 12) throw new Error(`Expected at least 12 total engine rows; got ${league.engines.length}`);
+
+          const v169Internal=league.engines.find(x=>x.engineId==='V16_9_BASKET');
+          if(!v169Internal) throw new Error('Internal V16_9_BASKET row disappeared while adding the external V16.9 published source');
+
+          console.log(JSON.stringify({
+            enginesTracked:league.engines.length,
+            externalRows:expected.map(([id])=>{
+              const x=league.engines.find(e=>e.engineId===id);
+              return {engineId:id,status:x.status,issued:x.issuedSignals,target1:x.target1Hits,stop:x.stopHits};
+            }),
+            internalV169Preserved:true
+          },null,2));
+          NODE
+
+      - name: Build and validate public web preview
+        run: |
+          node scripts/stable/build-v18-web-preview.cjs
+          test -s preview-v18-web/index.html
+          node <<'NODE'
+          const fs=require('fs');
+          const zlib=require('zlib');
+          const html=fs.readFileSync('preview-v18-web/index.html','utf8');
+          const match=html.match(/window\.__V18_DATA_GZIP_B64__=("[A-Za-z0-9+/=]+")/);
+          if(!match) throw new Error('Embedded compressed V18 data not found in standalone preview');
+          const b64=JSON.parse(match[1]);
+          const data=JSON.parse(zlib.gunzipSync(Buffer.from(b64,'base64')).toString('utf8'));
+          const ids=new Set((data.enginePerformanceLeague?.engines||[]).map(x=>x.engineId));
+          for(const id of ['EMA_MACD_DAILY_EXTERNAL','EGX_ONE_UNIFIED_EXTERNAL','EGX_PRO_V16_9_TECHNICAL_EXTERNAL','V16_9_BASKET']){
+            if(!ids.has(id)) throw new Error(`${id} missing from compressed standalone preview data`);
+          }
+          console.log(JSON.stringify({standalonePreviewValidated:true,engineRows:data.enginePerformanceLeague.engines.length,requiredRowsPresent:true},null,2));
+          NODE
+
+      - name: Persist validated web preview
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f preview-v18-web/index.html preview-v18-web/manifest.json
+          if git diff --cached --quiet; then
+            echo 'Web preview unchanged.'
+          else
+            git commit -m 'chore(v18): persist external engine comparison preview [skip ci]'
+            git push origin HEAD:v18-global-strategy-ensemble-20260906
+          fi
