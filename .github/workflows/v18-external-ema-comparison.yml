@@ -1,0 +1,68 @@
+name: V18 External EMA-MACD Daily Comparison
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v18-global-strategy-ensemble-20260906
+    paths:
+      - data/stable/v18-external-engine-snapshots.json
+      - scripts/stable/v18-external-engine-comparison.cjs
+      - scripts/stable/build-v18-decision-board.cjs
+      - preview-v18/performance.js
+
+permissions:
+  contents: write
+
+jobs:
+  validate-external-ema:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate adapter syntax
+        run: |
+          node --check scripts/stable/v18-external-engine-comparison.cjs
+          node --check scripts/stable/build-v18-decision-board.cjs
+
+      - name: Build unified comparison
+        run: node scripts/stable/build-v18-decision-board.cjs
+
+      - name: Validate external EMA row
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const out=JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
+          const row=(out.enginePerformanceLeague?.engines||[]).find(x=>x.engineId==='EMA_MACD_DAILY_EXTERNAL');
+          if(!row) throw new Error('EMA_MACD_DAILY_EXTERNAL missing from Engine Performance League');
+          if(row.externalIndependent!==true) throw new Error('External EMA engine must remain independent');
+          if(row.sourceUrl!=='https://egx-ema-macd-daily.ali19891.chatgpt.site/') throw new Error('External EMA source URL mismatch');
+          if(row.trackingStartsOn!=='2026-09-07') throw new Error('External EMA tracking start mismatch');
+          const registry=out.externalEngineRegistry;
+          if(!registry?.engines?.some(x=>x.engineId==='EMA_MACD_DAILY_EXTERNAL')) throw new Error('External EMA registry missing');
+          console.log(JSON.stringify({engine:row.engineId,status:row.status,issued:row.issuedSignals,target1:row.target1Hits,stop:row.stopHits},null,2));
+          NODE
+
+      - name: Build public web preview
+        run: |
+          node scripts/stable/build-v18-web-preview.cjs
+          test -s preview-v18-web/index.html
+          grep -q 'EMA_MACD_DAILY_EXTERNAL' preview-v18-web/index.html
+
+      - name: Persist validated web preview
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f preview-v18-web/index.html preview-v18-web/manifest.json
+          if git diff --cached --quiet; then
+            echo 'Web preview unchanged.'
+          else
+            git commit -m 'chore(v18): persist external EMA comparison preview [skip ci]'
+            git push origin HEAD:v18-global-strategy-ensemble-20260906
+          fi
