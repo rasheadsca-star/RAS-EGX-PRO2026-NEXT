@@ -14,8 +14,9 @@ const cssPath = path.join(srcDir, 'styles.css');
 const appPath = path.join(srcDir, 'app.js');
 const dataPath = path.join(srcDir, 'data.json');
 const commonChartPath = path.join(srcDir, 'common-chart.js');
+const multiTargetUiPath = path.join(srcDir, 'multi-target-ui.js');
 
-for (const p of [indexPath, cssPath, appPath, dataPath, commonChartPath]) {
+for (const p of [indexPath, cssPath, appPath, dataPath, commonChartPath, multiTargetUiPath]) {
   if (!fs.existsSync(p)) throw new Error(`Missing web preview source: ${path.relative(ROOT, p)}`);
 }
 
@@ -23,12 +24,17 @@ let html = fs.readFileSync(indexPath, 'utf8');
 const css = fs.readFileSync(cssPath, 'utf8');
 let app = fs.readFileSync(appPath, 'utf8');
 const commonChart = fs.readFileSync(commonChartPath, 'utf8');
+const multiTargetUi = fs.readFileSync(multiTargetUiPath, 'utf8');
 const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
 
 if (data.schemaVersion !== '18.2.0-shadow') throw new Error(`Unexpected schema ${data.schemaVersion}`);
 if (data.dataHealth?.status !== 'PASS') throw new Error('Refusing to publish web preview when Data Health is not PASS');
 if ((data.dataHealth?.criticalFailureCount || 0) !== 0) throw new Error('Refusing to publish web preview with critical integrity failures');
 if (!commonChart.includes('V18_COMMON_CHART_PLUGIN')) throw new Error('Common chart plugin marker missing');
+if (!multiTargetUi.includes('V18_MULTI_TARGET_UI_PLUGIN')) throw new Error('Multi-target UI plugin marker missing');
+const top20=data.allCandidates.slice().sort((a,b)=>(a.evidenceRank??a.rank??9999)-(b.evidenceRank??b.rank??9999)).slice(0,20);
+if(top20.length!==20)throw new Error('Top 20 recommendations missing');
+for(const row of top20){const p=row.execution?.multiTargetPlan;if(!p||![p.entryLow,p.entryHigh,p.stopLoss,p.target1,p.target2,p.target3].every(v=>Number.isFinite(Number(v))))throw new Error(`Multi-target levels missing for ${row.ticker}`);}
 
 const minified = Buffer.from(JSON.stringify(data));
 const packed = zlib.gzipSync(minified, { level: 9 });
@@ -39,6 +45,7 @@ const newLoader = "if(window.__V18_DATA__)state.data=window.__V18_DATA__;else if
 if (!app.includes(oldLoader)) throw new Error('Could not locate V18.2 data loader contract');
 app = app.replace(oldLoader, newLoader);
 if (!app.includes('V18_COMMON_CHART_PLUGIN')) app += `\n\n${commonChart}\n`;
+if (!app.includes('V18_MULTI_TARGET_UI_PLUGIN')) app += `\n\n${multiTargetUi}\n`;
 
 html = html.replace('<link rel="stylesheet" href="styles.css?v=18.2.0">', `<style>\n${css}\n</style>`);
 
@@ -48,7 +55,9 @@ html = html.replace('<script src="app.js?v=18.2.0"></script>', `${loader}\n<scri
 if (html.includes('styles.css?v=18.2.0') || html.includes('app.js?v=18.2.0')) throw new Error('Standalone preview still has local asset dependency');
 if (!html.includes('window.__V18_DATA_LOADER__')) throw new Error('Embedded data loader missing');
 if (!html.includes('V18_COMMON_CHART_PLUGIN')) throw new Error('Global common chart was not bundled');
+if (!html.includes('V18_MULTI_TARGET_UI_PLUGIN')) throw new Error('Multi-target UI was not bundled');
 if (!html.includes('Fibonacci') || !html.includes('Trend Channel') || !html.includes('MA20')) throw new Error('Technical chart overlays missing');
+if (!html.includes('Target 3') || !html.includes('Stop Loss') || !html.includes('منطقة الدخول')) throw new Error('Multi-target execution labels missing');
 
 fs.mkdirSync(outDir, { recursive: true });
 const out = path.join(outDir, 'index.html');
@@ -67,6 +76,8 @@ const manifest = {
   dashboardRecommendations: Math.min(20, data.allCandidates?.length || 0),
   globalCommonChart: true,
   chartOverlays: ['MA20','MA50','TREND_CHANNEL','FIBONACCI'],
+  multiTargetExecution: true,
+  executionLevels: ['ENTRY_ZONE','TARGET1','TARGET2','TARGET3','STOP_LOSS'],
   bytes: fs.statSync(out).size
 };
 fs.writeFileSync(path.join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
