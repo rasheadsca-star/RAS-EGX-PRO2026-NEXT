@@ -1,13 +1,20 @@
 {
-  "schemaVersion": "18.3.0-external-engine-snapshots",
+  "schemaVersion": "18.3.1-external-engine-snapshots",
   "trackingStartsOn": "2026-09-07",
-  "updatedAt": "2026-09-07T08:36:00+03:00",
+  "updatedAt": "2026-09-07T08:52:00+03:00",
+  "comparisonPolicy": {
+    "role": "PERFORMANCE_COMPARISON_ONLY",
+    "externalRowsDoNotAddConsensusVotes": true,
+    "missingSnapshotIsNotZeroSignals": true
+  },
   "engines": [
     {
       "engineId": "EMA_MACD_DAILY_EXTERNAL",
       "label": "EGX EMA–MACD Daily",
       "labelAr": "EGX EMA–MACD Daily — المحرك الخارجي",
       "sourceUrl": "https://egx-ema-macd-daily.ali19891.chatgpt.site/",
+      "comparisonRole": "EXTERNAL_PUBLISHED_SOURCE",
+      "independentAlpha": true,
       "collectionMode": "PERSISTED_PUBLISHED_SNAPSHOT",
       "sourceAccessStatus": "AUTHENTICATED_BROWSER_SESSION_REQUIRED_FOR_AUTOMATED_READ",
       "comparisonPolicy": "COUNT_ONLY_PUBLISHED_RECOMMENDATIONS_NOT_NEAR_CONFIRMATIONS",
@@ -45,6 +52,71 @@
           "publishedRecommendations": null,
           "nearConfirmations": null,
           "noteAr": "في انتظار Snapshot منشور من المحرك الخارجي لهذه الجلسة. لا يتم افتراض 0 توصيات عند غياب الالتقاط."
+        }
+      ]
+    },
+    {
+      "engineId": "EGX_ONE_UNIFIED_EXTERNAL",
+      "label": "EGX ONE — Unified Decision Center",
+      "labelAr": "EGX ONE — Unified Decision Center — المصدر الخارجي",
+      "sourceUrl": "https://egx-one-live.vercel.app/",
+      "comparisonRole": "EXTERNAL_PUBLISHED_SOURCE",
+      "independentAlpha": false,
+      "lineageNote": "Unified/aggregated decision source; tracked as a published source, not an extra independent consensus vote.",
+      "collectionMode": "PERSISTED_PUBLISHED_SNAPSHOT",
+      "sourceAccessStatus": "PUBLIC_UI_CLIENT_SIDE_DATA_REQUIRES_PERSISTED_SNAPSHOT",
+      "comparisonPolicy": "COUNT_ONLY_PUBLISHED_RECOMMENDATIONS_NOT_LOADING_DIAGNOSTIC_OR_ENGINE_COMPARISON_ROWS",
+      "recommendationSchema": {
+        "required": [
+          "ticker",
+          "rank",
+          "referenceClose",
+          "entryLow",
+          "entryHigh",
+          "stopLoss",
+          "target1"
+        ]
+      },
+      "snapshots": [
+        {
+          "sessionId": "2026-09-07",
+          "captureStatus": "PENDING_SOURCE_CAPTURE",
+          "publishedRecommendations": null,
+          "nearConfirmations": null,
+          "noteAr": "الموقع مسجل داخل المقارنة كمصدر منشور مستقل القياس، لكن توصياته المحملة ديناميكياً تحتاج Snapshot محفوظ. غياب الالتقاط لا يُحسب 0 توصيات."
+        }
+      ]
+    },
+    {
+      "engineId": "EGX_PRO_V16_9_TECHNICAL_EXTERNAL",
+      "label": "EGX Pro Professional V16.9 — Technical Visualization V1",
+      "labelAr": "EGX Pro Professional V16.9 — Technical Visualization V1 — المصدر الخارجي",
+      "sourceUrl": "https://egx-v16-technical-visualization-v1.vercel.app/",
+      "resolvedUrl": "https://egx-v16-technical-visualization-v1.vercel.app/core/",
+      "comparisonRole": "EXTERNAL_PUBLISHED_SOURCE",
+      "independentAlpha": false,
+      "lineageNote": "The V16.9 visualization exposes the published RC2 recommendation set; the visualization/status layer itself is not treated as a separate alpha engine.",
+      "collectionMode": "PERSISTED_PUBLISHED_SNAPSHOT",
+      "sourceAccessStatus": "PUBLIC_UI_CLIENT_SIDE_DATA_REQUIRES_PERSISTED_SNAPSHOT",
+      "comparisonPolicy": "COUNT_ONLY_PUBLISHED_RC2_RECOMMENDATIONS_NOT_VISUALIZATION_OR_READINESS_STATUS",
+      "recommendationSchema": {
+        "required": [
+          "ticker",
+          "rank",
+          "referenceClose",
+          "entryLow",
+          "entryHigh",
+          "stopLoss",
+          "target1"
+        ]
+      },
+      "snapshots": [
+        {
+          "sessionId": "2026-09-07",
+          "captureStatus": "PENDING_SOURCE_CAPTURE",
+          "publishedRecommendations": null,
+          "nearConfirmations": null,
+          "noteAr": "الموقع مسجل صراحةً في المقارنة. نقيس مجموعة التوصيات المنشورة عبر الواجهة ولا نعتبر طبقة العرض/الحالة نفسها محرك توصية إضافياً. غياب الالتقاط لا يُحسب 0 توصيات."
         }
       ]
     }
