@@ -1,0 +1,122 @@
+name: V18 Session Refresh From Main
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - data/history/**
+      - data/history-summary.json
+      - data/history-eligibility.json
+      - data/symbol-map.json
+      - data/session-calendar.json
+      - data/fetch-status.json
+      - data/source-gateway-report.json
+      - data/market-quality-report.json
+      - data/stable/v15-practical-decision.json
+      - data/stable/v16-market-regime.json
+      - data/stable/v15-price-truth.json
+      - .github/workflows/v18-session-refresh.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v18-session-refresh
+  cancel-in-progress: true
+
+jobs:
+  refresh-v18:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V18 research branch
+        uses: actions/checkout@v4
+        with:
+          ref: v18-global-strategy-ensemble-20260906
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Sync latest canonical session from main
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main -- \
+            data/history \
+            data/history-summary.json \
+            data/history-eligibility.json \
+            data/symbol-map.json \
+            data/session-calendar.json \
+            data/fetch-status.json \
+            data/source-gateway-report.json \
+            data/market-quality-report.json \
+            data/stable/v15-practical-decision.json \
+            data/stable/v16-market-regime.json \
+            data/stable/v15-price-truth.json
+
+      - name: Rebuild current-session quantitative layers
+        run: |
+          node --check scripts/quant/v13-4-quant-engine.cjs
+          node --check scripts/quant/v13-5-adaptive-paper-tracker.cjs
+          node --check scripts/quant/v13-7-stock-intelligence.cjs
+          node scripts/quant/v13-4-quant-engine.cjs
+          node scripts/quant/v13-5-adaptive-paper-tracker.cjs
+          node scripts/quant/v13-7-stock-intelligence.cjs
+
+      - name: Build V18 unified decision center
+        run: |
+          node scripts/stable/build-v18-decision-board.cjs
+          node scripts/stable/build-v18-web-preview.cjs
+
+      - name: Freshness and integrity gate
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const calendar = JSON.parse(fs.readFileSync('data/session-calendar.json','utf8'));
+          const out = JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
+          const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
+          const expected = calendar.latestMarketSession;
+          const fail = m => { throw new Error(m); };
+          if (!expected) fail('session-calendar missing latestMarketSession');
+          if (out.sessionId !== expected) fail(`STALE V18: output ${out.sessionId} != latest market session ${expected}`);
+          if (out.dataHealth?.status !== 'PASS') fail(`V18 data health ${out.dataHealth?.status}`);
+          if ((out.dataHealth?.criticalFailureCount || 0) !== 0) fail('Critical V18 integrity failures present');
+          if (!Array.isArray(out.allCandidates) || !out.allCandidates.length) fail('No V18 candidates generated');
+          const currentStocks = out.universeScreener.filter(x => x.sessionId === expected).length;
+          if (currentStocks < 150) fail(`Current-session stock coverage too low: ${currentStocks}`);
+          const currentIssued = ledger.entries.filter(x => x.issued?.sessionId === expected).length;
+          if (currentIssued < (out.actionable?.length || 0)) fail(`Forward ledger missing current-session signals: ${currentIssued}`);
+          if (out.enginePerformanceLeague?.trackingStartsOn !== '2026-09-07') fail('Engine league tracking start changed');
+          if (out.recommendationPositionPerformance?.trackingStartsOn !== '2026-09-07') fail('Recommendation-number tracking start changed');
+          console.log(JSON.stringify({
+            expectedSession: expected,
+            outputSession: out.sessionId,
+            canonicalUniverse: out.universeScreener.length,
+            currentSessionStocks: currentStocks,
+            candidates: out.allCandidates.length,
+            actionable: out.actionable?.length || 0,
+            currentForwardIssued: currentIssued,
+            dataHealth: out.dataHealth.status
+          }, null, 2));
+          NODE
+          test -s preview-v18-web/index.html
+          grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
+          grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
+
+      - name: Persist refreshed V18 ledger and web preview
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f \
+            data/stable/v18-forward-ledger.json \
+            preview-v18-web/index.html \
+            preview-v18-web/manifest.json
+          if git diff --cached --quiet; then
+            echo 'Validated V18 outputs unchanged.'
+          else
+            git commit -m 'chore(v18): refresh recommendations from latest verified session [skip ci]'
+            git push origin HEAD:v18-global-strategy-ensemble-20260906
+          fi
