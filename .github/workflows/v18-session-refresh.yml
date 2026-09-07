@@ -62,6 +62,8 @@ jobs:
           node --check scripts/quant/v13-4-quant-engine.cjs
           node --check scripts/quant/v13-5-adaptive-paper-tracker.cjs
           node --check scripts/quant/v13-7-stock-intelligence.cjs
+          node --check preview-v18/common-chart.js
+          node --check scripts/stable/build-v18-web-preview.cjs
           node scripts/quant/v13-4-quant-engine.cjs
           node scripts/quant/v13-5-adaptive-paper-tracker.cjs
           node scripts/quant/v13-7-stock-intelligence.cjs
@@ -78,6 +80,7 @@ jobs:
           const calendar = JSON.parse(fs.readFileSync('data/session-calendar.json','utf8'));
           const out = JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
           const ledger = JSON.parse(fs.readFileSync('preview-v18/forward-ledger.json','utf8'));
+          const manifest = JSON.parse(fs.readFileSync('preview-v18-web/manifest.json','utf8'));
           const expected = calendar.latestMarketSession;
           const fail = m => { throw new Error(m); };
           if (!expected) fail('session-calendar missing latestMarketSession');
@@ -95,6 +98,10 @@ jobs:
           if (position?.comparisonRange?.from !== 1 || position?.comparisonRange?.to !== 20) fail('Recommendation comparison range must be 1-20');
           if (!Array.isArray(position?.top20) || position.top20.length !== 20) fail('Recommendation Top 20 missing');
           for (let i=0;i<20;i++) if (position.top20[i]?.recommendationNumber !== i+1) fail(`Recommendation rank #${i+1} missing`);
+          if (manifest.dashboardRecommendations !== Math.min(20,out.allCandidates.length)) fail('Dashboard Top 20 manifest mismatch');
+          if (manifest.globalCommonChart !== true) fail('Global common chart missing');
+          const overlays = new Set(manifest.chartOverlays || []);
+          for (const key of ['MA20','MA50','TREND_CHANNEL','FIBONACCI']) if (!overlays.has(key)) fail(`Chart overlay missing: ${key}`);
           console.log(JSON.stringify({
             expectedSession: expected,
             outputSession: out.sessionId,
@@ -103,6 +110,9 @@ jobs:
             candidates: out.allCandidates.length,
             actionable: out.actionable?.length || 0,
             currentForwardIssued: currentIssued,
+            dashboardRecommendations: manifest.dashboardRecommendations,
+            globalCommonChart: manifest.globalCommonChart,
+            chartOverlays: manifest.chartOverlays,
             recommendationComparison: position.comparisonRange,
             recommendationTop20: position.top20.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct})),
             dataHealth: out.dataHealth.status
@@ -111,6 +121,10 @@ jobs:
           test -s preview-v18-web/index.html
           grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
           grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
+          grep -q 'V18_COMMON_CHART_PLUGIN' preview-v18-web/index.html
+          grep -q 'TOP 20 NOW' preview-v18-web/index.html
+          grep -q 'Trend Channel' preview-v18-web/index.html
+          grep -q 'Fibonacci' preview-v18-web/index.html
 
       - name: Persist refreshed canonical snapshot, ledger and web preview
         run: |
@@ -132,4 +146,4 @@ jobs:
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
 
-# trigger: 2026-09-07 recommendation-rank-20 publish refresh
+# trigger: 2026-09-07 global-chart-top20 publish refresh
