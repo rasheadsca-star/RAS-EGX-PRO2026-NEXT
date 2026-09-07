@@ -1,4 +1,4 @@
-name: V18 External EMA-MACD Daily Comparison
+name: V18 External Engines Performance Comparison
 
 on:
   workflow_dispatch:
@@ -9,13 +9,15 @@ on:
       - data/stable/v18-external-engine-snapshots.json
       - scripts/stable/v18-external-engine-comparison.cjs
       - scripts/stable/build-v18-decision-board.cjs
+      - scripts/stable/build-v18-web-preview.cjs
       - preview-v18/performance.js
+      - .github/workflows/v18-external-ema-comparison.yml
 
 permissions:
   contents: write
 
 jobs:
-  validate-external-ema:
+  validate-external-engines:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,23 +32,57 @@ jobs:
         run: |
           node --check scripts/stable/v18-external-engine-comparison.cjs
           node --check scripts/stable/build-v18-decision-board.cjs
+          node --check scripts/stable/build-v18-web-preview.cjs
 
       - name: Build unified comparison
         run: node scripts/stable/build-v18-decision-board.cjs
 
-      - name: Validate external EMA row
+      - name: Validate all external comparison rows
         run: |
           node <<'NODE'
           const fs=require('fs');
           const out=JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
-          const row=(out.enginePerformanceLeague?.engines||[]).find(x=>x.engineId==='EMA_MACD_DAILY_EXTERNAL');
-          if(!row) throw new Error('EMA_MACD_DAILY_EXTERNAL missing from Engine Performance League');
-          if(row.externalIndependent!==true) throw new Error('External EMA engine must remain independent');
-          if(row.sourceUrl!=='https://egx-ema-macd-daily.ali19891.chatgpt.site/') throw new Error('External EMA source URL mismatch');
-          if(row.trackingStartsOn!=='2026-09-07') throw new Error('External EMA tracking start mismatch');
+          const league=out.enginePerformanceLeague;
+          if(!league || !Array.isArray(league.engines)) throw new Error('Engine Performance League missing');
+
+          const expected=[
+            ['EMA_MACD_DAILY_EXTERNAL','https://egx-ema-macd-daily.ali19891.chatgpt.site/'],
+            ['EGX_ONE_UNIFIED_EXTERNAL','https://egx-one-live.vercel.app/'],
+            ['EGX_PRO_V16_9_TECHNICAL_EXTERNAL','https://egx-v16-technical-visualization-v1.vercel.app/']
+          ];
+
+          for(const [id,url] of expected){
+            const row=league.engines.find(x=>x.engineId===id);
+            if(!row) throw new Error(`${id} missing from Engine Performance League`);
+            if(row.externalIndependent!==true) throw new Error(`${id} must remain independently tracked in performance comparison`);
+            if(row.sourceUrl!==url) throw new Error(`${id} source URL mismatch: ${row.sourceUrl}`);
+            if(row.trackingStartsOn!=='2026-09-07') throw new Error(`${id} tracking start mismatch`);
+            if(row.status==='NO_PUBLISHED_SIGNALS' && !Number.isFinite(Number(row.issuedSignals))) throw new Error(`${id} invalid published-signal state`);
+          }
+
           const registry=out.externalEngineRegistry;
-          if(!registry?.engines?.some(x=>x.engineId==='EMA_MACD_DAILY_EXTERNAL')) throw new Error('External EMA registry missing');
-          console.log(JSON.stringify({engine:row.engineId,status:row.status,issued:row.issuedSignals,target1:row.target1Hits,stop:row.stopHits},null,2));
+          if(!registry || !Array.isArray(registry.engines)) throw new Error('External engine registry missing');
+          for(const [id] of expected){
+            const r=registry.engines.find(x=>x.engineId===id);
+            if(!r) throw new Error(`${id} missing from external engine registry`);
+          }
+
+          if((league.summary?.externalIndependentEngines||0)!==expected.length) {
+            throw new Error(`Expected ${expected.length} external comparison rows; got ${league.summary?.externalIndependentEngines}`);
+          }
+          if((league.engines||[]).length < 12) throw new Error(`Expected at least 12 total engine rows; got ${league.engines.length}`);
+
+          const v169Internal=league.engines.find(x=>x.engineId==='V16_9_BASKET');
+          if(!v169Internal) throw new Error('Internal V16_9_BASKET row disappeared while adding the external V16.9 published source');
+
+          console.log(JSON.stringify({
+            enginesTracked:league.engines.length,
+            externalRows:expected.map(([id])=>{
+              const x=league.engines.find(e=>e.engineId===id);
+              return {engineId:id,status:x.status,issued:x.issuedSignals,target1:x.target1Hits,stop:x.stopHits};
+            }),
+            internalV169Preserved:true
+          },null,2));
           NODE
 
       - name: Build public web preview
@@ -54,6 +90,9 @@ jobs:
           node scripts/stable/build-v18-web-preview.cjs
           test -s preview-v18-web/index.html
           grep -q 'EMA_MACD_DAILY_EXTERNAL' preview-v18-web/index.html
+          grep -q 'EGX_ONE_UNIFIED_EXTERNAL' preview-v18-web/index.html
+          grep -q 'EGX_PRO_V16_9_TECHNICAL_EXTERNAL' preview-v18-web/index.html
+          grep -q 'V16_9_BASKET' preview-v18-web/index.html
 
       - name: Persist validated web preview
         run: |
@@ -63,6 +102,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Web preview unchanged.'
           else
-            git commit -m 'chore(v18): persist external EMA comparison preview [skip ci]'
+            git commit -m 'chore(v18): persist external engine comparison preview [skip ci]'
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
