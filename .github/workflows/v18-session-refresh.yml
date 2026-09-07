@@ -90,7 +90,11 @@ jobs:
           const currentIssued = ledger.entries.filter(x => x.issued?.sessionId === expected).length;
           if (currentIssued < (out.actionable?.length || 0)) fail(`Forward ledger missing current-session signals: ${currentIssued}`);
           if (out.enginePerformanceLeague?.trackingStartsOn !== '2026-09-07') fail('Engine league tracking start changed');
-          if (out.recommendationPositionPerformance?.trackingStartsOn !== '2026-09-07') fail('Recommendation-number tracking start changed');
+          const position = out.recommendationPositionPerformance;
+          if (position?.trackingStartsOn !== '2026-09-07') fail('Recommendation-number tracking start changed');
+          if (position?.comparisonRange?.from !== 1 || position?.comparisonRange?.to !== 20) fail('Recommendation comparison range must be 1-20');
+          if (!Array.isArray(position?.top20) || position.top20.length !== 20) fail('Recommendation Top 20 missing');
+          for (let i=0;i<20;i++) if (position.top20[i]?.recommendationNumber !== i+1) fail(`Recommendation rank #${i+1} missing`);
           console.log(JSON.stringify({
             expectedSession: expected,
             outputSession: out.sessionId,
@@ -99,12 +103,15 @@ jobs:
             candidates: out.allCandidates.length,
             actionable: out.actionable?.length || 0,
             currentForwardIssued: currentIssued,
+            recommendationComparison: position.comparisonRange,
+            recommendationTop20: position.top20.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct})),
             dataHealth: out.dataHealth.status
           }, null, 2));
           NODE
           test -s preview-v18-web/index.html
           grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
           grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
+          grep -q 'Rank 1–20' preview-v18-web/index.html
 
       - name: Persist refreshed canonical snapshot, ledger and web preview
         run: |
@@ -126,4 +133,4 @@ jobs:
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
 
-# Latest-session refresh is fail-closed: stale output cannot replace a newer verified session.
+# trigger: 2026-09-07 recommendation-rank-20 refresh
