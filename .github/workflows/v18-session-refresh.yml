@@ -106,19 +106,24 @@ jobs:
           grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
           grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
 
-      - name: Persist refreshed V18 ledger and web preview
+      - name: Persist refreshed canonical snapshot, ledger and web preview
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -f \
+            data/session-calendar.json \
+            data/quant \
+            data/stable/v15-practical-decision.json \
+            data/stable/v16-market-regime.json \
+            data/stable/v15-price-truth.json \
             data/stable/v18-forward-ledger.json \
             preview-v18-web/index.html \
             preview-v18-web/manifest.json
           if git diff --cached --quiet; then
             echo 'Validated V18 outputs unchanged.'
           else
-            git commit -m 'chore(v18): refresh recommendations from latest verified session [skip ci]'
+            git commit -m 'chore(v18): persist latest verified canonical snapshot [skip ci]'
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
 
-# trigger: 2026-09-07 latest-session refresh
+# Latest-session refresh is fail-closed: stale output cannot replace a newer verified session.
