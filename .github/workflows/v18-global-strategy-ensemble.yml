@@ -89,9 +89,11 @@ jobs:
           }
 
           const position = out.recommendationPositionPerformance;
-          if (!position || position.schemaVersion !== '18.3.0-forward-position') fail('Recommendation-position performance missing');
+          if (!position || position.schemaVersion !== '18.3.1-forward-position-20') fail('Recommendation-position performance 1-20 missing');
           if (position.trackingStartsOn !== '2026-09-07' || position.noBackfillBeforeStart !== true) fail('Recommendation-position tracking start/guard invalid');
-          if ((position.top10 || []).length !== 10) fail('Recommendation-position Top 10 missing');
+          if (position.comparisonRange?.from !== 1 || position.comparisonRange?.to !== 20) fail('Recommendation comparison range must be 1-20');
+          if ((position.top20 || []).length !== 20) fail('Recommendation-position Top 20 missing');
+          for (let i=0;i<20;i++) if (position.top20[i]?.recommendationNumber !== i+1) fail(`Recommendation rank #${i+1} missing from Top 20`);
           for (const p of position.positions || []) {
             if (p.targetHitRateResolvedPct != null && (p.targetHitRateResolvedPct < 0 || p.targetHitRateResolvedPct > 100)) fail(`Invalid rank target rate: #${p.recommendationNumber}`);
             if (p.rankingEligible && p.resolvedSignals < position.rankingMinimumResolvedSignals) fail(`Rank #${p.recommendationNumber} eligible too early`);
@@ -160,8 +162,7 @@ jobs:
             enginesTracked: league.engines.length,
             enginesWithSignals: league.summary.enginesWithSignals,
             resolvedReference: league.summary.totalResolvedReferenceSignals,
-            engineLeague: league.engines.map(x=>({engine:x.engineId,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,rankingEligible:x.rankingEligible,status:x.status})),
-            recommendationNumberTop10: position.top10.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,eligible:x.rankingEligible})),
+            recommendationNumberTop20: position.top20.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,eligible:x.rankingEligible})),
             bestRecommendationNumberByTargetCount: position.bestByTargetCount,
             bestRecommendationNumberByTargetRate: position.bestByTargetRate,
             tmghTurnover,
@@ -177,6 +178,7 @@ jobs:
           grep -q '18.2.0-shadow' preview-v18-web/index.html
           grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
           grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
+          grep -q 'Rank 1–20' preview-v18-web/index.html
 
       - name: Package static preview
         run: |
