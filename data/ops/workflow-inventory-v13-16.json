@@ -1,20 +1,20 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-09-08T10:23:19.510Z",
+  "generatedAt": "2026-09-08T14:45:28.024Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
     "total": 112,
-    "scheduled": 41,
-    "scheduledLegacy": 41,
+    "scheduled": 42,
+    "scheduledLegacy": 42,
     "pageDeployers": 41,
     "repositoryWriters": 93,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "41 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "42 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "41 workflows can deploy GitHub Pages.",
     "93 workflows can write to the repository."
   ],
@@ -301,6 +301,14 @@
       "name": "V17 Historical Recovery Weekly Deep Review",
       "schedules": [
         "30 7 * * 5"
+      ]
+    },
+    {
+      "filename": "v18-session-refresh.yml",
+      "name": "V18 Session Refresh From Main",
+      "schedules": [
+        "45 13 * * 0-4",
+        "30 15 * * 0-4"
       ]
     },
     {
@@ -1940,8 +1948,11 @@
       "name": "V18 Session Refresh From Main",
       "isPrimary": false,
       "isEmergency": false,
-      "hasSchedule": false,
-      "schedules": [],
+      "hasSchedule": true,
+      "schedules": [
+        "45 13 * * 0-4",
+        "30 15 * * 0-4"
+      ],
       "hasWorkflowDispatch": true,
       "hasPush": true,
       "deploysPages": false,
