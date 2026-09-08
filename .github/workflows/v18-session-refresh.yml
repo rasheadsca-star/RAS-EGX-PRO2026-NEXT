@@ -2,6 +2,13 @@ name: V18 Session Refresh From Main
 
 on:
   workflow_dispatch:
+  schedule:
+    # Independent schedules are required because commits created by another
+    # GitHub Actions workflow via GITHUB_TOKEN do not trigger downstream push workflows.
+    # 13:45 UTC = 16:45 Cairo during DST: primary post-close V18 refresh.
+    - cron: '45 13 * * 0-4'
+    # 15:30 UTC = 18:30 Cairo during DST: fallback retry for late upstream/provider updates.
+    - cron: '30 15 * * 0-4'
   push:
     branches:
       - main
@@ -85,6 +92,7 @@ jobs:
           const fail = m => { throw new Error(m); };
           if (!expected) fail('session-calendar missing latestMarketSession');
           if (out.sessionId !== expected) fail(`STALE V18: output ${out.sessionId} != latest market session ${expected}`);
+          if (manifest.sessionId !== expected) fail(`STALE WEB: manifest ${manifest.sessionId} != latest market session ${expected}`);
           if (out.dataHealth?.status !== 'PASS') fail(`V18 data health ${out.dataHealth?.status}`);
           if ((out.dataHealth?.criticalFailureCount || 0) !== 0) fail('Critical V18 integrity failures present');
           if (!Array.isArray(out.allCandidates) || !out.allCandidates.length) fail('No V18 candidates generated');
@@ -100,11 +108,15 @@ jobs:
           for (let i=0;i<20;i++) if (position.top20[i]?.recommendationNumber !== i+1) fail(`Recommendation rank #${i+1} missing`);
           if (manifest.dashboardRecommendations !== Math.min(20,out.allCandidates.length)) fail('Dashboard Top 20 manifest mismatch');
           if (manifest.globalCommonChart !== true) fail('Global common chart missing');
+          if (manifest.multiTargetExecution !== true) fail('Multi-target execution missing');
+          const levels = new Set(manifest.executionLevels || []);
+          for (const key of ['ENTRY_ZONE','TARGET1','TARGET2','TARGET3','STOP_LOSS']) if (!levels.has(key)) fail(`Execution level missing: ${key}`);
           const overlays = new Set(manifest.chartOverlays || []);
           for (const key of ['MA20','MA50','TREND_CHANNEL','FIBONACCI']) if (!overlays.has(key)) fail(`Chart overlay missing: ${key}`);
           console.log(JSON.stringify({
             expectedSession: expected,
             outputSession: out.sessionId,
+            manifestSession: manifest.sessionId,
             canonicalUniverse: out.universeScreener.length,
             currentSessionStocks: currentStocks,
             candidates: out.allCandidates.length,
@@ -112,6 +124,8 @@ jobs:
             currentForwardIssued: currentIssued,
             dashboardRecommendations: manifest.dashboardRecommendations,
             globalCommonChart: manifest.globalCommonChart,
+            multiTargetExecution: manifest.multiTargetExecution,
+            executionLevels: manifest.executionLevels,
             chartOverlays: manifest.chartOverlays,
             recommendationComparison: position.comparisonRange,
             recommendationTop20: position.top20.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct})),
@@ -122,9 +136,12 @@ jobs:
           grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
           grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
           grep -q 'V18_COMMON_CHART_PLUGIN' preview-v18-web/index.html
+          grep -q 'V18_MULTI_TARGET_UI_PLUGIN' preview-v18-web/index.html
           grep -q 'TOP 20 NOW' preview-v18-web/index.html
           grep -q 'Trend Channel' preview-v18-web/index.html
           grep -q 'Fibonacci' preview-v18-web/index.html
+          grep -q 'Target 3' preview-v18-web/index.html
+          grep -q 'Stop Loss' preview-v18-web/index.html
 
       - name: Persist refreshed canonical snapshot, ledger and web preview
         run: |
@@ -146,4 +163,4 @@ jobs:
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
 
-# trigger: 2026-09-07 global-chart-top20 publish refresh
+# trigger: 2026-09-08 independent daily refresh + fallback retry
