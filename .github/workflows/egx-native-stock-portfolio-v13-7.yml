@@ -11,9 +11,10 @@ on:
       - "preview-v13/app/portfolio-technical-scenarios.js"
       - "preview-v13/app/portfolio-historical-calibration.js"
   schedule:
-    # 13:30 UTC = 16:30 Cairo during DST and 15:30 Cairo otherwise.
-    # Both are safely post-close for EGX and materially earlier than the old 18:15 Cairo refresh.
+    # Primary post-close refresh.
     - cron: "30 13 * * 0-4"
+    # Retry for delayed upstream market data; 14:50 UTC = 17:50 Cairo during DST.
+    - cron: "50 14 * * 0-4"
 
 permissions:
   contents: write
