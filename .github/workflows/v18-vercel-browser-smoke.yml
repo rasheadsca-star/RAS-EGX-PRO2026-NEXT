@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/v18-smoke.cjs <<'NODE'
+          cat > v18-smoke.cjs <<'NODE'
           const { chromium } = require('playwright');
           const fs = require('fs');
 
@@ -109,12 +109,12 @@ jobs:
               pageErrorCount: pageErrors.length
             }, null, 2));
             await browser.close();
-          })().catch(async err => {
+          })().catch(err => {
             console.error(err?.stack || String(err));
             process.exit(1);
           });
           NODE
-          node /tmp/v18-smoke.cjs
+          node v18-smoke.cjs
 
       - name: Upload browser smoke evidence
         if: always()
