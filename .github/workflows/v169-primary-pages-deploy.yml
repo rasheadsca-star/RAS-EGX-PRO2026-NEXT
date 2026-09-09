@@ -8,7 +8,9 @@ on:
       - "manifest.json"
       - "service-worker.js"
       - "preview-v16/app/**"
+      - "data/stable/v16-main-app-current.json"
       - "data/stable/v16-v169-primary-decision.json"
+      - "data/stable/v15-price-truth.json"
       - "data/stable/v16-v169-release-lock.json"
       - ".github/workflows/v169-primary-pages-deploy.yml"
 
@@ -38,16 +40,14 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Enforce frozen MAIN APP source
+      - name: Enforce frozen MAIN APP methodology only
         shell: bash
         run: |
           set -euo pipefail
           git cat-file -e "${MAIN_APP_FROZEN_SOURCE_REF}^{commit}"
+          # Keep the trading methodology/research engine frozen, while allowing
+          # operational/runtime fixes and fresh canonical data to deploy.
           PROTECTED=(
-            index.html
-            manifest.json
-            service-worker.js
-            preview-v16/app
             scripts/research/v16-v169-basket-engine.py
             scripts/research/v16-two-stage-predictor.py
             scripts/research/v16-v169-target-hit-audit.py
@@ -58,11 +58,11 @@ jobs:
             .github/workflows/v16-v169-basket-engine.yml
           )
           if ! git diff --quiet "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED[@]}"; then
-            echo "MAIN APP protected source drift detected. Deployment refused."
+            echo "MAIN APP protected methodology drift detected. Deployment refused."
             git diff --name-status "$MAIN_APP_FROZEN_SOURCE_REF" -- "${PROTECTED[@]}"
             exit 1
           fi
-          echo "MAIN APP source matches frozen P1 baseline ${MAIN_APP_FROZEN_SOURCE_REF}."
+          echo "MAIN APP protected methodology matches frozen P1 baseline ${MAIN_APP_FROZEN_SOURCE_REF}."
 
       - name: Validate MAIN APP runtime and live decision contract
         run: |
@@ -75,29 +75,47 @@ jobs:
           node --check preview-v16/app/launch.js
           node --check preview-v16/app/v16-9-basket-overlay.js
           node --check preview-v16/app/session-truth-ui.js
+          test -s data/stable/v16-main-app-current.json
           test -s data/stable/v16-v169-primary-decision.json
           test -s data/stable/v15-price-truth.json
           node - <<'NODE'
           const fs = require('fs');
+          const canonical = JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json', 'utf8'));
           const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
           const priceTruth = JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json', 'utf8'));
-          const model = decision?.selectedModel?.id;
-          const tickers = (decision.recommendations || []).map(row => row.ticker);
+          const model = canonical?.selectedModel?.id || decision?.selectedModel?.id;
+          const canonicalTickers = (canonical.recommendations || []).map(row => row.ticker);
+          const decisionTickers = (decision.recommendations || []).map(row => row.ticker);
+          const canonicalSession = canonical.sessionDate || canonical?.dataTruth?.decisionSession || null;
+          const decisionSession = decision.sessionDate || null;
+          const marketSession = priceTruth.expectedSession || priceTruth.marketDate || null;
           if (model !== 'V16_9_EQUAL_WEIGHT_BASKET') {
             throw new Error(`Unexpected MAIN APP model: ${model}`);
           }
-          if (tickers.length < 3) {
-            throw new Error('MAIN APP basket is empty.');
+          if (canonicalTickers.length < 3) {
+            throw new Error('MAIN APP canonical basket is empty.');
+          }
+          if (decisionTickers.length < 3) {
+            throw new Error('MAIN APP primary decision basket is empty.');
+          }
+          if (!canonicalSession || !marketSession || canonicalSession !== marketSession) {
+            throw new Error(`Stale canonical snapshot: canonical=${canonicalSession}; market=${marketSession}`);
+          }
+          if (decisionSession && decisionSession !== canonicalSession) {
+            throw new Error(`Decision/canonical session mismatch: decision=${decisionSession}; canonical=${canonicalSession}`);
+          }
+          if (JSON.stringify(canonicalTickers) !== JSON.stringify(decisionTickers)) {
+            throw new Error(`Decision/canonical ticker mismatch: canonical=${canonicalTickers.join(',')}; decision=${decisionTickers.join(',')}`);
           }
           console.log({
             app: 'MAIN APP',
             model,
-            recommendationSession: decision.sessionDate || null,
-            marketSession: priceTruth.expectedSession || null,
-            tickers,
+            recommendationSession: canonicalSession,
+            marketSession,
+            tickers: canonicalTickers,
             liveDataAllowed: true,
             methodologyLocked: true,
-            operationalPatch: 'P1_PUBLISHER_VARIABLE_ONLY',
+            operationalPatch: 'P3_STALE_DEPLOY_GUARD',
           });
           NODE
 
@@ -120,24 +138,25 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const fs = require('fs');
+          const canonical = JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json', 'utf8'));
           const decision = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json', 'utf8'));
           const output = {
-            schemaVersion: 'MAIN-APP-16.9.2-p1-frozen-method-live-data-1',
+            schemaVersion: 'MAIN-APP-16.9.2-p3-stale-deploy-guard',
             generatedAt: new Date().toISOString(),
             status: 'DEPLOYED',
             appName: 'MAIN APP',
             deployedUrl: process.env.DEPLOYED_URL || null,
             sourceCommit: process.env.GITHUB_SHA || null,
             frozenSourceRef: process.env.MAIN_APP_FROZEN_SOURCE_REF || null,
-            operationalPatch: 'P1_PUBLISHER_VARIABLE_ONLY',
+            operationalPatch: 'P3_STALE_DEPLOY_GUARD',
             methodologyChanged: false,
             methodologyLocked: true,
             liveMarketDataAllowed: true,
             liveRecommendationOutputAllowed: true,
-            primaryDecisionModel: decision?.selectedModel?.id || null,
-            sessionDate: decision.sessionDate || null,
-            recommendationTickers: (decision.recommendations || []).map(row => row.ticker),
-            protectedDecisionPath: 'data/stable/v16-v169-primary-decision.json',
+            primaryDecisionModel: canonical?.selectedModel?.id || decision?.selectedModel?.id || null,
+            sessionDate: canonical.sessionDate || decision.sessionDate || null,
+            recommendationTickers: (canonical.recommendations || decision.recommendations || []).map(row => row.ticker),
+            protectedDecisionPath: 'data/stable/v16-main-app-current.json',
             applicationEntry: 'preview-v16/app/v169.html'
           };
           fs.writeFileSync('data/stable/v16-v169-pages-status.json', JSON.stringify(output, null, 2) + '\n');
