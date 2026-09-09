@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-09-08T20:01:37.570Z",
+  "generatedAt": "2026-09-09T12:21:23.879Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,15 +12,162 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 0,
-  "tickers": [],
-  "matrix": [],
+  "recommendationCount": 5,
+  "tickers": [
+    "EASB",
+    "MMAT",
+    "NCCW",
+    "ETEL",
+    "OIH"
+  ],
+  "matrix": [
+    {
+      "ticker": "EASB",
+      "correlations": {
+        "EASB": {
+          "value": 1,
+          "observations": 60
+        },
+        "MMAT": {
+          "value": 0.443,
+          "observations": 21
+        },
+        "NCCW": {
+          "value": 0.211,
+          "observations": 56
+        },
+        "ETEL": {
+          "value": 0.222,
+          "observations": 53
+        },
+        "OIH": {
+          "value": 0.051,
+          "observations": 59
+        }
+      }
+    },
+    {
+      "ticker": "MMAT",
+      "correlations": {
+        "EASB": {
+          "value": 0.443,
+          "observations": 21
+        },
+        "MMAT": {
+          "value": 1,
+          "observations": 60
+        },
+        "NCCW": {
+          "value": 0.436,
+          "observations": 22
+        },
+        "ETEL": {
+          "value": 0.216,
+          "observations": 21
+        },
+        "OIH": {
+          "value": 0.431,
+          "observations": 21
+        }
+      }
+    },
+    {
+      "ticker": "NCCW",
+      "correlations": {
+        "EASB": {
+          "value": 0.211,
+          "observations": 56
+        },
+        "MMAT": {
+          "value": 0.436,
+          "observations": 22
+        },
+        "NCCW": {
+          "value": 1,
+          "observations": 60
+        },
+        "ETEL": {
+          "value": 0.385,
+          "observations": 53
+        },
+        "OIH": {
+          "value": -0.159,
+          "observations": 56
+        }
+      }
+    },
+    {
+      "ticker": "ETEL",
+      "correlations": {
+        "EASB": {
+          "value": 0.222,
+          "observations": 53
+        },
+        "MMAT": {
+          "value": 0.216,
+          "observations": 21
+        },
+        "NCCW": {
+          "value": 0.385,
+          "observations": 53
+        },
+        "ETEL": {
+          "value": 1,
+          "observations": 60
+        },
+        "OIH": {
+          "value": 0.171,
+          "observations": 53
+        }
+      }
+    },
+    {
+      "ticker": "OIH",
+      "correlations": {
+        "EASB": {
+          "value": 0.051,
+          "observations": 59
+        },
+        "MMAT": {
+          "value": 0.431,
+          "observations": 21
+        },
+        "NCCW": {
+          "value": -0.159,
+          "observations": 56
+        },
+        "ETEL": {
+          "value": 0.171,
+          "observations": 53
+        },
+        "OIH": {
+          "value": 1,
+          "observations": 60
+        }
+      }
+    }
+  ],
   "highCorrelationPairs": [],
-  "sectorConcentration": [],
+  "sectorConcentration": [
+    {
+      "sector": "GENERAL",
+      "count": 4,
+      "sharePct": 80
+    },
+    {
+      "sector": "غير مصنف",
+      "count": 1,
+      "sharePct": 20
+    }
+  ],
   "summary": {
     "highCorrelationPairCount": 0,
     "averageHighPairCorrelation": null,
-    "largestSector": null,
+    "largestSector": {
+      "sector": "GENERAL",
+      "count": 4,
+      "sharePct": 80
+    },
     "regime": "NEUTRAL",
     "regimeRiskMultiplier": 0.65,
     "suggestedMaximumPositions": 3,
@@ -32,19 +179,19 @@
       "id": "MARKET_GAP_5",
       "labelAr": "فجوة سوقية -5%",
       "assumedMovePct": -5,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -5
     },
     {
       "id": "RISK_OFF_8",
       "labelAr": "صدمة سوق دفاعي -8%",
       "assumedMovePct": -8,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -7.16
     },
     {
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -8
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
@@ -54,7 +201,9 @@
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 0
+    "positionWeightPct": 20
   },
-  "warnings": []
+  "warnings": [
+    "SECTOR_CONCENTRATION_ABOVE_40"
+  ]
 }
