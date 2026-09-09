@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/workflows/v16-history-summary-handoff.yml"
+      - "scripts/history/history-summary-builder.cjs"
   workflow_run:
     workflows:
       - "EGX MAIN APP V16.9.2 P2 Automatic Scan"
@@ -61,9 +62,19 @@ jobs:
           if (primary?.currentSessionReady === true && historySession !== mainSession) {
             throw new Error(`MAIN_HISTORY_SESSION_MISMATCH:${mainSession}:${historySession}`);
           }
-          const current = (summary.symbols || []).filter(x => x?.lastSession === historySession && x?.symbolVerified === true);
+          const symbols = Array.isArray(summary?.symbols) ? summary.symbols : [];
+          const current = symbols.filter(x => x?.lastSession === historySession && x?.symbolVerified === true);
           if (current.length < 50) throw new Error(`CURRENT_HISTORY_COVERAGE_TOO_LOW:${current.length}`);
-          console.log(`MAIN_HISTORY_HANDOFF_PASS:${JSON.stringify({mainSession,historySession,currentSymbols:current.length,symbolsTotal:summary.symbolsTotal})}`);
+          const lagged = symbols.filter(x => x?.lastSession && x.lastSession < historySession);
+          const mislabeled = lagged.filter(x => x?.staleData !== true || x?.sessionLagged !== true || x?.currentSessionMatched === true);
+          if (mislabeled.length) {
+            throw new Error(`LAGGING_SYMBOLS_NOT_STALE:${mislabeled.slice(0,12).map(x=>`${x.ticker}:${x.lastSession}`).join(',')}`);
+          }
+          const currentBad = current.filter(x => x?.sessionLagged === true || x?.currentSessionMatched !== true);
+          if (currentBad.length) {
+            throw new Error(`CURRENT_SYMBOL_SESSION_FLAGS_INVALID:${currentBad.slice(0,12).map(x=>x.ticker).join(',')}`);
+          }
+          console.log(`MAIN_HISTORY_HANDOFF_PASS:${JSON.stringify({mainSession,historySession,currentSymbols:current.length,laggedSymbols:lagged.length,symbolsTotal:summary.symbolsTotal})}`);
           NODE
 
       - name: Commit regenerated summary and calendar
