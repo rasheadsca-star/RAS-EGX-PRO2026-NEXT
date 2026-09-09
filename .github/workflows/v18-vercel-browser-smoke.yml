@@ -1,0 +1,128 @@
+name: V18.2 Exact Vercel Browser Smoke
+
+on:
+  push:
+    branches:
+      - v18-global-strategy-ensemble-20260906
+    paths:
+      - '.github/workflows/v18-vercel-browser-smoke.yml'
+      - 'preview-v18-web/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v18-exact-vercel-browser-smoke
+  cancel-in-progress: true
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      V18_URL: https://egx-pro-v18-2-unified-preview.vercel.app/
+    steps:
+      - name: Verify exact production URL is reachable
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="${V18_URL}?smoke=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          code="$(curl -L -sS -o /tmp/v18-wrapper.html -w '%{http_code}' --max-time 30 "$URL")"
+          echo "HTTP=$code"
+          test "$code" = "200"
+          grep -q 'EGX PRO V18.2' /tmp/v18-wrapper.html
+
+      - name: Install Playwright Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Run browser runtime assertions on exact Vercel URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/v18-smoke.cjs <<'NODE'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+
+          (async () => {
+            const url = `${process.env.V18_URL}?smoke=${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}-${Date.now()}`;
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+            const consoleErrors = [];
+            const pageErrors = [];
+            page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+            page.on('pageerror', err => pageErrors.push(String(err)));
+
+            const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+            if (!response) throw new Error('No navigation response');
+            if (response.status() !== 200) throw new Error(`Expected HTTP 200, got ${response.status()}`);
+
+            await page.waitForFunction(() => {
+              const t = document.body?.innerText || '';
+              return t.includes('Unified Decision Center') || t.includes('مركز القرار') || t.includes('Data Health');
+            }, { timeout: 60000 });
+
+            await page.waitForTimeout(2500);
+            const snapshot = await page.evaluate(() => ({
+              title: document.title,
+              text: document.body?.innerText || '',
+              hasLoader: typeof window.__V18_DATA_LOADER__ === 'function',
+              hasInlineData: !!window.__V18_DATA__,
+              schema: window.__V18_DATA__?.schemaVersion || null,
+              href: location.href
+            }));
+
+            if (!snapshot.title.includes('V18.2')) throw new Error(`Wrong title: ${snapshot.title}`);
+            if (snapshot.text.includes('تعذر تحميل V18.2')) throw new Error('Rendered runtime reports V18.2 load failure');
+            if (!snapshot.text.includes('2026-09-09')) throw new Error('Expected current V18.2 session 2026-09-09 not rendered');
+            if (!snapshot.text.includes('PASS')) throw new Error('Expected Data Health PASS not rendered');
+            if (!(snapshot.hasLoader || snapshot.hasInlineData)) throw new Error('Neither embedded V18 loader nor inline V18 data is present');
+            if (pageErrors.length) throw new Error(`pageerror: ${pageErrors.join(' | ')}`);
+
+            await page.screenshot({ path: 'v18-exact-vercel-smoke.png', fullPage: true });
+            fs.writeFileSync('v18-exact-vercel-smoke.json', JSON.stringify({
+              checkedUrl: url,
+              title: snapshot.title,
+              hasLoader: snapshot.hasLoader,
+              hasInlineData: snapshot.hasInlineData,
+              schema: snapshot.schema,
+              consoleErrors,
+              pageErrors,
+              bodyHasSession: snapshot.text.includes('2026-09-09'),
+              bodyHasPass: snapshot.text.includes('PASS'),
+              bodyHasLoadFailure: snapshot.text.includes('تعذر تحميل V18.2')
+            }, null, 2));
+
+            console.log(JSON.stringify({
+              ok: true,
+              title: snapshot.title,
+              hasLoader: snapshot.hasLoader,
+              hasInlineData: snapshot.hasInlineData,
+              sessionRendered: true,
+              dataHealthPassRendered: true,
+              consoleErrorCount: consoleErrors.length,
+              pageErrorCount: pageErrors.length
+            }, null, 2));
+            await browser.close();
+          })().catch(async err => {
+            console.error(err?.stack || String(err));
+            process.exit(1);
+          });
+          NODE
+          node /tmp/v18-smoke.cjs
+
+      - name: Upload browser smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v18-exact-vercel-browser-smoke-${{ github.run_id }}
+          path: |
+            v18-exact-vercel-smoke.png
+            v18-exact-vercel-smoke.json
+          if-no-files-found: warn
+          retention-days: 14
