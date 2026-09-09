@@ -68,6 +68,27 @@ function buildSummary(repoRoot, mapEntries, sourceStatuses = {}) {
   const confidenceValues = validDetails.map((item) => item.averageConfidence).filter((value) => Number.isFinite(value) && value > 0);
   const latestMarketSession = validDetails.map((item) => item.lastSession).filter(Boolean).sort().at(-1) || null;
 
+  // Current-market truth is stricter than historical recency. A symbol may have
+  // perfectly usable historical depth and still be one or more sessions behind
+  // the market-wide latest session. The UI already treats staleData as a
+  // review-only state, so derive that flag here without mutating the underlying
+  // per-symbol history document or any RC2 scoring input.
+  for (const item of details) {
+    const hasSession = Boolean(item.lastSession);
+    const currentSessionMatched = Boolean(latestMarketSession && hasSession && item.lastSession === latestMarketSession);
+    const sessionLagged = Boolean(latestMarketSession && hasSession && item.lastSession < latestMarketSession);
+    item.currentSessionMatched = currentSessionMatched;
+    item.sessionLagged = sessionLagged;
+    if (sessionLagged) {
+      item.staleData = true;
+      if (item.processingStatus !== 'failed') item.processingStatus = 'stale';
+      item.warnings = [...new Set([
+        ...(Array.isArray(item.warnings) ? item.warnings : []),
+        `latest_session_lag:${item.lastSession}->${latestMarketSession}`,
+      ])];
+    }
+  }
+
   const summary = {
     schemaVersion: '12.3.0',
     generatedAt: nowIso(),
@@ -83,6 +104,8 @@ function buildSummary(repoRoot, mapEntries, sourceStatuses = {}) {
     symbolsPending: details.filter((item) => item.processingStatus === 'pending').length,
     symbolsFailed: details.filter((item) => item.processingStatus === 'failed').length,
     symbolsStale: details.filter((item) => item.processingStatus === 'stale').length,
+    symbolsCurrentSession: details.filter((item) => item.currentSessionMatched && item.symbolVerified).length,
+    symbolsSessionLagged: details.filter((item) => item.sessionLagged).length,
     officiallyVerifiedSymbols: details.filter((item) => item.officiallyVerifiedLatestSession).length,
     crossVerifiedSymbols: details.filter((item) => item.verificationSources.some((source) => /^(egx_|mubasher_|investing_)/.test(String(source)))).length,
     singleSourceSymbols: validDetails.filter((item) => !item.verificationSources.some((source) => /^(egx_|mubasher_|investing_)/.test(String(source)))).length,
