@@ -16,12 +16,18 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: v18-decision-preview-persist
+  cancel-in-progress: false
+
 jobs:
   validate-external-engines:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: v18-global-strategy-ensemble-20260906
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -101,7 +107,8 @@ jobs:
           for(const id of ['EMA_MACD_DAILY_EXTERNAL','EGX_ONE_UNIFIED_EXTERNAL','EGX_PRO_V16_9_TECHNICAL_EXTERNAL','V16_9_BASKET']){
             if(!ids.has(id)) throw new Error(`${id} missing from compressed standalone preview data`);
           }
-          console.log(JSON.stringify({standalonePreviewValidated:true,engineRows:data.enginePerformanceLeague.engines.length,requiredRowsPresent:true},null,2));
+          if(data.consensusSchemaVersion!=='18.2.1-performance-weighted') throw new Error(`Weighted consensus missing from standalone preview: ${data.consensusSchemaVersion}`);
+          console.log(JSON.stringify({standalonePreviewValidated:true,engineRows:data.enginePerformanceLeague.engines.length,requiredRowsPresent:true,consensusSchemaVersion:data.consensusSchemaVersion},null,2));
           NODE
 
       - name: Persist validated web preview
