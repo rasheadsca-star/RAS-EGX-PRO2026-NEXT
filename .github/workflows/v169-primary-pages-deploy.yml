@@ -131,6 +131,34 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      - name: Verify deployed MAIN APP is fresh
+        env:
+          DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          expected_session="$(node -p "require('./data/stable/v16-main-app-current.json').sessionDate")"
+          expected_tickers="$(node -p "require('./data/stable/v16-main-app-current.json').recommendations.map(r=>r.ticker).join(',')")"
+          base="${DEPLOYED_URL%/}"
+          ok=0
+          for attempt in $(seq 1 12); do
+            cache_bust="$(date +%s)-${attempt}"
+            if curl -fsSL --retry 2 --retry-delay 2 "${base}/data/stable/v16-main-app-current.json?cb=${cache_bust}" -o /tmp/deployed-main-app.json; then
+              deployed_session="$(node -p "require('/tmp/deployed-main-app.json').sessionDate || ''")"
+              deployed_tickers="$(node -p "(require('/tmp/deployed-main-app.json').recommendations||[]).map(r=>r.ticker).join(',')")"
+              if [ "$deployed_session" = "$expected_session" ] && [ "$deployed_tickers" = "$expected_tickers" ]; then
+                echo "MAIN_APP_POST_DEPLOY_FRESHNESS_PASS session=${deployed_session} tickers=${deployed_tickers}"
+                ok=1
+                break
+              fi
+              echo "Attempt ${attempt}: stale/mismatched Pages payload session=${deployed_session} tickers=${deployed_tickers}"
+            fi
+            sleep 10
+          done
+          if [ "$ok" != "1" ]; then
+            echo "MAIN APP deployment is not serving the expected current recommendation snapshot."
+            exit 1
+          fi
+
       - name: Record MAIN APP deployment
         env:
           DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
@@ -157,7 +185,8 @@ jobs:
             sessionDate: canonical.sessionDate || decision.sessionDate || null,
             recommendationTickers: (canonical.recommendations || decision.recommendations || []).map(row => row.ticker),
             protectedDecisionPath: 'data/stable/v16-main-app-current.json',
-            applicationEntry: 'preview-v16/app/v169.html'
+            applicationEntry: 'preview-v16/app/v169.html',
+            postDeployFreshnessVerified: true
           };
           fs.writeFileSync('data/stable/v16-v169-pages-status.json', JSON.stringify(output, null, 2) + '\n');
           console.log(output);
