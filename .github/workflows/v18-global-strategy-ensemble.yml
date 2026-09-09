@@ -13,6 +13,8 @@ on:
       - scripts/stable/v18-engine-performance-league.cjs
       - scripts/stable/v18-recommendation-position-performance.cjs
       - scripts/stable/v18-unified-decision-center.cjs
+      - scripts/stable/v18-engine-agreement-badges.cjs
+      - scripts/stable/v18-performance-weighted-consensus.cjs
       - scripts/stable/build-v18-decision-board.cjs
       - scripts/stable/build-v18-web-preview.cjs
       - data/v18-global-strategy-policy.json
@@ -27,12 +29,18 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: v18-decision-preview-persist
+  cancel-in-progress: false
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: v18-global-strategy-ensemble-20260906
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -48,11 +56,15 @@ jobs:
           node --check scripts/stable/v18-engine-performance-league.cjs
           node --check scripts/stable/v18-recommendation-position-performance.cjs
           node --check scripts/stable/v18-unified-decision-center.cjs
+          node --check scripts/stable/v18-engine-agreement-badges.cjs
+          node --check scripts/stable/v18-performance-weighted-consensus.cjs
           node --check scripts/stable/build-v18-decision-board.cjs
           node --check scripts/stable/build-v18-web-preview.cjs
           node --check preview-v18/app.js
           node --check preview-v18/performance.js
           node --check preview-v18/position-performance.js
+          node --check preview-v18/agreement-badge-ui.js
+          node --check preview-v18/performance-weighted-consensus.js
 
       - name: Build V18.3 unified decision center
         run: node scripts/stable/build-v18-decision-board.cjs
@@ -64,6 +76,7 @@ jobs:
           const out = JSON.parse(fs.readFileSync('preview-v18/data.json', 'utf8'));
           const fail = m => { throw new Error(m); };
           if (out.schemaVersion !== '18.2.0-shadow') fail(`Unexpected schema ${out.schemaVersion}`);
+          if (out.consensusSchemaVersion !== '18.2.1-performance-weighted') fail(`Unexpected consensus schema ${out.consensusSchemaVersion}`);
           if (!out.sessionId) fail('Missing sessionId');
           if (!Array.isArray(out.allCandidates) || !Array.isArray(out.universeScreener)) fail('Missing decision/universe arrays');
           if (out.universeScreener.length < 190) fail(`Canonical universe unexpectedly low: ${out.universeScreener.length}`);
@@ -76,6 +89,23 @@ jobs:
           if (!out.forwardLedgerSummary?.immutableIssueSnapshots) fail('Forward issue snapshots are not immutable');
           if (!out.basketCenter || !out.riskCenter || !out.evidenceCenter || !out.engineAgreement) fail('Unified centers missing');
           if (out.riskCenter.automaticOrders !== false) fail('Automatic orders must remain disabled');
+
+          const consensus = out.performanceWeightedConsensus;
+          if (!consensus || consensus.schemaVersion !== '18.2.1-performance-weighted') fail('Performance-weighted consensus missing');
+          if (consensus.policy?.staleEngineWeight !== 0) fail('Stale engine weight must remain zero');
+          if (consensus.policy?.maximumDecisionScoreAdjustmentAbs !== 4) fail('Consensus adjustment guard must remain ±4');
+          if (consensus.policy?.evidenceRankMutation !== false || consensus.policy?.tierMutation !== false || consensus.policy?.executionPlanMutation !== false) fail('Consensus must not mutate evidence rank, tier, or execution plan');
+          if (consensus.policy?.externalComparisonEnginesVote !== false) fail('External comparison engines must not vote');
+          for (const e of consensus.engineRegistry || []) {
+            if (e.fresh === false && Number(e.voteWeightPct || 0) !== 0) fail(`Stale engine received vote weight: ${e.engine}`);
+            if (e.promotionEligible && Number(e.forwardSessions || 0) < Number(e.promotionThresholdSessions || 20)) fail(`Premature promotion: ${e.engine}`);
+          }
+          for (const row of out.allCandidates) {
+            const b = row.engineAgreementBadge;
+            if (!b || b.schemaVersion !== '18.2.1-performance-weighted') fail(`Weighted agreement badge missing: ${row.ticker}`);
+            if (Number(b.eligibleEngineCount || 0) > Number(b.rawEngineCount || 0)) fail(`Effective engine count exceeds raw count: ${row.ticker}`);
+            if (Math.abs(Number(row.consensusAdjustment || 0)) > 4.0001) fail(`Consensus adjustment exceeded guard: ${row.ticker}`);
+          }
 
           const league = out.enginePerformanceLeague;
           if (!league || league.schemaVersion !== '18.3.0-forward-league') fail('Engine Performance League missing');
@@ -150,9 +180,11 @@ jobs:
           const app = fs.readFileSync('preview-v18/app.js','utf8');
           if (!app.includes('renderEnginePerformanceLeague')) fail('Engine Performance League UI was not bundled');
           if (!app.includes('renderRecommendationPositionPerformance')) fail('Recommendation-position UI was not bundled');
+          if (!app.includes('installPerformanceWeightedConsensusUi')) fail('Performance-weighted consensus UI was not bundled');
 
           console.log(JSON.stringify({
             schemaVersion: out.schemaVersion,
+            consensusSchemaVersion: out.consensusSchemaVersion,
             sessionId: out.sessionId,
             dataHealth: out.dataHealth.status,
             canonicalUniverse: out.universeScreener.length,
@@ -162,6 +194,7 @@ jobs:
             enginesTracked: league.engines.length,
             enginesWithSignals: league.summary.enginesWithSignals,
             resolvedReference: league.summary.totalResolvedReferenceSignals,
+            consensusSummary: consensus.summary,
             recommendationNumberTop20: position.top20.map(x=>({rank:x.recommendationNumber,issued:x.issuedSignals,activated:x.referenceActivated,target1:x.target1Hits,stop:x.stopHits,targetRate:x.targetHitRateResolvedPct,eligible:x.rankingEligible})),
             bestRecommendationNumberByTargetCount: position.bestByTargetCount,
             bestRecommendationNumberByTargetRate: position.bestByTargetRate,
@@ -179,6 +212,7 @@ jobs:
           grep -q 'ENGINE PERFORMANCE LEAGUE' preview-v18-web/index.html
           grep -q 'RECOMMENDATION NUMBER PERFORMANCE' preview-v18-web/index.html
           grep -q 'Rank 1–20' preview-v18-web/index.html
+          grep -q '18.2.1-performance-weighted' preview-v18-web/index.html
 
       - name: Package static preview
         run: |
@@ -187,6 +221,7 @@ jobs:
           test -s preview-v18/app.js
           test -s preview-v18/performance.js
           test -s preview-v18/position-performance.js
+          test -s preview-v18/performance-weighted-consensus.js
           test -s preview-v18/data.json
           test -s preview-v18/forward-ledger.json
 
