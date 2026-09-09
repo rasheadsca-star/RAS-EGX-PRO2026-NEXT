@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-09-09T17:16:47.006Z",
+  "generatedAt": "2026-09-09T19:55:03.900Z",
   "application": "EGX Pro Professional V16.3",
   "scope": {
     "type": "TECHNICAL_ANALYSIS_ONLY",
@@ -18,19 +18,19 @@
   },
   "summary": {
     "totalChecks": 41,
-    "closedChecks": 31,
-    "openChecks": 10,
-    "blockingFindings": 10,
+    "closedChecks": 28,
+    "openChecks": 13,
+    "blockingFindings": 13,
     "severity": {
       "CRITICAL": {
         "total": 11,
-        "open": 3,
-        "closed": 8
+        "open": 4,
+        "closed": 7
       },
       "HIGH": {
         "total": 26,
-        "open": 7,
-        "closed": 19
+        "open": 9,
+        "closed": 17
       },
       "MEDIUM": {
         "total": 4,
@@ -58,17 +58,17 @@
           "id": "T01-1",
           "severity": "CRITICAL",
           "title": "بوابة الأسعار جاهزة للتنفيذ",
-          "status": "CLOSED",
-          "evidence": "ready=true; executionGrade=true; accepted=210",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "ready=false; executionGrade=false; accepted=0",
+          "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
         },
         {
           "id": "T01-2",
           "severity": "HIGH",
           "title": "جلسة القرار مطابقة للجلسة المتوقعة",
-          "status": "CLOSED",
-          "evidence": "2026-09-09 vs 2026-09-09",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "2026-09-09 vs undefined",
+          "remediation": "إعادة المسح من آخر جلسة مكتملة."
         }
       ]
     },
@@ -181,9 +181,9 @@
           "id": "T06-2",
           "severity": "HIGH",
           "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
-          "status": "CLOSED",
-          "evidence": "acceptedRows=210",
-          "remediation": null
+          "status": "OPEN",
+          "evidence": "acceptedRows=0",
+          "remediation": "حجب المسح عند ضعف التغطية."
         }
       ]
     },
@@ -312,7 +312,7 @@
           "severity": "CRITICAL",
           "title": "الفترات منفصلة ومرتبة زمنيًا",
           "status": "CLOSED",
-          "evidence": "{\"development\":{\"sessions\":39,\"from\":\"2026-05-14\",\"to\":\"2026-07-09\"},\"validation\":{\"sessions\":19,\"from\":\"2026-07-12\",\"to\":\"2026-08-05\"},\"test\":{\"sessions\":19,\"from\":\"2026-08-06\",\"to\":\"2026-09-01\"},\"professionalMinimumTestSessions\":20,\"sampleSufficientForProfessionalClaim\":false}",
+          "evidence": "{\"development\":{\"sessions\":40,\"from\":\"2026-05-14\",\"to\":\"2026-07-12\"},\"validation\":{\"sessions\":19,\"from\":\"2026-07-13\",\"to\":\"2026-08-06\"},\"test\":{\"sessions\":19,\"from\":\"2026-08-09\",\"to\":\"2026-09-02\"},\"professionalMinimumTestSessions\":20,\"sampleSufficientForProfessionalClaim\":false}",
           "remediation": null
         },
         {
@@ -389,7 +389,7 @@
           "severity": "CRITICAL",
           "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
           "status": "OPEN",
-          "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; professional=false; modes=",
+          "evidence": "decisionTier=PILOT_SHORT_SAMPLE; professional=false; modes=",
           "remediation": "فرض وضع Pilot منخفض المخاطرة."
         }
       ]
@@ -404,7 +404,7 @@
           "severity": "HIGH",
           "title": "قصر عينة الاختبار مصرح به",
           "status": "OPEN",
-          "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; test sample remains explicitly Pilot",
+          "evidence": "decisionTier=PILOT_SHORT_SAMPLE; test sample remains explicitly Pilot",
           "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
         },
         {
@@ -458,7 +458,7 @@
           "severity": "HIGH",
           "title": "نتيجة التوصية لا تُحذف عند الفشل",
           "status": "CLOSED",
-          "evidence": "records=286",
+          "evidence": "records=291",
           "remediation": null
         }
       ]
@@ -504,7 +504,7 @@
           "severity": "HIGH",
           "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
           "status": "OPEN",
-          "evidence": "tier=MODEL_CALIBRATION_REVIEW; reducedRisk=true; noProfitClaim=true",
+          "evidence": "tier=PILOT_SHORT_SAMPLE; reducedRisk=true; noProfitClaim=true",
           "remediation": "إزالة الادعاءات وإظهار القيود."
         },
         {
@@ -512,7 +512,7 @@
           "severity": "HIGH",
           "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
           "status": "OPEN",
-          "evidence": "recs=0; source=true; plans=true",
+          "evidence": "recs=0; source=false; plans=true",
           "remediation": "حجب الإصدار الفني وإعادة البناء."
         }
       ]
@@ -520,6 +520,22 @@
   ],
   "openFindings": [
     {
+      "id": "T01-1",
+      "severity": "CRITICAL",
+      "title": "بوابة الأسعار جاهزة للتنفيذ",
+      "status": "OPEN",
+      "evidence": "ready=false; executionGrade=false; accepted=0",
+      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
+    },
+    {
+      "id": "T01-2",
+      "severity": "HIGH",
+      "title": "جلسة القرار مطابقة للجلسة المتوقعة",
+      "status": "OPEN",
+      "evidence": "2026-09-09 vs undefined",
+      "remediation": "إعادة المسح من آخر جلسة مكتملة."
+    },
+    {
       "id": "T03-1",
       "severity": "HIGH",
       "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
@@ -534,6 +550,14 @@
       "status": "OPEN",
       "evidence": "",
       "remediation": "نقل السهم إلى المراقبة."
+    },
+    {
+      "id": "T06-2",
+      "severity": "HIGH",
+      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
+      "status": "OPEN",
+      "evidence": "acceptedRows=0",
+      "remediation": "حجب المسح عند ضعف التغطية."
     },
     {
       "id": "T07-1",
@@ -564,7 +588,7 @@
       "severity": "CRITICAL",
       "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; professional=false; modes=",
+      "evidence": "decisionTier=PILOT_SHORT_SAMPLE; professional=false; modes=",
       "remediation": "فرض وضع Pilot منخفض المخاطرة."
     },
     {
@@ -572,7 +596,7 @@
       "severity": "HIGH",
       "title": "قصر عينة الاختبار مصرح به",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; test sample remains explicitly Pilot",
+      "evidence": "decisionTier=PILOT_SHORT_SAMPLE; test sample remains explicitly Pilot",
       "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
     },
     {
@@ -588,7 +612,7 @@
       "severity": "HIGH",
       "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
       "status": "OPEN",
-      "evidence": "tier=MODEL_CALIBRATION_REVIEW; reducedRisk=true; noProfitClaim=true",
+      "evidence": "tier=PILOT_SHORT_SAMPLE; reducedRisk=true; noProfitClaim=true",
       "remediation": "إزالة الادعاءات وإظهار القيود."
     },
     {
@@ -596,12 +620,28 @@
       "severity": "HIGH",
       "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
       "status": "OPEN",
-      "evidence": "recs=0; source=true; plans=true",
+      "evidence": "recs=0; source=false; plans=true",
       "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
   "blockingFindings": [
     {
+      "id": "T01-1",
+      "severity": "CRITICAL",
+      "title": "بوابة الأسعار جاهزة للتنفيذ",
+      "status": "OPEN",
+      "evidence": "ready=false; executionGrade=false; accepted=0",
+      "remediation": "إيقاف التوصيات وإعادة بناء حقيقة الأسعار."
+    },
+    {
+      "id": "T01-2",
+      "severity": "HIGH",
+      "title": "جلسة القرار مطابقة للجلسة المتوقعة",
+      "status": "OPEN",
+      "evidence": "2026-09-09 vs undefined",
+      "remediation": "إعادة المسح من آخر جلسة مكتملة."
+    },
+    {
       "id": "T03-1",
       "severity": "HIGH",
       "title": "كل توصية تحمل قيمًا عددية للخطة والمؤشرات",
@@ -616,6 +656,14 @@
       "status": "OPEN",
       "evidence": "",
       "remediation": "نقل السهم إلى المراقبة."
+    },
+    {
+      "id": "T06-2",
+      "severity": "HIGH",
+      "title": "اتساع الأسعار يكفي للتنفيذ المتقاطع",
+      "status": "OPEN",
+      "evidence": "acceptedRows=0",
+      "remediation": "حجب المسح عند ضعف التغطية."
     },
     {
       "id": "T07-1",
@@ -646,7 +694,7 @@
       "severity": "CRITICAL",
       "title": "النماذج غير المستقرة لا تستخدم مخاطرة كاملة",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; professional=false; modes=",
+      "evidence": "decisionTier=PILOT_SHORT_SAMPLE; professional=false; modes=",
       "remediation": "فرض وضع Pilot منخفض المخاطرة."
     },
     {
@@ -654,7 +702,7 @@
       "severity": "HIGH",
       "title": "قصر عينة الاختبار مصرح به",
       "status": "OPEN",
-      "evidence": "decisionTier=MODEL_CALIBRATION_REVIEW; test sample remains explicitly Pilot",
+      "evidence": "decisionTier=PILOT_SHORT_SAMPLE; test sample remains explicitly Pilot",
       "remediation": "إظهار Pilot وعدم ادعاء الاحتراف المثبت."
     },
     {
@@ -670,7 +718,7 @@
       "severity": "HIGH",
       "title": "النسخة تصرح بمرحلة Pilot ولا تعد بالربح",
       "status": "OPEN",
-      "evidence": "tier=MODEL_CALIBRATION_REVIEW; reducedRisk=true; noProfitClaim=true",
+      "evidence": "tier=PILOT_SHORT_SAMPLE; reducedRisk=true; noProfitClaim=true",
       "remediation": "إزالة الادعاءات وإظهار القيود."
     },
     {
@@ -678,7 +726,7 @@
       "severity": "HIGH",
       "title": "التوصيات الحالية اجتازت كل البوابات الفنية الأساسية",
       "status": "OPEN",
-      "evidence": "recs=0; source=true; plans=true",
+      "evidence": "recs=0; source=false; plans=true",
       "remediation": "حجب الإصدار الفني وإعادة البناء."
     }
   ],
