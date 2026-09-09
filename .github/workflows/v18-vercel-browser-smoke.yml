@@ -23,6 +23,26 @@ jobs:
     env:
       V18_URL: https://egx-pro-v18-2-unified-preview.vercel.app/
     steps:
+      - name: Load expected V18.2 manifest truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          MANIFEST_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}/preview-v18-web/manifest.json?smoke=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          curl -L -sS --fail --max-time 30 "$MANIFEST_URL" -o /tmp/v18-manifest.json
+          EXPECTED_SCHEMA="$(jq -r '.schemaVersion' /tmp/v18-manifest.json)"
+          EXPECTED_SESSION="$(jq -r '.sessionId' /tmp/v18-manifest.json)"
+          EXPECTED_DATA_HEALTH="$(jq -r '.dataHealth' /tmp/v18-manifest.json)"
+          EXPECTED_CRITICAL_FAILURES="$(jq -r '.criticalFailureCount' /tmp/v18-manifest.json)"
+          test "$EXPECTED_SCHEMA" = "18.2.0-shadow"
+          test -n "$EXPECTED_SESSION"
+          test "$EXPECTED_SESSION" != "null"
+          test "$EXPECTED_DATA_HEALTH" = "PASS"
+          test "$EXPECTED_CRITICAL_FAILURES" = "0"
+          echo "EXPECTED_SCHEMA=$EXPECTED_SCHEMA" >> "$GITHUB_ENV"
+          echo "EXPECTED_SESSION=$EXPECTED_SESSION" >> "$GITHUB_ENV"
+          echo "EXPECTED_DATA_HEALTH=$EXPECTED_DATA_HEALTH" >> "$GITHUB_ENV"
+          echo "Expected schema=$EXPECTED_SCHEMA session=$EXPECTED_SESSION health=$EXPECTED_DATA_HEALTH criticalFailures=$EXPECTED_CRITICAL_FAILURES"
+
       - name: Verify exact production URL is reachable
         shell: bash
         run: |
@@ -50,6 +70,11 @@ jobs:
           const fs = require('fs');
 
           (async () => {
+            const expectedSession = process.env.EXPECTED_SESSION;
+            const expectedHealth = process.env.EXPECTED_DATA_HEALTH;
+            const expectedSchema = process.env.EXPECTED_SCHEMA;
+            if (!expectedSession || !expectedHealth || !expectedSchema) throw new Error('Expected manifest truth is missing');
+
             const url = `${process.env.V18_URL}?smoke=${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}-${Date.now()}`;
             const browser = await chromium.launch({ headless: true });
             const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
@@ -79,32 +104,39 @@ jobs:
 
             if (!snapshot.title.includes('V18.2')) throw new Error(`Wrong title: ${snapshot.title}`);
             if (snapshot.text.includes('تعذر تحميل V18.2')) throw new Error('Rendered runtime reports V18.2 load failure');
-            if (!snapshot.text.includes('2026-09-09')) throw new Error('Expected current V18.2 session 2026-09-09 not rendered');
-            if (!snapshot.text.includes('PASS')) throw new Error('Expected Data Health PASS not rendered');
+            if (!snapshot.text.includes(expectedSession)) throw new Error(`Expected current V18.2 session ${expectedSession} not rendered`);
+            if (!snapshot.text.includes(expectedHealth)) throw new Error(`Expected Data Health ${expectedHealth} not rendered`);
             if (!(snapshot.hasLoader || snapshot.hasInlineData)) throw new Error('Neither embedded V18 loader nor inline V18 data is present');
+            if (snapshot.schema && snapshot.schema !== expectedSchema) throw new Error(`Expected schema ${expectedSchema}, got ${snapshot.schema}`);
             if (pageErrors.length) throw new Error(`pageerror: ${pageErrors.join(' | ')}`);
 
             await page.screenshot({ path: 'v18-exact-vercel-smoke.png', fullPage: true });
             fs.writeFileSync('v18-exact-vercel-smoke.json', JSON.stringify({
               checkedUrl: url,
+              expectedSchema,
+              expectedSession,
+              expectedHealth,
               title: snapshot.title,
               hasLoader: snapshot.hasLoader,
               hasInlineData: snapshot.hasInlineData,
               schema: snapshot.schema,
               consoleErrors,
               pageErrors,
-              bodyHasSession: snapshot.text.includes('2026-09-09'),
-              bodyHasPass: snapshot.text.includes('PASS'),
+              bodyHasExpectedSession: snapshot.text.includes(expectedSession),
+              bodyHasExpectedHealth: snapshot.text.includes(expectedHealth),
               bodyHasLoadFailure: snapshot.text.includes('تعذر تحميل V18.2')
             }, null, 2));
 
             console.log(JSON.stringify({
               ok: true,
               title: snapshot.title,
+              expectedSchema,
+              expectedSession,
+              expectedHealth,
               hasLoader: snapshot.hasLoader,
               hasInlineData: snapshot.hasInlineData,
               sessionRendered: true,
-              dataHealthPassRendered: true,
+              dataHealthPassRendered: expectedHealth === 'PASS',
               consoleErrorCount: consoleErrors.length,
               pageErrorCount: pageErrors.length
             }, null, 2));
