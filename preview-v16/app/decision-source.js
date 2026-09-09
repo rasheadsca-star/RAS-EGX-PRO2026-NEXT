@@ -2,6 +2,7 @@
   'use strict';
 
   const nativeFetch = window.fetch.bind(window);
+  const canonicalDecisionSuffix = '/data/stable/v16-main-app-current.json';
   const legacyDecisionSuffix = '/data/stable/v15-practical-decision.json';
   const rawPrimaryDecisionSuffix = '/data/stable/v16-v169-primary-decision.json';
   const legacyUpdateSuffix = '/data/stable/v15-update-status.json';
@@ -185,14 +186,18 @@
     const requestedUrl = requestUrl(input);
     if (!requestedUrl) return nativeFetch(input, init);
 
-    if (requestedUrl.pathname.endsWith(legacyDecisionSuffix) || requestedUrl.pathname.endsWith(rawPrimaryDecisionSuffix)) {
+    if (
+      requestedUrl.pathname.endsWith(canonicalDecisionSuffix) ||
+      requestedUrl.pathname.endsWith(legacyDecisionSuffix) ||
+      requestedUrl.pathname.endsWith(rawPrimaryDecisionSuffix)
+    ) {
       return guardedPrimary(requestedUrl.search)
-        .catch(() => nativeFetch(input, init));
+        .catch(() => nativeFetch(input, noStore(init)));
     }
 
     if (requestedUrl.pathname.endsWith(legacyUpdateSuffix)) {
       return mergedUpdateStatus(input, init, requestedUrl)
-        .catch(() => nativeFetch(input, init));
+        .catch(() => nativeFetch(input, noStore(init)));
     }
 
     return nativeFetch(input, init);
