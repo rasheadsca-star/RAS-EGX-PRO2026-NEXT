@@ -1,10 +1,11 @@
 // V16.3-PROFESSIONAL shell with the isolated V16.9 primary basket integration.
 // Installed navigation marker: version=16.3.9.2
-const BUILD = 'V16.3-PROFESSIONAL-16.3.9.2-V169-BASKET-20260813';
+const BUILD = 'V16.3-PROFESSIONAL-16.3.9.2-V169-BASKET-20260909-P3-FRESHNESS-GUARD';
 const REQUIRED_VERSION = '16.3.9.2';
 const ROOT_URL = new URL('./', self.location.href);
 const LATEST_URL = new URL(`./?launch=installed-icon&latest=1&version=${REQUIRED_VERSION}&mobileReset=1&sw=${encodeURIComponent(BUILD)}`, ROOT_URL).href;
-const PRIMARY_DECISION_URL = new URL('./data/stable/v16-v169-primary-decision.json', ROOT_URL);
+const CANONICAL_DECISION_URL = new URL('./data/stable/v16-main-app-current.json', ROOT_URL);
+const PRICE_TRUTH_URL = new URL('./data/stable/v15-price-truth.json', ROOT_URL);
 
 function appState(value) {
   try {
@@ -36,8 +37,84 @@ function isDirectLaunch(request, url) {
   try { return new URL(request.referrer).origin !== url.origin; } catch (_) { return true; }
 }
 
-function isSharedLegacyDecision(url) {
-  return url.pathname.endsWith('/data/stable/v15-practical-decision.json');
+function isDecisionRequest(url) {
+  return [
+    '/data/stable/v15-practical-decision.json',
+    '/data/stable/v16-v169-primary-decision.json',
+    '/data/stable/v16-main-app-current.json'
+  ].some(suffix => url.pathname.endsWith(suffix));
+}
+
+function normalizeDate(value) {
+  const match = String(value || '').match(/^\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : null;
+}
+
+function decisionSession(primary) {
+  return normalizeDate(
+    primary?.dataTruth?.decisionSession ||
+    primary?.sessionDate ||
+    primary?.recommendations?.[0]?.sessionDate ||
+    null
+  );
+}
+
+function marketSession(primary, priceTruth) {
+  return normalizeDate(
+    primary?.dataTruth?.marketSession ||
+    primary?.expectedLatestSession ||
+    priceTruth?.expectedSession ||
+    priceTruth?.marketDate ||
+    null
+  );
+}
+
+function jsonResponse(value) {
+  return new Response(`${JSON.stringify(value, null, 2)}\n`, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    }
+  });
+}
+
+async function freshDecisionResponse(search = '') {
+  const canonicalUrl = new URL(CANONICAL_DECISION_URL.href);
+  const priceTruthUrl = new URL(PRICE_TRUTH_URL.href);
+  canonicalUrl.search = search;
+  priceTruthUrl.search = search;
+  canonicalUrl.searchParams.set('swcb', `${Date.now()}-decision`);
+  priceTruthUrl.searchParams.set('swcb', `${Date.now()}-truth`);
+
+  const [canonicalResponse, priceTruthResponse] = await Promise.all([
+    fetch(canonicalUrl.href, { cache: 'no-store' }),
+    fetch(priceTruthUrl.href, { cache: 'no-store' })
+  ]);
+  if (!canonicalResponse.ok) throw new Error(`Canonical decision HTTP ${canonicalResponse.status}`);
+
+  const primary = await canonicalResponse.json();
+  let priceTruth = null;
+  if (priceTruthResponse.ok) {
+    try { priceTruth = await priceTruthResponse.json(); } catch (_) {}
+  }
+
+  const canonicalSession = decisionSession(primary);
+  const latestMarketSession = marketSession(primary, priceTruth);
+  if (canonicalSession && latestMarketSession && canonicalSession !== latestMarketSession) {
+    return jsonResponse({
+      ...primary,
+      recommendations: [],
+      executionAllowed: false,
+      recommendationsReady: false,
+      systemState: 'STALE_RECOMMENDATIONS_BLOCKED',
+      state: 'STALE_RECOMMENDATIONS_BLOCKED',
+      staleRecommendationsBlocked: true,
+      staleReason: `canonical=${canonicalSession}; market=${latestMarketSession}`,
+      statusAr: 'تم إيقاف عرض التوصيات لأن جلسة التوصيات لا تطابق أحدث جلسة سوق. انتظر اكتمال التحديث التلقائي.'
+    });
+  }
+  return jsonResponse(primary);
 }
 
 self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
@@ -82,18 +159,29 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Older UI bundles still request the shared V15 decision path. Always serve
-  // the isolated V16.9 primary file instead, so legacy scanners cannot alter
-  // the recommendations displayed to users.
-  if (isSharedLegacyDecision(url)) {
+  // Every decision path, including legacy and installed-app requests, is routed
+  // through the canonical snapshot and blocked if it is older than market truth.
+  if (isDecisionRequest(url)) {
     event.respondWith((async () => {
-      const primaryUrl = new URL(PRIMARY_DECISION_URL.href);
-      primaryUrl.search = url.search;
       try {
-        const primary = await fetch(primaryUrl.href, { cache: 'no-store' });
-        if (primary.ok) return primary;
-      } catch (_) {}
-      return fetch(request, { cache: 'no-store' });
+        return await freshDecisionResponse(url.search);
+      } catch (_) {
+        return new Response(JSON.stringify({
+          recommendations: [],
+          executionAllowed: false,
+          recommendationsReady: false,
+          systemState: 'DECISION_FRESHNESS_UNAVAILABLE',
+          state: 'DECISION_FRESHNESS_UNAVAILABLE',
+          staleRecommendationsBlocked: true,
+          statusAr: 'تعذر التحقق من حداثة التوصيات؛ تم إيقاف عرضها احترازيًا.'
+        }, null, 2) + '\n', {
+          status: 503,
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-store, no-cache, must-revalidate'
+          }
+        });
+      }
     })());
     return;
   }
