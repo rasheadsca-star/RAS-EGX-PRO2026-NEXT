@@ -25,9 +25,30 @@
     headers: { ...((init || {}).headers || {}), 'Cache-Control': 'no-cache' },
   });
 
+  const normalizeDate = value => {
+    const match = String(value || '').match(/^\d{4}-\d{2}-\d{2}/);
+    return match ? match[0] : null;
+  };
+
+  const canonicalSessionOf = primary => normalizeDate(
+    primary?.dataTruth?.decisionSession ||
+    primary?.sessionDate ||
+    primary?.recommendations?.[0]?.sessionDate ||
+    null
+  );
+
+  const marketSessionOf = (primary, priceTruth) => normalizeDate(
+    primary?.dataTruth?.marketSession ||
+    primary?.expectedLatestSession ||
+    priceTruth?.expectedSession ||
+    priceTruth?.marketDate ||
+    null
+  );
+
   async function fetchPrimary(search = '') {
     const routedUrl = new URL(primaryUrl.href);
     routedUrl.search = search;
+    routedUrl.searchParams.set('cb', String(Date.now()));
     const response = await nativeFetch(routedUrl.href, noStore());
     if (!response.ok) throw new Error(`Canonical MAIN APP snapshot HTTP ${response.status}`);
     return response;
@@ -37,6 +58,7 @@
     try {
       const routedUrl = new URL(priceTruthUrl.href);
       routedUrl.search = search;
+      routedUrl.searchParams.set('cb', String(Date.now()));
       const response = await nativeFetch(routedUrl.href, noStore());
       if (!response.ok) return null;
       return await response.json();
@@ -45,10 +67,52 @@
     }
   }
 
+  function staleResponse(primary, marketSession, canonicalSession) {
+    const safe = {
+      ...primary,
+      recommendations: [],
+      executionAllowed: false,
+      recommendationsReady: false,
+      systemState: 'STALE_RECOMMENDATIONS_BLOCKED',
+      state: 'STALE_RECOMMENDATIONS_BLOCKED',
+      staleRecommendationsBlocked: true,
+      staleReason: `canonical=${canonicalSession || 'unknown'}; market=${marketSession || 'unknown'}`,
+      statusAr: 'تم إيقاف عرض التوصيات لأن جلسة التوصيات لا تطابق أحدث جلسة سوق. انتظر اكتمال التحديث التلقائي.',
+    };
+    return new Response(`${JSON.stringify(safe, null, 2)}\n`, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
+  }
+
+  async function guardedPrimary(search = '') {
+    const [response, priceTruth] = await Promise.all([
+      fetchPrimary(search),
+      readPriceTruth(search),
+    ]);
+    const primary = await response.json();
+    const canonicalSession = canonicalSessionOf(primary);
+    const marketSession = marketSessionOf(primary, priceTruth);
+    if (marketSession && canonicalSession && marketSession !== canonicalSession) {
+      console.error('MAIN APP stale recommendation guard blocked output', { canonicalSession, marketSession });
+      return staleResponse(primary, marketSession, canonicalSession);
+    }
+    return new Response(`${JSON.stringify(primary, null, 2)}\n`, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
+  }
+
   async function mergedUpdateStatus(input, init, requestedUrl) {
     const [legacyResponse, primaryResponse, priceTruth] = await Promise.all([
       nativeFetch(input, noStore(init)),
-      fetchPrimary(requestedUrl.search),
+      guardedPrimary(requestedUrl.search),
       readPriceTruth(requestedUrl.search),
     ]);
 
@@ -63,12 +127,12 @@
     const truth = primary.dataTruth || {};
     const actualScanAt = truth.marketScanAt || legacy.lastAutomaticScanAt || legacy.generatedAt || null;
     const statusGeneratedAt = primary.snapshotGeneratedAt || legacy.generatedAt || actualScanAt || null;
-    const marketSessionDate = truth.marketSession || priceTruth?.expectedSession || primary.expectedLatestSession || primary.sessionDate || null;
-    const recommendationSessionDate = truth.decisionSession || primary.sessionDate || marketSessionDate || null;
+    const marketSessionDate = marketSessionOf(primary, priceTruth) || primary.expectedLatestSession || primary.sessionDate || null;
+    const recommendationSessionDate = canonicalSessionOf(primary) || marketSessionDate || null;
     const recommendationGeneratedAt = truth.decisionBuiltAt || primary.generatedAt || null;
-    const recommendationSessionAligned = primary?.governance?.sessionAligned === true;
+    const recommendationSessionAligned = !primary.staleRecommendationsBlocked && recommendationSessionDate === marketSessionDate;
     const currentExecutionGrade = truth.executionGrade === true || priceTruth?.executionGrade === true;
-    const executionEligible = primary.executionAllowed === true;
+    const executionEligible = primary.executionAllowed === true && recommendationSessionAligned;
 
     const merged = {
       ...legacy,
@@ -92,6 +156,7 @@
       primaryTickers: recommendations.map(row => row.ticker),
       protectedDecisionPath: 'data/stable/v16-main-app-current.json',
       canonicalSnapshotHash: primary.snapshotHash || null,
+      staleRecommendationsBlocked: primary.staleRecommendationsBlocked === true,
       sessionTruth: {
         scannerRunAt: actualScanAt,
         statusGeneratedAt,
@@ -121,7 +186,7 @@
     if (!requestedUrl) return nativeFetch(input, init);
 
     if (requestedUrl.pathname.endsWith(legacyDecisionSuffix) || requestedUrl.pathname.endsWith(rawPrimaryDecisionSuffix)) {
-      return fetchPrimary(requestedUrl.search)
+      return guardedPrimary(requestedUrl.search)
         .catch(() => nativeFetch(input, init));
     }
 
@@ -203,9 +268,6 @@
     loadSupplementalRuntime();
   }
 
-  // The basket is rendered asynchronously after index.html is rewritten by P2.
-  // Re-check the manager loader a few times so one transient load failure or a
-  // late DOM build cannot leave the management badge silently absent.
   setTimeout(loadSupplementalRuntime, 500);
   setTimeout(ensureActivePositionManager, 1600);
   setTimeout(ensureActivePositionManager, 3200);
