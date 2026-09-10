@@ -1,0 +1,111 @@
+name: V16 Technical Visualization Market Truth Hotfix
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/v16-technical-visualization-hotfix.yml"
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_GPJA6r3D6vsBUEyUIDXY1mNPy51V
+  V16_PRODUCTION_URL: https://egx-v16-technical-visualization-v1.vercel.app
+  TECH_SOURCE_COMMIT: c77f184110a3d238b4a964382566c7e554a27ad9
+
+concurrency:
+  group: v16-technical-visualization-market-truth-hotfix
+  cancel-in-progress: false
+
+jobs:
+  deploy-hotfix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Validate hotfix source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check deploy/rc2-safe-shell/snapshot-date-fix.js
+          grep -q 'V16_MARKET_TRUTH_UI_HOTFIX_20260910_1' deploy/rc2-safe-shell/snapshot-date-fix.js
+          grep -q 'snapshot-date-fix.js?v=20260910-market-truth1' deploy/rc2-safe-shell/index.html
+          grep -q 'Technical Visualization V1' deploy/rc2-safe-shell/index.html
+
+      - name: Restore frozen Technical Visualization asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 \
+            "https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/${TECH_SOURCE_COMMIT}/tfe-v20/public/technical-analysis-tools.js" \
+            -o deploy/rc2-safe-shell/technical-analysis-tools.js
+          test -s deploy/rc2-safe-shell/technical-analysis-tools.js
+          grep -q 'TECHNICAL_VISUALIZATION_CONTRACT' deploy/rc2-safe-shell/technical-analysis-tools.js
+
+      - name: Require authorized Vercel deployment token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN repository secret is not configured; production deployment cannot be authorized from GitHub Actions."
+            exit 78
+          fi
+
+      - name: Link exact existing V16 Vercel project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deploy/rc2-safe-shell/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > deploy/rc2-safe-shell/.vercel/project.json
+
+      - name: Deploy hotfix to existing V16 production project
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd deploy/rc2-safe-shell
+          DEPLOYMENT_URL="$(npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN")"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "DEPLOYED_V16_HOTFIX=$DEPLOYMENT_URL"
+
+      - name: Verify production alias serves new UI hotfix and current market truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            ROOT="$(curl -fsSL --retry 2 "$V16_PRODUCTION_URL/?hotfix=20260910-market-truth1-$attempt" || true)"
+            SCRIPT="$(curl -fsSL --retry 2 "$V16_PRODUCTION_URL/snapshot-date-fix.js?v=20260910-market-truth1&check=$attempt" || true)"
+            if grep -q '20260910-market-truth1' <<<"$ROOT" && grep -q 'V16_MARKET_TRUTH_UI_HOTFIX_20260910_1' <<<"$SCRIPT"; then
+              break
+            fi
+            [ "$attempt" = "6" ] && { echo "Production alias did not expose the hotfix marker."; exit 1; }
+            sleep 5
+          done
+
+          curl -fsSL --retry 3 "$V16_PRODUCTION_URL/api/index?route=market-index&t=$(date +%s%3N)" -o /tmp/market-index.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const market=JSON.parse(fs.readFileSync('/tmp/market-index.json','utf8'));
+          const rows=new Map((market.symbols||[]).map(x=>[x.ticker,x]));
+          for(const ticker of ['EGSA','RAKT']){
+            const row=rows.get(ticker);
+            if(!row) throw new Error(`Missing ${ticker} from live market index`);
+            if(row.staleData!==true) throw new Error(`${ticker} is not stale on live production API`);
+            if(!(row.lastSession < market.sessionDate)) throw new Error(`${ticker} does not prove a lagged session`);
+          }
+          if(!market.sessionDate) throw new Error('Live market session missing');
+          console.log(`V16_PRODUCTION_MARKET_TRUTH_PASS session=${market.sessionDate} symbols=${market.symbols?.length||0}`);
+          NODE
+
+          echo "V16_UI_HOTFIX_PRODUCTION_PASS"
