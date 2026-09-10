@@ -154,8 +154,11 @@ jobs:
             data/stable/v16-market-regime.json \
             data/stable/v15-price-truth.json \
             data/stable/v18-forward-ledger.json \
+            preview-v18/data.json \
+            preview-v18/forward-ledger.json \
             preview-v18-web/index.html \
             preview-v18-web/manifest.json
+          git ls-files --error-unmatch preview-v18/data.json preview-v18/forward-ledger.json >/dev/null
           if git diff --cached --quiet; then
             echo 'Validated V18 outputs unchanged.'
           else
@@ -163,4 +166,37 @@ jobs:
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
 
-# trigger: 2026-09-08 independent daily refresh + fallback retry
+      - name: Verify persisted branch snapshot is current
+        run: |
+          expected="$(node -p "require('./data/session-calendar.json').latestMarketSession")"
+          git fetch origin v18-global-strategy-ensemble-20260906 --depth=1
+          git show origin/v18-global-strategy-ensemble-20260906:preview-v18/data.json > /tmp/v18-remote-data.json
+          git show origin/v18-global-strategy-ensemble-20260906:preview-v18/forward-ledger.json > /tmp/v18-remote-ledger.json
+          actual="$(node -p "require('/tmp/v18-remote-data.json').sessionId")"
+          test "$actual" = "$expected" || { echo "REMOTE V18 STALE: $actual != $expected"; exit 1; }
+          node -e "const d=require('/tmp/v18-remote-data.json'); const l=require('/tmp/v18-remote-ledger.json'); const e=process.argv[1]; if(!Array.isArray(d.allCandidates)||!d.allCandidates.length) throw new Error('Remote V18 has no candidates'); if(!Array.isArray(l.entries)) throw new Error('Remote V18 ledger missing entries'); console.log(JSON.stringify({expected:e,remoteSession:d.sessionId,candidates:d.allCandidates.length,ledgerEntries:l.entries.length},null,2));" "$expected"
+
+      - name: Verify V18.2 production serves the current session
+        env:
+          V18_PUBLIC_URL: https://egx-pro-v18-2-unified-preview.vercel.app
+        run: |
+          expected="$(node -p "require('./data/session-calendar.json').latestMarketSession")"
+          ok=0
+          for attempt in 1 2 3 4; do
+            stamp="$(date +%s)"
+            if curl -fsSL --retry 2 --retry-delay 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/data.json?t=$stamp" -o /tmp/v18-production-data.json; then
+              actual="$(node -e "try{const d=require('/tmp/v18-production-data.json'); process.stdout.write(String(d.sessionId||''));}catch(e){process.exit(2)}" || true)"
+              if [ "$actual" = "$expected" ]; then
+                echo "V18.2 production freshness PASS: $actual"
+                ok=1
+                break
+              fi
+              echo "Attempt $attempt: production session '$actual', expected '$expected'."
+            else
+              echo "Attempt $attempt: production data endpoint fetch failed."
+            fi
+            sleep 10
+          done
+          test "$ok" = "1" || { echo "V18.2 PRODUCTION STALE after refresh"; exit 1; }
+
+# trigger: 2026-09-10 persist live V18 snapshot + verify production freshness
