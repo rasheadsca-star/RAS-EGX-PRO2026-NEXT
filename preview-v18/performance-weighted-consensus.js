@@ -1,4 +1,5 @@
 const PERFORMANCE_WEIGHTED_CONSENSUS_SCHEMA='18.2.1-performance-weighted';
+const PERFORMANCE_WEIGHTED_RANKING_SCHEMA='18.2.2-performance-weighted-ranking';
 function installPerformanceWeightedConsensusUi(){
   if(typeof filteredOpportunities==='function'){
     filteredOpportunities=function(){
