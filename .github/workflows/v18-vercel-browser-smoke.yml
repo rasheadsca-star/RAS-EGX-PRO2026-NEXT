@@ -53,6 +53,7 @@ jobs:
           echo "HTTP=$code"
           test "$code" = "200"
           grep -q 'EGX PRO V18.2' /tmp/v18-wrapper.html
+          cp /tmp/v18-wrapper.html v18-production-wrapper.html
 
       - name: Install Playwright Chromium
         shell: bash
@@ -101,11 +102,34 @@ jobs:
               hasLoader: typeof window.__V18_DATA_LOADER__ === 'function',
               hasInlineData: !!window.__V18_DATA__,
               schema: window.__V18_DATA__?.schemaVersion || null,
+              consensusSchema: window.__V18_DATA__?.consensusSchemaVersion || null,
               rankingSchema: window.__V18_DATA__?.rankingSchemaVersion || null,
               href: location.href
             }));
             const runtimeHtml = await page.content();
             const hasRankingMarker = snapshot.rankingSchema === expectedRankingSchema || runtimeHtml.includes(expectedRankingSchema);
+            const evidence = {
+              checkedUrl: url,
+              expectedSchema,
+              expectedRankingSchema,
+              expectedSession,
+              expectedHealth,
+              title: snapshot.title,
+              hasLoader: snapshot.hasLoader,
+              hasInlineData: snapshot.hasInlineData,
+              schema: snapshot.schema,
+              consensusSchema: snapshot.consensusSchema,
+              rankingSchema: snapshot.rankingSchema,
+              hasRankingMarker,
+              consoleErrors,
+              pageErrors,
+              bodyHasExpectedSession: snapshot.text.includes(expectedSession),
+              bodyHasExpectedHealth: snapshot.text.includes(expectedHealth),
+              bodyHasLoadFailure: snapshot.text.includes('تعذر تحميل V18.2'),
+              bodySample: snapshot.text.slice(0, 2500)
+            };
+            fs.writeFileSync('v18-runtime-snapshot.json', JSON.stringify(evidence, null, 2));
+            fs.writeFileSync('v18-runtime.html', runtimeHtml);
 
             if (!snapshot.title.includes('V18.2')) throw new Error(`Wrong title: ${snapshot.title}`);
             if (snapshot.text.includes('تعذر تحميل V18.2')) throw new Error('Rendered runtime reports V18.2 load failure');
@@ -117,25 +141,7 @@ jobs:
             if (pageErrors.length) throw new Error(`pageerror: ${pageErrors.join(' | ')}`);
 
             await page.screenshot({ path: 'v18-exact-vercel-smoke.png', fullPage: true });
-            fs.writeFileSync('v18-exact-vercel-smoke.json', JSON.stringify({
-              checkedUrl: url,
-              expectedSchema,
-              expectedRankingSchema,
-              expectedSession,
-              expectedHealth,
-              title: snapshot.title,
-              hasLoader: snapshot.hasLoader,
-              hasInlineData: snapshot.hasInlineData,
-              schema: snapshot.schema,
-              rankingSchema: snapshot.rankingSchema,
-              hasRankingMarker,
-              consoleErrors,
-              pageErrors,
-              bodyHasExpectedSession: snapshot.text.includes(expectedSession),
-              bodyHasExpectedHealth: snapshot.text.includes(expectedHealth),
-              bodyHasLoadFailure: snapshot.text.includes('تعذر تحميل V18.2')
-            }, null, 2));
-
+            fs.writeFileSync('v18-exact-vercel-smoke.json', JSON.stringify(evidence, null, 2));
             console.log(JSON.stringify({
               ok: true,
               title: snapshot.title,
@@ -145,6 +151,7 @@ jobs:
               expectedHealth,
               hasLoader: snapshot.hasLoader,
               hasInlineData: snapshot.hasInlineData,
+              consensusSchema: snapshot.consensusSchema,
               rankingSchema: snapshot.rankingSchema,
               hasRankingMarker,
               sessionRendered: true,
@@ -166,6 +173,9 @@ jobs:
         with:
           name: v18-exact-vercel-browser-smoke-${{ github.run_id }}
           path: |
+            v18-production-wrapper.html
+            v18-runtime.html
+            v18-runtime-snapshot.json
             v18-exact-vercel-smoke.png
             v18-exact-vercel-smoke.json
           if-no-files-found: warn
