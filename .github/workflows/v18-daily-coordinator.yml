@@ -107,6 +107,7 @@ jobs:
           const fs=require('fs');
           const out=JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
           const manifest=JSON.parse(fs.readFileSync('preview-v18-web/manifest.json','utf8'));
+          const html=fs.readFileSync('preview-v18-web/index.html','utf8');
           const expected=process.env.EXPECTED_SESSION;
           if(out.sessionId!==expected) throw new Error(`V18 session ${out.sessionId} != expected market session ${expected}`);
           if(manifest.sessionId!==expected) throw new Error(`V18 manifest ${manifest.sessionId} != expected market session ${expected}`);
@@ -117,7 +118,11 @@ jobs:
           const levels=new Set(manifest.executionLevels||[]);
           for(const x of ['ENTRY_ZONE','TARGET1','TARGET2','TARGET3','STOP_LOSS']) if(!levels.has(x)) throw new Error(`Missing ${x}`);
           if((manifest.dashboardRecommendations||0)<20) throw new Error('Top 20 recommendations missing');
-          console.log(JSON.stringify({sessionId:out.sessionId,candidates:out.allCandidates.length,top20:manifest.dashboardRecommendations,dataHealth:out.dataHealth.status},null,2));
+          if(manifest.liveLoaderVersion!=='github-live-v1') throw new Error('V18 live loader version missing');
+          if(manifest.embeddedVerifiedFallback!==true) throw new Error('Embedded verified fallback missing');
+          if(!String(manifest.liveDataSource||'').includes('/v18-global-strategy-ensemble-20260906/preview-v18/data.json')) throw new Error('Live V18 source does not target the canonical V18 branch');
+          if(!html.includes('V18_LIVE_GITHUB_SOURCE_V1')) throw new Error('Live source marker missing from standalone HTML');
+          console.log(JSON.stringify({sessionId:out.sessionId,candidates:out.allCandidates.length,top20:manifest.dashboardRecommendations,dataHealth:out.dataHealth.status,liveLoader:manifest.liveLoaderVersion},null,2));
           NODE
 
       - name: Persist fresh V18 data and public preview
@@ -179,9 +184,12 @@ jobs:
           git fetch origin v18-global-strategy-ensemble-20260906 --depth=1
           git show origin/v18-global-strategy-ensemble-20260906:preview-v18/data.json > /tmp/v18-published-data.json
           git show origin/v18-global-strategy-ensemble-20260906:preview-v18/forward-ledger.json > /tmp/v18-published-ledger.json
+          git show origin/v18-global-strategy-ensemble-20260906:preview-v18-web/index.html > /tmp/v18-published-index.html
+          git show origin/v18-global-strategy-ensemble-20260906:preview-v18-web/manifest.json > /tmp/v18-published-manifest.json
           actual="$(node -p "require('/tmp/v18-published-data.json').sessionId")"
           test "$actual" = "$EXPECTED_SESSION" || { echo "::error::Published V18 branch is stale ($actual != $EXPECTED_SESSION)."; exit 1; }
-          node -e "const d=require('/tmp/v18-published-data.json'); const l=require('/tmp/v18-published-ledger.json'); if(!Array.isArray(d.allCandidates)||!d.allCandidates.length) throw new Error('Published candidates missing'); if(!Array.isArray(l.entries)) throw new Error('Published ledger missing'); console.log(JSON.stringify({publishedSession:d.sessionId,candidates:d.allCandidates.length,ledgerEntries:l.entries.length},null,2));"
+          grep -q 'V18_LIVE_GITHUB_SOURCE_V1' /tmp/v18-published-index.html || { echo "::error::Published V18 HTML is missing the live-source marker."; exit 1; }
+          node -e "const d=require('/tmp/v18-published-data.json'); const l=require('/tmp/v18-published-ledger.json'); const m=require('/tmp/v18-published-manifest.json'); if(!Array.isArray(d.allCandidates)||!d.allCandidates.length) throw new Error('Published candidates missing'); if(!Array.isArray(l.entries)) throw new Error('Published ledger missing'); if(m.liveLoaderVersion!=='github-live-v1'||m.embeddedVerifiedFallback!==true) throw new Error('Published live-loader contract missing'); console.log(JSON.stringify({publishedSession:d.sessionId,candidates:d.allCandidates.length,ledgerEntries:l.entries.length,liveLoader:m.liveLoaderVersion},null,2));"
 
       - name: Probe current V18.2 production freshness
         id: prod_probe
@@ -192,18 +200,25 @@ jobs:
           for attempt in 1 2 3; do
             stamp="$(date +%s%3N)"
             ROOT="$(curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/?probe=$stamp" || true)"
+
+            if grep -q 'EGX PRO V18.2' <<<"$ROOT" && grep -q 'V18_LIVE_GITHUB_SOURCE_V1' <<<"$ROOT"; then
+              current=true
+              echo "V18_2_PRODUCTION_LIVE_LINK_CURRENT session=$EXPECTED_SESSION source=github-live-v1"
+              break
+            fi
+
             if curl -fsSL --retry 2 --retry-delay 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/data.json?t=$stamp" -o /tmp/v18-production-probe.json; then
               actual="$(node -e "try{const d=require('/tmp/v18-production-probe.json');process.stdout.write(String(d.sessionId||''))}catch(e){process.exit(2)}" || true)"
               schema="$(node -e "try{const d=require('/tmp/v18-production-probe.json');process.stdout.write(String(d.schemaVersion||''))}catch(e){process.exit(2)}" || true)"
               recs="$(node -e "try{const d=require('/tmp/v18-production-probe.json');process.stdout.write(String((d.allCandidates||[]).length))}catch(e){process.exit(2)}" || true)"
-              echo "Production probe $attempt: session='$actual' schema='$schema' candidates='$recs' expected='$EXPECTED_SESSION'."
+              echo "Legacy production probe $attempt: session='$actual' schema='$schema' candidates='$recs' expected='$EXPECTED_SESSION'."
               if [ "$actual" = "$EXPECTED_SESSION" ] && [ "$schema" = "18.2.0-shadow" ] && [ "${recs:-0}" -gt 0 ] && grep -q 'EGX PRO V18.2' <<<"$ROOT"; then
                 current=true
                 echo "V18_2_PRODUCTION_ALREADY_CURRENT session=$actual candidates=$recs"
                 break
               fi
             else
-              echo "Production probe $attempt could not read data.json."
+              echo "Production probe $attempt could not read legacy data.json."
             fi
             sleep 3
           done
@@ -218,7 +233,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${VERCEL_TOKEN:-}" ]; then
-            echo "::error::Production is stale and VERCEL_TOKEN repository secret is not configured."
+            echo "::error::One bootstrap deployment is still required to install the V18 live-loader, but VERCEL_TOKEN is not configured."
             exit 78
           fi
 
@@ -233,6 +248,7 @@ jobs:
           cp v18/preview-v18/data.json deploy-v18-production/data.json
           cp v18/preview-v18/forward-ledger.json deploy-v18-production/forward-ledger.json
           cp v18/preview-v18-web/manifest.json deploy-v18-production/manifest.json
+          grep -q 'V18_LIVE_GITHUB_SOURCE_V1' deploy-v18-production/index.html
           cat > deploy-v18-production/vercel.json <<'JSON'
           {
             "$schema": "https://openapi.vercel.sh/vercel.json",
@@ -255,7 +271,7 @@ jobs:
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > deploy-v18-production/.vercel/project.json
           test -s deploy-v18-production/index.html
           test -s deploy-v18-production/data.json
-          node -e "const d=require('./deploy-v18-production/data.json'); if(d.sessionId!==process.env.EXPECTED_SESSION) throw new Error('Deploy bundle session mismatch'); console.log('V18_DEPLOY_BUNDLE_PASS '+d.sessionId);"
+          node -e "const d=require('./deploy-v18-production/data.json'); const m=require('./deploy-v18-production/manifest.json'); if(d.sessionId!==process.env.EXPECTED_SESSION) throw new Error('Deploy bundle session mismatch'); if(m.liveLoaderVersion!=='github-live-v1') throw new Error('Deploy bundle live loader missing'); console.log('V18_DEPLOY_BUNDLE_PASS '+d.sessionId+' live='+m.liveLoaderVersion);"
 
       - name: Deploy verified snapshot to existing V18.2 production project
         if: steps.prod_probe.outputs.production_current != 'true'
@@ -278,12 +294,19 @@ jobs:
           for attempt in 1 2 3 4 5 6; do
             stamp="$(date +%s%3N)"
             ROOT="$(curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/?verify=$stamp" || true)"
+
+            if grep -q 'EGX PRO V18.2' <<<"$ROOT" && grep -q 'V18_LIVE_GITHUB_SOURCE_V1' <<<"$ROOT"; then
+              echo "V18_2_PRODUCTION_E2E_PASS session=$EXPECTED_SESSION source=github-live-v1"
+              ok=1
+              break
+            fi
+
             if curl -fsSL --retry 2 --retry-delay 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/data.json?t=$stamp" -o /tmp/v18-production-data.json; then
               actual="$(node -e "try{const d=require('/tmp/v18-production-data.json');process.stdout.write(String(d.sessionId||''))}catch(e){process.exit(2)}" || true)"
               schema="$(node -e "try{const d=require('/tmp/v18-production-data.json');process.stdout.write(String(d.schemaVersion||''))}catch(e){process.exit(2)}" || true)"
               recs="$(node -e "try{const d=require('/tmp/v18-production-data.json');process.stdout.write(String((d.allCandidates||[]).length))}catch(e){process.exit(2)}" || true)"
               if [ "$actual" = "$EXPECTED_SESSION" ] && [ "$schema" = "18.2.0-shadow" ] && [ "${recs:-0}" -gt 0 ] && grep -q 'EGX PRO V18.2' <<<"$ROOT"; then
-                echo "V18_2_PRODUCTION_E2E_PASS session=$actual candidates=$recs"
+                echo "V18_2_PRODUCTION_E2E_PASS session=$actual candidates=$recs source=legacy-static"
                 ok=1
                 break
               fi
