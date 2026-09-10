@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 15
     env:
       V18_URL: https://egx-pro-v18-2-unified-preview.vercel.app/
+      EXPECTED_RANKING_SCHEMA: 18.2.2-performance-weighted-ranking
     steps:
       - name: Load expected V18.2 manifest truth
         shell: bash
@@ -41,7 +42,7 @@ jobs:
           echo "EXPECTED_SCHEMA=$EXPECTED_SCHEMA" >> "$GITHUB_ENV"
           echo "EXPECTED_SESSION=$EXPECTED_SESSION" >> "$GITHUB_ENV"
           echo "EXPECTED_DATA_HEALTH=$EXPECTED_DATA_HEALTH" >> "$GITHUB_ENV"
-          echo "Expected schema=$EXPECTED_SCHEMA session=$EXPECTED_SESSION health=$EXPECTED_DATA_HEALTH criticalFailures=$EXPECTED_CRITICAL_FAILURES"
+          echo "Expected schema=$EXPECTED_SCHEMA rankingSchema=$EXPECTED_RANKING_SCHEMA session=$EXPECTED_SESSION health=$EXPECTED_DATA_HEALTH criticalFailures=$EXPECTED_CRITICAL_FAILURES"
 
       - name: Verify exact production URL is reachable
         shell: bash
@@ -73,7 +74,8 @@ jobs:
             const expectedSession = process.env.EXPECTED_SESSION;
             const expectedHealth = process.env.EXPECTED_DATA_HEALTH;
             const expectedSchema = process.env.EXPECTED_SCHEMA;
-            if (!expectedSession || !expectedHealth || !expectedSchema) throw new Error('Expected manifest truth is missing');
+            const expectedRankingSchema = process.env.EXPECTED_RANKING_SCHEMA;
+            if (!expectedSession || !expectedHealth || !expectedSchema || !expectedRankingSchema) throw new Error('Expected manifest/ranking truth is missing');
 
             const url = `${process.env.V18_URL}?smoke=${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}-${Date.now()}`;
             const browser = await chromium.launch({ headless: true });
@@ -99,27 +101,34 @@ jobs:
               hasLoader: typeof window.__V18_DATA_LOADER__ === 'function',
               hasInlineData: !!window.__V18_DATA__,
               schema: window.__V18_DATA__?.schemaVersion || null,
+              rankingSchema: window.__V18_DATA__?.rankingSchemaVersion || null,
               href: location.href
             }));
+            const runtimeHtml = await page.content();
+            const hasRankingMarker = snapshot.rankingSchema === expectedRankingSchema || runtimeHtml.includes(expectedRankingSchema);
 
             if (!snapshot.title.includes('V18.2')) throw new Error(`Wrong title: ${snapshot.title}`);
             if (snapshot.text.includes('تعذر تحميل V18.2')) throw new Error('Rendered runtime reports V18.2 load failure');
             if (!snapshot.text.includes(expectedSession)) throw new Error(`Expected current V18.2 session ${expectedSession} not rendered`);
             if (!snapshot.text.includes(expectedHealth)) throw new Error(`Expected Data Health ${expectedHealth} not rendered`);
             if (!(snapshot.hasLoader || snapshot.hasInlineData)) throw new Error('Neither embedded V18 loader nor inline V18 data is present');
-            if (snapshot.schema && snapshot.schema !== expectedSchema) throw new Error(`Expected schema ${expectedSchema}, got ${snapshot.schema}`);
+            if (snapshot.schema && snapshot.schema !== expectedSchema) throw new Error(`Expected core schema ${expectedSchema}, got ${snapshot.schema}`);
+            if (!hasRankingMarker) throw new Error(`Expected V18.2.2 ranking schema ${expectedRankingSchema} is not present on production`);
             if (pageErrors.length) throw new Error(`pageerror: ${pageErrors.join(' | ')}`);
 
             await page.screenshot({ path: 'v18-exact-vercel-smoke.png', fullPage: true });
             fs.writeFileSync('v18-exact-vercel-smoke.json', JSON.stringify({
               checkedUrl: url,
               expectedSchema,
+              expectedRankingSchema,
               expectedSession,
               expectedHealth,
               title: snapshot.title,
               hasLoader: snapshot.hasLoader,
               hasInlineData: snapshot.hasInlineData,
               schema: snapshot.schema,
+              rankingSchema: snapshot.rankingSchema,
+              hasRankingMarker,
               consoleErrors,
               pageErrors,
               bodyHasExpectedSession: snapshot.text.includes(expectedSession),
@@ -131,10 +140,13 @@ jobs:
               ok: true,
               title: snapshot.title,
               expectedSchema,
+              expectedRankingSchema,
               expectedSession,
               expectedHealth,
               hasLoader: snapshot.hasLoader,
               hasInlineData: snapshot.hasInlineData,
+              rankingSchema: snapshot.rankingSchema,
+              hasRankingMarker,
               sessionRendered: true,
               dataHealthPassRendered: expectedHealth === 'PASS',
               consoleErrorCount: consoleErrors.length,
