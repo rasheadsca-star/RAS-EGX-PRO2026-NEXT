@@ -6,8 +6,11 @@ on:
     paths:
       - ".github/workflows/v18-daily-coordinator.yml"
   schedule:
-    # 14:20 UTC = 17:20 Cairo during DST; runs after the canonical market refresh.
+    # Post-close primary + late retries. A stale upstream run fails closed;
+    # later scheduled runs retry independently when the canonical session arrives.
     - cron: "20 14 * * 0-4"
+    - cron: "30 17 * * 0-4"
+    - cron: "0 19 * * 0-4"
 
 permissions:
   contents: write
@@ -45,18 +48,24 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Resolve expected canonical market session
+      - name: Resolve and verify expected canonical market session
         shell: bash
         run: |
           set -euo pipefail
-          EXPECTED_SESSION="$(node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('main-src/data/session-calendar.json','utf8'));process.stdout.write(String(c.latestMarketSession||''))")"
-          LATEST_DATE="$(node -e "const fs=require('fs');const p='main-src/data/quant/stocks/TMGH.json';const x=JSON.parse(fs.readFileSync(p,'utf8'));process.stdout.write(String(x.sessionId||x.latest?.date||''))")"
+          EXPECTED_SESSION="$(node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('main-src/data/fetch-status.json','utf8'));process.stdout.write(String(s.expectedSession||''))")"
+          CALENDAR_SESSION="$(node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('main-src/data/session-calendar.json','utf8'));process.stdout.write(String(c.latestMarketSession||''))")"
+          LATEST_DATE="$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('main-src/data/quant/stocks/TMGH.json','utf8'));process.stdout.write(String(x.sessionId||x.latest?.date||''))")"
+          FETCH_READY="$(node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('main-src/data/fetch-status.json','utf8'));process.stdout.write(String(Boolean(s.ok&&s.realFetch&&s.executionGrade&&Number(s.currentSessionRows||0)>=150)))")"
           if [ -z "$EXPECTED_SESSION" ]; then
-            echo "::error::session-calendar.latestMarketSession is missing."
+            echo "::error::fetch-status.expectedSession is missing."
             exit 1
           fi
-          if [ "$LATEST_DATE" != "$EXPECTED_SESSION" ]; then
-            echo "::error::Canonical stock snapshot $LATEST_DATE != expected market session $EXPECTED_SESSION."
+          if [ "$FETCH_READY" != "true" ]; then
+            echo "::error::Canonical fetch-status is not execution-grade/current enough for publication."
+            exit 1
+          fi
+          if [ "$CALENDAR_SESSION" != "$EXPECTED_SESSION" ] || [ "$LATEST_DATE" != "$EXPECTED_SESSION" ]; then
+            echo "::error::Canonical session mismatch: fetch=$EXPECTED_SESSION calendar=$CALENDAR_SESSION stock=$LATEST_DATE."
             exit 1
           fi
           echo "EXPECTED_SESSION=$EXPECTED_SESSION" >> "$GITHUB_ENV"
@@ -71,6 +80,7 @@ jobs:
           cp -R main-src/data/quant/stocks v18/data/quant/stocks
           for f in \
             data/session-calendar.json \
+            data/fetch-status.json \
             data/quant/stock-intelligence-index.json \
             data/quant/daily-recommendations.json \
             data/quant/adaptive-daily-recommendations.json \
@@ -87,6 +97,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # V18 build scripts resolve ROOT from GITHUB_WORKSPACE. Because this job
+          # checks main and V18 into sibling directories, pin ROOT to the V18 checkout.
+          export GITHUB_WORKSPACE="$PWD"
           node --check scripts/stable/v18-global-strategy-ensemble.cjs
           node --check scripts/stable/v18-leadership-extension.cjs
           node --check scripts/stable/v18-evidence-ranking.cjs
@@ -124,7 +137,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f data/session-calendar.json data/quant/stocks data/quant/stock-intelligence-index.json data/quant/daily-recommendations.json data/quant/adaptive-daily-recommendations.json data/stable/v16-market-regime.json data/stable/v15-practical-decision.json data/stable/v18-forward-ledger.json preview-v18/data.json preview-v18/forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json
+          git add -f data/session-calendar.json data/fetch-status.json data/quant/stocks data/quant/stock-intelligence-index.json data/quant/daily-recommendations.json data/quant/adaptive-daily-recommendations.json data/stable/v16-market-regime.json data/stable/v15-practical-decision.json data/stable/v18-forward-ledger.json preview-v18/data.json preview-v18/forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json
           git ls-files --error-unmatch preview-v18/data.json preview-v18/forward-ledger.json >/dev/null
           if git diff --cached --quiet; then
             echo "No V18 changes to publish."
