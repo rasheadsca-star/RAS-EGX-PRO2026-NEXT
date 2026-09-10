@@ -120,6 +120,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f data/quant/stocks data/quant/stock-intelligence-index.json data/quant/daily-recommendations.json data/quant/adaptive-daily-recommendations.json data/stable/v16-market-regime.json data/stable/v15-practical-decision.json data/stable/v18-forward-ledger.json preview-v18/data.json preview-v18/forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json
+          git ls-files --error-unmatch preview-v18/data.json preview-v18/forward-ledger.json >/dev/null
           if git diff --cached --quiet; then
             echo "No V18 changes to publish."
           else
@@ -127,3 +128,43 @@ jobs:
             git pull --rebase origin v18-global-strategy-ensemble-20260906
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
+
+      - name: Verify published branch snapshot
+        working-directory: v18
+        shell: bash
+        run: |
+          set -euo pipefail
+          export TZ=Africa/Cairo
+          expected="$(date +%F)"
+          git fetch origin v18-global-strategy-ensemble-20260906 --depth=1
+          git show origin/v18-global-strategy-ensemble-20260906:preview-v18/data.json > /tmp/v18-published-data.json
+          git show origin/v18-global-strategy-ensemble-20260906:preview-v18/forward-ledger.json > /tmp/v18-published-ledger.json
+          actual="$(node -p "require('/tmp/v18-published-data.json').sessionId")"
+          test "$actual" = "$expected" || { echo "::error::Published V18 branch is stale ($actual != $expected)."; exit 1; }
+          node -e "const d=require('/tmp/v18-published-data.json'); const l=require('/tmp/v18-published-ledger.json'); if(!Array.isArray(d.allCandidates)||!d.allCandidates.length) throw new Error('Published candidates missing'); if(!Array.isArray(l.entries)) throw new Error('Published ledger missing'); console.log(JSON.stringify({publishedSession:d.sessionId,candidates:d.allCandidates.length,ledgerEntries:l.entries.length},null,2));"
+
+      - name: Verify V18.2 production freshness
+        shell: bash
+        env:
+          V18_PUBLIC_URL: https://egx-pro-v18-2-unified-preview.vercel.app
+        run: |
+          set -euo pipefail
+          export TZ=Africa/Cairo
+          expected="$(date +%F)"
+          ok=0
+          for attempt in 1 2 3 4; do
+            stamp="$(date +%s)"
+            if curl -fsSL --retry 2 --retry-delay 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/data.json?t=$stamp" -o /tmp/v18-production-data.json; then
+              actual="$(node -e "try{const d=require('/tmp/v18-production-data.json'); process.stdout.write(String(d.sessionId||''));}catch(e){process.exit(2)}" || true)"
+              if [ "$actual" = "$expected" ]; then
+                echo "V18.2 production freshness PASS: $actual"
+                ok=1
+                break
+              fi
+              echo "Attempt $attempt: production session '$actual', expected '$expected'."
+            else
+              echo "Attempt $attempt: production data endpoint fetch failed."
+            fi
+            sleep 10
+          done
+          test "$ok" = "1" || { echo "::error::V18.2 production is stale after daily refresh."; exit 1; }
