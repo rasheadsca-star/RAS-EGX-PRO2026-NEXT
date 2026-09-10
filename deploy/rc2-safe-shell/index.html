@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#071521">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-  <title>EGX Pro Professional — RC2 Safe Shell</title>
+  <title>EGX Pro Professional V16.9 — Technical Visualization V1</title>
   <style>
     html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071521}
     #rc2-app{display:block;width:100%;height:100%;border:0;background:#071521}
@@ -19,38 +19,25 @@
     (() => {
       const frame = document.getElementById('rc2-app');
       const errorBox = document.getElementById('shell-error');
-      const showError = message => {
-        errorBox.textContent = message;
-        errorBox.style.display = 'flex';
-      };
+      const showError = message => { errorBox.textContent = message; errorBox.style.display = 'flex'; };
       frame.addEventListener('load', () => {
         try {
           const doc = frame.contentDocument;
-          if (!doc || !doc.documentElement) {
-            showError('تعذر فتح واجهة RC2 داخل الـSafe Shell.');
-            return;
-          }
+          if (!doc?.documentElement) return showError('تعذر فتح واجهة RC2 داخل طبقة العرض الآمنة.');
           const text = (doc.body?.innerText || '').trim();
-          if (/RC2_ORIGIN_PROTECTED|PROTECTION_BYPASS_REQUIRED/.test(text)) {
-            showError('الـFrozen RC2 سليم، لكن Vercel Deployment Protection يمنع الـSafe Shell من الوصول إلى الـimmutable origin. فعّل Protection Bypass for Automation ثم أعد النشر.');
-            return;
-          }
-          if (!doc.getElementById('rc2SnapshotDateFixScript')) {
+          if (/RC2_ORIGIN_PROTECTED|PROTECTION_BYPASS_REQUIRED/.test(text)) return showError('تعذر الوصول إلى نسخة RC2 الحالية.');
+          const inject = (id, src) => {
+            if (doc.getElementById(id)) return;
             const script = doc.createElement('script');
-            script.id = 'rc2SnapshotDateFixScript';
+            script.id = id;
             script.type = 'module';
-            script.src = '/snapshot-date-fix.js?v=20260828-safe2';
+            script.src = src;
             doc.head.appendChild(script);
-          }
-          if (!doc.getElementById('rc2NextSessionLabelScript')) {
-            const script = doc.createElement('script');
-            script.id = 'rc2NextSessionLabelScript';
-            script.type = 'module';
-            script.src = '/next-session-label.js?v=20260906-next1';
-            doc.head.appendChild(script);
-          }
-        } catch (error) {
-          showError('تعذر حقن طبقة تصحيح التاريخ العرضية بدون المساس بمحرك RC2.');
+          };
+          inject('rc2SnapshotDateFixScript','/snapshot-date-fix.js?v=20260910-market-truth1');
+          inject('rc2TechnicalVisualizationScript','/technical-analysis-tools.js?v=20260901-ta1');
+        } catch {
+          showError('تعذر تشغيل طبقة التحليل الفني العرضية بدون المساس بمحرك RC2.');
         }
       });
     })();
