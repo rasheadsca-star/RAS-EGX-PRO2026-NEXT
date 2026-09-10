@@ -22,7 +22,10 @@ jobs:
     timeout-minutes: 15
     env:
       V18_URL: https://egx-pro-v18-2-unified-preview.vercel.app/
+      EXPECTED_CONSENSUS_SCHEMA: 18.2.1-performance-weighted
       EXPECTED_RANKING_SCHEMA: 18.2.2-performance-weighted-ranking
+      EXPECTED_RANKING_POLICY: EVIDENCE_FIRST_THEN_SCORE
+      EXPECTED_TOP5: ETEL|OIH|EASB|EBSC|ATQA
     steps:
       - name: Load expected V18.2 manifest truth
         shell: bash
@@ -42,7 +45,7 @@ jobs:
           echo "EXPECTED_SCHEMA=$EXPECTED_SCHEMA" >> "$GITHUB_ENV"
           echo "EXPECTED_SESSION=$EXPECTED_SESSION" >> "$GITHUB_ENV"
           echo "EXPECTED_DATA_HEALTH=$EXPECTED_DATA_HEALTH" >> "$GITHUB_ENV"
-          echo "Expected schema=$EXPECTED_SCHEMA rankingSchema=$EXPECTED_RANKING_SCHEMA session=$EXPECTED_SESSION health=$EXPECTED_DATA_HEALTH criticalFailures=$EXPECTED_CRITICAL_FAILURES"
+          echo "Expected schema=$EXPECTED_SCHEMA consensus=$EXPECTED_CONSENSUS_SCHEMA ranking=$EXPECTED_RANKING_SCHEMA policy=$EXPECTED_RANKING_POLICY session=$EXPECTED_SESSION health=$EXPECTED_DATA_HEALTH top5=$EXPECTED_TOP5"
 
       - name: Verify exact production URL is reachable
         shell: bash
@@ -53,6 +56,7 @@ jobs:
           echo "HTTP=$code"
           test "$code" = "200"
           grep -q 'EGX PRO V18.2' /tmp/v18-wrapper.html
+          grep -q '__V18_DATA_LOADER__' /tmp/v18-wrapper.html
           cp /tmp/v18-wrapper.html v18-production-wrapper.html
 
       - name: Install Playwright Chromium
@@ -70,13 +74,19 @@ jobs:
           cat > v18-smoke.cjs <<'NODE'
           const { chromium } = require('playwright');
           const fs = require('fs');
+          const assert = require('assert/strict');
 
           (async () => {
             const expectedSession = process.env.EXPECTED_SESSION;
             const expectedHealth = process.env.EXPECTED_DATA_HEALTH;
             const expectedSchema = process.env.EXPECTED_SCHEMA;
+            const expectedConsensusSchema = process.env.EXPECTED_CONSENSUS_SCHEMA;
             const expectedRankingSchema = process.env.EXPECTED_RANKING_SCHEMA;
-            if (!expectedSession || !expectedHealth || !expectedSchema || !expectedRankingSchema) throw new Error('Expected manifest/ranking truth is missing');
+            const expectedRankingPolicy = process.env.EXPECTED_RANKING_POLICY;
+            const expectedTop5 = String(process.env.EXPECTED_TOP5 || '').split('|').filter(Boolean);
+            if (!expectedSession || !expectedHealth || !expectedSchema || !expectedConsensusSchema || !expectedRankingSchema || !expectedRankingPolicy || expectedTop5.length !== 5) {
+              throw new Error('Expected V18 production truth is incomplete');
+            }
 
             const url = `${process.env.V18_URL}?smoke=${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT}-${Date.now()}`;
             const browser = await chromium.launch({ headless: true });
@@ -88,39 +98,75 @@ jobs:
 
             const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
             if (!response) throw new Error('No navigation response');
-            if (response.status() !== 200) throw new Error(`Expected HTTP 200, got ${response.status()}`);
+            assert.equal(response.status(), 200, `Expected HTTP 200, got ${response.status()}`);
 
             await page.waitForFunction(() => {
               const t = document.body?.innerText || '';
               return t.includes('Unified Decision Center') || t.includes('مركز القرار') || t.includes('Data Health');
             }, { timeout: 60000 });
 
-            await page.waitForTimeout(2500);
-            const snapshot = await page.evaluate(() => ({
-              title: document.title,
-              text: document.body?.innerText || '',
-              hasLoader: typeof window.__V18_DATA_LOADER__ === 'function',
-              hasInlineData: !!window.__V18_DATA__,
-              schema: window.__V18_DATA__?.schemaVersion || null,
-              consensusSchema: window.__V18_DATA__?.consensusSchemaVersion || null,
-              rankingSchema: window.__V18_DATA__?.rankingSchemaVersion || null,
-              href: location.href
-            }));
+            await page.waitForTimeout(1500);
+            const snapshot = await page.evaluate(async () => {
+              let data = window.__V18_DATA__ || null;
+              let loaderError = null;
+              let loaderReturnType = null;
+
+              if (!data && typeof window.__V18_DATA_LOADER__ === 'function') {
+                try {
+                  const loaded = await window.__V18_DATA_LOADER__();
+                  loaderReturnType = loaded === null ? 'null' : typeof loaded;
+                  if (loaded && typeof loaded === 'object') data = loaded;
+                  if (!data && window.__V18_DATA__) data = window.__V18_DATA__;
+                } catch (err) {
+                  loaderError = String(err?.stack || err?.message || err);
+                }
+              }
+
+              const ranked = Array.isArray(data?.allCandidates)
+                ? data.allCandidates.slice().sort((a,b) => Number(a?.evidenceRank ?? a?.rank ?? 9999) - Number(b?.evidenceRank ?? b?.rank ?? 9999))
+                : [];
+              const topFiveNow = Array.isArray(data?.topFiveNow)
+                ? data.topFiveNow.map(x => typeof x === 'string' ? x : (x?.ticker || x?.symbol || x?.code)).filter(Boolean).slice(0,5)
+                : [];
+              const rankedTopFive = ranked.map(x => x?.ticker || x?.symbol || x?.code).filter(Boolean).slice(0,5);
+
+              return {
+                title: document.title,
+                text: document.body?.innerText || '',
+                hasLoader: typeof window.__V18_DATA_LOADER__ === 'function',
+                hasInlineData: !!window.__V18_DATA__,
+                loadedData: !!data,
+                loaderReturnType,
+                loaderError,
+                schema: data?.schemaVersion || null,
+                consensusSchema: data?.consensusSchemaVersion || null,
+                rankingSchema: data?.rankingSchemaVersion || null,
+                rankingPolicyCode: data?.rankingPolicy?.code || null,
+                postConsensusRerank: data?.rankingPolicy?.postConsensusRerank ?? null,
+                rankingTopFiveSynchronized: data?.performanceWeightedRanking?.safeguards?.topFiveSynchronized ?? null,
+                topFiveUsesPostWeightedEvidenceRank: data?.performanceWeightedRanking?.policy?.topFiveUsesPostWeightedEvidenceRank ?? null,
+                topFiveNow,
+                rankedTopFive,
+                sessionId: data?.sessionId || null,
+                dataHealth: data?.dataHealth?.status || null,
+                criticalFailureCount: Number(data?.dataHealth?.criticalFailureCount || 0),
+                href: location.href
+              };
+            });
+
             const runtimeHtml = await page.content();
-            const hasRankingMarker = snapshot.rankingSchema === expectedRankingSchema || runtimeHtml.includes(expectedRankingSchema);
+            const actualTop5 = snapshot.topFiveNow.length === 5 ? snapshot.topFiveNow : snapshot.rankedTopFive;
             const evidence = {
               checkedUrl: url,
               expectedSchema,
+              expectedConsensusSchema,
               expectedRankingSchema,
+              expectedRankingPolicy,
+              expectedTop5,
               expectedSession,
               expectedHealth,
-              title: snapshot.title,
-              hasLoader: snapshot.hasLoader,
-              hasInlineData: snapshot.hasInlineData,
-              schema: snapshot.schema,
-              consensusSchema: snapshot.consensusSchema,
-              rankingSchema: snapshot.rankingSchema,
-              hasRankingMarker,
+              ...snapshot,
+              actualTop5,
               consoleErrors,
               pageErrors,
               bodyHasExpectedSession: snapshot.text.includes(expectedSession),
@@ -131,13 +177,25 @@ jobs:
             fs.writeFileSync('v18-runtime-snapshot.json', JSON.stringify(evidence, null, 2));
             fs.writeFileSync('v18-runtime.html', runtimeHtml);
 
-            if (!snapshot.title.includes('V18.2')) throw new Error(`Wrong title: ${snapshot.title}`);
-            if (snapshot.text.includes('تعذر تحميل V18.2')) throw new Error('Rendered runtime reports V18.2 load failure');
-            if (!snapshot.text.includes(expectedSession)) throw new Error(`Expected current V18.2 session ${expectedSession} not rendered`);
-            if (!snapshot.text.includes(expectedHealth)) throw new Error(`Expected Data Health ${expectedHealth} not rendered`);
-            if (!(snapshot.hasLoader || snapshot.hasInlineData)) throw new Error('Neither embedded V18 loader nor inline V18 data is present');
-            if (snapshot.schema && snapshot.schema !== expectedSchema) throw new Error(`Expected core schema ${expectedSchema}, got ${snapshot.schema}`);
-            if (!hasRankingMarker) throw new Error(`Expected V18.2.2 ranking schema ${expectedRankingSchema} is not present on production`);
+            assert.ok(snapshot.title.includes('V18.2'), `Wrong title: ${snapshot.title}`);
+            assert.ok(!snapshot.text.includes('تعذر تحميل V18.2'), 'Rendered runtime reports V18.2 load failure');
+            assert.equal(snapshot.hasLoader, true, 'Embedded V18 data loader is missing');
+            if (snapshot.loaderError) throw new Error(`V18 data loader failed: ${snapshot.loaderError}`);
+            assert.equal(snapshot.loadedData, true, 'V18 embedded data could not be decoded');
+            assert.equal(snapshot.loaderReturnType, 'object', `Unexpected V18 loader return type: ${snapshot.loaderReturnType}`);
+            assert.equal(snapshot.schema, expectedSchema, `Expected core schema ${expectedSchema}, got ${snapshot.schema}`);
+            assert.equal(snapshot.consensusSchema, expectedConsensusSchema, `Expected consensus schema ${expectedConsensusSchema}, got ${snapshot.consensusSchema}`);
+            assert.equal(snapshot.rankingSchema, expectedRankingSchema, `Expected ranking schema ${expectedRankingSchema}, got ${snapshot.rankingSchema}`);
+            assert.equal(snapshot.rankingPolicyCode, expectedRankingPolicy, `Expected ranking policy ${expectedRankingPolicy}, got ${snapshot.rankingPolicyCode}`);
+            assert.equal(snapshot.postConsensusRerank, true, 'Post-consensus rerank is not enabled');
+            assert.equal(snapshot.rankingTopFiveSynchronized, true, 'Weighted ranking safeguard topFiveSynchronized did not pass');
+            assert.equal(snapshot.topFiveUsesPostWeightedEvidenceRank, true, 'Top Five is not marked as post-weighted evidence rank');
+            assert.equal(snapshot.sessionId, expectedSession, `Expected session ${expectedSession}, got ${snapshot.sessionId}`);
+            assert.equal(snapshot.dataHealth, expectedHealth, `Expected Data Health ${expectedHealth}, got ${snapshot.dataHealth}`);
+            assert.equal(snapshot.criticalFailureCount, 0, `Expected zero critical failures, got ${snapshot.criticalFailureCount}`);
+            assert.deepEqual(snapshot.topFiveNow, expectedTop5, `topFiveNow mismatch: ${snapshot.topFiveNow.join(' → ')}`);
+            assert.deepEqual(snapshot.rankedTopFive, expectedTop5, `ranked allCandidates Top 5 mismatch: ${snapshot.rankedTopFive.join(' → ')}`);
+            assert.deepEqual(actualTop5, expectedTop5, `Production Top 5 mismatch: ${actualTop5.join(' → ')}`);
             if (pageErrors.length) throw new Error(`pageerror: ${pageErrors.join(' | ')}`);
 
             await page.screenshot({ path: 'v18-exact-vercel-smoke.png', fullPage: true });
@@ -145,17 +203,17 @@ jobs:
             console.log(JSON.stringify({
               ok: true,
               title: snapshot.title,
-              expectedSchema,
-              expectedRankingSchema,
-              expectedSession,
-              expectedHealth,
-              hasLoader: snapshot.hasLoader,
-              hasInlineData: snapshot.hasInlineData,
+              schema: snapshot.schema,
               consensusSchema: snapshot.consensusSchema,
               rankingSchema: snapshot.rankingSchema,
-              hasRankingMarker,
-              sessionRendered: true,
-              dataHealthPassRendered: expectedHealth === 'PASS',
+              rankingPolicy: snapshot.rankingPolicyCode,
+              postConsensusRerank: snapshot.postConsensusRerank,
+              expectedSession,
+              dataHealth: snapshot.dataHealth,
+              criticalFailureCount: snapshot.criticalFailureCount,
+              topFive: actualTop5,
+              hasLoader: snapshot.hasLoader,
+              loaderReturnType: snapshot.loaderReturnType,
               consoleErrorCount: consoleErrors.length,
               pageErrorCount: pageErrors.length
             }, null, 2));
