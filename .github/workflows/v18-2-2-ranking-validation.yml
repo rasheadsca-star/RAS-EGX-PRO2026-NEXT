@@ -1,0 +1,137 @@
+name: V18.2.2 Performance-Weighted Ranking Validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - v18-global-strategy-ensemble-20260906
+    paths:
+      - scripts/stable/v18-performance-weighted-ranking.cjs
+      - scripts/stable/v18-performance-weighted-consensus.cjs
+      - scripts/stable/build-v18-decision-board.cjs
+      - scripts/stable/build-v18-web-preview.cjs
+      - preview-v18/performance-weighted-consensus.js
+      - .github/workflows/v18-2-2-ranking-validation.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v18-2-2-weighted-ranking-validation
+  cancel-in-progress: false
+
+jobs:
+  validate-weighted-ranking:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V18 branch
+        uses: actions/checkout@v4
+        with:
+          ref: v18-global-strategy-ensemble-20260906
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          node --check scripts/stable/v18-performance-weighted-consensus.cjs
+          node --check scripts/stable/v18-performance-weighted-ranking.cjs
+          node --check scripts/stable/build-v18-decision-board.cjs
+          node --check scripts/stable/build-v18-web-preview.cjs
+          node --check preview-v18/performance-weighted-consensus.js
+
+      - name: Build weighted decision center
+        run: node scripts/stable/build-v18-decision-board.cjs
+
+      - name: Validate V18.2.2 ranking invariants
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const out = JSON.parse(fs.readFileSync('preview-v18/data.json', 'utf8'));
+          const fail = m => { throw new Error(m); };
+
+          if (out.schemaVersion !== '18.2.0-shadow') fail(`Unexpected core schema: ${out.schemaVersion}`);
+          if (out.consensusSchemaVersion !== '18.2.1-performance-weighted') fail(`Unexpected consensus schema: ${out.consensusSchemaVersion}`);
+          if (out.rankingSchemaVersion !== '18.2.2-performance-weighted-ranking') fail(`Unexpected ranking schema: ${out.rankingSchemaVersion}`);
+
+          const consensus = out.performanceWeightedConsensus;
+          const ranking = out.performanceWeightedRanking;
+          if (!consensus || !ranking) fail('Weighted consensus/ranking output missing');
+
+          if (consensus.policy?.staleEngineWeight !== 0) fail('Stale engine weight must remain zero');
+          if (consensus.policy?.maximumDecisionScoreAdjustmentAbs !== 4) fail('Decision-score adjustment must remain bounded at ±4');
+          if (consensus.policy?.tierMutation !== false || consensus.policy?.executionPlanMutation !== false) fail('Consensus cannot mutate tier or execution plan');
+          if (consensus.policy?.externalComparisonEnginesVote !== false) fail('External comparison engines cannot vote');
+          if (!consensus.safeguards?.executionPlansUnchanged || !consensus.safeguards?.adjustmentBoundPassed || !consensus.safeguards?.staleWeightZeroPassed || !consensus.safeguards?.promotionGatePassed) fail('Consensus safeguards failed');
+
+          const p = ranking.policy || {};
+          if (p.evidencePriorityMutation !== false) fail('Evidence priority mutation enabled');
+          if (p.crossEvidenceClassMovement !== false) fail('Cross-evidence movement enabled');
+          if (p.tierMutation !== false) fail('Tier mutation enabled');
+          if (p.rawRankMutation !== false) fail('Raw Forward rank mutation enabled');
+          if (p.executionPlanMutation !== false) fail('Execution-plan mutation enabled');
+          if (p.evidenceRankRecomputedWithinEvidencePolicy !== true) fail('Weighted evidence-rank recomputation missing');
+          if (p.topFiveUsesPostWeightedEvidenceRank !== true) fail('Top Five does not use post-weighted rank');
+
+          const s = ranking.safeguards || {};
+          const requiredTrue = [
+            'evidencePriorityUnchanged',
+            'noCrossEvidenceInversion',
+            'tierUnchanged',
+            'rawRankUnchanged',
+            'executionPlansUnchanged',
+            'ranksContiguous',
+            'comparatorOrderPassed',
+            'topFiveSynchronized'
+          ];
+          for (const key of requiredTrue) if (s[key] !== true) fail(`Ranking safeguard failed: ${key}`);
+          if (Number(s.duplicateTickerCount || 0) !== 0) fail('Duplicate ticker detected');
+
+          const rows = out.allCandidates || [];
+          if (!rows.length) fail('No candidates generated');
+          const topFive = (out.topFiveNow || []).map(x => x.ticker);
+          const firstFive = rows.slice(0, 5).map(x => x.ticker);
+          if (topFive.join('|') !== firstFive.join('|')) fail('Top Five is not synchronized with weighted ranking');
+
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (Number(row.evidenceRank) !== i + 1) fail(`Non-contiguous evidenceRank at ${row.ticker}`);
+            if (Math.abs(Number(row.consensusAdjustment || 0)) > 4.0001) fail(`Adjustment outside ±4 at ${row.ticker}`);
+            if (i > 0 && Number(row.evidencePriority || 0) > Number(rows[i - 1].evidencePriority || 0)) fail(`Cross-evidence inversion at ${row.ticker}`);
+          }
+
+          for (const e of consensus.engineRegistry || []) {
+            if (e.fresh === false && Number(e.voteWeightPct || 0) !== 0) fail(`Stale engine has non-zero vote: ${e.engine}`);
+            if (e.promotionEligible && Number(e.forwardSessions || 0) < Number(e.promotionThresholdSessions || 20)) fail(`Premature promotion: ${e.engine}`);
+          }
+
+          const impact = ranking.impact || {};
+          if (!Array.isArray(impact.top5Before) || !Array.isArray(impact.top5After)) fail('Top-five impact audit missing');
+          if (Number(impact.changedPositions || 0) !== (impact.changed || []).length) fail('Changed-position audit count mismatch');
+
+          console.log(JSON.stringify({
+            schemaVersion: out.schemaVersion,
+            consensusSchemaVersion: out.consensusSchemaVersion,
+            rankingSchemaVersion: out.rankingSchemaVersion,
+            sessionId: out.sessionId,
+            candidates: rows.length,
+            changedPositions: impact.changedPositions,
+            top5Before: impact.top5Before,
+            top5After: impact.top5After,
+            safeguards: s
+          }, null, 2));
+          NODE
+
+      - name: Build and verify standalone V18.2.2 preview
+        run: |
+          node scripts/stable/build-v18-web-preview.cjs
+          test -s preview-v18-web/index.html
+          test -s preview-v18-web/manifest.json
+          grep -q '18.2.0-shadow' preview-v18-web/index.html
+          grep -q '18.2.1-performance-weighted' preview-v18-web/index.html
+          grep -q '18.2.2-performance-weighted-ranking' preview-v18-web/index.html
+
+      - name: Complete validation
+        run: echo 'V18.2.2 weighted ranking validation passed.'
