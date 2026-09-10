@@ -183,18 +183,47 @@ jobs:
           test "$actual" = "$EXPECTED_SESSION" || { echo "::error::Published V18 branch is stale ($actual != $EXPECTED_SESSION)."; exit 1; }
           node -e "const d=require('/tmp/v18-published-data.json'); const l=require('/tmp/v18-published-ledger.json'); if(!Array.isArray(d.allCandidates)||!d.allCandidates.length) throw new Error('Published candidates missing'); if(!Array.isArray(l.entries)) throw new Error('Published ledger missing'); console.log(JSON.stringify({publishedSession:d.sessionId,candidates:d.allCandidates.length,ledgerEntries:l.entries.length},null,2));"
 
+      - name: Probe current V18.2 production freshness
+        id: prod_probe
+        shell: bash
+        run: |
+          set -u
+          current=false
+          for attempt in 1 2 3; do
+            stamp="$(date +%s%3N)"
+            ROOT="$(curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/?probe=$stamp" || true)"
+            if curl -fsSL --retry 2 --retry-delay 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/data.json?t=$stamp" -o /tmp/v18-production-probe.json; then
+              actual="$(node -e "try{const d=require('/tmp/v18-production-probe.json');process.stdout.write(String(d.sessionId||''))}catch(e){process.exit(2)}" || true)"
+              schema="$(node -e "try{const d=require('/tmp/v18-production-probe.json');process.stdout.write(String(d.schemaVersion||''))}catch(e){process.exit(2)}" || true)"
+              recs="$(node -e "try{const d=require('/tmp/v18-production-probe.json');process.stdout.write(String((d.allCandidates||[]).length))}catch(e){process.exit(2)}" || true)"
+              echo "Production probe $attempt: session='$actual' schema='$schema' candidates='$recs' expected='$EXPECTED_SESSION'."
+              if [ "$actual" = "$EXPECTED_SESSION" ] && [ "$schema" = "18.2.0-shadow" ] && [ "${recs:-0}" -gt 0 ] && grep -q 'EGX PRO V18.2' <<<"$ROOT"; then
+                current=true
+                echo "V18_2_PRODUCTION_ALREADY_CURRENT session=$actual candidates=$recs"
+                break
+              fi
+            else
+              echo "Production probe $attempt could not read data.json."
+            fi
+            sleep 3
+          done
+          echo "production_current=$current" >> "$GITHUB_OUTPUT"
+          exit 0
+
       - name: Require authorized Vercel deployment token
+        if: steps.prod_probe.outputs.production_current != 'true'
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           if [ -z "${VERCEL_TOKEN:-}" ]; then
-            echo "::error::VERCEL_TOKEN repository secret is not configured."
+            echo "::error::Production is stale and VERCEL_TOKEN repository secret is not configured."
             exit 78
           fi
 
       - name: Prepare exact V18.2 static production bundle
+        if: steps.prod_probe.outputs.production_current != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -229,6 +258,7 @@ jobs:
           node -e "const d=require('./deploy-v18-production/data.json'); if(d.sessionId!==process.env.EXPECTED_SESSION) throw new Error('Deploy bundle session mismatch'); console.log('V18_DEPLOY_BUNDLE_PASS '+d.sessionId);"
 
       - name: Deploy verified snapshot to existing V18.2 production project
+        if: steps.prod_probe.outputs.production_current != 'true'
         id: deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
