@@ -49,12 +49,15 @@ if (!app.includes('V18_MULTI_TARGET_UI_PLUGIN')) app += `\n\n${multiTargetUi}\n`
 
 html = html.replace('<link rel="stylesheet" href="styles.css?v=18.2.0">', `<style>\n${css}\n</style>`);
 
-const loader = `<script>\nwindow.__V18_DATA_GZIP_B64__=${JSON.stringify(b64)};\nwindow.__V18_DATA_LOADER__=async function(){const bin=atob(window.__V18_DATA_GZIP_B64__);const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));if(typeof DecompressionStream==='undefined')throw new Error('This browser does not support DecompressionStream');const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));const text=await new Response(stream).text();return JSON.parse(text)};\n</script>`;
+const liveDataUrl = 'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18/data.json';
+const loader = `<script>\nwindow.__V18_LIVE_DATA_SOURCE__=${JSON.stringify(liveDataUrl)};\nwindow.__V18_LIVE_LOADER_VERSION__='github-live-v1';\nwindow.__V18_DATA_GZIP_B64__=${JSON.stringify(b64)};\nwindow.__V18_EMBEDDED_DATA_LOADER__=async function(){const bin=atob(window.__V18_DATA_GZIP_B64__);const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));if(typeof DecompressionStream==='undefined')throw new Error('This browser does not support DecompressionStream');const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));const text=await new Response(stream).text();return JSON.parse(text)};\nwindow.__V18_DATA_LOADER__=async function(){try{const url=window.__V18_LIVE_DATA_SOURCE__+'?live='+Date.now();const controller=typeof AbortController!=='undefined'?new AbortController():null;const timer=controller?setTimeout(()=>controller.abort(),20000):null;let r;try{r=await fetch(url,{cache:'no-store',signal:controller?.signal})}finally{if(timer)clearTimeout(timer)}if(!r.ok)throw new Error('Live V18 data HTTP '+r.status);const live=await r.json();if(live?.schemaVersion!=='18.2.0-shadow')throw new Error('Live V18 schema mismatch');if(live?.dataHealth?.status!=='PASS'||Number(live?.dataHealth?.criticalFailureCount||0)!==0)throw new Error('Live V18 data-health gate failed');if(!live?.sessionId)throw new Error('Live V18 session is missing');if(!Array.isArray(live?.allCandidates)||!live.allCandidates.length)throw new Error('Live V18 candidates are missing');window.__V18_DATA_SOURCE_USED__='github-live';return live}catch(err){console.warn('V18 live source unavailable; using embedded verified snapshot.',err);window.__V18_DATA_SOURCE_USED__='embedded-fallback';return window.__V18_EMBEDDED_DATA_LOADER__()}};\n</script>`;
 
 html = html.replace('<script src="app.js?v=18.2.0"></script>', `${loader}\n<script>\n${app}\n</script>`);
-html = html.replace('</body>', '<!-- Rank 1–20 · data-validated Entry Zone / Target 1 / Target 2 / Target 3 / Stop Loss -->\n</body>');
+html = html.replace('</body>', '<!-- Rank 1–20 · data-validated Entry Zone / Target 1 / Target 2 / Target 3 / Stop Loss · V18_LIVE_GITHUB_SOURCE_V1 -->\n</body>');
 if (html.includes('styles.css?v=18.2.0') || html.includes('app.js?v=18.2.0')) throw new Error('Standalone preview still has local asset dependency');
-if (!html.includes('window.__V18_DATA_LOADER__')) throw new Error('Embedded data loader missing');
+if (!html.includes('window.__V18_DATA_LOADER__')) throw new Error('Live data loader missing');
+if (!html.includes('window.__V18_EMBEDDED_DATA_LOADER__')) throw new Error('Embedded fallback loader missing');
+if (!html.includes('V18_LIVE_GITHUB_SOURCE_V1')) throw new Error('Live GitHub source marker missing');
 if (!html.includes('V18_COMMON_CHART_PLUGIN')) throw new Error('Global common chart was not bundled');
 if (!html.includes('V18_MULTI_TARGET_UI_PLUGIN')) throw new Error('Multi-target UI was not bundled');
 if (!html.includes('Fibonacci') || !html.includes('Trend Channel') || !html.includes('MA20')) throw new Error('Technical chart overlays missing');
@@ -80,6 +83,9 @@ const manifest = {
   chartOverlays: ['MA20','MA50','TREND_CHANNEL','FIBONACCI'],
   multiTargetExecution: true,
   executionLevels: ['ENTRY_ZONE','TARGET1','TARGET2','TARGET3','STOP_LOSS'],
+  liveDataSource: liveDataUrl,
+  liveLoaderVersion: 'github-live-v1',
+  embeddedVerifiedFallback: true,
   bytes: fs.statSync(out).size
 };
 fs.writeFileSync(path.join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
