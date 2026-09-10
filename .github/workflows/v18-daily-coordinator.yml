@@ -6,11 +6,16 @@ on:
     paths:
       - ".github/workflows/v18-daily-coordinator.yml"
   schedule:
-    # 14:20 UTC = 17:20 Cairo during DST; runs after the 13:30 UTC canonical refresh.
+    # 14:20 UTC = 17:20 Cairo during DST; runs after the canonical market refresh.
     - cron: "20 14 * * 0-4"
 
 permissions:
   contents: write
+
+env:
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_n94juB97344WO7NQbp4Ef0XxxsvS
+  V18_PUBLIC_URL: https://egx-pro-v18-2-unified-preview.vercel.app
 
 concurrency:
   group: v18-daily-post-close-coordinator
@@ -40,23 +45,22 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Verify canonical market freshness
+      - name: Resolve expected canonical market session
         shell: bash
         run: |
           set -euo pipefail
-          export TZ=Africa/Cairo
-          EXPECTED_DATE="$(date +%F)"
+          EXPECTED_SESSION="$(node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('main-src/data/session-calendar.json','utf8'));process.stdout.write(String(c.latestMarketSession||''))")"
           LATEST_DATE="$(node -e "const fs=require('fs');const p='main-src/data/quant/stocks/TMGH.json';const x=JSON.parse(fs.readFileSync(p,'utf8'));process.stdout.write(String(x.sessionId||x.latest?.date||''))")"
-          echo "Cairo date: ${EXPECTED_DATE}"
-          echo "Canonical session: ${LATEST_DATE}"
-          if [ -z "${LATEST_DATE}" ]; then
-            echo "::error::Canonical session is missing."
+          if [ -z "$EXPECTED_SESSION" ]; then
+            echo "::error::session-calendar.latestMarketSession is missing."
             exit 1
           fi
-          if [ "${LATEST_DATE}" != "${EXPECTED_DATE}" ]; then
-            echo "::error::Canonical data is stale (${LATEST_DATE}); refusing to republish stale V18 recommendations for ${EXPECTED_DATE}."
+          if [ "$LATEST_DATE" != "$EXPECTED_SESSION" ]; then
+            echo "::error::Canonical stock snapshot $LATEST_DATE != expected market session $EXPECTED_SESSION."
             exit 1
           fi
+          echo "EXPECTED_SESSION=$EXPECTED_SESSION" >> "$GITHUB_ENV"
+          echo "Expected canonical market session: $EXPECTED_SESSION"
 
       - name: Sync canonical market inputs into V18 branch workspace
         shell: bash
@@ -66,6 +70,7 @@ jobs:
           mkdir -p v18/data/quant
           cp -R main-src/data/quant/stocks v18/data/quant/stocks
           for f in \
+            data/session-calendar.json \
             data/quant/stock-intelligence-index.json \
             data/quant/daily-recommendations.json \
             data/quant/adaptive-daily-recommendations.json \
@@ -95,21 +100,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export TZ=Africa/Cairo
-          EXPECTED_DATE="$(date +%F)"
           node <<'NODE'
           const fs=require('fs');
           const out=JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
           const manifest=JSON.parse(fs.readFileSync('preview-v18-web/manifest.json','utf8'));
-          const expected=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-          if(out.sessionId!==expected) throw new Error(`V18 session ${out.sessionId} != Cairo date ${expected}`);
+          const expected=process.env.EXPECTED_SESSION;
+          if(out.sessionId!==expected) throw new Error(`V18 session ${out.sessionId} != expected market session ${expected}`);
+          if(manifest.sessionId!==expected) throw new Error(`V18 manifest ${manifest.sessionId} != expected market session ${expected}`);
           if(out.dataHealth?.status!=='PASS') throw new Error(`Data health ${out.dataHealth?.status}`);
           if((out.dataHealth?.criticalFailureCount||0)!==0) throw new Error('Critical data-health failure');
+          if(!Array.isArray(out.allCandidates)||!out.allCandidates.length) throw new Error('No V18 candidates generated');
           if(!manifest.multiTargetExecution) throw new Error('Multi-target execution missing');
           const levels=new Set(manifest.executionLevels||[]);
           for(const x of ['ENTRY_ZONE','TARGET1','TARGET2','TARGET3','STOP_LOSS']) if(!levels.has(x)) throw new Error(`Missing ${x}`);
           if((manifest.dashboardRecommendations||0)<20) throw new Error('Top 20 recommendations missing');
-          console.log(JSON.stringify({sessionId:out.sessionId,candidates:out.allCandidates?.length||0,top20:manifest.dashboardRecommendations,dataHealth:out.dataHealth.status},null,2));
+          console.log(JSON.stringify({sessionId:out.sessionId,candidates:out.allCandidates.length,top20:manifest.dashboardRecommendations,dataHealth:out.dataHealth.status},null,2));
           NODE
 
       - name: Persist fresh V18 data and public preview
@@ -119,12 +124,12 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f data/quant/stocks data/quant/stock-intelligence-index.json data/quant/daily-recommendations.json data/quant/adaptive-daily-recommendations.json data/stable/v16-market-regime.json data/stable/v15-practical-decision.json data/stable/v18-forward-ledger.json preview-v18/data.json preview-v18/forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json
+          git add -f data/session-calendar.json data/quant/stocks data/quant/stock-intelligence-index.json data/quant/daily-recommendations.json data/quant/adaptive-daily-recommendations.json data/stable/v16-market-regime.json data/stable/v15-practical-decision.json data/stable/v18-forward-ledger.json preview-v18/data.json preview-v18/forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json
           git ls-files --error-unmatch preview-v18/data.json preview-v18/forward-ledger.json >/dev/null
           if git diff --cached --quiet; then
             echo "No V18 changes to publish."
           else
-            git commit -m "chore(v18): daily post-close refresh $(TZ=Africa/Cairo date +%F)"
+            git commit -m "chore(v18): daily post-close refresh ${EXPECTED_SESSION}"
             git pull --rebase origin v18-global-strategy-ensemble-20260906
             git push origin HEAD:v18-global-strategy-ensemble-20260906
           fi
@@ -134,37 +139,89 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export TZ=Africa/Cairo
-          expected="$(date +%F)"
           git fetch origin v18-global-strategy-ensemble-20260906 --depth=1
           git show origin/v18-global-strategy-ensemble-20260906:preview-v18/data.json > /tmp/v18-published-data.json
           git show origin/v18-global-strategy-ensemble-20260906:preview-v18/forward-ledger.json > /tmp/v18-published-ledger.json
           actual="$(node -p "require('/tmp/v18-published-data.json').sessionId")"
-          test "$actual" = "$expected" || { echo "::error::Published V18 branch is stale ($actual != $expected)."; exit 1; }
+          test "$actual" = "$EXPECTED_SESSION" || { echo "::error::Published V18 branch is stale ($actual != $EXPECTED_SESSION)."; exit 1; }
           node -e "const d=require('/tmp/v18-published-data.json'); const l=require('/tmp/v18-published-ledger.json'); if(!Array.isArray(d.allCandidates)||!d.allCandidates.length) throw new Error('Published candidates missing'); if(!Array.isArray(l.entries)) throw new Error('Published ledger missing'); console.log(JSON.stringify({publishedSession:d.sessionId,candidates:d.allCandidates.length,ledgerEntries:l.entries.length},null,2));"
 
-      - name: Verify V18.2 production freshness
-        shell: bash
+      - name: Require authorized Vercel deployment token
         env:
-          V18_PUBLIC_URL: https://egx-pro-v18-2-unified-preview.vercel.app
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
         run: |
           set -euo pipefail
-          export TZ=Africa/Cairo
-          expected="$(date +%F)"
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::error::VERCEL_TOKEN repository secret is not configured."
+            exit 78
+          fi
+
+      - name: Prepare exact V18.2 static production bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf deploy-v18-production
+          mkdir -p deploy-v18-production/.vercel
+          cp v18/preview-v18-web/index.html deploy-v18-production/index.html
+          cp v18/preview-v18/data.json deploy-v18-production/data.json
+          cp v18/preview-v18/forward-ledger.json deploy-v18-production/forward-ledger.json
+          cp v18/preview-v18-web/manifest.json deploy-v18-production/manifest.json
+          cat > deploy-v18-production/vercel.json <<'JSON'
+          {
+            "$schema": "https://openapi.vercel.sh/vercel.json",
+            "headers": [
+              {
+                "source": "/data.json",
+                "headers": [
+                  { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+                ]
+              },
+              {
+                "source": "/manifest.json",
+                "headers": [
+                  { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+                ]
+              }
+            ]
+          }
+          JSON
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > deploy-v18-production/.vercel/project.json
+          test -s deploy-v18-production/index.html
+          test -s deploy-v18-production/data.json
+          node -e "const d=require('./deploy-v18-production/data.json'); if(d.sessionId!==process.env.EXPECTED_SESSION) throw new Error('Deploy bundle session mismatch'); console.log('V18_DEPLOY_BUNDLE_PASS '+d.sessionId);"
+
+      - name: Deploy verified snapshot to existing V18.2 production project
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd deploy-v18-production
+          DEPLOYMENT_URL="$(npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN")"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "DEPLOYED_V18_PRODUCTION=$DEPLOYMENT_URL"
+
+      - name: Verify V18.2 production alias end-to-end
+        shell: bash
+        run: |
+          set -euo pipefail
           ok=0
-          for attempt in 1 2 3 4; do
-            stamp="$(date +%s)"
+          for attempt in 1 2 3 4 5 6; do
+            stamp="$(date +%s%3N)"
+            ROOT="$(curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/?verify=$stamp" || true)"
             if curl -fsSL --retry 2 --retry-delay 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/data.json?t=$stamp" -o /tmp/v18-production-data.json; then
-              actual="$(node -e "try{const d=require('/tmp/v18-production-data.json'); process.stdout.write(String(d.sessionId||''));}catch(e){process.exit(2)}" || true)"
-              if [ "$actual" = "$expected" ]; then
-                echo "V18.2 production freshness PASS: $actual"
+              actual="$(node -e "try{const d=require('/tmp/v18-production-data.json');process.stdout.write(String(d.sessionId||''))}catch(e){process.exit(2)}" || true)"
+              schema="$(node -e "try{const d=require('/tmp/v18-production-data.json');process.stdout.write(String(d.schemaVersion||''))}catch(e){process.exit(2)}" || true)"
+              recs="$(node -e "try{const d=require('/tmp/v18-production-data.json');process.stdout.write(String((d.allCandidates||[]).length))}catch(e){process.exit(2)}" || true)"
+              if [ "$actual" = "$EXPECTED_SESSION" ] && [ "$schema" = "18.2.0-shadow" ] && [ "${recs:-0}" -gt 0 ] && grep -q 'EGX PRO V18.2' <<<"$ROOT"; then
+                echo "V18_2_PRODUCTION_E2E_PASS session=$actual candidates=$recs"
                 ok=1
                 break
               fi
-              echo "Attempt $attempt: production session '$actual', expected '$expected'."
-            else
-              echo "Attempt $attempt: production data endpoint fetch failed."
+              echo "Attempt $attempt: session='$actual' schema='$schema' candidates='$recs' expected='$EXPECTED_SESSION'."
             fi
-            sleep 10
+            sleep 5
           done
-          test "$ok" = "1" || { echo "::error::V18.2 production is stale after daily refresh."; exit 1; }
+          test "$ok" = "1" || { echo "::error::V18.2 production alias failed end-to-end freshness verification."; exit 1; }
