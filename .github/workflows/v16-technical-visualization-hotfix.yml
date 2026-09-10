@@ -1,11 +1,7 @@
 name: V16 Technical Visualization Market Truth Hotfix
-# production retrigger: 2026-09-10T07:00+03:00
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/v16-technical-visualization-hotfix.yml"
 
 permissions:
   contents: read
@@ -36,9 +32,11 @@ jobs:
         run: |
           set -euo pipefail
           node --check deploy/rc2-safe-shell/snapshot-date-fix.js
-          grep -q 'V16_MARKET_TRUTH_UI_HOTFIX_20260910_1' deploy/rc2-safe-shell/snapshot-date-fix.js
-          grep -q 'snapshot-date-fix.js?v=20260910-market-truth1' deploy/rc2-safe-shell/index.html
+          grep -q 'V16_MARKET_TRUTH_UI_HOTFIX_20260910_4' deploy/rc2-safe-shell/snapshot-date-fix.js
+          grep -q 'snapshot-date-fix.js?v=20260910-market-truth4' deploy/rc2-safe-shell/index.html
+          grep -q '/core/index.html?v=20260910-core4' deploy/rc2-safe-shell/index.html
           grep -q 'Technical Visualization V1' deploy/rc2-safe-shell/index.html
+          grep -q 'egx-tfe-v20-fusion-rc2.vercel.app' deploy/rc2-safe-shell/vercel.json
 
       - name: Restore frozen Technical Visualization asset
         shell: bash
@@ -80,17 +78,18 @@ jobs:
           echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
           echo "DEPLOYED_V16_HOTFIX=$DEPLOYMENT_URL"
 
-      - name: Verify production alias serves new UI hotfix and current market truth
+      - name: Verify production alias serves v4 UI hotfix and market truth
         shell: bash
         run: |
           set -euo pipefail
           for attempt in 1 2 3 4 5 6; do
-            ROOT="$(curl -fsSL --retry 2 "$V16_PRODUCTION_URL/?hotfix=20260910-market-truth1-$attempt" || true)"
-            SCRIPT="$(curl -fsSL --retry 2 "$V16_PRODUCTION_URL/snapshot-date-fix.js?v=20260910-market-truth1&check=$attempt" || true)"
-            if grep -q '20260910-market-truth1' <<<"$ROOT" && grep -q 'V16_MARKET_TRUTH_UI_HOTFIX_20260910_1' <<<"$SCRIPT"; then
+            ROOT="$(curl -fsSL --retry 2 "$V16_PRODUCTION_URL/?hotfix=20260910-market-truth4-$attempt" || true)"
+            SCRIPT="$(curl -fsSL --retry 2 "$V16_PRODUCTION_URL/snapshot-date-fix.js?v=20260910-market-truth4&check=$attempt" || true)"
+            CORE="$(curl -fsSL --retry 2 "$V16_PRODUCTION_URL/core/index.html?check=$attempt" || true)"
+            if grep -q '20260910-market-truth4' <<<"$ROOT" && grep -q 'V16_MARKET_TRUTH_UI_HOTFIX_20260910_4' <<<"$SCRIPT" && grep -q 'EGX Pro Professional V16.9' <<<"$CORE"; then
               break
             fi
-            [ "$attempt" = "6" ] && { echo "Production alias did not expose the hotfix marker."; exit 1; }
+            [ "$attempt" = "6" ] && { echo "Production alias did not expose the v4 hotfix/core."; exit 1; }
             sleep 5
           done
 
