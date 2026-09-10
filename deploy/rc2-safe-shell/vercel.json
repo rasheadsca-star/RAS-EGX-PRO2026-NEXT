@@ -1,15 +1,12 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/_proxy.js": { "maxDuration": 60 }
-  },
-  "rewrites": [
-    { "source": "/core", "destination": "/api/_proxy?upstream=/" },
-    { "source": "/core/:path*", "destination": "/api/_proxy?upstream=/:path*" },
-    { "source": "/api/index", "destination": "/api/_proxy?upstream=/api/index" },
-    { "source": "/api/intraday", "destination": "/api/_proxy?upstream=/api/intraday" },
-    { "source": "/api/fundamental", "destination": "/api/_proxy?upstream=/api/fundamental" },
-    { "source": "/api/session-monitor", "destination": "/api/_proxy?upstream=/api/session-monitor" },
-    { "source": "/api/recommendation-history", "destination": "/api/_proxy?upstream=/api/recommendation-history" }
+  "$schema":"https://openapi.vercel.sh/vercel.json",
+  "rewrites":[
+    {"source":"/core/:path*","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/:path*"},
+    {"source":"/api/index","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/index"},
+    {"source":"/api/intraday","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/intraday"},
+    {"source":"/api/fundamental","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/fundamental"},
+    {"source":"/api/session-monitor","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/session-monitor"},
+    {"source":"/api/recommendation-history","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/recommendation-history"},
+    {"source":"/technical-analysis-tools.js","destination":"/api/technical"}
   ]
 }
