@@ -1,46 +1,4 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#071521">
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
-  <title>EGX Pro Professional V16.9 — Technical Visualization V1</title>
-  <style>
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071521}
-    #rc2-app{display:block;width:100%;height:100%;border:0;background:#071521}
-    #shell-error{position:fixed;inset:16px;z-index:10;display:none;align-items:center;justify-content:center;padding:24px;border:1px solid #8b692d;border-radius:16px;background:#2b2413;color:#ffe2a2;font:600 14px/1.8 system-ui,sans-serif;text-align:center}
-  </style>
-</head>
-<body>
-  <iframe id="rc2-app" title="EGX TFE V20 Fusion RC2" src="/core/"></iframe>
-  <div id="shell-error" role="alert"></div>
-  <script>
-    (() => {
-      const frame = document.getElementById('rc2-app');
-      const errorBox = document.getElementById('shell-error');
-      const showError = message => { errorBox.textContent = message; errorBox.style.display = 'flex'; };
-      frame.addEventListener('load', () => {
-        try {
-          const doc = frame.contentDocument;
-          if (!doc?.documentElement) return showError('تعذر فتح واجهة RC2 داخل طبقة العرض الآمنة.');
-          const text = (doc.body?.innerText || '').trim();
-          if (/RC2_ORIGIN_PROTECTED|PROTECTION_BYPASS_REQUIRED/.test(text)) return showError('تعذر الوصول إلى نسخة RC2 الحالية.');
-          const inject = (id, src) => {
-            if (doc.getElementById(id)) return;
-            const script = doc.createElement('script');
-            script.id = id;
-            script.type = 'module';
-            script.src = src;
-            doc.head.appendChild(script);
-          };
-          inject('rc2SnapshotDateFixScript','/snapshot-date-fix.js?v=20260910-market-truth1');
-          inject('rc2TechnicalVisualizationScript','/technical-analysis-tools.js?v=20260901-ta1');
-        } catch {
-          showError('تعذر تشغيل طبقة التحليل الفني العرضية بدون المساس بمحرك RC2.');
-        }
-      });
-    })();
-  </script>
-</body>
-</html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071521"><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"><title>EGX Pro Professional V16.9 — Technical Visualization V1</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071521}#rc2-app{display:block;width:100%;height:100%;border:0;background:#071521}#shell-error{position:fixed;inset:16px;z-index:10;display:none;align-items:center;justify-content:center;padding:24px;border:1px solid #8b692d;border-radius:16px;background:#2b2413;color:#ffe2a2;font:600 14px/1.8 system-ui,sans-serif;text-align:center}</style></head>
+<body><iframe id="rc2-app" title="EGX TFE V20 Fusion RC2" src="/core/index.html?v=20260910-core4"></iframe><div id="shell-error" role="alert"></div><script>(()=>{const f=document.getElementById('rc2-app'),e=document.getElementById('shell-error');const fail=m=>{e.textContent=m;e.style.display='flex'};f.addEventListener('load',()=>{try{const d=f.contentDocument;if(!d?.documentElement)return fail('تعذر فتح واجهة RC2 داخل طبقة العرض الآمنة.');const text=(d.body?.innerText||'').trim();if(/RC2_ORIGIN_PROTECTED|PROTECTION_BYPASS_REQUIRED|NOT_FOUND/.test(text))return fail('تعذر الوصول إلى واجهة RC2 الحالية.');const inject=(id,src)=>{if(d.getElementById(id))return;const s=d.createElement('script');s.id=id;s.type='module';s.src=src;d.head.appendChild(s)};inject('rc2SnapshotDateFixScript','/snapshot-date-fix.js?v=20260910-market-truth4');inject('rc2TechnicalVisualizationScript','/technical-analysis-tools.js?v=20260910-ta-public1')}catch{fail('تعذر تشغيل طبقة التحليل الفني العرضية بدون المساس بمحرك RC2.')}})})();</script></body></html>
