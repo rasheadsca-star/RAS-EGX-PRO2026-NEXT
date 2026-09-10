@@ -11,6 +11,7 @@ const performance=path.join(ROOT,'scripts/stable/v18-engine-performance-league.c
 const unified=path.join(ROOT,'scripts/stable/v18-unified-decision-center.cjs');
 const agreementBadges=path.join(ROOT,'scripts/stable/v18-engine-agreement-badges.cjs');
 const weightedConsensus=path.join(ROOT,'scripts/stable/v18-performance-weighted-consensus.cjs');
+const weightedRanking=path.join(ROOT,'scripts/stable/v18-performance-weighted-ranking.cjs');
 const externalPerformance=path.join(ROOT,'scripts/stable/v18-external-engine-comparison.cjs');
 const externalSnapshots=path.join(ROOT,'data/stable/v18-external-engine-snapshots.json');
 const positionPerformance=path.join(ROOT,'scripts/stable/v18-recommendation-position-performance.cjs');
@@ -25,7 +26,7 @@ const ledgerSource=path.join(ROOT,'data/stable/v18-forward-ledger.json');
 const outDir=path.join(ROOT,'preview-v18');
 const out=path.join(outDir,'data.json');
 const ledgerOut=path.join(outDir,'forward-ledger.json');
-for(const [file,label] of [[seed,'Forward ledger seed'],[engine,'V18 engine'],[extension,'V18.1 leadership extension'],[ranking,'V18.1 evidence ranking'],[performance,'V18.3 engine performance league'],[unified,'V18.2 unified decision center'],[agreementBadges,'V18 engine agreement badges'],[weightedConsensus,'V18.2.1 performance-weighted consensus'],[externalPerformance,'External engine comparison adapter'],[externalSnapshots,'External engine snapshots'],[positionPerformance,'V18.3 recommendation position performance'],[multiTarget,'V18 multi-target execution'],[performanceUi,'Performance UI'],[positionUi,'Recommendation position UI'],[agreementUi,'Agreement badge UI'],[weightedConsensusUi,'Performance-weighted consensus UI']]) if(!fs.existsSync(file))throw new Error(`Missing ${label}`);
+for(const [file,label] of [[seed,'Forward ledger seed'],[engine,'V18 engine'],[extension,'V18.1 leadership extension'],[ranking,'V18.1 evidence ranking'],[performance,'V18.3 engine performance league'],[unified,'V18.2 unified decision center'],[agreementBadges,'V18 engine agreement badges'],[weightedConsensus,'V18.2.1 performance-weighted consensus'],[weightedRanking,'V18.2.2 post-consensus weighted ranking'],[externalPerformance,'External engine comparison adapter'],[externalSnapshots,'External engine snapshots'],[positionPerformance,'V18.3 recommendation position performance'],[multiTarget,'V18 multi-target execution'],[performanceUi,'Performance UI'],[positionUi,'Recommendation position UI'],[agreementUi,'Agreement badge UI'],[weightedConsensusUi,'Performance-weighted consensus UI']]) if(!fs.existsSync(file))throw new Error(`Missing ${label}`);
 require(seed);
 require(engine);
 require(extension);
@@ -34,6 +35,7 @@ require(performance);
 require(unified);
 require(agreementBadges);
 require(weightedConsensus);
+require(weightedRanking);
 require(externalPerformance);
 require(positionPerformance);
 require(multiTarget);
@@ -42,15 +44,20 @@ const data=JSON.parse(fs.readFileSync(source,'utf8'));
 if(!data.sessionId)throw new Error('V18 output missing sessionId');
 if(data.schemaVersion!=='18.2.0-shadow')throw new Error(`Unexpected schema ${data.schemaVersion}`);
 if(data.consensusSchemaVersion!=='18.2.1-performance-weighted')throw new Error(`Unexpected consensus schema ${data.consensusSchemaVersion}`);
+if(data.rankingSchemaVersion!=='18.2.2-performance-weighted-ranking')throw new Error(`Unexpected weighted ranking schema ${data.rankingSchemaVersion}`);
 if(!Array.isArray(data.allCandidates)||!Array.isArray(data.universeScreener))throw new Error('V18 decision/universe arrays missing');
-if(!data.leadershipSummary||!data.forwardLedgerSummary||!data.dataHealth||!data.enginePerformanceLeague||!data.recommendationPositionPerformance||!data.externalEngineRegistry||!data.executionPlanPolicy||!data.engineAgreementBadgeSummary||!data.performanceWeightedConsensus)throw new Error('V18 required summaries/performance/execution/agreement modules missing');
+if(!data.leadershipSummary||!data.forwardLedgerSummary||!data.dataHealth||!data.enginePerformanceLeague||!data.recommendationPositionPerformance||!data.externalEngineRegistry||!data.executionPlanPolicy||!data.engineAgreementBadgeSummary||!data.performanceWeightedConsensus||!data.performanceWeightedRanking)throw new Error('V18 required summaries/performance/execution/agreement/ranking modules missing');
 if(data.enginePerformanceLeague.trackingStartsOn!=='2026-09-07'||data.recommendationPositionPerformance.trackingStartsOn!=='2026-09-07')throw new Error('Forward performance must start on 2026-09-07');
 if(!data.enginePerformanceLeague.engines.some(x=>x.engineId==='EMA_MACD_DAILY_EXTERNAL'))throw new Error('External EGX EMA-MACD Daily engine missing from league');
-if(data.rankingPolicy?.code!=='EVIDENCE_FIRST_THEN_SCORE')throw new Error('V18 evidence ranking not applied');
+if(data.rankingPolicy?.code!=='EVIDENCE_FIRST_THEN_SCORE'||data.rankingPolicy?.postConsensusRerank!==true)throw new Error('Post-consensus evidence-first ranking not applied');
 if(data.dataHealth.status!=='PASS')throw new Error('V18 data integrity did not pass');
 const policy=data.performanceWeightedConsensus.policy||{};
 if(policy.staleEngineWeight!==0||policy.maximumDecisionScoreAdjustmentAbs!==4||policy.evidenceRankMutation!==false||policy.tierMutation!==false||policy.executionPlanMutation!==false||policy.externalComparisonEnginesVote!==false)throw new Error('Performance-weighted consensus safety policy changed');
 if(!data.performanceWeightedConsensus.safeguards?.executionPlansUnchanged||!data.performanceWeightedConsensus.safeguards?.adjustmentBoundPassed||!data.performanceWeightedConsensus.safeguards?.staleWeightZeroPassed||!data.performanceWeightedConsensus.safeguards?.promotionGatePassed||!data.performanceWeightedConsensus.safeguards?.rankingPolicyPreserved)throw new Error('Performance-weighted consensus safeguards failed');
+const rankingPolicy=data.performanceWeightedRanking.policy||{};
+const rankingSafeguards=data.performanceWeightedRanking.safeguards||{};
+if(rankingPolicy.evidencePriorityMutation!==false||rankingPolicy.crossEvidenceClassMovement!==false||rankingPolicy.tierMutation!==false||rankingPolicy.rawRankMutation!==false||rankingPolicy.executionPlanMutation!==false||rankingPolicy.evidenceRankRecomputedWithinEvidencePolicy!==true||rankingPolicy.topFiveUsesPostWeightedEvidenceRank!==true)throw new Error('Performance-weighted ranking safety policy changed');
+if(!rankingSafeguards.evidencePriorityUnchanged||!rankingSafeguards.noCrossEvidenceInversion||!rankingSafeguards.tierUnchanged||!rankingSafeguards.rawRankUnchanged||!rankingSafeguards.executionPlansUnchanged||!rankingSafeguards.ranksContiguous||!rankingSafeguards.comparatorOrderPassed||!rankingSafeguards.topFiveSynchronized||Number(rankingSafeguards.duplicateTickerCount||0)!==0)throw new Error('Performance-weighted ranking safeguards failed');
 for(const profile of data.performanceWeightedConsensus.engineRegistry||[]){
   if(profile.fresh===false&&Number(profile.voteWeightPct||0)!==0)throw new Error(`Stale engine has non-zero weight: ${profile.engine}`);
   if(profile.promotionEligible&&Number(profile.forwardSessions||0)<Number(profile.promotionThresholdSessions||20))throw new Error(`Premature engine promotion: ${profile.engine}`);
@@ -62,6 +69,10 @@ for(const row of data.allCandidates){
   if(badge.engineCount>=2&&!String(row.decisionLabelAr||'').includes('مشتركة بين'))throw new Error(`Shared recommendation badge not visible for ${row.ticker}`);
   if(badge.engineCount<2&&/مشتركة بين\s+\d+\s+محركات/u.test(String(row.decisionLabelAr||'')))throw new Error(`Stale/raw shared label leaked into effective decision for ${row.ticker}`);
 }
+const topFiveTickers=(data.topFiveNow||[]).map(x=>x.ticker).join('|');
+const rankedTopFive=data.allCandidates.slice(0,5).map(x=>x.ticker).join('|');
+if(topFiveTickers!==rankedTopFive)throw new Error('Top Five is not using post-consensus weighted ranking');
+for(let i=1;i<data.allCandidates.length;i++)if(Number(data.allCandidates[i].evidencePriority||0)>Number(data.allCandidates[i-1].evidencePriority||0))throw new Error('Evidence priority inversion after weighted ranking');
 const top20=data.allCandidates.slice().sort((a,b)=>(a.evidenceRank??a.rank??9999)-(b.evidenceRank??b.rank??9999)).slice(0,20);
 for(const row of top20){const p=row.execution?.multiTargetPlan;if(!p)throw new Error(`Missing multi-target plan for ${row.ticker}`);if(!(p.entryLow<=p.entryHigh&&p.stopLoss<p.referenceEntry&&p.target1>p.referenceEntry&&p.target2>p.target1&&p.target3>p.target2))throw new Error(`Invalid multi-target plan for ${row.ticker}`);}
 let app=fs.readFileSync(appPath,'utf8');
@@ -79,4 +90,4 @@ fs.writeFileSync(out,`${JSON.stringify(data,null,2)}\n`,'utf8');
 JSON.parse(fs.readFileSync(out,'utf8'));
 if(fs.existsSync(ledgerSource)){fs.copyFileSync(ledgerSource,ledgerOut);JSON.parse(fs.readFileSync(ledgerOut,'utf8'));}
 const externalRow=data.enginePerformanceLeague.engines.find(x=>x.engineId==='EMA_MACD_DAILY_EXTERNAL');
-console.log(JSON.stringify({board:'preview-v18',schemaVersion:data.schemaVersion,consensusSchemaVersion:data.consensusSchemaVersion,sessionId:data.sessionId,candidates:data.allCandidates.length,universe:data.universeScreener.length,actionable:data.counts?.actionableOrConditional||0,ema:data.counts?.emaMacdContinuationEligible||0,leadership:data.counts?.leadershipResearchEligible||0,vcp:data.counts?.vcpEligible||0,ranking:data.rankingPolicy?.code,features:data.featureManifest?.length||0,dataHealth:data.dataHealth?.status,forward:data.forwardLedgerSummary,agreementBadges:data.engineAgreementBadgeSummary,performanceWeightedConsensus:data.performanceWeightedConsensus,executionPlanPolicy:data.executionPlanPolicy,multiTargetTop20:top20.map(x=>({rank:x.evidenceRank??x.rank,ticker:x.ticker,plan:x.execution.multiTargetPlan,agreement:x.engineAgreementBadge})),performanceLeague:{trackingStartsOn:data.enginePerformanceLeague.trackingStartsOn,engines:data.enginePerformanceLeague.engines.length,withSignals:data.enginePerformanceLeague.summary?.enginesWithSignals,resolved:data.enginePerformanceLeague.summary?.totalResolvedReferenceSignals,externalEMA:externalRow},recommendationPositionPerformance:{trackingStartsOn:data.recommendationPositionPerformance.trackingStartsOn,bestByTargetCount:data.recommendationPositionPerformance.bestByTargetCount,bestByTargetRate:data.recommendationPositionPerformance.bestByTargetRate}},null,2));
+console.log(JSON.stringify({board:'preview-v18',schemaVersion:data.schemaVersion,consensusSchemaVersion:data.consensusSchemaVersion,rankingSchemaVersion:data.rankingSchemaVersion,sessionId:data.sessionId,candidates:data.allCandidates.length,universe:data.universeScreener.length,actionable:data.counts?.actionableOrConditional||0,ema:data.counts?.emaMacdContinuationEligible||0,leadership:data.counts?.leadershipResearchEligible||0,vcp:data.counts?.vcpEligible||0,ranking:data.rankingPolicy?.code,features:data.featureManifest?.length||0,dataHealth:data.dataHealth?.status,forward:data.forwardLedgerSummary,agreementBadges:data.engineAgreementBadgeSummary,performanceWeightedConsensus:data.performanceWeightedConsensus,performanceWeightedRanking:data.performanceWeightedRanking,executionPlanPolicy:data.executionPlanPolicy,multiTargetTop20:top20.map(x=>({rank:x.evidenceRank??x.rank,ticker:x.ticker,plan:x.execution.multiTargetPlan,agreement:x.engineAgreementBadge})),performanceLeague:{trackingStartsOn:data.enginePerformanceLeague.trackingStartsOn,engines:data.enginePerformanceLeague.engines.length,withSignals:data.enginePerformanceLeague.summary?.enginesWithSignals,resolved:data.enginePerformanceLeague.summary?.totalResolvedReferenceSignals,externalEMA:externalRow},recommendationPositionPerformance:{trackingStartsOn:data.recommendationPositionPerformance.trackingStartsOn,bestByTargetCount:data.recommendationPositionPerformance.bestByTargetCount,bestByTargetRate:data.recommendationPositionPerformance.bestByTargetRate}},null,2));
