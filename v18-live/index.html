@@ -14,10 +14,10 @@
   <main class="boot" id="boot">
     <h1>EGX PRO V18.2</h1>
     <p>جاري تحميل مركز القرار الحي والتحقق من أحدث نسخة موثقة...</p>
-    <div class="status" id="status">V18_DURABLE_BOOTSTRAP_V2</div>
+    <div class="status" id="status">V18_DURABLE_BOOTSTRAP_V3</div>
   </main>
   <script>
-  // V18_DURABLE_BOOTSTRAP_V2
+  // V18_DURABLE_BOOTSTRAP_V3
   (() => {
     'use strict';
     const SOURCES = [
@@ -37,14 +37,19 @@
     const boot = document.getElementById('boot');
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-    async function fetchText(url, timeoutMs = 10000) {
+    // Keep this a CORS-simple GET. A custom Cache-Control request header causes
+    // browser preflight and can fail even while server-side CI curl succeeds.
+    async function fetchText(url, timeoutMs = 30000) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
         const sep = url.includes('?') ? '&' : '?';
         const response = await fetch(`${url}${sep}bootstrap=${Date.now()}`, {
+          method: 'GET',
+          mode: 'cors',
           cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' },
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer',
           signal: controller.signal
         });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -60,6 +65,12 @@
         if (!html.includes(marker)) throw new Error(`Shell contract missing: ${marker}`);
       }
       return html;
+    }
+
+    function errorKind(error) {
+      if (error?.name === 'AbortError') return 'TIMEOUT';
+      if (/HTTP\s+\d+/i.test(String(error?.message || ''))) return 'HTTP';
+      return 'NETWORK/CORS';
     }
 
     async function loadShell() {
@@ -80,8 +91,9 @@
         }
         if (round < 3) await sleep(round * 1200);
       }
+      const kind = errorKind(lastError);
       console.error('V18 bootstrap failed closed', lastError);
-      boot.innerHTML = '<h1>تعذر تحميل النسخة الحية</h1><p>تم رفض أي نسخة غير موثقة أو قديمة. اضغط لإعادة المحاولة.</p><button id="retry">إعادة المحاولة</button><div class="status">V18_DURABLE_BOOTSTRAP_V2 · FAIL-CLOSED</div>';
+      boot.innerHTML = `<h1>تعذر تحميل النسخة الحية</h1><p>تعذر الوصول إلى المصدر الحي الموثق. اضغط لإعادة المحاولة.</p><button id="retry">إعادة المحاولة</button><div class="status">V18_DURABLE_BOOTSTRAP_V3 · FAIL-CLOSED · ${kind}</div>`;
       document.getElementById('retry').addEventListener('click', () => location.reload());
     }
 
