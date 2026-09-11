@@ -1,0 +1,66 @@
+name: V17 Professional Decision Research Shell
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/src/v17ResearchGovernance.js'
+      - 'tfe-v20/src/v17ResearchObservationEngine.js'
+      - 'tfe-v20/src/v17ResearchDecisionLedger.js'
+      - 'tfe-v20/test/v17-research-engine.test.js'
+      - 'tfe-v20/scripts/v17-build-research-shell.mjs'
+      - 'tfe-v20/forward-ledger/snapshots/2026-08-30-89a9e2ae85a9.json'
+      - '.github/workflows/v17-research-shell.yml'
+      - 'tfe-v20/research/v17/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-v17-research-shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run V17 destructive governance tests
+        run: node --test test/v17-research-engine.test.js
+
+      - name: Build frozen V17 pre-open research artifact
+        run: node scripts/v17-build-research-shell.mjs
+
+      - name: Enforce frozen snapshot and zero authority
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const report = JSON.parse(fs.readFileSync('reports/v17-research-shell.json', 'utf8'));
+          const expectedHash = '89a9e2ae85a94b6a18ffeb08daff691577db452dd10abd2b7de9e352a188573e';
+          if (report.snapshotHash !== expectedHash) throw new Error('V17_SNAPSHOT_HASH_DRIFT');
+          if (report.signalSessionDate !== '2026-08-30') throw new Error('V17_SIGNAL_DATE_DRIFT');
+          if (report.nextTradingSessionDate !== '2026-08-31') throw new Error('V17_NEXT_SESSION_DRIFT');
+          if (report.productionAuthority !== false || report.automaticOrders !== false) throw new Error('V17_AUTHORITY_VIOLATION');
+          if (report.readiness.status !== 'READY_FOR_RESEARCH_OBSERVATION') throw new Error('V17_DATA_GATE_NOT_READY');
+          if (report.maxConcurrentObservedPositions !== 2) throw new Error('V17_PORTFOLIO_CAP_DRIFT');
+          console.log(JSON.stringify({ok:true,status:report.status,snapshotHash:report.snapshotHash,recommendations:report.frozenRecommendations.map(x=>x.ticker)}, null, 2));
+          NODE
+
+      - name: Upload V17 research shell artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v17-professional-decision-research-shell-2026-08-30
+          path: |
+            tfe-v20/reports/v17-research-shell.json
+            tfe-v20/v17-research/index.html
+          if-no-files-found: error
+          retention-days: 90

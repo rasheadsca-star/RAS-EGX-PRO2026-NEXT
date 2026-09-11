@@ -1,0 +1,107 @@
+{
+  "schemaVersion": "egx.v169-correlation-concentration-result.1",
+  "frozenAt": "2026-08-30T17:51:31.633Z",
+  "evidenceClass": "PREREGISTERED_ONE_SHOT_RETROSPECTIVE_CORRELATION_CONCENTRATION_TEST",
+  "workflowRun": {
+    "id": 33326401712,
+    "commit": "cf23519f7ed7462cc59af2067d37ed34e108adb2",
+    "conclusion": "success",
+    "artifactId": 9736350286,
+    "artifactName": "v169-correlation-concentration-research",
+    "artifactSha256": "9b73174fbd49830a1fa9eb70017fcc7de9857f4395eedaecc0b2d5754bc96e9d"
+  },
+  "source": {
+    "sessions": 45,
+    "fromSignalDate": "2026-06-24",
+    "toSignalDate": "2026-08-26",
+    "lastOutcomeDate": "2026-08-27",
+    "residualRiskAlphaStops": 32
+  },
+  "frozenPolicy": {
+    "lookbackReturns": 20,
+    "minimumCommonReturnsPerPair": 15,
+    "minimumBasketMembers": 3,
+    "medianPairwiseCorrelationWatchThreshold": 0.60,
+    "retunedAfterOutcome": false
+  },
+  "diagnostic": {
+    "flaggedSessions": 8,
+    "flaggedResidualStopRatePct": 52.63,
+    "passResidualStopRatePct": 22.00,
+    "residualStopRateSeparationPp": 30.63,
+    "flaggedAverageRiskAlphaReturnPct": 2.5860,
+    "passAverageRiskAlphaReturnPct": 2.0889,
+    "averageReturnSeparationPp": 0.4971,
+    "eligibleFolds": 2,
+    "supportingFolds": 2,
+    "noLookahead": true
+  },
+  "arms": {
+    "V16_9": {
+      "averageNetReturnPct": 1.6624,
+      "profitFactor": 2.532,
+      "maximumDrawdownPct": -10.877,
+      "winningSessionPct": 55.556,
+      "stopRatePct": 28.91,
+      "targetRatePct": 28.91
+    },
+    "RiskAlpha_StageB": {
+      "averageNetReturnPct": 2.1773,
+      "profitFactor": 3.315,
+      "maximumDrawdownPct": -10.361,
+      "winningSessionPct": 60.000,
+      "stopRatePct": 26.89,
+      "targetRatePct": 31.09
+    },
+    "Correlation_Only": {
+      "averageNetReturnPct": 1.4021,
+      "profitFactor": 2.949,
+      "maximumDrawdownPct": -10.877,
+      "winningSessionPct": 48.889,
+      "stopRatePct": 24.07,
+      "targetRatePct": 28.70
+    },
+    "Combined": {
+      "averageNetReturnPct": 1.7176,
+      "profitFactor": 3.723,
+      "maximumDrawdownPct": -10.250,
+      "winningSessionPct": 51.111,
+      "stopRatePct": 22.00,
+      "targetRatePct": 31.00
+    }
+  },
+  "deltaCombinedVsRiskAlpha": {
+    "averageReturnPp": -0.4597,
+    "profitFactor": 0.408,
+    "maxDrawdownImprovementPp": 0.111,
+    "winRatePp": -8.889,
+    "residualStopRateReductionPp": 4.89,
+    "targetRateChangePp": -0.09
+  },
+  "checks": {
+    "enoughFlaggedSessions": true,
+    "materialAdverseSeparation": true,
+    "enoughEligibleFolds": true,
+    "enoughSupportingFolds": true,
+    "drawdownImproves": false,
+    "profitFactorNotWorse": true,
+    "averageReturnPreserved": false,
+    "winRatePreserved": false,
+    "noLookahead": true
+  },
+  "retrospectiveStatus": "REJECTED_ONE_SHOT_NO_RETUNE",
+  "formalDisposition": "REJECT_CORRELATION_CONCENTRATION_V1_NO_RETUNE_KEEP_V16_9_CHAMPION",
+  "interpretation": "Correlation concentration strongly enriches residual STOP incidence, but session-level abstention is too blunt: it removes high-return correlated sessions as well as loss clusters, so it fails the frozen incremental drawdown, average-return and win-rate gates. Do not retune v1 from these outcomes.",
+  "governance": {
+    "researchOnly": true,
+    "champion": "V16.9",
+    "scoringImpact": "NONE",
+    "alphaWeight": 0,
+    "productionAuthority": false,
+    "promotionEligible": false,
+    "riskAlphaRetuned": false,
+    "correlationThresholdRetuned": false,
+    "freshForwardLedgerChanged": false,
+    "mainBranchChanged": false
+  }
+}

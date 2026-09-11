@@ -1,0 +1,88 @@
+name: V16.9 RiskAlpha Research
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/src/v169RiskAlphaChallenger.js'
+      - 'tfe-v20/test/v169-riskalpha-challenger.test.js'
+      - 'tfe-v20/scripts/v169-riskalpha-audit.mjs'
+      - 'tfe-v20/research/V169_RISK_ALPHA_CHALLENGER_CONTRACT.md'
+      - 'tfe-v20/src/downsideFragilityExpert.js'
+      - '.github/workflows/v169-riskalpha-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LEGACY_EVIDENCE_COMMIT: 34218d27a36d2c916961a54573477f47f124416a
+
+jobs:
+  riskalpha-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lock RiskAlpha semantics and anti-lookahead guards
+        run: |
+          node --test test/downside-fragility-expert.test.js
+          node --test test/v169-riskalpha-challenger.test.js
+
+      - name: Materialize complete pinned V16 evidence lineage
+        run: |
+          cd ..
+          git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- gann-fusion-x data/history
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- \
+            scripts/research/v16-probabilistic-model-impact.py \
+            scripts/research/v16-two-stage-predictor.py \
+            scripts/research/v16-v169-basket-engine.py \
+            scripts/research/v16-v169-target-hit-audit.py
+          mkdir -p data/stable tfe-v20/reports
+          git show "$LEGACY_EVIDENCE_COMMIT:data/stable/v16-v169-live-evaluation.json" > data/stable/v16-v169-live-evaluation.json
+
+      - name: Rebuild exact 45-session V16.9 comparison basis
+        run: |
+          cd ..
+          python scripts/research/v16-v169-basket-engine.py
+          sed -i 's/AUDIT_SESSIONS = 20/AUDIT_SESSIONS = 999/' scripts/research/v16-v169-target-hit-audit.py
+          python scripts/research/v16-v169-target-hit-audit.py
+
+      - name: Run one-shot RiskAlpha comparison
+        run: node scripts/v169-riskalpha-audit.mjs
+
+      - name: Assert research-only governance
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('reports/v169-riskalpha-audit.json','utf8'));
+          if (x.governance.champion !== 'V16.9') throw new Error('CHAMPION_CHANGED');
+          if (x.governance.scoringImpact !== 'NONE') throw new Error('SCORING_IMPACT_CHANGED');
+          if (x.governance.alphaWeight !== 0) throw new Error('ALPHA_WEIGHT_CHANGED');
+          if (x.governance.productionAuthority !== false) throw new Error('PRODUCTION_AUTHORITY_CHANGED');
+          if (x.governance.promotionEligible !== false) throw new Error('PROMOTION_ELIGIBILITY_CHANGED');
+          if (x.governance.retuningAfterOutcome !== false) throw new Error('RETUNING_ALLOWED');
+          if (x.governance.freshForwardLedgerChanged !== false) throw new Error('FORWARD_LEDGER_CHANGED');
+          NODE
+
+      - name: Upload RiskAlpha research report
+        uses: actions/upload-artifact@v4
+        with:
+          name: v169-riskalpha-research
+          path: tfe-v20/reports/v169-riskalpha-audit.json
+          if-no-files-found: error
+          retention-days: 30
