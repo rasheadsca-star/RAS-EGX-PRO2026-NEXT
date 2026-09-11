@@ -1,0 +1,139 @@
+name: V18 Browser Production Gate
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "V18 Durable Post-Close Coordinator"
+    types:
+      - completed
+  push:
+    paths:
+      - "v18-live/index.html"
+      - ".github/workflows/v18-browser-production-gate.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v18-browser-production-gate
+  cancel-in-progress: true
+
+env:
+  V18_PUBLIC_URL: https://egx-pro-v18-2-unified-preview.vercel.app
+  V18_LIVE_MANIFEST_URL: https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18-web/manifest.json
+
+jobs:
+  browser-production-gate:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Resolve system Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER" || { echo "::error::No system Chrome/Chromium available on runner."; exit 1; }
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install browser driver only
+        shell: bash
+        run: npm install --no-save --ignore-scripts playwright-core@1.55.0
+
+      - name: Real-browser production E2E
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const { chromium } = require('playwright-core');
+          const fs = require('fs');
+
+          const publicUrl = process.env.V18_PUBLIC_URL;
+          const manifestUrl = process.env.V18_LIVE_MANIFEST_URL;
+          const chrome = process.env.CHROME_BIN;
+          const cacheBust = Date.now();
+
+          (async () => {
+            const liveManifestResponse = await fetch(`${manifestUrl}?browserGate=${cacheBust}`, {
+              cache: 'no-store',
+              headers: { 'Cache-Control': 'no-cache' }
+            });
+            if (!liveManifestResponse.ok) throw new Error(`Manifest HTTP ${liveManifestResponse.status}`);
+            const manifest = await liveManifestResponse.json();
+            if (!manifest.sessionId || !manifest.payloadSha256) throw new Error('Live manifest missing session/hash');
+            if (manifest.dataHealth !== 'PASS') throw new Error(`Live manifest dataHealth=${manifest.dataHealth}`);
+            if (manifest.liveLoaderVersion !== 'github-live-v3') throw new Error('Unexpected live loader version');
+            if (manifest.autoRefreshVersion !== 'github-live-watch-v3') throw new Error('Unexpected auto refresh version');
+
+            const browser = await chromium.launch({
+              executablePath: chrome,
+              headless: true,
+              args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+            });
+            const page = await browser.newPage();
+            const diagnostics = [];
+            page.on('console', msg => diagnostics.push(`console.${msg.type()}: ${msg.text()}`));
+            page.on('pageerror', err => diagnostics.push(`pageerror: ${err.message}`));
+            page.on('requestfailed', req => diagnostics.push(`requestfailed: ${req.url()} :: ${req.failure()?.errorText || 'unknown'}`));
+
+            try {
+              await page.goto(`${publicUrl}/?browserGate=${cacheBust}`, {
+                waitUntil: 'domcontentloaded',
+                timeout: 30000
+              });
+
+              await page.waitForFunction(() => {
+                const text = document.body?.innerText || '';
+                return text.includes('FAIL-CLOSED') ||
+                  typeof window.__V18_CHECK_FOR_NEW_SESSION__ === 'function';
+              }, { timeout: 60000, polling: 500 });
+
+              const state = await page.evaluate(() => ({
+                title: document.title,
+                bodyText: (document.body?.innerText || '').slice(0, 2000),
+                hasCheckFunction: typeof window.__V18_CHECK_FOR_NEW_SESSION__ === 'function',
+                activeHash: String(window.__V18_ACTIVE_PAYLOAD_SHA256__ || ''),
+                embeddedSession: String(window.__V18_EMBEDDED_DATA__?.sessionId || ''),
+                failClosed: (document.body?.innerText || '').includes('FAIL-CLOSED'),
+                bootstrapVisible: (document.body?.innerText || '').includes('V18_DURABLE_BOOTSTRAP_V3')
+              }));
+
+              if (state.failClosed) throw new Error(`Browser reached FAIL-CLOSED: ${state.bodyText}`);
+              if (!state.hasCheckFunction) throw new Error('Live shell did not install __V18_CHECK_FOR_NEW_SESSION__');
+              if (!/^[a-f0-9]{64}$/i.test(state.activeHash)) throw new Error(`Invalid browser active payload hash: ${state.activeHash}`);
+              if (state.activeHash !== manifest.payloadSha256) {
+                throw new Error(`Browser hash ${state.activeHash} != live manifest ${manifest.payloadSha256}`);
+              }
+              if (state.embeddedSession && state.embeddedSession !== manifest.sessionId) {
+                throw new Error(`Browser embedded session ${state.embeddedSession} != live manifest ${manifest.sessionId}`);
+              }
+              if (state.bootstrapVisible) throw new Error('Bootstrap is still visible after live shell initialization');
+
+              console.log(JSON.stringify({
+                result: 'V18_BROWSER_PRODUCTION_GATE_PASS',
+                title: state.title,
+                sessionId: manifest.sessionId,
+                payloadSha256: manifest.payloadSha256,
+                liveLoaderVersion: manifest.liveLoaderVersion,
+                autoRefreshVersion: manifest.autoRefreshVersion
+              }, null, 2));
+            } catch (error) {
+              console.error('V18_BROWSER_PRODUCTION_GATE_FAIL', error);
+              console.error(diagnostics.slice(-80).join('\n'));
+              try { await page.screenshot({ path: 'v18-browser-failure.png', fullPage: false }); } catch {}
+              throw error;
+            } finally {
+              await browser.close();
+            }
+          })().catch(error => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
