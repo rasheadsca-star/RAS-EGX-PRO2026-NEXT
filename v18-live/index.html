@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>EGX PRO V18.2 — Unified Decision Center</title>
+  <style>
+    html,body{margin:0;min-height:100%;background:#07101d;color:#eaf2ff;font-family:Arial,Tahoma,sans-serif}body{display:grid;place-items:center;min-height:100vh}.boot{width:min(680px,90vw);padding:30px;border:1px solid #26364d;border-radius:16px;background:#0d1828;box-shadow:0 18px 60px #0008;text-align:center}.boot h1{margin:0 0 12px;font-size:25px}.boot p{color:#aebdd2;line-height:1.7}.boot button{border:0;border-radius:10px;padding:11px 20px;font-weight:700;cursor:pointer}.status{font-size:13px;color:#7f94af;margin-top:15px}
+  </style>
+</head>
+<body>
+  <main class="boot" id="boot">
+    <h1>EGX PRO V18.2</h1>
+    <p>جاري تحميل مركز القرار الحي والتحقق من أحدث نسخة موثقة...</p>
+    <div class="status" id="status">V18_GITHUB_PAGES_BOOTSTRAP_V1</div>
+  </main>
+  <script>
+  // V18_GITHUB_PAGES_BOOTSTRAP_V1
+  (() => {
+    'use strict';
+    const SHELL = 'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18-web/index.html';
+    const REQUIRED = ['EGX PRO V18.2','V18_LIVE_GITHUB_SOURCE_V1','V18_AUTO_REFRESH_WATCH_V3','V18_PAYLOAD_HASH_REFRESH'];
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const status = document.getElementById('status');
+    const boot = document.getElementById('boot');
+
+    async function loadShell() {
+      let lastError = null;
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        try {
+          status.textContent = `تحميل النسخة الحية — محاولة ${attempt}/4`;
+          const response = await fetch(`${SHELL}?bootstrap=${Date.now()}`, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`Shell HTTP ${response.status}`);
+          const html = await response.text();
+          for (const marker of REQUIRED) {
+            if (!html.includes(marker)) throw new Error(`Shell contract missing: ${marker}`);
+          }
+          document.open();
+          document.write(html);
+          document.close();
+          return;
+        } catch (error) {
+          lastError = error;
+          if (attempt < 4) await sleep(attempt * 1200);
+        }
+      }
+      console.error('V18 bootstrap failed', lastError);
+      boot.innerHTML = '<h1>تعذر تحميل النسخة الحية</h1><p>لم يتم قبول أي نسخة غير موثقة. أعد المحاولة بعد لحظات.</p><button id="retry">إعادة المحاولة</button><div class="status">V18_GITHUB_PAGES_BOOTSTRAP_V1 · FAIL-CLOSED</div>';
+      document.getElementById('retry').addEventListener('click', () => location.reload());
+    }
+
+    loadShell();
+  })();
+  </script>
+</body>
+</html>
