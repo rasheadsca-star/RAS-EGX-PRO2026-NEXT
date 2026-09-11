@@ -69,6 +69,21 @@ jobs:
             echo "::error::Canonical session mismatch: fetch=$EXPECTED_SESSION calendar=$CALENDAR_SESSION stock=$LATEST_DATE."
             exit 1
           fi
+          node <<'NODE'
+          const fs=require('fs');
+          const s=JSON.parse(fs.readFileSync('main-src/data/fetch-status.json','utf8'));
+          const generated=Date.parse(s.generatedAt||'');
+          if(!Number.isFinite(generated)) throw new Error('fetch-status.generatedAt is invalid');
+          const ageHours=(Date.now()-generated)/3600000;
+          const eventName=process.env.GITHUB_EVENT_NAME;
+          if(eventName==='schedule' && ageHours>30) throw new Error(`Scheduled fallback refuses stale canonical fetch-status (${ageHours.toFixed(1)}h old)`);
+          if(eventName==='workflow_run'){
+            const ev=JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH,'utf8'));
+            const started=Date.parse(ev?.workflow_run?.run_started_at||ev?.workflow_run?.created_at||'');
+            if(Number.isFinite(started) && generated < started-5*60*1000) throw new Error('Upstream workflow succeeded but canonical fetch-status was not refreshed by that run');
+          }
+          console.log(JSON.stringify({eventName,canonicalGeneratedAt:s.generatedAt,ageHours:Number(ageHours.toFixed(2)),expectedSession:s.expectedSession,currentSessionRows:s.currentSessionRows},null,2));
+          NODE
           echo "EXPECTED_SESSION=$EXPECTED_SESSION" >> "$GITHUB_ENV"
           echo "Expected canonical market session: $EXPECTED_SESSION"
 
@@ -107,32 +122,36 @@ jobs:
           node scripts/stable/build-v18-decision-board.cjs
           node scripts/stable/build-v18-web-preview.cjs
 
-      - name: Validate V18 output and live-update contract
+      - name: Validate V18 output and durable live-update contract
         working-directory: v18
         shell: bash
         run: |
           set -euo pipefail
           node <<'NODE'
           const fs=require('fs');
+          const crypto=require('crypto');
           const out=JSON.parse(fs.readFileSync('preview-v18/data.json','utf8'));
           const manifest=JSON.parse(fs.readFileSync('preview-v18-web/manifest.json','utf8'));
           const html=fs.readFileSync('preview-v18-web/index.html','utf8');
           const expected=process.env.EXPECTED_SESSION;
+          const hash=crypto.createHash('sha256').update(Buffer.from(JSON.stringify(out))).digest('hex');
           if(out.sessionId!==expected) throw new Error(`V18 session ${out.sessionId} != expected ${expected}`);
           if(manifest.sessionId!==expected) throw new Error(`Manifest session ${manifest.sessionId} != expected ${expected}`);
+          if(manifest.payloadSha256!==hash) throw new Error('Manifest payload hash does not match V18 data');
           if(out.dataHealth?.status!=='PASS'||Number(out.dataHealth?.criticalFailureCount||0)!==0) throw new Error('V18 data-health gate failed');
           if(!Array.isArray(out.allCandidates)||out.allCandidates.length<20) throw new Error('V18 recommendations are incomplete');
           if(!manifest.multiTargetExecution) throw new Error('Multi-target execution missing');
           const levels=new Set(manifest.executionLevels||[]);
           for(const x of ['ENTRY_ZONE','TARGET1','TARGET2','TARGET3','STOP_LOSS']) if(!levels.has(x)) throw new Error(`Missing ${x}`);
           if((manifest.dashboardRecommendations||0)<20) throw new Error('Top 20 recommendations missing');
-          if(manifest.liveLoaderVersion!=='github-live-v2') throw new Error('V18 live loader v2 missing');
-          if(manifest.autoRefreshVersion!=='github-live-watch-v2') throw new Error('V18 live session watcher missing');
+          if(manifest.liveLoaderVersion!=='github-live-v3') throw new Error('V18 live loader v3 missing');
+          if(manifest.autoRefreshVersion!=='github-live-watch-v3') throw new Error('V18 live watcher v3 missing');
           if(Number(manifest.autoRefreshIntervalMs)!==60000) throw new Error('Unexpected live refresh interval');
-          if(manifest.embeddedVerifiedFallback!==true) throw new Error('Embedded verified fallback missing');
+          if(manifest.sameSessionPayloadRefresh!==true) throw new Error('Same-session payload refresh missing');
+          if(manifest.embeddedVerifiedFallback!==true||manifest.embeddedFallbackEncoding!=='plain-json') throw new Error('Browser-independent embedded fallback missing');
           if(!String(manifest.liveDataSource||'').includes('/v18-global-strategy-ensemble-20260906/preview-v18/data.json')) throw new Error('Live source is not the canonical V18 branch');
-          for(const marker of ['V18_LIVE_GITHUB_SOURCE_V1','V18_AUTO_REFRESH_WATCH_V2','window.__V18_CHECK_FOR_NEW_SESSION__']) if(!html.includes(marker)) throw new Error(`Missing ${marker}`);
-          console.log(JSON.stringify({sessionId:out.sessionId,candidates:out.allCandidates.length,top20:manifest.dashboardRecommendations,dataHealth:out.dataHealth.status,liveLoader:manifest.liveLoaderVersion,autoRefresh:manifest.autoRefreshVersion},null,2));
+          for(const marker of ['V18_LIVE_GITHUB_SOURCE_V1','V18_AUTO_REFRESH_WATCH_V3','V18_PAYLOAD_HASH_REFRESH','window.__V18_CHECK_FOR_NEW_SESSION__','window.__V18_ACTIVE_PAYLOAD_SHA256__','window.__V18_EMBEDDED_DATA__']) if(!html.includes(marker)) throw new Error(`Missing ${marker}`);
+          console.log(JSON.stringify({sessionId:out.sessionId,payloadSha256:hash,candidates:out.allCandidates.length,top20:manifest.dashboardRecommendations,dataHealth:out.dataHealth.status,liveLoader:manifest.liveLoaderVersion,autoRefresh:manifest.autoRefreshVersion},null,2));
           NODE
 
       - name: Persist fresh V18 data and public shell
@@ -169,14 +188,17 @@ jobs:
           git show origin/$V18_BRANCH:preview-v18-web/manifest.json > /tmp/v18-published-manifest.json
           node <<'NODE'
           const fs=require('fs');
+          const crypto=require('crypto');
           const d=JSON.parse(fs.readFileSync('/tmp/v18-published-data.json','utf8'));
           const m=JSON.parse(fs.readFileSync('/tmp/v18-published-manifest.json','utf8'));
           const h=fs.readFileSync('/tmp/v18-published-index.html','utf8');
+          const hash=crypto.createHash('sha256').update(Buffer.from(JSON.stringify(d))).digest('hex');
           if(d.sessionId!==process.env.EXPECTED_SESSION||m.sessionId!==process.env.EXPECTED_SESSION) throw new Error('Published V18 branch is stale');
           if(!Array.isArray(d.allCandidates)||d.allCandidates.length<20) throw new Error('Published candidates missing');
-          if(m.liveLoaderVersion!=='github-live-v2'||m.autoRefreshVersion!=='github-live-watch-v2'||m.embeddedVerifiedFallback!==true) throw new Error('Published live-update contract missing');
-          if(!h.includes('V18_AUTO_REFRESH_WATCH_V2')) throw new Error('Published shell watcher marker missing');
-          console.log(JSON.stringify({publishedSession:d.sessionId,candidates:d.allCandidates.length,liveLoader:m.liveLoaderVersion,autoRefresh:m.autoRefreshVersion},null,2));
+          if(m.payloadSha256!==hash) throw new Error('Published payload hash mismatch');
+          if(m.liveLoaderVersion!=='github-live-v3'||m.autoRefreshVersion!=='github-live-watch-v3'||m.sameSessionPayloadRefresh!==true||m.embeddedFallbackEncoding!=='plain-json') throw new Error('Published live-update contract missing');
+          if(!h.includes('V18_AUTO_REFRESH_WATCH_V3')||!h.includes('V18_PAYLOAD_HASH_REFRESH')) throw new Error('Published shell watcher/hash marker missing');
+          console.log(JSON.stringify({publishedSession:d.sessionId,payloadSha256:hash,candidates:d.allCandidates.length,liveLoader:m.liveLoaderVersion,autoRefresh:m.autoRefreshVersion},null,2));
           NODE
 
       - name: Verify GitHub live source is current
@@ -189,13 +211,16 @@ jobs:
             if curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_LIVE_MANIFEST_URL?verify=$stamp" -o /tmp/live-manifest.json \
               && curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_LIVE_DATA_URL?verify=$stamp" -o /tmp/live-data.json; then
               if node <<'NODE'
+          const crypto=require('crypto');
           const d=require('/tmp/live-data.json');
           const m=require('/tmp/live-manifest.json');
+          const hash=crypto.createHash('sha256').update(Buffer.from(JSON.stringify(d))).digest('hex');
           if(d.sessionId!==process.env.EXPECTED_SESSION) process.exit(2);
           if(m.sessionId!==process.env.EXPECTED_SESSION) process.exit(3);
           if(d.dataHealth?.status!=='PASS'||Number(d.dataHealth?.criticalFailureCount||0)!==0) process.exit(4);
           if(!Array.isArray(d.allCandidates)||d.allCandidates.length<20) process.exit(5);
-          if(m.liveLoaderVersion!=='github-live-v2'||m.autoRefreshVersion!=='github-live-watch-v2') process.exit(6);
+          if(m.payloadSha256!==hash) process.exit(6);
+          if(m.liveLoaderVersion!=='github-live-v3'||m.autoRefreshVersion!=='github-live-watch-v3'||m.sameSessionPayloadRefresh!==true||m.embeddedFallbackEncoding!=='plain-json') process.exit(7);
           NODE
               then
                 ok=1
@@ -218,7 +243,8 @@ jobs:
           current=false
           if grep -q 'EGX PRO V18.2' <<<"$ROOT" \
             && grep -q 'V18_LIVE_GITHUB_SOURCE_V1' <<<"$ROOT" \
-            && grep -q 'V18_AUTO_REFRESH_WATCH_V2' <<<"$ROOT" \
+            && grep -q 'V18_AUTO_REFRESH_WATCH_V3' <<<"$ROOT" \
+            && grep -q 'V18_PAYLOAD_HASH_REFRESH' <<<"$ROOT" \
             && grep -q 'window.__V18_CHECK_FOR_NEW_SESSION__' <<<"$ROOT"; then
             current=true
           fi
@@ -232,7 +258,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${VERCEL_TOKEN:-}" || { echo "::error::V18.2 shell needs one bootstrap deployment; VERCEL_TOKEN is missing."; exit 78; }
+          test -n "${VERCEL_TOKEN:-}" || { echo "::error::V18.2 needs one shell bootstrap deployment; after that daily refresh is GitHub-live and token-free."; exit 78; }
 
       - name: Prepare exact V18.2 production shell bundle
         if: steps.prod_shell.outputs.shell_current != 'true'
@@ -256,8 +282,9 @@ jobs:
           }
           JSON
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > deploy-v18-production/.vercel/project.json
-          grep -q 'V18_AUTO_REFRESH_WATCH_V2' deploy-v18-production/index.html
-          node -e "const d=require('./deploy-v18-production/data.json');const m=require('./deploy-v18-production/manifest.json');if(d.sessionId!==process.env.EXPECTED_SESSION||m.autoRefreshVersion!=='github-live-watch-v2')throw new Error('Deploy bundle contract mismatch')"
+          grep -q 'V18_AUTO_REFRESH_WATCH_V3' deploy-v18-production/index.html
+          grep -q 'V18_PAYLOAD_HASH_REFRESH' deploy-v18-production/index.html
+          node -e "const d=require('./deploy-v18-production/data.json');const m=require('./deploy-v18-production/manifest.json');if(d.sessionId!==process.env.EXPECTED_SESSION||m.autoRefreshVersion!=='github-live-watch-v3'||!m.payloadSha256)throw new Error('Deploy bundle contract mismatch')"
 
       - name: Bootstrap verified shell to existing V18.2 production project
         if: steps.prod_shell.outputs.shell_current != 'true'
@@ -279,12 +306,13 @@ jobs:
             ROOT="$(curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_PUBLIC_URL/?verify=$stamp" || true)"
             if grep -q 'EGX PRO V18.2' <<<"$ROOT" \
               && grep -q 'V18_LIVE_GITHUB_SOURCE_V1' <<<"$ROOT" \
-              && grep -q 'V18_AUTO_REFRESH_WATCH_V2' <<<"$ROOT" \
+              && grep -q 'V18_AUTO_REFRESH_WATCH_V3' <<<"$ROOT" \
+              && grep -q 'V18_PAYLOAD_HASH_REFRESH' <<<"$ROOT" \
               && grep -q 'window.__V18_CHECK_FOR_NEW_SESSION__' <<<"$ROOT"; then
               if curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_LIVE_MANIFEST_URL?e2e=$stamp" -o /tmp/e2e-manifest.json \
-                && node -e "const m=require('/tmp/e2e-manifest.json');if(m.sessionId!==process.env.EXPECTED_SESSION||m.dataHealth!=='PASS'||m.liveLoaderVersion!=='github-live-v2'||m.autoRefreshVersion!=='github-live-watch-v2')process.exit(2)"; then
+                && node -e "const m=require('/tmp/e2e-manifest.json');if(m.sessionId!==process.env.EXPECTED_SESSION||m.dataHealth!=='PASS'||m.liveLoaderVersion!=='github-live-v3'||m.autoRefreshVersion!=='github-live-watch-v3'||m.sameSessionPayloadRefresh!==true||!m.payloadSha256)process.exit(2)"; then
                 ok=1
-                echo "V18_2_PRODUCTION_E2E_PASS session=$EXPECTED_SESSION source=github-live-v2 autoRefresh=60000ms"
+                echo "V18_2_PRODUCTION_E2E_PASS session=$EXPECTED_SESSION source=github-live-v3 autoRefresh=60000ms payloadHash=yes"
                 break
               fi
             fi
