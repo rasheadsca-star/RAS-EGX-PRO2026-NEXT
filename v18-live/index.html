@@ -14,40 +14,74 @@
   <main class="boot" id="boot">
     <h1>EGX PRO V18.2</h1>
     <p>جاري تحميل مركز القرار الحي والتحقق من أحدث نسخة موثقة...</p>
-    <div class="status" id="status">V18_GITHUB_PAGES_BOOTSTRAP_V1</div>
+    <div class="status" id="status">V18_DURABLE_BOOTSTRAP_V2</div>
   </main>
   <script>
-  // V18_GITHUB_PAGES_BOOTSTRAP_V1
+  // V18_DURABLE_BOOTSTRAP_V2
   (() => {
     'use strict';
-    const SHELL = 'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18-web/index.html';
-    const REQUIRED = ['EGX PRO V18.2','V18_LIVE_GITHUB_SOURCE_V1','V18_AUTO_REFRESH_WATCH_V3','V18_PAYLOAD_HASH_REFRESH'];
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const SOURCES = [
+      'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18-web/index.html',
+      'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v18-global-strategy-ensemble-20260906/preview-v18-web/index.html'
+    ];
+    const REQUIRED = [
+      'EGX PRO V18.2',
+      'V18_LIVE_GITHUB_SOURCE_V1',
+      'V18_AUTO_REFRESH_WATCH_V3',
+      'V18_PAYLOAD_HASH_REFRESH',
+      'window.__V18_CHECK_FOR_NEW_SESSION__',
+      'window.__V18_ACTIVE_PAYLOAD_SHA256__',
+      'window.__V18_EMBEDDED_DATA__'
+    ];
     const status = document.getElementById('status');
     const boot = document.getElementById('boot');
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function fetchText(url, timeoutMs = 10000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const sep = url.includes('?') ? '&' : '?';
+        const response = await fetch(`${url}${sep}bootstrap=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' },
+          signal: controller.signal
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return await response.text();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function validateShell(html) {
+      if (!html || html.length < 10000) throw new Error('Shell is unexpectedly small');
+      for (const marker of REQUIRED) {
+        if (!html.includes(marker)) throw new Error(`Shell contract missing: ${marker}`);
+      }
+      return html;
+    }
 
     async function loadShell() {
       let lastError = null;
-      for (let attempt = 1; attempt <= 4; attempt++) {
-        try {
-          status.textContent = `تحميل النسخة الحية — محاولة ${attempt}/4`;
-          const response = await fetch(`${SHELL}?bootstrap=${Date.now()}`, { cache: 'no-store' });
-          if (!response.ok) throw new Error(`Shell HTTP ${response.status}`);
-          const html = await response.text();
-          for (const marker of REQUIRED) {
-            if (!html.includes(marker)) throw new Error(`Shell contract missing: ${marker}`);
+      for (let round = 1; round <= 3; round++) {
+        for (let i = 0; i < SOURCES.length; i++) {
+          try {
+            status.textContent = `تحميل النسخة الحية — ${round}/3 — مصدر ${i + 1}/${SOURCES.length}`;
+            const html = validateShell(await fetchText(SOURCES[i]));
+            document.open();
+            document.write(html);
+            document.close();
+            return;
+          } catch (error) {
+            lastError = error;
+            console.warn('V18 bootstrap source failed', SOURCES[i], error);
           }
-          document.open();
-          document.write(html);
-          document.close();
-          return;
-        } catch (error) {
-          lastError = error;
-          if (attempt < 4) await sleep(attempt * 1200);
         }
+        if (round < 3) await sleep(round * 1200);
       }
-      console.error('V18 bootstrap failed', lastError);
-      boot.innerHTML = '<h1>تعذر تحميل النسخة الحية</h1><p>لم يتم قبول أي نسخة غير موثقة. أعد المحاولة بعد لحظات.</p><button id="retry">إعادة المحاولة</button><div class="status">V18_GITHUB_PAGES_BOOTSTRAP_V1 · FAIL-CLOSED</div>';
+      console.error('V18 bootstrap failed closed', lastError);
+      boot.innerHTML = '<h1>تعذر تحميل النسخة الحية</h1><p>تم رفض أي نسخة غير موثقة أو قديمة. اضغط لإعادة المحاولة.</p><button id="retry">إعادة المحاولة</button><div class="status">V18_DURABLE_BOOTSTRAP_V2 · FAIL-CLOSED</div>';
       document.getElementById('retry').addEventListener('click', () => location.reload());
     }
 
