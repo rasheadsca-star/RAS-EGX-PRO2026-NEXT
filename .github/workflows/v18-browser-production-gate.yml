@@ -53,7 +53,6 @@ jobs:
           set -euo pipefail
           node <<'NODE'
           const { chromium } = require('playwright-core');
-          const fs = require('fs');
 
           const publicUrl = process.env.V18_PUBLIC_URL;
           const manifestUrl = process.env.V18_LIVE_MANIFEST_URL;
@@ -68,6 +67,7 @@ jobs:
             if (!liveManifestResponse.ok) throw new Error(`Manifest HTTP ${liveManifestResponse.status}`);
             const manifest = await liveManifestResponse.json();
             if (!manifest.sessionId || !manifest.payloadSha256) throw new Error('Live manifest missing session/hash');
+            if (!/^[a-f0-9]{64}$/i.test(manifest.payloadSha256)) throw new Error('Live manifest payload hash is invalid');
             if (manifest.dataHealth !== 'PASS') throw new Error(`Live manifest dataHealth=${manifest.dataHealth}`);
             if (manifest.liveLoaderVersion !== 'github-live-v3') throw new Error('Unexpected live loader version');
             if (manifest.autoRefreshVersion !== 'github-live-watch-v3') throw new Error('Unexpected auto refresh version');
@@ -89,10 +89,25 @@ jobs:
                 timeout: 30000
               });
 
-              await page.waitForFunction(() => {
-                const text = document.body?.innerText || '';
-                return text.includes('FAIL-CLOSED') ||
-                  typeof window.__V18_CHECK_FOR_NEW_SESSION__ === 'function';
+              // Do not treat installation of the watcher as application readiness.
+              // The watcher is installed before the async payload loader finishes, so
+              // sampling the hash at that point can create a false CI failure.
+              await page.waitForFunction(({ expectedSession, expectedHash }) => {
+                const bodyText = document.body?.innerText || '';
+                if (bodyText.includes('FAIL-CLOSED')) return true;
+                const activeHash = String(window.__V18_ACTIVE_PAYLOAD_SHA256__ || '');
+                const activeSession = String(window.__V18_ACTIVE_SESSION__ || '');
+                const displayedSession = String(document.getElementById('sessionId')?.textContent || '').trim();
+                const bootstrapVisible = bodyText.includes('V18_DURABLE_BOOTSTRAP_V3');
+                return typeof window.__V18_CHECK_FOR_NEW_SESSION__ === 'function' &&
+                  /^[a-f0-9]{64}$/i.test(activeHash) &&
+                  activeHash === expectedHash &&
+                  activeSession === expectedSession &&
+                  displayedSession === expectedSession &&
+                  !bootstrapVisible;
+              }, {
+                expectedSession: String(manifest.sessionId),
+                expectedHash: String(manifest.payloadSha256)
               }, { timeout: 60000, polling: 500 });
 
               const state = await page.evaluate(() => ({
@@ -100,7 +115,10 @@ jobs:
                 bodyText: (document.body?.innerText || '').slice(0, 2000),
                 hasCheckFunction: typeof window.__V18_CHECK_FOR_NEW_SESSION__ === 'function',
                 activeHash: String(window.__V18_ACTIVE_PAYLOAD_SHA256__ || ''),
+                activeSession: String(window.__V18_ACTIVE_SESSION__ || ''),
                 embeddedSession: String(window.__V18_EMBEDDED_DATA__?.sessionId || ''),
+                displayedSession: String(document.getElementById('sessionId')?.textContent || '').trim(),
+                dataSourceUsed: String(window.__V18_DATA_SOURCE_USED__ || ''),
                 failClosed: (document.body?.innerText || '').includes('FAIL-CLOSED'),
                 bootstrapVisible: (document.body?.innerText || '').includes('V18_DURABLE_BOOTSTRAP_V3')
               }));
@@ -111,22 +129,39 @@ jobs:
               if (state.activeHash !== manifest.payloadSha256) {
                 throw new Error(`Browser hash ${state.activeHash} != live manifest ${manifest.payloadSha256}`);
               }
-              if (state.embeddedSession && state.embeddedSession !== manifest.sessionId) {
-                throw new Error(`Browser embedded session ${state.embeddedSession} != live manifest ${manifest.sessionId}`);
+              if (state.activeSession !== manifest.sessionId) {
+                throw new Error(`Browser active session ${state.activeSession} != live manifest ${manifest.sessionId}`);
+              }
+              if (state.displayedSession !== manifest.sessionId) {
+                throw new Error(`Rendered session ${state.displayedSession} != live manifest ${manifest.sessionId}`);
               }
               if (state.bootstrapVisible) throw new Error('Bootstrap is still visible after live shell initialization');
+              if (!state.dataSourceUsed) throw new Error('Browser did not report the active V18 data source');
 
               console.log(JSON.stringify({
                 result: 'V18_BROWSER_PRODUCTION_GATE_PASS',
                 title: state.title,
-                sessionId: manifest.sessionId,
-                payloadSha256: manifest.payloadSha256,
+                sessionId: state.activeSession,
+                renderedSession: state.displayedSession,
+                payloadSha256: state.activeHash,
+                dataSourceUsed: state.dataSourceUsed,
                 liveLoaderVersion: manifest.liveLoaderVersion,
                 autoRefreshVersion: manifest.autoRefreshVersion
               }, null, 2));
             } catch (error) {
               console.error('V18_BROWSER_PRODUCTION_GATE_FAIL', error);
               console.error(diagnostics.slice(-80).join('\n'));
+              try {
+                const snapshot = await page.evaluate(() => ({
+                  title: document.title,
+                  activeHash: String(window.__V18_ACTIVE_PAYLOAD_SHA256__ || ''),
+                  activeSession: String(window.__V18_ACTIVE_SESSION__ || ''),
+                  displayedSession: String(document.getElementById('sessionId')?.textContent || '').trim(),
+                  dataSourceUsed: String(window.__V18_DATA_SOURCE_USED__ || ''),
+                  bodyText: (document.body?.innerText || '').slice(0, 2500)
+                }));
+                console.error('V18_BROWSER_STATE', JSON.stringify(snapshot, null, 2));
+              } catch {}
               try { await page.screenshot({ path: 'v18-browser-failure.png', fullPage: false }); } catch {}
               throw error;
             } finally {
