@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "18.0.0-production-qualification-policy-1",
+  "effectiveFrom": "2026-08-31",
+  "scope": "V18_RESEARCH_SHADOW_ONLY",
+  "transactionCostPct": 0.6,
+  "sameSessionAmbiguityPolicy": "CONSERVATIVE_STOP",
+  "standardizedComparisonHoldingSessions": 1,
+  "entryPolicy": "NEXT_SESSION_OPEN_INSIDE_FROZEN_RANGE",
+  "evidenceGate": {
+    "minimumResolvedCohorts": 30,
+    "minimumResolvedMembers": 100,
+    "minimumObservedCalendarDays": 90
+  },
+  "pairedGate": {
+    "minimumResolvedPairedCohorts": 30,
+    "controlEngine": "V16_9_EQUAL_WEIGHT_BASKET",
+    "requireSameSignalSession": true
+  },
+  "promotionRules": {
+    "countOnlyBuyCandidateSelections": true,
+    "shadowDiagnosticsCannotPromote": true,
+    "requireFrozenHoldingPolicy": true,
+    "requireFrozenPortfolioAllocationPolicy": true,
+    "requireSourceSessionAlignment": true,
+    "requireExplicitModelLineage": true,
+    "mainBranchMutationAllowed": false
+  },
+  "rationale": "Evidence minimums mirror the existing V17 native evidence gate so V18 cannot qualify under an easier standard."
+}
