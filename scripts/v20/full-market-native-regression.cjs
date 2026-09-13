@@ -107,12 +107,50 @@ for (const row of ranking) {
   check(detail.evidence?.liquidity?.shortTermEligible === true, `NATIVE_RECOMMENDATION_LIQUIDITY_${row.ticker}`);
   check(detail.evidence?.technical?.available === true && technicalMap.get(row.ticker)?.currentReady === true, `NATIVE_RECOMMENDATION_TECH_${row.ticker}`);
   check((detail.evidence?.supportResistance?.confluence?.methodCount || 0) >= Number(policy.minimumSrMethodCount || 2), `NATIVE_RECOMMENDATION_SR_${row.ticker}`);
-  check(detail.evidence?.researchTradePlan?.valid === true && finite(detail.evidence?.researchTradePlan?.netRiskReward) > 0, `NATIVE_RECOMMENDATION_PLAN_${row.ticker}`);
+  check(detail.evidence?.researchTradePlan?.valid === true && finite(detail.evidence?.researchTradePlan?.netRiskReward) >= Number(policy.minimumNetRiskReward || 0.7), `NATIVE_RECOMMENDATION_PLAN_${row.ticker}`);
   check(!(detail.blockers || []).includes('CRITICAL_SOURCE_CONFLICT'), `NATIVE_RECOMMENDATION_CONFLICT_${row.ticker}`);
   if (detail.evidence?.researchTradePlan?.alignment?.state === 'ABOVE_ENTRY_RANGE_DO_NOT_CHASE') {
     check(score <= Number(policyRoot.defensiveCaps?.aboveEntryRangeDoNotChaseMaxScore || 55), `NATIVE_DO_NOT_CHASE_CAP_${row.ticker}`);
   }
 }
+
+// V20_RANKING_DISCRIMINATION_REGRESSION_V2
+const eligibleRanking = selection.eligibleResearchRanking || [];
+const rd = policy.rankingDiscrimination || {};
+check(rd.contract === 'V20_SAFETY_STRENGTH_LEXICOGRAPHIC_TIE_BREAK_V2', 'NATIVE_TIE_BREAK_POLICY_DRIFT');
+check(rd.appliesOnlyWhenNativeResearchScoreExactlyTied === true && rd.mutatesNativeResearchScore === false && rd.canOverrideHigherNativeResearchScore === false, 'NATIVE_TIE_BREAK_SCORE_MUTATION_POLICY_DRIFT');
+check(eligibleRanking.length === Number(selection.summary?.nativeResearchRecommendationCount || 0), 'NATIVE_FULL_ELIGIBLE_RANKING_COUNT_MISMATCH');
+check(ranking.every((row, index) => row.ticker === eligibleRanking[index]?.ticker), 'NATIVE_PUBLISHED_NOT_PREFIX_OF_FULL_ELIGIBLE_RANKING');
+const cmpTie = (a, b) => {
+  const ax = a.rankingTieBreaker || {}, bx = b.rankingTieBreaker || {};
+  let d = Number(ax.alignmentSafetyPriority ?? 99) - Number(bx.alignmentSafetyPriority ?? 99);
+  if (d) return d;
+  d = Number(bx.scoreBeforeRegimeAndCaps ?? -Infinity) - Number(ax.scoreBeforeRegimeAndCaps ?? -Infinity);
+  if (d) return d;
+  d = Number(ax.entryDistancePct ?? Infinity) - Number(bx.entryDistancePct ?? Infinity);
+  if (d) return d;
+  for (const k of ['netRiskReward','liquidity2Score','srConfluenceScore','technicalScore','discoveryScore']) {
+    d = Number(bx[k] ?? -Infinity) - Number(ax[k] ?? -Infinity);
+    if (d) return d;
+  }
+  return String(a.ticker).localeCompare(String(b.ticker));
+};
+let tieBreakPairCount = 0;
+for (let i = 0; i < eligibleRanking.length; i++) {
+  const row = eligibleRanking[i], tb = row.rankingTieBreaker || {};
+  check(Number(row.rank) === i + 1, `NATIVE_ELIGIBLE_RANK_SEQUENCE_${row.ticker}`);
+  check(tb.contract === rd.contract && tb.mutatesNativeResearchScore === false && tb.canOverrideHigherNativeResearchScore === false, `NATIVE_TIE_BREAK_METADATA_${row.ticker}`);
+  check(finite(tb.scoreBeforeRegimeAndCaps) === finite(row.rankingTieBreaker?.scoreBeforeRegimeAndCaps), `NATIVE_TIE_BREAK_STRENGTH_METADATA_${row.ticker}`);
+  if (i === 0) continue;
+  const prev = eligibleRanking[i - 1], ps = finite(prev.nativeResearchScore), cs = finite(row.nativeResearchScore);
+  check(ps === null || cs === null || ps >= cs, `NATIVE_PRIMARY_SCORE_ORDER_${row.ticker}`);
+  if (ps !== null && cs !== null && ps === cs) {
+    tieBreakPairCount += 1;
+    check(cmpTie(prev, row) <= 0, `NATIVE_TIE_BREAK_ORDER_${prev.ticker}_${row.ticker}`);
+  }
+}
+check(tieBreakPairCount > 0, 'NATIVE_TIE_BREAK_NOT_EXERCISED');
+check(eligibleRanking.filter(row => row.alignmentState === 'ABOVE_ENTRY_RANGE_DO_NOT_CHASE').every(row => finite(row.nativeResearchScore) <= Number(policyRoot.defensiveCaps?.aboveEntryRangeDoNotChaseMaxScore || 55)), 'NATIVE_TIE_BREAK_WEAKENED_DO_NOT_CHASE_CAP');
 
 check((selection.top5 || []).every((row, index) => row.ticker === ranking[index]?.ticker), 'NATIVE_TOP5_NOT_PREFIX');
 check((selection.top10 || []).every((row, index) => row.ticker === ranking[index]?.ticker), 'NATIVE_TOP10_NOT_PREFIX');
@@ -145,6 +183,12 @@ const report = {
     multiMethodSrRequired: true,
     evidenceDerivedTradePlanRequired: true,
     conservativeCostAwareNetRrRequired: true,
+    minimumNetRiskRewardPreserved: true,
+    // V20_RANKING_DISCRIMINATION_REPORT_V2
+    safetyStrengthTieBreakPreserved: true,
+    tieBreakUsesPreCapStrength: true,
+    tieBreakCannotMutateScore: true,
+    tieBreakCannotOverrideHigherScore: true,
     v17ExecutionAuthorityPreserved: true,
     championProtected: true,
     automaticPromotionDisabled: true,
