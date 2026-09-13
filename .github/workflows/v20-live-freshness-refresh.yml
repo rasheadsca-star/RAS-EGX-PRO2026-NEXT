@@ -34,7 +34,12 @@ jobs:
           fi
           HOUR="$(TZ=Africa/Cairo date +%H)"
           DOW="$(TZ=Africa/Cairo date +%u)"
-          if [ "$HOUR" = "15" ] && [ "$DOW" -ge 1 ] && [ "$DOW" -le 5 ]; then
+          # EGX trading week is Sunday (7) through Thursday (4).
+          case "$DOW" in
+            7|1|2|3|4) TRADING_DAY=true ;;
+            *) TRADING_DAY=false ;;
+          esac
+          if [ "$HOUR" = "15" ] && [ "$TRADING_DAY" = "true" ]; then
             echo "proceed=true" >> "$GITHUB_OUTPUT"
           else
             echo "proceed=false" >> "$GITHUB_OUTPUT"
