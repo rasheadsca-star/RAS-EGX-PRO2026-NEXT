@@ -266,6 +266,29 @@ jobs:
           fi
           SESSION="$(node -p "require('./data/v20/native-current.json').sessionDate")"
           git commit -m "Refresh V20 Native research for session ${SESSION} [skip ci]"
-          git fetch origin develop/v20-integrated-decision-platform
-          git rebase origin/develop/v20-integrated-decision-platform
-          git push origin HEAD:develop/v20-integrated-decision-platform
+
+          # Only data/v20 is part of the persistence contract. Build steps may update
+          # tracked runtime/cache files elsewhere; discard those side effects before rebase.
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Discarding non-V20 tracked side effects before rebase:"
+            git status --short --untracked-files=no
+            git restore --worktree --staged -- .
+          fi
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            echo "Tracked working tree is still dirty after cleanup."
+            git status --short --untracked-files=no
+            exit 1
+          fi
+
+          # Rebase immediately before each push attempt so another V20 writer cannot
+          # turn a valid commit into a non-fast-forward failure between refreshes.
+          for attempt in 1 2 3; do
+            git fetch origin develop/v20-integrated-decision-platform
+            git rebase origin/develop/v20-integrated-decision-platform
+            if git push origin HEAD:develop/v20-integrated-decision-platform; then
+              exit 0
+            fi
+            echo "Push raced with another V20 writer; retrying (${attempt}/3)."
+          done
+          echo "Unable to persist V20 research evidence after 3 attempts."
+          exit 1
