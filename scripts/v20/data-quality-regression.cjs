@@ -24,10 +24,15 @@ const rawMap = new Map(rowsOf(rawMarket).map(row => [symbolOf(row.symbol || row.
 const failures = [];
 const check = (ok, code) => { if (!ok) failures.push(code); };
 
-check(snapshot.schemaVersion === '20.0.0-current-market-snapshot-2', 'SNAPSHOT_SCHEMA_NOT_SEMANTIC_V2');
+check(['20.0.0-current-market-snapshot-2','20.0.0-current-market-snapshot-3'].includes(snapshot.schemaVersion), 'SNAPSHOT_SCHEMA_NOT_SEMANTIC_V2_OR_V3');
 check(snapshot.semanticQuality?.semanticCompleteness === true, 'SEMANTIC_COMPLETENESS_NOT_ENABLED');
 check(snapshot.sourceTruth?.globalCoverageMetricsRemainAuthoritativeFromV17 === true, 'V17_GLOBAL_QUALITY_AUTHORITY_DRIFT');
 check(sourceHealth.semanticRowQuality?.semanticCompleteness === true, 'SOURCE_HEALTH_SEMANTIC_SUMMARY_MISSING');
+if (snapshot.schemaVersion === '20.0.0-current-market-snapshot-3') {
+  check(snapshot.researchSessionVerified === true, 'RESEARCH_SESSION_NOT_VERIFIED_IN_SNAPSHOT_V3');
+  check(/^\d{4}-\d{2}-\d{2}$/.test(String(snapshot.sessionDate || '')), 'RESEARCH_SESSION_DATE_MISSING_IN_SNAPSHOT_V3');
+  check(snapshot.sourceTruth?.v20DoesNotUpgradeExecutionGrade === true, 'V20_EXECUTION_GRADE_ESCALATION_GUARD_MISSING');
+}
 
 let rawZeroOhlcCount = 0;
 let sanitizedZeroOhlcCount = 0;
@@ -89,7 +94,7 @@ check(Number(summary.completeRows || 0) === completeCount, 'COMPLETE_ROW_SUMMARY
 check(rawZeroOhlcCount === sanitizedZeroOhlcCount, 'NOT_ALL_RAW_ZERO_OHLC_SANITIZED');
 
 const report = {
-  schemaVersion: '20.0.0-data-quality-regression-2',
+  schemaVersion: '20.0.0-data-quality-regression-3',
   generatedAt: new Date().toISOString(),
   ok: failures.length === 0,
   failedCount: failures.length,
@@ -97,12 +102,17 @@ const report = {
   checks: {
     nullIsMissingNotNumericZero: true,
     semanticCompletenessEnabled: true,
+    researchSessionSnapshotCompatible: true,
     nonPositiveOhlcNeverExposedAsValidNumeric: true,
     ohlcInvariantRequiredForCompleteState: true,
     currentPriceCanRemainAvailableWhenOhlcPartial: true,
     v17GlobalQualityAuthorityPreserved: true,
   },
   evidence: {
+    snapshotSchemaVersion: snapshot.schemaVersion,
+    sessionDate: snapshot.sessionDate || null,
+    researchSessionVerified: snapshot.researchSessionVerified === true,
+    executionSessionAligned: snapshot.executionSessionAligned === true,
     rowCount: (snapshot.rows || []).length,
     rawZeroOhlcCount,
     sanitizedZeroOhlcCount,
