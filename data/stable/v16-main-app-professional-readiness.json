@@ -1,10 +1,10 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-09-13T15:10:59.492Z",
+  "generatedAt": "2026-09-13T15:42:38.993Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-09-13",
   "professionalReadinessScore": 79,
-  "foundationQualityScore": 88.4,
+  "foundationQualityScore": 86.9,
   "stage": "ADVANCED_PILOT",
   "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
   "professionalClaimAllowed": false,
@@ -14,8 +14,8 @@
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 24.42,
-      "scorePct": 97.7,
+      "points": 24.37,
+      "scorePct": 97.5,
       "details": {
         "currentExecutionGrade": true,
         "sessionAligned": true,
@@ -23,11 +23,11 @@
         "publishedDecisionEvidenceCoveragePct": 94.9,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 183,
-        "currentAcceptedRows": 205,
-        "verifiedRows": 205,
+        "currentAcceptedRows": 203,
+        "verifiedRows": 203,
         "inputRows": 217,
         "evidenceCoveragePct": 94.9,
-        "verifiedRowsRatioPct": 94.5,
+        "verifiedRowsRatioPct": 93.5,
         "currentSourceHealth": "EXECUTION_GRADE"
       },
       "requirements": [
@@ -38,7 +38,7 @@
         },
         {
           "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 205/217",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 203/217",
           "hard": false
         }
       ]
@@ -64,28 +64,38 @@
       "id": "V169_LIVE_FORWARD",
       "labelAr": "السجل الحي / Forward لـV16.9",
       "weight": 25,
-      "points": 14,
-      "scorePct": 56,
+      "points": 12.5,
+      "scorePct": 50,
       "details": {
-        "resolvedSessions": 8,
+        "resolvedSessions": 24,
         "minimumResolvedSessions": 20,
-        "sampleCompletionPct": 40,
-        "winningSessionPct": 50,
-        "averageNetReturnPct": 0.2466,
-        "profitFactor": 1.171,
-        "maximumDrawdownPct": -11.08,
+        "sampleCompletionPct": 100,
+        "winningSessionPct": 41.67,
+        "averageNetReturnPct": -0.2591,
+        "profitFactor": 0.778,
+        "maximumDrawdownPct": -18.318,
         "promotionEligible": false,
         "hardGatePassed": false
       },
       "requirements": [
         {
-          "code": "LIVE_MIN_RESOLVED_SESSIONS",
-          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+          "code": "LIVE_POSITIVE_RETURN",
+          "labelAr": "متوسط عائد حي صافي موجب بعد التكاليف",
           "hard": true
         },
         {
           "code": "LIVE_PF",
           "labelAr": "Profit Factor حي ≥ 1.20",
+          "hard": true
+        },
+        {
+          "code": "LIVE_WIN_RATE",
+          "labelAr": "نسبة جلسات حية رابحة ≥ 45%",
+          "hard": true
+        },
+        {
+          "code": "LIVE_DRAWDOWN",
+          "labelAr": "Maximum Drawdown حي أفضل من -15%",
           "hard": true
         }
       ]
@@ -143,14 +153,26 @@
   },
   "hardBlockers": [
     {
-      "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+      "code": "LIVE_POSITIVE_RETURN",
+      "labelAr": "متوسط عائد حي صافي موجب بعد التكاليف",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     },
     {
       "code": "LIVE_PF",
       "labelAr": "Profit Factor حي ≥ 1.20",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "LIVE_WIN_RATE",
+      "labelAr": "نسبة جلسات حية رابحة ≥ 45%",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "LIVE_DRAWDOWN",
+      "labelAr": "Maximum Drawdown حي أفضل من -15%",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     }
@@ -164,21 +186,33 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 205/217",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 203/217",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     }
   ],
   "requirementsTo100": [
     {
-      "code": "LIVE_MIN_RESOLVED_SESSIONS",
-      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 8 والمتبقي 12",
+      "code": "LIVE_POSITIVE_RETURN",
+      "labelAr": "متوسط عائد حي صافي موجب بعد التكاليف",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     },
     {
       "code": "LIVE_PF",
       "labelAr": "Profit Factor حي ≥ 1.20",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "LIVE_WIN_RATE",
+      "labelAr": "نسبة جلسات حية رابحة ≥ 45%",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
+      "code": "LIVE_DRAWDOWN",
+      "labelAr": "Maximum Drawdown حي أفضل من -15%",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
     },
@@ -190,7 +224,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 205/217",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 203/217",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     }
@@ -202,11 +236,11 @@
     "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-09-13T15:07:48.942Z",
-    "basketGeneratedAt": "2026-09-13T15:09:00.509694+00:00",
-    "liveGeneratedAt": "2026-09-13T15:09:05.496935+00:00",
+    "priceTruthGeneratedAt": "2026-09-13T15:42:18.667Z",
+    "basketGeneratedAt": "2026-09-13T15:42:29.836177+00:00",
+    "liveGeneratedAt": "2026-09-13T15:42:35.975418+00:00",
     "canonicalSnapshotHash": "03bc220c98e89413c4158191fdc7458f69337a837e1418014920e9caedbe7985",
-    "consensusGeneratedAt": "2026-09-13T15:10:58.241Z",
+    "consensusGeneratedAt": "2026-09-13T15:42:37.693Z",
     "intelligenceSnapshotGeneratedAt": "2026-09-13T14:55:04.018Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -241,5 +275,5 @@
       ]
     }
   },
-  "readinessHash": "d0a9884986a040fd8722e0187d36c88833e9fca69d386c606b87a34a8a7f3c12"
+  "readinessHash": "31cb65e28894c718ce7ae64bd4c08f852b1951f7c02d16b1ebe60437ef714cd9"
 }
