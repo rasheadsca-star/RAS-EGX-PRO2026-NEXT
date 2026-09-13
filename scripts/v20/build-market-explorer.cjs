@@ -51,9 +51,12 @@ const rows = (universe.rows || []).map(base => {
   const profile = profileMap.get(base.ticker) || null;
   const ta = profile?.technicalAnalysis || null;
   const regimeSymbol = regimeSymbolMap.get(base.ticker) || null;
+  const researchSessionVerified = m?.researchSessionVerified === true || (
+    m?.researchSessionVerified == null && market?.researchSessionVerified === true
+  );
   const currentSessionAvailable = Boolean(
     m &&
-    m.sessionAligned === true &&
+    researchSessionVerified &&
     m.sessionDate === sessionDate &&
     finite(m.price) !== null &&
     Number(m.price) > 0
@@ -62,7 +65,9 @@ const rows = (universe.rows || []).map(base => {
     ? 'CURRENT_SESSION_DATA_UNAVAILABLE'
     : currentSessionAvailable
       ? 'CURRENT_SESSION_AVAILABLE'
-      : 'CURRENT_SESSION_MISMATCH';
+      : !researchSessionVerified
+        ? 'RESEARCH_SESSION_NOT_VERIFIED'
+        : 'CURRENT_SESSION_MISMATCH';
 
   const technicalState = !ta
     ? 'NOT_EVALUATED_IN_CURRENT_TECHNICAL_SCOPE'
@@ -148,6 +153,8 @@ const rows = (universe.rows || []).map(base => {
     sessionDate,
     marketDataState,
     currentSessionAvailable,
+    researchSessionVerified,
+    executionSessionAligned: m?.executionSessionAligned === true,
     price: currentSessionAvailable ? finite(m.price) : null,
     previousClose: currentSessionAvailable ? finite(m.previousClose) : null,
     open: currentSessionAvailable ? finite(m.open) : null,
@@ -220,6 +227,8 @@ const out = {
   policy: {
     fullMarketSearch: true,
     currentSessionPriceOnly: true,
+    currentSessionResearchPriceRequiresVerifiedResearchSession: true,
+    executionAlignmentDoesNotGateResearchVisibility: true,
     stalePriceFallbackDisplayedAsCurrent: false,
     marketOnlyIsRecommendation: false,
     technicalCurrentRequiresTrustedPointInTimeReadiness: true,
@@ -257,6 +266,9 @@ if (out.summary.universeCount !== Number(universe.count || rows.length)) {
 }
 if (rows.some(row => row.currentSessionAvailable && row.provenance.sourceSession !== sessionDate)) {
   throw new Error('Market Explorer contains current row with non-current source session');
+}
+if (rows.some(row => row.currentSessionAvailable && row.researchSessionVerified !== true)) {
+  throw new Error('Market Explorer exposes current research price without verified research session');
 }
 if (rows.some(row => row.marketDataState !== 'CURRENT_SESSION_AVAILABLE' && row.price !== null)) {
   throw new Error('Market Explorer exposes stale/misaligned price as current');
