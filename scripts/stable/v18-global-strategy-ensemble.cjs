@@ -8,6 +8,8 @@ const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const POLICY_PATH = path.join(ROOT, 'data/v18-global-strategy-policy.json');
 const STOCK_DIR = path.join(ROOT, 'data/quant/stocks');
 const OUT_PATH = path.join(ROOT, 'data/stable/v18-global-strategy-ensemble.json');
+const V169_CANONICAL_PATH = path.join(ROOT, 'data/stable/v16-main-app-current.json');
+const LEGACY_PRACTICAL_PATH = path.join(ROOT, 'data/stable/v15-practical-decision.json');
 
 function readJson(file, fallback = null) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
@@ -169,13 +171,27 @@ function evaluateEmaMacdContinuation(detail, policy) {
 function main() {
   const policy = readJson(POLICY_PATH, {});
   const regime = readJson(path.join(ROOT, 'data/stable/v16-market-regime.json'), {});
-  const practical = readJson(path.join(ROOT, 'data/stable/v15-practical-decision.json'), {});
+  const v169 = readJson(V169_CANONICAL_PATH, {});
+  const legacyPractical = readJson(LEGACY_PRACTICAL_PATH, {});
   const daily = readJson(path.join(ROOT, 'data/quant/daily-recommendations.json'), {});
   const adaptive = readJson(path.join(ROOT, 'data/quant/adaptive-daily-recommendations.json'), {});
   const stocks = loadStockDetails();
   const store = new Map();
 
-  for (const item of practical.recommendations || []) {
+  const v169ModelId = String(v169?.selectedModel?.id || '');
+  const v169Session = v169?.sessionDate || v169?.sessionId || null;
+  const v169Recommendations = Array.isArray(v169?.recommendations) ? v169.recommendations : [];
+  if (v169ModelId !== 'V16_9_EQUAL_WEIGHT_BASKET') {
+    throw new Error(`V18 refuses non-canonical V16.9 source: selectedModel.id=${v169ModelId || 'missing'}`);
+  }
+  if (v169.practicalReady !== true) {
+    throw new Error('V18 refuses V16.9 source because practicalReady is not true');
+  }
+  if (!v169Session || v169Recommendations.length === 0) {
+    throw new Error('V18 canonical V16.9 source is missing session or recommendations');
+  }
+
+  for (const item of v169Recommendations) {
     addCandidate(store, {
       ticker: item.ticker,
       companyNameAr: item.companyNameAr,
@@ -192,11 +208,14 @@ function main() {
         portfolioWeightPct: item.portfolioWeightPct,
         morningConfirmation: item.morningConfirmation
       },
-      noteAr: 'عضو في سلة V16.9 Pilot مع تأكيد افتتاح إلزامي.'
+      noteAr: 'عضو في سلة V16.9 Pilot من المصدر Canonical الحالي مع تأكيد افتتاح إلزامي.'
     });
   }
 
-  for (const item of practical.extendedMomentumWatch || []) {
+  const extendedMomentumWatch = Array.isArray(v169?.extendedMomentumWatch)
+    ? v169.extendedMomentumWatch
+    : (Array.isArray(legacyPractical?.extendedMomentumWatch) ? legacyPractical.extendedMomentumWatch : []);
+  for (const item of extendedMomentumWatch) {
     addCandidate(store, {
       ticker: item.ticker,
       companyNameAr: item.companyNameAr,
@@ -279,7 +298,10 @@ function main() {
     });
   }
 
-  const sessionId = latestSession(practical, daily, adaptive, regime);
+  const sessionId = latestSession(v169, daily, adaptive, regime);
+  if (v169Session !== sessionId) {
+    throw new Error(`V18 canonical V16.9 session mismatch: v16.9=${v169Session} ensemble=${sessionId}`);
+  }
   const regimeRiskOn = ['RISK_ON', 'BULLISH'].includes(String(regime.regime || regime.code || daily.marketRegime?.code || '').toUpperCase());
   const results = [];
 
@@ -389,6 +411,23 @@ function main() {
       independentSources: uniq(results.flatMap(row => row.sources)),
       emaMacdRole: 'one strategy family inside the ensemble, not the sole market gate'
     },
+    sourceProvenance: {
+      v16_9: {
+        path: 'data/stable/v16-main-app-current.json',
+        selectedModelId: v169ModelId,
+        sessionId: v169Session,
+        practicalReady: v169.practicalReady === true,
+        recommendationCount: v169Recommendations.length,
+        acceptedAs: 'V16_9_BASKET'
+      },
+      v15Extended: {
+        path: Array.isArray(v169?.extendedMomentumWatch)
+          ? 'data/stable/v16-main-app-current.json#extendedMomentumWatch'
+          : 'data/stable/v15-practical-decision.json#extendedMomentumWatch',
+        recommendationCount: extendedMomentumWatch.length,
+        acceptedAs: 'V15_EXTENDED'
+      }
+    },
     counts: {
       canonicalStocksLoaded: stocks.size,
       candidatesMerged: results.length,
@@ -402,7 +441,8 @@ function main() {
         ? 'السوق داعم للمخاطرة ويوجد أكثر من سهم يجتاز استمرار EMA–MACD؛ خروج صفر فرص يعني مشكلة في الدمج أو البوابات ويجب ألا يُعرض كحقيقة سوقية.'
         : null,
       canonicalLiquidityTruth: 'Average turnover is read from data/quant/stocks canonical intelligence; no duplicate unit conversion is allowed.',
-      evidenceSeparation: 'Backtest/validation/test/forward/pilot states are kept distinct. No historical metric is presented as a guaranteed probability.'
+      evidenceSeparation: 'Backtest/validation/test/forward/pilot states are kept distinct. No historical metric is presented as a guaranteed probability.',
+      canonicalV169Truth: 'V16_9_BASKET can only be sourced from data/stable/v16-main-app-current.json when selectedModel.id is V16_9_EQUAL_WEIGHT_BASKET and practicalReady is true.'
     },
     actionable,
     watch,
@@ -414,6 +454,7 @@ function main() {
   console.log(JSON.stringify({
     sessionId: output.sessionId,
     regime: output.marketRegime,
+    sourceProvenance: output.sourceProvenance,
     counts: output.counts,
     top: output.actionable.slice(0, 8).map(row => ({ ticker: row.ticker, tier: row.tier, score: row.decisionScore, sources: row.sources }))
   }, null, 2));
