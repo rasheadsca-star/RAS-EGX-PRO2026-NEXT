@@ -51,6 +51,9 @@ function asciiOnly(value) {
   const s = String(value || '').trim();
   return s ? /^[\x00-\x7F]+$/.test(s) : false;
 }
+function validSession(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+}
 function semanticMarketQuality(row) {
   const issues = [];
   const raw = {
@@ -147,6 +150,8 @@ function semanticMarketQuality(row) {
 const market = read('data/market.json');
 const ranking = read('data/final-opportunity-ranking.json');
 const gate = read('data/v17/resilient-session-status.json');
+const sessionTruth = read('data/v17/market-session-truth.json');
+const v17Current = read('data/v17/current.json');
 const internalSr = read('data/v17/internal-ohlc-support-resistance.json');
 const liquidity = read('data/v17/liquidity-gate.json');
 
@@ -155,8 +160,29 @@ const rankingRows = rowsOf(ranking);
 const srRows = rowsOf(internalSr);
 const liquidityRows = rowsOf(liquidity);
 
-const sessionDate = gate?.priceTruth?.verifiedSessionDate || gate?.sessionDate || market?.sessionDate || null;
-const sessionAligned = gate?.sessionAligned === true;
+// V20 is research-only. Use V17's verified completed research session as the
+// data-truth date, while keeping execution alignment as a separate fail-closed
+// signal. This prevents an unverified execution source from nulling an otherwise
+// coherent current research snapshot.
+const verifiedResearchSession = sessionTruth?.researchSessionVerified === true && validSession(sessionTruth?.researchSessionDate)
+  ? sessionTruth.researchSessionDate
+  : sessionTruth?.researchSessionVerified === true && validSession(sessionTruth?.selectedSessionDate)
+    ? sessionTruth.selectedSessionDate
+    : null;
+const verifiedExecutionSession = validSession(gate?.priceTruth?.verifiedSessionDate)
+  ? gate.priceTruth.verifiedSessionDate
+  : validSession(gate?.sessionDate)
+    ? gate.sessionDate
+    : null;
+const sessionDate = verifiedResearchSession
+  || verifiedExecutionSession
+  || (validSession(v17Current?.currentResearch?.sessionDate) ? v17Current.currentResearch.sessionDate : null)
+  || (validSession(v17Current?.sessionDate) ? v17Current.sessionDate : null)
+  || (validSession(market?.sessionDate) ? market.sessionDate : null);
+const researchSessionVerified = Boolean(verifiedResearchSession);
+const executionSessionAligned = gate?.sessionAligned === true;
+const sessionAligned = executionSessionAligned;
+
 const marketMap = new Map(marketRows.map(row => [symbolOf(row.symbol || row.ticker), row]).filter(([s]) => s));
 const rankMap = new Map(rankingRows.map(row => [symbolOf(row.symbol || row.ticker), row]).filter(([s]) => s));
 const srMap = new Map(srRows.map(row => [symbolOf(row.symbol || row.ticker), row]).filter(([s]) => s));
@@ -215,7 +241,9 @@ const snapshotRows = marketRows.map(row => {
     source: row.source || market.source || null,
     sourceUrl: row.sourceUrl || null,
     provenance: 'data/market.json',
+    researchSessionVerified,
     sessionAligned,
+    executionSessionAligned,
     criticalFieldCompletenessPct: quality.criticalFieldCompletenessPct,
     dataQualityState: quality.dataQualityState,
     dataQualityIssues: quality.dataQualityIssues,
@@ -243,12 +271,16 @@ const qualitySummary = {
 };
 
 const sourceHealth = {
-  schemaVersion: '20.0.0-source-health-2',
+  schemaVersion: '20.0.0-source-health-3',
   generatedAt: new Date().toISOString(),
   sessionDate,
+  researchSessionDate: verifiedResearchSession,
+  researchSessionVerified,
+  executionSessionDate: verifiedExecutionSession,
   status: gate?.status || 'BLOCKED',
   executionGrade: gate?.executionGrade === true,
   sessionAligned,
+  executionSessionAligned,
   coveragePct: finite(gate?.coveragePct),
   freshnessPct: finite(gate?.freshnessPct),
   criticalFieldsPct: finite(gate?.criticalFieldsPct),
@@ -272,6 +304,8 @@ const sourceHealth = {
   },
   provenance: {
     gate: 'data/v17/resilient-session-status.json',
+    sessionTruth: 'data/v17/market-session-truth.json',
+    v17Current: 'data/v17/current.json',
     market: 'data/market.json',
     supportResistance: 'data/v17/internal-ohlc-support-resistance.json',
     liquidity: 'data/v17/liquidity-gate.json',
@@ -283,6 +317,8 @@ const masterUniverse = {
   generatedAt: new Date().toISOString(),
   scope: 'UNION_OF_CURRENT_MARKET_RANKING_SUPPORT_RESISTANCE_AND_LIQUIDITY',
   sessionDate,
+  researchSessionVerified,
+  executionSessionAligned,
   count: universeRows.length,
   rows: universeRows,
   warnings: universeRows.some(row => row.nameAr && !row.nameArVerified)
@@ -291,14 +327,17 @@ const masterUniverse = {
 };
 
 const currentSnapshot = {
-  schemaVersion: '20.0.0-current-market-snapshot-2',
+  schemaVersion: '20.0.0-current-market-snapshot-3',
   generatedAt: new Date().toISOString(),
   sessionDate,
+  researchSessionVerified,
   sessionAligned,
+  executionSessionAligned,
   decisionSupportOnly: true,
   semanticQuality: qualitySummary,
   sourceTruth: {
     authoritativeGate: 'data/v17/resilient-session-status.json',
+    authoritativeResearchSessionTruth: 'data/v17/market-session-truth.json',
     currentPriceSource: 'data/market.json',
     v20DoesNotUpgradeExecutionGrade: true,
     globalCoverageMetricsRemainAuthoritativeFromV17: true,
@@ -306,6 +345,7 @@ const currentSnapshot = {
   globalQuality: {
     status: gate?.status || 'BLOCKED',
     executionGrade: gate?.executionGrade === true,
+    researchSessionVerified,
     coveragePct: finite(gate?.coveragePct),
     freshnessPct: finite(gate?.freshnessPct),
     criticalFieldsPct: finite(gate?.criticalFieldsPct),
@@ -320,6 +360,8 @@ write('data/v20/source-health.json', sourceHealth);
 
 console.log(JSON.stringify({
   sessionDate,
+  researchSessionVerified,
+  executionSessionAligned,
   universeCount: masterUniverse.count,
   currentSnapshotRows: currentSnapshot.rowCount,
   sourceHealthStatus: sourceHealth.status,
