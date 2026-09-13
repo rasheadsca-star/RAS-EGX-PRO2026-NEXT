@@ -32,20 +32,33 @@ if(sourceShaValid){
 }
 for(const rel of required)check(fs.existsSync(P(rel)),`V17_RUNTIME_REQUIRED_FILE_MISSING_${rel.replace(/[^A-Za-z0-9]+/g,'_')}`);
 const market=read('data/market.json'),ranking=read('data/final-opportunity-ranking.json'),history=read('data/history.json'),recommendations=read('data/recommendations.json'),technical=read('data/technical-50-report.json'),current=read('data/v17/current.json'),gate=read('data/v17/resilient-session-status.json'),sr=read('data/v17/internal-ohlc-support-resistance.json'),liq=read('data/v17/liquidity-gate.json'),challenger=read('data/v17/challenger-status.json'),truth=read('data/v17/market-session-truth.json'),reg=read('data/v17/regression.json'),review=read('data/v17/review.json'),recommendationStatus=read('data/v17/current-recommendation-base-status.json');
-const session=truth.selectedSessionDate||gate?.priceTruth?.verifiedSessionDate||gate.sessionDate||current.sessionDate||market.sessionDate||history.sessionDate||null;
+
+// V20 Native is a research-only engine. Bind its refresh to V17's verified
+// research session, while preserving V17's stricter execution gate separately.
+// A DEGRADED execution gate must never make an otherwise coherent completed
+// research session look stale, and it must never grant execution permission.
+const session=truth.researchSessionDate||truth.selectedSessionDate||current.currentResearch?.sessionDate||current.sessionDate||market.sessionDate||history.sessionDate||null;
 check(/^\d{4}-\d{2}-\d{2}$/.test(String(session||'')),'V17_RUNTIME_SESSION_MISSING',session);
+check(truth.researchSessionVerified===true,'V17_RESEARCH_SESSION_NOT_VERIFIED',truth.researchSessionVerified);
+check(truth.researchSessionDate===session||truth.selectedSessionDate===session,'V17_TRUTH_RESEARCH_SESSION_MISMATCH',{researchSessionDate:truth.researchSessionDate,selectedSessionDate:truth.selectedSessionDate});
 check(current.sessionDate===session,'V17_CURRENT_SESSION_MISMATCH',current.sessionDate);
-check((gate?.priceTruth?.verifiedSessionDate||gate.sessionDate)===session,'V17_GATE_SESSION_MISMATCH',gate?.priceTruth?.verifiedSessionDate||gate.sessionDate);
-check(truth.selectedSessionDate===session,'V17_TRUTH_SESSION_MISMATCH',truth.selectedSessionDate);
+check(current.currentResearch?.sessionDate===session,'V17_CURRENT_RESEARCH_SESSION_MISMATCH',current.currentResearch?.sessionDate);
+check(current.currentResearch?.researchReady===true,'V17_CURRENT_RESEARCH_NOT_READY',current.currentResearch?.researchReady);
 if(market.sessionDate)check(market.sessionDate===session,'V17_MARKET_SESSION_MISMATCH',market.sessionDate);
 if(history.sessionDate)check(history.sessionDate===session,'V17_HISTORY_SESSION_MISMATCH',history.sessionDate);
 check(recommendations.sessionDate===session,'V17_RECOMMENDATION_SESSION_MISMATCH',recommendations.sessionDate);
 check(technical.referenceSessionDate===session,'V17_TECHNICAL_SESSION_MISMATCH',technical.referenceSessionDate);
 check(recommendationStatus.sessionDate===session,'V17_RECOMMENDATION_STATUS_SESSION_MISMATCH',recommendationStatus.sessionDate);
+check(sr.referenceSessionDate===session,'V17_SR_RESEARCH_SESSION_MISMATCH',sr.referenceSessionDate);
+check(sr.researchReady===true,'V17_SR_RESEARCH_NOT_READY',sr.researchReady);
+check(sr.researchSessionVerified===true,'V17_SR_RESEARCH_SESSION_NOT_VERIFIED',sr.researchSessionVerified);
+check(liq.referenceSessionDate===session,'V17_LIQUIDITY_RESEARCH_SESSION_MISMATCH',liq.referenceSessionDate);
+check(gate.readiness?.researchReady===true,'V17_RUNTIME_RESEARCH_NOT_READY',gate.readiness?.researchReady);
+check(gate.executionInputs?.internal?.referenceSessionDate===session,'V17_GATE_INTERNAL_RESEARCH_SESSION_MISMATCH',gate.executionInputs?.internal?.referenceSessionDate);
+check(gate.executionInputs?.liquidity?.referenceSessionDate===session,'V17_GATE_LIQUIDITY_RESEARCH_SESSION_MISMATCH',gate.executionInputs?.liquidity?.referenceSessionDate);
 check(recommendations.engine==='V17_CURRENT_SESSION_TECHNICAL_BASE_1','V17_RECOMMENDATION_ENGINE_DRIFT',recommendations.engine);
 check(technical.version==='5.6.1-v17-session-truth','V17_TECHNICAL_REPORT_VERSION_DRIFT',technical.version);
 check(['HEALTHY','DEGRADED','RESEARCH_ONLY'].includes(gate.status),'V17_RUNTIME_GATE_STATUS_UNACCEPTABLE',gate.status);
-check(gate.sessionAligned===true,'V17_RUNTIME_GATE_NOT_SESSION_ALIGNED');
 check(current.engine?.id===CHAMPION,'V17_RUNTIME_CURRENT_CHAMPION_DRIFT',current.engine?.id);
 check(challenger.activeEngine===CHAMPION,'V17_RUNTIME_CHALLENGER_CHAMPION_DRIFT',challenger.activeEngine);
 check(challenger.promotionAllowed===false,'V17_RUNTIME_PROMOTION_ALLOWED');
@@ -59,14 +72,31 @@ check((technical.symbols||[]).length>0,'V17_RUNTIME_TECHNICAL_EMPTY');
 check(rows(sr).length>0,'V17_RUNTIME_SR_EMPTY');
 check(rows(liq).length>0||Array.isArray(liq.executionEligibleSymbols),'V17_RUNTIME_LIQUIDITY_EMPTY');
 check(Object.keys(history.sessionsBySymbol||{}).length>0,'V17_RUNTIME_HISTORY_EMPTY');
+const researchRefs=[
+ truth.researchSessionDate||truth.selectedSessionDate,
+ current.sessionDate,current.currentResearch?.sessionDate,recommendations.sessionDate,
+ technical.referenceSessionDate,recommendationStatus.sessionDate,sr.referenceSessionDate,
+ liq.referenceSessionDate,gate.executionInputs?.internal?.referenceSessionDate,
+ gate.executionInputs?.liquidity?.referenceSessionDate
+].filter(Boolean);
+const researchSessionAligned=researchRefs.length>=8&&researchRefs.every(v=>v===session);
+check(researchSessionAligned,'V17_RUNTIME_RESEARCH_SESSION_NOT_ALIGNED',researchRefs);
 const fileEvidence=required.filter(r=>fs.existsSync(P(r))).map(r=>({path:r,sha256:sha256File(r),bytes:fs.statSync(P(r)).size}));
 const out={
- schemaVersion:'20.0.0-v17-runtime-sync-3',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,
+ schemaVersion:'20.0.0-v17-runtime-sync-4',generatedAt:new Date().toISOString(),ok:failures.length===0,failedCount:failures.length,failures,
  source:{repository:'rasheadsca-star/RAS-EGX-PRO2026-NEXT',branch:'develop/v17-rebuild',commitSha:sourceSha,commitDate:sourceCommitDate||null,fetchMode:'EXACT_COMMIT_RUNTIME_MATERIALIZATION'},
  sessionDate:session,
- governance:{activeChampion:CHAMPION,v17GateStatus:gate.status,v17ExecutionGrade:gate.executionGrade===true,v17SessionAligned:gate.sessionAligned===true,promotionAllowed:false,automaticPromotion:false,v20MayMutateV17Branch:false,v17FilesPersistedIntoV20Branch:false},
+ governance:{
+  activeChampion:CHAMPION,v17GateStatus:gate.status,
+  v17ResearchSessionVerified:truth.researchSessionVerified===true,
+  v17ResearchSessionAligned:researchSessionAligned,
+  v17ExecutionGrade:gate.executionGrade===true,
+  v17ExecutionSessionAligned:gate.sessionAligned===true,
+  v17ExecutionNotRequiredForResearchRefresh:true,
+  promotionAllowed:false,automaticPromotion:false,v20MayMutateV17Branch:false,v17FilesPersistedIntoV20Branch:false
+ },
  whitelist:required,
- evidence:{marketRows:rows(market).length,rankingRows:rows(ranking).length,recommendationRows:(recommendations.all||[]).length,technicalRows:(technical.symbols||[]).length,historySymbols:Object.keys(history.sessionsBySymbol||{}).length,srRows:rows(sr).length,liquidityRows:rows(liq).length,coveragePct:Number(gate.coveragePct||0),freshnessPct:Number(gate.freshnessPct||0),criticalFieldsPct:Number(gate.criticalFieldsPct||0),sourceConflictCount:(gate.sourceConflicts||[]).length,files:fileEvidence},
+ evidence:{marketRows:rows(market).length,rankingRows:rows(ranking).length,recommendationRows:(recommendations.all||[]).length,technicalRows:(technical.symbols||[]).length,historySymbols:Object.keys(history.sessionsBySymbol||{}).length,srRows:rows(sr).length,liquidityRows:rows(liq).length,coveragePct:Number(gate.coveragePct||0),freshnessPct:Number(gate.freshnessPct||0),criticalFieldsPct:Number(gate.criticalFieldsPct||0),sourceConflictCount:(gate.sourceConflicts||[]).length,researchSessionRefs:researchRefs,files:fileEvidence},
  persistence:{reportPath:'data/v20/v17-runtime-sync.json',upstreamWorkingTreeFilesAreTemporary:true,upstreamFilesStagedForV20Commit:false,sourceShaPersistedForReproducibility:true,allV17DecisionInputsBoundToOneCommit:true,materializedRequiredInputsFromExactSourceSha:true}
 };
 write('data/v20/v17-runtime-sync.json',out);console.log(JSON.stringify(out,null,2));if(!out.ok)process.exitCode=1;
