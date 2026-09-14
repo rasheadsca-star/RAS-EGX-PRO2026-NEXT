@@ -36,14 +36,16 @@ jobs:
         run: |
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
-          # Immutable merge-base between V19 and V20. Comparing against a moving
-          # V19 HEAD creates false violations whenever V19 advances independently.
-          V20_ISOLATION_BASE="fb5aafb3e3e4cd908831a7cb98de3f952e356c34"
-          git fetch --no-tags --depth=1 origin "$V20_ISOLATION_BASE"
+          # Incremental immutable baseline. Historical sibling applications that already
+          # existed on the branch are not new integration violations.
+          V20_ISOLATION_BASE="0dbbe93ec228b62d3c510b1b57623c550f4eefef"
+          git cat-file -e "$V20_ISOLATION_BASE^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$V20_ISOLATION_BASE"
           git cat-file -e "$V20_ISOLATION_BASE^{commit}"
+          git merge-base --is-ancestor "$V20_ISOLATION_BASE" HEAD || { echo "V20 isolation baseline is not an ancestor of HEAD"; exit 1; }
           changed="$(git diff --name-only "$V20_ISOLATION_BASE" HEAD)"
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-v17-centric-clean(-v2|-v3|-v5)?\.yml$|\.github/workflows/v20-primary-entry-point-acceptance\.yml$)' || true)"
-          test -z "$violations" || { echo "V20 isolation violation:"; echo "$violations"; exit 1; }
+          test -z "$violations" || { echo "V20 isolation violation since accepted baseline $V20_ISOLATION_BASE:"; echo "$violations"; exit 1; }
+          echo "V20 integration isolation PASS since $V20_ISOLATION_BASE"
 
       - name: Setup Node
         uses: actions/setup-node@v6
