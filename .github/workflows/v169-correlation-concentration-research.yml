@@ -1,0 +1,97 @@
+name: V16.9 Correlation Concentration Research
+
+on:
+  push:
+    branches:
+      - agent/egx-meta-engine-v1-20260829
+    paths:
+      - 'tfe-v20/src/correlationConcentrationExpert.js'
+      - 'tfe-v20/test/correlation-concentration-expert.test.js'
+      - 'tfe-v20/scripts/v169-correlation-concentration-audit.mjs'
+      - 'tfe-v20/research/V169_CORRELATION_CONCENTRATION_EXPERT_CONTRACT.md'
+      - 'tfe-v20/.correlation-concentration-one-shot-trigger'
+      - '.github/workflows/v169-correlation-concentration-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LEGACY_EVIDENCE_COMMIT: 34218d27a36d2c916961a54573477f47f124416a
+
+jobs:
+  one-shot-correlation-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tfe-v20
+    steps:
+      - name: Checkout research branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Lock frozen policy and syntax
+        run: |
+          node --check src/correlationConcentrationExpert.js
+          node --check scripts/v169-correlation-concentration-audit.mjs
+          node --test test/correlation-concentration-expert.test.js
+          node --test test/v169-riskalpha-challenger.test.js
+
+      - name: Materialize exact pinned 45-session evidence lineage
+        run: |
+          cd ..
+          git fetch origin "$LEGACY_EVIDENCE_COMMIT" --depth=1
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- gann-fusion-x data/history
+          git checkout "$LEGACY_EVIDENCE_COMMIT" -- \
+            scripts/research/v16-probabilistic-model-impact.py \
+            scripts/research/v16-two-stage-predictor.py \
+            scripts/research/v16-v169-basket-engine.py \
+            scripts/research/v16-v169-target-hit-audit.py
+          mkdir -p data/stable tfe-v20/reports
+          git show "$LEGACY_EVIDENCE_COMMIT:data/stable/v16-v169-live-evaluation.json" > data/stable/v16-v169-live-evaluation.json
+
+      - name: Rebuild exact V16.9 comparison basis
+        run: |
+          cd ..
+          python scripts/research/v16-v169-basket-engine.py
+          sed -i 's/AUDIT_SESSIONS = 20/AUDIT_SESSIONS = 999/' scripts/research/v16-v169-target-hit-audit.py
+          python scripts/research/v16-v169-target-hit-audit.py
+
+      - name: Run preregistered correlation concentration test
+        run: node scripts/v169-correlation-concentration-audit.mjs
+
+      - name: Assert governance and frozen residual basis
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const x = JSON.parse(fs.readFileSync('reports/v169-correlation-concentration-audit.json','utf8'));
+          if (x.source.sessions !== 45) throw new Error(`EVIDENCE_WINDOW_CHANGED:${x.source.sessions}`);
+          if (x.source.residualRiskAlphaStops !== 32) throw new Error(`RESIDUAL_STOP_BASIS_CHANGED:${x.source.residualRiskAlphaStops}`);
+          if (x.policy.lookbackReturns !== 20) throw new Error('LOOKBACK_CHANGED');
+          if (x.policy.minimumCommonReturnsPerPair !== 15) throw new Error('COMMON_RETURN_MIN_CHANGED');
+          if (x.policy.medianPairwiseCorrelationWatchThreshold !== 0.60) throw new Error('CORRELATION_THRESHOLD_CHANGED');
+          if (x.governance.champion !== 'V16.9') throw new Error('CHAMPION_CHANGED');
+          if (x.governance.scoringImpact !== 'NONE') throw new Error('SCORING_IMPACT_CHANGED');
+          if (x.governance.alphaWeight !== 0) throw new Error('ALPHA_WEIGHT_CHANGED');
+          if (x.governance.productionAuthority !== false) throw new Error('PRODUCTION_AUTHORITY_CHANGED');
+          if (x.governance.promotionEligible !== false) throw new Error('PROMOTION_ELIGIBILITY_CHANGED');
+          if (x.governance.correlationThresholdRetuned !== false) throw new Error('CORRELATION_RETUNED');
+          if (x.governance.riskAlphaRetuned !== false) throw new Error('RISKALPHA_RETUNED');
+          if (x.governance.freshForwardLedgerChanged !== false) throw new Error('FORWARD_LEDGER_CHANGED');
+          if (x.arms?.length !== 4) throw new Error('FOUR_ARMS_REQUIRED');
+          NODE
+
+      - name: Upload exact one-shot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v169-correlation-concentration-research
+          path: tfe-v20/reports/v169-correlation-concentration-audit.json
+          if-no-files-found: error
+          retention-days: 30

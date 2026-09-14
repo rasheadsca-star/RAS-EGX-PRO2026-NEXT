@@ -24,6 +24,19 @@ test('frozen RC2 critical runtime and monitor files are byte-identical to accept
   }
 });
 
+test('approved technical visualization extension is read-only and zero-authority', () => {
+  const ui = FROZEN_RUNTIME_CONTRACT.uiExtensionBaseline;
+  assert.equal(ui.moduleId, 'V16_9_TECHNICAL_VISUALIZATION_EXTENSION_V1');
+  assert.equal(ui.historyRouteOnly, true);
+  assert.equal(ui.maxHistorySessions, 260);
+  assert.equal(ui.scoringImpact, 'NONE');
+  assert.equal(ui.recommendationMutationAllowed, false);
+  assert.equal(ui.executionAllowed, false);
+  assert.equal(ui.automaticOrders, false);
+  assert.deepEqual([...ui.horizons], ['SHORT','MEDIUM','LONG']);
+  assert.deepEqual([...ui.overlays], ['REGRESSION_PRICE_CHANNEL','FIBONACCI_RETRACEMENT']);
+});
+
 test('strict forward evidence snapshots are append-only and byte-immutable', () => {
   for (const [path, expectedSha] of Object.entries(FROZEN_RUNTIME_CONTRACT.immutableEvidenceFiles)) {
     assert.equal(gitBlobSha(localFile(path)), expectedSha, `FORWARD_EVIDENCE_MUTATED:${path}`);
@@ -54,6 +67,16 @@ test('frozen runtime is not allowed to import validation, evidence, or sidecar m
     const source = localFile(path).toString('utf8');
     assert.equal(forbidden.test(source), false, `FORBIDDEN_SIDECAR_DEPENDENCY:${path}`);
   }
+});
+
+test('technical visualization loader cannot become a hidden Alpha or execution path', () => {
+  const source = localFile('public/technical-analysis-tools.js').toString('utf8');
+  assert.equal(/route\s*[:=]\s*['"]scan['"]/i.test(source), false);
+  assert.equal(/route=scan/i.test(source), false);
+  assert.equal(/src\/(engine|policy|confidence|originalScore|originalIndicators|repository)/.test(source), false);
+  assert.equal(/executionAllowed\s*:\s*true/i.test(source), false);
+  assert.equal(/automaticOrders\s*:\s*true/i.test(source), false);
+  assert.match(source, /route:\s*'history'/);
 });
 
 test('sidecar contract explicitly forbids influence on production scan and UI boot', () => {
