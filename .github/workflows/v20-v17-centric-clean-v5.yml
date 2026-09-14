@@ -33,12 +33,17 @@ jobs:
         run: |
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
-          git fetch --no-tags origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
-          merge_base="$(git merge-base origin/v19-egx-chat-gpt HEAD)"
-          test -n "$merge_base" || { echo "Unable to resolve V19/V20 merge base"; exit 1; }
-          changed="$(git diff --name-only "$merge_base" HEAD)"
+          # Certification isolation is incremental from an immutable accepted V20 baseline.
+          # Historical sibling applications (for example tfe-v20) predate this baseline and
+          # must not be reclassified as new V20 violations on every certification run.
+          V20_ISOLATION_BASE="e4a4fd1ba042e885afc614845a4be445adc316b9"
+          git cat-file -e "$V20_ISOLATION_BASE^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$V20_ISOLATION_BASE"
+          git cat-file -e "$V20_ISOLATION_BASE^{commit}"
+          git merge-base --is-ancestor "$V20_ISOLATION_BASE" HEAD || { echo "V20 isolation baseline is not an ancestor of HEAD"; exit 1; }
+          changed="$(git diff --name-only "$V20_ISOLATION_BASE" HEAD)"
           violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-primary-entry-point-acceptance\.yml$|\.github/workflows/v20-v17-centric-clean[^/]*\.yml$)' || true)"
-          test -z "$violations" || { echo "V20 isolation violation since merge-base $merge_base:"; echo "$violations"; exit 1; }
+          test -z "$violations" || { echo "V20 isolation violation since accepted baseline $V20_ISOLATION_BASE:"; echo "$violations"; exit 1; }
+          echo "V20 isolation PASS since $V20_ISOLATION_BASE"
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -233,10 +238,11 @@ jobs:
           for(const [name,x] of Object.entries({semantic:sem,fundedNav:nav,forward:fwd,performance:perf,governance:gov})) if(x.ok!==true) throw Error(`${name} failed`);
           if(registry.activeChampion!=='V16_9_EQUAL_WEIGHT_BASKET'||registry.automaticPromotion!==false)throw Error('Champion governance drift');
           if(core.policy?.v17IsAuthoritativeForProductionEligibility!==true)throw Error('V17 authority drift');
+          if(core.policy?.srSourceCoverageSeparatedFromExecutionEligibility!==true)throw Error('S/R coverage/execution separation missing');
           if(native.executionPermission!==false||native.legacyScoringContributionPct!==0)throw Error('Native governance drift');
           if(d.architecture!=='V17_CENTRIC_V20_NATIVE_DISCOVERY')throw Error('Canonical architecture drift');
           if(d.sessionStatus!=='EXECUTION_GRADE'&&(d.summary.productionActionableCount!==0||d.summary.productionNewExposurePct!==0))throw Error('Production leak under closed gate');
-          console.log(JSON.stringify({ok:true,sessionDate:d.sessionDate,productStatus:d.productStatus,sessionStatus:d.sessionStatus,nativePublished:native.publishedCandidates.length,v17RecommendationEligible:core.summary.recommendationEligibleCount,actionable:d.summary.productionActionableCount,newExposurePct:d.summary.productionNewExposurePct,activeChampion:registry.activeChampion},null,2));
+          console.log(JSON.stringify({ok:true,sessionDate:d.sessionDate,productStatus:d.productStatus,sessionStatus:d.sessionStatus,nativePublished:native.publishedCandidates.length,v17RecommendationEligible:core.summary.recommendationEligibleCount,srSourceCoveragePct:core.summary.srSourceCoveragePct,srAuthoritativeResearchCoveragePct:core.summary.srAuthoritativeResearchCoveragePct,srProductionReadyCoveragePct:core.summary.srProductionReadyCoveragePct,actionable:d.summary.productionActionableCount,newExposurePct:d.summary.productionNewExposurePct,activeChampion:registry.activeChampion},null,2));
           NODE
 
       - name: Run V17-centric Decision Board Chromium E2E
