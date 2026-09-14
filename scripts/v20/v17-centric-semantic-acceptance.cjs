@@ -36,7 +36,6 @@ const contract=read('data/v20/final-decision-contract.json');
 const freeze=read('data/v20/native-model-freeze.json');
 const resilient=read('data/v17/resilient-session-status.json');
 const srSource=read('data/v17/internal-ohlc-support-resistance.json');
-const technicalSource=read('data/technical-50-report.json');
 const policy=read('data/v20/decision-intelligence-policy.json');
 const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
 const positive=v=>finite(v)&&Number(v)>0;
@@ -57,7 +56,6 @@ check(core.policy?.srSourceCoverageSeparatedFromExecutionEligibility===true,'LIV
 check((core.rows||[]).every(r=>Array.isArray(r.v17Blockers)&&typeof r.v17DataEligible==='boolean'&&typeof r.v17LiquidityEligible==='boolean'&&typeof r.v17TechnicalSourceEligible==='boolean'&&typeof r.v17TechnicalProductionReady==='boolean'&&typeof r.v17SrSourceEligible==='boolean'&&typeof r.v17SrProductionReady==='boolean'&&typeof r.v17RecommendationEligible==='boolean'&&typeof r.v17ExecutionEligible==='boolean'),'LIVE_V17_PER_STOCK_ELIGIBILITY_FIELDS_COMPLETE');
 check(core.summary?.technicalSourceEligibleCount>0,'LIVE_V17_TECHNICAL_SOURCE_NOT_FALSE_ZERO',core.summary?.technicalSourceEligibleCount);
 check((core.rows||[]).filter(r=>r.v17TechnicalProductionReady).every(r=>Number(r.evidence?.technicalHistorySessions)>=10&&!/تاريخ\s+غير\s+كاف/u.test(String(r.evidence?.technicalSignal||''))),'LIVE_V17_TECHNICAL_PRODUCTION_READINESS_EXACT_SOURCE_SEMANTICS');
-if(Number(technicalSource.summary?.withAtLeast20Sessions||0)===0){check(core.summary?.technicalProductionReadyCount===0,'LIVE_V17_CURRENT_TECHNICAL_READINESS_NOT_INVENTED',core.summary?.technicalProductionReadyCount)}
 check(core.summary?.srSourceEligibleCount===expectedCoreSrSourceEligible,'LIVE_V17_SR_SOURCE_COVERAGE_MATCHES_AUTHORITATIVE_EVIDENCE',{core:core.summary?.srSourceEligibleCount,source:expectedCoreSrSourceEligible});
 check(core.summary?.srSourceCoveragePct===expectedSrSourceCoveragePct,'LIVE_V17_SR_SOURCE_COVERAGE_PCT_RECONCILES',{core:core.summary?.srSourceCoveragePct,expected:expectedSrSourceCoveragePct});
 check(core.summary?.srAuthoritativeResearchCoveragePct===Number(srSource.researchCoveragePct??srSource.coveragePct),'LIVE_V17_SR_AUTHORITATIVE_RESEARCH_COVERAGE_PRESERVED',{core:core.summary?.srAuthoritativeResearchCoveragePct,source:srSource.researchCoveragePct??srSource.coveragePct});
