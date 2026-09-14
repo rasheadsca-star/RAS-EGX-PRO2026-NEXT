@@ -13,6 +13,8 @@ const positive = value => finite(value) && Number(value) > 0;
 const sym = value => String(value || '').trim().toUpperCase().replace(/\.CA$/, '').replace(/[^A-Z0-9.]/g, '');
 const indexBy = (rows, key='symbol') => new Map((Array.isArray(rows)?rows:[]).map(row=>[sym(row?.[key] ?? row?.ticker),row]).filter(([s])=>s));
 const insufficientTechnicalSignal = value => /تاريخ\s+غير\s+كاف/u.test(String(value || ''));
+const pct = (n,d) => d > 0 ? Math.round((Number(n) / Number(d)) * 10000) / 100 : 0;
+const srLevelsComplete = row => ['support1','support2','resistance1','resistance2'].every(key => positive(row?.levels?.[key]?.value ?? row?.[key]));
 
 const recs = read('data/recommendations.json');
 const recStatus = read('data/v17/current-recommendation-base-status.json', {});
@@ -52,7 +54,7 @@ const srMinConfidence = Number(sr?.thresholds?.minimumConfidence ?? 0.8);
 const globalExecutionGrade = resilient.executionGrade === true;
 const globalGateStatus = resilient.status || resilient.mode || null;
 const sourceSessionVerified = sessionTruth.executionSafe === true && sr.sourceSessionVerified === true && liquidity.sourceSessionVerified === true;
-const v17TechnicalMinimumSessions = 10; // Exact semantic boundary used by build-v56-technical-report.js before it stops emitting "تاريخ غير كافٍ".
+const v17TechnicalMinimumSessions = 10;
 
 const universeRows = Array.isArray(explorer.rows) ? explorer.rows : [];
 const rows = universeRows.map(base => {
@@ -73,9 +75,6 @@ const rows = universeRows.map(base => {
   const v17LiquidityEligible = liq?.executionLiquidityOk === true && liq?.evidenceAvailable === true;
   if (!v17LiquidityEligible) blockers.push('LOW_LIQUIDITY');
 
-  // Preserve the exact V17 Technical-50 semantics instead of requiring invented fields.
-  // rebuild-current-recommendation-base only emits a recommendation row when a current Technical-50 row exists.
-  // build-v56-technical-report explicitly labels <10 trusted sessions as "تاريخ غير كافٍ".
   const technicalHistorySessions = finite(rec?.historySessions) ? Number(rec.historySessions) : (finite(technical?.points) ? Number(technical.points) : null);
   const technicalSignal = String(rec?.signal ?? technical?.signal ?? '');
   const v17TechnicalSourceEligible = !!rec && !!technical && rec.sessionDate === sessionDate && technical.lastDate === sessionDate && finite(rec.technicalScore) && finite(rec.finalConfidence);
@@ -84,17 +83,20 @@ const rows = universeRows.map(base => {
   if (!v17TechnicalSourceEligible) blockers.push('TECHNICAL_SOURCE_NOT_CURRENT');
   else if (!v17TechnicalProductionReady) blockers.push('INSUFFICIENT_TECHNICAL_HISTORY');
 
+  // Source coverage is intentionally independent from execution permission.
+  // V17 may publish fresh, trustworthy research S/R while the global execution gate remains closed.
+  const srLevelsReady = !!srRow && srLevelsComplete(srRow);
   const srCurrent = !!srRow && srRow.sessionDate === sessionDate && srRow.freshness === 'LATEST_COMPLETED_SESSION';
   const srConfidenceOk = !!srRow && finite(srRow.confidence) && Number(srRow.confidence) >= srMinConfidence;
-  const v17SrSourceEligible = srRow?.executionEligible === true; // Exact per-row V17 source flag.
-  const v17SrProductionReady = v17SrSourceEligible && srCurrent && srConfidenceOk && conflicts.length === 0;
+  const v17SrSourceEligible = srLevelsReady && srCurrent && srConfidenceOk && conflicts.length === 0;
+  const v17SrProductionReady = v17SrSourceEligible && srRow?.executionEligible === true;
   const v17SrEligible = v17SrProductionReady;
   const v17SrGlobalExecutionReady = sr.executionCandidateReady === true;
-  if (!srRow || missingSr.has(ticker)) blockers.push('MISSING_SR');
-  else if (!v17SrSourceEligible) {
+  if (!srRow || missingSr.has(ticker) || !srLevelsReady) blockers.push('MISSING_SR');
+  else {
     if (!srCurrent) blockers.push('STALE_DATA');
     if (!srConfidenceOk) blockers.push('SR_LOW_CONFIDENCE');
-    if (srCurrent && srConfidenceOk) blockers.push('SR_NOT_EXECUTION_ELIGIBLE');
+    if (v17SrSourceEligible && srRow.executionEligible !== true) blockers.push('SR_NOT_EXECUTION_ELIGIBLE');
   }
   if (conflicts.length) blockers.push('CRITICAL_SOURCE_CONFLICT');
 
@@ -102,8 +104,6 @@ const rows = universeRows.map(base => {
   const v17PriceEligible = !!rec && rec.sessionDate === sessionDate && positive(rec.price ?? rec.last) && base.currentSessionAvailable === true && positive(base.price);
   if (!v17PriceEligible) blockers.push('PRICE_UNTRUSTED');
 
-  // No authoritative V17 per-symbol corporate-action feed was found in the audited V17 branch.
-  // Unknown stays unknown and can never be silently promoted to execution-safe.
   const v17CorporateActionSafe = null;
   const corporateActionState = 'NOT_AVAILABLE_IN_AUTHORITATIVE_V17_ARTIFACTS';
 
@@ -153,6 +153,7 @@ const rows = universeRows.map(base => {
       liquidityDecision: liq?.liquidityDecision || null,
       liquidityScore: finite(liq?.liquidityScore) ? Number(liq.liquidityScore) : null,
       srGrade: srRow?.grade || null,
+      srLevelsComplete: srLevelsReady,
       srRowExecutionEligible: srRow?.executionEligible === true,
       srGlobalExecutionCandidateReady: sr.executionCandidateReady === true,
       srConfidence: finite(srRow?.confidence) ? Number(srRow.confidence) : null,
@@ -165,6 +166,8 @@ const rows = universeRows.map(base => {
 });
 
 const counts = key => rows.filter(row => row[key] === true).length;
+const srSourceEligibleCount = counts('v17SrSourceEligible');
+const srProductionReadyCount = counts('v17SrProductionReady');
 const out = {
   schemaVersion: '20.0.0-v17-production-decision-core-2',
   generatedAt: new Date().toISOString(),
@@ -178,6 +181,11 @@ const out = {
     technicalReportVersion: technicalReport.version,
     technicalReportSummary: technicalReport.summary || null,
     srSchemaVersion: sr.schemaVersion || null,
+    srResearchReady: sr.researchReady === true,
+    srResearchCoveragePct: finite(sr.researchCoveragePct ?? sr.coveragePct) ? Number(sr.researchCoveragePct ?? sr.coveragePct) : null,
+    srResearchFreshnessPct: finite(sr.researchFreshnessPct ?? sr.freshnessPct) ? Number(sr.researchFreshnessPct ?? sr.freshnessPct) : null,
+    srCandidateUniverseCount: finite(sr.candidateUniverseCount) ? Number(sr.candidateUniverseCount) : null,
+    srCandidateTrustedFreshCount: finite(sr.candidateTrustedFreshCount) ? Number(sr.candidateTrustedFreshCount) : null,
     srExecutionCandidateReady: sr.executionCandidateReady === true,
     globalGateStatus,
     globalExecutionGrade,
@@ -188,6 +196,7 @@ const out = {
     v20NativeMayOverrideV17: false,
     researchDiscoveryMayContinueWhenBlocked: true,
     technicalSourceEligibilitySeparatedFromProductionReadiness: true,
+    srSourceCoverageSeparatedFromExecutionEligibility: true,
     srRowEligibilitySeparatedFromGlobalSrReadiness: true,
     corporateActionUnknownNeverPromotedToSafe: true,
     globalGateClosedMeansZeroExecutionEligible: true
@@ -200,8 +209,12 @@ const out = {
     technicalSourceEligibleCount: counts('v17TechnicalSourceEligible'),
     technicalProductionReadyCount: counts('v17TechnicalProductionReady'),
     technicalEligibleCount: counts('v17TechnicalEligible'),
-    srSourceEligibleCount: counts('v17SrSourceEligible'),
-    srProductionReadyCount: counts('v17SrProductionReady'),
+    srSourceEligibleCount,
+    srSourceCoveragePct: pct(srSourceEligibleCount, rows.length),
+    srProductionReadyCount,
+    srProductionReadyCoveragePct: pct(srProductionReadyCount, rows.length),
+    srAuthoritativeResearchCoveragePct: finite(sr.researchCoveragePct ?? sr.coveragePct) ? Number(sr.researchCoveragePct ?? sr.coveragePct) : null,
+    srAuthoritativeResearchFreshnessPct: finite(sr.researchFreshnessPct ?? sr.freshnessPct) ? Number(sr.researchFreshnessPct ?? sr.freshnessPct) : null,
     srEligibleCount: counts('v17SrEligible'),
     recommendationEligibleCount: counts('v17RecommendationEligible'),
     executionEligibleCount: counts('v17ExecutionEligible'),
@@ -213,7 +226,6 @@ const out = {
 if (!globalExecutionGrade && out.summary.executionEligibleCount !== 0) throw new Error('Closed V17 gate produced execution-eligible stocks');
 if (out.summary.technicalSourceEligibleCount === 0) throw new Error('V17 Technical-50 source mapping failed: no current source-eligible rows');
 if (Number(technicalReport.summary?.withAtLeast20Sessions || 0) === 0 && out.summary.technicalProductionReadyCount > 0) {
-  // Production readiness is allowed at the exact V17 signal threshold of 10 sessions, not invented 20/50 requirements.
   if (!rows.some(row => row.v17TechnicalProductionReady && Number(row.evidence?.technicalHistorySessions) >= 10)) throw new Error('Technical readiness count cannot be justified from V17 history semantics');
 }
 writeAtomic('data/v20/v17-production-decision-core.json', out);
