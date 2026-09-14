@@ -1,0 +1,36 @@
+name: V20 Native After V17
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Update EGX Market Data"]
+    types: [completed]
+    branches: [develop/v17-rebuild]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: v20-native-after-v17-dispatch
+  cancel-in-progress: false
+
+jobs:
+  dispatch-native-refresh:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Dispatch V20 Native refresh after V17 completion
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "V17 workflow run: ${{ github.event.workflow_run.id }}"
+            echo "V17 head branch: ${{ github.event.workflow_run.head_branch }}"
+            echo "V17 conclusion: ${{ github.event.workflow_run.conclusion }}"
+          fi
+          gh workflow run v20-live-freshness-refresh.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main
