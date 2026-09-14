@@ -1,19 +1,19 @@
-# تقرير جلسة 2026-09-13
+# تقرير جلسة 2026-09-14
 
 - حالة التشغيل: **يحتاج متابعة**
-- الأول فنيًا: **MASR**
-- أول B للمراقبة: **MASR**
+- الأول فنيًا: **MPCO**
+- أول B للمراقبة: **MPCO**
 - الجاهز ورقيًا: **لا يوجد**
 - إشارات جديدة: **20**
-- دخول جديد: **20**
-- صفقات مغلقة: **24**
+- دخول جديد: **21**
+- صفقات مغلقة: **39**
 - منتهية دون دخول: **0**
 
 ## حالة الاستراتيجيات
 
-- pullback: ACTIVE_PAPER — صفقات مغلقة 42, PF 2.8317, Average R 0.5044
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 415, PF 1.3605, Average R 0.1816
-- breakout: RESEARCH_ONLY — صفقات مغلقة 87, PF 1.6602, Average R 0.3199
+- pullback: ACTIVE_LIMITED — صفقات مغلقة 52, PF 1.6432, Average R 0.26
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 440, PF 1.259, Average R 0.1355
+- breakout: RESEARCH_ONLY — صفقات مغلقة 91, PF 1.6674, Average R 0.3246
 
 ## ملاحظات التشغيل
 
@@ -21,4 +21,4 @@
 - تحذير: 42 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 41 workflows can deploy Pages.
 
-بصمة التقرير: `2b2c7afc06726c6c05f656157189e8e6ef92cdb2f39bfcd8d36b517d27b3adfd`
+بصمة التقرير: `4dcbbbb017649d7ece4319d52e65ccec9933f10ec1ac3b8988e6473da23e564e`
