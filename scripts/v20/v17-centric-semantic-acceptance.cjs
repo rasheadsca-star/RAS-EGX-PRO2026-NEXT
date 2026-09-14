@@ -38,20 +38,34 @@ const resilient=read('data/v17/resilient-session-status.json');
 const srSource=read('data/v17/internal-ohlc-support-resistance.json');
 const technicalSource=read('data/technical-50-report.json');
 const policy=read('data/v20/decision-intelligence-policy.json');
+const finite=v=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v));
+const positive=v=>finite(v)&&Number(v)>0;
+const sym=v=>String(v||'').trim().toUpperCase().replace(/\.CA$/,'').replace(/[^A-Z0-9.]/g,'');
+const srLevelsComplete=row=>['support1','support2','resistance1','resistance2'].every(key=>positive(row?.levels?.[key]?.value??row?.[key]));
+const srMinConfidence=Number(srSource?.thresholds?.minimumConfidence??0.8);
+const criticalSrSymbols=new Set((srSource.allSourceConflicts||srSource.sourceConflicts||[]).filter(c=>c?.critical===true).map(c=>sym(c.symbol)));
+const authoritativeSrSourceEligible=new Set((srSource.rows||[]).filter(r=>srLevelsComplete(r)&&r.sessionDate===contract.sessionDate&&r.freshness==='LATEST_COMPLETED_SESSION'&&finite(r.confidence)&&Number(r.confidence)>=srMinConfidence&&!criticalSrSymbols.has(sym(r.symbol))).map(r=>sym(r.symbol)));
+const expectedCoreSrSourceEligible=(core.rows||[]).filter(r=>authoritativeSrSourceEligible.has(sym(r.ticker))).length;
+const expectedSrSourceCoveragePct=(core.rows||[]).length?Math.round(expectedCoreSrSourceEligible/(core.rows||[]).length*10000)/100:0;
+
 check(native.engineId==='V20_FULL_MARKET_NATIVE_SELECTION_V1','LIVE_NATIVE_V1_ENGINE');
 check(native.candidateUniverseIsFullMarketIndependent===true&&native.legacySeedDependency===false&&Number(native.legacyScoringContributionPct)===0,'LIVE_NATIVE_FULL_MARKET_LEGACY_ZERO');
 check(native.notAuthoritativeFor?.includes('EXECUTION_PERMISSION'),'LIVE_NATIVE_CANNOT_GRANT_EXECUTION');
 check(core.moduleId==='V20_V17_PRODUCTION_DECISION_CORE'&&core.policy?.v17IsAuthoritativeForProductionEligibility===true,'LIVE_V17_CORE_MORE_THAN_BOOLEAN_GATE');
 check(core.schemaVersion==='20.0.0-v17-production-decision-core-2','LIVE_V17_CORE_SCHEMA_V2');
+check(core.policy?.srSourceCoverageSeparatedFromExecutionEligibility===true,'LIVE_V17_SR_SOURCE_EXECUTION_SEPARATION_DECLARED');
 check((core.rows||[]).every(r=>Array.isArray(r.v17Blockers)&&typeof r.v17DataEligible==='boolean'&&typeof r.v17LiquidityEligible==='boolean'&&typeof r.v17TechnicalSourceEligible==='boolean'&&typeof r.v17TechnicalProductionReady==='boolean'&&typeof r.v17SrSourceEligible==='boolean'&&typeof r.v17SrProductionReady==='boolean'&&typeof r.v17RecommendationEligible==='boolean'&&typeof r.v17ExecutionEligible==='boolean'),'LIVE_V17_PER_STOCK_ELIGIBILITY_FIELDS_COMPLETE');
 check(core.summary?.technicalSourceEligibleCount>0,'LIVE_V17_TECHNICAL_SOURCE_NOT_FALSE_ZERO',core.summary?.technicalSourceEligibleCount);
 check((core.rows||[]).filter(r=>r.v17TechnicalProductionReady).every(r=>Number(r.evidence?.technicalHistorySessions)>=10&&!/تاريخ\s+غير\s+كاف/u.test(String(r.evidence?.technicalSignal||''))),'LIVE_V17_TECHNICAL_PRODUCTION_READINESS_EXACT_SOURCE_SEMANTICS');
 if(Number(technicalSource.summary?.withAtLeast20Sessions||0)===0){check(core.summary?.technicalProductionReadyCount===0,'LIVE_V17_CURRENT_TECHNICAL_READINESS_NOT_INVENTED',core.summary?.technicalProductionReadyCount)}
-check(core.summary?.srSourceEligibleCount===(srSource.rows||[]).filter(r=>r.executionEligible===true).length,'LIVE_V17_SR_SOURCE_ELIGIBILITY_MATCHES_AUTHORITATIVE_ROWS',{core:core.summary?.srSourceEligibleCount,source:(srSource.rows||[]).filter(r=>r.executionEligible===true).length});
+check(core.summary?.srSourceEligibleCount===expectedCoreSrSourceEligible,'LIVE_V17_SR_SOURCE_COVERAGE_MATCHES_AUTHORITATIVE_EVIDENCE',{core:core.summary?.srSourceEligibleCount,source:expectedCoreSrSourceEligible});
+check(core.summary?.srSourceCoveragePct===expectedSrSourceCoveragePct,'LIVE_V17_SR_SOURCE_COVERAGE_PCT_RECONCILES',{core:core.summary?.srSourceCoveragePct,expected:expectedSrSourceCoveragePct});
+check(core.summary?.srAuthoritativeResearchCoveragePct===Number(srSource.researchCoveragePct??srSource.coveragePct),'LIVE_V17_SR_AUTHORITATIVE_RESEARCH_COVERAGE_PRESERVED',{core:core.summary?.srAuthoritativeResearchCoveragePct,source:srSource.researchCoveragePct??srSource.coveragePct});
 check(core.summary?.srProductionReadyCount<=core.summary?.srSourceEligibleCount,'LIVE_V17_SR_PRODUCTION_READY_SUBSET');
 check(core.summary?.srGlobalExecutionReady===(srSource.executionCandidateReady===true),'LIVE_V17_SR_GLOBAL_READINESS_SEPARATE');
-if(srSource.executionCandidateReady!==true){check(core.summary?.srSourceEligibleCount>0,'LIVE_V17_GLOBAL_SR_CLOSED_DOES_NOT_FALSE_ZERO_PER_STOCK_SOURCE_ELIGIBILITY')}
-check((core.rows||[]).filter(r=>r.v17SrProductionReady).every(r=>r.v17SrSourceEligible===true&&r.evidence?.srFreshness==='LATEST_COMPLETED_SESSION'&&Number(r.evidence?.srConfidence)>=Number(srSource.thresholds?.minimumConfidence||0.8)&&(r.evidence?.criticalSourceConflicts||[]).length===0),'LIVE_V17_SR_PRODUCTION_READINESS_EXACT_SOURCE_SEMANTICS');
+if(srSource.executionCandidateReady!==true&&srSource.researchReady===true){check(core.summary?.srSourceEligibleCount>0,'LIVE_V17_GLOBAL_SR_CLOSED_DOES_NOT_FALSE_ZERO_SOURCE_COVERAGE')}
+check((core.rows||[]).filter(r=>r.v17SrSourceEligible).every(r=>r.evidence?.srLevelsComplete===true&&r.evidence?.srFreshness==='LATEST_COMPLETED_SESSION'&&Number(r.evidence?.srConfidence)>=srMinConfidence&&(r.evidence?.criticalSourceConflicts||[]).length===0),'LIVE_V17_SR_SOURCE_READINESS_EXACT_EVIDENCE_SEMANTICS');
+check((core.rows||[]).filter(r=>r.v17SrProductionReady).every(r=>r.v17SrSourceEligible===true&&r.evidence?.srRowExecutionEligible===true),'LIVE_V17_SR_PRODUCTION_READINESS_REQUIRES_SOURCE_AND_EXECUTION_FLAG');
 check((core.rows||[]).every(r=>r.v17CorporateActionSafe===null&&r.corporateActionState==='NOT_AVAILABLE_IN_AUTHORITATIVE_V17_ARTIFACTS'),'LIVE_CORPORATE_ACTION_UNKNOWN_NEVER_PROMOTED_SAFE');
 check((core.rows||[]).every(r=>r.v17ExecutionEligible!==true||r.v17CorporateActionSafe===true),'LIVE_CORPORATE_ACTION_UNKNOWN_BLOCKS_EXECUTION');
 check(contract.architecture==='V17_CENTRIC_V20_NATIVE_DISCOVERY'&&contract.policy?.v20NativeCannotOverrideV17===true,'LIVE_CANONICAL_DECISION_CONTRACT_V17_CENTRIC');
@@ -70,6 +84,6 @@ check(policy.fullMarketNativeSelection?.minimumNetRiskReward===0.7,'LIVE_NATIVE_
 check(contract.rows?.every(r=>r.governance?.activeChampion==='V16_9_EQUAL_WEIGHT_BASKET'&&r.governance?.automaticPromotion===false&&r.governance?.automaticBrokerExecution===false),'LIVE_CHAMPION_AND_NO_AUTO_PROMOTION_EXECUTION');
 check((contract.rows||[]).every(r=>r.confidence?.modelConfidence===null&&r.confidence?.modelConfidenceState==='UNCALIBRATED_DO_NOT_INFER_FROM_NATIVE_SCORE'),'LIVE_MODEL_CONFIDENCE_NOT_INFERRED_FROM_SCORE');
 
-const report={schemaVersion:'20.0.0-v17-centric-semantic-acceptance-2',generatedAt:new Date().toISOString(),sessionDate:contract.sessionDate,ok:failures.length===0,failedCount:failures.length,failures,checks,summary:{testCount:checks.length,caseAtoHPassed:checks.slice(0,8).every(x=>x.ok),v17ExecutionGrade:resilient.executionGrade===true,technicalSourceEligibleCount:core.summary?.technicalSourceEligibleCount,technicalProductionReadyCount:core.summary?.technicalProductionReadyCount,srSourceEligibleCount:core.summary?.srSourceEligibleCount,srProductionReadyCount:core.summary?.srProductionReadyCount,v17RecommendationEligibleCount:core.summary?.recommendationEligibleCount,productionActionableCount:contract.summary?.productionActionableCount,productionNewExposurePct:contract.summary?.productionNewExposurePct,nativePublishedCount:native.publishedCandidates?.length||0,activeChampion:'V16_9_EQUAL_WEIGHT_BASKET'}};
+const report={schemaVersion:'20.0.0-v17-centric-semantic-acceptance-2',generatedAt:new Date().toISOString(),sessionDate:contract.sessionDate,ok:failures.length===0,failedCount:failures.length,failures,checks,summary:{testCount:checks.length,caseAtoHPassed:checks.slice(0,8).every(x=>x.ok),v17ExecutionGrade:resilient.executionGrade===true,technicalSourceEligibleCount:core.summary?.technicalSourceEligibleCount,technicalProductionReadyCount:core.summary?.technicalProductionReadyCount,srSourceEligibleCount:core.summary?.srSourceEligibleCount,srSourceCoveragePct:core.summary?.srSourceCoveragePct,srAuthoritativeResearchCoveragePct:core.summary?.srAuthoritativeResearchCoveragePct,srProductionReadyCount:core.summary?.srProductionReadyCount,srProductionReadyCoveragePct:core.summary?.srProductionReadyCoveragePct,srGlobalExecutionReady:core.summary?.srGlobalExecutionReady,v17RecommendationEligibleCount:core.summary?.recommendationEligibleCount,productionActionableCount:contract.summary?.productionActionableCount,productionNewExposurePct:contract.summary?.productionNewExposurePct,nativePublishedCount:native.publishedCandidates?.length||0,activeChampion:'V16_9_EQUAL_WEIGHT_BASKET'}};
 write('data/v20/v17-centric-semantic-acceptance.json',report);
 console.log(JSON.stringify(report,null,2));if(!report.ok)process.exitCode=1;
