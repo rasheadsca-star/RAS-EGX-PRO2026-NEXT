@@ -1,150 +1,268 @@
-name: Repair V18 Canonical No-Trade Session Handling
+name: V18 Canonical V16.9 Refresh
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "EGX MAIN APP V16.9.2 P2 Automatic Scan"
+    types:
+      - completed
   push:
     paths:
       - ".github/workflows/v18-canonical-no-trade-repair.yml"
+  schedule:
+    - cron: "25 13-19 * * 0-4"
 
 permissions:
   contents: write
 
 concurrency:
-  group: v18-canonical-no-trade-repair
+  group: v18-durable-post-close-coordinator
   cancel-in-progress: false
 
 env:
   V18_BRANCH: v18-global-strategy-ensemble-20260906
+  V18_LIVE_DATA_URL: https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18/data.json
+  V18_LIVE_MANIFEST_URL: https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18-web/manifest.json
 
 jobs:
-  repair:
+  refresh-v18:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
-      - name: Checkout main
+      - name: Checkout canonical main
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
+          path: main-src
+          fetch-depth: 1
 
-      - name: Checkout V18 branch
+      - name: Checkout V18 publication branch
         uses: actions/checkout@v4
         with:
           ref: v18-global-strategy-ensemble-20260906
           path: v18
           fetch-depth: 0
 
-      - name: Patch V18 engine to accept a current canonical no-trade session
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify canonical session and decide whether refresh is needed
+        id: gate
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
+          node <<'NODE'
+          const fs=require('fs');
+          const read=f=>{try{return JSON.parse(fs.readFileSync(f,'utf8'));}catch{return {};}};
+          const fetch=read('main-src/data/fetch-status.json');
+          const canonical=read('main-src/data/stable/v16-main-app-current.json');
+          const stock=read('main-src/data/quant/stocks/TMGH.json');
+          const daily=read('main-src/data/quant/daily-recommendations.json');
+          const adaptive=read('main-src/data/quant/adaptive-daily-recommendations.json');
+          const regime=read('main-src/data/stable/v16-market-regime.json');
+          const published=read('v18/preview-v18-web/manifest.json');
+          const expected=String(fetch.expectedSession||'');
+          const stockSession=String(stock.sessionId||stock.latest?.date||'');
+          const canonicalSession=String(canonical.sessionDate||canonical.sessionId||'');
+          const dailySession=String(daily.sessionDate||daily.sessionId||'');
+          const adaptiveSession=String(adaptive.sessionDate||adaptive.sessionId||'');
+          const regimeSession=String(regime.sessionDate||regime.sessionId||regime.metrics?.sessionDate||'');
+          const sourceVerified=canonical?.basketPlan?.sourceSessionReady===true || canonical?.freshness?.isFresh===true;
+          if(!expected) throw new Error('fetch-status.expectedSession is missing');
+          if(!(fetch.ok===true && fetch.realFetch===true && fetch.executionGrade===true && Number(fetch.currentSessionRows||0)>=150)) throw new Error('Canonical fetch-status is not execution-grade/current enough');
+          if(stockSession!==expected) throw new Error(`Canonical stock session ${stockSession} != expected ${expected}`);
+          if(canonicalSession!==expected) throw new Error(`Canonical V16.9 session ${canonicalSession} != expected ${expected}`);
+          if(canonical?.selectedModel?.id!=='V16_9_EQUAL_WEIGHT_BASKET') throw new Error(`Canonical engine mismatch: ${canonical?.selectedModel?.id||'missing'}`);
+          if(canonical.currentSessionReady!==true) throw new Error('Canonical V16.9 currentSessionReady is not true');
+          if(!sourceVerified) throw new Error('Canonical V16.9 source session is not verified');
+          if(!Array.isArray(canonical.recommendations)) throw new Error('Canonical recommendations field is invalid');
+          if(dailySession!==expected) throw new Error(`Daily recommendations session ${dailySession} != expected ${expected}`);
+          if(regimeSession!==expected) throw new Error(`Market regime session ${regimeSession} != expected ${expected}`);
+          const scheduleNoop=process.env.GITHUB_EVENT_NAME==='schedule' && String(published.sessionId||'')===expected;
+          const out={
+            eventName:process.env.GITHUB_EVENT_NAME,
+            expectedSession:expected,
+            canonicalSession,
+            canonicalStatus:canonical.status||null,
+            practicalReady:canonical.practicalReady===true,
+            recommendationCount:canonical.recommendations.length,
+            stockSession,
+            dailySession,
+            adaptiveSession:adaptiveSession||null,
+            adaptiveCurrent:adaptiveSession===expected,
+            regimeSession,
+            currentPublishedSession:published.sessionId||null,
+            scheduleNoop
+          };
+          console.log(JSON.stringify(out,null,2));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`expected=${expected}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`run=${scheduleNoop?'false':'true'}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,`adaptive_current=${adaptiveSession===expected?'true':'false'}\n`);
+          NODE
 
-          p = Path('v18/scripts/stable/v18-global-strategy-ensemble.cjs')
-          text = p.read_text(encoding='utf-8')
+      - name: Stop scheduled duplicate after current session is already published
+        if: steps.gate.outputs.run != 'true'
+        run: echo "V18 already publishes the canonical current session; scheduled fallback is a no-op."
 
-          old = """  const daily = readJson(path.join(ROOT, 'data/quant/daily-recommendations.json'), {});\n  const adaptive = readJson(path.join(ROOT, 'data/quant/adaptive-daily-recommendations.json'), {});\n  const stocks = loadStockDetails();\n"""
-          new = """  const dailyRaw = readJson(path.join(ROOT, 'data/quant/daily-recommendations.json'), {});\n  const adaptiveRaw = readJson(path.join(ROOT, 'data/quant/adaptive-daily-recommendations.json'), {});\n  const stocks = loadStockDetails();\n"""
-          if old not in text:
-              raise SystemExit('V18 source-load block changed; refusing blind patch')
-          text = text.replace(old, new, 1)
+      - name: Sync current canonical inputs into V18 workspace
+        if: steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="${{ steps.gate.outputs.expected }}"
+          rm -rf v18/data/quant/stocks
+          mkdir -p v18/data/quant v18/data/stable
+          cp -R main-src/data/quant/stocks v18/data/quant/stocks
+          cp main-src/data/fetch-status.json v18/data/fetch-status.json
+          cp main-src/data/quant/stock-intelligence-index.json v18/data/quant/stock-intelligence-index.json
+          cp main-src/data/quant/daily-recommendations.json v18/data/quant/daily-recommendations.json
+          cp main-src/data/stable/v16-market-regime.json v18/data/stable/v16-market-regime.json
+          cp main-src/data/stable/v16-main-app-current.json v18/data/stable/v16-main-app-current.json
+          cp main-src/data/stable/v15-practical-decision.json v18/data/stable/v15-practical-decision.json
+          if [ -f main-src/data/session-calendar.json ]; then cp main-src/data/session-calendar.json v18/data/session-calendar.json; fi
+          if [ "${{ steps.gate.outputs.adaptive_current }}" = "true" ]; then
+            cp main-src/data/quant/adaptive-daily-recommendations.json v18/data/quant/adaptive-daily-recommendations.json
+          else
+            rm -f v18/data/quant/adaptive-daily-recommendations.json
+            echo "Excluded stale adaptive recommendations; they do not match $EXPECTED."
+          fi
 
-          old = """  const v169ModelId = String(v169?.selectedModel?.id || '');\n  const v169Session = v169?.sessionDate || v169?.sessionId || null;\n  const v169Recommendations = Array.isArray(v169?.recommendations) ? v169.recommendations : [];\n  if (v169ModelId !== 'V16_9_EQUAL_WEIGHT_BASKET') {\n    throw new Error(`V18 refuses non-canonical V16.9 source: selectedModel.id=${v169ModelId || 'missing'}`);\n  }\n  if (v169.practicalReady !== true) {\n    throw new Error('V18 refuses V16.9 source because practicalReady is not true');\n  }\n  if (!v169Session || v169Recommendations.length === 0) {\n    throw new Error('V18 canonical V16.9 source is missing session or recommendations');\n  }\n"""
-          new = """  const v169ModelId = String(v169?.selectedModel?.id || '');\n  const v169Session = v169?.sessionDate || v169?.sessionId || null;\n  const v169Recommendations = Array.isArray(v169?.recommendations) ? v169.recommendations : [];\n  const v169CurrentSessionReady = v169?.currentSessionReady === true || v169?.freshness?.currentSessionReady === true;\n  const v169SourceSessionReady = v169?.basketPlan?.sourceSessionReady === true || v169?.freshness?.isFresh === true;\n  const dailySession = dailyRaw?.sessionDate || dailyRaw?.sessionId || null;\n  const adaptiveSession = adaptiveRaw?.sessionDate || adaptiveRaw?.sessionId || null;\n  const daily = dailySession === v169Session ? dailyRaw : {};\n  const adaptive = adaptiveSession === v169Session ? adaptiveRaw : {};\n  if (v169ModelId !== 'V16_9_EQUAL_WEIGHT_BASKET') {\n    throw new Error(`V18 refuses non-canonical V16.9 source: selectedModel.id=${v169ModelId || 'missing'}`);\n  }\n  if (!v169Session || !v169CurrentSessionReady || !v169SourceSessionReady) {\n    throw new Error(`V18 refuses V16.9 source because canonical session is not current/verified: session=${v169Session || 'missing'} current=${v169CurrentSessionReady} source=${v169SourceSessionReady}`);\n  }\n  if (!Array.isArray(v169?.recommendations)) {\n    throw new Error('V18 canonical V16.9 recommendations field is invalid');\n  }\n"""
-          if old not in text:
-              raise SystemExit('V18 canonical gate changed; refusing blind patch')
-          text = text.replace(old, new, 1)
-
-          old = """  const extendedMomentumWatch = Array.isArray(v169?.extendedMomentumWatch)\n    ? v169.extendedMomentumWatch\n    : (Array.isArray(legacyPractical?.extendedMomentumWatch) ? legacyPractical.extendedMomentumWatch : []);\n"""
-          new = """  const extendedMomentumWatch = v169.practicalReady === true\n    ? (Array.isArray(v169?.extendedMomentumWatch)\n      ? v169.extendedMomentumWatch\n      : (Array.isArray(legacyPractical?.extendedMomentumWatch) ? legacyPractical.extendedMomentumWatch : []))\n    : [];\n"""
-          if old not in text:
-              raise SystemExit('V18 extended-watch block changed; refusing blind patch')
-          text = text.replace(old, new, 1)
-
-          old = """        acceptedAs: 'V16_9_BASKET'\n"""
-          new = """        acceptedAs: v169.practicalReady === true ? 'V16_9_BASKET' : 'V16_9_CURRENT_NO_TRADE'\n"""
-          if old not in text:
-              raise SystemExit('V18 provenance acceptedAs field changed; refusing blind patch')
-          text = text.replace(old, new, 1)
-
-          old = """      canonicalV169Truth: 'V16_9_BASKET can only be sourced from data/stable/v16-main-app-current.json when selectedModel.id is V16_9_EQUAL_WEIGHT_BASKET and practicalReady is true.'\n"""
-          new = """      canonicalV169Truth: 'V16.9 is accepted only from data/stable/v16-main-app-current.json when the engine id and verified current session match. practicalReady=false is a valid canonical NO_TRADE outcome and contributes zero V16.9 basket votes.'\n"""
-          if old not in text:
-              raise SystemExit('V18 diagnostic truth string changed; refusing blind patch')
-          text = text.replace(old, new, 1)
-
-          p.write_text(text, encoding='utf-8')
-          PY
-          node --check v18/scripts/stable/v18-global-strategy-ensemble.cjs
-          grep -q "V16_9_CURRENT_NO_TRADE" v18/scripts/stable/v18-global-strategy-ensemble.cjs
-          grep -q "dailySession === v169Session" v18/scripts/stable/v18-global-strategy-ensemble.cjs
-          grep -q "adaptiveSession === v169Session" v18/scripts/stable/v18-global-strategy-ensemble.cjs
-
-      - name: Persist V18 engine repair first
+      - name: Build V18 from canonical session
+        if: steps.gate.outputs.run == 'true'
         working-directory: v18
         shell: bash
         run: |
           set -euo pipefail
+          export GITHUB_WORKSPACE="$PWD"
+          node --check scripts/stable/v18-global-strategy-ensemble.cjs
+          node --check scripts/stable/build-v18-decision-board.cjs
+          node --check scripts/stable/build-v18-web-preview.cjs
+          grep -q "V16_9_CURRENT_NO_TRADE" scripts/stable/v18-global-strategy-ensemble.cjs
+          node scripts/stable/build-v18-decision-board.cjs
+          node scripts/stable/build-v18-web-preview.cjs
+
+      - name: Validate session, provenance, stale-source exclusion and payload hash
+        if: steps.gate.outputs.run == 'true'
+        working-directory: v18
+        shell: bash
+        env:
+          EXPECTED_SESSION: ${{ steps.gate.outputs.expected }}
+          ADAPTIVE_CURRENT: ${{ steps.gate.outputs.adaptive_current }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const crypto=require('crypto');
+          const out=require('./preview-v18/data.json');
+          const manifest=require('./preview-v18-web/manifest.json');
+          const canonical=require('./data/stable/v16-main-app-current.json');
+          const expected=process.env.EXPECTED_SESSION;
+          const hash=crypto.createHash('sha256').update(Buffer.from(JSON.stringify(out))).digest('hex');
+          if(out.sessionId!==expected) throw new Error(`V18 session ${out.sessionId} != expected ${expected}`);
+          if(manifest.sessionId!==expected) throw new Error(`Manifest session ${manifest.sessionId} != expected ${expected}`);
+          if(manifest.payloadSha256!==hash) throw new Error('Manifest payload hash mismatch');
+          if(out.dataHealth?.status!=='PASS'||Number(out.dataHealth?.criticalFailureCount||0)!==0) throw new Error('V18 data-health gate failed');
+          if(!Array.isArray(out.allCandidates)||out.allCandidates.length<20) throw new Error(`V18 candidates incomplete: ${out.allCandidates?.length||0}`);
+          const provenance=out.sourceProvenance?.v16_9;
+          const canonicalTickers=(canonical.recommendations||[]).map(x=>String(x.ticker||'').toUpperCase()).filter(Boolean);
+          if(!provenance||provenance.path!=='data/stable/v16-main-app-current.json'||provenance.selectedModelId!=='V16_9_EQUAL_WEIGHT_BASKET'||provenance.sessionId!==expected) throw new Error('V18 canonical V16.9 provenance gate failed');
+          if(Boolean(provenance.practicalReady)!==Boolean(canonical.practicalReady)) throw new Error('V18 canonical practicalReady provenance mismatch');
+          if(Number(provenance.recommendationCount||0)!==canonicalTickers.length) throw new Error('V18 canonical recommendation-count provenance mismatch');
+          for(const ticker of canonicalTickers){
+            const row=out.allCandidates.find(x=>String(x.ticker||'').toUpperCase()===ticker);
+            if(!row||(row.sources||[]).includes('V16_9_BASKET')===false) throw new Error(`Canonical V16.9 vote missing: ${ticker}`);
+          }
+          if(process.env.ADAPTIVE_CURRENT!=='true'){
+            const leaked=out.allCandidates.filter(x=>(x.sources||[]).some(s=>String(s).startsWith('V13_5_'))).map(x=>x.ticker);
+            if(leaked.length) throw new Error(`Stale adaptive source leaked into V18: ${leaked.join(',')}`);
+          }
+          console.log(JSON.stringify({
+            sessionId:out.sessionId,
+            payloadSha256:hash,
+            candidates:out.allCandidates.length,
+            practicalReady:canonical.practicalReady===true,
+            v169RecommendationCount:canonicalTickers.length,
+            v169AcceptedAs:provenance.acceptedAs,
+            adaptiveCurrent:process.env.ADAPTIVE_CURRENT==='true',
+            dataHealth:out.dataHealth.status
+          },null,2));
+          NODE
+
+      - name: Persist verified V18 publication
+        if: steps.gate.outputs.run == 'true'
+        working-directory: v18
+        shell: bash
+        env:
+          EXPECTED_SESSION: ${{ steps.gate.outputs.expected }}
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/stable/v18-global-strategy-ensemble.cjs
-          if ! git diff --cached --quiet; then
-            git commit -m "fix(v18): accept verified canonical no-trade sessions"
-            git pull --rebase origin "$V18_BRANCH"
-            git push origin HEAD:"$V18_BRANCH"
+          required=(preview-v18/data.json preview-v18/forward-ledger.json preview-v18-web/index.html preview-v18-web/manifest.json)
+          for p in "${required[@]}"; do test -s "$p" || { echo "::error::Missing publication artifact $p"; exit 1; }; done
+          git add -f "${required[@]}"
+          git add -f data/fetch-status.json data/quant/stocks data/quant/stock-intelligence-index.json data/quant/daily-recommendations.json data/stable/v16-market-regime.json data/stable/v16-main-app-current.json data/stable/v15-practical-decision.json
+          [ ! -f data/session-calendar.json ] || git add -f data/session-calendar.json
+          git add -A data/quant/adaptive-daily-recommendations.json
+          [ ! -f data/stable/v18-forward-ledger.json ] || git add -f data/stable/v18-forward-ledger.json
+          if git diff --cached --quiet; then
+            echo "No material V18 changes to publish."
+          else
+            git commit -m "chore(v18): canonical refresh ${EXPECTED_SESSION}"
+            git restore --worktree --staged -- .
+            for attempt in 1 2 3; do
+              git fetch origin "$V18_BRANCH"
+              if git rebase "origin/$V18_BRANCH" && git push origin HEAD:"$V18_BRANCH"; then
+                break
+              fi
+              git rebase --abort || true
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 5))
+            done
           fi
 
-      - name: Patch V18 coordinator to follow canonical V16.9
+      - name: Verify published V18 branch snapshot
+        if: steps.gate.outputs.run == 'true'
+        working-directory: v18
         shell: bash
+        env:
+          EXPECTED_SESSION: ${{ steps.gate.outputs.expected }}
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
+          git fetch origin "$V18_BRANCH"
+          git show "origin/$V18_BRANCH:preview-v18/data.json" > /tmp/v18-published-data.json
+          git show "origin/$V18_BRANCH:preview-v18-web/manifest.json" > /tmp/v18-published-manifest.json
+          node <<'NODE'
+          const fs=require('fs');
+          const crypto=require('crypto');
+          const data=require('/tmp/v18-published-data.json');
+          const manifest=require('/tmp/v18-published-manifest.json');
+          const hash=crypto.createHash('sha256').update(Buffer.from(JSON.stringify(data))).digest('hex');
+          if(data.sessionId!==process.env.EXPECTED_SESSION||manifest.sessionId!==process.env.EXPECTED_SESSION) throw new Error('Published V18 branch is stale');
+          if(manifest.payloadSha256!==hash) throw new Error('Published V18 payload hash mismatch');
+          if(!Array.isArray(data.allCandidates)||data.allCandidates.length<20) throw new Error('Published V18 candidates are incomplete');
+          console.log(JSON.stringify({publishedSession:data.sessionId,payloadSha256:hash,candidates:data.allCandidates.length,v169:data.sourceProvenance?.v16_9},null,2));
+          NODE
 
-          p = Path('.github/workflows/v18-durable-coordinator.yml')
-          text = p.read_text(encoding='utf-8')
-
-          old = '      - "EGX V16.3.3 Immediate Market Rescan and Deploy"'
-          new = '      - "EGX MAIN APP V16.9.2 P2 Automatic Scan"'
-          if old not in text:
-              raise SystemExit('V18 workflow_run trigger changed; refusing blind patch')
-          text = text.replace(old, new, 1)
-
-          old = """          if(v169.practicalReady!==true) throw new Error('Canonical V16.9 practicalReady is not true');\n          if(!Array.isArray(v169.recommendations)||v169.recommendations.length<1) throw new Error('Canonical V16.9 recommendations are missing');\n"""
-          new = """          if(v169.currentSessionReady!==true) throw new Error('Canonical V16.9 currentSessionReady is not true');\n          if(v169?.basketPlan?.sourceSessionReady!==true && v169?.freshness?.isFresh!==true) throw new Error('Canonical V16.9 source session is not verified');\n          if(!Array.isArray(v169.recommendations)) throw new Error('Canonical V16.9 recommendations field is invalid');\n"""
-          if old not in text:
-              raise SystemExit('V18 canonical session gate changed; refusing blind patch')
-          text = text.replace(old, new, 1)
-
-          old = """          const provenance=out.sourceProvenance?.v16_9;\n          if(!provenance||provenance.path!=='data/stable/v16-main-app-current.json'||provenance.selectedModelId!=='V16_9_EQUAL_WEIGHT_BASKET'||provenance.sessionId!==expected||provenance.practicalReady!==true) throw new Error('V18 canonical V16.9 provenance gate failed');\n          const canonicalTickers=(canonical.recommendations||[]).map(x=>String(x.ticker||'').toUpperCase()).filter(Boolean);\n"""
-          new = """          const provenance=out.sourceProvenance?.v16_9;\n          const canonicalTickers=(canonical.recommendations||[]).map(x=>String(x.ticker||'').toUpperCase()).filter(Boolean);\n          if(!provenance||provenance.path!=='data/stable/v16-main-app-current.json'||provenance.selectedModelId!=='V16_9_EQUAL_WEIGHT_BASKET'||provenance.sessionId!==expected) throw new Error('V18 canonical V16.9 provenance gate failed');\n          if(Boolean(provenance.practicalReady)!==Boolean(canonical.practicalReady)) throw new Error('V18 canonical V16.9 practicalReady provenance mismatch');\n          if(Number(provenance.recommendationCount||0)!==canonicalTickers.length) throw new Error('V18 canonical V16.9 recommendation-count provenance mismatch');\n"""
-          if old not in text:
-              raise SystemExit('V18 output provenance gate changed; refusing blind patch')
-          text = text.replace(old, new, 1)
-
-          p.write_text(text, encoding='utf-8')
-          PY
-          grep -q 'EGX MAIN APP V16.9.2 P2 Automatic Scan' .github/workflows/v18-durable-coordinator.yml
-          grep -q 'currentSessionReady is not true' .github/workflows/v18-durable-coordinator.yml
-          grep -q 'recommendation-count provenance mismatch' .github/workflows/v18-durable-coordinator.yml
-
-      - name: Persist coordinator repair
+      - name: Verify raw GitHub live source
+        if: steps.gate.outputs.run == 'true'
         shell: bash
+        env:
+          EXPECTED_SESSION: ${{ steps.gate.outputs.expected }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/v18-durable-coordinator.yml
-          if ! git diff --cached --quiet; then
-            git commit -m "fix(v18): follow canonical V16.9 no-trade sessions"
-            git pull --rebase origin main
-            git push origin HEAD:main
-          fi
-
-      - name: Summarize repair
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "V18 engine and durable coordinator repaired."
-          echo "The coordinator push will trigger a fresh V18 build from the current canonical session."
+          ok=0
+          for attempt in 1 2 3 4 5 6; do
+            stamp="$(date +%s%3N)"
+            if curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$V18_LIVE_MANIFEST_URL?verify=$stamp" -o /tmp/live-manifest.json; then
+              LIVE_SESSION="$(node -e "const x=require('/tmp/live-manifest.json');process.stdout.write(String(x.sessionId||''))")"
+              if [ "$LIVE_SESSION" = "$EXPECTED_SESSION" ]; then ok=1; break; fi
+            fi
+            sleep 5
+          done
+          test "$ok" = "1" || { echo "::error::Raw V18 live manifest did not advance to $EXPECTED_SESSION"; exit 1; }
+          node -e "const x=require('/tmp/live-manifest.json');console.log({sessionId:x.sessionId,payloadSha256:x.payloadSha256,candidates:x.candidates,dashboardRecommendations:x.dashboardRecommendations})"
