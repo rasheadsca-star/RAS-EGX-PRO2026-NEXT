@@ -173,22 +173,28 @@ function main() {
   const regime = readJson(path.join(ROOT, 'data/stable/v16-market-regime.json'), {});
   const v169 = readJson(V169_CANONICAL_PATH, {});
   const legacyPractical = readJson(LEGACY_PRACTICAL_PATH, {});
-  const daily = readJson(path.join(ROOT, 'data/quant/daily-recommendations.json'), {});
-  const adaptive = readJson(path.join(ROOT, 'data/quant/adaptive-daily-recommendations.json'), {});
+  const dailyRaw = readJson(path.join(ROOT, 'data/quant/daily-recommendations.json'), {});
+  const adaptiveRaw = readJson(path.join(ROOT, 'data/quant/adaptive-daily-recommendations.json'), {});
   const stocks = loadStockDetails();
   const store = new Map();
 
   const v169ModelId = String(v169?.selectedModel?.id || '');
   const v169Session = v169?.sessionDate || v169?.sessionId || null;
   const v169Recommendations = Array.isArray(v169?.recommendations) ? v169.recommendations : [];
+  const v169CurrentSessionReady = v169?.currentSessionReady === true || v169?.freshness?.currentSessionReady === true;
+  const v169SourceSessionReady = v169?.basketPlan?.sourceSessionReady === true || v169?.freshness?.isFresh === true;
+  const dailySession = dailyRaw?.sessionDate || dailyRaw?.sessionId || null;
+  const adaptiveSession = adaptiveRaw?.sessionDate || adaptiveRaw?.sessionId || null;
+  const daily = dailySession === v169Session ? dailyRaw : {};
+  const adaptive = adaptiveSession === v169Session ? adaptiveRaw : {};
   if (v169ModelId !== 'V16_9_EQUAL_WEIGHT_BASKET') {
     throw new Error(`V18 refuses non-canonical V16.9 source: selectedModel.id=${v169ModelId || 'missing'}`);
   }
-  if (v169.practicalReady !== true) {
-    throw new Error('V18 refuses V16.9 source because practicalReady is not true');
+  if (!v169Session || !v169CurrentSessionReady || !v169SourceSessionReady) {
+    throw new Error(`V18 refuses V16.9 source because canonical session is not current/verified: session=${v169Session || 'missing'} current=${v169CurrentSessionReady} source=${v169SourceSessionReady}`);
   }
-  if (!v169Session || v169Recommendations.length === 0) {
-    throw new Error('V18 canonical V16.9 source is missing session or recommendations');
+  if (!Array.isArray(v169?.recommendations)) {
+    throw new Error('V18 canonical V16.9 recommendations field is invalid');
   }
 
   for (const item of v169Recommendations) {
@@ -212,9 +218,11 @@ function main() {
     });
   }
 
-  const extendedMomentumWatch = Array.isArray(v169?.extendedMomentumWatch)
-    ? v169.extendedMomentumWatch
-    : (Array.isArray(legacyPractical?.extendedMomentumWatch) ? legacyPractical.extendedMomentumWatch : []);
+  const extendedMomentumWatch = v169.practicalReady === true
+    ? (Array.isArray(v169?.extendedMomentumWatch)
+      ? v169.extendedMomentumWatch
+      : (Array.isArray(legacyPractical?.extendedMomentumWatch) ? legacyPractical.extendedMomentumWatch : []))
+    : [];
   for (const item of extendedMomentumWatch) {
     addCandidate(store, {
       ticker: item.ticker,
@@ -418,7 +426,7 @@ function main() {
         sessionId: v169Session,
         practicalReady: v169.practicalReady === true,
         recommendationCount: v169Recommendations.length,
-        acceptedAs: 'V16_9_BASKET'
+        acceptedAs: v169.practicalReady === true ? 'V16_9_BASKET' : 'V16_9_CURRENT_NO_TRADE'
       },
       v15Extended: {
         path: Array.isArray(v169?.extendedMomentumWatch)
@@ -442,7 +450,7 @@ function main() {
         : null,
       canonicalLiquidityTruth: 'Average turnover is read from data/quant/stocks canonical intelligence; no duplicate unit conversion is allowed.',
       evidenceSeparation: 'Backtest/validation/test/forward/pilot states are kept distinct. No historical metric is presented as a guaranteed probability.',
-      canonicalV169Truth: 'V16_9_BASKET can only be sourced from data/stable/v16-main-app-current.json when selectedModel.id is V16_9_EQUAL_WEIGHT_BASKET and practicalReady is true.'
+      canonicalV169Truth: 'V16.9 is accepted only from data/stable/v16-main-app-current.json when the engine id and verified current session match. practicalReady=false is a valid canonical NO_TRADE outcome and contributes zero V16.9 basket votes.'
     },
     actionable,
     watch,
