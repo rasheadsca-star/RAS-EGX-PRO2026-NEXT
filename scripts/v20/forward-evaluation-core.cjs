@@ -141,7 +141,22 @@ function aggregateAppliedPortfolio(core, memberOutcomes) {
 
 function aggregateResearch(memberOutcomes, candidateCount) {
   const resolvedRows = memberOutcomes.filter(row => row.outcome?.resolved === true && row.researchEligible === true);
-  if (resolvedRows.length !== candidateCount) return { resolved: false, status: 'PENDING_RESEARCH_MEMBER_OUTCOME', candidateCount, resolvedCount: resolvedRows.length };
+  if (resolvedRows.length !== candidateCount) {
+    return {
+      resolved: false,
+      status: 'PENDING_RESEARCH_MEMBER_OUTCOME',
+      candidateCount,
+      resolvedCount: resolvedRows.length,
+      enteredCount: null,
+      notEnteredCount: null,
+      ambiguousCount: 0,
+      equalWeightIssuedGrossReturnPct: null,
+      equalWeightIssuedNetReturnPct: null,
+      enteredOnlyAverageNetReturnPct: null,
+      decisionUse: 'RESEARCH_DIAGNOSTIC_ONLY_NOT_PRODUCTION_PERFORMANCE',
+      appliedToProduction: false,
+    };
+  }
   if (!candidateCount) return { resolved: true, status: 'NO_ELIGIBLE_RESEARCH_PLANS', candidateCount: 0, enteredCount: 0, notEnteredCount: 0, ambiguousCount: 0, equalWeightIssuedGrossReturnPct: null, equalWeightIssuedNetReturnPct: null, enteredOnlyAverageNetReturnPct: null };
   const entered = resolvedRows.filter(row => row.outcome.entered === true);
   const gross = resolvedRows.reduce((s,row) => s + (finite(row.outcome.grossReturnPct) ?? 0), 0) / candidateCount;
