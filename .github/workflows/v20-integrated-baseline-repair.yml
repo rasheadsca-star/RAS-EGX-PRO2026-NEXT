@@ -1,0 +1,59 @@
+name: V20 One-Shot Integrated Baseline Repair
+
+on:
+  push:
+    branches: [develop/v20-integrated-decision-platform]
+    paths:
+      - ".github/workflows/v20-integrated-baseline-repair.yml"
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Replace invalid isolation baseline exactly once
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/v20-integrated-decision-platform.yml')
+          s = p.read_text()
+          old = '0dbbe93ec228b62d3c510b1b57623c550f4eefef'
+          new = 'e4a4fd1ba042e885afc614845a4be445adc316b9'
+          count = s.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one old baseline, found {count}')
+          p.write_text(s.replace(old, new))
+          PY
+          grep -F 'V20_ISOLATION_BASE="e4a4fd1ba042e885afc614845a4be445adc316b9"' .github/workflows/v20-integrated-decision-platform.yml
+          git diff --check
+
+      - name: Commit repair and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/v20-integrated-baseline-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/v20-integrated-decision-platform.yml .github/workflows/v20-integrated-baseline-repair.yml
+          git diff --cached --check
+          git commit -m "Fix Integrated V20 isolation baseline"
+          git push origin HEAD:develop/v20-integrated-decision-platform
+
+      - name: Dispatch Integrated validation on repaired head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh workflow run v20-integrated-decision-platform.yml --ref develop/v20-integrated-decision-platform
