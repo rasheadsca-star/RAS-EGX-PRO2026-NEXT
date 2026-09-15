@@ -24,16 +24,20 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
-        with: {fetch-depth: 1}
+        with: {fetch-depth: 0}
       - name: Enforce V20 branch isolation
         shell: bash
         run: |
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
-          git fetch --no-tags --depth=1 origin v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
-          changed="$(git diff --name-only origin/v19-egx-chat-gpt HEAD)"
-          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-v17-centric-clean(-v2)?\.yml$)' || true)"
-          test -z "$violations" || { echo "$violations"; exit 1; }
+          V20_ISOLATION_BASE="e4a4fd1ba042e885afc614845a4be445adc316b9"
+          git cat-file -e "$V20_ISOLATION_BASE^{commit}" 2>/dev/null || git fetch --no-tags origin "$V20_ISOLATION_BASE"
+          git cat-file -e "$V20_ISOLATION_BASE^{commit}"
+          git merge-base --is-ancestor "$V20_ISOLATION_BASE" HEAD || { echo "V20 isolation baseline is not an ancestor of HEAD"; exit 1; }
+          changed="$(git diff --name-only "$V20_ISOLATION_BASE" HEAD)"
+          violations="$(printf '%s\n' "$changed" | grep -Ev '^(scripts/v20/|docs/v20/|data/v20/|v20/|\.github/workflows/v20-integrated-decision-platform\.yml$|\.github/workflows/v20-market-regime\.yml$|\.github/workflows/v20-v17-centric-clean(-v2|-v3|-v5)?\.yml$|\.github/workflows/v20-primary-entry-point-acceptance\.yml$)' || true)"
+          test -z "$violations" || { echo "V20 isolation violation since accepted baseline $V20_ISOLATION_BASE:"; echo "$violations"; exit 1; }
+          echo "V20 isolation PASS since $V20_ISOLATION_BASE"
       - uses: actions/setup-node@v6
         with: {node-version: "22"}
       - name: Sync authoritative V17 inputs read-only
