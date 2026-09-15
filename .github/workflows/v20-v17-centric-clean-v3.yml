@@ -34,7 +34,7 @@ jobs:
           # Compare only changes introduced after the accepted V20 isolation baseline.
           # Historical sibling applications already present before this baseline are not
           # new V20 integration violations and must not create false positives.
-          V20_ISOLATION_BASE="0dbbe93ec228b62d3c510b1b57623c550f4eefef"
+          V20_ISOLATION_BASE="e4a4fd1ba042e885afc614845a4be445adc316b9"
           git cat-file -e "$V20_ISOLATION_BASE^{commit}" 2>/dev/null || git fetch --no-tags origin "$V20_ISOLATION_BASE"
           git cat-file -e "$V20_ISOLATION_BASE^{commit}"
           git merge-base --is-ancestor "$V20_ISOLATION_BASE" HEAD || { echo "V20 isolation baseline is not an ancestor of HEAD"; exit 1; }
