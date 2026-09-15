@@ -1,6 +1,6 @@
 {
   "schemaVersion": "astra-g08-strategy-reconstruction-matrix-1",
-  "generatedAt": "2026-09-15T21:15:29.874Z",
+  "generatedAt": "2026-09-15T21:19:00.751Z",
   "count": 18,
   "strategies": [
     {
@@ -1145,9 +1145,9 @@
         "breakout20"
       ],
       "requiredMarketHistory": [
-        "cross-sectional valid canonical OHLCV",
-        "minimum 60-stock signal universe",
-        "minimum 50 signal sessions"
+        "cross-sectional validation-approved canonical OHLCV",
+        ">=60 eligible securities per signal session",
+        ">=50 labeled signal sessions"
       ],
       "minimumBars": 56,
       "preferredBars": 80,
@@ -1417,7 +1417,9 @@
         "market breadth"
       ],
       "requiredMarketHistory": [
-        "cross-sectional valid canonical OHLCV"
+        "cross-sectional validation-approved canonical OHLCV",
+        ">=60 eligible securities per labeled session",
+        ">=50 labeled sessions for final model"
       ],
       "minimumBars": 23,
       "preferredBars": 60,
@@ -1477,7 +1479,8 @@
           "1": 0.65,
           "2": 0.4,
           "3": 0.25
-        }
+        },
+        "minLabeledSessions": 50
       },
       "parameterProvenance": [
         {
