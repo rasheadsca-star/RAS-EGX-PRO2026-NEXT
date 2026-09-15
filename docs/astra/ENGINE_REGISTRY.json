@@ -1,0 +1,233 @@
+{
+  "schemaVersion": "astra-engine-registry-1",
+  "generatedAt": "2026-09-15T22:28:00+03:00",
+  "repository": "rasheadsca-star/RAS-EGX-PRO2026-NEXT",
+  "discoveryHead": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+  "count": 20,
+  "countingRule": "Distinct decision/analysis/governance engine implementations are counted once; aliases and minor versions are recorded on the parent entry rather than double-counted.",
+  "engines": [
+    {
+      "engineId": "V13_4_QUANT_ENGINE",
+      "name": "V13.4 Quant Research Engine",
+      "family": "QUANT_STRATEGY_STACK",
+      "status": "historical-only",
+      "implementation": ["scripts/quant/v13-4-quant-engine.cjs", "data/v13-4-quant-policy.json"],
+      "responsibilities": ["feature calculation", "market regime", "strategy backtests", "walk-forward", "paper recommendations"],
+      "strategies": ["trend_follow", "breakout", "pullback"],
+      "historicalOutputs": ["data/quant/feature-store.json", "data/quant/strategy-backtests.json", "data/quant/walk-forward-results.json", "data/quant/daily-recommendations.json"],
+      "provenance": "Recoverable from main."
+    },
+    {
+      "engineId": "V13_5_ADAPTIVE_PAPER",
+      "name": "V13.5 Adaptive Paper",
+      "family": "QUANT_STRATEGY_STACK",
+      "status": "historical-only",
+      "implementation": ["data/quant/adaptive-daily-recommendations.json", "data/quant/adaptive-strategy-calibration.json", ".github/workflows/egx-adaptive-paper-v13-5.yml"],
+      "responsibilities": ["adaptive calibration", "paper/watch selection"],
+      "strategies": ["trend_follow", "breakout", "pullback"],
+      "provenance": "Recoverable artifacts/workflow on repository history; treated as V13.4-family adaptive variant."
+    },
+    {
+      "engineId": "V14_STABLE_DECISION_SYSTEM",
+      "name": "V14 Stable Decision System",
+      "family": "STABLE_DECISION",
+      "status": "active",
+      "implementation": ["scripts/stable/v14-stable-decision-system.cjs", "scripts/stable/v14-acceptance.cjs"],
+      "historicalOutputs": ["data/stable/v14-stable-decision.json", "data/stable/v14-forward-sessions.json"],
+      "responsibilities": ["stable decision selection", "forward ledger/session evaluation", "acceptance checks"],
+      "provenance": "main HEAD commit 1ed10bc updates V14 stable-decision/forward-session artifacts; active in repository automation but legacy relative to target standalone engine."
+    },
+    {
+      "engineId": "V15_PRACTICAL_DECISION",
+      "name": "V15 Practical Market Scanner / Decision",
+      "family": "PRACTICAL_SCANNER",
+      "status": "historical-only",
+      "implementation": ["data/stable/v15-practical-decision.json", ".github/workflows/v15-practical-market-scanner.yml", ".github/workflows/v15-practical-refinement.yml"],
+      "responsibilities": ["practical scan", "extended momentum watch", "decision feed for later ensembles"],
+      "strategies": ["momentum", "trend_continuation"],
+      "provenance": "Later V18 code explicitly consumes data/stable/v15-practical-decision.json as legacy practical source."
+    },
+    {
+      "engineId": "V16_TWO_STAGE_PREDICTOR",
+      "name": "V16 Two-Stage Predictor",
+      "family": "PROBABILISTIC_TOP_GAINERS",
+      "status": "historical-only",
+      "implementation": [".github/workflows/v16-two-stage-predictor.yml", ".github/workflows/v16-two-stage-top2-backtest.yml", ".github/workflows/v16-two-stage-production.yml"],
+      "responsibilities": ["two-stage candidate prediction", "top-2 backtest", "probabilistic research"],
+      "provenance": "Recoverable workflow/script family retained on main/history."
+    },
+    {
+      "engineId": "V16_6_GATED_DECISION",
+      "name": "V16.6 Gated Decision",
+      "family": "V16_CHAMPION_LINEAGE",
+      "status": "retired",
+      "implementation": [".github/workflows/v16-v166-triple-barrier.yml", "scripts/research/v16-v167-blocked-run.py"],
+      "responsibilities": ["triple-barrier validation", "gated model selection"],
+      "provenance": "Predecessor in V16.6→V16.9 champion lineage."
+    },
+    {
+      "engineId": "V16_7_COHERENT_ENGINE",
+      "name": "V16.7 Coherent Engine",
+      "family": "V16_CHAMPION_LINEAGE",
+      "status": "retired",
+      "implementation": [".github/workflows/v16-v167-coherent-engine.yml", "scripts/research/v16-v167-blocked-run.py"],
+      "responsibilities": ["coherent blocked walk-forward", "selection validation"],
+      "provenance": "Predecessor in V16.6→V16.9 champion lineage."
+    },
+    {
+      "engineId": "V16_8_PRACTICAL_SELECTOR",
+      "name": "V16.8 Practical Selector",
+      "family": "V16_CHAMPION_LINEAGE",
+      "status": "retired",
+      "implementation": [".github/workflows/v16-v168-practical-selector.yml", "scripts/research"],
+      "responsibilities": ["practical candidate selector", "champion-lineage validation"],
+      "provenance": "Immediate predecessor to V16.9 basket engine."
+    },
+    {
+      "engineId": "V16_9_EQUAL_WEIGHT_BASKET",
+      "name": "MAIN APP V16.9.2 Equal Weight Basket",
+      "family": "V16_CHAMPION_LINEAGE",
+      "status": "active",
+      "implementation": ["scripts/stable/v16-main-app-consensus.cjs", "scripts/stable/v16-main-app-governance.cjs", "data/research/v16-v169-basket-engine.json"],
+      "historicalOutputs": ["data/stable/v16-main-app-signal-ledger.json", "data/stable/v16-main-app-current.json", "data/stable/v16-main-app-consensus.json"],
+      "responsibilities": ["champion basket", "main ranking/recommendations", "consensus display", "risk/position governance"],
+      "strategies": ["portfolio_basket_equal_weight"],
+      "aliases": ["MAIN APP", "V16.9.2"],
+      "provenance": "V20 model registry and current main consensus identify this as active production champion/reference."
+    },
+    {
+      "engineId": "V17_GOVERNANCE_SPINE",
+      "name": "V17 Governance / Validation / Production Decision Reference",
+      "family": "V16_9_METHOD_RELATED",
+      "status": "active",
+      "implementation": ["develop/v17-rebuild:scripts/v17/*", "research/egx-meta-engine-v1-20260829:data/v17/*"],
+      "aliases": ["V17_VALIDATION", "V17_PRODUCTION_DECISION_CORE"],
+      "responsibilities": ["data truth", "liquidity/SR gates", "execution governance", "ledger resolution", "track record"],
+      "historicalOutputs": ["data/v17/ledger.json", "data/v17/recommendation-track-record.json"],
+      "provenance": "V20 registry calls V17 authoritative for execution gate; method-related to V16.9, not independent alpha."
+    },
+    {
+      "engineId": "V18_GLOBAL_STRATEGY_ENSEMBLE",
+      "name": "V18.2/V18.3 Unified Decision Center / Global Strategy Ensemble",
+      "family": "EVIDENCE_ROUTER_AND_ENSEMBLE",
+      "status": "experimental",
+      "implementation": ["v18-global-strategy-ensemble-20260906:scripts/stable/v18-global-strategy-ensemble.cjs", "v18-global-strategy-ensemble-20260906:scripts/stable/v18-leadership-extension.cjs", "v18-global-strategy-ensemble-20260906:data/v18-global-strategy-policy.json"],
+      "historicalOutputs": ["v18-global-strategy-ensemble-20260906:data/stable/v18-forward-ledger.json", "v18-global-strategy-ensemble-20260906:preview-v18/data.json"],
+      "responsibilities": ["multi-strategy evidence routing", "regime compatibility", "evidence-first ranking", "engine agreement", "risk/basket centers", "forward league"],
+      "strategies": ["portfolio_basket", "breakout", "momentum", "trend_continuation", "pullback", "reversal", "ema_macd", "leadership", "volatility_contraction"],
+      "provenance": "Branch workflow labels build V18.3 while output schema remains 18.2.x; main v18-live is only a remote loader for this branch."
+    },
+    {
+      "engineId": "V19_CHAT_GPT_NATIVE_CHALLENGER",
+      "name": "V19 Native Challenger",
+      "family": "TOP10_PROBABILITY_RELATED",
+      "status": "experimental",
+      "currentVersion": "V6",
+      "versions": ["V1", "V2", "V3", "V4", "V5", "V6"],
+      "implementation": ["v19-egx-chat-gpt:scripts/v19/native-challenger.py", "v19-egx-chat-gpt:scripts/v19/native-challenger-v2.py", "v19-egx-chat-gpt:scripts/v19/native-challenger-v3.py", "v19-egx-chat-gpt:scripts/v19/native-challenger-v4.py", "v19-egx-chat-gpt:scripts/v19/native-challenger-v5.py", "v19-egx-chat-gpt:scripts/v19/native-challenger-v6.py"],
+      "historicalOutputs": ["v19-egx-chat-gpt:data/v19/recorded-session-replay.json", "v19-egx-chat-gpt:data/v19/native-challenger-v6.json"],
+      "strategies": ["v19_top10_probability_inverse_volatility_3"],
+      "responsibilities": ["TOP10 probability ranking", "inverse-volatility basket", "loss-streak exposure overlay"],
+      "provenance": "V6 code recoverable; explicit SHADOW_RESEARCH_ONLY and not fresh independent evidence."
+    },
+    {
+      "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+      "name": "V20 Native Full Market V1",
+      "family": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
+      "status": "experimental",
+      "implementation": ["research/egx-meta-engine-v1-20260829:scripts/v20/build-full-market-native-selection.cjs", "research/egx-meta-engine-v1-20260829:scripts/v20/finalize-native-ranking-v1.cjs", "research/egx-meta-engine-v1-20260829:data/v20/native-model-freeze.json"],
+      "historicalOutputs": ["research/egx-meta-engine-v1-20260829:data/v20/signal-archive/*", "research/egx-meta-engine-v1-20260829:data/v20/forward-evaluation.json", "research/egx-meta-engine-v1-20260829:data/v20/retrospective-walk-forward-target-stop.json"],
+      "strategies": ["v20_native_multi_component_composite"],
+      "responsibilities": ["full-market discovery", "data/liquidity/SR/technical/RR composite", "shadow ranking", "trade-plan evidence"],
+      "provenance": "Frozen V1 ruleset says legacySeedDependency=false and execution influence=false."
+    },
+    {
+      "engineId": "QUANT_EDGE",
+      "name": "QUANT EDGE Shadow Engine",
+      "family": "INDEPENDENT_QUANT_STRATEGY_STACK",
+      "status": "unrecoverable",
+      "classification": "legacy-output-only",
+      "implementation": [],
+      "runtimeReference": "https://quant-edge-shadow.vercel.app/api/run",
+      "historicalOutputs": ["data/stable/v16-main-app-consensus.json annotations/source health"],
+      "responsibilities": ["independent shadow vote/comparison"],
+      "provenance": "Repository contains runtime URL and consumed outputs/status but no recoverable original algorithm source found in available branches/artifacts. Missing logic must not be reconstructed as original."
+    },
+    {
+      "engineId": "GANN_FUSION_X",
+      "name": "Gann Fusion X",
+      "family": "GANN_TECHNICAL_FUSION",
+      "status": "experimental",
+      "currentVersion": "V1 with V2-V5 challenger branches",
+      "implementation": ["gann-fusion-x/engine/fusion.js", "gann-fusion-x/engine/planner.js", "gann-fusion-x/scripts/forward-shadow-v2.cjs", "feature/gann-fusion-x-v2-challenger", "feature/gann-fusion-x-v3-ensemble-gate", "feature/gann-fusion-x-v4-regime-router", "feature/gann-fusion-x-v5-meta-router"],
+      "historicalOutputs": ["gann-fusion-x/data/forward-shadow-ledger.json", "gann-fusion-x/data/forward-shadow-report.json"],
+      "strategies": ["gann_fusion", "gann_regime_gate", "gann_entry_timing", "gann_execution_quality"],
+      "responsibilities": ["technical fusion", "trade-plan construction", "entry/exit geometry", "forward shadow"],
+      "provenance": "Recoverable implementation on main plus dedicated feature/research branches."
+    },
+    {
+      "engineId": "SEPA_X_QVUA",
+      "name": "SEPA-X Isolated Strategy",
+      "family": "SEPA_BREAKOUT_TRIGGER",
+      "status": "experimental",
+      "currentVersion": "QVUA-1.0-STABLE",
+      "implementation": ["develop/sepax-isolated-v1:sepa-x/*", "develop/sepax-v2-isolated:sepa-x/*", "gann-fusion-x/engine/sepa-adapter.js"],
+      "historicalOutputs": ["gann-fusion-x/data/sepa-x-snapshot.json", "gann-fusion-x/data/forward-shadow-ledger.json"],
+      "strategies": ["sepa_qvua_near_first_then_forming"],
+      "responsibilities": ["breakout/pivot watch", "entry readiness", "isolated static scan"],
+      "provenance": "Current main Pages workflow checks out develop/sepax-isolated-v1 and builds /sepax; Gann sync also calls legacy stable Vercel endpoint."
+    },
+    {
+      "engineId": "TFE_V20_FUSION_RC2",
+      "name": "TFE V20 Fusion RC2",
+      "family": "TECHNICAL_HARD_GATE_FUSION",
+      "status": "experimental",
+      "implementation": ["release/rc2-frozen:tfe-v20/*", "develop/v20-integrated-decision-platform:tfe-v20/*", "deploy/rc2-safe-shell/*"],
+      "historicalOutputs": ["tfe-v20/evidence/forward/*", "data/rc2/recommendation-history.json"],
+      "strategies": ["tfe_evidence_aware_hard_gate_fusion"],
+      "responsibilities": ["technical scorer", "hard gates", "liquidity/SR", "trade plans", "Wilson evidence ranking", "decision log/simulation"],
+      "provenance": "Frozen RC2 handoff explicitly research/shadow only; originalScore/originalIndicators source is recoverable in frozen tree."
+    },
+    {
+      "engineId": "TRIPLE_ENGINE_CONSENSUS_V1",
+      "name": "Triple Engine Consensus V1",
+      "family": "CONSENSUS_AGGREGATOR",
+      "status": "experimental",
+      "implementation": ["research/triple-engine-consensus-v1:triple-engine/build-consensus.cjs"],
+      "inputs": ["V16_9", "SEPA_X", "GANN_FUSION_X"],
+      "historicalOutputs": ["research/triple-engine-consensus-v1:triple-engine/data/current.json"],
+      "responsibilities": ["three-engine same-session comparison", "consensus trade-plan selection"],
+      "provenance": "Research-only branch; aggregator, not independent alpha source."
+    },
+    {
+      "engineId": "EGX_META_ENGINE_V1",
+      "name": "EGX Meta Engine Research V1",
+      "family": "META_RESEARCH",
+      "status": "experimental",
+      "implementation": ["research/egx-meta-engine-v1-20260829:tfe-v20/scripts/meta-current.mjs", "research/egx-meta-engine-v1-20260829:tfe-v20/scripts/meta-review.mjs"],
+      "historicalOutputs": ["research/egx-meta-engine-v1-20260829:tfe-v20/evidence/meta/*"],
+      "responsibilities": ["meta snapshot", "destructive review", "full-universe TFE gate scan", "ablation/feature audit"],
+      "provenance": "Dedicated research branch/workflow; not production-promoted."
+    },
+    {
+      "engineId": "EGX_ONE_CLEAN_ROOM",
+      "name": "EGX ONE Clean-Room Decision Engine",
+      "family": "CLEAN_ROOM_UNIFIED_ENGINE",
+      "status": "experimental",
+      "implementation": ["egx-one/clean-room-v0"],
+      "historicalOutputs": ["egx-one/clean-room-v0:evidence/*", "egx-one/clean-room-v0:research warehouse/forward workflows"],
+      "responsibilities": ["clean-room canonical market truth", "data readiness", "deterministic decisioning", "forward evidence", "research-history migration"],
+      "provenance": "Branch README states Phase 0/1 foundation and intentionally isolated legacy runtime; not assumed to contain a finished/frozen alpha strategy."
+    }
+  ],
+  "aliasesNotCountedSeparately": {
+    "V19_CHALLENGER": "V19_CHAT_GPT_NATIVE_CHALLENGER",
+    "V17_VALIDATION": "V17_GOVERNANCE_SPINE",
+    "V17_PRODUCTION_DECISION_CORE": "V17_GOVERNANCE_SPINE",
+    "V20_NATIVE": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+    "SEPA_X_LIVE_SHADOW": "SEPA_X_QVUA",
+    "SEPA_X_PROXY": "SEPA_X_QVUA",
+    "GANN_FUSION_X_V1": "GANN_FUSION_X",
+    "V18_EXTERNAL_REFERENCE": "external behavioral reference to V18 family; not a separate recoverable engine"
+  }
+}
