@@ -1,6 +1,6 @@
 {
   "schemaVersion": "astra-g08-strategy-reconstruction-matrix-1",
-  "generatedAt": "2026-09-15T21:09:56.570Z",
+  "generatedAt": "2026-09-15T21:15:29.874Z",
   "count": 18,
   "strategies": [
     {
@@ -400,18 +400,33 @@
         "V18_GLOBAL_STRATEGY_ENSEMBLE"
       ],
       "sourceBranch": "main",
-      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
       "sourcePaths": [
-        "data/stable/v15-practical-decision.json"
+        "scripts/stable/v15-practical-market-scanner.cjs"
       ],
       "originalStatus": "historical-only",
       "lifecycleStatus": "historical-only",
-      "algorithmRecoverability": "UNRECOVERABLE",
-      "parameterRecoverability": "NO_PARAMETERS",
-      "requiredIndicators": [],
-      "requiredMarketHistory": [],
-      "minimumBars": null,
-      "preferredBars": null,
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "SMA10",
+        "SMA20",
+        "SMA50",
+        "RSI14",
+        "volumeRatio20",
+        "relativeStrength20",
+        "return3",
+        "return5",
+        "return10",
+        "return20",
+        "rangePosition20"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV",
+        "cross-sectional median return20"
+      ],
+      "minimumBars": 56,
+      "preferredBars": 80,
       "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
       "missingVolumeBehavior": "NOT_REQUIRED",
       "missingTurnoverBehavior": "NOT_REQUIRED",
@@ -451,13 +466,71 @@
         "explicit derived evidence only"
       ],
       "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
-      "internalReconstructionStatus": "BLOCKED_BY_MISSING_EVIDENCE",
-      "canExecuteInternally": false,
+      "internalReconstructionStatus": "RECONSTRUCTED",
+      "canExecuteInternally": true,
       "productionEligibility": false,
-      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
-      "unsupportedReason": "Preserved decision output proves identity but not a complete original momentum calculation; no formula is invented.",
-      "parameters": {},
-      "parameterProvenance": []
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "modelId": "MOMENTUM_ACCELERATION",
+        "ret3MinPct": 0.8,
+        "ret10MinPct": 3,
+        "ret20MinPct": 5,
+        "relativeStrength20MinPct": 2,
+        "volumeRatio20Min": 0.8,
+        "rsiMin": 50,
+        "rsiMax": 78
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "modelId",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        },
+        {
+          "parameter": "ret3MinPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        },
+        {
+          "parameter": "ret10MinPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        },
+        {
+          "parameter": "ret20MinPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        },
+        {
+          "parameter": "relativeStrength20MinPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        },
+        {
+          "parameter": "volumeRatio20Min",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        },
+        {
+          "parameter": "rsiMin",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        },
+        {
+          "parameter": "rsiMax",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "MOMENTUM"
+        }
+      ]
     },
     {
       "strategyId": "REVERSAL",
@@ -468,27 +541,36 @@
       "sourceEngineLineage": [
         "V18_GLOBAL_STRATEGY_ENSEMBLE"
       ],
-      "sourceBranch": "v18-global-strategy-ensemble-20260906",
-      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourceBranch": "main",
+      "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
       "sourcePaths": [
-        "data/v18-global-strategy-policy.json"
+        "scripts/stable/v15-practical-market-scanner.cjs"
       ],
       "originalStatus": "historical-only",
       "lifecycleStatus": "historical-only",
-      "algorithmRecoverability": "UNRECOVERABLE",
-      "parameterRecoverability": "NO_PARAMETERS",
-      "requiredIndicators": [],
-      "requiredMarketHistory": [],
-      "minimumBars": null,
-      "preferredBars": null,
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "SMA10",
+        "SMA20",
+        "SMA50",
+        "RSI14",
+        "volumeRatio20",
+        "return1",
+        "return3",
+        "return5"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 56,
+      "preferredBars": 80,
       "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
       "missingVolumeBehavior": "NOT_REQUIRED",
       "missingTurnoverBehavior": "NOT_REQUIRED",
       "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
       "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
-      "regimeRequirements": [
-        "strategyRegimeMatrix"
-      ],
+      "regimeRequirements": [],
       "liquidityRequirements": [],
       "outputFields": [
         "strategyExecutionId",
@@ -522,13 +604,64 @@
         "explicit derived evidence only"
       ],
       "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
-      "internalReconstructionStatus": "BLOCKED_BY_MISSING_EVIDENCE",
-      "canExecuteInternally": false,
+      "internalReconstructionStatus": "RECONSTRUCTED",
+      "canExecuteInternally": true,
       "productionEligibility": false,
-      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
-      "unsupportedReason": "Only family/regime compatibility is proven; original reversal algorithm is not proven.",
-      "parameters": {},
-      "parameterProvenance": []
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "modelId": "REVERSAL_CONFIRMATION",
+        "ret1MinPct": 1.5,
+        "ret3MinPct": 0,
+        "ret5MaxPct": 8,
+        "volumeRatio20Min": 1.2,
+        "rsiMin": 28,
+        "rsiMax": 58
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "modelId",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "REVERSAL"
+        },
+        {
+          "parameter": "ret1MinPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "REVERSAL"
+        },
+        {
+          "parameter": "ret3MinPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "REVERSAL"
+        },
+        {
+          "parameter": "ret5MaxPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "REVERSAL"
+        },
+        {
+          "parameter": "volumeRatio20Min",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "REVERSAL"
+        },
+        {
+          "parameter": "rsiMin",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "REVERSAL"
+        },
+        {
+          "parameter": "rsiMax",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+          "strategyVersion": "REVERSAL"
+        }
+      ]
     },
     {
       "strategyId": "EMA_MACD_TREND_CONTINUATION",
@@ -985,22 +1118,39 @@
         "V16_8_PRACTICAL_SELECTOR"
       ],
       "sourceBranch": "main",
-      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
       "sourcePaths": [
-        ".github/workflows/v16-two-stage-predictor.yml",
-        ".github/workflows/v16-two-stage-top2-backtest.yml",
-        "scripts/research/v16-v167-coherent-engine.py"
+        "scripts/research/v16-probabilistic-model-impact.py",
+        "scripts/research/v16-two-stage-predictor.py"
       ],
       "originalStatus": "historical-only",
       "lifecycleStatus": "historical-only",
-      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
-      "parameterRecoverability": "NO_PARAMETERS",
-      "requiredIndicators": [],
-      "requiredMarketHistory": [
-        "OHLCV"
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "SMA10",
+        "SMA20",
+        "SMA50",
+        "ATR14",
+        "RSI14",
+        "volumeRatio20",
+        "turnover20",
+        "return1",
+        "return3",
+        "return5",
+        "return10",
+        "return20",
+        "relativeStrength20",
+        "rangePosition20",
+        "breakout20"
       ],
-      "minimumBars": null,
-      "preferredBars": null,
+      "requiredMarketHistory": [
+        "cross-sectional valid canonical OHLCV",
+        "minimum 60-stock signal universe",
+        "minimum 50 signal sessions"
+      ],
+      "minimumBars": 56,
+      "preferredBars": 80,
       "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
       "missingVolumeBehavior": "NOT_REQUIRED",
       "missingTurnoverBehavior": "NOT_REQUIRED",
@@ -1040,13 +1190,85 @@
         "explicit derived evidence only"
       ],
       "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
-      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
-      "canExecuteInternally": false,
+      "internalReconstructionStatus": "RECONSTRUCTED",
+      "canExecuteInternally": true,
       "productionEligibility": false,
-      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
-      "unsupportedReason": "Probability-model training/scoring stack is recoverable in source but has not yet been refactored behind explicit G06 inputs without legacy persistence reads.",
-      "parameters": {},
-      "parameterProvenance": []
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "topK": 10,
+        "minUniverse": 60,
+        "minSignalSessions": 50,
+        "warmupSessions": 20,
+        "costPct": 0.6,
+        "largeLossPct": -2,
+        "prior": 25,
+        "l2": 0.018,
+        "finalEpochs": 55,
+        "executionFailureLimit": 0.62
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "topK",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "minUniverse",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "minSignalSessions",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "warmupSessions",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "costPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "largeLossPct",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "prior",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "l2",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "finalEpochs",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        },
+        {
+          "parameter": "executionFailureLimit",
+          "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+          "sourcePath": "scripts/research/v16-probabilistic-model-impact.py",
+          "strategyVersion": "V16_TWO_STAGE_TOP_GAINER"
+        }
+      ]
     },
     {
       "strategyId": "V16_TRIPLE_BARRIER_GATE",
@@ -1169,20 +1391,36 @@
       "sourceBranch": "v19-egx-chat-gpt",
       "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
       "sourcePaths": [
-        "scripts/v19/native-challenger-v6.py",
+        "scripts/v19/native-challenger-v2.py",
         "scripts/v19/native-challenger-v4.py",
-        "scripts/v19/native-challenger-v2.py"
+        "scripts/v19/native-challenger-v6.py"
       ],
       "originalStatus": "experimental",
       "lifecycleStatus": "experimental",
-      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
+      "algorithmRecoverability": "RECOVERED",
       "parameterRecoverability": "EVIDENCE_BACKED",
-      "requiredIndicators": [],
-      "requiredMarketHistory": [
-        "OHLCV"
+      "requiredIndicators": [
+        "ATR14",
+        "RSI14",
+        "return1",
+        "return3",
+        "return5",
+        "return10",
+        "return20",
+        "relativeStrength1",
+        "relativeStrength5",
+        "relativeStrength20",
+        "volumeRatio20",
+        "turnover20",
+        "support",
+        "resistance",
+        "market breadth"
       ],
-      "minimumBars": null,
-      "preferredBars": null,
+      "requiredMarketHistory": [
+        "cross-sectional valid canonical OHLCV"
+      ],
+      "minimumBars": 23,
+      "preferredBars": 60,
       "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
       "missingVolumeBehavior": "NOT_REQUIRED",
       "missingTurnoverBehavior": "NOT_REQUIRED",
@@ -1222,12 +1460,17 @@
         "explicit derived evidence only"
       ],
       "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
-      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
-      "canExecuteInternally": false,
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
       "productionEligibility": false,
-      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
-      "unsupportedReason": "V6 policy is proven, but its probability model depends on earlier local model-training code not yet refactored into the G06 pure strategy contract.",
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
       "parameters": {
+        "costPct": 0.6,
+        "minUniverse": 60,
+        "featureWarmup": 22,
+        "trainWarmup": 15,
+        "holdout": 20,
         "basePolicy": "S0.00|R0|A8|INV_VOL|N3",
         "riskProfile": {
           "0": 1,
@@ -1238,15 +1481,45 @@
       },
       "parameterProvenance": [
         {
+          "parameter": "costPct",
+          "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+          "sourcePath": "scripts/v19/native-challenger-v2.py",
+          "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
+        },
+        {
+          "parameter": "minUniverse",
+          "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+          "sourcePath": "scripts/v19/native-challenger-v2.py",
+          "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
+        },
+        {
+          "parameter": "featureWarmup",
+          "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+          "sourcePath": "scripts/v19/native-challenger-v2.py",
+          "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
+        },
+        {
+          "parameter": "trainWarmup",
+          "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+          "sourcePath": "scripts/v19/native-challenger-v2.py",
+          "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
+        },
+        {
+          "parameter": "holdout",
+          "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+          "sourcePath": "scripts/v19/native-challenger-v2.py",
+          "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
+        },
+        {
           "parameter": "basePolicy",
           "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
-          "sourcePath": "scripts/v19/native-challenger-v6.py",
+          "sourcePath": "scripts/v19/native-challenger-v2.py",
           "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
         },
         {
           "parameter": "riskProfile",
           "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
-          "sourcePath": "scripts/v19/native-challenger-v6.py",
+          "sourcePath": "scripts/v19/native-challenger-v2.py",
           "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
         }
       ]
@@ -1473,21 +1746,27 @@
       ],
       "originalStatus": "experimental",
       "lifecycleStatus": "experimental",
-      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
-      "parameterRecoverability": "NO_PARAMETERS",
-      "requiredIndicators": [],
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "marketRegime"
+      ],
       "requiredMarketHistory": [
         "OHLCV"
       ],
-      "minimumBars": null,
-      "preferredBars": null,
+      "minimumBars": 50,
+      "preferredBars": 55,
       "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
       "missingVolumeBehavior": "NOT_REQUIRED",
       "missingTurnoverBehavior": "NOT_REQUIRED",
       "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
       "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
       "regimeRequirements": [
-        "marketRegime"
+        "RISK_ON",
+        "POSITIVE",
+        "SIDEWAYS",
+        "RISK_OFF",
+        "UNKNOWN"
       ],
       "liquidityRequirements": [],
       "outputFields": [
@@ -1522,13 +1801,71 @@
         "explicit derived evidence only"
       ],
       "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
-      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
-      "canExecuteInternally": false,
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
       "productionEligibility": false,
-      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
-      "unsupportedReason": "Competing v1-v4 router semantics exist; exact versioned evaluator extraction is still required before claiming reconstruction.",
-      "parameters": {},
-      "parameterProvenance": []
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "RISK_ON": "V1_TREND",
+        "POSITIVE": "V1_TREND",
+        "SIDEWAYS": "SEPA_SELECTIVE",
+        "RISK_OFF": "ABSTAIN",
+        "UNKNOWN": "ABSTAIN",
+        "topN": 3,
+        "holdingSessions": 3,
+        "costPct": 0.6
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "RISK_ON",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        },
+        {
+          "parameter": "POSITIVE",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        },
+        {
+          "parameter": "SIDEWAYS",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        },
+        {
+          "parameter": "RISK_OFF",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        },
+        {
+          "parameter": "UNKNOWN",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        },
+        {
+          "parameter": "topN",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        },
+        {
+          "parameter": "holdingSessions",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        },
+        {
+          "parameter": "costPct",
+          "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+          "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+          "strategyVersion": "GANN_REGIME_ROUTER"
+        }
+      ]
     },
     {
       "strategyId": "GANN_ENTRY_EXECUTION_QUALITY",
@@ -1645,15 +1982,16 @@
         "TRIPLE_ENGINE_CONSENSUS_V1"
       ],
       "sourceBranch": "develop/sepax-isolated-v1",
-      "sourceCommit": "bf63dc85f515e58cccebb44dde087ffd47b63bf",
+      "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
       "sourcePaths": [
         "sepa-x/src/engine.js",
-        "sepa-x/src/features.js",
-        "sepa-x/src/config.js"
+        "sepa-x/src/config.js",
+        "gann-fusion-x/engine/sepa-adapter.js",
+        "gann-fusion-x/data/sepa-x-snapshot.json"
       ],
       "originalStatus": "experimental",
       "lifecycleStatus": "experimental",
-      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
+      "algorithmRecoverability": "RECOVERED",
       "parameterRecoverability": "EVIDENCE_BACKED",
       "requiredIndicators": [
         "trendTemplate",
@@ -1661,23 +1999,27 @@
         "VCP",
         "pivot",
         "entryReadiness",
-        "risk"
+        "riskReward",
+        "riskPct",
+        "finalScore"
       ],
       "requiredMarketHistory": [
-        "OHLCV 252"
+        "OHLCV 253"
       ],
-      "minimumBars": 252,
-      "preferredBars": 252,
+      "minimumBars": 253,
+      "preferredBars": 253,
       "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
       "missingVolumeBehavior": "NOT_REQUIRED",
       "missingTurnoverBehavior": "NOT_REQUIRED",
       "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
       "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
       "regimeRequirements": [
-        "marketRegime"
+        "explicit market regime context"
       ],
       "liquidityRequirements": [
-        "liquidity"
+        "medianTurnover20",
+        "tradedDaysRatio60",
+        "zeroVolumeDays60"
       ],
       "outputFields": [
         "strategyExecutionId",
@@ -1711,25 +2053,74 @@
         "explicit derived evidence only"
       ],
       "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
-      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
-      "canExecuteInternally": false,
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
       "productionEligibility": false,
-      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
-      "unsupportedReason": "Isolated source is proven and local, but the full 252-session pipeline has not yet been refactored into explicit G06 inputs; old runtime dependency is not used by this G08 module.",
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
       "parameters": {
         "version": "QVUA-1.0-STABLE",
-        "selectionPolicy": "NEAR_FIRST_THEN_FORMING"
+        "selectionPolicy": "NEAR_FIRST_THEN_FORMING",
+        "requiredHistorySessions": 253,
+        "readyBelowPivotPct": 1.5,
+        "nearBelowPivotPct": 4,
+        "maxAbovePivotPct": 3,
+        "breakoutVolumeConfirm": 1.4,
+        "minRewardRisk": 2,
+        "maxRiskPct": 8
       },
       "parameterProvenance": [
         {
           "parameter": "version",
-          "sourceCommit": "bf63dc85f515e58cccebb44dde087ffd47b63bf",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
           "sourcePath": "sepa-x/src/engine.js",
           "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
         },
         {
           "parameter": "selectionPolicy",
-          "sourceCommit": "bf63dc85f515e58cccebb44dde087ffd47b63bf",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "requiredHistorySessions",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "readyBelowPivotPct",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "nearBelowPivotPct",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "maxAbovePivotPct",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "breakoutVolumeConfirm",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "minRewardRisk",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "maxRiskPct",
+          "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
           "sourcePath": "sepa-x/src/engine.js",
           "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
         }
