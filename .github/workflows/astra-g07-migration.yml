@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   migrate-and-reconcile:
+    if: github.event_name != 'push' || !contains(github.event.head_commit.message, '[skip g07]')
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -50,6 +51,38 @@ jobs:
       - name: Freeze one migration batch timestamp
         shell: bash
         run: echo "ASTRA_G07_MIGRATED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Repair extracted raw-record field bridge
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const p='astra/migration/g07-migrate.cjs';
+          let s=fs.readFileSync(p,'utf8');
+          const replacements=[
+            [
+              "function identityStatus(source,rec){if(rec.artifact)return false;const p=rec.payload&&typeof rec.payload==='object'?rec.payload:{};const t=tickerFrom(p,rec.context,rec.sourcePath),d=recordDate(p,rec.context),id=pick(p,['id','recordId','recommendationId','signalId','decisionId','snapshotId']);return['CanonicalMarketSnapshot','IndicatorSnapshot','RecommendationRecord','DecisionSnapshot','ForwardOutcome','StrategyExecution'].includes(source.destinationCanonicalEntity)&&!(t||d||id)}",
+              "function identityStatus(source,rec){if(rec.artifact)return false;const payload=rec.rawPayload!==undefined?rec.rawPayload:rec.payload,ctx=rec.containerContext||rec.context||{},p=payload&&typeof payload==='object'&&!Array.isArray(payload)?payload:{};const t=tickerFrom(p,ctx,rec.sourcePath),d=recordDate(p,ctx),id=pick(p,['id','recordId','recommendationId','signalId','decisionId','snapshotId']);return['CanonicalMarketSnapshot','IndicatorSnapshot','RecommendationRecord','DecisionSnapshot','ForwardOutcome','StrategyExecution'].includes(source.destinationCanonicalEntity)&&!(t||d||id)}"
+            ],
+            [
+              "function makeProvenance({source,raw,canonicalRecordId,canonicalHash,validationStatus='VALID',rules=[]}){const p=raw.payload&&typeof raw.payload==='object'?raw.payload:{},sessionDate=recordDate(p,raw.context),ts=recordTimestamp(p,raw.context);return{migrationId:migrationStableId({legacySourceId:source.sourceId,sourceBranch:raw.sourceBranch,sourceCommit:raw.sourceCommit,sourcePath:raw.sourcePath,originalRecordId:raw.originalRecordId,sessionDate,contentHash:raw.rawContentHash}),canonicalRecordId,legacySourceId:source.sourceId,legacyEngine:engineFrom(source),legacyEngineVersion:pick(p,['engineVersion','version','engine_version'])??null,legacyStrategyId:strategyFrom(p,raw.context,source.sourceId),sourceBranch:raw.sourceBranch,sourceCommit:raw.sourceCommit,sourcePath:raw.sourcePath,originalRecordId:raw.originalRecordId??null,originalTimestamp:ts,sessionDate,contentHash:raw.rawContentHash,rawContentHash:raw.rawContentHash,canonicalContentHash:canonicalHash??null,migrationVersion:MIGRATION_VERSION,migratedAt:MIGRATED_AT,transformationRules:rules,validationStatus,relationship:'UNKNOWN'}}",
+              "function makeProvenance({source,raw,canonicalRecordId,canonicalHash,validationStatus='VALID',rules=[]}){const payload=raw.rawPayload!==undefined?raw.rawPayload:raw.payload,ctx=raw.containerContext||raw.context||{},p=payload&&typeof payload==='object'&&!Array.isArray(payload)?payload:{},sessionDate=recordDate(p,ctx),ts=recordTimestamp(p,ctx);return{migrationId:migrationStableId({legacySourceId:source.sourceId,sourceBranch:raw.sourceBranch,sourceCommit:raw.sourceCommit,sourcePath:raw.sourcePath,originalRecordId:raw.originalRecordId,sessionDate,contentHash:raw.rawContentHash}),canonicalRecordId,legacySourceId:source.sourceId,legacyEngine:engineFrom(source),legacyEngineVersion:pick(p,['engineVersion','version','engine_version'])??null,legacyStrategyId:strategyFrom(p,ctx,source.sourceId),sourceBranch:raw.sourceBranch,sourceCommit:raw.sourceCommit,sourcePath:raw.sourcePath,originalRecordId:raw.originalRecordId??null,originalTimestamp:ts,sessionDate,contentHash:raw.rawContentHash,rawContentHash:raw.rawContentHash,canonicalContentHash:canonicalHash??null,migrationVersion:MIGRATION_VERSION,migratedAt:MIGRATED_AT,transformationRules:rules,validationStatus,relationship:'UNKNOWN'}}"
+            ],
+            [
+              "  const p=raw.payload&&typeof raw.payload==='object'&&!Array.isArray(raw.payload)?raw.payload:{},ctx=raw.context||{},dest=source.destinationCanonicalEntity,ticker=tickerFrom(p,ctx,raw.sourcePath),sessionDate=recordDate(p,ctx),asOf=recordAsOf(p,ctx),timestamp=recordTimestamp(p,ctx),securityId=ticker?`EGX:${ticker}`:null,baseDiag=[];",
+              "  const payload=raw.rawPayload!==undefined?raw.rawPayload:raw.payload,p=payload&&typeof payload==='object'&&!Array.isArray(payload)?payload:{},ctx=raw.containerContext||raw.context||{},dest=source.destinationCanonicalEntity,ticker=tickerFrom(p,ctx,raw.sourcePath),sessionDate=recordDate(p,ctx),asOf=recordAsOf(p,ctx),timestamp=recordTimestamp(p,ctx),securityId=ticker?`EGX:${ticker}`:null,baseDiag=[];"
+            ]
+          ];
+          let changed=0;
+          for(const [from,to] of replacements){
+            if(s.includes(from)){s=s.replace(from,to);changed++;}
+            else if(!s.includes(to))throw new Error('Expected G07 raw-record bridge pattern missing');
+          }
+          if(changed===0)console.log('Raw-record bridge already repaired.');
+          else console.log(`Repaired ${changed} raw-record bridge patterns.`);
+          fs.writeFileSync(p,s);
+          NODE
+          node --check astra/migration/g07-migrate.cjs
 
       - name: Verify eight exact parity source pins
         run: node astra/migration/g07-migrate.cjs check-pins
@@ -123,6 +156,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
+            astra/migration/g07-migrate.cjs \
             docs/astra/MIGRATION_RECONCILIATION.json \
             docs/astra/MIGRATION_REPORT.md \
             docs/astra/MIGRATION_PROVENANCE_SUMMARY.json \
