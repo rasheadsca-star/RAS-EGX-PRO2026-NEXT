@@ -1,0 +1,186 @@
+{
+  "schemaVersion": "astra-strategy-registry-1",
+  "generatedAt": "2026-09-15T22:28:00+03:00",
+  "repository": "rasheadsca-star/RAS-EGX-PRO2026-NEXT",
+  "count": 18,
+  "countingRule": "Counts distinct recoverable strategy families/modules; threshold variants and aliases are nested under the family rather than double-counted.",
+  "strategies": [
+    {
+      "strategyId": "TREND_FOLLOW",
+      "family": "TREND_CONTINUATION",
+      "status": "historical-only",
+      "engines": ["V13_4_QUANT_ENGINE", "V13_5_ADAPTIVE_PAPER", "V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["scripts/quant/v13-4-quant-engine.cjs", "data/v13-4-quant-policy.json"],
+      "variants": ["balanced", "strict", "momentum"],
+      "inputs": ["SMA20", "SMA50", "RSI14", "volumeRatio20", "RS20", "resistanceUpside"],
+      "evidence": "V13.4 policy explicitly defines trend_follow variants and thresholds; V18 maps TREND/LIQUID_LEADERS to TREND_CONTINUATION."
+    },
+    {
+      "strategyId": "BREAKOUT",
+      "family": "BREAKOUT",
+      "status": "historical-only",
+      "engines": ["V13_4_QUANT_ENGINE", "V13_5_ADAPTIVE_PAPER", "V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["scripts/quant/v13-4-quant-engine.cjs", "data/v13-4-quant-policy.json"],
+      "variants": ["early", "balanced", "strict"],
+      "inputs": ["breakoutBuffer", "RSI14", "volumeRatio20", "RS20"],
+      "evidence": "Recoverable exact threshold family in V13.4 policy."
+    },
+    {
+      "strategyId": "PULLBACK",
+      "family": "PULLBACK",
+      "status": "historical-only",
+      "engines": ["V13_4_QUANT_ENGINE", "V13_5_ADAPTIVE_PAPER", "V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["scripts/quant/v13-4-quant-engine.cjs", "data/v13-4-quant-policy.json"],
+      "variants": ["wide", "balanced", "strict"],
+      "inputs": ["distanceToSMA20", "RSI14", "volumeRatio20", "RS20"],
+      "evidence": "Recoverable exact threshold family in V13.4 policy."
+    },
+    {
+      "strategyId": "MOMENTUM",
+      "family": "MOMENTUM",
+      "status": "historical-only",
+      "engines": ["V15_PRACTICAL_DECISION", "V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["data/stable/v15-practical-decision.json", "v18-global-strategy-ensemble-20260906:scripts/stable/v18-global-strategy-ensemble.cjs"],
+      "evidence": "V18 consumes V15 extendedMomentumWatch and assigns MOMENTUM/TREND_CONTINUATION family from strategy identifiers."
+    },
+    {
+      "strategyId": "REVERSAL",
+      "family": "REVERSAL",
+      "status": "historical-only",
+      "engines": ["V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["v18-global-strategy-ensemble-20260906:data/v18-global-strategy-policy.json"],
+      "evidence": "Explicit strategy-regime family in V18 policy; no separate original pre-V18 algorithm was proven during discovery, so this record does not invent one."
+    },
+    {
+      "strategyId": "EMA_MACD_TREND_CONTINUATION",
+      "family": "EMA_MACD",
+      "status": "experimental",
+      "engines": ["V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["v18-global-strategy-ensemble-20260906:scripts/stable/v18-global-strategy-ensemble.cjs"],
+      "entryRules": ["close>SMA20", "SMA20>SMA50", "MACD>signal", "RSI in configured range", "ATR in configured range", "relative volume minimum", "turnover minimum", "not overextended above SMA20"],
+      "evidence": "Implementation and scoring are directly recoverable."
+    },
+    {
+      "strategyId": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "family": "PORTFOLIO_BASKET",
+      "status": "active",
+      "engines": ["V16_9_EQUAL_WEIGHT_BASKET", "V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["data/research/v16-v169-basket-engine.json", "data/stable/v16-main-app-current.json"],
+      "risk": ["basket exposure/concentration gates", "morning confirmation", "failed weight remains cash in V18"],
+      "evidence": "V20 registries identify V16.9 Equal Weight Basket as champion/reference."
+    },
+    {
+      "strategyId": "RELATIVE_STRENGTH_HIGH_PROXIMITY",
+      "family": "LEADERSHIP",
+      "status": "experimental",
+      "engines": ["V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["v18-global-strategy-ensemble-20260906:scripts/stable/v18-leadership-extension.cjs"],
+      "entryRules": ["relativeStrengthComposite>=80", "near available-history high", "minimum turnover"],
+      "constraints": ["52_WEEK_HIGH label requires >=220 sessions", "research evidence cannot independently create Tier A"],
+      "evidence": "Directly recoverable V18 leadership implementation."
+    },
+    {
+      "strategyId": "VOLATILITY_CONTRACTION_PATTERN",
+      "family": "VOLATILITY_CONTRACTION",
+      "status": "experimental",
+      "engines": ["V18_GLOBAL_STRATEGY_ENSEMBLE"],
+      "implementation": ["v18-global-strategy-ensemble-20260906:scripts/stable/v18-leadership-extension.cjs"],
+      "entryRules": ["minimum history", "trend aligned", "10-session range contraction vs prior 20", "5/20 volume dry-up", "near available high", "minimum turnover"],
+      "constraints": ["research evidence cannot independently create Tier A"],
+      "evidence": "Directly recoverable V18 VCP implementation."
+    },
+    {
+      "strategyId": "V16_TWO_STAGE_TOP_GAINER",
+      "family": "PROBABILISTIC_TOP_GAINERS",
+      "status": "historical-only",
+      "engines": ["V16_TWO_STAGE_PREDICTOR", "V16_6_GATED_DECISION", "V16_7_COHERENT_ENGINE", "V16_8_PRACTICAL_SELECTOR"],
+      "implementation": [".github/workflows/v16-two-stage-predictor.yml", ".github/workflows/v16-two-stage-top2-backtest.yml", ".github/workflows/v16-v167-coherent-engine.yml"],
+      "evidence": "Recoverable V16 predictor/backtest workflow family; exact subversion thresholds must be preserved from its scripts during migration rather than inferred."
+    },
+    {
+      "strategyId": "V16_TRIPLE_BARRIER_GATE",
+      "family": "VALIDATION_GATE",
+      "status": "retired",
+      "engines": ["V16_6_GATED_DECISION", "V16_7_COHERENT_ENGINE"],
+      "implementation": [".github/workflows/v16-v166-triple-barrier.yml", "scripts/research/v16-v167-blocked-run.py"],
+      "evidence": "Validation/labeling strategy in champion lineage; not counted as independent alpha engine."
+    },
+    {
+      "strategyId": "V19_TOP10_PROBABILITY_INV_VOL_3",
+      "family": "TOP10_PROBABILITY_RELATED",
+      "status": "experimental",
+      "engines": ["V19_CHAT_GPT_NATIVE_CHALLENGER"],
+      "implementation": ["v19-egx-chat-gpt:scripts/v19/native-challenger-v6.py"],
+      "entryRules": ["TOP10 probability ranking", "ATR<=8 candidate preference", "select 3", "inverse-volatility weights"],
+      "risk": ["100% exposure normally", "65% after one loss", "40% after two", "25% after three+", "reset after positive session"],
+      "evidence": "V6 code explicitly documents methodology and states post-hoc benchmark influence; fresh independent evidence=false."
+    },
+    {
+      "strategyId": "V20_NATIVE_MULTI_COMPONENT_COMPOSITE",
+      "family": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
+      "status": "experimental",
+      "engines": ["V20_FULL_MARKET_NATIVE_SELECTION_V1"],
+      "implementation": ["research/egx-meta-engine-v1-20260829:data/v20/native-model-freeze.json", "research/egx-meta-engine-v1-20260829:scripts/v20/build-full-market-native-selection.cjs"],
+      "components": ["dataEvidence", "liquidity", "supportResistance", "netRiskReward", "tradePlanAlignment", "currentTechnical"],
+      "weightsPct": {"legacyOpportunity": 10, "dataEvidence": 18, "liquidity": 30, "supportResistance": 12, "netRiskReward": 15, "tradePlanAlignment": 10, "currentTechnical": 5},
+      "constraints": ["research only", "execution=false", "full-market independent universe", "legacy seed dependency=false", "defensive caps"],
+      "evidence": "Frozen rules/weights/hash contract is recoverable."
+    },
+    {
+      "strategyId": "GANN_FUSION",
+      "family": "GANN_TECHNICAL_FUSION",
+      "status": "experimental",
+      "engines": ["GANN_FUSION_X", "TRIPLE_ENGINE_CONSENSUS_V1"],
+      "implementation": ["gann-fusion-x/engine/fusion.js", "gann-fusion-x/engine/planner.js"],
+      "evidence": "Main and triple-engine branch instantiate Fusion.analyze and Planner.buildPlan from these modules."
+    },
+    {
+      "strategyId": "GANN_REGIME_ROUTER",
+      "family": "GANN_REGIME_GATE",
+      "status": "experimental",
+      "engines": ["GANN_FUSION_X"],
+      "implementation": ["feature/gann-regime-gate-challenger-v1", "feature/gann-regime-gate-v2-deterioration", "feature/gann-regime-gate-v3-pure", "feature/gann-fusion-x-v4-regime-router"],
+      "evidence": "Dedicated versioned research branches prove competing regime-gate/router implementations."
+    },
+    {
+      "strategyId": "GANN_ENTRY_EXECUTION_QUALITY",
+      "family": "GANN_EXECUTION",
+      "status": "experimental",
+      "engines": ["GANN_FUSION_X"],
+      "implementation": ["feature/gann-entry-timing-grade-v1", "feature/gann-entry-timing-grade-v1r", "feature/gann-execution-quality-ranking-v2"],
+      "evidence": "Dedicated branches are retained as competing implementation variants; migration must preserve version provenance."
+    },
+    {
+      "strategyId": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING",
+      "family": "SEPA_BREAKOUT_TRIGGER",
+      "status": "experimental",
+      "engines": ["SEPA_X_QVUA", "TRIPLE_ENGINE_CONSENSUS_V1"],
+      "implementation": ["develop/sepax-isolated-v1:sepa-x/*", "develop/sepax-v2-isolated:sepa-x/*", "gann-fusion-x/engine/sepa-adapter.js"],
+      "version": "QVUA-1.0-STABLE",
+      "selectionPolicy": "NEAR_FIRST_THEN_FORMING",
+      "evidence": "Persisted SEPA snapshot carries strategy/feed/selection policy; isolated source branches are available."
+    },
+    {
+      "strategyId": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION",
+      "family": "TECHNICAL_HARD_GATE_FUSION",
+      "status": "experimental",
+      "engines": ["TFE_V20_FUSION_RC2", "EGX_META_ENGINE_V1"],
+      "implementation": ["release/rc2-frozen:tfe-v20/src/originalScore.js", "release/rc2-frozen:tfe-v20/src/originalIndicators.js", "release/rc2-frozen:tfe-v20/engine.js", "release/rc2-frozen:tfe-v20/policy.js"],
+      "entryRules": ["minimum 60 sessions", "technical>=70", "research>=72", "liquidity>=55 and eligible", "SR confluence>=55 with >=2 strong methods", "net RR>=0.70 after 0.60% modeled round-trip cost", "max pullback 0.70 ATR", "reject DO_NOT_CHASE/BELOW_ENTRY_WAIT"],
+      "exitRules": ["entry expiry 3 sessions", "maximum hold 10 sessions", "T1 0.8R capped by structural resistance", "same-bar ambiguity STOP_FIRST"],
+      "evidence": "Frozen RC2 developer handoff documents exact hard gates and source provenance."
+    }
+  ],
+  "unresolvedWithoutInventingLogic": [
+    {
+      "name": "QUANT_EDGE internal strategy set",
+      "classification": "legacy-output-only",
+      "reason": "Runtime endpoint/output references exist but original source algorithm was not found in available repository branches/artifacts."
+    },
+    {
+      "name": "V18 REVERSAL pre-ensemble implementation",
+      "classification": "family-known-original-logic-not-proven",
+      "reason": "V18 policy defines regime compatibility for REVERSAL, but discovery did not prove a distinct original reversal implementation; no logic is inferred."
+    }
+  ]
+}
