@@ -2,9 +2,9 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "G08_COMPLETE_G09_NOT_STARTED",
-  "current_gate": "G09",
-  "last_green_gate": "G08",
+  "current_phase": "G09_COMPLETE_G10_NOT_STARTED",
+  "current_gate": "G10",
+  "last_green_gate": "G09",
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -14,7 +14,10 @@
     "Previously unresolved parity source provenance P05,P06,P08,P09,P15,P16,P17,P18 is pinned 8/8 with repository evidence hashes.",
     "34018 records remain invalid and 34012 are unresolved under strict canonical semantics; their raw evidence and diagnostics are preserved rather than synthesized or dropped.",
     "Legacy removal plan still covers 8/8 dependencies and targets runtimeLegacyDependencyCount=0; no runtime dependency was cut over during G07 and G12 remains PENDING.",
-    "QUANT_EDGE remains legacy-output-only; no missing QUANT_EDGE calculation logic or speculative parameters were fabricated."
+    "QUANT_EDGE remains legacy-output-only; no missing QUANT_EDGE calculation logic or speculative parameters were fabricated.",
+    "G09 unified internal decision pipeline is certified GREEN in internal/shadow mode with one direct production-eligible strategy (V16.9 equal-weight basket), 11 retired/experimental strategies excluded from production ranking, zero QUANT_EDGE live influence and zero legacy-network calls from the new pipeline.",
+    "G09 certification fixture evaluated 80 canonical securities and produced 3 valid opportunities; the valid-zero fixture produced 0 opportunities with an explicit VALID_ZERO_OPPORTUNITY_SESSION state.",
+    "G10 parity is not started; G12 remains PENDING and the existing 8 application legacy runtime dependencies were not removed or cut over."
   ],
   "completed_gates": [
     "G01",
@@ -24,7 +27,8 @@
     "G05",
     "G06",
     "G07",
-    "G08"
+    "G08",
+    "G09"
   ],
   "failed_gates": [],
   "clean_review_streak": 0,
@@ -71,8 +75,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Stop. G09 may start only on explicit request; G12 remains PENDING.",
-  "last_updated": "2026-09-15T21:22:49.366Z",
+  "next_action": "Stop. G10 golden-master parity may start only on explicit request. Do not cut over production runtime; G12 remains PENDING and all 8 current legacy runtime dependencies remain intact.",
+  "last_updated": "2026-09-15T21:43:42.910Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -83,5 +87,27 @@
     "legacyNetworkCalls": 0,
     "quarantineTests": "PASS",
     "statusReason": "ALL_G08_PASS_CRITERIA_MET"
+  },
+  "g09_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35027165948,
+    "totalTests": 46,
+    "productionEligibleStrategies": "1/18",
+    "retiredExperimentalExcluded": 11,
+    "engineLineagesAccounted": "20/20",
+    "marketUniverseEvaluated": 80,
+    "validOpportunitiesFixture": 3,
+    "evidenceIndependence": "PASS",
+    "deterministicRanking": "PASS",
+    "temporalLeakage": "PASS",
+    "zeroOpportunityGuard": "PASS",
+    "decisionSnapshotConsistency": "PASS",
+    "legacyNetworkCalls": 0,
+    "quantEdgeLiveInfluence": 0,
+    "g06Regression": "PASS",
+    "g07RegressionIdempotency": "PASS",
+    "g08RegressionDeterminism": "PASS",
+    "productionCutover": false,
+    "g12Status": "PENDING"
   }
 }

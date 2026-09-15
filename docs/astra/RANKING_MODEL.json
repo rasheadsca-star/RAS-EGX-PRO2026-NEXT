@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "astra-g09-ranking-model-1",
+  "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+  "generatedAt": "2026-09-15T21:43:42.910Z",
+  "scoreMeaning": "Source-pinned V16.9 selection ordering score. It is not a probability of success.",
+  "components": [
+    {
+      "name": "V16_9_SOURCE_SELECTION_SCORE",
+      "weight": null,
+      "provenance": {
+        "path": "scripts/research/v16-v169-basket-engine.py",
+        "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
+      }
+    }
+  ],
+  "tieBreak": [
+    "sourceSelectionScore DESC",
+    "ticker ASC"
+  ],
+  "normalization": "No arbitrary new weighted normalization introduced in G09.",
+  "topNRule": "Top 5 is slice(0,5) of valid ranked opportunities; never pad invalid candidates."
+}

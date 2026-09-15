@@ -31,10 +31,11 @@ function canonicalRows(size=80){
     supportResistanceInputs:{asOfSessionDate:SESSION}
   }));
 }
+function guardHistory(n=60){return Array.from({length:n},(_,i)=>{const d=new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10);return{sessionDate:d,close:100+i*.1,volume:1000000+i,turnover:30000000+i*1000,validationStatus:'VALID',migrationValidationStatus:'VALID'}})}
 function context(overrides={}){
   const c={
     sessionDate:SESSION,canonicalSnapshot:{snapshotId:'UNIVERSE-2026-09-15',sessionDate:SESSION,rows:canonicalRows()},
-    historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},
+    historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},modelGuardHistory:guardHistory(),
     modelTrainingSessions:trainSessions(),modelCurrentRows:currentRows(),capitalEgp:1000000,
     approvedStrategyVersions:{PORTFOLIO_BASKET_EQUAL_WEIGHT:SPECS.PORTFOLIO_BASKET_EQUAL_WEIGHT.sourceCommit},
     approvedConfig:{basketSize:3},requestedStrategyIds:Object.keys(SPECS),generatedAt:'2026-09-15T20:00:00+03:00',applicationVersion:'ASTRA_SHADOW_G09',codeVersion:pipeline.VERSION.pipeline
@@ -86,6 +87,7 @@ test('meaningful approved configuration change changes semantic decision hash',(
 test('invalid unapproved basket-size config blocks production execution',()=>{const r=run({approvedConfig:{basketSize:2}});assert.equal(r.ok,false);assert.equal(r.diagnostics[0].code,'ALL_PRODUCTION_STRATEGIES_FAILED')});
 test('valid zero-opportunity session is distinct from pipeline failure',()=>{const c=context({modelCurrentRows:currentRows(80,{lowTurnover:true})});const r=pipeline.runUnifiedDecisionPipeline(c);assert.equal(r.ok,true);assert.equal(r.status,'VALID_ZERO_OPPORTUNITY_SESSION');assert.equal(r.decisionSnapshot.top5.length,0);assert.ok(r.decisionSnapshot.diagnostics.some(d=>d.code==='VALID_ZERO_OPPORTUNITY_SESSION'))});
 test('broken canonical pipeline cannot masquerade as valid zero opportunities',()=>{const c=context();c.canonicalSnapshot.rows=[];const r=pipeline.runUnifiedDecisionPipeline(c);assert.equal(r.ok,false);assert.equal(r.status,'PIPELINE_FAILED');assert.notEqual(r.diagnostics[0].code,'VALID_ZERO_OPPORTUNITY_SESSION')});
+test('missing canonical model guard history is pipeline failure, not valid zero',()=>{const c=context();delete c.modelGuardHistory;const r=pipeline.runUnifiedDecisionPipeline(c);assert.equal(r.ok,false);assert.equal(r.status,'PIPELINE_FAILED');assert.notEqual(r.diagnostics[0].code,'VALID_ZERO_OPPORTUNITY_SESSION')});
 test('DecisionSnapshot is immutable once issued',()=>{const s=run().decisionSnapshot;assert.equal(Object.isFrozen(s),true);assert.equal(Object.isFrozen(s.top5),true);assert.throws(()=>{s.status='MUTATED'},TypeError)});
 test('new G09 pipeline contains no legacy network/runtime calls or fallback endpoints',()=>{const src=fs.readFileSync(path.join(__dirname,'../../astra/pipeline/g09-unified-decision-pipeline.cjs'),'utf8');for(const token of ['fetch(','axios','http.request','https.request','quant-edge-shadow.vercel.app','sepax-strategy-stable.vercel.app','raw.githubusercontent.com'])assert.equal(src.includes(token),false,token)});
 test('pipeline reports zero legacy-network calls and no production cutover',()=>{const s=run().decisionSnapshot;assert.equal(s.legacyNetworkCalls,0);assert.equal(s.productionCutover,false);assert.equal(s.shadowMode,true)});

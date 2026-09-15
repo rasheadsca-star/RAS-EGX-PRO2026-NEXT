@@ -33,3 +33,13 @@ G07 completed against pinned source commits. Processed 19/19 historical store gr
 - 2026-09-15T21:21:06.609Z G08 GREEN: 18/18 internally executable; 20/20 lineages accounted; G09-G19 unchanged/PENDING.
 
 - 2026-09-15T21:22:49.367Z G08 GREEN: 18/18 internally executable; 20/20 lineages accounted; G09-G19 unchanged/PENDING.
+
+## 2026-09-15T21:43:42.910Z — G09 Unified Internal Decision Pipeline
+- G09: GREEN (internal/shadow only).
+- Production-eligible direct strategies: 1/18; retired/experimental excluded: 11.
+- Market fixture: 80 securities; valid opportunities: 3; valid-zero fixture: 0.
+- Evidence independence, deterministic ranking, temporal leakage, quarantine, zero-opportunity and DecisionSnapshot consistency: PASS.
+- New pipeline legacy-network calls: 0; QUANT_EDGE live influence: 0.
+- G06/G07/G08 regressions: PASS.
+- No production cutover; G10 and G12-G19 remain PENDING; G19 streak remains 0.
+- Next: G10 only on explicit request.

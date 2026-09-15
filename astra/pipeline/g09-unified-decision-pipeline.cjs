@@ -119,6 +119,7 @@ function validateContext(context){
     const d=asDate(row);if(d&&after(d,session))temporal.push(`${ticker}:HISTORY:${d}`);
     if(row.validationStatus!=='VALID'||migrationBad(row.migrationValidationStatus))quarantined.push(`${ticker}:HISTORY`);
   }
+  for(const row of context?.modelGuardHistory||[]){const d=asDate(row);if(d&&after(d,session))temporal.push(`MODEL_GUARD_HISTORY:${d}`);if(row.validationStatus!=='VALID'||migrationBad(row.migrationValidationStatus))quarantined.push('MODEL_GUARD_HISTORY')}
   for(let s=0;s<(context?.modelTrainingSessions||[]).length;s++)for(const row of context.modelTrainingSessions[s]||[]){
     const d=asDate(row);if(d&&after(d,session))temporal.push(`${row.ticker||'UNKNOWN'}:TRAINING:${d}`);
     if(row.validationStatus&&row.validationStatus!=='VALID')quarantined.push(`${row.ticker||'UNKNOWN'}:TRAINING`);
@@ -169,7 +170,7 @@ function computeRegime(context){
 function regimeReasons(m,score,regime){return[{code:'BREADTH_ADVANCE_PCT',value:m.advancePct},{code:'ABOVE_SMA20_PCT',value:m.aboveSma20Pct},{code:'ABOVE_SMA50_PCT',value:m.aboveSma50Pct},{code:'MEDIAN_RETURN20_PCT',value:m.medianReturn20Pct},{code:'MEDIAN_RETURN5_PCT',value:m.medianReturn5Pct},{code:'VOLATILITY20_ANNUALIZED_PCT',value:m.volatility20AnnualizedPct},{code:'REGIME_SCORE',value:score},{code:'REGIME_CLASS',value:regime}]}
 
 function decisionInputIdentity(context,regime){
-  return stableHash({sessionDate:context.sessionDate,canonicalSnapshotId:context.canonicalSnapshot.snapshotId,rowSnapshotIds:context.canonicalSnapshot.rows.map(r=>r.snapshotId||`${r.ticker}:${r.sessionDate}`).sort(),historyIdentities:context.historyIdentities||{},trainingHash:stableHash(context.modelTrainingSessions||[]),currentRowsHash:stableHash(context.modelCurrentRows||[]),approvedStrategyVersions:context.approvedStrategyVersions||{},approvedConfig:context.approvedConfig||{},regimeHash:regime.semanticHash});
+  return stableHash({sessionDate:context.sessionDate,canonicalSnapshotId:context.canonicalSnapshot.snapshotId,rowSnapshotIds:context.canonicalSnapshot.rows.map(r=>r.snapshotId||`${r.ticker}:${r.sessionDate}`).sort(),historyIdentities:context.historyIdentities||{},modelGuardHistoryHash:stableHash(context.modelGuardHistory||[]),trainingHash:stableHash(context.modelTrainingSessions||[]),currentRowsHash:stableHash(context.modelCurrentRows||[]),approvedStrategyVersions:context.approvedStrategyVersions||{},approvedConfig:context.approvedConfig||{},regimeHash:regime.semanticHash});
 }
 
 function runProductionStrategy(context,regime,inputIdentity){
@@ -181,10 +182,13 @@ function runProductionStrategy(context,regime,inputIdentity){
   try{
     embedded=executeStrategy(EMBEDDED_SELECTION_MODEL,{
       snapshot:{snapshotId:context.canonicalSnapshot.snapshotId,ticker:'__MARKET__',sessionDate:context.sessionDate,validationStatus:'VALID',migrationValidationStatus:'VALID'},
-      history:[],trainingSessions:context.modelTrainingSessions,currentRows:context.modelCurrentRows
+      history:context.modelGuardHistory||[],trainingSessions:context.modelTrainingSessions,currentRows:context.modelCurrentRows
     },context.approvedConfig||{});
   }catch(error){return{ok:false,executions:[],diagnostics:[diagnostic('STRATEGY_EXECUTION_FAILED','ERROR',{strategyId:EMBEDDED_SELECTION_MODEL,message:error.message})]}}
-  if(embedded.eligibility!=='ELIGIBLE')return{ok:true,executions:[marketExecution([],embedded,eligibility,context,regime,inputIdentity)],diagnostics:[diagnostic('BASKET_SELECTION_MODEL_INELIGIBLE','WARN',{reason:embedded.eligibilityReason})]};
+  if(embedded.eligibility!=='ELIGIBLE'){
+    const validNoOpportunity=embedded.eligibilityReason==='NO_EXECUTION_ELIGIBLE_CANDIDATE';
+    return{ok:validNoOpportunity,executions:[marketExecution([],embedded,eligibility,context,regime,inputIdentity)],diagnostics:[diagnostic('BASKET_SELECTION_MODEL_INELIGIBLE',validNoOpportunity?'INFO':'ERROR',{reason:embedded.eligibilityReason})]};
+  }
   const size=context.approvedConfig.basketSize;
   const currentByTicker=new Map((context.modelCurrentRows||[]).map(r=>[String(r.ticker||''),r]));
   const ranked=(embedded.evidenceItems||[]).map(item=>{

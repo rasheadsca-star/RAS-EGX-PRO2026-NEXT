@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "astra-g09-production-strategy-eligibility-1",
+  "version": "ASTRA_G09_PRODUCTION_ELIGIBILITY_1",
+  "generatedAt": "2026-09-15T21:43:42.910Z",
+  "totalReconstructed": 18,
+  "productionEligibleCount": 1,
+  "productionEligibleStrategyIds": [
+    "PORTFOLIO_BASKET_EQUAL_WEIGHT"
+  ],
+  "retiredExperimentalExcluded": 11,
+  "directProductionExcludedCount": 17,
+  "criteria": [
+    "canExecuteInternally",
+    "lifecycleStatus == active",
+    "reconstruction/evidence status",
+    "G08 productionEligible == true",
+    "approved source-pinned strategy version",
+    "regime available",
+    "approved basket configuration"
+  ],
+  "embeddedSelectionComponent": {
+    "strategyId": "V16_TWO_STAGE_TOP_GAINER",
+    "role": "EMBEDDED_SOURCE_PINNED_SELECTION_MODEL_NOT_INDEPENDENT_VOTER",
+    "sourceEvidence": "scripts/research/v16-v169-basket-engine.py",
+    "rationale": "The certified V16.9 basket source ranks candidates with the existing out-of-sample top-gainer probability model, then equal-weights the selected basket."
+  },
+  "important": "The embedded V16 two-stage model is part of the source-pinned V16.9 basket selection logic and is not counted as an independent production voter or independent strategy agreement vote.",
+  "quantEdge": "HISTORICAL_OUTPUT_ONLY; live influence forbidden"
+}

@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "astra-g09-config-1",
+  "versions": {
+    "pipeline": "ASTRA_G09_PIPELINE_1",
+    "eligibility": "ASTRA_G09_PRODUCTION_ELIGIBILITY_1",
+    "regime": "EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+    "evidence": "ASTRA_G09_EVIDENCE_1",
+    "agreement": "ASTRA_G09_AGREEMENT_1",
+    "ranking": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+    "risk": "ASTRA_G09_V16_9_RISK_1",
+    "basket": "V16_9_EQUAL_WEIGHT_BASKET_PILOT",
+    "snapshot": "ASTRA_G09_DECISION_SNAPSHOT_1"
+  },
+  "productionStrategyApproval": {
+    "strategyId": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
+    "sourceEngine": "V16_9_EQUAL_WEIGHT_BASKET",
+    "approvedStrategyVersion": "2351b2ec2bbcf3e36e992021e26b36845e879ab0",
+    "requiredLifecycleStatus": "active",
+    "requiredProductionEligible": true,
+    "allowedBasketSizes": [
+      3,
+      4,
+      5
+    ],
+    "maxTotalExposurePct": 50,
+    "failedWeightPolicy": "KEEP_CASH",
+    "selectionComponent": {
+      "strategyId": "V16_TWO_STAGE_TOP_GAINER",
+      "role": "EMBEDDED_SOURCE_PINNED_SELECTION_MODEL_NOT_INDEPENDENT_VOTER",
+      "sourceEvidence": "scripts/research/v16-v169-basket-engine.py",
+      "rationale": "The certified V16.9 basket source ranks candidates with the existing out-of-sample top-gainer probability model, then equal-weights the selected basket."
+    }
+  },
+  "regimeSource": {
+    "path": "scripts/stable/v16-market-regime-engine.cjs",
+    "methodology": "EGX_PRO_MARKET_REGIME_BREADTH_1.0"
+  },
+  "rankingSource": {
+    "path": "scripts/research/v16-v169-basket-engine.py",
+    "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
+  },
+  "riskSource": {
+    "path": "scripts/research/v16-v169-basket-engine.py",
+    "entryAtrLow": -0.08,
+    "entryAtrHigh": 0.08,
+    "stopAtr": -0.9,
+    "targetAtr": 1.2,
+    "portfolioAllocationPct": 50,
+    "unfilledMemberPolicy": "KEEP_CASH"
+  },
+  "evidenceFamilies": {
+    "MODEL_SELECTION": "selection model and basket membership are correlated; count once",
+    "LIQUIDITY": "source-model liquidity gate/input",
+    "REGIME": "market-regime context; not a second strategy vote",
+    "STRUCTURE": "entry/stop/target structural plan where present"
+  },
+  "tieBreak": [
+    "sourceSelectionScore DESC",
+    "ticker ASC"
+  ],
+  "generatedAt": "2026-09-15T21:43:42.910Z",
+  "configHash": "c110a932799ebb7b513b9a1bbc91463e315445f56299c3f75c644f464f3d2c1c"
+}
