@@ -8,13 +8,13 @@
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
-    "G06 now has executable canonical contracts: 19 schemas and 30 explicit module boundaries.",
-    "DecisionSnapshot identity, time semantics, strategy raw-output preservation, immutable recommendation issuance and migration provenance/idempotency contracts are executable and tested.",
-    "G07 is prepared but not executed; MIGRATION_MANIFEST covers 19/19 historical store groups.",
-    "Legacy removal plan covers 8/8 dependencies and targets runtimeLegacyDependencyCount=0; no dependency has been cut over in this phase and G12 remains PENDING.",
-    "QUANT_EDGE remains legacy-output-only; algorithmic parity and fabricated internal production logic are prohibited.",
-    "Parity cases P05,P06,P08,P09,P15,P16,P17,P18 require exact branch commit pin before G10 parity execution.",
-    "Exact per-store record counts are intentionally deferred to G07 extraction where they can be reconciled against immutable raw archives."
+    "G06 canonical contracts remain valid after real-data G07 migration: 19 schemas and 30 explicit module boundaries; post-migration G06 regression/certifier PASS.",
+    "G07 completed historical migration and reconciliation for 19/19 store groups from pinned source commits.",
+    "G07 archived 60288 raw records and produced 26270 canonical records with 26270 provenance links; run 2 matched run 1 and unexplained data loss is 0.",
+    "Previously unresolved parity source provenance P05,P06,P08,P09,P15,P16,P17,P18 is pinned 8/8 with repository evidence hashes.",
+    "34018 records remain invalid and 34012 are unresolved under strict canonical semantics; their raw evidence and diagnostics are preserved rather than synthesized or dropped.",
+    "Legacy removal plan still covers 8/8 dependencies and targets runtimeLegacyDependencyCount=0; no runtime dependency was cut over during G07 and G12 remains PENDING.",
+    "QUANT_EDGE remains legacy-output-only; no missing QUANT_EDGE calculation logic or speculative parameters were fabricated."
   ],
   "completed_gates": [
     "G01",
@@ -35,6 +35,7 @@
     "canonical_schemas": 19,
     "architecture_modules": 30,
     "migration_sources_prepared": 19,
+    "migration_sources_processed": 19,
     "legacy_replacement_contracts": 8
   },
   "g06_certification": {
@@ -44,9 +45,15 @@
     "tests": "14/14 PASS",
     "certifier": "PASS"
   },
-  "g07_readiness": "READY_TO_EXECUTE_MIGRATION_CONTRACT",
-  "next_action": "Run Prompt 04 / G08 only when explicitly requested. Do not start runtime cutover; G12 remains PENDING.",
-  "last_updated": "2026-09-15T20:24:36Z",
+  "g06_post_g07_regression": {
+    "status": "PASS",
+    "workflowRunId": 35019349149,
+    "schemas": 19,
+    "migrationSources": 19,
+    "g07Status": "G07_MIGRATED_RECONCILED",
+    "g12Status": "PENDING"
+  },
+  "g07_readiness": "COMPLETED_GREEN",
   "g07_certification": {
     "status": "GREEN",
     "workflowRunId": 35019349149,
@@ -54,7 +61,15 @@
     "exactCommitPins": "8/8",
     "rawArchived": 60288,
     "canonicalRecords": 26270,
+    "provenanceLinks": 26270,
+    "exactDuplicates": 357,
+    "conflicts": 0,
+    "invalid": 34018,
+    "unresolved": 34012,
     "idempotency": "PASS",
+    "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
-  }
+  },
+  "next_action": "Run Prompt 04 / G08 only when explicitly requested. Do not start runtime cutover; G12 remains PENDING.",
+  "last_updated": "2026-09-15T20:25:00Z"
 }
