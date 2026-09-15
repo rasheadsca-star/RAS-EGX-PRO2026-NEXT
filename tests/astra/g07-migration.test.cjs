@@ -59,6 +59,16 @@ test('real migration: all 19 store groups are processed and reconciliation equat
   assert.equal(s.totals.unexplainedDataLoss,0);
 });
 
+test('real migration: recoverable OHLCV history is actually normalized, not merely archived',{skip:!r1},()=>{
+  const s=loadJson(path.join(r1,'run-summary.json'));
+  const h01=s.sourceAccounting.find(x=>x.sourceId==='H01_MARKET_OHLCV_HISTORY');
+  assert.ok(h01,'H01 accounting missing');
+  assert.ok(h01.normalizedImported>0,'recoverable OHLCV produced zero canonical snapshots');
+  assert.ok(h01.normalizedImported<h01.physicalRecordsDiscovered+1);
+  const records=loadJsonl(path.join(r1,'canonical/records.jsonl'));
+  assert.ok(records.some(r=>r.canonicalType==='CanonicalMarketSnapshot'),'no canonical market snapshot produced');
+});
+
 test('real migration: raw archive exists for every store group and hashes/checkpoints are deterministic',{skip:!r1},()=>{
   const cps=loadJson(path.join(r1,'checkpoints.json'));
   assert.equal(cps.length,19);
