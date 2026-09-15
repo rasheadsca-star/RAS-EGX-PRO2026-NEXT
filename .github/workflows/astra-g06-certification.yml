@@ -1,0 +1,32 @@
+name: Astra G06 Architecture Certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'astra/**'
+      - 'tests/astra/**'
+      - 'docs/astra/**'
+      - 'package.json'
+      - '.github/workflows/astra-g06-certification.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-g06-certification
+  cancel-in-progress: true
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact main commit
+        uses: actions/checkout@v4
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run G06 executable contracts and manifest certification
+        run: npm run test:astra:g06
