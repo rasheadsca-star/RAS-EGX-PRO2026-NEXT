@@ -1,0 +1,101 @@
+name: Astra G08 Internal Strategy Reconstruction
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/astra-g08-reconstruction.yml'
+      - 'astra/strategies/g08-internal-strategies.cjs'
+      - 'astra/certification/g08-certify.cjs'
+      - 'tests/astra/g08-strategy-reconstruction.test.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: astra-g08-reconstruction
+  cancel-in-progress: false
+
+jobs:
+  reconstruct-and-certify:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check G08 implementation
+        run: |
+          node --check astra/strategies/g08-internal-strategies.cjs
+          node --check astra/certification/g08-certify.cjs
+          node --check tests/astra/g08-strategy-reconstruction.test.cjs
+      - name: Run G08 strategy reconstruction tests
+        run: node --test tests/astra/g08-strategy-reconstruction.test.cjs
+      - name: G06 regression
+        run: npm run test:astra:g06
+      - name: Verify certified G07 baseline without raw reprocessing
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const x=JSON.parse(fs.readFileSync('docs/astra/MIGRATION_RECONCILIATION.json','utf8'));
+          if(x.status!=='GREEN') throw new Error(`G07 status ${x.status}`);
+          if(x.storeGroupsProcessed!==19||x.storeGroupsTotal!==19) throw new Error('G07 store-group baseline changed');
+          if(x.totals?.rawArchived!==60288||x.totals?.canonicalRecords!==26270||x.totals?.provenanceLinks!==26270) throw new Error('G07 certified counts changed');
+          if(x.totals?.invalid!==34018||x.totals?.unresolved!==34012) throw new Error('G07 invalid/unresolved accounting changed');
+          if(x.totals?.unexplainedDataLoss!==0) throw new Error('G07 unexplained data loss changed');
+          if(x.idempotency?.pass!==true||x.idempotency?.run1Hash!=='435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3'||x.idempotency?.run2Hash!==x.idempotency.run1Hash) throw new Error('G07 idempotency baseline changed');
+          NODE
+      - name: Build G08 evidence and gate decision
+        env:
+          G08_TEST_PASS: '1'
+          G08_TEST_COUNT: '21'
+          G06_PASS: '1'
+        run: node astra/certification/g08-certify.cjs
+      - name: Guard later gates and cutover boundary
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const gates=JSON.parse(fs.readFileSync('04_ACCEPTANCE_GATES.json','utf8')).gates;
+          const by=new Map(gates.map(x=>[x.id,x.status]));
+          if(!['GREEN','BLOCKED','FAILING'].includes(by.get('G08'))) throw new Error(`Unexpected G08 ${by.get('G08')}`);
+          for(const id of ['G09','G10','G11','G12','G13','G14','G15','G16','G17','G18','G19']) if(by.get(id)!=='PENDING') throw new Error(`${id} must remain PENDING, got ${by.get(id)}`);
+          const src=fs.readFileSync('astra/strategies/g08-internal-strategies.cjs','utf8');
+          for(const token of ['quant-edge-shadow.vercel.app','stable-sepax.vercel.app','fetch(','axios','http.request','https.request']) if(src.includes(token)) throw new Error(`Legacy/network token in G08 internal layer: ${token}`);
+          NODE
+      - name: Commit G08 evidence/state
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/astra/STRATEGY_RECONSTRUCTION_MATRIX.json \
+            docs/astra/ENGINE_CAPABILITY_COVERAGE.json \
+            docs/astra/G08_RECONSTRUCTION_REPORT.md \
+            docs/astra/G08_TEST_EVIDENCE.json \
+            docs/astra/G08_PARITY_FIXTURES.json \
+            docs/astra/WORK_STATE.json \
+            04_ACCEPTANCE_GATES.json \
+            05_WORK_STATE.json \
+            07_WORK_LOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m "docs(astra): record G08 reconstruction gate [skip g08]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Emit compact G08 summary
+        run: |
+          node <<'NODE'
+          const m=require('./docs/astra/STRATEGY_RECONSTRUCTION_MATRIX.json');
+          const e=require('./docs/astra/ENGINE_CAPABILITY_COVERAGE.json');
+          const t=require('./docs/astra/G08_TEST_EVIDENCE.json');
+          const g=require('./04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G08');
+          const reconstructed=m.strategies.filter(x=>x.canExecuteInternally);
+          const blocked=m.strategies.filter(x=>!x.canExecuteInternally);
+          console.log('ASTRA_G08_FINAL '+JSON.stringify({status:g.status,strategies:`${m.strategies.length}/18`,reconstructed:reconstructed.length,blocked:blocked.map(x=>x.strategyId),engineLineages:`${e.engines.length}/20`,legacyNetworkCalls:0,quarantine:t.invalidUnresolvedQuarantine,tests:t.status,g06:t.g06Regression,g07:t.g07RegressionIdempotency}));
+          NODE
