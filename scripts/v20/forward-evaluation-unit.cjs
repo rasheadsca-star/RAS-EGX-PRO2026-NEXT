@@ -81,4 +81,15 @@ assert.equal(research.equalWeightIssuedNetReturnPct, 1);
 assert.equal(research.enteredOnlyAverageNetReturnPct, 2);
 assert.equal(research.appliedToProduction, false);
 
-console.log(JSON.stringify({ ok:true, cases:11, ambiguityPolicy:'TREAT_AS_STOP', appliedCashSeparation:true }, null, 2));
+const pendingResearch = aggregateResearch([
+  { researchEligible:true, outcome:{ resolved:true, entered:false, netReturnPct:0, grossReturnPct:0, ambiguous:false } },
+  { researchEligible:true, outcome:{ resolved:false, state:'PENDING_ENTRY_SESSION_OHLC_MISSING' } },
+], 2);
+assert.equal(pendingResearch.resolved, false);
+assert.equal(pendingResearch.status, 'PENDING_RESEARCH_MEMBER_OUTCOME');
+assert.strictEqual(pendingResearch.equalWeightIssuedGrossReturnPct, null);
+assert.strictEqual(pendingResearch.equalWeightIssuedNetReturnPct, null);
+assert.strictEqual(pendingResearch.enteredOnlyAverageNetReturnPct, null);
+assert.equal(pendingResearch.appliedToProduction, false);
+
+console.log(JSON.stringify({ ok:true, cases:12, ambiguityPolicy:'TREAT_AS_STOP', appliedCashSeparation:true, pendingResearchNullSemantics:true }, null, 2));
