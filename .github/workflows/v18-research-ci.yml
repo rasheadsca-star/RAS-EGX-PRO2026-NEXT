@@ -1,0 +1,59 @@
+name: V18 Research CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['scripts/v18/**','tests/v18/**','config/v18-*','docs/v18/**','.github/workflows/v18-research-ci.yml']
+  push:
+    branches: ['research/v18-target-probability-engine']
+    paths: ['scripts/v18/**','tests/v18/**','config/v18-*','docs/v18/**','.github/workflows/v18-research-ci.yml']
+  workflow_dispatch:
+
+permissions: { contents: read }
+
+jobs:
+  fail-closed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: V18 unit tests
+        run: python -m unittest discover -s tests/v18 -p 'test_*.py' -v
+      - name: Build research snapshot
+        run: python scripts/v18/run.py
+      - name: Validate deterministic research baseline
+        run: python scripts/v18/validate.py
+      - name: Verify immutable forward evidence
+        run: python scripts/v18/forward.py --verify
+      - name: Build production qualification report
+        run: python scripts/v18/qualify.py
+      - name: Enforce research-only qualification state
+        run: |
+          python - <<'PY'
+          import json
+          x=json.load(open('data/v18/current.json'))
+          assert x['mode']=='RESEARCH_SHADOW_ONLY'
+          assert all(not r['productionAuthority'] and not r['automaticOrders'] for r in x['recommendations'])
+          assert x['artifactHash']
+          w=json.load(open('data/v18/walk-forward-validation.json'))
+          assert w['protocol']['embargoSessions'] >= 5
+          assert w['formalGate']['pass'] is False
+          q=json.load(open('data/v18/production-qualification.json'))
+          assert q['decision']=='KEEP_RESEARCH'
+          assert q['promotionAllowed'] is False
+          assert q['v18']['evidenceGate']['minimumResolvedCohorts']==30
+          assert q['v18']['evidenceGate']['minimumResolvedMembers']==100
+          assert q['v18']['evidenceGate']['minimumObservedCalendarDays']==90
+          assert q['championChallenge']['pairedGate']['minimumResolvedPairedCohorts']==30
+          PY
+      - name: Upload qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v18-production-qualification
+          path: |
+            data/v18/current.json
+            data/v18/production-qualification.json
+            data/v18/validation-report.json
+            data/v18/walk-forward-validation.json
