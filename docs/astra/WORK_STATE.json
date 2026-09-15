@@ -2,31 +2,25 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "TARGET_ARCHITECTURE_AND_MIGRATION_CONTRACT",
-  "current_gate": "G06",
-  "last_green_gate": "G05",
-  "gate_status": {"G01":"GREEN","G02":"GREEN","G03":"GREEN","G04":"GREEN","G05":"GREEN","G06":"PENDING"},
+  "current_phase": "HISTORICAL_MIGRATION_AND_RECONCILIATION",
+  "current_gate": "G07",
+  "last_green_gate": "G06",
+  "gate_status": {"G01":"GREEN","G02":"GREEN","G03":"GREEN","G04":"GREEN","G05":"GREEN","G06":"GREEN","G07":"PENDING"},
   "blocking_issues": [],
   "material_findings": [
-    "No Git tags were found; branch/commit/path provenance is mandatory.",
-    "Important implementations are branch-only and materially diverged from main.",
-    "QUANT_EDGE original algorithm was not recovered and is classified legacy-output-only.",
-    "Current GitHub Pages deployment imports SEPA-X from develop/sepax-isolated-v1 at build time.",
-    "V18 live shell remotely loads its branch artifact using GitHub Raw/jsDelivr.",
-    "MAIN APP consensus references remote V19, V20 and QUANT EDGE sources.",
-    "Overlapping historical stores require source/version/session/ticker/checksum reconciliation; development, reused holdout, retrospective and true forward evidence must remain distinct."
+    "Discovery baseline remains 20 engines / 18 strategies / 19 historical store groups / 8 legacy runtime dependencies.",
+    "G06 executable contract defines 19 canonical schemas and 30 bounded modules.",
+    "G07 migration contract maps all 19 source groups; full migration has not been executed.",
+    "All 8 legacy dependencies have replacement contracts targeting zero production runtime legacy dependencies; G12 remains PENDING.",
+    "QUANT_EDGE remains legacy-output-only and is limited to output preservation/integrity evidence.",
+    "Parity cases P05,P06,P08,P09,P15,P16,P17,P18 require exact branch commit pins before G10 execution."
   ],
-  "completed_gates": ["G01","G02","G03","G04","G05"],
+  "completed_gates": ["G01","G02","G03","G04","G05","G06"],
   "failed_gates": [],
   "clean_review_streak": 0,
-  "inventory": {"engines":20,"strategies":18,"historical_store_groups":19,"legacy_runtime_dependencies":8},
-  "discovery_artifacts": [
-    "docs/astra/ENGINE_REGISTRY.json",
-    "docs/astra/STRATEGY_REGISTRY.json",
-    "docs/astra/HISTORICAL_STORES.json",
-    "docs/astra/RUNTIME_DEPENDENCIES.json",
-    "docs/astra/DISCOVERY_REPORT.md"
-  ],
-  "next_action": "Run Prompt 02 — Target Architecture + Migration Contract: use the completed G01-G05 discovery manifests as authoritative evidence; design the target standalone architecture and canonical schemas, complete G06, and prepare G07 without broad UI work.",
-  "last_updated": "2026-09-15T22:28:00+03:00"
+  "inventory": {"engines":20,"strategies":18,"historical_store_groups":19,"legacy_runtime_dependencies":8,"canonical_schemas":19,"architecture_modules":30,"migration_sources_prepared":19,"legacy_replacement_contracts":8},
+  "g06_certification": {"workflowRunId":35017089866,"sourceCommit":"1feaa1550a6f6e32d1e7b18b3ca621502f8cc382","testsPassed":14,"testsFailed":0,"certifier":"PASS"},
+  "g07_readiness": "READY_TO_EXECUTE_MIGRATION_CONTRACT",
+  "next_action": "Execute G07 historical migration and reconciliation only: pin exact source commits for parity cases P05,P06,P08,P09,P15,P16,P17,P18 during source extraction; archive immutable raw records for all 19 store groups; run deterministic idempotent normalization/reconciliation with MigrationProvenance and count/hash checkpoints; do not begin runtime cutover and do not mark G12 GREEN.",
+  "last_updated": "2026-09-15T23:01:36+03:00"
 }
