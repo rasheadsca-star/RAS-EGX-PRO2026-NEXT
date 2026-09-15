@@ -86,6 +86,11 @@ jobs:
           {
             const p='astra/certification/g09-certify.cjs';
             let s=fs.readFileSync(p,'utf8');
+            if(!s.includes("const ACTIVE_STRATEGY='PORTFOLIO_BASKET_EQUAL_WEIGHT';")){
+              const needle="const P=require('../pipeline/g09-unified-decision-pipeline.cjs');\n";
+              if(!s.includes(needle))throw new Error('G09 certifier import marker missing');
+              s=s.replace(needle,needle+"const ACTIVE_STRATEGY='PORTFOLIO_BASKET_EQUAL_WEIGHT';\n");
+            }
             if(!s.includes('function guardHistory(n=60)')){
               const needle='function fixture(extra={}){';
               if(!s.includes(needle))throw new Error('G09 certifier fixture insertion point missing');
