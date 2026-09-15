@@ -122,8 +122,20 @@ function aggregateAppliedPortfolio(core, memberOutcomes) {
   const exposurePct = finite(core?.portfolio?.recommendedExposurePct) ?? 0;
   const opportunities = Array.isArray(core?.opportunities) ? core.opportunities : [];
   const applied = opportunities.filter(row => (finite(row.positionWeightPct) ?? 0) > 0);
+  const researchPending = (memberOutcomes || []).some(row => row.researchEligible === true && row.outcome?.resolved !== true);
   if (exposurePct <= 0 || applied.length === 0) {
-    return { resolved: true, status: 'CASH_NO_APPLIED_EXPOSURE', appliedExposurePct: 0, cashPct: 100, grossReturnPct: 0, netReturnPct: 0, appliedPositionCount: 0, note: 'Issued production exposure was zero; research opportunity outcomes are not treated as applied portfolio performance.' };
+    return {
+      resolved: true,
+      status: 'CASH_NO_APPLIED_EXPOSURE',
+      appliedExposurePct: 0,
+      cashPct: 100,
+      grossReturnPct: researchPending ? null : 0,
+      netReturnPct: researchPending ? null : 0,
+      appliedPositionCount: 0,
+      note: researchPending
+        ? 'Issued production exposure was zero; cash return remains null while the overall forward evaluation is pending trusted research-member evidence.'
+        : 'Issued production exposure was zero; research opportunity outcomes are not treated as applied portfolio performance.',
+    };
   }
   const byTicker = new Map(memberOutcomes.map(row => [row.ticker, row]));
   if (applied.some(row => !byTicker.get(row.ticker)?.outcome?.resolved)) return { resolved: false, status: 'PENDING_APPLIED_MEMBER_OUTCOME', appliedExposurePct: exposurePct, grossReturnPct: null, netReturnPct: null };
@@ -136,7 +148,16 @@ function aggregateAppliedPortfolio(core, memberOutcomes) {
     net += weightPct / 100 * (finite(outcome.netReturnPct) ?? 0);
     members.push({ ticker: row.ticker, weightPct, state: outcome.state, grossReturnPct: outcome.grossReturnPct, netReturnPct: outcome.netReturnPct });
   }
-  return { resolved: true, status: 'RESOLVED_APPLIED_PORTFOLIO', appliedExposurePct: exposurePct, cashPct: round(100 - exposurePct, 4), grossReturnPct: round(gross), netReturnPct: round(net), appliedPositionCount: applied.length, members };
+  return {
+    resolved: true,
+    status: 'RESOLVED_APPLIED_PORTFOLIO',
+    appliedExposurePct: exposurePct,
+    cashPct: round(100 - exposurePct, 4),
+    grossReturnPct: researchPending ? null : round(gross),
+    netReturnPct: researchPending ? null : round(net),
+    appliedPositionCount: applied.length,
+    members,
+  };
 }
 
 function aggregateResearch(memberOutcomes, candidateCount) {
