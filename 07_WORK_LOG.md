@@ -19,3 +19,7 @@
 - Unresolved material preparation issue: exact source commit pins are still required before G10 execution for parity cases P05,P06,P08,P09,P15,P16,P17,P18; this does not block G06 or starting G07 extraction.
 - Result: G06 GREEN; G07 READY_TO_EXECUTE_MIGRATION_CONTRACT, not completed.
 - Next action: Execute G07 historical migration and reconciliation only: pin the unresolved source commits during extraction, archive immutable raw records for all 19 store groups, and run deterministic idempotent normalization/reconciliation with provenance and count/hash checkpoints; do not begin runtime cutover or mark G12 GREEN.
+
+## 2026-09-15T20:24:36Z — G07 Historical Migration + Reconciliation
+
+G07 completed against pinned source commits. Processed 19/19 historical store groups; resolved 8/8 previously pending parity source commits; archived 60288 raw records; produced 26270 canonical records; preserved 0 conflicts and 34018 invalid records; run #2 matched run #1 exactly; unexplained loss = 0. G06 regression suite remained green. No runtime cutover was performed and G12 remains PENDING. Evidence workflow: 35019349149.

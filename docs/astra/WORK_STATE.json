@@ -2,25 +2,59 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "HISTORICAL_MIGRATION_AND_RECONCILIATION",
-  "current_gate": "G07",
-  "last_green_gate": "G06",
-  "gate_status": {"G01":"GREEN","G02":"GREEN","G03":"GREEN","G04":"GREEN","G05":"GREEN","G06":"GREEN","G07":"PENDING"},
+  "current_phase": "INTERNAL_STRATEGY_RECONSTRUCTION_NOT_STARTED",
+  "current_gate": "G08",
+  "last_green_gate": "G07",
   "blocking_issues": [],
   "material_findings": [
-    "Discovery baseline remains 20 engines / 18 strategies / 19 historical store groups / 8 legacy runtime dependencies.",
-    "G06 executable contract defines 19 canonical schemas and 30 bounded modules.",
-    "G07 migration contract maps all 19 source groups; full migration has not been executed.",
-    "All 8 legacy dependencies have replacement contracts targeting zero production runtime legacy dependencies; G12 remains PENDING.",
-    "QUANT_EDGE remains legacy-output-only and is limited to output preservation/integrity evidence.",
-    "Parity cases P05,P06,P08,P09,P15,P16,P17,P18 require exact branch commit pins before G10 execution."
+    "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
+    "G06 now has executable canonical contracts: 19 schemas and 30 explicit module boundaries.",
+    "DecisionSnapshot identity, time semantics, strategy raw-output preservation, immutable recommendation issuance and migration provenance/idempotency contracts are executable and tested.",
+    "G07 is prepared but not executed; MIGRATION_MANIFEST covers 19/19 historical store groups.",
+    "Legacy removal plan covers 8/8 dependencies and targets runtimeLegacyDependencyCount=0; no dependency has been cut over in this phase and G12 remains PENDING.",
+    "QUANT_EDGE remains legacy-output-only; algorithmic parity and fabricated internal production logic are prohibited.",
+    "Parity cases P05,P06,P08,P09,P15,P16,P17,P18 require exact branch commit pin before G10 parity execution.",
+    "Exact per-store record counts are intentionally deferred to G07 extraction where they can be reconciled against immutable raw archives."
   ],
-  "completed_gates": ["G01","G02","G03","G04","G05","G06"],
+  "completed_gates": [
+    "G01",
+    "G02",
+    "G03",
+    "G04",
+    "G05",
+    "G06",
+    "G07"
+  ],
   "failed_gates": [],
   "clean_review_streak": 0,
-  "inventory": {"engines":20,"strategies":18,"historical_store_groups":19,"legacy_runtime_dependencies":8,"canonical_schemas":19,"architecture_modules":30,"migration_sources_prepared":19,"legacy_replacement_contracts":8},
-  "g06_certification": {"workflowRunId":35017089866,"sourceCommit":"1feaa1550a6f6e32d1e7b18b3ca621502f8cc382","testsPassed":14,"testsFailed":0,"certifier":"PASS"},
+  "inventory": {
+    "engines": 20,
+    "strategies": 18,
+    "historical_store_groups": 19,
+    "legacy_runtime_dependencies": 8,
+    "canonical_schemas": 19,
+    "architecture_modules": 30,
+    "migration_sources_prepared": 19,
+    "legacy_replacement_contracts": 8
+  },
+  "g06_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35017089866,
+    "sourceCommit": "1feaa1550a6f6e32d1e7b18b3ca621502f8cc382",
+    "tests": "14/14 PASS",
+    "certifier": "PASS"
+  },
   "g07_readiness": "READY_TO_EXECUTE_MIGRATION_CONTRACT",
-  "next_action": "Execute G07 historical migration and reconciliation only: pin exact source commits for parity cases P05,P06,P08,P09,P15,P16,P17,P18 during source extraction; archive immutable raw records for all 19 store groups; run deterministic idempotent normalization/reconciliation with MigrationProvenance and count/hash checkpoints; do not begin runtime cutover and do not mark G12 GREEN.",
-  "last_updated": "2026-09-15T23:01:36+03:00"
+  "next_action": "Run Prompt 04 / G08 only when explicitly requested. Do not start runtime cutover; G12 remains PENDING.",
+  "last_updated": "2026-09-15T20:24:36Z",
+  "g07_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35019349149,
+    "storeGroups": "19/19",
+    "exactCommitPins": "8/8",
+    "rawArchived": 60288,
+    "canonicalRecords": 26270,
+    "idempotency": "PASS",
+    "unexplainedDataLoss": 0
+  }
 }

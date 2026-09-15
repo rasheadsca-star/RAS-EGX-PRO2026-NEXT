@@ -2,9 +2,9 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "HISTORICAL_MIGRATION_AND_RECONCILIATION",
-  "current_gate": "G07",
-  "last_green_gate": "G06",
+  "current_phase": "INTERNAL_STRATEGY_RECONSTRUCTION_NOT_STARTED",
+  "current_gate": "G08",
+  "last_green_gate": "G07",
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -16,7 +16,15 @@
     "Parity cases P05,P06,P08,P09,P15,P16,P17,P18 require exact branch commit pin before G10 parity execution.",
     "Exact per-store record counts are intentionally deferred to G07 extraction where they can be reconciled against immutable raw archives."
   ],
-  "completed_gates": ["G01","G02","G03","G04","G05","G06"],
+  "completed_gates": [
+    "G01",
+    "G02",
+    "G03",
+    "G04",
+    "G05",
+    "G06",
+    "G07"
+  ],
   "failed_gates": [],
   "clean_review_streak": 0,
   "inventory": {
@@ -37,6 +45,16 @@
     "certifier": "PASS"
   },
   "g07_readiness": "READY_TO_EXECUTE_MIGRATION_CONTRACT",
-  "next_action": "Execute G07 historical migration and reconciliation only: pin exact source commits for parity cases P05,P06,P08,P09,P15,P16,P17,P18 during source extraction; archive immutable raw records for all 19 store groups; run deterministic idempotent normalization/reconciliation with MigrationProvenance and count/hash checkpoints; do not begin runtime cutover and do not mark G12 GREEN.",
-  "last_updated": "2026-09-15T23:01:36+03:00"
+  "next_action": "Run Prompt 04 / G08 only when explicitly requested. Do not start runtime cutover; G12 remains PENDING.",
+  "last_updated": "2026-09-15T20:24:36Z",
+  "g07_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35019349149,
+    "storeGroups": "19/19",
+    "exactCommitPins": "8/8",
+    "rawArchived": 60288,
+    "canonicalRecords": 26270,
+    "idempotency": "PASS",
+    "unexplainedDataLoss": 0
+  }
 }
