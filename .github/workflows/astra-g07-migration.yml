@@ -1,0 +1,166 @@
+name: Astra G07 Historical Migration Certification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/astra-g07-migration.yml'
+      - 'astra/migration/g07-migrate.cjs'
+      - 'tests/astra/g07-migration.test.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: astra-g07-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate-and-reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout full main history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch pinned branch histories
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin refs/heads/v18-global-strategy-ensemble-20260906:refs/remotes/origin/v18-global-strategy-ensemble-20260906
+          git fetch --no-tags origin refs/heads/feature/gann-fusion-x-v4-regime-router:refs/remotes/origin/feature/gann-fusion-x-v4-regime-router
+          git fetch --no-tags origin refs/heads/feature/gann-execution-quality-ranking-v2:refs/remotes/origin/feature/gann-execution-quality-ranking-v2
+          git fetch --no-tags origin refs/heads/develop/sepax-isolated-v1:refs/remotes/origin/develop/sepax-isolated-v1
+          git fetch --no-tags origin refs/heads/develop/sepax-v2-isolated:refs/remotes/origin/develop/sepax-v2-isolated
+          git fetch --no-tags origin refs/heads/release/rc2-frozen:refs/remotes/origin/release/rc2-frozen
+          git fetch --no-tags origin refs/heads/research/egx-meta-engine-v1-20260829:refs/remotes/origin/research/egx-meta-engine-v1-20260829
+          git fetch --no-tags origin refs/heads/v19-egx-chat-gpt:refs/remotes/origin/v19-egx-chat-gpt
+          git fetch --no-tags origin refs/heads/egx-one/clean-room-v0:refs/remotes/origin/egx-one/clean-room-v0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Freeze one migration batch timestamp
+        shell: bash
+        run: echo "ASTRA_G07_MIGRATED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Verify eight exact parity source pins
+        run: node astra/migration/g07-migrate.cjs check-pins
+
+      - name: G06 regression before real-data migration
+        run: npm run test:astra:g06
+
+      - name: Migration run 1
+        run: node astra/migration/g07-migrate.cjs migrate --out=.astra-g07/run1
+
+      - name: Migration run 2 from the same frozen sources
+        run: node astra/migration/g07-migrate.cjs migrate --out=.astra-g07/run2
+
+      - name: G07 automated migration suite
+        env:
+          G07_RUN1: .astra-g07/run1
+          G07_RUN2: .astra-g07/run2
+        run: node --test tests/astra/g07-migration.test.cjs
+
+      - name: Explicit byte-level idempotency verification
+        run: node astra/migration/g07-migrate.cjs verify --run1=.astra-g07/run1 --run2=.astra-g07/run2
+
+      - name: Publish G07 repository evidence
+        run: node astra/migration/g07-migrate.cjs publish --run1=.astra-g07/run1 --run2=.astra-g07/run2 --workflow-run-id="${GITHUB_RUN_ID}"
+
+      - name: G06 regression after G07 publication
+        run: npm run test:astra:g06
+
+      - name: Guard gate boundaries
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const gates=JSON.parse(fs.readFileSync('04_ACCEPTANCE_GATES.json','utf8')).gates;
+          const by=new Map(gates.map(x=>[x.id,x.status]));
+          if(by.get('G07')!=='GREEN') throw new Error('G07 must be GREEN after successful migration');
+          for(const id of ['G08','G09','G10','G11','G12','G13','G14','G15','G16','G17','G18','G19']){
+            if(by.get(id)!=='PENDING') throw new Error(`${id} must remain PENDING, got ${by.get(id)}`);
+          }
+          NODE
+
+      - name: Upload immutable migration evidence bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-g07-migration-evidence-${{ github.run_id }}
+          path: |
+            .astra-g07/run1/raw/
+            .astra-g07/run1/canonical/
+            .astra-g07/run1/diagnostics.json
+            .astra-g07/run1/conflicts.json
+            .astra-g07/run1/checkpoints.json
+            .astra-g07/run1/run-summary.json
+            .astra-g07/run1/provenance-summary.json
+            .astra-g07/run1/parity-manifest-pinned.json
+            .astra-g07/run2/canonical/
+            .astra-g07/run2/diagnostics.json
+            .astra-g07/run2/conflicts.json
+            .astra-g07/run2/checkpoints.json
+            .astra-g07/run2/run-summary.json
+            docs/astra/MIGRATION_RECONCILIATION.json
+            docs/astra/MIGRATION_REPORT.md
+            docs/astra/MIGRATION_PROVENANCE_SUMMARY.json
+            docs/astra/HISTORICAL_CONFLICTS.json
+            docs/astra/MIGRATION_CHECKPOINTS.json
+          retention-days: 90
+
+      - name: Commit compact G07 evidence to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/astra/MIGRATION_RECONCILIATION.json \
+            docs/astra/MIGRATION_REPORT.md \
+            docs/astra/MIGRATION_PROVENANCE_SUMMARY.json \
+            docs/astra/HISTORICAL_CONFLICTS.json \
+            docs/astra/MIGRATION_CHECKPOINTS.json \
+            docs/astra/MIGRATION_MANIFEST.json \
+            docs/astra/PARITY_MANIFEST.json \
+            docs/astra/WORK_STATE.json \
+            04_ACCEPTANCE_GATES.json \
+            05_WORK_STATE.json \
+            07_WORK_LOG.md
+          if git diff --cached --quiet; then
+            echo "No compact evidence changes to commit."
+          else
+            git commit -m "data(astra): certify G07 historical migration [skip g07]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Emit final compact summary
+        shell: bash
+        run: |
+          node <<'NODE'
+          const s=require('./docs/astra/MIGRATION_RECONCILIATION.json');
+          console.log('ASTRA_G07_FINAL '+JSON.stringify({
+            status:s.status,
+            storeGroups:`${s.storeGroupsProcessed}/${s.storeGroupsTotal}`,
+            exactCommitProvenance:'8/8',
+            raw:s.totals.rawArchived,
+            canonical:s.totals.canonicalRecords,
+            exactDuplicates:s.totals.exactDuplicates,
+            semanticDuplicates:s.totals.semanticDuplicates,
+            versionedSuccessors:s.totals.versionedSuccessors,
+            conflicts:s.totals.conflicts,
+            invalid:s.totals.invalid,
+            unresolved:s.totals.unresolved,
+            idempotency:s.idempotency.pass,
+            unexplainedDataLoss:s.totals.unexplainedDataLoss,
+            g06Regression:s.g06Regression
+          }));
+          NODE
