@@ -1,0 +1,127 @@
+name: Astra G09 Unified Internal Decision Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'astra/pipeline/g09-unified-decision-pipeline.cjs'
+      - 'astra/certification/g09-certify.cjs'
+      - 'tests/astra/g09-unified-decision-pipeline.test.cjs'
+      - '.github/workflows/astra-g09-unified-pipeline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-g09-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  certify-g09:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Baseline checkpoint G06
+        run: |
+          node --test tests/astra/g06-contracts.test.cjs tests/astra/g06-certification.test.cjs
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G06');
+          if(g?.status!=='GREEN')throw new Error('G06 baseline is not GREEN');
+          NODE
+
+      - name: Baseline checkpoint G07 without historical reprocessing
+        run: |
+          node <<'NODE'
+          const x=require('./docs/astra/MIGRATION_RECONCILIATION.json');
+          if(x.status!=='GREEN'||x.storeGroupsProcessed!==19||x.storeGroupsTotal!==19)throw new Error('G07 status/store groups changed');
+          if(x.totals?.rawArchived!==60288||x.totals?.canonicalRecords!==26270||x.totals?.provenanceLinks!==26270)throw new Error('G07 counts changed');
+          if(x.totals?.invalid!==34018||x.totals?.unresolved!==34012||x.totals?.unexplainedDataLoss!==0)throw new Error('G07 quarantine/loss changed');
+          if(x.idempotency?.pass!==true||x.idempotency?.run1Hash!=='435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3'||x.idempotency?.run2Hash!==x.idempotency.run1Hash)throw new Error('G07 idempotency changed');
+          NODE
+
+      - name: Baseline checkpoint G08 determinism and isolation
+        run: |
+          node --test tests/astra/g08-strategy-reconstruction.test.cjs tests/astra/g08-recovery-overlay.test.cjs tests/astra/g08-strict-boundaries.test.cjs tests/astra/g08-final-hash.test.cjs
+          node <<'NODE'
+          const e=require('./docs/astra/G08_TEST_EVIDENCE.json');
+          const g=require('./04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G08');
+          if(g?.status!=='GREEN'||e.status!=='PASS'||e.g08Tests!==37||e.deterministicStrategyTests!==18||e.legacyNetworkCalls!==0)throw new Error('G08 baseline changed');
+          NODE
+
+      - name: Syntax check G09
+        run: |
+          node --check astra/pipeline/g09-unified-decision-pipeline.cjs
+          node --check astra/certification/g09-certify.cjs
+          node --check tests/astra/g09-unified-decision-pipeline.test.cjs
+
+      - name: Run G09 unified pipeline tests
+        run: node --test tests/astra/g09-unified-decision-pipeline.test.cjs
+
+      - name: Certify G09 and write evidence
+        env:
+          G09_TEST_PASS: '1'
+          G06_REGRESSION_PASS: '1'
+          G07_REGRESSION_PASS: '1'
+          G08_REGRESSION_PASS: '1'
+        run: node astra/certification/g09-certify.cjs
+
+      - name: Guard G09 scope and later gates
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const by=new Map(gates.map(x=>[x.id,x.status]));
+          if(by.get('G09')!=='GREEN')throw new Error(`G09 must be GREEN, got ${by.get('G09')}`);
+          for(const id of ['G10','G11','G12','G13','G14','G15','G16','G17','G18','G19'])if(by.get(id)!=='PENDING')throw new Error(`${id} must remain PENDING`);
+          const t=require('./docs/astra/G09_TEST_EVIDENCE.json');
+          if(t.legacyNetworkCalls!==0||t.quantEdgeIsolation!=='PASS'||t.productionCutover!==false)throw new Error('G09 isolation/cutover guard failed');
+          const s=require('./05_WORK_STATE.json');
+          if(s.clean_review_streak!==0)throw new Error('G09 local review must not increment G19 streak');
+          if(s.inventory?.legacy_runtime_dependencies!==8)throw new Error('Legacy runtime dependency inventory changed during G09');
+          const src=fs.readFileSync('astra/pipeline/g09-unified-decision-pipeline.cjs','utf8');
+          for(const token of ['fetch(','axios','http.request','https.request','quant-edge-shadow.vercel.app','sepax-strategy-stable.vercel.app'])if(src.includes(token))throw new Error(`Forbidden network token: ${token}`);
+          NODE
+
+      - name: Commit G09 evidence and state
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/astra/G09_PIPELINE_SPEC.md \
+            docs/astra/G09_TEST_EVIDENCE.json \
+            docs/astra/PRODUCTION_STRATEGY_ELIGIBILITY.json \
+            docs/astra/EVIDENCE_MODEL.json \
+            docs/astra/RANKING_MODEL.json \
+            docs/astra/DECISION_PIPELINE_DIAGNOSTICS.json \
+            docs/astra/G09_DECISION_SNAPSHOT_EVIDENCE.json \
+            docs/astra/G09_PERFORMANCE_BASELINE.json \
+            docs/astra/G09_FOCUSED_DESTRUCTIVE_REVIEW.json \
+            docs/astra/G09_CONFIG.json \
+            docs/astra/WORK_STATE.json \
+            04_ACCEPTANCE_GATES.json \
+            05_WORK_STATE.json \
+            07_WORK_LOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m "cert(astra): mark G09 unified pipeline GREEN [skip g09]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Emit compact G09 summary
+        run: |
+          node <<'NODE'
+          const t=require('./docs/astra/G09_TEST_EVIDENCE.json');
+          const s=require('./05_WORK_STATE.json');
+          console.log('ASTRA_G09_FINAL '+JSON.stringify({status:s.g09_certification.status,productionEligibleStrategies:t.productionEligibleStrategies,retiredExperimentalExcluded:t.retiredExperimentalExcluded,engineCapabilityCoverageRegression:t.engineCapabilityCoverageRegression,quantEdgeLiveDecisionInfluence:0,unifiedPipelineLegacyNetworkCalls:t.legacyNetworkCalls,marketUniverseEvaluated:t.marketUniverseEvaluated,validOpportunities:t.validOpportunitiesProduced,evidenceIndependence:t.evidenceIndependence,deterministicRanking:t.deterministicRanking,temporalLeakage:t.temporalLeakage,zeroOpportunityGuard:t.zeroOpportunityGuard,decisionSnapshotConsistency:t.snapshotConsistency,totalG09Tests:t.totalG09Tests,g06:t.g06Regression,g07:t.g07RegressionIdempotency,g08:t.g08RegressionDeterminism,g10:'PENDING',g12:t.g12Status,legacyRuntimeDependencies:s.inventory.legacy_runtime_dependencies,nextAction:s.next_action}));
+          NODE
