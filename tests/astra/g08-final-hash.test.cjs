@@ -1,4 +1,5 @@
 'use strict';
+// G08 final certification trigger: semantic-hash coverage is intentionally unchanged.
 const test=require('node:test');const assert=require('node:assert/strict');
 const{executeStrategy,crossSectionIdentity}=require('../../astra/strategies/g08-final-overlay.cjs');
 function history(n=260){return Array.from({length:n},(_,i)=>({sessionDate:`2026-${String(1+Math.floor(i/28)).padStart(2,'0')}-${String(1+i%28).padStart(2,'0')}`,close:100+i*.1,volume:1000000+i,validationStatus:'VALID',migrationValidationStatus:'VALID'}))}
