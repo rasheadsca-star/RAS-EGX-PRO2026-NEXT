@@ -1,0 +1,140 @@
+{
+  "schemaVersion": "astra-runtime-dependencies-1",
+  "generatedAt": "2026-09-15T22:28:00+03:00",
+  "repository": "rasheadsca-star/RAS-EGX-PRO2026-NEXT",
+  "legacyRuntimeDependencyCount": 8,
+  "currentProductionPath": {
+    "deployment": "GitHub Pages from main via .github/workflows/static.yml",
+    "publishedTree": "entire tracked main working tree plus generated /sepax static snapshot",
+    "primaryDocumentedUrl": "https://rasheadsca-star.github.io/RAS-EGX0.1/",
+    "buildTimeLegacyImport": "static.yml performs a second checkout of develop/sepax-isolated-v1 and builds SEPA-X into /sepax",
+    "notes": [
+      "main is not a clean standalone target runtime; it deploys a historical monorepo tree containing multiple generations.",
+      "v18-live/index.html is a loader, not self-contained V18 code."
+    ]
+  },
+  "legacyDependencies": [
+    {
+      "id": "R01_V18_REMOTE_SHELL_RAW",
+      "kind": "runtime remote shell",
+      "consumer": "v18-live/index.html",
+      "target": "raw.githubusercontent.com/.../v18-global-strategy-ensemble-20260906/preview-v18-web/index.html",
+      "fallbackGroup": "V18_REMOTE_SHELL",
+      "status": "active-in-legacy-surface",
+      "evidence": "main:v18-live/index.html SOURCES[0]",
+      "standaloneTargetPolicy": "forbidden after cutover"
+    },
+    {
+      "id": "R02_V18_REMOTE_SHELL_JSDELIVR",
+      "kind": "runtime CDN fallback",
+      "consumer": "v18-live/index.html",
+      "target": "cdn.jsdelivr.net/gh/...@v18-global-strategy-ensemble-20260906/preview-v18-web/index.html",
+      "fallbackGroup": "V18_REMOTE_SHELL",
+      "status": "active-in-legacy-surface",
+      "evidence": "main:v18-live/index.html SOURCES[1]",
+      "standaloneTargetPolicy": "forbidden after cutover"
+    },
+    {
+      "id": "R03_V19_REMOTE_CHALLENGER",
+      "kind": "runtime remote JSON with CDN fallback",
+      "consumer": "scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs / MAIN APP consensus",
+      "target": ["raw.githubusercontent.com/.../v19-egx-chat-gpt/data/v19/native-challenger-v6.json", "cdn.jsdelivr.net/.../v19-egx-chat-gpt/data/v19/native-challenger-v6.json"],
+      "status": "active-in-legacy-consensus",
+      "evidence": "main:scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs and data/stable/v16-main-app-consensus.json",
+      "standaloneTargetPolicy": "must be internalized or comparison-only offline"
+    },
+    {
+      "id": "R04_V20_NATIVE_PAGES",
+      "kind": "runtime remote JSON",
+      "consumer": "MAIN APP method-independent consensus",
+      "target": "https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/native-current.json",
+      "status": "active-in-legacy-consensus",
+      "evidence": "main:data/stable/v16-main-app-consensus.json sourceHealth.V20",
+      "standaloneTargetPolicy": "must be internalized; no remote engine dependency"
+    },
+    {
+      "id": "R05_QUANT_EDGE_API",
+      "kind": "runtime external engine API",
+      "consumer": "MAIN APP method-independent consensus",
+      "target": "https://quant-edge-shadow.vercel.app/api/run",
+      "status": "active-reference-but-currently-stale/blocked in discovered snapshot",
+      "algorithmRecovery": "unrecoverable-from-repository",
+      "classification": "legacy-output-only",
+      "evidence": "main:data/stable/v16-main-app-consensus.json sourceHealth.QUANT_EDGE",
+      "standaloneTargetPolicy": "remove runtime call; preserve historical outputs/provenance only unless original source is later recovered"
+    },
+    {
+      "id": "R06_SEPA_X_STABLE_API",
+      "kind": "runtime external engine API",
+      "consumer": "gann-fusion-x/scripts/sync-sepa.cjs",
+      "target": "https://sepax-strategy-stable.vercel.app",
+      "status": "active-in-gann-integration",
+      "evidence": "main:gann-fusion-x/scripts/sync-sepa.cjs",
+      "standaloneTargetPolicy": "replace with internal SEPA module/source snapshot ingestion"
+    },
+    {
+      "id": "R07_RC2_VERCEL_PROXY",
+      "kind": "runtime proxy/rewrites",
+      "consumer": "deploy/rc2-safe-shell",
+      "target": ["https://egx-tfe-v20-fusion-rc2.vercel.app", "https://egx-tfe-v20-fusion-rc2-7g9dcsh4k-steverabin38-1168s-projects.vercel.app"],
+      "status": "active-in-rc2-safe-shell",
+      "evidence": ["main:deploy/rc2-safe-shell/vercel.json", "main:deploy/rc2-safe-shell/api/_proxy.js"],
+      "standaloneTargetPolicy": "remove proxy/runtime origin dependency"
+    },
+    {
+      "id": "R08_SEPA_BRANCH_BUILD_IMPORT",
+      "kind": "build-time legacy branch import",
+      "consumer": "main GitHub Pages deployment",
+      "target": "develop/sepax-isolated-v1",
+      "status": "active-in-current-production-build",
+      "evidence": "main:.github/workflows/static.yml second actions/checkout plus sepa-x static build",
+      "standaloneTargetPolicy": "vendor/internalize implementation into target repository path; no cross-branch build dependency"
+    }
+  ],
+  "additionalLegacyFetchesNotCountedAsDistinctSystems": [
+    {
+      "consumer": "deploy/rc2-safe-shell/api/technical.js",
+      "target": "raw.githubusercontent.com repository file pinned to commit c77f184110a3d238b4a964382566c7e554a27ad9/tfe-v20/public/technical-analysis-tools.js",
+      "relationship": "RC2 technical asset fetch; belongs to R07/TFE family but is separately actionable."
+    },
+    {
+      "consumer": "V19 consensus",
+      "target": "jsDelivr mirror",
+      "relationship": "fallback mirror for R03, not a distinct algorithm."
+    }
+  ],
+  "externalMarketDataAndEvidenceSources": [
+    {
+      "source": "Mubasher Arabic/English EGX pages/news",
+      "kind": "market/news/source evidence",
+      "evidence": ["scripts/fetch-trusted-news.js", "scripts/collect-mubasher-direct-stock-sr.js", "artifacts/mubasher-support-resistance/*"],
+      "legacyEngine": false
+    },
+    {
+      "source": "Official EGX website",
+      "kind": "official reference/listing context",
+      "evidence": "scripts/build-v113-source-registry.js / data/build-v113-source-registry.js",
+      "legacyEngine": false
+    },
+    {
+      "source": "public historical OHLCV adapters including Yahoo/Investing probes",
+      "kind": "historical market data",
+      "evidence": ["historical-source-registry lineage", "egx-one/clean-room-v0 probe workflows"],
+      "legacyEngine": false
+    },
+    {
+      "source": "manual/official issuer evidence",
+      "kind": "fundamental evidence",
+      "evidence": ["docs/v17/MANUAL_EVIDENCE_INGESTION.md", "docs/v17/FUNDAMENTAL_ANALYSIS.md"],
+      "legacyEngine": false
+    }
+  ],
+  "duplicateOrCompetingRuntimePaths": [
+    "main GitHub Pages deploys the whole repository while V18 has a separate remote-shell loader path.",
+    "SEPA-X exists both as isolated branch source built into Pages and as an external stable Vercel API consumed by Gann.",
+    "V19/V20/QUANT EDGE are consumed as comparison/consensus sources while V16.9 remains champion, creating multiple competing decision representations.",
+    "TFE RC2 has frozen branch source plus a safe-shell proxy deployment path.",
+    "Research branches (V18, V19, V20, Triple, Meta, EGX ONE) diverge from main and cannot be treated as interchangeable latest state."
+  ],
+  "cutoverImplication": "G12 cannot pass until all eight legacy engine/runtime/build dependencies are either internalized or removed from the production execution path and a legacy-off test proves functionality."
+}
