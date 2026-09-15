@@ -31,6 +31,73 @@ jobs:
         with:
           node-version: 22
 
+      - name: Apply G09 root-cause repair
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+
+          {
+            const p='astra/pipeline/g09-unified-decision-pipeline.cjs';
+            let s=fs.readFileSync(p,'utf8');
+            if(!s.includes('for(const row of context?.modelGuardHistory||[])')){
+              const needle="  for(let s=0;s<(context?.modelTrainingSessions||[]).length;s++)for(const row of context.modelTrainingSessions[s]||[]){";
+              if(!s.includes(needle))throw new Error('G09 validation insertion point missing');
+              const guard="  for(const row of context?.modelGuardHistory||[]){const d=asDate(row);if(d&&after(d,session))temporal.push(`MODEL_GUARD_HISTORY:${d}`);if(row.validationStatus!=='VALID'||migrationBad(row.migrationValidationStatus))quarantined.push('MODEL_GUARD_HISTORY')}\n";
+              s=s.replace(needle,guard+needle);
+            }
+            if(!s.includes('modelGuardHistoryHash:stableHash(context.modelGuardHistory||[])')){
+              const needle='historyIdentities:context.historyIdentities||{},trainingHash:';
+              if(!s.includes(needle))throw new Error('G09 input identity insertion point missing');
+              s=s.replace(needle,'historyIdentities:context.historyIdentities||{},modelGuardHistoryHash:stableHash(context.modelGuardHistory||[]),trainingHash:');
+            }
+            if(s.includes('history:[],trainingSessions:context.modelTrainingSessions')){
+              s=s.replace('history:[],trainingSessions:context.modelTrainingSessions','history:context.modelGuardHistory||[],trainingSessions:context.modelTrainingSessions');
+            }else if(!s.includes('history:context.modelGuardHistory||[],trainingSessions:context.modelTrainingSessions'))throw new Error('G09 V16 history adapter pattern missing');
+            const oldLine="  if(embedded.eligibility!=='ELIGIBLE')return{ok:true,executions:[marketExecution([],embedded,eligibility,context,regime,inputIdentity)],diagnostics:[diagnostic('BASKET_SELECTION_MODEL_INELIGIBLE','WARN',{reason:embedded.eligibilityReason})]};";
+            if(s.includes(oldLine)){
+              const replacement="  if(embedded.eligibility!=='ELIGIBLE'){\n    const validNoOpportunity=embedded.eligibilityReason==='NO_EXECUTION_ELIGIBLE_CANDIDATE';\n    return{ok:validNoOpportunity,executions:[marketExecution([],embedded,eligibility,context,regime,inputIdentity)],diagnostics:[diagnostic('BASKET_SELECTION_MODEL_INELIGIBLE',validNoOpportunity?'INFO':'ERROR',{reason:embedded.eligibilityReason})]};\n  }";
+              s=s.replace(oldLine,replacement);
+            }else if(!s.includes("const validNoOpportunity=embedded.eligibilityReason==='NO_EXECUTION_ELIGIBLE_CANDIDATE'"))throw new Error('G09 zero-opportunity classification pattern missing');
+            fs.writeFileSync(p,s);
+          }
+
+          const guardFn="function guardHistory(n=60){return Array.from({length:n},(_,i)=>{const d=new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10);return{sessionDate:d,close:100+i*.1,volume:1000000+i,turnover:30000000+i*1000,validationStatus:'VALID',migrationValidationStatus:'VALID'}})}\n";
+
+          {
+            const p='tests/astra/g09-unified-decision-pipeline.test.cjs';
+            let s=fs.readFileSync(p,'utf8');
+            if(!s.includes('function guardHistory(n=60)')){
+              const needle='function context(overrides={}){';
+              if(!s.includes(needle))throw new Error('G09 test fixture insertion point missing');
+              s=s.replace(needle,guardFn+needle);
+            }
+            if(s.includes("historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},\n    modelTrainingSessions:")){
+              s=s.replace("historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},\n    modelTrainingSessions:","historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},modelGuardHistory:guardHistory(),\n    modelTrainingSessions:");
+            }else if(!s.includes('modelGuardHistory:guardHistory()'))throw new Error('G09 test model guard history fixture pattern missing');
+            if(!s.includes('missing canonical model guard history is pipeline failure, not valid zero')){
+              const needle="test('DecisionSnapshot is immutable once issued'";
+              const extra="test('missing canonical model guard history is pipeline failure, not valid zero',()=>{const c=context();delete c.modelGuardHistory;const r=pipeline.runUnifiedDecisionPipeline(c);assert.equal(r.ok,false);assert.equal(r.status,'PIPELINE_FAILED');assert.notEqual(r.diagnostics[0].code,'VALID_ZERO_OPPORTUNITY_SESSION')});\n";
+              if(!s.includes(needle))throw new Error('G09 test insertion marker missing');
+              s=s.replace(needle,extra+needle);
+            }
+            fs.writeFileSync(p,s);
+          }
+
+          {
+            const p='astra/certification/g09-certify.cjs';
+            let s=fs.readFileSync(p,'utf8');
+            if(!s.includes('function guardHistory(n=60)')){
+              const needle='function fixture(extra={}){';
+              if(!s.includes(needle))throw new Error('G09 certifier fixture insertion point missing');
+              s=s.replace(needle,guardFn+needle);
+            }
+            if(s.includes("historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},modelTrainingSessions:")){
+              s=s.replace("historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},modelTrainingSessions:","historyIdentities:{range:'validation-approved-through-2026-09-15'},historyByTicker:{},modelGuardHistory:guardHistory(),modelTrainingSessions:");
+            }else if(!s.includes('modelGuardHistory:guardHistory()'))throw new Error('G09 certifier model guard history fixture pattern missing');
+            fs.writeFileSync(p,s);
+          }
+          NODE
+
       - name: Baseline checkpoint G06
         run: |
           node --test tests/astra/g06-contracts.test.cjs tests/astra/g06-certification.test.cjs
@@ -92,12 +159,15 @@ jobs:
           for(const token of ['fetch(','axios','http.request','https.request','quant-edge-shadow.vercel.app','sepax-strategy-stable.vercel.app'])if(src.includes(token))throw new Error(`Forbidden network token: ${token}`);
           NODE
 
-      - name: Commit G09 evidence and state
+      - name: Commit G09 implementation, evidence and state
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
+            astra/pipeline/g09-unified-decision-pipeline.cjs \
+            astra/certification/g09-certify.cjs \
+            tests/astra/g09-unified-decision-pipeline.test.cjs \
             docs/astra/G09_PIPELINE_SPEC.md \
             docs/astra/G09_TEST_EVIDENCE.json \
             docs/astra/PRODUCTION_STRATEGY_ELIGIBILITY.json \
