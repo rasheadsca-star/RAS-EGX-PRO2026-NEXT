@@ -2,10 +2,17 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "INTERNAL_STRATEGY_RECONSTRUCTION_NOT_STARTED",
+  "current_phase": "G08_INTERNAL_STRATEGY_RECONSTRUCTION_BLOCKED",
   "current_gate": "G08",
   "last_green_gate": "G07",
-  "blocking_issues": [],
+  "blocking_issues": [
+    "MOMENTUM:BLOCKED_BY_MISSING_EVIDENCE:Preserved decision output proves identity but not a complete original momentum calculation; no formula is invented.",
+    "REVERSAL:BLOCKED_BY_MISSING_EVIDENCE:Only family/regime compatibility is proven; original reversal algorithm is not proven.",
+    "V16_TWO_STAGE_TOP_GAINER:RECONSTRUCTABLE_PENDING:Probability-model training/scoring stack is recoverable in source but has not yet been refactored behind explicit G06 inputs without legacy persistence reads.",
+    "V19_TOP10_PROBABILITY_INV_VOL_3:RECONSTRUCTABLE_PENDING:V6 policy is proven, but its probability model depends on earlier local model-training code not yet refactored into the G06 pure strategy contract.",
+    "GANN_REGIME_ROUTER:RECONSTRUCTABLE_PENDING:Competing v1-v4 router semantics exist; exact versioned evaluator extraction is still required before claiming reconstruction.",
+    "SEPA_QVUA_NEAR_FIRST_THEN_FORMING:RECONSTRUCTABLE_PENDING:Isolated source is proven and local, but the full 252-session pipeline has not yet been refactored into explicit G06 inputs; old runtime dependency is not used by this G08 module."
+  ],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
     "G06 canonical contracts remain valid after real-data G07 migration: 19 schemas and 30 explicit module boundaries; post-migration G06 regression/certifier PASS.",
@@ -25,7 +32,9 @@
     "G06",
     "G07"
   ],
-  "failed_gates": [],
+  "failed_gates": [
+    "G08"
+  ],
   "clean_review_streak": 0,
   "inventory": {
     "engines": 20,
@@ -70,6 +79,17 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Run Prompt 04 / G08 only when explicitly requested. Do not start runtime cutover; G12 remains PENDING.",
-  "last_updated": "2026-09-15T20:25:00Z"
+  "next_action": "Finish the listed G08 strategy ports with evidence-backed pure evaluators; rerun G08 only. Do not start G09 or runtime cutover.",
+  "last_updated": "2026-09-15T21:09:56.575Z",
+  "g08_certification": {
+    "status": "BLOCKED",
+    "strategiesAccounted": "18/18",
+    "strategiesInternallyReconstructed": 12,
+    "legacyOutputOnlyOrUnrecoverable": 2,
+    "reconstructablePending": 4,
+    "engineLineagesAccounted": "20/20",
+    "legacyNetworkCalls": 0,
+    "quarantineTests": "PASS",
+    "statusReason": "MATERIAL_RECONSTRUCTION_GAPS_REMAIN"
+  }
 }

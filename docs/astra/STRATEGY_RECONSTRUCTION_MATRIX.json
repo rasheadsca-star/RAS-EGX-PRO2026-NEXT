@@ -1,0 +1,1890 @@
+{
+  "schemaVersion": "astra-g08-strategy-reconstruction-matrix-1",
+  "generatedAt": "2026-09-15T21:09:56.570Z",
+  "count": 18,
+  "strategies": [
+    {
+      "strategyId": "TREND_FOLLOW",
+      "strategyName": "TREND_CONTINUATION",
+      "discoveredVersions": [
+        "balanced",
+        "strict",
+        "momentum"
+      ],
+      "sourceEngineLineage": [
+        "V13_4_QUANT_ENGINE",
+        "V13_5_ADAPTIVE_PAPER",
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePaths": [
+        "scripts/quant/v13-4-quant-engine.cjs",
+        "data/v13-4-quant-policy.json"
+      ],
+      "originalStatus": "historical-only",
+      "lifecycleStatus": "historical-only",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "SMA20",
+        "SMA50",
+        "RSI14",
+        "volumeRatio20",
+        "relativeStrength20",
+        "resistanceUpsidePct"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 55,
+      "preferredBars": 80,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "missingTurnoverBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "turnover",
+        "volume"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "variant": "balanced",
+        "minRsi": 50,
+        "maxRsi": 70,
+        "minVolumeRatio": 0.8,
+        "minRelativeStrength20": 0,
+        "minResistanceUpsidePct": 1.5
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "variant",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "TREND_FOLLOW"
+        },
+        {
+          "parameter": "minRsi",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "TREND_FOLLOW"
+        },
+        {
+          "parameter": "maxRsi",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "TREND_FOLLOW"
+        },
+        {
+          "parameter": "minVolumeRatio",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "TREND_FOLLOW"
+        },
+        {
+          "parameter": "minRelativeStrength20",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "TREND_FOLLOW"
+        },
+        {
+          "parameter": "minResistanceUpsidePct",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "TREND_FOLLOW"
+        }
+      ]
+    },
+    {
+      "strategyId": "BREAKOUT",
+      "strategyName": "BREAKOUT",
+      "discoveredVersions": [
+        "early",
+        "balanced",
+        "strict"
+      ],
+      "sourceEngineLineage": [
+        "V13_4_QUANT_ENGINE",
+        "V13_5_ADAPTIVE_PAPER",
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePaths": [
+        "scripts/quant/v13-4-quant-engine.cjs",
+        "data/v13-4-quant-policy.json"
+      ],
+      "originalStatus": "historical-only",
+      "lifecycleStatus": "historical-only",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "resistance20",
+        "RSI14",
+        "volumeRatio20",
+        "relativeStrength20"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 55,
+      "preferredBars": 80,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "missingTurnoverBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "turnover",
+        "volume"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "variant": "balanced",
+        "breakoutBufferPct": 0.2,
+        "minVolumeRatio": 1.2,
+        "minRsi": 55,
+        "maxRsi": 75,
+        "minRelativeStrength20": 1
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "variant",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "BREAKOUT"
+        },
+        {
+          "parameter": "breakoutBufferPct",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "BREAKOUT"
+        },
+        {
+          "parameter": "minVolumeRatio",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "BREAKOUT"
+        },
+        {
+          "parameter": "minRsi",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "BREAKOUT"
+        },
+        {
+          "parameter": "maxRsi",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "BREAKOUT"
+        },
+        {
+          "parameter": "minRelativeStrength20",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "BREAKOUT"
+        }
+      ]
+    },
+    {
+      "strategyId": "PULLBACK",
+      "strategyName": "PULLBACK",
+      "discoveredVersions": [
+        "wide",
+        "balanced",
+        "strict"
+      ],
+      "sourceEngineLineage": [
+        "V13_4_QUANT_ENGINE",
+        "V13_5_ADAPTIVE_PAPER",
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePaths": [
+        "scripts/quant/v13-4-quant-engine.cjs",
+        "data/v13-4-quant-policy.json"
+      ],
+      "originalStatus": "historical-only",
+      "lifecycleStatus": "historical-only",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "SMA20",
+        "RSI14",
+        "volumeRatio20",
+        "relativeStrength20"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 55,
+      "preferredBars": 80,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "missingTurnoverBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "turnover",
+        "volume"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "variant": "balanced",
+        "maxDistanceSma20Pct": 2.5,
+        "minRsi": 42,
+        "maxRsi": 60,
+        "minVolumeRatio": 0.7,
+        "minRelativeStrength20": -2
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "variant",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "PULLBACK"
+        },
+        {
+          "parameter": "maxDistanceSma20Pct",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "PULLBACK"
+        },
+        {
+          "parameter": "minRsi",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "PULLBACK"
+        },
+        {
+          "parameter": "maxRsi",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "PULLBACK"
+        },
+        {
+          "parameter": "minVolumeRatio",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "PULLBACK"
+        },
+        {
+          "parameter": "minRelativeStrength20",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+          "strategyVersion": "PULLBACK"
+        }
+      ]
+    },
+    {
+      "strategyId": "MOMENTUM",
+      "strategyName": "MOMENTUM",
+      "discoveredVersions": [
+        "data/stable/v15-practical-decision.json"
+      ],
+      "sourceEngineLineage": [
+        "V15_PRACTICAL_DECISION",
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePaths": [
+        "data/stable/v15-practical-decision.json"
+      ],
+      "originalStatus": "historical-only",
+      "lifecycleStatus": "historical-only",
+      "algorithmRecoverability": "UNRECOVERABLE",
+      "parameterRecoverability": "NO_PARAMETERS",
+      "requiredIndicators": [],
+      "requiredMarketHistory": [],
+      "minimumBars": null,
+      "preferredBars": null,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "BLOCKED_BY_MISSING_EVIDENCE",
+      "canExecuteInternally": false,
+      "productionEligibility": false,
+      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
+      "unsupportedReason": "Preserved decision output proves identity but not a complete original momentum calculation; no formula is invented.",
+      "parameters": {},
+      "parameterProvenance": []
+    },
+    {
+      "strategyId": "REVERSAL",
+      "strategyName": "REVERSAL",
+      "discoveredVersions": [
+        "data/v18-global-strategy-policy.json"
+      ],
+      "sourceEngineLineage": [
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePaths": [
+        "data/v18-global-strategy-policy.json"
+      ],
+      "originalStatus": "historical-only",
+      "lifecycleStatus": "historical-only",
+      "algorithmRecoverability": "UNRECOVERABLE",
+      "parameterRecoverability": "NO_PARAMETERS",
+      "requiredIndicators": [],
+      "requiredMarketHistory": [],
+      "minimumBars": null,
+      "preferredBars": null,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [
+        "strategyRegimeMatrix"
+      ],
+      "liquidityRequirements": [],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "BLOCKED_BY_MISSING_EVIDENCE",
+      "canExecuteInternally": false,
+      "productionEligibility": false,
+      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
+      "unsupportedReason": "Only family/regime compatibility is proven; original reversal algorithm is not proven.",
+      "parameters": {},
+      "parameterProvenance": []
+    },
+    {
+      "strategyId": "EMA_MACD_TREND_CONTINUATION",
+      "strategyName": "EMA_MACD",
+      "discoveredVersions": [
+        "scripts/stable/v18-global-strategy-ensemble.cjs"
+      ],
+      "sourceEngineLineage": [
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePaths": [
+        "scripts/stable/v18-global-strategy-ensemble.cjs",
+        "data/v18-global-strategy-policy.json"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "close",
+        "SMA20",
+        "SMA50",
+        "MACD",
+        "MACDSignal",
+        "RSI14",
+        "ATRPct",
+        "volumeRatio20",
+        "averageTurnover20Egp"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 50,
+      "preferredBars": 55,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "missingTurnoverBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "turnover",
+        "volume"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "minimumAverageTurnover20Egp": 20000000,
+        "minimumVolumeRatio20": 0.6,
+        "minimumRsi14": 45,
+        "maximumRsi14": 72,
+        "minimumAtrPct": 1,
+        "maximumAtrPct": 6.5,
+        "maximumDistanceAboveSma20Pct": 8
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "minimumAverageTurnover20Egp",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+          "strategyVersion": "EMA_MACD_TREND_CONTINUATION"
+        },
+        {
+          "parameter": "minimumVolumeRatio20",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+          "strategyVersion": "EMA_MACD_TREND_CONTINUATION"
+        },
+        {
+          "parameter": "minimumRsi14",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+          "strategyVersion": "EMA_MACD_TREND_CONTINUATION"
+        },
+        {
+          "parameter": "maximumRsi14",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+          "strategyVersion": "EMA_MACD_TREND_CONTINUATION"
+        },
+        {
+          "parameter": "minimumAtrPct",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+          "strategyVersion": "EMA_MACD_TREND_CONTINUATION"
+        },
+        {
+          "parameter": "maximumAtrPct",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+          "strategyVersion": "EMA_MACD_TREND_CONTINUATION"
+        },
+        {
+          "parameter": "maximumDistanceAboveSma20Pct",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+          "strategyVersion": "EMA_MACD_TREND_CONTINUATION"
+        }
+      ]
+    },
+    {
+      "strategyId": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "strategyName": "PORTFOLIO_BASKET",
+      "discoveredVersions": [
+        "data/research/v16-v169-basket-engine.json"
+      ],
+      "sourceEngineLineage": [
+        "V16_9_EQUAL_WEIGHT_BASKET",
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "release/v16.9.2-frozen-20260806",
+      "sourceCommit": "2351b2ec2bbcf3e36e992021e26b36845e879ab0",
+      "sourcePaths": [
+        "data/research/v16-v169-basket-engine.json"
+      ],
+      "originalStatus": "active",
+      "lifecycleStatus": "active",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [],
+      "requiredMarketHistory": [],
+      "minimumBars": 0,
+      "preferredBars": 0,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": true,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "failedWeightPolicy": "KEEP_CASH"
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "failedWeightPolicy",
+          "sourceCommit": "2351b2ec2bbcf3e36e992021e26b36845e879ab0",
+          "sourcePath": "data/research/v16-v169-basket-engine.json",
+          "strategyVersion": "PORTFOLIO_BASKET_EQUAL_WEIGHT"
+        }
+      ]
+    },
+    {
+      "strategyId": "RELATIVE_STRENGTH_HIGH_PROXIMITY",
+      "strategyName": "LEADERSHIP",
+      "discoveredVersions": [
+        "scripts/stable/v18-leadership-extension.cjs"
+      ],
+      "sourceEngineLineage": [
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePaths": [
+        "scripts/stable/v18-leadership-extension.cjs",
+        "data/v18-global-strategy-policy.json"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "relativeStrengthComposite",
+        "distanceFromAvailableHighPct",
+        "averageTurnover20Egp"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 220,
+      "preferredBars": 220,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "turnover"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "minimumAverageTurnover20Egp": 20000000,
+        "minimumLeadershipScore": 80,
+        "nearHighMaximumDistancePct": 8,
+        "full52WeekMinimumSessions": 220
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "minimumAverageTurnover20Egp",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "RELATIVE_STRENGTH_HIGH_PROXIMITY"
+        },
+        {
+          "parameter": "minimumLeadershipScore",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "RELATIVE_STRENGTH_HIGH_PROXIMITY"
+        },
+        {
+          "parameter": "nearHighMaximumDistancePct",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "RELATIVE_STRENGTH_HIGH_PROXIMITY"
+        },
+        {
+          "parameter": "full52WeekMinimumSessions",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "RELATIVE_STRENGTH_HIGH_PROXIMITY"
+        }
+      ]
+    },
+    {
+      "strategyId": "VOLATILITY_CONTRACTION_PATTERN",
+      "strategyName": "VOLATILITY_CONTRACTION",
+      "discoveredVersions": [
+        "scripts/stable/v18-leadership-extension.cjs"
+      ],
+      "sourceEngineLineage": [
+        "V18_GLOBAL_STRATEGY_ENSEMBLE"
+      ],
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePaths": [
+        "scripts/stable/v18-leadership-extension.cjs",
+        "data/v18-global-strategy-policy.json"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "SMA20",
+        "SMA50",
+        "contractionRatio",
+        "volumeDryUpRatio",
+        "distanceFromAvailableHighPct",
+        "averageTurnover20Egp"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 35,
+      "preferredBars": 220,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "missingTurnoverBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "turnover",
+        "volume"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "minimumVcpHistorySessions": 35,
+        "maximumVcpContractionRatio": 0.68,
+        "maximumVcpVolumeDryUpRatio": 0.9,
+        "vcpMaximumDistanceFromHighPct": 12,
+        "minimumAverageTurnover20Egp": 20000000
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "minimumVcpHistorySessions",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "VOLATILITY_CONTRACTION_PATTERN"
+        },
+        {
+          "parameter": "maximumVcpContractionRatio",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "VOLATILITY_CONTRACTION_PATTERN"
+        },
+        {
+          "parameter": "maximumVcpVolumeDryUpRatio",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "VOLATILITY_CONTRACTION_PATTERN"
+        },
+        {
+          "parameter": "vcpMaximumDistanceFromHighPct",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "VOLATILITY_CONTRACTION_PATTERN"
+        },
+        {
+          "parameter": "minimumAverageTurnover20Egp",
+          "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+          "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+          "strategyVersion": "VOLATILITY_CONTRACTION_PATTERN"
+        }
+      ]
+    },
+    {
+      "strategyId": "V16_TWO_STAGE_TOP_GAINER",
+      "strategyName": "PROBABILISTIC_TOP_GAINERS",
+      "discoveredVersions": [
+        ".github/workflows/v16-two-stage-predictor.yml"
+      ],
+      "sourceEngineLineage": [
+        "V16_TWO_STAGE_PREDICTOR",
+        "V16_6_GATED_DECISION",
+        "V16_7_COHERENT_ENGINE",
+        "V16_8_PRACTICAL_SELECTOR"
+      ],
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePaths": [
+        ".github/workflows/v16-two-stage-predictor.yml",
+        ".github/workflows/v16-two-stage-top2-backtest.yml",
+        "scripts/research/v16-v167-coherent-engine.py"
+      ],
+      "originalStatus": "historical-only",
+      "lifecycleStatus": "historical-only",
+      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
+      "parameterRecoverability": "NO_PARAMETERS",
+      "requiredIndicators": [],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": null,
+      "preferredBars": null,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
+      "canExecuteInternally": false,
+      "productionEligibility": false,
+      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
+      "unsupportedReason": "Probability-model training/scoring stack is recoverable in source but has not yet been refactored behind explicit G06 inputs without legacy persistence reads.",
+      "parameters": {},
+      "parameterProvenance": []
+    },
+    {
+      "strategyId": "V16_TRIPLE_BARRIER_GATE",
+      "strategyName": "VALIDATION_GATE",
+      "discoveredVersions": [
+        "scripts/research/v16-v167-blocked-run.py"
+      ],
+      "sourceEngineLineage": [
+        "V16_6_GATED_DECISION",
+        "V16_7_COHERENT_ENGINE"
+      ],
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePaths": [
+        "scripts/research/v16-v167-blocked-run.py"
+      ],
+      "originalStatus": "retired",
+      "lifecycleStatus": "retired",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "ATR14"
+      ],
+      "requiredMarketHistory": [
+        "forward OHLC"
+      ],
+      "minimumBars": 28,
+      "preferredBars": 28,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RETIRED_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "configs": [
+          {
+            "id": "FAST_2D",
+            "horizon": 2,
+            "targetAtr": 1,
+            "stopAtr": 0.8
+          },
+          {
+            "id": "BALANCED_3D",
+            "horizon": 3,
+            "targetAtr": 1.25,
+            "stopAtr": 0.9
+          },
+          {
+            "id": "BALANCED_5D",
+            "horizon": 5,
+            "targetAtr": 1.5,
+            "stopAtr": 1
+          }
+        ],
+        "sameBarConflictRule": "STOP_FIRST"
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "configs",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/research/v16-v167-blocked-run.py",
+          "strategyVersion": "V16_TRIPLE_BARRIER_GATE"
+        },
+        {
+          "parameter": "sameBarConflictRule",
+          "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+          "sourcePath": "scripts/research/v16-v167-blocked-run.py",
+          "strategyVersion": "V16_TRIPLE_BARRIER_GATE"
+        }
+      ]
+    },
+    {
+      "strategyId": "V19_TOP10_PROBABILITY_INV_VOL_3",
+      "strategyName": "TOP10_PROBABILITY_RELATED",
+      "discoveredVersions": [
+        "scripts/v19/native-challenger-v6.py"
+      ],
+      "sourceEngineLineage": [
+        "V19_CHAT_GPT_NATIVE_CHALLENGER"
+      ],
+      "sourceBranch": "v19-egx-chat-gpt",
+      "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+      "sourcePaths": [
+        "scripts/v19/native-challenger-v6.py",
+        "scripts/v19/native-challenger-v4.py",
+        "scripts/v19/native-challenger-v2.py"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": null,
+      "preferredBars": null,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
+      "canExecuteInternally": false,
+      "productionEligibility": false,
+      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
+      "unsupportedReason": "V6 policy is proven, but its probability model depends on earlier local model-training code not yet refactored into the G06 pure strategy contract.",
+      "parameters": {
+        "basePolicy": "S0.00|R0|A8|INV_VOL|N3",
+        "riskProfile": {
+          "0": 1,
+          "1": 0.65,
+          "2": 0.4,
+          "3": 0.25
+        }
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "basePolicy",
+          "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+          "sourcePath": "scripts/v19/native-challenger-v6.py",
+          "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
+        },
+        {
+          "parameter": "riskProfile",
+          "sourceCommit": "4e6dee3bdfb2e902bf787974c1fbad67cae875cb",
+          "sourcePath": "scripts/v19/native-challenger-v6.py",
+          "strategyVersion": "V19_TOP10_PROBABILITY_INV_VOL_3"
+        }
+      ]
+    },
+    {
+      "strategyId": "V20_NATIVE_MULTI_COMPONENT_COMPOSITE",
+      "strategyName": "MULTI_COMPONENT_EVIDENCE_COMPOSITE",
+      "discoveredVersions": [
+        "scripts/v20/build-full-market-native-selection.cjs"
+      ],
+      "sourceEngineLineage": [
+        "V20_FULL_MARKET_NATIVE_SELECTION_V1"
+      ],
+      "sourceBranch": "research/egx-meta-engine-v1-20260829",
+      "sourceCommit": "66de656866f1e1b8cab58c52ff2d13584fc543ec",
+      "sourcePaths": [
+        "data/v20/native-model-freeze.json",
+        "scripts/v20/build-full-market-native-selection.cjs"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "legacyOpportunity",
+        "dataEvidence",
+        "liquidity",
+        "supportResistance",
+        "netRiskReward",
+        "tradePlanAlignment",
+        "currentTechnical"
+      ],
+      "requiredMarketHistory": [],
+      "minimumBars": 0,
+      "preferredBars": 0,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "liquidity"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "weightsPct": {
+          "legacyOpportunity": 10,
+          "dataEvidence": 18,
+          "liquidity": 30,
+          "supportResistance": 12,
+          "netRiskReward": 15,
+          "tradePlanAlignment": 10,
+          "currentTechnical": 5
+        }
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "weightsPct",
+          "sourceCommit": "66de656866f1e1b8cab58c52ff2d13584fc543ec",
+          "sourcePath": "data/v20/native-model-freeze.json",
+          "strategyVersion": "V20_NATIVE_MULTI_COMPONENT_COMPOSITE"
+        }
+      ]
+    },
+    {
+      "strategyId": "GANN_FUSION",
+      "strategyName": "GANN_TECHNICAL_FUSION",
+      "discoveredVersions": [
+        "gann-fusion-x/engine/fusion.js"
+      ],
+      "sourceEngineLineage": [
+        "GANN_FUSION_X",
+        "TRIPLE_ENGINE_CONSENSUS_V1"
+      ],
+      "sourceBranch": "main",
+      "sourceCommit": "fa11f5b715dda19aa6099649d5708355a8adcb7a",
+      "sourcePaths": [
+        "gann-fusion-x/engine/fusion.js"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "gannTime",
+        "gannPrice",
+        "trend",
+        "relativeStrength",
+        "breakout",
+        "volume",
+        "momentum",
+        "fundamentals",
+        "entryQuality",
+        "riskReward",
+        "marketRegime"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 20,
+      "preferredBars": 20,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "INELIGIBLE_OR_DIAGNOSTIC",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [
+        "marketRegime"
+      ],
+      "liquidityRequirements": [
+        "volume"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "weights": {
+          "gannTime": 15,
+          "gannPrice": 10,
+          "trend": 10,
+          "relativeStrength": 8,
+          "breakout": 10,
+          "volume": 10,
+          "momentum": 7,
+          "fundamentals": 10,
+          "entryQuality": 7,
+          "riskReward": 8,
+          "marketRegime": 5
+        }
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "weights",
+          "sourceCommit": "fa11f5b715dda19aa6099649d5708355a8adcb7a",
+          "sourcePath": "gann-fusion-x/engine/fusion.js",
+          "strategyVersion": "GANN_FUSION"
+        }
+      ]
+    },
+    {
+      "strategyId": "GANN_REGIME_ROUTER",
+      "strategyName": "GANN_REGIME_GATE",
+      "discoveredVersions": [
+        "gann-fusion-x/scripts/backtest-v4-regime-router.cjs"
+      ],
+      "sourceEngineLineage": [
+        "GANN_FUSION_X"
+      ],
+      "sourceBranch": "feature/gann-fusion-x-v4-regime-router",
+      "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+      "sourcePaths": [
+        "gann-fusion-x/scripts/backtest-v4-regime-router.cjs"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
+      "parameterRecoverability": "NO_PARAMETERS",
+      "requiredIndicators": [],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": null,
+      "preferredBars": null,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [
+        "marketRegime"
+      ],
+      "liquidityRequirements": [],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
+      "canExecuteInternally": false,
+      "productionEligibility": false,
+      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
+      "unsupportedReason": "Competing v1-v4 router semantics exist; exact versioned evaluator extraction is still required before claiming reconstruction.",
+      "parameters": {},
+      "parameterProvenance": []
+    },
+    {
+      "strategyId": "GANN_ENTRY_EXECUTION_QUALITY",
+      "strategyName": "GANN_EXECUTION",
+      "discoveredVersions": [
+        "gann-fusion-x/engine/planner.js"
+      ],
+      "sourceEngineLineage": [
+        "GANN_FUSION_X"
+      ],
+      "sourceBranch": "feature/gann-execution-quality-ranking-v2",
+      "sourceCommit": "3d41f5c13803bd42e6a2fdab4cf31953a70fcf3f",
+      "sourcePaths": [
+        "gann-fusion-x/engine/planner.js"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "fusionScore",
+        "breakout",
+        "volume",
+        "riskReward",
+        "momentum",
+        "relativeStrength",
+        "moneyFlowQuality",
+        "gannTime",
+        "dataConfidence"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 20,
+      "preferredBars": 20,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [
+        "marketRegime"
+      ],
+      "liquidityRequirements": [
+        "liquidity"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "executionWeights": {
+          "triggerReadiness": 0.24,
+          "volumeConfirmation": 0.18,
+          "stopEfficiency": 0.14,
+          "rewardRisk": 0.12,
+          "momentumTemperature": 0.08,
+          "relativeStrength": 0.08,
+          "moneyFlowQuality": 0.06,
+          "gannTiming": 0.05,
+          "dataConfidence": 0.05
+        }
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "executionWeights",
+          "sourceCommit": "3d41f5c13803bd42e6a2fdab4cf31953a70fcf3f",
+          "sourcePath": "gann-fusion-x/engine/planner.js",
+          "strategyVersion": "GANN_ENTRY_EXECUTION_QUALITY"
+        }
+      ]
+    },
+    {
+      "strategyId": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING",
+      "strategyName": "SEPA_BREAKOUT_TRIGGER",
+      "discoveredVersions": [
+        "QVUA-1.0-STABLE"
+      ],
+      "sourceEngineLineage": [
+        "SEPA_X_QVUA",
+        "TRIPLE_ENGINE_CONSENSUS_V1"
+      ],
+      "sourceBranch": "develop/sepax-isolated-v1",
+      "sourceCommit": "bf63dc85f515e58cccebb44dde087ffd47b63bf",
+      "sourcePaths": [
+        "sepa-x/src/engine.js",
+        "sepa-x/src/features.js",
+        "sepa-x/src/config.js"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERABLE_NOT_YET_PORTED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "trendTemplate",
+        "relativeStrength",
+        "VCP",
+        "pivot",
+        "entryReadiness",
+        "risk"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV 252"
+      ],
+      "minimumBars": 252,
+      "preferredBars": 252,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [
+        "marketRegime"
+      ],
+      "liquidityRequirements": [
+        "liquidity"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "RECONSTRUCTABLE_PENDING",
+      "canExecuteInternally": false,
+      "productionEligibility": false,
+      "parityReadiness": "BLOCKED_BY_RECONSTRUCTION",
+      "unsupportedReason": "Isolated source is proven and local, but the full 252-session pipeline has not yet been refactored into explicit G06 inputs; old runtime dependency is not used by this G08 module.",
+      "parameters": {
+        "version": "QVUA-1.0-STABLE",
+        "selectionPolicy": "NEAR_FIRST_THEN_FORMING"
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "version",
+          "sourceCommit": "bf63dc85f515e58cccebb44dde087ffd47b63bf",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        },
+        {
+          "parameter": "selectionPolicy",
+          "sourceCommit": "bf63dc85f515e58cccebb44dde087ffd47b63bf",
+          "sourcePath": "sepa-x/src/engine.js",
+          "strategyVersion": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING"
+        }
+      ]
+    },
+    {
+      "strategyId": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION",
+      "strategyName": "TECHNICAL_HARD_GATE_FUSION",
+      "discoveredVersions": [
+        "tfe-v20/*"
+      ],
+      "sourceEngineLineage": [
+        "TFE_V20_FUSION_RC2",
+        "EGX_META_ENGINE_V1"
+      ],
+      "sourceBranch": "release/rc2-frozen",
+      "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+      "sourcePaths": [
+        "tfe-v20/src/originalScore.js",
+        "tfe-v20/src/originalIndicators.js",
+        "tfe-v20/engine.js",
+        "tfe-v20/policy.js"
+      ],
+      "originalStatus": "experimental",
+      "lifecycleStatus": "experimental",
+      "algorithmRecoverability": "RECOVERED",
+      "parameterRecoverability": "EVIDENCE_BACKED",
+      "requiredIndicators": [
+        "technicalScore",
+        "researchScore",
+        "liquidityScore",
+        "srConfluenceScore",
+        "srStrongMethods",
+        "netRiskReward",
+        "pullbackAtr",
+        "entryState"
+      ],
+      "requiredMarketHistory": [
+        "OHLCV"
+      ],
+      "minimumBars": 60,
+      "preferredBars": 60,
+      "insufficientHistoryBehavior": "DIAGNOSTIC_INSUFFICIENT_VALID_HISTORY",
+      "missingVolumeBehavior": "NOT_REQUIRED",
+      "missingTurnoverBehavior": "NOT_REQUIRED",
+      "suspendedSecurityBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "staleInputBehavior": "INELIGIBLE_CANONICAL_INPUT_REQUIRED",
+      "regimeRequirements": [],
+      "liquidityRequirements": [
+        "liquidity"
+      ],
+      "outputFields": [
+        "strategyExecutionId",
+        "strategyId",
+        "strategyVersion",
+        "eligibility",
+        "eligibilityReason",
+        "rawSignal",
+        "normalizedSignal",
+        "rawScore",
+        "componentScores",
+        "evidenceItems",
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation",
+        "warnings",
+        "diagnostics",
+        "provenance",
+        "executionHash"
+      ],
+      "riskRelatedOutputs": [
+        "entryData",
+        "stopData",
+        "targets",
+        "invalidation"
+      ],
+      "dependencies": [
+        "canonical market snapshot",
+        "validation-approved canonical history",
+        "explicit derived evidence only"
+      ],
+      "historicalEvidenceAvailability": "PARITY_CASE_PREPARED",
+      "internalReconstructionStatus": "EXPERIMENTAL_RECONSTRUCTED",
+      "canExecuteInternally": true,
+      "productionEligibility": false,
+      "parityReadiness": "PREPARED_NOT_CERTIFIED",
+      "unsupportedReason": null,
+      "parameters": {
+        "minimumSessions": 60,
+        "technicalMin": 70,
+        "researchMin": 72,
+        "liquidityMin": 55,
+        "srMin": 55,
+        "srStrongMethodsMin": 2,
+        "netRiskRewardMin": 0.7,
+        "modeledRoundTripCostPct": 0.6,
+        "maxPullbackAtr": 0.7
+      },
+      "parameterProvenance": [
+        {
+          "parameter": "minimumSessions",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "technicalMin",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "researchMin",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "liquidityMin",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "srMin",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "srStrongMethodsMin",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "netRiskRewardMin",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "modeledRoundTripCostPct",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        },
+        {
+          "parameter": "maxPullbackAtr",
+          "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+          "sourcePath": "tfe-v20/src/originalScore.js",
+          "strategyVersion": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION"
+        }
+      ]
+    }
+  ]
+}
