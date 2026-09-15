@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "astra-historical-stores-1",
+  "generatedAt": "2026-09-15T22:28:00+03:00",
+  "repository": "rasheadsca-star/RAS-EGX-PRO2026-NEXT",
+  "count": 19,
+  "stores": [
+    {
+      "storeId": "H01_MARKET_OHLCV_HISTORY",
+      "type": "canonical-or-source market history",
+      "locations": ["data/history/*.json", "data/history.json", "data/history-summary.json", "data/history-50.json"],
+      "contains": ["dated OHLCV sessions", "symbol identity/history status", "history depth"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H02_HISTORY_SOURCE_AND_BACKFILL_LINEAGE",
+      "type": "provenance/reconciliation",
+      "locations": ["data/historical-source-registry.json", "data/symbol-alias-map.json", "data/symbol-resolver-report.json", "data/history-backfill-report.json", "data/history-batch-state.json"],
+      "contains": ["source registry", "symbol aliases", "backfill outcomes", "batch state"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H03_QUANT_FEATURE_AND_STOCK_STORE",
+      "type": "derived historical features",
+      "locations": ["data/quant/feature-store.json", "data/quant/stocks/*.json", "data/quant/stock-intelligence-index.json", "data/quant/market-regime.json"],
+      "contains": ["indicators", "technical features", "per-symbol chart/history slices", "regime"],
+      "migrationPriority": "high"
+    },
+    {
+      "storeId": "H04_QUANT_RECOMMENDATION_HISTORY",
+      "type": "issued paper/watch recommendations",
+      "locations": ["data/quant/daily-recommendations.json", "data/quant/adaptive-daily-recommendations.json", "data/quant/paper-recommendation-ledger.json", "data/quant/paper-recommendation-metrics.json", "data/quant/recommendation-audit.json", "data/quant/recommendation-gate-trace-v13-9.json"],
+      "contains": ["paper candidates", "watch candidates", "plans", "audit/gate traces", "paper ledger"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H05_QUANT_BACKTEST_WALK_FORWARD",
+      "type": "backtest/walk-forward",
+      "locations": ["data/quant/strategy-backtests.json", "data/quant/walk-forward-results.json", "data/quant/recommendation-model.json", "data/quant/adaptive-strategy-calibration.json"],
+      "contains": ["strategy backtests", "walk-forward outputs", "model/calibration state"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H06_V13_EVIDENCE_LEDGER_ARCHIVES",
+      "type": "forward/paper evidence",
+      "locations": ["backups/v13-15-2-technical-ranking-restore/scripts/evidence/v13-15-paper-ledger.cjs", "backups/v13-15-2-technical-ranking-restore/scripts/evidence/v13-15-strategy-health.cjs", "backups/v13-15-stability-evidence-core/*", "backups/v13-16-operational-hardening/*", "backups/v13-17-1-production-hardening/*"],
+      "contains": ["legacy forward paper ledger logic", "strategy health", "policies", "historical implementation snapshots"],
+      "migrationPriority": "high",
+      "note": "Archives are implementation/evidence stores; treat data reconstructed from them as provenance-sensitive, not current truth."
+    },
+    {
+      "storeId": "H07_V14_STABLE_DECISION_FORWARD",
+      "type": "decision snapshots/forward sessions",
+      "locations": ["data/stable/v14-stable-decision.json", "data/stable/v14-forward-sessions.json"],
+      "contains": ["V14 stable decisions", "forward session outcomes"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H08_V15_PRACTICAL_DECISION",
+      "type": "decision snapshot/history feed",
+      "locations": ["data/stable/v15-practical-decision.json"],
+      "contains": ["recommendations", "extended momentum watch", "practical scanner output"],
+      "migrationPriority": "high"
+    },
+    {
+      "storeId": "H09_V16_MAIN_APP_LEDGER_AND_STATE",
+      "type": "production-reference decisions/ledger",
+      "locations": ["data/stable/v16-main-app-current.json", "data/stable/v16-main-app-signal-ledger.json", "data/stable/v16-main-app-consensus.json", "data/research/v16-v169-basket-engine.json", "data/research/v16-v169-target-hit-audit.json"],
+      "contains": ["champion basket decisions", "signal ledger", "consensus annotations", "walk-forward/reference performance", "target audit"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H10_V17_LEDGER_TRACK_RECORD",
+      "type": "governance/forward outcomes",
+      "locations": ["research/egx-meta-engine-v1-20260829:data/v17/ledger.json", "research/egx-meta-engine-v1-20260829:data/v17/recommendation-track-record.json", "research/egx-meta-engine-v1-20260829:data/v17/current.json", "research/egx-meta-engine-v1-20260829:data/v17/review.json", "research/egx-meta-engine-v1-20260829:data/v17/regression.json"],
+      "contains": ["issued recommendations", "resolved outcomes", "track record", "review/regression evidence"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H11_V19_CHALLENGER_REPLAYS",
+      "type": "research backtest/holdout/current snapshots",
+      "locations": ["v19-egx-chat-gpt:data/v19/native-challenger*.json", "v19-egx-chat-gpt:data/v19/challenger-status*.json", "v19-egx-chat-gpt:data/v19/recorded-session-replay.json", "v19-egx-chat-gpt:data/v19/regression*.json"],
+      "contains": ["development OOS", "reused holdout", "current shadow candidates", "version regressions"],
+      "migrationPriority": "high",
+      "note": "V6 explicitly says benchmark/holdout reuse is not fresh independent evidence. Preserve that label."
+    },
+    {
+      "storeId": "H12_V20_NATIVE_SIGNAL_ARCHIVE",
+      "type": "immutable-ish shadow signals/forward evidence",
+      "locations": ["research/egx-meta-engine-v1-20260829:data/v20/signal-archive/*.json", "research/egx-meta-engine-v1-20260829:data/v20/signal-archive/native-shadow/archive/*.json", "research/egx-meta-engine-v1-20260829:data/v20/signal-archive/native-shadow/forward.json", "research/egx-meta-engine-v1-20260829:data/v20/forward-evaluation.json", "research/egx-meta-engine-v1-20260829:data/v20/forward-resolution-status.json"],
+      "contains": ["signal snapshots", "native-shadow archive", "forward outcomes", "resolution state"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H13_V20_PERFORMANCE_AND_WALK_FORWARD",
+      "type": "performance/backtest/certification evidence",
+      "locations": ["research/egx-meta-engine-v1-20260829:data/v20/performance-evidence-registry.json", "research/egx-meta-engine-v1-20260829:data/v20/retrospective-walk-forward-target-stop.json", "research/egx-meta-engine-v1-20260829:data/v20/v18-performance-audit.json", "research/egx-meta-engine-v1-20260829:data/v20/champion-challenger-registry.json", "research/egx-meta-engine-v1-20260829:data/v20/model-registry.json"],
+      "contains": ["separated performance evidence", "retrospective walk-forward", "cross-version audit", "model governance"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H14_V18_FORWARD_LEDGER_AND_LEAGUE",
+      "type": "forward ledger/engine league",
+      "locations": ["v18-global-strategy-ensemble-20260906:data/stable/v18-forward-ledger.json", "v18-global-strategy-ensemble-20260906:preview-v18/forward-ledger.json", "v18-global-strategy-ensemble-20260906:preview-v18/data.json"],
+      "contains": ["immutable issue snapshots", "future performance", "engine performance league", "rank-position performance"],
+      "migrationPriority": "critical",
+      "guards": ["tracking starts 2026-09-07", "no backfill before start", "ambiguous target/stop same bar is not resolved"]
+    },
+    {
+      "storeId": "H15_GANN_FORWARD_SHADOW",
+      "type": "forward shadow/backtest comparison",
+      "locations": ["gann-fusion-x/data/forward-shadow-ledger.json", "gann-fusion-x/data/forward-shadow-report.json", "gann-fusion-x/scripts/backtest-compare.cjs"],
+      "contains": ["GANN issued signals", "SEPA shadow signals", "resolved forward outcomes", "cross-engine comparison"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H16_SEPA_SNAPSHOTS_AND_BENCHMARK",
+      "type": "isolated strategy snapshot/historical benchmark",
+      "locations": ["gann-fusion-x/data/sepa-x-snapshot.json", "develop/sepax-v2-isolated:.github/workflows/sepax-historical-benchmark.yml", "develop/sepax-isolated-v1:sepa-x/*"],
+      "contains": ["SEPA rows/views", "strategy/feed version", "selection policy", "historical benchmark artifacts"],
+      "migrationPriority": "high"
+    },
+    {
+      "storeId": "H17_TFE_RC2_EVIDENCE",
+      "type": "forward/simulation/decision evidence",
+      "locations": ["release/rc2-frozen:tfe-v20/evidence/forward/*", "release/rc2-frozen:tfe-v20/evidence/*", "data/rc2/recommendation-history.json"],
+      "contains": ["immutable forward evidence", "recorded simulations", "decision logs", "recommendation history"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H18_EGX_ONE_RESEARCH_WAREHOUSE",
+      "type": "clean-room research history/forward evidence",
+      "locations": ["egx-one/clean-room-v0:data/*", "egx-one/clean-room-v0:evidence/*", "egx-one/clean-room-v0:.github/workflows/egx-one-research-history-migrate.yml", "egx-one/clean-room-v0:.github/workflows/egx-one-forward-shadow.yml", "egx-one/clean-room-v0:.github/workflows/egx-one-forward-resolve.yml"],
+      "contains": ["migrated research history", "forward shadow", "forward resolution", "lineage/hash/reconciliation upgrades"],
+      "migrationPriority": "critical"
+    },
+    {
+      "storeId": "H19_GENERIC_MAIN_RECOMMENDATION_AND_CERTIFICATION_ARTIFACTS",
+      "type": "legacy recommendation/performance/certification catchment",
+      "locations": ["data/recommendations.json", "data/recommendation-signals-ledger.json", "data/recommendation-outcome-tracker.json", "data/recommendation-accuracy.json", "data/recommendation-performance-index.json", "data/final-opportunity-ranking.json", "data/final-multisource-ranking.json", "data/app-regression-report.json", "data/support-resistance-verification.json", "data/source-health.json", "artifacts/mubasher-support-resistance/*"],
+      "contains": ["legacy recommendation outputs", "outcomes", "accuracy/performance summaries", "rankings", "regression/data-health/SR certification evidence"],
+      "migrationPriority": "high",
+      "note": "This group contains overlapping/competing representations; G07 must reconcile records by provenance rather than choosing latest filenames blindly."
+    }
+  ],
+  "reconciliationRisks": [
+    "The same recommendation lineage appears in multiple snapshots, ledgers, summaries and branch copies; deduplication requires stable source/version/session/ticker keys and checksums.",
+    "Several branches diverged substantially from main; branch-only history must not be lost during migration.",
+    "Historical/backtest/development/holdout/forward evidence labels must remain distinct; do not merge them into one accuracy statistic.",
+    "No tags exist; branch/commit/path provenance is mandatory for reproducibility.",
+    "Unexplained historical loss must remain zero during G07 reconciliation."
+  ]
+}
