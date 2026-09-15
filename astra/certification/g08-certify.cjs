@@ -1,5 +1,5 @@
 'use strict';
-const fs=require('fs');const path=require('path');const{SPECS}=require('../strategies/g08-strict-overlay.cjs');
+const fs=require('fs');const path=require('path');const{SPECS}=require('../strategies/g08-final-overlay.cjs');
 const ROOT=path.resolve(__dirname,'../..');
 function read(rel){return JSON.parse(fs.readFileSync(path.join(ROOT,rel),'utf8'))}function write(rel,v){const p=path.join(ROOT,rel);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,JSON.stringify(v,null,2)+'\n')}function now(){return new Date().toISOString()}
 function statusBucket(s){if(s.reconstructionStatus==='BLOCKED_BY_MISSING_EVIDENCE')return'UNRECOVERABLE';if(s.reconstructionStatus==='RECONSTRUCTABLE_PENDING')return'RECONSTRUCTABLE_PENDING';return s.reconstructionStatus}
