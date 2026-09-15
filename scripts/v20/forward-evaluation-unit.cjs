@@ -73,6 +73,15 @@ const cashApplied = aggregateAppliedPortfolio({ portfolio: { recommendedExposure
 assert.equal(cashApplied.status, 'CASH_NO_APPLIED_EXPOSURE');
 assert.equal(cashApplied.netReturnPct, 0);
 
+const pendingCashApplied = aggregateAppliedPortfolio(
+  { portfolio: { recommendedExposurePct: 0 }, opportunities: [{ ticker:'A', positionWeightPct:0 }] },
+  [{ ticker:'A', researchEligible:true, outcome:{ resolved:false, state:'PENDING_ENTRY_SESSION_OHLC_MISSING' } }],
+);
+assert.equal(pendingCashApplied.resolved, true);
+assert.equal(pendingCashApplied.status, 'CASH_NO_APPLIED_EXPOSURE');
+assert.strictEqual(pendingCashApplied.grossReturnPct, null);
+assert.strictEqual(pendingCashApplied.netReturnPct, null);
+
 const research = aggregateResearch([
   { researchEligible:true, outcome:{ resolved:true, entered:true, netReturnPct:2, grossReturnPct:2.6, ambiguous:false } },
   { researchEligible:true, outcome:{ resolved:true, entered:false, netReturnPct:0, grossReturnPct:0, ambiguous:false } },
@@ -92,4 +101,4 @@ assert.strictEqual(pendingResearch.equalWeightIssuedNetReturnPct, null);
 assert.strictEqual(pendingResearch.enteredOnlyAverageNetReturnPct, null);
 assert.equal(pendingResearch.appliedToProduction, false);
 
-console.log(JSON.stringify({ ok:true, cases:12, ambiguityPolicy:'TREAT_AS_STOP', appliedCashSeparation:true, pendingResearchNullSemantics:true }, null, 2));
+console.log(JSON.stringify({ ok:true, cases:13, ambiguityPolicy:'TREAT_AS_STOP', appliedCashSeparation:true, pendingResearchNullSemantics:true, pendingAppliedReturnNullSemantics:true }, null, 2));
