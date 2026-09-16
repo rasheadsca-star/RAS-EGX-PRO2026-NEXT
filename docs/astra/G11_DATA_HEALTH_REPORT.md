@@ -2,17 +2,17 @@
 
 - Gate status: **BLOCKED**
 - Overall data-health status: **DEGRADED**
-- Evaluated source snapshot: 2026-09-16T10:36:23.747Z
-- Code HEAD evaluated: 07b71554ac3d6922518b6fde1127a751f4aba00c
+- Evaluated source snapshot: 2026-09-16T12:39:32.895Z
+- Code HEAD evaluated: 4130996422652667d48c06abc7f508f0152894ca
 - Intended mapped universe: 243
 - Active universe: 242
 - Intentionally excluded: 1
-- Latest expected finalized session: 2026-09-15
-- Latest available canonical session: 2026-09-15
+- Latest expected finalized session: 2026-09-16
+- Latest available canonical session: 2026-09-16
 - Session freshness: CURRENT
-- Valid current canonical securities: 185/242
-- Pipeline-ready V16 source-feature securities: 181/242
-- Production strategy readiness: 181/242 Security×Strategy rows
+- Valid current canonical securities: 180/242
+- Pipeline-ready V16 source-feature securities: 176/242
+- Production strategy readiness: 176/242 Security×Strategy rows
 - Current unified-pipeline valid opportunities: 3
 - Current unified-pipeline legacy-network calls: 0
 - CRITICAL unresolved issue classes: 0
@@ -25,11 +25,23 @@
 ## Material findings
 
 - **HIGH SYMBOL_IDENTITY_UNRESOLVED** — Active mapped securities lack verified canonical symbol/history identity (42 affected securities).
-- **HIGH CURRENT_SESSION_GAP** — Active intended securities are missing a validation-approved row for the expected finalized session (57 affected securities).
-- **HIGH REGIME_INPUT_INCOMPLETE** — Market-regime/production model inputs cover only a subset of the intended active universe (61 affected securities).
+- **HIGH CURRENT_SESSION_GAP** — Active intended securities are missing a validation-approved row for the expected finalized session (62 affected securities).
+- **HIGH REGIME_INPUT_INCOMPLETE** — Market-regime/production model inputs cover only a subset of the intended active universe (66 affected securities).
 
 ## Acceptance decision
 
 G11 is blocked because at least one CRITICAL/HIGH production-critical data-health condition remains unresolved. No aggregate coverage percentage overrides these blockers.
 
 The G11 run is non-cutover/shadow certification only. It does not change strategy eligibility, remove legacy dependencies, or start G12.
+## Exact final evidence closure
+
+- Searchable active universe: 242/242
+- Current valid canonical universe: 180/242
+- Decision-ready universe: 176/242
+- Regime-ready universe: 176/242
+- Current-universe gaps: 62; disposition accounting closes exactly (SOURCE_INGESTION_FAILED=42, STALE_DATA=20).
+- Previously unverified history-source mappings reviewed: 42; resolved=0; unresolved=42.
+- Stale production-critical records: 20; resolved=0; unresolved=20.
+- Current DecisionSnapshot: G09-DS-41b5f7cfe9c12129a591c12c; semantic hash=41b5f7cfe9c12129a591c12c0e9434944b2465910634db29d9620c0659ad9b96.
+- Current pipeline opportunities: 3; legacy-network calls=0.
+- G11 remains **BLOCKED** unless all CRITICAL and production-relevant HIGH findings are cleared by validation-approved evidence.

@@ -7,8 +7,8 @@
   "last_green_gate": "G10",
   "blocking_issues": [
     "HIGH:SYMBOL_IDENTITY_UNRESOLVED:42",
-    "HIGH:CURRENT_SESSION_GAP:57",
-    "HIGH:REGIME_INPUT_INCOMPLETE:61"
+    "HIGH:CURRENT_SESSION_GAP:62",
+    "HIGH:REGIME_INPUT_INCOMPLETE:66"
   ],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -25,7 +25,7 @@
     "G10 exposed a material G08 V13 reconstruction regression; the 9 historical variants were restored source-exactly, G08 passed 50/50 on recertification, and G09 passed 46/46 unchanged.",
     "V16.9 plan parity uses a 0.0007 maximum representation-only tolerance derived from preserved ATR14 3-decimal precision; semantic fields remain exact-only.",
     "QUANT_EDGE remains OUTPUT_INTEGRITY_ONLY. No production cutover occurred; 8 legacy runtime dependencies remain; G12 PENDING.",
-    "G11 BLOCKED: DEGRADED; intended mapped 243, active 242, current canonical 185/242, pipeline-ready 181/242, CRITICAL 0, HIGH 3."
+    "G11 BLOCKED: DEGRADED; intended mapped 243, active 242, current canonical 180/242, pipeline-ready 176/242, CRITICAL 0, HIGH 3."
   ],
   "completed_gates": [
     "G01",
@@ -84,8 +84,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Repair/restore validation-approved current-session history and symbol verification for the affected active mapped securities, regenerate dependent current indicators/regime inputs, then rerun G11. Do not start G12, remove legacy dependencies, or cut over production.",
-  "last_updated": "2026-09-16T10:36:23.747Z",
+  "next_action": "Restore validation-approved current-session/history-source coverage for the exact G11_CURRENT_UNIVERSE_GAPS and G11_STALE_RECORDS securities, regenerate V16/regime inputs, then rerun G11 only. Do not start G12, remove legacy dependencies, or cut over production.",
+  "last_updated": "2026-09-16T12:39:32.895Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -158,17 +158,17 @@
   "g11_certification": {
     "status": "BLOCKED",
     "overallDataHealth": "DEGRADED",
-    "workflowRunId": 35093292040,
-    "sourceCommit": "07b71554ac3d6922518b6fde1127a751f4aba00c",
+    "workflowRunId": 35106958822,
+    "sourceCommit": "4130996422652667d48c06abc7f508f0152894ca",
     "intendedUniverse": 243,
     "activeSecurities": 242,
-    "latestExpectedSession": "2026-09-15",
-    "latestAvailableSession": "2026-09-15",
+    "latestExpectedSession": "2026-09-16",
+    "latestAvailableSession": "2026-09-16",
     "sessionFreshness": "CURRENT",
-    "currentCanonical": "185/242",
-    "pipelineReady": "181/242",
+    "currentCanonical": "180/242",
+    "pipelineReady": "176/242",
     "productionEligibility": "1/18",
-    "productionCriticalReady": "181/242",
+    "productionCriticalReady": "176/242",
     "criticalUnresolved": 0,
     "highUnresolved": 3,
     "g07QuarantineLeakage": "PASS",
@@ -182,6 +182,26 @@
     "g10Regression": "PASS",
     "focusedDestructiveReview": "BLOCKER_CONFIRMED",
     "g12Status": "PENDING",
-    "productionCutover": false
+    "productionCutover": false,
+    "searchableUniverse": 242,
+    "currentValidCanonicalUniverse": 180,
+    "decisionReadyUniverse": 176,
+    "regimeReadyUniverse": 176,
+    "currentUniverseGapCount": 62,
+    "currentUniverseGapDispositionAccounting": {
+      "SOURCE_INGESTION_FAILED": 42,
+      "STALE_DATA": 20,
+      "total": 62,
+      "equation": "242 - 180 = 62",
+      "closes": true
+    },
+    "historySourceMappingsResolved": 0,
+    "historySourceMappingsUnresolved": 42,
+    "staleProductionCriticalResolved": 0,
+    "staleProductionCriticalUnresolved": 20,
+    "currentDecisionSnapshotId": "G09-DS-41b5f7cfe9c12129a591c12c",
+    "currentDecisionSnapshotHash": "41b5f7cfe9c12129a591c12c0e9434944b2465910634db29d9620c0659ad9b96",
+    "mediumUnresolved": 0,
+    "lowUnresolved": 0
   }
 }
