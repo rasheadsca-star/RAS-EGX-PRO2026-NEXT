@@ -86,3 +86,34 @@ G07 completed against pinned source commits. Processed 19/19 historical store gr
 - Stale production-critical: unresolved 20.
 - DecisionSnapshot: G09-DS-41b5f7cfe9c12129a591c12c; semantic hash 41b5f7cfe9c12129a591c12c0e9434944b2465910634db29d9620c0659ad9b96; legacy-network calls 0.
 - G12 remains PENDING; no cutover and no legacy dependency removal.
+
+
+## 2026-09-16T16:00:58.952Z — G11 Full Data Health Certification
+
+- Status: BLOCKED / DEGRADED
+- Universe: 243 mapped, 242 active, 1 intentional exclusions.
+- Session: expected 2026-09-16, available 2026-09-16, CURRENT.
+- Current canonical: 215/242; V16 pipeline-ready: 208/242.
+- Material issue classes: CRITICAL=0, HIGH=3.
+- G07 quarantine=PASS; legacy-network calls=0; production cutover=false; G12=PENDING.
+- G06/G07/G08/G09/G10 regressions: PASS.
+
+
+## 2026-09-16T16:00:58.952Z — G11 Exact Evidence Closure
+
+- Source HEAD: 7f18cf27421bcf24d96e7b0d2ca3e7a981eb40e6
+- Gap accounting: 27 = STALE_DATA:12 + SOURCE_INGESTION_FAILED:15.
+- Searchable/current/decision-ready/regime-ready: 242/215/208/208.
+- History-source mapping review: resolved 0, unresolved 15.
+- Stale production-critical: unresolved 12.
+- DecisionSnapshot: G09-DS-cbf8e96cd7c4c3f6b1a64990; semantic hash cbf8e96cd7c4c3f6b1a649905fe1932c736ec0dfb380ed522502c118913469e5; legacy-network calls 0.
+- G12 remains PENDING; no cutover and no legacy dependency removal.
+
+
+## 2026-09-16T16:01:18.659Z — G11 Targeted Current-Data Repair
+
+- Gate after full recertification: BLOCKED.
+- Exact source identities: 27/42; unresolved=15.
+- Original stale set repaired: 11/20; remaining=9.
+- Production readiness: READY=208, legitimate exclusions=0, data-defect blocked=34.
+- CRITICAL=0; HIGH=3; G12=PENDING; production cutover=false.

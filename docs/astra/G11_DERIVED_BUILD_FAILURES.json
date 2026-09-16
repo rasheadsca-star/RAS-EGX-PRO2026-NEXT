@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "astra-g11-derived-build-failures-1",
+  "generatedAt": "2026-09-16T16:00:59.516Z",
+  "expectedSession": "2026-09-16",
+  "component": "V13_7_STOCK_INTELLIGENCE",
+  "stockIntelligenceRecordsBuilt": 227,
+  "totalBuildFailures": 1,
+  "diagnosedUnavailable": 1,
+  "unexplainedBuildFailures": 0,
+  "accountingCloses": true,
+  "records": [
+    {
+      "ticker": "IRAX",
+      "securityId": "EGX:IRAX",
+      "active": true,
+      "failedComponent": "V13_7_STOCK_INTELLIGENCE",
+      "originalDiagnostic": "insufficient_history",
+      "classification": "DIAGNOSED_UNAVAILABLE_INSUFFICIENT_HISTORY",
+      "explained": true,
+      "inputState": {
+        "expectedSession": "2026-09-16",
+        "currentSessionAvailable": true,
+        "validHistorySessions": 13,
+        "requiredMinimumSessions": 20,
+        "latestValidSession": "2026-09-16",
+        "symbolVerified": true,
+        "sourceStatus": "historical_limited_5"
+      },
+      "rootCause": "Only 13 validation-approved sessions are available; V13.7 requires at least 20.",
+      "productionImpact": "STOCK_INTELLIGENCE_DERIVATION_UNAVAILABLE; production/regime readiness remains governed separately by canonical G11 strategy-readiness checks and must not infer values.",
+      "evidence": [
+        "data/history/IRAX.json",
+        "data/quant/stock-intelligence-index.json",
+        "scripts/quant/v13-7-stock-intelligence.cjs"
+      ]
+    }
+  ]
+}
