@@ -44,3 +44,5 @@ fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 fs.writeFileSync(outputPath, JSON.stringify(evidence, null, 2) + '\n', 'utf8');
 console.log('ASTRA_G11_GUARD37 ' + JSON.stringify({ status, selfTests: `${selfTests.passed}/${selfTests.total}`, findings: implementationFindings.length }));
 if (status !== 'PASS') process.exit(1);
+
+// Recovery trigger only: behavior is unchanged; this path is monitored by the G11 recovery workflow.
