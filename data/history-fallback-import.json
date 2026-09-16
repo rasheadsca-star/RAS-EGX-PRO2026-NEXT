@@ -1,8 +1,38 @@
 {
   "schemaVersion": "12.5.0",
-  "records": [],
+  "records": [
+    {
+      "ticker": "AIHC",
+      "source": "approved_csv",
+      "sourceUrl": "https://sa.investing.com/equities/arabia-inv-development---cash-historical-data",
+      "approved": true,
+      "symbolVerified": true,
+      "fetchedAt": "2026-09-17T00:03:03+03:00",
+      "approvalNote": "User-authorized reviewed composite. AIHC exact identity. Sep-16 OHLC/close from Investing; exact session volume 27,971,185 independently verified on Mubasher. No carry-forward or synthetic values.",
+      "verificationUrls": [
+        "https://sa.investing.com/equities/arabia-inv-development---cash-historical-data",
+        "https://www.mubasher.info/markets/EGX/stocks/AIHC/news/2/"
+      ],
+      "sessions": [
+        {
+          "date": "2026-09-16",
+          "open": 0.76,
+          "high": 0.783,
+          "low": 0.758,
+          "close": 0.78,
+          "adjustedClose": null,
+          "volume": 27971185,
+          "currency": "EGP",
+          "warnings": [
+            "reviewed_composite_investing_ohlc_mubasher_exact_volume"
+          ]
+        }
+      ]
+    }
+  ],
   "instructions": [
-    "Leave records empty until real reviewed OHLCV data is available.",
+    "Validated reviewed import for G11 recovery only.",
+    "Only records that passed recovery-branch symbol-map, exact session, OHLC invariants, symbol identity, approved-source evidence, and no-carry-forward checks are included.",
     "Allowed source values: egx_official, mubasher, investing, approved_csv.",
     "Every record must set approved=true and symbolVerified=true.",
     "Never estimate missing prices or duplicate a previous close as a new session."
