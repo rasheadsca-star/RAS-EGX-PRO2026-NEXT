@@ -202,4 +202,54 @@ async function fetchExactEgxHistory(mapEntry, options = {}) {
   };
 }
 
-module.exports = { fetchExactEgxHistory, verifyExactIdentity, normalizeOhlcRows };
+async function diagnoseExactEgxHistory(mapEntry, options = {}) {
+  const cfg = { ...configDefaults(), ...options };
+  const ticker = safeTicker(mapEntry?.ticker);
+  if (!ticker) throw new Error('missing_canonical_ticker');
+  const diagnostics = [];
+  let identity = null;
+  try {
+    const identityResponse = await fetchFromAnyBase(`/egx/stock/${encodeURIComponent(ticker)}`, cfg, diagnostics);
+    identity = verifyExactIdentity(identityResponse.data, ticker, mapEntry);
+  } catch (error) {
+    return { ticker, identity: null, identityError: error.message, diagnostics, periods: [] };
+  }
+  if (!identity.verified) return { ticker, identity, identityError: `identity_rejected:${identity.resolutionType}`, diagnostics, periods: [] };
+
+  const periods = Array.isArray(options.periodCandidates) && options.periodCandidates.length
+    ? options.periodCandidates : ['5y', '3y', '2y', '1y'];
+  const limit = Number(options.maximumRowsPerRequest || 2000);
+  const periodDiagnostics = [];
+  for (const period of periods) {
+    try {
+      const result = await fetchFromAnyBase(`/egx/ohlc/${encodeURIComponent(ticker)}?period=${encodeURIComponent(period)}&limit=${limit}`, cfg, diagnostics);
+      const rawRows = Array.isArray(result.data) ? result.data : [];
+      const normalized = normalizeOhlcRows(result.data, ticker, result.sourceUrl, cfg.sourceConfidence);
+      const rejectionReasons = {};
+      for (const item of normalized.rejected) for (const reason of item.errors || []) rejectionReasons[reason] = (rejectionReasons[reason] || 0) + 1;
+      periodDiagnostics.push({
+        period,
+        sourceUrl: result.sourceUrl,
+        rawRowCount: rawRows.length,
+        validRowCount: normalized.rows.length,
+        rejectedRowCount: normalized.rejected.length,
+        latestValidSession: normalized.rows.at(-1)?.date || null,
+        rejectionReasons,
+        rejectedSamples: normalized.rejected.slice(0, 8),
+        rawSamples: rawRows.slice(0, 3).map((row) => ({
+          date: row?.date ?? row?.session_date ?? row?.sessionDate ?? null,
+          open: row?.open ?? null,
+          high: row?.high ?? null,
+          low: row?.low ?? null,
+          close: row?.close ?? null,
+          volume: row?.volume ?? null,
+        })),
+      });
+    } catch (error) {
+      periodDiagnostics.push({ period, error: error.message });
+    }
+  }
+  return { ticker, identity, identityError: null, diagnostics, periods: periodDiagnostics };
+}
+
+module.exports = { fetchExactEgxHistory, diagnoseExactEgxHistory, verifyExactIdentity, normalizeOhlcRows };
