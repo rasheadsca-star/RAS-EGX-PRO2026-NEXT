@@ -43,3 +43,13 @@ G07 completed against pinned source commits. Processed 19/19 historical store gr
 - G06/G07/G08 regressions: PASS.
 - No production cutover; G10 and G12-G19 remain PENDING; G19 streak remains 0.
 - Next: G10 only on explicit request.
+
+
+## 2026-09-16T05:20:29.113Z — G10 Golden-master historical parity GREEN
+- Production eligibility audit PASS: 1/18 preserved. Historical parity eligibility: 18/18.
+- Version source accounting: 33/33; engine lineages: 20/20.
+- Golden cases: 5; exact: 1; tolerance: 4; intentional documented differences: 2; material unresolved mismatches: 0.
+- Evidence gaps remain explicit: 6 missing, 1 not comparable.
+- G08 regression recertified 50/50 after V13 9-variant source-exact repair; G09 recertified 46/46 unchanged at 1/18 production eligibility.
+- V16.9 price tolerance 0.0007 is derived from ATR 3dp precision propagation only; no semantic-field tolerance.
+- QUANT_EDGE OUTPUT_INTEGRITY_ONLY; replay legacy-network calls 0; 8 legacy dependencies remain; G12 PENDING; G19 streak remains 0.

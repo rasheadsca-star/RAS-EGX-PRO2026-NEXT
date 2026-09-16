@@ -1,0 +1,944 @@
+{
+  "schemaVersion": "astra-g10-parity-coverage-2",
+  "productionEligibilityDefinition": "G09 live-ranking permission only.",
+  "historicalParityEligibilityDefinition": "Forensic accounting/replay eligibility independent of production lifecycle.",
+  "strategies": [
+    {
+      "strategyId": "TREND_FOLLOW",
+      "lifecycleStatus": "historical-only",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V13_4:balanced",
+        "V13_4:strict",
+        "V13_4:momentum"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": true,
+      "rejectionCaseAvailable": true,
+      "thresholdBoundaryCaseAvailable": true,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "BREAKOUT",
+      "lifecycleStatus": "historical-only",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V13_4:early",
+        "V13_4:balanced",
+        "V13_4:strict"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": true,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "PULLBACK",
+      "lifecycleStatus": "historical-only",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V13_4:wide",
+        "V13_4:balanced",
+        "V13_4:strict"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": true,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "MOMENTUM",
+      "lifecycleStatus": "historical-only",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V15:MOMENTUM_ACCELERATION"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "REVERSAL",
+      "lifecycleStatus": "historical-only",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V15:REVERSAL_CONFIRMATION",
+        "V18:FAMILY_POLICY"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": true,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH",
+        "MISSING_LEGACY_EVIDENCE"
+      ],
+      "reasonForMissingCoverage": "Exact source/version is accounted for, but no ticker/session externally anchored legacy Golden output is preserved for at least one version; not counted as a parity pass."
+    },
+    {
+      "strategyId": "EMA_MACD_TREND_CONTINUATION",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V18:EMA_MACD"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": true,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "lifecycleStatus": "active",
+      "internallyExecutable": true,
+      "productionEligible": true,
+      "historicalParityEligible": true,
+      "versions": [
+        "V16_9:FROZEN"
+      ],
+      "historicalFixturesAvailable": true,
+      "positiveCaseAvailable": true,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH",
+        "TOLERANCE_MATCH",
+        "NOT_COMPARABLE"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "RELATIVE_STRENGTH_HIGH_PROXIMITY",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V18:LEADERSHIP"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": true,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "VOLATILITY_CONTRACTION_PATTERN",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V18:VCP"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": true,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "V16_TWO_STAGE_TOP_GAINER",
+      "lifecycleStatus": "historical-only",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V16:TWO_STAGE_COMPOSITE"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": true,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "V16_TRIPLE_BARRIER_GATE",
+      "lifecycleStatus": "retired",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "FAST_2D",
+        "BALANCED_3D",
+        "BALANCED_5D"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "V19_TOP10_PROBABILITY_INV_VOL_3",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V19:V6"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "INTENTIONAL_DOCUMENTED_DIFFERENCE",
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "V20_NATIVE_MULTI_COMPONENT_COMPOSITE",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "V20_FULL_MARKET_NATIVE_SELECTION_V1"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "INTENTIONAL_DOCUMENTED_DIFFERENCE",
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "GANN_FUSION",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "GANN:FUSION_BASE"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    },
+    {
+      "strategyId": "GANN_REGIME_ROUTER",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "ROUTER_V1",
+        "ROUTER_V2",
+        "ROUTER_V3",
+        "ROUTER_V4"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": true,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "MISSING_LEGACY_EVIDENCE",
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": "Exact source/version is accounted for, but no ticker/session externally anchored legacy Golden output is preserved for at least one version; not counted as a parity pass."
+    },
+    {
+      "strategyId": "GANN_ENTRY_EXECUTION_QUALITY",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "ENTRY_V1",
+        "ENTRY_V1R",
+        "ENTRY_V2"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH",
+        "MISSING_LEGACY_EVIDENCE"
+      ],
+      "reasonForMissingCoverage": "Exact source/version is accounted for, but no ticker/session externally anchored legacy Golden output is preserved for at least one version; not counted as a parity pass."
+    },
+    {
+      "strategyId": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "QVUA_1_0_STABLE_V1",
+        "QVUA_V2_ISOLATED"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": false,
+      "rejectionCaseAvailable": false,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH",
+        "MISSING_LEGACY_EVIDENCE"
+      ],
+      "reasonForMissingCoverage": "Exact source/version is accounted for, but no ticker/session externally anchored legacy Golden output is preserved for at least one version; not counted as a parity pass."
+    },
+    {
+      "strategyId": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION",
+      "lifecycleStatus": "experimental",
+      "internallyExecutable": true,
+      "productionEligible": false,
+      "historicalParityEligible": true,
+      "versions": [
+        "RC2_FROZEN"
+      ],
+      "historicalFixturesAvailable": false,
+      "positiveCaseAvailable": true,
+      "rejectionCaseAvailable": true,
+      "thresholdBoundaryCaseAvailable": false,
+      "regimeSpecificCaseAvailable": false,
+      "expectedFieldsAvailable": true,
+      "comparisonStatuses": [
+        "EXACT_MATCH"
+      ],
+      "reasonForMissingCoverage": null
+    }
+  ],
+  "versions": [
+    {
+      "strategyId": "TREND_FOLLOW",
+      "strategyVersion": "V13_4:balanced",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "TREND_FOLLOW",
+      "strategyVersion": "V13_4:strict",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "TREND_FOLLOW",
+      "strategyVersion": "V13_4:momentum",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "BREAKOUT",
+      "strategyVersion": "V13_4:early",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "BREAKOUT",
+      "strategyVersion": "V13_4:balanced",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "BREAKOUT",
+      "strategyVersion": "V13_4:strict",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "PULLBACK",
+      "strategyVersion": "V13_4:wide",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "PULLBACK",
+      "strategyVersion": "V13_4:balanced",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "PULLBACK",
+      "strategyVersion": "V13_4:strict",
+      "engineLineage": "V13_4_QUANT_ENGINE",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/quant/v13-4-quant-engine.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "aeed98e1da0a4700c7981007a5f85f24b080ec9f7e92ba2d8b7daebbfe167ecb"
+    },
+    {
+      "strategyId": "MOMENTUM",
+      "strategyVersion": "V15:MOMENTUM_ACCELERATION",
+      "engineLineage": "V15_PRACTICAL_DECISION",
+      "sourceBranch": "main",
+      "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+      "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+      "evidenceMode": "SOURCE_RULE_PLUS_PRESERVED_OUTPUT",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "b323add2c1a4e8090dafb726d77cb89d75156b4a243b5b98a1e0f850d9b3b977"
+    },
+    {
+      "strategyId": "REVERSAL",
+      "strategyVersion": "V15:REVERSAL_CONFIRMATION",
+      "engineLineage": "V15_PRACTICAL_DECISION",
+      "sourceBranch": "main",
+      "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+      "sourcePath": "scripts/stable/v15-practical-market-scanner.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "b323add2c1a4e8090dafb726d77cb89d75156b4a243b5b98a1e0f850d9b3b977"
+    },
+    {
+      "strategyId": "REVERSAL",
+      "strategyVersion": "V18:FAMILY_POLICY",
+      "engineLineage": "V18_GLOBAL_STRATEGY_ENSEMBLE",
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePath": "data/v18-global-strategy-policy.json",
+      "evidenceMode": "POLICY_ONLY_ORIGINAL_ALGORITHM_MISSING",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "da22873afb1c8a0f1a91505ec61a0e3bfebd0c92e22b43252b36c4bdeb5da8ea"
+    },
+    {
+      "strategyId": "EMA_MACD_TREND_CONTINUATION",
+      "strategyVersion": "V18:EMA_MACD",
+      "engineLineage": "V18_GLOBAL_STRATEGY_ENSEMBLE",
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePath": "scripts/stable/v18-global-strategy-ensemble.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "e47fd36d87b3b08c5e707f5b994764c2a763a002ce23df709e81bdcc415756f8"
+    },
+    {
+      "strategyId": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "strategyVersion": "V16_9:FROZEN",
+      "engineLineage": "V16_9_EQUAL_WEIGHT_BASKET",
+      "sourceBranch": "release/v16.9.2-frozen-20260806",
+      "sourceCommit": "2351b2ec2bbcf3e36e992021e26b36845e879ab0",
+      "sourcePath": "data/research/v16-v169-basket-engine.json",
+      "evidenceMode": "GOLDEN_SESSION_OUTPUT",
+      "parityEligible": true,
+      "productionEligible": true,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "00e5f344ed748cccb42053d5f2d3b786b99191984afcc43e124f0fa7c21a4d2d"
+    },
+    {
+      "strategyId": "RELATIVE_STRENGTH_HIGH_PROXIMITY",
+      "strategyVersion": "V18:LEADERSHIP",
+      "engineLineage": "V18_GLOBAL_STRATEGY_ENSEMBLE",
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "c77a4d3cb78a0e8f5bb88e107018990bb183f621457cf01c47d6300c7628f9ac"
+    },
+    {
+      "strategyId": "VOLATILITY_CONTRACTION_PATTERN",
+      "strategyVersion": "V18:VCP",
+      "engineLineage": "V18_GLOBAL_STRATEGY_ENSEMBLE",
+      "sourceBranch": "v18-global-strategy-ensemble-20260906",
+      "sourceCommit": "100ecd0bcb001d2ad1767ec75a02fc574bf99efd",
+      "sourcePath": "scripts/stable/v18-leadership-extension.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "c77a4d3cb78a0e8f5bb88e107018990bb183f621457cf01c47d6300c7628f9ac"
+    },
+    {
+      "strategyId": "V16_TWO_STAGE_TOP_GAINER",
+      "strategyVersion": "V16:TWO_STAGE_COMPOSITE",
+      "engineLineage": "V16_TWO_STAGE_PREDICTOR",
+      "sourceBranch": "main",
+      "sourceCommit": "e2cd07e618b0907242253e12ab27048716ee21db",
+      "sourcePath": "scripts/research/v16-two-stage-predictor.py",
+      "evidenceMode": "SOURCE_RULE_WITH_HISTORICAL_WORKFLOW_EVIDENCE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "5ab8f5628ee262d827af1a5c872c1563d3027edd929a05fc3eb0ca0149476716"
+    },
+    {
+      "strategyId": "V16_TRIPLE_BARRIER_GATE",
+      "strategyVersion": "FAST_2D",
+      "engineLineage": "V16_6_GATED_DECISION",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/research/v16-v167-blocked-run.py",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "fc43ebf811a02f35edb2f7d6b314c3d94dbacc1ec7c71086084acf77eb3a888f"
+    },
+    {
+      "strategyId": "V16_TRIPLE_BARRIER_GATE",
+      "strategyVersion": "BALANCED_3D",
+      "engineLineage": "V16_6_GATED_DECISION",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/research/v16-v167-blocked-run.py",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "fc43ebf811a02f35edb2f7d6b314c3d94dbacc1ec7c71086084acf77eb3a888f"
+    },
+    {
+      "strategyId": "V16_TRIPLE_BARRIER_GATE",
+      "strategyVersion": "BALANCED_5D",
+      "engineLineage": "V16_6_GATED_DECISION",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "scripts/research/v16-v167-blocked-run.py",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "fc43ebf811a02f35edb2f7d6b314c3d94dbacc1ec7c71086084acf77eb3a888f"
+    },
+    {
+      "strategyId": "V19_TOP10_PROBABILITY_INV_VOL_3",
+      "strategyVersion": "V19:V6",
+      "engineLineage": "V19_CHAT_GPT_NATIVE_CHALLENGER",
+      "sourceBranch": "v19-egx-chat-gpt",
+      "sourceCommit": "fb5aafb3e3e4cd908831a7cb98de3f952e356c34",
+      "sourcePath": "scripts/v19/native-challenger-v6.py",
+      "evidenceMode": "CONFIG_AND_SOURCE_IDENTITY",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "503123ba12c27fe0fb4aa0bc581e2adf0937ed3186c191f88685607e029f3845"
+    },
+    {
+      "strategyId": "V20_NATIVE_MULTI_COMPONENT_COMPOSITE",
+      "strategyVersion": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+      "engineLineage": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+      "sourceBranch": "research/egx-meta-engine-v1-20260829",
+      "sourceCommit": "9283b72305c581776b5762f04b3b9d7c7dbe6dd1",
+      "sourcePath": "scripts/v20/build-full-market-native-selection.cjs",
+      "evidenceMode": "SOURCE_RULE_WITH_EQUIVALENT_LATER_BLOB",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "8edd184049966a570fdfa5c0b6f84b0cfa288300d1be8bd822925af7b58c6375"
+    },
+    {
+      "strategyId": "GANN_FUSION",
+      "strategyVersion": "GANN:FUSION_BASE",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "main",
+      "sourceCommit": "1ed10bc0e3c1d19659d12b7daebc4c06a6a41f61",
+      "sourcePath": "gann-fusion-x/engine/fusion.js",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "ad2ad1d19894f229f68dd2a5da45d3b5ce2ccefb27f20b6b9a8fda2ba94d3d59"
+    },
+    {
+      "strategyId": "GANN_REGIME_ROUTER",
+      "strategyVersion": "ROUTER_V1",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "feature/gann-regime-gate-challenger-v1",
+      "sourceCommit": "852beaae9e0f54fd3cd158f397850b1953a8aa0e",
+      "sourcePath": "gann-fusion-x/scripts/backtest-regime-challenger.cjs",
+      "evidenceMode": "SOURCE_AVAILABLE_NO_TICKER_GOLDEN",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "865a42fab778385212741083bec54594c5d66285c8cfe5d105795aaaa4a1b4d2"
+    },
+    {
+      "strategyId": "GANN_REGIME_ROUTER",
+      "strategyVersion": "ROUTER_V2",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "feature/gann-regime-gate-v2-deterioration",
+      "sourceCommit": "da9d8e43b833c71c1081ed0dad04704e13c77c53",
+      "sourcePath": "gann-fusion-x/scripts/backtest-regime-v2.cjs",
+      "evidenceMode": "PRESERVED_AGGREGATE_EVIDENCE_ONLY",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "f31a58de9683f2ba1cefdc1bea3346821470899fe28e4b4b365b00fb78960dac"
+    },
+    {
+      "strategyId": "GANN_REGIME_ROUTER",
+      "strategyVersion": "ROUTER_V3",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "feature/gann-regime-gate-v3-pure",
+      "sourceCommit": "2e000cef5d8421a0db71fa3ac2c871b39a7c0fcf",
+      "sourcePath": "gann-fusion-x/scripts/backtest-regime-v3-pure.cjs",
+      "evidenceMode": "PRESERVED_AGGREGATE_EVIDENCE_ONLY",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "3df6d37b024ad8dedd5c21e266f41406d88735b8fafccd1142725b5d0e1ac352"
+    },
+    {
+      "strategyId": "GANN_REGIME_ROUTER",
+      "strategyVersion": "ROUTER_V4",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "feature/gann-fusion-x-v4-regime-router",
+      "sourceCommit": "88218c49546af0820540aa31bc979953935751ca",
+      "sourcePath": "gann-fusion-x/scripts/backtest-v4-regime-router.cjs",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "712cb4736af4d2d5b02d0e8265522272bd2ad16c1e340ff02b4b209e36545919"
+    },
+    {
+      "strategyId": "GANN_ENTRY_EXECUTION_QUALITY",
+      "strategyVersion": "ENTRY_V1",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "feature/gann-entry-timing-grade-v1",
+      "sourceCommit": "283273a849f65e1ec819bc88e13e40911c516fee",
+      "sourcePath": "gann-fusion-x/engine/planner.js",
+      "evidenceMode": "SOURCE_AVAILABLE_NO_GOLDEN",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "4e9ddd9b889e171bce112bc7d4f7d421278e152462e8844e5a74be103f1ee611"
+    },
+    {
+      "strategyId": "GANN_ENTRY_EXECUTION_QUALITY",
+      "strategyVersion": "ENTRY_V1R",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "feature/gann-entry-timing-grade-v1r",
+      "sourceCommit": "152680d518a4a93d9f7428529f0ff25df11098d2",
+      "sourcePath": "gann-fusion-x/engine/planner.js",
+      "evidenceMode": "SEMANTICALLY_IDENTICAL_BLOB_TO_ENTRY_V1",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "4e9ddd9b889e171bce112bc7d4f7d421278e152462e8844e5a74be103f1ee611"
+    },
+    {
+      "strategyId": "GANN_ENTRY_EXECUTION_QUALITY",
+      "strategyVersion": "ENTRY_V2",
+      "engineLineage": "GANN_FUSION_X",
+      "sourceBranch": "feature/gann-execution-quality-ranking-v2",
+      "sourceCommit": "3d41f5c13803bd42e6a2fdab4cf31953a70fcf3f",
+      "sourcePath": "gann-fusion-x/engine/planner.js",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "4e9ddd9b889e171bce112bc7d4f7d421278e152462e8844e5a74be103f1ee611"
+    },
+    {
+      "strategyId": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING",
+      "strategyVersion": "QVUA_1_0_STABLE_V1",
+      "engineLineage": "SEPA_X_QVUA",
+      "sourceBranch": "develop/sepax-isolated-v1",
+      "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+      "sourcePath": "sepa-x/src/engine.js",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "6f65dd3801a37842d14e95b2b01ff1a7f11e0b2e8dc8c492b9fd3b3111debf6a"
+    },
+    {
+      "strategyId": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING",
+      "strategyVersion": "QVUA_V2_ISOLATED",
+      "engineLineage": "SEPA_X_QVUA",
+      "sourceBranch": "develop/sepax-v2-isolated",
+      "sourceCommit": "4ab6ef4f31c41558cccebb44dde087ffd47b63bf",
+      "sourcePath": "sepa-x/src/engine.js",
+      "evidenceMode": "SOURCE_AVAILABLE_NO_GOLDEN",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "d0a18471bbb2789e35e830db0f4820f34673e95a5563611bad4e328fb5e03ea3"
+    },
+    {
+      "strategyId": "TFE_EVIDENCE_AWARE_HARD_GATE_FUSION",
+      "strategyVersion": "RC2_FROZEN",
+      "engineLineage": "TFE_V20_FUSION_RC2",
+      "sourceBranch": "release/rc2-frozen",
+      "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+      "sourcePath": "tfe-v20/src/engine.js",
+      "evidenceMode": "SOURCE_RULE",
+      "parityEligible": true,
+      "productionEligible": false,
+      "sourceArtifactAvailable": true,
+      "sourceArtifactHash": "15f881c229f2e9af1648900a49ecab780632d528bac073e84880e8b5fa84a33a"
+    }
+  ],
+  "engineCapabilityLineages": [
+    {
+      "engineId": "V13_4_QUANT_ENGINE",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V13_5_ADAPTIVE_PAPER",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V14_STABLE_DECISION_SYSTEM",
+      "accounted": true,
+      "disposition": "NON_ALPHA_CAPABILITIES_ACCOUNTED_BY_G06_MODULE_BOUNDARIES"
+    },
+    {
+      "engineId": "V15_PRACTICAL_DECISION",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V16_TWO_STAGE_PREDICTOR",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V16_6_GATED_DECISION",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V16_7_COHERENT_ENGINE",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V16_8_PRACTICAL_SELECTOR",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V16_9_EQUAL_WEIGHT_BASKET",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V17_GOVERNANCE_SPINE",
+      "accounted": true,
+      "disposition": "NON_ALPHA_CAPABILITIES_ACCOUNTED_BY_G06_MODULE_BOUNDARIES"
+    },
+    {
+      "engineId": "V18_GLOBAL_STRATEGY_ENSEMBLE",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V19_CHAT_GPT_NATIVE_CHALLENGER",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "V20_FULL_MARKET_NATIVE_SELECTION_V1",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "QUANT_EDGE",
+      "accounted": true,
+      "disposition": "HISTORICAL_OUTPUT_ONLY"
+    },
+    {
+      "engineId": "GANN_FUSION_X",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "SEPA_X_QVUA",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "TFE_V20_FUSION_RC2",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "TRIPLE_ENGINE_CONSENSUS_V1",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "EGX_META_ENGINE_V1",
+      "accounted": true,
+      "disposition": "REPRESENTED_BY_INTERNAL_STRATEGIES"
+    },
+    {
+      "engineId": "EGX_ONE_CLEAN_ROOM",
+      "accounted": true,
+      "disposition": "ENGINE_LINEAGE_ACCOUNTED_NO_UNIQUE_REGISTERED_STRATEGY"
+    }
+  ],
+  "metrics": {
+    "strategiesAccounted": 18,
+    "parityEligibleStrategies": 18,
+    "identifiedVersions": 33,
+    "sourceArtifactsAvailable": 33,
+    "engineLineagesAccounted": 20
+  },
+  "generatedAt": "2026-09-16T05:20:29.113Z",
+  "evidenceWeightedCoverage": {
+    "implementation": {
+      "covered": 33,
+      "total": 33
+    },
+    "evidence": {
+      "covered": 30,
+      "total": 33
+    },
+    "executedParityCases": 40,
+    "passedComparableGoldenCases": 5,
+    "totalGoldenCases": 5
+  }
+}

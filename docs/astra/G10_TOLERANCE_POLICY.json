@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "astra-g10-tolerance-policy-2",
+  "default": "EXACT_EQUALITY",
+  "allowed": [
+    {
+      "fields": [
+        "entryLow",
+        "entryHigh",
+        "stopLoss",
+        "target1"
+      ],
+      "casePattern": "GOLDEN-V169-*-PLAN",
+      "type": "ABSOLUTE",
+      "magnitude": 0.0007,
+      "technicalJustification": "The preserved stock snapshot serializes ATR14 to three decimals (maximum hidden ATR error ±0.0005). Legacy V16.9 plan geometry multiplies ATR by up to 1.2, so propagation can reach 0.0006 before four-decimal plan serialization; 0.0007 is a conservative representation-only bound and is not applied to score, signal, rank, tier, eligibility, regime, support or resistance.",
+      "derivation": {
+        "preservedAtrDecimals": 3,
+        "maxHiddenAtrError": 0.0005,
+        "maxAtrMultiplier": 1.2,
+        "maxPropagation": 0.0006,
+        "planSerializationDecimals": 4,
+        "policyBound": 0.0007
+      }
+    }
+  ],
+  "forbidden": [
+    "broad score tolerance",
+    "rank similarity tolerance",
+    "signal normalization that changes meaning",
+    "eligibility tolerance",
+    "regime tolerance",
+    "support/resistance close-enough tolerance without source precision proof",
+    "null-zero equivalence"
+  ],
+  "generatedAt": "2026-09-16T05:20:29.113Z"
+}
