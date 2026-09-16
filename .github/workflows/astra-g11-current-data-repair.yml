@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/astra-g11-current-data-repair.yml'
       - 'tests/astra/g11-source-repair.test.cjs'
+      - 'tests/astra/g11-carry-forward-guard.test.cjs'
+      - 'astra/certification/g11-carry-forward-guard.cjs'
+      - 'astra/certification/g11-guard37-evidence.cjs'
 
 permissions:
   contents: write
@@ -16,6 +19,7 @@ concurrency:
 
 jobs:
   repair-and-certify:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     steps:
@@ -40,6 +44,8 @@ jobs:
           node --check scripts/history/adapters/starta-exact-egx-adapter.cjs
           node --check astra/data-health/g11-source-data-repair.cjs
           node --check astra/data-health/g11-decision-dump.cjs
+          node --check astra/certification/g11-carry-forward-guard.cjs
+          node --check astra/certification/g11-guard37-evidence.cjs
           node --check astra/certification/g11-repair-finalize.cjs
           node --check astra/certification/g11-repair-destructive.cjs
           node --check astra/certification/g11-certify.cjs
@@ -87,15 +93,18 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --test tests/astra/g11-data-health.test.cjs tests/astra/g11-source-repair.test.cjs | tee /tmp/g11.tap
+          node --test tests/astra/g11-data-health.test.cjs tests/astra/g11-source-repair.test.cjs tests/astra/g11-carry-forward-guard.test.cjs | tee /tmp/g11.tap
           N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g11.tap)
           P=$(awk '/^# pass /{n=$3} END{print n}' /tmp/g11.tap)
           F=$(awk '/^# fail /{n=$3} END{print n}' /tmp/g11.tap)
-          test "$N" -ge 37
+          test "$N" -ge 41
           test "$P" = "$N"
           test "$F" = 0
           echo G11_TEST_COUNT=$N >> "$GITHUB_ENV"
           echo G11_TEST_PASS=1 >> "$GITHUB_ENV"
+
+      - name: Generate guard 37 evidence
+        run: node astra/certification/g11-guard37-evidence.cjs
 
       - name: Full G11 recertification
         run: node astra/certification/g11-certify.cjs
@@ -129,6 +138,8 @@ jobs:
           const sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json');
           const id=r('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json');
           const d=r('docs/astra/G11_REPAIR_DESTRUCTIVE_REVIEW.json');
+          const guard=r('docs/astra/G11_GUARD37_EVIDENCE.json');
+          if(guard.status!=='PASS'||guard.selfTests?.passed!==guard.selfTests?.total)throw Error('guard37 evidence not PASS');
           if(g.gapCount!==g.activeUniverse-g.currentValidCanonicalUniverse||g.accounting.total!==g.gapCount||g.accounting.closes!==true)throw Error('gap accounting does not close');
           if(sr.finalTaxonomy.UNEXPLAINED_NULL!==0)throw Error('S/R unexplained null remains');
           if(p.legacyNetworkCalls!==0||p.productionCutover!==false)throw Error('network/cutover violation');
@@ -170,6 +181,6 @@ jobs:
           node <<'NODE'
           const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
           const gate=r('04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G11');
-          const snap=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),m=r('docs/astra/G11_DATA_HEALTH_METRICS.json'),id=r('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json'),repair=r('docs/astra/G11_CURRENT_DATA_REPAIR_REPORT.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json'),t=r('docs/astra/G11_TEST_EVIDENCE.json'),d=r('docs/astra/G11_REPAIR_DESTRUCTIVE_REVIEW.json');
-          console.log('ASTRA_G11_REPAIR_FINAL_SUMMARY '+JSON.stringify({status:gate.status,overall:snap.overallStatus,expected:m.latestExpectedSession,available:m.latestAvailableSession,intended:snap.universeCount,active:m.activeUniverse.count,searchable:m.searchReadiness.resolvedActive,current:m.currentCanonicalSecurities.numerator,decisionReady:m.decisionPipeline.pipelineReadySecurities,regimeReady:m.regimeInputs.analyzed,identityResolved:id.resolved,identityTotal:id.reviewed,identityUnresolved:id.unresolved,baselineStaleResolved:st.baselineResolved,baselineStaleTotal:st.baselineTotal,baselineStaleUnresolved:st.baselineUnresolved,currentStale:st.records.length,feature:repair.finalCertification?.featureReadiness,historyDepth:m.historyDepth,indicators:m.indicators,sr:sr.finalTaxonomy,regimeStatus:m.regimeInputs.status,production:repair.finalCertification?.productionStrategy,opportunities:p.opportunities,decisionSnapshotId:p.decisionSnapshotId,decisionSnapshotHash:p.semanticDecisionHash,legacyNetworkCalls:p.legacyNetworkCalls,critical:i.criticalUnresolved,high:i.highProductionRelevantUnresolved??i.highUnresolved,tests:t.g11Tests,destructive:d.result,g12:t.g12Status}));
+          const snap=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),m=r('docs/astra/G11_DATA_HEALTH_METRICS.json'),id=r('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json'),repair=r('docs/astra/G11_CURRENT_DATA_REPAIR_REPORT.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json'),t=r('docs/astra/G11_TEST_EVIDENCE.json'),d=r('docs/astra/G11_REPAIR_DESTRUCTIVE_REVIEW.json'),guard=r('docs/astra/G11_GUARD37_EVIDENCE.json');
+          console.log('ASTRA_G11_REPAIR_FINAL_SUMMARY '+JSON.stringify({status:gate.status,overall:snap.overallStatus,expected:m.latestExpectedSession,available:m.latestAvailableSession,intended:snap.universeCount,active:m.activeUniverse.count,searchable:m.searchReadiness.resolvedActive,current:m.currentCanonicalSecurities.numerator,decisionReady:m.decisionPipeline.pipelineReadySecurities,regimeReady:m.regimeInputs.analyzed,identityResolved:id.resolved,identityTotal:id.reviewed,identityUnresolved:id.unresolved,baselineStaleResolved:st.baselineResolved,baselineStaleTotal:st.baselineTotal,baselineStaleUnresolved:st.baselineUnresolved,currentStale:st.records.length,feature:repair.finalCertification?.featureReadiness,historyDepth:m.historyDepth,indicators:m.indicators,sr:sr.finalTaxonomy,regimeStatus:m.regimeInputs.status,production:repair.finalCertification?.productionStrategy,opportunities:p.opportunities,decisionSnapshotId:p.decisionSnapshotId,decisionSnapshotHash:p.semanticDecisionHash,legacyNetworkCalls:p.legacyNetworkCalls,critical:i.criticalUnresolved,high:i.highProductionRelevantUnresolved??i.highUnresolved,tests:t.g11Tests,guard37:guard.status,guardSelfTests:guard.selfTests,destructive:d.result,g12:t.g12Status}));
           NODE
