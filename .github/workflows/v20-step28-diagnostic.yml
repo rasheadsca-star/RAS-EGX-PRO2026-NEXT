@@ -113,6 +113,20 @@ jobs:
       - name: Step 28G - Native current regression
         run: node scripts/v20/native-current-regression.cjs
 
+      - name: Capture 28G evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v20-step28g-evidence
+          if-no-files-found: error
+          path: |
+            data/v20/native-current-regression.json
+            data/v20/native-current.json
+            data/v20/full-market-native-selection.json
+            data/v20/native-explainability.json
+            data/v20/native-model-freeze.json
+            data/v20/decision-intelligence-policy.json
+
       - name: Step 28H - Archive native shadow
         env:
           V20_NATIVE_FORWARD_NETWORK_REFRESH: "true"
