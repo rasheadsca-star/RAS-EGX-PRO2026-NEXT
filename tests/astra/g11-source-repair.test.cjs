@@ -59,5 +59,5 @@ test('repair implementation never imports G07 migration payloads or legacy decis
 test('repair implementation caps source rows at the expected session and has no carry-forward primitive', () => {
   const source = fs.readFileSync(path.join(ROOT, 'astra/data-health/g11-source-data-repair.cjs'), 'utf8');
   assert.match(source, /fetched\.sessions\.filter\(\(row\) => row\.date <= expected\)/);
-  assert.equal(/carryForward|previous.*as.*current|copyPrevious/i.test(source), false);
+  assert.equal(/carryForward|copyPrevious|labelPreviousAsCurrent|synthesizeCurrent/i.test(source), false);
 });
