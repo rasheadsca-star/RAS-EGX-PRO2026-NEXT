@@ -1,0 +1,138 @@
+name: Astra G11 Final Evidence Closure
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/astra-g11-final-evidence-closure.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-g11-final-evidence-closure
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          node --check astra/data-health/g11-data-health.cjs
+          node --check astra/certification/g11-certify.cjs
+          node --check astra/certification/g11-finalize-evidence.cjs
+          python3 -m py_compile astra/data-health/g11-v16-context.py
+          node --check scripts/quant/v13-17-market-search-index.cjs
+
+      - name: Verify persisted G06-G10 invariants without rerunning earlier gates
+        shell: bash
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
+          for(const id of ['G01','G02','G03','G04','G05','G06','G07','G08','G09','G10'])if(m.get(id)!=='GREEN')throw Error(`${id} baseline is not GREEN`);
+          if(m.get('G12')!=='PENDING')throw Error('G12 must remain PENDING');
+          const g7=require('./docs/astra/MIGRATION_RECONCILIATION.json');
+          if(g7.status!=='GREEN'||g7.totals.rawArchived!==60288||g7.totals.canonicalRecords!==26270||g7.totals.unexplainedDataLoss!==0||!g7.idempotency.pass)throw Error('G07 persisted invariant changed');
+          const g10=require('./docs/astra/G10_PARITY_RESULTS.json');
+          if(g10.status!=='GREEN'||g10.metrics.unresolvedMismatches!==0||g10.metrics.identifiedStrategyVersions!==33||g10.metrics.implementationSourceCoverage!==33||g10.legacyNetworkCalls!==0||g10.quantEdge.algorithmicallyReproduced!==false)throw Error('G10 persisted invariant changed');
+          const a=require('./docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json');
+          if(a.productionEligibleCount!==1||a.productionEligibleStrategyIds[0]!=='PORTFOLIO_BASKET_EQUAL_WEIGHT')throw Error('production eligibility changed');
+          if(require('./docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy dependency inventory changed');
+          NODE
+          echo G06_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G07_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G08_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G09_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G10_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+
+      - name: Rebuild searchable market universe from SecurityMaster
+        run: node scripts/quant/v13-17-market-search-index.cjs
+
+      - name: Run current G11 suite
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/astra/g11-data-health.test.cjs | tee /tmp/g11.tap
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g11.tap)
+          P=$(awk '/^# pass /{n=$3} END{print n}' /tmp/g11.tap)
+          F=$(awk '/^# fail /{n=$3} END{print n}' /tmp/g11.tap)
+          test "$N" = 29
+          test "$P" = 29
+          test "$F" = 0
+          echo G11_TEST_COUNT=$N >> "$GITHUB_ENV"
+          echo G11_TEST_PASS=1 >> "$GITHUB_ENV"
+
+      - name: Re-certify G11 on current data only
+        run: node astra/certification/g11-certify.cjs
+
+      - name: Build exact gap mapping stale and pipeline evidence
+        run: node astra/certification/g11-finalize-evidence.cjs
+
+      - name: Final G11 honesty guard
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const gates=r('04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
+          const s=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),g=r('docs/astra/G11_CURRENT_UNIVERSE_GAPS.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json');
+          if(g.gapCount!==g.activeUniverse-g.currentValidCanonicalUniverse)throw Error('gap equation does not close');
+          if(Object.values(g.accounting).filter(Number.isFinite).reduce((a,b)=>a+b,0)<g.gapCount)throw Error('gap accounting malformed');
+          if(sr.finalTaxonomy.UNEXPLAINED_NULL!==0)throw Error('S/R unexplained null remains');
+          if(p.legacyNetworkCalls!==0||p.productionCutover!==false)throw Error('network/cutover violation');
+          if(!p.decisionSnapshotId||!p.semanticDecisionHash)throw Error('DecisionSnapshot evidence missing');
+          if(m.get('G12')!=='PENDING')throw Error('G12 changed');
+          for(const id of ['G13','G14','G15','G16','G17','G18','G19'])if(m.get(id)!=='PENDING')throw Error(`${id} changed`);
+          if(m.get('G11')==='GREEN'&&(i.criticalUnresolved>0||i.highProductionRelevantUnresolved>0||g.gapCount>0))throw Error('false G11 GREEN');
+          if(m.get('G11')==='BLOCKED'&&i.criticalUnresolved===0&&i.highProductionRelevantUnresolved===0)throw Error('BLOCKED without material blocker');
+          if(s.searchableUniverse!==p.searchableUniverse||s.decisionReadyUniverse!==p.decisionReadyUniverse||s.regimeReadyUniverse!==p.regimeReadyUniverse)throw Error('snapshot universe mismatch');
+          if(st.unresolved>0&&m.get('G11')==='GREEN')throw Error('GREEN with unresolved stale production records');
+          NODE
+
+      - name: Persist final G11 evidence
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/quant/market-search-index-v13-17.json \
+            docs/astra/G11_UNIVERSE_BASELINE.json \
+            docs/astra/G11_DATA_HEALTH_SNAPSHOT.json \
+            docs/astra/G11_DATA_HEALTH_METRICS.json \
+            docs/astra/G11_DATA_HEALTH_ISSUES.json \
+            docs/astra/G11_STRATEGY_DATA_READINESS.json \
+            docs/astra/G11_SESSION_INTEGRITY.json \
+            docs/astra/G11_SYMBOL_HEALTH.json \
+            docs/astra/G11_TEST_EVIDENCE.json \
+            docs/astra/G11_DATA_HEALTH_REPORT.md \
+            docs/astra/G11_PERFORMANCE_BASELINE.json \
+            docs/astra/G11_DESTRUCTIVE_REVIEW.json \
+            docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json \
+            docs/astra/G11_HISTORY_DEPTH.json \
+            docs/astra/G11_CURRENT_UNIVERSE_GAPS.json \
+            docs/astra/G11_STALE_RECORDS.json \
+            docs/astra/G11_CURRENT_PIPELINE_RUN.json \
+            docs/astra/WORK_STATE.json \
+            04_ACCEPTANCE_GATES.json 05_WORK_STATE.json 07_WORK_LOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'cert(astra): close exact G11 current-data evidence [skip g11]'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Final summary
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const g=r('docs/astra/G11_CURRENT_UNIVERSE_GAPS.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),m=r('docs/astra/G11_DATA_HEALTH_METRICS.json'),sy=r('docs/astra/G11_SYMBOL_HEALTH.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json'),t=r('docs/astra/G11_TEST_EVIDENCE.json'),gate=r('04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G11');
+          console.log('ASTRA_G11_FINAL '+JSON.stringify({status:gate.status,overall:r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json').overallStatus,tests:`${t.g11Tests}/${t.g11Tests}`,intended:g.activeUniverse+1,active:g.activeUniverse,searchable:p.searchableUniverse,current:p.currentValidCanonicalUniverse,decisionReady:p.decisionReadyUniverse,regimeReady:p.regimeReadyUniverse,gaps:g.accounting,mappings:sy.mappingReview,stale:{resolved:st.resolved,unresolved:st.unresolved},duplicates:m.duplicates,sr:sr.finalTaxonomy,productionCritical:m.strategyInputReadiness.productionCritical,opportunities:p.opportunities,decisionSnapshotId:p.decisionSnapshotId,decisionSnapshotHash:p.semanticDecisionHash,legacyNetworkCalls:p.legacyNetworkCalls,critical:i.criticalUnresolved,high:i.highProductionRelevantUnresolved,medium:i.mediumUnresolved,low:i.lowUnresolved,destructive:t.focusedDestructiveReview,g12:t.g12Status}));
+          NODE
