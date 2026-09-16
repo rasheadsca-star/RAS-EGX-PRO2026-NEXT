@@ -7,8 +7,12 @@ on:
       - '.github/workflows/astra-g11-current-data-repair.yml'
       - 'tests/astra/g11-source-repair.test.cjs'
       - 'tests/astra/g11-carry-forward-guard.test.cjs'
+      - 'tests/astra/g11-source-dispositions.test.cjs'
+      - 'tests/astra/g11-derived-build-failures.test.cjs'
       - 'astra/certification/g11-carry-forward-guard.cjs'
       - 'astra/certification/g11-guard37-evidence.cjs'
+      - 'astra/certification/g11-source-dispositions.cjs'
+      - 'astra/certification/g11-derived-build-failures.cjs'
 
 permissions:
   contents: write
@@ -46,6 +50,8 @@ jobs:
           node --check astra/data-health/g11-decision-dump.cjs
           node --check astra/certification/g11-carry-forward-guard.cjs
           node --check astra/certification/g11-guard37-evidence.cjs
+          node --check astra/certification/g11-source-dispositions.cjs
+          node --check astra/certification/g11-derived-build-failures.cjs
           node --check astra/certification/g11-repair-finalize.cjs
           node --check astra/certification/g11-repair-destructive.cjs
           node --check astra/certification/g11-certify.cjs
@@ -66,7 +72,7 @@ jobs:
           if(g10.status!=='GREEN'||g10.metrics.unresolvedMismatches!==0||g10.metrics.identifiedStrategyVersions!==33||g10.metrics.implementationSourceCoverage!==33||g10.legacyNetworkCalls!==0||g10.quantEdge.algorithmicallyReproduced!==false)throw Error('G10 persisted invariant changed');
           const a=r('docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json');
           if(a.productionEligibleCount!==1||a.productionEligibleStrategyIds[0]!=='PORTFOLIO_BASKET_EQUAL_WEIGHT')throw Error('production eligibility changed');
-          if(r('docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy dependency inventory changed');
+          if(r('docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy runtime dependency inventory changed');
           NODE
           echo G06_REGRESSION_PASS=1 >> "$GITHUB_ENV"
           echo G07_REGRESSION_PASS=1 >> "$GITHUB_ENV"
@@ -89,15 +95,20 @@ jobs:
           node scripts/quant/v13-7-stock-intelligence.cjs
           node scripts/quant/v13-17-market-search-index.cjs
 
+      - name: Classify unresolved source stale and derived-build cases
+        run: |
+          node astra/certification/g11-source-dispositions.cjs
+          node astra/certification/g11-derived-build-failures.cjs
+
       - name: Run complete G11 suite plus targeted repair guards
         shell: bash
         run: |
           set -o pipefail
-          node --test tests/astra/g11-data-health.test.cjs tests/astra/g11-source-repair.test.cjs tests/astra/g11-carry-forward-guard.test.cjs | tee /tmp/g11.tap
+          node --test tests/astra/g11-data-health.test.cjs tests/astra/g11-source-repair.test.cjs tests/astra/g11-carry-forward-guard.test.cjs tests/astra/g11-source-dispositions.test.cjs tests/astra/g11-derived-build-failures.test.cjs | tee /tmp/g11.tap
           N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g11.tap)
           P=$(awk '/^# pass /{n=$3} END{print n}' /tmp/g11.tap)
           F=$(awk '/^# fail /{n=$3} END{print n}' /tmp/g11.tap)
-          test "$N" -ge 41
+          test "$N" -ge 47
           test "$P" = "$N"
           test "$F" = 0
           echo G11_TEST_COUNT=$N >> "$GITHUB_ENV"
@@ -139,9 +150,12 @@ jobs:
           const id=r('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json');
           const d=r('docs/astra/G11_REPAIR_DESTRUCTIVE_REVIEW.json');
           const guard=r('docs/astra/G11_GUARD37_EVIDENCE.json');
+          const build=r('docs/astra/G11_DERIVED_BUILD_FAILURES.json');
           if(guard.status!=='PASS'||guard.selfTests?.passed!==guard.selfTests?.total)throw Error('guard37 evidence not PASS');
+          if(build.accountingCloses!==true||build.unexplainedBuildFailures!==0)throw Error('unexplained derived build failure remains');
+          if(id.finalDispositionAccountingCloses!==true||id.reviewed!==42)throw Error('42-case identity disposition accounting does not close');
           if(g.gapCount!==g.activeUniverse-g.currentValidCanonicalUniverse||g.accounting.total!==g.gapCount||g.accounting.closes!==true)throw Error('gap accounting does not close');
-          if(sr.finalTaxonomy.UNEXPLAINED_NULL!==0)throw Error('S/R unexplained null remains');
+          if(sr.finalTaxonomy.UNEXPLAINED_NULL!==0||sr.finalTaxonomy.COMPUTATION_FAILED!==0)throw Error('S/R unexplained computation failure remains');
           if(p.legacyNetworkCalls!==0||p.productionCutover!==false)throw Error('network/cutover violation');
           if(!p.decisionSnapshotId||!p.semanticDecisionHash)throw Error('DecisionSnapshot evidence missing');
           if(id.sourcePolicy.fuzzyCompanyNameAuthoritative!==false)throw Error('fuzzy source identity policy enabled');
@@ -181,6 +195,6 @@ jobs:
           node <<'NODE'
           const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
           const gate=r('04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G11');
-          const snap=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),m=r('docs/astra/G11_DATA_HEALTH_METRICS.json'),id=r('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json'),repair=r('docs/astra/G11_CURRENT_DATA_REPAIR_REPORT.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json'),t=r('docs/astra/G11_TEST_EVIDENCE.json'),d=r('docs/astra/G11_REPAIR_DESTRUCTIVE_REVIEW.json'),guard=r('docs/astra/G11_GUARD37_EVIDENCE.json');
-          console.log('ASTRA_G11_REPAIR_FINAL_SUMMARY '+JSON.stringify({status:gate.status,overall:snap.overallStatus,expected:m.latestExpectedSession,available:m.latestAvailableSession,intended:snap.universeCount,active:m.activeUniverse.count,searchable:m.searchReadiness.resolvedActive,current:m.currentCanonicalSecurities.numerator,decisionReady:m.decisionPipeline.pipelineReadySecurities,regimeReady:m.regimeInputs.analyzed,identityResolved:id.resolved,identityTotal:id.reviewed,identityUnresolved:id.unresolved,baselineStaleResolved:st.baselineResolved,baselineStaleTotal:st.baselineTotal,baselineStaleUnresolved:st.baselineUnresolved,currentStale:st.records.length,feature:repair.finalCertification?.featureReadiness,historyDepth:m.historyDepth,indicators:m.indicators,sr:sr.finalTaxonomy,regimeStatus:m.regimeInputs.status,production:repair.finalCertification?.productionStrategy,opportunities:p.opportunities,decisionSnapshotId:p.decisionSnapshotId,decisionSnapshotHash:p.semanticDecisionHash,legacyNetworkCalls:p.legacyNetworkCalls,critical:i.criticalUnresolved,high:i.highProductionRelevantUnresolved??i.highUnresolved,tests:t.g11Tests,guard37:guard.status,guardSelfTests:guard.selfTests,destructive:d.result,g12:t.g12Status}));
+          const snap=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),m=r('docs/astra/G11_DATA_HEALTH_METRICS.json'),id=r('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json'),repair=r('docs/astra/G11_CURRENT_DATA_REPAIR_REPORT.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json'),t=r('docs/astra/G11_TEST_EVIDENCE.json'),d=r('docs/astra/G11_REPAIR_DESTRUCTIVE_REVIEW.json'),guard=r('docs/astra/G11_GUARD37_EVIDENCE.json'),build=r('docs/astra/G11_DERIVED_BUILD_FAILURES.json');
+          console.log('ASTRA_G11_REPAIR_FINAL_SUMMARY '+JSON.stringify({status:gate.status,overall:snap.overallStatus,expected:m.latestExpectedSession,available:m.latestAvailableSession,intended:snap.universeCount,active:m.activeUniverse.count,searchable:m.searchReadiness.resolvedActive,current:m.currentCanonicalSecurities.numerator,decisionReady:m.decisionPipeline.pipelineReadySecurities,regimeReady:m.regimeInputs.analyzed,identityResolved:id.resolved,identityTotal:id.reviewed,identityUnresolved:id.unresolved,identityDispositionCounts:id.finalDispositionCounts,identityProductionBlockers:id.productionRelevantBlockers,baselineStaleResolved:repair.finalStaleDisposition?.repaired,baselineStaleTotal:repair.finalStaleDisposition?.baselineTotal,baselineStaleUnresolved:repair.finalStaleDisposition?.remaining,currentStale:st.records.length,feature:repair.finalCertification?.featureReadiness,stockIntelligenceBuilt:build.stockIntelligenceRecordsBuilt,unexplainedBuildFailures:build.unexplainedBuildFailures,historyDepth:m.historyDepth,indicators:m.indicators,sr:sr.finalTaxonomy,regimeStatus:m.regimeInputs.status,production:repair.finalCertification?.productionStrategy,opportunities:p.opportunities,decisionSnapshotId:p.decisionSnapshotId,decisionSnapshotHash:p.semanticDecisionHash,legacyNetworkCalls:p.legacyNetworkCalls,critical:i.criticalUnresolved,high:i.highProductionRelevantUnresolved??i.highUnresolved,tests:t.g11Tests,guard37:guard.status,guardSelfTests:guard.selfTests,destructive:d.result,g12:t.g12Status}));
           NODE
