@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const A = require('../../scripts/history/adapters/starta-exact-egx-adapter.cjs');
+const G = require('../../astra/certification/g11-carry-forward-guard.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 
@@ -56,8 +57,8 @@ test('repair implementation never imports G07 migration payloads or legacy decis
   assert.equal(/quant-edge|v18-live|v19-egx-chat-gpt|sepax-strategy-stable|egx-tfe-v20-fusion-rc2/i.test(source), false);
 });
 
-test('repair implementation caps source rows at the expected session and has no carry-forward primitive', () => {
+test('repair implementation caps source rows at the expected session and has no executable carry-forward behavior', () => {
   const source = fs.readFileSync(path.join(ROOT, 'astra/data-health/g11-source-data-repair.cjs'), 'utf8');
   assert.match(source, /fetched\.sessions\.filter\(\(row\) => row\.date <= expected\)/);
-  assert.equal(/carryForward|copyPrevious|labelPreviousAsCurrent|synthesizeCurrent/i.test(source), false);
+  assert.deepEqual(G.analyzeCarryForwardSource(source), []);
 });
