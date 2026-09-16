@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "astra-g11-reviewed-import-validation-1",
+  "expectedSession": "2026-09-16",
+  "sourceAttachment": "EGX_G11_APPROVED_REVIEWED_IMPORT_2026-09-16",
+  "policy": {
+    "branch": "astra/g11-guard37-recovery-20260916",
+    "approvedImportPath": "data/history-fallback-import.json -> scripts/history/approved-fallback-importer.cjs",
+    "rowIsolation": true,
+    "carryForwardForbidden": true,
+    "syntheticValuesForbidden": true,
+    "acceptanceCriteriaUnchanged": true
+  },
+  "records": [
+    {
+      "ticker": "AIHC",
+      "disposition": "ACCEPTED",
+      "reason": "Canonical AIHC is active in the recovery-branch symbol map; session is exactly 2026-09-16; OHLC passes the repository validator; exact current volume 27,971,185 is independently visible on Mubasher; Investing Saudi shows the same session O=0.760 H=0.783 L=0.758 C=0.780. No previous-session carry-forward is used.",
+      "canonicalTicker": "AIHC",
+      "sourceTicker": "AIHC",
+      "session": "2026-09-16",
+      "ohlcInvariant": "PASS",
+      "symbolIdentity": "PASS_EXACT",
+      "volumeEvidence": "PASS_EXACT",
+      "noCarryForward": "PASS",
+      "evidenceUrls": [
+        "https://sa.investing.com/equities/arabia-inv-development---cash-historical-data",
+        "https://www.mubasher.info/markets/EGX/stocks/AIHC"
+      ]
+    },
+    {
+      "ticker": "ALRA",
+      "disposition": "REJECTED",
+      "reason": "Canonical ALRA -> current public source ticker AIFI identity is explicitly supported, and OHLC passes, but the proposed exact volume 1,322,104 is not proven as the 2026-09-16 session volume. The visible Investing session row reports 1.32M, while 1,322,104 is presented as average daily trading volume. Exact per-session volume evidence is therefore insufficient for the proposed reviewed row.",
+      "canonicalTicker": "ALRA",
+      "sourceTicker": "AIFI",
+      "session": "2026-09-16",
+      "ohlcInvariant": "PASS",
+      "symbolIdentity": "PASS_EXPLICIT_ALIAS",
+      "volumeEvidence": "FAIL_EXACT_SESSION_PROVENANCE",
+      "noCarryForward": "PASS",
+      "evidenceUrls": [
+        "https://sa.investing.com/equities/atlas-for-land-recl---agri-proc-historical-data",
+        "https://www.mubasher.info/markets/EGX/stocks/AIFI",
+        "https://www.atlasegypt.com/about/company-overview.html"
+      ]
+    },
+    {
+      "ticker": "NAPR",
+      "disposition": "REJECTED",
+      "reason": "The proposed 2026-09-16 row fails the repository OHLC invariant because low=35.19 is above open=35.09. The repository validator explicitly rejects low_above_open. The guard is not weakened even though public pages display the same values.",
+      "canonicalTicker": "NAPR",
+      "sourceTicker": "NAPR",
+      "session": "2026-09-16",
+      "ohlcInvariant": "FAIL_LOW_ABOVE_OPEN",
+      "symbolIdentity": "PASS_EXACT",
+      "volumeEvidence": "PASS_EXACT",
+      "noCarryForward": "PASS",
+      "evidenceUrls": [
+        "https://www.mubasher.info/markets/EGX/stocks/NAPR/volume-statistics",
+        "https://sa.investing.com/equities/national-printing-historical-data"
+      ]
+    }
+  ],
+  "acceptedTickers": ["AIHC"],
+  "rejectedTickers": ["ALRA", "NAPR"]
+}
