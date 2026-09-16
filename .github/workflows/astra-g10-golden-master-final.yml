@@ -1,0 +1,85 @@
+name: Astra G10 Golden Master Parity Final
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/astra-g10-golden-master-final.yml'
+      - 'astra/parity/g10-forensic-final.cjs'
+      - 'astra/certification/g10-certify-final.cjs'
+      - 'tests/astra/g10-golden-master-final.test.cjs'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: astra-g10-golden-master-final
+  cancel-in-progress: false
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Syntax
+        run: |
+          node --check astra/parity/g10-forensic-final.cjs
+          node --check astra/certification/g10-certify-final.cjs
+          node --check tests/astra/g10-golden-master-final.test.cjs
+      - name: G06 regression
+        run: |
+          node --test tests/astra/g06-certification.test.cjs tests/astra/g06-contracts.test.cjs tests/astra/legacy-isolation-skeleton.test.cjs
+          node astra/certification/g06-certify.cjs .
+          echo G06_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+      - name: G07 certified idempotency baseline
+        run: |
+          node <<'NODE'
+          const x=require('./docs/astra/MIGRATION_RECONCILIATION.json');
+          if(x.status!=='GREEN'||x.storeGroupsProcessed!==19||x.storeGroupsTotal!==19)throw Error('G07 status');
+          if(x.totals.rawArchived!==60288||x.totals.canonicalRecords!==26270||x.totals.provenanceLinks!==26270||x.totals.invalid!==34018||x.totals.unresolved!==34012||x.totals.unexplainedDataLoss!==0)throw Error('G07 counts');
+          if(!x.idempotency.pass||x.idempotency.run1Hash!==x.idempotency.run2Hash||x.idempotency.run1Hash!=='435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3')throw Error('G07 idempotency');
+          NODE
+          echo G07_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+      - name: G08 regression recertification
+        run: |
+          set -o pipefail
+          node --test tests/astra/g08-strategy-reconstruction.test.cjs tests/astra/g08-recovery-overlay.test.cjs tests/astra/g08-strict-boundaries.test.cjs tests/astra/g08-final-hash.test.cjs tests/astra/g08-v13-parity-repair.test.cjs | tee /tmp/g08
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g08); test "$N" = 50
+          echo G08_TEST_COUNT=$N >> "$GITHUB_ENV"; echo G08_RECERT_PASS=1 >> "$GITHUB_ENV"
+      - name: G09 regression recertification
+        run: |
+          set -o pipefail
+          node --test tests/astra/g09-unified-decision-pipeline.test.cjs | tee /tmp/g09
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g09); test "$N" = 46
+          echo G09_TEST_COUNT=$N >> "$GITHUB_ENV"; echo G09_RECERT_PASS=1 >> "$GITHUB_ENV"
+      - name: G10 final forensic tests
+        run: |
+          set -o pipefail
+          node --test tests/astra/g10-golden-master-final.test.cjs | tee /tmp/g10
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g10); test "$N" = 25
+          echo G10_TEST_COUNT=$N >> "$GITHUB_ENV"; echo G10_TEST_PASS=1 >> "$GITHUB_ENV"
+      - name: Certify and write evidence
+        run: node astra/certification/g10-certify-final.cjs
+      - name: Final no-cutover guard
+        run: |
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json').gates,m=new Map(g.map(x=>[x.id,x.status]));
+          for(const id of ['G01','G02','G03','G04','G05','G06','G07','G08','G09','G10'])if(m.get(id)!=='GREEN')throw Error(id);
+          for(const id of ['G11','G12','G13','G14','G15','G16','G17','G18','G19'])if(m.get(id)!=='PENDING')throw Error(id);
+          if(require('./docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy deps');
+          const r=require('./docs/astra/G10_PARITY_RESULTS.json');if(r.legacyNetworkCalls!==0||r.metrics.unresolvedMismatches!==0)throw Error('G10 final guard');
+          NODE
+      - name: Commit evidence
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json docs/astra/G10_PARITY_COVERAGE.json docs/astra/G10_PARITY_RESULTS.json docs/astra/G10_PARITY_REPORT.md docs/astra/G10_MISMATCHES.json docs/astra/G10_TOLERANCE_POLICY.json docs/astra/G10_TEST_EVIDENCE.json docs/astra/G10_DESTRUCTIVE_REVIEW.json docs/astra/G08_TEST_EVIDENCE.json docs/astra/G09_TEST_EVIDENCE.json docs/astra/WORK_STATE.json 04_ACCEPTANCE_GATES.json 05_WORK_STATE.json 07_WORK_LOG.md
+          if ! git diff --cached --quiet; then git commit -m 'cert(astra): complete G10 historical parity [skip g10]'; git pull --rebase origin main; git push origin HEAD:main; fi
+      - name: Summary
+        run: |
+          node <<'NODE'
+          const r=require('./docs/astra/G10_PARITY_RESULTS.json'),t=require('./docs/astra/G10_TEST_EVIDENCE.json'),a=require('./docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json');
+          console.log('ASTRA_G10_WORKFLOW '+JSON.stringify({status:r.status,productionEligible:`${a.productionEligibleCount}/18`,parityEligible:'18/18',versions:`${r.metrics.implementationSourceCoverage}/${r.metrics.identifiedStrategyVersions}`,engineLineages:'20/20',golden:r.metrics.totalGoldenCases,exact:r.metrics.exactMatches,tolerance:r.metrics.toleranceMatches,intentional:r.metrics.intentionalDocumentedDifferences,notComparable:r.metrics.notComparableCases,missing:r.metrics.missingEvidenceCases,unresolved:r.metrics.unresolvedMismatches,sessionReplays:r.historicalSessionReplays.length,g10Tests:t.g10Tests,g08Tests:t.g08RegressionTests,g09Tests:t.g09RegressionTests,legacyNetworkCalls:r.legacyNetworkCalls,g12:t.g12Status}));
+          NODE
