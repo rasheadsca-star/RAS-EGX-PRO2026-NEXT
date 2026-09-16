@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "astra-g11-source-precedence-1",
+  "generatedAt": "2026-09-16T17:24:00Z",
+  "expectedSession": "2026-09-16",
+  "rules": [
+    {
+      "priority": 1,
+      "sourceId": "starta_egx_exact",
+      "role": "PRIMARY_APPROVED_EXISTING",
+      "requirements": [
+        "exact EGX source identity",
+        "expected-session row",
+        "valid OHLCV",
+        "no ISIN conflict"
+      ]
+    },
+    {
+      "priority": 2,
+      "sourceId": "egx_official_public_pages",
+      "role": "APPROVED_FALLBACK",
+      "requirements": [
+        "exact symbol evidence",
+        "explicit expected-session date",
+        "valid OHLCV"
+      ]
+    },
+    {
+      "priority": 3,
+      "sourceId": "optional_licensed_eod_provider",
+      "role": "APPROVED_FALLBACK_IF_CONFIGURED",
+      "requirements": [
+        "configured project secret",
+        "exact source symbol when supplied",
+        "expected-session row",
+        "valid OHLCV"
+      ]
+    },
+    {
+      "priority": 4,
+      "sourceId": "mubasher_public_stock_pages",
+      "role": "APPROVED_FALLBACK",
+      "requirements": [
+        "exact EGX stock route",
+        "explicit expected-session date",
+        "valid OHLCV"
+      ]
+    },
+    {
+      "priority": 5,
+      "sourceId": "approved_reviewed_import",
+      "role": "APPROVED_FALLBACK",
+      "requirements": [
+        "approved=true",
+        "symbolVerified=true",
+        "allowed source",
+        "expected-session row",
+        "valid OHLCV"
+      ]
+    },
+    {
+      "priority": 99,
+      "sourceId": "UNAVAILABLE",
+      "role": "EXPLICIT_DIAGNOSTIC",
+      "requirements": [
+        "never carry forward",
+        "never use legacy decisions",
+        "never silently null"
+      ]
+    }
+  ],
+  "sourceMixing": {
+    "allowed": false,
+    "reason": "G11 current canonical OHLCV is atomic per security/session. Derived turnover close*volume is downstream and explicitly identified, not silent source blending."
+  },
+  "disagreementPolicy": {
+    "materialCloseTolerancePct": 0.25,
+    "materialCloseToleranceAbsoluteEgp": 0.02,
+    "rule": "If two approved current sources materially disagree after session/unit validation, persist neither fallback row and emit a blocker."
+  }
+}

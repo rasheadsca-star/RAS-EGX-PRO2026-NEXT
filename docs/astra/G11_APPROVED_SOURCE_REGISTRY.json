@@ -1,0 +1,200 @@
+{
+  "schemaVersion": "astra-g11-approved-source-registry-1",
+  "generatedAt": "2026-09-16T17:24:00Z",
+  "expectedSession": "2026-09-16",
+  "policy": "Only APPROVED_EXISTING or APPROVED_FALLBACK sources may populate current canonical truth. No candidate is silently promoted.",
+  "records": [
+    {
+      "sourceId": "starta_egx_exact",
+      "classification": "APPROVED_EXISTING",
+      "sourceType": "public EGX-scoped exact-symbol API",
+      "authoritativeScope": "exact EGX security identity + OHLCV fallback used by certified G11 repair",
+      "currentSessionCapability": true,
+      "ohlcSupport": true,
+      "volumeSupport": true,
+      "turnoverSupport": "derived close*volume downstream; source turnover not required",
+      "historicalDepth": "up to configured 5y/2000 rows",
+      "securityCoverage": "partial; exact /egx/stock identity required",
+      "symbolScheme": "EGX ticker exact",
+      "existingAdapter": "scripts/history/adapters/starta-exact-egx-adapter.cjs",
+      "validationStatus": "G11_EXACT_SYMBOL_OHLCV_VALIDATION_ACTIVE",
+      "currentAvailability": true,
+      "credentialsPermissionRequirement": "none",
+      "productionApprovalEvidence": [
+        "astra/data-health/g11-source-data-repair.cjs",
+        "data/history-starta-gap-config.json",
+        "docs/astra/G11_SOURCE_IDENTITY_REPAIR.json"
+      ]
+    },
+    {
+      "sourceId": "egx_official_public_pages",
+      "classification": "APPROVED_FALLBACK",
+      "sourceType": "official public HTML/export when available",
+      "authoritativeScope": "official EGX public reference/current rows only when exact symbol + explicit session + OHLCV parse succeeds",
+      "currentSessionCapability": "conditional",
+      "ohlcSupport": "conditional",
+      "volumeSupport": "conditional",
+      "turnoverSupport": "conditional",
+      "historicalDepth": "page/export dependent",
+      "securityCoverage": "page dependent",
+      "symbolScheme": "EGX ticker",
+      "existingAdapter": "scripts/history/adapters/g11-approved-current-source-adapter.cjs",
+      "validationStatus": "STRICT_CURRENT_ROW_PROBE_REQUIRED",
+      "currentAvailability": "probed during this run",
+      "credentialsPermissionRequirement": "none",
+      "productionApprovalEvidence": [
+        "data/historical-source-registry.json",
+        "data/history-gap-diagnostics-config.json",
+        "scripts/history/approved-fallback-importer.cjs"
+      ]
+    },
+    {
+      "sourceId": "mubasher_public_stock_pages",
+      "classification": "APPROVED_FALLBACK",
+      "sourceType": "public delayed HTML",
+      "authoritativeScope": "cross-check/fallback only with exact route, explicit session date and valid OHLCV",
+      "currentSessionCapability": "conditional",
+      "ohlcSupport": "conditional",
+      "volumeSupport": "conditional",
+      "turnoverSupport": "conditional",
+      "historicalDepth": "page dependent",
+      "securityCoverage": "partial",
+      "symbolScheme": "Mubasher EGX ticker",
+      "existingAdapter": "scripts/history/adapters/g11-approved-current-source-adapter.cjs",
+      "validationStatus": "STRICT_CURRENT_ROW_PROBE_REQUIRED",
+      "currentAvailability": "probed during this run",
+      "credentialsPermissionRequirement": "none",
+      "productionApprovalEvidence": [
+        "data/historical-source-registry.json",
+        "data/history-gap-diagnostics-config.json",
+        "scripts/history/approved-fallback-importer.cjs",
+        "fetch-market-data.js"
+      ]
+    },
+    {
+      "sourceId": "approved_reviewed_import",
+      "classification": "APPROVED_FALLBACK",
+      "sourceType": "administrator-reviewed import/override",
+      "authoritativeScope": "egx_official/mubasher/investing/approved_csv records only when approved=true and symbolVerified=true",
+      "currentSessionCapability": true,
+      "ohlcSupport": true,
+      "volumeSupport": true,
+      "turnoverSupport": "optional/derived",
+      "historicalDepth": "supplied reviewed rows",
+      "securityCoverage": "record-specific",
+      "symbolScheme": "canonical ticker",
+      "existingAdapter": "scripts/history/approved-fallback-importer.cjs + approved-verification-adapter.cjs",
+      "validationStatus": "EXPLICIT_APPROVAL_REQUIRED",
+      "currentAvailability": false,
+      "approvedRecordCount": 0,
+      "credentialsPermissionRequirement": "administrator review",
+      "productionApprovalEvidence": [
+        "data/history-fallback-import.json",
+        "data/history-verification-overrides.json",
+        "scripts/history/approved-fallback-importer.cjs"
+      ]
+    },
+    {
+      "sourceId": "optional_licensed_eod_provider",
+      "classification": "UNAVAILABLE",
+      "sourceType": "licensed API placeholder",
+      "authoritativeScope": "future production EOD history/current only when configured and row validates",
+      "currentSessionCapability": false,
+      "ohlcSupport": true,
+      "volumeSupport": true,
+      "turnoverSupport": "provider dependent",
+      "historicalDepth": "provider dependent",
+      "securityCoverage": "provider dependent",
+      "symbolScheme": "template {symbol}",
+      "existingAdapter": "scripts/history/adapters/g11-approved-current-source-adapter.cjs",
+      "validationStatus": "NOT_CONFIGURED",
+      "currentAvailability": false,
+      "credentialsPermissionRequirement": "EGX_HISTORY_API_URL and optional EGX_HISTORY_API_KEY secret",
+      "productionApprovalEvidence": [
+        "data/historical-source-registry.json"
+      ]
+    },
+    {
+      "sourceId": "yahoo_chart_public_api",
+      "classification": "HISTORICAL_ONLY",
+      "sourceType": "public chart JSON",
+      "authoritativeScope": "historical backfill/diagnostics; not current canonical truth in this G11 closure",
+      "currentSessionCapability": false,
+      "ohlcSupport": true,
+      "volumeSupport": true,
+      "turnoverSupport": false,
+      "historicalDepth": "provider dependent",
+      "securityCoverage": "partial .CA",
+      "symbolScheme": "ticker.CA",
+      "existingAdapter": "scripts/history/adapters/yahoo-history-adapter.cjs",
+      "validationStatus": "NOT_APPROVED_FOR_CURRENT_TRUTH_THIS_RUN",
+      "currentAvailability": false,
+      "credentialsPermissionRequirement": "none",
+      "productionApprovalEvidence": [
+        "docs/astra/G11_SOURCE_IDENTITY_REPAIR.json"
+      ]
+    },
+    {
+      "sourceId": "tradingview_public_symbol_pages",
+      "classification": "RESEARCH_ONLY",
+      "sourceType": "public reference page",
+      "authoritativeScope": "symbol resolution/reference only",
+      "currentSessionCapability": false,
+      "ohlcSupport": false,
+      "volumeSupport": false,
+      "turnoverSupport": false,
+      "historicalDepth": null,
+      "securityCoverage": "reference only",
+      "symbolScheme": "public symbol page",
+      "existingAdapter": null,
+      "validationStatus": "REFERENCE_ONLY",
+      "currentAvailability": false,
+      "credentialsPermissionRequirement": "none",
+      "productionApprovalEvidence": [
+        "data/historical-source-registry.json"
+      ]
+    },
+    {
+      "sourceId": "legacy_engine_decision_outputs",
+      "classification": "LEGACY_DECISION_SOURCE_FORBIDDEN",
+      "sourceType": "legacy recommendation/decision artifacts",
+      "authoritativeScope": "never market truth",
+      "currentSessionCapability": false,
+      "ohlcSupport": false,
+      "volumeSupport": false,
+      "turnoverSupport": false,
+      "historicalDepth": null,
+      "securityCoverage": null,
+      "symbolScheme": null,
+      "existingAdapter": null,
+      "validationStatus": "FORBIDDEN_FOR_G11_MARKET_TRUTH",
+      "currentAvailability": false,
+      "credentialsPermissionRequirement": "n/a",
+      "productionApprovalEvidence": [
+        "G11 no-legacy-output policy"
+      ]
+    }
+  ],
+  "discoveredRegistrySourceCount": 4,
+  "runFindings": {
+    "evaluatedAt": "2026-09-16T17:24:00Z",
+    "approvedSourcesExhausted": true,
+    "externalBlockedUniqueTickers": [
+      "AIHC",
+      "ALRA",
+      "DCCC",
+      "DEIN",
+      "EPPK",
+      "GPPL",
+      "ICLE",
+      "MEGM",
+      "NAPR",
+      "NDRL",
+      "POCO",
+      "SAIB",
+      "SPHT"
+    ],
+    "licensedProviderConfigured": false,
+    "reviewedApprovedImportRecords": 0
+  }
+}
