@@ -1,5 +1,5 @@
 'use strict';
-const strict=require('./g08-strict-overlay.cjs');
+const strict=require('./g08-v13-parity-repair.cjs');
 const core=require('./g08-internal-strategies.cjs');
 const SPECS=strict.SPECS;
 
