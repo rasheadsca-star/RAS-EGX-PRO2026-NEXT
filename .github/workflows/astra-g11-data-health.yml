@@ -1,0 +1,152 @@
+name: Astra G11 Full Data Health Certification
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/data-health/**'
+      - 'astra/certification/g11-certify.cjs'
+      - 'tests/astra/g11-data-health.test.cjs'
+      - 'scripts/quant/v13-17-market-search-index.cjs'
+      - '.github/workflows/astra-g11-data-health.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-g11-data-health
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g11]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        run: |
+          node --check astra/data-health/g11-data-health.cjs
+          node --check astra/certification/g11-certify.cjs
+          node --check tests/astra/g11-data-health.test.cjs
+          python3 -m py_compile astra/data-health/g11-v16-context.py
+          node --check scripts/quant/v13-17-market-search-index.cjs
+
+      - name: G06 regression
+        run: |
+          node --test tests/astra/g06-certification.test.cjs tests/astra/g06-contracts.test.cjs tests/astra/legacy-isolation-skeleton.test.cjs
+          node astra/certification/g06-certify.cjs .
+          echo G06_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+
+      - name: G07 certified reconciliation regression
+        run: |
+          node <<'NODE'
+          const x=require('./docs/astra/MIGRATION_RECONCILIATION.json');
+          if(x.status!=='GREEN'||x.storeGroupsProcessed!==19||x.storeGroupsTotal!==19)throw Error('G07 status');
+          if(x.totals.rawArchived!==60288||x.totals.canonicalRecords!==26270||x.totals.provenanceLinks!==26270||x.totals.invalid!==34018||x.totals.unresolved!==34012||x.totals.unexplainedDataLoss!==0)throw Error('G07 counts');
+          if(!x.idempotency.pass||x.idempotency.run1Hash!==x.idempotency.run2Hash||x.idempotency.run1Hash!=='435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3')throw Error('G07 idempotency');
+          NODE
+          echo G07_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+
+      - name: G08 regression recertification
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/astra/g08-strategy-reconstruction.test.cjs tests/astra/g08-recovery-overlay.test.cjs tests/astra/g08-strict-boundaries.test.cjs tests/astra/g08-final-hash.test.cjs tests/astra/g08-v13-parity-repair.test.cjs | tee /tmp/g08.tap
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g08.tap)
+          test "$N" = 50
+          echo G08_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+
+      - name: G09 regression recertification
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/astra/g09-unified-decision-pipeline.test.cjs | tee /tmp/g09.tap
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g09.tap)
+          test "$N" = 46
+          echo G09_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+
+      - name: G10 regression recertification
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/astra/g10-golden-master-final.test.cjs | tee /tmp/g10.tap
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g10.tap)
+          test "$N" = 25
+          echo G10_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+
+      - name: Rebuild non-decision full-market search from symbol master
+        run: node scripts/quant/v13-17-market-search-index.cjs
+
+      - name: G11 full current-data test suite
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/astra/g11-data-health.test.cjs | tee /tmp/g11.tap
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g11.tap)
+          test -n "$N"
+          test "$N" -ge 29
+          echo G11_TEST_COUNT=$N >> "$GITHUB_ENV"
+          echo G11_TEST_PASS=1 >> "$GITHUB_ENV"
+
+      - name: Build and certify G11 evidence
+        run: node astra/certification/g11-certify.cjs
+
+      - name: Final no-cutover and gate-boundary guard
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates; const m=new Map(gates.map(x=>[x.id,x.status]));
+          for(const id of ['G01','G02','G03','G04','G05','G06','G07','G08','G09','G10'])if(m.get(id)!=='GREEN')throw Error(`${id} regressed`);
+          if(!['GREEN','BLOCKED'].includes(m.get('G11')))throw Error(`G11 invalid status ${m.get('G11')}`);
+          for(const id of ['G12','G13','G14','G15','G16','G17','G18','G19'])if(m.get(id)!=='PENDING')throw Error(`${id} must remain PENDING`);
+          const issues=require('./docs/astra/G11_DATA_HEALTH_ISSUES.json'); const snap=require('./docs/astra/G11_DATA_HEALTH_SNAPSHOT.json');
+          if(m.get('G11')==='GREEN'&&(issues.criticalUnresolved||issues.highUnresolved))throw Error('false G11 GREEN');
+          if(m.get('G11')==='BLOCKED'&&!(issues.criticalUnresolved||issues.highUnresolved))throw Error('G11 blocked without material blocker');
+          if(snap.legacyNetworkCalls!==0||snap.productionCutover!==false||snap.g12Status!=='PENDING')throw Error('cutover/network guard');
+          if(require('./docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy dependency inventory changed');
+          const a=require('./docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json');if(a.productionEligibleCount!==1||a.productionEligibleStrategyIds[0]!=='PORTFOLIO_BASKET_EQUAL_WEIGHT')throw Error('production eligibility changed');
+          NODE
+
+      - name: Commit G11 evidence and safe search repair
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            data/quant/market-search-index-v13-17.json \
+            docs/astra/G11_UNIVERSE_BASELINE.json \
+            docs/astra/G11_DATA_HEALTH_SNAPSHOT.json \
+            docs/astra/G11_DATA_HEALTH_METRICS.json \
+            docs/astra/G11_DATA_HEALTH_ISSUES.json \
+            docs/astra/G11_STRATEGY_DATA_READINESS.json \
+            docs/astra/G11_SESSION_INTEGRITY.json \
+            docs/astra/G11_SYMBOL_HEALTH.json \
+            docs/astra/G11_TEST_EVIDENCE.json \
+            docs/astra/G11_DATA_HEALTH_REPORT.md \
+            docs/astra/G11_PERFORMANCE_BASELINE.json \
+            docs/astra/G11_DESTRUCTIVE_REVIEW.json \
+            docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json \
+            docs/astra/G11_HISTORY_DEPTH.json \
+            docs/astra/WORK_STATE.json \
+            04_ACCEPTANCE_GATES.json 05_WORK_STATE.json 07_WORK_LOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'cert(astra): persist G11 data-health decision [skip g11]'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Summary
+        run: |
+          node <<'NODE'
+          const s=require('./docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),m=require('./docs/astra/G11_DATA_HEALTH_METRICS.json'),i=require('./docs/astra/G11_DATA_HEALTH_ISSUES.json'),t=require('./docs/astra/G11_TEST_EVIDENCE.json'),u=require('./docs/astra/G11_UNIVERSE_BASELINE.json');
+          console.log('ASTRA_G11_WORKFLOW '+JSON.stringify({status:require('./04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G11').status,overall:s.overallStatus,universe:u.intendedUniverseCount,active:u.activeUniverseCount,expected:s.latestExpectedSession,available:s.latestAvailableSession,current:`${m.currentCanonicalSecurities.numerator}/${m.currentCanonicalSecurities.denominator}`,pipelineReady:`${m.decisionPipeline.pipelineReadySecurities}/${u.activeUniverseCount}`,productionReady:`${m.strategyInputReadiness.productionCritical.numerator}/${m.strategyInputReadiness.productionCritical.denominator}`,critical:i.criticalUnresolved,high:i.highUnresolved,legacyNetworkCalls:s.legacyNetworkCalls,validOpportunities:m.decisionPipeline.validOpportunities,tests:t.g11Tests,g12:t.g12Status}));
+          NODE
