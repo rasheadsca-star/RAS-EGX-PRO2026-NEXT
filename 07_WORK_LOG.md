@@ -53,3 +53,14 @@ G07 completed against pinned source commits. Processed 19/19 historical store gr
 - G08 regression recertified 50/50 after V13 9-variant source-exact repair; G09 recertified 46/46 unchanged at 1/18 production eligibility.
 - V16.9 price tolerance 0.0007 is derived from ATR 3dp precision propagation only; no semantic-field tolerance.
 - QUANT_EDGE OUTPUT_INTEGRITY_ONLY; replay legacy-network calls 0; 8 legacy dependencies remain; G12 PENDING; G19 streak remains 0.
+
+
+## 2026-09-16T10:36:23.747Z — G11 Full Data Health Certification
+
+- Status: BLOCKED / DEGRADED
+- Universe: 243 mapped, 242 active, 1 intentional exclusions.
+- Session: expected 2026-09-15, available 2026-09-15, CURRENT.
+- Current canonical: 185/242; V16 pipeline-ready: 181/242.
+- Material issue classes: CRITICAL=0, HIGH=3.
+- G07 quarantine=PASS; legacy-network calls=0; production cutover=false; G12=PENDING.
+- G06/G07/G08/G09/G10 regressions: PASS.
