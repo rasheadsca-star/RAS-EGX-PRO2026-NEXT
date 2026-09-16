@@ -62,3 +62,11 @@ test('repair implementation caps source rows at the expected session and has no 
   assert.match(source, /fetched\.sessions\.filter\(\(row\) => row\.date <= expected\)/);
   assert.deepEqual(G.analyzeCarryForwardSource(source), []);
 });
+
+test('full-market search builder is seeded from canonical symbol master before operational sources', () => {
+  const source = fs.readFileSync(path.join(ROOT, 'scripts/quant/v13-17-market-search-index.cjs'), 'utf8');
+  assert.match(source, /symbolMap:path\.join\(ROOT,'data','symbol-map\.json'\)/);
+  assert.match(source, /function seedSymbolMaster\(raw\)/);
+  assert.match(source, /seedSymbolMaster\(read\(FILES\.symbolMap,\{\}\)\);/);
+  assert.match(source, /symbolMasterMapped:true|x\.symbolMasterMapped=true/);
+});
