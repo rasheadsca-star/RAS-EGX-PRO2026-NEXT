@@ -32,7 +32,7 @@ test('source precedence is deterministic and has a hard unavailable terminal sta
   const priorities = p.rules.map((x)=>x.priority);
   assert.deepEqual(priorities,[...priorities].sort((a,b)=>a-b));
   assert.equal(p.rules[0].sourceId,'starta_egx_exact');
-  assert.equal(p.rules.at(-1].sourceId,'UNAVAILABLE');
+  assert.equal(p.rules.at(-1).sourceId,'UNAVAILABLE');
   assert.equal(p.sourceMixing.allowed,false);
 });
 
