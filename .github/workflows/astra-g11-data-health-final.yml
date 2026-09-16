@@ -67,10 +67,10 @@ jobs:
         run: |
           set -o pipefail
           node --test --test-name-pattern='production eligibility|historical parity eligibility|all 33 identified|coverage accounts|Golden metrics exclude|every counted Golden|anti-self-certification|no self-derived|historical replay guard|V13 version router|unknown historical V13|source-rule regression|V16\.9 historical|ATR precision tolerance|Golden cases contain|missing evidence and not-comparable|GANN entry V1|V20 historical frozen|retired and experimental|QUANT_EDGE is|new replay modules|G12 remains|G10 evidence weighting' tests/astra/g10-golden-master-final.test.cjs | tee /tmp/g10.tap
-          test "$(awk '/^# tests /{n=$3} END{print n}' /tmp/g10.tap)" = 25
+          test "$(awk '/^# tests /{n=$3} END{print n}' /tmp/g10.tap)" = 24
           test "$(awk '/^# pass /{n=$3} END{print n}' /tmp/g10.tap)" = 24
           test "$(awk '/^# fail /{n=$3} END{print n}' /tmp/g10.tap)" = 0
-          test "$(awk '/^# skipped /{n=$3} END{print n}' /tmp/g10.tap)" = 1
+          test "$(awk '/^# skipped /{n=$3} END{print n}' /tmp/g10.tap)" = 0
           node <<'NODE'
           const gates=require('./04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
           for(const id of ['G01','G02','G03','G04','G05','G06','G07','G08','G09','G10'])if(m.get(id)!=='GREEN')throw Error(`${id} not GREEN`);
