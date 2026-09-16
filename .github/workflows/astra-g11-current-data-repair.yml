@@ -23,11 +23,11 @@ concurrency:
 
 jobs:
   repair-and-certify:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916'
     runs-on: ubuntu-24.04
     timeout-minutes: 55
     steps:
-      - name: Checkout current main
+      - name: Checkout certification ref
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -40,6 +40,7 @@ jobs:
       - name: Record source state
         run: |
           echo "SOURCE_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "TARGET_BRANCH=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
           echo "EVALUATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
           git status --short
 
@@ -72,7 +73,7 @@ jobs:
           if(g10.status!=='GREEN'||g10.metrics.unresolvedMismatches!==0||g10.metrics.identifiedStrategyVersions!==33||g10.metrics.implementationSourceCoverage!==33||g10.legacyNetworkCalls!==0||g10.quantEdge.algorithmicallyReproduced!==false)throw Error('G10 persisted invariant changed');
           const a=r('docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json');
           if(a.productionEligibleCount!==1||a.productionEligibleStrategyIds[0]!=='PORTFOLIO_BASKET_EQUAL_WEIGHT')throw Error('production eligibility changed');
-          if(r('docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy runtime dependency inventory changed');
+          if(r('docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy dependency inventory changed');
           NODE
           echo G06_REGRESSION_PASS=1 >> "$GITHUB_ENV"
           echo G07_REGRESSION_PASS=1 >> "$GITHUB_ENV"
@@ -185,9 +186,9 @@ jobs:
             echo 'No G11 repair evidence changes to persist.'
           else
             git commit -m 'data(astra): persist targeted G11 current-data repair [skip g11] [skip g11-repair]'
-            git fetch origin main
-            test "$(git rev-parse origin/main)" = "$SOURCE_HEAD" || { echo 'main advanced during G11 repair; refusing unsafe data rebase'; exit 2; }
-            git push origin HEAD:main
+            git fetch origin "$TARGET_BRANCH"
+            test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$SOURCE_HEAD" || { echo "$TARGET_BRANCH advanced during G11 repair; refusing unsafe data rebase"; exit 2; }
+            git push origin HEAD:"$TARGET_BRANCH"
           fi
 
       - name: Final summary
