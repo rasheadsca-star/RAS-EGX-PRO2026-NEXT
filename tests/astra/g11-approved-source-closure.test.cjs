@@ -108,3 +108,5 @@ test('G12 remains pending and closure is non-cutover', () => {
   const p = read('docs/astra/G11_CURRENT_PIPELINE_RUN.json');
   assert.equal(p.legacyNetworkCalls,0); assert.equal(p.productionCutover,false);
 });
+
+// Trigger marker: external-data closure certification after workflow registration.
