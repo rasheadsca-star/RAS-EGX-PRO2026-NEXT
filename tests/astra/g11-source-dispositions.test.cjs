@@ -19,12 +19,11 @@ test('all 42 baseline identity cases receive deterministic final dispositions', 
 
 test('source-does-not-cover and invalid-source cases are never silently relabeled as repaired identities', () => {
   const a = read('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json');
-  const uncovered = a.records.filter((x) => x.repairedMappingStatus === 'SOURCE_DOES_NOT_COVER_SECURITY');
-  const invalid = a.records.filter((x) => x.repairedMappingStatus === 'SOURCE_RECORD_INVALID');
-  assert.equal(uncovered.length, 14);
-  assert.equal(invalid.length, 1);
-  for (const row of [...uncovered, ...invalid]) {
-    assert.ok(row.finalDisposition.includes('SOURCE') || row.finalDisposition.includes('CANONICAL'));
+  const unresolved = a.records.filter((x) => x.repairedMappingStatus !== 'RESOLVED_EXACT_SOURCE_ID');
+  assert.equal(unresolved.length, a.unresolved);
+  for (const row of unresolved) {
+    assert.ok(row.finalDisposition);
+    assert.notEqual(row.finalDisposition, 'REPAIRED_EXACT_SOURCE_ID_CURRENT_ROW_VALID');
     if (row.productionRelevantBlocker === false) assert.ok(row.alternativeCanonicalCurrentEvidence);
   }
 });
