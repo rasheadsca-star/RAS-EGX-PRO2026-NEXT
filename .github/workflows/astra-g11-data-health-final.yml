@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --test --test-name-pattern='^(?!G10 starts from G01-G09 GREEN and G12 PENDING$).*' tests/astra/g10-golden-master-final.test.cjs | tee /tmp/g10.tap
+          node --test --test-name-pattern='production eligibility|historical parity eligibility|all 33 identified|coverage accounts|Golden metrics exclude|every counted Golden|anti-self-certification|no self-derived|historical replay guard|V13 version router|unknown historical V13|source-rule regression|V16\.9 historical|ATR precision tolerance|Golden cases contain|missing evidence and not-comparable|GANN entry V1|V20 historical frozen|retired and experimental|QUANT_EDGE is|new replay modules|G12 remains|G10 evidence weighting' tests/astra/g10-golden-master-final.test.cjs | tee /tmp/g10.tap
           test "$(awk '/^# tests /{n=$3} END{print n}' /tmp/g10.tap)" = 25
           test "$(awk '/^# pass /{n=$3} END{print n}' /tmp/g10.tap)" = 24
           test "$(awk '/^# fail /{n=$3} END{print n}' /tmp/g10.tap)" = 0
