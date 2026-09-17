@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
-const { readHistory } = require('../../scripts/history/history-storage.cjs');
+const { readHistory, writeHistory } = require('../../scripts/history/history-storage.cjs');
 const { validateCurrentRow } = require('../../scripts/history/adapters/g11-approved-current-source-adapter.cjs');
 const { readJson, safeTicker, writeJsonAtomic } = require('../../scripts/history/lib/utils.cjs');
 
@@ -28,6 +28,70 @@ function validCurrent(doc) {
     open:Number(row.open), high:Number(row.high), low:Number(row.low), close:Number(row.close),
     volume:row.volume === null || row.volume === undefined ? null : Number(row.volume),
   }, expected).ok;
+}
+
+function runDynamicReviewedPreflight() {
+  const result = cp.spawnSync(process.execPath, [R('astra/data-health/g11-current-reviewed-import-preflight.cjs')], {
+    cwd:ROOT,
+    stdio:'inherit',
+    env:{...process.env, EXPECTED_SESSION:expected, G11_EVALUATED_AT:evaluatedAt},
+  });
+  if (result.status !== 0) throw new Error(`dynamic_reviewed_import_preflight_failed:${result.status}`);
+}
+
+function normalizeResolvedReviewedRows() {
+  const preflight = read('docs/astra/G11_CURRENT_REVIEWED_IMPORT_PREFLIGHT.json', { acceptedCurrentTickers:[] });
+  const staged = read('data/history-fallback-import.json', { records:[] });
+  const normalized = [];
+  const unresolved = [];
+
+  for (const tickerRaw of preflight.acceptedCurrentTickers || []) {
+    const ticker = safeTicker(tickerRaw);
+    const stagedRecord = (staged.records || []).find((x) => safeTicker(x.ticker) === ticker && x.approved === true && x.symbolVerified === true);
+    const stagedRow = (stagedRecord?.sessions || []).find((x) => dateOnly(x.date || x.sessionDate) === expected);
+    if (!stagedRecord || !stagedRow) throw new Error(`reviewed_staging_missing_after_preflight:${ticker}`);
+
+    const doc = readHistory(ROOT, ticker);
+    const current = (doc?.sessions || []).find((x) => dateOnly(x.date || x.sessionDate) === expected);
+    if (!current) {
+      unresolved.push({ ticker, reason:'NO_CANONICAL_CURRENT_ROW_AFTER_APPROVED_SOURCE_CLOSURE' });
+      continue;
+    }
+
+    const source = String(stagedRecord.source || '').toLowerCase();
+    const primary = String(current.primarySource || '').toLowerCase();
+    const verifiedBy = (current.verifiedBy || []).map((x) => String(x).toLowerCase());
+    const hasReviewedProvenance = primary === source || verifiedBy.includes(source);
+    const parity = ['open','high','low','close','volume'].every((field) => Number(current[field]) === Number(stagedRow[field]));
+
+    if (!hasReviewedProvenance) {
+      unresolved.push({ ticker, reason:'CURRENT_ROW_FROM_OTHER_SOURCE_NOT_RELABELED', primarySource:primary || null });
+      continue;
+    }
+    if (!parity) throw new Error(`reviewed_canonical_ohlcv_parity_failed:${ticker}`);
+
+    if (current.validationStatus === 'g11_approved_current_source_validated') {
+      current.validationStatus = 'approved_fallback_import';
+      current.verifiedBy = [...new Set([...(current.verifiedBy || []), source])];
+      current.warnings = [...new Set([...(current.warnings || []), 'reviewed_import_provenance_normalized_after_exact_parity'])];
+      writeHistory(ROOT, ticker, doc);
+      normalized.push(ticker);
+    } else if (current.validationStatus === 'approved_fallback_import') {
+      normalized.push(ticker);
+    } else {
+      throw new Error(`unexpected_reviewed_canonical_validation_status:${ticker}:${current.validationStatus || 'missing'}`);
+    }
+  }
+
+  write('docs/astra/G11_CURRENT_REVIEWED_IMPORT_NORMALIZATION.json', {
+    schemaVersion:'astra-g11-current-reviewed-import-normalization-1',
+    generatedAt:evaluatedAt,
+    expectedSession:expected,
+    normalizedTickers:normalized,
+    unresolved,
+    safety:{ exactOhlcvParityRequired:true, reviewedProvenanceRequired:true, carryForward:false, syntheticMarketData:false },
+  });
+  console.log('ASTRA_G11_CURRENT_REVIEWED_IMPORT_NORMALIZATION ' + JSON.stringify({ expectedSession:expected, normalized, unresolved }));
 }
 
 const symbolMap = read('data/symbol-map.json', {});
@@ -79,6 +143,8 @@ write('docs/astra/G11_CURRENT_GAP_REBASELINE.json', {
   fallbackTargetTickers:gaps.map((x)=>x.ticker),
 });
 
+runDynamicReviewedPreflight();
+
 try {
   identity.expectedSession = expected;
   identity.currentClosureSessionOverride = {
@@ -93,6 +159,7 @@ try {
     env:{...process.env, EXPECTED_SESSION:expected},
   });
   if (result.status !== 0) process.exitCode = result.status || 1;
+  else normalizeResolvedReviewedRows();
 } finally {
   fs.writeFileSync(identityPath, identityBytes);
 }
