@@ -67,7 +67,47 @@ async function render(file, data) {
    d=>d['internal-ohlc-support-resistance.json'].researchReady=false,
    d=>d['internal-ohlc-support-resistance.json'].researchSessionVerified=false
  ]) {const d=fixture();mutate(d);assert.equal((await render('v20/health-gap.js',d)).failed,true);count++;}
+ const stale=fixture();Object.assign(stale['resilient-session-status.json'],{sessionAligned:true,priceTruth:{sourceSessionVerified:true,verifiedSessionDate:'2026-08-13'}});
+ const staleResult=await render('v20/health.js',stale);
+ assert.equal(staleResult.failed,false);
+ assert.match(staleResult.elements.get('readinessGrid').innerHTML, /تزامن جلسة التنفيذ<\/span><strong>لا<\/strong>/);count++;
  const d=fixture();d['current.json'].executionStatus='EXECUTION_GRADE';Object.assign(d['resilient-session-status.json'],{executionGrade:true,sessionAligned:true,priceTruth:{sourceSessionVerified:true,verifiedSessionDate:session}});
  assert.equal((await render('v20/health.js',d)).failed,false);count++;
+ // Exercise the actual final acceptance program with read-only artifact fixtures.
+ const path=require('node:path');
+ function acceptance(mutate=()=>{}) {
+   const docs={};
+   for(const name of fs.readdirSync('data/v20').filter(x=>x.endsWith('.json'))) {
+     try {docs[path.resolve('data/v20',name)]=JSON.parse(fs.readFileSync(path.join('data/v20',name),'utf8'));} catch {}
+   }
+   const f=fixture();
+   docs[path.resolve('data/v17/resilient-session-status.json')]=f['resilient-session-status.json'];
+   docs[path.resolve('data/v17/market-session-truth.json')]=f['market-session-truth.json'];
+   docs[path.resolve('data/v20/current.json')].sessionDate=session;
+   docs[path.resolve('data/v20/source-health.json')].sessionDate=session;
+   docs[path.resolve('data/v20/market-explorer.json')].sessionDate=session;
+   docs[path.resolve('data/v20/market-explorer.json')].summary.currentSessionCoveragePct=95;
+   f['resilient-session-status.json'].priceTruth.researchMinimumHealthy=true;
+   mutate(docs);
+   let report;
+   const mockFs={mkdirSync(){},renameSync(){},writeFileSync:(_,s)=>{report=JSON.parse(s)},readFileSync:p=>p.includes('.tmp-')?JSON.stringify(report):JSON.stringify(docs[p])};
+   vm.runInNewContext(fs.readFileSync('scripts/v20/final-acceptance.cjs','utf8'),{
+     require:n=>n==='fs'?mockFs:require(n),process:{env:{}},console:{log(){}}
+   });
+   return report;
+ }
+ const acceptedResearch=acceptance();
+ assert.equal(acceptedResearch.acceptanceMatrix.dataTruthForResearch.state,'PASS');
+ assert.equal(acceptedResearch.executionReady,false);count++;
+ for(const mutate of [
+   d=>d[path.resolve('data/v17/market-session-truth.json')].researchSessionVerified=false,
+   d=>d[path.resolve('data/v17/market-session-truth.json')].researchSessionDate='2026-08-13',
+   d=>d[path.resolve('data/v20/source-health.json')].sessionDate='2026-08-13',
+   d=>d[path.resolve('data/v20/market-explorer.json')].sessionDate='2026-08-13',
+   d=>d[path.resolve('data/v17/resilient-session-status.json')].executionInputs.internal.referenceSessionDate=null,
+   d=>d[path.resolve('data/v17/resilient-session-status.json')].executionInputs.liquidity.referenceSessionDate=null,
+   d=>d[path.resolve('data/v20/market-explorer.json')].summary.currentSessionCoveragePct=89,
+   d=>d[path.resolve('data/v17/resilient-session-status.json')].priceTruth.researchMinimumHealthy=false
+ ]) {assert.equal(acceptance(mutate).acceptanceMatrix.dataTruthForResearch.state,'FAIL');count++;}
  console.log(`Health research/execution session regression PASS (${count} cases)`);
 })().catch(e=>{console.error(e);process.exitCode=1});

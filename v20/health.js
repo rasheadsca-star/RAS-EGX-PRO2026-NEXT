@@ -80,7 +80,7 @@
 
       renderHero(current, sourceHealth);
       renderBlockers(gate);
-      renderReadiness(gate, sourceHealth, technical, sector, regime, forward);
+      renderReadiness(gate, sourceHealth, technical, sector, regime, forward, current.sessionDate);
       renderConflicts(sourceHealth);
       renderMissing(sourceHealth);
       renderQuality(sourceHealth, technical, sector, forward);
@@ -123,11 +123,12 @@
     }).join('') : '<div class="empty-good">لا توجد أسباب حظر مسجلة في V17 gate.</div>';
   }
 
-  function renderReadiness(gate, sourceHealth, technical, sector, regime, forward) {
+  function renderReadiness(gate, sourceHealth, technical, sector, regime, forward, sessionDate) {
+    const executionSessionAligned = gate.sessionAligned === true && gate.priceTruth?.sourceSessionVerified === true && gate.priceTruth?.verifiedSessionDate === sessionDate;
     const cards = [
       {
-        title:'تزامن جلسة القرار', value: boolAr(gate.sessionAligned),
-        detail:`V17 / ${gate.priceTruth?.verifiedSessionDate || '—'}`, ok: gate.sessionAligned === true && gate.priceTruth?.sourceSessionVerified === true
+        title:'تزامن جلسة التنفيذ', value: boolAr(executionSessionAligned),
+        detail:`V17 / ${gate.priceTruth?.verifiedSessionDate || '—'}`, ok: executionSessionAligned
       },
       {
         title:'Price Truth', value: gate.priceTruth?.healthy ? 'سليم' : 'غير سليم',

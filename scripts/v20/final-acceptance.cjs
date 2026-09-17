@@ -20,6 +20,7 @@ const finite = value => {
 
 const current = read('data/v20/current.json');
 const gate = read('data/v17/resilient-session-status.json');
+const sessionTruth = read('data/v17/market-session-truth.json');
 const regression = read('data/v20/regression.json');
 const tradePlanRegression = read('data/v20/trade-plan-regression.json');
 const phase3 = read('data/v20/phase3-regression.json');
@@ -102,9 +103,16 @@ const immutableEvidencePass = phase3.checks?.immutableSignalArchive === true
   && forward.authoritativeEvidence?.selfContainedStatus === true
   && forward.authoritativeEvidence?.selfContainedRegression === true
   && forward.authoritativeEvidence?.derivedSidecarsAreAuthoritative === false;
+const researchSessionAligned = /^\d{4}-\d{2}-\d{2}$/.test(current.sessionDate || '')
+  && sessionTruth.researchSessionVerified === true
+  && sessionTruth.researchSessionDate === current.sessionDate
+  && sourceHealth.sessionDate === current.sessionDate
+  && marketExplorer.sessionDate === current.sessionDate
+  && gate.executionInputs?.internal?.referenceSessionDate === current.sessionDate
+  && gate.executionInputs?.liquidity?.referenceSessionDate === current.sessionDate;
 const researchDataPass = gate.readiness?.researchReady === true
   && gate.priceTruth?.researchMinimumHealthy === true
-  && gate.sessionAligned === true
+  && researchSessionAligned
   && marketExplorer.summary?.currentSessionCoveragePct >= 90;
 const decisionSeparationPass = profiles.decisionIntelligenceSummary?.status === 'SHADOW_RESEARCH_ONLY_UNCALIBRATED'
   && profiles.decisionIntelligenceSummary?.scoreIsConfidence === false
@@ -121,6 +129,9 @@ const researchPlatformReady = failedValidators.length === 0
   && decisionSeparationPass && performanceEvidencePass;
 
 const executionReady = researchPlatformReady
+  && gate.sessionAligned === true
+  && gate.priceTruth?.sourceSessionVerified === true
+  && gate.priceTruth?.verifiedSessionDate === current.sessionDate
   && gate.executionGrade === true
   && current.executionStatus === 'EXECUTION_GRADE'
   && gate.readiness?.executionReady === true
@@ -171,7 +182,7 @@ if (marketRegime.verified === true && finite(marketRegime.metrics?.advances) !==
 const acceptanceMatrix = {
   repositoryIsolation: {state:'PASS', evidence:'Main V20 workflow isolation guard'},
   governance: {state: governancePass ? 'PASS' : 'FAIL', evidence:'V16 Champion preserved; no automatic promotion'},
-  dataTruthForResearch: {state: researchDataPass ? 'PASS' : 'FAIL', evidence:`V17 researchReady=${gate.readiness?.researchReady === true}; sessionAligned=${gate.sessionAligned === true}`},
+  dataTruthForResearch: {state: researchDataPass ? 'PASS' : 'FAIL', evidence:`V17 researchReady=${gate.readiness?.researchReady === true}; researchSessionAligned=${researchSessionAligned}; executionSessionAligned=${gate.sessionAligned === true}`},
   executionGrade: {state: executionReady ? 'PASS' : 'BLOCKED', evidence:`V17 executionGrade=${gate.executionGrade === true}; V20 executionStatus=${current.executionStatus}`},
   costAwareRiskReward: {state: riskRewardAudit.primaryMetric === 'CONSERVATIVE_NET_RR_AFTER_ROUND_TRIP_COSTS' ? 'PASS' : 'FAIL', evidence:'Legacy R/R audit-only'},
   tradePlanAlignment: {state: tradePlanRegression.ok === true ? 'PASS' : 'FAIL', evidence:'Current price / entry-zone fail-closed policy'},
