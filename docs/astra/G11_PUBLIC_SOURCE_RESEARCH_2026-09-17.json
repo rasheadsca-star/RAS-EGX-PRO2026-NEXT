@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "astra-g11-public-source-research-1",
+  "generatedAt": "2026-09-17T20:30:00Z",
+  "expectedSession": "2026-09-17",
+  "purpose": "Non-canonical research evidence for exact finalized current-session OHLCV recovery. This artifact MUST NOT be treated as approval to populate canonical history.",
+  "safety": {
+    "canonicalWrite": false,
+    "g11StatusMutation": false,
+    "g12Mutation": false,
+    "mainMutation": false,
+    "productionCutover": false,
+    "carryForward": false,
+    "syntheticValues": false,
+    "roundedVolumePromotionForbidden": true,
+    "crossSourcePrecisionInferenceForbidden": true
+  },
+  "providers": [
+    {
+      "providerId": "egxapi",
+      "classification": "RESEARCH_ONLY_UNAVAILABLE",
+      "endpointTested": "https://api.egxapi.com/v2/market-data/bars?symbol=FERC",
+      "environment": "paper",
+      "authModesTested": ["Authorization: Bearer", "X-API-Key"],
+      "result": "HTTP_530_CLOUDFLARE_1033_FOR_BOTH_AUTH_MODES",
+      "interpretation": "Request reached the published hostname but the provider origin/tunnel was unavailable; authentication validity and response schema remain unverified.",
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "providerId": "egid_delayed_feed",
+      "classification": "RESEARCH_ONLY_CREDENTIAL_REQUIRED",
+      "endpointObserved": "https://ticker.egidegypt.com/api/DelayedFeed/getSymbolHistory",
+      "requestSchemaObserved": ["SymbolCode", "Skip", "Take", "FromDate", "ToDate"],
+      "unauthenticatedResult": "HTTP_401_BEARER_REQUIRED",
+      "tokenEndpointObserved": "https://ticker.egidegypt.com/api/Settings/GetToken",
+      "tokenRequestFieldsObserved": ["Username", "Password"],
+      "eligibleForCanonicalCurrent": false,
+      "reason": "No authorized EGID credentials are configured for this project."
+    },
+    {
+      "providerId": "fin_arabia",
+      "classification": "RESEARCH_ONLY_CURRENT_CROSS_CHECK",
+      "url": "https://fin-arabia.com/",
+      "observedCapabilities": "Public current market table includes exact integer volume plus price/high/low/open columns for a subset of EGX securities.",
+      "limitations": [
+        "Aggregate table does not expose an explicit per-row session timestamp/date in the rendered market table.",
+        "Price precision can be lower than canonical precision for sub-pound securities, so rounded values cannot prove exact OHLC parity.",
+        "Individual stock pages observed by search may lag the aggregate table and therefore cannot be assumed to represent the same session."
+      ],
+      "crossChecks": [
+        {
+          "canonicalTicker": "AIHC",
+          "providerSymbol": "AIH",
+          "providerIdentityLabel": "Arabia Investments Holding SAE / العربية للاستثمارات القابضة",
+          "observedCurrent": {
+            "close": 0.78,
+            "high": 0.79,
+            "low": 0.77,
+            "open": 0.78,
+            "volume": 60722309
+          },
+          "note": "Exact integer volume is useful as corroboration, but price fields are rounded relative to 3-decimal public historical quotes; not canonical-import eligible."
+        }
+      ],
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "providerId": "investing_public_historical",
+      "classification": "RESEARCH_ONLY_PARTIAL_PRECISION",
+      "observedCapabilities": "Public historical pages expose explicit 2026-09-17 OHLC for multiple EGX securities.",
+      "limitations": [
+        "Displayed volume is commonly rounded with K/M suffixes and therefore cannot establish exact integer volume.",
+        "Regional mirrors may update at different times and can disagree on whether the current-session row is present.",
+        "Some illiquid-security rows can contain blank volume or internally suspicious OHLC layouts; these cannot be promoted."
+      ],
+      "examples": [
+        {
+          "ticker": "AIHC",
+          "session": "2026-09-17",
+          "open": 0.770,
+          "high": 0.790,
+          "low": 0.768,
+          "close": 0.782,
+          "displayedVolume": "60.72M",
+          "eligibleForCanonicalCurrent": false,
+          "reason": "rounded_volume"
+        },
+        {
+          "ticker": "AIFI",
+          "canonicalAliasUnderReview": "ALRA",
+          "session": "2026-09-17",
+          "open": 2.410,
+          "high": 2.430,
+          "low": 2.390,
+          "close": 2.420,
+          "displayedVolume": "3.16M",
+          "eligibleForCanonicalCurrent": false,
+          "reason": "rounded_volume_and_alias_requires_exact_identity_evidence"
+        },
+        {
+          "ticker": "EHDR",
+          "session": "2026-09-17",
+          "open": 2.730,
+          "high": 2.780,
+          "low": 2.730,
+          "close": 2.780,
+          "displayedVolume": "1.01M",
+          "eligibleForCanonicalCurrent": false,
+          "reason": "rounded_volume"
+        },
+        {
+          "ticker": "NAPR",
+          "session": "2026-09-17",
+          "open": 42.10,
+          "high": 48.85,
+          "low": 37.55,
+          "close": 42.56,
+          "displayedVolume": "2.86M",
+          "eligibleForCanonicalCurrent": false,
+          "reason": "rounded_volume"
+        },
+        {
+          "ticker": "EGSA",
+          "session": "2026-09-17",
+          "regionalMirrorState": "current row observed on at least one regional mirror while another mirror still showed 2026-09-16 as latest",
+          "eligibleForCanonicalCurrent": false,
+          "reason": "regional_update_inconsistency_and_rounded_volume"
+        },
+        {
+          "ticker": "DEIN",
+          "session": "2026-09-17",
+          "eligibleForCanonicalCurrent": false,
+          "reason": "public row observed with missing volume and OHLC layout unsuitable for strict invariant validation"
+        }
+      ]
+    },
+    {
+      "providerId": "watheeqa_and_minastock_public_snapshots",
+      "classification": "APPROVED_RESEARCH_CORROBORATION_ONLY_UNLESS_EXACT_SESSION_IDENTITY_AND_FINALIZATION_ARE_PROVEN",
+      "note": "These public brokerage-style pages previously corroborated FERC exact integer volume and OHLC. Current generic pages can expose exact figures, but only ticker-specific, finalized-session evidence may be considered for reviewed import.",
+      "eligibleForCanonicalCurrent": "record_specific_only"
+    }
+  ],
+  "decision": {
+    "newCanonicalRowsApproved": 0,
+    "g11Status": "BLOCKED",
+    "g12Status": "PENDING",
+    "nextAction": "Continue searching for exact finalized 2026-09-17 OHLCV with explicit identity/session provenance. Do not combine rounded OHLC from one source with exact volume from another to fabricate an exact row. If a provider exposes exact finalized OHLCV and identity for a blocker, stage it only through the existing reviewed-import preflight and exact canonical parity path."
+  }
+}
