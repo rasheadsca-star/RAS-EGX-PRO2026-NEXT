@@ -39,11 +39,23 @@ function runDynamicReviewedPreflight() {
   if (result.status !== 0) throw new Error(`dynamic_reviewed_import_preflight_failed:${result.status}`);
 }
 
+function findClosureRecord(closureRun, ticker) {
+  const groups = [closureRun?.noncoverage?.records, closureRun?.invalidSource?.records, closureRun?.stale?.records];
+  for (const records of groups) {
+    const found = (records || []).find((x) => safeTicker(x?.ticker) === ticker);
+    if (found) return found;
+  }
+  return null;
+}
+
 function normalizeResolvedReviewedRows() {
   const preflight = read('docs/astra/G11_CURRENT_REVIEWED_IMPORT_PREFLIGHT.json', { acceptedCurrentTickers:[] });
   const staged = read('data/history-fallback-import.json', { records:[] });
+  const closureRun = read('docs/astra/G11_APPROVED_SOURCE_CLOSURE_RUN.json', null);
+  if (!closureRun) throw new Error('approved_source_closure_evidence_missing_before_reviewed_normalization');
   const normalized = [];
   const unresolved = [];
+  const logicalEvidence = [];
 
   for (const tickerRaw of preflight.acceptedCurrentTickers || []) {
     const ticker = safeTicker(tickerRaw);
@@ -70,6 +82,45 @@ function normalizeResolvedReviewedRows() {
     }
     if (!parity) throw new Error(`reviewed_canonical_ohlcv_parity_failed:${ticker}`);
 
+    const closureRecord = findClosureRecord(closureRun, ticker);
+    if (!closureRecord || !String(closureRecord.finalDisposition || '').startsWith('RESOLVED_')) {
+      throw new Error(`reviewed_closure_record_not_resolved:${ticker}`);
+    }
+    const reviewedAttempt = {
+      ok:true,
+      sourceId:'approved_reviewed_import',
+      underlyingSourceId:source,
+      row:{
+        ticker,
+        sourceSymbol:ticker,
+        sessionDate:expected,
+        open:Number(stagedRow.open),
+        high:Number(stagedRow.high),
+        low:Number(stagedRow.low),
+        close:Number(stagedRow.close),
+        volume:Number(stagedRow.volume),
+        sourceId:'approved_reviewed_import',
+        underlyingSourceId:source,
+        sourceUrl:stagedRecord.sourceUrl || null,
+        fetchedAt:stagedRecord.fetchedAt || evaluatedAt,
+        approvedRecord:true,
+      },
+      evidence:{
+        stagedApproved:true,
+        stagedSymbolVerified:true,
+        exactExpectedSession:true,
+        exactCanonicalOhlcvParity:true,
+        reviewedProvenanceVerified:true,
+        noCarryForward:true,
+        syntheticMarketData:false,
+      },
+    };
+    closureRecord.fallbackAttempts = [
+      ...(closureRecord.fallbackAttempts || []).filter((x) => String(x?.sourceId || '') !== 'approved_reviewed_import'),
+      reviewedAttempt,
+    ];
+    logicalEvidence.push({ ticker, sourceId:'approved_reviewed_import', underlyingSourceId:source, exactCanonicalOhlcvParity:true });
+
     if (current.validationStatus === 'g11_approved_current_source_validated') {
       current.validationStatus = 'approved_fallback_import';
       current.verifiedBy = [...new Set([...(current.verifiedBy || []), source])];
@@ -83,15 +134,17 @@ function normalizeResolvedReviewedRows() {
     }
   }
 
+  write('docs/astra/G11_APPROVED_SOURCE_CLOSURE_RUN.json', closureRun);
   write('docs/astra/G11_CURRENT_REVIEWED_IMPORT_NORMALIZATION.json', {
-    schemaVersion:'astra-g11-current-reviewed-import-normalization-1',
+    schemaVersion:'astra-g11-current-reviewed-import-normalization-2',
     generatedAt:evaluatedAt,
     expectedSession:expected,
     normalizedTickers:normalized,
+    logicalReviewedImportEvidence:logicalEvidence,
     unresolved,
     safety:{ exactOhlcvParityRequired:true, reviewedProvenanceRequired:true, carryForward:false, syntheticMarketData:false },
   });
-  console.log('ASTRA_G11_CURRENT_REVIEWED_IMPORT_NORMALIZATION ' + JSON.stringify({ expectedSession:expected, normalized, unresolved }));
+  console.log('ASTRA_G11_CURRENT_REVIEWED_IMPORT_NORMALIZATION ' + JSON.stringify({ expectedSession:expected, normalized, logicalEvidence, unresolved }));
 }
 
 const symbolMap = read('data/symbol-map.json', {});
@@ -116,7 +169,6 @@ for (const entry of active) {
   });
 }
 
-const stalePath = R('docs/astra/G11_STALE_RECORDS.json');
 const identityPath = R('docs/astra/G11_SOURCE_IDENTITY_REPAIR.json');
 const identityBytes = fs.readFileSync(identityPath);
 const identity = JSON.parse(identityBytes.toString('utf8'));
