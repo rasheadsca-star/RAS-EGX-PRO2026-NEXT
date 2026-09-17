@@ -24,12 +24,20 @@
   }
 
   async function render() {
-    const [gate, sr] = await Promise.all([
+    const [gate, sr, truth, current] = await Promise.all([
       loadJson('../data/v17/resilient-session-status.json'),
-      loadJson('../data/v17/internal-ohlc-support-resistance.json')
+      loadJson('../data/v17/internal-ohlc-support-resistance.json'),
+      loadJson('../data/v17/market-session-truth.json'),
+      loadJson('../data/v20/current.json')
     ]);
-    const sessionDate = gate.priceTruth?.verifiedSessionDate || null;
-    if (!sessionDate || sr.referenceSessionDate !== sessionDate) throw new Error('Execution Gap source-session mismatch');
+    const sessionDate = current.sessionDate;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(sessionDate || '') ||
+        truth.researchSessionVerified !== true || truth.researchSessionDate !== sessionDate ||
+        gate.readiness?.researchReady !== true ||
+        gate.executionInputs?.internal?.referenceSessionDate !== sessionDate ||
+        sr.referenceSessionDate !== sessionDate || sr.researchSessionVerified !== true || sr.researchReady !== true) {
+      throw new Error('Execution Gap research source-session mismatch');
+    }
 
     const thresholds = sr.thresholds || {};
     const total = numeric(sr.candidateUniverseCount) || 0;

@@ -47,18 +47,32 @@
 
   async function load() {
     try {
-      const [current, sourceHealth, gate, technical, sector, regime, forward] = await Promise.all([
+      const [current, sourceHealth, gate, technical, sector, regime, forward, truth] = await Promise.all([
         loadJson('../data/v20/current.json'),
         loadJson('../data/v20/source-health.json'),
         loadJson('../data/v17/resilient-session-status.json'),
         loadJson('../data/v20/technical-history-status.json'),
         loadJson('../data/v20/sector-provenance-audit.json'),
         loadJson('../data/v20/market-regime.json'),
-        loadJson('../data/v20/forward-evaluation.json')
+        loadJson('../data/v20/forward-evaluation.json'),
+        loadJson('../data/v17/market-session-truth.json')
       ]);
 
-      if (sourceHealth.sessionDate !== current.sessionDate || gate.priceTruth?.verifiedSessionDate !== current.sessionDate) {
-        throw new Error('عدم تطابق جلسة Source Health أو V17 Price Truth مع جلسة V20 الحالية');
+      // Research evidence and execution price verification have separate contracts.
+      // Keep execution blockers visible even when price verification is unavailable.
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(current.sessionDate || '') ||
+          sourceHealth.sessionDate !== current.sessionDate ||
+          truth.researchSessionVerified !== true || truth.researchSessionDate !== current.sessionDate ||
+          gate.readiness?.researchReady !== true ||
+          gate.executionInputs?.internal?.referenceSessionDate !== current.sessionDate ||
+          gate.executionInputs?.liquidity?.referenceSessionDate !== current.sessionDate) {
+        throw new Error('عدم تطابق أدلة جلسة البحث المتحققة مع جلسة V20 الحالية');
+      }
+      if (current.executionStatus === 'EXECUTION_GRADE' &&
+          (gate.executionGrade !== true || gate.sessionAligned !== true ||
+           gate.priceTruth?.sourceSessionVerified !== true ||
+           gate.priceTruth?.verifiedSessionDate !== current.sessionDate)) {
+        throw new Error('ادعاء جاهزية التنفيذ غير مدعوم ببوابة V17 للجلسة الحالية');
       }
       if (technical.asOfSessionDate !== current.sessionDate || regime.asOfSessionDate !== current.sessionDate || forward.asOfSessionDate !== current.sessionDate) {
         throw new Error('إحدى طبقات Technical / Market Regime / Forward ليست متزامنة مع جلسة V20 الحالية');

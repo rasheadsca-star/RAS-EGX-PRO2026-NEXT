@@ -219,7 +219,9 @@ jobs:
         run: node scripts/v20/validate-ui.cjs
 
       - name: Run Chromium browser smoke acceptance
-        run: node scripts/v20/browser-smoke.cjs
+        run: |
+          node scripts/v20/health-session-regression.cjs
+          node scripts/v20/browser-smoke.cjs
 
       - name: Acceptance guard
         run: |
