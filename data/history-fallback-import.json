@@ -2,42 +2,44 @@
   "schemaVersion": "12.5.0",
   "records": [
     {
-      "ticker": "FERC",
-      "source": "approved_csv",
-      "sourceUrl": "https://www.watheeqa.com.eg/",
+      "ticker": "EHDR",
+      "isin": "EGS65341C017",
+      "source": "investing",
+      "sourceUrl": "https://au.investing.com/equities/egyptn-hous-de-historical-data",
       "approved": true,
       "symbolVerified": true,
-      "fetchedAt": "2026-09-17T14:30:00+03:00",
-      "approvalNote": "User-authorized administrator-reviewed current-session fallback for FERC. Exact FERC.CA identity. Final 17-Sep-2026 Watheeqa 14:30 market snapshot reports O=77.53 H=81.90 L=77.51 C=81.90 V=252601; Mina Stock independently reports the same OHLCV. No carry-forward, no rounded-volume inference, no synthetic values, and no legacy decision output.",
+      "approvalNote": "Administrator-reviewed G11 current-session fallback for EHDR. Investing AU is Closed for 17/09 and provides the 2026-09-17 daily OHLC row O=2.730 H=2.790 L=2.730 C=2.790; its same-market scoreboard provides exact Volume=3,307,212 and ISIN EGS65341C017. Aletihad independently shows EGX Market Status Closed for 17-Sep-2026 and the EHDR row at 2.79 with exact Volume=3,307,212 and separate Trading Value=9,135,745, with site provenance stating financial data originate from certified financial-market data providers. The conflicting Investing UK observation was explicitly delayed/intraday and is not treated as finalized evidence. No carry-forward, rounded-volume promotion, synthetic value, or legacy decision output is used.",
       "verificationUrls": [
-        "https://www.watheeqa.com.eg/",
-        "https://minastock.com/home.aspx?ReturnUrl=%2F"
+        "https://au.investing.com/equities/egyptn-hous-de-scoreboard",
+        "https://en.aletihad.ae/market/4489549/egyptian-stock-exchange"
       ],
       "reviewEvidence": {
         "humanApproved": true,
         "expectedSession": "2026-09-17",
         "sessionFinalized": true,
-        "sourceFinalizedAt": "2026-09-17T14:30:00+03:00",
         "crossVerified": true,
         "noCarryForward": true,
         "syntheticValuesForbidden": true,
-        "identityBasis": "EXACT_CANONICAL_FERC_TO_PUBLIC_FERC.CA",
-        "primaryEvidence": "Watheeqa final 14:30 snapshot",
-        "verificationEvidence": "Mina Stock independently identical OHLCV"
+        "identityBasis": "EHDR / ISIN EGS65341C017 on closed Investing AU surface",
+        "primaryEvidence": "Investing AU Closed 17/09 historical row + exact-volume scoreboard",
+        "verificationEvidence": "Aletihad EGX Market Status Closed 17-Sep-2026; EHDR close 2.79, Volume 3,307,212, Trading Value 9,135,745; financial data stated to originate from certified market-data providers",
+        "volumeEvidence": "Exact integer 3,307,212 on Investing AU scoreboard and independently on Aletihad, with Trading Value separately reported by Aletihad",
+        "intradayConflictDisposition": "Investing UK same-day C=2.770/H=2.780/V≈1.98M was explicitly Delayed Data/intraday and is excluded from finalized-session evidence"
       },
       "sessions": [
         {
           "date": "2026-09-17",
-          "open": 77.53,
-          "high": 81.9,
-          "low": 77.51,
-          "close": 81.9,
+          "open": 2.73,
+          "high": 2.79,
+          "low": 2.73,
+          "close": 2.79,
           "adjustedClose": null,
-          "volume": 252601,
+          "volume": 3307212,
           "currency": "EGP",
           "warnings": [
-            "administrator_reviewed_cross_verified_current_session",
-            "watheeqa_final_1430_and_minastock_exact_parity"
+            "administrator_reviewed_current_session",
+            "closed_session_exact_volume_cross_verified",
+            "no_rounded_volume_inference"
           ]
         }
       ]

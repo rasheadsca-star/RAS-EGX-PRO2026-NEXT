@@ -180,7 +180,19 @@ function persistApprovedCurrentRow(ticker, mapEntry, candidate, expectedSession)
   const incoming = prepareCanonicalRow(ticker, candidate);
   if (incoming.date !== expectedSession) throw new Error(`refuse_non_expected_session:${incoming.date}`);
   const existing = readHistory(ROOT, ticker) || {};
-  const merged = mergeAndValidate(existing.sessions || [], [incoming], 100);
+  const existingSessions = Array.isArray(existing.sessions) ? existing.sessions : [];
+  // Current-session repair must never shorten an already-valid historical series.
+  // Preserve every existing session and allow room for the new expected-session row.
+  const retentionLimit = Math.max(100, existingSessions.length + 1);
+  const merged = mergeAndValidate(existingSessions, [incoming], retentionLimit);
+  if (merged.sessions.length < existingSessions.length) {
+    throw new Error(`approved_current_row_history_depth_regression:${existingSessions.length}->${merged.sessions.length}`);
+  }
+  const existingDates = new Set(existingSessions.map((x) => String(x.date || x.sessionDate || '').slice(0,10)).filter(Boolean));
+  const mergedDates = new Set(merged.sessions.map((x) => String(x.date || x.sessionDate || '').slice(0,10)).filter(Boolean));
+  for (const date of existingDates) {
+    if (!mergedDates.has(date)) throw new Error(`approved_current_row_lost_existing_session:${date}`);
+  }
   const current = merged.sessions.find((x) => String(x.date).slice(0,10) === expectedSession);
   if (!current) throw new Error('approved_current_row_failed_history_validation');
   const sessions = merged.sessions;

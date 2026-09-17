@@ -197,6 +197,15 @@ write('docs/astra/G11_CURRENT_GAP_REBASELINE.json', {
 
 runDynamicReviewedPreflight();
 
+const reviewedPreflight = read('docs/astra/G11_CURRENT_REVIEWED_IMPORT_PREFLIGHT.json', { acceptedCurrentTickers:[] });
+const reviewedHistoryDepthBefore = Object.fromEntries(
+  (reviewedPreflight.acceptedCurrentTickers || []).map((tickerRaw) => {
+    const ticker = safeTicker(tickerRaw);
+    const doc = readHistory(ROOT, ticker);
+    return [ticker, Array.isArray(doc?.sessions) ? doc.sessions.length : 0];
+  })
+);
+
 try {
   identity.expectedSession = expected;
   identity.currentClosureSessionOverride = {
@@ -211,7 +220,16 @@ try {
     env:{...process.env, EXPECTED_SESSION:expected},
   });
   if (result.status !== 0) process.exitCode = result.status || 1;
-  else normalizeResolvedReviewedRows();
+  else {
+    for (const [ticker, beforeDepth] of Object.entries(reviewedHistoryDepthBefore)) {
+      const afterDoc = readHistory(ROOT, ticker);
+      const afterDepth = Array.isArray(afterDoc?.sessions) ? afterDoc.sessions.length : 0;
+      if (afterDepth < beforeDepth) {
+        throw new Error(`reviewed_import_history_depth_regression:${ticker}:${beforeDepth}->${afterDepth}`);
+      }
+    }
+    normalizeResolvedReviewedRows();
+  }
 } finally {
   fs.writeFileSync(identityPath, identityBytes);
 }
