@@ -196,13 +196,16 @@ jobs:
       - name: Persist current-session G11 evidence
         shell: bash
         run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add data/symbol-map.json data/history data/history-summary.json data/session-calendar.json \
-            data/history-fallback-import-report.json data/history-last-run.json data/history-batch-state.json \
             data/quant/stock-intelligence-index.json data/quant/stocks data/quant/market-search-index-v13-17.json \
             docs/astra/G11_*.json docs/astra/G11_*.md docs/astra/WORK_STATE.json \
             04_ACCEPTANCE_GATES.json 05_WORK_STATE.json 07_WORK_LOG.md
+          for optional in data/history-fallback-import-report.json data/history-last-run.json data/history-batch-state.json; do
+            if [ -f "$optional" ]; then git add "$optional"; fi
+          done
           if git diff --cached --quiet; then
             echo 'No current-session G11 evidence changes to persist.'
           else
