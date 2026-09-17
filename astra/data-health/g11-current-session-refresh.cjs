@@ -22,11 +22,14 @@ function mapRows(raw) {
   return Array.isArray(raw) ? raw : Object.entries(raw || {}).map(([ticker, value]) => ({ ...(value || {}), ticker: value?.ticker || ticker }));
 }
 function dateOnly(v) { const m = String(v || '').match(/^(\d{4}-\d{2}-\d{2})/); return m ? m[1] : null; }
-function activeEntries() {
+function allEntries() {
   return mapRows(read('data/symbol-map.json', {}))
     .map((x) => ({ ...x, ticker: safeTicker(x.ticker) }))
-    .filter((x) => x.ticker && x.active !== false)
+    .filter((x) => x.ticker)
     .sort((a, b) => a.ticker.localeCompare(b.ticker));
+}
+function activeEntries() {
+  return allEntries().filter((x) => x.active !== false);
 }
 function currentRow(doc) {
   return (doc?.sessions || []).find((s) => dateOnly(s.date || s.sessionDate) === expected) || null;
@@ -99,7 +102,16 @@ function buildDocument(entry, existing, fetched, sourceRow) {
 }
 
 async function main() {
-  const entries = activeEntries();
+  const all = allEntries();
+  const entries = all.filter((x) => x.active !== false);
+  const retiredAliasExclusions = all
+    .filter((x) => x.active === false && x.inactiveReason === 'LEGACY_DUPLICATE_ALIAS_SUPERSEDED_BY_ACTIVE_CANONICAL')
+    .map((x) => ({
+      ticker:x.ticker,
+      supersededBy:safeTicker(x.supersededBy),
+      reason:x.inactiveReason,
+      evidence:Array.isArray(x.identityEvidence)?x.identityEvidence:[],
+    }));
   const records = [];
   let alreadyCurrent = 0, refreshed = 0, unavailable = 0, failed = 0;
   const delayMs = Math.max(0, Number(process.env.G11_CURRENT_REFRESH_DELAY_MS || 100));
@@ -165,6 +177,8 @@ async function main() {
     expectedSession:expected,
     approvedPrimarySource:'starta_egx_exact',
     activeUniverse:entries.length,
+    retiredAliasExclusionCount:retiredAliasExclusions.length,
+    retiredAliasExclusions,
     alreadyCurrentValid:alreadyCurrent,
     refreshedApprovedPrimary:refreshed,
     approvedPrimaryUnavailable:unavailable,

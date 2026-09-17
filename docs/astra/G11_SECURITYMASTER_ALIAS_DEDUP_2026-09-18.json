@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "astra-g11-securitymaster-alias-dedup-1",
+  "generatedDate": "2026-09-18",
+  "sourceHead": "b3ed16102b2955900457f98b638fd9aba45874a5",
+  "purpose": "Remove duplicate legacy aliases from active G11 universe without deleting historical files or synthesizing market data.",
+  "changes": [
+    {
+      "legacyTicker": "ALRA",
+      "activeCanonicalTicker": "AIFI",
+      "company": "Atlas for Investment & Food Industries",
+      "evidence": [
+        "Company investor-relations page states EGX: ALRA / AIFI.",
+        "AIFI is already an active SecurityMaster entry with symbol-verified current canonical history through 2026-09-17."
+      ],
+      "action": "ALRA active=false; retain for historical lookup only"
+    },
+    {
+      "legacyTicker": "SEIGA",
+      "activeCanonicalTicker": "SEIG",
+      "company": "Saudi Egyptian Investment & Finance",
+      "evidence": [
+        "Mubasher current market profile uses SEIG and EGX announcements reference SEIG.CA / SEIGA.CA for the same company.",
+        "SEIG is already an active SecurityMaster entry with symbol-verified current canonical history through 2026-09-17."
+      ],
+      "action": "SEIGA active=false; retain for historical lookup only"
+    }
+  ],
+  "invariants": {
+    "historyFilesDeleted": 0,
+    "canonicalOhlcvSynthesized": 0,
+    "testsChanged": 0,
+    "workflowsChanged": 0,
+    "guardsChanged": 0,
+    "activeCurrentCanonicalRepresentatives": [
+      "AIFI",
+      "SEIG"
+    ],
+    "legacyHistoryRetained": [
+      "ALRA",
+      "SEIGA"
+    ]
+  }
+}
