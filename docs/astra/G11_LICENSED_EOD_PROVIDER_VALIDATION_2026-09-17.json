@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "astra-g11-licensed-eod-provider-validation-1",
+  "targetSession": "2026-09-17",
+  "startingHead": "242563df015c45e80d0f2b076f498233470b19fc",
+  "branch": "astra/g11-guard37-recovery-20260916",
+  "purpose": "Read-only discovery and validation preflight for the existing optional_licensed_eod_provider. This artifact does not promote, stage, or write canonical market rows.",
+  "providerDiscovery": {
+    "sourceId": "optional_licensed_eod_provider",
+    "registryLocation": "scripts/build-v113-source-registry.js",
+    "currentG11Adapter": "scripts/history/adapters/g11-approved-current-source-adapter.cjs",
+    "currentClosure": "astra/data-health/g11-approved-source-closure.cjs",
+    "workflow": ".github/workflows/astra-g11-current-session-closure.yml",
+    "method": "GET",
+    "urlVariable": "EGX_HISTORY_API_URL",
+    "urlTemplateSubstitutions": {
+      "{symbol}": "URL-encoded canonical EGX ticker",
+      "{market}": "EGX",
+      "{limit}": "250 in the current G11 probeLicensedCurrent implementation"
+    },
+    "dateRequestBehavior": "No date parameter is injected by the adapter. Returned JSON is recursively parsed and then filtered to the exact target session.",
+    "auth": {
+      "mechanism": "Optional Authorization: Bearer <EGX_HISTORY_API_KEY>",
+      "apiKeyVariable": "EGX_HISTORY_API_KEY",
+      "secretValuePersisted": false
+    },
+    "headers": {
+      "Accept": "application/json",
+      "User-Agent": "RAS-EGX-PRO2026-G11-Licensed-EOD/1.0"
+    },
+    "timeoutMs": 12000,
+    "redirectBehavior": "fetch default",
+    "successRequirement": "HTTP response.ok plus valid JSON plus an exact target-session row plus validateCurrentRow().ok",
+    "jsonFieldMappings": {
+      "date": ["date", "sessionDate", "session_date", "tradingDate", "datetime"],
+      "symbol": ["symbol", "ticker", "code"],
+      "open": ["open", "o"],
+      "high": ["high", "h"],
+      "low": ["low", "l"],
+      "close": ["close", "c", "last", "price"],
+      "volume": ["volume", "v"],
+      "turnover": ["turnover", "valueTraded", "value"]
+    },
+    "numericRules": {
+      "parser": "parseNumber strips comma/percent/Arabic-comma/whitespace and parses a decimal numeric token",
+      "ohlc": "must all be positive and satisfy high/low/open/close invariants",
+      "volume": "must be finite and >= 0; missing volume is rejected",
+      "integerVolumeRequirementForThisPreflight": "Not yet provable because no provider response is available. Any non-integer/rounded/ambiguous volume remains ineligible even if the generic adapter parses it."
+    },
+    "identityRules": {
+      "requestedTicker": "safeTicker(ticker)",
+      "returnedSymbolRule": "When provider returns symbol/ticker/code, it must equal the requested ticker after safeTicker normalization.",
+      "importantLimitation": "The current adapter can accept a row whose JSON object contains no sourceSymbol. For this recovery preflight, independent exact identity must still be established before canonical eligibility."
+    },
+    "sessionRules": {
+      "requiredSession": "2026-09-17",
+      "adapterFilter": "row.sessionDate === expectedSession",
+      "timezoneShiftAllowed": false
+    },
+    "finalizationSemantics": {
+      "explicitFinalizedFlagRequiredByCurrentAdapter": false,
+      "currentAdapterBehavior": "Treats a matching historical JSON row as a candidate; it does not inspect an explicit EOD/finalized flag.",
+      "recoveryRequirement": "Provider endpoint/schema semantics must demonstrate that the returned 2026-09-17 record is a finalized EOD historical bar before eligibility. No new finalization rule is invented here."
+    },
+    "provenance": {
+      "adapterCarries": ["sourceId", "sourceUrl", "fetchedAt", "sourceSymbol when returned"],
+      "requiredBeforeAcceptance": ["provider name", "endpoint identifier", "retrieval timestamp", "requested symbol", "requested session", "provider returned symbol when available", "provider returned date", "raw field names", "normalized values"],
+      "apiSecretsMayBePersisted": false
+    },
+    "downstream": {
+      "candidatePriority": 95,
+      "candidateSourceId": "optional_licensed_eod_provider",
+      "canonicalPreparationStatus": "g11_approved_current_source_validated",
+      "reviewedImportNormalizationStatusWhenApplicable": "approved_fallback_import",
+      "writePath": "astra/data-health/g11-approved-source-closure.cjs -> prepareCanonicalRow/persistApprovedCurrentRow -> history-storage.cjs",
+      "writesAllowedInThisPreflight": false
+    }
+  },
+  "environment": {
+    "workflowBindsEgxHistoryApiUrlSecret": true,
+    "workflowBindsEgxHistoryApiKeySecret": true,
+    "persistedRegistryLicensedProviderConfigured": false,
+    "EGX_HISTORY_API_URL": "MISSING_IN_EFFECTIVE_PERSISTED_G11_RUN",
+    "EGX_HISTORY_API_KEY": "NOT_OBSERVABLE_WITH_AVAILABLE_GITHUB_CONNECTION",
+    "authMechanismDetected": "OPTIONAL_BEARER",
+    "note": "No credential value was read, logged, or persisted. The absence of an effective URL is sufficient to block a provider request."
+  },
+  "readOnlyValidation": {
+    "ticker": "EHDR",
+    "session": "2026-09-17",
+    "status": "BLOCKED_NOT_EXECUTED",
+    "classification": "PROVIDER_ERROR",
+    "reason": "EGX_HISTORY_API_URL_NOT_CONFIGURED in the latest persisted G11 provider registry; no endpoint can be constructed safely.",
+    "httpRequestSent": false,
+    "httpStatus": null,
+    "returnedSymbol": null,
+    "returnedDate": null,
+    "open": null,
+    "high": null,
+    "low": null,
+    "close": null,
+    "volume": null,
+    "finalizedStatus": null,
+    "mappingResult": "NOT_RUN",
+    "eligible": false,
+    "researchCandidateUsedAsTruth": false,
+    "canonicalWrite": false,
+    "stagingWrite": false
+  },
+  "dryRun": {
+    "status": "NOT_RUN",
+    "reason": "EHDR read-only provider request could not be executed because the effective provider URL is not configured.",
+    "wouldBeStagedRow": null
+  },
+  "currentSessionGaps": {
+    "sourceArtifact": "docs/astra/G11_DATA_HEALTH_ISSUES.json",
+    "count": 21,
+    "tickers": ["AIHC", "ALRA", "ARVA", "CFGH", "DCCC", "DEIN", "EGSA", "EHDR", "EPPK", "GPPL", "ICLE", "IRAX", "MEGM", "MMAT", "NAPR", "NDRL", "POCO", "SAIB", "SEIGA", "SPHT", "TORA"],
+    "batchProviderValidationStatus": "NOT_ENTERED",
+    "reason": "Phase 6 is gated on successful EHDR provider-contract validation.",
+    "totalProviderRequestsAttempted": 0,
+    "VALID_EXACT_EOD": 0,
+    "NOT_FOUND": 0,
+    "IDENTITY_MISMATCH": 0,
+    "SESSION_MISMATCH": 0,
+    "NON_FINALIZED": 0,
+    "SCHEMA_INVALID": 0,
+    "VOLUME_INVALID": 0,
+    "CONFLICT": 0,
+    "PROVIDER_ERROR": 1
+  },
+  "acceptedRows": [],
+  "rejectedRows": [
+    {
+      "ticker": "EHDR",
+      "session": "2026-09-17",
+      "classification": "PROVIDER_ERROR",
+      "reason": "Provider URL not configured; no request executed and no market data was returned."
+    }
+  ],
+  "actualPersistedRows": [],
+  "canonicalMutation": {
+    "rowsStaged": 0,
+    "rowsApproved": 0,
+    "rowsWritten": 0,
+    "duplicateOrRejectedRows": 0
+  },
+  "officialPersistedBaseline": {
+    "canonicalRowsAdded": 0,
+    "CURRENT_SESSION_GAP": 21,
+    "CRITICAL": 0,
+    "HIGHIssueFamilies": 3,
+    "G11": "BLOCKED",
+    "G12": "PENDING",
+    "unchangedByThisArtifact": true
+  },
+  "nextAction": "Configure a licensed EOD endpoint in the existing EGX_HISTORY_API_URL GitHub secret (and EGX_HISTORY_API_KEY only if that endpoint requires Bearer auth), then run a read-only EHDR/2026-09-17 probe against the exact existing adapter contract before any staging or canonical write."
+}
