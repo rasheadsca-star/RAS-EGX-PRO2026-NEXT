@@ -1,0 +1,174 @@
+{
+  "schemaVersion": "astra-g11-licensed-eod-provider-configuration-1",
+  "generatedDate": "2026-09-18",
+  "branch": "astra/g11-guard37-recovery-20260916",
+  "startingHead": "8ff98b0670dac00bcda39203884e160a76b9ca85",
+  "targetSession": "2026-09-17",
+  "targetTicker": "EHDR",
+  "scope": "Configuration/provider research and read-only preflight only. No tests, workflows, guards, canonical/history data, G12 state, staging, or mutable G11 closure were changed or executed.",
+  "existingConfigurationSearch": {
+    "repository": {
+      "result": "NO_CONCRETE_PROVIDER_ENDPOINT_FOUND",
+      "evidence": [
+        ".env.example contains only PORT, POLL_SECONDS, and MUBASHER_BASE",
+        "data/historical-source-registry.json keeps optional_licensed_eod_provider disabled with templates=[]",
+        "repository searches for EGX_HISTORY_API_URL resolve to the placeholder/adapter/workflow/docs contract, not to a concrete provider URL",
+        "no repository occurrence of ticker.egidegypt.com was present before this research artifact"
+      ]
+    },
+    "branchHistory": "No commit after startingHead existed immediately before this artifact write.",
+    "googleDrive": "No accessible Drive result for EGX_HISTORY_API_URL, EGX API, or EODHD.",
+    "vercel": {
+      "egxProjectsPresent": true,
+      "v20ProjectObserved": "egx-tfe-v20-fusion-rc2",
+      "environmentVariableMetadataReadableWithAuthorizedConnector": false,
+      "environmentVariableMutationAvailableWithAuthorizedConnector": false,
+      "conclusion": "Vercel project existence is proven; provider environment configuration is not observable and is not inferred."
+    }
+  },
+  "githubConfigurationCapability": {
+    "actionsSecretMetadataReadable": false,
+    "repositoryVariablesReadable": false,
+    "environmentVariablesMetadataReadable": false,
+    "repositorySecretsWritable": false,
+    "environmentSecretsWritable": false,
+    "connectorConstraint": "Available GitHub tooling explicitly excludes sensitive secret API families and exposes no secret/variable mutation action.",
+    "EGX_HISTORY_API_URL_secret_name_status": "UNKNOWN",
+    "EGX_HISTORY_API_KEY_secret_name_status": "UNKNOWN",
+    "effectivePersistedRuntimeStatus": {
+      "EGX_HISTORY_API_URL": "MISSING_IN_EFFECTIVE_PERSISTED_G11_RUN",
+      "optional_licensed_eod_provider": "UNAVAILABLE",
+      "licensedProviderConfigured": false
+    },
+    "secretValuesPersisted": false
+  },
+  "providerCandidates": [
+    {
+      "provider": "EGID Feed API",
+      "authority": "EGID states it is a fully owned subsidiary of EGX and the sole authorized provider of EGX market data.",
+      "publicEvidence": [
+        "https://www.egidegypt.com/",
+        "https://ticker.egidegypt.com/index.html"
+      ],
+      "egxSupport": "PROVEN",
+      "historicalCapability": "PROVEN_OPERATION_EXISTS",
+      "observedOperations": [
+        "GET /api/DelayedFeed/GetSymbolHistories",
+        "POST /api/DelayedFeed/getSymbolHistory",
+        "GET /api/Feed/GetSymbolHistories",
+        "POST /api/Feed/GetSymbolHistory",
+        "POST /api/Settings/GetToken"
+      ],
+      "exactDailyOhlcvSchema": "NOT_PROVEN_FROM_ACCESSIBLE_TOOL_OUTPUT",
+      "integerTradedShareVolume": "NOT_PROVEN_FROM_ACCESSIBLE_TOOL_OUTPUT",
+      "finalizedEodSemantics": "NOT_PROVEN; operation name/history alone is not accepted as finalization proof",
+      "auth": "TOKEN_MECHANISM_EXISTS_BUT_ENDPOINT_AUTH_REQUIREMENT_NOT_PROVEN",
+      "compatibility": "UNDETERMINED_FOR_EXISTING_RESPONSE_MAPPING",
+      "compatibilityNotes": "The existing G11 licensed adapter is GET-only. The observed GET GetSymbolHistories operation is the only possible config-only path, but its required query parameters and response field names must be known before a URL template can be constructed. The POST operation is not compatible without an adapter change.",
+      "decision": "PRIMARY_NEXT_PROVIDER; DO_NOT_CONFIGURE_OR_REQUEST_UNTIL_EXACT_GET_CONTRACT_AND_ACCESS ARE VERIFIED"
+    },
+    {
+      "provider": "ICE Egyptian Exchange dataset",
+      "publicEvidence": ["https://developer.ice.com/fixed-income-data-services/catalog/egyptian-exchange-egx"],
+      "egxSupport": "PROVEN",
+      "historicalCapability": "PROVEN",
+      "eodCapability": "PROVEN",
+      "dataFrequency": "DAILY",
+      "integerTradedShareVolume": "NOT_PROVEN_IN_PUBLIC CATALOG PAGE",
+      "finalizedEodSemantics": "PROVEN_AT_DATASET_LEVEL",
+      "auth": "ENTERPRISE_ENTITLEMENT_REQUIRED",
+      "compatibility": "REQUIRES_RESPONSE_ADAPTER_OR_ENTERPRISE_DELIVERY_CONTRACT",
+      "decision": "LEGITIMATE_FALLBACK_CANDIDATE_BUT_NOT CONFIG_ONLY IN THIS RUN"
+    },
+    {
+      "provider": "DirectFN",
+      "egxSupport": "PUBLICLY_CLAIMED/PROVEN_IN_COVERAGE",
+      "historicalCapability": "PUBLICLY_CLAIMED",
+      "eodCapability": "PUBLICLY_CLAIMED",
+      "integerTradedShareVolume": "VOLUME FIELD EXISTS IN FEED MATERIAL; HISTORICAL DAILY RAW-VOLUME CONTRACT NOT PROVEN",
+      "finalizedEodSemantics": "EOD SERVICE EXISTS; EXACT HISTORICAL ENDPOINT CONTRACT NOT PROVEN",
+      "auth": "EXTERNAL_CREDENTIAL_REQUIRED",
+      "compatibility": "REQUIRES_ENDPOINT/SCHEMA CONTRACT; NOT CONFIG_ONLY PROVEN",
+      "decision": "LEGITIMATE_REGIONAL_CANDIDATE; SECONDARY TO EGID FOR THIS RECOVERY"
+    },
+    {
+      "provider": "EODHD",
+      "publicEvidence": ["https://eodhd.com/financial-apis/api-for-historical-data-and-volumes"],
+      "egxSupport": "PUBLIC EXCHANGE COVERAGE EXISTS",
+      "historicalCapability": "PROVEN",
+      "eodCapability": "PROVEN",
+      "integerVolumeField": true,
+      "volumeSemantics": "Provider documentation states historical volume is adjusted for splits.",
+      "auth": "QUERY api_token; not the current optional Bearer contract",
+      "compatibility": "COMPATIBLE_WITH_EXISTING_RESPONSE_MAPPING ONLY IF TOKEN IS EMBEDDED IN THE SECRET URL; AUTH CONTRACT DIFFERS",
+      "decision": "NOT ACCEPTED AS G11 EXACT RAW TRADED-SHARE TRUTH WITHOUT ADDITIONAL PROOF; DO NOT CONFIGURE"
+    },
+    {
+      "provider": "Twelve Data",
+      "egxSupport": "XCAI exchange page exists",
+      "historicalCapability": "GENERIC TIME_SERIES EXISTS BUT XCAI PAGE DOES NOT LIST MARKET-DATA ENDPOINTS",
+      "integerTradedShareVolume": "NOT PROVEN FOR EGX",
+      "finalizedEodSemantics": "NOT PROVEN FOR EGX",
+      "auth": "QUERY API KEY",
+      "compatibility": "UNSUITABLE_FOR_EXACT_EOD UNTIL EGX PRICE/TIME-SERIES COVERAGE IS PROVEN",
+      "decision": "REJECT_FOR_THIS PREFLIGHT"
+    },
+    {
+      "provider": "Marketstack",
+      "egxSupport": "NOT PROVEN FOR EHDR/EGX IN PUBLIC EVIDENCE REVIEWED",
+      "historicalCapability": "GENERIC EOD API EXISTS",
+      "integerTradedShareVolume": "NOT PROVEN FOR EGX",
+      "finalizedEodSemantics": "GENERIC EOD DATASET",
+      "auth": "QUERY access_key",
+      "compatibility": "UNSUITABLE_FOR_EXACT_EOD UNTIL EGX COVERAGE IS PROVEN",
+      "decision": "REJECT_FOR_THIS PREFLIGHT"
+    }
+  ],
+  "configurationDecision": {
+    "outcome": "C_NO_PROVEN_PROVIDER_FOR_EXISTING_CONTRACT_YET",
+    "reason": "A legitimate official EGID API surface was discovered, but the exact GET historical request parameters, auth requirement, response OHLCV field names, raw integer-volume semantics, and finalized-EOD semantics are not proven by the accessible contract view. Guessing any of those would violate the G11 acceptance rules. No authorized secret write capability is available in the current GitHub connector.",
+    "configurationOccurred": false,
+    "secretsChanged": false,
+    "applicationCodeChanged": false,
+    "testsChanged": false,
+    "workflowsChanged": false,
+    "guardsChanged": false
+  },
+  "ehdrReadOnlyValidation": {
+    "status": "NOT_RUN_DUE_TO_PROVIDER_PREFLIGHT",
+    "httpRequestSent": false,
+    "reason": "No exact, credential-safe, parser-compatible EGID GetSymbolHistories request could be constructed without guessing required parameters/auth/schema. Other providers did not meet the stronger exact-market-truth threshold.",
+    "ticker": "EHDR",
+    "session": "2026-09-17",
+    "httpStatus": null,
+    "returnedIdentity": null,
+    "returnedSession": null,
+    "open": null,
+    "high": null,
+    "low": null,
+    "close": null,
+    "volume": null,
+    "finalizationEvidence": null,
+    "stabilityRequests": 0,
+    "dryRun": "NOT_RUN",
+    "eligible": false
+  },
+  "writes": {
+    "stagingRows": 0,
+    "canonicalRows": 0,
+    "historyRows": 0,
+    "g12Opened": false,
+    "mutableG11ClosureRun": false,
+    "g11CertificationRun": false
+  },
+  "officialPersistedStatus": {
+    "canonicalRowsAdded": 0,
+    "CURRENT_SESSION_GAP": 21,
+    "CRITICAL": 0,
+    "HIGHIssueFamilies": 3,
+    "G11": "BLOCKED",
+    "G12": "PENDING",
+    "changedByThisResearch": false
+  },
+  "exactNextAction": "Obtain the exact EGID Feed API access contract for GET /api/DelayedFeed/GetSymbolHistories — required query parameters, authentication requirement/credential, response JSON schema, and confirmation that its daily historical row carries raw session Open/High/Low/Close plus exact integer traded-share Volume for a completed session — then configure EGX_HISTORY_API_URL manually only if that GET response maps to the existing adapter without code changes, and run EHDR/2026-09-17 read-only first."
+}
