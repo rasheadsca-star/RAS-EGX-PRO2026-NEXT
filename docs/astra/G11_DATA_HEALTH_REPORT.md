@@ -2,17 +2,17 @@
 
 - Gate status: **BLOCKED**
 - Overall data-health status: **DEGRADED**
-- Evaluated source snapshot: 2026-09-17T09:04:04.344Z
-- Code HEAD evaluated: 9026e57b5f053f666ae2c5de3fbf168617484925
+- Evaluated source snapshot: 2026-09-17T14:41:04.319Z
+- Code HEAD evaluated: 1ed016c77e292870e9c8ace2b3a4e84f56aa6b34
 - Intended mapped universe: 243
 - Active universe: 228
 - Intentionally excluded: 15
-- Latest expected finalized session: 2026-09-16
-- Latest available canonical session: 2026-09-16
+- Latest expected finalized session: 2026-09-17
+- Latest available canonical session: 2026-09-17
 - Session freshness: CURRENT
-- Valid current canonical securities: 216/228
-- Pipeline-ready V16 source-feature securities: 208/228
-- Production strategy readiness: 208/228 Security×Strategy rows
+- Valid current canonical securities: 206/228
+- Pipeline-ready V16 source-feature securities: 204/228
+- Production strategy readiness: 204/228 Security×Strategy rows
 - Current unified-pipeline valid opportunities: 3
 - Current unified-pipeline legacy-network calls: 0
 - CRITICAL unresolved issue classes: 0
@@ -25,8 +25,8 @@
 ## Material findings
 
 - **HIGH SYMBOL_IDENTITY_UNRESOLVED** — Active mapped securities lack verified canonical symbol/history identity (1 affected securities).
-- **HIGH CURRENT_SESSION_GAP** — Active intended securities are missing a validation-approved row for the expected finalized session (12 affected securities).
-- **HIGH REGIME_INPUT_INCOMPLETE** — Market-regime/production model inputs cover only a subset of the intended active universe (20 affected securities).
+- **HIGH CURRENT_SESSION_GAP** — Active intended securities are missing a validation-approved row for the expected finalized session (22 affected securities).
+- **HIGH REGIME_INPUT_INCOMPLETE** — Market-regime/production model inputs cover only a subset of the intended active universe (24 affected securities).
 
 ## Acceptance decision
 
@@ -36,12 +36,12 @@ The G11 run is non-cutover/shadow certification only. It does not change strateg
 ## Exact final evidence closure
 
 - Searchable active universe: 228/228
-- Current valid canonical universe: 216/228
-- Decision-ready universe: 208/228
-- Regime-ready universe: 208/228
-- Current-universe gaps: 12; disposition accounting closes exactly (STALE_DATA=11, SOURCE_INGESTION_FAILED=1).
+- Current valid canonical universe: 206/228
+- Decision-ready universe: 204/228
+- Regime-ready universe: 204/228
+- Current-universe gaps: 22; disposition accounting closes exactly (STALE_DATA=21, SOURCE_INGESTION_FAILED=1).
 - Previously unverified history-source mappings reviewed: 1; resolved=0; unresolved=1.
-- Stale production-critical records: 11; resolved=0; unresolved=11.
-- Current DecisionSnapshot: G09-DS-3e84f0479722a41534c2d9d9; semantic hash=3e84f0479722a41534c2d9d94f48f9650c4f203a53cbdfa022408f66e5cfaec7.
+- Stale production-critical records: 21; resolved=0; unresolved=21.
+- Current DecisionSnapshot: G09-DS-e2dfab3eeddfe5750f1800b6; semantic hash=e2dfab3eeddfe5750f1800b6cbea4438641f2507ba4b6b33396dc1872b67d7fb.
 - Current pipeline opportunities: 3; legacy-network calls=0.
 - G11 remains **BLOCKED** unless all CRITICAL and production-relevant HIGH findings are cleared by validation-approved evidence.

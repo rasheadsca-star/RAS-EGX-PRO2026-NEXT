@@ -1,28 +1,32 @@
 {
   "schemaVersion": "astra-g11-blocker-dependency-graph-1",
-  "generatedAt": "2026-09-17T08:56:21Z",
+  "generatedAt": "2026-09-17T14:34:41Z",
   "issueFamilyCounts": {
     "symbolIdentity": 1,
-    "currentSessionGap": 12,
-    "regimeInputIncomplete": 20
+    "currentSessionGap": 22,
+    "regimeInputIncomplete": 24
   },
-  "uniqueAffectedSecurityCount": 20,
+  "uniqueAffectedSecurityCount": 24,
   "uniqueAffectedSecurities": [
     "AIHC",
     "ALRA",
     "AMES",
+    "ARVA",
+    "CFGH",
     "DCCC",
     "DEIN",
+    "EGSA",
+    "EHDR",
     "EPPK",
+    "FERC",
     "GPPL",
     "GRCA",
     "ICLE",
     "IRAX",
-    "LUTS",
     "MEGM",
+    "MMAT",
     "NAPR",
     "NDRL",
-    "PHGC",
     "POCO",
     "SAIB",
     "SEIGA",
@@ -37,29 +41,56 @@
       "POCO"
     ],
     "currentAndRegime": [
+      "AIHC",
       "ALRA",
+      "ARVA",
+      "CFGH",
       "DCCC",
       "DEIN",
+      "EGSA",
+      "EHDR",
       "EPPK",
+      "FERC",
       "GPPL",
       "ICLE",
+      "IRAX",
       "MEGM",
+      "MMAT",
       "NAPR",
       "NDRL",
       "POCO",
       "SAIB",
-      "SPHT"
+      "SEIGA",
+      "SPHT",
+      "TORA"
     ],
     "allThree": [
       "POCO"
     ]
   },
   "v16ReasonSets": {
-    "PREVIOUS_20_SESSION_AVERAGE_VOLUME_NON_POSITIVE": [
-      "AIHC"
-    ],
-    "ABS_RETURN1_EXCEEDS_V16_30_PCT_LIMIT": [
-      "AIHC"
+    "CURRENT_EXPECTED_SESSION_ROW_MISSING": [
+      "AIHC",
+      "ALRA",
+      "ARVA",
+      "CFGH",
+      "DCCC",
+      "DEIN",
+      "EGSA",
+      "EHDR",
+      "EPPK",
+      "FERC",
+      "GPPL",
+      "ICLE",
+      "IRAX",
+      "MEGM",
+      "MMAT",
+      "NAPR",
+      "NDRL",
+      "SAIB",
+      "SEIGA",
+      "SPHT",
+      "TORA"
     ],
     "HISTORY_DOCUMENT_NOT_SOURCE_VALID": [
       "ALRA",
@@ -73,58 +104,65 @@
       "SAIB",
       "SPHT"
     ],
-    "CURRENT_EXPECTED_SESSION_ROW_MISSING": [
-      "ALRA",
-      "DCCC",
-      "DEIN",
-      "EPPK",
-      "GPPL",
-      "ICLE",
-      "MEGM",
-      "NAPR",
-      "NDRL",
-      "SAIB",
-      "SPHT"
-    ],
     "ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE": [
       "AMES",
-      "GRCA",
-      "LUTS",
-      "PHGC",
-      "SEIGA"
-    ],
-    "HISTORY_LT_56_FOR_V16_SOURCE_FEATURES": [
-      "IRAX",
-      "TORA"
+      "GRCA"
     ],
     "HISTORY_FILE_MISSING": [
       "POCO"
     ]
   },
   "nodes": [
-    "feature:ABS_RETURN1_EXCEEDS_V16_30_PCT_LIMIT",
     "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
     "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
     "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
     "feature:HISTORY_FILE_MISSING",
-    "feature:HISTORY_LT_56_FOR_V16_SOURCE_FEATURES",
-    "feature:PREVIOUS_20_SESSION_AVERAGE_VOLUME_NON_POSITIVE",
     "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+    "source:AIHC",
     "source:ALRA",
+    "source:ARVA",
+    "source:CFGH",
     "source:DCCC",
     "source:DEIN",
+    "source:EGSA",
+    "source:EHDR",
     "source:EPPK",
+    "source:FERC",
     "source:GPPL",
     "source:ICLE",
+    "source:IRAX",
     "source:MEGM",
+    "source:MMAT",
     "source:NAPR",
     "source:NDRL",
     "source:POCO",
     "source:SAIB",
+    "source:SEIGA",
     "source:SPHT",
+    "source:TORA",
     "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT"
   ],
   "edges": [
+    {
+      "from": "source:AIHC",
+      "to": "feature:CURRENT_CANONICAL_AIHC",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_AIHC",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_AIHC",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:AIHC",
+      "relation": "production_readiness"
+    },
     {
       "from": "source:ALRA",
       "to": "feature:CURRENT_CANONICAL_ALRA",
@@ -143,6 +181,46 @@
     {
       "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
       "to": "security:ALRA",
+      "relation": "production_readiness"
+    },
+    {
+      "from": "source:ARVA",
+      "to": "feature:CURRENT_CANONICAL_ARVA",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_ARVA",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_ARVA",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:ARVA",
+      "relation": "production_readiness"
+    },
+    {
+      "from": "source:CFGH",
+      "to": "feature:CURRENT_CANONICAL_CFGH",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_CFGH",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_CFGH",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:CFGH",
       "relation": "production_readiness"
     },
     {
@@ -186,6 +264,46 @@
       "relation": "production_readiness"
     },
     {
+      "from": "source:EGSA",
+      "to": "feature:CURRENT_CANONICAL_EGSA",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_EGSA",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_EGSA",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:EGSA",
+      "relation": "production_readiness"
+    },
+    {
+      "from": "source:EHDR",
+      "to": "feature:CURRENT_CANONICAL_EHDR",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_EHDR",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_EHDR",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:EHDR",
+      "relation": "production_readiness"
+    },
+    {
       "from": "source:EPPK",
       "to": "feature:CURRENT_CANONICAL_EPPK",
       "relation": "blocks"
@@ -203,6 +321,26 @@
     {
       "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
       "to": "security:EPPK",
+      "relation": "production_readiness"
+    },
+    {
+      "from": "source:FERC",
+      "to": "feature:CURRENT_CANONICAL_FERC",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_FERC",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_FERC",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:FERC",
       "relation": "production_readiness"
     },
     {
@@ -246,6 +384,26 @@
       "relation": "production_readiness"
     },
     {
+      "from": "source:IRAX",
+      "to": "feature:CURRENT_CANONICAL_IRAX",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_IRAX",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_IRAX",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:IRAX",
+      "relation": "production_readiness"
+    },
+    {
       "from": "source:MEGM",
       "to": "feature:CURRENT_CANONICAL_MEGM",
       "relation": "blocks"
@@ -263,6 +421,26 @@
     {
       "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
       "to": "security:MEGM",
+      "relation": "production_readiness"
+    },
+    {
+      "from": "source:MMAT",
+      "to": "feature:CURRENT_CANONICAL_MMAT",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_MMAT",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_MMAT",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:MMAT",
       "relation": "production_readiness"
     },
     {
@@ -346,6 +524,26 @@
       "relation": "production_readiness"
     },
     {
+      "from": "source:SEIGA",
+      "to": "feature:CURRENT_CANONICAL_SEIGA",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_SEIGA",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_SEIGA",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:SEIGA",
+      "relation": "production_readiness"
+    },
+    {
       "from": "source:SPHT",
       "to": "feature:CURRENT_CANONICAL_SPHT",
       "relation": "blocks"
@@ -366,68 +564,43 @@
       "relation": "production_readiness"
     },
     {
-      "from": "feature:PREVIOUS_20_SESSION_AVERAGE_VOLUME_NON_POSITIVE",
+      "from": "source:TORA",
+      "to": "feature:CURRENT_CANONICAL_TORA",
+      "relation": "blocks"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_TORA",
+      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "relation": "can_block_candidate_evaluation"
+    },
+    {
+      "from": "feature:CURRENT_CANONICAL_TORA",
+      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "relation": "reduces_cross_section"
+    },
+    {
+      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "to": "security:TORA",
+      "relation": "production_readiness"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
       "to": "security:AIHC",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:ABS_RETURN1_EXCEEDS_V16_30_PCT_LIMIT",
-      "to": "security:AIHC",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:ALRA",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:DEIN",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:EPPK",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:GPPL",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:ICLE",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:MEGM",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:NAPR",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:NDRL",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:SAIB",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:SPHT",
       "relation": "not_ready"
     },
     {
       "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
       "to": "security:ALRA",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:ARVA",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:CFGH",
       "relation": "not_ready"
     },
     {
@@ -442,7 +615,22 @@
     },
     {
       "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:EGSA",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:EHDR",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
       "to": "security:EPPK",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:FERC",
       "relation": "not_ready"
     },
     {
@@ -457,7 +645,17 @@
     },
     {
       "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:IRAX",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
       "to": "security:MEGM",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:MMAT",
       "relation": "not_ready"
     },
     {
@@ -477,6 +675,66 @@
     },
     {
       "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:SEIGA",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:SPHT",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
+      "to": "security:TORA",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:ALRA",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:DEIN",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:EPPK",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:GPPL",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:ICLE",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:MEGM",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:NAPR",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:NDRL",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
+      "to": "security:SAIB",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
       "to": "security:SPHT",
       "relation": "not_ready"
     },
@@ -488,31 +746,6 @@
     {
       "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
       "to": "security:GRCA",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
-      "to": "security:LUTS",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
-      "to": "security:PHGC",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
-      "to": "security:SEIGA",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_LT_56_FOR_V16_SOURCE_FEATURES",
-      "to": "security:IRAX",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:HISTORY_LT_56_FOR_V16_SOURCE_FEATURES",
-      "to": "security:TORA",
       "relation": "not_ready"
     },
     {
