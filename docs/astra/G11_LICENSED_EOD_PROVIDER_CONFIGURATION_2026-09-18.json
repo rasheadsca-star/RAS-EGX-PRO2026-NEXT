@@ -191,7 +191,12 @@
     "historyRows": 0,
     "g12Opened": false,
     "mutableG11ClosureRun": false,
-    "g11CertificationRun": false
+    "g11CertificationRun": false,
+    "applicationChanges": 0,
+    "testChanges": 0,
+    "workflowChanges": 0,
+    "guardChanges": 0,
+    "canonicalChanges": 0
   },
   "officialPersistedStatus": {
     "canonicalRowsAdded": 0,
@@ -202,7 +207,7 @@
     "G12": "PENDING",
     "changedByThisResearch": false
   },
-  "exactNextAction": "Obtain from EGID the Feed API access contract/credential for GET /api/DelayedFeed/GetSymbolHistories (exact query parameters, authentication/token requirement, response JSON schema, and confirmation that completed daily rows provide raw Open/High/Low/Close plus exact integer traded-share Volume). Then set GitHub Actions secret EGX_HISTORY_API_URL to that verified GET template and EGX_HISTORY_API_KEY only if Bearer auth is actually required, and run EHDR/2026-09-17 read-only before any staging.",
+  "exactNextAction": "Send the recorded EGID technical contract request to EGID Market Data / Technical Support and obtain their exact GetSymbolHistories + GetToken contract/entitlement response before any EHDR API call.",
   "reconciledFromHead": "0a8063e5cc9605cead7fe4ff10105a978a8cc1cd",
   "additionalAuthorizedResourceChecks": {
     "googleDrive": {
@@ -222,5 +227,213 @@
       "environmentMetadataStatus": "UNKNOWN",
       "conclusion": "No inference is made about Vercel env vars from the current connector session because no readable team scope was returned."
     }
+  },
+  "egid_contract_discovery": {
+    "authority": {
+      "provider": "EGID",
+      "status": "PROVEN_OFFICIAL_EGX_MARKET_DATA_PROVIDER",
+      "evidence": [
+        "EGID official site states it is fully owned by EGX and has acted as the sole authorized provider of EGX market data.",
+        "EGID official site describes a market-data feed service for EGX transactions and information."
+      ]
+    },
+    "swagger_machine_readable": {
+      "ui": "https://ticker.egidegypt.com/index.html",
+      "openapiVersion": "OAS3",
+      "definitionPath": "/swagger/v1/swagger.json",
+      "definitionUrl": "https://ticker.egidegypt.com/swagger/v1/swagger.json",
+      "definitionPathStatus": "PROVEN_BY_OFFICIAL_SWAGGER_UI",
+      "rawDefinitionRetrievedByAuthorizedTools": false,
+      "rawDefinitionRetrievalNote": "The public Swagger UI exposes the backing path, but the available text-web tooling did not expose the raw JSON payload and the sandbox runtime has no outbound DNS. No endpoint contract fields were inferred from this limitation.",
+      "provenOperations": [
+        "GET /api/DelayedFeed/GetSymbolHistories",
+        "GET /api/Feed/GetSymbolHistories",
+        "POST /api/Settings/GetToken"
+      ],
+      "provenSchemas": [
+        "Period",
+        "DateInterval",
+        "HistoryReqDto",
+        "SymbolChartRequest",
+        "SymbolChartByDateRequest",
+        "AuthenticationParameterReqDto"
+      ]
+    },
+    "project_material_search": {
+      "github": {
+        "exactTerms": [
+          "EGID",
+          "GetSymbolHistories",
+          "GetToken",
+          "DelayedFeed",
+          "Feed API"
+        ],
+        "existingIntegrationFound": false,
+        "credentialReferenceFound": false,
+        "note": "No EGID/GetSymbolHistories/GetToken/DelayedFeed implementation or credential reference was found in the authorized repository search. A generic README recommendation for a licensed EGX provider is not an EGID integration."
+      },
+      "googleDrive": {
+        "exactTerms": [
+          "EGID",
+          "GetSymbolHistories",
+          "GetToken",
+          "DelayedFeed",
+          "Feed API"
+        ],
+        "relevantResults": 0,
+        "credentialReferenceFound": false
+      }
+    }
+  },
+  "historical_endpoint": {
+    "delayedFeed": {
+      "method": "GET",
+      "path": "/api/DelayedFeed/GetSymbolHistories",
+      "absoluteBase": "https://ticker.egidegypt.com",
+      "queryParameters": "UNKNOWN",
+      "requiredParameters": "UNKNOWN",
+      "parameterTypes": "UNKNOWN",
+      "symbolParameterName": "UNKNOWN",
+      "symbolFormat": "UNKNOWN",
+      "marketExchangeParameter": "UNKNOWN",
+      "dateRangeParameters": "UNKNOWN",
+      "intervalGranularityParameter": "UNKNOWN",
+      "pagination": "UNKNOWN",
+      "limitCount": "UNKNOWN",
+      "ordering": "UNKNOWN"
+    },
+    "feed": {
+      "method": "GET",
+      "path": "/api/Feed/GetSymbolHistories",
+      "absoluteBase": "https://ticker.egidegypt.com",
+      "queryParameters": "UNKNOWN",
+      "requiredParameters": "UNKNOWN",
+      "parameterTypes": "UNKNOWN",
+      "symbolParameterName": "UNKNOWN",
+      "symbolFormat": "UNKNOWN",
+      "marketExchangeParameter": "UNKNOWN",
+      "dateRangeParameters": "UNKNOWN",
+      "intervalGranularityParameter": "UNKNOWN",
+      "pagination": "UNKNOWN",
+      "limitCount": "UNKNOWN",
+      "ordering": "UNKNOWN"
+    },
+    "delayedVsLiveSufficiency": "UNKNOWN_UNTIL_EGID_CONFIRMS_HISTORICAL_ENTITLEMENT_AND_COMPLETED_DAILY_DATA"
+  },
+  "authentication_contract": {
+    "tokenEndpoint": {
+      "method": "POST",
+      "path": "/api/Settings/GetToken",
+      "bodySchemaName": "AuthenticationParameterReqDto",
+      "bodyFields": "UNKNOWN",
+      "requiredCredentialFields": "UNKNOWN",
+      "requestContentType": "UNKNOWN",
+      "responseTokenField": "UNKNOWN",
+      "tokenType": "UNKNOWN",
+      "tokenLifetime": "UNKNOWN"
+    },
+    "feedConsumption": {
+      "authorizationHeaderFormat": "UNKNOWN",
+      "customHeader": "UNKNOWN",
+      "cookie": "UNKNOWN",
+      "queryToken": "UNKNOWN",
+      "otherMechanism": "UNKNOWN"
+    },
+    "currentAdapterImplication": "Cannot classify static EGX_HISTORY_API_KEY as sufficient until EGID documents whether the token is static/long-lived or dynamically issued/expiring."
+  },
+  "response_schema": {
+    "getSymbolHistoriesResponse": "UNKNOWN",
+    "identityField": "UNKNOWN",
+    "symbolField": "UNKNOWN",
+    "securityIdField": "UNKNOWN",
+    "isinField": "UNKNOWN",
+    "dateField": "UNKNOWN",
+    "timestampField": "UNKNOWN",
+    "openField": "UNKNOWN",
+    "highField": "UNKNOWN",
+    "lowField": "UNKNOWN",
+    "closeField": "UNKNOWN",
+    "volumeField": "UNKNOWN",
+    "turnoverValueField": "UNKNOWN",
+    "tradeCountField": "UNKNOWN",
+    "marketExchangeField": "UNKNOWN",
+    "intervalTypeField": "UNKNOWN",
+    "finalClosedField": "UNKNOWN",
+    "note": "No EGID response field is mapped to G11 until the authoritative schema or sample response is supplied."
+  },
+  "volume_semantics": {
+    "status": "VOLUME_SEMANTICS_UNPROVEN",
+    "exactTradedShareVolumeRequired": true,
+    "rawSessionVolumeProven": false,
+    "splitAdjustedExcluded": true,
+    "cumulativeIntradayPartialExcluded": true,
+    "averageDailyVolumeExcluded": true,
+    "tradedValueExcluded": true,
+    "roundedDisplayVolumeExcluded": true
+  },
+  "eod_finalization_semantics": {
+    "status": "UNPROVEN",
+    "dailyBarProven": false,
+    "completedSessionProven": false,
+    "explicitFinalClosedField": "UNKNOWN",
+    "historicalAgeAloneAcceptedAsProof": false,
+    "requirement": "EGID must confirm the granularity/interval that yields a completed daily session bar and that the returned historical record is final for that trading session."
+  },
+  "adapter_compatibility": {
+    "classification": "STILL_UNPROVEN",
+    "existingAdapter": "probeLicensedCurrent()",
+    "methodCompatibility": "POTENTIALLY_COMPATIBLE because EGID exposes GET operations",
+    "urlTemplateCompatibility": "UNPROVEN because exact query parameter names and date/range behavior are unknown",
+    "authCompatibility": "UNPROVEN because EGID token acquisition and consumption are unknown",
+    "responseMappingCompatibility": "UNPROVEN because EGID response field names/nesting are unknown",
+    "datePaginationCompatibility": "UNPROVEN because historical window, ordering, pagination and limit behavior are unknown",
+    "exactEodSuitability": "UNPROVEN because daily/completed semantics and raw traded-share volume are not documented in accessible evidence",
+    "noCodeChangeAttempted": true
+  },
+  "credential_status": {
+    "egidCredentialAvailable": "UNKNOWN",
+    "usableByCurrentAdapter": "UNKNOWN",
+    "githubSecretMetadata": "UNKNOWN",
+    "authorizedProjectCredentialReferenceFound": false,
+    "noCredentialValueRead": true,
+    "noCredentialValuePersisted": true
+  },
+  "read_only_ehdr": {
+    "executed": false,
+    "status": "NOT_RUN_DUE_TO_PROVIDER_CONTRACT_PREFLIGHT",
+    "exactBlocker": "The exact EGID GetSymbolHistories query/auth/response contract and provider-level daily final/raw-volume semantics remain unproven; therefore a credential-safe EHDR request cannot be constructed without guessing.",
+    "ticker": "EHDR",
+    "session": "2026-09-17",
+    "requestsSent": 0,
+    "stagingRows": 0,
+    "canonicalRows": 0
+  },
+  "external_action_required": {
+    "outcome": "B_EXACT_EGID_CONTRACT_AND_CREDENTIAL_REQUEST_REQUIRED",
+    "provider": "EGID Feed API",
+    "requiredService": "Historical EGX market-data access through EGID Feed API",
+    "preferredOperation": "GET /api/DelayedFeed/GetSymbolHistories if EGID confirms it provides completed historical daily OHLCV and the required entitlement; otherwise EGID must identify the correct GET operation.",
+    "technicalQuestions": [
+      "What are the exact query parameters, required/optional flags, types, and symbol format for GET /api/DelayedFeed/GetSymbolHistories and GET /api/Feed/GetSymbolHistories?",
+      "How should a single EGX security such as EHDR be identified: ticker, security ID, ISIN, or another instrument identifier?",
+      "How are historical date range and daily interval/granularity specified, and what ordering/pagination/limit rules apply?",
+      "What is the exact request body schema for POST /api/Settings/GetToken and what credential fields are required?",
+      "What token field is returned, what is its type/lifetime, and exactly how is it supplied to Feed/DelayedFeed requests?",
+      "What is the exact JSON response schema for GetSymbolHistories, including identity, date/time, open, high, low, close, traded-share volume, traded value/turnover, and any final/closed marker?",
+      "Which field is raw traded-share Volume for one session, and is it unadjusted for splits and distinct from traded value/turnover?",
+      "Which interval/parameter returns one completed daily EOD bar, and are historical daily rows final after the session closes?",
+      "Does DelayedFeed entitlement include historical daily/EOD data for 2026-09-17, or is the live Feed entitlement required?",
+      "Please provide one redacted/sample response for an EGX equity historical daily request."
+    ],
+    "githubConfigurationAfterConfirmation": {
+      "EGX_HISTORY_API_URL": "Set only to the verified GET URL template compatible with the existing adapter; exact template remains UNKNOWN until EGID answers the contract questions.",
+      "EGX_HISTORY_API_KEY": "Set only if the documented EGID auth mechanism is directly compatible with the current static secret model; otherwise adapter work will be required in a separate authorized phase."
+    },
+    "firstValidationAfterSupply": "Run exactly one direct read-only EHDR / 2026-09-17 request using the proven EGID contract, validate identity/date/OHLC/raw integer Volume/completed-EOD semantics, then repeat the identical request for stability. No staging or canonical write."
+  },
+  "support_request_draft": {
+    "addressee": "EGID Market Data / Technical Support",
+    "subject": "Technical contract request — EGID historical daily EGX Feed API integration",
+    "body": "We are integrating an internal EGX market-data validation service and would like to use EGID as the authoritative source for historical daily data. Please provide the exact API contract and entitlement requirements for historical EGX equity data, specifically GET /api/DelayedFeed/GetSymbolHistories and GET /api/Feed/GetSymbolHistories. We need: (1) all query parameters, required/optional status, data types and exact symbol/instrument format; (2) date-range, daily interval/granularity, ordering, pagination and limit behavior; (3) the exact POST /api/Settings/GetToken request schema, required credential fields, token response field, token type/lifetime and the exact way the token is supplied to Feed/DelayedFeed requests; (4) the GetSymbolHistories response JSON schema, including security identity, session date/timestamp, Open, High, Low, Close, traded-share Volume, traded value/turnover and any final/closed field; (5) confirmation of which Volume field represents raw traded shares for the completed session, unadjusted and distinct from monetary turnover/value; (6) confirmation of the parameter/interval that returns one completed final daily EOD bar; (7) whether DelayedFeed entitlement is sufficient for historical daily data including 17 September 2026, or whether Feed entitlement is required; and (8) one redacted/sample historical daily response for an EGX equity such as EHDR. Please also advise the required commercial/technical entitlement for this historical API access. No live trading or order-entry capability is required."
   }
 }
