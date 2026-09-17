@@ -1,0 +1,91 @@
+{
+  "schemaVersion": "astra-g11-official-fallback-source-recovery-1",
+  "generatedDate": "2026-09-18",
+  "branch": "astra/g11-guard37-recovery-20260916",
+  "startingHead": "316111618211cf3dac6598ebad9ad00e9b8f3e71",
+  "scope": "Parallel read-only fallback-source research while EGID remains blocked. No G11 code/test/workflow/guard/canonical/history/G12 mutation.",
+  "target": {
+    "ticker": "EHDR",
+    "session": "2026-09-17"
+  },
+  "objective": "Find a reproducible authoritative or independently defensible finalized-EOD OHLCV source without waiting for EGID, while preserving the same G11 acceptance standard.",
+  "officialEgxFindings": {
+    "betaSiteSessionEvidence": {
+      "url": "https://beta.egx.com.eg/en",
+      "status": "PROVEN_CURRENT_OFFICIAL_SURFACE",
+      "evidence": "Official EGX beta site is serving 17 September 2026 market/disclosure content and market-summary surfaces.",
+      "ehdrExactRowVisible": false
+    },
+    "legacyOfficialReferencesAlreadyInRepo": [
+      "https://www.egx.com.eg/en/Stock_Trading.aspx?code={symbol}",
+      "https://www.egx.com.eg/en/Trading.aspx?code={symbol}",
+      "https://www.egx.com.eg/en/ListedStocks.aspx"
+    ],
+    "repositoryPriorAudit": "NO_STABLE_PUBLIC_STRUCTURED_MARKET_WIDE_ENDPOINT_VERIFIED",
+    "officialBulletinStatus": "SEARCHED_BUT_EXACT_2026-09-17_EHDR_ROW_NOT_YET_RETRIEVED_FROM_AN_EGX_OFFICIAL_PUBLICATION"
+  },
+  "ehdrResearchEvidence": {
+    "identity": {
+      "ticker": "EHDR",
+      "name": "Egyptians Housing Development & Reconstruction",
+      "isin": "EGS65341C017",
+      "status": "CONSISTENT_ACROSS_MULTIPLE_PUBLIC_SOURCES"
+    },
+    "strongestClosedSecondarySnapshot": {
+      "source": "Investing.com AU scoreboard + historical page",
+      "status": "RESEARCH_ONLY_NOT_CANONICAL",
+      "marketState": "Closed 17/09",
+      "session": "2026-09-17",
+      "open": 2.73,
+      "high": 2.79,
+      "low": 2.73,
+      "close": 2.79,
+      "exactVolume": 3307212,
+      "isin": "EGS65341C017",
+      "urls": [
+        "https://au.investing.com/equities/egyptn-hous-de-scoreboard",
+        "https://au.investing.com/equities/egyptn-hous-de-historical-data"
+      ]
+    },
+    "instabilityEvidence": {
+      "source": "Investing.com UK historical surface",
+      "observedSameCalendarSession": {
+        "close": 2.77,
+        "high": 2.78,
+        "low": 2.73,
+        "approximateVolume": "1.98M"
+      },
+      "interpretation": "The regional surface was still delayed/intraday at crawl time while AU/India surfaces reported a closed-session snapshot. This proves that a generic Investing surface cannot be treated as a stable canonical oracle for G11.",
+      "classification": "UNSTABLE_PUBLIC_SURFACE_FOR_CANONICAL_USE"
+    }
+  },
+  "currentDecision": {
+    "fallbackResearchActivated": true,
+    "waitForEgidBeforeResearch": false,
+    "promoteResearchValues": false,
+    "stagingRows": 0,
+    "canonicalRows": 0,
+    "g11CertificationRun": false,
+    "g12Opened": false,
+    "status": "CONTINUE_OFFICIAL_PRIMARY_EVIDENCE_RECOVERY_IN_PARALLEL_WITH_EGID"
+  },
+  "acceptanceGate": {
+    "securityIdentityExact": true,
+    "exactSessionRequired": true,
+    "exactOHLCRequired": true,
+    "rawIntegerVolumeRequired": true,
+    "finalizedEodRequired": true,
+    "stableReproducibleSourceRequired": true,
+    "currentEhdrEligible": false,
+    "blocker": "Exact EHDR values now have strong secondary research support, but primary EGX/authorized-provider proof of the finalized row and raw-volume semantics has not yet been captured."
+  },
+  "officialPersistedBaseline": {
+    "canonicalRowsAdded": 0,
+    "CURRENT_SESSION_GAP": 21,
+    "CRITICAL": 0,
+    "HIGHIssueFamilies": 3,
+    "G11": "BLOCKED",
+    "G12": "PENDING"
+  },
+  "nextTechnicalAction": "Continue immediately against EGX official publications/backend surfaces to retrieve the exact finalized EHDR 2026-09-17 row (identity + O/H/L/C + raw integer Volume). Do not wait for EGID and do not promote secondary values unless the official/authorized evidence closes the remaining provenance/finalization gate."
+}
