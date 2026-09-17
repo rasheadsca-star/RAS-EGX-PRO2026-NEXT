@@ -22,7 +22,43 @@
       "https://www.egx.com.eg/en/ListedStocks.aspx"
     ],
     "repositoryPriorAudit": "NO_STABLE_PUBLIC_STRUCTURED_MARKET_WIDE_ENDPOINT_VERIFIED",
-    "officialBulletinStatus": "SEARCHED_BUT_EXACT_2026-09-17_EHDR_ROW_NOT_YET_RETRIEVED_FROM_AN_EGX_OFFICIAL_PUBLICATION"
+    "officialBulletinStatus": "SEARCHED_BUT_EXACT_2026-09-17_EHDR_ROW_NOT_YET_RETRIEVED_FROM_AN_EGX_OFFICIAL_PUBLICATION",
+    "betaOfficialSurface": {
+      "url": "https://beta.egx.com.eg/en",
+      "classification": "OFFICIAL_EGX_SURFACE",
+      "currentSessionDateEvidence": "17 September 2026 content is present on the official EGX site.",
+      "marketSummaryHeadingsVisible": [
+        "Value (EGP)",
+        "Volume",
+        "Number of Trades",
+        "Market Cap (EGP)"
+      ],
+      "exactEhdrRowRetrieved": false,
+      "note": "The public HTML surface did not expose a stock-specific EHDR historical OHLCV row through the accessible text layer."
+    },
+    "legacyOfficialPages": {
+      "templates": [
+        "https://www.egx.com.eg/en/Stock_Trading.aspx?code={symbol}",
+        "https://www.egx.com.eg/en/Trading.aspx?code={symbol}",
+        "https://www.egx.com.eg/en/ListedStocks.aspx"
+      ],
+      "accessibilityInThisRun": "UNAVAILABLE_OR_502_THROUGH_AVAILABLE_WEB_LAYER",
+      "repositoryLimitation": "Existing project registry already notes that public EGX pages may not expose full per-stock OHLCV tables for every symbol."
+    },
+    "dailyBulletin": {
+      "exact2026_09_17EhdrBulletinRetrieved": false,
+      "directDownloadAttempts": "Official bulletin download URLs encountered access/security/502 behavior in the available retrieval layer; no actual 17-Sep-2026 bulletin containing EHDR was successfully obtained.",
+      "pdfRowInspected": false,
+      "classification": "OFFICIAL_SOURCE_BLOCKED_AT_DOCUMENT_ACCESS_LAYER"
+    },
+    "machineReadableEndpoint": {
+      "exactOfficialStockHistoryEndpointFound": false,
+      "internalSecurityIdForEHDR": "UNKNOWN",
+      "method": "UNKNOWN",
+      "parameters": "UNKNOWN",
+      "responseSchema": "UNKNOWN",
+      "adapterCompatibility": "STILL_UNPROVEN"
+    }
   },
   "ehdrResearchEvidence": {
     "identity": {
@@ -87,5 +123,160 @@
     "G11": "BLOCKED",
     "G12": "PENDING"
   },
-  "nextTechnicalAction": "Continue immediately against EGX official publications/backend surfaces to retrieve the exact finalized EHDR 2026-09-17 row (identity + O/H/L/C + raw integer Volume). Do not wait for EGID and do not promote secondary values unless the official/authorized evidence closes the remaining provenance/finalization gate."
+  "nextTechnicalAction": "Continue immediately against EGX official publications/backend surfaces to retrieve the exact finalized EHDR 2026-09-17 row (identity + O/H/L/C + raw integer Volume). Do not wait for EGID and do not promote secondary values unless the official/authorized evidence closes the remaining provenance/finalization gate.",
+  "repositoryHeadAtEvidenceReview": "06b8cffb4eaf02e3468d5ca735c12293cdb4e59e",
+  "ehdrIdentity": {
+    "ticker": "EHDR",
+    "isin": "EGS65341C017",
+    "company": "Egyptians Housing Development & Reconstruction",
+    "officialInternalSecurityId": "UNKNOWN",
+    "status": "IDENTITY_STRONGLY_CORROBORATED_BUT_NO_DIRECT_EGX_SECURITY_DETAIL_PAYLOAD_CAPTURED_IN_THIS_RUN"
+  },
+  "officialExactEodEvidence": {
+    "classification": "NOT_OBTAINED",
+    "source": "EGX official infrastructure",
+    "session": "2026-09-17",
+    "open": "UNKNOWN",
+    "high": "UNKNOWN",
+    "low": "UNKNOWN",
+    "close": "UNKNOWN",
+    "volume": "UNKNOWN",
+    "rawIntegerVolumeSemantics": "UNKNOWN",
+    "finalizedEodSemantics": "UNKNOWN",
+    "reason": "No official EGX stock-specific historical row or daily bulletin row for EHDR/2026-09-17 was successfully retrieved from the accessible official surfaces."
+  },
+  "authorizedSecondaryAssessment": {
+    "directFN": {
+      "provider": "DirectFN Egypt",
+      "provenance": "Commercial market-data provider; public delayed-data documentation exposes SYMBOL, OPEN, HIGH, LOW, LAST TRADE PRICE, VOLUME, TURNOVER and states data are delayed during market session.",
+      "publicFeedSemantics": "Today Traded / delayed feed; 15 minutes late during market session.",
+      "closedMarketPageObserved": "A DirectFN surface states EGX Closed 17 Sep 2026 at market-summary level.",
+      "ehdrPublicRows": [
+        {
+          "surface": "tradingData.aspx",
+          "open": 2.73,
+          "last": 2.77,
+          "high": 2.78,
+          "low": 2.73,
+          "volume": 847437,
+          "turnover": 2339811,
+          "classification": "STALE_OR_INTRADAY"
+        },
+        {
+          "surface": "data_feed.aspx/search cache",
+          "last": 2.51,
+          "classification": "CONFLICTING_CACHE"
+        }
+      ],
+      "exactHistoricalFinalEhdrRowProven": false,
+      "decision": "NOT_ACCEPTED_AS_AUTHORIZED_EXACT_EOD_FROM_PUBLIC_SURFACES"
+    }
+  },
+  "secondaryEvidence": {
+    "investing": {
+      "classification": "SECONDARY_CORROBORATION_ONLY",
+      "ticker": "EHDR",
+      "isin": "EGS65341C017",
+      "session": "2026-09-17",
+      "marketState": "Closed",
+      "open": 2.73,
+      "high": 2.79,
+      "low": 2.73,
+      "close": 2.79,
+      "exactVolume": 3307212,
+      "sameProviderRegionalConflict": true,
+      "conflictNote": "A different regional/cache surface previously exposed a partial/stale same-day state; therefore Investing is not a stable canonical oracle."
+    },
+    "argaam": {
+      "classification": "SECONDARY_CORROBORATION_ONLY",
+      "sessionPageDate": "2026-09-17",
+      "ticker": "EHDR",
+      "closeOrPrice": 2.79,
+      "high": 2.79,
+      "low": 2.73,
+      "exactVolume": 3307212,
+      "turnover": 9135745,
+      "transactions": 372,
+      "open": "NOT_EXPOSED_IN_CAPTURED_TABLE",
+      "finalizationSemantics": "NOT_EXPLICITLY_PROVEN",
+      "provenanceAsOfficialEgxSource": false
+    },
+    "crossCheck": {
+      "c_h_l_volumeExactMatchBetweenInvestingAndArgaam": true,
+      "fullOhlcvExactMatch": false,
+      "fullOhlcvReason": "Argaam capture does not expose Open; official EGX exact row remains unavailable.",
+      "SECONDARY_CORROBORATION_MATCH": "PARTIAL_C_H_L_VOLUME"
+    }
+  },
+  "sourceClassifications": [
+    {
+      "source": "EGX beta/public infrastructure",
+      "classification": "SESSION_UNPROVEN_FOR_EHDR_EXACT_ROW",
+      "note": "Official site proves current 17-Sep-2026 exchange content but no exact EHDR historical row was retrieved."
+    },
+    {
+      "source": "EGX daily bulletin/download",
+      "classification": "SESSION_UNPROVEN",
+      "note": "Potentially authoritative, but the exact 17-Sep-2026 EHDR bulletin row could not be retrieved through the available access layer."
+    },
+    {
+      "source": "DirectFN public delayed/demo surfaces",
+      "classification": "STALE_OR_INTRADAY + CONFLICTING_CACHE",
+      "note": "Public surface explicitly states intraday delay and exposed incompatible EHDR states; no stable finalized historical row proven."
+    },
+    {
+      "source": "Investing closed scoreboard/historical",
+      "classification": "SECONDARY_CORROBORATION_ONLY",
+      "note": "Strong exact-date OHLC and exact volume evidence, but same-provider regional/cache conflict prevents canonical use."
+    },
+    {
+      "source": "Argaam market table",
+      "classification": "SECONDARY_CORROBORATION_ONLY",
+      "note": "Independently corroborates C/H/L/exact volume but lacks Open and provider-level finalization/provenance needed by G11."
+    }
+  ],
+  "defensibleSourceCandidateGate": {
+    "security_identity": "TRUE",
+    "exact_session_2026_09_17": "TRUE_SECONDARY_ONLY",
+    "finalized_completed_daily_session": "UNPROVEN_AT_REQUIRED_PROVENANCE_LEVEL",
+    "exact_open": "TRUE_SECONDARY_ONLY",
+    "exact_high": "TRUE_SECONDARY_ONLY",
+    "exact_low": "TRUE_SECONDARY_ONLY",
+    "exact_close": "TRUE_SECONDARY_ONLY",
+    "exact_integer_raw_traded_share_volume": "EXACT_INTEGER_VALUE_CORROBORATED_BUT_RAW_PROVIDER_SEMANTICS_UNPROVEN",
+    "stable_provenance": "FALSE",
+    "no_unresolved_material_conflict_with_equally_authoritative_finalized_source": "PENDING_NO_OFFICIAL_FINAL_ROW_CAPTURED",
+    "DEFENSIBLE_SOURCE_CANDIDATE": false
+  },
+  "ehdrClassification": {
+    "classification": "RESEARCH_CANDIDATE_ONLY",
+    "reason": "The candidate OHLCV is strongly corroborated by multiple secondary surfaces, but the required official/authorized stable finalized-row provenance and raw-volume semantics have not been captured. DirectFN public surfaces are intraday/cache-conflicted, and the official EGX stock-specific row remains inaccessible.",
+    "candidate": {
+      "open": 2.73,
+      "high": 2.79,
+      "low": 2.73,
+      "close": 2.79,
+      "volume": 3307212
+    }
+  },
+  "pathStatus": {
+    "PATH_A_EGID": "EXTERNAL_HANDOFF_PENDING",
+    "PATH_B_OFFICIAL_EGX_FALLBACK": "ACTIVE_BLOCKED_ON_OFFICIAL_STOCK_ROW_ACCESS"
+  },
+  "adapterCompatibility": {
+    "classification": "STILL_UNPROVEN",
+    "reason": "No official machine-readable EGX stock-history endpoint was discovered, so there is no executable response contract to compare with probeLicensedCurrent().",
+    "adapterModified": false
+  },
+  "noWriteConfirmation": {
+    "applicationChanges": 0,
+    "testsChanges": 0,
+    "workflowsChanges": 0,
+    "guardsChanges": 0,
+    "stagingRows": 0,
+    "canonicalRows": 0,
+    "historyRows": 0,
+    "g12Changes": 0
+  },
+  "exactNextAction": "Retrieve the official Egyptian Exchange 17-Sep-2026 daily bulletin or stock-history payload through a normal EGX browser/download session that can pass the public download/security layer, then extract the single EHDR row and verify exact O/H/L/C plus raw integer Volume before any staging or canonical action."
 }
