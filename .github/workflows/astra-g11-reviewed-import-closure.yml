@@ -1,0 +1,214 @@
+name: Astra G11 Reviewed Import Closure
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/astra-g11-reviewed-import-closure.yml'
+      - 'astra/data-health/g11-reviewed-import-preflight.cjs'
+      - 'data/history-fallback-import.json'
+      - 'docs/astra/G11_REVIEWED_IMPORT_VALIDATION.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-g11-reviewed-import-closure
+  cancel-in-progress: false
+
+jobs:
+  reviewed-import-closure:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && !contains(github.event.head_commit.message, '[skip g11-reviewed]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Checkout recovery branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Record immutable run state
+        shell: bash
+        run: |
+          echo "SOURCE_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "TARGET_BRANCH=${GITHUB_REF_NAME}" >> "$GITHUB_ENV"
+          echo "G11_EVALUATED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "EXPECTED_SESSION=2026-09-16" >> "$GITHUB_ENV"
+          git status --short
+
+      - name: Verify G01-G10 and G12 boundary
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const gates=r('04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
+          for(const id of ['G01','G02','G03','G04','G05','G06','G07','G08','G09','G10'])if(m.get(id)!=='GREEN')throw Error(`${id} baseline is not GREEN`);
+          if(!['BLOCKED','GREEN'].includes(m.get('G11')))throw Error(`unexpected G11 state ${m.get('G11')}`);
+          for(const id of ['G12','G13','G14','G15','G16','G17','G18','G19'])if(m.get(id)!=='PENDING')throw Error(`${id} must remain PENDING`);
+          const g7=r('docs/astra/MIGRATION_RECONCILIATION.json');
+          if(g7.status!=='GREEN'||g7.totals.rawArchived!==60288||g7.totals.canonicalRecords!==26270||g7.totals.unexplainedDataLoss!==0||!g7.idempotency.pass)throw Error('G07 invariant changed');
+          const g10=r('docs/astra/G10_PARITY_RESULTS.json');
+          if(g10.status!=='GREEN'||g10.metrics.unresolvedMismatches!==0||g10.metrics.identifiedStrategyVersions!==33||g10.metrics.implementationSourceCoverage!==33||g10.legacyNetworkCalls!==0||g10.quantEdge.algorithmicallyReproduced!==false)throw Error('G10 invariant changed');
+          const a=r('docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json');
+          if(a.productionEligibleCount!==1||a.productionEligibleStrategyIds[0]!=='PORTFOLIO_BASKET_EQUAL_WEIGHT')throw Error('production eligibility changed');
+          if(r('docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy dependency inventory changed');
+          NODE
+          echo G06_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G07_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G08_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G09_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+          echo G10_REGRESSION_PASS=1 >> "$GITHUB_ENV"
+
+      - name: Syntax and reviewed-import preflight
+        run: |
+          node --check astra/data-health/g11-reviewed-import-preflight.cjs
+          node --check scripts/history/approved-fallback-importer.cjs
+          node --check astra/data-health/g11-approved-source-closure.cjs
+          node --check astra/certification/g11-external-data-finalize.cjs
+          node --check astra/certification/g11-certify.cjs
+          python3 -m py_compile astra/data-health/g11-v16-feature-readiness.py astra/data-health/g11-v16-context.py
+          node astra/data-health/g11-reviewed-import-preflight.cjs
+
+      - name: Capture immutable before DecisionSnapshot
+        run: node astra/data-health/g11-decision-dump.cjs /tmp/g11-before-reviewed.json
+
+      - name: Import accepted reviewed rows through existing approved importer
+        run: node scripts/history/approved-fallback-importer.cjs
+
+      - name: Verify isolated reviewed import result
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const rep=r('data/history-fallback-import-report.json');
+          if(rep.imported?.length!==1||rep.imported[0]?.ticker!=='AIHC'||rep.failed?.length!==0)throw Error('approved importer did not import exactly AIHC');
+          const h=r('data/history/AIHC.json');
+          const row=(h.sessions||[]).find(x=>String(x.date).slice(0,10)==='2026-09-16');
+          if(!row)throw Error('AIHC expected-session row missing after importer');
+          if(Number(row.open)!==0.76||Number(row.high)!==0.783||Number(row.low)!==0.758||Number(row.close)!==0.78||Number(row.volume)!==27971185)throw Error('AIHC imported values changed');
+          if(row.validationStatus!=='approved_fallback_import')throw Error(`AIHC validation status ${row.validationStatus}`);
+          for(const t of ['ALRA','NAPR']){
+            const x=r(`data/history/${t}.json`);
+            if((x.sessions||[]).some(s=>String(s.date).slice(0,10)==='2026-09-16'))throw Error(`${t} rejected row leaked into history`);
+          }
+          const staged=r('data/history-fallback-import.json');
+          if(staged.records.length!==1||staged.records[0].ticker!=='AIHC')throw Error('reviewed import staging changed');
+          NODE
+
+      - name: Exhaust remaining approved existing and fallback current sources
+        env:
+          EGX_HISTORY_API_URL: ${{ secrets.EGX_HISTORY_API_URL }}
+          EGX_HISTORY_API_KEY: ${{ secrets.EGX_HISTORY_API_KEY }}
+        run: node astra/data-health/g11-approved-source-closure.cjs
+
+      - name: Rebuild affected dependent market data
+        run: |
+          node scripts/quant/v13-7-stock-intelligence.cjs
+          node scripts/quant/v13-17-market-search-index.cjs
+
+      - name: Build exact V16 and cross-sectional readiness evidence
+        run: python3 astra/data-health/g11-v16-feature-readiness.py --session "$EXPECTED_SESSION" --output docs/astra/G11_V16_FEATURE_READINESS.json
+
+      - name: Refresh diagnosed derived build failures
+        run: node astra/certification/g11-derived-build-failures.cjs
+
+      - name: Run complete G11 suite
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test \
+            tests/astra/g11-data-health.test.cjs \
+            tests/astra/g11-source-repair.test.cjs \
+            tests/astra/g11-carry-forward-guard.test.cjs \
+            tests/astra/g11-source-dispositions.test.cjs \
+            tests/astra/g11-derived-build-failures.test.cjs \
+            tests/astra/g11-approved-source-closure.test.cjs | tee /tmp/g11-reviewed.tap
+          N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g11-reviewed.tap)
+          P=$(awk '/^# pass /{n=$3} END{print n}' /tmp/g11-reviewed.tap)
+          F=$(awk '/^# fail /{n=$3} END{print n}' /tmp/g11-reviewed.tap)
+          test "$N" -ge 58
+          test "$P" = "$N"
+          test "$F" = 0
+          echo G11_TEST_COUNT=$N >> "$GITHUB_ENV"
+          echo G11_TEST_PASS=1 >> "$GITHUB_ENV"
+
+      - name: Recheck guard 37
+        run: node astra/certification/g11-guard37-evidence.cjs
+
+      - name: Full G11 recertification
+        run: node astra/certification/g11-certify.cjs
+
+      - name: Rebuild current gaps stale S-R and unified pipeline evidence
+        run: node astra/certification/g11-finalize-evidence.cjs
+
+      - name: Capture after DecisionSnapshot
+        run: node astra/data-health/g11-decision-dump.cjs /tmp/g11-after-reviewed.json
+
+      - name: Compare immutable DecisionSnapshots
+        env:
+          G11_BEFORE_DECISION: /tmp/g11-before-reviewed.json
+          G11_AFTER_DECISION: /tmp/g11-after-reviewed.json
+        run: node astra/certification/g11-repair-finalize.cjs
+
+      - name: Focused destructive review
+        run: node astra/certification/g11-repair-destructive.cjs
+
+      - name: Finalize external blocker dependency and overlap evidence
+        run: node astra/certification/g11-external-data-finalize.cjs
+
+      - name: Final honesty and reviewed-import guard
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const gates=r('04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
+          const issues=r('docs/astra/G11_DATA_HEALTH_ISSUES.json');
+          const graph=r('docs/astra/G11_BLOCKER_DEPENDENCY_GRAPH.json');
+          const src=r('docs/astra/G11_APPROVED_SOURCE_REGISTRY.json');
+          const pipe=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json');
+          const guard=r('docs/astra/G11_GUARD37_EVIDENCE.json');
+          const pre=r('docs/astra/G11_REVIEWED_IMPORT_PREFLIGHT.json');
+          if(pipe.legacyNetworkCalls!==0||pipe.productionCutover!==false)throw Error('network/cutover violation');
+          if(guard.status!=='PASS'||guard.selfTests?.passed!==guard.selfTests?.total)throw Error('guard37 failed');
+          if(src.runFindings?.approvedSourcesExhausted!==true)throw Error('approved sources were not exhausted');
+          if(graph.uniqueAffectedSecurityCount!==graph.uniqueAffectedSecurities.length)throw Error('overlap accounting broken');
+          if(JSON.stringify(pre.stagedTickers)!==JSON.stringify(['AIHC'])||pre.noCarryForward!==true)throw Error('reviewed import preflight changed');
+          const critical=Number(issues.criticalUnresolved||0),high=Number(issues.highProductionRelevantUnresolved??issues.highUnresolved??0);
+          if(m.get('G11')==='GREEN'&&(critical||high))throw Error('false G11 GREEN');
+          if(m.get('G11')==='BLOCKED'&&critical===0&&high===0)throw Error('G11 BLOCKED without material blocker');
+          for(const id of ['G12','G13','G14','G15','G16','G17','G18','G19'])if(m.get(id)!=='PENDING')throw Error(`${id} changed`);
+          if(r('docs/astra/LEGACY_REMOVAL_PLAN.json').dependencies.length!==8)throw Error('legacy dependency inventory changed');
+          NODE
+
+      - name: Persist reviewed-import G11 evidence
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/symbol-map.json data/history data/history-summary.json data/session-calendar.json \
+            data/history-fallback-import.json data/history-fallback-import-report.json data/history-last-run.json data/history-batch-state.json \
+            data/quant/stock-intelligence-index.json data/quant/stocks data/quant/market-search-index-v13-17.json \
+            docs/astra/G11_*.json docs/astra/G11_*.md docs/astra/WORK_STATE.json \
+            04_ACCEPTANCE_GATES.json 05_WORK_STATE.json 07_WORK_LOG.md
+          if git diff --cached --quiet; then
+            echo 'No reviewed-import G11 evidence changes to persist.'
+          else
+            git commit -m 'data(astra): persist G11 reviewed import closure [skip g11] [skip g11-repair] [skip g11-external] [skip g11-reviewed]'
+            git fetch origin "$TARGET_BRANCH"
+            test "$(git rev-parse "origin/$TARGET_BRANCH")" = "$SOURCE_HEAD" || { echo "$TARGET_BRANCH advanced during reviewed closure; refusing unsafe rebase"; exit 2; }
+            git push origin HEAD:"$TARGET_BRANCH"
+          fi
+
+      - name: Final summary
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const gate=r('04_ACCEPTANCE_GATES.json').gates.find(x=>x.id==='G11');
+          const m=r('docs/astra/G11_DATA_HEALTH_METRICS.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),t=r('docs/astra/G11_TEST_EVIDENCE.json'),d=r('docs/astra/G11_REPAIR_DESTRUCTIVE_REVIEW.json'),pre=r('docs/astra/G11_REVIEWED_IMPORT_PREFLIGHT.json'),ext=r('docs/astra/G11_EXTERNAL_SOURCE_BLOCKERS.json');
+          console.log('ASTRA_G11_REVIEWED_IMPORT_FINAL '+JSON.stringify({gate:gate.status,reviewed:pre,external:ext,current:m.currentCanonicalSecurities,decisionReady:m.decisionPipeline.pipelineReadySecurities,regimeReady:m.regimeInputs.analyzed,active:m.activeUniverse.count,indicators:m.indicators,sr:sr.finalTaxonomy,regimeStatus:m.regimeInputs.status,opportunities:p.opportunities,decisionSnapshotId:p.decisionSnapshotId,hash:p.semanticDecisionHash,critical:i.criticalUnresolved,high:i.highProductionRelevantUnresolved??i.highUnresolved,tests:t.g11Tests,destructive:d.result,g12:t.g12Status}));
+          NODE
