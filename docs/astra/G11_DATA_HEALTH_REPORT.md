@@ -2,15 +2,15 @@
 
 - Gate status: **BLOCKED**
 - Overall data-health status: **DEGRADED**
-- Evaluated source snapshot: 2026-09-16T17:25:56.680Z
-- Code HEAD evaluated: 65a407911cf5d79da7b4036fb3dd022410959142
+- Evaluated source snapshot: 2026-09-17T07:23:35.516Z
+- Code HEAD evaluated: 6d4fea9a7f598b87a0cf959817fee35a61fade0b
 - Intended mapped universe: 243
 - Active universe: 228
 - Intentionally excluded: 15
 - Latest expected finalized session: 2026-09-16
 - Latest available canonical session: 2026-09-16
 - Session freshness: CURRENT
-- Valid current canonical securities: 215/228
+- Valid current canonical securities: 216/228
 - Pipeline-ready V16 source-feature securities: 208/228
 - Production strategy readiness: 208/228 Security×Strategy rows
 - Current unified-pipeline valid opportunities: 3
@@ -25,7 +25,7 @@
 ## Material findings
 
 - **HIGH SYMBOL_IDENTITY_UNRESOLVED** — Active mapped securities lack verified canonical symbol/history identity (1 affected securities).
-- **HIGH CURRENT_SESSION_GAP** — Active intended securities are missing a validation-approved row for the expected finalized session (13 affected securities).
+- **HIGH CURRENT_SESSION_GAP** — Active intended securities are missing a validation-approved row for the expected finalized session (12 affected securities).
 - **HIGH REGIME_INPUT_INCOMPLETE** — Market-regime/production model inputs cover only a subset of the intended active universe (20 affected securities).
 
 ## Acceptance decision
@@ -36,12 +36,12 @@ The G11 run is non-cutover/shadow certification only. It does not change strateg
 ## Exact final evidence closure
 
 - Searchable active universe: 228/228
-- Current valid canonical universe: 215/228
+- Current valid canonical universe: 216/228
 - Decision-ready universe: 208/228
 - Regime-ready universe: 208/228
-- Current-universe gaps: 13; disposition accounting closes exactly (STALE_DATA=12, SOURCE_INGESTION_FAILED=1).
+- Current-universe gaps: 12; disposition accounting closes exactly (STALE_DATA=11, SOURCE_INGESTION_FAILED=1).
 - Previously unverified history-source mappings reviewed: 1; resolved=0; unresolved=1.
-- Stale production-critical records: 12; resolved=0; unresolved=12.
-- Current DecisionSnapshot: G09-DS-6591cd876559c7b1fd577f62; semantic hash=6591cd876559c7b1fd577f62cffa81e7cf292c2bae90687bf309057858ff55b7.
+- Stale production-critical records: 11; resolved=0; unresolved=11.
+- Current DecisionSnapshot: G09-DS-78cdd28fd596b1705ebff229; semantic hash=78cdd28fd596b1705ebff229c79d566ca87179483340fb6098002b7e2ac6b58b.
 - Current pipeline opportunities: 3; legacy-network calls=0.
 - G11 remains **BLOCKED** unless all CRITICAL and production-relevant HIGH findings are cleared by validation-approved evidence.
