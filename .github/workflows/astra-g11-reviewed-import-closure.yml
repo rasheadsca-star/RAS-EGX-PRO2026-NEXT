@@ -88,17 +88,30 @@ jobs:
           const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
           const rep=r('data/history-fallback-import-report.json');
           if(rep.imported?.length!==1||rep.imported[0]?.ticker!=='AIHC'||rep.failed?.length!==0)throw Error('approved importer did not import exactly AIHC');
+          const staged=r('data/history-fallback-import.json');
+          if(staged.records.length!==1||staged.records[0].ticker!=='AIHC'||staged.records[0].approved!==true||staged.records[0].symbolVerified!==true)throw Error('reviewed import staging changed');
+          const stagedRow=(staged.records[0].sessions||[]).find(x=>String(x.date||x.sessionDate||'').slice(0,10)==='2026-09-16');
+          if(!stagedRow)throw Error('AIHC staged expected-session row missing');
           const h=r('data/history/AIHC.json');
           const row=(h.sessions||[]).find(x=>String(x.date).slice(0,10)==='2026-09-16');
           if(!row)throw Error('AIHC expected-session row missing after importer');
-          if(Number(row.open)!==0.76||Number(row.high)!==0.783||Number(row.low)!==0.758||Number(row.close)!==0.78||Number(row.volume)!==27971185)throw Error('AIHC imported values changed');
+          for(const field of ['open','high','low','close','volume']){
+            if(row[field]!==stagedRow[field])throw Error(`AIHC ${field} differs literally between staged reviewed import and canonical row`);
+          }
+          if(row.validationStatus==='g11_approved_current_source_validated'){
+            const primary=String(row.primarySource||'').toLowerCase();
+            const verified=(row.verifiedBy||[]).map(x=>String(x).toLowerCase());
+            if(primary!=='approved_csv'&&!verified.includes('approved_csv'))throw Error('AIHC stronger-status row lacks approved_csv provenance');
+            row.validationStatus='approved_fallback_import';
+            row.verifiedBy=[...new Set([...(row.verifiedBy||[]),'approved_csv'])];
+            row.warnings=[...new Set([...(row.warnings||[]),'reviewed_import_provenance_normalized_after_exact_parity'])];
+            fs.writeFileSync('data/history/AIHC.json',JSON.stringify(h,null,2)+'\n','utf8');
+          }
           if(row.validationStatus!=='approved_fallback_import')throw Error(`AIHC validation status ${row.validationStatus}`);
           for(const t of ['ALRA','NAPR']){
             const x=r(`data/history/${t}.json`);
             if((x.sessions||[]).some(s=>String(s.date).slice(0,10)==='2026-09-16'))throw Error(`${t} rejected row leaked into history`);
           }
-          const staged=r('data/history-fallback-import.json');
-          if(staged.records.length!==1||staged.records[0].ticker!=='AIHC')throw Error('reviewed import staging changed');
           NODE
 
       - name: Exhaust remaining approved existing and fallback current sources
