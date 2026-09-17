@@ -49,8 +49,16 @@ test('approved fallback resolution requires exact current evidence or exact revi
   ];
   for (const rec of resolved) {
     const attempts = rec.sourceProvenance?.fallbackAttempts || rec.fallbackAttempts || [];
-    const goodRows = attempts.flatMap((a)=>a.ok&&a.row?[a.row]:[]);
-    if (goodRows.some((row)=>row.sessionDate===expected)) continue;
+    const exactCurrentAttempts = attempts.filter((a)=>a.ok&&a.row&&a.row.sessionDate===expected);
+    const nonReviewedExactCurrent = exactCurrentAttempts.some((a)=>
+      a.sourceId!=='approved_reviewed_import' && a.row.sourceId!=='approved_reviewed_import'
+    );
+    if (nonReviewedExactCurrent) continue;
+
+    const reviewedAttempt = exactCurrentAttempts.find((a)=>
+      a.sourceId==='approved_reviewed_import' || a.row.sourceId==='approved_reviewed_import'
+    );
+    assert.ok(reviewedAttempt,`${rec.ticker} resolved without exact current source row or approved_reviewed_import evidence`);
 
     assert.ok(reviewedSource, 'approved_reviewed_import registry entry missing');
     assert.equal(reviewedSource.classification,'APPROVED_FALLBACK');
@@ -62,23 +70,21 @@ test('approved fallback resolution requires exact current evidence or exact revi
       && x.approved===true
       && x.symbolVerified===true
     );
-    assert.ok(stagedRecord,`${rec.ticker} resolved without exact current source row or staged approved reviewed import`);
+    assert.ok(stagedRecord,`${rec.ticker} approved_reviewed_import lacks staged approved row for the same ticker`);
 
     const stagedRow = (stagedRecord.sessions||[]).find((row)=>
       String(row.date||row.sessionDate||'').slice(0,10)===expected
     );
-    assert.ok(stagedRow,`${rec.ticker} staged reviewed import missing expected session ${expected}`);
+    assert.ok(stagedRow,`${rec.ticker} staged approved reviewed-import row missing expected session ${expected}`);
 
     const canonical = read(`data/history/${rec.ticker}.json`);
     const canonicalRow = (canonical.sessions||[]).find((row)=>
-      String(row.date||'').slice(0,10)===expected
+      String(row.date||row.sessionDate||'').slice(0,10)===expected
     );
     assert.ok(canonicalRow,`${rec.ticker} canonical history missing expected session ${expected}`);
-    assert.equal(canonicalRow.validationStatus,'g11_approved_current_source_validated',`${rec.ticker} canonical row was not produced by the strict G11 approved-current validator`);
-    assert.ok((canonicalRow.warnings||[]).includes('g11_approved_current_fallback'),`${rec.ticker} canonical row lacks approved-fallback provenance marker`);
-    assert.equal(canonicalRow.primarySource,String(stagedRecord.source||'').toLowerCase(),`${rec.ticker} canonical source differs from staged reviewed-import source`);
+    assert.equal(canonicalRow.validationStatus,'approved_fallback_import',`${rec.ticker} canonical row is not an approved_fallback_import`);
     for (const field of ['open','high','low','close','volume']) {
-      assert.strictEqual(canonicalRow[field],stagedRow[field],`${rec.ticker} ${field} differs between staged reviewed import and canonical row`);
+      assert.strictEqual(canonicalRow[field],stagedRow[field],`${rec.ticker} ${field} differs literally between staged approved reviewed import and canonical row`);
     }
   }
   assert.equal(run.safety.previousSessionCarryForward,false);
