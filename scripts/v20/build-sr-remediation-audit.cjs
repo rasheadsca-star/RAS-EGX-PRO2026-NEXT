@@ -34,7 +34,9 @@ function observedCondition(roles,h50,srRow){if(roles.includes('CONFLICT'))return
 async function main(){
   const before=hashes();
   const gate=read('data/v17/resilient-session-status.json',{}),sr=read('data/v17/internal-ohlc-support-resistance.json',{}),h50=read('data/history-50.json',{symbols:{}}),current=read('data/v20/current.json',{}),market=read('data/v20/market-explorer.json',{rows:[]}),gap=read('data/v20/execution-gap-regression.json',null),smRaw=read('data/symbol-map.json',[]);
-  const session=String(gate.priceTruth?.verifiedSessionDate||sr.referenceSessionDate||current.sessionDate||'').slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(session))throw new Error('Current V17/V20 session is missing');
+  const truth=read('data/v17/market-session-truth.json');
+  if(!require('./research-session-contract.cjs').researchSessionAligned(current,gate,truth,sr))throw new Error('Current V17/V20 research session is unverified or mismatched');
+  const session=current.sessionDate;
   const missing=uniq(gap?.symbols?.missingCandidateSymbols||sr.missingCandidateSymbols||sr.missingSymbols||gate.missingSymbols||[]),candidateSet=new Set((sr.candidateSymbols||[]).map(safe)),stale=uniq(gap?.symbols?.staleTrustedCandidateSymbols||(sr.rows||[]).filter(r=>candidateSet.has(safe(r.symbol||r.ticker))&&r.provenance?.trustedForExecution===true&&String(r.sessionDate||r.levelSessionDate||'')!==String(sr.levelSessionDate||sr.referenceSessionDate||'')).map(r=>r.symbol||r.ticker)),conflicts=uniq(gap?.symbols?.conflictSymbols||(sr.sourceConflicts||[]).map(x=>x.symbol)),targetSymbols=uniq([...missing,...stale,...conflicts]);
   const srMap=new Map((sr.rows||[]).map(x=>[safe(x.symbol||x.ticker),x])),marketMap=new Map((market.rows||[]).map(x=>[safe(x.ticker),x])),smEntries=Array.isArray(smRaw)?smRaw:Object.values(smRaw||{}),symbolMap=new Map(smEntries.map(x=>[safe(x.ticker),x])),conflictMap=new Map((sr.sourceConflicts||[]).filter(x=>x.symbol).map(x=>[safe(x.symbol),x]));
   const targets=await mapPool(targetSymbols,async symbol=>{

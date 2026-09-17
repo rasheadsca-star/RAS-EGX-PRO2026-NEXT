@@ -19,6 +19,8 @@ const check = (ok, code) => { if (!ok) failures.push(code); };
 const gate = readJson('data/v17/resilient-session-status.json');
 const sr = readJson('data/v17/internal-ohlc-support-resistance.json');
 const current = readJson('data/v20/current.json');
+const truth = readJson('data/v17/market-session-truth.json');
+const {researchSessionAligned} = require('./research-session-contract.cjs');
 const healthHtml = readText('v20/health.html');
 const healthGapJs = readText('v20/health-gap.js');
 
@@ -69,7 +71,7 @@ const expectedExecutionCandidateReady = sr.sourceSessionVerified === true
   && Number(averageFreshConfidence || 0) >= confidenceThreshold
   && conflicts.length === 0;
 
-check(gate.priceTruth?.verifiedSessionDate === current.sessionDate, 'GAP_GATE_SESSION_NOT_CURRENT');
+check(researchSessionAligned(current, gate, truth, sr), 'GAP_RESEARCH_SESSION_NOT_CURRENT');
 check(referenceSessionDate === current.sessionDate, 'GAP_SR_REFERENCE_SESSION_NOT_CURRENT');
 check(sourceSessionDate === current.sessionDate, 'GAP_SR_SOURCE_SESSION_NOT_CURRENT');
 check(finite(gate.executionInputs?.internal?.coveragePct) === coveragePct, 'GAP_COVERAGE_GATE_SR_MISMATCH');

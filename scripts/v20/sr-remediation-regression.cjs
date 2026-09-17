@@ -15,6 +15,8 @@ const gap=read('data/v20/execution-gap-regression.json');
 const gate=read('data/v17/resilient-session-status.json');
 const sr=read('data/v17/internal-ohlc-support-resistance.json');
 const current=read('data/v20/current.json');
+const truth=read('data/v17/market-session-truth.json');
+const {researchSessionAligned}=require('./research-session-contract.cjs');
 const protectedInputs=['data/v17/resilient-session-status.json','data/v17/internal-ohlc-support-resistance.json','data/history-50.json'];
 const currentHashes=Object.fromEntries(protectedInputs.map(rel=>[rel,sha256(rel)]));
 const missing=uniq(gap.symbols?.missingCandidateSymbols||[]),stale=uniq(gap.symbols?.staleTrustedCandidateSymbols||[]),conflicts=uniq(gap.symbols?.conflictSymbols||[]),expected=uniq([...missing,...stale,...conflicts]).sort(),actual=uniq((audit.targets||audit.symbols||[]).map(x=>x.symbol)).sort();
@@ -22,7 +24,7 @@ const t=sr.thresholds||{},coverageThreshold=Number(t.minimumCandidateCoveragePct
 
 check(audit.schemaVersion==='20.0.0-sr-remediation-audit-3','SR3_SCHEMA_DRIFT');
 check(audit.status==='REMEDIATION_CANDIDATE_RESEARCH_ONLY','SR3_STATUS_DRIFT');
-check(audit.sessionDate===current.sessionDate&&audit.sessionDate===gate.priceTruth?.verifiedSessionDate&&audit.sessionDate===sr.referenceSessionDate,'SR3_SESSION_MISMATCH');
+check(audit.sessionDate===current.sessionDate&&researchSessionAligned(current,gate,truth,sr),'SR3_SESSION_MISMATCH');
 check(audit.readOnly===true&&audit.automaticV17MutationAllowed===false&&audit.automaticTrustUpgradeAllowed===false&&audit.automaticConflictResolutionAllowed===false,'SR3_MUTATION_OR_AUTO_UPGRADE_ALLOWED');
 check(audit.guaranteesExecutionGrade===false&&audit.requiresV17InternalSrRebuild===true&&audit.requiresV17GateRebuild===true,'SR3_FALSE_EXECUTION_GUARANTEE');
 check(audit.authoritativeInputPath==='data/history-50.json','SR3_AUTHORITATIVE_HISTORY_PATH_DRIFT');

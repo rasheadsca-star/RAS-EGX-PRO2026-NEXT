@@ -109,5 +109,21 @@ async function render(file, data) {
    d=>d[path.resolve('data/v20/market-explorer.json')].summary.currentSessionCoveragePct=89,
    d=>d[path.resolve('data/v17/resilient-session-status.json')].priceTruth.researchMinimumHealthy=false
  ]) {assert.equal(acceptance(mutate).acceptanceMatrix.dataTruthForResearch.state,'FAIL');count++;}
+ const {researchSessionAligned}=require('./research-session-contract.cjs');
+ for(const date of [null,'2026-08-13',session]) {
+   const f=fixture();f['resilient-session-status.json'].priceTruth.verifiedSessionDate=date;
+   assert.equal(researchSessionAligned(f['current.json'],f['resilient-session-status.json'],f['market-session-truth.json'],f['internal-ohlc-support-resistance.json']),true);count++;
+ }
+ for(const mutate of [
+   f=>f['market-session-truth.json'].researchSessionVerified=false,
+   f=>f['market-session-truth.json'].researchSessionDate='2026-08-13',
+   f=>f['resilient-session-status.json'].readiness.researchReady=false,
+   f=>f['resilient-session-status.json'].executionInputs.internal.referenceSessionDate=null,
+   f=>f['internal-ohlc-support-resistance.json'].referenceSessionDate='2026-08-13',
+   f=>f['internal-ohlc-support-resistance.json'].researchReady=false,
+   f=>f['internal-ohlc-support-resistance.json'].researchSessionVerified=false
+ ]) {
+   const f=fixture();mutate(f);assert.equal(researchSessionAligned(f['current.json'],f['resilient-session-status.json'],f['market-session-truth.json'],f['internal-ohlc-support-resistance.json']),false);count++;
+ }
  console.log(`Health research/execution session regression PASS (${count} cases)`);
 })().catch(e=>{console.error(e);process.exitCode=1});
