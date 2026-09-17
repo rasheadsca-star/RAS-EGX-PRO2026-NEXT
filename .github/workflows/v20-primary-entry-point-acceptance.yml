@@ -2,6 +2,11 @@ name: V20 Primary Entry Point Acceptance
 
 on:
   workflow_dispatch:
+    inputs:
+      scope_base_sha:
+        description: 'Reviewed baseline commit for entry-point scope comparison'
+        required: true
+        type: string
   push:
     branches: [develop/v20-integrated-decision-platform]
     paths:
@@ -36,11 +41,21 @@ jobs:
           node-version: "22"
 
       - name: Enforce entry-point-only scope
+        env:
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          MANUAL_BASE_SHA: ${{ inputs.scope_base_sha }}
         shell: bash
         run: |
           set -euo pipefail
           test "${GITHUB_REF_NAME}" = "develop/v20-integrated-decision-platform"
-          BASE_SHA="54197f494392717805dfbef316a8c02a224efdfc"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            BASE_SHA="$PUSH_BASE_SHA"
+          else
+            BASE_SHA="$MANUAL_BASE_SHA"
+          fi
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "Explicit full baseline SHA required"; exit 1; }
+          test "$BASE_SHA" != "$(git rev-parse HEAD)" || { echo "Baseline must precede HEAD"; exit 1; }
+          git merge-base --is-ancestor "$BASE_SHA" HEAD
           git cat-file -e "${BASE_SHA}^{commit}"
           changed="$(git diff --name-only "$BASE_SHA" HEAD)"
           printf '%s\n' "$changed"
