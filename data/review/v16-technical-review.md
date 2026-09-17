@@ -1,7 +1,7 @@
 # تقرير المراجعة الفنية المستقلة — EGX Pro V16.3
 
 - النطاق: **الشق الفني بالكامل**
-- تاريخ التوليد: 2026-09-17T08:57:39.431Z
+- تاريخ التوليد: 2026-09-17T17:44:43.941Z
 - الدورات: 20/20
 - الحكم: **REJECTED_BLOCKING_TECHNICAL_FINDINGS**
 - الفحوص: 31/41 مغلق
@@ -40,10 +40,10 @@
 | 7 | CRITICAL | كل خطة هندسيًا صحيحة | valid=0/0 | إعادة بناء أو حذف الخطة. |
 | 12 | HIGH | كل نموذج مختار اجتاز التحقق والاختبار |  | إلغاء اختيار النموذج الضعيف. |
 | 15 | HIGH | عدم الاستقرار موثق ولا يُخفى |  | إظهار عدم الاستقرار وخفض المخاطرة. |
-| 15 | CRITICAL | النماذج غير المستقرة لا تستخدم مخاطرة كاملة | decisionTier=BASKET_GATE_BLOCKED; professional=false; modes= | فرض وضع Pilot منخفض المخاطرة. |
-| 16 | HIGH | قصر عينة الاختبار مصرح به | decisionTier=BASKET_GATE_BLOCKED; test sample remains explicitly Pilot | إظهار Pilot وعدم ادعاء الاحتراف المثبت. |
+| 15 | CRITICAL | النماذج غير المستقرة لا تستخدم مخاطرة كاملة | decisionTier=MODEL_CALIBRATION_REVIEW; professional=false; modes= | فرض وضع Pilot منخفض المخاطرة. |
+| 16 | HIGH | قصر عينة الاختبار مصرح به | decisionTier=MODEL_CALIBRATION_REVIEW; test sample remains explicitly Pilot | إظهار Pilot وعدم ادعاء الاحتراف المثبت. |
 | 19 | HIGH | اختبارات متصفح حقيقية ناجحة | status=FAILED; tests=0; realBrowser=true | تشغيل Playwright وإصلاح الرحلة. |
-| 20 | HIGH | النسخة تصرح بمرحلة Pilot ولا تعد بالربح | tier=BASKET_GATE_BLOCKED; reducedRisk=true; noProfitClaim=true | إزالة الادعاءات وإظهار القيود. |
+| 20 | HIGH | النسخة تصرح بمرحلة Pilot ولا تعد بالربح | tier=MODEL_CALIBRATION_REVIEW; reducedRisk=true; noProfitClaim=true | إزالة الادعاءات وإظهار القيود. |
 | 20 | HIGH | التوصيات الحالية اجتازت كل البوابات الفنية الأساسية | recs=0; source=true; plans=true | حجب الإصدار الفني وإعادة البناء. |
 
 ## قرار المستلم الفني
