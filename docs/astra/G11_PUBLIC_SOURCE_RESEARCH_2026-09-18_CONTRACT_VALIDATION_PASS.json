@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "astra-g11-public-source-contract-validation-pass-1",
+  "session": "2026-09-17",
+  "researchDate": "2026-09-18",
+  "purpose": "Research-only validation of the highest-priority unresolved G11 current-session gaps against the actual current acceptance contract. This artifact is non-canonical and non-certifying.",
+  "baseHeadVerifiedBeforeWrite": "e611506e21b47fa0c02d72aa9edb9b10d104f5e1",
+  "safety": {
+    "canonicalWrite": false,
+    "g11StatusMutation": false,
+    "g12Mutation": false,
+    "mainMutation": false,
+    "productionCutover": false,
+    "guardRelaxation": false,
+    "testRelaxation": false,
+    "crossSourceFieldMixing": false,
+    "roundedVolumePromotion": false,
+    "inferredOHLCV": false
+  },
+  "contractObservedAtHead": {
+    "ohlcvAtomicPerSecuritySession": true,
+    "sourceMixingAllowed": false,
+    "reviewedImportAllowedSources": [
+      "egx_official",
+      "mubasher",
+      "investing",
+      "approved_csv"
+    ],
+    "reviewedImportRequiresApprovedTrue": true,
+    "reviewedImportRequiresSymbolVerifiedTrue": true,
+    "expectedSessionRequired": true,
+    "validPositiveOHLCRequired": true,
+    "finiteNonNegativeVolumeRequired": true,
+    "materialApprovedSourceDisagreementBlocksResolution": true,
+    "reviewedImportCanonicalParityRequired": [
+      "open",
+      "high",
+      "low",
+      "close",
+      "volume"
+    ],
+    "reviewedImportCanonicalValidationStatus": "approved_fallback_import",
+    "testPatchRequired": false,
+    "testPatchReason": "Current g11-approved-source-closure.test.cjs already enforces same-ticker staged reviewed import, same expected session, approved/symbol-verified staging, approved_fallback_import canonical status, and strict O/H/L/C/V parity."
+  },
+  "reviews": [
+    {
+      "ticker": "EHDR",
+      "result": "BLOCKED",
+      "candidate": {
+        "session": "2026-09-17",
+        "open": 2.73,
+        "high": 2.79,
+        "low": 2.73,
+        "close": 2.79,
+        "volumeCandidate": 3307212
+      },
+      "newEvidence": [
+        {
+          "source": "Investing Saudi historical",
+          "url": "https://sa.investing.com/equities/egyptn-hous-de-historical-data",
+          "observation": "Explicit 17/09/2026 row O=2.730 H=2.790 L=2.730 C=2.790, but session volume is rounded as 3.31M. Page is marked closed."
+        },
+        {
+          "source": "Investing Australia scoreboard",
+          "url": "https://au.investing.com/equities/egyptn-hous-de-scoreboard",
+          "observation": "17/09 Closed, Egypt identity, ISIN EGS65341C017, close=2.790, exact volume=3,307,212 and day range=2.730-2.790, but the surface does not expose the complete explicit O/H/L/C/V tuple as one row."
+        },
+        {
+          "source": "Argaam market table",
+          "url": "https://www.argaam.com/en/company/companies-prices/13",
+          "observation": "A search-indexed state exposed EHDR price=2.79, range endpoints 2.73/2.79 and exact volume=3,307,212, while a separately crawled state of the same dynamic page exposed an older EHDR market state. This is cache/session instability, not stable finalized single-surface proof."
+        }
+      ],
+      "blocker": "Exact volume is corroborated on current-looking surfaces, but the current contract forbids assembling the complete canonical tuple across surfaces, and dynamic/cache states remain inconsistent. No stable single-surface exact finalized O/H/L/C/V proof was obtained.",
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "ticker": "NAPR",
+      "result": "BLOCKED",
+      "newEvidence": [
+        {
+          "source": "Investing Saudi/UK",
+          "observation": "17/09/2026 row C=42.56 O=42.10 H=48.85 L=37.55 with rounded volume=2.86M."
+        },
+        {
+          "source": "Investing India",
+          "observation": "17/09/2026 row C=42.56 O=42.10 H=48.90 L=37.55 with rounded volume=2.94M."
+        },
+        {
+          "source": "Investing FAQ",
+          "observation": "2,858,309 is explicitly labeled Average Daily Trading Volume, not the exact volume field of the 17/09 session row."
+        }
+      ],
+      "blocker": "Material 48.85 versus 48.90 high disagreement and 2.86M versus 2.94M volume disagreement across provider nodes. Exact 2,858,309 remains semantically an average-volume field, not session volume.",
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "ticker": "AIHC",
+      "result": "BLOCKED",
+      "newEvidence": [
+        {
+          "source": "Investing Saudi/global",
+          "observation": "A current 17/09 row exposes C=0.782 O=0.770 H=0.790 L=0.768 with rounded volume=60.72M."
+        },
+        {
+          "source": "Investing UK/PH",
+          "observation": "A current 17/09 row exposes C=0.782 O=0.780 H=0.790 L=0.768 with rounded volume=59.80M."
+        },
+        {
+          "source": "Investing France",
+          "observation": "A current 17/09 row exposes C=0.779 O=0.780 H=0.790 L=0.768 with rounded volume=36.55M."
+        },
+        {
+          "source": "Pyramids Capital",
+          "url": "https://pyramidscapital.com/symbol-details.php?sym=AIHC",
+          "observation": "Explicit 17-09-2026 timestamped snapshot exposes last/close=0.781, H=0.790, L=0.768, V=26,475,304 but TODAY'S OPEN=0.000000. This fails the current positive-OHLC validator and materially conflicts with other same-session provider states."
+        }
+      ],
+      "blocker": "Multiple material same-session close/open/volume conflicts. The exact-volume Pyramids row is independently invalid under the current validator because open=0.",
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "ticker": "ALRA/AIFI",
+      "result": "BLOCKED",
+      "identity": {
+        "canonicalTicker": "ALRA",
+        "observedProviderAlias": "AIFI",
+        "isin": "EGS071L1C018"
+      },
+      "newEvidence": [
+        {
+          "source": "Investing Saudi/global",
+          "observation": "17/09/2026 AIFI row C=2.420 O=2.410 H=2.430 L=2.390 with rounded volume=3.16M."
+        },
+        {
+          "source": "Investing India/Canada",
+          "observation": "17/09/2026 AIFI row C=2.420 O=2.410 H=2.430 L=2.390 with rounded volume=3.31M."
+        },
+        {
+          "source": "Investing Indonesia",
+          "observation": "17/09/2026 row exposes C=2.410 O=2.410 H=2.430 L=2.390 with rounded volume=1.88M."
+        },
+        {
+          "source": "StockAnalysis / S&P Global Market Intelligence",
+          "url": "https://stockanalysis.com/quote/egx/ALRA/history/",
+          "observation": "Identity is EGX:ALRA and exact prior-session rows are available, but data was last updated only through 16-Sep-2026 when checked, so it cannot close the expected 17-Sep session."
+        }
+      ],
+      "blocker": "Ticker identity is resolved sufficiently for research, but 17/09 exact finalized OHLCV is not. Provider cache nodes disagree on both close and volume, while the exact-integer S&P-derived source is one session stale.",
+      "eligibleForCanonicalCurrent": false
+    }
+  ],
+  "additionalSourceDiscipline": {
+    "minaStock": {
+      "result": "REJECTED_AS_STABLE_SINGLE_SURFACE_PROOF_FOR_THIS_PASS",
+      "reason": "Search-indexed MinaStock content exposed a 17-Sep-2026 market timestamp, while an opened/crawled state of the same homepage exposed older Sep-10/Sep-11 target snapshots. The cache/session mismatch prevents using it as stable finalized proof for these target rows."
+    },
+    "officialEgxBeta": {
+      "result": "SESSION_DATE_CONFIRMED_BUT_TARGET_ROWS_NOT_EXTRACTED",
+      "reason": "The official EGX beta public site visibly carried 17-Sep-2026 exchange content and market summary context, but no exact complete ticker-specific O/H/L/C/V row for the four targets was obtained from the accessible surface."
+    },
+    "egxApiCandidate": {
+      "result": "NOT_CONFIGURED_NOT_CERTIFIED",
+      "reason": "Public EGXAPI documentation advertises historical bars and requires a free API key for authenticated requests; its quickstart also demonstrates the X-EGX-Env paper/live header. The repository generic licensed-provider adapter currently supports bearer auth and a URL template but has not been certified against this provider in this run. No credential is available to this execution context, so no provider row was tested or promoted."
+    }
+  },
+  "decision": {
+    "newCanonicalRowsApproved": 0,
+    "currentSessionGaps": 21,
+    "criticalUnresolved": 0,
+    "highIssueFamilies": 3,
+    "g11Status": "BLOCKED",
+    "g12Status": "PENDING",
+    "officialStateMutation": false,
+    "nextAction": "Do not stage EHDR/NAPR/AIHC/ALRA from these public observations. Next safe closure path is either an official/stable single-surface exact finalized 2026-09-17 OHLCV record, or configure and first certify the existing optional licensed-EOD path with a real provider credential and verified endpoint/schema/header compatibility before any canonical write."
+  }
+}
