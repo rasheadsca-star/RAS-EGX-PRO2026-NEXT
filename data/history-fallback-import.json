@@ -2,39 +2,51 @@
   "schemaVersion": "12.5.0",
   "records": [
     {
-      "ticker": "AIHC",
+      "ticker": "FERC",
       "source": "approved_csv",
-      "sourceUrl": "https://sa.investing.com/equities/arabia-inv-development---cash-historical-data",
+      "sourceUrl": "https://www.watheeqa.com.eg/",
       "approved": true,
       "symbolVerified": true,
-      "fetchedAt": "2026-09-17T00:03:03+03:00",
-      "approvalNote": "User-authorized reviewed composite. AIHC exact identity. Sep-16 OHLC/close from Investing; exact session volume 27,971,185 independently verified on Mubasher. No carry-forward or synthetic values.",
+      "fetchedAt": "2026-09-17T14:30:00+03:00",
+      "approvalNote": "User-authorized administrator-reviewed current-session fallback for FERC. Exact FERC.CA identity. Final 17-Sep-2026 Watheeqa 14:30 market snapshot reports O=77.53 H=81.90 L=77.51 C=81.90 V=252601; Mina Stock independently reports the same OHLCV. No carry-forward, no rounded-volume inference, no synthetic values, and no legacy decision output.",
       "verificationUrls": [
-        "https://sa.investing.com/equities/arabia-inv-development---cash-historical-data",
-        "https://www.mubasher.info/markets/EGX/stocks/AIHC/news/2/"
+        "https://www.watheeqa.com.eg/",
+        "https://minastock.com/home.aspx?ReturnUrl=%2F"
       ],
+      "reviewEvidence": {
+        "humanApproved": true,
+        "expectedSession": "2026-09-17",
+        "sessionFinalized": true,
+        "sourceFinalizedAt": "2026-09-17T14:30:00+03:00",
+        "crossVerified": true,
+        "noCarryForward": true,
+        "syntheticValuesForbidden": true,
+        "identityBasis": "EXACT_CANONICAL_FERC_TO_PUBLIC_FERC.CA",
+        "primaryEvidence": "Watheeqa final 14:30 snapshot",
+        "verificationEvidence": "Mina Stock independently identical OHLCV"
+      },
       "sessions": [
         {
-          "date": "2026-09-16",
-          "open": 0.76,
-          "high": 0.783,
-          "low": 0.758,
-          "close": 0.78,
+          "date": "2026-09-17",
+          "open": 77.53,
+          "high": 81.9,
+          "low": 77.51,
+          "close": 81.9,
           "adjustedClose": null,
-          "volume": 27971185,
+          "volume": 252601,
           "currency": "EGP",
           "warnings": [
-            "reviewed_composite_investing_ohlc_mubasher_exact_volume"
+            "administrator_reviewed_cross_verified_current_session",
+            "watheeqa_final_1430_and_minastock_exact_parity"
           ]
         }
       ]
     }
   ],
   "instructions": [
-    "Validated reviewed import for G11 recovery only.",
-    "Only records that passed recovery-branch symbol-map, exact session, OHLC invariants, symbol identity, approved-source evidence, and no-carry-forward checks are included.",
+    "Validated reviewed import candidates for G11 recovery/current-session closure only.",
+    "Only exact expected-session rows with approved=true, symbolVerified=true, valid OHLCV and explicit reviewEvidence may influence current canonical truth.",
     "Allowed source values: egx_official, mubasher, investing, approved_csv.",
-    "Every record must set approved=true and symbolVerified=true.",
-    "Never estimate missing prices or duplicate a previous close as a new session."
+    "Never estimate rounded volume, carry forward a previous session, synthesize prices, or use legacy decision outputs."
   ]
 }
