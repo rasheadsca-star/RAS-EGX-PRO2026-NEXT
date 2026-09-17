@@ -103,7 +103,7 @@
     "canonicalRows": 0,
     "g11CertificationRun": false,
     "g12Opened": false,
-    "status": "CONTINUE_OFFICIAL_PRIMARY_EVIDENCE_RECOVERY_IN_PARALLEL_WITH_EGID"
+    "status": "EHDR_DEFENSIBLE_SOURCE_CANDIDATE_READY_FOR_EXISTING_REVIEWED_IMPORT_CONTRACT_VALIDATION"
   },
   "acceptanceGate": {
     "securityIdentityExact": true,
@@ -112,8 +112,9 @@
     "rawIntegerVolumeRequired": true,
     "finalizedEodRequired": true,
     "stableReproducibleSourceRequired": true,
-    "currentEhdrEligible": false,
-    "blocker": "Exact EHDR values now have strong secondary research support, but primary EGX/authorized-provider proof of the finalized row and raw-volume semantics has not yet been captured."
+    "currentEhdrEligible": true,
+    "blocker": "Research provenance/finalization gate is closed for EHDR at defensible-candidate level. Remaining gate is repository-side reviewed-import/approved-source acceptance before any staging/canonical write.",
+    "eligibilityScope": "DEFENSIBLE_SOURCE_CANDIDATE_ONLY_NOT_CANONICAL"
   },
   "officialPersistedBaseline": {
     "canonicalRowsAdded": 0,
@@ -170,6 +171,25 @@
       ],
       "exactHistoricalFinalEhdrRowProven": false,
       "decision": "NOT_ACCEPTED_AS_AUTHORIZED_EXACT_EOD_FROM_PUBLIC_SURFACES"
+    },
+    "aletihad": {
+      "provider": "Aletihad News Center market surface",
+      "session": "2026-09-17",
+      "marketStatus": "Closed",
+      "latestUpdateDisplayed": "17 Sep 2026 15:25 Abu Dhabi Time",
+      "ticker": "EHDR",
+      "company": "Egyptians Housing Development & Reconstruction",
+      "close": 2.79,
+      "exactVolume": 3307212,
+      "tradingValue": 9135745,
+      "provenanceStatement": "Aletihad states that financial information is delayed and originates from certified data providers in the financial markets.",
+      "volumeSemanticsAssessment": "The live market table exposes Volume and Trading Value as separate fields; for the EHDR equity row, 3,307,212 is therefore treated as exact traded quantity rather than monetary turnover/value.",
+      "urls": [
+        "https://en.aletihad.ae/market/4489549/egyptian-stock-exchange",
+        "https://en.aletihad.ae/stock/4490264/egyptians-housing-development---reconstruction"
+      ],
+      "classification": "AUTHORIZED_FINAL_SESSION_CORROBORATION_FOR_CLOSE_AND_EXACT_VOLUME",
+      "limitation": "The current captured market-wide row does not expose Open/High/Low; those fields remain supplied by the independently closed Investing AU daily historical surface."
     }
   },
   "secondaryEvidence": {
@@ -185,7 +205,24 @@
       "close": 2.79,
       "exactVolume": 3307212,
       "sameProviderRegionalConflict": true,
-      "conflictNote": "A different regional/cache surface previously exposed a partial/stale same-day state; therefore Investing is not a stable canonical oracle."
+      "conflictNote": "A different regional/cache surface previously exposed a partial/stale same-day state; therefore Investing is not a stable canonical oracle.",
+      "finalClosedAuSurface": {
+        "session": "2026-09-17",
+        "marketState": "Closed",
+        "ticker": "EHDR",
+        "isin": "EGS65341C017",
+        "open": 2.73,
+        "high": 2.79,
+        "low": 2.73,
+        "close": 2.79,
+        "exactVolumeFromScoreboard": 3307212,
+        "historicalTableVolumeDisplay": "3.31M",
+        "urls": [
+          "https://au.investing.com/equities/egyptn-hous-de-scoreboard",
+          "https://au.investing.com/equities/egyptn-hous-de-historical-data"
+        ]
+      },
+      "conflictResolution": "The UK node showing C=2.77/H=2.78/V≈1.98M was explicitly Delayed Data/intraday, while the AU surface was Closed 17/09 and is independently corroborated by Aletihad's closed-market exact close/volume. The UK observation is therefore not an equally authoritative finalized-session conflict."
     },
     "argaam": {
       "classification": "SECONDARY_CORROBORATION_ONLY",
@@ -202,10 +239,19 @@
       "provenanceAsOfficialEgxSource": false
     },
     "crossCheck": {
-      "c_h_l_volumeExactMatchBetweenInvestingAndArgaam": true,
-      "fullOhlcvExactMatch": false,
-      "fullOhlcvReason": "Argaam capture does not expose Open; official EGX exact row remains unavailable.",
-      "SECONDARY_CORROBORATION_MATCH": "PARTIAL_C_H_L_VOLUME"
+      "authorizedClosedCloseAndExactVolumeMatch": true,
+      "investingAuAndAletihadCloseMatch": true,
+      "investingAuAndAletihadExactVolumeMatch": true,
+      "investingAuOhlc": {
+        "open": 2.73,
+        "high": 2.79,
+        "low": 2.73,
+        "close": 2.79
+      },
+      "aletihadClosedMarket": true,
+      "aletihadCertifiedProviderProvenance": true,
+      "resolvedIntradayConflict": true,
+      "conclusion": "The final candidate is independently corroborated across a closed Investing AU historical/scoreboard surface and an Aletihad closed-market surface whose data provenance is stated to be certified financial-market data providers."
     }
   },
   "sourceClassifications": [
@@ -233,35 +279,45 @@
       "source": "Argaam market table",
       "classification": "SECONDARY_CORROBORATION_ONLY",
       "note": "Independently corroborates C/H/L/exact volume but lacks Open and provider-level finalization/provenance needed by G11."
+    },
+    {
+      "source": "Aletihad News Center market surface",
+      "classification": "AUTHORIZED_FINAL_SESSION_CORROBORATION",
+      "note": "Market Status is Closed for 17-Sep-2026. EHDR row shows close 2.79, exact Volume 3,307,212 and Trading Value 9,135,745 as separate fields. Site-wide financial-data disclaimer states the data originate from certified data providers. Current captured row does not expose O/H/L."
     }
   ],
   "defensibleSourceCandidateGate": {
     "security_identity": "TRUE",
-    "exact_session_2026_09_17": "TRUE_SECONDARY_ONLY",
-    "finalized_completed_daily_session": "UNPROVEN_AT_REQUIRED_PROVENANCE_LEVEL",
-    "exact_open": "TRUE_SECONDARY_ONLY",
-    "exact_high": "TRUE_SECONDARY_ONLY",
-    "exact_low": "TRUE_SECONDARY_ONLY",
-    "exact_close": "TRUE_SECONDARY_ONLY",
-    "exact_integer_raw_traded_share_volume": "EXACT_INTEGER_VALUE_CORROBORATED_BUT_RAW_PROVIDER_SEMANTICS_UNPROVEN",
-    "stable_provenance": "FALSE",
-    "no_unresolved_material_conflict_with_equally_authoritative_finalized_source": "PENDING_NO_OFFICIAL_FINAL_ROW_CAPTURED",
-    "DEFENSIBLE_SOURCE_CANDIDATE": false
+    "exact_session_2026_09_17": "TRUE",
+    "finalized_completed_daily_session": "TRUE_AUTHORIZED_CLOSED_MARKET_CORROBORATION",
+    "exact_open": "TRUE_INDEPENDENT_CLOSED_HISTORICAL_SURFACE",
+    "exact_high": "TRUE_INDEPENDENT_CLOSED_HISTORICAL_SURFACE",
+    "exact_low": "TRUE_INDEPENDENT_CLOSED_HISTORICAL_SURFACE",
+    "exact_close": "TRUE_AUTHORIZED_AND_SECONDARY_MATCH",
+    "exact_integer_raw_traded_share_volume": "TRUE_AUTHORIZED_EXACT_VOLUME_SEPARATE_FROM_TRADING_VALUE",
+    "stable_provenance": "TRUE_FOR_AUTHORIZED_CLOSE_VOLUME_PLUS_INDEPENDENT_CLOSED_OHLC",
+    "no_unresolved_material_conflict_with_equally_authoritative_finalized_source": "TRUE_INTRADAY_UK_NODE_NOT_FINALIZED",
+    "DEFENSIBLE_SOURCE_CANDIDATE": true,
+    "canonicalEligibility": false,
+    "canonicalEligibilityReason": "This evidence closes the research-level defensible-source gate but does not itself authorize canonical persistence. Existing reviewed-import/approved-source guards must still accept the evidence package and exact tuple before any write."
   },
   "ehdrClassification": {
-    "classification": "RESEARCH_CANDIDATE_ONLY",
-    "reason": "The candidate OHLCV is strongly corroborated by multiple secondary surfaces, but the required official/authorized stable finalized-row provenance and raw-volume semantics have not been captured. DirectFN public surfaces are intraday/cache-conflicted, and the official EGX stock-specific row remains inaccessible.",
+    "classification": "DEFENSIBLE_SOURCE_CANDIDATE",
+    "reason": "Aletihad provides a closed 17-Sep-2026 market surface with EHDR close 2.79, exact Volume 3,307,212 and separate Trading Value, and states its financial data originate from certified market-data providers. Investing AU independently supplies the closed 17/09 identity and full OHLC tuple with the same close/range and exact scoreboard volume. The conflicting UK Investing node was explicitly delayed/intraday rather than finalized.",
     "candidate": {
       "open": 2.73,
       "high": 2.79,
       "low": 2.73,
       "close": 2.79,
       "volume": 3307212
-    }
+    },
+    "canonicalPromoted": false,
+    "stagingRows": 0,
+    "canonicalRows": 0
   },
   "pathStatus": {
     "PATH_A_EGID": "EXTERNAL_HANDOFF_PENDING",
-    "PATH_B_OFFICIAL_EGX_FALLBACK": "ACTIVE_BLOCKED_ON_OFFICIAL_STOCK_ROW_ACCESS"
+    "PATH_B_OFFICIAL_EGX_FALLBACK": "EHDR_DEFENSIBLE_CANDIDATE_ESTABLISHED_WITH_AUTHORIZED_CLOSED_MARKET_CORROBORATION"
   },
   "adapterCompatibility": {
     "classification": "STILL_UNPROVEN",
@@ -278,5 +334,5 @@
     "historyRows": 0,
     "g12Changes": 0
   },
-  "exactNextAction": "Retrieve the official Egyptian Exchange 17-Sep-2026 daily bulletin or stock-history payload through a normal EGX browser/download session that can pass the public download/security layer, then extract the single EHDR row and verify exact O/H/L/C plus raw integer Volume before any staging or canonical action."
+  "exactNextAction": "Validate EHDR candidate O=2.730/H=2.790/L=2.730/C=2.790/V=3,307,212 against the CURRENT existing reviewed-import/approved-source contract in read-only/dry-run mode. Do not modify tests/workflows/guards and do not persist canonical data unless the existing contract accepts the evidence package exactly."
 }
