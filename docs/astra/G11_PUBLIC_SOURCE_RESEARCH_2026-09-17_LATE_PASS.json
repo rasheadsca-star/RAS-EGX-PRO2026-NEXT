@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "astra-g11-public-source-research-late-pass-1",
+  "session": "2026-09-17",
+  "purpose": "Persist a research-only late pass over EHDR, NAPR, AIHC and ALRA/AIFI without changing canonical history or G11/G12 status.",
+  "baseHeadVerifiedBeforeWrite": "dd34b723cb38baf577f45d5d881fa26787f4124b",
+  "safety": {
+    "canonicalWrite": false,
+    "g11StatusMutation": false,
+    "g12Mutation": false,
+    "mainMutation": false,
+    "productionCutover": false,
+    "guardRelaxation": false,
+    "crossSourcePrecisionInference": false,
+    "roundedVolumePromotion": false
+  },
+  "reviews": [
+    {
+      "ticker": "EHDR",
+      "status": "NEAR_CLOSURE_NOT_ELIGIBLE",
+      "candidate": {
+        "session": "2026-09-17",
+        "open": 2.730,
+        "high": 2.790,
+        "low": 2.730,
+        "close": 2.790,
+        "volume": 3307212
+      },
+      "evidence": [
+        "Investing Saudi search-indexed historical surface exposed the explicit 2026-09-17 row with O=2.730 H=2.790 L=2.730 C=2.790 but rounded volume=3.31M and a closed quote state.",
+        "Investing Australia scoreboard exposed 17/09 Closed, exact volume=3307212, close=2.790, day range=2.730-2.790, market Egypt and ISIN EGS65341C017.",
+        "Mubasher pages observed in the same late pass remained at 2026-09-16 with exact O/H/L/C/V for that older session."
+      ],
+      "blocker": "No stable single surface observed with explicit 2026-09-17 finalization plus exact O/H/L/C/V. Investing cache nodes still showed materially different session states when re-opened.",
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "ticker": "NAPR",
+      "status": "CURRENT_ROW_VISIBLE_NOT_ELIGIBLE",
+      "candidate": {
+        "session": "2026-09-17",
+        "open": 42.10,
+        "high": 48.85,
+        "low": 37.55,
+        "close": 42.56,
+        "exactVolumeCandidate": 2858309
+      },
+      "evidence": [
+        "Investing Saudi/UK search-indexed historical surfaces exposed explicit 2026-09-17 O=42.10 H=48.85 L=37.55 C=42.56 with table volume rounded to 2.86M.",
+        "The same surface exposed 2,858,309 under an Average Daily Trading Volume FAQ label, not as an explicit session-volume field.",
+        "The quote summary exposed a day-range high of 48.90 while the historical row exposed high=48.85."
+      ],
+      "blocker": "The exact integer volume is not semantically bound to the 2026-09-17 historical row, and the 48.85 versus 48.90 high conflict remains unresolved.",
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "ticker": "AIHC",
+      "status": "MATERIAL_REGIONAL_CONFLICT_NOT_ELIGIBLE",
+      "evidence": [
+        "One Investing regional surface exposed 2026-09-17 C=0.782 O=0.780 H=0.790 L=0.768 with rounded volume=59.80M.",
+        "Another Investing regional surface exposed 2026-09-17 C=0.779 O=0.780 H=0.790 L=0.768 with rounded volume=36.55M.",
+        "Other current/search surfaces exposed exact integer 60,722,309 but not as an unambiguous exact session-volume field tied to the same precise OHLC row."
+      ],
+      "blocker": "Material same-session close/volume disagreement across provider cache nodes prevents selection of a canonical finalized bar.",
+      "eligibleForCanonicalCurrent": false
+    },
+    {
+      "ticker": "ALRA/AIFI",
+      "status": "IDENTITY_ALIAS_CONFIRMED_PRICE_BAR_NOT_ELIGIBLE",
+      "identity": {
+        "company": "Atlas for Investment & Food Industries S.A.E.",
+        "aliases": ["ALRA", "AIFI"],
+        "isin": "EGS071L1C018"
+      },
+      "identityEvidence": [
+        "Atlas official company site states the listed company uses EGX tickers ALRA / AIFI.",
+        "Mubasher AIFI.CA rights-issue notice identifies Atlas for Investment & Food Industries with ISIN EGS071L1C018."
+      ],
+      "currentConflict": [
+        "Investing surfaces exposed a 2026-09-17 AIFI row around O=2.410 H=2.430 L=2.390 C=2.420 with rounded volume, while some regional nodes remained on 2026-09-16 or showed different current snapshots.",
+        "DirectFN rendered an exact AIFI row O=3.39 C=3.58 H=3.64 L=3.41 V=12,708,741, but those figures match the 31-Dec-2025 market state (including AIFI 3.58 +5.60%) rather than the 2026-09-17 market state, demonstrating stale/misaligned feed risk despite a newer page header."
+      ],
+      "blocker": "Ticker identity is no longer the primary blocker; exact finalized 2026-09-17 OHLCV remains unresolved and DirectFN is rejected for this record due stale/misaligned data.",
+      "eligibleForCanonicalCurrent": false
+    }
+  ],
+  "decision": {
+    "newCanonicalRowsApproved": 0,
+    "currentSessionGapsUnchangedFromPersistedBaseline": 21,
+    "criticalUnchanged": 0,
+    "highIssueFamiliesUnchanged": 3,
+    "g11Status": "BLOCKED",
+    "g12Status": "PENDING",
+    "nextAction": "Continue searching for a stable ticker-specific single-surface exact finalized 2026-09-17 OHLCV source. Prefer EHDR first, then NAPR, AIHC, and ALRA/AIFI. Do not promote rounded, cache-conflicted, stale, aggregate-only, or semantically ambiguous values."
+  }
+}
