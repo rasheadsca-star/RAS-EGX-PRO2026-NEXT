@@ -80,6 +80,7 @@ jobs:
             node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" "$rel"
           done
           V20_V17_RUNTIME_SOURCE_SHA="$V17_SHA" V20_V17_RUNTIME_SOURCE_DATE="$V17_DATE" node scripts/v20/validate-v17-runtime-sync.cjs
+          cp data/v20/v17-runtime-sync.json data/v20/v17-centric-runtime-sync.json
           node scripts/v20/validate-v17-decision-core-runtime.cjs
 
       - name: Static and anti-self-patching validation
@@ -212,6 +213,7 @@ jobs:
         run: |
           node scripts/v20/archive-native-shadow.cjs
           node scripts/v20/native-shadow-forward-regression.cjs
+          cp data/v20/signal-archive/native-shadow/regression.json data/v20/v17-centric-native-shadow-regression.json
 
       - name: Build Performance Evidence
         run: |
@@ -228,8 +230,8 @@ jobs:
           node - <<'NODE'
           const sem=require('./data/v20/v17-centric-semantic-acceptance.json');
           const nav=require('./data/v20/funded-nav-regression.json');
-          const fwd=require('./data/v20/signal-archive/native-shadow/regression.json');
-          const perf=require('./data/v20/performance-evidence-regression.json');
+          const fwd=require('./data/v20/v17-centric-native-shadow-regression.json');
+          const perf=require('./data/v20/canonical-performance-evidence-regression.json');
           const gov=require('./data/v20/champion-challenger-regression.json');
           const d=require('./data/v20/final-decision-contract.json');
           const core=require('./data/v20/v17-production-decision-core.json');
@@ -304,13 +306,13 @@ jobs:
             data/v20/v17-production-decision-core.json
             data/v20/native-current.json
             data/v20/native-model-freeze.json
-            data/v20/v17-runtime-sync.json
+            data/v20/v17-centric-runtime-sync.json
             data/v20/v17-centric-semantic-acceptance.json
             data/v20/funded-nav.json
             data/v20/funded-nav-regression.json
-            data/v20/signal-archive/native-shadow/regression.json
-            data/v20/performance-evidence-registry.json
-            data/v20/performance-evidence-regression.json
+            data/v20/v17-centric-native-shadow-regression.json
+            data/v20/canonical-performance-evidence-registry.json
+            data/v20/canonical-performance-evidence-regression.json
             data/v20/champion-challenger-registry.json
             data/v20/champion-challenger-regression.json
             data/v20/decision-board-browser-certification.json

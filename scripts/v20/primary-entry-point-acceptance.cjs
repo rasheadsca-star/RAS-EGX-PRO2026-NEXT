@@ -45,9 +45,9 @@ const requiredCanonicalSources = [
   '../data/v20/native-current.json',
   '../data/v20/native-model-freeze.json',
   '../data/v20/funded-nav.json',
-  '../data/v20/performance-evidence-registry.json',
+  '../data/v20/canonical-performance-evidence-registry.json',
   '../data/v20/champion-challenger-registry.json',
-  '../data/v20/v17-runtime-sync.json'
+  '../data/v20/v17-centric-runtime-sync.json'
 ];
 check('canonicalDecisionDataSourcesUnchanged', requiredCanonicalSources.every(source => board.includes(source)), requiredCanonicalSources.filter(source => !board.includes(source)));
 check('canonicalArchitectureGuardPreserved', board.includes("contract.architecture!=='V17_CENTRIC_V20_NATIVE_DISCOVERY'"));

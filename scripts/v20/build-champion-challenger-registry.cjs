@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 const fs=require('fs'),path=require('path');const root=path.resolve(process.env.GITHUB_WORKSPACE||'.'),P=r=>path.join(root,r),read=(r,f={})=>{try{return JSON.parse(fs.readFileSync(P(r),'utf8'))}catch{return f}},write=(r,v)=>{const f=P(r);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,`${JSON.stringify(v,null,2)}\n`,'utf8')};
-const evidence=read('data/v20/performance-evidence-registry.json'),freeze=read('data/v20/native-model-freeze.json'),core=read('data/v20/v17-production-decision-core.json'),decision=read('data/v20/final-decision-contract.json'),v19Gate=read('data/v19/challenger-status-v6.json');
+const evidence=read('data/v20/canonical-performance-evidence-registry.json'),freeze=read('data/v20/native-model-freeze.json'),core=read('data/v20/v17-production-decision-core.json'),decision=read('data/v20/final-decision-contract.json'),v19Gate=read('data/v19/challenger-status-v6.json');
 const byModel=id=>(evidence.entries||[]).filter(e=>e.modelId===id||e.model===id);const nativeForward=(evidence.entries||[]).find(e=>e.evidenceId==='V20_NATIVE_V1_FRESH_FORWARD'),nativeReviewReady=Number(nativeForward?.sessionCount||0)>=30&&Object.values(nativeForward?.forwardState?.metricsByHorizon||{}).some(x=>Number(x?.resolvedIndependentSessionCount||0)>=30),holdoutReady=false;
 const rows=[
  {modelId:'V16_9_EQUAL_WEIGHT_BASKET',displayName:'V16.9 Equal Weight Basket',role:'CHAMPION',governanceState:'CHAMPION_LOCKED',freezeStatus:'FROZEN_REFERENCE',evidenceIds:(evidence.entries||[]).filter(e=>e.role==='CHAMPION').map(e=>e.evidenceId),freshForwardSessions:null,independentHoldoutReady:null,promotionEligibility:'NOT_APPLICABLE_ALREADY_CHAMPION',productionExecutionInfluence:true,automaticPromotion:false},

@@ -14,12 +14,12 @@ const core=read('data/v20/v17-production-decision-core.json');
 const native=read('data/v20/native-current.json');
 const semantic=read('data/v20/v17-centric-semantic-acceptance.json');
 const navReg=read('data/v20/funded-nav-regression.json');
-const forwardReg=read('data/v20/signal-archive/native-shadow/regression.json');
-const perfReg=read('data/v20/performance-evidence-regression.json');
+const forwardReg=read('data/v20/v17-centric-native-shadow-regression.json');
+const perfReg=read('data/v20/canonical-performance-evidence-regression.json');
 const govReg=read('data/v20/champion-challenger-regression.json');
 const registry=read('data/v20/champion-challenger-registry.json');
 const browser=read('data/v20/decision-board-browser-certification.json');
-const sync=read('data/v20/v17-runtime-sync.json');
+const sync=read('data/v20/v17-centric-runtime-sync.json');
 
 assert(contract.schemaVersion==='20.0.0-canonical-stock-decision-contract-1','Unexpected canonical contract schema');
 assert(contract.architecture==='V17_CENTRIC_V20_NATIVE_DISCOVERY','Canonical architecture drift');

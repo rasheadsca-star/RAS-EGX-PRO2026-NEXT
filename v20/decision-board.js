@@ -119,7 +119,7 @@
     mount(); bind();
     try{
       const [contract,core,native,freeze,nav,perf,governance,sync]=await Promise.all([
-        json('../data/v20/final-decision-contract.json'),json('../data/v20/v17-production-decision-core.json'),json('../data/v20/native-current.json'),json('../data/v20/native-model-freeze.json',true),json('../data/v20/funded-nav.json',true),json('../data/v20/performance-evidence-registry.json',true),json('../data/v20/champion-challenger-registry.json',true),json('../data/v20/v17-runtime-sync.json',true)
+        json('../data/v20/final-decision-contract.json'),json('../data/v20/v17-production-decision-core.json'),json('../data/v20/native-current.json'),json('../data/v20/native-model-freeze.json',true),json('../data/v20/funded-nav.json',true),json('../data/v20/canonical-performance-evidence-registry.json',true),json('../data/v20/champion-challenger-registry.json',true),json('../data/v20/v17-centric-runtime-sync.json',true)
       ]);
       Object.assign(state,{contract,core,native,freeze,nav,perf,governance,sync});
       if(contract.architecture!=='V17_CENTRIC_V20_NATIVE_DISCOVERY')throw new Error('Canonical architecture mismatch');
