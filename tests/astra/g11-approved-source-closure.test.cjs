@@ -36,9 +36,12 @@ test('source precedence is deterministic and has a hard unavailable terminal sta
   assert.equal(p.sourceMixing.allowed,false);
 });
 
-test('approved fallback resolution can never use a mismatched or previous session', () => {
+test('approved fallback resolution requires exact current evidence or exact reviewed-import canonical parity', () => {
   const run = read('docs/astra/G11_APPROVED_SOURCE_CLOSURE_RUN.json');
   const expected = run.expectedSession;
+  const registry = read('docs/astra/G11_APPROVED_SOURCE_REGISTRY.json');
+  const staged = read('data/history-fallback-import.json');
+  const reviewedSource = registry.records.find((x)=>x.sourceId==='approved_reviewed_import');
   const resolved = [
     ...(run.noncoverage?.records||[]).filter((x)=>x.finalDisposition==='RESOLVED_APPROVED_FALLBACK'),
     ...(run.invalidSource?.records||[]).filter((x)=>x.finalDisposition==='RESOLVED_APPROVED_FALLBACK'),
@@ -47,7 +50,34 @@ test('approved fallback resolution can never use a mismatched or previous sessio
   for (const rec of resolved) {
     const attempts = rec.sourceProvenance?.fallbackAttempts || rec.fallbackAttempts || [];
     const goodRows = attempts.flatMap((a)=>a.ok&&a.row?[a.row]:[]);
-    assert.ok(goodRows.some((row)=>row.sessionDate===expected));
+    if (goodRows.some((row)=>row.sessionDate===expected)) continue;
+
+    assert.ok(reviewedSource, 'approved_reviewed_import registry entry missing');
+    assert.equal(reviewedSource.classification,'APPROVED_FALLBACK');
+    assert.equal(reviewedSource.currentAvailability,true);
+    assert.ok(Number(reviewedSource.approvedRecordCount||0)>0);
+
+    const stagedRecord = (staged.records||[]).find((x)=>
+      String(x.ticker||'').trim().toUpperCase()===String(rec.ticker||'').trim().toUpperCase()
+      && x.approved===true
+      && x.symbolVerified===true
+    );
+    assert.ok(stagedRecord,`${rec.ticker} resolved without exact current source row or staged approved reviewed import`);
+
+    const stagedRow = (stagedRecord.sessions||[]).find((row)=>
+      String(row.date||row.sessionDate||'').slice(0,10)===expected
+    );
+    assert.ok(stagedRow,`${rec.ticker} staged reviewed import missing expected session ${expected}`);
+
+    const canonical = read(`data/history/${rec.ticker}.json`);
+    const canonicalRow = (canonical.sessions||[]).find((row)=>
+      String(row.date||'').slice(0,10)===expected
+    );
+    assert.ok(canonicalRow,`${rec.ticker} canonical history missing expected session ${expected}`);
+    assert.equal(canonicalRow.validationStatus,'approved_fallback_import',`${rec.ticker} reviewed import lacks approved_fallback_import validation status`);
+    for (const field of ['open','high','low','close','volume']) {
+      assert.strictEqual(canonicalRow[field],stagedRow[field],`${rec.ticker} ${field} differs between staged reviewed import and canonical row`);
+    }
   }
   assert.equal(run.safety.previousSessionCarryForward,false);
   assert.equal(run.safety.syntheticMarketData,false);
