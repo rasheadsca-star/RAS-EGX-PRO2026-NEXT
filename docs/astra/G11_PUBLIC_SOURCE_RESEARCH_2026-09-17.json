@@ -1,8 +1,8 @@
 {
-  "schemaVersion": "astra-g11-public-source-research-1",
-  "generatedAt": "2026-09-17T20:30:00Z",
+  "schemaVersion": "astra-g11-public-source-research-2",
+  "generatedAt": "2026-09-17T21:05:00Z",
   "expectedSession": "2026-09-17",
-  "purpose": "Non-canonical research evidence for exact finalized current-session OHLCV recovery. This artifact MUST NOT be treated as approval to populate canonical history.",
+  "purpose": "Non-canonical research evidence for exact finalized current-session OHLCV recovery. This artifact MUST NOT be treated as approval to populate canonical history or as a substitute for G11 certification.",
   "safety": {
     "canonicalWrite": false,
     "g11StatusMutation": false,
@@ -12,7 +12,8 @@
     "carryForward": false,
     "syntheticValues": false,
     "roundedVolumePromotionForbidden": true,
-    "crossSourcePrecisionInferenceForbidden": true
+    "crossSourcePrecisionInferenceForbidden": true,
+    "noTradeCarveoutInvented": false
   },
   "providers": [
     {
@@ -37,6 +38,30 @@
       "reason": "No authorized EGID credentials are configured for this project."
     },
     {
+      "providerId": "aletihad_egx_market",
+      "classification": "RESEARCH_ONLY_CURRENT_CROSS_CHECK_WITH_STALE_CARRY_FORWARD_RISK",
+      "marketUrl": "https://www.aletihad.ae/market/4465514/",
+      "observedMarketState": {
+        "sessionDisplayDate": "2026-09-17",
+        "marketStatus": "Closed",
+        "latestUpdateAbuDhabi": "2026-09-17 15:25"
+      },
+      "strengths": [
+        "Aggregate market table exposes exact integer volume and trading value for many EGX securities.",
+        "EHDR aggregate close/volume matches a finalized Investing scoreboard snapshot."
+      ],
+      "criticalLimitation": "The aggregate market table can carry a security's last known values even when its own stock page has an older update date. Aggregate presence is therefore NOT proof that the security traded or had a finalized bar on 2026-09-17.",
+      "staleCarryForwardExamples": [
+        {"ticker":"ARVA","aggregateVolume":4642112,"directStockPageLatestObserved":"2026-07-29"},
+        {"ticker":"EPPK","aggregateVolume":235214,"directStockPageLatestObserved":"2026-09-09"},
+        {"ticker":"ICLE","aggregateVolume":18,"directStockPageLatestObserved":"2026-09-16"},
+        {"ticker":"MMAT","aggregateVolume":73716,"directStockPageLatestObserved":"2026-09-16"},
+        {"ticker":"NDRL","aggregateVolume":100,"directStockPageLatestObserved":"2026-09-16"},
+        {"ticker":"DEIN","aggregateVolume":4,"directStockPageLatestObserved":"2026-09-10"}
+      ],
+      "eligibleForCanonicalCurrent": false
+    },
+    {
       "providerId": "fin_arabia",
       "classification": "RESEARCH_ONLY_CURRENT_CROSS_CHECK",
       "url": "https://fin-arabia.com/",
@@ -51,13 +76,7 @@
           "canonicalTicker": "AIHC",
           "providerSymbol": "AIH",
           "providerIdentityLabel": "Arabia Investments Holding SAE / العربية للاستثمارات القابضة",
-          "observedCurrent": {
-            "close": 0.78,
-            "high": 0.79,
-            "low": 0.77,
-            "open": 0.78,
-            "volume": 60722309
-          },
+          "observedCurrent": {"close":0.78,"high":0.79,"low":0.77,"open":0.78,"volume":60722309},
           "note": "Exact integer volume is useful as corroboration, but price fields are rounded relative to 3-decimal public historical quotes; not canonical-import eligible."
         }
       ],
@@ -65,73 +84,68 @@
     },
     {
       "providerId": "investing_public_historical",
-      "classification": "RESEARCH_ONLY_PARTIAL_PRECISION",
-      "observedCapabilities": "Public historical pages expose explicit 2026-09-17 OHLC for multiple EGX securities.",
+      "classification": "RESEARCH_ONLY_PARTIAL_PRECISION_AND_REGIONAL_CACHE_VARIANCE",
+      "observedCapabilities": "Public historical pages expose explicit 2026-09-17 OHLC for multiple EGX securities; some scoreboard pages expose exact integer current volume and exact identity metadata.",
       "limitations": [
-        "Displayed volume is commonly rounded with K/M suffixes and therefore cannot establish exact integer volume.",
-        "Regional mirrors may update at different times and can disagree on whether the current-session row is present.",
-        "Some illiquid-security rows can contain blank volume or internally suspicious OHLC layouts; these cannot be promoted."
+        "Historical table volume is commonly rounded with K/M suffixes and therefore cannot establish exact integer volume.",
+        "Regional mirrors can disagree on whether the current-session row is present and can show different intraday/final snapshots.",
+        "A single regional mirror cannot override a material conflicting regional mirror without independent finalization evidence.",
+        "Some illiquid-security rows contain blank volume or OHLC layouts that fail the project's strict invariant rules."
       ],
       "examples": [
-        {
-          "ticker": "AIHC",
-          "session": "2026-09-17",
-          "open": 0.770,
-          "high": 0.790,
-          "low": 0.768,
-          "close": 0.782,
-          "displayedVolume": "60.72M",
-          "eligibleForCanonicalCurrent": false,
-          "reason": "rounded_volume"
-        },
-        {
-          "ticker": "AIFI",
-          "canonicalAliasUnderReview": "ALRA",
-          "session": "2026-09-17",
-          "open": 2.410,
-          "high": 2.430,
-          "low": 2.390,
-          "close": 2.420,
-          "displayedVolume": "3.16M",
-          "eligibleForCanonicalCurrent": false,
-          "reason": "rounded_volume_and_alias_requires_exact_identity_evidence"
-        },
-        {
-          "ticker": "EHDR",
-          "session": "2026-09-17",
-          "open": 2.730,
-          "high": 2.780,
-          "low": 2.730,
-          "close": 2.780,
-          "displayedVolume": "1.01M",
-          "eligibleForCanonicalCurrent": false,
-          "reason": "rounded_volume"
-        },
-        {
-          "ticker": "NAPR",
-          "session": "2026-09-17",
-          "open": 42.10,
-          "high": 48.85,
-          "low": 37.55,
-          "close": 42.56,
-          "displayedVolume": "2.86M",
-          "eligibleForCanonicalCurrent": false,
-          "reason": "rounded_volume"
-        },
-        {
-          "ticker": "EGSA",
-          "session": "2026-09-17",
-          "regionalMirrorState": "current row observed on at least one regional mirror while another mirror still showed 2026-09-16 as latest",
-          "eligibleForCanonicalCurrent": false,
-          "reason": "regional_update_inconsistency_and_rounded_volume"
-        },
-        {
-          "ticker": "DEIN",
-          "session": "2026-09-17",
-          "eligibleForCanonicalCurrent": false,
-          "reason": "public row observed with missing volume and OHLC layout unsuitable for strict invariant validation"
-        }
+        {"ticker":"AIHC","session":"2026-09-17","open":0.770,"high":0.790,"low":0.768,"close":0.782,"displayedVolume":"60.72M","eligibleForCanonicalCurrent":false,"reason":"rounded_volume_plus_material_regional_conflict"},
+        {"ticker":"AIFI","canonicalAliasUnderReview":"ALRA","session":"2026-09-17","open":2.410,"high":2.430,"low":2.390,"close":2.420,"displayedVolume":"3.16M","eligibleForCanonicalCurrent":false,"reason":"rounded_volume_and_alias_requires_exact_identity_evidence"},
+        {"ticker":"NAPR","session":"2026-09-17","eligibleForCanonicalCurrent":false,"reason":"prior public snapshots materially conflicted; no exact finalized full OHLCV accepted"},
+        {"ticker":"EGSA","session":"2026-09-17","regionalMirrorState":"one mirror exposes a 2026-09-17 row while another remains at 2026-09-16; observed 2026-09-17 row has low above close under the displayed fields","eligibleForCanonicalCurrent":false,"reason":"regional_update_inconsistency_and_strict_ohlc_invariant_failure"},
+        {"ticker":"SAIB","latestExplicitHistoricalSessionObserved":"2026-09-16","eligibleForCanonicalCurrent":false,"reason":"no_explicit_2026-09-17_historical_row_in_observed_source"},
+        {"ticker":"IRAX","latestExplicitHistoricalSessionObserved":"2026-09-16","eligibleForCanonicalCurrent":false,"reason":"no_explicit_2026-09-17_historical_row_in_observed_source"},
+        {"ticker":"NDRL","latestExplicitHistoricalSessionObserved":"2026-09-16","eligibleForCanonicalCurrent":false,"reason":"no_explicit_2026-09-17_historical_row_in_observed_source"}
       ]
+    },
+    {
+      "providerId": "ehdr_multi_source_finalization_research",
+      "classification": "NEAR_CLOSURE_NOT_YET_CANONICAL_APPROVED",
+      "ticker": "EHDR",
+      "identity": {
+        "name": "Egyptians Housing Development",
+        "isin": "EGS65341C017",
+        "market": "Egypt",
+        "currency": "EGP"
+      },
+      "candidateRow": {
+        "session": "2026-09-17",
+        "open": 2.730,
+        "high": 2.790,
+        "low": 2.730,
+        "close": 2.790,
+        "volume": 3307212
+      },
+      "evidence": [
+        {
+          "source": "Investing Saudi historical",
+          "url": "https://sa.investing.com/equities/egyptn-hous-de-historical-data",
+          "supports": ["explicit 2026-09-17 session", "open=2.730", "high=2.790", "low=2.730", "close=2.790", "closed timestamp"],
+          "limitation": "historical table displays volume as rounded 3.31M"
+        },
+        {
+          "source": "Investing Australia scoreboard",
+          "url": "https://au.investing.com/equities/egyptn-hous-de-scoreboard",
+          "supports": ["17/09 Closed", "exact volume=3307212", "close=2.790", "day range=2.730-2.790", "ISIN EGS65341C017", "Market Egypt"]
+        },
+        {
+          "source": "Aletihad EGX closed aggregate",
+          "url": "https://www.aletihad.ae/market/4465514/",
+          "supports": ["market closed current 2026-09-17", "EHDR close=2.79", "exact volume=3307212", "trading value=9135745"]
+        },
+        {
+          "source": "Argaam market table",
+          "url": "https://www.argaam.com/en/company/companies-prices/13",
+          "supports": ["EHDR price=2.79", "range=2.73-2.79", "exact volume=3307212", "turnover=9135745"]
+        }
+      ],
+      "conflict": "Other Investing regional cache nodes observed during the same research window still exposed earlier/intraday snapshots, including different close/volume or latest-session date.",
+      "decision": "Do not stage yet. Candidate is strongly corroborated but still assembled across surfaces while the provider's regional cache state is materially inconsistent. Require either one source surface exposing exact full OHLCV + finalized session/identity, or an independent exact finalized full OHLCV corroboration before reviewed import.",
+      "eligibleForCanonicalCurrent": false
     },
     {
       "providerId": "watheeqa_and_minastock_public_snapshots",
@@ -140,10 +154,20 @@
       "eligibleForCanonicalCurrent": "record_specific_only"
     }
   ],
+  "gate_semantics_review": {
+    "result": "NO_NEW_NO_TRADE_CARVEOUT_ALLOWED_UNDER_CURRENT_G11_CONTRACT",
+    "findings": [
+      "g11-data-health.cjs currently raises HIGH CURRENT_SESSION_GAP for every active intended security without a validation-approved expected-session row.",
+      "g11-data-health.test.cjs explicitly checks that missing expected-session records are not confused with market closure.",
+      "The final repair reporter recognizes statuses beginning LEGITIMATE_ only inside production-strategy readiness accounting; that does not suppress the independent HIGH CURRENT_SESSION_GAP issue.",
+      "Therefore relabeling a missing 2026-09-17 bar as LEGITIMATE_NO_TRADE would require changing the G11 acceptance contract and would lower the existing standard unless separately authorized by an upstream specification change. No such change is made."
+    ],
+    "codeChanged": false
+  },
   "decision": {
     "newCanonicalRowsApproved": 0,
     "g11Status": "BLOCKED",
     "g12Status": "PENDING",
-    "nextAction": "Continue searching for exact finalized 2026-09-17 OHLCV with explicit identity/session provenance. Do not combine rounded OHLC from one source with exact volume from another to fabricate an exact row. If a provider exposes exact finalized OHLCV and identity for a blocker, stage it only through the existing reviewed-import preflight and exact canonical parity path."
+    "nextAction": "Continue exact finalized 2026-09-17 OHLCV acquisition. Prioritize EHDR single-surface exact full OHLCV corroboration and identify exact finalized rows for the remaining blockers. Do not use aggregate current tables as session proof, do not fabricate no-trade exclusions, and do not combine rounded values into canonical rows."
   }
 }
