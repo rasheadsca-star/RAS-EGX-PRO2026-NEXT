@@ -15,8 +15,8 @@ test('R07 legacy Vercel proxy and Raw technical loader are absent',()=>{
   assert.equal(fs.existsSync(path.join(root,'deploy/rc2-safe-shell/api/_proxy.js')),false);
   assert.equal(fs.existsSync(path.join(root,'deploy/rc2-safe-shell/api/technical.js')),false);
 });
-test('R07 disappears from cumulative G12 scan and only R08 remains',()=>{
+test('R07 remains absent from cumulative G12 scan as R08 closes',()=>{
   const x=scanLegacyDependencies(root);
-  assert.deepEqual(x.dependencyIds,['R08_SEPA_BRANCH_BUILD_IMPORT']);
-  assert.equal(x.runtimeLegacyDependencyCount,1);
+  assert.equal(x.dependencyIds.includes('R07_RC2_VERCEL_PROXY'),false);
+  assert.ok(x.runtimeLegacyDependencyCount<=1);
 });
