@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const V19_LOCAL = require('../../astra/runtime/bridges/v19-local.cjs');
 const V20_LOCAL = require('../../astra/runtime/bridges/v20-local.cjs');
+const QUANT_ARCHIVE = require('../../astra/runtime/bridges/quant-edge-archive.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const P = relative => path.join(ROOT, relative);
@@ -14,13 +15,6 @@ const V17_PATH = P('data/v17/current.json');
 const OUTPUT_PATH = P('data/stable/v16-main-app-consensus.json');
 const REGRESSION_PATH = P('data/stable/v16-main-app-consensus-regression.json');
 const V19_ENGINE_ID = 'V19_CHAT_GPT_NATIVE_CHALLENGER_V6';
-
-const EXTERNAL_SOURCES = {
-  quantEdge: [
-    'https://quant-edge-shadow.vercel.app/api/run',
-    'https://quant-edge-shadow-steverabin38-1168s-projects.vercel.app/api/run',
-  ],
-};
 
 function readJson(file, fallback = {}) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
@@ -35,48 +29,6 @@ function writeJsonAtomic(file, value) {
 function ticker(value) { return String(value || '').trim().toUpperCase(); }
 function unique(values) { return [...new Set((values || []).filter(Boolean))]; }
 function setOfRows(rows) { return new Set(unique((Array.isArray(rows) ? rows : []).map(row => ticker(row?.ticker || row)))); }
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-async function fetchJson(url, attempt = 1) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 18000);
-  try {
-    const separator = url.includes('?') ? '&' : '?';
-    const response = await fetch(`${url}${separator}t=${Date.now()}-${attempt}`, {
-      cache: 'no-store',
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'EGX-MAIN-APP-V16.9.2-stable-consensus',
-        'Cache-Control': 'no-cache',
-        'Accept': 'application/json,text/plain;q=0.9,*/*;q=0.8',
-      },
-    });
-    if (!response.ok) throw new Error(`HTTP_${response.status}`);
-    const text = await response.text();
-    const parsed = JSON.parse(text);
-    if (!parsed || typeof parsed !== 'object') throw new Error('INVALID_JSON_OBJECT');
-    return parsed;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchFirstValid(label, urls) {
-  const errors = [];
-  for (const url of urls) {
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      try {
-        const data = await fetchJson(url, attempt);
-        return { data, sourceUrl: url, attempts: attempt, errors };
-      } catch (error) {
-        errors.push(`${label}:${new URL(url).hostname}:attempt${attempt}:${error.message}`);
-        if (attempt < 2) await sleep(1200 * attempt);
-      }
-    }
-  }
-  return { data: null, sourceUrl: null, attempts: 0, errors };
-}
-
 function v19SelectedTickers(v19) {
   const current = v19?.current || {};
   const explicit = Array.isArray(current.selectedTickers) ? current.selectedTickers.map(ticker) : [];
@@ -140,11 +92,9 @@ async function main() {
       : [];
   const mainTickers = unique(mainRows.map(row => ticker(row.ticker)));
 
-  const [v19Result, v20Result, quantResult] = await Promise.all([
-    Promise.resolve({ data: V19_LOCAL.pendingState(), sourceUrl: 'LOCAL_G08_CONTRACT', attempts: 0, errors: [] }),
-    Promise.resolve({ data: V20_LOCAL.pendingState(), sourceUrl: 'LOCAL_G08_CONTRACT', attempts: 0, errors: [] }),
-    fetchFirstValid('QUANT', EXTERNAL_SOURCES.quantEdge),
-  ]);
+  const v19Result = { data: V19_LOCAL.pendingState(), sourceUrl: 'LOCAL_G08_CONTRACT', attempts: 0, errors: [] };
+  const v20Result = { data: V20_LOCAL.pendingState(), sourceUrl: 'LOCAL_G08_CONTRACT', attempts: 0, errors: [] };
+  const quantResult = { data: QUANT_ARCHIVE.state(), sourceUrl: 'LOCAL_ARCHIVE_ONLY', attempts: 0, errors: [] };
 
   const v19 = v19Result.data;
   const v20 = v20Result.data;
@@ -354,7 +304,7 @@ async function main() {
       v20Source: v20Result.sourceUrl,
       quantSource: quantResult.sourceUrl,
       sourceErrors,
-      resilientSourcePolicy: 'LOCAL_V19_V20_G08_CONTRACTS_PLUS_VERCEL_QUANT_WITH_RETRY',
+      resilientSourcePolicy: 'LOCAL_V19_V20_G08_CONTRACTS_PLUS_QUANT_ARCHIVE_ONLY',
     },
     current: {
       mainAppBasket: mainTickers,
