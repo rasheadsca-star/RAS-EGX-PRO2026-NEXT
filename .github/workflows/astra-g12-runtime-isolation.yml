@@ -22,6 +22,7 @@ on:
       - 'tests/astra/g12-r05-quant-edge-archive.test.cjs'
       - 'tests/astra/g12-r05-quant-edge-cutover.test.cjs'
       - 'tests/astra/g12-r06-sepa-local.test.cjs'
+      - 'tests/astra/g12-r06-sepa-cutover.test.cjs'
       - 'scripts/stable/v16-main-app-consensus.cjs'
       - 'scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs'
       - 'scripts/stable/v16-main-app-independent-consensus-audit.cjs'
@@ -75,6 +76,8 @@ jobs:
         run: node --test tests/astra/g12-r05-quant-edge-cutover.test.cjs
       - name: R06 SEPA internal replacement parity
         run: node --test tests/astra/g12-r06-sepa-local.test.cjs
+      - name: R06 SEPA post-cut isolation invariant
+        run: node --test tests/astra/g12-r06-sepa-cutover.test.cjs
       - name: Full declared legacy scan
         shell: bash
         run: |

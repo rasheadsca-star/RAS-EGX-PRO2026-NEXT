@@ -167,13 +167,18 @@
       "removalStep": "replace sync-sepa remote fetch with local internal strategy execution and normalized envelope",
       "isolationTest": "legacy-isolation SEPA_X_REMOTE + SEPA parity",
       "cutoverCriterion": "local source passes golden cases; no external SEPA host dependency",
-      "status": "PARITY_CANDIDATE",
+      "status": "CUTOVER_PENDING_POST_SCAN",
       "replacementEvidence": {
         "candidateReplacement": "astra/runtime/bridges/sepa-local.cjs",
         "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
         "g10Case": "RULE-SEPA-V1",
         "legacyApiStillPresentUntilParityPass": true,
-        "productionCutover": false
+        "productionCutover": false,
+        "candidateCommit": "58b5e1ffc0a0cd5bfaf1cad669fdf0817dd47d14",
+        "candidateWorkflowRunId": 35393727964,
+        "parityResult": "PASS_4_OF_4",
+        "replacement": "astra/runtime/bridges/sepa-local.cjs",
+        "localMissingBehavior": "FAIL_CLOSED_NO_NETWORK"
       }
     },
     {
