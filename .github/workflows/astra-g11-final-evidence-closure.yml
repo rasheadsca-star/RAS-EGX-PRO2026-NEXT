@@ -76,16 +76,22 @@ jobs:
       - name: Rebuild searchable market universe from SecurityMaster
         run: node scripts/quant/v13-17-market-search-index.cjs
 
-      - name: Run current G11 suite
+      - name: Run complete G11 suite
         shell: bash
         run: |
           set -o pipefail
-          node --test tests/astra/g11-data-health.test.cjs | tee /tmp/g11.tap
+          node --test \
+            tests/astra/g11-data-health.test.cjs \
+            tests/astra/g11-source-repair.test.cjs \
+            tests/astra/g11-carry-forward-guard.test.cjs \
+            tests/astra/g11-source-dispositions.test.cjs \
+            tests/astra/g11-derived-build-failures.test.cjs \
+            tests/astra/g11-approved-source-closure.test.cjs | tee /tmp/g11.tap
           N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g11.tap)
           P=$(awk '/^# pass /{n=$3} END{print n}' /tmp/g11.tap)
           F=$(awk '/^# fail /{n=$3} END{print n}' /tmp/g11.tap)
-          test "$N" = 29
-          test "$P" = 29
+          test "$N" -ge 58
+          test "$P" = "$N"
           test "$F" = 0
           echo G11_TEST_COUNT=$N >> "$GITHUB_ENV"
           echo G11_TEST_PASS=1 >> "$GITHUB_ENV"
@@ -101,11 +107,12 @@ jobs:
           node <<'NODE'
           const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
           const gates=r('04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
-          const s=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),g=r('docs/astra/G11_CURRENT_UNIVERSE_GAPS.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json');
+          const s=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),g=r('docs/astra/G11_CURRENT_UNIVERSE_GAPS.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json'),guard=r('docs/astra/G11_GUARD37_EVIDENCE.json');
           const expectedGapCount=g.activeUniverse-g.currentValidCanonicalUniverse-Number(g.legitimateSessionExceptionCount||0);if(g.gapCount!==expectedGapCount)throw Error('gap equation does not close');
           if(g.accounting.total!==g.gapCount||g.accounting.closes!==true)throw Error('gap accounting malformed');
           if(sr.finalTaxonomy.UNEXPLAINED_NULL!==0)throw Error('S/R unexplained null remains');
           if(p.legacyNetworkCalls!==0||p.productionCutover!==false)throw Error('network/cutover violation');
+          if(guard.status!=='PASS'||guard.selfTests?.passed!==guard.selfTests?.total)throw Error('guard37 failed');
           if(!p.decisionSnapshotId||!p.semanticDecisionHash)throw Error('DecisionSnapshot evidence missing');
           if(m.get('G12')!=='PENDING')throw Error('G12 changed');
           for(const id of ['G13','G14','G15','G16','G17','G18','G19'])if(m.get(id)!=='PENDING')throw Error(`${id} changed`);
