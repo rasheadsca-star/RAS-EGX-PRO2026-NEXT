@@ -11,9 +11,8 @@ test('R04 cut removes V20 Pages Raw and CDN runtime sources',()=>{
   assert.doesNotMatch(s,/RAS-EGX0\.1\/data\/v20\/native-current\.json/i);
   assert.doesNotMatch(s,/EXTERNAL_SOURCES\.v20/);
 });
-test('R04 disappears from full G12 scan while R05 remains for its own step',()=>{
+test('R04 remains absent from the cumulative G12 scan',()=>{
   const x=scanLegacyDependencies(root);
   assert.equal(x.dependencyIds.includes('R04_V20_NATIVE_PAGES'),false);
-  assert.equal(x.dependencyIds.includes('R05_QUANT_EDGE_API'),true);
   assert.ok(x.runtimeLegacyDependencyCount<=4);
 });
