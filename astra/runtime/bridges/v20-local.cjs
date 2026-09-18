@@ -1,10 +1,11 @@
 'use strict';
-const {SPECS,executeStrategy}=require('../../strategies/g08-final-overlay.cjs');
+const {getStrategyDescriptor}=require('../../strategies/strategy-registry.cjs');
+const {executeStrategy}=require('../../strategies/strategy-runner.cjs');
 const STRATEGY_ID='V20_NATIVE_MULTI_COMPONENT_COMPOSITE';
 const ENGINE_ID='V20_FULL_MARKET_NATIVE_SELECTION_V1';
 
 function capability(){
-  const spec=SPECS[STRATEGY_ID];
+  const spec=getStrategyDescriptor(STRATEGY_ID);
   if(!spec)throw new Error('V20_INTERNAL_SPEC_MISSING');
   return{
     engineId:ENGINE_ID,
