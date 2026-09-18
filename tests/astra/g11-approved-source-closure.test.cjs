@@ -141,9 +141,14 @@ test('blocker overlap accounting uses unique-security sets instead of summing is
   const regime=[...(byCode.REGIME_INPUT_INCOMPLETE||new Set())];
   const unique=[...new Set([...symbol,...current,...regime])];
   const allThree=symbol.filter((x)=>(byCode.CURRENT_SESSION_GAP||new Set()).has(x)&&(byCode.REGIME_INPUT_INCOMPLETE||new Set()).has(x));
-  assert.ok(unique.length<=symbol.length+current.length+regime.length);
+  const graph = read('docs/astra/G11_BLOCKER_DEPENDENCY_GRAPH.json');
+  const familyTotal = symbol.length + current.length + regime.length;
+  assert.ok(unique.length <= familyTotal);
   assert.ok(Array.isArray(allThree));
-  assert.ok(unique.length>0);
+  assert.equal(unique.length, Number(graph.uniqueAffectedSecurityCount || 0));
+  assert.deepEqual([...unique].sort(), [...(graph.uniqueAffectedSecurities || [])].sort());
+  if (familyTotal === 0) assert.equal(unique.length, 0);
+  else assert.ok(unique.length > 0);
 });
 
 test('G12 remains pending and closure is non-cutover', () => {
