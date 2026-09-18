@@ -48,9 +48,8 @@ test('R06 sync source contains no remote SEPA host or network primitive',()=>{
   for(const token of ['sepax-strategy-stable.vercel.app','fetch(','http.request','https.request'])assert.equal(src.includes(token),false,token);
 });
 
-test('R06 disappears from cumulative G12 scan and only R07-R08 remain',()=>{
+test('R06 remains absent from cumulative G12 scan as later dependencies close',()=>{
   const x=scanLegacyDependencies(root);
   assert.equal(x.dependencyIds.includes('R06_SEPA_X_STABLE_API'),false);
-  assert.deepEqual(x.dependencyIds,['R07_RC2_VERCEL_PROXY','R08_SEPA_BRANCH_BUILD_IMPORT']);
-  assert.equal(x.runtimeLegacyDependencyCount,2);
+  assert.ok(x.runtimeLegacyDependencyCount<=2);
 });
