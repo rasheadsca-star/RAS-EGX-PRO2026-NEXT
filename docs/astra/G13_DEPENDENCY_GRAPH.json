@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-dependency-graph-1",
-  "generatedAt": "2026-09-18T21:53:20.277Z",
-  "sourceHead": "d2668fa164ce5550b865660ef9416c65f3ba4160",
+  "generatedAt": "2026-09-18T22:11:15.669Z",
+  "sourceHead": "f4e722bedc3b29fda49f074e652e3602a69416c4",
   "nodes": [
     {
       "file": "astra/certification/g06-certify.cjs",
@@ -149,6 +149,12 @@
     },
     {
       "file": "astra/contracts/canonical-contracts.cjs",
+      "zone": "shared-contracts",
+      "kind": "shared-contract",
+      "logicalModules": []
+    },
+    {
+      "file": "astra/contracts/data-health-primitives.cjs",
       "zone": "shared-contracts",
       "kind": "shared-contract",
       "logicalModules": []
@@ -413,17 +419,6 @@
       "classification": "external-or-builtin"
     },
     {
-      "from": "astra/certification/g08-certify.cjs",
-      "fromZone": "certification",
-      "spec": "../strategies/strategy-registry.cjs",
-      "target": "astra/strategies/strategy-registry.cjs",
-      "targetZone": "strategy-registry",
-      "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry"
-      ]
-    },
-    {
       "from": "astra/certification/g09-certify.cjs",
       "fromZone": "certification",
       "spec": "fs",
@@ -446,36 +441,6 @@
       "target": null,
       "targetZone": null,
       "classification": "external-or-builtin"
-    },
-    {
-      "from": "astra/certification/g09-certify.cjs",
-      "fromZone": "certification",
-      "spec": "../strategies/strategy-registry.cjs",
-      "target": "astra/strategies/strategy-registry.cjs",
-      "targetZone": "strategy-registry",
-      "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry"
-      ]
-    },
-    {
-      "from": "astra/certification/g09-certify.cjs",
-      "fromZone": "certification",
-      "spec": "../pipeline/g09-unified-decision-pipeline.cjs",
-      "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-      "targetZone": "decision-pipeline-shared",
-      "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "market-regime",
-        "signal-normalizer",
-        "evidence-engine",
-        "agreement-engine",
-        "ranking-engine",
-        "risk-engine",
-        "basket-engine",
-        "position-sizing",
-        "diagnostics"
-      ]
     },
     {
       "from": "astra/certification/g10-certify-final.cjs",
@@ -544,17 +509,6 @@
       "classification": "external-or-builtin"
     },
     {
-      "from": "astra/certification/g11-certify.cjs",
-      "fromZone": "certification",
-      "spec": "../data-health/g11-data-health.cjs",
-      "target": "astra/data-health/g11-data-health.cjs",
-      "targetZone": "data-health",
-      "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "data-health"
-      ]
-    },
-    {
       "from": "astra/certification/g11-derived-build-failures.cjs",
       "fromZone": "certification",
       "spec": "fs",
@@ -573,13 +527,11 @@
     {
       "from": "astra/certification/g11-derived-build-failures.cjs",
       "fromZone": "certification",
-      "spec": "../data-health/g11-data-health.cjs",
-      "target": "astra/data-health/g11-data-health.cjs",
-      "targetZone": "data-health",
+      "spec": "../contracts/data-health-primitives.cjs",
+      "target": "astra/contracts/data-health-primitives.cjs",
+      "targetZone": "shared-contracts",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "data-health"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/certification/g11-external-data-finalize.cjs",
@@ -734,13 +686,11 @@
     {
       "from": "astra/certification/g11-source-dispositions.cjs",
       "fromZone": "certification",
-      "spec": "../data-health/g11-data-health.cjs",
-      "target": "astra/data-health/g11-data-health.cjs",
-      "targetZone": "data-health",
+      "spec": "../contracts/data-health-primitives.cjs",
+      "target": "astra/contracts/data-health-primitives.cjs",
+      "targetZone": "shared-contracts",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "data-health"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/certification/g12-certify.cjs",
@@ -1125,21 +1075,11 @@
     {
       "from": "astra/data-health/g11-data-health.cjs",
       "fromZone": "data-health",
-      "spec": "../pipeline/g09-unified-decision-pipeline.cjs",
-      "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-      "targetZone": "decision-pipeline-shared",
+      "spec": "../contracts/data-health-primitives.cjs",
+      "target": "astra/contracts/data-health-primitives.cjs",
+      "targetZone": "shared-contracts",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "market-regime",
-        "signal-normalizer",
-        "evidence-engine",
-        "agreement-engine",
-        "ranking-engine",
-        "risk-engine",
-        "basket-engine",
-        "position-sizing",
-        "diagnostics"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/data-health/g11-data-health.cjs",

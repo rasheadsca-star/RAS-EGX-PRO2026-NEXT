@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-18T21:53:20.277Z",
-  "sourceHead": "d2668fa164ce5550b865660ef9416c65f3ba4160",
+  "generatedAt": "2026-09-18T22:11:15.669Z",
+  "sourceHead": "f4e722bedc3b29fda49f074e652e3602a69416c4",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -44,7 +44,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 49,
+    "sourceFiles": 50,
     "zones": [
       {
         "zone": "api-runtime",
@@ -113,7 +113,7 @@
       {
         "zone": "shared-contracts",
         "kind": "shared-contract",
-        "files": 1,
+        "files": 2,
         "logicalModules": []
       },
       {
@@ -147,8 +147,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 49,
-    "edgeCount": 150
+    "nodeCount": 50,
+    "edgeCount": 146
   },
   "moduleIsolation": [
     {
@@ -568,12 +568,10 @@
     }
   ],
   "findings": {
-    "total": 39,
-    "high": 23,
+    "total": 31,
+    "high": 15,
     "medium": 16,
     "byCode": {
-      "FORBIDDEN_LOGICAL_IMPORT": 7,
-      "DATA_HEALTH_DECISION_COUPLING": 1,
       "PHYSICAL_BOUNDARY_COLLAPSE": 1,
       "UNREGISTERED_ACTIVE_LAYER": 8,
       "DIRECT_DATA_PATH_COUPLING": 3,
@@ -582,158 +580,6 @@
       "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 16
     },
     "items": [
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/certification/g08-certify.cjs",
-        "zone": "certification",
-        "sourceModule": "certification",
-        "target": "astra/strategies/strategy-registry.cjs",
-        "targetZone": "strategy-registry",
-        "targetLogicalModules": [
-          "strategy-registry"
-        ],
-        "disallowed": [
-          "strategy-registry"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/certification/g09-certify.cjs",
-        "zone": "certification",
-        "sourceModule": "certification",
-        "target": "astra/strategies/strategy-registry.cjs",
-        "targetZone": "strategy-registry",
-        "targetLogicalModules": [
-          "strategy-registry"
-        ],
-        "disallowed": [
-          "strategy-registry"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/certification/g09-certify.cjs",
-        "zone": "certification",
-        "sourceModule": "certification",
-        "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-        "targetZone": "decision-pipeline-shared",
-        "targetLogicalModules": [
-          "market-regime",
-          "signal-normalizer",
-          "evidence-engine",
-          "agreement-engine",
-          "ranking-engine",
-          "risk-engine",
-          "basket-engine",
-          "position-sizing",
-          "diagnostics"
-        ],
-        "disallowed": [
-          "market-regime",
-          "signal-normalizer",
-          "evidence-engine",
-          "agreement-engine",
-          "ranking-engine",
-          "risk-engine",
-          "basket-engine",
-          "position-sizing"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/certification/g11-certify.cjs",
-        "zone": "certification",
-        "sourceModule": "certification",
-        "target": "astra/data-health/g11-data-health.cjs",
-        "targetZone": "data-health",
-        "targetLogicalModules": [
-          "data-health"
-        ],
-        "disallowed": [
-          "data-health"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/certification/g11-derived-build-failures.cjs",
-        "zone": "certification",
-        "sourceModule": "certification",
-        "target": "astra/data-health/g11-data-health.cjs",
-        "targetZone": "data-health",
-        "targetLogicalModules": [
-          "data-health"
-        ],
-        "disallowed": [
-          "data-health"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/certification/g11-source-dispositions.cjs",
-        "zone": "certification",
-        "sourceModule": "certification",
-        "target": "astra/data-health/g11-data-health.cjs",
-        "targetZone": "data-health",
-        "targetLogicalModules": [
-          "data-health"
-        ],
-        "disallowed": [
-          "data-health"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/data-health/g11-data-health.cjs",
-        "zone": "data-health",
-        "sourceModule": "data-health",
-        "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-        "targetZone": "decision-pipeline-shared",
-        "targetLogicalModules": [
-          "market-regime",
-          "signal-normalizer",
-          "evidence-engine",
-          "agreement-engine",
-          "ranking-engine",
-          "risk-engine",
-          "basket-engine",
-          "position-sizing",
-          "diagnostics"
-        ],
-        "disallowed": [
-          "market-regime",
-          "signal-normalizer",
-          "evidence-engine",
-          "agreement-engine",
-          "ranking-engine",
-          "risk-engine",
-          "basket-engine",
-          "position-sizing",
-          "diagnostics"
-        ],
-        "detail": "data-health imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DATA_HEALTH_DECISION_COUPLING",
-        "file": "astra/data-health/g11-data-health.cjs",
-        "zone": "data-health",
-        "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-        "targetZone": "decision-pipeline-shared",
-        "detail": "Data-health is coupled directly to decision/strategy implementation."
-      },
       {
         "severity": "HIGH",
         "code": "PHYSICAL_BOUNDARY_COLLAPSE",
