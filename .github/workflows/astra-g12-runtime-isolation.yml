@@ -16,6 +16,7 @@ on:
       - 'astra/runtime/bridges/**'
       - 'astra/vendor/sepa-x/**'
       - 'tests/astra/g12-r08-sepa-vendor.test.cjs'
+      - 'tests/astra/g12-r08-sepa-cutover.test.cjs'
       - 'data/archive/v19/target-stop-audit-v6.json'
       - 'tests/astra/g12-r03-v19-local.test.cjs'
       - 'tests/astra/g12-r03-v19-cutover.test.cjs'
@@ -98,6 +99,13 @@ jobs:
           test -f /tmp/sepax-g12/scan/index.html
           test -f /tmp/sepax-g12/pages-manifest.json
           node -e "const m=require('/tmp/sepax-g12/pages-manifest.json'); if(!m.symbols||m.symbols<1) process.exit(1); console.log('R08_LOCAL_SEPA_BUILD_PASS',m.symbols)"
+      - name: R08 post-cut isolation invariant
+        run: |
+          node --test tests/astra/g12-r08-sepa-cutover.test.cjs
+          rm -rf /tmp/sepax-g12-cut
+          node astra/vendor/sepa-x/scripts/build-github-pages.mjs /tmp/sepax-g12-cut
+          test -f /tmp/sepax-g12-cut/pages-manifest.json
+          node -e "const m=require('/tmp/sepax-g12-cut/pages-manifest.json'); if(!m.symbols||m.symbols<1) process.exit(1); console.log('R08_POST_CUT_LOCAL_BUILD_PASS',m.symbols)"
       - name: Full declared legacy scan
         shell: bash
         run: |
