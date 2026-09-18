@@ -141,9 +141,13 @@ jobs:
             docs/astra/WORK_STATE.json \
             04_ACCEPTANCE_GATES.json 05_WORK_STATE.json 07_WORK_LOG.md
           if ! git diff --cached --quiet; then
+            REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+            if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
+              echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
+              exit 1
+            fi
             git commit -m 'cert(astra): close exact G11 current-data evidence [skip g11]'
-            git pull --rebase origin main
-            git push origin HEAD:main
+            git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
 
       - name: Final summary
