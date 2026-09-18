@@ -1,11 +1,11 @@
 {
   "schemaVersion": "astra-g11-stale-records-2",
-  "evaluatedAt": "2026-09-18T16:08:10.873Z",
-  "sourceHead": "19984928010ce75272e0d3014db9a6ef12f17079",
+  "evaluatedAt": "2026-09-18T16:13:05.916Z",
+  "sourceHead": "5a0bea04aca861bbba4f7ccedf94dd6ce7b3cbab",
   "expectedSession": "2026-09-17",
   "total": 13,
-  "resolved": 3,
-  "unresolved": 10,
+  "resolved": 4,
+  "unresolved": 9,
   "legitimateSessionExceptions": [
     {
       "ticker": "EPPK",
@@ -59,6 +59,24 @@
         "https://in.investing.com/equities/golden-pyramids-plaza-historical-data"
       ],
       "evidenceSummary": "GPPL / ISIN EGS70342C018 has no actual trading session after 2026-09-08 in the approved Starta trading-session history (Sep-08 volume 1,000; next listed actual trading session is absent through target date). S&P Global Market Intelligence via StockAnalysis reports the instrument At close on 2026-09-17 and shows a 2026-09-17 display row with Volume unavailable ('-'), while Investing independently reports Closed 17/09 with the 2026-09-17 row and blank Volume. This is recorded only as a no-trade session exception; no Sep-17 OHLCV row is synthesized or carried forward.",
+      "reviewedAt": "2026-09-18"
+    },
+    {
+      "ticker": "SAIB",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_NO_TRADE",
+      "approved": true,
+      "identityVerified": true,
+      "isin": "EGS60142C014",
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "authorityClass": "MARKET_DATA_CROSS_VERIFIED",
+      "evidenceUrls": [
+        "https://startamarkets.com/symbol/SAIB/history",
+        "https://stockanalysis.com/quote/egx/SAIB/history/",
+        "https://www.investing.com/equities/soc-arab-intl-historical-data"
+      ],
+      "evidenceSummary": "SAIB / ISIN EGS60142C014 is an extremely illiquid EGX security. Starta's EGX price-history surface is explicitly a list of trading sessions and shows no 2026-09-17 trading session; the repository-approved Starta API likewise last supplied an actual row on 2026-09-15 (15 shares). S&P Global Market Intelligence via StockAnalysis reports SAIB At close on 2026-09-17 while its daily history has no Sep-17 trading row and last shows volume 15 on Sep-15; Investing independently reports Closed 17/09 with a Sep-17 display row whose Volume is blank. This is recorded only as a no-trade exception; no Sep-17 OHLCV is synthesized or carried forward.",
       "reviewedAt": "2026-09-18"
     }
   ],
@@ -161,19 +179,6 @@
       "expectedSession": "2026-09-17",
       "actualSession": "2026-02-04",
       "source": "data/history/NDRL.json",
-      "reason": "LATEST_VALIDATION_APPROVED_ROW_PREDATES_EXPECTED_SESSION_AND_NO_DOCUMENTED_NO_TRADE_OR_SUSPENSION_EXCEPTION_IS PRESENT_IN_G11_SOURCE_SET",
-      "affectedStrategy": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
-      "affectedModule": "market-regime + V16 source features + production candidate selection",
-      "canAffectCurrentDecisioning": true,
-      "status": "UNRESOLVED_BROKEN_FRESHNESS"
-    },
-    {
-      "securityId": "EGX:SAIB",
-      "ticker": "SAIB",
-      "component": "CURRENT_CANONICAL_HISTORY_AND_V16_SOURCE_FEATURES",
-      "expectedSession": "2026-09-17",
-      "actualSession": "2026-09-15",
-      "source": "data/history/SAIB.json",
       "reason": "LATEST_VALIDATION_APPROVED_ROW_PREDATES_EXPECTED_SESSION_AND_NO_DOCUMENTED_NO_TRADE_OR_SUSPENSION_EXCEPTION_IS PRESENT_IN_G11_SOURCE_SET",
       "affectedStrategy": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
       "affectedModule": "market-regime + V16 source features + production candidate selection",
