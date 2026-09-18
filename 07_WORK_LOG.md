@@ -891,3 +891,46 @@ G07 completed against pinned source commits. Processed 19/19 historical store gr
 - Final issue-family overlap unique affected securities: 6.
 - CRITICAL=0; HIGH=2.
 - DecisionSnapshot=G09-DS-4ea1ce7a520c1e8624782aa8; legacy-network calls=0; productionCutover=false; G12=PENDING.
+
+
+## 2026-09-18T18:47:49.077Z — G11 Full Data Health Certification
+
+- Status: BLOCKED / DEGRADED
+- Universe: 244 mapped, 224 active, 20 intentional exclusions.
+- Session: expected 2026-09-17, available 2026-09-17, CURRENT.
+- Current canonical: 213/224; V16 pipeline-ready: 209/224.
+- Material issue classes: CRITICAL=0, HIGH=1.
+- G07 quarantine=PASS; legacy-network calls=0; production cutover=false; G12=PENDING.
+- G06/G07/G08/G09/G10 regressions: PASS.
+
+
+## 2026-09-18T18:47:49.077Z — G11 Exact Evidence Closure
+
+- Source HEAD: 2d07df910290e07d5658589f173f5b764bb58529
+- Gap accounting: 0 = .
+- Searchable/current/decision-ready/regime-ready: 224/213/209/209.
+- History-source mapping review: resolved 0, unresolved 0.
+- Stale production-critical: legitimate session exceptions 11; unresolved 0.
+- DecisionSnapshot: G09-DS-bba850d2456fc7bc0dd7a967; semantic hash bba850d2456fc7bc0dd7a9678558f3da16528e70e292fc0e12927e14a469ea8a; legacy-network calls 0.
+- G12 remains PENDING; no cutover and no legacy dependency removal.
+
+
+## 2026-09-18T18:48:09.983Z — G11 Targeted Current-Data Repair
+
+- Gate after full recertification: BLOCKED.
+- Exact source identities: 27/42; unresolved=15.
+- Original stale set repaired: 11/20; remaining=9.
+- Production readiness: READY=209, legitimate exclusions=11, data-defect blocked=4.
+- CRITICAL=0; HIGH=1; G12=PENDING; production cutover=false.
+
+
+## 2026-09-18T18:44:57Z — G11 Approved Source Closure
+
+- Status: BLOCKED_DATA_HEALTH
+- Approved current-source inventory exhausted: yes.
+- Noncoverage resolved/external: 14/0.
+- Invalid-source resolved/external: 0/1.
+- Stale resolved/legitimate/external/internal: 0/11/0/0.
+- Final issue-family overlap unique affected securities: 4.
+- CRITICAL=0; HIGH=1.
+- DecisionSnapshot=G09-DS-bba850d2456fc7bc0dd7a967; legacy-network calls=0; productionCutover=false; G12=PENDING.
