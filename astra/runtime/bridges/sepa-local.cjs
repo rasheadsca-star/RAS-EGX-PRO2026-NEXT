@@ -1,6 +1,7 @@
 'use strict';
 
-const {SPECS,executeStrategy}=require('../../strategies/g08-final-overlay.cjs');
+const {getStrategyDescriptor}=require('../../strategies/strategy-registry.cjs');
+const {executeStrategy}=require('../../strategies/strategy-runner.cjs');
 
 const STRATEGY_ID='SEPA_QVUA_NEAR_FIRST_THEN_FORMING';
 
@@ -36,8 +37,8 @@ function materializeMirror(input={}){
         mode:'INTERNAL_LOCAL_FAIL_CLOSED',
         strategyId:STRATEGY_ID,
         strategyVersion:result.strategyVersion,
-        sourceCommit:SPECS[STRATEGY_ID].sourceCommit,
-        selectionPolicy:SPECS[STRATEGY_ID].parameters.selectionPolicy,
+        sourceCommit:getStrategyDescriptor(STRATEGY_ID).sourceCommit,
+        selectionPolicy:getStrategyDescriptor(STRATEGY_ID).parameters.selectionPolicy,
         eligibilityReason:result.eligibilityReason
       },
       rows:[],views:{near:[],forming:[],extended:[],top:[]},verified:{records:[]}
@@ -54,8 +55,8 @@ function materializeMirror(input={}){
       mode:'INTERNAL_LOCAL',
       strategyId:STRATEGY_ID,
       strategyVersion:result.strategyVersion,
-      sourceCommit:SPECS[STRATEGY_ID].sourceCommit,
-      selectionPolicy:SPECS[STRATEGY_ID].parameters.selectionPolicy,
+      sourceCommit:getStrategyDescriptor(STRATEGY_ID).sourceCommit,
+      selectionPolicy:getStrategyDescriptor(STRATEGY_ID).parameters.selectionPolicy,
       executionHash:result.executionHash
     },
     rows:selected,
