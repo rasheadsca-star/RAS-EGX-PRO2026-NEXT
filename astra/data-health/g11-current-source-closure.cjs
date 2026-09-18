@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: validate GPPL cross-verified 2026-09-17 legitimate no-trade exception.
 // Trigger marker: validate MEGM no-trade exception and POCO exact identity evidence.
 // Trigger marker: recertify corrected current stale accounting after legitimate-session exception.
 // Trigger marker: validate EPPK regulator-documented legitimate suspension exception.
