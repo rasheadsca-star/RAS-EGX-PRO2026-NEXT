@@ -60,9 +60,10 @@ function main() {
     ...invalidExternal.map((x) => x.ticker),
     ...staleExternal.map((x) => x.ticker),
   ]);
+  const legitimateTickerSet = new Set(staleLegitimate.map((x) => x.ticker));
   const internalTickerSet = uniq([
     ...staleInternal.map((x) => x.ticker),
-    ...notReady.filter((x) => (x.reasons || []).some((r) => /PRIMITIVE|ATR_PCT|RETURN1|AVERAGE_VOLUME|BASE_FEATURE/.test(r))).map((x) => x.ticker),
+    ...notReady.filter((x) => !legitimateTickerSet.has(x.ticker) && (x.reasons || []).some((r) => /PRIMITIVE|ATR_PCT|RETURN1|AVERAGE_VOLUME|BASE_FEATURE/.test(r))).map((x) => x.ticker),
   ]);
   const gate = (gates.gates || []).find((x) => x.id === 'G11');
   const high = Number(issues.highProductionRelevantUnresolved ?? issues.highUnresolved ?? 0);

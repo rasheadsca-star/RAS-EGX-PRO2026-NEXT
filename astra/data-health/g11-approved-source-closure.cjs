@@ -16,6 +16,7 @@ const { mergeAndValidate } = require('../../scripts/history/history-validator.cj
 const { readHistory, writeHistory } = require('../../scripts/history/history-storage.cjs');
 const { historyStatus, buildSummary, buildSessionCalendar } = require('../../scripts/history/history-summary-builder.cjs');
 const { unique } = require('../../scripts/history/lib/utils.cjs');
+const { loadCurrentSessionExceptions } = require('./g11-current-session-exceptions.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const R = (p) => path.join(ROOT, p);
@@ -288,6 +289,8 @@ async function main() {
   const stale = read('docs/astra/G11_STALE_RECORDS.json', { records:[] });
   const symbolMap = read('data/symbol-map.json', {});
   const expectedSession = identity.expectedSession || stale.expectedSession || '2026-09-16';
+  const sessionExceptions = loadCurrentSessionExceptions(ROOT, expectedSession, { symbolMap });
+  const sessionExceptionByTicker = sessionExceptions.byTicker;
   const catalog = loadApprovedCatalog();
   const registry = buildSourceRegistry(expectedSession);
   const precedence = buildPrecedence(expectedSession);
@@ -406,7 +409,9 @@ async function main() {
         finalDisposition = 'RESOLVED_FRESH_APPROVED_FALLBACK';
       }
     }
-    staleResults.push({ securityId:`EGX:${ticker}`, ticker, expectedSession, canonicalSessionBefore:baseline.actualSession || null, primarySourceLatestSession:primary?.row?.date || primary?.latestSession || null, primarySource:primary, approvedFallbackLatestSession:fallback.candidates[0]?.row?.sessionDate || null, securityTraded:null, suspended:null, sourceMissing:!primary?.ok, adapterParserFailed:Boolean(primary?.error), cacheStale:false, sourceIdentityFailed:/identity|404/i.test(String(primary?.error || '')), finalDisposition, fallbackAttempts:fallback.attempts, sourceDisagreements:fallback.disagreements, persisted });
+    const sessionException = sessionExceptionByTicker.get(ticker) || null;
+    if (!String(finalDisposition).startsWith('RESOLVED_') && sessionException) finalDisposition = sessionException.disposition;
+    staleResults.push({ securityId:`EGX:${ticker}`, ticker, expectedSession, canonicalSessionBefore:baseline.actualSession || null, primarySourceLatestSession:primary?.row?.date || primary?.latestSession || null, primarySource:primary, approvedFallbackLatestSession:fallback.candidates[0]?.row?.sessionDate || null, securityTraded:sessionException?.disposition==='LEGITIMATE_NO_TRADE'?false:null, suspended:sessionException?.disposition==='LEGITIMATE_SUSPENSION'?true:null, sourceMissing:!primary?.ok, adapterParserFailed:Boolean(primary?.error), cacheStale:false, sourceIdentityFailed:/identity|404/i.test(String(primary?.error || '')), finalDisposition, sessionException, fallbackAttempts:fallback.attempts, sourceDisagreements:fallback.disagreements, persisted });
   }
 
   write('data/symbol-map.json', symbolMap);
