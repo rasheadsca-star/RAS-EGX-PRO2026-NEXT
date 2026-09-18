@@ -53,9 +53,13 @@ const baselineStaleUnresolved = baselineStale.size - baselineStaleResolved;
 stale.baselineTotal = baselineStale.size;
 stale.baselineResolved = baselineStaleResolved;
 stale.baselineUnresolved = baselineStaleUnresolved;
-stale.resolved = baselineStaleResolved;
+const currentLegitimateExceptions = Array.isArray(stale.legitimateSessionExceptions) ? stale.legitimateSessionExceptions.length : 0;
+stale.resolved = currentLegitimateExceptions;
 stale.unresolved = Array.isArray(stale.records) ? stale.records.length : Number(stale.unresolved || 0);
-stale.note = 'resolved/unresolved baseline fields track the original G11 stale set; records contains all currently stale production-critical histories after repair.';
+stale.total = stale.resolved + stale.unresolved;
+if (stale.total !== stale.resolved + stale.unresolved) throw new Error('current_stale_accounting_does_not_close');
+if (stale.resolved !== currentLegitimateExceptions) throw new Error('current_stale_resolved_count_does_not_match_legitimate_session_exceptions');
+stale.note = 'baselineTotal/baselineResolved/baselineUnresolved preserve the original repair baseline. total/resolved/unresolved describe the current-session stale set, where resolved is the count of exact documented legitimate session exceptions and unresolved equals records.length.';
 write('docs/astra/G11_STALE_RECORDS.json', stale);
 
 const prodRows = (readiness.rows || []).filter((x) => x.productionCritical);

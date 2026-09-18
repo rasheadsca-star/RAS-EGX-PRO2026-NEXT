@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: recertify corrected current stale accounting after legitimate-session exception.
 // Trigger marker: validate EPPK regulator-documented legitimate suspension exception.
 // Trigger marker: recertify after evidence-backed IRAX/TORA legacy scope retirement.
 // Trigger marker: rerun current-session closure after SecurityMaster alias dedup and EHDR persistence.
