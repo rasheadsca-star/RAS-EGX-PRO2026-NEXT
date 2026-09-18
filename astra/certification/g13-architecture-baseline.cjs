@@ -26,7 +26,9 @@ const ACTIVE_ROOTS=[
 const ZONES=[
   {id:'shared-contracts',prefix:'astra/contracts/',modules:[],kind:'shared-contract'},
   {id:'decision-pipeline-shared',prefix:'astra/pipeline/',modules:['market-regime','signal-normalizer','evidence-engine','agreement-engine','ranking-engine','risk-engine','basket-engine','position-sizing','diagnostics'],kind:'shared-target-implementation'},
-  {id:'strategy-core-shared',prefix:'astra/strategies/',modules:['strategy-registry','strategy-runner'],kind:'shared-target-implementation'},
+  {id:'strategy-registry',exact:'astra/strategies/strategy-registry.cjs',modules:['strategy-registry'],kind:'target-module'},
+  {id:'strategy-runner',exact:'astra/strategies/strategy-runner.cjs',modules:['strategy-runner'],kind:'target-module'},
+  {id:'strategy-core-private',prefix:'astra/strategies/',modules:[],kind:'private-implementation'},
   {id:'data-health',prefix:'astra/data-health/',modules:['data-health'],kind:'target-module'},
   {id:'migration',prefix:'astra/migration/',modules:['migration'],kind:'target-module'},
   {id:'certification',prefix:'astra/certification/',modules:['certification'],kind:'target-module'},
@@ -116,13 +118,13 @@ function scan(root=ROOT){
     }
 
     const directIo=/\b(?:readFileSync|writeFileSync|readFile|writeFile|appendFileSync|createReadStream|createWriteStream)\s*\(/.test(text);
-    if(directIo&&['decision-pipeline-shared','strategy-core-shared','runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)){
+    if(directIo&&['decision-pipeline-shared','strategy-core-private','runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)){
       pushIssue(issues,{severity:'HIGH',code:'DIRECT_FILE_IO_BYPASS',file,zone:z.id,detail:'Active decision/runtime layer performs direct filesystem I/O instead of going through an owned data contract.'});
     }
     if(/\bfetch\s*\(/.test(text)&&!['certification','parity-control'].includes(z.id)){
       pushIssue(issues,{severity:'HIGH',code:'DIRECT_NETWORK_ACCESS',file,zone:z.id,detail:'Active layer contains a direct fetch() call; requires contract/service-boundary review.'});
     }
-    if(/(?:data\/stable|docs\/astra|data\/archive|raw_legacy|canonical_history)/.test(text)&&['decision-pipeline-shared','strategy-core-shared','runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)){
+    if(/(?:data\/stable|docs\/astra|data\/archive|raw_legacy|canonical_history)/.test(text)&&['decision-pipeline-shared','strategy-core-private','runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)){
       pushIssue(issues,{severity:'HIGH',code:'DIRECT_DATA_PATH_COUPLING',file,zone:z.id,detail:'Active decision/runtime source references persistence/evidence paths directly.'});
     }
 
@@ -138,10 +140,15 @@ function scan(root=ROOT){
             pushIssue(issues,{severity:'HIGH',code:'FORBIDDEN_LOGICAL_IMPORT',file,zone:z.id,sourceModule,target,targetZone:tz.id,targetLogicalModules:tz.modules,disallowed,detail:`${sourceModule} imports implementation containing module(s) outside allowedImports.`});
           }
         }
-        if(['runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)&&['decision-pipeline-shared','strategy-core-shared','data-health','migration'].includes(tz.id)){
+        const privateStrategyTarget=tz.kind==='private-implementation';
+        const privateStrategyOwner=z.id==='strategy-registry'||z.id==='strategy-runner'||z.id==='parity-control';
+        if(privateStrategyTarget&&!privateStrategyOwner){
+          pushIssue(issues,{severity:'HIGH',code:'DIRECT_INTERNAL_IMPLEMENTATION_ACCESS',file,zone:z.id,target,targetZone:tz.id,detail:'Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary.'});
+        }
+        if(['runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)&&['decision-pipeline-shared','data-health','migration'].includes(tz.id)){
           pushIssue(issues,{severity:'HIGH',code:'DIRECT_INTERNAL_IMPLEMENTATION_ACCESS',file,zone:z.id,target,targetZone:tz.id,detail:'Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade.'});
         }
-        if(z.id==='data-health'&&['decision-pipeline-shared','strategy-core-shared'].includes(tz.id)){
+        if(z.id==='data-health'&&['decision-pipeline-shared','strategy-core-private','strategy-runner'].includes(tz.id)){
           pushIssue(issues,{severity:'HIGH',code:'DATA_HEALTH_DECISION_COUPLING',file,zone:z.id,target,targetZone:tz.id,detail:'Data-health is coupled directly to decision/strategy implementation.'});
         }
       }
