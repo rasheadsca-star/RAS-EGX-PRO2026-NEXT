@@ -30,11 +30,11 @@ test('G13 baseline distinguishes physical-boundary collapse from missing mapping
   assert.ok(r.findings.items.some(x=>x.code==='PHYSICAL_BOUNDARY_COLLAPSE'));
   assert.ok(r.findings.items.some(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY'));
 });
-test('data-health registry access uses public facade while remaining pipeline coupling stays visible',()=>{
+test('data-health uses public registry and no longer imports the decision pipeline directly',()=>{
   const r=scan();
   const xs=r.findings.items.filter(x=>x.file==='astra/data-health/g11-data-health.cjs');
-  assert.ok(xs.some(x=>x.code==='DATA_HEALTH_DECISION_COUPLING'));
-  assert.ok(xs.some(x=>x.code==='FORBIDDEN_LOGICAL_IMPORT'));
+  assert.equal(xs.some(x=>x.code==='DATA_HEALTH_DECISION_COUPLING'),false);
+  assert.equal(xs.some(x=>x.code==='FORBIDDEN_LOGICAL_IMPORT'),false);
   assert.equal(xs.some(x=>x.target==='astra/strategies/g08-final-overlay.cjs'),false);
   assert.ok(r.graph.edges.some(e=>e.from==='astra/data-health/g11-data-health.cjs'&&e.target==='astra/strategies/strategy-registry.cjs'));
 });
