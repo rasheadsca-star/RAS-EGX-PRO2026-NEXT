@@ -18,6 +18,7 @@ on:
       - 'tests/astra/g12-r03-v19-local.test.cjs'
       - 'tests/astra/g12-r03-v19-cutover.test.cjs'
       - 'tests/astra/g12-r04-v20-local.test.cjs'
+      - 'tests/astra/g12-r04-v20-cutover.test.cjs'
       - 'scripts/stable/v16-main-app-consensus.cjs'
       - 'scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs'
       - 'scripts/stable/v16-main-app-independent-consensus-audit.cjs'
@@ -63,6 +64,8 @@ jobs:
         run: node --test tests/astra/g12-r03-v19-cutover.test.cjs
       - name: R04 V20 internal replacement parity
         run: node --test tests/astra/g12-r04-v20-local.test.cjs
+      - name: R04 V20 post-cut isolation invariant
+        run: node --test tests/astra/g12-r04-v20-cutover.test.cjs
       - name: Full declared legacy scan
         shell: bash
         run: |
