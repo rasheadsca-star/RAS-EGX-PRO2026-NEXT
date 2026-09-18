@@ -80,3 +80,32 @@ test('first G13 remediation family removes direct G08 implementation access from
     assert.equal(src.includes('g08-final-overlay.cjs'),false,file);
   }
 });
+
+test('private strategy implementation may compose internally but active consumers cannot bypass public facades',()=>{
+  const r=scan();
+  const directPrivate=r.findings.items.filter(x=>x.code==='DIRECT_INTERNAL_IMPLEMENTATION_ACCESS'&&x.targetZone==='strategy-core-private');
+  assert.equal(directPrivate.length,0,JSON.stringify(directPrivate,null,2));
+  const guarded=[
+    'astra/certification/g08-certify.cjs',
+    'astra/certification/g09-certify.cjs',
+    'astra/pipeline/g09-unified-decision-pipeline.cjs',
+    'astra/data-health/g11-data-health.cjs',
+    'astra/runtime/bridges/v19-local.cjs',
+    'astra/runtime/bridges/v20-local.cjs',
+    'astra/runtime/bridges/sepa-local.cjs',
+    'astra/runtime/bridges/tfe-local.cjs'
+  ];
+  for(const file of guarded){
+    const src=fs.readFileSync(file,'utf8');
+    assert.equal(/require\s*\(\s*['"][^'"]*\/g08-[^'"]*\.cjs['"]\s*\)/.test(src),false,file);
+  }
+});
+test('historical parity control remains the only non-facade policy exception for private G08 imports',()=>{
+  const r=scan();
+  const privateEdges=r.graph.edges.filter(e=>e.targetZone==='strategy-core-private');
+  const illegal=privateEdges.filter(e=>{
+    const z=zoneFor(e.from);
+    return !(z.kind==='private-implementation'||z.id==='strategy-registry'||z.id==='strategy-runner'||z.id==='parity-control');
+  });
+  assert.deepEqual(illegal,[]);
+});
