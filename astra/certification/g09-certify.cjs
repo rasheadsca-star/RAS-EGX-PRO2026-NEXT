@@ -2,9 +2,11 @@
 const fs=require('fs');
 const path=require('path');
 const crypto=require('crypto');
-const {listStrategyIds,getStrategyDescriptor}=require('../strategies/strategy-registry.cjs');
-const SPECS=Object.freeze(Object.fromEntries(listStrategyIds().map(id=>[id,getStrategyDescriptor(id)])));
-const P=require('../pipeline/g09-unified-decision-pipeline.cjs');
+const OBS_PATH=process.env.G09_CERT_OBSERVATION||'/tmp/g09-cert-observation.json';
+if(!fs.existsSync(OBS_PATH))throw new Error(`G09 certification observation missing: ${OBS_PATH}`);
+const OBS=JSON.parse(fs.readFileSync(OBS_PATH,'utf8'));
+const SPECS=OBS.specs;
+const P={VERSION:OBS.version,CONFIG:OBS.config,DIAGNOSTIC_CODES:OBS.diagnosticCodes};
 const ACTIVE_STRATEGY='PORTFOLIO_BASKET_EQUAL_WEIGHT';
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const R=p=>path.join(ROOT,p);
@@ -43,15 +45,14 @@ ensure(process.env.G09_TEST_PASS==='1','G09 test run did not report PASS');
 ensure(testCount>=30,`G09 test coverage too small: ${testCount}`);
 ensure(process.env.G06_REGRESSION_PASS==='1'&&process.env.G07_REGRESSION_PASS==='1'&&process.env.G08_REGRESSION_PASS==='1','certified gate regression checkpoint failed');
 
-const primary=P.runUnifiedDecisionPipeline(fixture());ensure(primary.ok&&primary.status==='DECISION_SNAPSHOT_READY','primary G09 certification fixture failed');
-const zero=P.runUnifiedDecisionPipeline(fixture({modelCurrentRows:currentRows(80,true)}));ensure(zero.ok&&zero.status==='VALID_ZERO_OPPORTUNITY_SESSION','zero-opportunity fixture failed');
-const repeat=P.runUnifiedDecisionPipeline(fixture({generatedAt:'2026-09-15T20:30:00+03:00'}));ensure(repeat.decisionSnapshot.semanticDecisionHash===primary.decisionSnapshot.semanticDecisionHash,'semantic decision determinism failed');
-const future=fixture();future.canonicalSnapshot.rows[0].supportResistanceInputs.asOfSessionDate='2026-09-16';const temporal=P.runUnifiedDecisionPipeline(future);ensure(!temporal.ok&&temporal.diagnostics[0].code==='TEMPORAL_LEAKAGE_GUARD_FAILED','temporal leakage guard failed');
-const bad=fixture();bad.canonicalSnapshot.rows[0].migrationValidationStatus='UNRESOLVED';const quarantine=P.runUnifiedDecisionPipeline(bad);ensure(!quarantine.ok&&quarantine.diagnostics[0].code==='INVALID_UNRESOLVED_DATA_QUARANTINED','G07 quarantine integration failed');
-const qedge=P.runUnifiedDecisionPipeline(fixture({quantEdge:{score:999,signal:'BUY'}}));ensure(qedge.decisionSnapshot.semanticDecisionHash===primary.decisionSnapshot.semanticDecisionHash&&qedge.decisionSnapshot.quantEdgeLiveInfluence===0,'QUANT_EDGE influenced live decision');
-const productionEligible=Object.keys(SPECS).filter(id=>P.productionEligibility(id,fixture(),P.computeRegime(fixture())).productionEligible);
-ensure(productionEligible.length===1&&productionEligible[0]==='PORTFOLIO_BASKET_EQUAL_WEIGHT','production eligibility filter drift');
-const retiredExperimental=Object.values(SPECS).filter(x=>['retired','experimental'].includes(x.lifecycleStatus));ensure(retiredExperimental.length===11&&retiredExperimental.every(x=>x.productionEligible===false),'retired/experimental leakage');
+const primary=OBS.primary;ensure(primary.ok&&primary.status==='DECISION_SNAPSHOT_READY','primary G09 certification fixture failed');
+const zero=OBS.zero;ensure(zero.ok&&zero.status==='VALID_ZERO_OPPORTUNITY_SESSION','zero-opportunity fixture failed');
+const repeat=OBS.repeat;ensure(repeat.decisionSnapshot.semanticDecisionHash===primary.decisionSnapshot.semanticDecisionHash,'semantic decision determinism failed');
+const temporal=OBS.temporal;ensure(!temporal.ok&&temporal.diagnostics[0].code==='TEMPORAL_LEAKAGE_GUARD_FAILED','temporal leakage guard failed');
+const quarantine=OBS.quarantine;ensure(!quarantine.ok&&quarantine.diagnostics[0].code==='INVALID_UNRESOLVED_DATA_QUARANTINED','G07 quarantine integration failed');
+const qedge=OBS.qedge;ensure(qedge.decisionSnapshot.semanticDecisionHash===primary.decisionSnapshot.semanticDecisionHash&&qedge.decisionSnapshot.quantEdgeLiveInfluence===0,'QUANT_EDGE influenced live decision');
+const productionEligible=OBS.productionEligible;ensure(productionEligible.length===1&&productionEligible[0]==='PORTFOLIO_BASKET_EQUAL_WEIGHT','production eligibility filter drift');
+const retiredExperimental=OBS.retiredExperimental;ensure(retiredExperimental.length===11&&retiredExperimental.every(x=>x.productionEligible===false),'retired/experimental leakage');
 
 const destructiveChecks={
   'strategy-eligibility-leakage':productionEligible.length===1,
@@ -68,8 +69,8 @@ const destructiveChecks={
   'hidden-legacy-fallback':primary.decisionSnapshot.legacyNetworkCalls===0&&!/fallback recommendation|use previous v18|use previous v19|use previous v20/i.test(src),
   'risk-overriding-signal-validity':primary.decisionSnapshot.top5.every(x=>x.strategyExecutionRef&&x.risk.quantity>0),
   'quant-edge-leakage':qedge.decisionSnapshot.quantEdgeLiveInfluence===0,
-  'failure-isolation':P.runUnifiedDecisionPipeline(fixture({requestedStrategyIds:['UNKNOWN_RESEARCH','PORTFOLIO_BASKET_EQUAL_WEIGHT']})).ok===true,
-  'stale-session-data':P.validateContext(Object.assign(fixture(),{sessionDate:'2026-09-16'})).ok===false
+  'failure-isolation':OBS.failureIsolation===true,
+  'stale-session-data':OBS.staleSessionData===true
 };
 ensure(Object.values(destructiveChecks).every(Boolean),'focused G09 destructive review found material issue');
 

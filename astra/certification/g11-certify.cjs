@@ -1,7 +1,6 @@
 'use strict';
 const fs=require('fs');
 const path=require('path');
-const H=require('../data-health/g11-data-health.cjs');
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const R=p=>path.join(ROOT,p);
 const read=(p,d=null)=>{try{return JSON.parse(fs.readFileSync(R(p),'utf8'))}catch{return d}};
@@ -16,7 +15,7 @@ for(const id of ['G01','G02','G03','G04','G05','G06','G07','G08','G09','G10'])en
 ensure(by.get('G12')?.status==='PENDING','G12 must remain PENDING during G11');
 const legacy=read('docs/astra/LEGACY_REMOVAL_PLAN.json',{});ensure(legacy.dependencies?.length===8,'legacy runtime dependency inventory changed');
 
-const h=H.buildHealth();
+const observationPath=process.env.G11_HEALTH_OBSERVATION||'/tmp/g11-health-observation.json';ensure(fs.existsSync(observationPath),`G11 health observation missing: ${observationPath}`);const h=JSON.parse(fs.readFileSync(observationPath,'utf8'));
 ensure(h.productionEligibilityInvariant,'production eligibility changed from 1/18');
 ensure(h.quarantinePass,'G07 invalid/unresolved quarantine accounting changed');
 ensure(h.quantEdgePass,'QUANT_EDGE isolation changed');

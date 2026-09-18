@@ -4,7 +4,7 @@ const path=require('path');
 const crypto=require('crypto');
 const cp=require('child_process');
 const {listStrategyIds,getStrategyDescriptor}=require('../strategies/strategy-registry.cjs');
-const P=require('../pipeline/g09-unified-decision-pipeline.cjs');
+const {validHistoryRow,parseHistory,expectedSession,utcDate,fmt,isTrading}=require('../contracts/data-health-primitives.cjs');
 const {loadCurrentSessionExceptions}=require('./g11-current-session-exceptions.cjs');
 const {loadV16DomainExceptions}=require('./g11-v16-domain-exceptions.cjs');
 
@@ -30,31 +30,6 @@ const DIAGNOSTIC_CODES=Object.freeze([
 function gitHead(){try{return cp.execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim()}catch{return process.env.GITHUB_SHA||'UNKNOWN'}}
 function sourceHash(paths){const parts=[];for(const p of paths){try{parts.push([p,hash(fs.readFileSync(R(p)))])}catch{parts.push([p,null])}}return hash(parts)}
 function symbolRows(raw){return Array.isArray(raw)?raw:Object.entries(raw||{}).map(([k,v])=>({...v,ticker:v?.ticker||k}))}
-function validHistoryRow(row){
-  const date=isoDate(row?.date||row?.sessionDate),open=finite(row?.open),high=finite(row?.high),low=finite(row?.low),close=finite(row?.close);
-  const volume=Object.prototype.hasOwnProperty.call(row||{},'volume')?finite(row.volume):null;
-  const errors=[];
-  if(!date)errors.push('SESSION_DATE_INVALID');
-  if(!(open>0&&high>0&&low>0&&close>0))errors.push('OHLC_NON_POSITIVE_OR_MISSING');
-  if(high!==null&&open!==null&&close!==null&&high<Math.max(open,close))errors.push('HIGH_BELOW_OPEN_CLOSE');
-  if(low!==null&&open!==null&&close!==null&&low>Math.min(open,close))errors.push('LOW_ABOVE_OPEN_CLOSE');
-  if(volume===null)errors.push('VOLUME_MISSING_OR_PARSE_FAILURE');else if(volume<0)errors.push('VOLUME_NEGATIVE');
-  if(badStatus(row?.validationStatus))errors.push('SOURCE_VALIDATION_REJECTED');
-  return{ok:errors.length===0,date,open,high,low,close,volume,errors};
-}
-function parseHistory(doc){
-  const src=Array.isArray(doc?.sessions)?doc.sessions:Array.isArray(doc)?doc:[];const validated=[];const byDate=new Map();const duplicates=[];
-  for(const raw of src){const v=validHistoryRow(raw);if(v.ok)validated.push({...v,raw});const d=v.date;if(!d)continue;if(!byDate.has(d))byDate.set(d,[]);byDate.get(d).push({v,raw})}
-  validated.sort((a,b)=>a.date.localeCompare(b.date));
-  for(const [date,rows] of byDate){if(rows.length<2)continue;const sigs=rows.map(x=>JSON.stringify([x.v.open,x.v.high,x.v.low,x.v.close,x.v.volume]));duplicates.push({date,count:rows.length,type:new Set(sigs).size===1?'EXACT_DUPLICATE':'CONFLICTING_DUPLICATE'})}
-  return{validated,duplicates};
-}
-function cairoParts(iso){const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',weekday:'long',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso));const g=t=>parts.find(x=>x.type===t)?.value;return{date:`${g('year')}-${g('month')}-${g('day')}`,weekday:g('weekday'),hour:Number(g('hour')),minute:Number(g('minute'))}}
-function utcDate(s){const [y,m,d]=s.split('-').map(Number);return new Date(Date.UTC(y,m-1,d))}
-function fmt(d){return d.toISOString().slice(0,10)}
-function isTrading(s,policy){return policy.market.tradingDayNumbersJs.includes(utcDate(s).getUTCDay())}
-function previousTrading(s,policy){const d=utcDate(s);do{d.setUTCDate(d.getUTCDate()-1)}while(!isTrading(fmt(d),policy));return fmt(d)}
-function expectedSession(evaluatedAt,policy){const c=cairoParts(evaluatedAt);return policy.market.tradingDays.includes(c.weekday)&&c.hour>=Number(policy.market.expectedPostSessionHourCairo||15)?c.date:previousTrading(c.date,policy)}
 function tradingLag(from,to,policy){if(!from||!to)return null;if(from===to)return 0;let d=utcDate(from),count=0,guard=0;while(fmt(d)!==to&&guard++<1000){d.setUTCDate(d.getUTCDate()+1);if(isTrading(fmt(d),policy))count++}return count}
 function metric(n,d,extra={}){return{numerator:n,denominator:d,percentage:pct(n,d),excludedByRule:extra.excludedByRule||0,invalid:extra.invalid||0,unresolved:extra.unresolved||0}}
 function issue(code,severity,summary,affected=[],details={}){if(!DIAGNOSTIC_CODES.includes(code))throw new Error(`Unknown G11 diagnostic ${code}`);return{code,severity,summary,affectedCount:affected.length,affectedTickers:[...new Set(affected)].sort(),details,status:'UNRESOLVED'}}
@@ -79,7 +54,7 @@ function reviewedSecurityIdentity(entry){
   );
 }
 
-function buildHealth(){
+function buildHealth(options={}){
   const started=process.hrtime.bigint();const codeVersion=gitHead();const evaluatedAt=deriveEvaluationAt();
   const policy=read('data/v13-3-daily-production-policy.json',{}),calendarDoc=read('data/session-calendar.json',{}),historySummary=read('data/history-summary.json',{}),symbolMap=read('data/symbol-map.json',{}),search=read('data/quant/market-search-index-v13-17.json',{}),stockIndex=read('data/quant/stock-intelligence-index.json',{}),g07=read('docs/astra/MIGRATION_RECONCILIATION.json',{}),eligibility=read('docs/astra/PRODUCTION_STRATEGY_ELIGIBILITY.json',{}),legacyPlan=read('docs/astra/LEGACY_REMOVAL_PLAN.json',{});
   const intended=symbolRows(symbolMap).filter(x=>normTicker(x.ticker));const active=intended.filter(x=>x.active!==false),inactive=intended.filter(x=>x.active===false);const activeTickers=new Set(active.map(x=>normTicker(x.ticker)));const indexByTicker=new Map((stockIndex.stocks||[]).map(x=>[normTicker(x.ticker),x]));const searchByTicker=new Map((search.stocks||[]).map(x=>[normTicker(x.ticker),x]));const details=detailMap();
@@ -117,7 +92,7 @@ function buildHealth(){
 
   const pipelineRows=v16.currentRows.map(m=>{const t=m.ticker,c=currentRows.get(t),tech=v16.technicalByTicker[t],sr=srRows.find(x=>x.ticker===t);return{snapshotId:`G11-CAN-${t}-${expected}`,securityId:`EGX:${t}`,ticker:t,sessionDate:expected,validationStatus:'VALID',migrationValidationStatus:'VALID',ohlc:{open:c.open,high:c.high,low:c.low,close:c.close,previousClose:c.previousClose},volume:c.volume,turnover:c.turnoverDerivedEgp,technicalInputs:{return1Pct:tech.return1Pct,return5Pct:tech.return5Pct,return20Pct:tech.return20Pct,aboveSma20:tech.aboveSma20,aboveSma50:tech.aboveSma50,volatility20AnnualizedPct:tech.volatility20AnnualizedPct,relativeVolume20:tech.relativeVolume20},supportResistanceInputs:{asOfSessionDate:expected,support:sr?.support??null,resistance:sr?.resistance??null}}});
   const context={sessionDate:expected,canonicalSnapshot:{snapshotId:`G11-CURRENT-${expected}-${hash(pipelineRows).slice(0,16)}`,sessionDate:expected,rows:pipelineRows},historyIdentities:{source:'validation-approved data/history',latestSession:expected},historyByTicker:{},modelGuardHistory:v16.modelGuardHistory,modelTrainingSessions:v16.trainingSessions,modelCurrentRows:v16.currentRows,capitalEgp:1000000,approvedStrategyVersions:{PORTFOLIO_BASKET_EQUAL_WEIGHT:getStrategyDescriptor('PORTFOLIO_BASKET_EQUAL_WEIGHT').sourceCommit},approvedConfig:{basketSize:3},requestedStrategyIds:strategyIds,generatedAt:evaluatedAt,applicationVersion:'ASTRA_G11_SHADOW_CERTIFICATION',codeVersion};
-  const pipeStart=process.hrtime.bigint();const pipeline=P.runUnifiedDecisionPipeline(context);const pipelineMs=Number(process.hrtime.bigint()-pipeStart)/1e6;
+  const pipelineRunner=options.pipelineRunner;if(typeof pipelineRunner!=='function')throw new Error('G11_PIPELINE_RUNNER_REQUIRED');const pipeStart=process.hrtime.bigint();const pipeline=pipelineRunner(context);const pipelineMs=Number(process.hrtime.bigint()-pipeStart)/1e6;
   const intendedParticipation=pct(v16.currentFeatureCount,active.length);
 
   const issues=[];if(freshness!=='CURRENT')issues.push(issue('DATA_STALE','CRITICAL',`Latest finalized canonical session ${available} does not match expected ${expected}`,[],{available,expected,freshness}));

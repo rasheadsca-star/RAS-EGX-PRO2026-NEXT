@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const H = require('../data-health/g11-data-health.cjs');
+const H = require('../contracts/data-health-primitives.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const R = (p) => path.join(ROOT, p);

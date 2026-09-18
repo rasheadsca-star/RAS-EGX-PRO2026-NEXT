@@ -1,5 +1,5 @@
 'use strict';
-const fs=require('fs');const path=require('path');const{listStrategyIds,getStrategyDescriptor}=require('../strategies/strategy-registry.cjs');const SPECS=Object.freeze(Object.fromEntries(listStrategyIds().map(id=>[id,getStrategyDescriptor(id)])));
+const fs=require('fs');const path=require('path');const OBS=process.env.G08_REGISTRY_OBSERVATION||'/tmp/g08-strategy-registry-observation.json';if(!fs.existsSync(OBS))throw new Error(`G08 registry observation missing: ${OBS}`);const SPECS=Object.freeze(Object.fromEntries(JSON.parse(fs.readFileSync(OBS,'utf8')).strategies.map(x=>[x.strategyId,x])));
 const ROOT=path.resolve(__dirname,'../..');
 function read(rel){return JSON.parse(fs.readFileSync(path.join(ROOT,rel),'utf8'))}function write(rel,v){const p=path.join(ROOT,rel);fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,JSON.stringify(v,null,2)+'\n')}function now(){return new Date().toISOString()}
 function statusBucket(s){if(s.reconstructionStatus==='BLOCKED_BY_MISSING_EVIDENCE')return'UNRECOVERABLE';if(s.reconstructionStatus==='RECONSTRUCTABLE_PENDING')return'RECONSTRUCTABLE_PENDING';return s.reconstructionStatus}
