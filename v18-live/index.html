@@ -1,105 +1,50 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-  <meta name="robots" content="noindex,nofollow">
-  <title>EGX PRO V18.2 — Unified Decision Center</title>
-  <style>
-    html,body{margin:0;min-height:100%;background:#07101d;color:#eaf2ff;font-family:Arial,Tahoma,sans-serif}body{display:grid;place-items:center;min-height:100vh}.boot{width:min(680px,90vw);padding:30px;border:1px solid #26364d;border-radius:16px;background:#0d1828;box-shadow:0 18px 60px #0008;text-align:center}.boot h1{margin:0 0 12px;font-size:25px}.boot p{color:#aebdd2;line-height:1.7}.boot button{border:0;border-radius:10px;padding:11px 20px;font-weight:700;cursor:pointer}.status{font-size:13px;color:#7f94af;margin-top:15px}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta name="robots" content="noindex,nofollow">
+<title>EGX PRO V18.2 — G12 Local Bootstrap</title>
+<style>
+html,body{margin:0;min-height:100%;background:#07101d;color:#eaf2ff;font-family:Arial,Tahoma,sans-serif}
+body{display:grid;place-items:center;min-height:100vh}.boot{width:min(680px,90vw);padding:30px;border:1px solid #26364d;border-radius:16px;background:#0d1828;text-align:center}
+.boot h1{margin:0 0 12px;font-size:25px}.boot p,.status{color:#aebdd2;line-height:1.7}.status{font-size:13px;margin-top:15px}
+</style>
 </head>
 <body>
-  <main class="boot" id="boot">
-    <h1>EGX PRO V18.2</h1>
-    <p>جاري تحميل مركز القرار الحي والتحقق من أحدث نسخة موثقة...</p>
-    <div class="status" id="status">V18_DURABLE_BOOTSTRAP_V3</div>
-  </main>
-  <script>
-  // V18_DURABLE_BOOTSTRAP_V3
-  // V18_DURABLE_BOOTSTRAP_V2 compatibility marker for the existing coordinator during rollout.
-  (() => {
-    'use strict';
-    const SOURCES = [
-      'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/preview-v18-web/index.html',
-      'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v18-global-strategy-ensemble-20260906/preview-v18-web/index.html'
-    ];
-    const REQUIRED = [
-      'EGX PRO V18.2',
-      'V18_LIVE_GITHUB_SOURCE_V1',
-      'V18_AUTO_REFRESH_WATCH_V3',
-      'V18_PAYLOAD_HASH_REFRESH',
-      'window.__V18_CHECK_FOR_NEW_SESSION__',
-      'window.__V18_ACTIVE_PAYLOAD_SHA256__',
-      'window.__V18_EMBEDDED_DATA__'
-    ];
-    const status = document.getElementById('status');
-    const boot = document.getElementById('boot');
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-    // Keep this a CORS-simple GET. A custom Cache-Control request header causes
-    // browser preflight and can fail even while server-side CI curl succeeds.
-    async function fetchText(url, timeoutMs = 30000) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const sep = url.includes('?') ? '&' : '?';
-        const response = await fetch(`${url}${sep}bootstrap=${Date.now()}`, {
-          method: 'GET',
-          mode: 'cors',
-          cache: 'no-store',
-          credentials: 'omit',
-          referrerPolicy: 'no-referrer',
-          signal: controller.signal
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.text();
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-
-    function validateShell(html) {
-      if (!html || html.length < 10000) throw new Error('Shell is unexpectedly small');
-      for (const marker of REQUIRED) {
-        if (!html.includes(marker)) throw new Error(`Shell contract missing: ${marker}`);
-      }
-      return html;
-    }
-
-    function errorKind(error) {
-      if (error?.name === 'AbortError') return 'TIMEOUT';
-      if (/HTTP\s+\d+/i.test(String(error?.message || ''))) return 'HTTP';
-      return 'NETWORK/CORS';
-    }
-
-    async function loadShell() {
-      let lastError = null;
-      for (let round = 1; round <= 3; round++) {
-        for (let i = 0; i < SOURCES.length; i++) {
-          try {
-            status.textContent = `تحميل النسخة الحية — ${round}/3 — مصدر ${i + 1}/${SOURCES.length}`;
-            const html = validateShell(await fetchText(SOURCES[i]));
-            document.open();
-            document.write(html);
-            document.close();
-            return;
-          } catch (error) {
-            lastError = error;
-            console.warn('V18 bootstrap source failed', SOURCES[i], error);
-          }
-        }
-        if (round < 3) await sleep(round * 1200);
-      }
-      const kind = errorKind(lastError);
-      console.error('V18 bootstrap failed closed', lastError);
-      boot.innerHTML = `<h1>تعذر تحميل النسخة الحية</h1><p>تعذر الوصول إلى المصدر الحي الموثق. اضغط لإعادة المحاولة.</p><button id="retry">إعادة المحاولة</button><div class="status">V18_DURABLE_BOOTSTRAP_V3 · FAIL-CLOSED · ${kind}</div>`;
-      document.getElementById('retry').addEventListener('click', () => location.reload());
-    }
-
-    loadShell();
-  })();
-  </script>
+<main class="boot" id="boot">
+<h1>EGX PRO V18.2</h1>
+<p>جاري فتح محرك Astra المحلي المعزول.</p>
+<div class="status" id="status">G12 · R01 LOCAL-FIRST · R02 FALLBACK TEMPORARILY RETAINED</div>
+</main>
+<script>
+(() => {
+  'use strict';
+  const LOCAL = '../astra/runtime/v18/index.html';
+  const R02_FALLBACK = 'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v18-global-strategy-ensemble-20260906/preview-v18-web/index.html';
+  const status=document.getElementById('status');
+  async function localReady(){
+    const r=await fetch(LOCAL,{method:'GET',cache:'no-store',credentials:'same-origin'});
+    if(!r.ok)throw new Error('LOCAL_HTTP_'+r.status);
+    const html=await r.text();
+    if(!html.includes('Astra Local Decision Surface'))throw new Error('LOCAL_CONTRACT_MISSING');
+    return true;
+  }
+  async function fallback(){
+    status.textContent='تعذر المسار المحلي — تشغيل R02 المؤقت';
+    const r=await fetch(R02_FALLBACK,{method:'GET',mode:'cors',cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});
+    if(!r.ok)throw new Error('R02_HTTP_'+r.status);
+    const html=await r.text();
+    document.open();document.write(html);document.close();
+  }
+  localReady()
+    .then(()=>location.replace(LOCAL))
+    .catch(error=>fallback().catch(last=>{
+      console.error('V18 G12 bootstrap failed closed',error,last);
+      status.textContent='FAIL-CLOSED · لا يوجد مسار محلي صالح ولا fallback متاح';
+    }));
+})();
+</script>
 </body>
 </html>

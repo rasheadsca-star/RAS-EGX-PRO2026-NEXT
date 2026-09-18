@@ -11,6 +11,7 @@ on:
       - 'astra/runtime/v18/**'
       - 'astra/certification/g12-r01-parity.cjs'
       - 'tests/astra/g12-r01-v18-local.test.cjs'
+      - 'tests/astra/g12-r01-v18-cutover.test.cjs'
       - 'scripts/stable/v16-main-app-consensus.cjs'
       - 'scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs'
       - 'scripts/stable/v16-main-app-independent-consensus-audit.cjs'
@@ -46,6 +47,8 @@ jobs:
         run: |
           node --test tests/astra/g12-r01-v18-local.test.cjs
           node astra/certification/g12-r01-parity.cjs
+      - name: R01 post-cut isolation invariant
+        run: node --test tests/astra/g12-r01-v18-cutover.test.cjs
       - name: Full declared legacy scan
         shell: bash
         run: |
