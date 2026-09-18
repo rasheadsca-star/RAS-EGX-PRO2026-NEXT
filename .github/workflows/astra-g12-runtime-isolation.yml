@@ -5,6 +5,9 @@ on:
   push:
     paths:
       - 'astra/certification/legacy-isolation.cjs'
+      - 'astra/certification/g12-certify.cjs'
+      - 'tests/astra/g12-final-certification.test.cjs'
+      - 'tests/astra/g12-g10-persisted-regression.test.cjs'
       - 'docs/astra/G12_*.json'
       - 'tests/astra/legacy-isolation-skeleton.test.cjs'
       - 'v18-live/**'
@@ -116,7 +119,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          node --test             tests/astra/g06-*.test.cjs             tests/astra/g07-*.test.cjs             tests/astra/g08-*.test.cjs             tests/astra/g09-*.test.cjs             tests/astra/g10-*.test.cjs             tests/astra/g11-*.test.cjs | tee /tmp/g12-regression.tap
+          node --test tests/astra/g06-*.test.cjs tests/astra/g07-*.test.cjs tests/astra/g08-*.test.cjs tests/astra/g09-*.test.cjs tests/astra/g11-*.test.cjs tests/astra/g12-g10-persisted-regression.test.cjs | tee /tmp/g12-regression.tap
           N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g12-regression.tap)
           P=$(awk '/^# pass /{n=$3} END{print n}' /tmp/g12-regression.tap)
           F=$(awk '/^# fail /{n=$3} END{print n}' /tmp/g12-regression.tap)
