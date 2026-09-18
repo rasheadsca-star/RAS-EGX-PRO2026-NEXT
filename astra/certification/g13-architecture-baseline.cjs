@@ -141,7 +141,7 @@ function scan(root=ROOT){
           }
         }
         const privateStrategyTarget=tz.kind==='private-implementation';
-        const privateStrategyOwner=z.id==='strategy-registry'||z.id==='strategy-runner'||z.id==='parity-control';
+        const privateStrategyOwner=z.kind==='private-implementation'||z.id==='strategy-registry'||z.id==='strategy-runner'||z.id==='parity-control';
         if(privateStrategyTarget&&!privateStrategyOwner){
           pushIssue(issues,{severity:'HIGH',code:'DIRECT_INTERNAL_IMPLEMENTATION_ACCESS',file,zone:z.id,target,targetZone:tz.id,detail:'Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary.'});
         }
