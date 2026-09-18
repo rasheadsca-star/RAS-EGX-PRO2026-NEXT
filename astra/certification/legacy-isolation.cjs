@@ -19,7 +19,7 @@ const RULES=Object.freeze([
 
 const DEPENDENCIES=Object.freeze([
   {dependencyId:'R01_V18_REMOTE_SHELL_RAW',locations:['v18-live/index.html'],re:/raw\.githubusercontent\.com\/rasheadsca-star\/RAS-EGX-PRO2026-NEXT\/v18-global-strategy-ensemble-20260906\/preview-v18-web\/index\.html/i},
-  {dependencyId:'R02_V18_REMOTE_SHELL_JSDELIVR',locations:['v18-live/index.html'],re:/cdn\.jsdelivr\.net\/gh\/rasheadsca-star\/RAS-EGX-PRO2026-NEXT@v18-global-strategy-ensemble-20260906\/preview-v18-web\/index\.html/i},
+  {dependencyId:'R02_V18_REMOTE_SHELL_JSDELIVR',locations:['v18-live'],re:/cdn\.jsdelivr\.net\/gh\/rasheadsca-star\/RAS-EGX-PRO2026-NEXT@v18-global-strategy-ensemble-20260906\/preview-v18-web\/index\.html/i},
   {dependencyId:'R03_V19_REMOTE_CHALLENGER',locations:['scripts/stable/v16-main-app-consensus.cjs','scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs','scripts/stable/v16-main-app-independent-consensus-audit.cjs'],re:/(?:raw\.githubusercontent\.com\/rasheadsca-star\/RAS-EGX-PRO2026-NEXT\/v19-egx-chat-gpt|cdn\.jsdelivr\.net\/gh\/rasheadsca-star\/RAS-EGX-PRO2026-NEXT@v19-egx-chat-gpt)/i},
   {dependencyId:'R04_V20_NATIVE_PAGES',locations:['scripts/stable/v16-main-app-consensus.cjs'],re:/(?:rasheadsca-star\.github\.io\/RAS-EGX0\.1\/data\/v20\/native-current\.json|raw\.githubusercontent\.com\/rasheadsca-star\/RAS-EGX0\.1\/main\/data\/v20\/native-current\.json|cdn\.jsdelivr\.net\/gh\/rasheadsca-star\/RAS-EGX0\.1@main\/data\/v20\/native-current\.json)/i},
   {dependencyId:'R05_QUANT_EDGE_API',locations:['scripts/stable/v16-main-app-consensus.cjs'],re:/quant-edge-shadow(?:-[a-z0-9-]+)?\.vercel\.app\/api\/run/i},
