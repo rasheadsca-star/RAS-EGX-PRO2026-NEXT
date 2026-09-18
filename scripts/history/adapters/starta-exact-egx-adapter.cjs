@@ -63,6 +63,50 @@ async function fetchFromAnyBase(pathname, options, diagnostics) {
   throw error;
 }
 
+async function fetchBestOhlcFromAllBases(pathname, ticker, options, diagnostics) {
+  const bases = unique([
+    process.env.STARTA_API_BASE,
+    ...(options.apiBases || []),
+  ].filter(Boolean)).map((value) => String(value).replace(/\/$/, ''));
+  const failures = [];
+  const candidates = [];
+  for (const base of bases) {
+    const sourceUrl = `${base}${pathname}`;
+    try {
+      const data = await fetchJson(sourceUrl, options, diagnostics);
+      const normalized = normalizeOhlcRows(data, ticker, sourceUrl, options.sourceConfidence);
+      if (!normalized.rows.length) throw new Error('no_validation_approved_rows');
+      candidates.push({
+        ...normalized,
+        base,
+        sourceUrl,
+        latestSession: normalized.rows.at(-1)?.date || null,
+      });
+    } catch (error) {
+      failures.push(`${base}:${error.message}`);
+    }
+  }
+  if (!candidates.length) {
+    const error = new Error(failures.join(' | ') || 'no_validation_approved_rows_on_any_starta_base');
+    error.failures = failures;
+    throw error;
+  }
+  candidates.sort((a, b) => {
+    const byLatest = String(b.latestSession || '').localeCompare(String(a.latestSession || ''));
+    if (byLatest) return byLatest;
+    return b.rows.length - a.rows.length;
+  });
+  return {
+    ...candidates[0],
+    alternatives: candidates.slice(1).map((x) => ({
+      sourceUrl:x.sourceUrl,
+      latestSession:x.latestSession,
+      validRows:x.rows.length,
+    })),
+    failures,
+  };
+}
+
 function normalizeIdentity(raw) {
   return {
     symbol: safeTicker(raw?.symbol || raw?.ticker || raw?.code),
@@ -174,10 +218,10 @@ async function fetchExactEgxHistory(mapEntry, options = {}) {
   const failures = [];
   for (const period of periods) {
     try {
-      const result = await fetchFromAnyBase(`/egx/ohlc/${encodeURIComponent(ticker)}?period=${encodeURIComponent(period)}&limit=${limit}`, cfg, diagnostics);
-      const normalized = normalizeOhlcRows(result.data, ticker, result.sourceUrl, cfg.sourceConfidence);
-      if (!normalized.rows.length) throw new Error('no_validation_approved_rows');
-      if (!best || normalized.rows.length > best.rows.length) best = { ...normalized, period, sourceUrl: result.sourceUrl };
+      const result = await fetchBestOhlcFromAllBases(`/egx/ohlc/${encodeURIComponent(ticker)}?period=${encodeURIComponent(period)}&limit=${limit}`, ticker, cfg, diagnostics);
+      const normalized = { rows:result.rows, rejected:result.rejected };
+      const candidate = { ...normalized, period, sourceUrl:result.sourceUrl, latestSession:result.latestSession, baseAlternatives:result.alternatives };
+      if (!best || String(candidate.latestSession || '').localeCompare(String(best.latestSession || '')) > 0 || (candidate.latestSession === best.latestSession && candidate.rows.length > best.rows.length)) best = candidate;
     } catch (error) {
       failures.push(`${period}:${error.message}`);
     }

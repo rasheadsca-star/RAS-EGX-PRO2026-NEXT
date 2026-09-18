@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: prefer freshest validated Starta OHLC base across configured mirrors.
 'use strict';
 
 const fs = require('fs');
