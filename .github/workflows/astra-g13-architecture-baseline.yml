@@ -1,0 +1,72 @@
+name: Astra G13 Architecture Baseline
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g13-architecture-baseline.cjs'
+      - 'tests/astra/g13-architecture-baseline.test.cjs'
+      - '.github/workflows/astra-g13-architecture-baseline.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  baseline:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g13]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Preserve G01-G12 and pre-cutover boundary
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=12;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G13')!=='PENDING')throw Error('G13 must be PENDING at baseline');
+          const g12=require('./docs/astra/G12_CERTIFICATION.json');
+          if(g12.runtimeLegacyDependencyCount!==0||g12.dependencyClosure.closed!==8||g12.productionCutover!==false)throw Error('G12 boundary changed');
+          NODE
+      - name: Reprove strict zero legacy runtime boundary
+        run: |
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g13-g12-scan.json
+          node -e "const x=require('/tmp/g13-g12-scan.json'); if(x.runtimeLegacyDependencyCount!==0||!x.clean||x.matches.length) process.exit(1)"
+      - name: G13 architecture baseline tests
+        run: node --test tests/astra/g13-architecture-baseline.test.cjs
+      - name: Build G13 architecture baseline evidence
+        env:
+          G13_SOURCE_HEAD: ${{ github.sha }}
+        run: node astra/certification/g13-architecture-baseline.cjs --write
+      - name: Validate generated baseline boundary
+        run: |
+          node <<'NODE'
+          const b=require('./docs/astra/G13_ARCHITECTURE_BASELINE.json');
+          const g=require('./docs/astra/G13_DEPENDENCY_GRAPH.json');
+          if(b.gateStatus!=='PENDING'||b.productionCutover!==false)throw Error('baseline promoted G13 or production');
+          if(b.priorGateBoundary.g01ThroughG12Green!==true||b.priorGateBoundary.runtimeLegacyDependencyCount!==0)throw Error('prior boundary changed');
+          if(b.sourceHead!==process.env.GITHUB_SHA||g.sourceHead!==process.env.GITHUB_SHA)throw Error('source head mismatch');
+          if(!(b.contract.logicalModuleCount===30&&g.nodes.length>0&&g.edges.length>0))throw Error('incomplete baseline');
+          console.log('G13_BASELINE_PASS',JSON.stringify({high:b.findings.high,medium:b.findings.medium,files:b.scanScope.sourceFiles,edges:b.dependencyGraph.edgeCount}));
+          NODE
+      - name: Persist G13 baseline evidence only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
+            echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             docs/astra/G13_ARCHITECTURE_BASELINE.json             docs/astra/G13_DEPENDENCY_GRAPH.json             docs/astra/G13_ARCHITECTURE_BASELINE.md             05_WORK_STATE.json             docs/astra/WORK_STATE.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'docs(g13): persist architecture isolation baseline [skip g13]'
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
