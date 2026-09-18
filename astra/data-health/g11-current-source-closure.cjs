@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: validate NDRL cross-verified 2026-09-17 legitimate no-trade exception.
 // Trigger marker: validate SAIB cross-verified 2026-09-17 legitimate no-trade exception.
 // Trigger marker: validate GPPL cross-verified 2026-09-17 legitimate no-trade exception.
 // Trigger marker: validate MEGM no-trade exception and POCO exact identity evidence.
