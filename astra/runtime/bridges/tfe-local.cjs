@@ -1,6 +1,7 @@
 'use strict';
 
-const {SPECS,executeStrategy}=require('../../strategies/g08-final-overlay.cjs');
+const {getStrategyDescriptor}=require('../../strategies/strategy-registry.cjs');
+const {executeStrategy}=require('../../strategies/strategy-runner.cjs');
 
 const STRATEGY_ID='TFE_EVIDENCE_AWARE_HARD_GATE_FUSION';
 
@@ -11,7 +12,7 @@ function evaluateTfe(input={}){
   return executeStrategy(STRATEGY_ID,{snapshot,history,components});
 }
 function health(){
-  const spec=SPECS[STRATEGY_ID];
+  const spec=getStrategyDescriptor(STRATEGY_ID);
   return{
     ok:true,
     engine:'TFE_V20_FUSION_RC2_INTERNAL',
