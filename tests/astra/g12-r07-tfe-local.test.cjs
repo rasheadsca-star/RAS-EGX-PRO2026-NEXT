@@ -60,7 +60,7 @@ test('R07 bridge has zero network primitives and reports local health',()=>{
 });
 
 test('R07 vendored technical asset matches pinned source blob exactly',()=>{
-  const local=fs.readFileSync(path.join(__dirname,'../../deploy/rc2-safe-shell/technical-analysis-tools.local.js'),'utf8');
+  const local=fs.readFileSync(path.join(__dirname,'../../deploy/rc2-safe-shell/technical-analysis-tools.js'),'utf8');
   assert.match(local,/TECHNICAL_VISUALIZATION_CONTRACT/);
   assert.equal(local.length>10000,true);
 });
