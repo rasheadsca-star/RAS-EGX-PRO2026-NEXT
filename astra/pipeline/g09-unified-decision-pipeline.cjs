@@ -1,7 +1,9 @@
 'use strict';
 
 const crypto=require('crypto');
-const {SPECS,executeStrategy}=require('../strategies/g08-final-overlay.cjs');
+const {listStrategyIds,getStrategyDescriptor}=require('../strategies/strategy-registry.cjs');
+const {executeStrategy}=require('../strategies/strategy-runner.cjs');
+const SPECS=Object.freeze(Object.fromEntries(listStrategyIds().map(id=>[id,getStrategyDescriptor(id)])));
 
 const VERSION=Object.freeze({
   pipeline:'ASTRA_G09_PIPELINE_1',
