@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: recertify after evidence-backed IRAX/TORA legacy scope retirement.
 // Trigger marker: rerun current-session closure after SecurityMaster alias dedup and EHDR persistence.
 'use strict';
 
