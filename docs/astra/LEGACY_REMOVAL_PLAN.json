@@ -167,7 +167,7 @@
       "removalStep": "replace sync-sepa remote fetch with local internal strategy execution and normalized envelope",
       "isolationTest": "legacy-isolation SEPA_X_REMOTE + SEPA parity",
       "cutoverCriterion": "local source passes golden cases; no external SEPA host dependency",
-      "status": "CUTOVER_PENDING_POST_SCAN",
+      "status": "CLOSED",
       "replacementEvidence": {
         "candidateReplacement": "astra/runtime/bridges/sepa-local.cjs",
         "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
@@ -178,7 +178,12 @@
         "candidateWorkflowRunId": 35393727964,
         "parityResult": "PASS_4_OF_4",
         "replacement": "astra/runtime/bridges/sepa-local.cjs",
-        "localMissingBehavior": "FAIL_CLOSED_NO_NETWORK"
+        "localMissingBehavior": "FAIL_CLOSED_NO_NETWORK",
+        "cutoverCommit": "2c4d44affa3eacacfefbde46b69cbc83d81bae68",
+        "postCutWorkflowRunId": 35393851368,
+        "postCutResult": "PASS",
+        "postCutLegacyDependencyCount": 2,
+        "remoteSepaAbsent": true
       }
     },
     {
@@ -193,7 +198,18 @@
       "removalStep": "remove proxy rewrites/origin dependency; route any retained TFE capability to local internal modules",
       "isolationTest": "legacy-isolation TFE_RC2_REMOTE + LEGACY_PROXY_IMPLEMENTATION; TFE parity",
       "cutoverCriterion": "local API/contract tests pass with legacy Vercel blocked",
-      "status": "PLANNED"
+      "status": "PARITY_CANDIDATE",
+      "replacementEvidence": {
+        "decisionBridge": "astra/runtime/bridges/tfe-local.cjs",
+        "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
+        "g10Cases": [
+          "RULE-TFE-RC2-PASS",
+          "RULE-TFE-RC2-REJECT"
+        ],
+        "technicalAssetCandidate": "deploy/rc2-safe-shell/technical-analysis-tools.local.js",
+        "legacyProxyStillPresentUntilParityPass": true,
+        "productionCutover": false
+      }
     },
     {
       "dependencyId": "R08_SEPA_BRANCH_BUILD_IMPORT",
