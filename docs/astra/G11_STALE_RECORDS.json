@@ -1,11 +1,11 @@
 {
   "schemaVersion": "astra-g11-stale-records-2",
-  "evaluatedAt": "2026-09-18T16:13:05.916Z",
-  "sourceHead": "5a0bea04aca861bbba4f7ccedf94dd6ce7b3cbab",
+  "evaluatedAt": "2026-09-18T16:18:28.411Z",
+  "sourceHead": "d2da4f675ceeed6c18d9f5e8cf3436b2db4e9360",
   "expectedSession": "2026-09-17",
   "total": 13,
-  "resolved": 4,
-  "unresolved": 9,
+  "resolved": 5,
+  "unresolved": 8,
   "legitimateSessionExceptions": [
     {
       "ticker": "EPPK",
@@ -77,6 +77,24 @@
         "https://www.investing.com/equities/soc-arab-intl-historical-data"
       ],
       "evidenceSummary": "SAIB / ISIN EGS60142C014 is an extremely illiquid EGX security. Starta's EGX price-history surface is explicitly a list of trading sessions and shows no 2026-09-17 trading session; the repository-approved Starta API likewise last supplied an actual row on 2026-09-15 (15 shares). S&P Global Market Intelligence via StockAnalysis reports SAIB At close on 2026-09-17 while its daily history has no Sep-17 trading row and last shows volume 15 on Sep-15; Investing independently reports Closed 17/09 with a Sep-17 display row whose Volume is blank. This is recorded only as a no-trade exception; no Sep-17 OHLCV is synthesized or carried forward.",
+      "reviewedAt": "2026-09-18"
+    },
+    {
+      "ticker": "NDRL",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_NO_TRADE",
+      "approved": true,
+      "identityVerified": true,
+      "isin": "EGS735N2C012",
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "authorityClass": "MARKET_DATA_CROSS_VERIFIED",
+      "evidenceUrls": [
+        "https://startamarkets.com/symbol/NDRL/history",
+        "https://stockanalysis.com/quote/egx/NDRL/history/",
+        "https://www.marketscreener.com/quote/stock/NATIONAL-DRILLING-COMPANY-20705605/"
+      ],
+      "evidenceSummary": "NDRL / ISIN EGS735N2C012 has no actual trading session on 2026-09-17. Starta's EGX history explicitly lists trading sessions only and records just 34 trading days since 2015, with the last actual trade on 2023-05-09 (15 shares). S&P Global Market Intelligence via StockAnalysis reports NDRL At close on 2026-09-17 but the displayed daily rows carry the unchanged 4.69 quote with Volume unavailable. MarketScreener independently reports an End-of-day Egyptian Exchange quote for 2026-09-17 and binds NDRL to ISIN EGS735N2C012. This is a no-trade session exception only; no 2026-09-17 OHLCV row is synthesized or carried forward.",
       "reviewedAt": "2026-09-18"
     }
   ],
@@ -166,19 +184,6 @@
       "expectedSession": "2026-09-17",
       "actualSession": "2026-06-03",
       "source": "data/history/NAPR.json",
-      "reason": "LATEST_VALIDATION_APPROVED_ROW_PREDATES_EXPECTED_SESSION_AND_NO_DOCUMENTED_NO_TRADE_OR_SUSPENSION_EXCEPTION_IS PRESENT_IN_G11_SOURCE_SET",
-      "affectedStrategy": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
-      "affectedModule": "market-regime + V16 source features + production candidate selection",
-      "canAffectCurrentDecisioning": true,
-      "status": "UNRESOLVED_BROKEN_FRESHNESS"
-    },
-    {
-      "securityId": "EGX:NDRL",
-      "ticker": "NDRL",
-      "component": "CURRENT_CANONICAL_HISTORY_AND_V16_SOURCE_FEATURES",
-      "expectedSession": "2026-09-17",
-      "actualSession": "2026-02-04",
-      "source": "data/history/NDRL.json",
       "reason": "LATEST_VALIDATION_APPROVED_ROW_PREDATES_EXPECTED_SESSION_AND_NO_DOCUMENTED_NO_TRADE_OR_SUSPENSION_EXCEPTION_IS PRESENT_IN_G11_SOURCE_SET",
       "affectedStrategy": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
       "affectedModule": "market-regime + V16 source features + production candidate selection",
