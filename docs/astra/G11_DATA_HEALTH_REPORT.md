@@ -2,8 +2,8 @@
 
 - Gate status: **BLOCKED**
 - Overall data-health status: **DEGRADED**
-- Evaluated source snapshot: 2026-09-18T15:15:04.598Z
-- Code HEAD evaluated: 932bfede474effc9803f3c33fdd6e0dcf1644e27
+- Evaluated source snapshot: 2026-09-18T15:21:44.762Z
+- Code HEAD evaluated: b49c0f1e2e2b1e8b8616fb8e553fa6246f43f55c
 - Intended mapped universe: 243
 - Active universe: 224
 - Intentionally excluded: 19
@@ -42,6 +42,6 @@ The G11 run is non-cutover/shadow certification only. It does not change strateg
 - Current-universe gaps: 13; disposition accounting closes exactly (STALE_DATA=12, SOURCE_INGESTION_FAILED=1).
 - Previously unverified history-source mappings reviewed: 1; resolved=0; unresolved=1.
 - Stale production-critical records: 13; documented legitimate session exceptions=1; unresolved=12.
-- Current DecisionSnapshot: G09-DS-96a53ae696c9067b82cec79e; semantic hash=96a53ae696c9067b82cec79e54e359c607d081a2110de97d40a82fa103259b4b.
+- Current DecisionSnapshot: G09-DS-728d6c41072bbddd664fe014; semantic hash=728d6c41072bbddd664fe01429ae1133ff2f068ac1b89d750827335297a0e10e.
 - Current pipeline opportunities: 3; legacy-network calls=0.
 - G11 remains **BLOCKED** unless all CRITICAL and production-relevant HIGH findings are cleared by validation-approved evidence.

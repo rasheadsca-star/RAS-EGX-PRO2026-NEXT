@@ -36,4 +36,4 @@ No legacy recommendation output, fuzzy symbol substitution, or synthesized carry
 - Current canonical=210/224; regime=DEGRADED_PARTIAL_UNIVERSE; legacy-network calls=0.
 - CRITICAL=0; HIGH production-relevant=3.
 - G12 remains PENDING; production cutover=false.
-- DecisionSnapshot: G09-DS-96a53ae696c9067b82cec79e (96a53ae696c9067b82cec79e54e359c607d081a2110de97d40a82fa103259b4b) -> G09-DS-96a53ae696c9067b82cec79e (96a53ae696c9067b82cec79e54e359c607d081a2110de97d40a82fa103259b4b); NO_SEMANTIC_DECISION_CHANGE.
+- DecisionSnapshot: G09-DS-728d6c41072bbddd664fe014 (728d6c41072bbddd664fe01429ae1133ff2f068ac1b89d750827335297a0e10e) -> G09-DS-728d6c41072bbddd664fe014 (728d6c41072bbddd664fe01429ae1133ff2f068ac1b89d750827335297a0e10e); NO_SEMANTIC_DECISION_CHANGE.
