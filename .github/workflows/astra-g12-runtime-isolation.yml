@@ -125,12 +125,21 @@ jobs:
           N=$(awk '/^# tests /{n=$3} END{print n}' /tmp/g12-regression.tap)
           P=$(awk '/^# pass /{n=$3} END{print n}' /tmp/g12-regression.tap)
           F=$(awk '/^# fail /{n=$3} END{print n}' /tmp/g12-regression.tap)
+          S=$(awk '/^# skipped /{n=$3} END{print n}' /tmp/g12-regression.tap)
+          C=$(awk '/^# cancelled /{n=$3} END{print n}' /tmp/g12-regression.tap)
+          T=$(awk '/^# todo /{n=$3} END{print n}' /tmp/g12-regression.tap)
           test "$N" -gt 0
-          test "$P" = "$N"
           test "$F" = 0
+          test "$C" = 0
+          test "$T" = 0
+          test "$S" = 11
+          test $((P + S)) -eq "$N"
           echo "G12_REGRESSION_TESTS=$N" >> "$GITHUB_ENV"
           echo "G12_REGRESSION_PASS=$P" >> "$GITHUB_ENV"
           echo "G12_REGRESSION_FAIL=$F" >> "$GITHUB_ENV"
+          echo "G12_REGRESSION_SKIPPED=$S" >> "$GITHUB_ENV"
+          echo "G12_REGRESSION_CANCELLED=$C" >> "$GITHUB_ENV"
+          echo "G12_REGRESSION_TODO=$T" >> "$GITHUB_ENV"
       - name: G12 final pre-certification invariants
         run: node --test tests/astra/g12-final-certification.test.cjs
       - name: Finalize G12 certification evidence

@@ -11,6 +11,9 @@ const workflowRunId=Number(process.env.G12_WORKFLOW_RUN_ID||process.env.GITHUB_R
 const regressionTests=Number(process.env.G12_REGRESSION_TESTS||0);
 const regressionPass=Number(process.env.G12_REGRESSION_PASS||0);
 const regressionFail=Number(process.env.G12_REGRESSION_FAIL||0);
+const regressionSkipped=Number(process.env.G12_REGRESSION_SKIPPED||0);
+const regressionCancelled=Number(process.env.G12_REGRESSION_CANCELLED||0);
+const regressionTodo=Number(process.env.G12_REGRESSION_TODO||0);
 const now=new Date().toISOString();
 
 const gates=read('04_ACCEPTANCE_GATES.json');
@@ -39,7 +42,10 @@ if(Number(g11Gaps.gapCount??g11Gaps.currentUniverseGapCount??0)!==0)throw Error(
 if(pipeline.productionCutover!==false||Number(pipeline.legacyNetworkCalls||0)!==0)throw Error('production cutover/network invariant violated');
 if(g10Parity.quantEdge?.parityMode!=='OUTPUT_INTEGRITY_ONLY'||g10Parity.quantEdge?.algorithmicallyReproduced!==false)throw Error('QUANT_EDGE disposition changed');
 if(eligibility.productionEligibleCount!==1||eligibility.productionEligibleStrategyIds?.[0]!=='PORTFOLIO_BASKET_EQUAL_WEIGHT')throw Error('G10 production eligibility invariant changed');
-if(!(regressionTests>0&&regressionTests===regressionPass&&regressionFail===0))throw Error('G01-G11 regression suite evidence is not clean');
+const g07State=read('05_WORK_STATE.json').g07_certification;
+if(g07State?.status!=='GREEN'||g07State?.idempotency!=='PASS')throw Error('G07 persisted migration certification/idempotency not preserved');
+if(!(regressionTests>0&&regressionPass+regressionSkipped===regressionTests&&regressionFail===0&&regressionCancelled===0&&regressionTodo===0))throw Error('G01-G11 regression suite evidence is not clean');
+if(regressionSkipped!==11)throw Error('Unexpected regression skip count; only the 11 G07 real-migration rerun cases may be skipped');
 
 const closedIds=plan.dependencies.map(x=>x.dependencyId);
 const certification={
@@ -80,8 +86,12 @@ const certification={
     g01ThroughG11GateState:'GREEN',
     tests:regressionTests,
     pass:regressionPass,
+    skipped:regressionSkipped,
     fail:regressionFail,
-    status:'PASS'
+    cancelled:regressionCancelled,
+    todo:regressionTodo,
+    skipReason:'11 G07 real-migration rerun cases intentionally skipped to preserve the non-mutating G12 boundary; persisted G07 GREEN/idempotency evidence is revalidated.',
+    status:'PASS_WITH_INTENTIONAL_NON_MUTATING_SKIPS'
   },
   g11Boundary:{
     tests:'58/58 PASS',
@@ -99,7 +109,8 @@ write('docs/astra/G12_REGRESSION_EVIDENCE.json',{
   schemaVersion:'astra-g12-regression-evidence-1',
   generatedAt:now,workflowRunId,sourceHead,
   scope:'NON_MUTATING_G06_G11_TEST_REGRESSION',
-  tests:regressionTests,pass:regressionPass,fail:regressionFail,status:'PASS',
+  tests:regressionTests,pass:regressionPass,skipped:regressionSkipped,fail:regressionFail,cancelled:regressionCancelled,todo:regressionTodo,status:'PASS_WITH_INTENTIONAL_NON_MUTATING_SKIPS',
+  intentionalSkips:{count:regressionSkipped,scope:'G07_REAL_MIGRATION_RERUN',reason:'Avoid data-writing migration rerun during G12; persisted G07 GREEN/idempotency evidence revalidated.'},
   g11DataRefreshPerformed:false,productionCutover:false
 });
 
@@ -140,7 +151,7 @@ for(const statePath of states){
     baselineLegacyRuntimeDependencyCount:8,
     runtimeLegacyDependencyCount:0,
     dependenciesClosed:'8/8',
-    g01ThroughG11Regression:`${regressionPass}/${regressionTests} PASS`,
+    g01ThroughG11Regression:`${regressionPass} pass + ${regressionSkipped} intentional skips / ${regressionTests}; 0 fail`,
     g11Tests:'58/58 PASS',
     productionCutover:false
   };
@@ -148,4 +159,4 @@ for(const statePath of states){
   state.last_updated=now;
   write(statePath,state);
 }
-process.stdout.write('ASTRA_G12_CERTIFICATION '+JSON.stringify({status:'GREEN',runtimeLegacyDependencyCount:0,dependencies:'8/8',regression:`${regressionPass}/${regressionTests}`,workflowRunId,sourceHead,productionCutover:false})+'\n');
+process.stdout.write('ASTRA_G12_CERTIFICATION '+JSON.stringify({status:'GREEN',runtimeLegacyDependencyCount:0,dependencies:'8/8',regression:`${regressionPass} pass + ${regressionSkipped} skipped / ${regressionTests}`,workflowRunId,sourceHead,productionCutover:false})+'\n');
