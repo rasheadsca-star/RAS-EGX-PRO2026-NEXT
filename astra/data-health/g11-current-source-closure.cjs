@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: rerun current-session closure after SecurityMaster alias dedup and EHDR persistence.
 'use strict';
 
 const fs = require('fs');
