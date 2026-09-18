@@ -214,16 +214,30 @@ async function fetchExactEgxHistory(mapEntry, options = {}) {
     ? options.periodCandidates
     : ['5y', '3y', '2y', '1y'];
   const limit = Number(options.maximumRowsPerRequest || 2000);
+  const historyIdentifiers = unique([
+    ticker,
+    mapEntry?.startaIdentifier,
+    mapEntry?.isin,
+  ].filter(Boolean).map((value) => String(value).trim().toUpperCase()));
   let best = null;
   const failures = [];
   for (const period of periods) {
-    try {
-      const result = await fetchBestOhlcFromAllBases(`/egx/ohlc/${encodeURIComponent(ticker)}?period=${encodeURIComponent(period)}&limit=${limit}`, ticker, cfg, diagnostics);
-      const normalized = { rows:result.rows, rejected:result.rejected };
-      const candidate = { ...normalized, period, sourceUrl:result.sourceUrl, latestSession:result.latestSession, baseAlternatives:result.alternatives };
-      if (!best || String(candidate.latestSession || '').localeCompare(String(best.latestSession || '')) > 0 || (candidate.latestSession === best.latestSession && candidate.rows.length > best.rows.length)) best = candidate;
-    } catch (error) {
-      failures.push(`${period}:${error.message}`);
+    for (const historyIdentifier of historyIdentifiers) {
+      try {
+        const result = await fetchBestOhlcFromAllBases(`/egx/ohlc/${encodeURIComponent(historyIdentifier)}?period=${encodeURIComponent(period)}&limit=${limit}`, ticker, cfg, diagnostics);
+        const normalized = { rows:result.rows, rejected:result.rejected };
+        const candidate = {
+          ...normalized,
+          period,
+          requestedHistoryIdentifier:historyIdentifier,
+          sourceUrl:result.sourceUrl,
+          latestSession:result.latestSession,
+          baseAlternatives:result.alternatives,
+        };
+        if (!best || String(candidate.latestSession || '').localeCompare(String(best.latestSession || '')) > 0 || (candidate.latestSession === best.latestSession && candidate.rows.length > best.rows.length)) best = candidate;
+      } catch (error) {
+        failures.push(`${period}:${historyIdentifier}:${error.message}`);
+      }
     }
   }
   if (!best) {
@@ -241,6 +255,7 @@ async function fetchExactEgxHistory(mapEntry, options = {}) {
     rejected: best.rejected,
     sourceUrl: best.sourceUrl,
     period: best.period,
+    requestedHistoryIdentifier: best.requestedHistoryIdentifier || ticker,
     diagnostics,
     candidateFailures: failures,
   };

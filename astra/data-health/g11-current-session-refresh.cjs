@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: probe exact Starta OHLC by canonical ticker plus reviewed source identifier/ISIN.
 // Trigger marker: prefer freshest validated Starta OHLC base across configured mirrors.
 'use strict';
 
