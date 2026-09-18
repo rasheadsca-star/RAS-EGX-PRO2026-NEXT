@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g11-current-universe-gaps-2",
-  "evaluatedAt": "2026-09-18T15:28:12.872Z",
-  "sourceHead": "409b8e30edf5ae7140e13f897f9f9074345774cd",
+  "evaluatedAt": "2026-09-18T16:08:10.873Z",
+  "sourceHead": "19984928010ce75272e0d3014db9a6ef12f17079",
   "expectedSession": "2026-09-17",
   "activeUniverse": 224,
   "currentValidCanonicalUniverse": 210,
@@ -42,15 +42,33 @@
       ],
       "evidenceSummary": "MEGM target session is explicitly bounded to 2026-09-17. EGXBot snapshot at 14:48 Cairo time, after the EGX cash session close, reports Open/High/Low 12.540 with Volume=0 and Turnover=0 and identifies ISIN EGS3C001C012. StockAnalysis/S&P reports At close: Sep 17, 2026 with Volume/Open/Day's Range n/a and last checked Sep 17. MarketScreener independently reports End-of-day quote Egyptian Exchange 2026-09-17 for MEGM/ISIN EGS3C001C012. No previous-session OHLCV is promoted.",
       "reviewedAt": "2026-09-18"
+    },
+    {
+      "ticker": "GPPL",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_NO_TRADE",
+      "approved": true,
+      "identityVerified": true,
+      "isin": "EGS70342C018",
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "authorityClass": "MARKET_DATA_CROSS_VERIFIED",
+      "evidenceUrls": [
+        "https://startamarkets.com/symbol/GPPL/history",
+        "https://stockanalysis.com/quote/egx/GPPL/history/",
+        "https://in.investing.com/equities/golden-pyramids-plaza-historical-data"
+      ],
+      "evidenceSummary": "GPPL / ISIN EGS70342C018 has no actual trading session after 2026-09-08 in the approved Starta trading-session history (Sep-08 volume 1,000; next listed actual trading session is absent through target date). S&P Global Market Intelligence via StockAnalysis reports the instrument At close on 2026-09-17 and shows a 2026-09-17 display row with Volume unavailable ('-'), while Investing independently reports Closed 17/09 with the 2026-09-17 row and blank Volume. This is recorded only as a no-trade session exception; no Sep-17 OHLCV row is synthesized or carried forward.",
+      "reviewedAt": "2026-09-18"
     }
   ],
-  "legitimateSessionExceptionCount": 2,
-  "gapCount": 12,
+  "legitimateSessionExceptionCount": 3,
+  "gapCount": 11,
   "accounting": {
-    "STALE_DATA": 11,
+    "STALE_DATA": 10,
     "SOURCE_INGESTION_FAILED": 1,
-    "total": 12,
-    "equation": "224 - 210 - 2 legitimate session exception(s) = 12",
+    "total": 11,
+    "equation": "224 - 210 - 3 legitimate session exception(s) = 11",
     "closes": true
   },
   "records": [
@@ -141,29 +159,6 @@
         "data/history/DEIN.json"
       ],
       "lastUpdateError": "Exact source identity resolved, but validation-approved source row for expected session 2026-09-16 is unavailable; latest=2026-09-10",
-      "productionImpact": "EXCLUDED_FROM_CURRENT_PRODUCTION_CANDIDATE_AND_REGIME_INPUT_UNTIL_RESOLVED"
-    },
-    {
-      "securityId": "EGX:GPPL",
-      "ticker": "GPPL",
-      "primaryReason": "STALE_DATA",
-      "expectedSession": "2026-09-17",
-      "latestValidSession": "2026-09-08",
-      "validHistorySessions": 250,
-      "symbolVerified": true,
-      "processingStatus": "stale",
-      "sourceStatus": "historical_complete_100",
-      "sourceFailureCategory": "identity_rejected",
-      "sourceTicker": "GPPL.CA",
-      "companyNameAr": "جولدن بيراميدز بلازا",
-      "companyNameEn": "Golden Pyramids Plaza S.A.E.",
-      "evidence": [
-        "data/symbol-map.json",
-        "data/history-summary.json",
-        "data/history/GPPL.json",
-        "data/history-universe-cleanup-report.json"
-      ],
-      "lastUpdateError": "Exact source identity resolved, but validation-approved source row for expected session 2026-09-16 is unavailable; latest=2026-09-08",
       "productionImpact": "EXCLUDED_FROM_CURRENT_PRODUCTION_CANDIDATE_AND_REGIME_INPUT_UNTIL_RESOLVED"
     },
     {
