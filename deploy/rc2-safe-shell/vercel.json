@@ -1,12 +1,12 @@
 {
-  "$schema":"https://openapi.vercel.sh/vercel.json",
-  "rewrites":[
-    {"source":"/core/:path*","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/:path*"},
-    {"source":"/api/index","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/index"},
-    {"source":"/api/intraday","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/intraday"},
-    {"source":"/api/fundamental","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/fundamental"},
-    {"source":"/api/session-monitor","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/session-monitor"},
-    {"source":"/api/recommendation-history","destination":"https://egx-tfe-v20-fusion-rc2.vercel.app/api/recommendation-history"},
-    {"source":"/technical-analysis-tools.js","destination":"/api/technical"}
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {"key":"Cache-Control","value":"no-store"}
+      ]
+    }
   ]
 }

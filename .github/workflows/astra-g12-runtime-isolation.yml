@@ -24,6 +24,7 @@ on:
       - 'tests/astra/g12-r06-sepa-local.test.cjs'
       - 'tests/astra/g12-r06-sepa-cutover.test.cjs'
       - 'tests/astra/g12-r07-tfe-local.test.cjs'
+      - 'tests/astra/g12-r07-tfe-cutover.test.cjs'
       - 'scripts/stable/v16-main-app-consensus.cjs'
       - 'scripts/stable/v16-main-app-v19v6-consensus-enricher.cjs'
       - 'scripts/stable/v16-main-app-independent-consensus-audit.cjs'
@@ -81,6 +82,10 @@ jobs:
         run: node --test tests/astra/g12-r06-sepa-cutover.test.cjs
       - name: R07 TFE internal replacement parity
         run: node --test tests/astra/g12-r07-tfe-local.test.cjs
+      - name: R07 TFE post-cut isolation invariant
+        run: |
+          node --test tests/astra/g12-r07-tfe-cutover.test.cjs
+          (cd deploy/rc2-safe-shell && npm test)
       - name: Full declared legacy scan
         shell: bash
         run: |
