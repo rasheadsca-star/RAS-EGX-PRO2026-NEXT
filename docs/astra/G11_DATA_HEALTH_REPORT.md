@@ -3,7 +3,7 @@
 - Gate status: **GREEN**
 - Overall data-health status: **HEALTHY**
 - Evaluated source snapshot: 2026-09-18T19:05:47.977Z
-- Code HEAD evaluated: c318df04746aad57bf91184cd800779e218ef57c
+- Code HEAD evaluated: 66cf59d73e82bf8fec0c294ec1521ee3cedbf8cf
 - Intended mapped universe: 244
 - Active universe: 224
 - Intentionally excluded: 20
@@ -40,6 +40,6 @@ The G11 run is non-cutover/shadow certification only. It does not change strateg
 - Current-universe gaps: 0; disposition accounting closes exactly ().
 - Previously unverified history-source mappings reviewed: 0; resolved=0; unresolved=0.
 - Stale production-critical records: 11; documented legitimate session exceptions=11; unresolved=0.
-- Current DecisionSnapshot: G09-DS-cc6b9a5f4d9e2c6084418a63; semantic hash=cc6b9a5f4d9e2c6084418a63fbf0e2adcbffd625a3b51a6dadb7bb15a48bf847.
+- Current DecisionSnapshot: G09-DS-b5bbb494faa015aba64d8327; semantic hash=b5bbb494faa015aba64d8327d2ca95f285e288cb3e7be48c69c68bc5acb3b51b.
 - Current pipeline opportunities: 3; legacy-network calls=0.
 - G11 remains **GREEN** unless all CRITICAL and production-relevant HIGH findings are cleared by validation-approved evidence.
