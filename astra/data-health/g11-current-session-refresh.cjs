@@ -50,10 +50,19 @@ function buildDocument(entry, existing, fetched, sourceRow) {
   const existingSessions = Array.isArray(existing?.sessions) ? existing.sessions : [];
   const exactSourceSessions = (Array.isArray(fetched?.sessions) ? fetched.sessions : []).map((row) => ({ ...row, ticker: entry.ticker }));
   const incoming = { ...sourceRow, ticker: entry.ticker };
-  // For a newly discovered/current canonical ticker, seed its history only from the
-  // same exact EGX-scoped source that supplied the verified current row. Do not
-  // copy a predecessor ticker and do not promote any prior value into a new date.
-  const sourceRows = existingSessions.length ? [incoming] : exactSourceSessions;
+  const fullHistoryBackfill = entry?.g11ExactHistoryBackfill?.approved === true &&
+    entry?.g11ExactHistoryBackfill?.sourceId === 'starta_egx_exact';
+  if (fullHistoryBackfill) {
+    const approvedIdentifier = String(entry.g11ExactHistoryBackfill.identifier || '').trim().toUpperCase();
+    const requestedIdentifier = String(fetched.requestedHistoryIdentifier || '').trim().toUpperCase();
+    if (approvedIdentifier && requestedIdentifier !== approvedIdentifier) {
+      throw new Error(`approved_history_backfill_identifier_mismatch:${approvedIdentifier}:${requestedIdentifier}`);
+    }
+  }
+  // Newly discovered tickers may seed from the exact current source. Existing tickers
+  // may consume the full exact-source history only through an explicit per-security
+  // G11 backfill approval. Otherwise only the current row is merged.
+  const sourceRows = (!existingSessions.length || fullHistoryBackfill) ? exactSourceSessions : [incoming];
   const retentionLimit = Math.max(250, existingSessions.length + sourceRows.length);
   const merged = mergeAndValidate(existingSessions, sourceRows, retentionLimit);
   const persisted = merged.sessions.find((s) => dateOnly(s.date) === expected);
@@ -97,7 +106,7 @@ function buildDocument(entry, existing, fetched, sourceRow) {
     staleData: false,
     updateFailed: false,
     lastUpdateError: null,
-    warnings: unique([...(existing?.warnings || []).filter((w) => !String(w).startsWith('expected_session_row_unavailable:')), 'g11_full_market_current_session_refresh', 'no_carry_forward', ...(existingSessions.length ? [] : ['history_seeded_from_same_exact_current_source']), ...merged.corporateActions.map(() => 'corporate_action_review_required')]),
+    warnings: unique([...(existing?.warnings || []).filter((w) => !String(w).startsWith('expected_session_row_unavailable:')), 'g11_full_market_current_session_refresh', 'no_carry_forward', ...(existingSessions.length ? [] : ['history_seeded_from_same_exact_current_source']), ...(fullHistoryBackfill ? ['g11_exact_source_full_history_backfill'] : []), ...merged.corporateActions.map(() => 'corporate_action_review_required')]),
     sessions: merged.sessions,
     g11CurrentSessionRefresh: {
       expectedSession: expected,
@@ -107,6 +116,15 @@ function buildDocument(entry, existing, fetched, sourceRow) {
       refreshedAt: now(),
       noCarryForward: true,
       syntheticValues: false,
+      exactHistoryBackfill: fullHistoryBackfill ? {
+        approved:true,
+        sourceId:'starta_egx_exact',
+        requestedIdentifier:fetched.requestedHistoryIdentifier || null,
+        sourceRowsConsidered:exactSourceSessions.length,
+        preexistingSessions:existingSessions.length,
+        retainedSessions:merged.sessions.length,
+        preserveExistingPreferredRows:true,
+      } : null,
     },
   };
 }
@@ -129,7 +147,9 @@ async function main() {
   console.log(`G11 full-market current refresh: expected=${expected}, active=${entries.length}`);
   for (const entry of entries) {
     const existing = readHistory(ROOT, entry.ticker);
-    if (currentRowValid(existing) && existing?.symbolVerified === true) {
+    const approvedExactHistoryBackfill = entry?.g11ExactHistoryBackfill?.approved === true &&
+      entry?.g11ExactHistoryBackfill?.sourceId === 'starta_egx_exact';
+    if (currentRowValid(existing) && existing?.symbolVerified === true && !approvedExactHistoryBackfill) {
       alreadyCurrent += 1;
       records.push({ ticker: entry.ticker, status: 'ALREADY_CURRENT_VALID', latestSession: expected });
       continue;
@@ -161,7 +181,7 @@ async function main() {
       const document = buildDocument(entry, existing, fetched, sourceRow);
       writeHistory(ROOT, entry.ticker, document);
       refreshed += 1;
-      records.push({ ticker: entry.ticker, status:'REFRESHED_APPROVED_PRIMARY', sourceUrl:fetched.sourceUrl, validationStatus:sourceRow.validationStatus || null });
+      records.push({ ticker: entry.ticker, status:approvedExactHistoryBackfill?'REFRESHED_APPROVED_PRIMARY_WITH_HISTORY_BACKFILL':'REFRESHED_APPROVED_PRIMARY', sourceUrl:fetched.sourceUrl, validationStatus:sourceRow.validationStatus || null, historyBackfill:approvedExactHistoryBackfill ? {requestedIdentifier:fetched.requestedHistoryIdentifier || null, sourceRows:(fetched.sessions || []).length, retainedSessions:document.sessions.length} : null });
     } catch (error) {
       failed += 1;
       records.push({ ticker: entry.ticker, status:'APPROVED_PRIMARY_REFRESH_FAILED', error:String(error.message || error) });
