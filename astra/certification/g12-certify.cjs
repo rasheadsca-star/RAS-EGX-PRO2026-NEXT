@@ -21,6 +21,7 @@ const g11Issues=read('docs/astra/G11_DATA_HEALTH_ISSUES.json');
 const g11Gaps=read('docs/astra/G11_CURRENT_UNIVERSE_GAPS.json');
 const pipeline=read('docs/astra/G11_CURRENT_PIPELINE_RUN.json');
 const eligibility=read('docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json');
+const g10Parity=read('docs/astra/G10_PARITY_RESULTS.json');
 const scan=scanLegacyDependencies(ROOT);
 
 const gateMap=new Map(gates.gates.map(x=>[x.id,x]));
@@ -36,7 +37,8 @@ const high=Number(g11Issues.highUnresolved??g11Issues.highProductionRelevantUnre
 if(high!==0)throw Error('G11 HIGH boundary changed');
 if(Number(g11Gaps.gapCount??g11Gaps.currentUniverseGapCount??0)!==0)throw Error('G11 current-session gap boundary changed');
 if(pipeline.productionCutover!==false||Number(pipeline.legacyNetworkCalls||0)!==0)throw Error('production cutover/network invariant violated');
-if(eligibility.quantEdge!=='HISTORICAL_OUTPUT_ONLY'&&eligibility.quantEdgeDisposition!=='HISTORICAL_OUTPUT_ONLY')throw Error('QUANT_EDGE disposition changed');
+if(g10Parity.quantEdge?.parityMode!=='OUTPUT_INTEGRITY_ONLY'||g10Parity.quantEdge?.algorithmicallyReproduced!==false)throw Error('QUANT_EDGE disposition changed');
+if(eligibility.productionEligibleCount!==1||eligibility.productionEligibleStrategyIds?.[0]!=='PORTFOLIO_BASKET_EQUAL_WEIGHT')throw Error('G10 production eligibility invariant changed');
 if(!(regressionTests>0&&regressionTests===regressionPass&&regressionFail===0))throw Error('G01-G11 regression suite evidence is not clean');
 
 const closedIds=plan.dependencies.map(x=>x.dependencyId);
