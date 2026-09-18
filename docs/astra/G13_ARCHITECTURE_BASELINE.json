@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-18T21:27:58.983Z",
-  "sourceHead": "8ea3436e9da92fcf20dbc8550ef311478495ce86",
+  "generatedAt": "2026-09-18T21:43:16.256Z",
+  "sourceHead": "a68529c0186fcc2b44db9723d713aa37a94aa170",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -44,7 +44,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 47,
+    "sourceFiles": 49,
     "zones": [
       {
         "zone": "api-runtime",
@@ -117,11 +117,24 @@
         "logicalModules": []
       },
       {
-        "zone": "strategy-core-shared",
-        "kind": "shared-target-implementation",
+        "zone": "strategy-core-private",
+        "kind": "private-implementation",
         "files": 5,
+        "logicalModules": []
+      },
+      {
+        "zone": "strategy-registry",
+        "kind": "target-module",
+        "files": 1,
         "logicalModules": [
-          "strategy-registry",
+          "strategy-registry"
+        ]
+      },
+      {
+        "zone": "strategy-runner",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
           "strategy-runner"
         ]
       },
@@ -134,8 +147,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 47,
-    "edgeCount": 142
+    "nodeCount": 49,
+    "edgeCount": 149
   },
   "moduleIsolation": [
     {
@@ -252,28 +265,24 @@
     },
     {
       "module": "strategy-registry",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/strategies/g08-final-overlay.cjs",
-        "astra/strategies/g08-internal-strategies.cjs",
-        "astra/strategies/g08-recovery-overlay.cjs",
-        "astra/strategies/g08-strict-overlay.cjs",
-        "astra/strategies/g08-v13-parity-repair.cjs"
+        "astra/strategies/strategy-registry.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/strategies/strategy-registry.cjs"
+      ],
       "allowedImports": []
     },
     {
       "module": "strategy-runner",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/strategies/g08-final-overlay.cjs",
-        "astra/strategies/g08-internal-strategies.cjs",
-        "astra/strategies/g08-recovery-overlay.cjs",
-        "astra/strategies/g08-strict-overlay.cjs",
-        "astra/strategies/g08-v13-parity-repair.cjs"
+        "astra/strategies/strategy-runner.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/strategies/strategy-runner.cjs"
+      ],
       "allowedImports": [
         "strategy-registry",
         "canonical-data",
@@ -559,16 +568,16 @@
     }
   ],
   "findings": {
-    "total": 50,
-    "high": 34,
+    "total": 47,
+    "high": 31,
     "medium": 16,
     "byCode": {
-      "FORBIDDEN_LOGICAL_IMPORT": 8,
-      "DATA_HEALTH_DECISION_COUPLING": 2,
-      "PHYSICAL_BOUNDARY_COLLAPSE": 6,
+      "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS": 10,
+      "FORBIDDEN_LOGICAL_IMPORT": 5,
+      "DATA_HEALTH_DECISION_COUPLING": 1,
+      "PHYSICAL_BOUNDARY_COLLAPSE": 1,
       "UNREGISTERED_ACTIVE_LAYER": 8,
       "DIRECT_DATA_PATH_COUPLING": 3,
-      "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS": 4,
       "DIRECT_NETWORK_ACCESS": 1,
       "DIRECT_FILE_IO_BYPASS": 2,
       "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 16
@@ -576,39 +585,21 @@
     "items": [
       {
         "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
         "file": "astra/certification/g08-certify.cjs",
         "zone": "certification",
-        "sourceModule": "certification",
         "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "targetLogicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "disallowed": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
       },
       {
         "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
         "file": "astra/certification/g09-certify.cjs",
         "zone": "certification",
-        "sourceModule": "certification",
         "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "targetLogicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "disallowed": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "detail": "certification imports implementation containing module(s) outside allowedImports."
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
       },
       {
         "severity": "HIGH",
@@ -695,32 +686,6 @@
         "file": "astra/data-health/g11-data-health.cjs",
         "zone": "data-health",
         "sourceModule": "data-health",
-        "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "targetLogicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "disallowed": [
-          "strategy-runner"
-        ],
-        "detail": "data-health imports implementation containing module(s) outside allowedImports."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DATA_HEALTH_DECISION_COUPLING",
-        "file": "astra/data-health/g11-data-health.cjs",
-        "zone": "data-health",
-        "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "detail": "Data-health is coupled directly to decision/strategy implementation."
-      },
-      {
-        "severity": "HIGH",
-        "code": "FORBIDDEN_LOGICAL_IMPORT",
-        "file": "astra/data-health/g11-data-health.cjs",
-        "zone": "data-health",
-        "sourceModule": "data-health",
         "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
         "targetZone": "decision-pipeline-shared",
         "targetLogicalModules": [
@@ -776,6 +741,15 @@
       },
       {
         "severity": "HIGH",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+        "zone": "decision-pipeline-shared",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
+      },
+      {
+        "severity": "HIGH",
         "code": "UNREGISTERED_ACTIVE_LAYER",
         "file": "astra/runtime/bridges/quant-edge-archive.cjs",
         "zone": "runtime-adapter",
@@ -797,28 +771,10 @@
       },
       {
         "severity": "HIGH",
-        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
-        "file": "astra/runtime/bridges/sepa-local.cjs",
-        "zone": "runtime-adapter",
-        "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
-      },
-      {
-        "severity": "HIGH",
         "code": "UNREGISTERED_ACTIVE_LAYER",
         "file": "astra/runtime/bridges/tfe-local.cjs",
         "zone": "runtime-adapter",
         "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
-        "file": "astra/runtime/bridges/tfe-local.cjs",
-        "zone": "runtime-adapter",
-        "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
       },
       {
         "severity": "HIGH",
@@ -829,28 +785,10 @@
       },
       {
         "severity": "HIGH",
-        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
-        "file": "astra/runtime/bridges/v19-local.cjs",
-        "zone": "runtime-adapter",
-        "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
-      },
-      {
-        "severity": "HIGH",
         "code": "UNREGISTERED_ACTIVE_LAYER",
         "file": "astra/runtime/bridges/v20-local.cjs",
         "zone": "runtime-adapter",
         "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
-        "file": "astra/runtime/bridges/v20-local.cjs",
-        "zone": "runtime-adapter",
-        "target": "astra/strategies/g08-final-overlay.cjs",
-        "targetZone": "strategy-core-shared",
-        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
       },
       {
         "severity": "HIGH",
@@ -875,65 +813,73 @@
       },
       {
         "severity": "HIGH",
-        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
         "file": "astra/strategies/g08-final-overlay.cjs",
-        "zone": "strategy-core-shared",
-        "logicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+        "zone": "strategy-core-private",
+        "target": "astra/strategies/g08-v13-parity-repair.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
       },
       {
         "severity": "HIGH",
-        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
-        "file": "astra/strategies/g08-internal-strategies.cjs",
-        "zone": "strategy-core-shared",
-        "logicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/strategies/g08-final-overlay.cjs",
+        "zone": "strategy-core-private",
+        "target": "astra/strategies/g08-internal-strategies.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
       },
       {
         "severity": "HIGH",
         "code": "DIRECT_DATA_PATH_COUPLING",
         "file": "astra/strategies/g08-internal-strategies.cjs",
-        "zone": "strategy-core-shared",
+        "zone": "strategy-core-private",
         "detail": "Active decision/runtime source references persistence/evidence paths directly."
       },
       {
         "severity": "HIGH",
-        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
         "file": "astra/strategies/g08-recovery-overlay.cjs",
-        "zone": "strategy-core-shared",
-        "logicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+        "zone": "strategy-core-private",
+        "target": "astra/strategies/g08-internal-strategies.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
       },
       {
         "severity": "HIGH",
-        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
         "file": "astra/strategies/g08-strict-overlay.cjs",
-        "zone": "strategy-core-shared",
-        "logicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+        "zone": "strategy-core-private",
+        "target": "astra/strategies/g08-recovery-overlay.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
       },
       {
         "severity": "HIGH",
-        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/strategies/g08-strict-overlay.cjs",
+        "zone": "strategy-core-private",
+        "target": "astra/strategies/g08-internal-strategies.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
         "file": "astra/strategies/g08-v13-parity-repair.cjs",
-        "zone": "strategy-core-shared",
-        "logicalModules": [
-          "strategy-registry",
-          "strategy-runner"
-        ],
-        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+        "zone": "strategy-core-private",
+        "target": "astra/strategies/g08-strict-overlay.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/strategies/g08-v13-parity-repair.cjs",
+        "zone": "strategy-core-private",
+        "target": "astra/strategies/g08-internal-strategies.cjs",
+        "targetZone": "strategy-core-private",
+        "detail": "Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary."
       },
       {
         "severity": "HIGH",

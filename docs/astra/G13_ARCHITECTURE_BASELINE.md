@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `8ea3436e9da92fcf20dbc8550ef311478495ce86`
+Source HEAD: `a68529c0186fcc2b44db9723d713aa37a94aa170`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,21 +14,21 @@ Source HEAD: `8ea3436e9da92fcf20dbc8550ef311478495ce86`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 47
-- Static dependency edges: 142
-- HIGH findings: 34
+- Scanned active source files: 49
+- Static dependency edges: 149
+- HIGH findings: 31
 - MEDIUM findings: 16
 
 ## Finding classes
 
-- DATA_HEALTH_DECISION_COUPLING: 2
+- DATA_HEALTH_DECISION_COUPLING: 1
 - DIRECT_DATA_PATH_COUPLING: 3
 - DIRECT_FILE_IO_BYPASS: 2
-- DIRECT_INTERNAL_IMPLEMENTATION_ACCESS: 4
+- DIRECT_INTERNAL_IMPLEMENTATION_ACCESS: 10
 - DIRECT_NETWORK_ACCESS: 1
-- FORBIDDEN_LOGICAL_IMPORT: 8
+- FORBIDDEN_LOGICAL_IMPORT: 5
 - NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 16
-- PHYSICAL_BOUNDARY_COLLAPSE: 6
+- PHYSICAL_BOUNDARY_COLLAPSE: 1
 - UNREGISTERED_ACTIVE_LAYER: 8
 
 ## Module physical-isolation map
@@ -44,8 +44,8 @@ Source HEAD: `8ea3436e9da92fcf20dbc8550ef311478495ce86`
 - relative-strength: NO_PHYSICAL_MAPPING
 - vcp: NO_PHYSICAL_MAPPING
 - liquidity: NO_PHYSICAL_MAPPING
-- strategy-registry: SHARED_PHYSICAL_ZONE — astra/strategies/g08-final-overlay.cjs, astra/strategies/g08-internal-strategies.cjs, astra/strategies/g08-recovery-overlay.cjs, astra/strategies/g08-strict-overlay.cjs, astra/strategies/g08-v13-parity-repair.cjs
-- strategy-runner: SHARED_PHYSICAL_ZONE — astra/strategies/g08-final-overlay.cjs, astra/strategies/g08-internal-strategies.cjs, astra/strategies/g08-recovery-overlay.cjs, astra/strategies/g08-strict-overlay.cjs, astra/strategies/g08-v13-parity-repair.cjs
+- strategy-registry: DEDICATED_ZONE — astra/strategies/strategy-registry.cjs
+- strategy-runner: DEDICATED_ZONE — astra/strategies/strategy-runner.cjs
 - signal-normalizer: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
 - evidence-engine: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
 - agreement-engine: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs

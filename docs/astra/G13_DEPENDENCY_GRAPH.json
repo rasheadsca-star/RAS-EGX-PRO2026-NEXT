@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-dependency-graph-1",
-  "generatedAt": "2026-09-18T21:27:58.983Z",
-  "sourceHead": "8ea3436e9da92fcf20dbc8550ef311478495ce86",
+  "generatedAt": "2026-09-18T21:43:16.256Z",
+  "sourceHead": "a68529c0186fcc2b44db9723d713aa37a94aa170",
   "nodes": [
     {
       "file": "astra/certification/g06-certify.cjs",
@@ -313,46 +313,47 @@
     },
     {
       "file": "astra/strategies/g08-final-overlay.cjs",
-      "zone": "strategy-core-shared",
-      "kind": "shared-target-implementation",
-      "logicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "zone": "strategy-core-private",
+      "kind": "private-implementation",
+      "logicalModules": []
     },
     {
       "file": "astra/strategies/g08-internal-strategies.cjs",
-      "zone": "strategy-core-shared",
-      "kind": "shared-target-implementation",
-      "logicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "zone": "strategy-core-private",
+      "kind": "private-implementation",
+      "logicalModules": []
     },
     {
       "file": "astra/strategies/g08-recovery-overlay.cjs",
-      "zone": "strategy-core-shared",
-      "kind": "shared-target-implementation",
-      "logicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "zone": "strategy-core-private",
+      "kind": "private-implementation",
+      "logicalModules": []
     },
     {
       "file": "astra/strategies/g08-strict-overlay.cjs",
-      "zone": "strategy-core-shared",
-      "kind": "shared-target-implementation",
-      "logicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "zone": "strategy-core-private",
+      "kind": "private-implementation",
+      "logicalModules": []
     },
     {
       "file": "astra/strategies/g08-v13-parity-repair.cjs",
-      "zone": "strategy-core-shared",
-      "kind": "shared-target-implementation",
+      "zone": "strategy-core-private",
+      "kind": "private-implementation",
+      "logicalModules": []
+    },
+    {
+      "file": "astra/strategies/strategy-registry.cjs",
+      "zone": "strategy-registry",
+      "kind": "target-module",
       "logicalModules": [
-        "strategy-registry",
+        "strategy-registry"
+      ]
+    },
+    {
+      "file": "astra/strategies/strategy-runner.cjs",
+      "zone": "strategy-runner",
+      "kind": "target-module",
+      "logicalModules": [
         "strategy-runner"
       ]
     },
@@ -416,12 +417,9 @@
       "fromZone": "certification",
       "spec": "../strategies/g08-final-overlay.cjs",
       "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/certification/g09-certify.cjs",
@@ -452,12 +450,9 @@
       "fromZone": "certification",
       "spec": "../strategies/g08-final-overlay.cjs",
       "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/certification/g09-certify.cjs",
@@ -1115,13 +1110,12 @@
     {
       "from": "astra/data-health/g11-data-health.cjs",
       "fromZone": "data-health",
-      "spec": "../strategies/g08-final-overlay.cjs",
-      "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "spec": "../strategies/strategy-registry.cjs",
+      "target": "astra/strategies/strategy-registry.cjs",
+      "targetZone": "strategy-registry",
       "classification": "relative-static-import",
       "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
+        "strategy-registry"
       ]
     },
     {
@@ -1388,12 +1382,9 @@
       "fromZone": "parity-control",
       "spec": "../strategies/g08-final-overlay.cjs",
       "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/parity/g10-golden-master.cjs",
@@ -1432,12 +1423,9 @@
       "fromZone": "parity-control",
       "spec": "../strategies/g08-final-overlay.cjs",
       "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
@@ -1452,88 +1440,119 @@
       "fromZone": "decision-pipeline-shared",
       "spec": "../strategies/g08-final-overlay.cjs",
       "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/runtime/bridges/sepa-local.cjs",
+      "fromZone": "runtime-adapter",
+      "spec": "../../strategies/strategy-registry.cjs",
+      "target": "astra/strategies/strategy-registry.cjs",
+      "targetZone": "strategy-registry",
       "classification": "relative-static-import",
       "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
+        "strategy-registry"
       ]
     },
     {
       "from": "astra/runtime/bridges/sepa-local.cjs",
       "fromZone": "runtime-adapter",
-      "spec": "../../strategies/g08-final-overlay.cjs",
-      "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "spec": "../../strategies/strategy-runner.cjs",
+      "target": "astra/strategies/strategy-runner.cjs",
+      "targetZone": "strategy-runner",
       "classification": "relative-static-import",
       "targetLogicalModules": [
-        "strategy-registry",
         "strategy-runner"
       ]
     },
     {
       "from": "astra/runtime/bridges/tfe-local.cjs",
       "fromZone": "runtime-adapter",
-      "spec": "../../strategies/g08-final-overlay.cjs",
-      "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "spec": "../../strategies/strategy-registry.cjs",
+      "target": "astra/strategies/strategy-registry.cjs",
+      "targetZone": "strategy-registry",
       "classification": "relative-static-import",
       "targetLogicalModules": [
-        "strategy-registry",
+        "strategy-registry"
+      ]
+    },
+    {
+      "from": "astra/runtime/bridges/tfe-local.cjs",
+      "fromZone": "runtime-adapter",
+      "spec": "../../strategies/strategy-runner.cjs",
+      "target": "astra/strategies/strategy-runner.cjs",
+      "targetZone": "strategy-runner",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
         "strategy-runner"
       ]
     },
     {
       "from": "astra/runtime/bridges/v19-local.cjs",
       "fromZone": "runtime-adapter",
-      "spec": "../../strategies/g08-final-overlay.cjs",
-      "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "spec": "../../strategies/strategy-registry.cjs",
+      "target": "astra/strategies/strategy-registry.cjs",
+      "targetZone": "strategy-registry",
       "classification": "relative-static-import",
       "targetLogicalModules": [
-        "strategy-registry",
+        "strategy-registry"
+      ]
+    },
+    {
+      "from": "astra/runtime/bridges/v19-local.cjs",
+      "fromZone": "runtime-adapter",
+      "spec": "../../strategies/strategy-runner.cjs",
+      "target": "astra/strategies/strategy-runner.cjs",
+      "targetZone": "strategy-runner",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
         "strategy-runner"
       ]
     },
     {
       "from": "astra/runtime/bridges/v20-local.cjs",
       "fromZone": "runtime-adapter",
-      "spec": "../../strategies/g08-final-overlay.cjs",
-      "target": "astra/strategies/g08-final-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "spec": "../../strategies/strategy-registry.cjs",
+      "target": "astra/strategies/strategy-registry.cjs",
+      "targetZone": "strategy-registry",
       "classification": "relative-static-import",
       "targetLogicalModules": [
-        "strategy-registry",
+        "strategy-registry"
+      ]
+    },
+    {
+      "from": "astra/runtime/bridges/v20-local.cjs",
+      "fromZone": "runtime-adapter",
+      "spec": "../../strategies/strategy-runner.cjs",
+      "target": "astra/strategies/strategy-runner.cjs",
+      "targetZone": "strategy-runner",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
         "strategy-runner"
       ]
     },
     {
       "from": "astra/strategies/g08-final-overlay.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "./g08-v13-parity-repair.cjs",
       "target": "astra/strategies/g08-v13-parity-repair.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/strategies/g08-final-overlay.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "./g08-internal-strategies.cjs",
       "target": "astra/strategies/g08-internal-strategies.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/strategies/g08-internal-strategies.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "crypto",
       "target": null,
       "targetZone": null,
@@ -1541,62 +1560,76 @@
     },
     {
       "from": "astra/strategies/g08-recovery-overlay.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "./g08-internal-strategies.cjs",
       "target": "astra/strategies/g08-internal-strategies.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/strategies/g08-strict-overlay.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "./g08-recovery-overlay.cjs",
       "target": "astra/strategies/g08-recovery-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/strategies/g08-strict-overlay.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "./g08-internal-strategies.cjs",
       "target": "astra/strategies/g08-internal-strategies.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/strategies/g08-v13-parity-repair.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "./g08-strict-overlay.cjs",
       "target": "astra/strategies/g08-strict-overlay.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
       "classification": "relative-static-import",
-      "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
-      ]
+      "targetLogicalModules": []
     },
     {
       "from": "astra/strategies/g08-v13-parity-repair.cjs",
-      "fromZone": "strategy-core-shared",
+      "fromZone": "strategy-core-private",
       "spec": "./g08-internal-strategies.cjs",
       "target": "astra/strategies/g08-internal-strategies.cjs",
-      "targetZone": "strategy-core-shared",
+      "targetZone": "strategy-core-private",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/strategies/strategy-registry.cjs",
+      "fromZone": "strategy-registry",
+      "spec": "./g08-final-overlay.cjs",
+      "target": "astra/strategies/g08-final-overlay.cjs",
+      "targetZone": "strategy-core-private",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/strategies/strategy-runner.cjs",
+      "fromZone": "strategy-runner",
+      "spec": "./g08-final-overlay.cjs",
+      "target": "astra/strategies/g08-final-overlay.cjs",
+      "targetZone": "strategy-core-private",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/strategies/strategy-runner.cjs",
+      "fromZone": "strategy-runner",
+      "spec": "./strategy-registry.cjs",
+      "target": "astra/strategies/strategy-registry.cjs",
+      "targetZone": "strategy-registry",
       "classification": "relative-static-import",
       "targetLogicalModules": [
-        "strategy-registry",
-        "strategy-runner"
+        "strategy-registry"
       ]
     },
     {
