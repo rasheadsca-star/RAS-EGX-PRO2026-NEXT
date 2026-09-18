@@ -138,7 +138,7 @@
       "removalStep": "remove API invocation and exclude QUANT_EDGE from live strategy farm unless original algorithm is later recovered with evidence-backed reclassification",
       "isolationTest": "legacy-isolation QUANT_EDGE_REMOTE; integrity check compares archived content hashes only",
       "cutoverCriterion": "zero production runtime calls; historical reports retain attributable QUANT_EDGE output without algorithmic parity claim",
-      "status": "CUTOVER_PENDING_POST_SCAN",
+      "status": "CLOSED",
       "replacementEvidence": {
         "candidateCommit": "0fc23e7abdd3ac4fc1751c85dc922510d3f4766f",
         "candidateWorkflowRunId": 35389825036,
@@ -147,7 +147,12 @@
         "disposition": "HISTORICAL_OUTPUT_ONLY",
         "algorithmicallyReproduced": false,
         "liveDecisionInfluence": 0,
-        "productionCutover": false
+        "productionCutover": false,
+        "cutoverCommit": "3010b280763f64420876958108e386d06e1d2c30",
+        "postCutWorkflowRunId": 35389994684,
+        "postCutResult": "PASS",
+        "postCutLegacyDependencyCount": 3,
+        "remoteQuantEdgeAbsent": true
       }
     },
     {
@@ -162,7 +167,14 @@
       "removalStep": "replace sync-sepa remote fetch with local internal strategy execution and normalized envelope",
       "isolationTest": "legacy-isolation SEPA_X_REMOTE + SEPA parity",
       "cutoverCriterion": "local source passes golden cases; no external SEPA host dependency",
-      "status": "PLANNED"
+      "status": "PARITY_CANDIDATE",
+      "replacementEvidence": {
+        "candidateReplacement": "astra/runtime/bridges/sepa-local.cjs",
+        "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+        "g10Case": "RULE-SEPA-V1",
+        "legacyApiStillPresentUntilParityPass": true,
+        "productionCutover": false
+      }
     },
     {
       "dependencyId": "R07_RC2_VERCEL_PROXY",
