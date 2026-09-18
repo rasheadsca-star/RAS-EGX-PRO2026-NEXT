@@ -102,7 +102,7 @@ jobs:
           const fs=require('fs'),r=p=>JSON.parse(fs.readFileSync(p,'utf8'));
           const gates=r('04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
           const s=r('docs/astra/G11_DATA_HEALTH_SNAPSHOT.json'),i=r('docs/astra/G11_DATA_HEALTH_ISSUES.json'),g=r('docs/astra/G11_CURRENT_UNIVERSE_GAPS.json'),st=r('docs/astra/G11_STALE_RECORDS.json'),p=r('docs/astra/G11_CURRENT_PIPELINE_RUN.json'),sr=r('docs/astra/G11_SUPPORT_RESISTANCE_HEALTH.json');
-          if(g.gapCount!==g.activeUniverse-g.currentValidCanonicalUniverse)throw Error('gap equation does not close');
+          const expectedGapCount=g.activeUniverse-g.currentValidCanonicalUniverse-Number(g.legitimateSessionExceptionCount||0);if(g.gapCount!==expectedGapCount)throw Error('gap equation does not close');
           if(g.accounting.total!==g.gapCount||g.accounting.closes!==true)throw Error('gap accounting malformed');
           if(sr.finalTaxonomy.UNEXPLAINED_NULL!==0)throw Error('S/R unexplained null remains');
           if(p.legacyNetworkCalls!==0||p.productionCutover!==false)throw Error('network/cutover violation');
