@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: validate DCCC/POCO documented temporary-listing no-trade exceptions.
 // Trigger marker: recertify ARVA->AMII identity and reviewed Sep-17 no-trade exceptions.
 // Trigger marker: validate NDRL cross-verified 2026-09-17 legitimate no-trade exception.
 // Trigger marker: validate SAIB cross-verified 2026-09-17 legitimate no-trade exception.
