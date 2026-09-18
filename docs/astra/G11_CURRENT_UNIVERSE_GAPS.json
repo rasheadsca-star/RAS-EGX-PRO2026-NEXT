@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g11-current-universe-gaps-2",
-  "evaluatedAt": "2026-09-18T15:21:44.762Z",
-  "sourceHead": "b49c0f1e2e2b1e8b8616fb8e553fa6246f43f55c",
+  "evaluatedAt": "2026-09-18T15:28:12.872Z",
+  "sourceHead": "409b8e30edf5ae7140e13f897f9f9074345774cd",
   "expectedSession": "2026-09-17",
   "activeUniverse": 224,
   "currentValidCanonicalUniverse": 210,
@@ -24,15 +24,33 @@
       ],
       "evidenceSummary": "FRA suspension of El Ahram Co. For Printing And Packing for 15 trading sessions from 2026-09-10 through the end of 2026-09-24; target session 2026-09-17 lies inside the suspension window. Company profile confirms EPPK and ISIN EGS360A1C011.",
       "reviewedAt": "2026-09-18"
+    },
+    {
+      "ticker": "MEGM",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_NO_TRADE",
+      "approved": true,
+      "identityVerified": true,
+      "isin": "EGS3C001C012",
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "authorityClass": "MARKET_DATA_CROSS_VERIFIED",
+      "evidenceUrls": [
+        "https://egxbot.com/en/stock/MEGM",
+        "https://stockanalysis.com/quote/egx/MEGM/",
+        "https://www.marketscreener.com/quote/stock/MIDDLE-EAST-GLASS-MANUFAC-20707028/company/"
+      ],
+      "evidenceSummary": "MEGM target session is explicitly bounded to 2026-09-17. EGXBot snapshot at 14:48 Cairo time, after the EGX cash session close, reports Open/High/Low 12.540 with Volume=0 and Turnover=0 and identifies ISIN EGS3C001C012. StockAnalysis/S&P reports At close: Sep 17, 2026 with Volume/Open/Day's Range n/a and last checked Sep 17. MarketScreener independently reports End-of-day quote Egyptian Exchange 2026-09-17 for MEGM/ISIN EGS3C001C012. No previous-session OHLCV is promoted.",
+      "reviewedAt": "2026-09-18"
     }
   ],
-  "legitimateSessionExceptionCount": 1,
-  "gapCount": 13,
+  "legitimateSessionExceptionCount": 2,
+  "gapCount": 12,
   "accounting": {
-    "STALE_DATA": 12,
+    "STALE_DATA": 11,
     "SOURCE_INGESTION_FAILED": 1,
-    "total": 13,
-    "equation": "224 - 210 - 1 legitimate session exception(s) = 13",
+    "total": 12,
+    "equation": "224 - 210 - 2 legitimate session exception(s) = 12",
     "closes": true
   },
   "records": [
@@ -171,28 +189,6 @@
       "productionImpact": "EXCLUDED_FROM_CURRENT_PRODUCTION_CANDIDATE_AND_REGIME_INPUT_UNTIL_RESOLVED"
     },
     {
-      "securityId": "EGX:MEGM",
-      "ticker": "MEGM",
-      "primaryReason": "STALE_DATA",
-      "expectedSession": "2026-09-17",
-      "latestValidSession": "2026-08-24",
-      "validHistorySessions": 112,
-      "symbolVerified": true,
-      "processingStatus": "stale",
-      "sourceStatus": "historical_complete_100",
-      "sourceFailureCategory": null,
-      "sourceTicker": null,
-      "companyNameAr": "الشرق الأوسط لصناعة الزجاج",
-      "companyNameEn": "Middle East Glass Manufacturing",
-      "evidence": [
-        "data/symbol-map.json",
-        "data/history-summary.json",
-        "data/history/MEGM.json"
-      ],
-      "lastUpdateError": "Exact source identity resolved, but validation-approved source row for expected session 2026-09-16 is unavailable; latest=2022-04-28",
-      "productionImpact": "EXCLUDED_FROM_CURRENT_PRODUCTION_CANDIDATE_AND_REGIME_INPUT_UNTIL_RESOLVED"
-    },
-    {
       "securityId": "EGX:MMAT",
       "ticker": "MMAT",
       "primaryReason": "STALE_DATA",
@@ -267,7 +263,7 @@
       "expectedSession": "2026-09-17",
       "latestValidSession": null,
       "validHistorySessions": 0,
-      "symbolVerified": false,
+      "symbolVerified": true,
       "processingStatus": "failed",
       "sourceStatus": "historical_insufficient",
       "sourceFailureCategory": "yahoo_404",

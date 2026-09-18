@@ -1,11 +1,11 @@
 {
   "schemaVersion": "astra-g11-stale-records-2",
-  "evaluatedAt": "2026-09-18T15:21:44.762Z",
-  "sourceHead": "b49c0f1e2e2b1e8b8616fb8e553fa6246f43f55c",
+  "evaluatedAt": "2026-09-18T15:28:12.872Z",
+  "sourceHead": "409b8e30edf5ae7140e13f897f9f9074345774cd",
   "expectedSession": "2026-09-17",
   "total": 13,
-  "resolved": 1,
-  "unresolved": 12,
+  "resolved": 2,
+  "unresolved": 11,
   "legitimateSessionExceptions": [
     {
       "ticker": "EPPK",
@@ -23,6 +23,24 @@
         "https://arabfinance.com/en/home/companyprofile/EPPK"
       ],
       "evidenceSummary": "FRA suspension of El Ahram Co. For Printing And Packing for 15 trading sessions from 2026-09-10 through the end of 2026-09-24; target session 2026-09-17 lies inside the suspension window. Company profile confirms EPPK and ISIN EGS360A1C011.",
+      "reviewedAt": "2026-09-18"
+    },
+    {
+      "ticker": "MEGM",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_NO_TRADE",
+      "approved": true,
+      "identityVerified": true,
+      "isin": "EGS3C001C012",
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "authorityClass": "MARKET_DATA_CROSS_VERIFIED",
+      "evidenceUrls": [
+        "https://egxbot.com/en/stock/MEGM",
+        "https://stockanalysis.com/quote/egx/MEGM/",
+        "https://www.marketscreener.com/quote/stock/MIDDLE-EAST-GLASS-MANUFAC-20707028/company/"
+      ],
+      "evidenceSummary": "MEGM target session is explicitly bounded to 2026-09-17. EGXBot snapshot at 14:48 Cairo time, after the EGX cash session close, reports Open/High/Low 12.540 with Volume=0 and Turnover=0 and identifies ISIN EGS3C001C012. StockAnalysis/S&P reports At close: Sep 17, 2026 with Volume/Open/Day's Range n/a and last checked Sep 17. MarketScreener independently reports End-of-day quote Egyptian Exchange 2026-09-17 for MEGM/ISIN EGS3C001C012. No previous-session OHLCV is promoted.",
       "reviewedAt": "2026-09-18"
     }
   ],
@@ -99,19 +117,6 @@
       "expectedSession": "2026-09-17",
       "actualSession": "2026-09-08",
       "source": "data/history/ICLE.json",
-      "reason": "LATEST_VALIDATION_APPROVED_ROW_PREDATES_EXPECTED_SESSION_AND_NO_DOCUMENTED_NO_TRADE_OR_SUSPENSION_EXCEPTION_IS PRESENT_IN_G11_SOURCE_SET",
-      "affectedStrategy": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
-      "affectedModule": "market-regime + V16 source features + production candidate selection",
-      "canAffectCurrentDecisioning": true,
-      "status": "UNRESOLVED_BROKEN_FRESHNESS"
-    },
-    {
-      "securityId": "EGX:MEGM",
-      "ticker": "MEGM",
-      "component": "CURRENT_CANONICAL_HISTORY_AND_V16_SOURCE_FEATURES",
-      "expectedSession": "2026-09-17",
-      "actualSession": "2026-08-24",
-      "source": "data/history/MEGM.json",
       "reason": "LATEST_VALIDATION_APPROVED_ROW_PREDATES_EXPECTED_SESSION_AND_NO_DOCUMENTED_NO_TRADE_OR_SUSPENSION_EXCEPTION_IS PRESENT_IN_G11_SOURCE_SET",
       "affectedStrategy": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
       "affectedModule": "market-regime + V16 source features + production candidate selection",

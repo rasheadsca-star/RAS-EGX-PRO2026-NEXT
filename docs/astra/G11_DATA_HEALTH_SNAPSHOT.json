@@ -1,17 +1,17 @@
 {
-  "healthSnapshotId": "G11-DH-87463a5c27aeeba1dc8802d3",
-  "evaluatedAt": "2026-09-18T15:21:44.762Z",
+  "healthSnapshotId": "G11-DH-4992933c422304fcbba3e289",
+  "evaluatedAt": "2026-09-18T15:28:12.872Z",
   "latestExpectedSession": "2026-09-17",
   "latestAvailableSession": "2026-09-17",
   "universeIdentity": "a47e21b9b045a721fe8019c8f3ed387ad6b42b0f2d8c76cd1cd44e4fa2811783",
   "universeCount": 243,
   "activeUniverseCount": 224,
-  "canonicalDatasetHash": "d91944fb6f6c97232a5c4ad97c5921098108c9e666304e55a71c61721d51d328",
-  "codeVersion": "b49c0f1e2e2b1e8b8616fb8e553fa6246f43f55c",
+  "canonicalDatasetHash": "bc4593fa9a1f8f9058bbc1c10e89bf3374b38b08baa6e64acaa0c2e8f27e06f4",
+  "codeVersion": "409b8e30edf5ae7140e13f897f9f9074345774cd",
   "schemaVersion": "astra-g11-data-health-snapshot-1",
   "coverageMetrics": {
     "schemaVersion": "astra-g11-data-health-metrics-1",
-    "evaluatedAt": "2026-09-18T15:21:44.762Z",
+    "evaluatedAt": "2026-09-18T15:28:12.872Z",
     "latestExpectedSession": "2026-09-17",
     "latestAvailableSession": "2026-09-17",
     "sessionFreshnessStatus": "CURRENT",
@@ -21,7 +21,7 @@
       "percentage": 100,
       "excludedByRule": 19,
       "invalid": 0,
-      "unresolved": 1
+      "unresolved": 0
     },
     "activeUniverse": {
       "count": 224
@@ -32,9 +32,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 13,
+      "unresolved": 12,
       "rawMissingCurrent": 14,
-      "legitimateSessionExceptions": 1
+      "legitimateSessionExceptions": 2
     },
     "ohlcWithPreviousClose": {
       "numerator": 210,
@@ -42,9 +42,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 13,
+      "unresolved": 12,
       "rawMissingCurrent": 14,
-      "legitimateSessionExceptions": 1
+      "legitimateSessionExceptions": 2
     },
     "volume": {
       "numerator": 210,
@@ -52,9 +52,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 13,
+      "unresolved": 12,
       "rawMissingCurrent": 14,
-      "legitimateSessionExceptions": 1
+      "legitimateSessionExceptions": 2
     },
     "turnoverDecisionProxy": {
       "numerator": 210,
@@ -62,9 +62,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 13,
+      "unresolved": 12,
       "rawMissingCurrent": 14,
-      "legitimateSessionExceptions": 1,
+      "legitimateSessionExceptions": 2,
       "method": "close * volume, identical to V16 source turnover primitive; not represented as official exchange traded value"
     },
     "historyDepth": {
@@ -337,24 +337,24 @@
       "analyzed": 208,
       "participationPct": 92.86,
       "status": "DEGRADED_PARTIAL_UNIVERSE",
-      "legitimateSessionExceptions": 1,
-      "unresolvedMissingFeatureInputs": 15
+      "legitimateSessionExceptions": 2,
+      "unresolvedMissingFeatureInputs": 14
     },
     "symbolMapping": {
       "mapped": 243,
       "active": 224,
-      "unresolved": 1,
+      "unresolved": 0,
       "collisions": 0
     },
     "stale": {
-      "productionCriticalRecords": 12,
+      "productionCriticalRecords": 11,
       "rawStaleRecords": 13,
-      "legitimateSessionExceptions": 1
+      "legitimateSessionExceptions": 2
     },
     "missingSessions": {
       "activeWithoutExpectedSession": 14,
-      "unresolvedAfterLegitimateExceptions": 13,
-      "legitimateSessionExceptions": 1
+      "unresolvedAfterLegitimateExceptions": 12,
+      "legitimateSessionExceptions": 2
     },
     "duplicates": {
       "currentExact": 0,
@@ -383,8 +383,8 @@
       "validCanonicalSecurities": 210,
       "pipelineReadySecurities": 208,
       "insufficientDataSecurities": 16,
-      "unresolvedInsufficientDataSecurities": 15,
-      "legitimateSessionExceptions": 1,
+      "unresolvedInsufficientDataSecurities": 14,
+      "legitimateSessionExceptions": 2,
       "rejectedInvalidSecurities": 0,
       "staleSecurities": 13,
       "strategyExecutionsAttempted": 1,
@@ -401,21 +401,10 @@
   },
   "failures": [
     {
-      "code": "SYMBOL_IDENTITY_UNRESOLVED",
-      "severity": "HIGH",
-      "summary": "Active mapped securities lack verified canonical symbol/history identity",
-      "affectedCount": 1,
-      "affectedTickers": [
-        "POCO"
-      ],
-      "details": {},
-      "status": "UNRESOLVED"
-    },
-    {
       "code": "CURRENT_SESSION_GAP",
       "severity": "HIGH",
       "summary": "Active intended securities are missing a validation-approved row for the expected finalized session",
-      "affectedCount": 13,
+      "affectedCount": 12,
       "affectedTickers": [
         "AIHC",
         "ARVA",
@@ -423,7 +412,6 @@
         "DEIN",
         "GPPL",
         "ICLE",
-        "MEGM",
         "MMAT",
         "NAPR",
         "NDRL",
@@ -436,6 +424,10 @@
           {
             "ticker": "EPPK",
             "disposition": "LEGITIMATE_SUSPENSION"
+          },
+          {
+            "ticker": "MEGM",
+            "disposition": "LEGITIMATE_NO_TRADE"
           }
         ]
       },
@@ -445,7 +437,7 @@
       "code": "REGIME_INPUT_INCOMPLETE",
       "severity": "HIGH",
       "summary": "Market-regime/production model inputs cover only a subset of the intended active universe after deterministic legitimate session exceptions",
-      "affectedCount": 15,
+      "affectedCount": 14,
       "affectedTickers": [
         "AIHC",
         "AMES",
@@ -455,7 +447,6 @@
         "GPPL",
         "GRCA",
         "ICLE",
-        "MEGM",
         "MMAT",
         "NAPR",
         "NDRL",
@@ -471,6 +462,10 @@
           {
             "ticker": "EPPK",
             "disposition": "LEGITIMATE_SUSPENSION"
+          },
+          {
+            "ticker": "MEGM",
+            "disposition": "LEGITIMATE_NO_TRADE"
           }
         ]
       },
@@ -502,6 +497,24 @@
       ],
       "evidenceSummary": "FRA suspension of El Ahram Co. For Printing And Packing for 15 trading sessions from 2026-09-10 through the end of 2026-09-24; target session 2026-09-17 lies inside the suspension window. Company profile confirms EPPK and ISIN EGS360A1C011.",
       "reviewedAt": "2026-09-18"
+    },
+    {
+      "ticker": "MEGM",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_NO_TRADE",
+      "approved": true,
+      "identityVerified": true,
+      "isin": "EGS3C001C012",
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "authorityClass": "MARKET_DATA_CROSS_VERIFIED",
+      "evidenceUrls": [
+        "https://egxbot.com/en/stock/MEGM",
+        "https://stockanalysis.com/quote/egx/MEGM/",
+        "https://www.marketscreener.com/quote/stock/MIDDLE-EAST-GLASS-MANUFAC-20707028/company/"
+      ],
+      "evidenceSummary": "MEGM target session is explicitly bounded to 2026-09-17. EGXBot snapshot at 14:48 Cairo time, after the EGX cash session close, reports Open/High/Low 12.540 with Volume=0 and Turnover=0 and identifies ISIN EGS3C001C012. StockAnalysis/S&P reports At close: Sep 17, 2026 with Volume/Open/Day's Range n/a and last checked Sep 17. MarketScreener independently reports End-of-day quote Egyptian Exchange 2026-09-17 for MEGM/ISIN EGS3C001C012. No previous-session OHLCV is promoted.",
+      "reviewedAt": "2026-09-18"
     }
   ],
   "overallStatus": "DEGRADED",
@@ -511,32 +524,30 @@
   "legacyNetworkCalls": 0,
   "productionCutover": false,
   "g12Status": "PENDING",
-  "sourceHead": "b49c0f1e2e2b1e8b8616fb8e553fa6246f43f55c",
+  "sourceHead": "409b8e30edf5ae7140e13f897f9f9074345774cd",
   "searchableUniverse": 224,
   "currentValidCanonicalUniverse": 210,
   "decisionReadyUniverse": 208,
   "regimeReadyUniverse": 208,
-  "currentDecisionSnapshotId": "G09-DS-728d6c41072bbddd664fe014",
-  "currentDecisionSnapshotHash": "728d6c41072bbddd664fe01429ae1133ff2f068ac1b89d750827335297a0e10e",
+  "currentDecisionSnapshotId": "G09-DS-73fb18b9f95285c24d7dc2fc",
+  "currentDecisionSnapshotHash": "73fb18b9f95285c24d7dc2fcb830ba11e8130ef16cec98e47e1f7554186d878b",
   "currentUniverseGapDispositionAccounting": {
-    "STALE_DATA": 12,
+    "STALE_DATA": 11,
     "SOURCE_INGESTION_FAILED": 1,
-    "total": 13,
-    "equation": "224 - 210 - 1 legitimate session exception(s) = 13",
+    "total": 12,
+    "equation": "224 - 210 - 2 legitimate session exception(s) = 12",
     "closes": true
   },
   "historySourceMappingReview": {
-    "reviewed": 1,
+    "reviewed": 0,
     "resolved": 0,
-    "unresolved": 1,
-    "statusCounts": {
-      "SOURCE_INVALID": 1
-    }
+    "unresolved": 0,
+    "statusCounts": {}
   },
   "staleProductionCriticalReview": {
     "total": 13,
-    "resolved": 1,
-    "unresolved": 12,
+    "resolved": 2,
+    "unresolved": 11,
     "legitimateSessionExceptions": [
       {
         "ticker": "EPPK",
@@ -555,8 +566,26 @@
         ],
         "evidenceSummary": "FRA suspension of El Ahram Co. For Printing And Packing for 15 trading sessions from 2026-09-10 through the end of 2026-09-24; target session 2026-09-17 lies inside the suspension window. Company profile confirms EPPK and ISIN EGS360A1C011.",
         "reviewedAt": "2026-09-18"
+      },
+      {
+        "ticker": "MEGM",
+        "session": "2026-09-17",
+        "disposition": "LEGITIMATE_NO_TRADE",
+        "approved": true,
+        "identityVerified": true,
+        "isin": "EGS3C001C012",
+        "effectiveFrom": null,
+        "effectiveThrough": null,
+        "authorityClass": "MARKET_DATA_CROSS_VERIFIED",
+        "evidenceUrls": [
+          "https://egxbot.com/en/stock/MEGM",
+          "https://stockanalysis.com/quote/egx/MEGM/",
+          "https://www.marketscreener.com/quote/stock/MIDDLE-EAST-GLASS-MANUFAC-20707028/company/"
+        ],
+        "evidenceSummary": "MEGM target session is explicitly bounded to 2026-09-17. EGXBot snapshot at 14:48 Cairo time, after the EGX cash session close, reports Open/High/Low 12.540 with Volume=0 and Turnover=0 and identifies ISIN EGS3C001C012. StockAnalysis/S&P reports At close: Sep 17, 2026 with Volume/Open/Day's Range n/a and last checked Sep 17. MarketScreener independently reports End-of-day quote Egyptian Exchange 2026-09-17 for MEGM/ISIN EGS3C001C012. No previous-session OHLCV is promoted.",
+        "reviewedAt": "2026-09-18"
       }
     ]
   },
-  "finalizedSnapshotId": "G11-DH-FINAL-0425a0d65b779a965a7fc949"
+  "finalizedSnapshotId": "G11-DH-FINAL-22fb2dd2c0817d3218c3dad8"
 }

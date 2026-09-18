@@ -547,3 +547,46 @@ G07 completed against pinned source commits. Processed 19/19 historical store gr
 - Final issue-family overlap unique affected securities: 15.
 - CRITICAL=0; HIGH=3.
 - DecisionSnapshot=G09-DS-728d6c41072bbddd664fe014; legacy-network calls=0; productionCutover=false; G12=PENDING.
+
+
+## 2026-09-18T15:28:12.872Z — G11 Full Data Health Certification
+
+- Status: BLOCKED / DEGRADED
+- Universe: 243 mapped, 224 active, 19 intentional exclusions.
+- Session: expected 2026-09-17, available 2026-09-17, CURRENT.
+- Current canonical: 210/224; V16 pipeline-ready: 208/224.
+- Material issue classes: CRITICAL=0, HIGH=2.
+- G07 quarantine=PASS; legacy-network calls=0; production cutover=false; G12=PENDING.
+- G06/G07/G08/G09/G10 regressions: PASS.
+
+
+## 2026-09-18T15:28:12.872Z — G11 Exact Evidence Closure
+
+- Source HEAD: 409b8e30edf5ae7140e13f897f9f9074345774cd
+- Gap accounting: 12 = STALE_DATA:11 + SOURCE_INGESTION_FAILED:1.
+- Searchable/current/decision-ready/regime-ready: 224/210/208/208.
+- History-source mapping review: resolved 0, unresolved 0.
+- Stale production-critical: legitimate session exceptions 2; unresolved 11.
+- DecisionSnapshot: G09-DS-73fb18b9f95285c24d7dc2fc; semantic hash 73fb18b9f95285c24d7dc2fcb830ba11e8130ef16cec98e47e1f7554186d878b; legacy-network calls 0.
+- G12 remains PENDING; no cutover and no legacy dependency removal.
+
+
+## 2026-09-18T15:28:28.393Z — G11 Targeted Current-Data Repair
+
+- Gate after full recertification: BLOCKED.
+- Exact source identities: 27/42; unresolved=15.
+- Original stale set repaired: 11/20; remaining=9.
+- Production readiness: READY=208, legitimate exclusions=2, data-defect blocked=14.
+- CRITICAL=0; HIGH=2; G12=PENDING; production cutover=false.
+
+
+## 2026-09-18T15:25:35Z — G11 Approved Source Closure
+
+- Status: BLOCKED_DATA_HEALTH
+- Approved current-source inventory exhausted: yes.
+- Noncoverage resolved/external: 14/0.
+- Invalid-source resolved/external: 0/1.
+- Stale resolved/legitimate/external/internal: 0/2/12/0.
+- Final issue-family overlap unique affected securities: 14.
+- CRITICAL=0; HIGH=2.
+- DecisionSnapshot=G09-DS-73fb18b9f95285c24d7dc2fc; legacy-network calls=0; productionCutover=false; G12=PENDING.
