@@ -6,7 +6,10 @@ const path=require('path');
 const {scanLegacyDependencies}=require('../../astra/certification/legacy-isolation.cjs');
 const root=path.resolve(__dirname,'../..');
 test('R01 Raw shell is removed only after local replacement parity',()=>{
-  const s=fs.readFileSync(path.join(root,'v18-live/index.html'),'utf8');
+  const s=[
+    fs.readFileSync(path.join(root,'v18-live/index.html'),'utf8'),
+    fs.readFileSync(path.join(root,'v18-live/bootstrap.js'),'utf8')
+  ].join('\n');
   assert.match(s,/\.\.\/astra\/runtime\/v18\/index\.html/);
   assert.doesNotMatch(s,/raw\.githubusercontent\.com\/rasheadsca-star\/RAS-EGX-PRO2026-NEXT\/v18-global-strategy-ensemble-20260906/i);
 });
