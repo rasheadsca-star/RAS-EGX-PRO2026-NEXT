@@ -1,0 +1,1074 @@
+{
+  "schemaVersion": "astra-g13-architecture-baseline-1",
+  "generatedAt": "2026-09-18T21:27:58.983Z",
+  "sourceHead": "8ea3436e9da92fcf20dbc8550ef311478495ce86",
+  "gateStatus": "PENDING",
+  "productionCutover": false,
+  "priorGateBoundary": {
+    "g01ThroughG12Green": true,
+    "g12Status": "GREEN",
+    "runtimeLegacyDependencyCount": 0,
+    "dependenciesClosed": "8/8",
+    "productionCutover": false
+  },
+  "contract": {
+    "logicalModuleCount": 30,
+    "globalRules": {
+      "productionRuntimeLegacyDependencyCount": 0,
+      "legacyUseAllowedOnlyFor": [
+        "discovery",
+        "migration",
+        "golden-master parity",
+        "historical provenance"
+      ],
+      "noGodEngine": true,
+      "rawLegacyArchiveImmutable": true,
+      "sameDecisionSnapshotRequiredFor": [
+        "Top5",
+        "stock-detail",
+        "market-regime",
+        "decision-SR"
+      ]
+    }
+  },
+  "scanScope": {
+    "activeRoots": [
+      "astra/contracts",
+      "astra/pipeline",
+      "astra/strategies",
+      "astra/data-health",
+      "astra/runtime",
+      "astra/migration",
+      "astra/parity",
+      "astra/certification",
+      "deploy/rc2-safe-shell/api",
+      "gann-fusion-x/scripts/sync-sepa.cjs"
+    ],
+    "sourceFiles": 47,
+    "zones": [
+      {
+        "zone": "api-runtime",
+        "kind": "active-unregistered-layer",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "certification",
+        "kind": "target-module",
+        "files": 18,
+        "logicalModules": [
+          "certification"
+        ]
+      },
+      {
+        "zone": "data-health",
+        "kind": "target-module",
+        "files": 10,
+        "logicalModules": [
+          "data-health"
+        ]
+      },
+      {
+        "zone": "decision-pipeline-shared",
+        "kind": "shared-target-implementation",
+        "files": 1,
+        "logicalModules": [
+          "market-regime",
+          "signal-normalizer",
+          "evidence-engine",
+          "agreement-engine",
+          "ranking-engine",
+          "risk-engine",
+          "basket-engine",
+          "position-sizing",
+          "diagnostics"
+        ]
+      },
+      {
+        "zone": "integration-adapter",
+        "kind": "active-unregistered-layer",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "migration",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "migration"
+        ]
+      },
+      {
+        "zone": "parity-control",
+        "kind": "control-plane",
+        "files": 3,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-adapter",
+        "kind": "active-unregistered-layer",
+        "files": 5,
+        "logicalModules": []
+      },
+      {
+        "zone": "shared-contracts",
+        "kind": "shared-contract",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "strategy-core-shared",
+        "kind": "shared-target-implementation",
+        "files": 5,
+        "logicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ]
+      },
+      {
+        "zone": "ui-runtime",
+        "kind": "active-unregistered-layer",
+        "files": 1,
+        "logicalModules": []
+      }
+    ]
+  },
+  "dependencyGraph": {
+    "nodeCount": 47,
+    "edgeCount": 142
+  },
+  "moduleIsolation": [
+    {
+      "module": "canonical-data",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "market-calendar",
+        "symbol-master",
+        "corporate-actions",
+        "data-health",
+        "diagnostics"
+      ]
+    },
+    {
+      "module": "market-calendar",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": []
+    },
+    {
+      "module": "symbol-master",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": []
+    },
+    {
+      "module": "corporate-actions",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "symbol-master",
+        "market-calendar"
+      ]
+    },
+    {
+      "module": "market-regime",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "indicators",
+        "market-calendar"
+      ]
+    },
+    {
+      "module": "indicators",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "market-calendar"
+      ]
+    },
+    {
+      "module": "technical-analysis",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "indicators"
+      ]
+    },
+    {
+      "module": "support-resistance",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "indicators",
+        "technical-analysis"
+      ]
+    },
+    {
+      "module": "relative-strength",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "indicators"
+      ]
+    },
+    {
+      "module": "vcp",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "indicators",
+        "relative-strength"
+      ]
+    },
+    {
+      "module": "liquidity",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "indicators"
+      ]
+    },
+    {
+      "module": "strategy-registry",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/strategies/g08-final-overlay.cjs",
+        "astra/strategies/g08-internal-strategies.cjs",
+        "astra/strategies/g08-recovery-overlay.cjs",
+        "astra/strategies/g08-strict-overlay.cjs",
+        "astra/strategies/g08-v13-parity-repair.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": []
+    },
+    {
+      "module": "strategy-runner",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/strategies/g08-final-overlay.cjs",
+        "astra/strategies/g08-internal-strategies.cjs",
+        "astra/strategies/g08-recovery-overlay.cjs",
+        "astra/strategies/g08-strict-overlay.cjs",
+        "astra/strategies/g08-v13-parity-repair.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "strategy-registry",
+        "canonical-data",
+        "market-regime",
+        "indicators",
+        "technical-analysis",
+        "support-resistance",
+        "relative-strength",
+        "vcp",
+        "liquidity",
+        "diagnostics"
+      ]
+    },
+    {
+      "module": "signal-normalizer",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "strategy-runner",
+        "strategy-registry"
+      ]
+    },
+    {
+      "module": "evidence-engine",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "market-regime",
+        "technical-analysis",
+        "support-resistance",
+        "relative-strength",
+        "vcp",
+        "liquidity",
+        "signal-normalizer",
+        "historical-store"
+      ]
+    },
+    {
+      "module": "agreement-engine",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "signal-normalizer",
+        "evidence-engine",
+        "strategy-registry"
+      ]
+    },
+    {
+      "module": "ranking-engine",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "signal-normalizer",
+        "evidence-engine",
+        "agreement-engine",
+        "market-regime"
+      ]
+    },
+    {
+      "module": "risk-engine",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "ranking-engine",
+        "support-resistance",
+        "liquidity",
+        "market-regime"
+      ]
+    },
+    {
+      "module": "basket-engine",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "ranking-engine",
+        "risk-engine",
+        "position-sizing",
+        "portfolio"
+      ]
+    },
+    {
+      "module": "position-sizing",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "risk-engine",
+        "portfolio"
+      ]
+    },
+    {
+      "module": "morning-confirmation",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "canonical-data",
+        "market-calendar",
+        "forward-ledger"
+      ]
+    },
+    {
+      "module": "portfolio",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "symbol-master",
+        "market-calendar"
+      ]
+    },
+    {
+      "module": "backtest",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "historical-store",
+        "strategy-runner",
+        "ranking-engine",
+        "risk-engine",
+        "market-calendar"
+      ]
+    },
+    {
+      "module": "walk-forward",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "historical-store",
+        "strategy-runner",
+        "ranking-engine",
+        "risk-engine",
+        "market-calendar"
+      ]
+    },
+    {
+      "module": "forward-ledger",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "market-calendar",
+        "diagnostics"
+      ]
+    },
+    {
+      "module": "historical-store",
+      "status": "NO_PHYSICAL_MAPPING",
+      "implementationFiles": [],
+      "dedicatedFiles": [],
+      "allowedImports": [
+        "symbol-master",
+        "market-calendar"
+      ]
+    },
+    {
+      "module": "migration",
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/migration/g07-migrate.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/migration/g07-migrate.cjs"
+      ],
+      "allowedImports": [
+        "historical-store",
+        "symbol-master",
+        "market-calendar",
+        "diagnostics"
+      ]
+    },
+    {
+      "module": "data-health",
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/data-health/g11-approved-source-closure.cjs",
+        "astra/data-health/g11-current-reviewed-import-preflight.cjs",
+        "astra/data-health/g11-current-session-exceptions.cjs",
+        "astra/data-health/g11-current-session-refresh.cjs",
+        "astra/data-health/g11-current-source-closure.cjs",
+        "astra/data-health/g11-data-health.cjs",
+        "astra/data-health/g11-decision-dump.cjs",
+        "astra/data-health/g11-reviewed-import-preflight.cjs",
+        "astra/data-health/g11-source-data-repair.cjs",
+        "astra/data-health/g11-v16-domain-exceptions.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/data-health/g11-approved-source-closure.cjs",
+        "astra/data-health/g11-current-reviewed-import-preflight.cjs",
+        "astra/data-health/g11-current-session-exceptions.cjs",
+        "astra/data-health/g11-current-session-refresh.cjs",
+        "astra/data-health/g11-current-source-closure.cjs",
+        "astra/data-health/g11-data-health.cjs",
+        "astra/data-health/g11-decision-dump.cjs",
+        "astra/data-health/g11-reviewed-import-preflight.cjs",
+        "astra/data-health/g11-source-data-repair.cjs",
+        "astra/data-health/g11-v16-domain-exceptions.cjs"
+      ],
+      "allowedImports": [
+        "canonical-data",
+        "historical-store",
+        "strategy-registry"
+      ]
+    },
+    {
+      "module": "diagnostics",
+      "status": "SHARED_PHYSICAL_ZONE",
+      "implementationFiles": [
+        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+      ],
+      "dedicatedFiles": [],
+      "allowedImports": []
+    },
+    {
+      "module": "certification",
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/certification/g06-certify.cjs",
+        "astra/certification/g08-certify.cjs",
+        "astra/certification/g09-certify.cjs",
+        "astra/certification/g10-certify-final.cjs",
+        "astra/certification/g10-certify.cjs",
+        "astra/certification/g11-carry-forward-guard.cjs",
+        "astra/certification/g11-certify.cjs",
+        "astra/certification/g11-derived-build-failures.cjs",
+        "astra/certification/g11-external-data-finalize.cjs",
+        "astra/certification/g11-finalize-evidence.cjs",
+        "astra/certification/g11-guard37-evidence.cjs",
+        "astra/certification/g11-repair-destructive.cjs",
+        "astra/certification/g11-repair-finalize.cjs",
+        "astra/certification/g11-source-dispositions.cjs",
+        "astra/certification/g12-certify.cjs",
+        "astra/certification/g12-r01-parity.cjs",
+        "astra/certification/g13-architecture-baseline.cjs",
+        "astra/certification/legacy-isolation.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/certification/g06-certify.cjs",
+        "astra/certification/g08-certify.cjs",
+        "astra/certification/g09-certify.cjs",
+        "astra/certification/g10-certify-final.cjs",
+        "astra/certification/g10-certify.cjs",
+        "astra/certification/g11-carry-forward-guard.cjs",
+        "astra/certification/g11-certify.cjs",
+        "astra/certification/g11-derived-build-failures.cjs",
+        "astra/certification/g11-external-data-finalize.cjs",
+        "astra/certification/g11-finalize-evidence.cjs",
+        "astra/certification/g11-guard37-evidence.cjs",
+        "astra/certification/g11-repair-destructive.cjs",
+        "astra/certification/g11-repair-finalize.cjs",
+        "astra/certification/g11-source-dispositions.cjs",
+        "astra/certification/g12-certify.cjs",
+        "astra/certification/g12-r01-parity.cjs",
+        "astra/certification/g13-architecture-baseline.cjs",
+        "astra/certification/legacy-isolation.cjs"
+      ],
+      "allowedImports": [
+        "diagnostics"
+      ]
+    }
+  ],
+  "findings": {
+    "total": 50,
+    "high": 34,
+    "medium": 16,
+    "byCode": {
+      "FORBIDDEN_LOGICAL_IMPORT": 8,
+      "DATA_HEALTH_DECISION_COUPLING": 2,
+      "PHYSICAL_BOUNDARY_COLLAPSE": 6,
+      "UNREGISTERED_ACTIVE_LAYER": 8,
+      "DIRECT_DATA_PATH_COUPLING": 3,
+      "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS": 4,
+      "DIRECT_NETWORK_ACCESS": 1,
+      "DIRECT_FILE_IO_BYPASS": 2,
+      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 16
+    },
+    "items": [
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/certification/g08-certify.cjs",
+        "zone": "certification",
+        "sourceModule": "certification",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "targetLogicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "disallowed": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "detail": "certification imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/certification/g09-certify.cjs",
+        "zone": "certification",
+        "sourceModule": "certification",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "targetLogicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "disallowed": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "detail": "certification imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/certification/g09-certify.cjs",
+        "zone": "certification",
+        "sourceModule": "certification",
+        "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+        "targetZone": "decision-pipeline-shared",
+        "targetLogicalModules": [
+          "market-regime",
+          "signal-normalizer",
+          "evidence-engine",
+          "agreement-engine",
+          "ranking-engine",
+          "risk-engine",
+          "basket-engine",
+          "position-sizing",
+          "diagnostics"
+        ],
+        "disallowed": [
+          "market-regime",
+          "signal-normalizer",
+          "evidence-engine",
+          "agreement-engine",
+          "ranking-engine",
+          "risk-engine",
+          "basket-engine",
+          "position-sizing"
+        ],
+        "detail": "certification imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/certification/g11-certify.cjs",
+        "zone": "certification",
+        "sourceModule": "certification",
+        "target": "astra/data-health/g11-data-health.cjs",
+        "targetZone": "data-health",
+        "targetLogicalModules": [
+          "data-health"
+        ],
+        "disallowed": [
+          "data-health"
+        ],
+        "detail": "certification imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/certification/g11-derived-build-failures.cjs",
+        "zone": "certification",
+        "sourceModule": "certification",
+        "target": "astra/data-health/g11-data-health.cjs",
+        "targetZone": "data-health",
+        "targetLogicalModules": [
+          "data-health"
+        ],
+        "disallowed": [
+          "data-health"
+        ],
+        "detail": "certification imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/certification/g11-source-dispositions.cjs",
+        "zone": "certification",
+        "sourceModule": "certification",
+        "target": "astra/data-health/g11-data-health.cjs",
+        "targetZone": "data-health",
+        "targetLogicalModules": [
+          "data-health"
+        ],
+        "disallowed": [
+          "data-health"
+        ],
+        "detail": "certification imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/data-health/g11-data-health.cjs",
+        "zone": "data-health",
+        "sourceModule": "data-health",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "targetLogicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "disallowed": [
+          "strategy-runner"
+        ],
+        "detail": "data-health imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DATA_HEALTH_DECISION_COUPLING",
+        "file": "astra/data-health/g11-data-health.cjs",
+        "zone": "data-health",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "detail": "Data-health is coupled directly to decision/strategy implementation."
+      },
+      {
+        "severity": "HIGH",
+        "code": "FORBIDDEN_LOGICAL_IMPORT",
+        "file": "astra/data-health/g11-data-health.cjs",
+        "zone": "data-health",
+        "sourceModule": "data-health",
+        "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+        "targetZone": "decision-pipeline-shared",
+        "targetLogicalModules": [
+          "market-regime",
+          "signal-normalizer",
+          "evidence-engine",
+          "agreement-engine",
+          "ranking-engine",
+          "risk-engine",
+          "basket-engine",
+          "position-sizing",
+          "diagnostics"
+        ],
+        "disallowed": [
+          "market-regime",
+          "signal-normalizer",
+          "evidence-engine",
+          "agreement-engine",
+          "ranking-engine",
+          "risk-engine",
+          "basket-engine",
+          "position-sizing",
+          "diagnostics"
+        ],
+        "detail": "data-health imports implementation containing module(s) outside allowedImports."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DATA_HEALTH_DECISION_COUPLING",
+        "file": "astra/data-health/g11-data-health.cjs",
+        "zone": "data-health",
+        "target": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+        "targetZone": "decision-pipeline-shared",
+        "detail": "Data-health is coupled directly to decision/strategy implementation."
+      },
+      {
+        "severity": "HIGH",
+        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "file": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+        "zone": "decision-pipeline-shared",
+        "logicalModules": [
+          "market-regime",
+          "signal-normalizer",
+          "evidence-engine",
+          "agreement-engine",
+          "ranking-engine",
+          "risk-engine",
+          "basket-engine",
+          "position-sizing",
+          "diagnostics"
+        ],
+        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "astra/runtime/bridges/quant-edge-archive.cjs",
+        "zone": "runtime-adapter",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_DATA_PATH_COUPLING",
+        "file": "astra/runtime/bridges/quant-edge-archive.cjs",
+        "zone": "runtime-adapter",
+        "detail": "Active decision/runtime source references persistence/evidence paths directly."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "astra/runtime/bridges/sepa-local.cjs",
+        "zone": "runtime-adapter",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/runtime/bridges/sepa-local.cjs",
+        "zone": "runtime-adapter",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "astra/runtime/bridges/tfe-local.cjs",
+        "zone": "runtime-adapter",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/runtime/bridges/tfe-local.cjs",
+        "zone": "runtime-adapter",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "astra/runtime/bridges/v19-local.cjs",
+        "zone": "runtime-adapter",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/runtime/bridges/v19-local.cjs",
+        "zone": "runtime-adapter",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "astra/runtime/bridges/v20-local.cjs",
+        "zone": "runtime-adapter",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_INTERNAL_IMPLEMENTATION_ACCESS",
+        "file": "astra/runtime/bridges/v20-local.cjs",
+        "zone": "runtime-adapter",
+        "target": "astra/strategies/g08-final-overlay.cjs",
+        "targetZone": "strategy-core-shared",
+        "detail": "Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "astra/runtime/v18/app.js",
+        "zone": "ui-runtime",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_NETWORK_ACCESS",
+        "file": "astra/runtime/v18/app.js",
+        "zone": "ui-runtime",
+        "detail": "Active layer contains a direct fetch() call; requires contract/service-boundary review."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_DATA_PATH_COUPLING",
+        "file": "astra/runtime/v18/app.js",
+        "zone": "ui-runtime",
+        "detail": "Active decision/runtime source references persistence/evidence paths directly."
+      },
+      {
+        "severity": "HIGH",
+        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "file": "astra/strategies/g08-final-overlay.cjs",
+        "zone": "strategy-core-shared",
+        "logicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+      },
+      {
+        "severity": "HIGH",
+        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "file": "astra/strategies/g08-internal-strategies.cjs",
+        "zone": "strategy-core-shared",
+        "logicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_DATA_PATH_COUPLING",
+        "file": "astra/strategies/g08-internal-strategies.cjs",
+        "zone": "strategy-core-shared",
+        "detail": "Active decision/runtime source references persistence/evidence paths directly."
+      },
+      {
+        "severity": "HIGH",
+        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "file": "astra/strategies/g08-recovery-overlay.cjs",
+        "zone": "strategy-core-shared",
+        "logicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+      },
+      {
+        "severity": "HIGH",
+        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "file": "astra/strategies/g08-strict-overlay.cjs",
+        "zone": "strategy-core-shared",
+        "logicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+      },
+      {
+        "severity": "HIGH",
+        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
+        "file": "astra/strategies/g08-v13-parity-repair.cjs",
+        "zone": "strategy-core-shared",
+        "logicalModules": [
+          "strategy-registry",
+          "strategy-runner"
+        ],
+        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "deploy/rc2-safe-shell/api/index.js",
+        "zone": "api-runtime",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_FILE_IO_BYPASS",
+        "file": "deploy/rc2-safe-shell/api/index.js",
+        "zone": "api-runtime",
+        "detail": "Active decision/runtime layer performs direct filesystem I/O instead of going through an owned data contract."
+      },
+      {
+        "severity": "HIGH",
+        "code": "UNREGISTERED_ACTIVE_LAYER",
+        "file": "gann-fusion-x/scripts/sync-sepa.cjs",
+        "zone": "integration-adapter",
+        "detail": "Active source is outside the 30 registered target module boundaries."
+      },
+      {
+        "severity": "HIGH",
+        "code": "DIRECT_FILE_IO_BYPASS",
+        "file": "gann-fusion-x/scripts/sync-sepa.cjs",
+        "zone": "integration-adapter",
+        "detail": "Active decision/runtime layer performs direct filesystem I/O instead of going through an owned data contract."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "canonical-data",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "market-calendar",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "symbol-master",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "corporate-actions",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "indicators",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "technical-analysis",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "support-resistance",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "relative-strength",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "vcp",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "liquidity",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "morning-confirmation",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "portfolio",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "backtest",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "walk-forward",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "forward-ledger",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      },
+      {
+        "severity": "MEDIUM",
+        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
+        "module": "historical-store",
+        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
+      }
+    ]
+  },
+  "interpretation": {
+    "zeroFindingRequiredForG13Green": true,
+    "baselineOnly": true,
+    "noRuntimeRemediationPerformed": true,
+    "notes": [
+      "NO_PHYSICAL_MAPPING means isolation cannot yet be proven; it is not a claim that business functionality is absent.",
+      "PHYSICAL_BOUNDARY_COLLAPSE identifies source zones that implement multiple logical modules in one physical boundary.",
+      "Adapter/UI layers outside the 30-module registry are reported separately so they can be assigned an explicit public contract or isolated facade."
+    ]
+  }
+}

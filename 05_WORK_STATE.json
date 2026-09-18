@@ -2,10 +2,12 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "G12_COMPLETE_G13_NOT_STARTED",
+  "current_phase": "G13_BASELINE_CAPTURED_REMEDIATION_PENDING",
   "current_gate": "G13",
   "last_green_gate": "G12",
-  "blocking_issues": [],
+  "blocking_issues": [
+    "G13 architecture isolation baseline has 34 HIGH and 16 MEDIUM findings; remediation/certification not started."
+  ],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
     "G06 canonical contracts remain valid after real-data G07 migration: 19 schemas and 30 explicit module boundaries; post-migration G06 regression/certifier PASS.",
@@ -83,8 +85,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Stop. G12 is GREEN. G13 and production cutover remain PENDING and require an explicit next-stage request.",
-  "last_updated": "2026-09-18T21:10:23.375Z",
+  "next_action": "Remediate G13 architecture-isolation findings one issue family at a time. Do not reopen G12 and do not cut over production.",
+  "last_updated": "2026-09-18T21:27:58.983Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -232,6 +234,16 @@
     "dependenciesClosed": "8/8",
     "g01ThroughG11Regression": "172 pass + 11 intentional skips / 183; 0 fail",
     "g11Tests": "58/58 PASS",
+    "productionCutover": false
+  },
+  "g13_baseline": {
+    "status": "PENDING_REMEDIATION",
+    "sourceCommit": "8ea3436e9da92fcf20dbc8550ef311478495ce86",
+    "logicalModules": 30,
+    "scannedSourceFiles": 47,
+    "dependencyEdges": 142,
+    "highFindings": 34,
+    "mediumFindings": 16,
     "productionCutover": false
   }
 }
