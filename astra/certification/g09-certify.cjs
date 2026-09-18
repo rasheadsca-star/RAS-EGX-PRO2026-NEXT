@@ -2,7 +2,8 @@
 const fs=require('fs');
 const path=require('path');
 const crypto=require('crypto');
-const {SPECS}=require('../strategies/g08-final-overlay.cjs');
+const {listStrategyIds,getStrategyDescriptor}=require('../strategies/strategy-registry.cjs');
+const SPECS=Object.freeze(Object.fromEntries(listStrategyIds().map(id=>[id,getStrategyDescriptor(id)])));
 const P=require('../pipeline/g09-unified-decision-pipeline.cjs');
 const ACTIVE_STRATEGY='PORTFOLIO_BASKET_EQUAL_WEIGHT';
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
