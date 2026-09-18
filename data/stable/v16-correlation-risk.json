@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.0",
-  "generatedAt": "2026-09-17T17:43:29.522Z",
+  "generatedAt": "2026-09-18T19:33:02.962Z",
   "methodology": {
     "name": "EGX_PRO_CORRELATION_PORTFOLIO_RISK_1.0",
     "returnWindowSessions": 60,
@@ -12,15 +12,157 @@
       "Stress scenarios are deterministic risk illustrations, not forecasts."
     ]
   },
-  "recommendationCount": 0,
-  "tickers": [],
-  "matrix": [],
+  "recommendationCount": 5,
+  "tickers": [
+    "GSSC",
+    "SDTI",
+    "OIH",
+    "ALCN",
+    "MIPH"
+  ],
+  "matrix": [
+    {
+      "ticker": "GSSC",
+      "correlations": {
+        "GSSC": {
+          "value": 1,
+          "observations": 60
+        },
+        "SDTI": {
+          "value": 0.027,
+          "observations": 54
+        },
+        "OIH": {
+          "value": -0.062,
+          "observations": 53
+        },
+        "ALCN": {
+          "value": 0.368,
+          "observations": 56
+        },
+        "MIPH": {
+          "value": 0.256,
+          "observations": 53
+        }
+      }
+    },
+    {
+      "ticker": "SDTI",
+      "correlations": {
+        "GSSC": {
+          "value": 0.027,
+          "observations": 54
+        },
+        "SDTI": {
+          "value": 1,
+          "observations": 60
+        },
+        "OIH": {
+          "value": 0.016,
+          "observations": 55
+        },
+        "ALCN": {
+          "value": 0.184,
+          "observations": 55
+        },
+        "MIPH": {
+          "value": 0.241,
+          "observations": 56
+        }
+      }
+    },
+    {
+      "ticker": "OIH",
+      "correlations": {
+        "GSSC": {
+          "value": -0.062,
+          "observations": 53
+        },
+        "SDTI": {
+          "value": 0.016,
+          "observations": 55
+        },
+        "OIH": {
+          "value": 1,
+          "observations": 60
+        },
+        "ALCN": {
+          "value": 0.026,
+          "observations": 54
+        },
+        "MIPH": {
+          "value": -0.074,
+          "observations": 56
+        }
+      }
+    },
+    {
+      "ticker": "ALCN",
+      "correlations": {
+        "GSSC": {
+          "value": 0.368,
+          "observations": 56
+        },
+        "SDTI": {
+          "value": 0.184,
+          "observations": 55
+        },
+        "OIH": {
+          "value": 0.026,
+          "observations": 54
+        },
+        "ALCN": {
+          "value": 1,
+          "observations": 60
+        },
+        "MIPH": {
+          "value": 0.336,
+          "observations": 54
+        }
+      }
+    },
+    {
+      "ticker": "MIPH",
+      "correlations": {
+        "GSSC": {
+          "value": 0.256,
+          "observations": 53
+        },
+        "SDTI": {
+          "value": 0.241,
+          "observations": 56
+        },
+        "OIH": {
+          "value": -0.074,
+          "observations": 56
+        },
+        "ALCN": {
+          "value": 0.336,
+          "observations": 54
+        },
+        "MIPH": {
+          "value": 1,
+          "observations": 60
+        }
+      }
+    }
+  ],
   "highCorrelationPairs": [],
-  "sectorConcentration": [],
+  "sectorConcentration": [
+    {
+      "sector": "GENERAL",
+      "count": 5,
+      "sharePct": 100
+    }
+  ],
   "summary": {
     "highCorrelationPairCount": 0,
     "averageHighPairCorrelation": null,
-    "largestSector": null,
+    "largestSector": {
+      "sector": "GENERAL",
+      "count": 5,
+      "sharePct": 100
+    },
     "regime": "RISK_ON",
     "regimeRiskMultiplier": 1,
     "suggestedMaximumPositions": 5,
@@ -32,19 +174,19 @@
       "id": "MARKET_GAP_5",
       "labelAr": "فجوة سوقية -5%",
       "assumedMovePct": -5,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -5
     },
     {
       "id": "RISK_OFF_8",
       "labelAr": "صدمة سوق دفاعي -8%",
       "assumedMovePct": -8,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -8
     },
     {
       "id": "SECTOR_SHOCK_10",
       "labelAr": "صدمة -10% لأكبر قطاع",
       "assumedMovePct": -10,
-      "equalWeightPortfolioImpactPct": null
+      "equalWeightPortfolioImpactPct": -10
     },
     {
       "id": "CORRELATED_STOP_CLUSTER",
@@ -54,7 +196,9 @@
     }
   ],
   "equalWeightAssumption": {
-    "positionWeightPct": 0
+    "positionWeightPct": 20
   },
-  "warnings": []
+  "warnings": [
+    "SECTOR_CONCENTRATION_ABOVE_40"
+  ]
 }
