@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const V19_LOCAL = require('../../astra/runtime/bridges/v19-local.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const CONSENSUS_PATH = path.join(ROOT, 'data/stable/v16-main-app-consensus.json');
@@ -10,11 +11,6 @@ const ACCEPTANCE_PATH = path.join(ROOT, 'data/stable/v16-main-app-v19v6-consensu
 const V19_ENGINE_ID = 'V19_CHAT_GPT_NATIVE_CHALLENGER_V6';
 const CONSENSUS_ENGINE_ID = 'V19_CHALLENGER';
 const V19_LABEL = 'V19 V6';
-const SOURCES = [
-  'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/native-challenger-v6.json',
-  'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v19-egx-chat-gpt/data/v19/native-challenger-v6.json',
-];
-
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
@@ -36,47 +32,6 @@ function isV19Entry(entry) {
   const sourceEngineId = String(entry?.sourceEngineId || '');
   return id === CONSENSUS_ENGINE_ID || id === V19_ENGINE_ID || sourceEngineId === V19_ENGINE_ID;
 }
-function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-
-async function fetchJson(url, attempt = 1) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 18000);
-  try {
-    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}-${attempt}`, {
-      cache: 'no-store',
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'EGX-MAIN-APP-V19-V6-CONSENSUS-ENRICHER',
-        'Cache-Control': 'no-cache',
-        Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8',
-      },
-    });
-    if (!response.ok) throw new Error(`HTTP_${response.status}`);
-    const parsed = JSON.parse(await response.text());
-    if (!parsed || typeof parsed !== 'object') throw new Error('INVALID_JSON_OBJECT');
-    return parsed;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchV19() {
-  const errors = [];
-  for (const url of SOURCES) {
-    for (let attempt = 1; attempt <= 2; attempt += 1) {
-      try {
-        const data = await fetchJson(url, attempt);
-        if (data.engineId !== V19_ENGINE_ID) throw new Error(`ENGINE_ID_MISMATCH_${data.engineId || 'missing'}`);
-        return { data, sourceUrl: url, errors };
-      } catch (error) {
-        errors.push(`${new URL(url).hostname}:attempt${attempt}:${error.message}`);
-        if (attempt < 2) await sleep(1000 * attempt);
-      }
-    }
-  }
-  throw new Error(`V19_V6_SOURCE_UNAVAILABLE ${errors.join(' | ')}`);
-}
-
 function selectedTickers(v19) {
   const current = v19?.current || {};
   const explicit = Array.isArray(current.selectedTickers) ? current.selectedTickers.map(ticker) : [];
@@ -171,7 +126,9 @@ async function main() {
     confirmationLevel: row?.confirmationLevel,
   }));
 
-  const { data: v19, sourceUrl, errors } = await fetchV19();
+  const v19 = V19_LOCAL.pendingState();
+  const sourceUrl = 'LOCAL_G08_CONTRACT';
+  const errors = [];
   const mainSession = consensus.sessionDate || null;
   const v19Session = v19?.current?.signalDate || v19?.signalDate || null;
   const selected = selectedTickers(v19);

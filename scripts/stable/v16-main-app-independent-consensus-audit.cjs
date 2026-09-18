@@ -5,23 +5,18 @@ const path=require('path');
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||'.');
 const V16=path.join(ROOT,'data/research/v16-v169-target-hit-audit.json');
 const OUT=path.join(ROOT,'data/stable/v16-main-app-independent-consensus-audit.json');
-const V19_URLS=[
-  'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/target-stop-audit-v6.json',
-  'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v19-egx-chat-gpt/data/v19/target-stop-audit-v6.json'
-];
+const V19_ARCHIVE=path.join(ROOT,'data/archive/v19/target-stop-audit-v6.json');
 function read(f){return JSON.parse(fs.readFileSync(f,'utf8'));}
 function n(v){const x=Number(v);return Number.isFinite(x)?x:null;}
 function round(v,d=2){const x=n(v);return x===null?null:Number(x.toFixed(d));}
 function pct(a,b){return b>0?round(a/b*100,2):null;}
-async function fetchJson(url){const c=new AbortController(),t=setTimeout(()=>c.abort(),9000);try{const r=await fetch(`${url}${url.includes('?')?'&':'?'}t=${Date.now()}`,{cache:'no-store',signal:c.signal,headers:{'User-Agent':'EGX-INDEPENDENT-CONSENSUS-AUDIT'}});if(!r.ok)throw Error(`HTTP ${r.status}`);return await r.json();}finally{clearTimeout(t)}}
-async function firstJson(urls){let last=null;for(const url of urls){try{return{value:await fetchJson(url),url}}catch(e){last=e}}throw last||Error('V19 audit unavailable')}
 function groupStats(rows){
   const total=rows.length,exec=rows.filter(x=>x.executableByOpenRule===true),noEntry=rows.filter(x=>x.executableByOpenRule!==true),raw=exec.filter(x=>x.targetTouched===true),target=exec.filter(x=>x.conservativeTargetHit===true),stop=exec.filter(x=>x.stopTouched===true),amb=exec.filter(x=>x.ambiguousSameDay===true),returns=exec.map(x=>n(x.nextCloseReturnPct)).filter(x=>x!==null);
   return {selectionCount:total,executableCount:exec.length,noEntryCount:noEntry.length,noEntryPct:pct(noEntry.length,total),rawTargetTouchCount:raw.length,rawTargetTouchRatePct:pct(raw.length,exec.length),conservativeTargetHitCount:target.length,conservativeTargetHitRatePct:pct(target.length,exec.length),stopTouchedCount:stop.length,stopTouchRatePct:pct(stop.length,exec.length),ambiguousCount:amb.length,averageNextCloseReturnPct:returns.length?round(returns.reduce((a,b)=>a+b,0)/returns.length,4):null,positiveNextCloseReturnPct:returns.length?pct(returns.filter(x=>x>0).length,returns.length):null,targetMinusStopEdgePct:exec.length?round(pct(target.length,exec.length)-pct(stop.length,exec.length),2):null};
 }
 async function main(){
   const v16=read(V16);if(v16.schemaVersion!=='16.9.1-target-hit-audit')throw Error(`V16 audit schema mismatch ${v16.schemaVersion}`);
-  const got=await firstJson(V19_URLS),v19=got.value;if(v19.schemaVersion!=='19.5.0-target-stop-audit-v1'||v19.engineId!=='V19_CHAT_GPT_NATIVE_CHALLENGER_V6')throw Error('V19 V6 target-stop audit schema/engine mismatch');
+  const got={value:read(V19_ARCHIVE),url:'data/archive/v19/target-stop-audit-v6.json'},v19=got.value;if(v19.schemaVersion!=='19.5.0-target-stop-audit-v1'||v19.engineId!=='V19_CHAT_GPT_NATIVE_CHALLENGER_V6')throw Error('V19 V6 target-stop audit schema/engine mismatch');
   const v19BySession=new Map((v19.sessions||[]).map(s=>[s.signalDate,new Set((s.tickers||s.members?.map(m=>m.ticker)||[]).map(x=>String(x||'').trim().toUpperCase()) )]));
   const agreed=[],v16Only=[],unmatchedSessions=[];const perSession=[];
   for(const session of v16.sessions||[]){

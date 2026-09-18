@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const V19_LOCAL = require('../../astra/runtime/bridges/v19-local.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const P = relative => path.join(ROOT, relative);
@@ -14,10 +15,6 @@ const REGRESSION_PATH = P('data/stable/v16-main-app-consensus-regression.json');
 const V19_ENGINE_ID = 'V19_CHAT_GPT_NATIVE_CHALLENGER_V6';
 
 const EXTERNAL_SOURCES = {
-  v19V6: [
-    'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v19-egx-chat-gpt/data/v19/native-challenger-v6.json',
-    'https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@v19-egx-chat-gpt/data/v19/native-challenger-v6.json',
-  ],
   v20: [
     'https://rasheadsca-star.github.io/RAS-EGX0.1/data/v20/native-current.json',
     'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX0.1/main/data/v20/native-current.json',
@@ -148,7 +145,7 @@ async function main() {
   const mainTickers = unique(mainRows.map(row => ticker(row.ticker)));
 
   const [v19Result, v20Result, quantResult] = await Promise.all([
-    fetchFirstValid('V19_V6', EXTERNAL_SOURCES.v19V6),
+    Promise.resolve({ data: V19_LOCAL.pendingState(), sourceUrl: 'LOCAL_G08_CONTRACT', attempts: 0, errors: [] }),
     fetchFirstValid('V20', EXTERNAL_SOURCES.v20),
     fetchFirstValid('QUANT', EXTERNAL_SOURCES.quantEdge),
   ]);
@@ -361,7 +358,7 @@ async function main() {
       v20Source: v20Result.sourceUrl,
       quantSource: quantResult.sourceUrl,
       sourceErrors,
-      resilientSourcePolicy: 'DIRECT_V19_V6_RAW_OR_JSDELIVR_PLUS_V20_PAGES_RAW_CDN_PLUS_VERCEL_QUANT_WITH_RETRY',
+      resilientSourcePolicy: 'LOCAL_V19_G08_CONTRACT_PLUS_V20_PAGES_RAW_CDN_PLUS_VERCEL_QUANT_WITH_RETRY',
     },
     current: {
       mainAppBasket: mainTickers,
