@@ -61,9 +61,10 @@ function main() {
     ...staleExternal.map((x) => x.ticker),
   ]);
   const legitimateTickerSet = new Set(staleLegitimate.map((x) => x.ticker));
+  const modelDomainExceptionSet = new Set((snapshot.modelDomainExceptions || []).map((x) => x.ticker));
   const internalTickerSet = uniq([
     ...staleInternal.map((x) => x.ticker),
-    ...notReady.filter((x) => !legitimateTickerSet.has(x.ticker) && (x.reasons || []).some((r) => /PRIMITIVE|ATR_PCT|RETURN1|AVERAGE_VOLUME|BASE_FEATURE/.test(r))).map((x) => x.ticker),
+    ...notReady.filter((x) => !legitimateTickerSet.has(x.ticker) && !modelDomainExceptionSet.has(x.ticker) && (x.reasons || []).some((r) => /PRIMITIVE|ATR_PCT|RETURN1|AVERAGE_VOLUME|BASE_FEATURE/.test(r))).map((x) => x.ticker),
   ]);
   const gate = (gates.gates || []).find((x) => x.id === 'G11');
   const high = Number(issues.highProductionRelevantUnresolved ?? issues.highUnresolved ?? 0);
@@ -80,6 +81,7 @@ function main() {
     stale:{audited:staleAudit.length,resolved:staleResolved.length,legitimate:staleLegitimate.length,externalBlocked:staleExternal.length,internalBlocked:staleInternal.length,resolvedTickers:staleResolved.map((x)=>x.ticker),legitimateTickers:staleLegitimate.map((x)=>x.ticker),externalBlockedTickers:staleExternal.map((x)=>x.ticker),internalBlockedTickers:staleInternal.map((x)=>x.ticker),currentCertifiedStaleTickers:(stale.records||[]).map((x)=>x.ticker)},
     externalBlockedUniqueTickers:externalTickerSet,
     internalBlockedUniqueTickers:internalTickerSet,
+    legitimateModelDomainExclusions:[...modelDomainExceptionSet].sort(),
     sourceApprovalsStillRequired:externalTickerSet.length ? [
       {requirement:'Provide a validation-approved expected-session OHLCV source for the listed active securities through an existing approved fallback channel (EGX official, Mubasher, reviewed approved import) OR configure the repository licensed EOD provider.',tickers:externalTickerSet,expectedSession:closure.expectedSession,requiredFields:['exact canonical symbol or verified ISIN','session date','open','high','low','close','volume','source timestamp/provenance']},
       {requirement:'If the licensed provider is selected, configure EGX_HISTORY_API_URL and the required EGX_HISTORY_API_KEY secret; do not substitute unapproved public providers.',tickers:externalTickerSet},

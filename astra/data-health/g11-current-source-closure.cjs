@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: validate strict V16 model-domain exclusions for AMES/GRCA without threshold changes.
 // Trigger marker: recertify AMII same-ISIN ARVA pre-rename history lineage.
 // Trigger marker: validate DCCC/POCO documented temporary-listing no-trade exceptions.
 // Trigger marker: recertify ARVA->AMII identity and reviewed Sep-17 no-trade exceptions.
