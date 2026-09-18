@@ -198,7 +198,7 @@
       "removalStep": "remove proxy rewrites/origin dependency; route any retained TFE capability to local internal modules",
       "isolationTest": "legacy-isolation TFE_RC2_REMOTE + LEGACY_PROXY_IMPLEMENTATION; TFE parity",
       "cutoverCriterion": "local API/contract tests pass with legacy Vercel blocked",
-      "status": "CUTOVER_PENDING_POST_SCAN",
+      "status": "CLOSED",
       "replacementEvidence": {
         "decisionBridge": "astra/runtime/bridges/tfe-local.cjs",
         "sourceCommit": "66b2ac2bc63fe144d5d30d3d304350a6c0d04da9",
@@ -213,7 +213,13 @@
         "candidateWorkflowRunId": 35394017900,
         "parityResult": "PASS_5_OF_5",
         "localApi": "deploy/rc2-safe-shell/api/index.js",
-        "technicalAssetGitBlob": "350b05a6a3f253faf44533f7747e03bba9095953"
+        "technicalAssetGitBlob": "350b05a6a3f253faf44533f7747e03bba9095953",
+        "cutoverCommit": "fc8e622830f5173d0d63ddc899bb5518a0a0ca34",
+        "postCutWorkflowRunId": 35394315175,
+        "postCutResult": "PASS",
+        "postCutLegacyDependencyCount": 1,
+        "legacyProxyAbsent": true,
+        "remoteTechnicalLoaderAbsent": true
       }
     },
     {
@@ -228,7 +234,16 @@
       "removalStep": "remove secondary actions/checkout and build from local target module only",
       "isolationTest": "CI grep/architecture boundary test forbids cross-branch checkout for runtime code",
       "cutoverCriterion": "clean checkout of target branch alone builds/tests without fetching legacy branches",
-      "status": "PLANNED"
+      "status": "PARITY_CANDIDATE",
+      "replacementEvidence": {
+        "sourceCommit": "bf63dc85f515e58a7be1c6de6633eed87228a021",
+        "sourceTree": "7ae15750c0654b86c108d1dcd687bfc1366f162f",
+        "targetRoot": "astra/vendor/sepa-x",
+        "fileCount": 80,
+        "sourceExactGitBlobs": true,
+        "crossBranchCheckoutStillPresentUntilParityPass": true,
+        "productionCutover": false
+      }
     }
   ]
 }

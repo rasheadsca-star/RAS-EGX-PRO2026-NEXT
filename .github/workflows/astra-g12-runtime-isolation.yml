@@ -14,6 +14,8 @@ on:
       - 'tests/astra/g12-r01-v18-cutover.test.cjs'
       - 'tests/astra/g12-r02-blocked-host.test.cjs'
       - 'astra/runtime/bridges/**'
+      - 'astra/vendor/sepa-x/**'
+      - 'tests/astra/g12-r08-sepa-vendor.test.cjs'
       - 'data/archive/v19/target-stop-audit-v6.json'
       - 'tests/astra/g12-r03-v19-local.test.cjs'
       - 'tests/astra/g12-r03-v19-cutover.test.cjs'
@@ -86,6 +88,16 @@ jobs:
         run: |
           node --test tests/astra/g12-r07-tfe-cutover.test.cjs
           (cd deploy/rc2-safe-shell && npm test)
+      - name: R08 vendored SEPA source parity
+        run: |
+          node --test tests/astra/g12-r08-sepa-vendor.test.cjs
+          node --test astra/vendor/sepa-x/test/engine.test.js astra/vendor/sepa-x/test/features.test.js astra/vendor/sepa-x/test/golden.test.js
+          rm -rf /tmp/sepax-g12
+          node astra/vendor/sepa-x/scripts/build-github-pages.mjs /tmp/sepax-g12
+          test -f /tmp/sepax-g12/index.html
+          test -f /tmp/sepax-g12/scan/index.html
+          test -f /tmp/sepax-g12/pages-manifest.json
+          node -e "const m=require('/tmp/sepax-g12/pages-manifest.json'); if(!m.symbols||m.symbols<1) process.exit(1); console.log('R08_LOCAL_SEPA_BUILD_PASS',m.symbols)"
       - name: Full declared legacy scan
         shell: bash
         run: |
