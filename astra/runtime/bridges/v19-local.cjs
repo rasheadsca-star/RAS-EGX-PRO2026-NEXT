@@ -1,10 +1,11 @@
 'use strict';
-const {SPECS,executeStrategy}=require('../../strategies/g08-final-overlay.cjs');
+const {getStrategyDescriptor}=require('../../strategies/strategy-registry.cjs');
+const {executeStrategy}=require('../../strategies/strategy-runner.cjs');
 const STRATEGY_ID='V19_TOP10_PROBABILITY_INV_VOL_3';
 const ENGINE_ID='V19_CHAT_GPT_NATIVE_CHALLENGER_V6';
 
 function capability(){
-  const spec=SPECS[STRATEGY_ID];
+  const spec=getStrategyDescriptor(STRATEGY_ID);
   if(!spec)throw new Error('V19_INTERNAL_SPEC_MISSING');
   return{
     engineId:ENGINE_ID,
