@@ -44,8 +44,15 @@ function currentRowValid(doc) {
   }, expected).ok;
 }
 function buildDocument(entry, existing, fetched, sourceRow) {
+  const existingSessions = Array.isArray(existing?.sessions) ? existing.sessions : [];
+  const exactSourceSessions = (Array.isArray(fetched?.sessions) ? fetched.sessions : []).map((row) => ({ ...row, ticker: entry.ticker }));
   const incoming = { ...sourceRow, ticker: entry.ticker };
-  const merged = mergeAndValidate(existing?.sessions || [], [incoming], 250);
+  // For a newly discovered/current canonical ticker, seed its history only from the
+  // same exact EGX-scoped source that supplied the verified current row. Do not
+  // copy a predecessor ticker and do not promote any prior value into a new date.
+  const sourceRows = existingSessions.length ? [incoming] : exactSourceSessions;
+  const retentionLimit = Math.max(250, existingSessions.length + sourceRows.length);
+  const merged = mergeAndValidate(existingSessions, sourceRows, retentionLimit);
   const persisted = merged.sessions.find((s) => dateOnly(s.date) === expected);
   if (!persisted) throw new Error('expected_session_not_persisted_after_validation');
   const parity = ['open','high','low','close','volume'].every((f) => Number(persisted[f]) === Number(sourceRow[f]));
@@ -87,7 +94,7 @@ function buildDocument(entry, existing, fetched, sourceRow) {
     staleData: false,
     updateFailed: false,
     lastUpdateError: null,
-    warnings: unique([...(existing?.warnings || []).filter((w) => !String(w).startsWith('expected_session_row_unavailable:')), 'g11_full_market_current_session_refresh', 'no_carry_forward', ...merged.corporateActions.map(() => 'corporate_action_review_required')]),
+    warnings: unique([...(existing?.warnings || []).filter((w) => !String(w).startsWith('expected_session_row_unavailable:')), 'g11_full_market_current_session_refresh', 'no_carry_forward', ...(existingSessions.length ? [] : ['history_seeded_from_same_exact_current_source']), ...merged.corporateActions.map(() => 'corporate_action_review_required')]),
     sessions: merged.sessions,
     g11CurrentSessionRefresh: {
       expectedSession: expected,
