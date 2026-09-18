@@ -61,6 +61,22 @@ function contiguousDepth(validated,calendar,latest){const set=new Set(validated.
 function deriveEvaluationAt(){const docs=['data/history-summary.json','data/market.json','data/production-readiness-v13-17-1.json','data/quant/stock-intelligence-index.json'].map(p=>read(p,{}));const vals=docs.flatMap(d=>[d.generatedAt,d.updatedAt].filter(Boolean)).filter(x=>!Number.isNaN(new Date(x).getTime())).sort((a,b)=>new Date(a)-new Date(b));return vals.at(-1)||new Date().toISOString()}
 function runV16Context(session){const out=cp.execFileSync('python3',[R('astra/data-health/g11-v16-context.py'),'--session',session],{cwd:ROOT,encoding:'utf8',maxBuffer:96*1024*1024});return JSON.parse(out)}
 function detailMap(){const dir=R('data/quant/stocks'),m=new Map();if(!fs.existsSync(dir))return m;for(const f of fs.readdirSync(dir).filter(x=>x.endsWith('.json'))){const d=read(path.join('data/quant/stocks',f),null);if(d?.ticker)m.set(normTicker(d.ticker),d)}return m}
+function reviewedSecurityIdentity(entry){
+  const v=entry?.g11IdentityVerification;
+  const ticker=normTicker(entry?.ticker),isin=String(entry?.isin||'').trim().toUpperCase();
+  const evidence=Array.isArray(v?.evidenceUrls)?v.evidenceUrls.filter(x=>/^https?:\/\//i.test(String(x||''))):[];
+  return Boolean(
+    entry?.active!==false &&
+    v?.verified===true &&
+    v?.method==='EXACT_TICKER_ISIN_EGX_EVIDENCE' &&
+    normTicker(v?.canonicalTicker)===ticker &&
+    String(v?.exchange||'').trim().toUpperCase()==='EGX' &&
+    /^EG[A-Z0-9]{10}$/.test(isin) &&
+    String(v?.isin||'').trim().toUpperCase()===isin &&
+    evidence.length>=2 &&
+    String(v?.evidenceSummary||'').trim()
+  );
+}
 
 function buildHealth(){
   const started=process.hrtime.bigint();const codeVersion=gitHead();const evaluatedAt=deriveEvaluationAt();
@@ -72,7 +88,7 @@ function buildHealth(){
   const histories=new Map(),currentRows=new Map(),historyStats=new Map(),duplicateCurrent=[];const symbolUnresolved=[],stale=[],missingCurrent=[],ohlcInvalid=[],volumeMissing=[];
   for(const s of intended){
     const ticker=normTicker(s.ticker),doc=read(`data/history/${ticker}.json`,null),parsed=parseHistory(doc||{});histories.set(ticker,{doc,parsed});
-    const latest=parsed.validated.at(-1)?.date||null,current=parsed.validated.find(x=>x.date===expected)||null;const hs=(historySummary.symbols||[]).find(x=>normTicker(x.ticker)===ticker);const symbolVerified=Boolean(doc?.symbolVerified===true||hs?.symbolVerified===true);
+    const latest=parsed.validated.at(-1)?.date||null,current=parsed.validated.find(x=>x.date===expected)||null;const hs=(historySummary.symbols||[]).find(x=>normTicker(x.ticker)===ticker);const symbolVerified=Boolean(doc?.symbolVerified===true||hs?.symbolVerified===true||reviewedSecurityIdentity(s));
     if(s.active!==false&&!symbolVerified)symbolUnresolved.push(ticker);
     if(s.active!==false&&latest&&latest<expected)stale.push(ticker);
     if(s.active!==false&&!current)missingCurrent.push(ticker);

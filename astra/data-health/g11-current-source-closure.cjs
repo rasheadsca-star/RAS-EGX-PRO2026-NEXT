@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Trigger marker: validate MEGM no-trade exception and POCO exact identity evidence.
 // Trigger marker: recertify corrected current stale accounting after legitimate-session exception.
 // Trigger marker: validate EPPK regulator-documented legitimate suspension exception.
 // Trigger marker: recertify after evidence-backed IRAX/TORA legacy scope retirement.
