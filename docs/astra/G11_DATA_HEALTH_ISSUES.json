@@ -1,6 +1,6 @@
 {
   "schemaVersion": "astra-g11-data-health-issues-1",
-  "evaluatedAt": "2026-09-18T15:03:33.539Z",
+  "evaluatedAt": "2026-09-18T15:15:04.598Z",
   "severityModel": {
     "CRITICAL": "Could make a production decision wrong or use future/wrong-session data.",
     "HIGH": "Removes a production-eligible security/strategy input unexpectedly.",
@@ -25,13 +25,12 @@
       "code": "CURRENT_SESSION_GAP",
       "severity": "HIGH",
       "summary": "Active intended securities are missing a validation-approved row for the expected finalized session",
-      "affectedCount": 14,
+      "affectedCount": 13,
       "affectedTickers": [
         "AIHC",
         "ARVA",
         "DCCC",
         "DEIN",
-        "EPPK",
         "GPPL",
         "ICLE",
         "MEGM",
@@ -42,21 +41,27 @@
         "SAIB",
         "SPHT"
       ],
-      "details": {},
+      "details": {
+        "documentedSessionExceptions": [
+          {
+            "ticker": "EPPK",
+            "disposition": "LEGITIMATE_SUSPENSION"
+          }
+        ]
+      },
       "status": "UNRESOLVED"
     },
     {
       "code": "REGIME_INPUT_INCOMPLETE",
       "severity": "HIGH",
-      "summary": "Market-regime/production model inputs cover only a subset of the intended active universe",
-      "affectedCount": 16,
+      "summary": "Market-regime/production model inputs cover only a subset of the intended active universe after deterministic legitimate session exceptions",
+      "affectedCount": 15,
       "affectedTickers": [
         "AIHC",
         "AMES",
         "ARVA",
         "DCCC",
         "DEIN",
-        "EPPK",
         "GPPL",
         "GRCA",
         "ICLE",
@@ -71,7 +76,13 @@
       "details": {
         "intendedActive": 224,
         "analyzed": 208,
-        "participationPct": 92.86
+        "participationPct": 92.86,
+        "documentedSessionExceptions": [
+          {
+            "ticker": "EPPK",
+            "disposition": "LEGITIMATE_SUSPENSION"
+          }
+        ]
       },
       "status": "UNRESOLVED"
     }

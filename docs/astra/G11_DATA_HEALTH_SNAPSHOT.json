@@ -1,17 +1,17 @@
 {
-  "healthSnapshotId": "G11-DH-ed6022fdbccb3e3c00dd4867",
-  "evaluatedAt": "2026-09-18T15:03:33.539Z",
+  "healthSnapshotId": "G11-DH-5769de05fe1429fc60078e1b",
+  "evaluatedAt": "2026-09-18T15:15:04.598Z",
   "latestExpectedSession": "2026-09-17",
   "latestAvailableSession": "2026-09-17",
   "universeIdentity": "a47e21b9b045a721fe8019c8f3ed387ad6b42b0f2d8c76cd1cd44e4fa2811783",
   "universeCount": 243,
   "activeUniverseCount": 224,
-  "canonicalDatasetHash": "085392216877f2d2d6147a07a65d360e5f3598a743e5c07fa8f3b4bc7af3311b",
-  "codeVersion": "8129688ab6050cf8bc9424096301bfbc25911970",
+  "canonicalDatasetHash": "c0b853cfe9aee44638b48c77ea00ab65c257a56ebf45e9d6ed210a9e0d461c4e",
+  "codeVersion": "932bfede474effc9803f3c33fdd6e0dcf1644e27",
   "schemaVersion": "astra-g11-data-health-snapshot-1",
   "coverageMetrics": {
     "schemaVersion": "astra-g11-data-health-metrics-1",
-    "evaluatedAt": "2026-09-18T15:03:33.539Z",
+    "evaluatedAt": "2026-09-18T15:15:04.598Z",
     "latestExpectedSession": "2026-09-17",
     "latestAvailableSession": "2026-09-17",
     "sessionFreshnessStatus": "CURRENT",
@@ -32,7 +32,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 14
+      "unresolved": 13,
+      "rawMissingCurrent": 14,
+      "legitimateSessionExceptions": 1
     },
     "ohlcWithPreviousClose": {
       "numerator": 210,
@@ -40,7 +42,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 14
+      "unresolved": 13,
+      "rawMissingCurrent": 14,
+      "legitimateSessionExceptions": 1
     },
     "volume": {
       "numerator": 210,
@@ -48,7 +52,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 14
+      "unresolved": 13,
+      "rawMissingCurrent": 14,
+      "legitimateSessionExceptions": 1
     },
     "turnoverDecisionProxy": {
       "numerator": 210,
@@ -56,7 +62,9 @@
       "percentage": 93.75,
       "excludedByRule": 0,
       "invalid": 0,
-      "unresolved": 14,
+      "unresolved": 13,
+      "rawMissingCurrent": 14,
+      "legitimateSessionExceptions": 1,
       "method": "close * volume, identical to V16 source turnover primitive; not represented as official exchange traded value"
     },
     "historyDepth": {
@@ -328,7 +336,9 @@
       "intendedUniverse": 224,
       "analyzed": 208,
       "participationPct": 92.86,
-      "status": "DEGRADED_PARTIAL_UNIVERSE"
+      "status": "DEGRADED_PARTIAL_UNIVERSE",
+      "legitimateSessionExceptions": 1,
+      "unresolvedMissingFeatureInputs": 15
     },
     "symbolMapping": {
       "mapped": 243,
@@ -337,10 +347,14 @@
       "collisions": 0
     },
     "stale": {
-      "productionCriticalRecords": 13
+      "productionCriticalRecords": 12,
+      "rawStaleRecords": 13,
+      "legitimateSessionExceptions": 1
     },
     "missingSessions": {
-      "activeWithoutExpectedSession": 14
+      "activeWithoutExpectedSession": 14,
+      "unresolvedAfterLegitimateExceptions": 13,
+      "legitimateSessionExceptions": 1
     },
     "duplicates": {
       "currentExact": 0,
@@ -369,6 +383,8 @@
       "validCanonicalSecurities": 210,
       "pipelineReadySecurities": 208,
       "insufficientDataSecurities": 16,
+      "unresolvedInsufficientDataSecurities": 15,
+      "legitimateSessionExceptions": 1,
       "rejectedInvalidSecurities": 0,
       "staleSecurities": 13,
       "strategyExecutionsAttempted": 1,
@@ -399,13 +415,12 @@
       "code": "CURRENT_SESSION_GAP",
       "severity": "HIGH",
       "summary": "Active intended securities are missing a validation-approved row for the expected finalized session",
-      "affectedCount": 14,
+      "affectedCount": 13,
       "affectedTickers": [
         "AIHC",
         "ARVA",
         "DCCC",
         "DEIN",
-        "EPPK",
         "GPPL",
         "ICLE",
         "MEGM",
@@ -416,21 +431,27 @@
         "SAIB",
         "SPHT"
       ],
-      "details": {},
+      "details": {
+        "documentedSessionExceptions": [
+          {
+            "ticker": "EPPK",
+            "disposition": "LEGITIMATE_SUSPENSION"
+          }
+        ]
+      },
       "status": "UNRESOLVED"
     },
     {
       "code": "REGIME_INPUT_INCOMPLETE",
       "severity": "HIGH",
-      "summary": "Market-regime/production model inputs cover only a subset of the intended active universe",
-      "affectedCount": 16,
+      "summary": "Market-regime/production model inputs cover only a subset of the intended active universe after deterministic legitimate session exceptions",
+      "affectedCount": 15,
       "affectedTickers": [
         "AIHC",
         "AMES",
         "ARVA",
         "DCCC",
         "DEIN",
-        "EPPK",
         "GPPL",
         "GRCA",
         "ICLE",
@@ -445,7 +466,13 @@
       "details": {
         "intendedActive": 224,
         "analyzed": 208,
-        "participationPct": 92.86
+        "participationPct": 92.86,
+        "documentedSessionExceptions": [
+          {
+            "ticker": "EPPK",
+            "disposition": "LEGITIMATE_SUSPENSION"
+          }
+        ]
       },
       "status": "UNRESOLVED"
     }
@@ -457,6 +484,26 @@
     "researchReady": 3146,
     "researchTotal": 3808
   },
+  "sessionExceptions": [
+    {
+      "ticker": "EPPK",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_SUSPENSION",
+      "approved": true,
+      "identityVerified": true,
+      "isin": "EGS360A1C011",
+      "effectiveFrom": "2026-09-10",
+      "effectiveThrough": "2026-09-24",
+      "authorityClass": "REGULATOR_OR_EXCHANGE",
+      "evidenceUrls": [
+        "https://www.arabfinance.com/en/news/newdetails/fra-suspends-trading-on-el-ahram-for-Printing-until-september-24",
+        "https://startamarkets.com/ar/News/864825-%D8%A7%D9%84%D8%B1%D9%82%D8%A7%D8%A8%D8%A9-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9-%D8%AA%D8%B1%D8%B5%D8%AF-8-%D9%85%D8%AE%D8%A7%D9%84%D9%81%D8%A7%D8%AA-%D9%84%D9%84%D8%A3%D9%87%D8%B1%D8%A7%D9%85-%D9%84%D9%84%D8%B7%D8%A8%D8%A7%D8%B9%D8%A9-%D9%88%D8%A5%D9%8A%D9%82%D8%A7%D9%81-%D8%AA%D8%AF%D8%A7%D9%88%D9%84-%D8%A7%D9%84%D8%B3%D9%87%D9%85-15-%D9%8A%D9%88%D9%85%D8%A7",
+        "https://arabfinance.com/en/home/companyprofile/EPPK"
+      ],
+      "evidenceSummary": "FRA suspension of El Ahram Co. For Printing And Packing for 15 trading sessions from 2026-09-10 through the end of 2026-09-24; target session 2026-09-17 lies inside the suspension window. Company profile confirms EPPK and ISIN EGS360A1C011.",
+      "reviewedAt": "2026-09-18"
+    }
+  ],
   "overallStatus": "DEGRADED",
   "productionEligibility": "1/18",
   "quantEdge": "OUTPUT_INTEGRITY_ONLY",
@@ -464,18 +511,18 @@
   "legacyNetworkCalls": 0,
   "productionCutover": false,
   "g12Status": "PENDING",
-  "sourceHead": "8129688ab6050cf8bc9424096301bfbc25911970",
+  "sourceHead": "932bfede474effc9803f3c33fdd6e0dcf1644e27",
   "searchableUniverse": 224,
   "currentValidCanonicalUniverse": 210,
   "decisionReadyUniverse": 208,
   "regimeReadyUniverse": 208,
-  "currentDecisionSnapshotId": "G09-DS-d22718b405cf1389a47bd9c1",
-  "currentDecisionSnapshotHash": "d22718b405cf1389a47bd9c18c9d96a3e66cf55cc915664112f1a4000640cc8c",
+  "currentDecisionSnapshotId": "G09-DS-96a53ae696c9067b82cec79e",
+  "currentDecisionSnapshotHash": "96a53ae696c9067b82cec79e54e359c607d081a2110de97d40a82fa103259b4b",
   "currentUniverseGapDispositionAccounting": {
-    "STALE_DATA": 13,
+    "STALE_DATA": 12,
     "SOURCE_INGESTION_FAILED": 1,
-    "total": 14,
-    "equation": "224 - 210 = 14",
+    "total": 13,
+    "equation": "224 - 210 - 1 legitimate session exception(s) = 13",
     "closes": true
   },
   "historySourceMappingReview": {
@@ -488,8 +535,28 @@
   },
   "staleProductionCriticalReview": {
     "total": 13,
-    "resolved": 0,
-    "unresolved": 13
+    "resolved": 1,
+    "unresolved": 12,
+    "legitimateSessionExceptions": [
+      {
+        "ticker": "EPPK",
+        "session": "2026-09-17",
+        "disposition": "LEGITIMATE_SUSPENSION",
+        "approved": true,
+        "identityVerified": true,
+        "isin": "EGS360A1C011",
+        "effectiveFrom": "2026-09-10",
+        "effectiveThrough": "2026-09-24",
+        "authorityClass": "REGULATOR_OR_EXCHANGE",
+        "evidenceUrls": [
+          "https://www.arabfinance.com/en/news/newdetails/fra-suspends-trading-on-el-ahram-for-Printing-until-september-24",
+          "https://startamarkets.com/ar/News/864825-%D8%A7%D9%84%D8%B1%D9%82%D8%A7%D8%A8%D8%A9-%D8%A7%D9%84%D9%85%D8%A7%D9%84%D9%8A%D8%A9-%D8%AA%D8%B1%D8%B5%D8%AF-8-%D9%85%D8%AE%D8%A7%D9%84%D9%81%D8%A7%D8%AA-%D9%84%D9%84%D8%A3%D9%87%D8%B1%D8%A7%D9%85-%D9%84%D9%84%D8%B7%D8%A8%D8%A7%D8%B9%D8%A9-%D9%88%D8%A5%D9%8A%D9%82%D8%A7%D9%81-%D8%AA%D8%AF%D8%A7%D9%88%D9%84-%D8%A7%D9%84%D8%B3%D9%87%D9%85-15-%D9%8A%D9%88%D9%85%D8%A7",
+          "https://arabfinance.com/en/home/companyprofile/EPPK"
+        ],
+        "evidenceSummary": "FRA suspension of El Ahram Co. For Printing And Packing for 15 trading sessions from 2026-09-10 through the end of 2026-09-24; target session 2026-09-17 lies inside the suspension window. Company profile confirms EPPK and ISIN EGS360A1C011.",
+        "reviewedAt": "2026-09-18"
+      }
+    ]
   },
-  "finalizedSnapshotId": "G11-DH-FINAL-f85c92f614976f7d12fe3e12"
+  "finalizedSnapshotId": "G11-DH-FINAL-461d2d7368693c52f95a9be4"
 }
