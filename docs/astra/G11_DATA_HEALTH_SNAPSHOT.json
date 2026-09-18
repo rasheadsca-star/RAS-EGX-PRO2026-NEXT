@@ -1,17 +1,17 @@
 {
-  "healthSnapshotId": "G11-DH-43069e37fa1e40c003c77108",
-  "evaluatedAt": "2026-09-18T18:58:22.124Z",
+  "healthSnapshotId": "G11-DH-7781db8fd31191610d3c951b",
+  "evaluatedAt": "2026-09-18T19:05:47.977Z",
   "latestExpectedSession": "2026-09-17",
   "latestAvailableSession": "2026-09-17",
   "universeIdentity": "4c0605a793821701e2dfecd61f6d430a785e50cc97e70e02bc13cdc384c3e096",
   "universeCount": 244,
   "activeUniverseCount": 224,
-  "canonicalDatasetHash": "641c4fdf8702324bca49dbfbb0e0f85016c02179ed1bc43ed1763f5149c34d5e",
-  "codeVersion": "b1256018050054bd1d50ad2ccfb6dd1f68c58521",
+  "canonicalDatasetHash": "e05817e9f8ada3c8f4fa390105db931b98cd0ad9971a28d5aa036d6df99da85c",
+  "codeVersion": "c318df04746aad57bf91184cd800779e218ef57c",
   "schemaVersion": "astra-g11-data-health-snapshot-1",
   "coverageMetrics": {
     "schemaVersion": "astra-g11-data-health-metrics-1",
-    "evaluatedAt": "2026-09-18T18:58:22.124Z",
+    "evaluatedAt": "2026-09-18T19:05:47.977Z",
     "latestExpectedSession": "2026-09-17",
     "latestAvailableSession": "2026-09-17",
     "sessionFreshnessStatus": "CURRENT",
@@ -337,8 +337,11 @@
       "analyzed": 211,
       "participationPct": 94.2,
       "status": "DEGRADED_PARTIAL_UNIVERSE",
+      "accountedUniverse": 224,
+      "accountingStatus": "COMPLETE_WITH_DOCUMENTED_EXCLUSIONS",
       "legitimateSessionExceptions": 11,
-      "unresolvedMissingFeatureInputs": 2
+      "legitimateModelDomainExclusions": 2,
+      "unresolvedMissingFeatureInputs": 0
     },
     "symbolMapping": {
       "mapped": 244,
@@ -367,7 +370,10 @@
         "percentage": 94.2,
         "excludedByRule": 0,
         "invalid": 0,
-        "unresolved": 13
+        "unresolved": 0,
+        "legitimateExclusions": 13,
+        "rawNotReady": 13,
+        "accountingStatus": "COMPLETE_WITH_DOCUMENTED_EXCLUSIONS"
       },
       "research": {
         "numerator": 3194,
@@ -383,7 +389,7 @@
       "validCanonicalSecurities": 213,
       "pipelineReadySecurities": 211,
       "insufficientDataSecurities": 13,
-      "unresolvedInsufficientDataSecurities": 2,
+      "unresolvedInsufficientDataSecurities": 0,
       "legitimateSessionExceptions": 11,
       "rejectedInvalidSecurities": 0,
       "staleSecurities": 10,
@@ -399,73 +405,12 @@
       "missingActive": 0
     }
   },
-  "failures": [
-    {
-      "code": "REGIME_INPUT_INCOMPLETE",
-      "severity": "HIGH",
-      "summary": "Market-regime/production model inputs cover only a subset of the intended active universe after deterministic legitimate session exceptions",
-      "affectedCount": 2,
-      "affectedTickers": [
-        "AMES",
-        "GRCA"
-      ],
-      "details": {
-        "intendedActive": 224,
-        "analyzed": 211,
-        "participationPct": 94.2,
-        "documentedSessionExceptions": [
-          {
-            "ticker": "DCCC",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "DEIN",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "EPPK",
-            "disposition": "LEGITIMATE_SUSPENSION"
-          },
-          {
-            "ticker": "GPPL",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "ICLE",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "MEGM",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "MMAT",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "NDRL",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "POCO",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "SAIB",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          },
-          {
-            "ticker": "SPHT",
-            "disposition": "LEGITIMATE_NO_TRADE"
-          }
-        ]
-      },
-      "status": "UNRESOLVED"
-    }
-  ],
+  "failures": [],
   "warnings": [],
   "strategyReadiness": {
     "productionReady": 211,
+    "productionLegitimateExclusions": 13,
+    "productionBlocked": 0,
     "productionTotal": 224,
     "researchReady": 3194,
     "researchTotal": 3808
@@ -672,20 +617,66 @@
       "reviewedAt": "2026-09-18"
     }
   ],
-  "overallStatus": "DEGRADED",
+  "modelDomainExceptions": [
+    {
+      "ticker": "AMES",
+      "isin": "EGS72081C010",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_V16_MODEL_DOMAIN_EXCLUSION",
+      "reason": "ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
+      "approved": true,
+      "currentSessionValidated": true,
+      "validHistorySessions": 250,
+      "atrPct": 17.700680272108844,
+      "certifiedRange": {
+        "min": 0.4,
+        "max": 14
+      },
+      "sameSessionRequirementMet": true,
+      "evidencePaths": [
+        "data/history/AMES.json",
+        "docs/astra/G11_V16_FEATURE_READINESS.json",
+        "scripts/research/v16-probabilistic-model-impact.py"
+      ],
+      "reviewedAt": "2026-09-18"
+    },
+    {
+      "ticker": "GRCA",
+      "isin": "EGS69261C013",
+      "session": "2026-09-17",
+      "disposition": "LEGITIMATE_V16_MODEL_DOMAIN_EXCLUSION",
+      "reason": "ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
+      "approved": true,
+      "currentSessionValidated": true,
+      "validHistorySessions": 250,
+      "atrPct": 15.825944170771757,
+      "certifiedRange": {
+        "min": 0.4,
+        "max": 14
+      },
+      "sameSessionRequirementMet": true,
+      "evidencePaths": [
+        "data/history/GRCA.json",
+        "docs/astra/G11_V16_FEATURE_READINESS.json",
+        "scripts/research/v16-probabilistic-model-impact.py"
+      ],
+      "reviewedAt": "2026-09-18"
+    }
+  ],
+  "overallStatus": "HEALTHY",
   "productionEligibility": "1/18",
   "quantEdge": "OUTPUT_INTEGRITY_ONLY",
   "g07QuarantineLeakage": "PASS",
   "legacyNetworkCalls": 0,
   "productionCutover": false,
   "g12Status": "PENDING",
-  "sourceHead": "b1256018050054bd1d50ad2ccfb6dd1f68c58521",
+  "sourceHead": "c318df04746aad57bf91184cd800779e218ef57c",
   "searchableUniverse": 224,
   "currentValidCanonicalUniverse": 213,
   "decisionReadyUniverse": 211,
   "regimeReadyUniverse": 211,
-  "currentDecisionSnapshotId": "G09-DS-64c53bd905bd10fde1bb7eac",
-  "currentDecisionSnapshotHash": "64c53bd905bd10fde1bb7eac755b1919dd00820508afe41c14b2befb1e6715c3",
+  "currentDecisionSnapshotId": "G09-DS-cc6b9a5f4d9e2c6084418a63",
+  "currentDecisionSnapshotHash": "cc6b9a5f4d9e2c6084418a63fbf0e2adcbffd625a3b51a6dadb7bb15a48bf847",
   "currentUniverseGapDispositionAccounting": {
     "total": 0,
     "equation": "224 - 213 - 11 legitimate session exception(s) = 0",
@@ -904,5 +895,5 @@
       }
     ]
   },
-  "finalizedSnapshotId": "G11-DH-FINAL-9232fa41eaaff960d2f3111b"
+  "finalizedSnapshotId": "G11-DH-FINAL-e14b9ee8f0a0f29e93ad107f"
 }

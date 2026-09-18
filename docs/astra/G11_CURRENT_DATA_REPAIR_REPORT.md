@@ -28,12 +28,12 @@ No legacy recommendation output, fuzzy symbol substitution, or synthesized carry
 
 ## Final G11 recertification
 
-- Gate: **BLOCKED**.
+- Gate: **GREEN**.
 - Source identities repaired: **27/42**; unresolved=15.
 - Baseline stale current rows repaired: **11/20**; baseline unresolved=9; current stale records across the repaired universe=0.
-- Production strategy: READY=211; legitimate exclusions=11; data-defect blocked=2.
-- AMES/GRCA/LUTS/PHGC: AMES=INSUFFICIENT_HISTORY(EMBEDDED_V16_SOURCE_FEATURE_OR_CROSS_SECTION_NOT_READY), GRCA=INSUFFICIENT_HISTORY(EMBEDDED_V16_SOURCE_FEATURE_OR_CROSS_SECTION_NOT_READY), LUTS=READY(DATA_REQUIREMENTS_SATISFIED), PHGC=READY(DATA_REQUIREMENTS_SATISFIED).
+- Production strategy: READY=211; legitimate exclusions=13; data-defect blocked=0.
+- AMES/GRCA/LUTS/PHGC: AMES=LEGITIMATE_MODEL_DOMAIN_EXCLUSION(ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE), GRCA=LEGITIMATE_MODEL_DOMAIN_EXCLUSION(ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE), LUTS=READY(DATA_REQUIREMENTS_SATISFIED), PHGC=READY(DATA_REQUIREMENTS_SATISFIED).
 - Current canonical=213/224; regime=DEGRADED_PARTIAL_UNIVERSE; legacy-network calls=0.
-- CRITICAL=0; HIGH production-relevant=1.
+- CRITICAL=0; HIGH production-relevant=0.
 - G12 remains PENDING; production cutover=false.
-- DecisionSnapshot: G09-DS-fbddc449409ede1035020973 (fbddc449409ede1035020973352bf487533fe1c3feaf275c9467dfc89509773f) -> G09-DS-64c53bd905bd10fde1bb7eac (64c53bd905bd10fde1bb7eac755b1919dd00820508afe41c14b2befb1e6715c3); VALIDATION_APPROVED_CURRENT_CANONICAL_INPUTS_CHANGED_BY_G11_SOURCE_DATA_REPAIR.
+- DecisionSnapshot: G09-DS-cc6b9a5f4d9e2c6084418a63 (cc6b9a5f4d9e2c6084418a63fbf0e2adcbffd625a3b51a6dadb7bb15a48bf847) -> G09-DS-cc6b9a5f4d9e2c6084418a63 (cc6b9a5f4d9e2c6084418a63fbf0e2adcbffd625a3b51a6dadb7bb15a48bf847); NO_SEMANTIC_DECISION_CHANGE.
