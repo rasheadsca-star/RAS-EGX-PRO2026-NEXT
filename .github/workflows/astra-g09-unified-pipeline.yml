@@ -7,6 +7,7 @@ on:
       - 'astra/pipeline/g09-unified-decision-pipeline.cjs'
       - 'astra/certification/g09-certify.cjs'
       - 'tests/astra/g09-unified-decision-pipeline.test.cjs'
+      - 'tests/astra/g09-certification-observer.cjs'
       - '.github/workflows/astra-g09-unified-pipeline.yml'
   workflow_dispatch:
 
@@ -135,16 +136,20 @@ jobs:
           node --check astra/pipeline/g09-unified-decision-pipeline.cjs
           node --check astra/certification/g09-certify.cjs
           node --check tests/astra/g09-unified-decision-pipeline.test.cjs
+          node --check tests/astra/g09-certification-observer.cjs
 
       - name: Run G09 unified pipeline tests
         run: node --test tests/astra/g09-unified-decision-pipeline.test.cjs
 
+      - name: Build G09 certification observation
+        run: node tests/astra/g09-certification-observer.cjs /tmp/g09-cert-observation.json
       - name: Certify G09 and write evidence
         env:
           G09_TEST_PASS: '1'
           G06_REGRESSION_PASS: '1'
           G07_REGRESSION_PASS: '1'
           G08_REGRESSION_PASS: '1'
+          G09_CERT_OBSERVATION: /tmp/g09-cert-observation.json
         run: node astra/certification/g09-certify.cjs
 
       - name: Guard G09 scope and later gates

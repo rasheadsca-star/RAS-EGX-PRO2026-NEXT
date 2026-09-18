@@ -7,7 +7,7 @@ const H=require('../../astra/data-health/g11-data-health.cjs');
 const P=require('../../astra/pipeline/g09-unified-decision-pipeline.cjs');
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
-const h=H.buildHealth();
+const h=H.buildHealth({pipelineRunner:P.runUnifiedDecisionPipeline});
 
 test('universe integrity is explicit and symbol-master based',()=>{assert.ok(h.universe.intendedUniverseCount>=h.universe.activeUniverseCount);assert.equal(h.universe.records.length,h.universe.intendedUniverseCount);assert.ok(h.universe.records.every(x=>x.securityId&&x.ticker&&x.normalizedTicker&&Array.isArray(x.aliases)))});
 test('inactive or delisted identities remain explicit exclusions',()=>{const x=h.universe.records.filter(r=>!r.active);assert.equal(x.length,h.universe.intentionallyExcludedCount);assert.ok(x.every(r=>r.expectedInclusion===false&&r.expectedInclusionReason))});

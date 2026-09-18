@@ -91,7 +91,18 @@ jobs:
           test -n "$N" && test "$N" -ge 29
           echo G11_TEST_COUNT=$N >> "$GITHUB_ENV"
           echo G11_TEST_PASS=1 >> "$GITHUB_ENV"
+      - name: Build G11 cross-module health observation
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const H=require('./astra/data-health/g11-data-health.cjs');
+          const P=require('./astra/pipeline/g09-unified-decision-pipeline.cjs');
+          const h=H.buildHealth({pipelineRunner:P.runUnifiedDecisionPipeline});
+          fs.writeFileSync('/tmp/g11-health-observation.json',JSON.stringify(h,null,2)+'\n');
+          NODE
       - name: Build and certify G11 evidence
+        env:
+          G11_HEALTH_OBSERVATION: /tmp/g11-health-observation.json
         run: node astra/certification/g11-certify.cjs
       - name: Final no-cutover and gate-boundary guard
         run: |

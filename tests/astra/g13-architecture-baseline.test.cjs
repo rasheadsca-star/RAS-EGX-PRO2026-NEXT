@@ -109,3 +109,15 @@ test('historical parity control remains the only non-facade policy exception for
   });
   assert.deepEqual(illegal,[]);
 });
+
+test('Family 3 isolates certification and data-health from direct business implementation imports',()=>{
+  const r=scan();
+  assert.equal(r.findings.items.filter(x=>x.code==='FORBIDDEN_LOGICAL_IMPORT').length,0);
+  assert.equal(r.findings.items.filter(x=>x.code==='DATA_HEALTH_DECISION_COUPLING').length,0);
+  const dh=fs.readFileSync('astra/data-health/g11-data-health.cjs','utf8');
+  assert.equal(dh.includes("require('../pipeline/g09-unified-decision-pipeline.cjs')"),false);
+  for(const p of ['astra/certification/g08-certify.cjs','astra/certification/g09-certify.cjs','astra/certification/g11-certify.cjs','astra/certification/g11-derived-build-failures.cjs','astra/certification/g11-source-dispositions.cjs']){
+    const s=fs.readFileSync(p,'utf8');
+    assert.equal(/require\(['"]\.\.\/(?:pipeline|strategies|data-health)\//.test(s),false,p);
+  }
+});
