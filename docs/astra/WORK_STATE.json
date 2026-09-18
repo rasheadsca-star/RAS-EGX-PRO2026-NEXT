@@ -6,7 +6,7 @@
   "current_gate": "G11",
   "last_green_gate": "G10",
   "blocking_issues": [
-    "HIGH:REGIME_INPUT_INCOMPLETE:3"
+    "HIGH:REGIME_INPUT_INCOMPLETE:2"
   ],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -23,7 +23,7 @@
     "G10 exposed a material G08 V13 reconstruction regression; the 9 historical variants were restored source-exactly, G08 passed 50/50 on recertification, and G09 passed 46/46 unchanged.",
     "V16.9 plan parity uses a 0.0007 maximum representation-only tolerance derived from preserved ATR14 3-decimal precision; semantic fields remain exact-only.",
     "QUANT_EDGE remains OUTPUT_INTEGRITY_ONLY. No production cutover occurred; 8 legacy runtime dependencies remain; G12 PENDING.",
-    "G11 BLOCKED: DEGRADED; intended mapped 244, active 224, current canonical 213/224, pipeline-ready 210/224, CRITICAL 0, HIGH 1."
+    "G11 BLOCKED: DEGRADED; intended mapped 244, active 224, current canonical 213/224, pipeline-ready 211/224, CRITICAL 0, HIGH 1."
   ],
   "completed_gates": [
     "G01",
@@ -83,7 +83,7 @@
     "unexplainedDataLoss": 0
   },
   "next_action": "Restore validation-approved current-session/history-source coverage for the exact G11_CURRENT_UNIVERSE_GAPS and G11_STALE_RECORDS securities, regenerate V16/regime inputs, then rerun G11 only. Do not start G12, remove legacy dependencies, or cut over production.",
-  "last_updated": "2026-09-18T18:50:47Z",
+  "last_updated": "2026-09-18T18:55:35Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -156,17 +156,17 @@
   "g11_certification": {
     "status": "BLOCKED",
     "overallDataHealth": "DEGRADED",
-    "workflowRunId": 35382459861,
-    "sourceCommit": "190e978a95a0063c46a585610ca0d0c0f17e5eb8",
+    "workflowRunId": 35382929439,
+    "sourceCommit": "b1256018050054bd1d50ad2ccfb6dd1f68c58521",
     "intendedUniverse": 244,
     "activeSecurities": 224,
     "latestExpectedSession": "2026-09-17",
     "latestAvailableSession": "2026-09-17",
     "sessionFreshness": "CURRENT",
     "currentCanonical": "213/224",
-    "pipelineReady": "210/224",
+    "pipelineReady": "211/224",
     "productionEligibility": "1/18",
-    "productionCriticalReady": "210/224",
+    "productionCriticalReady": "211/224",
     "criticalUnresolved": 0,
     "highUnresolved": 1,
     "g07QuarantineLeakage": "PASS",
@@ -183,8 +183,8 @@
     "productionCutover": false,
     "searchableUniverse": 224,
     "currentValidCanonicalUniverse": 213,
-    "decisionReadyUniverse": 210,
-    "regimeReadyUniverse": 210,
+    "decisionReadyUniverse": 211,
+    "regimeReadyUniverse": 211,
     "currentUniverseGapCount": 0,
     "currentUniverseGapDispositionAccounting": {
       "total": 0,
@@ -195,8 +195,8 @@
     "historySourceMappingsUnresolved": 0,
     "staleProductionCriticalResolved": 11,
     "staleProductionCriticalUnresolved": 0,
-    "currentDecisionSnapshotId": "G09-DS-559f55d54b1698491dbbfb30",
-    "currentDecisionSnapshotHash": "559f55d54b1698491dbbfb302f5b4c92089220226bef3fd1a1bed66a7ae161a9",
+    "currentDecisionSnapshotId": "G09-DS-64c53bd905bd10fde1bb7eac",
+    "currentDecisionSnapshotHash": "64c53bd905bd10fde1bb7eac755b1919dd00820508afe41c14b2befb1e6715c3",
     "mediumUnresolved": 0,
     "lowUnresolved": 0,
     "sourceIdentitiesRepaired": 27,
@@ -206,9 +206,9 @@
     "baselineStaleTotal": 20,
     "baselineStaleUnresolved": 9,
     "currentStaleRecords": 0,
-    "productionStrategyReady": 210,
+    "productionStrategyReady": 211,
     "productionStrategyLegitimateExclusions": 11,
-    "productionStrategyDataDefectBlocked": 3,
+    "productionStrategyDataDefectBlocked": 2,
     "featureReadiness": [
       {
         "ticker": "AMES",
@@ -236,15 +236,15 @@
       }
     ],
     "decisionSnapshotComparison": {
-      "previousId": "G09-DS-559f55d54b1698491dbbfb30",
-      "repairedId": "G09-DS-559f55d54b1698491dbbfb30",
-      "materialChange": false,
-      "reason": "NO_SEMANTIC_DECISION_CHANGE"
+      "previousId": "G09-DS-fbddc449409ede1035020973",
+      "repairedId": "G09-DS-64c53bd905bd10fde1bb7eac",
+      "materialChange": true,
+      "reason": "VALIDATION_APPROVED_CURRENT_CANONICAL_INPUTS_CHANGED_BY_G11_SOURCE_DATA_REPAIR"
     }
   },
   "g11_external_data_closure": {
     "status": "BLOCKED_DATA_HEALTH",
-    "evaluatedAt": "2026-09-18T18:50:47Z",
+    "evaluatedAt": "2026-09-18T18:55:35Z",
     "noncoverageResolved": 14,
     "noncoverageExternalBlocked": 0,
     "invalidResolved": 0,
@@ -253,14 +253,14 @@
     "staleLegitimate": 11,
     "staleExternalBlocked": 0,
     "staleInternalBlocked": 0,
-    "uniqueAffectedAfter": 3,
+    "uniqueAffectedAfter": 2,
     "externalBlockedUnique": 1,
-    "internalBlockedUnique": 3,
+    "internalBlockedUnique": 2,
     "currentCanonical": "213/224",
-    "decisionReady": "210/224",
-    "regimeReady": "210/224",
-    "decisionSnapshotId": "G09-DS-559f55d54b1698491dbbfb30",
-    "semanticDecisionHash": "559f55d54b1698491dbbfb302f5b4c92089220226bef3fd1a1bed66a7ae161a9",
+    "decisionReady": "211/224",
+    "regimeReady": "211/224",
+    "decisionSnapshotId": "G09-DS-64c53bd905bd10fde1bb7eac",
+    "semanticDecisionHash": "64c53bd905bd10fde1bb7eac755b1919dd00820508afe41c14b2befb1e6715c3",
     "criticalUnresolved": 0,
     "highProductionRelevantUnresolved": 1,
     "g12Status": "PENDING",
