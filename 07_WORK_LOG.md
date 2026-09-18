@@ -375,3 +375,46 @@ G07 completed against pinned source commits. Processed 19/19 historical store gr
 - Final issue-family overlap unique affected securities: 20.
 - CRITICAL=0; HIGH=3.
 - DecisionSnapshot=G09-DS-27b6b692e1ca73b47d02d523; legacy-network calls=0; productionCutover=false; G12=PENDING.
+
+
+## 2026-09-18T14:58:19.243Z — G11 Full Data Health Certification
+
+- Status: BLOCKED / DEGRADED
+- Universe: 243 mapped, 226 active, 17 intentional exclusions.
+- Session: expected 2026-09-17, available 2026-09-17, CURRENT.
+- Current canonical: 210/226; V16 pipeline-ready: 208/226.
+- Material issue classes: CRITICAL=0, HIGH=3.
+- G07 quarantine=PASS; legacy-network calls=0; production cutover=false; G12=PENDING.
+- G06/G07/G08/G09/G10 regressions: PASS.
+
+
+## 2026-09-18T14:58:19.243Z — G11 Exact Evidence Closure
+
+- Source HEAD: 2ce656421b0d0242fb6a92f026a3878ba01bf153
+- Gap accounting: 16 = STALE_DATA:15 + SOURCE_INGESTION_FAILED:1.
+- Searchable/current/decision-ready/regime-ready: 226/210/208/208.
+- History-source mapping review: resolved 0, unresolved 1.
+- Stale production-critical: unresolved 15.
+- DecisionSnapshot: G09-DS-5118b099a50d002b33a51358; semantic hash 5118b099a50d002b33a51358824255a2f4bf449d8b829bfd8f6e84f835941658; legacy-network calls 0.
+- G12 remains PENDING; no cutover and no legacy dependency removal.
+
+
+## 2026-09-18T14:58:30.394Z — G11 Targeted Current-Data Repair
+
+- Gate after full recertification: BLOCKED.
+- Exact source identities: 27/42; unresolved=15.
+- Original stale set repaired: 11/20; remaining=9.
+- Production readiness: READY=208, legitimate exclusions=0, data-defect blocked=18.
+- CRITICAL=0; HIGH=3; G12=PENDING; production cutover=false.
+
+
+## 2026-09-18T14:55:11Z — G11 Approved Source Closure
+
+- Status: BLOCKED_DATA_HEALTH
+- Approved current-source inventory exhausted: yes.
+- Noncoverage resolved/external: 14/0.
+- Invalid-source resolved/external: 0/1.
+- Stale resolved/legitimate/external/internal: 0/0/16/0.
+- Final issue-family overlap unique affected securities: 18.
+- CRITICAL=0; HIGH=3.
+- DecisionSnapshot=G09-DS-5118b099a50d002b33a51358; legacy-network calls=0; productionCutover=false; G12=PENDING.

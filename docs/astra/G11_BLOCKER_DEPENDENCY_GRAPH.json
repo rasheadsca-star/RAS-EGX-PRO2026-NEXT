@@ -1,15 +1,14 @@
 {
   "schemaVersion": "astra-g11-blocker-dependency-graph-1",
-  "generatedAt": "2026-09-17T22:45:36Z",
+  "generatedAt": "2026-09-18T14:55:11Z",
   "issueFamilyCounts": {
     "symbolIdentity": 1,
-    "currentSessionGap": 18,
-    "regimeInputIncomplete": 20
+    "currentSessionGap": 16,
+    "regimeInputIncomplete": 18
   },
-  "uniqueAffectedSecurityCount": 20,
+  "uniqueAffectedSecurityCount": 18,
   "uniqueAffectedSecurities": [
     "AIHC",
-    "ALRA",
     "AMES",
     "ARVA",
     "DCCC",
@@ -25,7 +24,6 @@
     "NDRL",
     "POCO",
     "SAIB",
-    "SEIGA",
     "SPHT",
     "TORA"
   ],
@@ -38,7 +36,6 @@
     ],
     "currentAndRegime": [
       "AIHC",
-      "ALRA",
       "ARVA",
       "DCCC",
       "DEIN",
@@ -52,7 +49,6 @@
       "NDRL",
       "POCO",
       "SAIB",
-      "SEIGA",
       "SPHT",
       "TORA"
     ],
@@ -63,7 +59,6 @@
   "v16ReasonSets": {
     "CURRENT_EXPECTED_SESSION_ROW_MISSING": [
       "AIHC",
-      "ALRA",
       "ARVA",
       "DCCC",
       "DEIN",
@@ -76,12 +71,14 @@
       "NAPR",
       "NDRL",
       "SAIB",
-      "SEIGA",
       "SPHT",
       "TORA"
     ],
+    "ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE": [
+      "AMES",
+      "GRCA"
+    ],
     "HISTORY_DOCUMENT_NOT_SOURCE_VALID": [
-      "ALRA",
       "DEIN",
       "EPPK",
       "GPPL",
@@ -91,10 +88,6 @@
       "NDRL",
       "SAIB",
       "SPHT"
-    ],
-    "ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE": [
-      "AMES",
-      "GRCA"
     ],
     "HISTORY_FILE_MISSING": [
       "POCO"
@@ -107,7 +100,6 @@
     "feature:HISTORY_FILE_MISSING",
     "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
     "source:AIHC",
-    "source:ALRA",
     "source:ARVA",
     "source:DCCC",
     "source:DEIN",
@@ -121,7 +113,6 @@
     "source:NDRL",
     "source:POCO",
     "source:SAIB",
-    "source:SEIGA",
     "source:SPHT",
     "source:TORA",
     "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT"
@@ -145,26 +136,6 @@
     {
       "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
       "to": "security:AIHC",
-      "relation": "production_readiness"
-    },
-    {
-      "from": "source:ALRA",
-      "to": "feature:CURRENT_CANONICAL_ALRA",
-      "relation": "blocks"
-    },
-    {
-      "from": "feature:CURRENT_CANONICAL_ALRA",
-      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
-      "relation": "can_block_candidate_evaluation"
-    },
-    {
-      "from": "feature:CURRENT_CANONICAL_ALRA",
-      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
-      "relation": "reduces_cross_section"
-    },
-    {
-      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
-      "to": "security:ALRA",
       "relation": "production_readiness"
     },
     {
@@ -428,26 +399,6 @@
       "relation": "production_readiness"
     },
     {
-      "from": "source:SEIGA",
-      "to": "feature:CURRENT_CANONICAL_SEIGA",
-      "relation": "blocks"
-    },
-    {
-      "from": "feature:CURRENT_CANONICAL_SEIGA",
-      "to": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
-      "relation": "can_block_candidate_evaluation"
-    },
-    {
-      "from": "feature:CURRENT_CANONICAL_SEIGA",
-      "to": "regime:EGX_PRO_MARKET_REGIME_BREADTH_1.0",
-      "relation": "reduces_cross_section"
-    },
-    {
-      "from": "strategy:PORTFOLIO_BASKET_EQUAL_WEIGHT",
-      "to": "security:SEIGA",
-      "relation": "production_readiness"
-    },
-    {
       "from": "source:SPHT",
       "to": "feature:CURRENT_CANONICAL_SPHT",
       "relation": "blocks"
@@ -490,11 +441,6 @@
     {
       "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
       "to": "security:AIHC",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
-      "to": "security:ALRA",
       "relation": "not_ready"
     },
     {
@@ -559,11 +505,6 @@
     },
     {
       "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
-      "to": "security:SEIGA",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:CURRENT_EXPECTED_SESSION_ROW_MISSING",
       "to": "security:SPHT",
       "relation": "not_ready"
     },
@@ -573,8 +514,13 @@
       "relation": "not_ready"
     },
     {
-      "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
-      "to": "security:ALRA",
+      "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
+      "to": "security:AMES",
+      "relation": "not_ready"
+    },
+    {
+      "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
+      "to": "security:GRCA",
       "relation": "not_ready"
     },
     {
@@ -620,16 +566,6 @@
     {
       "from": "feature:HISTORY_DOCUMENT_NOT_SOURCE_VALID",
       "to": "security:SPHT",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
-      "to": "security:AMES",
-      "relation": "not_ready"
-    },
-    {
-      "from": "feature:ATR_PCT_OUTSIDE_V16_0_4_TO_14_RANGE",
-      "to": "security:GRCA",
       "relation": "not_ready"
     },
     {

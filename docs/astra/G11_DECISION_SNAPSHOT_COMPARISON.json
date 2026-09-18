@@ -1,696 +1,17 @@
 {
   "schemaVersion": "astra-g11-decision-snapshot-comparison-1",
-  "generatedAt": "2026-09-17T22:49:07.371Z",
+  "generatedAt": "2026-09-18T14:58:30.393Z",
   "immutablePreviousSnapshot": true,
   "previous": {
-    "generatedAt": "2026-09-17T15:16:32.102Z",
-    "session": "2026-09-17",
-    "activeUniverse": 228,
-    "currentCanonicalUniverse": 207,
-    "decisionReadyUniverse": 205,
-    "regimeReadyUniverse": 205,
-    "regimeStatus": "DEGRADED_PARTIAL_UNIVERSE",
-    "decisionSnapshotId": "G09-DS-23ef1af5f2d641fe084fc54c",
-    "semanticDecisionHash": "23ef1af5f2d641fe084fc54c1ade8bc6998d6f07a823c6709499e43039e865b3",
-    "marketUniverseEvaluated": 205,
-    "opportunities": 3,
-    "top5": [
-      {
-        "ticker": "GSSC",
-        "securityId": "EGX:GSSC",
-        "rank": 1,
-        "decisionScore": 0.06323963,
-        "ranking": {
-          "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "score": 0.06323963,
-          "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
-          "components": [
-            {
-              "name": "V16_9_SOURCE_SELECTION_SCORE",
-              "value": 0.06323963,
-              "weight": null,
-              "provenance": {
-                "path": "scripts/research/v16-v169-basket-engine.py",
-                "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
-              }
-            }
-          ],
-          "tieBreak": [
-            "sourceSelectionScore DESC",
-            "ticker ASC"
-          ]
-        },
-        "agreement": {
-          "agreementVersion": "ASTRA_G09_AGREEMENT_1",
-          "strategiesEvaluated": 1,
-          "eligibleStrategies": 1,
-          "positive": 1,
-          "neutral": 0,
-          "negativeRejecting": 0,
-          "unavailableInsufficientData": 0,
-          "agreementCount": 1,
-          "disagreement": 0,
-          "rawEvidenceCount": 5,
-          "independentEvidenceCount": 4,
-          "evidenceFamilies": [
-            "LIQUIDITY",
-            "MODEL_SELECTION",
-            "REGIME",
-            "STRUCTURE"
-          ],
-          "contradictionFlags": []
-        },
-        "evidence": [
-          {
-            "evidenceId": "EV-3bd23d4137f781291e365e",
-            "evidenceFamily": "MODEL_SELECTION",
-            "evidenceType": "STRATEGY_SELECTION",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "score": 0.06323963
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-e632f878d093cd88310ac3",
-            "evidenceFamily": "MODEL_SELECTION",
-            "evidenceType": "BASKET_MEMBERSHIP",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "member": true
-            },
-            "correlatedWith": [
-              "STRATEGY_SELECTION"
-            ],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": false,
-            "duplicateOf": "EV-3bd23d4137f781291e365e"
-          },
-          {
-            "evidenceId": "EV-96705298a370050bf9c552",
-            "evidenceFamily": "LIQUIDITY",
-            "evidenceType": "TURNOVER20",
-            "sourceKind": "MARKET_DATA",
-            "sourceRef": "G11-CAN-GSSC-2026-09-17",
-            "value": {
-              "turnover20Egp": 8809870.811,
-              "passed": true
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-7d073e4ea055e469d22e45",
-            "evidenceFamily": "REGIME",
-            "evidenceType": "MARKET_REGIME",
-            "sourceKind": "MARKET_DATA",
-            "sourceRef": "REGIME-b05db290b1b4f0348d94",
-            "value": {
-              "regime": "RISK_ON",
-              "score": 78
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-7e8cb254c85917640f1f5b",
-            "evidenceFamily": "STRUCTURE",
-            "evidenceType": "ENTRY_STOP_TARGET",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "entry": {
-                "low": 318.4549,
-                "high": 320.5451
-              },
-              "stopLoss": 307.7428,
-              "targets": [
-                335.1763
-              ]
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          }
-        ],
-        "risk": {
-          "riskVersion": "ASTRA_G09_V16_9_RISK_1",
-          "capitalEgp": 1000000,
-          "riskPct": 0.25,
-          "entry": 320.5451,
-          "stopLoss": 307.7428,
-          "targets": [
-            335.1763
-          ],
-          "perShareRisk": 12.8023,
-          "quantity": 195,
-          "maxLossEgp": 2496.45,
-          "exposureEgp": 62506.29,
-          "exposurePct": 6.2506,
-          "memberExposureCapPct": 16.666666666666668,
-          "regimeRiskMultiplier": 1,
-          "units": {
-            "capital": "EGP",
-            "entry": "EGP_PER_SHARE",
-            "stopLoss": "EGP_PER_SHARE",
-            "perShareRisk": "EGP_PER_SHARE",
-            "maxLossEgp": "EGP",
-            "exposureEgp": "EGP",
-            "riskPct": "PERCENT",
-            "exposurePct": "PERCENT"
-          }
-        },
-        "entryPlan": {
-          "low": 318.4549,
-          "high": 320.5451
-        },
-        "stopLoss": 307.7428,
-        "targets": [
-          335.1763
-        ],
-        "strategyExecutionRef": "G09-SE-18847e93f75628e4dd3abce4",
-        "trace": {
-          "candidate": "GSSC",
-          "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "evidenceRefs": [
-            "EV-3bd23d4137f781291e365e",
-            "EV-e632f878d093cd88310ac3",
-            "EV-96705298a370050bf9c552",
-            "EV-7d073e4ea055e469d22e45",
-            "EV-7e8cb254c85917640f1f5b"
-          ],
-          "strategyExecutionRefs": [
-            "G09-SE-18847e93f75628e4dd3abce4"
-          ],
-          "inputSnapshotRefs": [
-            "G11-CAN-GSSC-2026-09-17"
-          ],
-          "decisionInputSnapshotId": "8936144a59f8ad305b3f5a94101bc7d914e51ea9a41e996c6940dffeaad0c58d"
-        }
-      },
-      {
-        "ticker": "CANA",
-        "securityId": "EGX:CANA",
-        "rank": 2,
-        "decisionScore": 0.06019292,
-        "ranking": {
-          "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "score": 0.06019292,
-          "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
-          "components": [
-            {
-              "name": "V16_9_SOURCE_SELECTION_SCORE",
-              "value": 0.06019292,
-              "weight": null,
-              "provenance": {
-                "path": "scripts/research/v16-v169-basket-engine.py",
-                "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
-              }
-            }
-          ],
-          "tieBreak": [
-            "sourceSelectionScore DESC",
-            "ticker ASC"
-          ]
-        },
-        "agreement": {
-          "agreementVersion": "ASTRA_G09_AGREEMENT_1",
-          "strategiesEvaluated": 1,
-          "eligibleStrategies": 1,
-          "positive": 1,
-          "neutral": 0,
-          "negativeRejecting": 0,
-          "unavailableInsufficientData": 0,
-          "agreementCount": 1,
-          "disagreement": 0,
-          "rawEvidenceCount": 5,
-          "independentEvidenceCount": 4,
-          "evidenceFamilies": [
-            "LIQUIDITY",
-            "MODEL_SELECTION",
-            "REGIME",
-            "STRUCTURE"
-          ],
-          "contradictionFlags": []
-        },
-        "evidence": [
-          {
-            "evidenceId": "EV-6c61ef5f3a692994fdc194",
-            "evidenceFamily": "MODEL_SELECTION",
-            "evidenceType": "STRATEGY_SELECTION",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "score": 0.06019292
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-639251d0c44433f52cf487",
-            "evidenceFamily": "MODEL_SELECTION",
-            "evidenceType": "BASKET_MEMBERSHIP",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "member": true
-            },
-            "correlatedWith": [
-              "STRATEGY_SELECTION"
-            ],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": false,
-            "duplicateOf": "EV-6c61ef5f3a692994fdc194"
-          },
-          {
-            "evidenceId": "EV-45f504de1ee387b932ca16",
-            "evidenceFamily": "LIQUIDITY",
-            "evidenceType": "TURNOVER20",
-            "sourceKind": "MARKET_DATA",
-            "sourceRef": "G11-CAN-CANA-2026-09-17",
-            "value": {
-              "turnover20Egp": 15037995.5215,
-              "passed": true
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-7355ec93be336d50e990a2",
-            "evidenceFamily": "REGIME",
-            "evidenceType": "MARKET_REGIME",
-            "sourceKind": "MARKET_DATA",
-            "sourceRef": "REGIME-b05db290b1b4f0348d94",
-            "value": {
-              "regime": "RISK_ON",
-              "score": 78
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-3cbfef6d39d05009a2e5e4",
-            "evidenceFamily": "STRUCTURE",
-            "evidenceType": "ENTRY_STOP_TARGET",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "entry": {
-                "low": 43.9079,
-                "high": 44.0921
-              },
-              "stopLoss": 42.9644,
-              "targets": [
-                45.3809
-              ]
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          }
-        ],
-        "risk": {
-          "riskVersion": "ASTRA_G09_V16_9_RISK_1",
-          "capitalEgp": 1000000,
-          "riskPct": 0.25,
-          "entry": 44.0921,
-          "stopLoss": 42.9644,
-          "targets": [
-            45.3809
-          ],
-          "perShareRisk": 1.1277,
-          "quantity": 2216,
-          "maxLossEgp": 2498.98,
-          "exposureEgp": 97708.09,
-          "exposurePct": 9.7708,
-          "memberExposureCapPct": 16.666666666666668,
-          "regimeRiskMultiplier": 1,
-          "units": {
-            "capital": "EGP",
-            "entry": "EGP_PER_SHARE",
-            "stopLoss": "EGP_PER_SHARE",
-            "perShareRisk": "EGP_PER_SHARE",
-            "maxLossEgp": "EGP",
-            "exposureEgp": "EGP",
-            "riskPct": "PERCENT",
-            "exposurePct": "PERCENT"
-          }
-        },
-        "entryPlan": {
-          "low": 43.9079,
-          "high": 44.0921
-        },
-        "stopLoss": 42.9644,
-        "targets": [
-          45.3809
-        ],
-        "strategyExecutionRef": "G09-SE-18847e93f75628e4dd3abce4",
-        "trace": {
-          "candidate": "CANA",
-          "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "evidenceRefs": [
-            "EV-6c61ef5f3a692994fdc194",
-            "EV-639251d0c44433f52cf487",
-            "EV-45f504de1ee387b932ca16",
-            "EV-7355ec93be336d50e990a2",
-            "EV-3cbfef6d39d05009a2e5e4"
-          ],
-          "strategyExecutionRefs": [
-            "G09-SE-18847e93f75628e4dd3abce4"
-          ],
-          "inputSnapshotRefs": [
-            "G11-CAN-CANA-2026-09-17"
-          ],
-          "decisionInputSnapshotId": "8936144a59f8ad305b3f5a94101bc7d914e51ea9a41e996c6940dffeaad0c58d"
-        }
-      },
-      {
-        "ticker": "SDTI",
-        "securityId": "EGX:SDTI",
-        "rank": 3,
-        "decisionScore": 0.05995954,
-        "ranking": {
-          "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "score": 0.05995954,
-          "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
-          "components": [
-            {
-              "name": "V16_9_SOURCE_SELECTION_SCORE",
-              "value": 0.05995954,
-              "weight": null,
-              "provenance": {
-                "path": "scripts/research/v16-v169-basket-engine.py",
-                "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
-              }
-            }
-          ],
-          "tieBreak": [
-            "sourceSelectionScore DESC",
-            "ticker ASC"
-          ]
-        },
-        "agreement": {
-          "agreementVersion": "ASTRA_G09_AGREEMENT_1",
-          "strategiesEvaluated": 1,
-          "eligibleStrategies": 1,
-          "positive": 1,
-          "neutral": 0,
-          "negativeRejecting": 0,
-          "unavailableInsufficientData": 0,
-          "agreementCount": 1,
-          "disagreement": 0,
-          "rawEvidenceCount": 5,
-          "independentEvidenceCount": 4,
-          "evidenceFamilies": [
-            "LIQUIDITY",
-            "MODEL_SELECTION",
-            "REGIME",
-            "STRUCTURE"
-          ],
-          "contradictionFlags": []
-        },
-        "evidence": [
-          {
-            "evidenceId": "EV-cbfc5448ca83d0de2866f8",
-            "evidenceFamily": "MODEL_SELECTION",
-            "evidenceType": "STRATEGY_SELECTION",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "score": 0.05995954
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-a7812c48613c1c69e5941c",
-            "evidenceFamily": "MODEL_SELECTION",
-            "evidenceType": "BASKET_MEMBERSHIP",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "member": true
-            },
-            "correlatedWith": [
-              "STRATEGY_SELECTION"
-            ],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": false,
-            "duplicateOf": "EV-cbfc5448ca83d0de2866f8"
-          },
-          {
-            "evidenceId": "EV-e99814d910450d284dae6e",
-            "evidenceFamily": "LIQUIDITY",
-            "evidenceType": "TURNOVER20",
-            "sourceKind": "MARKET_DATA",
-            "sourceRef": "G11-CAN-SDTI-2026-09-17",
-            "value": {
-              "turnover20Egp": 20258832.553,
-              "passed": true
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-5b55907247b3ff46a8601d",
-            "evidenceFamily": "REGIME",
-            "evidenceType": "MARKET_REGIME",
-            "sourceKind": "MARKET_DATA",
-            "sourceRef": "REGIME-b05db290b1b4f0348d94",
-            "value": {
-              "regime": "RISK_ON",
-              "score": 78
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          },
-          {
-            "evidenceId": "EV-95dd5938c403d82b41ace6",
-            "evidenceFamily": "STRUCTURE",
-            "evidenceType": "ENTRY_STOP_TARGET",
-            "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-18847e93f75628e4dd3abce4",
-            "value": {
-              "entry": {
-                "low": 75.2139,
-                "high": 75.5861
-              },
-              "stopLoss": 73.3069,
-              "targets": [
-                78.1909
-              ]
-            },
-            "correlatedWith": [],
-            "provenance": {
-              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
-              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
-            },
-            "independent": true,
-            "duplicateOf": null
-          }
-        ],
-        "risk": {
-          "riskVersion": "ASTRA_G09_V16_9_RISK_1",
-          "capitalEgp": 1000000,
-          "riskPct": 0.25,
-          "entry": 75.5861,
-          "stopLoss": 73.3069,
-          "targets": [
-            78.1909
-          ],
-          "perShareRisk": 2.2792,
-          "quantity": 1096,
-          "maxLossEgp": 2498,
-          "exposureEgp": 82842.37,
-          "exposurePct": 8.2842,
-          "memberExposureCapPct": 16.666666666666668,
-          "regimeRiskMultiplier": 1,
-          "units": {
-            "capital": "EGP",
-            "entry": "EGP_PER_SHARE",
-            "stopLoss": "EGP_PER_SHARE",
-            "perShareRisk": "EGP_PER_SHARE",
-            "maxLossEgp": "EGP",
-            "exposureEgp": "EGP",
-            "riskPct": "PERCENT",
-            "exposurePct": "PERCENT"
-          }
-        },
-        "entryPlan": {
-          "low": 75.2139,
-          "high": 75.5861
-        },
-        "stopLoss": 73.3069,
-        "targets": [
-          78.1909
-        ],
-        "strategyExecutionRef": "G09-SE-18847e93f75628e4dd3abce4",
-        "trace": {
-          "candidate": "SDTI",
-          "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "evidenceRefs": [
-            "EV-cbfc5448ca83d0de2866f8",
-            "EV-a7812c48613c1c69e5941c",
-            "EV-e99814d910450d284dae6e",
-            "EV-5b55907247b3ff46a8601d",
-            "EV-95dd5938c403d82b41ace6"
-          ],
-          "strategyExecutionRefs": [
-            "G09-SE-18847e93f75628e4dd3abce4"
-          ],
-          "inputSnapshotRefs": [
-            "G11-CAN-SDTI-2026-09-17"
-          ],
-          "decisionInputSnapshotId": "8936144a59f8ad305b3f5a94101bc7d914e51ea9a41e996c6940dffeaad0c58d"
-        }
-      }
-    ],
-    "basketPlan": null,
-    "riskPlan": null,
-    "regime": {
-      "regimeId": "REGIME-b05db290b1b4f0348d94",
-      "regime": "RISK_ON",
-      "score": 78,
-      "version": "EGX_PRO_MARKET_REGIME_BREADTH_1.0",
-      "metrics": {
-        "sessionDate": "2026-09-17",
-        "universeCount": 205,
-        "analyzedCount": 205,
-        "participationPct": 100,
-        "advances": 142,
-        "declines": 51,
-        "unchanged": 12,
-        "advancePct": 73.6,
-        "advanceDeclineRatio": 2.78,
-        "aboveSma20Pct": 44.9,
-        "aboveSma50Pct": 62.9,
-        "medianReturn1Pct": 0.91,
-        "medianReturn5Pct": -0.87,
-        "medianReturn20Pct": 0,
-        "volatility20AnnualizedPct": 35.97,
-        "highVolumeParticipationPct": 12.2
-      },
-      "evidenceReasons": [
-        {
-          "code": "BREADTH_ADVANCE_PCT",
-          "value": 73.6
-        },
-        {
-          "code": "ABOVE_SMA20_PCT",
-          "value": 44.9
-        },
-        {
-          "code": "ABOVE_SMA50_PCT",
-          "value": 62.9
-        },
-        {
-          "code": "MEDIAN_RETURN20_PCT",
-          "value": 0
-        },
-        {
-          "code": "MEDIAN_RETURN5_PCT",
-          "value": -0.87
-        },
-        {
-          "code": "VOLATILITY20_ANNUALIZED_PCT",
-          "value": 35.97
-        },
-        {
-          "code": "REGIME_SCORE",
-          "value": 78
-        },
-        {
-          "code": "REGIME_CLASS",
-          "value": "RISK_ON"
-        }
-      ],
-      "eligibleStrategyFamilies": [
-        "V16_CHAMPION_LINEAGE"
-      ],
-      "riskMultiplier": 1,
-      "maxOpenRiskPct": 2,
-      "maxTradeRiskPct": 0.25,
-      "semanticHash": "b05db290b1b4f0348d946bfc648030bcb07fcd1ff553df04d62ecc3720c518b7"
-    },
-    "diagnostics": [],
-    "legacyNetworkCalls": 0,
-    "productionCutover": false
-  },
-  "repairedCurrent": {
     "generatedAt": "2026-09-17T22:48:47.410Z",
     "session": "2026-09-17",
-    "activeUniverse": 228,
+    "activeUniverse": 226,
     "currentCanonicalUniverse": 210,
     "decisionReadyUniverse": 208,
     "regimeReadyUniverse": 208,
     "regimeStatus": "DEGRADED_PARTIAL_UNIVERSE",
-    "decisionSnapshotId": "G09-DS-27b6b692e1ca73b47d02d523",
-    "semanticDecisionHash": "27b6b692e1ca73b47d02d5237a1a245a86116dc29ad68dde15495c416e1625a3",
+    "decisionSnapshotId": "G09-DS-5118b099a50d002b33a51358",
+    "semanticDecisionHash": "5118b099a50d002b33a51358824255a2f4bf449d8b829bfd8f6e84f835941658",
     "marketUniverseEvaluated": 208,
     "opportunities": 3,
     "top5": [
@@ -698,15 +19,15 @@
         "ticker": "GSSC",
         "securityId": "EGX:GSSC",
         "rank": 1,
-        "decisionScore": 0.06322635,
+        "decisionScore": 0.0632331,
         "ranking": {
           "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "score": 0.06322635,
+          "score": 0.0632331,
           "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
           "components": [
             {
               "name": "V16_9_SOURCE_SELECTION_SCORE",
-              "value": 0.06322635,
+              "value": 0.0632331,
               "weight": null,
               "provenance": {
                 "path": "scripts/research/v16-v169-basket-engine.py",
@@ -741,13 +62,13 @@
         },
         "evidence": [
           {
-            "evidenceId": "EV-e7ccbfc6543d03fef490cb",
+            "evidenceId": "EV-38ea24214e1b7b678eef5c",
             "evidenceFamily": "MODEL_SELECTION",
             "evidenceType": "STRATEGY_SELECTION",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
-              "score": 0.06322635
+              "score": 0.0632331
             },
             "correlatedWith": [],
             "provenance": {
@@ -758,11 +79,11 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-4331cbfac914be0188db5e",
+            "evidenceId": "EV-86b22bbf123b8035ac9cf4",
             "evidenceFamily": "MODEL_SELECTION",
             "evidenceType": "BASKET_MEMBERSHIP",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
               "member": true
             },
@@ -774,10 +95,10 @@
               "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
             },
             "independent": false,
-            "duplicateOf": "EV-e7ccbfc6543d03fef490cb"
+            "duplicateOf": "EV-38ea24214e1b7b678eef5c"
           },
           {
-            "evidenceId": "EV-5655acf626631fb58517b2",
+            "evidenceId": "EV-38d0ddfc3336fd428fa76b",
             "evidenceFamily": "LIQUIDITY",
             "evidenceType": "TURNOVER20",
             "sourceKind": "MARKET_DATA",
@@ -795,7 +116,7 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-8434de1e69b829a83ae82b",
+            "evidenceId": "EV-3c7ed038e693bf490cc768",
             "evidenceFamily": "REGIME",
             "evidenceType": "MARKET_REGIME",
             "sourceKind": "MARKET_DATA",
@@ -813,11 +134,11 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-eec67ab9be4ca39a473bf7",
+            "evidenceId": "EV-1841f2fdc17fb8e5ba0330",
             "evidenceFamily": "STRUCTURE",
             "evidenceType": "ENTRY_STOP_TARGET",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
               "entry": {
                 "low": 318.4549,
@@ -872,39 +193,39 @@
         "targets": [
           335.1763
         ],
-        "strategyExecutionRef": "G09-SE-d0b6dff605a016e16164d350",
+        "strategyExecutionRef": "G09-SE-fa480732cde705219cd10c4c",
         "trace": {
           "candidate": "GSSC",
           "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
           "evidenceRefs": [
-            "EV-e7ccbfc6543d03fef490cb",
-            "EV-4331cbfac914be0188db5e",
-            "EV-5655acf626631fb58517b2",
-            "EV-8434de1e69b829a83ae82b",
-            "EV-eec67ab9be4ca39a473bf7"
+            "EV-38ea24214e1b7b678eef5c",
+            "EV-86b22bbf123b8035ac9cf4",
+            "EV-38d0ddfc3336fd428fa76b",
+            "EV-3c7ed038e693bf490cc768",
+            "EV-1841f2fdc17fb8e5ba0330"
           ],
           "strategyExecutionRefs": [
-            "G09-SE-d0b6dff605a016e16164d350"
+            "G09-SE-fa480732cde705219cd10c4c"
           ],
           "inputSnapshotRefs": [
             "G11-CAN-GSSC-2026-09-17"
           ],
-          "decisionInputSnapshotId": "8e0d53dcbfca0c7a5f9454593c002cc416a0155b66c0c40a0e1888df1b91101b"
+          "decisionInputSnapshotId": "d569d92516941c2f2433a6275d7cd44dd097832b6520962a848edfa2fc9134e0"
         }
       },
       {
         "ticker": "CANA",
         "securityId": "EGX:CANA",
         "rank": 2,
-        "decisionScore": 0.0601823,
+        "decisionScore": 0.06018289,
         "ranking": {
           "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "score": 0.0601823,
+          "score": 0.06018289,
           "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
           "components": [
             {
               "name": "V16_9_SOURCE_SELECTION_SCORE",
-              "value": 0.0601823,
+              "value": 0.06018289,
               "weight": null,
               "provenance": {
                 "path": "scripts/research/v16-v169-basket-engine.py",
@@ -939,13 +260,13 @@
         },
         "evidence": [
           {
-            "evidenceId": "EV-cc04beebbaeaad249b6a1e",
+            "evidenceId": "EV-1293ec0b0bd7e1b690b089",
             "evidenceFamily": "MODEL_SELECTION",
             "evidenceType": "STRATEGY_SELECTION",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
-              "score": 0.0601823
+              "score": 0.06018289
             },
             "correlatedWith": [],
             "provenance": {
@@ -956,11 +277,11 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-23338a4ed209d7016160a1",
+            "evidenceId": "EV-f78331caae2fa10f3f9f84",
             "evidenceFamily": "MODEL_SELECTION",
             "evidenceType": "BASKET_MEMBERSHIP",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
               "member": true
             },
@@ -972,10 +293,10 @@
               "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
             },
             "independent": false,
-            "duplicateOf": "EV-cc04beebbaeaad249b6a1e"
+            "duplicateOf": "EV-1293ec0b0bd7e1b690b089"
           },
           {
-            "evidenceId": "EV-19e7ffdaddc01f7f7c5040",
+            "evidenceId": "EV-e1c10948b9113674172f15",
             "evidenceFamily": "LIQUIDITY",
             "evidenceType": "TURNOVER20",
             "sourceKind": "MARKET_DATA",
@@ -993,7 +314,7 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-1394723c3c82aca05e41d2",
+            "evidenceId": "EV-c084a11216b3dac1ca267a",
             "evidenceFamily": "REGIME",
             "evidenceType": "MARKET_REGIME",
             "sourceKind": "MARKET_DATA",
@@ -1011,11 +332,11 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-2a16dce4991c0b2a6d04e3",
+            "evidenceId": "EV-70f5cdb511a302ac78ecf1",
             "evidenceFamily": "STRUCTURE",
             "evidenceType": "ENTRY_STOP_TARGET",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
               "entry": {
                 "low": 43.9079,
@@ -1070,39 +391,39 @@
         "targets": [
           45.3809
         ],
-        "strategyExecutionRef": "G09-SE-d0b6dff605a016e16164d350",
+        "strategyExecutionRef": "G09-SE-fa480732cde705219cd10c4c",
         "trace": {
           "candidate": "CANA",
           "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
           "evidenceRefs": [
-            "EV-cc04beebbaeaad249b6a1e",
-            "EV-23338a4ed209d7016160a1",
-            "EV-19e7ffdaddc01f7f7c5040",
-            "EV-1394723c3c82aca05e41d2",
-            "EV-2a16dce4991c0b2a6d04e3"
+            "EV-1293ec0b0bd7e1b690b089",
+            "EV-f78331caae2fa10f3f9f84",
+            "EV-e1c10948b9113674172f15",
+            "EV-c084a11216b3dac1ca267a",
+            "EV-70f5cdb511a302ac78ecf1"
           ],
           "strategyExecutionRefs": [
-            "G09-SE-d0b6dff605a016e16164d350"
+            "G09-SE-fa480732cde705219cd10c4c"
           ],
           "inputSnapshotRefs": [
             "G11-CAN-CANA-2026-09-17"
           ],
-          "decisionInputSnapshotId": "8e0d53dcbfca0c7a5f9454593c002cc416a0155b66c0c40a0e1888df1b91101b"
+          "decisionInputSnapshotId": "d569d92516941c2f2433a6275d7cd44dd097832b6520962a848edfa2fc9134e0"
         }
       },
       {
         "ticker": "SDTI",
         "securityId": "EGX:SDTI",
         "rank": 3,
-        "decisionScore": 0.05995089,
+        "decisionScore": 0.05995926,
         "ranking": {
           "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
-          "score": 0.05995089,
+          "score": 0.05995926,
           "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
           "components": [
             {
               "name": "V16_9_SOURCE_SELECTION_SCORE",
-              "value": 0.05995089,
+              "value": 0.05995926,
               "weight": null,
               "provenance": {
                 "path": "scripts/research/v16-v169-basket-engine.py",
@@ -1137,13 +458,13 @@
         },
         "evidence": [
           {
-            "evidenceId": "EV-509770bfd14af0ed2396ae",
+            "evidenceId": "EV-1bf9cf578a2c3eafb131a5",
             "evidenceFamily": "MODEL_SELECTION",
             "evidenceType": "STRATEGY_SELECTION",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
-              "score": 0.05995089
+              "score": 0.05995926
             },
             "correlatedWith": [],
             "provenance": {
@@ -1154,11 +475,11 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-a65b75d65fb3337c734544",
+            "evidenceId": "EV-8f1efebae34b715124ff0d",
             "evidenceFamily": "MODEL_SELECTION",
             "evidenceType": "BASKET_MEMBERSHIP",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
               "member": true
             },
@@ -1170,10 +491,10 @@
               "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
             },
             "independent": false,
-            "duplicateOf": "EV-509770bfd14af0ed2396ae"
+            "duplicateOf": "EV-1bf9cf578a2c3eafb131a5"
           },
           {
-            "evidenceId": "EV-d1d827b304f3c11600cf31",
+            "evidenceId": "EV-c44e6f502aa2092fe22f62",
             "evidenceFamily": "LIQUIDITY",
             "evidenceType": "TURNOVER20",
             "sourceKind": "MARKET_DATA",
@@ -1191,7 +512,7 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-9afcf68b63fb19056a54a8",
+            "evidenceId": "EV-cb8cc28666859f119734c7",
             "evidenceFamily": "REGIME",
             "evidenceType": "MARKET_REGIME",
             "sourceKind": "MARKET_DATA",
@@ -1209,11 +530,11 @@
             "duplicateOf": null
           },
           {
-            "evidenceId": "EV-74f996a2e763991f2f2f6a",
+            "evidenceId": "EV-59ca7cfbe0c179a4d861e5",
             "evidenceFamily": "STRUCTURE",
             "evidenceType": "ENTRY_STOP_TARGET",
             "sourceKind": "STRATEGY",
-            "sourceRef": "G09-SE-d0b6dff605a016e16164d350",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
             "value": {
               "entry": {
                 "low": 75.2139,
@@ -1268,24 +589,24 @@
         "targets": [
           78.1909
         ],
-        "strategyExecutionRef": "G09-SE-d0b6dff605a016e16164d350",
+        "strategyExecutionRef": "G09-SE-fa480732cde705219cd10c4c",
         "trace": {
           "candidate": "SDTI",
           "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
           "evidenceRefs": [
-            "EV-509770bfd14af0ed2396ae",
-            "EV-a65b75d65fb3337c734544",
-            "EV-d1d827b304f3c11600cf31",
-            "EV-9afcf68b63fb19056a54a8",
-            "EV-74f996a2e763991f2f2f6a"
+            "EV-1bf9cf578a2c3eafb131a5",
+            "EV-8f1efebae34b715124ff0d",
+            "EV-c44e6f502aa2092fe22f62",
+            "EV-cb8cc28666859f119734c7",
+            "EV-59ca7cfbe0c179a4d861e5"
           ],
           "strategyExecutionRefs": [
-            "G09-SE-d0b6dff605a016e16164d350"
+            "G09-SE-fa480732cde705219cd10c4c"
           ],
           "inputSnapshotRefs": [
             "G11-CAN-SDTI-2026-09-17"
           ],
-          "decisionInputSnapshotId": "8e0d53dcbfca0c7a5f9454593c002cc416a0155b66c0c40a0e1888df1b91101b"
+          "decisionInputSnapshotId": "d569d92516941c2f2433a6275d7cd44dd097832b6520962a848edfa2fc9134e0"
         }
       }
     ],
@@ -1360,22 +681,701 @@
     "legacyNetworkCalls": 0,
     "productionCutover": false
   },
-  "materialChange": true,
+  "repairedCurrent": {
+    "generatedAt": "2026-09-18T14:58:19.243Z",
+    "session": "2026-09-17",
+    "activeUniverse": 226,
+    "currentCanonicalUniverse": 210,
+    "decisionReadyUniverse": 208,
+    "regimeReadyUniverse": 208,
+    "regimeStatus": "DEGRADED_PARTIAL_UNIVERSE",
+    "decisionSnapshotId": "G09-DS-5118b099a50d002b33a51358",
+    "semanticDecisionHash": "5118b099a50d002b33a51358824255a2f4bf449d8b829bfd8f6e84f835941658",
+    "marketUniverseEvaluated": 208,
+    "opportunities": 3,
+    "top5": [
+      {
+        "ticker": "GSSC",
+        "securityId": "EGX:GSSC",
+        "rank": 1,
+        "decisionScore": 0.0632331,
+        "ranking": {
+          "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+          "score": 0.0632331,
+          "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
+          "components": [
+            {
+              "name": "V16_9_SOURCE_SELECTION_SCORE",
+              "value": 0.0632331,
+              "weight": null,
+              "provenance": {
+                "path": "scripts/research/v16-v169-basket-engine.py",
+                "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
+              }
+            }
+          ],
+          "tieBreak": [
+            "sourceSelectionScore DESC",
+            "ticker ASC"
+          ]
+        },
+        "agreement": {
+          "agreementVersion": "ASTRA_G09_AGREEMENT_1",
+          "strategiesEvaluated": 1,
+          "eligibleStrategies": 1,
+          "positive": 1,
+          "neutral": 0,
+          "negativeRejecting": 0,
+          "unavailableInsufficientData": 0,
+          "agreementCount": 1,
+          "disagreement": 0,
+          "rawEvidenceCount": 5,
+          "independentEvidenceCount": 4,
+          "evidenceFamilies": [
+            "LIQUIDITY",
+            "MODEL_SELECTION",
+            "REGIME",
+            "STRUCTURE"
+          ],
+          "contradictionFlags": []
+        },
+        "evidence": [
+          {
+            "evidenceId": "EV-38ea24214e1b7b678eef5c",
+            "evidenceFamily": "MODEL_SELECTION",
+            "evidenceType": "STRATEGY_SELECTION",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "score": 0.0632331
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-86b22bbf123b8035ac9cf4",
+            "evidenceFamily": "MODEL_SELECTION",
+            "evidenceType": "BASKET_MEMBERSHIP",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "member": true
+            },
+            "correlatedWith": [
+              "STRATEGY_SELECTION"
+            ],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": false,
+            "duplicateOf": "EV-38ea24214e1b7b678eef5c"
+          },
+          {
+            "evidenceId": "EV-38d0ddfc3336fd428fa76b",
+            "evidenceFamily": "LIQUIDITY",
+            "evidenceType": "TURNOVER20",
+            "sourceKind": "MARKET_DATA",
+            "sourceRef": "G11-CAN-GSSC-2026-09-17",
+            "value": {
+              "turnover20Egp": 8809870.811,
+              "passed": true
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-3c7ed038e693bf490cc768",
+            "evidenceFamily": "REGIME",
+            "evidenceType": "MARKET_REGIME",
+            "sourceKind": "MARKET_DATA",
+            "sourceRef": "REGIME-8af0e3913777323262da",
+            "value": {
+              "regime": "RISK_ON",
+              "score": 78
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-1841f2fdc17fb8e5ba0330",
+            "evidenceFamily": "STRUCTURE",
+            "evidenceType": "ENTRY_STOP_TARGET",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "entry": {
+                "low": 318.4549,
+                "high": 320.5451
+              },
+              "stopLoss": 307.7428,
+              "targets": [
+                335.1763
+              ]
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          }
+        ],
+        "risk": {
+          "riskVersion": "ASTRA_G09_V16_9_RISK_1",
+          "capitalEgp": 1000000,
+          "riskPct": 0.25,
+          "entry": 320.5451,
+          "stopLoss": 307.7428,
+          "targets": [
+            335.1763
+          ],
+          "perShareRisk": 12.8023,
+          "quantity": 195,
+          "maxLossEgp": 2496.45,
+          "exposureEgp": 62506.29,
+          "exposurePct": 6.2506,
+          "memberExposureCapPct": 16.666666666666668,
+          "regimeRiskMultiplier": 1,
+          "units": {
+            "capital": "EGP",
+            "entry": "EGP_PER_SHARE",
+            "stopLoss": "EGP_PER_SHARE",
+            "perShareRisk": "EGP_PER_SHARE",
+            "maxLossEgp": "EGP",
+            "exposureEgp": "EGP",
+            "riskPct": "PERCENT",
+            "exposurePct": "PERCENT"
+          }
+        },
+        "entryPlan": {
+          "low": 318.4549,
+          "high": 320.5451
+        },
+        "stopLoss": 307.7428,
+        "targets": [
+          335.1763
+        ],
+        "strategyExecutionRef": "G09-SE-fa480732cde705219cd10c4c",
+        "trace": {
+          "candidate": "GSSC",
+          "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+          "evidenceRefs": [
+            "EV-38ea24214e1b7b678eef5c",
+            "EV-86b22bbf123b8035ac9cf4",
+            "EV-38d0ddfc3336fd428fa76b",
+            "EV-3c7ed038e693bf490cc768",
+            "EV-1841f2fdc17fb8e5ba0330"
+          ],
+          "strategyExecutionRefs": [
+            "G09-SE-fa480732cde705219cd10c4c"
+          ],
+          "inputSnapshotRefs": [
+            "G11-CAN-GSSC-2026-09-17"
+          ],
+          "decisionInputSnapshotId": "d569d92516941c2f2433a6275d7cd44dd097832b6520962a848edfa2fc9134e0"
+        }
+      },
+      {
+        "ticker": "CANA",
+        "securityId": "EGX:CANA",
+        "rank": 2,
+        "decisionScore": 0.06018289,
+        "ranking": {
+          "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+          "score": 0.06018289,
+          "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
+          "components": [
+            {
+              "name": "V16_9_SOURCE_SELECTION_SCORE",
+              "value": 0.06018289,
+              "weight": null,
+              "provenance": {
+                "path": "scripts/research/v16-v169-basket-engine.py",
+                "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
+              }
+            }
+          ],
+          "tieBreak": [
+            "sourceSelectionScore DESC",
+            "ticker ASC"
+          ]
+        },
+        "agreement": {
+          "agreementVersion": "ASTRA_G09_AGREEMENT_1",
+          "strategiesEvaluated": 1,
+          "eligibleStrategies": 1,
+          "positive": 1,
+          "neutral": 0,
+          "negativeRejecting": 0,
+          "unavailableInsufficientData": 0,
+          "agreementCount": 1,
+          "disagreement": 0,
+          "rawEvidenceCount": 5,
+          "independentEvidenceCount": 4,
+          "evidenceFamilies": [
+            "LIQUIDITY",
+            "MODEL_SELECTION",
+            "REGIME",
+            "STRUCTURE"
+          ],
+          "contradictionFlags": []
+        },
+        "evidence": [
+          {
+            "evidenceId": "EV-1293ec0b0bd7e1b690b089",
+            "evidenceFamily": "MODEL_SELECTION",
+            "evidenceType": "STRATEGY_SELECTION",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "score": 0.06018289
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-f78331caae2fa10f3f9f84",
+            "evidenceFamily": "MODEL_SELECTION",
+            "evidenceType": "BASKET_MEMBERSHIP",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "member": true
+            },
+            "correlatedWith": [
+              "STRATEGY_SELECTION"
+            ],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": false,
+            "duplicateOf": "EV-1293ec0b0bd7e1b690b089"
+          },
+          {
+            "evidenceId": "EV-e1c10948b9113674172f15",
+            "evidenceFamily": "LIQUIDITY",
+            "evidenceType": "TURNOVER20",
+            "sourceKind": "MARKET_DATA",
+            "sourceRef": "G11-CAN-CANA-2026-09-17",
+            "value": {
+              "turnover20Egp": 15037995.5215,
+              "passed": true
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-c084a11216b3dac1ca267a",
+            "evidenceFamily": "REGIME",
+            "evidenceType": "MARKET_REGIME",
+            "sourceKind": "MARKET_DATA",
+            "sourceRef": "REGIME-8af0e3913777323262da",
+            "value": {
+              "regime": "RISK_ON",
+              "score": 78
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-70f5cdb511a302ac78ecf1",
+            "evidenceFamily": "STRUCTURE",
+            "evidenceType": "ENTRY_STOP_TARGET",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "entry": {
+                "low": 43.9079,
+                "high": 44.0921
+              },
+              "stopLoss": 42.9644,
+              "targets": [
+                45.3809
+              ]
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          }
+        ],
+        "risk": {
+          "riskVersion": "ASTRA_G09_V16_9_RISK_1",
+          "capitalEgp": 1000000,
+          "riskPct": 0.25,
+          "entry": 44.0921,
+          "stopLoss": 42.9644,
+          "targets": [
+            45.3809
+          ],
+          "perShareRisk": 1.1277,
+          "quantity": 2216,
+          "maxLossEgp": 2498.98,
+          "exposureEgp": 97708.09,
+          "exposurePct": 9.7708,
+          "memberExposureCapPct": 16.666666666666668,
+          "regimeRiskMultiplier": 1,
+          "units": {
+            "capital": "EGP",
+            "entry": "EGP_PER_SHARE",
+            "stopLoss": "EGP_PER_SHARE",
+            "perShareRisk": "EGP_PER_SHARE",
+            "maxLossEgp": "EGP",
+            "exposureEgp": "EGP",
+            "riskPct": "PERCENT",
+            "exposurePct": "PERCENT"
+          }
+        },
+        "entryPlan": {
+          "low": 43.9079,
+          "high": 44.0921
+        },
+        "stopLoss": 42.9644,
+        "targets": [
+          45.3809
+        ],
+        "strategyExecutionRef": "G09-SE-fa480732cde705219cd10c4c",
+        "trace": {
+          "candidate": "CANA",
+          "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+          "evidenceRefs": [
+            "EV-1293ec0b0bd7e1b690b089",
+            "EV-f78331caae2fa10f3f9f84",
+            "EV-e1c10948b9113674172f15",
+            "EV-c084a11216b3dac1ca267a",
+            "EV-70f5cdb511a302ac78ecf1"
+          ],
+          "strategyExecutionRefs": [
+            "G09-SE-fa480732cde705219cd10c4c"
+          ],
+          "inputSnapshotRefs": [
+            "G11-CAN-CANA-2026-09-17"
+          ],
+          "decisionInputSnapshotId": "d569d92516941c2f2433a6275d7cd44dd097832b6520962a848edfa2fc9134e0"
+        }
+      },
+      {
+        "ticker": "SDTI",
+        "securityId": "EGX:SDTI",
+        "rank": 3,
+        "decisionScore": 0.05995926,
+        "ranking": {
+          "version": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+          "score": 0.05995926,
+          "meaning": "Source-pinned V16.9 selection ordering score; not a probability of success.",
+          "components": [
+            {
+              "name": "V16_9_SOURCE_SELECTION_SCORE",
+              "value": 0.05995926,
+              "weight": null,
+              "provenance": {
+                "path": "scripts/research/v16-v169-basket-engine.py",
+                "rule": "Preserve source selection order/score; no new weighted decision-score formula is introduced in G09."
+              }
+            }
+          ],
+          "tieBreak": [
+            "sourceSelectionScore DESC",
+            "ticker ASC"
+          ]
+        },
+        "agreement": {
+          "agreementVersion": "ASTRA_G09_AGREEMENT_1",
+          "strategiesEvaluated": 1,
+          "eligibleStrategies": 1,
+          "positive": 1,
+          "neutral": 0,
+          "negativeRejecting": 0,
+          "unavailableInsufficientData": 0,
+          "agreementCount": 1,
+          "disagreement": 0,
+          "rawEvidenceCount": 5,
+          "independentEvidenceCount": 4,
+          "evidenceFamilies": [
+            "LIQUIDITY",
+            "MODEL_SELECTION",
+            "REGIME",
+            "STRUCTURE"
+          ],
+          "contradictionFlags": []
+        },
+        "evidence": [
+          {
+            "evidenceId": "EV-1bf9cf578a2c3eafb131a5",
+            "evidenceFamily": "MODEL_SELECTION",
+            "evidenceType": "STRATEGY_SELECTION",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "score": 0.05995926
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-8f1efebae34b715124ff0d",
+            "evidenceFamily": "MODEL_SELECTION",
+            "evidenceType": "BASKET_MEMBERSHIP",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "member": true
+            },
+            "correlatedWith": [
+              "STRATEGY_SELECTION"
+            ],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": false,
+            "duplicateOf": "EV-1bf9cf578a2c3eafb131a5"
+          },
+          {
+            "evidenceId": "EV-c44e6f502aa2092fe22f62",
+            "evidenceFamily": "LIQUIDITY",
+            "evidenceType": "TURNOVER20",
+            "sourceKind": "MARKET_DATA",
+            "sourceRef": "G11-CAN-SDTI-2026-09-17",
+            "value": {
+              "turnover20Egp": 20258832.553,
+              "passed": true
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-cb8cc28666859f119734c7",
+            "evidenceFamily": "REGIME",
+            "evidenceType": "MARKET_REGIME",
+            "sourceKind": "MARKET_DATA",
+            "sourceRef": "REGIME-8af0e3913777323262da",
+            "value": {
+              "regime": "RISK_ON",
+              "score": 78
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          },
+          {
+            "evidenceId": "EV-59ca7cfbe0c179a4d861e5",
+            "evidenceFamily": "STRUCTURE",
+            "evidenceType": "ENTRY_STOP_TARGET",
+            "sourceKind": "STRATEGY",
+            "sourceRef": "G09-SE-fa480732cde705219cd10c4c",
+            "value": {
+              "entry": {
+                "low": 75.2139,
+                "high": 75.5861
+              },
+              "stopLoss": 73.3069,
+              "targets": [
+                78.1909
+              ]
+            },
+            "correlatedWith": [],
+            "provenance": {
+              "pipelineVersion": "ASTRA_G09_PIPELINE_1",
+              "evidenceVersion": "ASTRA_G09_EVIDENCE_1"
+            },
+            "independent": true,
+            "duplicateOf": null
+          }
+        ],
+        "risk": {
+          "riskVersion": "ASTRA_G09_V16_9_RISK_1",
+          "capitalEgp": 1000000,
+          "riskPct": 0.25,
+          "entry": 75.5861,
+          "stopLoss": 73.3069,
+          "targets": [
+            78.1909
+          ],
+          "perShareRisk": 2.2792,
+          "quantity": 1096,
+          "maxLossEgp": 2498,
+          "exposureEgp": 82842.37,
+          "exposurePct": 8.2842,
+          "memberExposureCapPct": 16.666666666666668,
+          "regimeRiskMultiplier": 1,
+          "units": {
+            "capital": "EGP",
+            "entry": "EGP_PER_SHARE",
+            "stopLoss": "EGP_PER_SHARE",
+            "perShareRisk": "EGP_PER_SHARE",
+            "maxLossEgp": "EGP",
+            "exposureEgp": "EGP",
+            "riskPct": "PERCENT",
+            "exposurePct": "PERCENT"
+          }
+        },
+        "entryPlan": {
+          "low": 75.2139,
+          "high": 75.5861
+        },
+        "stopLoss": 73.3069,
+        "targets": [
+          78.1909
+        ],
+        "strategyExecutionRef": "G09-SE-fa480732cde705219cd10c4c",
+        "trace": {
+          "candidate": "SDTI",
+          "rankingVersion": "ASTRA_G09_V16_9_SOURCE_ORDER_1",
+          "evidenceRefs": [
+            "EV-1bf9cf578a2c3eafb131a5",
+            "EV-8f1efebae34b715124ff0d",
+            "EV-c44e6f502aa2092fe22f62",
+            "EV-cb8cc28666859f119734c7",
+            "EV-59ca7cfbe0c179a4d861e5"
+          ],
+          "strategyExecutionRefs": [
+            "G09-SE-fa480732cde705219cd10c4c"
+          ],
+          "inputSnapshotRefs": [
+            "G11-CAN-SDTI-2026-09-17"
+          ],
+          "decisionInputSnapshotId": "d569d92516941c2f2433a6275d7cd44dd097832b6520962a848edfa2fc9134e0"
+        }
+      }
+    ],
+    "basketPlan": null,
+    "riskPlan": null,
+    "regime": {
+      "regimeId": "REGIME-8af0e3913777323262da",
+      "regime": "RISK_ON",
+      "score": 78,
+      "version": "EGX_PRO_MARKET_REGIME_BREADTH_1.0",
+      "metrics": {
+        "sessionDate": "2026-09-17",
+        "universeCount": 208,
+        "analyzedCount": 208,
+        "participationPct": 100,
+        "advances": 144,
+        "declines": 52,
+        "unchanged": 12,
+        "advancePct": 73.5,
+        "advanceDeclineRatio": 2.77,
+        "aboveSma20Pct": 44.2,
+        "aboveSma50Pct": 63,
+        "medianReturn1Pct": 0.85,
+        "medianReturn5Pct": -0.88,
+        "medianReturn20Pct": 0.11,
+        "volatility20AnnualizedPct": 35.91,
+        "highVolumeParticipationPct": 12
+      },
+      "evidenceReasons": [
+        {
+          "code": "BREADTH_ADVANCE_PCT",
+          "value": 73.5
+        },
+        {
+          "code": "ABOVE_SMA20_PCT",
+          "value": 44.2
+        },
+        {
+          "code": "ABOVE_SMA50_PCT",
+          "value": 63
+        },
+        {
+          "code": "MEDIAN_RETURN20_PCT",
+          "value": 0.11
+        },
+        {
+          "code": "MEDIAN_RETURN5_PCT",
+          "value": -0.88
+        },
+        {
+          "code": "VOLATILITY20_ANNUALIZED_PCT",
+          "value": 35.91
+        },
+        {
+          "code": "REGIME_SCORE",
+          "value": 78
+        },
+        {
+          "code": "REGIME_CLASS",
+          "value": "RISK_ON"
+        }
+      ],
+      "eligibleStrategyFamilies": [
+        "V16_CHAMPION_LINEAGE"
+      ],
+      "riskMultiplier": 1,
+      "maxOpenRiskPct": 2,
+      "maxTradeRiskPct": 0.25,
+      "semanticHash": "8af0e3913777323262dab2244a6954f366015d8d5f557c4f527a84f3ef786de9"
+    },
+    "diagnostics": [],
+    "legacyNetworkCalls": 0,
+    "productionCutover": false
+  },
+  "materialChange": false,
   "universeChanges": {
     "currentCanonical": [
-      207,
+      210,
       210
     ],
     "decisionReady": [
-      205,
+      208,
       208
     ],
     "regimeReady": [
-      205,
+      208,
       208
     ]
   },
-  "regimeChanged": true,
+  "regimeChanged": false,
   "candidateChanges": {
     "previous": [
       "GSSC",
@@ -1393,5 +1393,5 @@
   "rankingChanged": false,
   "riskChanged": false,
   "basketChanged": false,
-  "reason": "VALIDATION_APPROVED_CURRENT_CANONICAL_INPUTS_CHANGED_BY_G11_SOURCE_DATA_REPAIR"
+  "reason": "NO_SEMANTIC_DECISION_CHANGE"
 }
