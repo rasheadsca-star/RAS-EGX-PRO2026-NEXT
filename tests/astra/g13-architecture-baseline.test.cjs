@@ -43,10 +43,10 @@ test('G13 baseline builds a real static source/import graph',()=>{
   assert.ok(r.dependencyGraph.edgeCount>0);
   assert.ok(r.graph.edges.some(e=>e.classification==='relative-static-import'));
 });
-test('G13 baseline retains missing mappings while Family 6 removes the shared G09 physical collapse',()=>{
+test('G13 baseline keeps the Family 6 physical-collapse closure while final remediation reaches zero missing mappings',()=>{
   const r=scan();
   assert.equal(r.findings.items.some(x=>x.code==='PHYSICAL_BOUNDARY_COLLAPSE'),false);
-  assert.ok(r.findings.items.some(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY'));
+  assert.equal(r.findings.items.some(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY'),false);
 });
 test('data-health uses public registry and no longer imports the decision pipeline directly',()=>{
   const r=scan();
@@ -596,7 +596,7 @@ test('Family 14 backtest is retrospective-only and enforces point-in-time histor
   const through=backtest.historyThrough(history,'2026-09-18');
   assert.equal(through.COMI.length,2);
   assert.equal(through.COMI.at(-1).sessionDate,'2026-09-18');
-  assert.equal(backtest.netReturnPct(100,110,.6),9.4);
+  assert.ok(Math.abs(backtest.netReturnPct(100,110,.6)-9.4)<1e-12);
   const summary=backtest.summarizeReturns([10,-5,5]);
   assert.equal(summary.count,3);
   assert.equal(summary.winRatePct,2/3*100);
