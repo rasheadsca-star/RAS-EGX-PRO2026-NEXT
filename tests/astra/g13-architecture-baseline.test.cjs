@@ -6,6 +6,7 @@ const {scan,importsFrom,zoneFor,runtimeBoundaryManifest}=require('../../astra/ce
 const registry=require('../../astra/strategies/strategy-registry.cjs');
 const runner=require('../../astra/strategies/strategy-runner.cjs');
 const privateCore=require('../../astra/strategies/g08-final-overlay.cjs');
+const {SOURCE_PATHS}=require('../../astra/contracts/strategy-provenance.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -155,4 +156,26 @@ test('Family 4 moves concrete IO ownership behind explicit providers',()=>{
   assert.equal(/\b(?:readFileSync|writeFileSync|existsSync)\s*\(/.test(api),false);
   assert.equal(/\b(?:readFileSync|writeFileSync|existsSync)\s*\(/.test(sync),false);
   assert.equal(/docs\/astra\//.test(q),false);
+});
+
+test('Family 5 isolates strategy provenance paths from private G08 implementation without semantic drift',()=>{
+  const src=fs.readFileSync('astra/strategies/g08-internal-strategies.cjs','utf8');
+  for(const [id,paths] of Object.entries(SOURCE_PATHS)){
+    for(const p of paths)assert.equal(src.includes(p),false,`${id}: provenance path leaked into private implementation: ${p}`);
+    assert.deepEqual(privateCore.SPECS[id].sourcePaths,[...paths],id);
+  }
+  const prior=JSON.parse(fs.readFileSync('docs/astra/STRATEGY_RECONSTRUCTION_MATRIX.json','utf8'));
+  const byId=new Map((prior.strategies||[]).map(x=>[x.strategyId,x]));
+  for(const [id,paths] of Object.entries(SOURCE_PATHS)){
+    const row=byId.get(id);
+    assert.ok(row,`missing persisted G08 evidence for ${id}`);
+    assert.deepEqual(row.sourcePaths,[...paths],`${id}: sourcePaths drifted from certified G08 evidence`);
+  }
+});
+test('Family 5 removes the final direct data-path coupling finding before G09 decomposition',()=>{
+  const r=scan();
+  const xs=r.findings.items.filter(x=>x.code==='DIRECT_DATA_PATH_COUPLING');
+  assert.deepEqual(xs,[]);
+  assert.equal(r.findings.byCode.DIRECT_DATA_PATH_COUPLING||0,0);
+  assert.equal(r.findings.items.filter(x=>x.code==='PHYSICAL_BOUNDARY_COLLAPSE').length,1);
 });
