@@ -57,11 +57,11 @@ jobs:
 
       - name: Require authorized Vercel deployment token
         env:
-          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -z "\${VERCEL_TOKEN:-}" ]; then
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
             echo "VERCEL_TOKEN repository secret is required for G16."
             exit 78
           fi
@@ -164,7 +164,7 @@ jobs:
 
       - name: Ensure dedicated Vercel project exists
         env:
-          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -177,8 +177,8 @@ jobs:
       - name: Deploy exact bundle to isolated Vercel production project
         id: deploy
         env:
-          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
-          BUNDLE: \${{ steps.bundle.outputs.path }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          BUNDLE: ${{ steps.bundle.outputs.path }}
         shell: bash
         run: |
           set -euo pipefail
@@ -193,8 +193,8 @@ jobs:
 
       - name: Verify immutable deployment and production alias bytes
         env:
-          DEPLOYMENT_URL: \${{ steps.deploy.outputs.deployment_url }}
-          BUNDLE: \${{ steps.bundle.outputs.path }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
+          BUNDLE: ${{ steps.bundle.outputs.path }}
         shell: bash
         run: |
           set -euo pipefail
@@ -236,10 +236,10 @@ jobs:
 
       - name: Build G16 deployment evidence
         env:
-          G16_SOURCE_HEAD: \${{ github.sha }}
-          G16_WORKFLOW_RUN_ID: \${{ github.run_id }}
-          DEPLOYMENT_URL: \${{ steps.deploy.outputs.deployment_url }}
-          RUNTIME_EXTERNAL_REFS: \${{ steps.bundle.outputs.runtime_external_refs }}
+          G16_SOURCE_HEAD: ${{ github.sha }}
+          G16_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
+          RUNTIME_EXTERNAL_REFS: ${{ steps.bundle.outputs.runtime_external_refs }}
         shell: bash
         run: |
           set -euo pipefail
@@ -312,8 +312,8 @@ jobs:
 
       - name: Promote G16 only after deployment PASS
         env:
-          G16_SOURCE_HEAD: \${{ github.sha }}
-          G16_WORKFLOW_RUN_ID: \${{ github.run_id }}
+          G16_SOURCE_HEAD: ${{ github.sha }}
+          G16_WORKFLOW_RUN_ID: ${{ github.run_id }}
         run: node astra/certification/g16-certify.cjs --write
 
       - name: Validate promoted G16 state
@@ -338,7 +338,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          REMOTE_HEAD="$(git ls-remote origin "refs/heads/\${GITHUB_REF_NAME}" | awk '{print $1}')"
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
           if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
             echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
             exit 1
@@ -353,4 +353,4 @@ jobs:
             05_WORK_STATE.json \
             docs/astra/WORK_STATE.json
           git commit -m 'cert(g16): isolated production deployment GREEN [skip g16]'
-          git push origin "HEAD:\${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
