@@ -12,6 +12,8 @@ const symbolMaster=require('../../astra/core/symbol-master.cjs');
 const canonicalData=require('../../astra/core/canonical-data.cjs');
 const historicalStore=require('../../astra/core/historical-store.cjs');
 const healthPrimitives=require('../../astra/contracts/data-health-primitives.cjs');
+const indicators=require('../../astra/analysis/indicators.cjs');
+const technicalAnalysis=require('../../astra/analysis/technical-analysis.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -259,13 +261,74 @@ test('Family 8 owns canonical snapshot and point-in-time history validation with
   assert.deepEqual(historicalStore.validateHistoricalStore({COMI:[{sessionDate:'2026-09-18',validationStatus:'VALID',migrationValidationStatus:'VALID'}]},session).temporal,['COMI:HISTORY:2026-09-18']);
   assert.deepEqual(historicalStore.validateHistoricalStore({COMI:[{sessionDate:session,validationStatus:'VALID',migrationValidationStatus:'UNRESOLVED'}]},session).quarantined,['COMI:HISTORY']);
 });
-test('Family 8 reduces exactly two additional medium mappings and keeps HIGH at zero',()=>{
+test('Family 8 mappings remain closed during later medium-boundary remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
-  assert.equal(r.findings.medium,12);
   const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
   assert.equal(missing.includes('canonical-data'),false);
   assert.equal(missing.includes('historical-store'),false);
-  assert.equal(missing.length,12);
+  assert.ok(missing.length<=12);
+  assert.equal(r.productionCutover,false);
+});
+
+test('Family 9 gives indicators and technical-analysis dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['indicators','technical-analysis']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/analysis/indicators.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/analysis/technical-analysis.cjs').kind,'target-module');
+});
+test('Family 9 indicator boundary is point-in-time and preserves certified technical inputs when supplied',()=>{
+  const session='2026-09-20';
+  const history=Array.from({length:20},(_,i)=>({
+    sessionDate:`2026-09-${String(i+1).padStart(2,'0')}`,
+    open:100+i,high:102+i,low:99+i,close:101+i,volume:1000+i*10
+  }));
+  const row={
+    snapshotId:'IND-COMI',securityId:'EGX:COMI',ticker:'COMI',sessionDate:session,
+    validationStatus:'VALID',migrationValidationStatus:'VALID',
+    ohlc:{open:119,high:122,low:118,close:120},volume:1400,
+    technicalInputs:{return1Pct:1.25,return5Pct:4.5,return20Pct:8,aboveSma20:true,aboveSma50:false,volatility20AnnualizedPct:24,relativeVolume20:1.4}
+  };
+  const frame=indicators.pointInTimeIndicators(row,history,session);
+  assert.equal(frame.return1Pct,1.25);
+  assert.equal(frame.return5Pct,4.5);
+  assert.equal(frame.return20Pct,8);
+  assert.equal(frame.aboveSma20,true);
+  assert.equal(frame.aboveSma50,false);
+  assert.equal(frame.volatility20AnnualizedPct,24);
+  assert.equal(frame.relativeVolume20,1.4);
+  assert.ok(Number.isFinite(indicators.sma(history,20,session)));
+  assert.equal(indicators.pointInTimeHistory([...history,{sessionDate:'2026-09-21',close:999}],session).length,20);
+});
+test('Family 9 technical-analysis emits technical evidence only and preserves canonical source identity',()=>{
+  const session='2026-09-20';
+  const row={
+    snapshotId:'TA-COMI',securityId:'EGX:COMI',ticker:'COMI',sessionDate:session,
+    validationStatus:'VALID',migrationValidationStatus:'VALID',
+    ohlc:{open:119,high:122,low:118,close:120},volume:1400,
+    technicalInputs:{return1Pct:1,return5Pct:2,return20Pct:6,aboveSma20:true,aboveSma50:true,volatility20AnnualizedPct:24,relativeVolume20:1.4}
+  };
+  const x=technicalAnalysis.buildTechnicalEvidence(row,[],session);
+  assert.equal(x.sourceRef,'TA-COMI');
+  assert.equal(x.asOfSessionDate,session);
+  assert.deepEqual(x.momentum,{return1Pct:1,return5Pct:2,return20Pct:6});
+  assert.deepEqual(x.trend,{aboveSma20:true,aboveSma50:true});
+  assert.equal(Object.prototype.hasOwnProperty.call(x,'ranking'),false);
+  assert.equal(Object.prototype.hasOwnProperty.call(x,'strategy'),false);
+});
+test('Family 9 reduces exactly indicators and technical-analysis MEDIUM mappings with no HIGH regression',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.medium,10);
+  const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
+  assert.equal(missing.includes('indicators'),false);
+  assert.equal(missing.includes('technical-analysis'),false);
+  for(const id of ['support-resistance','relative-strength','vcp','liquidity'])assert.equal(missing.includes(id),true,id);
+  assert.equal(missing.length,10);
   assert.equal(r.productionCutover,false);
 });

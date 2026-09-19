@@ -7,6 +7,7 @@ on:
       - 'astra/certification/g13-architecture-baseline.cjs'
       - 'astra/pipeline/**'
       - 'astra/core/**'
+      - 'astra/analysis/**'
       - 'astra/contracts/data-health-primitives.cjs'
       - 'astra/data-health/g11-data-health.cjs'
       - 'astra/contracts/strategy-provenance.cjs'
@@ -59,12 +60,14 @@ jobs:
             deploy/rc2-safe-shell/test/local-api.test.js
       - name: Family 6 G09 semantic regression
         run: node --test tests/astra/g09-unified-decision-pipeline.test.cjs
-      - name: Family 7-8 core foundation syntax
+      - name: Family 7-9 core and analysis syntax
         run: |
           node --check astra/core/market-calendar.cjs
           node --check astra/core/symbol-master.cjs
           node --check astra/core/canonical-data.cjs
           node --check astra/core/historical-store.cjs
+          node --check astra/analysis/indicators.cjs
+          node --check astra/analysis/technical-analysis.cjs
           node --check astra/contracts/data-health-primitives.cjs
           node --check astra/data-health/g11-data-health.cjs
       - name: G13 architecture baseline tests

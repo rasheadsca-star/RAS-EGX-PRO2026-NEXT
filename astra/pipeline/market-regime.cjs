@@ -1,8 +1,9 @@
 'use strict';
 const {VERSION,CONFIG,finite,round,median,deepFreeze,stableHash}=require('./g09-shared.cjs');
+const {pointInTimeIndicators}=require('../analysis/indicators.cjs');
 
 function computeRegime(context){
-  const rows=context.canonicalSnapshot.rows;const metricsRows=rows.map(row=>row.technicalInputs||{});
+  const rows=context.canonicalSnapshot.rows;const metricsRows=rows.map(row=>pointInTimeIndicators(row,[],context.sessionDate));
   const advances=metricsRows.filter(x=>finite(x.return1Pct,0)>.05).length;
   const declines=metricsRows.filter(x=>finite(x.return1Pct,0)<-.05).length;
   const unchanged=rows.length-advances-declines;
