@@ -16,6 +16,8 @@ const indicators=require('../../astra/analysis/indicators.cjs');
 const technicalAnalysis=require('../../astra/analysis/technical-analysis.cjs');
 const supportResistance=require('../../astra/analysis/support-resistance.cjs');
 const relativeStrength=require('../../astra/analysis/relative-strength.cjs');
+const vcp=require('../../astra/analysis/vcp.cjs');
+const liquidity=require('../../astra/analysis/liquidity.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -360,13 +362,75 @@ test('Family 10 preserves point-in-time S/R and relative-strength source semanti
   assert.equal(rs.relativeStrength20,5);assert.equal(rs.crossSection.rank,1);assert.equal(rs.crossSection.comparableCount,2);
   assert.equal(Object.hasOwn(rs,'productionEligible'),false);
 });
-test('Family 10 reduces exactly two additional medium mappings and keeps HIGH at zero',()=>{
+test('Family 10 support-resistance and relative-strength mappings remain closed during later remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
-  assert.equal(r.findings.medium,8);
   const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
   assert.equal(missing.includes('support-resistance'),false);
   assert.equal(missing.includes('relative-strength'),false);
-  assert.equal(missing.length,8);
+  assert.ok(missing.length<=8);
+  assert.equal(r.productionCutover,false);
+});
+
+test('Family 11 gives VCP and liquidity dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['vcp','liquidity']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/analysis/vcp.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/analysis/liquidity.cjs').kind,'target-module');
+});
+test('Family 11 VCP boundary emits raw point-in-time observations without strategy scoring or thresholds',()=>{
+  const session='2026-09-20';
+  const history=Array.from({length:20},(_,i)=>({
+    sessionDate:`2026-09-${String(i+1).padStart(2,'0')}`,
+    open:100+i*.2,high:103+i*.2,low:98+i*.2,close:101+i*.2,volume:200000-i*3000
+  }));
+  const row={
+    snapshotId:'VCP-COMI',securityId:'EGX:COMI',ticker:'COMI',sessionDate:session,
+    validationStatus:'VALID',migrationValidationStatus:'VALID',
+    ohlc:{open:103,high:105,low:102,close:104},volume:140000,
+    technicalInputs:{relativeStrength20:5,breakout20:2,aboveSma20:true,aboveSma50:true,relativeVolume20:.8}
+  };
+  const x=vcp.buildVcpEvidence(row,[...history,{sessionDate:'2026-09-21',open:1,high:999,low:1,close:999,volume:999999}],session,[row]);
+  assert.equal(x.sourceRef,'VCP-COMI');
+  assert.equal(x.observations.historySessions,20);
+  assert.ok(Number.isFinite(x.observations.contractionRatio));
+  assert.ok(Number.isFinite(x.observations.volumeDryUpRatio));
+  assert.equal(x.observations.relativeStrength20,5);
+  assert.equal(Object.hasOwn(x,'score'),false);
+  assert.equal(Object.hasOwn(x,'passed'),false);
+  assert.equal(x.provenance.noStrategyThresholdsApplied,true);
+});
+test('Family 11 liquidity boundary owns the existing G09 turnover readiness rule without payload drift',()=>{
+  const session='2026-09-20';
+  const row={
+    snapshotId:'LIQ-COMI',securityId:'EGX:COMI',ticker:'COMI',sessionDate:session,
+    validationStatus:'VALID',migrationValidationStatus:'VALID',
+    ohlc:{open:99,high:104,low:98,close:103},volume:100000,
+    technicalInputs:{relativeVolume20:1.4,turnover20:2500000}
+  };
+  const x=liquidity.buildLiquidityEvidence(row,[],session,{turnover20:3000000});
+  assert.equal(x.sourceRef,'LIQ-COMI');
+  assert.equal(x.turnover20Egp,3000000);
+  assert.equal(x.readiness.minimumTurnoverEgp,1000000);
+  assert.equal(x.readiness.passed,true);
+  assert.equal(x.readiness.rule,'G09_EXISTING_TURNOVER20_EVIDENCE_THRESHOLD');
+  assert.equal(Object.hasOwn(x,'ranking'),false);
+  assert.equal(Object.hasOwn(x,'strategy'),false);
+  const low=liquidity.buildLiquidityEvidence(row,[],session,{turnover20:999999});
+  assert.equal(low.readiness.passed,false);
+});
+test('Family 11 reduces exactly VCP and liquidity MEDIUM mappings with no HIGH regression',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.medium,6);
+  const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
+  assert.equal(missing.includes('vcp'),false);
+  assert.equal(missing.includes('liquidity'),false);
+  assert.deepEqual(missing.sort(),['backtest','corporate-actions','forward-ledger','morning-confirmation','portfolio','walk-forward'].sort());
   assert.equal(r.productionCutover,false);
 });

@@ -34,6 +34,8 @@ const ZONES=[
   {id:'technical-analysis',exact:'astra/analysis/technical-analysis.cjs',modules:['technical-analysis'],kind:'target-module'},
   {id:'support-resistance',exact:'astra/analysis/support-resistance.cjs',modules:['support-resistance'],kind:'target-module'},
   {id:'relative-strength',exact:'astra/analysis/relative-strength.cjs',modules:['relative-strength'],kind:'target-module'},
+  {id:'vcp',exact:'astra/analysis/vcp.cjs',modules:['vcp'],kind:'target-module'},
+  {id:'liquidity',exact:'astra/analysis/liquidity.cjs',modules:['liquidity'],kind:'target-module'},
   {id:'analysis-unmapped',prefix:'astra/analysis/',modules:[],kind:'active-unregistered-layer'},
   {id:'market-calendar',exact:'astra/core/market-calendar.cjs',modules:['market-calendar'],kind:'target-module'},
   {id:'symbol-master',exact:'astra/core/symbol-master.cjs',modules:['symbol-master'],kind:'target-module'},
