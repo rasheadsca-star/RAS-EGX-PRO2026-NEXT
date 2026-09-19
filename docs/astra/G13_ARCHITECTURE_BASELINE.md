@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `fded04746b34dcbd96d7ec0fb8180a938dafbde3`
+Source HEAD: `d081592a64e557390f9e54e51caada3ce258e402`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,14 +14,14 @@ Source HEAD: `fded04746b34dcbd96d7ec0fb8180a938dafbde3`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 71
-- Static dependency edges: 178
+- Scanned active source files: 73
+- Static dependency edges: 185
 - HIGH findings: 0
-- MEDIUM findings: 10
+- MEDIUM findings: 8
 
 ## Finding classes
 
-- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 10
+- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 8
 
 ## Module physical-isolation map
 
@@ -32,8 +32,8 @@ Source HEAD: `fded04746b34dcbd96d7ec0fb8180a938dafbde3`
 - market-regime: DEDICATED_ZONE — astra/pipeline/market-regime.cjs
 - indicators: DEDICATED_ZONE — astra/analysis/indicators.cjs
 - technical-analysis: DEDICATED_ZONE — astra/analysis/technical-analysis.cjs
-- support-resistance: NO_PHYSICAL_MAPPING
-- relative-strength: NO_PHYSICAL_MAPPING
+- support-resistance: DEDICATED_ZONE — astra/analysis/support-resistance.cjs
+- relative-strength: DEDICATED_ZONE — astra/analysis/relative-strength.cjs
 - vcp: NO_PHYSICAL_MAPPING
 - liquidity: NO_PHYSICAL_MAPPING
 - strategy-registry: DEDICATED_ZONE — astra/strategies/strategy-registry.cjs

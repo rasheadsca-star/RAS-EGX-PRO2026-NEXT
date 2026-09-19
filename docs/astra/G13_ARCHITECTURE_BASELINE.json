@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T21:47:19.642Z",
-  "sourceHead": "fded04746b34dcbd96d7ec0fb8180a938dafbde3",
+  "generatedAt": "2026-09-19T21:54:07.634Z",
+  "sourceHead": "d081592a64e557390f9e54e51caada3ce258e402",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -52,7 +52,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 71,
+    "sourceFiles": 73,
     "zones": [
       {
         "zone": "agreement-engine",
@@ -185,6 +185,14 @@
         ]
       },
       {
+        "zone": "relative-strength",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "relative-strength"
+        ]
+      },
+      {
         "zone": "risk-engine",
         "kind": "target-module",
         "files": 1,
@@ -289,6 +297,14 @@
         ]
       },
       {
+        "zone": "support-resistance",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "support-resistance"
+        ]
+      },
+      {
         "zone": "symbol-master",
         "kind": "target-module",
         "files": 1,
@@ -313,8 +329,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 71,
-    "edgeCount": 178
+    "nodeCount": 73,
+    "edgeCount": 185
   },
   "moduleIsolation": [
     {
@@ -411,9 +427,13 @@
     },
     {
       "module": "support-resistance",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/analysis/support-resistance.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/analysis/support-resistance.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "indicators",
@@ -422,9 +442,13 @@
     },
     {
       "module": "relative-strength",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/analysis/relative-strength.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/analysis/relative-strength.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "indicators"
@@ -776,29 +800,17 @@
     }
   ],
   "findings": {
-    "total": 10,
+    "total": 8,
     "high": 0,
-    "medium": 10,
+    "medium": 8,
     "byCode": {
-      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 10
+      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 8
     },
     "items": [
       {
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
         "module": "corporate-actions",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "support-resistance",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "relative-strength",
         "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
       },
       {
