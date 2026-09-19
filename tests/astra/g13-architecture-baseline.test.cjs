@@ -18,6 +18,8 @@ const supportResistance=require('../../astra/analysis/support-resistance.cjs');
 const relativeStrength=require('../../astra/analysis/relative-strength.cjs');
 const vcp=require('../../astra/analysis/vcp.cjs');
 const liquidity=require('../../astra/analysis/liquidity.cjs');
+const forwardLedger=require('../../astra/forward/forward-ledger.cjs');
+const morningConfirmation=require('../../astra/forward/morning-confirmation.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -424,13 +426,92 @@ test('Family 11 liquidity boundary owns the existing G09 turnover readiness rule
   const low=liquidity.buildLiquidityEvidence(row,[],session,{turnover20:999999});
   assert.equal(low.readiness.passed,false);
 });
-test('Family 11 reduces exactly VCP and liquidity MEDIUM mappings with no HIGH regression',()=>{
+test('Family 11 VCP and liquidity mappings remain closed during later remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
-  assert.equal(r.findings.medium,6);
   const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
   assert.equal(missing.includes('vcp'),false);
   assert.equal(missing.includes('liquidity'),false);
-  assert.deepEqual(missing.sort(),['backtest','corporate-actions','forward-ledger','morning-confirmation','portfolio','walk-forward'].sort());
+  assert.ok(missing.length<=6);
+  assert.equal(r.productionCutover,false);
+});
+
+test('Family 12 gives forward-ledger and morning-confirmation dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['forward-ledger','morning-confirmation']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/forward/forward-ledger.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/forward/morning-confirmation.cjs').kind,'target-module');
+});
+test('Family 12 forward ledger issues immutable recommendations and append-only linked records',()=>{
+  const snapshot={
+    decisionSnapshotId:'G09-DS-FAMILY12',
+    sessionDate:'2026-09-17',
+    generatedAt:'2026-09-17T16:30:00+03:00',
+    marketRegimeRef:'REGIME-FAMILY12'
+  };
+  const opportunity={
+    ticker:'COMI',securityId:'EGX:COMI',rank:1,
+    trace:{strategyExecutionRefs:['G09-SE-F12'],evidenceRefs:['EV-F12']},
+    evidence:[{evidenceId:'EV-F12'}],
+    entryPlan:{low:100,high:102},stopLoss:98,targets:[106]
+  };
+  const rec=forwardLedger.recommendationFromDecisionSnapshot(snapshot,opportunity);
+  assert.equal(Object.isFrozen(rec),true);
+  assert.equal(rec.decisionSnapshotId,snapshot.decisionSnapshotId);
+  assert.equal(rec.entryPlan.high,102);
+  let ledger=forwardLedger.appendRecommendation(forwardLedger.emptyLedger(),rec);
+  assert.equal(ledger.recommendations.length,1);
+  assert.throws(()=>forwardLedger.appendRecommendation(ledger,{...rec,rank:2}),/RECOMMENDATION_IMMUTABILITY_VIOLATION/);
+  const outcome=forwardLedger.buildForwardOutcome({
+    recommendationId:rec.recommendationId,
+    evaluationSessionDate:'2026-09-21',
+    evaluatedAt:'2026-09-21T16:30:00+03:00',
+    status:'OPEN',
+    outcome:{},
+    metrics:{}
+  });
+  ledger=forwardLedger.appendOutcome(ledger,outcome);
+  assert.equal(ledger.outcomes.length,1);
+  assert.equal(ledger.recommendations[0].rank,1);
+  assert.equal(ledger.recommendations[0].entryPlan.high,102);
+});
+test('Family 12 morning confirmation preserves the historical 0.5% gap rules without rewriting recommendation',()=>{
+  const snapshot={decisionSnapshotId:'G09-DS-MORNING',sessionDate:'2026-09-17',generatedAt:'2026-09-17T16:30:00+03:00',marketRegimeRef:'REGIME-M'};
+  const opportunity={ticker:'COMI',securityId:'EGX:COMI',rank:1,trace:{strategyExecutionRefs:['SE-M'],evidenceRefs:['EV-M']},evidence:[{evidenceId:'EV-M'}],entryPlan:{low:100,high:102},stopLoss:98,targets:[106]};
+  const rec=forwardLedger.recommendationFromDecisionSnapshot(snapshot,opportunity);
+  const base={recommendation:rec,sessionDate:'2026-09-20',evaluatedAt:'2026-09-20T10:15:00+03:00'};
+  const row=open=>({snapshotId:`OPEN-${open}`,ticker:'COMI',securityId:'EGX:COMI',sessionDate:'2026-09-20',validationStatus:'VALID',migrationValidationStatus:'VALID',ohlc:{open,high:Math.max(open,103),low:Math.min(open,97),close:open}});
+  const gapUp=morningConfirmation.buildMorningConfirmation({...base,openingRow:row(102.52)});
+  assert.equal(gapUp.status,'CANCELLED');
+  assert.equal(gapUp.observations.reasonCode,'CANCELLED_GAP_UP');
+  const gapDown=morningConfirmation.buildMorningConfirmation({...base,openingRow:row(97.99)});
+  assert.equal(gapDown.status,'CANCELLED');
+  assert.equal(gapDown.observations.reasonCode,'CANCELLED_GAP_DOWN');
+  const confirmed=morningConfirmation.buildMorningConfirmation({...base,openingRow:row(101)});
+  assert.equal(confirmed.status,'CONFIRMED');
+  assert.equal(confirmed.observations.reasonCode,'OPENING_GAP_RULES_PASSED');
+  const pending=morningConfirmation.buildMorningConfirmation(base);
+  assert.equal(pending.status,'PENDING');
+  assert.equal(morningConfirmation.GAP_TOLERANCE,0.005);
+  assert.equal(rec.rank,1);
+  assert.equal(rec.entryPlan.high,102);
+  let ledger=forwardLedger.appendRecommendation(forwardLedger.emptyLedger(),rec);
+  ledger=forwardLedger.appendConfirmation(ledger,confirmed);
+  assert.equal(ledger.confirmations.length,1);
+  assert.equal(ledger.recommendations[0].recommendationId,rec.recommendationId);
+});
+test('Family 12 reduces exactly forward-ledger and morning-confirmation MEDIUM mappings with no HIGH regression',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.medium,4);
+  const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
+  assert.equal(missing.includes('forward-ledger'),false);
+  assert.equal(missing.includes('morning-confirmation'),false);
+  assert.deepEqual(missing.sort(),['backtest','corporate-actions','portfolio','walk-forward'].sort());
   assert.equal(r.productionCutover,false);
 });
