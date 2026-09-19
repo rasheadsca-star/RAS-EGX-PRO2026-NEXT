@@ -14,6 +14,7 @@ const EXCLUDED_PARTS=['/node_modules/','/.git/','/test/','/tests/'];
 const ACTIVE_ROOTS=[
   'astra/contracts',
   'astra/pipeline',
+  'astra/core',
   'astra/strategies',
   'astra/data-health',
   'astra/runtime',
@@ -26,6 +27,8 @@ const ACTIVE_ROOTS=[
 
 const ZONES=[
   {id:'shared-contracts',prefix:'astra/contracts/',modules:[],kind:'shared-contract'},
+  {id:'market-calendar',exact:'astra/core/market-calendar.cjs',modules:['market-calendar'],kind:'target-module'},
+  {id:'symbol-master',exact:'astra/core/symbol-master.cjs',modules:['symbol-master'],kind:'target-module'},
   {id:'g09-shared-contract',exact:'astra/pipeline/g09-shared.cjs',modules:[],kind:'public-contract'},
   {id:'g09-orchestrator',exact:'astra/pipeline/g09-unified-decision-pipeline.cjs',modules:[],kind:'control-plane'},
   {id:'market-regime',exact:'astra/pipeline/market-regime.cjs',modules:['market-regime'],kind:'target-module'},

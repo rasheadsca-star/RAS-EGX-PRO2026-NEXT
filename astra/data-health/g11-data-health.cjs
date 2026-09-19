@@ -4,7 +4,7 @@ const path=require('path');
 const crypto=require('crypto');
 const cp=require('child_process');
 const {listStrategyIds,getStrategyDescriptor}=require('../strategies/strategy-registry.cjs');
-const {validHistoryRow,parseHistory,expectedSession,utcDate,fmt,isTrading}=require('../contracts/data-health-primitives.cjs');
+const {validHistoryRow,parseHistory,expectedSession,tradingLag,normalizeTicker: normTicker,symbolRows,reviewedSecurityIdentity}=require('../contracts/data-health-primitives.cjs');
 const {loadCurrentSessionExceptions}=require('./g11-current-session-exceptions.cjs');
 const {loadV16DomainExceptions}=require('./g11-v16-domain-exceptions.cjs');
 
@@ -15,7 +15,6 @@ const hash=v=>crypto.createHash('sha256').update(typeof v==='string'?v:JSON.stri
 const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
 const pct=(n,d)=>d?Number((n/d*100).toFixed(2)):null;
 const finite=v=>Number.isFinite(Number(v))?Number(v):null;
-const normTicker=v=>String(v||'').trim().toUpperCase().replace(/[^A-Z0-9._-]/g,'');
 const isoDate=v=>{const m=String(v||'').match(/^(\d{4}-\d{2}-\d{2})/);return m?m[1]:null};
 const badStatus=v=>/invalid|conflict|failed|unresolved|quarantined/i.test(String(v||''));
 
@@ -29,31 +28,12 @@ const DIAGNOSTIC_CODES=Object.freeze([
 
 function gitHead(){try{return cp.execFileSync('git',['rev-parse','HEAD'],{cwd:ROOT,encoding:'utf8'}).trim()}catch{return process.env.GITHUB_SHA||'UNKNOWN'}}
 function sourceHash(paths){const parts=[];for(const p of paths){try{parts.push([p,hash(fs.readFileSync(R(p)))])}catch{parts.push([p,null])}}return hash(parts)}
-function symbolRows(raw){return Array.isArray(raw)?raw:Object.entries(raw||{}).map(([k,v])=>({...v,ticker:v?.ticker||k}))}
-function tradingLag(from,to,policy){if(!from||!to)return null;if(from===to)return 0;let d=utcDate(from),count=0,guard=0;while(fmt(d)!==to&&guard++<1000){d.setUTCDate(d.getUTCDate()+1);if(isTrading(fmt(d),policy))count++}return count}
 function metric(n,d,extra={}){return{numerator:n,denominator:d,percentage:pct(n,d),excludedByRule:extra.excludedByRule||0,invalid:extra.invalid||0,unresolved:extra.unresolved||0}}
 function issue(code,severity,summary,affected=[],details={}){if(!DIAGNOSTIC_CODES.includes(code))throw new Error(`Unknown G11 diagnostic ${code}`);return{code,severity,summary,affectedCount:affected.length,affectedTickers:[...new Set(affected)].sort(),details,status:'UNRESOLVED'}}
 function contiguousDepth(validated,calendar,latest){const set=new Set(validated.map(x=>x.date));const expected=calendar.filter(x=>x<=latest).sort();let n=0;for(let i=expected.length-1;i>=0;i--){if(set.has(expected[i]))n++;else break}return n}
 function deriveEvaluationAt(){const docs=['data/history-summary.json','data/market.json','data/production-readiness-v13-17-1.json','data/quant/stock-intelligence-index.json'].map(p=>read(p,{}));const vals=docs.flatMap(d=>[d.generatedAt,d.updatedAt].filter(Boolean)).filter(x=>!Number.isNaN(new Date(x).getTime())).sort((a,b)=>new Date(a)-new Date(b));return vals.at(-1)||new Date().toISOString()}
 function runV16Context(session){const out=cp.execFileSync('python3',[R('astra/data-health/g11-v16-context.py'),'--session',session],{cwd:ROOT,encoding:'utf8',maxBuffer:96*1024*1024});return JSON.parse(out)}
 function detailMap(){const dir=R('data/quant/stocks'),m=new Map();if(!fs.existsSync(dir))return m;for(const f of fs.readdirSync(dir).filter(x=>x.endsWith('.json'))){const d=read(path.join('data/quant/stocks',f),null);if(d?.ticker)m.set(normTicker(d.ticker),d)}return m}
-function reviewedSecurityIdentity(entry){
-  const v=entry?.g11IdentityVerification;
-  const ticker=normTicker(entry?.ticker),isin=String(entry?.isin||'').trim().toUpperCase();
-  const evidence=Array.isArray(v?.evidenceUrls)?v.evidenceUrls.filter(x=>/^https?:\/\//i.test(String(x||''))):[];
-  return Boolean(
-    entry?.active!==false &&
-    v?.verified===true &&
-    v?.method==='EXACT_TICKER_ISIN_EGX_EVIDENCE' &&
-    normTicker(v?.canonicalTicker)===ticker &&
-    String(v?.exchange||'').trim().toUpperCase()==='EGX' &&
-    /^EG[A-Z0-9]{10}$/.test(isin) &&
-    String(v?.isin||'').trim().toUpperCase()===isin &&
-    evidence.length>=2 &&
-    String(v?.evidenceSummary||'').trim()
-  );
-}
-
 function buildHealth(options={}){
   const started=process.hrtime.bigint();const codeVersion=gitHead();const evaluatedAt=deriveEvaluationAt();
   const policy=read('data/v13-3-daily-production-policy.json',{}),calendarDoc=read('data/session-calendar.json',{}),historySummary=read('data/history-summary.json',{}),symbolMap=read('data/symbol-map.json',{}),search=read('data/quant/market-search-index-v13-17.json',{}),stockIndex=read('data/quant/stock-intelligence-index.json',{}),g07=read('docs/astra/MIGRATION_RECONCILIATION.json',{}),eligibility=read('docs/astra/PRODUCTION_STRATEGY_ELIGIBILITY.json',{}),legacyPlan=read('docs/astra/LEGACY_REMOVAL_PLAN.json',{});

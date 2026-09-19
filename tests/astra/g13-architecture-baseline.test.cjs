@@ -7,6 +7,9 @@ const registry=require('../../astra/strategies/strategy-registry.cjs');
 const runner=require('../../astra/strategies/strategy-runner.cjs');
 const privateCore=require('../../astra/strategies/g08-final-overlay.cjs');
 const {SOURCE_PATHS}=require('../../astra/contracts/strategy-provenance.cjs');
+const marketCalendar=require('../../astra/core/market-calendar.cjs');
+const symbolMaster=require('../../astra/core/symbol-master.cjs');
+const healthPrimitives=require('../../astra/contracts/data-health-primitives.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -192,10 +195,45 @@ test('Family 6 maps all nine former G09 shared logical modules to dedicated phys
   assert.equal(zoneFor('astra/pipeline/g09-unified-decision-pipeline.cjs').kind,'control-plane');
   assert.equal(zoneFor('astra/pipeline/g09-shared.cjs').kind,'public-contract');
 });
-test('Family 6 leaves no HIGH architecture findings before G13 medium-boundary remediation',()=>{
+test('Family 6 keeps HIGH findings at zero during later medium-boundary remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
   assert.equal(r.findings.byCode.PHYSICAL_BOUNDARY_COLLAPSE||0,0);
-  assert.equal(r.findings.medium,16);
+  assert.ok(r.findings.medium<=16);
   assert.equal(r.productionCutover,false);
+});
+
+test('Family 7 gives market-calendar and symbol-master dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['market-calendar','symbol-master']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/core/market-calendar.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/core/symbol-master.cjs').kind,'target-module');
+});
+test('Family 7 preserves Cairo session and symbol identity semantics through the shared contract',()=>{
+  const policy={market:{tradingDays:['Sunday','Monday','Tuesday','Wednesday','Thursday'],tradingDayNumbersJs:[0,1,2,3,4],expectedPostSessionHourCairo:15}};
+  assert.equal(marketCalendar.expectedSession('2026-09-14T16:00:00+03:00',policy),'2026-09-14');
+  assert.equal(marketCalendar.expectedSession('2026-09-14T14:00:00+03:00',policy),'2026-09-13');
+  assert.equal(marketCalendar.tradingLag('2026-09-10','2026-09-14',policy),2);
+  assert.equal(healthPrimitives.expectedSession,marketCalendar.expectedSession);
+  assert.equal(healthPrimitives.tradingLag,marketCalendar.tradingLag);
+  assert.equal(symbolMaster.normalizeTicker(' comi.eg? '),'COMI.EG');
+  assert.deepEqual(symbolMaster.symbolRows({COMI:{active:true}}),[{active:true,ticker:'COMI'}]);
+  const verified={active:true,ticker:'COMI',isin:'EGS60121C018',g11IdentityVerification:{verified:true,method:'EXACT_TICKER_ISIN_EGX_EVIDENCE',canonicalTicker:'COMI',exchange:'EGX',isin:'EGS60121C018',evidenceUrls:['https://example.com/a','https://example.com/b'],evidenceSummary:'verified'}};
+  assert.equal(symbolMaster.reviewedSecurityIdentity(verified),true);
+  assert.equal(healthPrimitives.normalizeTicker,symbolMaster.normalizeTicker);
+  assert.equal(healthPrimitives.reviewedSecurityIdentity,symbolMaster.reviewedSecurityIdentity);
+});
+test('Family 7 reduces only the two foundational medium mappings and keeps HIGH at zero',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0);
+  assert.equal(r.findings.medium,14);
+  const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
+  assert.equal(missing.includes('market-calendar'),false);
+  assert.equal(missing.includes('symbol-master'),false);
+  assert.equal(missing.length,14);
 });
