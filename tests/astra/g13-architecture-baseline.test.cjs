@@ -26,9 +26,9 @@ test('G13 baseline builds a real static source/import graph',()=>{
   assert.ok(r.dependencyGraph.edgeCount>0);
   assert.ok(r.graph.edges.some(e=>e.classification==='relative-static-import'));
 });
-test('G13 baseline distinguishes physical-boundary collapse from missing mapping',()=>{
+test('G13 baseline retains missing mappings while Family 6 removes the shared G09 physical collapse',()=>{
   const r=scan();
-  assert.ok(r.findings.items.some(x=>x.code==='PHYSICAL_BOUNDARY_COLLAPSE'));
+  assert.equal(r.findings.items.some(x=>x.code==='PHYSICAL_BOUNDARY_COLLAPSE'),false);
   assert.ok(r.findings.items.some(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY'));
 });
 test('data-health uses public registry and no longer imports the decision pipeline directly',()=>{
@@ -172,10 +172,30 @@ test('Family 5 isolates strategy provenance paths from private G08 implementatio
     assert.deepEqual(row.sourcePaths,[...paths],`${id}: sourcePaths drifted from certified G08 evidence`);
   }
 });
-test('Family 5 removes the final direct data-path coupling finding before G09 decomposition',()=>{
+test('Family 5 keeps direct strategy data-path coupling at zero through Family 6',()=>{
   const r=scan();
   const xs=r.findings.items.filter(x=>x.code==='DIRECT_DATA_PATH_COUPLING');
   assert.deepEqual(xs,[]);
   assert.equal(r.findings.byCode.DIRECT_DATA_PATH_COUPLING||0,0);
-  assert.equal(r.findings.items.filter(x=>x.code==='PHYSICAL_BOUNDARY_COLLAPSE').length,1);
+});
+
+test('Family 6 maps all nine former G09 shared logical modules to dedicated physical boundaries',()=>{
+  const r=scan();
+  const ids=['market-regime','signal-normalizer','evidence-engine','agreement-engine','ranking-engine','risk-engine','basket-engine','position-sizing','diagnostics'];
+  const by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ids){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/pipeline/g09-unified-decision-pipeline.cjs').kind,'control-plane');
+  assert.equal(zoneFor('astra/pipeline/g09-shared.cjs').kind,'public-contract');
+});
+test('Family 6 leaves no HIGH architecture findings before G13 medium-boundary remediation',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.byCode.PHYSICAL_BOUNDARY_COLLAPSE||0,0);
+  assert.equal(r.findings.medium,16);
+  assert.equal(r.productionCutover,false);
 });
