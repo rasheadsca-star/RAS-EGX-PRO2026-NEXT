@@ -1,24 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs=require('fs');
 const path=require('path');
 const {materializeMirror}=require('../../astra/runtime/bridges/sepa-local.cjs');
+const {exists,readJson,writeJsonAtomic}=require('../../astra/runtime/io/json-resource-store.cjs');
 
 const OUT=path.resolve(__dirname,'../data/sepa-x-snapshot.json');
 const DEFAULT_INPUT=path.resolve(__dirname,'../data/sepa-local-input.json');
 
-function readJson(file){
-  return JSON.parse(fs.readFileSync(file,'utf8'));
-}
-function writeJsonAtomic(file,value){
-  fs.mkdirSync(path.dirname(file),{recursive:true});
-  const next=JSON.stringify(value,null,2)+'\n';
-  const tmp=`${file}.tmp-${process.pid}-${Date.now()}`;
-  fs.writeFileSync(tmp,next,'utf8');
-  JSON.parse(fs.readFileSync(tmp,'utf8'));
-  fs.renameSync(tmp,file);
-}
 function disconnected(reason,generatedAt=new Date().toISOString()){
   return{
     schemaVersion:'gann-fusion-x-sepa-local-v2',
@@ -38,7 +27,7 @@ function disconnected(reason,generatedAt=new Date().toISOString()){
   };
 }
 function buildLocalSnapshot(inputFile=process.env.SEPA_LOCAL_INPUT||DEFAULT_INPUT,generatedAt=new Date().toISOString()){
-  if(!fs.existsSync(inputFile))return disconnected('SEPA_LOCAL_INPUT_MISSING',generatedAt);
+  if(!exists(inputFile))return disconnected('SEPA_LOCAL_INPUT_MISSING',generatedAt);
   const input=readJson(inputFile);
   if(!input||typeof input!=='object')return disconnected('SEPA_LOCAL_INPUT_INVALID',generatedAt);
   const snapshot=input.snapshot||{
@@ -50,30 +39,14 @@ function buildLocalSnapshot(inputFile=process.env.SEPA_LOCAL_INPUT||DEFAULT_INPU
   };
   const history=Array.isArray(input.history)?input.history:[];
   const candidates=Array.isArray(input.candidates)?input.candidates:[];
-  if(!snapshot.sessionDate||history.length<253||!candidates.length){
-    return disconnected('SEPA_LOCAL_INPUT_INCOMPLETE',generatedAt);
-  }
-  return materializeMirror({
-    snapshot,
-    history,
-    candidates,
-    regimeContext:input.regimeContext||null,
-    generatedAt
-  });
+  if(!snapshot.sessionDate||history.length<253||!candidates.length)return disconnected('SEPA_LOCAL_INPUT_INCOMPLETE',generatedAt);
+  return materializeMirror({snapshot,history,candidates,regimeContext:input.regimeContext||null,generatedAt});
 }
 function main(){
   const result=buildLocalSnapshot();
   writeJsonAtomic(OUT,result);
-  console.log(JSON.stringify({
-    ok:true,
-    mode:result.meta.mode,
-    sessionDate:result.sessionDate,
-    rows:result.rows.length,
-    output:path.relative(process.cwd(),OUT)
-  },null,2));
+  console.log(JSON.stringify({ok:true,mode:result.meta.mode,sessionDate:result.sessionDate,rows:result.rows.length,output:path.relative(process.cwd(),OUT)},null,2));
   return result;
 }
-if(require.main===module){
-  try{main()}catch(error){console.error(error.stack||error);process.exit(1)}
-}
+if(require.main===module){try{main()}catch(error){console.error(error.stack||error);process.exit(1)}}
 module.exports={buildLocalSnapshot,disconnected,main};
