@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-dependency-graph-1",
-  "generatedAt": "2026-09-19T07:51:07.436Z",
-  "sourceHead": "6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c",
+  "generatedAt": "2026-09-19T07:57:08.452Z",
+  "sourceHead": "658bdcb3730c5298c85dadb300b00b634af38a0f",
   "nodes": [
     {
       "file": "astra/certification/g06-certify.cjs",
@@ -342,21 +342,109 @@
       "logicalModules": []
     },
     {
-      "file": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-      "zone": "decision-pipeline-shared",
-      "kind": "shared-target-implementation",
+      "file": "astra/pipeline/agreement-engine.cjs",
+      "zone": "agreement-engine",
+      "kind": "target-module",
       "boundaryId": null,
       "boundaryType": null,
       "logicalModules": [
-        "market-regime",
-        "signal-normalizer",
-        "evidence-engine",
-        "agreement-engine",
-        "ranking-engine",
-        "risk-engine",
-        "basket-engine",
-        "position-sizing",
+        "agreement-engine"
+      ]
+    },
+    {
+      "file": "astra/pipeline/basket-engine.cjs",
+      "zone": "basket-engine",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "basket-engine"
+      ]
+    },
+    {
+      "file": "astra/pipeline/diagnostics.cjs",
+      "zone": "diagnostics",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
         "diagnostics"
+      ]
+    },
+    {
+      "file": "astra/pipeline/evidence-engine.cjs",
+      "zone": "evidence-engine",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "evidence-engine"
+      ]
+    },
+    {
+      "file": "astra/pipeline/g09-shared.cjs",
+      "zone": "g09-shared-contract",
+      "kind": "public-contract",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": []
+    },
+    {
+      "file": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "zone": "g09-orchestrator",
+      "kind": "control-plane",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": []
+    },
+    {
+      "file": "astra/pipeline/market-regime.cjs",
+      "zone": "market-regime",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "market-regime"
+      ]
+    },
+    {
+      "file": "astra/pipeline/position-sizing.cjs",
+      "zone": "position-sizing",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "position-sizing"
+      ]
+    },
+    {
+      "file": "astra/pipeline/ranking-engine.cjs",
+      "zone": "ranking-engine",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "ranking-engine"
+      ]
+    },
+    {
+      "file": "astra/pipeline/risk-engine.cjs",
+      "zone": "risk-engine",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "risk-engine"
+      ]
+    },
+    {
+      "file": "astra/pipeline/signal-normalizer.cjs",
+      "zone": "signal-normalizer",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "signal-normalizer"
       ]
     },
     {
@@ -1512,8 +1600,55 @@
       "targetLogicalModules": []
     },
     {
-      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-      "fromZone": "decision-pipeline-shared",
+      "from": "astra/pipeline/agreement-engine.cjs",
+      "fromZone": "agreement-engine",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/basket-engine.cjs",
+      "fromZone": "basket-engine",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/basket-engine.cjs",
+      "fromZone": "basket-engine",
+      "spec": "./position-sizing.cjs",
+      "target": "astra/pipeline/position-sizing.cjs",
+      "targetZone": "position-sizing",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "position-sizing"
+      ]
+    },
+    {
+      "from": "astra/pipeline/diagnostics.cjs",
+      "fromZone": "diagnostics",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/evidence-engine.cjs",
+      "fromZone": "evidence-engine",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/g09-shared.cjs",
+      "fromZone": "g09-shared-contract",
       "spec": "crypto",
       "target": null,
       "targetZone": null,
@@ -1521,7 +1656,7 @@
     },
     {
       "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-      "fromZone": "decision-pipeline-shared",
+      "fromZone": "g09-orchestrator",
       "spec": "../strategies/strategy-registry.cjs",
       "target": "astra/strategies/strategy-registry.cjs",
       "targetZone": "strategy-registry",
@@ -1532,7 +1667,7 @@
     },
     {
       "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-      "fromZone": "decision-pipeline-shared",
+      "fromZone": "g09-orchestrator",
       "spec": "../strategies/strategy-runner.cjs",
       "target": "astra/strategies/strategy-runner.cjs",
       "targetZone": "strategy-runner",
@@ -1540,6 +1675,150 @@
       "targetLogicalModules": [
         "strategy-runner"
       ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./market-regime.cjs",
+      "target": "astra/pipeline/market-regime.cjs",
+      "targetZone": "market-regime",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "market-regime"
+      ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./signal-normalizer.cjs",
+      "target": "astra/pipeline/signal-normalizer.cjs",
+      "targetZone": "signal-normalizer",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "signal-normalizer"
+      ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./evidence-engine.cjs",
+      "target": "astra/pipeline/evidence-engine.cjs",
+      "targetZone": "evidence-engine",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "evidence-engine"
+      ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./agreement-engine.cjs",
+      "target": "astra/pipeline/agreement-engine.cjs",
+      "targetZone": "agreement-engine",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "agreement-engine"
+      ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./ranking-engine.cjs",
+      "target": "astra/pipeline/ranking-engine.cjs",
+      "targetZone": "ranking-engine",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "ranking-engine"
+      ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./position-sizing.cjs",
+      "target": "astra/pipeline/position-sizing.cjs",
+      "targetZone": "position-sizing",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "position-sizing"
+      ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./basket-engine.cjs",
+      "target": "astra/pipeline/basket-engine.cjs",
+      "targetZone": "basket-engine",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "basket-engine"
+      ]
+    },
+    {
+      "from": "astra/pipeline/g09-unified-decision-pipeline.cjs",
+      "fromZone": "g09-orchestrator",
+      "spec": "./diagnostics.cjs",
+      "target": "astra/pipeline/diagnostics.cjs",
+      "targetZone": "diagnostics",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "diagnostics"
+      ]
+    },
+    {
+      "from": "astra/pipeline/market-regime.cjs",
+      "fromZone": "market-regime",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/position-sizing.cjs",
+      "fromZone": "position-sizing",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/position-sizing.cjs",
+      "fromZone": "position-sizing",
+      "spec": "./risk-engine.cjs",
+      "target": "astra/pipeline/risk-engine.cjs",
+      "targetZone": "risk-engine",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "risk-engine"
+      ]
+    },
+    {
+      "from": "astra/pipeline/ranking-engine.cjs",
+      "fromZone": "ranking-engine",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/risk-engine.cjs",
+      "fromZone": "risk-engine",
+      "spec": "./g09-shared.cjs",
+      "target": "astra/pipeline/g09-shared.cjs",
+      "targetZone": "g09-shared-contract",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
     },
     {
       "from": "astra/runtime/bridges/quant-edge-archive.cjs",

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T07:51:07.436Z",
-  "sourceHead": "6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c",
+  "generatedAt": "2026-09-19T07:57:08.452Z",
+  "sourceHead": "658bdcb3730c5298c85dadb300b00b634af38a0f",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -50,8 +50,24 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 55,
+    "sourceFiles": 65,
     "zones": [
+      {
+        "zone": "agreement-engine",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "agreement-engine"
+        ]
+      },
+      {
+        "zone": "basket-engine",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "basket-engine"
+        ]
+      },
       {
         "zone": "certification",
         "kind": "target-module",
@@ -69,19 +85,39 @@
         ]
       },
       {
-        "zone": "decision-pipeline-shared",
-        "kind": "shared-target-implementation",
+        "zone": "diagnostics",
+        "kind": "target-module",
         "files": 1,
         "logicalModules": [
-          "market-regime",
-          "signal-normalizer",
-          "evidence-engine",
-          "agreement-engine",
-          "ranking-engine",
-          "risk-engine",
-          "basket-engine",
-          "position-sizing",
           "diagnostics"
+        ]
+      },
+      {
+        "zone": "evidence-engine",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "evidence-engine"
+        ]
+      },
+      {
+        "zone": "g09-orchestrator",
+        "kind": "control-plane",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "g09-shared-contract",
+        "kind": "public-contract",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "market-regime",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "market-regime"
         ]
       },
       {
@@ -97,6 +133,30 @@
         "kind": "control-plane",
         "files": 3,
         "logicalModules": []
+      },
+      {
+        "zone": "position-sizing",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "position-sizing"
+        ]
+      },
+      {
+        "zone": "ranking-engine",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "ranking-engine"
+        ]
+      },
+      {
+        "zone": "risk-engine",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "risk-engine"
+        ]
       },
       {
         "zone": "runtime-boundary:quant-edge-archive-adapter",
@@ -165,6 +225,14 @@
         "logicalModules": []
       },
       {
+        "zone": "signal-normalizer",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "signal-normalizer"
+        ]
+      },
+      {
         "zone": "strategy-core-private",
         "kind": "private-implementation",
         "files": 5,
@@ -195,8 +263,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 55,
-    "edgeCount": 150
+    "nodeCount": 65,
+    "edgeCount": 169
   },
   "moduleIsolation": [
     {
@@ -238,11 +306,13 @@
     },
     {
       "module": "market-regime",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/market-regime.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/market-regime.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "indicators",
@@ -346,11 +416,13 @@
     },
     {
       "module": "signal-normalizer",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/signal-normalizer.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/signal-normalizer.cjs"
+      ],
       "allowedImports": [
         "strategy-runner",
         "strategy-registry"
@@ -358,11 +430,13 @@
     },
     {
       "module": "evidence-engine",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/evidence-engine.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/evidence-engine.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "market-regime",
@@ -377,11 +451,13 @@
     },
     {
       "module": "agreement-engine",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/agreement-engine.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/agreement-engine.cjs"
+      ],
       "allowedImports": [
         "signal-normalizer",
         "evidence-engine",
@@ -390,11 +466,13 @@
     },
     {
       "module": "ranking-engine",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/ranking-engine.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/ranking-engine.cjs"
+      ],
       "allowedImports": [
         "signal-normalizer",
         "evidence-engine",
@@ -404,11 +482,13 @@
     },
     {
       "module": "risk-engine",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/risk-engine.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/risk-engine.cjs"
+      ],
       "allowedImports": [
         "ranking-engine",
         "support-resistance",
@@ -418,11 +498,13 @@
     },
     {
       "module": "basket-engine",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/basket-engine.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/basket-engine.cjs"
+      ],
       "allowedImports": [
         "ranking-engine",
         "risk-engine",
@@ -432,11 +514,13 @@
     },
     {
       "module": "position-sizing",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/position-sizing.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/position-sizing.cjs"
+      ],
       "allowedImports": [
         "risk-engine",
         "portfolio"
@@ -560,11 +644,13 @@
     },
     {
       "module": "diagnostics",
-      "status": "SHARED_PHYSICAL_ZONE",
+      "status": "DEDICATED_ZONE",
       "implementationFiles": [
-        "astra/pipeline/g09-unified-decision-pipeline.cjs"
+        "astra/pipeline/diagnostics.cjs"
       ],
-      "dedicatedFiles": [],
+      "dedicatedFiles": [
+        "astra/pipeline/diagnostics.cjs"
+      ],
       "allowedImports": []
     },
     {
@@ -616,32 +702,13 @@
     }
   ],
   "findings": {
-    "total": 17,
-    "high": 1,
+    "total": 16,
+    "high": 0,
     "medium": 16,
     "byCode": {
-      "PHYSICAL_BOUNDARY_COLLAPSE": 1,
       "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 16
     },
     "items": [
-      {
-        "severity": "HIGH",
-        "code": "PHYSICAL_BOUNDARY_COLLAPSE",
-        "file": "astra/pipeline/g09-unified-decision-pipeline.cjs",
-        "zone": "decision-pipeline-shared",
-        "logicalModules": [
-          "market-regime",
-          "signal-normalizer",
-          "evidence-engine",
-          "agreement-engine",
-          "ranking-engine",
-          "risk-engine",
-          "basket-engine",
-          "position-sizing",
-          "diagnostics"
-        ],
-        "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
-      },
       {
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",

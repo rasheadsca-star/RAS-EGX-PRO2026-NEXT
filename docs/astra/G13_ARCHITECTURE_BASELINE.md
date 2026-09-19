@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c`
+Source HEAD: `658bdcb3730c5298c85dadb300b00b634af38a0f`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,15 +14,14 @@ Source HEAD: `6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 55
-- Static dependency edges: 150
-- HIGH findings: 1
+- Scanned active source files: 65
+- Static dependency edges: 169
+- HIGH findings: 0
 - MEDIUM findings: 16
 
 ## Finding classes
 
 - NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 16
-- PHYSICAL_BOUNDARY_COLLAPSE: 1
 
 ## Module physical-isolation map
 
@@ -30,7 +29,7 @@ Source HEAD: `6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c`
 - market-calendar: NO_PHYSICAL_MAPPING
 - symbol-master: NO_PHYSICAL_MAPPING
 - corporate-actions: NO_PHYSICAL_MAPPING
-- market-regime: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
+- market-regime: DEDICATED_ZONE — astra/pipeline/market-regime.cjs
 - indicators: NO_PHYSICAL_MAPPING
 - technical-analysis: NO_PHYSICAL_MAPPING
 - support-resistance: NO_PHYSICAL_MAPPING
@@ -39,13 +38,13 @@ Source HEAD: `6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c`
 - liquidity: NO_PHYSICAL_MAPPING
 - strategy-registry: DEDICATED_ZONE — astra/strategies/strategy-registry.cjs
 - strategy-runner: DEDICATED_ZONE — astra/strategies/strategy-runner.cjs
-- signal-normalizer: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
-- evidence-engine: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
-- agreement-engine: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
-- ranking-engine: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
-- risk-engine: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
-- basket-engine: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
-- position-sizing: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
+- signal-normalizer: DEDICATED_ZONE — astra/pipeline/signal-normalizer.cjs
+- evidence-engine: DEDICATED_ZONE — astra/pipeline/evidence-engine.cjs
+- agreement-engine: DEDICATED_ZONE — astra/pipeline/agreement-engine.cjs
+- ranking-engine: DEDICATED_ZONE — astra/pipeline/ranking-engine.cjs
+- risk-engine: DEDICATED_ZONE — astra/pipeline/risk-engine.cjs
+- basket-engine: DEDICATED_ZONE — astra/pipeline/basket-engine.cjs
+- position-sizing: DEDICATED_ZONE — astra/pipeline/position-sizing.cjs
 - morning-confirmation: NO_PHYSICAL_MAPPING
 - portfolio: NO_PHYSICAL_MAPPING
 - backtest: NO_PHYSICAL_MAPPING
@@ -54,7 +53,7 @@ Source HEAD: `6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c`
 - historical-store: NO_PHYSICAL_MAPPING
 - migration: DEDICATED_ZONE — astra/migration/g07-migrate.cjs
 - data-health: DEDICATED_ZONE — astra/data-health/g11-approved-source-closure.cjs, astra/data-health/g11-current-reviewed-import-preflight.cjs, astra/data-health/g11-current-session-exceptions.cjs, astra/data-health/g11-current-session-refresh.cjs, astra/data-health/g11-current-source-closure.cjs, astra/data-health/g11-data-health.cjs, astra/data-health/g11-decision-dump.cjs, astra/data-health/g11-reviewed-import-preflight.cjs, astra/data-health/g11-source-data-repair.cjs, astra/data-health/g11-v16-domain-exceptions.cjs
-- diagnostics: SHARED_PHYSICAL_ZONE — astra/pipeline/g09-unified-decision-pipeline.cjs
+- diagnostics: DEDICATED_ZONE — astra/pipeline/diagnostics.cjs
 - certification: DEDICATED_ZONE — astra/certification/g06-certify.cjs, astra/certification/g08-certify.cjs, astra/certification/g09-certify.cjs, astra/certification/g10-certify-final.cjs, astra/certification/g10-certify.cjs, astra/certification/g11-carry-forward-guard.cjs, astra/certification/g11-certify.cjs, astra/certification/g11-derived-build-failures.cjs, astra/certification/g11-external-data-finalize.cjs, astra/certification/g11-finalize-evidence.cjs, astra/certification/g11-guard37-evidence.cjs, astra/certification/g11-repair-destructive.cjs, astra/certification/g11-repair-finalize.cjs, astra/certification/g11-source-dispositions.cjs, astra/certification/g12-certify.cjs, astra/certification/g12-r01-parity.cjs, astra/certification/g13-architecture-baseline.cjs, astra/certification/legacy-isolation.cjs
 
 ## Interpretation
