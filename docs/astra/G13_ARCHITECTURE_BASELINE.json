@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T21:54:07.634Z",
-  "sourceHead": "d081592a64e557390f9e54e51caada3ce258e402",
+  "generatedAt": "2026-09-19T21:58:24.751Z",
+  "sourceHead": "d7e0a96c0a51bdf2b89555c9da76b4f3f3a34424",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -52,7 +52,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 73,
+    "sourceFiles": 75,
     "zones": [
       {
         "zone": "agreement-engine",
@@ -136,6 +136,14 @@
         "files": 1,
         "logicalModules": [
           "indicators"
+        ]
+      },
+      {
+        "zone": "liquidity",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "liquidity"
         ]
       },
       {
@@ -325,12 +333,20 @@
         "kind": "io-boundary",
         "files": 1,
         "logicalModules": []
+      },
+      {
+        "zone": "vcp",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "vcp"
+        ]
       }
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 73,
-    "edgeCount": 185
+    "nodeCount": 75,
+    "edgeCount": 192
   },
   "moduleIsolation": [
     {
@@ -456,9 +472,13 @@
     },
     {
       "module": "vcp",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/analysis/vcp.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/analysis/vcp.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "indicators",
@@ -467,9 +487,13 @@
     },
     {
       "module": "liquidity",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/analysis/liquidity.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/analysis/liquidity.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "indicators"
@@ -800,29 +824,17 @@
     }
   ],
   "findings": {
-    "total": 8,
+    "total": 6,
     "high": 0,
-    "medium": 8,
+    "medium": 6,
     "byCode": {
-      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 8
+      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 6
     },
     "items": [
       {
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
         "module": "corporate-actions",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "vcp",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "liquidity",
         "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
       },
       {

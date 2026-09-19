@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `d081592a64e557390f9e54e51caada3ce258e402`
+Source HEAD: `d7e0a96c0a51bdf2b89555c9da76b4f3f3a34424`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,14 +14,14 @@ Source HEAD: `d081592a64e557390f9e54e51caada3ce258e402`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 73
-- Static dependency edges: 185
+- Scanned active source files: 75
+- Static dependency edges: 192
 - HIGH findings: 0
-- MEDIUM findings: 8
+- MEDIUM findings: 6
 
 ## Finding classes
 
-- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 8
+- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 6
 
 ## Module physical-isolation map
 
@@ -34,8 +34,8 @@ Source HEAD: `d081592a64e557390f9e54e51caada3ce258e402`
 - technical-analysis: DEDICATED_ZONE — astra/analysis/technical-analysis.cjs
 - support-resistance: DEDICATED_ZONE — astra/analysis/support-resistance.cjs
 - relative-strength: DEDICATED_ZONE — astra/analysis/relative-strength.cjs
-- vcp: NO_PHYSICAL_MAPPING
-- liquidity: NO_PHYSICAL_MAPPING
+- vcp: DEDICATED_ZONE — astra/analysis/vcp.cjs
+- liquidity: DEDICATED_ZONE — astra/analysis/liquidity.cjs
 - strategy-registry: DEDICATED_ZONE — astra/strategies/strategy-registry.cjs
 - strategy-runner: DEDICATED_ZONE — astra/strategies/strategy-runner.cjs
 - signal-normalizer: DEDICATED_ZONE — astra/pipeline/signal-normalizer.cjs
