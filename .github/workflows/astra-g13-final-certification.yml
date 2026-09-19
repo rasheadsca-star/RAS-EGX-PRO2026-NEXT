@@ -1,0 +1,87 @@
+name: Astra G13 Final Certification
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g13-certify.cjs'
+      - 'tests/astra/g13-final-certification.test.cjs'
+      - '.github/workflows/astra-g13-final-certification.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g13-final]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify pre-certification gate boundary
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=12;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G13')!=='PENDING')throw Error('G13 must be PENDING before final certification');
+          if(m.get('G14')!=='PENDING')throw Error('G14 must remain PENDING');
+          NODE
+      - name: Reprove strict G12 zero-legacy boundary
+        run: |
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g13-final-g12-scan.json
+          node -e "const x=require('/tmp/g13-final-g12-scan.json'); if(x.runtimeLegacyDependencyCount!==0||!x.clean||x.matches.length) process.exit(1)"
+      - name: Regress G06 contracts
+        run: node --test tests/astra/g06-contracts.test.cjs tests/astra/g06-certification.test.cjs
+      - name: Regress G08 strategy reconstruction
+        run: |
+          node --test             tests/astra/g08-strategy-reconstruction.test.cjs             tests/astra/g08-strict-boundaries.test.cjs             tests/astra/g08-final-hash.test.cjs             tests/astra/g08-recovery-overlay.test.cjs             tests/astra/g08-v13-parity-repair.test.cjs
+      - name: Regress G09 semantic pipeline
+        run: node --test tests/astra/g09-unified-decision-pipeline.test.cjs
+      - name: Regress persisted G10 and G11 guards
+        run: |
+          node --test             tests/astra/g12-g10-persisted-regression.test.cjs             tests/astra/g11-carry-forward-guard.test.cjs
+      - name: Regress G12 isolation and runtime replacements
+        run: |
+          node --test             tests/astra/g12-final-certification.test.cjs             tests/astra/g12-r01-v18-local.test.cjs             tests/astra/g12-r02-blocked-host.test.cjs             tests/astra/g12-r03-v19-local.test.cjs             tests/astra/g12-r04-v20-local.test.cjs             tests/astra/g12-r05-quant-edge-archive.test.cjs             tests/astra/g12-r06-sepa-local.test.cjs             tests/astra/g12-r07-tfe-local.test.cjs             tests/astra/g12-r08-sepa-vendor.test.cjs             deploy/rc2-safe-shell/test/local-api.test.js
+      - name: Regress G13 architecture zero-finding boundary
+        run: node --test tests/astra/g13-architecture-baseline.test.cjs
+      - name: Validate final G13 certification candidate
+        env:
+          G13_SOURCE_HEAD: ${{ github.sha }}
+          G13_REGRESSION_STATUS: PASS
+        run: node --test tests/astra/g13-final-certification.test.cjs
+      - name: Write G13 final certification and promote gate
+        env:
+          G13_SOURCE_HEAD: ${{ github.sha }}
+          G13_REGRESSION_STATUS: PASS
+        run: node astra/certification/g13-certify.cjs --write
+      - name: Validate promoted gate state
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const cert=require('./docs/astra/G13_CERTIFICATION.json');
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          if(cert.status!=='GREEN'||cert.architecture.findingsTotal!==0||cert.architecture.dedicatedModules!==30)throw Error('G13 certificate invalid');
+          if(m.get('G13')!=='GREEN'||m.get('G14')!=='PENDING')throw Error('gate promotion invalid');
+          if(cert.productionCutover!==false)throw Error('production cutover changed');
+          NODE
+      - name: Persist G13 certification only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
+            echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             docs/astra/G13_CERTIFICATION.json             04_ACCEPTANCE_GATES.json             05_WORK_STATE.json             docs/astra/WORK_STATE.json
+          git commit -m 'cert(g13): architecture isolation GREEN [skip g13-final]'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
