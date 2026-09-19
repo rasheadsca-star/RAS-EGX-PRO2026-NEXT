@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T07:29:16.357Z",
-  "sourceHead": "88a824ba381035fb49c5e8c3ead275c06a07c406",
+  "generatedAt": "2026-09-19T07:51:07.436Z",
+  "sourceHead": "6ae9db46e045773c7d8ab8e4e9aa619e696c6c4c",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -50,7 +50,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 54,
+    "sourceFiles": 55,
     "zones": [
       {
         "zone": "certification",
@@ -161,7 +161,7 @@
       {
         "zone": "shared-contracts",
         "kind": "shared-contract",
-        "files": 2,
+        "files": 3,
         "logicalModules": []
       },
       {
@@ -195,8 +195,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 54,
-    "edgeCount": 149
+    "nodeCount": 55,
+    "edgeCount": 150
   },
   "moduleIsolation": [
     {
@@ -616,12 +616,11 @@
     }
   ],
   "findings": {
-    "total": 18,
-    "high": 2,
+    "total": 17,
+    "high": 1,
     "medium": 16,
     "byCode": {
       "PHYSICAL_BOUNDARY_COLLAPSE": 1,
-      "DIRECT_DATA_PATH_COUPLING": 1,
       "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 16
     },
     "items": [
@@ -642,13 +641,6 @@
           "diagnostics"
         ],
         "detail": "One physical source file belongs to a zone implementing multiple logical architecture modules."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_DATA_PATH_COUPLING",
-        "file": "astra/strategies/g08-internal-strategies.cjs",
-        "zone": "strategy-core-private",
-        "detail": "Active decision/runtime source references persistence/evidence paths directly."
       },
       {
         "severity": "MEDIUM",
