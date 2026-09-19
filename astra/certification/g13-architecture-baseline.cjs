@@ -27,6 +27,8 @@ const ACTIVE_ROOTS=[
 
 const ZONES=[
   {id:'shared-contracts',prefix:'astra/contracts/',modules:[],kind:'shared-contract'},
+  {id:'canonical-data',exact:'astra/core/canonical-data.cjs',modules:['canonical-data'],kind:'target-module'},
+  {id:'historical-store',exact:'astra/core/historical-store.cjs',modules:['historical-store'],kind:'target-module'},
   {id:'market-calendar',exact:'astra/core/market-calendar.cjs',modules:['market-calendar'],kind:'target-module'},
   {id:'symbol-master',exact:'astra/core/symbol-master.cjs',modules:['symbol-master'],kind:'target-module'},
   {id:'g09-shared-contract',exact:'astra/pipeline/g09-shared.cjs',modules:[],kind:'public-contract'},
