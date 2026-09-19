@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `658bdcb3730c5298c85dadb300b00b634af38a0f`
+Source HEAD: `97e6138ba8a601f04dabaafd4d960935019b9be6`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,20 +14,20 @@ Source HEAD: `658bdcb3730c5298c85dadb300b00b634af38a0f`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 65
-- Static dependency edges: 169
+- Scanned active source files: 67
+- Static dependency edges: 171
 - HIGH findings: 0
-- MEDIUM findings: 16
+- MEDIUM findings: 14
 
 ## Finding classes
 
-- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 16
+- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 14
 
 ## Module physical-isolation map
 
 - canonical-data: NO_PHYSICAL_MAPPING
-- market-calendar: NO_PHYSICAL_MAPPING
-- symbol-master: NO_PHYSICAL_MAPPING
+- market-calendar: DEDICATED_ZONE — astra/core/market-calendar.cjs
+- symbol-master: DEDICATED_ZONE — astra/core/symbol-master.cjs
 - corporate-actions: NO_PHYSICAL_MAPPING
 - market-regime: DEDICATED_ZONE — astra/pipeline/market-regime.cjs
 - indicators: NO_PHYSICAL_MAPPING
