@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'astra/certification/g13-architecture-baseline.cjs'
+      - 'astra/pipeline/**'
       - 'astra/contracts/strategy-provenance.cjs'
       - 'astra/strategies/g08-internal-strategies.cjs'
       - 'docs/astra/RUNTIME_ADAPTER_BOUNDARIES.json'
@@ -53,6 +54,8 @@ jobs:
             tests/astra/g12-r06-sepa-local.test.cjs \
             tests/astra/g12-r07-tfe-local.test.cjs \
             deploy/rc2-safe-shell/test/local-api.test.js
+      - name: Family 6 G09 semantic regression
+        run: node --test tests/astra/g09-unified-decision-pipeline.test.cjs
       - name: G13 architecture baseline tests
         run: node --test tests/astra/g13-architecture-baseline.test.cjs
       - name: Build G13 architecture baseline evidence
