@@ -1,3 +1,3 @@
 'use strict';
 const test=require('node:test');const assert=require('node:assert/strict');const{certify}=require('../../astra/certification/g06-certify.cjs');
-test('G06 architecture/manifests certify against discovery baseline',()=>{const result=certify(process.cwd());assert.equal(result.status,'PASS');assert.equal(result.migrationSources,19);assert.equal(result.legacyReplacementContracts,8);assert.equal(result.parityStrategyCases,18);assert.equal(result.g12Status,'PENDING')});
+test('G06 architecture/manifests certify against discovery baseline',()=>{const result=certify(process.cwd());assert.equal(result.status,'PASS');assert.equal(result.migrationSources,19);assert.equal(result.legacyReplacementContracts,8);assert.equal(result.parityStrategyCases,18);assert.equal(result.g12BaselineStatus,'PENDING');assert.ok(['PENDING','GREEN'].includes(result.g12Status));if(result.g12Status==='GREEN')assert.equal(result.currentG12RuntimeLegacyDependencyCount,0)});
