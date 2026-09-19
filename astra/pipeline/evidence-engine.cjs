@@ -1,9 +1,16 @@
 'use strict';
 const {VERSION,stableHash,finite}=require('./g09-shared.cjs');
 const {buildTechnicalEvidence}=require('../analysis/technical-analysis.cjs');
+const {buildSupportResistanceEvidence}=require('../analysis/support-resistance.cjs');
+const {buildRelativeStrengthEvidence}=require('../analysis/relative-strength.cjs');
 
 function buildEvidence(signal,row,regime,decisionInputSnapshotId){
   const technical=row?buildTechnicalEvidence(row,[],row.sessionDate):{sourceRef:signal.ticker};
+  if(row){
+    const sr=buildSupportResistanceEvidence(row,[],row.sessionDate);
+    const rs=buildRelativeStrengthEvidence(row,[],row.sessionDate,[row]);
+    if(sr.sourceRef!==technical.sourceRef||rs.sourceRef!==technical.sourceRef)throw Object.assign(new Error('Analysis evidence source identity mismatch'),{code:'DECISION_INPUT_INVALID'});
+  }
   const base=`${signal.ticker}|${signal.strategyExecutionId}|${decisionInputSnapshotId}`;
   const items=[
     evidence(base,'MODEL_SELECTION','STRATEGY_SELECTION',signal.strategyExecutionId,{score:signal.rawScore},'STRATEGY',[]),
