@@ -2,9 +2,9 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "G15_PENDING",
-  "current_gate": "G15",
-  "last_green_gate": "G14",
+  "current_phase": "G16_PENDING",
+  "current_gate": "G16",
+  "last_green_gate": "G15",
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -23,7 +23,8 @@
     "G12 GREEN: all 8/8 legacy runtime/build dependencies are closed; strict declared active-surface scan reports runtimeLegacyDependencyCount=0 and no production cutover occurred.",
     "QUANT_EDGE remains HISTORICAL_OUTPUT_ONLY / OUTPUT_INTEGRITY_ONLY with zero live decision influence; no unavailable algorithm or parameters were fabricated.",
     "G12 final non-mutating regression completed 183 tests: 172 passed, 11 intentional G07 real-migration rerun skips, 0 failed, 0 cancelled, 0 todo; persisted G07 GREEN/idempotency evidence was revalidated.",
-    "G14 GREEN: complete Astra unit/integration/regression suite passed with zero failed/cancelled/todo tests, no unexpected skips, all dedicated architecture files syntax-clean, and zero legacy runtime dependencies."
+    "G14 GREEN: complete Astra unit/integration/regression suite passed with zero failed/cancelled/todo tests, no unexpected skips, all dedicated architecture files syntax-clean, and zero legacy runtime dependencies.",
+    "G15 GREEN: real Chromium desktop/mobile smoke passed on the standalone Astra local decision surface with persisted DecisionSnapshot truth, same-origin-only requests, zero legacy runtime dependencies and an explicit fail-closed outage scenario."
   ],
   "completed_gates": [
     "G01",
@@ -39,7 +40,8 @@
     "G11",
     "G12",
     "G13",
-    "G14"
+    "G14",
+    "G15"
   ],
   "failed_gates": [],
   "clean_review_streak": 0,
@@ -86,8 +88,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Begin G15 Chromium browser smoke. Keep production cutover disabled.",
-  "last_updated": "2026-09-19T22:31:03.805Z",
+  "next_action": "Begin G16 production deployment. Keep production cutover disabled until its dedicated acceptance boundary permits it.",
+  "last_updated": "2026-09-19T22:48:37.847Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -274,6 +276,24 @@
     "dedicatedFilesSyntaxChecked": 57,
     "runtimeLegacyDependencyCount": 0,
     "g01ThroughG13Regression": "PASS",
+    "productionCutover": false
+  },
+  "g15_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35474338036,
+    "sourceCommit": "264440e2e56a524d047f6e8672c3223c1cda28ec",
+    "browserVersion": "152.0.7977.82",
+    "profiles": [
+      "chromium-desktop",
+      "chromium-mobile"
+    ],
+    "runtimeSurface": "astra/runtime/v18/index.html",
+    "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+    "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+    "externalRequests": 0,
+    "failClosedScenario": "PASS",
+    "runtimeLegacyDependencyCount": 0,
+    "g01ThroughG14Regression": "PASS",
     "productionCutover": false
   }
 }
