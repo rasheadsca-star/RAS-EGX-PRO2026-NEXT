@@ -14,6 +14,8 @@ const historicalStore=require('../../astra/core/historical-store.cjs');
 const healthPrimitives=require('../../astra/contracts/data-health-primitives.cjs');
 const indicators=require('../../astra/analysis/indicators.cjs');
 const technicalAnalysis=require('../../astra/analysis/technical-analysis.cjs');
+const supportResistance=require('../../astra/analysis/support-resistance.cjs');
+const relativeStrength=require('../../astra/analysis/relative-strength.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -330,5 +332,43 @@ test('Family 9 reduces exactly indicators and technical-analysis MEDIUM mappings
   assert.equal(missing.includes('technical-analysis'),false);
   for(const id of ['support-resistance','relative-strength','vcp','liquidity'])assert.equal(missing.includes(id),true,id);
   assert.equal(missing.length,10);
+  assert.equal(r.productionCutover,false);
+});
+
+test('Family 10 gives support-resistance and relative-strength dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['support-resistance','relative-strength']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/analysis/support-resistance.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/analysis/relative-strength.cjs').kind,'target-module');
+});
+test('Family 10 preserves point-in-time S/R and relative-strength source semantics without strategy thresholds',()=>{
+  const session='2026-09-17';
+  const row={
+    snapshotId:'AN-COMI-2026-09-17',securityId:'EGX:COMI',ticker:'COMI',sessionDate:session,
+    validationStatus:'VALID',migrationValidationStatus:'VALID',
+    ohlc:{open:99,high:104,low:98,close:103},volume:1000000,turnover:30000000,
+    technicalInputs:{relativeStrength20:5,return20Pct:6,aboveSma20:true,aboveSma50:true,volatility20AnnualizedPct:24,relativeVolume20:1.4},
+    supportResistanceInputs:{asOfSessionDate:session,support:100,resistance:106}
+  };
+  const sr=supportResistance.buildSupportResistanceEvidence(row,[],session);
+  assert.equal(sr.support,100);assert.equal(sr.resistance,106);assert.equal(sr.sourceRef,row.snapshotId);
+  assert.equal(sr.availability.both,true);
+  const rs=relativeStrength.buildRelativeStrengthEvidence(row,[],session,[row,{...row,snapshotId:'AN-SWDY',ticker:'SWDY',securityId:'EGX:SWDY',technicalInputs:{...row.technicalInputs,relativeStrength20:3}}]);
+  assert.equal(rs.relativeStrength20,5);assert.equal(rs.crossSection.rank,1);assert.equal(rs.crossSection.comparableCount,2);
+  assert.equal(Object.hasOwn(rs,'productionEligible'),false);
+});
+test('Family 10 reduces exactly two additional medium mappings and keeps HIGH at zero',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.medium,8);
+  const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
+  assert.equal(missing.includes('support-resistance'),false);
+  assert.equal(missing.includes('relative-strength'),false);
+  assert.equal(missing.length,8);
   assert.equal(r.productionCutover,false);
 });
