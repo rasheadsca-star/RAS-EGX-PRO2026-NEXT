@@ -2,9 +2,9 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "G17_PENDING",
-  "current_gate": "G17",
-  "last_green_gate": "G16",
+  "current_phase": "G18_PENDING",
+  "current_gate": "G18",
+  "last_green_gate": "G17",
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -25,7 +25,8 @@
     "G12 final non-mutating regression completed 183 tests: 172 passed, 11 intentional G07 real-migration rerun skips, 0 failed, 0 cancelled, 0 todo; persisted G07 GREEN/idempotency evidence was revalidated.",
     "G14 GREEN: complete Astra unit/integration/regression suite passed with zero failed/cancelled/todo tests, no unexpected skips, all dedicated architecture files syntax-clean, and zero legacy runtime dependencies.",
     "G15 GREEN: real Chromium desktop/mobile smoke passed on the standalone Astra local decision surface with persisted DecisionSnapshot truth, same-origin-only requests, zero legacy runtime dependencies and an explicit fail-closed outage scenario.",
-    "G16 GREEN: standalone Astra runtime deployed to an isolated GitHub Pages production path; runtime and persisted decision truth verified byte-exact, Pages build uses vendored SEPA-X with no cross-branch build dependency, and no public/legacy cutover occurred."
+    "G16 GREEN: standalone Astra runtime deployed to an isolated GitHub Pages production path; runtime and persisted decision truth verified byte-exact, Pages build uses vendored SEPA-X with no cross-branch build dependency, and no public/legacy cutover occurred.",
+    "G17 GREEN: the isolated Astra GitHub Pages production surface passed live Chromium verification on production root, desktop and mobile; runtime and persisted decision truth remained byte-exact, requests remained same-origin only, and the live resource-outage scenario failed closed without any public/legacy cutover."
   ],
   "completed_gates": [
     "G01",
@@ -43,7 +44,8 @@
     "G13",
     "G14",
     "G15",
-    "G16"
+    "G16",
+    "G17"
   ],
   "failed_gates": [],
   "clean_review_streak": 0,
@@ -90,8 +92,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Begin G17 live production verification against the isolated Astra Pages deployment. Do not perform legacy/public cutover.",
-  "last_updated": "2026-09-19T23:06:09.649Z",
+  "next_action": "Begin G18 legacy-off cutover simulation only. Do not perform a real legacy/public cutover.",
+  "last_updated": "2026-09-19T23:16:19.877Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -315,6 +317,29 @@
     "runtimeLegacyDependencyCount": 0,
     "runtimeExternalReferences": 0,
     "g01ThroughG15Regression": "PASS",
+    "productionCutover": false
+  },
+  "g17_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35475612451,
+    "sourceCommit": "6bcddfff78427ff6a9a51387f1e9367b20b0e91e",
+    "provider": "GITHUB_PAGES",
+    "productionUrl": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/",
+    "runtimeUrl": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/runtime/v18/index.html",
+    "browserVersion": "152.0.7977.82",
+    "profiles": [
+      "production-root-desktop",
+      "chromium-desktop",
+      "chromium-mobile"
+    ],
+    "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+    "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+    "liveRuntimeByteExact": true,
+    "livePersistedTruthByteExact": true,
+    "externalRequests": 0,
+    "failClosedScenario": "PASS",
+    "runtimeLegacyDependencyCount": 0,
+    "g01ThroughG16Regression": "PASS",
     "productionCutover": false
   }
 }
