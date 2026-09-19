@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "astra-g11-guard37-evidence-1",
+  "generatedAt": "2026-09-18T19:05:52.404Z",
+  "status": "PASS",
+  "guard": "G11_NO_CARRY_FORWARD_BEHAVIOR",
+  "previousFalsePositive": {
+    "reason": "The previous guard searched for the raw token carryForward and therefore matched the explicit safety declaration carryForwardForbidden: true.",
+    "unsafeBehaviorObserved": false
+  },
+  "correctedDetectionRule": {
+    "principle": "Detect executable/configured previous-session-as-current behavior, not terminology that prohibits or diagnoses it.",
+    "unsafeRuleIds": [
+      "EXECUTABLE_CARRY_FORWARD_HELPER",
+      "CARRY_FORWARD_CONFIG_ENABLED",
+      "PREVIOUS_VALUE_DIRECTLY_PROMOTED_AS_CURRENT",
+      "PREVIOUS_VALUE_USED_AS_CURRENT_FALLBACK",
+      "SYNTHETIC_CURRENT_ROW_FROM_PREVIOUS_SESSION"
+    ],
+    "explicitlySafeExamples": [
+      "carryForwardForbidden: true",
+      "noCarryForward: true",
+      "comments or diagnostic strings stating carry forward is forbidden"
+    ]
+  },
+  "selfTests": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "cases": [
+      {
+        "id": "SAFE_EXPLICIT_FORBIDDEN_POLICY",
+        "expectedUnsafe": false,
+        "observedUnsafe": false,
+        "pass": true,
+        "findings": []
+      },
+      {
+        "id": "UNSAFE_EXECUTABLE_CARRY_FORWARD",
+        "expectedUnsafe": true,
+        "observedUnsafe": true,
+        "pass": true,
+        "findings": [
+          {
+            "ruleId": "EXECUTABLE_CARRY_FORWARD_HELPER",
+            "description": "Executable helper call that copies or promotes an older session into the current session.",
+            "match": "carryForward(",
+            "index": 16,
+            "context": "const current = carryForward(previousRow, expectedSession);"
+          }
+        ]
+      },
+      {
+        "id": "SAFE_PROHIBITION_DOCUMENTATION",
+        "expectedUnsafe": false,
+        "observedUnsafe": false,
+        "pass": true,
+        "findings": []
+      },
+      {
+        "id": "UNSAFE_PREVIOUS_PRICE_PROMOTED_CURRENT",
+        "expectedUnsafe": true,
+        "observedUnsafe": true,
+        "pass": true,
+        "findings": [
+          {
+            "ruleId": "PREVIOUS_VALUE_DIRECTLY_PROMOTED_AS_CURRENT",
+            "description": "A current OHLC/price/volume/turnover field is assigned directly from a previous session/row.",
+            "match": "close: previousSession.close",
+            "index": 80,
+            "context": "function buildCurrent(previousSession) { return { sessionDate: expectedSession, close: previousSession.close, volume: previousSession.volume }; }"
+          },
+          {
+            "ruleId": "PREVIOUS_VALUE_DIRECTLY_PROMOTED_AS_CURRENT",
+            "description": "A current OHLC/price/volume/turnover field is assigned directly from a previous session/row.",
+            "match": "volume: previousSession.volume",
+            "index": 110,
+            "context": "Session) { return { sessionDate: expectedSession, close: previousSession.close, volume: previousSession.volume }; }"
+          },
+          {
+            "ruleId": "SYNTHETIC_CURRENT_ROW_FROM_PREVIOUS_SESSION",
+            "description": "A row labelled as the expected/current session is constructed from previous-session market values.",
+            "match": "sessionDate: expectedSession, close: previousSession.close",
+            "index": 50,
+            "context": "function buildCurrent(previousSession) { return { sessionDate: expectedSession, close: previousSession.close, volume: previousSession.volume }; }"
+          }
+        ]
+      }
+    ]
+  },
+  "implementationCheck": {
+    "path": "astra/data-health/g11-source-data-repair.cjs",
+    "capsRowsAtExpectedSession": true,
+    "findings": [],
+    "pass": true
+  }
+}
