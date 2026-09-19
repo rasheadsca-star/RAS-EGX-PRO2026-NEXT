@@ -1,0 +1,157 @@
+name: Astra G17 Live Production Verification
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g17-live-production.cjs'
+      - 'astra/certification/g17-certify.cjs'
+      - '.github/workflows/astra-g17-live-production-verification.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+env:
+  G17_PRODUCTION_URL: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/
+  G17_RUNTIME_URL: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/runtime/v18/index.html
+
+concurrency:
+  group: astra-g17-live-production-verification
+  cancel-in-progress: false
+
+jobs:
+  verify-and-certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g17]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G17 pre-certification boundary
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=16;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G17')!=='PENDING')throw Error('G17 must be PENDING');
+          for(const id of ['G18','G19'])if(m.get(id)!=='PENDING')throw Error(id+' must remain PENDING');
+          const a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json'),g16=require('./docs/astra/G16_CERTIFICATION.json');
+          for(const s of [a,b])if(s.current_gate!=='G17'||s.last_green_gate!=='G16'||s.current_phase!=='G17_PENDING')throw Error('G17 state boundary invalid');
+          if(g16.status!=='GREEN'||g16.productionCutover!==false||g16.runtimeLegacyDependencyCount!==0||g16.runtimeExternalReferences!==0)throw Error('G16 boundary invalid');
+          if(g16.deployment?.provider!=='GITHUB_PAGES'||g16.deployment?.productionUrl!==process.env.G17_PRODUCTION_URL||g16.deployment?.runtimeUrl!==process.env.G17_RUNTIME_URL)throw Error('G17 production target does not match G16 certification');
+          NODE
+
+      - name: Verify G17 scripts syntax
+        run: |
+          node --check astra/certification/g17-live-production.cjs
+          node --check astra/certification/g17-certify.cjs
+          node --check astra/runtime/v18/app.js
+          node --check astra/runtime/v18/resource-client.js
+
+      - name: Revalidate zero-legacy runtime boundary
+        run: |
+          set -euo pipefail
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g17-legacy.json
+          node -e "const x=require('/tmp/g17-legacy.json');if(x.clean!==true||x.runtimeLegacyDependencyCount!==0||x.matches.length)process.exit(1)"
+
+      - name: Preserve G16 deployment boundary
+        run: |
+          node <<'NODE'
+          const g16=require('./docs/astra/G16_CERTIFICATION.json');
+          const e=require('./docs/astra/G16_DEPLOYMENT_EVIDENCE.json');
+          if(g16.status!=='GREEN'||g16.productionCutover!==false||g16.runtimeLegacyDependencyCount!==0||g16.runtimeExternalReferences!==0)throw Error('G16 cert regressed');
+          if(e.status!=='PASS'||e.deployment?.provider!=='GITHUB_PAGES'||e.deployment?.isolatedPath!=='astra-prod/'||e.deployment?.publicEntrypointChanged!==false)throw Error('G16 deployment evidence regressed');
+          if(e.runtime?.allHashesMatch!==true||e.persistedTruth?.allHashesMatch!==true)throw Error('G16 exactness evidence regressed');
+          NODE
+
+      - name: Locate system Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER" || { echo "::error::No system Chrome/Chromium available on runner."; exit 1; }
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Run live Chromium verification and build evidence
+        env:
+          G17_SOURCE_HEAD: ${{ github.sha }}
+          G17_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          node astra/certification/g17-live-production.cjs --write
+
+      - name: Reject browser-induced repository mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain | grep -vE '^.. docs/astra/G17_(LIVE_PRODUCTION_EVIDENCE\.json|LIVE_PRODUCTION_REPORT\.md)$' > /tmp/g17-unexpected-status || true
+          if [ -s /tmp/g17-unexpected-status ]; then
+            echo "Unexpected repository mutations during G17 live verification:" >&2
+            cat /tmp/g17-unexpected-status >&2
+            exit 1
+          fi
+
+      - name: Validate G17 live evidence
+        run: |
+          node <<'NODE'
+          const e=require('./docs/astra/G17_LIVE_PRODUCTION_EVIDENCE.json');
+          if(e.status!=='PASS'||e.failedChecks.length)throw Error('G17 evidence is not PASS');
+          if(e.browser.engine!=='Chromium'||!e.browser.version)throw Error('Real Chromium was not proven');
+          for(const p of ['production-root-desktop','chromium-desktop','chromium-mobile'])if(!e.browser.profiles.includes(p))throw Error('Missing browser profile '+p);
+          if(e.scenarios.root.status!=='PASS'||e.scenarios.desktop.status!=='PASS'||e.scenarios.mobile.status!=='PASS')throw Error('Live browser happy path failed');
+          if(e.scenarios.failClosed.status!=='PASS')throw Error('Live fail-closed scenario failed');
+          if(e.liveBytes.runtimeAllExact!==true||e.liveBytes.truthAllExact!==true||e.liveBytes.manifestValid!==true)throw Error('Live exactness/manifest verification failed');
+          if(e.checks.zeroExternalRequests!==true||e.checks.renderedDecisionTruthMatches!==true)throw Error('Live browser boundary violated');
+          if(!e.strictLegacyScan.clean||e.strictLegacyScan.runtimeLegacyDependencyCount!==0||e.strictLegacyScan.matches!==0)throw Error('Legacy runtime boundary regressed');
+          if(e.productionCutover!==false)throw Error('Production cutover changed');
+          NODE
+
+      - name: Promote G17 only after live PASS
+        env:
+          G17_SOURCE_HEAD: ${{ github.sha }}
+          G17_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g17-certify.cjs --write
+
+      - name: Validate promoted G17 state
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates,m=new Map(gates.map(x=>[x.id,x.status]));
+          const cert=require('./docs/astra/G17_CERTIFICATION.json');
+          const a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json');
+          for(let n=1;n<=17;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN after G17 promotion')}
+          for(const id of ['G18','G19'])if(m.get(id)!=='PENDING')throw Error(id+' changed');
+          if(cert.status!=='GREEN'||cert.productionCutover!==false||cert.runtimeLegacyDependencyCount!==0||cert.externalRequests!==0)throw Error('G17 certification invalid');
+          for(const s of [a,b])if(s.current_gate!=='G18'||s.last_green_gate!=='G17'||s.current_phase!=='G18_PENDING')throw Error('work state not advanced to G18');
+          NODE
+
+      - name: Persist G17 certification only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
+            echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/astra/G17_LIVE_PRODUCTION_EVIDENCE.json \
+            docs/astra/G17_LIVE_PRODUCTION_REPORT.md \
+            docs/astra/G17_CERTIFICATION.json \
+            04_ACCEPTANCE_GATES.json \
+            05_WORK_STATE.json \
+            docs/astra/WORK_STATE.json
+          git commit -m 'cert(g17): live production verification GREEN [skip g17]'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
