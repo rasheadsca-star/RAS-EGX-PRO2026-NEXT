@@ -1,0 +1,142 @@
+name: Astra G15 Chromium Browser Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g15-browser-smoke.cjs'
+      - 'astra/certification/g15-certify.cjs'
+      - '.github/workflows/astra-g15-chromium-smoke.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g15]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G15 pre-certification boundary
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=14;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G15')!=='PENDING')throw Error('G15 must be PENDING before certification');
+          if(m.get('G16')!=='PENDING')throw Error('G16 must remain PENDING');
+          const state=require('./docs/astra/WORK_STATE.json');
+          if(state.current_gate!=='G15'||state.last_green_gate!=='G14'||state.current_phase!=='G15_PENDING')throw Error('work state not aligned to G15');
+          const g14=require('./docs/astra/G14_CERTIFICATION.json');
+          if(g14.status!=='GREEN'||g14.productionCutover!==false||g14.runtimeLegacyDependencyCount!==0)throw Error('G14 boundary invalid');
+          NODE
+
+      - name: Verify G15 scripts syntax
+        run: |
+          node --check astra/certification/g15-browser-smoke.cjs
+          node --check astra/certification/g15-certify.cjs
+
+      - name: Locate system Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER" || { echo "::error::No system Chrome/Chromium available on runner."; exit 1; }
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Run real Chromium smoke and build evidence
+        shell: bash
+        env:
+          G15_SOURCE_HEAD: ${{ github.sha }}
+          G15_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          G15_BASE_URL: http://127.0.0.1:4173
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/g15-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/astra/runtime/v18/index.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/astra/runtime/v18/index.html >/dev/null
+          node astra/certification/g15-browser-smoke.cjs --write
+
+      - name: Reject browser-induced repository mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain | grep -vE '^.. docs/astra/G15_BROWSER_SMOKE_(EVIDENCE\.json|REPORT\.md)$' > /tmp/g15-unexpected-status || true
+          if [ -s /tmp/g15-unexpected-status ]; then
+            echo "Unexpected repository mutations during G15 browser smoke:" >&2
+            cat /tmp/g15-unexpected-status >&2
+            exit 1
+          fi
+
+      - name: Validate G15 browser evidence
+        run: |
+          node <<'NODE'
+          const e=require('./docs/astra/G15_BROWSER_SMOKE_EVIDENCE.json');
+          if(e.status!=='PASS'||e.failedChecks.length)throw Error('G15 browser evidence is not PASS');
+          if(e.browser.engine!=='Chromium'||!e.browser.version)throw Error('Real Chromium was not proven');
+          for(const p of ['chromium-desktop','chromium-mobile'])if(!e.browser.profiles.includes(p))throw Error('Missing browser profile '+p);
+          if(e.scenarios.desktop.status!=='PASS'||e.scenarios.mobile.status!=='PASS')throw Error('Desktop/mobile smoke failed');
+          if(e.scenarios.bootstrap.status!=='PASS')throw Error('Local-only bootstrap failed');
+          if(e.scenarios.failClosed.status!=='PASS')throw Error('Fail-closed scenario failed');
+          if(e.checks.zeroExternalRequests!==true)throw Error('External browser request observed');
+          if(e.checks.renderedDecisionTruthMatches!==true)throw Error('Rendered decision truth mismatch');
+          if(!e.strictLegacyScan.clean||e.strictLegacyScan.runtimeLegacyDependencyCount!==0||e.strictLegacyScan.matches!==0)throw Error('Legacy runtime boundary regressed');
+          if(e.productionCutover!==false)throw Error('Production cutover changed');
+          NODE
+
+      - name: Promote G15 only after browser PASS
+        env:
+          G15_SOURCE_HEAD: ${{ github.sha }}
+          G15_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g15-certify.cjs --write
+
+      - name: Validate promoted G15 state
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          const cert=require('./docs/astra/G15_CERTIFICATION.json');
+          const state=require('./docs/astra/WORK_STATE.json');
+          for(let n=1;n<=15;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN after G15 promotion')}
+          if(m.get('G16')!=='PENDING')throw Error('G16 must remain PENDING');
+          if(cert.status!=='GREEN'||cert.productionCutover!==false||cert.runtimeLegacyDependencyCount!==0)throw Error('G15 certification invalid');
+          if(state.current_gate!=='G16'||state.last_green_gate!=='G15'||state.current_phase!=='G16_PENDING')throw Error('work state not advanced to G16');
+          NODE
+
+      - name: Persist G15 certification only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
+            echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/astra/G15_BROWSER_SMOKE_EVIDENCE.json \
+            docs/astra/G15_BROWSER_SMOKE_REPORT.md \
+            docs/astra/G15_CERTIFICATION.json \
+            04_ACCEPTANCE_GATES.json \
+            05_WORK_STATE.json \
+            docs/astra/WORK_STATE.json
+          git commit -m 'cert(g15): Chromium browser smoke GREEN [skip g15]'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
