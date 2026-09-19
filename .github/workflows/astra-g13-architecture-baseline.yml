@@ -10,6 +10,7 @@ on:
       - 'astra/analysis/**'
       - 'astra/forward/**'
       - 'astra/portfolio/**'
+      - 'astra/evaluation/**'
       - 'astra/contracts/data-health-primitives.cjs'
       - 'astra/data-health/g11-data-health.cjs'
       - 'astra/contracts/strategy-provenance.cjs'
@@ -62,7 +63,7 @@ jobs:
             deploy/rc2-safe-shell/test/local-api.test.js
       - name: Family 6 G09 semantic regression
         run: node --test tests/astra/g09-unified-decision-pipeline.test.cjs
-      - name: Family 7-13 core analysis forward and portfolio syntax
+      - name: Family 7-14 core analysis forward portfolio and evaluation syntax
         run: |
           node --check astra/core/market-calendar.cjs
           node --check astra/core/symbol-master.cjs
@@ -78,6 +79,8 @@ jobs:
           node --check astra/forward/forward-ledger.cjs
           node --check astra/forward/morning-confirmation.cjs
           node --check astra/portfolio/portfolio.cjs
+          node --check astra/evaluation/backtest.cjs
+          node --check astra/evaluation/walk-forward.cjs
           node --check astra/contracts/data-health-primitives.cjs
           node --check astra/data-health/g11-data-health.cjs
       - name: G13 architecture baseline tests

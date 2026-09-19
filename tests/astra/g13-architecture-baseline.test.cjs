@@ -22,6 +22,8 @@ const forwardLedger=require('../../astra/forward/forward-ledger.cjs');
 const morningConfirmation=require('../../astra/forward/morning-confirmation.cjs');
 const corporateActions=require('../../astra/core/corporate-actions.cjs');
 const portfolio=require('../../astra/portfolio/portfolio.cjs');
+const backtest=require('../../astra/evaluation/backtest.cjs');
+const walkForward=require('../../astra/evaluation/walk-forward.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -564,11 +566,77 @@ test('Family 13 portfolio owns immutable position lifecycle and neutral empty-st
   assert.equal(occupied.existingExposureEgp,5000);
   assert.equal(occupied.availableCapitalEgp,995000);
 });
-test('Family 13 reduces exactly corporate-actions and portfolio MEDIUM mappings with no HIGH regression',()=>{
+test('Family 13 corporate-actions and portfolio mappings remain closed during final remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
-  assert.equal(r.findings.medium,2);
   const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
-  assert.deepEqual(missing.sort(),['backtest','walk-forward'].sort());
+  assert.equal(missing.includes('corporate-actions'),false);
+  assert.equal(missing.includes('portfolio'),false);
+  assert.ok(missing.length<=2);
+  assert.equal(r.productionCutover,false);
+});
+
+test('Family 14 gives backtest and walk-forward dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['backtest','walk-forward']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/evaluation/backtest.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/evaluation/walk-forward.cjs').kind,'target-module');
+});
+test('Family 14 backtest is retrospective-only and enforces point-in-time history',()=>{
+  const history={COMI:[
+    {sessionDate:'2026-09-17',validationStatus:'VALID',migrationValidationStatus:'VALID',close:100},
+    {sessionDate:'2026-09-18',validationStatus:'VALID',migrationValidationStatus:'VALID',close:101},
+    {sessionDate:'2026-09-21',validationStatus:'VALID',migrationValidationStatus:'VALID',close:102}
+  ]};
+  const through=backtest.historyThrough(history,'2026-09-18');
+  assert.equal(through.COMI.length,2);
+  assert.equal(through.COMI.at(-1).sessionDate,'2026-09-18');
+  assert.equal(backtest.netReturnPct(100,110,.6),9.4);
+  const summary=backtest.summarizeReturns([10,-5,5]);
+  assert.equal(summary.count,3);
+  assert.equal(summary.winRatePct,2/3*100);
+  assert.equal(backtest.EVIDENCE_CLASS,'RETROSPECTIVE_BACKTEST');
+  const source=fs.readFileSync('astra/evaluation/backtest.cjs','utf8');
+  assert.equal(source.includes('../forward/'),false);
+  assert.equal(source.includes('forward-ledger'),false);
+});
+test('Family 14 walk-forward windows are chronological and train/test leakage is impossible',()=>{
+  const sessions=['2026-09-01','2026-09-02','2026-09-03','2026-09-04','2026-09-05','2026-09-06','2026-09-07','2026-09-08'];
+  const windows=walkForward.buildWalkForwardWindows(sessions,{trainSessions:3,testSessions:2,stepSessions:2,embargoSessions:1});
+  assert.equal(windows.length,2);
+  assert.deepEqual(windows[0].trainDates,['2026-09-01','2026-09-02','2026-09-03']);
+  assert.deepEqual(windows[0].testDates,['2026-09-05','2026-09-06']);
+  assert.equal(walkForward.assertNoLeakage(windows),true);
+  assert.throws(()=>walkForward.assertNoLeakage([{trainDates:['2026-09-01','2026-09-02'],testDates:['2026-09-02'],trainEnd:'2026-09-02',testStart:'2026-09-02'}]),/LEAKAGE/);
+  assert.equal(walkForward.EVIDENCE_CLASS,'WALK_FORWARD_EVALUATION');
+  const source=fs.readFileSync('astra/evaluation/walk-forward.cjs','utf8');
+  assert.equal(source.includes('../forward/'),false);
+  assert.equal(source.includes('forward-ledger'),false);
+});
+test('Family 14 evaluation boundaries import only contract-approved modules and never live/forward state',()=>{
+  const r=scan();
+  const bad=r.findings.items.filter(x=>x.code==='FORBIDDEN_LOGICAL_IMPORT'&&['backtest','walk-forward'].includes(x.sourceModule));
+  assert.deepEqual(bad,[]);
+  for(const file of ['astra/evaluation/backtest.cjs','astra/evaluation/walk-forward.cjs']){
+    const src=fs.readFileSync(file,'utf8');
+    assert.equal(src.includes('../pipeline/g09-unified-decision-pipeline.cjs'),false,file);
+    assert.equal(src.includes('../forward/'),false,file);
+    assert.equal(src.includes('../portfolio/'),false,file);
+  }
+});
+test('Family 14 removes the final two architecture findings with no HIGH regression',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.medium,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='MEDIUM'),null,2));
+  assert.equal(r.findings.total,0,JSON.stringify(r.findings.items,null,2));
+  assert.equal(r.findings.byCode.NO_DEDICATED_IMPLEMENTATION_BOUNDARY||0,0);
+  const by=new Map(r.moduleIsolation.map(x=>[x.module,x.status]));
+  assert.equal(by.get('backtest'),'DEDICATED_ZONE');
+  assert.equal(by.get('walk-forward'),'DEDICATED_ZONE');
   assert.equal(r.productionCutover,false);
 });
