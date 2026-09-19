@@ -5,6 +5,10 @@ on:
   push:
     paths:
       - 'astra/certification/g13-architecture-baseline.cjs'
+      - 'docs/astra/RUNTIME_ADAPTER_BOUNDARIES.json'
+      - 'astra/runtime/**'
+      - 'deploy/rc2-safe-shell/api/**'
+      - 'gann-fusion-x/scripts/sync-sepa.cjs'
       - 'tests/astra/g13-architecture-baseline.test.cjs'
       - '.github/workflows/astra-g13-architecture-baseline.yml'
 
@@ -37,6 +41,16 @@ jobs:
         run: |
           node astra/certification/legacy-isolation.cjs . --full > /tmp/g13-g12-scan.json
           node -e "const x=require('/tmp/g13-g12-scan.json'); if(x.runtimeLegacyDependencyCount!==0||!x.clean||x.matches.length) process.exit(1)"
+      - name: Family 4 runtime adapter regression
+        run: |
+          node --test \
+            tests/astra/g12-r01-v18-local.test.cjs \
+            tests/astra/g12-r03-v19-local.test.cjs \
+            tests/astra/g12-r04-v20-local.test.cjs \
+            tests/astra/g12-r05-quant-edge-archive.test.cjs \
+            tests/astra/g12-r06-sepa-local.test.cjs \
+            tests/astra/g12-r07-tfe-local.test.cjs \
+            deploy/rc2-safe-shell/test/local-api.test.js
       - name: G13 architecture baseline tests
         run: node --test tests/astra/g13-architecture-baseline.test.cjs
       - name: Build G13 architecture baseline evidence

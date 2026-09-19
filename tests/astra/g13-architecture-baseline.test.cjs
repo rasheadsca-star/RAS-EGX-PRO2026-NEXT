@@ -2,7 +2,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('fs');
-const {scan,importsFrom,zoneFor}=require('../../astra/certification/g13-architecture-baseline.cjs');
+const {scan,importsFrom,zoneFor,runtimeBoundaryManifest}=require('../../astra/certification/g13-architecture-baseline.cjs');
 const registry=require('../../astra/strategies/strategy-registry.cjs');
 const runner=require('../../astra/strategies/strategy-runner.cjs');
 const privateCore=require('../../astra/strategies/g08-final-overlay.cjs');
@@ -38,10 +38,10 @@ test('data-health uses public registry and no longer imports the decision pipeli
   assert.equal(xs.some(x=>x.target==='astra/strategies/g08-final-overlay.cjs'),false);
   assert.ok(r.graph.edges.some(e=>e.from==='astra/data-health/g11-data-health.cjs'&&e.target==='astra/strategies/strategy-registry.cjs'));
 });
-test('active adapters are explicit baseline zones rather than silently treated as target modules',()=>{
-  assert.equal(zoneFor('astra/runtime/bridges/v19-local.cjs').kind,'active-unregistered-layer');
-  assert.equal(zoneFor('deploy/rc2-safe-shell/api/index.js').kind,'active-unregistered-layer');
-  assert.equal(zoneFor('gann-fusion-x/scripts/sync-sepa.cjs').kind,'active-unregistered-layer');
+test('active adapters are explicit registered boundaries outside the 30 business modules',()=>{
+  assert.equal(zoneFor('astra/runtime/bridges/v19-local.cjs').kind,'registered-adapter-boundary');
+  assert.equal(zoneFor('deploy/rc2-safe-shell/api/index.js').kind,'registered-adapter-boundary');
+  assert.equal(zoneFor('gann-fusion-x/scripts/sync-sepa.cjs').kind,'registered-adapter-boundary');
 });
 test('import parser handles commonjs and esm static imports',()=>{
   const x=importsFrom("const a=require('../x.cjs');\nimport b from './y.js';\nimport 'node:fs';");
@@ -120,4 +120,39 @@ test('Family 3 isolates certification and data-health from direct business imple
     const s=fs.readFileSync(p,'utf8');
     assert.equal(/require\(['"]\.\.\/(?:pipeline|strategies|data-health)\//.test(s),false,p);
   }
+});
+
+test('Family 4 registry covers exactly the eight active adapters without changing target module count',()=>{
+  const m=runtimeBoundaryManifest();
+  assert.equal(m.boundaries.length,8);
+  assert.equal(new Set(m.boundaries.map(x=>x.file)).size,8);
+  assert.equal(m.ioProviders.length,3);
+  assert.equal(m.policy.targetArchitectureModulesUnchanged,30);
+  assert.equal(m.productionCutover,false);
+  for(const b of m.boundaries)assert.equal(zoneFor(b.file).kind,'registered-adapter-boundary',b.file);
+  for(const p of m.ioProviders)assert.equal(zoneFor(p.file).kind,'io-boundary',p.file);
+});
+test('Family 4 registered adapters have no unregistered/direct IO/network/data-path findings',()=>{
+  const r=scan(),m=runtimeBoundaryManifest();
+  const registered=new Set(m.boundaries.map(x=>x.file));
+  const blocked=new Set(['UNREGISTERED_ACTIVE_LAYER','DIRECT_FILE_IO_BYPASS','DIRECT_NETWORK_ACCESS','DIRECT_DATA_PATH_COUPLING']);
+  const bad=r.findings.items.filter(x=>registered.has(x.file)&&blocked.has(x.code));
+  assert.deepEqual(bad,[]);
+  assert.equal(r.findings.items.filter(x=>x.code==='UNREGISTERED_ACTIVE_LAYER').length,0);
+  assert.equal(r.findings.items.filter(x=>x.code==='DIRECT_FILE_IO_BYPASS').length,0);
+  assert.equal(r.findings.items.filter(x=>x.code==='DIRECT_NETWORK_ACCESS').length,0);
+});
+test('Family 4 moves concrete IO ownership behind explicit providers',()=>{
+  const app=fs.readFileSync('astra/runtime/v18/app.js','utf8');
+  const client=fs.readFileSync('astra/runtime/v18/resource-client.js','utf8');
+  const api=fs.readFileSync('deploy/rc2-safe-shell/api/index.js','utf8');
+  const sync=fs.readFileSync('gann-fusion-x/scripts/sync-sepa.cjs','utf8');
+  const q=fs.readFileSync('astra/runtime/bridges/quant-edge-archive.cjs','utf8');
+  assert.equal(/\bfetch\s*\(/.test(app),false);
+  assert.equal(/docs\/astra\//.test(app),false);
+  assert.equal(/\bfetch\s*\(/.test(client),true);
+  assert.equal(/https?:\/\//i.test(client),false);
+  assert.equal(/\b(?:readFileSync|writeFileSync|existsSync)\s*\(/.test(api),false);
+  assert.equal(/\b(?:readFileSync|writeFileSync|existsSync)\s*\(/.test(sync),false);
+  assert.equal(/docs\/astra\//.test(q),false);
 });

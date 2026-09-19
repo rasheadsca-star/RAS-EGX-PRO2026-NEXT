@@ -7,6 +7,7 @@ const ROOT=path.resolve(process.cwd());
 const BOUNDARY_PATH='docs/astra/ARCHITECTURE_BOUNDARIES.json';
 const GATES_PATH='04_ACCEPTANCE_GATES.json';
 const G12_PATH='docs/astra/G12_CERTIFICATION.json';
+const RUNTIME_BOUNDARY_PATH='docs/astra/RUNTIME_ADAPTER_BOUNDARIES.json';
 
 const SOURCE_EXTENSIONS=new Set(['.js','.cjs','.mjs']);
 const EXCLUDED_PARTS=['/node_modules/','/.git/','/test/','/tests/'];
@@ -33,6 +34,9 @@ const ZONES=[
   {id:'migration',prefix:'astra/migration/',modules:['migration'],kind:'target-module'},
   {id:'certification',prefix:'astra/certification/',modules:['certification'],kind:'target-module'},
   {id:'parity-control',prefix:'astra/parity/',modules:[],kind:'control-plane'},
+  {id:'runtime-contracts',prefix:'astra/runtime/contracts/',modules:[],kind:'public-contract'},
+  {id:'runtime-io',prefix:'astra/runtime/io/',modules:[],kind:'io-boundary'},
+  {id:'v18-resource-io',exact:'astra/runtime/v18/resource-client.js',modules:[],kind:'io-boundary'},
   {id:'runtime-adapter',prefix:'astra/runtime/bridges/',modules:[],kind:'active-unregistered-layer'},
   {id:'ui-runtime',prefix:'astra/runtime/v18/',modules:[],kind:'active-unregistered-layer'},
   {id:'api-runtime',prefix:'deploy/rc2-safe-shell/api/',modules:[],kind:'active-unregistered-layer'},
@@ -42,6 +46,8 @@ const ZONES=[
 
 function rel(p){return path.relative(ROOT,p).split(path.sep).join('/')}
 function readJson(p){return JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'))}
+let runtimeBoundaryCache=null;
+function runtimeBoundaryManifest(){return runtimeBoundaryCache||(runtimeBoundaryCache=readJson(RUNTIME_BOUNDARY_PATH))}
 function walk(entry,out=[]){
   const abs=path.join(ROOT,entry);
   if(!fs.existsSync(abs))return out;
@@ -59,6 +65,8 @@ function walk(entry,out=[]){
 }
 function zoneFor(file){
   const p=typeof file==='string'?file:rel(file);
+  const registered=(runtimeBoundaryManifest().boundaries||[]).find(x=>x.file===p);
+  if(registered)return{id:`runtime-boundary:${registered.boundaryId}`,boundaryId:registered.boundaryId,boundaryType:registered.type,modules:[],kind:'registered-adapter-boundary'};
   return ZONES.find(z=>z.exact===p||(z.prefix&&p.startsWith(z.prefix)))||{id:'unmapped-active',modules:[],kind:'active-unregistered-layer'};
 }
 function sourceFiles(){
@@ -97,16 +105,22 @@ function scan(root=ROOT){
   const bounds=readJson(BOUNDARY_PATH);
   const gates=readJson(GATES_PATH);
   const g12=readJson(G12_PATH);
+  const runtimeBoundaries=runtimeBoundaryManifest();
   const bmap=boundaryMap(bounds);
   const files=sourceFiles();
   const graph={nodes:[],edges:[]};
   const issues=[];
   const zoneStats=new Map();
+  const registeredFiles=(runtimeBoundaries.boundaries||[]).map(x=>x.file);
+  const ioProviderFiles=(runtimeBoundaries.ioProviders||[]).map(x=>x.file);
+  if(registeredFiles.length!==8||new Set(registeredFiles).size!==8)pushIssue(issues,{severity:'HIGH',code:'RUNTIME_BOUNDARY_REGISTRY_INVALID',detail:'Family 4 requires exactly eight unique registered active adapter boundaries.'});
+  if(runtimeBoundaries.policy?.targetArchitectureModulesUnchanged!==bounds.modules.length)pushIssue(issues,{severity:'HIGH',code:'RUNTIME_BOUNDARY_REGISTRY_INVALID',detail:'Runtime adapter registry must not change the 30 target architecture modules.'});
+  for(const file of [...registeredFiles,...ioProviderFiles])if(!fs.existsSync(path.join(ROOT,file)))pushIssue(issues,{severity:'HIGH',code:'RUNTIME_BOUNDARY_REGISTRY_INVALID',file,detail:'Registered runtime boundary/provider file is missing.'});
 
   for(const file of files){
     const z=zoneFor(file);
     const text=fs.readFileSync(path.join(ROOT,file),'utf8');
-    graph.nodes.push({file,zone:z.id,kind:z.kind,logicalModules:z.modules});
+    graph.nodes.push({file,zone:z.id,kind:z.kind,boundaryId:z.boundaryId||null,boundaryType:z.boundaryType||null,logicalModules:z.modules});
     const zs=zoneStats.get(z.id)||{zone:z.id,kind:z.kind,files:0,logicalModules:z.modules};
     zs.files++;zoneStats.set(z.id,zs);
 
@@ -118,13 +132,13 @@ function scan(root=ROOT){
     }
 
     const directIo=/\b(?:readFileSync|writeFileSync|readFile|writeFile|appendFileSync|createReadStream|createWriteStream)\s*\(/.test(text);
-    if(directIo&&['decision-pipeline-shared','strategy-core-private','runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)){
+    if(directIo&&['shared-target-implementation','private-implementation','registered-adapter-boundary','active-unregistered-layer'].includes(z.kind)){
       pushIssue(issues,{severity:'HIGH',code:'DIRECT_FILE_IO_BYPASS',file,zone:z.id,detail:'Active decision/runtime layer performs direct filesystem I/O instead of going through an owned data contract.'});
     }
-    if(/\bfetch\s*\(/.test(text)&&!['certification','parity-control'].includes(z.id)){
+    if(/\bfetch\s*\(/.test(text)&&z.kind!=='io-boundary'&&!['certification','parity-control'].includes(z.id)){
       pushIssue(issues,{severity:'HIGH',code:'DIRECT_NETWORK_ACCESS',file,zone:z.id,detail:'Active layer contains a direct fetch() call; requires contract/service-boundary review.'});
     }
-    if(/(?:data\/stable|docs\/astra|data\/archive|raw_legacy|canonical_history)/.test(text)&&['decision-pipeline-shared','strategy-core-private','runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)){
+    if(/(?:data\/stable|docs\/astra|data\/archive|raw_legacy|canonical_history)/.test(text)&&['shared-target-implementation','private-implementation','registered-adapter-boundary','active-unregistered-layer'].includes(z.kind)){
       pushIssue(issues,{severity:'HIGH',code:'DIRECT_DATA_PATH_COUPLING',file,zone:z.id,detail:'Active decision/runtime source references persistence/evidence paths directly.'});
     }
 
@@ -145,7 +159,7 @@ function scan(root=ROOT){
         if(privateStrategyTarget&&!privateStrategyOwner){
           pushIssue(issues,{severity:'HIGH',code:'DIRECT_INTERNAL_IMPLEMENTATION_ACCESS',file,zone:z.id,target,targetZone:tz.id,detail:'Active non-owner layer imports private strategy implementation instead of the public strategy-registry/strategy-runner boundary.'});
         }
-        if(['runtime-adapter','ui-runtime','api-runtime','integration-adapter'].includes(z.id)&&['decision-pipeline-shared','data-health','migration'].includes(tz.id)){
+        if(['registered-adapter-boundary','active-unregistered-layer'].includes(z.kind)&&['decision-pipeline-shared','data-health','migration'].includes(tz.id)){
           pushIssue(issues,{severity:'HIGH',code:'DIRECT_INTERNAL_IMPLEMENTATION_ACCESS',file,zone:z.id,target,targetZone:tz.id,detail:'Adapter/UI/runtime layer imports an internal implementation file directly instead of a registered public contract/facade.'});
         }
         if(z.id==='data-health'&&['decision-pipeline-shared','strategy-core-private','strategy-runner'].includes(tz.id)){
@@ -189,7 +203,7 @@ function scan(root=ROOT){
       dependenciesClosed:g12.dependencyClosure?.closed+'/'+g12.dependencyClosure?.total,
       productionCutover:g12.productionCutover
     },
-    contract:{logicalModuleCount:bounds.modules.length,globalRules:bounds.globalRules},
+    contract:{logicalModuleCount:bounds.modules.length,globalRules:bounds.globalRules,runtimeAdapterRegistry:{status:runtimeBoundaries.status,registeredAdapters:registeredFiles.length,ioProviders:ioProviderFiles.length,productionCutover:runtimeBoundaries.productionCutover}},
     scanScope:{activeRoots:ACTIVE_ROOTS,sourceFiles:files.length,zones:[...zoneStats.values()].sort((a,b)=>a.zone.localeCompare(b.zone))},
     dependencyGraph:{nodeCount:graph.nodes.length,edgeCount:graph.edges.length},
     moduleIsolation,
@@ -201,7 +215,8 @@ function scan(root=ROOT){
       notes:[
         'NO_PHYSICAL_MAPPING means isolation cannot yet be proven; it is not a claim that business functionality is absent.',
         'PHYSICAL_BOUNDARY_COLLAPSE identifies source zones that implement multiple logical modules in one physical boundary.',
-        'Adapter/UI layers outside the 30-module registry are reported separately so they can be assigned an explicit public contract or isolated facade.'
+        'Runtime/UI/API/integration adapters are registered separately from the 30 target business modules and may not own direct filesystem/network/persistence access.',
+        'Explicit io-boundary providers are the only Family 4 runtime surfaces allowed to own local filesystem or same-origin resource I/O.'
       ]
     },
     graph
@@ -262,4 +277,4 @@ if(require.main===module){
   if(process.argv.includes('--write'))writeOutputs(r);
   process.stdout.write('ASTRA_G13_BASELINE '+JSON.stringify({sourceHead:r.sourceHead,modules:r.contract.logicalModuleCount,files:r.scanScope.sourceFiles,edges:r.dependencyGraph.edgeCount,high:r.findings.high,medium:r.findings.medium,g13:r.gateStatus,productionCutover:r.productionCutover})+'\n');
 }
-module.exports={scan,importsFrom,resolveImport,zoneFor,ZONES,ACTIVE_ROOTS};
+module.exports={scan,importsFrom,resolveImport,zoneFor,runtimeBoundaryManifest,ZONES,ACTIVE_ROOTS};
