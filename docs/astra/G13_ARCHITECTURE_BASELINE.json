@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T08:10:06.872Z",
-  "sourceHead": "b50d374184e9fa68890b69d22d868fd92f4d2e57",
+  "generatedAt": "2026-09-19T21:47:19.642Z",
+  "sourceHead": "fded04746b34dcbd96d7ec0fb8180a938dafbde3",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -42,6 +42,7 @@
       "astra/contracts",
       "astra/pipeline",
       "astra/core",
+      "astra/analysis",
       "astra/strategies",
       "astra/data-health",
       "astra/runtime",
@@ -51,7 +52,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 69,
+    "sourceFiles": 71,
     "zones": [
       {
         "zone": "agreement-engine",
@@ -127,6 +128,14 @@
         "files": 1,
         "logicalModules": [
           "historical-store"
+        ]
+      },
+      {
+        "zone": "indicators",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "indicators"
         ]
       },
       {
@@ -288,6 +297,14 @@
         ]
       },
       {
+        "zone": "technical-analysis",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "technical-analysis"
+        ]
+      },
+      {
         "zone": "v18-resource-io",
         "kind": "io-boundary",
         "files": 1,
@@ -296,8 +313,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 69,
-    "edgeCount": 173
+    "nodeCount": 71,
+    "edgeCount": 178
   },
   "moduleIsolation": [
     {
@@ -366,9 +383,13 @@
     },
     {
       "module": "indicators",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/analysis/indicators.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/analysis/indicators.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "market-calendar"
@@ -376,9 +397,13 @@
     },
     {
       "module": "technical-analysis",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/analysis/technical-analysis.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/analysis/technical-analysis.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "indicators"
@@ -751,29 +776,17 @@
     }
   ],
   "findings": {
-    "total": 12,
+    "total": 10,
     "high": 0,
-    "medium": 12,
+    "medium": 10,
     "byCode": {
-      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 12
+      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 10
     },
     "items": [
       {
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
         "module": "corporate-actions",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "indicators",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "technical-analysis",
         "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
       },
       {

@@ -1,8 +1,28 @@
 {
   "schemaVersion": "astra-g13-dependency-graph-1",
-  "generatedAt": "2026-09-19T08:10:06.872Z",
-  "sourceHead": "b50d374184e9fa68890b69d22d868fd92f4d2e57",
+  "generatedAt": "2026-09-19T21:47:19.642Z",
+  "sourceHead": "fded04746b34dcbd96d7ec0fb8180a938dafbde3",
   "nodes": [
+    {
+      "file": "astra/analysis/indicators.cjs",
+      "zone": "indicators",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "indicators"
+      ]
+    },
+    {
+      "file": "astra/analysis/technical-analysis.cjs",
+      "zone": "technical-analysis",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "technical-analysis"
+      ]
+    },
     {
       "file": "astra/certification/g06-certify.cjs",
       "zone": "certification",
@@ -645,6 +665,39 @@
     }
   ],
   "edges": [
+    {
+      "from": "astra/analysis/indicators.cjs",
+      "fromZone": "indicators",
+      "spec": "../core/canonical-data.cjs",
+      "target": "astra/core/canonical-data.cjs",
+      "targetZone": "canonical-data",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "canonical-data"
+      ]
+    },
+    {
+      "from": "astra/analysis/technical-analysis.cjs",
+      "fromZone": "technical-analysis",
+      "spec": "../core/canonical-data.cjs",
+      "target": "astra/core/canonical-data.cjs",
+      "targetZone": "canonical-data",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "canonical-data"
+      ]
+    },
+    {
+      "from": "astra/analysis/technical-analysis.cjs",
+      "fromZone": "technical-analysis",
+      "spec": "./indicators.cjs",
+      "target": "astra/analysis/indicators.cjs",
+      "targetZone": "indicators",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "indicators"
+      ]
+    },
     {
       "from": "astra/certification/g06-certify.cjs",
       "fromZone": "certification",
@@ -1709,6 +1762,17 @@
       "targetLogicalModules": []
     },
     {
+      "from": "astra/pipeline/evidence-engine.cjs",
+      "fromZone": "evidence-engine",
+      "spec": "../analysis/technical-analysis.cjs",
+      "target": "astra/analysis/technical-analysis.cjs",
+      "targetZone": "technical-analysis",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "technical-analysis"
+      ]
+    },
+    {
       "from": "astra/pipeline/g09-shared.cjs",
       "fromZone": "g09-shared-contract",
       "spec": "crypto",
@@ -1865,6 +1929,17 @@
       "targetZone": "g09-shared-contract",
       "classification": "relative-static-import",
       "targetLogicalModules": []
+    },
+    {
+      "from": "astra/pipeline/market-regime.cjs",
+      "fromZone": "market-regime",
+      "spec": "../analysis/indicators.cjs",
+      "target": "astra/analysis/indicators.cjs",
+      "targetZone": "indicators",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "indicators"
+      ]
     },
     {
       "from": "astra/pipeline/position-sizing.cjs",
