@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `f4e722bedc3b29fda49f074e652e3602a69416c4`
+Source HEAD: `88a824ba381035fb49c5e8c3ead275c06a07c406`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,19 +14,16 @@ Source HEAD: `f4e722bedc3b29fda49f074e652e3602a69416c4`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 50
-- Static dependency edges: 146
-- HIGH findings: 15
+- Scanned active source files: 54
+- Static dependency edges: 149
+- HIGH findings: 2
 - MEDIUM findings: 16
 
 ## Finding classes
 
-- DIRECT_DATA_PATH_COUPLING: 3
-- DIRECT_FILE_IO_BYPASS: 2
-- DIRECT_NETWORK_ACCESS: 1
+- DIRECT_DATA_PATH_COUPLING: 1
 - NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 16
 - PHYSICAL_BOUNDARY_COLLAPSE: 1
-- UNREGISTERED_ACTIVE_LAYER: 8
 
 ## Module physical-isolation map
 

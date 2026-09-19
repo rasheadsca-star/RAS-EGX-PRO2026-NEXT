@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-18T22:11:15.669Z",
-  "sourceHead": "f4e722bedc3b29fda49f074e652e3602a69416c4",
+  "generatedAt": "2026-09-19T07:29:16.357Z",
+  "sourceHead": "88a824ba381035fb49c5e8c3ead275c06a07c406",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -29,6 +29,12 @@
         "market-regime",
         "decision-SR"
       ]
+    },
+    "runtimeAdapterRegistry": {
+      "status": "G13_FAMILY4_REGISTERED",
+      "registeredAdapters": 8,
+      "ioProviders": 3,
+      "productionCutover": false
     }
   },
   "scanScope": {
@@ -44,14 +50,8 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 50,
+    "sourceFiles": 54,
     "zones": [
-      {
-        "zone": "api-runtime",
-        "kind": "active-unregistered-layer",
-        "files": 1,
-        "logicalModules": []
-      },
       {
         "zone": "certification",
         "kind": "target-module",
@@ -85,12 +85,6 @@
         ]
       },
       {
-        "zone": "integration-adapter",
-        "kind": "active-unregistered-layer",
-        "files": 1,
-        "logicalModules": []
-      },
-      {
         "zone": "migration",
         "kind": "target-module",
         "files": 1,
@@ -105,9 +99,63 @@
         "logicalModules": []
       },
       {
-        "zone": "runtime-adapter",
-        "kind": "active-unregistered-layer",
-        "files": 5,
+        "zone": "runtime-boundary:quant-edge-archive-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-boundary:rc2-local-api-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-boundary:sepa-local-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-boundary:sepa-sync-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-boundary:tfe-local-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-boundary:v18-local-ui-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-boundary:v19-local-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-boundary:v20-local-adapter",
+        "kind": "registered-adapter-boundary",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-contracts",
+        "kind": "public-contract",
+        "files": 1,
+        "logicalModules": []
+      },
+      {
+        "zone": "runtime-io",
+        "kind": "io-boundary",
+        "files": 2,
         "logicalModules": []
       },
       {
@@ -139,16 +187,16 @@
         ]
       },
       {
-        "zone": "ui-runtime",
-        "kind": "active-unregistered-layer",
+        "zone": "v18-resource-io",
+        "kind": "io-boundary",
         "files": 1,
         "logicalModules": []
       }
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 50,
-    "edgeCount": 146
+    "nodeCount": 54,
+    "edgeCount": 149
   },
   "moduleIsolation": [
     {
@@ -568,15 +616,12 @@
     }
   ],
   "findings": {
-    "total": 31,
-    "high": 15,
+    "total": 18,
+    "high": 2,
     "medium": 16,
     "byCode": {
       "PHYSICAL_BOUNDARY_COLLAPSE": 1,
-      "UNREGISTERED_ACTIVE_LAYER": 8,
-      "DIRECT_DATA_PATH_COUPLING": 3,
-      "DIRECT_NETWORK_ACCESS": 1,
-      "DIRECT_FILE_IO_BYPASS": 2,
+      "DIRECT_DATA_PATH_COUPLING": 1,
       "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 16
     },
     "items": [
@@ -600,101 +645,10 @@
       },
       {
         "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "astra/runtime/bridges/quant-edge-archive.cjs",
-        "zone": "runtime-adapter",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_DATA_PATH_COUPLING",
-        "file": "astra/runtime/bridges/quant-edge-archive.cjs",
-        "zone": "runtime-adapter",
-        "detail": "Active decision/runtime source references persistence/evidence paths directly."
-      },
-      {
-        "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "astra/runtime/bridges/sepa-local.cjs",
-        "zone": "runtime-adapter",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "astra/runtime/bridges/tfe-local.cjs",
-        "zone": "runtime-adapter",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "astra/runtime/bridges/v19-local.cjs",
-        "zone": "runtime-adapter",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "astra/runtime/bridges/v20-local.cjs",
-        "zone": "runtime-adapter",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "astra/runtime/v18/app.js",
-        "zone": "ui-runtime",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_NETWORK_ACCESS",
-        "file": "astra/runtime/v18/app.js",
-        "zone": "ui-runtime",
-        "detail": "Active layer contains a direct fetch() call; requires contract/service-boundary review."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_DATA_PATH_COUPLING",
-        "file": "astra/runtime/v18/app.js",
-        "zone": "ui-runtime",
-        "detail": "Active decision/runtime source references persistence/evidence paths directly."
-      },
-      {
-        "severity": "HIGH",
         "code": "DIRECT_DATA_PATH_COUPLING",
         "file": "astra/strategies/g08-internal-strategies.cjs",
         "zone": "strategy-core-private",
         "detail": "Active decision/runtime source references persistence/evidence paths directly."
-      },
-      {
-        "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "deploy/rc2-safe-shell/api/index.js",
-        "zone": "api-runtime",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_FILE_IO_BYPASS",
-        "file": "deploy/rc2-safe-shell/api/index.js",
-        "zone": "api-runtime",
-        "detail": "Active decision/runtime layer performs direct filesystem I/O instead of going through an owned data contract."
-      },
-      {
-        "severity": "HIGH",
-        "code": "UNREGISTERED_ACTIVE_LAYER",
-        "file": "gann-fusion-x/scripts/sync-sepa.cjs",
-        "zone": "integration-adapter",
-        "detail": "Active source is outside the 30 registered target module boundaries."
-      },
-      {
-        "severity": "HIGH",
-        "code": "DIRECT_FILE_IO_BYPASS",
-        "file": "gann-fusion-x/scripts/sync-sepa.cjs",
-        "zone": "integration-adapter",
-        "detail": "Active decision/runtime layer performs direct filesystem I/O instead of going through an owned data contract."
       },
       {
         "severity": "MEDIUM",
@@ -801,7 +755,8 @@
     "notes": [
       "NO_PHYSICAL_MAPPING means isolation cannot yet be proven; it is not a claim that business functionality is absent.",
       "PHYSICAL_BOUNDARY_COLLAPSE identifies source zones that implement multiple logical modules in one physical boundary.",
-      "Adapter/UI layers outside the 30-module registry are reported separately so they can be assigned an explicit public contract or isolated facade."
+      "Runtime/UI/API/integration adapters are registered separately from the 30 target business modules and may not own direct filesystem/network/persistence access.",
+      "Explicit io-boundary providers are the only Family 4 runtime surfaces allowed to own local filesystem or same-origin resource I/O."
     ]
   }
 }
