@@ -147,6 +147,7 @@ const failedChecks = Object.entries(checks).filter(([, ok]) => !ok).map(([name])
 
 const evidence = {
   schemaVersion: 'astra-g14-test-evidence-1',
+  remediationRound: 2,
   generatedAt: new Date().toISOString(),
   sourceHead: SOURCE_HEAD,
   workflowRunId: WORKFLOW_RUN_ID || null,
