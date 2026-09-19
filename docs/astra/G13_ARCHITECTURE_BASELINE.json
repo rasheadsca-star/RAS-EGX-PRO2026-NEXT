@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T21:58:24.751Z",
-  "sourceHead": "d7e0a96c0a51bdf2b89555c9da76b4f3f3a34424",
+  "generatedAt": "2026-09-19T22:03:38.290Z",
+  "sourceHead": "f142bcbf4b3fe4fdea2c8d78559023076f171f98",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -43,6 +43,7 @@
       "astra/pipeline",
       "astra/core",
       "astra/analysis",
+      "astra/forward",
       "astra/strategies",
       "astra/data-health",
       "astra/runtime",
@@ -52,7 +53,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 75,
+    "sourceFiles": 77,
     "zones": [
       {
         "zone": "agreement-engine",
@@ -108,6 +109,14 @@
         "files": 1,
         "logicalModules": [
           "evidence-engine"
+        ]
+      },
+      {
+        "zone": "forward-ledger",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "forward-ledger"
         ]
       },
       {
@@ -168,6 +177,14 @@
         "files": 1,
         "logicalModules": [
           "migration"
+        ]
+      },
+      {
+        "zone": "morning-confirmation",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "morning-confirmation"
         ]
       },
       {
@@ -345,8 +362,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 75,
-    "edgeCount": 192
+    "nodeCount": 77,
+    "edgeCount": 196
   },
   "moduleIsolation": [
     {
@@ -646,9 +663,13 @@
     },
     {
       "module": "morning-confirmation",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/forward/morning-confirmation.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/forward/morning-confirmation.cjs"
+      ],
       "allowedImports": [
         "canonical-data",
         "market-calendar",
@@ -693,9 +714,13 @@
     },
     {
       "module": "forward-ledger",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/forward/forward-ledger.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/forward/forward-ledger.cjs"
+      ],
       "allowedImports": [
         "market-calendar",
         "diagnostics"
@@ -824,23 +849,17 @@
     }
   ],
   "findings": {
-    "total": 6,
+    "total": 4,
     "high": 0,
-    "medium": 6,
+    "medium": 4,
     "byCode": {
-      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 6
+      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 4
     },
     "items": [
       {
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
         "module": "corporate-actions",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "morning-confirmation",
         "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
       },
       {
@@ -859,12 +878,6 @@
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
         "module": "walk-forward",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "forward-ledger",
         "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
       }
     ]

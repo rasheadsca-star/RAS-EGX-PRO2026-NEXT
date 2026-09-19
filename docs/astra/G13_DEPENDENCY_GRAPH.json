@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-dependency-graph-1",
-  "generatedAt": "2026-09-19T21:58:24.751Z",
-  "sourceHead": "d7e0a96c0a51bdf2b89555c9da76b4f3f3a34424",
+  "generatedAt": "2026-09-19T22:03:38.290Z",
+  "sourceHead": "f142bcbf4b3fe4fdea2c8d78559023076f171f98",
   "nodes": [
     {
       "file": "astra/analysis/indicators.cjs",
@@ -405,6 +405,26 @@
       "boundaryType": null,
       "logicalModules": [
         "data-health"
+      ]
+    },
+    {
+      "file": "astra/forward/forward-ledger.cjs",
+      "zone": "forward-ledger",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "forward-ledger"
+      ]
+    },
+    {
+      "file": "astra/forward/morning-confirmation.cjs",
+      "zone": "morning-confirmation",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "morning-confirmation"
       ]
     },
     {
@@ -1740,6 +1760,46 @@
       "target": null,
       "targetZone": null,
       "classification": "external-or-builtin"
+    },
+    {
+      "from": "astra/forward/forward-ledger.cjs",
+      "fromZone": "forward-ledger",
+      "spec": "../contracts/canonical-contracts.cjs",
+      "target": "astra/contracts/canonical-contracts.cjs",
+      "targetZone": "shared-contracts",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/forward/morning-confirmation.cjs",
+      "fromZone": "morning-confirmation",
+      "spec": "../contracts/canonical-contracts.cjs",
+      "target": "astra/contracts/canonical-contracts.cjs",
+      "targetZone": "shared-contracts",
+      "classification": "relative-static-import",
+      "targetLogicalModules": []
+    },
+    {
+      "from": "astra/forward/morning-confirmation.cjs",
+      "fromZone": "morning-confirmation",
+      "spec": "../core/canonical-data.cjs",
+      "target": "astra/core/canonical-data.cjs",
+      "targetZone": "canonical-data",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "canonical-data"
+      ]
+    },
+    {
+      "from": "astra/forward/morning-confirmation.cjs",
+      "fromZone": "morning-confirmation",
+      "spec": "./forward-ledger.cjs",
+      "target": "astra/forward/forward-ledger.cjs",
+      "targetZone": "forward-ledger",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "forward-ledger"
+      ]
     },
     {
       "from": "astra/migration/g07-migrate.cjs",

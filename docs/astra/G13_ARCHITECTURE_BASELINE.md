@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `d7e0a96c0a51bdf2b89555c9da76b4f3f3a34424`
+Source HEAD: `f142bcbf4b3fe4fdea2c8d78559023076f171f98`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,14 +14,14 @@ Source HEAD: `d7e0a96c0a51bdf2b89555c9da76b4f3f3a34424`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 75
-- Static dependency edges: 192
+- Scanned active source files: 77
+- Static dependency edges: 196
 - HIGH findings: 0
-- MEDIUM findings: 6
+- MEDIUM findings: 4
 
 ## Finding classes
 
-- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 6
+- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 4
 
 ## Module physical-isolation map
 
@@ -45,11 +45,11 @@ Source HEAD: `d7e0a96c0a51bdf2b89555c9da76b4f3f3a34424`
 - risk-engine: DEDICATED_ZONE — astra/pipeline/risk-engine.cjs
 - basket-engine: DEDICATED_ZONE — astra/pipeline/basket-engine.cjs
 - position-sizing: DEDICATED_ZONE — astra/pipeline/position-sizing.cjs
-- morning-confirmation: NO_PHYSICAL_MAPPING
+- morning-confirmation: DEDICATED_ZONE — astra/forward/morning-confirmation.cjs
 - portfolio: NO_PHYSICAL_MAPPING
 - backtest: NO_PHYSICAL_MAPPING
 - walk-forward: NO_PHYSICAL_MAPPING
-- forward-ledger: NO_PHYSICAL_MAPPING
+- forward-ledger: DEDICATED_ZONE — astra/forward/forward-ledger.cjs
 - historical-store: DEDICATED_ZONE — astra/core/historical-store.cjs
 - migration: DEDICATED_ZONE — astra/migration/g07-migrate.cjs
 - data-health: DEDICATED_ZONE — astra/data-health/g11-approved-source-closure.cjs, astra/data-health/g11-current-reviewed-import-preflight.cjs, astra/data-health/g11-current-session-exceptions.cjs, astra/data-health/g11-current-session-refresh.cjs, astra/data-health/g11-current-source-closure.cjs, astra/data-health/g11-data-health.cjs, astra/data-health/g11-decision-dump.cjs, astra/data-health/g11-reviewed-import-preflight.cjs, astra/data-health/g11-source-data-repair.cjs, astra/data-health/g11-v16-domain-exceptions.cjs
