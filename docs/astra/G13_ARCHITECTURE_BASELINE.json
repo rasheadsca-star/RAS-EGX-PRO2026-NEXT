@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T08:05:24.662Z",
-  "sourceHead": "97e6138ba8a601f04dabaafd4d960935019b9be6",
+  "generatedAt": "2026-09-19T08:10:06.872Z",
+  "sourceHead": "b50d374184e9fa68890b69d22d868fd92f4d2e57",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -51,7 +51,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 67,
+    "sourceFiles": 69,
     "zones": [
       {
         "zone": "agreement-engine",
@@ -67,6 +67,14 @@
         "files": 1,
         "logicalModules": [
           "basket-engine"
+        ]
+      },
+      {
+        "zone": "canonical-data",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "canonical-data"
         ]
       },
       {
@@ -112,6 +120,14 @@
         "kind": "public-contract",
         "files": 1,
         "logicalModules": []
+      },
+      {
+        "zone": "historical-store",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "historical-store"
+        ]
       },
       {
         "zone": "market-calendar",
@@ -280,15 +296,19 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 67,
-    "edgeCount": 171
+    "nodeCount": 69,
+    "edgeCount": 173
   },
   "moduleIsolation": [
     {
       "module": "canonical-data",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/core/canonical-data.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/core/canonical-data.cjs"
+      ],
       "allowedImports": [
         "market-calendar",
         "symbol-master",
@@ -610,9 +630,13 @@
     },
     {
       "module": "historical-store",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/core/historical-store.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/core/historical-store.cjs"
+      ],
       "allowedImports": [
         "symbol-master",
         "market-calendar"
@@ -727,19 +751,13 @@
     }
   ],
   "findings": {
-    "total": 14,
+    "total": 12,
     "high": 0,
-    "medium": 14,
+    "medium": 12,
     "byCode": {
-      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 14
+      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 12
     },
     "items": [
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "canonical-data",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
       {
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
@@ -810,12 +828,6 @@
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
         "module": "forward-ledger",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "historical-store",
         "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
       }
     ]
