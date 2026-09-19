@@ -148,9 +148,12 @@ test('blocker overlap accounting uses unique-security sets instead of summing is
   else assert.ok(unique.length > 0);
 });
 
-test('G12 remains pending and closure is non-cutover', () => {
+test('post-G12 closure remains zero-legacy and non-cutover', () => {
   const gates = read('04_ACCEPTANCE_GATES.json').gates;
-  assert.equal(gates.find((x)=>x.id==='G12').status,'PENDING');
+  assert.equal(gates.find((x)=>x.id==='G12').status,'GREEN');
+  const cert = read('docs/astra/G12_CERTIFICATION.json');
+  assert.equal(cert.runtimeLegacyDependencyCount,0);
+  assert.equal(cert.productionCutover,false);
   const p = read('docs/astra/G11_CURRENT_PIPELINE_RUN.json');
   assert.equal(p.legacyNetworkCalls,0); assert.equal(p.productionCutover,false);
 });
