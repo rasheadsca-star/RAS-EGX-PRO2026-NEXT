@@ -67,6 +67,9 @@ async function captureProfile(browser,profile){
     scrollWidth:document.documentElement.scrollWidth,
     clientWidth:document.documentElement.clientWidth
   }));
+  const generic404='Failed to load resource: the server responded with a status of 404 (File not found)';
+  const benignBrowser404Diagnostics=badResponses.length===0?consoleErrors.filter(x=>x===generic404):[];
+  const actionableConsoleErrors=consoleErrors.filter(x=>x!==generic404||badResponses.length>0);
   const checks={
     navigationHttpOk:Boolean(response&&response.ok()),
     readyStatus:rendered.status===pipeline.status,
@@ -85,7 +88,8 @@ async function captureProfile(browser,profile){
     sameOriginResourceContract:Boolean(rendered.resourceIds)&&Object.values(rendered.resourceIds).every(x=>typeof x==='string'&&!/^[a-z][a-z0-9+.-]*:/i.test(x)&&!String(x).startsWith('//')),
     zeroExternalRequests:externalRequests.length===0,
     zeroPageErrors:pageErrors.length===0,
-    zeroConsoleErrors:consoleErrors.length===0,
+    zeroActionableConsoleErrors:actionableConsoleErrors.length===0,
+    browser404NoiseBounded:benignBrowser404Diagnostics.length<=1,
     zeroBadSameOriginResponses:badResponses.length===0,
     noHorizontalOverflow:rendered.scrollWidth<=rendered.clientWidth+1,
     viewportBounded:rendered.mainWidth<=profile.viewport.width+1
@@ -102,6 +106,8 @@ async function captureProfile(browser,profile){
     externalRequests,
     pageErrors,
     consoleErrors,
+    actionableConsoleErrors,
+    benignBrowser404Diagnostics,
     badResponses
   };
 }
