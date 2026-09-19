@@ -323,15 +323,13 @@ test('Family 9 technical-analysis emits technical evidence only and preserves ca
   assert.equal(Object.prototype.hasOwnProperty.call(x,'ranking'),false);
   assert.equal(Object.prototype.hasOwnProperty.call(x,'strategy'),false);
 });
-test('Family 9 reduces exactly indicators and technical-analysis MEDIUM mappings with no HIGH regression',()=>{
+test('Family 9 indicator and technical-analysis mappings remain closed during later remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
-  assert.equal(r.findings.medium,10);
   const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
   assert.equal(missing.includes('indicators'),false);
   assert.equal(missing.includes('technical-analysis'),false);
-  for(const id of ['support-resistance','relative-strength','vcp','liquidity'])assert.equal(missing.includes(id),true,id);
-  assert.equal(missing.length,10);
+  assert.ok(missing.length<=10);
   assert.equal(r.productionCutover,false);
 });
 
