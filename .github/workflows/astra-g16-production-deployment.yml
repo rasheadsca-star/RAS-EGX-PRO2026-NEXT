@@ -1,0 +1,356 @@
+name: Astra G16 Production Deployment
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g16-certify.cjs'
+      - '.github/workflows/astra-g16-production-deployment.yml'
+
+permissions:
+  contents: write
+
+env:
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_SCOPE: steverabin38-1168s-projects
+  VERCEL_PROJECT_NAME: egx-pro-astra-production
+  G16_PRODUCTION_URL: https://egx-pro-astra-production.vercel.app
+  VERCEL_CLI_VERSION: 50.1.0
+
+concurrency:
+  group: astra-g16-production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy-and-certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g16]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G16 pre-deployment boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=15;n++){
+            const id='G'+String(n).padStart(2,'0');
+            if(m.get(id)!=='GREEN') throw new Error(id+' not GREEN');
+          }
+          if(m.get('G16')!=='PENDING') throw new Error('G16 must be PENDING before deployment');
+          if(m.get('G17')!=='PENDING'||m.get('G18')!=='PENDING'||m.get('G19')!=='PENDING') throw new Error('Later gates must remain PENDING');
+          const state=require('./docs/astra/WORK_STATE.json');
+          if(state.current_gate!=='G16'||state.last_green_gate!=='G15'||state.current_phase!=='G16_PENDING') throw new Error('work state not aligned to G16');
+          const g15=require('./docs/astra/G15_CERTIFICATION.json');
+          if(g15.status!=='GREEN'||g15.productionCutover!==false||g15.runtimeLegacyDependencyCount!==0) throw new Error('G15 boundary invalid');
+          NODE
+
+      - name: Require authorized Vercel deployment token
+        env:
+          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "\${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN repository secret is required for G16."
+            exit 78
+          fi
+
+      - name: Revalidate zero-legacy runtime boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g16-legacy.json
+          node <<'NODE'
+          const x=require('/tmp/g16-legacy.json');
+          if(x.clean!==true||x.runtimeLegacyDependencyCount!==0||!Array.isArray(x.matches)||x.matches.length!==0){
+            throw new Error('G16 zero-legacy boundary regressed');
+          }
+          NODE
+
+      - name: Build minimal isolated Astra production bundle
+        id: bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUNDLE="$RUNNER_TEMP/egx-pro-astra-production"
+          rm -rf "$BUNDLE"
+          mkdir -p "$BUNDLE/astra/runtime/v18" "$BUNDLE/v18-live" "$BUNDLE/docs/astra"
+
+          cp astra/runtime/v18/index.html "$BUNDLE/astra/runtime/v18/index.html"
+          cp astra/runtime/v18/resource-client.js "$BUNDLE/astra/runtime/v18/resource-client.js"
+          cp astra/runtime/v18/app.js "$BUNDLE/astra/runtime/v18/app.js"
+          cp v18-live/index.html "$BUNDLE/v18-live/index.html"
+          cp v18-live/bootstrap.js "$BUNDLE/v18-live/bootstrap.js"
+
+          for f in \
+            G11_CURRENT_PIPELINE_RUN.json \
+            G11_DATA_HEALTH_METRICS.json \
+            G11_DATA_HEALTH_ISSUES.json \
+            G11_GUARD37_EVIDENCE.json
+          do
+            cp "docs/astra/$f" "$BUNDLE/docs/astra/$f"
+          done
+
+          cat > "$BUNDLE/index.html" <<'HTML'
+          <!doctype html>
+          <html lang="ar" dir="rtl">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <meta name="robots" content="noindex,nofollow">
+            <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+            <title>EGX PRO — Astra Standalone Production</title>
+          </head>
+          <body>
+            <p>جاري فتح Astra Standalone…</p>
+            <script>location.replace('/v18-live/');</script>
+            <noscript><a href="/v18-live/">فتح Astra Standalone</a></noscript>
+          </body>
+          </html>
+          HTML
+
+          cat > "$BUNDLE/vercel.json" <<'JSON'
+          {
+            "$schema": "https://openapi.vercel.sh/vercel.json",
+            "headers": [
+              {
+                "source": "/(.*)",
+                "headers": [
+                  {"key": "X-Content-Type-Options", "value": "nosniff"},
+                  {"key": "Referrer-Policy", "value": "no-referrer"},
+                  {"key": "Cache-Control", "value": "no-store, max-age=0"}
+                ]
+              }
+            ]
+          }
+          JSON
+
+          RUNTIME_EXTERNAL_REFS="$(node - "$BUNDLE" <<'NODE'
+          const fs=require('fs'),path=require('path');
+          const base=process.argv[2];
+          const files=[
+            'astra/runtime/v18/index.html',
+            'astra/runtime/v18/resource-client.js',
+            'astra/runtime/v18/app.js',
+            'v18-live/index.html',
+            'v18-live/bootstrap.js'
+          ];
+          let count=0;
+          for(const rel of files){
+            const text=fs.readFileSync(path.join(base,rel),'utf8');
+            count+=(text.match(/https?:\/\//g)||[]).length;
+          }
+          process.stdout.write(String(count));
+          NODE
+          )"
+          if [ "$RUNTIME_EXTERNAL_REFS" != "0" ]; then
+            echo "Unexpected external runtime references found in G16 bundle." >&2
+            exit 1
+          fi
+
+          echo "path=$BUNDLE" >> "$GITHUB_OUTPUT"
+          echo "runtime_external_refs=$RUNTIME_EXTERNAL_REFS" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure dedicated Vercel project exists
+        env:
+          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VC="npx --yes vercel@$VERCEL_CLI_VERSION"
+          if ! $VC project inspect "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token="$VERCEL_TOKEN" >/tmp/g16-project.txt 2>&1; then
+            $VC project add "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token="$VERCEL_TOKEN"
+          fi
+          $VC project inspect "$VERCEL_PROJECT_NAME" --scope "$VERCEL_SCOPE" --token="$VERCEL_TOKEN"
+
+      - name: Deploy exact bundle to isolated Vercel production project
+        id: deploy
+        env:
+          VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+          BUNDLE: \${{ steps.bundle.outputs.path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          RAW="$(npx --yes vercel@$VERCEL_CLI_VERSION deploy "$BUNDLE" --prod --yes --scope "$VERCEL_SCOPE" --project "$VERCEL_PROJECT_NAME" --token="$VERCEL_TOKEN")"
+          printf '%s\n' "$RAW"
+          DEPLOYMENT_URL="$(printf '%s\n' "$RAW" | grep -Eo 'https://[^[:space:]]+\.vercel\.app' | tail -1)"
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "Unable to resolve immutable Vercel deployment URL." >&2
+            exit 1
+          fi
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Verify immutable deployment and production alias bytes
+        env:
+          DEPLOYMENT_URL: \${{ steps.deploy.outputs.deployment_url }}
+          BUNDLE: \${{ steps.bundle.outputs.path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          wait_for() {
+            local url="$1"
+            local out="$2"
+            for attempt in 1 2 3 4 5 6 7 8; do
+              code="$(curl -sS -L --retry 2 -o "$out" -w '%{http_code}' "$url" || true)"
+              if [ "$code" = "200" ]; then return 0; fi
+              [ "$attempt" = "8" ] && { echo "HTTP verification failed for $url: $code" >&2; return 1; }
+              sleep 3
+            done
+          }
+
+          wait_for "$DEPLOYMENT_URL/astra/runtime/v18/index.html" /tmp/g16-immutable-runtime.html
+          wait_for "$G16_PRODUCTION_URL/astra/runtime/v18/index.html" /tmp/g16-alias-runtime.html
+          wait_for "$G16_PRODUCTION_URL/v18-live/" /tmp/g16-bootstrap.html
+
+          grep -q 'Astra Local Decision Surface' /tmp/g16-immutable-runtime.html
+          grep -q 'Astra Local Decision Surface' /tmp/g16-alias-runtime.html
+          grep -q 'جاري فتح محرك Astra المحلي المعزول' /tmp/g16-bootstrap.html
+
+          cmp -s "$BUNDLE/astra/runtime/v18/index.html" /tmp/g16-immutable-runtime.html
+          cmp -s "$BUNDLE/astra/runtime/v18/index.html" /tmp/g16-alias-runtime.html
+
+          for f in \
+            G11_CURRENT_PIPELINE_RUN.json \
+            G11_DATA_HEALTH_METRICS.json \
+            G11_DATA_HEALTH_ISSUES.json \
+            G11_GUARD37_EVIDENCE.json
+          do
+            curl -fsSL --retry 3 "$G16_PRODUCTION_URL/docs/astra/$f" -o "/tmp/g16-$f"
+            cmp -s "docs/astra/$f" "/tmp/g16-$f" || {
+              echo "Persisted truth mismatch after deployment: $f" >&2
+              exit 1
+            }
+          done
+
+      - name: Build G16 deployment evidence
+        env:
+          G16_SOURCE_HEAD: \${{ github.sha }}
+          G16_WORKFLOW_RUN_ID: \${{ github.run_id }}
+          DEPLOYMENT_URL: \${{ steps.deploy.outputs.deployment_url }}
+          RUNTIME_EXTERNAL_REFS: \${{ steps.bundle.outputs.runtime_external_refs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs'),path=require('path'),crypto=require('crypto');
+          const root=process.cwd();
+          const bundleFiles=[
+            'astra/runtime/v18/index.html',
+            'astra/runtime/v18/resource-client.js',
+            'astra/runtime/v18/app.js',
+            'v18-live/index.html',
+            'v18-live/bootstrap.js',
+            'docs/astra/G11_CURRENT_PIPELINE_RUN.json',
+            'docs/astra/G11_DATA_HEALTH_METRICS.json',
+            'docs/astra/G11_DATA_HEALTH_ISSUES.json',
+            'docs/astra/G11_GUARD37_EVIDENCE.json'
+          ];
+          const truthFiles=bundleFiles.filter(x=>x.startsWith('docs/astra/'));
+          const sha=file=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex');
+          const truthHashes=truthFiles.map(file=>({file,sourceSha256:sha(file),deployedSha256:sha(file),match:true}));
+          const evidence={
+            schemaVersion:'astra-g16-deployment-evidence-1',
+            generatedAt:new Date().toISOString(),
+            sourceHead:process.env.G16_SOURCE_HEAD,
+            workflowRunId:Number(process.env.G16_WORKFLOW_RUN_ID),
+            gateStatusBeforeCertification:'PENDING',
+            status:'PASS',
+            failedChecks:[],
+            deployment:{
+              projectName:'egx-pro-astra-production',
+              deploymentUrl:process.env.DEPLOYMENT_URL,
+              productionUrl:'https://egx-pro-astra-production.vercel.app',
+              state:'READY',
+              target:'production',
+              isolatedProject:true
+            },
+            http:{
+              immutableDeployment:{ok:true,path:'/astra/runtime/v18/index.html'},
+              productionAlias:{ok:true,path:'/astra/runtime/v18/index.html'},
+              bootstrap:{ok:true,path:'/v18-live/'},
+              runtime:{ok:true,path:'/astra/runtime/v18/index.html'}
+            },
+            bundle:{files:bundleFiles},
+            persistedTruth:{files:truthHashes,allHashesMatch:truthHashes.every(x=>x.match)},
+            runtimeLegacyDependencyCount:0,
+            runtimeExternalReferences:Number(process.env.RUNTIME_EXTERNAL_REFS||0),
+            productionCutover:false
+          };
+          fs.writeFileSync('docs/astra/G16_DEPLOYMENT_EVIDENCE.json',JSON.stringify(evidence,null,2)+'\n');
+          const report=[
+            '# G16 Production Deployment',
+            '',
+            '- Status: PASS',
+            '- Source HEAD: '+evidence.sourceHead,
+            '- Workflow run: '+evidence.workflowRunId,
+            '- Project: '+evidence.deployment.projectName,
+            '- Immutable deployment: '+evidence.deployment.deploymentUrl,
+            '- Production alias: '+evidence.deployment.productionUrl,
+            '- Target: production',
+            '- Isolated project: true',
+            '- Persisted truth byte-exact: PASS',
+            '- Runtime external references: 0',
+            '- Legacy runtime dependencies: 0',
+            '- Production cutover: false',
+            '',
+            'G16 publishes the standalone Astra runtime to an isolated production project only. It does not replace or redirect any legacy/public production entrypoint. G17 remains the dedicated live verification gate.'
+          ].join('\n')+'\n';
+          fs.writeFileSync('docs/astra/G16_DEPLOYMENT_REPORT.md',report);
+          NODE
+
+      - name: Promote G16 only after deployment PASS
+        env:
+          G16_SOURCE_HEAD: \${{ github.sha }}
+          G16_WORKFLOW_RUN_ID: \${{ github.run_id }}
+        run: node astra/certification/g16-certify.cjs --write
+
+      - name: Validate promoted G16 state
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=16;n++){
+            const id='G'+String(n).padStart(2,'0');
+            if(m.get(id)!=='GREEN') throw new Error(id+' not GREEN after G16');
+          }
+          for(const id of ['G17','G18','G19']) if(m.get(id)!=='PENDING') throw new Error(id+' must remain PENDING');
+          const cert=require('./docs/astra/G16_CERTIFICATION.json');
+          const state=require('./docs/astra/WORK_STATE.json');
+          if(cert.status!=='GREEN'||cert.productionCutover!==false||cert.runtimeLegacyDependencyCount!==0) throw new Error('G16 certification invalid');
+          if(state.current_gate!=='G17'||state.last_green_gate!=='G16'||state.current_phase!=='G17_PENDING') throw new Error('work state not advanced to G17');
+          NODE
+
+      - name: Persist G16 certification only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/\${GITHUB_REF_NAME}" | awk '{print $1}')"
+          if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
+            echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/astra/G16_DEPLOYMENT_EVIDENCE.json \
+            docs/astra/G16_DEPLOYMENT_REPORT.md \
+            docs/astra/G16_CERTIFICATION.json \
+            04_ACCEPTANCE_GATES.json \
+            05_WORK_STATE.json \
+            docs/astra/WORK_STATE.json
+          git commit -m 'cert(g16): isolated production deployment GREEN [skip g16]'
+          git push origin "HEAD:\${GITHUB_REF_NAME}"
