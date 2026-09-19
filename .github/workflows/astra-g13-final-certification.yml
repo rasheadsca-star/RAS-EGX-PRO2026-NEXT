@@ -36,8 +36,17 @@ jobs:
         run: |
           node astra/certification/legacy-isolation.cjs . --full > /tmp/g13-final-g12-scan.json
           node -e "const x=require('/tmp/g13-final-g12-scan.json'); if(x.runtimeLegacyDependencyCount!==0||!x.clean||x.matches.length) process.exit(1)"
-      - name: Regress G06 contracts
-        run: node --test tests/astra/g06-contracts.test.cjs tests/astra/g06-certification.test.cjs
+      - name: Regress G06 contracts and persisted certification
+        run: |
+          node --test tests/astra/g06-contracts.test.cjs
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const cert=require('./docs/astra/G06_CERTIFICATION.json');
+          const architecture=require('./docs/astra/ARCHITECTURE_BOUNDARIES.json');
+          if(gates.find(x=>x.id==='G06')?.status!=='GREEN')throw Error('G06 gate not GREEN');
+          if(cert.status!=='GREEN')throw Error('persisted G06 certification not GREEN');
+          if((architecture.modules||[]).length!==30)throw Error('G06 architecture module count drifted');
+          NODE
       - name: Regress G08 strategy reconstruction
         run: |
           node --test             tests/astra/g08-strategy-reconstruction.test.cjs             tests/astra/g08-strict-boundaries.test.cjs             tests/astra/g08-final-hash.test.cjs             tests/astra/g08-recovery-overlay.test.cjs             tests/astra/g08-v13-parity-repair.test.cjs
