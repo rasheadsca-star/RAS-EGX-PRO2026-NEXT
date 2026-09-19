@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T22:03:38.290Z",
-  "sourceHead": "f142bcbf4b3fe4fdea2c8d78559023076f171f98",
+  "generatedAt": "2026-09-19T22:07:46.601Z",
+  "sourceHead": "1bf5bc9e50ceb7bed4cfdb6ac56b66580959369e",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -44,6 +44,7 @@
       "astra/core",
       "astra/analysis",
       "astra/forward",
+      "astra/portfolio",
       "astra/strategies",
       "astra/data-health",
       "astra/runtime",
@@ -53,7 +54,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 77,
+    "sourceFiles": 79,
     "zones": [
       {
         "zone": "agreement-engine",
@@ -85,6 +86,14 @@
         "files": 18,
         "logicalModules": [
           "certification"
+        ]
+      },
+      {
+        "zone": "corporate-actions",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "corporate-actions"
         ]
       },
       {
@@ -192,6 +201,14 @@
         "kind": "control-plane",
         "files": 3,
         "logicalModules": []
+      },
+      {
+        "zone": "portfolio",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "portfolio"
+        ]
       },
       {
         "zone": "position-sizing",
@@ -362,8 +379,8 @@
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 77,
-    "edgeCount": 196
+    "nodeCount": 79,
+    "edgeCount": 202
   },
   "moduleIsolation": [
     {
@@ -407,9 +424,13 @@
     },
     {
       "module": "corporate-actions",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/core/corporate-actions.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/core/corporate-actions.cjs"
+      ],
       "allowedImports": [
         "symbol-master",
         "market-calendar"
@@ -678,9 +699,13 @@
     },
     {
       "module": "portfolio",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/portfolio/portfolio.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/portfolio/portfolio.cjs"
+      ],
       "allowedImports": [
         "symbol-master",
         "market-calendar"
@@ -849,25 +874,13 @@
     }
   ],
   "findings": {
-    "total": 4,
+    "total": 2,
     "high": 0,
-    "medium": 4,
+    "medium": 2,
     "byCode": {
-      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 4
+      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 2
     },
     "items": [
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "corporate-actions",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "portfolio",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
       {
         "severity": "MEDIUM",
         "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",

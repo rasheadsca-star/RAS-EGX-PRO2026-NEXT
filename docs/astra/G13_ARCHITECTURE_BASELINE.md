@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `f142bcbf4b3fe4fdea2c8d78559023076f171f98`
+Source HEAD: `1bf5bc9e50ceb7bed4cfdb6ac56b66580959369e`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,21 +14,21 @@ Source HEAD: `f142bcbf4b3fe4fdea2c8d78559023076f171f98`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 77
-- Static dependency edges: 196
+- Scanned active source files: 79
+- Static dependency edges: 202
 - HIGH findings: 0
-- MEDIUM findings: 4
+- MEDIUM findings: 2
 
 ## Finding classes
 
-- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 4
+- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 2
 
 ## Module physical-isolation map
 
 - canonical-data: DEDICATED_ZONE — astra/core/canonical-data.cjs
 - market-calendar: DEDICATED_ZONE — astra/core/market-calendar.cjs
 - symbol-master: DEDICATED_ZONE — astra/core/symbol-master.cjs
-- corporate-actions: NO_PHYSICAL_MAPPING
+- corporate-actions: DEDICATED_ZONE — astra/core/corporate-actions.cjs
 - market-regime: DEDICATED_ZONE — astra/pipeline/market-regime.cjs
 - indicators: DEDICATED_ZONE — astra/analysis/indicators.cjs
 - technical-analysis: DEDICATED_ZONE — astra/analysis/technical-analysis.cjs
@@ -46,7 +46,7 @@ Source HEAD: `f142bcbf4b3fe4fdea2c8d78559023076f171f98`
 - basket-engine: DEDICATED_ZONE — astra/pipeline/basket-engine.cjs
 - position-sizing: DEDICATED_ZONE — astra/pipeline/position-sizing.cjs
 - morning-confirmation: DEDICATED_ZONE — astra/forward/morning-confirmation.cjs
-- portfolio: NO_PHYSICAL_MAPPING
+- portfolio: DEDICATED_ZONE — astra/portfolio/portfolio.cjs
 - backtest: NO_PHYSICAL_MAPPING
 - walk-forward: NO_PHYSICAL_MAPPING
 - forward-ledger: DEDICATED_ZONE — astra/forward/forward-ledger.cjs

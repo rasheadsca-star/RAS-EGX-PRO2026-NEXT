@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-dependency-graph-1",
-  "generatedAt": "2026-09-19T22:03:38.290Z",
-  "sourceHead": "f142bcbf4b3fe4fdea2c8d78559023076f171f98",
+  "generatedAt": "2026-09-19T22:07:46.601Z",
+  "sourceHead": "1bf5bc9e50ceb7bed4cfdb6ac56b66580959369e",
   "nodes": [
     {
       "file": "astra/analysis/indicators.cjs",
@@ -275,6 +275,16 @@
       "boundaryType": null,
       "logicalModules": [
         "canonical-data"
+      ]
+    },
+    {
+      "file": "astra/core/corporate-actions.cjs",
+      "zone": "corporate-actions",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "corporate-actions"
       ]
     },
     {
@@ -565,6 +575,16 @@
       "boundaryType": null,
       "logicalModules": [
         "signal-normalizer"
+      ]
+    },
+    {
+      "file": "astra/portfolio/portfolio.cjs",
+      "zone": "portfolio",
+      "kind": "target-module",
+      "boundaryId": null,
+      "boundaryType": null,
+      "logicalModules": [
+        "portfolio"
       ]
     },
     {
@@ -1297,6 +1317,39 @@
       "classification": "relative-static-import",
       "targetLogicalModules": [
         "symbol-master"
+      ]
+    },
+    {
+      "from": "astra/core/canonical-data.cjs",
+      "fromZone": "canonical-data",
+      "spec": "./corporate-actions.cjs",
+      "target": "astra/core/corporate-actions.cjs",
+      "targetZone": "corporate-actions",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "corporate-actions"
+      ]
+    },
+    {
+      "from": "astra/core/corporate-actions.cjs",
+      "fromZone": "corporate-actions",
+      "spec": "./symbol-master.cjs",
+      "target": "astra/core/symbol-master.cjs",
+      "targetZone": "symbol-master",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "symbol-master"
+      ]
+    },
+    {
+      "from": "astra/core/corporate-actions.cjs",
+      "fromZone": "corporate-actions",
+      "spec": "./market-calendar.cjs",
+      "target": "astra/core/market-calendar.cjs",
+      "targetZone": "market-calendar",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "market-calendar"
       ]
     },
     {
@@ -2216,6 +2269,17 @@
       ]
     },
     {
+      "from": "astra/pipeline/position-sizing.cjs",
+      "fromZone": "position-sizing",
+      "spec": "../portfolio/portfolio.cjs",
+      "target": "astra/portfolio/portfolio.cjs",
+      "targetZone": "portfolio",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "portfolio"
+      ]
+    },
+    {
       "from": "astra/pipeline/ranking-engine.cjs",
       "fromZone": "ranking-engine",
       "spec": "./g09-shared.cjs",
@@ -2232,6 +2296,28 @@
       "targetZone": "g09-shared-contract",
       "classification": "relative-static-import",
       "targetLogicalModules": []
+    },
+    {
+      "from": "astra/portfolio/portfolio.cjs",
+      "fromZone": "portfolio",
+      "spec": "../core/symbol-master.cjs",
+      "target": "astra/core/symbol-master.cjs",
+      "targetZone": "symbol-master",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "symbol-master"
+      ]
+    },
+    {
+      "from": "astra/portfolio/portfolio.cjs",
+      "fromZone": "portfolio",
+      "spec": "../core/market-calendar.cjs",
+      "target": "astra/core/market-calendar.cjs",
+      "targetZone": "market-calendar",
+      "classification": "relative-static-import",
+      "targetLogicalModules": [
+        "market-calendar"
+      ]
     },
     {
       "from": "astra/runtime/bridges/quant-edge-archive.cjs",
