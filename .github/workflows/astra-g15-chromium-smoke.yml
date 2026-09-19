@@ -6,6 +6,8 @@ on:
     paths:
       - 'astra/certification/g15-browser-smoke.cjs'
       - 'astra/certification/g15-certify.cjs'
+      - 'astra/runtime/v18/**'
+      - 'v18-live/**'
       - '.github/workflows/astra-g15-chromium-smoke.yml'
 
 permissions:
@@ -43,6 +45,15 @@ jobs:
         run: |
           node --check astra/certification/g15-browser-smoke.cjs
           node --check astra/certification/g15-certify.cjs
+          node --check astra/runtime/v18/app.js
+          node --check astra/runtime/v18/resource-client.js
+          node --check v18-live/bootstrap.js
+
+      - name: Preserve G12 V18 isolation regression
+        run: |
+          node --test \
+            tests/astra/g12-r01-v18-local.test.cjs \
+            tests/astra/g12-r01-v18-cutover.test.cjs
 
       - name: Locate system Chromium
         shell: bash
