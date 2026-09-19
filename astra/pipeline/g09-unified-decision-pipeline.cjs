@@ -16,6 +16,8 @@ const {rankCandidates}=require('./ranking-engine.cjs');
 const {riskPlan}=require('./position-sizing.cjs');
 const {basketPlan}=require('./basket-engine.cjs');
 const {marketStates,failedRun}=require('./diagnostics.cjs');
+const {validateCanonicalSnapshot}=require('../core/canonical-data.cjs');
+const {validateHistoricalStore}=require('../core/historical-store.cjs');
 
 function productionEligibility(strategyId,context,regime){
   if(strategyId===QUANT_EDGE)return{internallyExecutable:false,productionEligible:false,reason:'QUANT_EDGE_HISTORICAL_OUTPUT_ONLY'};
@@ -38,21 +40,10 @@ function validateContext(context){
   const errors=[];const temporal=[];const quarantined=[];
   if(!context||!DATE_RE.test(String(context.sessionDate||'')))errors.push('SESSION_DATE_INVALID');
   const session=String(context?.sessionDate||'');
-  const snap=context?.canonicalSnapshot;
-  if(!snap||!snap.snapshotId||snap.sessionDate!==session||!Array.isArray(snap.rows)||!snap.rows.length)errors.push('CANONICAL_SNAPSHOT_INVALID');
-  const rows=Array.isArray(snap?.rows)?snap.rows:[];
-  for(const row of rows){
-    const ticker=String(row?.ticker||'');
-    if(!ticker||row.sessionDate!==session)errors.push(`ROW_SESSION_OR_TICKER_INVALID:${ticker||'UNKNOWN'}`);
-    if(row.validationStatus!=='VALID'||migrationBad(row.migrationValidationStatus)){quarantined.push(ticker||'UNKNOWN');continue}
-    const srDate=String(row?.supportResistanceInputs?.asOfSessionDate||row?.supportResistanceInputs?.sessionDate||'');
-    if(srDate&&after(srDate,session))temporal.push(`${ticker}:SUPPORT_RESISTANCE:${srDate}`);
-    const regimeDate=String(row?.technicalInputs?.regimeSessionDate||'');if(regimeDate&&after(regimeDate,session))temporal.push(`${ticker}:REGIME:${regimeDate}`);
-  }
-  for(const [ticker,history] of Object.entries(context?.historyByTicker||{}))for(const row of history||[]){
-    const d=asDate(row);if(d&&after(d,session))temporal.push(`${ticker}:HISTORY:${d}`);
-    if(row.validationStatus!=='VALID'||migrationBad(row.migrationValidationStatus))quarantined.push(`${ticker}:HISTORY`);
-  }
+  const canonical=validateCanonicalSnapshot(context?.canonicalSnapshot,session);
+  errors.push(...canonical.errors);temporal.push(...canonical.temporal);quarantined.push(...canonical.quarantined);
+  const history=validateHistoricalStore(context?.historyByTicker,session);
+  temporal.push(...history.temporal);quarantined.push(...history.quarantined);
   for(const row of context?.modelGuardHistory||[]){const d=asDate(row);if(d&&after(d,session))temporal.push(`MODEL_GUARD_HISTORY:${d}`);if(row.validationStatus!=='VALID'||migrationBad(row.migrationValidationStatus))quarantined.push('MODEL_GUARD_HISTORY')}
   for(let s=0;s<(context?.modelTrainingSessions||[]).length;s++)for(const row of context.modelTrainingSessions[s]||[]){
     const d=asDate(row);if(d&&after(d,session))temporal.push(`${row.ticker||'UNKNOWN'}:TRAINING:${d}`);
@@ -65,7 +56,7 @@ function validateContext(context){
   if(temporal.length)return{ok:false,code:'TEMPORAL_LEAKAGE_GUARD_FAILED',details:[...new Set(temporal)]};
   if(errors.length)return{ok:false,code:'DECISION_INPUT_INVALID',details:errors};
   const capital=finite(context?.capitalEgp);if(!(capital>0))return{ok:false,code:'DECISION_INPUT_INVALID',details:['CAPITAL_EGP_MUST_BE_POSITIVE']};
-  return{ok:true,universeCount:rows.length};
+  return{ok:true,universeCount:canonical.universeCount};
 }
 
 function decisionInputIdentity(context,regime){
