@@ -1,9 +1,11 @@
 'use strict';
 const {round,diagnostic}=require('./g09-shared.cjs');
 const {prepareRisk}=require('./risk-engine.cjs');
+const {portfolioCapacity}=require('../portfolio/portfolio.cjs');
 
-function riskPlan(candidate,capitalEgp,regime,basketSize){
-  const prepared=prepareRisk(candidate,capitalEgp,regime,basketSize);
+function riskPlan(candidate,capitalEgp,regime,basketSize,portfolioState=null){
+  const capacity=portfolioCapacity({capitalEgp,positions:portfolioState?.positions||[]});
+  const prepared=prepareRisk(candidate,capacity.availableCapitalEgp,regime,basketSize);
   if(!prepared.ok)return prepared;
   const b=prepared.base;
   const riskBudget=b.capitalEgp*b.riskPct/100;

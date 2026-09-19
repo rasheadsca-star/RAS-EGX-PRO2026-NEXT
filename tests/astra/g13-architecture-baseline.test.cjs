@@ -20,6 +20,8 @@ const vcp=require('../../astra/analysis/vcp.cjs');
 const liquidity=require('../../astra/analysis/liquidity.cjs');
 const forwardLedger=require('../../astra/forward/forward-ledger.cjs');
 const morningConfirmation=require('../../astra/forward/morning-confirmation.cjs');
+const corporateActions=require('../../astra/core/corporate-actions.cjs');
+const portfolio=require('../../astra/portfolio/portfolio.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
   const r=scan();
@@ -505,13 +507,68 @@ test('Family 12 morning confirmation preserves the historical 0.5% gap rules wit
   assert.equal(ledger.confirmations.length,1);
   assert.equal(ledger.recommendations[0].recommendationId,rec.recommendationId);
 });
-test('Family 12 reduces exactly forward-ledger and morning-confirmation MEDIUM mappings with no HIGH regression',()=>{
+test('Family 12 forward mappings remain closed during later remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
-  assert.equal(r.findings.medium,4);
   const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
   assert.equal(missing.includes('forward-ledger'),false);
   assert.equal(missing.includes('morning-confirmation'),false);
-  assert.deepEqual(missing.sort(),['backtest','corporate-actions','portfolio','walk-forward'].sort());
+  assert.ok(missing.length<=4);
+  assert.equal(r.productionCutover,false);
+});
+
+test('Family 13 gives corporate-actions and portfolio dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['corporate-actions','portfolio']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/core/corporate-actions.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/portfolio/portfolio.cjs').kind,'target-module');
+});
+test('Family 13 corporate-actions requires explicit evidence and canonical-data rejects future actions',()=>{
+  const event=corporateActions.normalizeCorporateAction({
+    type:'SPLIT',ticker:'COMI',effectiveSessionDate:'2026-09-17',
+    ratioNumerator:2,ratioDenominator:1,source:'EGX',evidenceUrl:'https://example.com/egx-action'
+  });
+  assert.equal(event.type,'SPLIT');
+  assert.equal(event.ticker,'COMI');
+  assert.equal(corporateActions.splitAdjustmentFactor(event),0.5);
+  assert.throws(()=>corporateActions.normalizeCorporateAction({type:'SPLIT',ticker:'COMI',effectiveSessionDate:'2026-09-17',ratioNumerator:2,ratioDenominator:1}),/EVIDENCE_REQUIRED/);
+  const snapshot={
+    snapshotId:'CA-F13',sessionDate:'2026-09-17',
+    rows:[{ticker:'COMI',sessionDate:'2026-09-17',validationStatus:'VALID',migrationValidationStatus:'VALID'}],
+    corporateActions:[{...event,effectiveSessionDate:'2026-09-18'}]
+  };
+  const check=canonicalData.validateCanonicalSnapshot(snapshot,'2026-09-17');
+  assert.deepEqual(check.temporal,['COMI:CORPORATE_ACTION:2026-09-18']);
+});
+test('Family 13 portfolio owns immutable position lifecycle and neutral empty-state capacity',()=>{
+  const position=portfolio.createPosition({ticker:'COMI',openedSessionDate:'2026-09-17',quantity:100,averagePriceEgp:50,source:'CONFIRMED_TRADE'});
+  assert.equal(Object.isFrozen(position),true);
+  assert.equal(position.status,'OPEN');
+  const added=portfolio.applyPositionEvent(position,{type:'ADD',sessionDate:'2026-09-20',quantity:50,priceEgp:60});
+  assert.equal(added.quantity,150);
+  assert.equal(position.quantity,100);
+  assert.equal(added.lifecycle.length,1);
+  const reduced=portfolio.applyPositionEvent(added,{type:'REDUCE',sessionDate:'2026-09-21',quantity:25});
+  assert.equal(reduced.quantity,125);
+  const closed=portfolio.applyPositionEvent(reduced,{type:'CLOSE',sessionDate:'2026-09-22',priceEgp:62});
+  assert.equal(closed.status,'CLOSED');
+  const empty=portfolio.portfolioCapacity({capitalEgp:1000000,positions:[]});
+  assert.equal(empty.availableCapitalEgp,1000000);
+  assert.equal(empty.existingExposureEgp,0);
+  const occupied=portfolio.portfolioCapacity({capitalEgp:1000000,positions:[position]});
+  assert.equal(occupied.existingExposureEgp,5000);
+  assert.equal(occupied.availableCapitalEgp,995000);
+});
+test('Family 13 reduces exactly corporate-actions and portfolio MEDIUM mappings with no HIGH regression',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.medium,2);
+  const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
+  assert.deepEqual(missing.sort(),['backtest','walk-forward'].sort());
   assert.equal(r.productionCutover,false);
 });

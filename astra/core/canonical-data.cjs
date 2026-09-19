@@ -1,5 +1,7 @@
 'use strict';
 
+const {validateCorporateActionEvents}=require('./corporate-actions.cjs');
+
 const DATE_RE=/^\d{4}-\d{2}-\d{2}$/;
 
 function migrationBad(v){return['INVALID','UNRESOLVED','QUARANTINED'].includes(String(v||'').toUpperCase())}
@@ -12,6 +14,9 @@ function validateCanonicalSnapshot(snapshot,sessionDate){
     errors.push('CANONICAL_SNAPSHOT_INVALID');
   }
   const rows=Array.isArray(snapshot?.rows)?snapshot.rows:[];
+  const actions=validateCorporateActionEvents(snapshot?.corporateActions,session);
+  errors.push(...actions.errors.map(x=>`CORPORATE_ACTION_INVALID:${x}`));
+  temporal.push(...actions.temporal);
   for(const row of rows){
     const ticker=String(row?.ticker||'');
     if(!ticker||row.sessionDate!==session)errors.push(`ROW_SESSION_OR_TICKER_INVALID:${ticker||'UNKNOWN'}`);
