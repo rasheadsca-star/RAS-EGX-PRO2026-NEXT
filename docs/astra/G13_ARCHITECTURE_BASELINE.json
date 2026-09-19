@@ -1,7 +1,7 @@
 {
   "schemaVersion": "astra-g13-architecture-baseline-1",
-  "generatedAt": "2026-09-19T22:07:46.601Z",
-  "sourceHead": "1bf5bc9e50ceb7bed4cfdb6ac56b66580959369e",
+  "generatedAt": "2026-09-19T22:14:21.535Z",
+  "sourceHead": "f1c5d9c9ebba6afff512675aff77cc65ec71d817",
   "gateStatus": "PENDING",
   "productionCutover": false,
   "priorGateBoundary": {
@@ -45,6 +45,7 @@
       "astra/analysis",
       "astra/forward",
       "astra/portfolio",
+      "astra/evaluation",
       "astra/strategies",
       "astra/data-health",
       "astra/runtime",
@@ -54,7 +55,7 @@
       "deploy/rc2-safe-shell/api",
       "gann-fusion-x/scripts/sync-sepa.cjs"
     ],
-    "sourceFiles": 79,
+    "sourceFiles": 81,
     "zones": [
       {
         "zone": "agreement-engine",
@@ -62,6 +63,14 @@
         "files": 1,
         "logicalModules": [
           "agreement-engine"
+        ]
+      },
+      {
+        "zone": "backtest",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "backtest"
         ]
       },
       {
@@ -375,12 +384,20 @@
         "logicalModules": [
           "vcp"
         ]
+      },
+      {
+        "zone": "walk-forward",
+        "kind": "target-module",
+        "files": 1,
+        "logicalModules": [
+          "walk-forward"
+        ]
       }
     ]
   },
   "dependencyGraph": {
-    "nodeCount": 79,
-    "edgeCount": 202
+    "nodeCount": 81,
+    "edgeCount": 212
   },
   "moduleIsolation": [
     {
@@ -713,9 +730,13 @@
     },
     {
       "module": "backtest",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/evaluation/backtest.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/evaluation/backtest.cjs"
+      ],
       "allowedImports": [
         "historical-store",
         "strategy-runner",
@@ -726,9 +747,13 @@
     },
     {
       "module": "walk-forward",
-      "status": "NO_PHYSICAL_MAPPING",
-      "implementationFiles": [],
-      "dedicatedFiles": [],
+      "status": "DEDICATED_ZONE",
+      "implementationFiles": [
+        "astra/evaluation/walk-forward.cjs"
+      ],
+      "dedicatedFiles": [
+        "astra/evaluation/walk-forward.cjs"
+      ],
       "allowedImports": [
         "historical-store",
         "strategy-runner",
@@ -874,26 +899,11 @@
     }
   ],
   "findings": {
-    "total": 2,
+    "total": 0,
     "high": 0,
-    "medium": 2,
-    "byCode": {
-      "NO_DEDICATED_IMPLEMENTATION_BOUNDARY": 2
-    },
-    "items": [
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "backtest",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      },
-      {
-        "severity": "MEDIUM",
-        "code": "NO_DEDICATED_IMPLEMENTATION_BOUNDARY",
-        "module": "walk-forward",
-        "detail": "Contract exists, but the baseline cannot map this logical module to a dedicated target source boundary. This does not by itself mean functionality is absent."
-      }
-    ]
+    "medium": 0,
+    "byCode": {},
+    "items": []
   },
   "interpretation": {
     "zeroFindingRequiredForG13Green": true,

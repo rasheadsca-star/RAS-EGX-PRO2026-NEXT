@@ -1,6 +1,6 @@
 # G13 Architecture Isolation Baseline
 
-Source HEAD: `1bf5bc9e50ceb7bed4cfdb6ac56b66580959369e`
+Source HEAD: `f1c5d9c9ebba6afff512675aff77cc65ec71d817`
 
 **Gate status: PENDING.** This is a baseline only; no runtime remediation or production cutover was performed.
 
@@ -14,14 +14,13 @@ Source HEAD: `1bf5bc9e50ceb7bed4cfdb6ac56b66580959369e`
 ## Baseline summary
 
 - Logical architecture modules: 30
-- Scanned active source files: 79
-- Static dependency edges: 202
+- Scanned active source files: 81
+- Static dependency edges: 212
 - HIGH findings: 0
-- MEDIUM findings: 2
+- MEDIUM findings: 0
 
 ## Finding classes
 
-- NO_DEDICATED_IMPLEMENTATION_BOUNDARY: 2
 
 ## Module physical-isolation map
 
@@ -47,8 +46,8 @@ Source HEAD: `1bf5bc9e50ceb7bed4cfdb6ac56b66580959369e`
 - position-sizing: DEDICATED_ZONE — astra/pipeline/position-sizing.cjs
 - morning-confirmation: DEDICATED_ZONE — astra/forward/morning-confirmation.cjs
 - portfolio: DEDICATED_ZONE — astra/portfolio/portfolio.cjs
-- backtest: NO_PHYSICAL_MAPPING
-- walk-forward: NO_PHYSICAL_MAPPING
+- backtest: DEDICATED_ZONE — astra/evaluation/backtest.cjs
+- walk-forward: DEDICATED_ZONE — astra/evaluation/walk-forward.cjs
 - forward-ledger: DEDICATED_ZONE — astra/forward/forward-ledger.cjs
 - historical-store: DEDICATED_ZONE — astra/core/historical-store.cjs
 - migration: DEDICATED_ZONE — astra/migration/g07-migrate.cjs
