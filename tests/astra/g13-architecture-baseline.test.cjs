@@ -9,6 +9,8 @@ const privateCore=require('../../astra/strategies/g08-final-overlay.cjs');
 const {SOURCE_PATHS}=require('../../astra/contracts/strategy-provenance.cjs');
 const marketCalendar=require('../../astra/core/market-calendar.cjs');
 const symbolMaster=require('../../astra/core/symbol-master.cjs');
+const canonicalData=require('../../astra/core/canonical-data.cjs');
+const historicalStore=require('../../astra/core/historical-store.cjs');
 const healthPrimitives=require('../../astra/contracts/data-health-primitives.cjs');
 
 test('G13 baseline preserves the certified G01-G12 boundary and keeps G13 pending',()=>{
@@ -228,12 +230,42 @@ test('Family 7 preserves Cairo session and symbol identity semantics through the
   assert.equal(healthPrimitives.normalizeTicker,symbolMaster.normalizeTicker);
   assert.equal(healthPrimitives.reviewedSecurityIdentity,symbolMaster.reviewedSecurityIdentity);
 });
-test('Family 7 reduces only the two foundational medium mappings and keeps HIGH at zero',()=>{
+test('Family 7 foundational mappings remain closed during later remediation',()=>{
   const r=scan();
   assert.equal(r.findings.high,0);
-  assert.equal(r.findings.medium,14);
   const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
   assert.equal(missing.includes('market-calendar'),false);
   assert.equal(missing.includes('symbol-master'),false);
-  assert.equal(missing.length,14);
+  assert.ok(missing.length<=14);
+});
+
+test('Family 8 gives canonical-data and historical-store dedicated physical ownership',()=>{
+  const r=scan(),by=new Map(r.moduleIsolation.map(x=>[x.module,x]));
+  for(const id of ['canonical-data','historical-store']){
+    const m=by.get(id);
+    assert.ok(m,id);
+    assert.equal(m.status,'DEDICATED_ZONE',id);
+    assert.equal(m.dedicatedFiles.length,1,id);
+  }
+  assert.equal(zoneFor('astra/core/canonical-data.cjs').kind,'target-module');
+  assert.equal(zoneFor('astra/core/historical-store.cjs').kind,'target-module');
+});
+test('Family 8 owns canonical snapshot and point-in-time history validation without changing fail-closed semantics',()=>{
+  const session='2026-09-17';
+  const good={snapshotId:'C1',sessionDate:session,rows:[{ticker:'COMI',sessionDate:session,validationStatus:'VALID',migrationValidationStatus:'VALID',supportResistanceInputs:{asOfSessionDate:session},technicalInputs:{regimeSessionDate:session}}]};
+  assert.deepEqual(canonicalData.validateCanonicalSnapshot(good,session),{errors:[],temporal:[],quarantined:[],rows:good.rows,universeCount:1});
+  const future={...good,rows:[{...good.rows[0],supportResistanceInputs:{asOfSessionDate:'2026-09-18'}}]};
+  assert.deepEqual(canonicalData.validateCanonicalSnapshot(future,session).temporal,['COMI:SUPPORT_RESISTANCE:2026-09-18']);
+  assert.deepEqual(historicalStore.validateHistoricalStore({COMI:[{sessionDate:'2026-09-18',validationStatus:'VALID',migrationValidationStatus:'VALID'}]},session).temporal,['COMI:HISTORY:2026-09-18']);
+  assert.deepEqual(historicalStore.validateHistoricalStore({COMI:[{sessionDate:session,validationStatus:'VALID',migrationValidationStatus:'UNRESOLVED'}]},session).quarantined,['COMI:HISTORY']);
+});
+test('Family 8 reduces exactly two additional medium mappings and keeps HIGH at zero',()=>{
+  const r=scan();
+  assert.equal(r.findings.high,0,JSON.stringify(r.findings.items.filter(x=>x.severity==='HIGH'),null,2));
+  assert.equal(r.findings.medium,12);
+  const missing=r.findings.items.filter(x=>x.code==='NO_DEDICATED_IMPLEMENTATION_BOUNDARY').map(x=>x.module);
+  assert.equal(missing.includes('canonical-data'),false);
+  assert.equal(missing.includes('historical-store'),false);
+  assert.equal(missing.length,12);
+  assert.equal(r.productionCutover,false);
 });
