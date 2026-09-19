@@ -1,0 +1,104 @@
+name: Astra G14 Unit Integration Regression Suite
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g14-suite.cjs'
+      - 'astra/certification/g14-certify.cjs'
+      - '.github/workflows/astra-g14-test-suite.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g14]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G14 pre-certification boundary
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=13;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G14')!=='PENDING')throw Error('G14 must be PENDING before certification');
+          if(m.get('G15')!=='PENDING')throw Error('G15 must remain PENDING');
+          const state=require('./docs/astra/WORK_STATE.json');
+          if(state.current_gate!=='G14'||state.last_green_gate!=='G13'||state.current_phase!=='G14_PENDING')throw Error('work state not aligned to G14');
+          const g13=require('./docs/astra/G13_CERTIFICATION.json');
+          if(g13.status!=='GREEN'||g13.architecture.findingsTotal!==0||g13.productionCutover!==false)throw Error('G13 boundary invalid');
+          NODE
+
+      - name: Run complete G14 suite and build evidence
+        env:
+          G14_SOURCE_HEAD: ${{ github.sha }}
+          G14_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g14-suite.cjs --write
+
+      - name: Reject test-induced repository mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain | grep -vE '^.. docs/astra/G14_TEST_(EVIDENCE\.json|REPORT\.md)$' > /tmp/g14-unexpected-status || true
+          if [ -s /tmp/g14-unexpected-status ]; then
+            echo "Unexpected repository mutations during G14 suite:" >&2
+            cat /tmp/g14-unexpected-status >&2
+            exit 1
+          fi
+
+      - name: Validate G14 evidence
+        run: |
+          node <<'NODE'
+          const e=require('./docs/astra/G14_TEST_EVIDENCE.json');
+          if(e.suiteStatus!=='PASS'||e.failedChecks.length)throw Error('G14 suite evidence is not PASS');
+          if(e.totals.fail||e.totals.cancelled||e.totals.todo)throw Error('G14 suite has failing/cancelled/todo tests');
+          if(e.totals.tests<183)throw Error('G14 test floor regressed');
+          if(e.skipPolicy.unexpectedSkipFiles.length)throw Error('Unexpected skips detected');
+          if(e.inventory.dedicatedArchitectureFilesSyntaxChecked<30)throw Error('Architecture syntax coverage incomplete');
+          if(!e.strictLegacyScan.clean||e.strictLegacyScan.runtimeLegacyDependencyCount!==0)throw Error('Legacy runtime dependency boundary regressed');
+          if(e.productionCutover!==false)throw Error('Production cutover changed');
+          NODE
+
+      - name: Promote G14 only after full PASS
+        env:
+          G14_SOURCE_HEAD: ${{ github.sha }}
+          G14_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g14-certify.cjs --write
+
+      - name: Validate promoted gate state
+        run: |
+          node <<'NODE'
+          const gates=require('./04_ACCEPTANCE_GATES.json').gates;
+          const m=new Map(gates.map(x=>[x.id,x.status]));
+          const cert=require('./docs/astra/G14_CERTIFICATION.json');
+          const state=require('./docs/astra/WORK_STATE.json');
+          for(let n=1;n<=14;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN after G14 promotion')}
+          if(m.get('G15')!=='PENDING')throw Error('G15 must remain PENDING');
+          if(cert.status!=='GREEN'||cert.productionCutover!==false||cert.runtimeLegacyDependencyCount!==0)throw Error('G14 certification invalid');
+          if(state.current_gate!=='G15'||state.last_green_gate!=='G14'||state.current_phase!=='G15_PENDING')throw Error('work state not advanced to G15');
+          NODE
+
+      - name: Persist G14 certification only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          if [ "$REMOTE_HEAD" != "$GITHUB_SHA" ]; then
+            echo "Branch head moved: expected $GITHUB_SHA, found $REMOTE_HEAD" >&2
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add             docs/astra/G14_TEST_EVIDENCE.json             docs/astra/G14_TEST_REPORT.md             docs/astra/G14_CERTIFICATION.json             04_ACCEPTANCE_GATES.json             05_WORK_STATE.json             docs/astra/WORK_STATE.json
+          git commit -m 'cert(g14): unit integration regression suite GREEN [skip g14]'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
