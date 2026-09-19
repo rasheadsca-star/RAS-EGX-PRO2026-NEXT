@@ -1,0 +1,96 @@
+{
+  "schemaVersion": "astra-runtime-adapter-boundaries-1",
+  "status": "G13_FAMILY4_REGISTERED",
+  "productionCutover": false,
+  "policy": {
+    "adapterRule": "Registered adapters may depend on public contracts/facades but may not own filesystem, network, or persistence paths.",
+    "ioRule": "Filesystem/network/resource paths are owned only by explicit ioProviders.",
+    "targetArchitectureModulesUnchanged": 30
+  },
+  "boundaries": [
+    {
+      "boundaryId": "quant-edge-archive-adapter",
+      "file": "astra/runtime/bridges/quant-edge-archive.cjs",
+      "type": "runtime-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "HISTORICAL_OUTPUT_ONLY"
+    },
+    {
+      "boundaryId": "sepa-local-adapter",
+      "file": "astra/runtime/bridges/sepa-local.cjs",
+      "type": "runtime-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "STRATEGY_REGISTRY_RUNNER"
+    },
+    {
+      "boundaryId": "tfe-local-adapter",
+      "file": "astra/runtime/bridges/tfe-local.cjs",
+      "type": "runtime-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "STRATEGY_REGISTRY_RUNNER"
+    },
+    {
+      "boundaryId": "v19-local-adapter",
+      "file": "astra/runtime/bridges/v19-local.cjs",
+      "type": "runtime-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "STRATEGY_REGISTRY_RUNNER"
+    },
+    {
+      "boundaryId": "v20-local-adapter",
+      "file": "astra/runtime/bridges/v20-local.cjs",
+      "type": "runtime-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "STRATEGY_REGISTRY_RUNNER"
+    },
+    {
+      "boundaryId": "v18-local-ui-adapter",
+      "file": "astra/runtime/v18/app.js",
+      "type": "ui-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "V18_RESOURCE_CLIENT"
+    },
+    {
+      "boundaryId": "rc2-local-api-adapter",
+      "file": "deploy/rc2-safe-shell/api/index.js",
+      "type": "api-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "LOCAL_HISTORY_STORE_AND_TFE_ADAPTER"
+    },
+    {
+      "boundaryId": "sepa-sync-adapter",
+      "file": "gann-fusion-x/scripts/sync-sepa.cjs",
+      "type": "integration-adapter",
+      "ioPolicy": "NO_DIRECT_IO",
+      "contract": "JSON_RESOURCE_STORE_AND_SEPA_ADAPTER"
+    }
+  ],
+  "ioProviders": [
+    {
+      "providerId": "v18-resource-client",
+      "file": "astra/runtime/v18/resource-client.js",
+      "capabilities": [
+        "SAME_ORIGIN_JSON_READ"
+      ],
+      "networkPolicy": "SAME_ORIGIN_RELATIVE_ONLY"
+    },
+    {
+      "providerId": "local-history-store",
+      "file": "astra/runtime/io/local-history-store.cjs",
+      "capabilities": [
+        "VALIDATION_APPROVED_HISTORY_READ"
+      ],
+      "networkPolicy": "NONE"
+    },
+    {
+      "providerId": "json-resource-store",
+      "file": "astra/runtime/io/json-resource-store.cjs",
+      "capabilities": [
+        "JSON_READ",
+        "ATOMIC_JSON_WRITE",
+        "EXISTS"
+      ],
+      "networkPolicy": "NONE"
+    }
+  ]
+}

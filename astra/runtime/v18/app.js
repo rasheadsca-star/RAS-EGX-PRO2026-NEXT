@@ -1,20 +1,13 @@
 'use strict';
 (() => {
-  const LOCAL = Object.freeze({
-    pipeline:'../../../docs/astra/G11_CURRENT_PIPELINE_RUN.json',
-    metrics:'../../../docs/astra/G11_DATA_HEALTH_METRICS.json',
-    issues:'../../../docs/astra/G11_DATA_HEALTH_ISSUES.json',
-    guard:'../../../docs/astra/G11_GUARD37_EVIDENCE.json'
-  });
+  const PIPELINE_RESOURCE_ID='G11_CURRENT_PIPELINE_RUN.json';
   const el=id=>document.getElementById(id);
-  const json=async url=>{
-    const r=await fetch(url,{cache:'no-store',credentials:'same-origin'});
-    if(!r.ok)throw new Error(`${url}: HTTP ${r.status}`);
-    return r.json();
-  };
   async function boot(){
     try{
-      const [p,m,i,g]=await Promise.all(Object.values(LOCAL).map(json));
+      const resources=globalThis.AstraRuntimeResources;
+      if(!resources||typeof resources.load!=='function')throw new Error('V18_RESOURCE_CLIENT_UNAVAILABLE');
+      const {pipeline:p,metrics:m,issues:i,guard:g,sourceIds}=await resources.load();
+      if(!String(sourceIds?.pipeline||'').endsWith(PIPELINE_RESOURCE_ID))throw new Error('V18_PIPELINE_RESOURCE_CONTRACT_MISMATCH');
       if(p.productionCutover!==false||p.legacyNetworkCalls!==0)throw new Error('unsafe runtime snapshot');
       if(i.criticalUnresolved!==0||i.highProductionRelevantUnresolved!==0)throw new Error('material G11 blocker present');
       if(g.status!=='PASS')throw new Error('Guard 37 not PASS');
