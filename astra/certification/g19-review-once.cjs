@@ -21,7 +21,7 @@ const git=(args,cwd=TARGET)=>cp.execFileSync('git',args,{cwd,encoding:'utf8'}).t
 const mainHead=()=>cp.execFileSync('git',['ls-remote','origin','refs/heads/main'],{cwd:CONTROL,encoding:'utf8'}).trim().split(/\s+/)[0]||'';
 const failNames=o=>Object.entries(o).filter(([,v])=>v!==true).map(([k])=>k);
 const runNode=(script,env)=>{
- const r=cp.spawnSync(process.execPath,[script],{cwd:TARGET,env:{...process.env,...env},encoding:'utf8',maxBuffer:20*1024*1024});
+ const r=cp.spawnSync(process.execPath,[script],{cwd:TARGET,env:{...process.env,NODE_PATH:path.join(CONTROL,'node_modules'),...env},encoding:'utf8',maxBuffer:20*1024*1024});
  if(r.status!==0)throw new Error(path.basename(script)+' failed\nSTDOUT:\n'+r.stdout+'\nSTDERR:\n'+r.stderr);
  const text=(r.stdout||'').trim();
  const start=text.indexOf('{');
