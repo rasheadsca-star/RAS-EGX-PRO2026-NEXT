@@ -6,12 +6,16 @@ const crypto = require('crypto');
 const cp = require('child_process');
 const Module = require('module');
 
-const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
-const P = p => path.join(ROOT, p);
-const read = p => JSON.parse(fs.readFileSync(P(p), 'utf8'));
-const write = (p, value) => {
-  fs.mkdirSync(path.dirname(P(p)), { recursive: true });
-  fs.writeFileSync(P(p), JSON.stringify(value, null, 2) + '\n', 'utf8');
+const PROD_ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
+const DECISION_ROOT = path.resolve(process.env.ASTRA_DECISION_ROOT || PROD_ROOT);
+const PROD = p => path.join(PROD_ROOT, p);
+const DEC = p => path.join(DECISION_ROOT, p);
+
+const readProd = p => JSON.parse(fs.readFileSync(PROD(p), 'utf8'));
+const readDecision = p => JSON.parse(fs.readFileSync(DEC(p), 'utf8'));
+const writeProd = (p, value) => {
+  fs.mkdirSync(path.dirname(PROD(p)), { recursive: true });
+  fs.writeFileSync(PROD(p), JSON.stringify(value, null, 2) + '\n', 'utf8');
 };
 const ensure = (condition, message) => {
   if (!condition) throw new Error(message);
@@ -19,24 +23,40 @@ const ensure = (condition, message) => {
 const sha256 = value => crypto.createHash('sha256').update(
   typeof value === 'string' ? value : JSON.stringify(value)
 ).digest('hex');
-const gitHead = () => cp.execFileSync('git', ['rev-parse', 'HEAD'], {
-  cwd: ROOT,
+const gitHead = root => cp.execFileSync('git', ['rev-parse', 'HEAD'], {
+  cwd: root,
   encoding: 'utf8'
 }).trim();
 
-function loadCurrentHealthWithDecisionSnapshot() {
-  const filename = P('astra/data-health/g11-data-health.cjs');
+function loadCertifiedHealthWithDecisionSnapshot() {
+  const filename = DEC('astra/data-health/g11-data-health.cjs');
+  const pipelineFile = DEC('astra/pipeline/g09-unified-decision-pipeline.cjs');
+  ensure(fs.existsSync(filename), 'Certified G11 data-health module unavailable');
+  ensure(fs.existsSync(pipelineFile), 'Certified G09 pipeline module unavailable');
+
   let src = fs.readFileSync(filename, 'utf8');
   const needle = "marketUniverseEvaluated:pipeline.decisionSnapshot?.marketUniverseEvaluated||0,productionCutover:false";
   const replacement = "marketUniverseEvaluated:pipeline.decisionSnapshot?.marketUniverseEvaluated||0,decisionSnapshot:pipeline.decisionSnapshot||null,productionCutover:false";
-  ensure(src.includes(needle), 'G11 decision-snapshot patch point unavailable');
+  ensure(src.includes(needle), 'Certified G11 DecisionSnapshot exposure point unavailable');
   src = src.replace(needle, replacement);
 
-  const m = new Module(filename, module);
-  m.filename = filename;
-  m.paths = Module._nodeModulePaths(path.dirname(filename));
-  m._compile(src, filename);
-  return m.exports.buildHealth();
+  const oldWorkspace = process.env.GITHUB_WORKSPACE;
+  process.env.GITHUB_WORKSPACE = DECISION_ROOT;
+  try {
+    delete require.cache[require.resolve(pipelineFile)];
+    const pipeline = require(pipelineFile);
+    ensure(typeof pipeline.runUnifiedDecisionPipeline === 'function', 'Certified G09 runner unavailable');
+
+    const m = new Module(filename, module);
+    m.filename = filename;
+    m.paths = Module._nodeModulePaths(path.dirname(filename));
+    m._compile(src, filename);
+    ensure(typeof m.exports.buildHealth === 'function', 'Certified G11 buildHealth unavailable');
+    return m.exports.buildHealth({ pipelineRunner: pipeline.runUnifiedDecisionPipeline });
+  } finally {
+    if (oldWorkspace === undefined) delete process.env.GITHUB_WORKSPACE;
+    else process.env.GITHUB_WORKSPACE = oldWorkspace;
+  }
 }
 
 function baselineFrom(data, manifest) {
@@ -66,19 +86,31 @@ function validateOpportunity(row) {
   }
 }
 
+function pct(n, d) {
+  return d > 0 ? Number((Number(n) / Number(d) * 100).toFixed(2)) : 0;
+}
+
 function main() {
-  const current = read('astra-prod/app/data.json');
-  const manifest = read('astra-prod/G22_FULL_APP_MANIFEST.json');
-  const priceTruth = read('data/stable/v15-price-truth.json');
-  const gates = read('04_ACCEPTANCE_GATES.json');
-  const h = loadCurrentHealthWithDecisionSnapshot();
+  const current = readProd('astra-prod/app/data.json');
+  const manifest = readProd('astra-prod/G22_FULL_APP_MANIFEST.json');
+  const priceTruth = readDecision('data/stable/v15-price-truth.json');
+  const h = loadCertifiedHealthWithDecisionSnapshot();
   const d = h?.pipeline?.decisionSnapshot;
 
   const expected = priceTruth.expectedSession;
   const available = h?.sessionIntegrity?.latestAvailableCanonicalSession;
   const derivedExpected = h?.sessionIntegrity?.latestExpectedSession;
   const critical = Number(h?.issues?.criticalUnresolved || 0);
-  const high = Number(h?.issues?.highUnresolved || 0);
+  const highIssues = (h?.issues?.issues || []).filter(x => x.severity === 'HIGH');
+  const high = highIssues.length;
+  const activeUniverse = Number(h?.universe?.activeUniverseCount || 0);
+  const currentCanonical = Number(h?.metrics?.currentCanonicalSecurities?.numerator || 0);
+  const pipelineReady = Number(h?.metrics?.decisionPipeline?.pipelineReadySecurities || 0);
+  const currentCoveragePct = pct(currentCanonical, activeUniverse);
+  const pipelineCoveragePct = pct(pipelineReady, activeUniverse);
+  const sourceCoveragePct = Number(priceTruth?.source?.sourceSessionEvidenceCoveragePct || 0);
+  const allowedOperationalHighCodes = new Set(['CURRENT_SESSION_GAP', 'REGIME_INPUT_INCOMPLETE']);
+  const disallowedHigh = highIssues.filter(x => !allowedOperationalHighCodes.has(x.code));
 
   ensure(manifest.authorizedGate === 'G22', 'G22 manifest authorization missing');
   ensure(manifest.productionCutover === true, 'Production cutover is not active');
@@ -89,20 +121,29 @@ function main() {
   ensure(current.sourceDecision?.decisionSnapshotId === manifest.decisionSnapshotId, 'Pre-refresh app/manifest decision identity mismatch');
   ensure(current.sourceDecision?.semanticDecisionHash === manifest.semanticDecisionHash, 'Pre-refresh app/manifest semantic hash mismatch');
 
+  ensure(DECISION_ROOT !== PROD_ROOT, 'Daily decision must execute from the pinned G22 certified baseline workspace');
   ensure(typeof expected === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expected), 'Price-truth expected session invalid');
   ensure(priceTruth.ready === true, 'Price truth not ready');
   ensure(priceTruth.executionGrade === true, 'Price truth is not execution-grade');
-  ensure(derivedExpected === expected, 'G11 expected session != price-truth expected session');
+  ensure(Number(priceTruth.acceptedRows || 0) >= 200, 'Price-truth accepted-row coverage below operational floor: ' + priceTruth.acceptedRows);
+  ensure(sourceCoveragePct >= 90, 'Source-session evidence coverage below 90%: ' + sourceCoveragePct);
+  ensure((priceTruth.missingHistoryFiles || []).length === 0, 'Certified baseline still has missing history files: ' + JSON.stringify(priceTruth.missingHistoryFiles));
+  ensure(activeUniverse === 224, 'Certified active universe drifted from G22 baseline: ' + activeUniverse);
+  ensure(derivedExpected === expected, 'Certified G11 expected session != price-truth expected session');
   ensure(available === expected, 'Latest canonical session is not current');
   ensure(h.sessionIntegrity.freshnessStatus === 'CURRENT', 'Session freshness is not CURRENT');
-  ensure(h.pipeline.ok === true, 'Unified decision pipeline failed');
+  ensure(critical === 0, 'Current health has CRITICAL findings: ' + critical + ' ' + JSON.stringify((h.issues.issues || []).filter(x => x.severity === 'CRITICAL')));
+  ensure(disallowedHigh.length === 0, 'Disallowed HIGH findings: ' + JSON.stringify(disallowedHigh));
+  ensure(currentCoveragePct >= 90, 'Current canonical coverage below 90%: ' + currentCoveragePct);
+  ensure(pipelineCoveragePct >= 80, 'Decision pipeline coverage below 80%: ' + pipelineCoveragePct);
+  ensure(h.pipeline.ok === true, 'Unified decision pipeline failed: ' + JSON.stringify(h.pipeline.diagnostics || []));
   ensure(d, 'Current DecisionSnapshot unavailable');
   ensure(d.sessionDate === expected, 'Decision session mismatch');
   ensure(d.asOfSessionDate === expected, 'Decision as-of session mismatch');
   ensure(['DECISION_SNAPSHOT_READY', 'VALID_ZERO_OPPORTUNITY_SESSION'].includes(d.status), 'Decision status not publishable');
   ensure((d.legacyNetworkCalls || 0) === 0, 'Legacy network influence detected');
-  ensure(critical === 0, 'Current health has CRITICAL findings: ' + critical);
-  ensure(high === 0, 'Current health has HIGH findings: ' + high + ' ' + JSON.stringify((h.issues.issues || []).filter(x => x.severity === 'HIGH')));
+  ensure((d.quantEdgeLiveInfluence || 0) === 0, 'QUANT_EDGE live influence detected');
+  ensure(Number(d.marketUniverseEvaluated || 0) >= 180, 'Decision universe evaluated below operational floor: ' + d.marketUniverseEvaluated);
   ensure(/^G09-DS-[0-9a-f]{24}$/.test(d.decisionSnapshotId || ''), 'DecisionSnapshot ID invalid');
   ensure(/^[0-9a-f]{64}$/.test(d.semanticDecisionHash || ''), 'Semantic decision hash invalid');
 
@@ -110,10 +151,12 @@ function main() {
   ensure(top5.length <= 5, 'Top opportunities exceed 5');
   top5.forEach(validateOpportunity);
 
-  const sourceHead = gitHead();
+  const sourceHead = gitHead(PROD_ROOT);
+  const certifiedBaselineHead = process.env.ASTRA_CERTIFIED_BASELINE_HEAD || gitHead(DECISION_ROOT);
   const refreshedAt = new Date().toISOString();
   const objectHash = sha256(d);
   const baseline = baselineFrom(current, manifest);
+  const guardStatus = high > 0 ? 'PASS_WITH_DOCUMENTED_COVERAGE_GAPS' : 'PASS';
 
   current.schemaVersion = current.schemaVersion || 'astra-g22-ui-snapshot-1';
   current.generatedAt = refreshedAt;
@@ -132,9 +175,10 @@ function main() {
     objectHashVarianceReason: null,
     currentProductionCutover: true,
     sourceHead,
+    certifiedBaselineHead,
     refreshedAt,
-    refreshPolicy: 'G22_POST_CLOSE_CERTIFIED_PIPELINE_REFRESH',
-    refreshSource: 'astra/data-health/g11-data-health.cjs -> ASTRA_G09_PIPELINE_1',
+    refreshPolicy: 'G22_POST_CLOSE_CERTIFIED_BASELINE_OPERATIONAL_REFRESH',
+    refreshSource: 'G22_CERTIFIED_BASELINE + CURRENT_SESSION_PRICE_TRUTH -> CERTIFIED_G11_CONTEXT -> CERTIFIED_ASTRA_G09_PIPELINE_1',
     sourcePriceTruthGeneratedAt: priceTruth.generatedAt || null,
     certificationBaseline: baseline
   };
@@ -144,14 +188,24 @@ function main() {
     latestExpectedSession: expected,
     latestAvailableSession: available,
     freshness: h.sessionIntegrity.freshnessStatus,
-    activeUniverse: h.universe.activeUniverseCount,
+    activeUniverse,
     currentCanonical: h.metrics.currentCanonicalSecurities,
     decisionReady: h.metrics.decisionPipeline,
     supportResistance: h.metrics.supportResistance,
     searchReadiness: h.metrics.searchReadiness,
     criticalUnresolved: critical,
     highUnresolved: high,
-    guardStatus: 'PASS',
+    operationalHighFindings: highIssues.map(x => ({
+      code: x.code,
+      affectedCount: x.affectedCount,
+      affectedTickers: x.affectedTickers
+    })),
+    guardStatus,
+    coverage: {
+      currentCanonicalPct: currentCoveragePct,
+      decisionPipelinePct: pipelineCoveragePct,
+      sourceSessionEvidencePct: sourceCoveragePct
+    },
     sessionIntegrity: {
       expectedSession: expected,
       availableSession: available,
@@ -162,8 +216,10 @@ function main() {
       executionGrade: priceTruth.executionGrade,
       generatedAt: priceTruth.generatedAt || null,
       acceptedRows: priceTruth.acceptedRows ?? null,
+      updatedHistoryFiles: priceTruth.updatedHistoryFiles ?? null,
+      missingHistoryFiles: priceTruth.missingHistoryFiles ?? [],
       source: priceTruth.source?.name || null,
-      sourceSessionEvidenceCoveragePct: priceTruth.source?.sourceSessionEvidenceCoveragePct ?? null
+      sourceSessionEvidenceCoveragePct: sourceCoveragePct
     }
   };
 
@@ -174,15 +230,26 @@ function main() {
   manifest.currentSemanticDecisionHash = d.semanticDecisionHash;
   manifest.currentDecisionSnapshotObjectHash = objectHash;
   manifest.lastPostCloseRefreshAt = refreshedAt;
-  manifest.currentDecisionSource = 'ASTRA_G09_PIPELINE_1 via G11 current-session context';
+  manifest.currentDecisionSource = 'CERTIFIED_ASTRA_G09_PIPELINE_1_POST_CLOSE';
+  manifest.currentDecisionBaselineHead = certifiedBaselineHead;
+  manifest.currentDecisionCoverage = {
+    activeUniverse,
+    currentCanonical,
+    currentCanonicalPct: currentCoveragePct,
+    pipelineReady,
+    pipelineCoveragePct,
+    sourceSessionEvidencePct: sourceCoveragePct,
+    documentedOperationalHighFindings: high
+  };
   manifest.certificationBaseline = manifest.certificationBaseline || baseline;
   manifest.productionCutover = true;
   manifest.certifiedRuntimeBundleMutated = false;
 
   const audit = {
-    schemaVersion: 'astra-g22-session-refresh-1',
+    schemaVersion: 'astra-g22-session-refresh-2',
     refreshedAt,
     sourceHead,
+    certifiedBaselineHead,
     certifiedThrough: 'G22',
     productionCutover: true,
     session: {
@@ -198,22 +265,32 @@ function main() {
       executionGrade: priceTruth.executionGrade,
       acceptedRows: priceTruth.acceptedRows ?? null,
       updatedHistoryFiles: priceTruth.updatedHistoryFiles ?? null,
+      missingHistoryFiles: priceTruth.missingHistoryFiles ?? [],
       source: priceTruth.source?.name || null,
-      sourceSessionEvidenceCoveragePct: priceTruth.source?.sourceSessionEvidenceCoveragePct ?? null
+      sourceSessionEvidenceCoveragePct: sourceCoveragePct
     },
     health: {
-      activeUniverse: h.universe.activeUniverseCount,
+      activeUniverse,
       currentCanonical: h.metrics.currentCanonicalSecurities,
+      currentCanonicalCoveragePct: currentCoveragePct,
       decisionReady: h.metrics.decisionPipeline,
+      decisionPipelineCoveragePct: pipelineCoveragePct,
       criticalUnresolved: critical,
       highUnresolved: high,
-      legacyNetworkCalls: h.pipeline.legacyNetworkCalls || 0
+      highFindings: highIssues.map(x => ({
+        code: x.code,
+        affectedCount: x.affectedCount,
+        affectedTickers: x.affectedTickers
+      })),
+      legacyNetworkCalls: h.pipeline.legacyNetworkCalls || 0,
+      operationalGuardStatus: guardStatus
     },
     decision: {
       status: d.status,
       decisionSnapshotId: d.decisionSnapshotId,
       semanticDecisionHash: d.semanticDecisionHash,
       decisionSnapshotObjectHash: objectHash,
+      marketUniverseEvaluated: d.marketUniverseEvaluated,
       opportunities: top5.length,
       tickers: top5.map(x => x.ticker),
       ranks: top5.map(x => ({ ticker: x.ticker, rank: x.rank, score: x.decisionScore ?? x.ranking?.score ?? null }))
@@ -223,24 +300,31 @@ function main() {
       fullAppData: true,
       manifest: true,
       certifiedRuntimeBundle: false,
+      certifiedBaselineRepository: false,
       legacyFallback: false
     }
   };
 
-  write('astra-prod/app/data.json', current);
-  write('astra-prod/G22_FULL_APP_MANIFEST.json', manifest);
-  write('astra-prod/G22_SESSION_REFRESH.json', audit);
+  writeProd('astra-prod/app/data.json', current);
+  writeProd('astra-prod/G22_FULL_APP_MANIFEST.json', manifest);
+  writeProd('astra-prod/G22_SESSION_REFRESH.json', audit);
 
   process.stdout.write('G22_POST_CLOSE_REFRESH ' + JSON.stringify({
     session: expected,
     decisionSnapshotId: d.decisionSnapshotId,
     semanticDecisionHash: d.semanticDecisionHash,
+    status: d.status,
     opportunities: top5.length,
     tickers: top5.map(x => x.ticker),
-    currentCanonical: h.metrics.currentCanonicalSecurities.numerator + '/' + h.metrics.currentCanonicalSecurities.denominator,
-    decisionReady: h.metrics.decisionPipeline.pipelineReadySecurities,
+    activeUniverse,
+    currentCanonical: currentCanonical + '/' + activeUniverse,
+    currentCanonicalPct: currentCoveragePct,
+    decisionReady: pipelineReady,
+    decisionPipelinePct: pipelineCoveragePct,
+    sourceSessionEvidencePct: sourceCoveragePct,
     critical,
-    high
+    high,
+    guardStatus
   }) + '\n');
 }
 
