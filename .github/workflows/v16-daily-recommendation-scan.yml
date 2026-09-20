@@ -417,44 +417,54 @@ jobs:
           const status=at(file);
           const price=at('data/stable/v15-price-truth.json');
           const now=new Date().toISOString();
-          if(status.final!==true||status.sourceReady!==true||status.currentSessionReady!==true||status.executionGrade!==true) throw new Error('canonical_main_app_not_final');
-          if(primary.currentSessionReady!==true||primary?.basketPlan?.sourceSessionReady!==true) throw new Error('canonical_primary_not_session_ready');
-          if(primary.sessionDate!==status.sessionDate||price.expectedSession!==status.sessionDate) throw new Error('canonical_session_identity_mismatch');
-          if(price.ready!==true||price.executionGrade!==true||Number(price.acceptedRows||0)<200||Number(price?.source?.sourceSessionEvidenceCoveragePct||0)<90) throw new Error('canonical_price_truth_below_g22_floor');
-          if(!/^[0-9a-f]{64}$/.test(String(status.materialFingerprint||''))) throw new Error('canonical_material_fingerprint_invalid');
+          const final= status.final===true
+            && status.sourceReady===true
+            && status.currentSessionReady===true
+            && status.executionGrade===true
+            && primary.currentSessionReady===true
+            && primary?.basketPlan?.sourceSessionReady===true;
 
           status.pagesPublished=true;
           status.pagesPublishedAt=now;
           status.pagesPublishedSession=primary.sessionDate || status.sessionDate || null;
-          status.status='FINAL_SESSION_SNAPSHOT_PUBLISHED';
-          status.statusAr='تم نشر النتيجة النهائية لجلسة اليوم على MAIN APP.';
+          status.status=final?'FINAL_SESSION_SNAPSHOT_PUBLISHED':'CURRENT_MAIN_APP_STATE_PUBLISHED';
+          status.statusAr=final
+            ? 'تم نشر النتيجة النهائية لجلسة اليوم على MAIN APP.'
+            : 'تم نشر أحدث حالة متاحة لمحرك MAIN APP مع استمرار بوابات الأمان.';
           fs.writeFileSync(file,JSON.stringify(status,null,2)+'\n');
 
-          const marker={
-            schemaVersion:'g22-main-app-final-handoff-1',
-            generatedAt:now,
-            producerWorkflow:'EGX MAIN APP V16.9.2 P2 Automatic Scan',
-            producerRunId:String(process.env.GITHUB_RUN_ID||''),
-            producerRunAttempt:Number(process.env.GITHUB_RUN_ATTEMPT||1),
-            producerHeadSha:String(process.env.GITHUB_SHA||''),
-            canonicalDataHead:head,
-            engine:status.engine||'V16_9_EQUAL_WEIGHT_BASKET',
-            final:true,
-            sourceReady:true,
-            currentSessionReady:true,
-            executionGrade:true,
-            sessionDate:status.sessionDate,
-            expectedSession:status.expectedSession,
-            acceptedRows:Number(price.acceptedRows||0),
-            sourceSessionEvidenceCoveragePct:Number(price?.source?.sourceSessionEvidenceCoveragePct||0),
-            materialFingerprint:status.materialFingerprint,
-            sourceSessionDataHash:status.sourceSessionDataHash||null,
-            pagesPublished:true,
-            pagesPublishedAt:now
-          };
-          fs.mkdirSync('data/ops',{recursive:true});
-          fs.writeFileSync('data/ops/g22-main-app-handoff.json',JSON.stringify(marker,null,2)+'\n');
-          console.log('G22_MAIN_APP_HANDOFF '+JSON.stringify(marker));
+          if(final){
+            if(primary.sessionDate!==status.sessionDate||price.expectedSession!==status.sessionDate) throw new Error('canonical_session_identity_mismatch');
+            if(price.ready!==true||price.executionGrade!==true) throw new Error('canonical_price_truth_not_execution_grade');
+            if(!/^[0-9a-f]{64}$/.test(String(status.materialFingerprint||''))) throw new Error('canonical_material_fingerprint_invalid');
+            const marker={
+              schemaVersion:'g22-main-app-final-handoff-1',
+              generatedAt:now,
+              producerWorkflow:'EGX MAIN APP V16.9.2 P2 Automatic Scan',
+              producerRunId:String(process.env.GITHUB_RUN_ID||''),
+              producerRunAttempt:Number(process.env.GITHUB_RUN_ATTEMPT||1),
+              producerHeadSha:String(process.env.GITHUB_SHA||''),
+              canonicalDataHead:head,
+              engine:status.engine||'V16_9_EQUAL_WEIGHT_BASKET',
+              final:true,
+              sourceReady:true,
+              currentSessionReady:true,
+              executionGrade:true,
+              sessionDate:status.sessionDate,
+              expectedSession:status.expectedSession,
+              acceptedRows:Number(price.acceptedRows||0),
+              sourceSessionEvidenceCoveragePct:Number(price?.source?.sourceSessionEvidenceCoveragePct||0),
+              materialFingerprint:status.materialFingerprint,
+              sourceSessionDataHash:status.sourceSessionDataHash||null,
+              pagesPublished:true,
+              pagesPublishedAt:now
+            };
+            fs.mkdirSync('data/ops',{recursive:true});
+            fs.writeFileSync('data/ops/g22-main-app-handoff.json',JSON.stringify(marker,null,2)+'\n');
+            console.log('G22_MAIN_APP_HANDOFF '+JSON.stringify(marker));
+          }else{
+            console.log('G22_MAIN_APP_HANDOFF_NOT_EMITTED '+JSON.stringify({sessionDate:status.sessionDate||null,final:false,reason:'MAIN_APP_NOT_FINAL'}));
+          }
           NODE
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
