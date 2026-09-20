@@ -87,6 +87,7 @@ jobs:
       publish: ${{ steps.scan.outputs.publish }}
       final: ${{ steps.scan.outputs.final }}
       session: ${{ steps.scan.outputs.session }}
+      canonical_commit: ${{ steps.canonical_commit.outputs.sha }}
     steps:
       - name: Checkout latest MAIN APP
         uses: actions/checkout@v4
@@ -309,6 +310,7 @@ jobs:
           echo "MAIN APP post-close session is already final and Pages-published. No duplicate scan."
 
       - name: Commit canonical MAIN APP state
+        id: canonical_commit
         if: steps.already.outputs.skip != 'true'
         run: |
           set -euo pipefail
@@ -323,6 +325,7 @@ jobs:
               sleep $((attempt * 10))
             done
           fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Prepare Pages artifact
         if: steps.already.outputs.skip != 'true'
@@ -395,28 +398,67 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Record Pages-published session
+      - name: Record Pages-published session and immutable G22 handoff
         if: steps.deployment_result.outputs.success == 'true'
         shell: bash
+        env:
+          CANONICAL_DATA_HEAD: ${{ needs.scan-and-publish.outputs.canonical_commit }}
         run: |
           set -euo pipefail
           node - <<'NODE'
           const fs=require('fs');
+          const path=require('path');
+          const cp=require('child_process');
+          const head=String(process.env.CANONICAL_DATA_HEAD||'').trim();
+          if(!/^[0-9a-f]{40}$/.test(head)) throw new Error('canonical_data_head_missing_or_invalid');
+          const at=file=>JSON.parse(cp.execFileSync('git',['show',head+':'+file],{encoding:'utf8',maxBuffer:64*1024*1024}));
           const file='data/stable/v16-immediate-scan-status.json';
-          const primary=JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json','utf8'));
-          const status=JSON.parse(fs.readFileSync(file,'utf8'));
+          const primary=at('data/stable/v16-v169-primary-decision.json');
+          const status=at(file);
+          const price=at('data/stable/v15-price-truth.json');
+          const now=new Date().toISOString();
+          if(status.final!==true||status.sourceReady!==true||status.currentSessionReady!==true||status.executionGrade!==true) throw new Error('canonical_main_app_not_final');
+          if(primary.currentSessionReady!==true||primary?.basketPlan?.sourceSessionReady!==true) throw new Error('canonical_primary_not_session_ready');
+          if(primary.sessionDate!==status.sessionDate||price.expectedSession!==status.sessionDate) throw new Error('canonical_session_identity_mismatch');
+          if(price.ready!==true||price.executionGrade!==true||Number(price.acceptedRows||0)<200||Number(price?.source?.sourceSessionEvidenceCoveragePct||0)<90) throw new Error('canonical_price_truth_below_g22_floor');
+          if(!/^[0-9a-f]{64}$/.test(String(status.materialFingerprint||''))) throw new Error('canonical_material_fingerprint_invalid');
+
           status.pagesPublished=true;
-          status.pagesPublishedAt=new Date().toISOString();
+          status.pagesPublishedAt=now;
           status.pagesPublishedSession=primary.sessionDate || status.sessionDate || null;
-          status.status = status.final ? 'FINAL_SESSION_SNAPSHOT_PUBLISHED' : 'CURRENT_MAIN_APP_STATE_PUBLISHED';
-          status.statusAr = status.final
-            ? 'تم نشر النتيجة النهائية لجلسة اليوم على MAIN APP.'
-            : 'تم نشر أحدث حالة متاحة لمحرك MAIN APP مع استمرار بوابات الأمان.';
+          status.status='FINAL_SESSION_SNAPSHOT_PUBLISHED';
+          status.statusAr='تم نشر النتيجة النهائية لجلسة اليوم على MAIN APP.';
           fs.writeFileSync(file,JSON.stringify(status,null,2)+'\n');
+
+          const marker={
+            schemaVersion:'g22-main-app-final-handoff-1',
+            generatedAt:now,
+            producerWorkflow:'EGX MAIN APP V16.9.2 P2 Automatic Scan',
+            producerRunId:String(process.env.GITHUB_RUN_ID||''),
+            producerRunAttempt:Number(process.env.GITHUB_RUN_ATTEMPT||1),
+            producerHeadSha:String(process.env.GITHUB_SHA||''),
+            canonicalDataHead:head,
+            engine:status.engine||'V16_9_EQUAL_WEIGHT_BASKET',
+            final:true,
+            sourceReady:true,
+            currentSessionReady:true,
+            executionGrade:true,
+            sessionDate:status.sessionDate,
+            expectedSession:status.expectedSession,
+            acceptedRows:Number(price.acceptedRows||0),
+            sourceSessionEvidenceCoveragePct:Number(price?.source?.sourceSessionEvidenceCoveragePct||0),
+            materialFingerprint:status.materialFingerprint,
+            sourceSessionDataHash:status.sourceSessionDataHash||null,
+            pagesPublished:true,
+            pagesPublishedAt:now
+          };
+          fs.mkdirSync('data/ops',{recursive:true});
+          fs.writeFileSync('data/ops/g22-main-app-handoff.json',JSON.stringify(marker,null,2)+'\n');
+          console.log('G22_MAIN_APP_HANDOFF '+JSON.stringify(marker));
           NODE
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/stable/v16-immediate-scan-status.json
+          git add data/stable/v16-immediate-scan-status.json data/ops/g22-main-app-handoff.json
           if ! git diff --cached --quiet; then
             git commit -m "Record MAIN APP Pages publication"
             for attempt in 1 2 3; do
