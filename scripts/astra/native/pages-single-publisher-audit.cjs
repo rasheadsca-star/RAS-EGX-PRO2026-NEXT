@@ -95,7 +95,7 @@ for (const file of workflows) {
   const text = fs.readFileSync(file, 'utf8');
 
   if (/pages:\s*write\b/.test(text)) pagesWriters.push(fileRel);
-  if (/actions\/deploy-pages@/i.test(text)) activeDeployers.push(fileRel);
+  if (/^\\s*(?:-\\s*)?uses:\\s*actions\\/deploy-pages@/mi.test(text)) activeDeployers.push(fileRel);
 
   for (const action of ['actions/configure-pages@', 'actions/upload-pages-artifact@']) {
     if (fileRel !== CANONICAL && hasActivePagesAuxAction(text, action)) {
@@ -135,7 +135,7 @@ for (const fileRel of expectedRetired) {
   }
   const text = fs.readFileSync(abs, 'utf8');
   if (!text.includes('ASTRA_SINGLE_PUBLISHER')) retiredNotMarked.push(fileRel);
-  if (/pages:\s*write\b/.test(text) || /actions\/deploy-pages@/i.test(text)) retiredStillDeploying.push(fileRel);
+  if (/pages:\s*write\b/.test(text) || /^\\s*(?:-\\s*)?uses:\\s*actions\\/deploy-pages@/mi.test(text)) retiredStillDeploying.push(fileRel);
 }
 if (retiredMissing.length) findings.push({ id: 'EXPECTED_RETIRED_MISSING', actual: retiredMissing });
 if (retiredNotMarked.length) findings.push({ id: 'EXPECTED_RETIRED_UNMARKED', actual: retiredNotMarked });
