@@ -38,8 +38,12 @@ const profiles=[
 
       await page.locator('[data-view="search"]').click();
       await page.waitForSelector('#view-search.active');
-      const badge=await page.locator('#view-search .tag.good').first().innerText();
-      assert.match(badge,/224\s*\/\s*224/,name+' full active universe must be 224/224');
+      const badgeEl=page.locator('#view-search [data-universe-active]').first();
+      const badge=await badgeEl.innerText();
+      const active=await badgeEl.getAttribute('data-universe-active');
+      const intended=await badgeEl.getAttribute('data-universe-intended');
+      assert.equal(active,'224',name+' active universe must be 224');
+      assert.equal(intended,'224',name+' intended universe must be 224');
       await page.locator('#astraMarketQ').fill('GOUR');
       await page.waitForTimeout(100);
       assert.match(await page.locator('#astraMarketRows').innerText(),/GOUR/);
