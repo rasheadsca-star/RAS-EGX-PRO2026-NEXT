@@ -1,0 +1,138 @@
+name: Astra G22 Full Application Local Acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/g22/**'
+      - 'deploy/g22-full-app/**'
+      - '.github/workflows/astra-g22-full-app-local-acceptance.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: astra-g22-full-app-local-acceptance
+  cancel-in-progress: false
+
+jobs:
+  build-and-accept:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g22]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G22 pre-cutover boundary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          const a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json'),base=require('./docs/astra/G22_BASELINE.json');
+          for(let n=1;n<=21;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G22')!=='PENDING')throw Error('G22 not PENDING');
+          for(const s of [a,b])if(s.current_gate!=='G22'||s.current_phase!=='G22_PENDING'||s.last_green_gate!=='G21'||s.productionCutover!==true)throw Error('G22 state invalid');
+          if(base.productionMutationAllowed!==false)throw Error('G22 baseline must forbid production mutation before local acceptance');
+          NODE
+          EXPECTED="$(node -e "process.stdout.write(require('./docs/astra/G22_BASELINE.json').productionMainAtAuthorization)")"
+          git fetch origin main
+          [ "$(git rev-parse origin/main)" = "$EXPECTED" ]
+
+      - name: Verify G22 source syntax and forbidden decision sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/g22/build-ui-snapshot.cjs
+          node --check scripts/g22/local-acceptance.cjs
+          node --check deploy/g22-full-app/app.js
+          ! grep -R -E 'v16-main-app-current|v15-practical-decision|v16-v169-primary-decision' deploy/g22-full-app
+          grep -q "No legacy decision fallback" deploy/g22-full-app/index.html
+          grep -q "portfolioStorage:'LOCAL_BROWSER_ONLY'" scripts/g22/build-ui-snapshot.cjs
+
+      - name: Build exact Astra UI snapshot
+        run: node scripts/g22/build-ui-snapshot.cjs
+
+      - name: Validate exact rebuilt DecisionSnapshot
+        run: |
+          node <<'NODE'
+          const d=require('./deploy/g22-full-app/data.json'),p=require('./docs/astra/G11_CURRENT_PIPELINE_RUN.json'),b=require('./docs/astra/G22_BASELINE.json');
+          if(!d.integrity.rebuildExact)throw Error('rebuildExact false');
+          if(d.sourceDecision.decisionSnapshotId!==p.decisionSnapshotId||d.sourceDecision.decisionSnapshotId!==b.decisionSnapshotId)throw Error('DecisionSnapshot ID mismatch');
+          if(d.sourceDecision.semanticDecisionHash!==p.semanticDecisionHash||d.sourceDecision.semanticDecisionHash!==b.semanticDecisionHash)throw Error('Semantic hash mismatch');
+          if(d.sourceDecision.decisionSnapshotObjectHash!==p.decisionSnapshotObjectHash)throw Error('Object hash mismatch');
+          if(d.decisionSnapshot.top5.length!==p.opportunities)throw Error('Opportunity count mismatch');
+          if(d.decisionSnapshot.legacyNetworkCalls!==0||d.decisionSnapshot.quantEdgeLiveInfluence!==0)throw Error('Legacy/QUANT_EDGE influence detected');
+          NODE
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Run desktop/mobile Full App acceptance
+        shell: bash
+        env:
+          G22_SOURCE_HEAD: ${{ github.sha }}
+          G22_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          G22_LOCAL_BASE_URL: http://127.0.0.1:4173
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/g22-http.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4173/deploy/g22-full-app/index.html >/dev/null && break
+            sleep 1
+          done
+          node scripts/g22/local-acceptance.cjs --write
+
+      - name: Validate local acceptance evidence
+        run: |
+          node <<'NODE'
+          const e=require('./docs/astra/G22_LOCAL_UI_EVIDENCE.json');
+          if(e.status!=='PASS'||e.failedChecks.length)throw Error('G22 local evidence not PASS');
+          if(e.browser.desktop.status!=='PASS'||e.browser.mobile.status!=='PASS')throw Error('Desktop/mobile not PASS');
+          if(e.recommendations<1)throw Error('No Astra recommendations rendered');
+          if(e.productionMutated!==false)throw Error('Local acceptance mutated production');
+          NODE
+
+      - name: Reject unexpected repository mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain | grep -vE '^.. (deploy/g22-full-app/data\.json|docs/astra/G22_LOCAL_UI_EVIDENCE\.json|docs/astra/G22_LOCAL_UI_REPORT\.md)$' > /tmp/g22-unexpected || true
+          if [ -s /tmp/g22-unexpected ]; then
+            cat /tmp/g22-unexpected >&2
+            exit 1
+          fi
+
+      - name: Persist G22 locally accepted bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          [ "$REMOTE_HEAD" = "$GITHUB_SHA" ]
+          EXPECTED="$(node -e "process.stdout.write(require('./docs/astra/G22_BASELINE.json').productionMainAtAuthorization)")"
+          [ "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$EXPECTED" ]
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy/g22-full-app/data.json docs/astra/G22_LOCAL_UI_EVIDENCE.json docs/astra/G22_LOCAL_UI_REPORT.md
+          git commit -m 'g22: full application locally accepted [skip g22]'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
