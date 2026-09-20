@@ -1,0 +1,147 @@
+name: Astra G19 Consecutive Destructive Review
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g19-review-once.cjs'
+      - 'astra/certification/g19-advance.cjs'
+      - '.github/workflows/astra-g19-destructive-reviews.yml'
+      - 'docs/astra/G19_STREAK_STATE.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-g19-consecutive-destructive-reviews
+  cancel-in-progress: false
+
+env:
+  G19_TARGET_HEAD: efab44f829364aeeba3943b505531879e3955216
+  G19_EXPECTED_MAIN: 3ce76f81426885dae34ab9e921edba9975f35d52
+  G19_LIVE_BASE: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/
+
+jobs:
+  one-independent-review:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g19]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G19 control state
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          for(let n=1;n<=18;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G19')!=='PENDING')throw Error('G19 must be PENDING before final review');
+          if(g.certified!==false)throw Error('certified flag moved early');
+          const a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json'),s=require('./docs/astra/G19_STREAK_STATE.json');
+          if(a.current_gate!=='G19'||b.current_gate!=='G19'||a.current_phase!=='G19_PENDING'||b.current_phase!=='G19_PENDING'||a.last_green_gate!=='G18'||b.last_green_gate!=='G18')throw Error('G19 state boundary invalid');
+          if(a.clean_review_streak!==s.cleanReviewStreak||b.clean_review_streak!==s.cleanReviewStreak)throw Error('streak state mismatch');
+          if(s.cleanReviewStreak<0||s.cleanReviewStreak>=10)throw Error('unexpected pre-run streak');
+          if(s.reviewTargetHead!==process.env.G19_TARGET_HEAD||s.expectedProductionMain!==process.env.G19_EXPECTED_MAIN)throw Error('G19 pins changed');
+          NODE
+          CURRENT_MAIN="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          [ "$CURRENT_MAIN" = "$G19_EXPECTED_MAIN" ]
+
+      - name: Prepare fixed G18 review target
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "$G19_TARGET_HEAD^{commit}"
+          rm -rf /tmp/g19-target
+          git worktree add --detach /tmp/g19-target "$G19_TARGET_HEAD"
+          [ "$(git -C /tmp/g19-target rev-parse HEAD)" = "$G19_TARGET_HEAD" ]
+          [ -z "$(git -C /tmp/g19-target status --porcelain)" ]
+          echo "G19_TARGET_ROOT=/tmp/g19-target" >> "$GITHUB_ENV"
+          CYCLE="$(node -e "process.stdout.write(String(require('./docs/astra/G19_STREAK_STATE.json').cleanReviewStreak+1))")"
+          echo "G19_CYCLE=$CYCLE" >> "$GITHUB_ENV"
+
+      - name: Verify G19 scripts syntax
+        run: |
+          node --check astra/certification/g19-review-once.cjs
+          node --check astra/certification/g19-advance.cjs
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Execute one destructive review
+        env:
+          G19_WORKFLOW_RUN_ID: ${{ github.run_id }}
+          G19_SOURCE_HEAD: ${{ github.sha }}
+        run: node astra/certification/g19-review-once.cjs
+
+      - name: Advance or reset official streak
+        run: node astra/certification/g19-advance.cjs
+
+      - name: Enforce authorized mutations only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain > /tmp/g19-status
+          if grep -vE '^.. (docs/astra/G19_(STREAK_STATE\.json|DESTRUCTIVE_REVIEWS\.json|REVIEW_RESULT\.json|RUN_OUTCOME\.txt|CERTIFICATION\.json|FINAL_REPORT\.md)|05_WORK_STATE\.json|docs/astra/WORK_STATE\.json|04_ACCEPTANCE_GATES\.json)$' /tmp/g19-status | grep -q .; then
+            echo "Unauthorized mutation during G19:" >&2
+            cat /tmp/g19-status >&2
+            exit 1
+          fi
+          [ -z "$(git -C /tmp/g19-target status --porcelain)" ]
+          CURRENT_MAIN="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          [ "$CURRENT_MAIN" = "$G19_EXPECTED_MAIN" ]
+
+      - name: Validate cycle semantics
+        run: |
+          node <<'NODE'
+          const r=require('./docs/astra/G19_REVIEW_RESULT.json'),s=require('./docs/astra/G19_STREAK_STATE.json');
+          const outcome=require('fs').readFileSync('./docs/astra/G19_RUN_OUTCOME.txt','utf8').trim();
+          if(r.status==='PASS'){
+            if(s.cleanReviewStreak!==r.cycle)throw Error('success did not increment exactly one');
+            if(!['PASS','GREEN'].includes(outcome))throw Error('invalid success outcome');
+          }else{
+            if(s.cleanReviewStreak!==0||outcome!=='FAIL')throw Error('failure did not reset streak to zero');
+          }
+          if(s.failedDestructiveReviewsInCurrentStreak!==0&&outcome!=='FAIL')throw Error('failed review retained in clean streak');
+          NODE
+
+      - name: Persist cycle result
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          [ "$REMOTE_HEAD" = "$GITHUB_SHA" ]
+          OUTCOME="$(cat docs/astra/G19_RUN_OUTCOME.txt | tr -d '\r\n')"
+          STREAK="$(node -e "process.stdout.write(String(require('./docs/astra/G19_STREAK_STATE.json').cleanReviewStreak))")"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/astra/G19_STREAK_STATE.json docs/astra/G19_DESTRUCTIVE_REVIEWS.json docs/astra/G19_REVIEW_RESULT.json docs/astra/G19_RUN_OUTCOME.txt 05_WORK_STATE.json docs/astra/WORK_STATE.json
+          if [ "$OUTCOME" = "GREEN" ]; then
+            git add docs/astra/G19_CERTIFICATION.json docs/astra/G19_FINAL_REPORT.md 04_ACCEPTANCE_GATES.json
+            git commit -m 'cert(g19): 10 consecutive clean destructive reviews GREEN [skip g19]'
+          elif [ "$OUTCOME" = "FAIL" ]; then
+            git commit -m 'cert(g19): destructive review failed; streak reset to 0 [skip g19]'
+          else
+            git commit -m "cert(g19): clean destructive review $STREAK/10"
+          fi
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Fail workflow after persisted failed review
+        shell: bash
+        run: |
+          OUTCOME="$(cat docs/astra/G19_RUN_OUTCOME.txt | tr -d '\r\n')"
+          if [ "$OUTCOME" = "FAIL" ]; then exit 1; fi
