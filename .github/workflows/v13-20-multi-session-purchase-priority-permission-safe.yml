@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: write
-  pages: write
+  pages: read # ASTRA_SINGLE_PUBLISHER: static.yml is the only Pages publisher
   id-token: write
 
 concurrency:
@@ -120,9 +120,11 @@ jobs:
           fi
 
       - name: Configure Pages
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/configure-pages@v5
 
       - name: Upload repository for Pages
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
@@ -130,7 +132,9 @@ jobs:
       - name: Deploy V13.20 attempt 1
         id: deploy1
         continue-on-error: true
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
 
       - name: Wait before deployment retry 2
         if: steps.deploy1.outcome == 'failure'
@@ -140,7 +144,9 @@ jobs:
         if: steps.deploy1.outcome == 'failure'
         id: deploy2
         continue-on-error: true
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
 
       - name: Wait before deployment retry 3
         if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
@@ -149,7 +155,9 @@ jobs:
       - name: Deploy V13.20 attempt 3
         if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         id: deploy3
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
 
       - name: Final V13.20 result
         shell: bash
