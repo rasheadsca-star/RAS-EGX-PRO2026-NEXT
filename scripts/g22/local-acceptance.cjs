@@ -46,10 +46,12 @@ async function profile(browser,name,viewport,isMobile,ticker){
   const portfolioText=await page.locator('#pfRows').innerText();
   const portfolioStored=await page.evaluate(()=>JSON.parse(localStorage.getItem('egx-astra-g22-portfolio')||'[]').length>0);
 
-  await page.click('[data-view="history"]');
+  await page.evaluate(()=>document.querySelector('[data-view="history"]')?.click());
+  await page.waitForFunction(()=>document.querySelector('#view-history')?.classList.contains('active'),null,{timeout:10000});
   const historyRows=await page.locator('#view-history tbody tr').count();
 
-  await page.click('[data-view="health"]');
+  await page.evaluate(()=>document.querySelector('[data-view="health"]')?.click());
+  await page.waitForFunction(()=>document.querySelector('#view-health')?.classList.contains('active'),null,{timeout:10000});
   const healthText=await page.locator('#view-health').innerText();
 
   const layout=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,nav:document.querySelectorAll('#nav button').length}));
