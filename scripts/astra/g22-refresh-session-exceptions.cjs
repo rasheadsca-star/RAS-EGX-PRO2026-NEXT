@@ -58,10 +58,15 @@ async function main(){
   const expected=dateOnly(truth.expectedSession);
   if(!expected)throw new Error('expected_session_missing');
   const marketByTicker=new Map((market.rows||[]).map(r=>[norm(r.ticker||r.symbol||r.code),r]));
+  const reviewed=read('data/g22-reviewed-session-exceptions-'+expected+'.json',{expectedSession:null,records:[]});
+  const reviewedRecords=dateOnly(reviewed.expectedSession)===expected?(reviewed.records||[]):[];
+  const mergedRaw=new Map();
+  for(const raw of (base.records||[])) mergedRaw.set(norm(raw.ticker),raw);
+  for(const raw of reviewedRecords) mergedRaw.set(norm(raw.ticker),raw);
   const records=[];
   const audit=[];
 
-  for(const raw of (base.records||[])){
+  for(const raw of mergedRaw.values()){
     const ticker=norm(raw.ticker);
     const mapEntry=Array.isArray(symbols)?symbols.find(x=>norm(x.ticker)===ticker):symbols[ticker];
     if(!ticker||!mapEntry||mapEntry.active===false)continue;
