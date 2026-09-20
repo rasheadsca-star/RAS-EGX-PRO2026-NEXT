@@ -2,9 +2,9 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "G18_PENDING",
-  "current_gate": "G18",
-  "last_green_gate": "G17",
+  "current_phase": "G19_PENDING",
+  "current_gate": "G19",
+  "last_green_gate": "G18",
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -26,7 +26,8 @@
     "G14 GREEN: complete Astra unit/integration/regression suite passed with zero failed/cancelled/todo tests, no unexpected skips, all dedicated architecture files syntax-clean, and zero legacy runtime dependencies.",
     "G15 GREEN: real Chromium desktop/mobile smoke passed on the standalone Astra local decision surface with persisted DecisionSnapshot truth, same-origin-only requests, zero legacy runtime dependencies and an explicit fail-closed outage scenario.",
     "G16 GREEN: standalone Astra runtime deployed to an isolated GitHub Pages production path; runtime and persisted decision truth verified byte-exact, Pages build uses vendored SEPA-X with no cross-branch build dependency, and no public/legacy cutover occurred.",
-    "G17 GREEN: the isolated Astra GitHub Pages production surface passed live Chromium verification on production root, desktop and mobile; runtime and persisted decision truth remained byte-exact, requests remained same-origin only, and the live resource-outage scenario failed closed without any public/legacy cutover."
+    "G17 GREEN: the isolated Astra GitHub Pages production surface passed live Chromium verification on production root, desktop and mobile; runtime and persisted decision truth remained byte-exact, requests remained same-origin only, and the live resource-outage scenario failed closed without any public/legacy cutover.",
+    "G18 GREEN: legacy-off cutover was simulated only in an in-memory local routing harness; all 8 legacy families were disabled, Astra passed desktop/mobile and fail-closed checks, rollback restored the baseline root byte-exactly, main was unchanged, and no production cutover occurred."
   ],
   "completed_gates": [
     "G01",
@@ -45,7 +46,8 @@
     "G14",
     "G15",
     "G16",
-    "G17"
+    "G17",
+    "G18"
   ],
   "failed_gates": [],
   "clean_review_streak": 0,
@@ -92,8 +94,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Begin G18 legacy-off cutover simulation only. Do not perform a real legacy/public cutover.",
-  "last_updated": "2026-09-19T23:16:19.877Z",
+  "next_action": "Begin G19 only: execute 10 consecutive clean destructive reviews. Do not perform a real production cutover.",
+  "last_updated": "2026-09-20T08:44:48.860Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -341,5 +343,24 @@
     "runtimeLegacyDependencyCount": 0,
     "g01ThroughG16Regression": "PASS",
     "productionCutover": false
+  },
+  "g18_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35500328897,
+    "sourceCommit": "3dcbc0395fbb8fdabb51ac5eecd5ef7ddaf09b10",
+    "simulationMode": "IN_MEMORY_LOCAL_ROUTING_ONLY",
+    "productionMain": "3ce76f81426885dae34ab9e921edba9975f35d52",
+    "legacyFamiliesDisabled": "8/8",
+    "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+    "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+    "desktop": "PASS",
+    "mobile": "PASS",
+    "failClosedScenario": "PASS",
+    "rollbackByteExact": true,
+    "externalRequests": 0,
+    "runtimeLegacyDependencyCount": 0,
+    "runtimeExternalReferences": 0,
+    "productionCutover": false,
+    "g19Increment": 0
   }
 }

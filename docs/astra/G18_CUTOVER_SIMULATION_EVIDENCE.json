@@ -1,0 +1,192 @@
+{
+  "schemaVersion": "astra-g18-legacy-off-cutover-simulation-1",
+  "generatedAt": "2026-09-20T08:44:48.270Z",
+  "sourceHead": "3dcbc0395fbb8fdabb51ac5eecd5ef7ddaf09b10",
+  "workflowRunId": 35500328897,
+  "status": "PASS",
+  "checks": {
+    "sourceHead": true,
+    "chromium": true,
+    "g01to17": true,
+    "g18Pending": true,
+    "g19Pending": true,
+    "stateAligned": true,
+    "g17Green": true,
+    "mainPinned": true,
+    "eightClosed": true,
+    "zeroLegacy": true,
+    "noForbiddenRefs": true,
+    "truthSafe": true,
+    "baselinePreserved": true,
+    "desktopPass": true,
+    "mobilePass": true,
+    "allLegacyDisabled": true,
+    "failClosedPass": true,
+    "rollbackExact": true,
+    "simulationOnly": true,
+    "productionCutoverFalse": true
+  },
+  "failedChecks": [],
+  "production": {
+    "mainHeadBefore": "3ce76f81426885dae34ab9e921edba9975f35d52",
+    "expectedMainHead": "3ce76f81426885dae34ab9e921edba9975f35d52",
+    "mutated": false
+  },
+  "baseline": {
+    "rootSha256": "a525a32bf3844648bb1d7e42c42a92c533fce7368fcb29f7b02561d2f23c8920",
+    "checks": {
+      "status200": true,
+      "hashExact": true
+    }
+  },
+  "cutoverSimulation": {
+    "mode": "IN_MEMORY_LOCAL_ROUTING_ONLY",
+    "rootTarget": "/astra-prod/runtime/v18/index.html",
+    "legacyDependencyIds": [
+      "R01_V18_REMOTE_SHELL_RAW",
+      "R02_V18_REMOTE_SHELL_JSDELIVR",
+      "R03_V19_REMOTE_CHALLENGER",
+      "R04_V20_NATIVE_PAGES",
+      "R05_QUANT_EDGE_API",
+      "R06_SEPA_X_STABLE_API",
+      "R07_RC2_VERCEL_PROXY",
+      "R08_SEPA_BRANCH_BUILD_IMPORT"
+    ],
+    "legacyRoutes": [
+      {
+        "route": "/v18-live/legacy-remote-shell",
+        "status": 410,
+        "disabled": true
+      },
+      {
+        "route": "/legacy/v19-remote-challenger",
+        "status": 410,
+        "disabled": true
+      },
+      {
+        "route": "/legacy/v20-native-pages",
+        "status": 410,
+        "disabled": true
+      },
+      {
+        "route": "/legacy/quant-edge-api",
+        "status": 410,
+        "disabled": true
+      },
+      {
+        "route": "/legacy/sepa-x-api",
+        "status": 410,
+        "disabled": true
+      },
+      {
+        "route": "/deploy/rc2-safe-shell/legacy-proxy",
+        "status": 410,
+        "disabled": true
+      },
+      {
+        "route": "/legacy/sepa-cross-branch-build",
+        "status": 410,
+        "disabled": true
+      }
+    ],
+    "prohibitedHostReferences": [],
+    "desktop": {
+      "status": "PASS",
+      "checks": {
+        "finalRuntimePath": true,
+        "ready": true,
+        "id": true,
+        "hash": true,
+        "noRealCutover": true,
+        "zeroExternal": true,
+        "zeroPageErrors": true,
+        "zeroBad": true,
+        "noOverflow": true
+      },
+      "failedChecks": [],
+      "view": {
+        "status": "DECISION_SNAPSHOT_READY",
+        "id": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+        "h": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+        "iso": "LOCAL_ARTIFACTS_ONLY · productionCutover=false",
+        "sw": 1440,
+        "cw": 1440
+      },
+      "externalRequests": [],
+      "pageErrors": [],
+      "badResponses": []
+    },
+    "mobile": {
+      "status": "PASS",
+      "checks": {
+        "finalRuntimePath": true,
+        "ready": true,
+        "id": true,
+        "hash": true,
+        "noRealCutover": true,
+        "zeroExternal": true,
+        "zeroPageErrors": true,
+        "zeroBad": true,
+        "noOverflow": true
+      },
+      "failedChecks": [],
+      "view": {
+        "status": "DECISION_SNAPSHOT_READY",
+        "id": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+        "h": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+        "iso": "LOCAL_ARTIFACTS_ONLY · productionCutover=false",
+        "sw": 390,
+        "cw": 390
+      },
+      "externalRequests": [],
+      "pageErrors": [],
+      "badResponses": []
+    },
+    "failClosed": {
+      "status": "PASS",
+      "checks": {
+        "finalRuntimePath": true,
+        "failClosed": true,
+        "zeroExternal": true,
+        "zeroPageErrors": true,
+        "expected503": true
+      },
+      "failedChecks": [],
+      "view": {
+        "status": "FAIL-CLOSED",
+        "id": "—",
+        "h": "—",
+        "iso": "LOCAL_ARTIFACTS_ONLY · productionCutover=false",
+        "sw": 1440,
+        "cw": 1440
+      },
+      "externalRequests": [],
+      "pageErrors": [],
+      "badResponses": [
+        {
+          "url": "http://127.0.0.1:33397/docs/astra/G11_CURRENT_PIPELINE_RUN.json",
+          "status": 503
+        }
+      ]
+    }
+  },
+  "rollback": {
+    "rootSha256": "a525a32bf3844648bb1d7e42c42a92c533fce7368fcb29f7b02561d2f23c8920",
+    "checks": {
+      "status200": true,
+      "baselineHashRestored": true
+    }
+  },
+  "strictLegacyScan": {
+    "clean": true,
+    "runtimeLegacyDependencyCount": 0,
+    "matches": 0
+  },
+  "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+  "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+  "externalRequests": 0,
+  "runtimeLegacyDependencyCount": 0,
+  "runtimeExternalReferences": 0,
+  "productionCutover": false,
+  "g19Increment": 0
+}
