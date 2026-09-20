@@ -81,7 +81,9 @@ async function profile(browser,name,viewport,isMobile,ticker){
   const preChecks={
     sourceHeadProvided:Boolean(SOURCE_HEAD),
     chromeProvided:Boolean(CHROME_BIN),
-    exactRebuild:data.integrity?.rebuildExact===true,
+    exactSemanticRebuild:data.integrity?.decisionSemanticRebuildExact===true,
+    normalizedObjectDeterministic:data.integrity?.normalizedObjectDeterministic===true,
+    persistedObjectHashPreserved:data.integrity?.persistedObjectHashPreserved===true,
     decisionIdMatches:data.sourceDecision?.decisionSnapshotId===baseline.decisionSnapshotId,
     semanticHashMatches:data.sourceDecision?.semanticDecisionHash===baseline.semanticDecisionHash,
     zeroLegacyNetworkCalls:data.integrity?.zeroLegacyNetworkCalls===true,
@@ -121,7 +123,8 @@ async function profile(browser,name,viewport,isMobile,ticker){
     fs.writeFileSync(path.join(ROOT,'docs/astra/G22_LOCAL_UI_REPORT.md'),[
       '# G22 Full Application Local Acceptance','',
       '- Status: **PASS**',
-      '- DecisionSnapshot exact rebuild: **PASS**',
+      '- DecisionSnapshot semantic identity exact: **PASS**',
+      '- Normalized DecisionSnapshot deterministic: **PASS**',
       '- Recommendations rendered: **'+evidence.recommendations+'**',
       '- Desktop Chromium: **PASS**',
       '- Mobile Chromium: **PASS**',
