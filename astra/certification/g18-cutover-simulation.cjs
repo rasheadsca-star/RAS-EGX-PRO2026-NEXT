@@ -52,9 +52,9 @@ async function scenario(browser,base,mobile,failClosed){
  await page.waitForFunction(()=>document.querySelector('#status')?.textContent!=='جارٍ التحميل',null,{timeout:15000});
  const v=await page.evaluate(()=>({status:document.querySelector('#status')?.textContent||'',id:document.querySelector('#snapshotId')?.textContent||'',h:document.querySelector('#snapshotHash')?.textContent||'',iso:document.querySelector('#isolation')?.textContent||'',sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
  const c=failClosed?{
-  rootRedirected:Boolean(nav&&nav.status()===302),failClosed:v.status==='FAIL-CLOSED',zeroExternal:external.length===0,zeroPageErrors:errors.length===0,expected503:bad.some(x=>x.status===503)
+  finalRuntimePath:new URL(page.url()).pathname.endsWith('/astra-prod/runtime/v18/index.html'),failClosed:v.status==='FAIL-CLOSED',zeroExternal:external.length===0,zeroPageErrors:errors.length===0,expected503:bad.some(x=>x.status===503)
  }:{
-  rootRedirected:Boolean(nav&&nav.status()===302),ready:v.status===t.p.status,id:v.id===t.p.decisionSnapshotId,hash:v.h===t.p.semanticDecisionHash,noRealCutover:/productionCutover=false/.test(v.iso),zeroExternal:external.length===0,zeroPageErrors:errors.length===0,zeroBad:bad.length===0,noOverflow:v.sw<=v.cw+1
+  finalRuntimePath:new URL(page.url()).pathname.endsWith('/astra-prod/runtime/v18/index.html'),ready:v.status===t.p.status,id:v.id===t.p.decisionSnapshotId,hash:v.h===t.p.semanticDecisionHash,noRealCutover:/productionCutover=false/.test(v.iso),zeroExternal:external.length===0,zeroPageErrors:errors.length===0,zeroBad:bad.length===0,noOverflow:v.sw<=v.cw+1
  };
  const out={status:fails(c).length?'FAIL':'PASS',checks:c,failedChecks:fails(c),view:v,externalRequests:external,pageErrors:errors,badResponses:bad};await ctx.close();return out
 }
