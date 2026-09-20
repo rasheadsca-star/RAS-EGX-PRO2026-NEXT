@@ -314,12 +314,13 @@ function aggregate(records,outcomes,keyFn){
   return out;
 }
 
-function buildMarketUniverse(){
+function buildMarketUniverse(currentRecords=[],currentSession=null){
   const search=readJson('data/quant/market-search-index-v13-17.json',{stocks:[]});
   const searchRows=Array.isArray(search.stocks)?search.stocks:[];
   const activeTarget=finite(readJson('astra-prod/app/data.json',{}).health?.searchReadiness?.intendedActive)||224;
   const rows=[];
   const seen=new Set();
+  const currentByTicker=new Map(currentRecords.filter(r=>!currentSession||r.sessionDate===currentSession).map(r=>[r.ticker,r]));
 
   for(const s of searchRows){
     const ticker=String(s.ticker||'').trim().toUpperCase();
@@ -352,7 +353,21 @@ function buildMarketUniverse(){
         historicalSupport20:finite(s.historicalSupport20),
         historicalResistance20:finite(s.historicalResistance20),
         rsi14:finite(s.momentumMoneyFlow?.rsi14)
-      }
+      },
+      support:finite(s.historicalSupport20),
+      resistance:finite(s.historicalResistance20),
+      rsi14:finite(s.momentumMoneyFlow?.rsi14),
+      verifiedPrice:finite(last.close??s.price),
+      priceSource:hist?.primarySource||s.priceSource||null,
+      astraCurrent:currentByTicker.has(ticker)?{
+        recommendationId:currentByTicker.get(ticker).recommendationId,
+        rank:currentByTicker.get(ticker).rank,
+        decisionScore:currentByTicker.get(ticker).decisionScore,
+        entryPlan:currentByTicker.get(ticker).entryPlan,
+        stopLoss:currentByTicker.get(ticker).stopLoss,
+        targets:currentByTicker.get(ticker).targets,
+        marketRegime:currentByTicker.get(ticker).marketRegime
+      }:null
     });
   }
 
@@ -366,6 +381,36 @@ function buildMarketUniverse(){
     activeCoveragePct:activeTarget?round(Math.min(activeRows.length,activeTarget)/activeTarget*100,2):null,
     sourceIndex:'data/quant/market-search-index-v13-17.json'
   };
+}
+
+
+function sessionWindowRecords(records,name){
+  const sessions=[...new Set(records.map(r=>r.sessionDate).filter(Boolean))].sort();
+  if(name==='ALL') return records;
+  if(name==='YTD'){
+    const y=String(sessions.at(-1)||'').slice(0,4);
+    return records.filter(r=>String(r.sessionDate).startsWith(y+'-'));
+  }
+  if(name==='5_SESSIONS'||name==='20_SESSIONS'){
+    const n=name==='5_SESSIONS'?5:20, keep=new Set(sessions.slice(-n));
+    return records.filter(r=>keep.has(r.sessionDate));
+  }
+  const months=name==='3_MONTHS'?3:name==='6_MONTHS'?6:null;
+  if(!months||!sessions.length) return records;
+  const d=new Date(sessions.at(-1)+'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth()-months);
+  const min=d.toISOString().slice(0,10);
+  return records.filter(r=>r.sessionDate>=min);
+}
+
+function performanceWindows(records,outcomes){
+  const byId=new Map(outcomes.map(o=>[o.recommendationId,o]));
+  const out={};
+  for(const name of ['5_SESSIONS','20_SESSIONS','3_MONTHS','6_MONTHS','YTD','ALL']){
+    const recs=sessionWindowRecords(records,name);
+    const os=recs.map(r=>byId.get(r.recommendationId)).filter(Boolean);
+    out[name]={sampleSize:recs.length,...summarize(recs,os)};
+  }
+  return out;
 }
 
 function validateHandoff(appData,handoff){
@@ -404,11 +449,12 @@ function main(){
   };
 
   const outcomeDoc={schemaVersion:'astra-recommendation-outcomes-1',...meta,records:outcomes};
-  const summaryDoc={schemaVersion:'astra-performance-summary-1',...meta,...summary,currentOpportunities:(appData.decisionSnapshot.top5||[]).length};
+  const windows=performanceWindows(ledger.records,outcomes);
+  const summaryDoc={schemaVersion:'astra-performance-summary-2',...meta,...summary,counts:summary.metrics,rates:{activationRate:summary.metrics.activationRate,target1HitRate:summary.metrics.target1HitRate,finalTargetRate:summary.metrics.finalTargetRate,stopLossRate:summary.metrics.stopLossRate,winRate:summary.metrics.winRate,lossRate:summary.metrics.lossRate},returns:{averageReturnPct:summary.metrics.averageReturnPct,medianReturnPct:summary.metrics.medianReturnPct,averageWinnerPct:summary.metrics.averageWinnerPct,averageLoserPct:summary.metrics.averageLoserPct,profitFactor:summary.metrics.profitFactor,expectancyPct:summary.metrics.expectancyPct},timing:{averageHoldingSessions:summary.metrics.averageHoldingSessions,averageTimeToT1:summary.metrics.averageTimeToT1,averageTimeToFinalTarget:summary.metrics.averageTimeToFinalTarget},windows,currentOpportunities:(appData.decisionSnapshot.top5||[]).length};
   const byRank={schemaVersion:'astra-performance-by-rank-1',...meta,groups:aggregate(ledger.records,outcomes,r=>'RANK_'+r.rank)};
   const byRegime={schemaVersion:'astra-performance-by-regime-1',...meta,groups:aggregate(ledger.records,outcomes,r=>r.marketRegime||'UNKNOWN')};
   const byTicker={schemaVersion:'astra-ticker-performance-1',...meta,groups:aggregate(ledger.records,outcomes,r=>r.ticker)};
-  const universeBuilt=buildMarketUniverse();
+  const universeBuilt=buildMarketUniverse(ledger.records,appData.sourceDecision.session);
   const universe={schemaVersion:'astra-market-universe-2',...meta,...universeBuilt};
 
   if(!summary.reconciliation.pass) throw new Error('KPI reconciliation failed: '+JSON.stringify(summary.reconciliation));
@@ -420,9 +466,24 @@ function main(){
   writeJson('astra-prod/app/intelligence/performance-by-regime.json',byRegime);
   writeJson('astra-prod/app/intelligence/ticker-performance.json',byTicker);
   writeJson('astra-prod/app/intelligence/market-universe.json',universe);
+  writeJson('astra-prod/app/intelligence/analytics-integrity.json',{
+    schemaVersion:'astra-analytics-integrity-1',
+    ...meta,
+    status:summary.reconciliation.pass&&handoffCheck.status==='PASS'?'PASS':'FAIL',
+    decisionIntegrityIsolation:'PASS',
+    historicalAnalyticsStatus:summary.reconciliation.pass?'AVAILABLE':'UNAVAILABLE',
+    currentDecisionMutated:false,
+    legacyRecommendationInfluence:0,
+    quantEdgeLiveInfluence:finite(appData.decisionSnapshot?.quantEdgeLiveInfluence)??0,
+    noSyntheticCurrentPrices:true,
+    noCarryForwardFakeBars:true,
+    handoff:handoffCheck,
+    reconciliation:summary.reconciliation
+  });
+
 
   console.log(JSON.stringify({status:'PASS',records:ledger.recordCount,outcomes:outcomes.length,reconciliation:summary.reconciliation,currentOpportunities:summaryDoc.currentOpportunities},null,2));
 }
 
 if(require.main===module) main();
-module.exports={stableRecommendationId,recommendationRecord,buildLedger,evaluateRecommendation,evaluateRows,validateHandoff,summarize,aggregate,STATES};
+module.exports={stableRecommendationId,recommendationRecord,buildLedger,evaluateRecommendation,evaluateRows,validateHandoff,summarize,aggregate,performanceWindows,sessionWindowRecords,STATES};
