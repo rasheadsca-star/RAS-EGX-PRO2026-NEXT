@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: astra-g22-postclose-refresh
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   refresh:
@@ -26,7 +26,7 @@ jobs:
       - name: Checkout current production
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
