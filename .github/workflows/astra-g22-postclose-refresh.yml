@@ -1,0 +1,134 @@
+name: Astra G22 Post-Close Session Refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 13 * * 0-4'
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/astra-g22-postclose-refresh.yml'
+      - 'scripts/astra/g22-postclose-refresh.cjs'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout current production
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate refresh implementation
+        run: |
+          set -euo pipefail
+          node --check scripts/astra/g22-postclose-refresh.cjs
+          node --check astra/data-health/g11-data-health.cjs
+          node --check astra/pipeline/g09-unified-decision-pipeline.cjs
+
+      - name: Rebuild current post-close DecisionSnapshot
+        run: |
+          set -euo pipefail
+          node scripts/astra/g22-postclose-refresh.cjs | tee /tmp/g22-refresh.log
+          grep -q '^G22_POST_CLOSE_REFRESH ' /tmp/g22-refresh.log
+
+      - name: Verify publication consistency
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const app=read('astra-prod/app/data.json');
+          const manifest=read('astra-prod/G22_FULL_APP_MANIFEST.json');
+          const audit=read('astra-prod/G22_SESSION_REFRESH.json');
+          const price=read('data/stable/v15-price-truth.json');
+          const s=price.expectedSession;
+          const ok=(c,m)=>{if(!c)throw new Error(m)};
+          ok(app.sourceDecision.session===s,'app session mismatch');
+          ok(app.decisionSnapshot.sessionDate===s,'snapshot session mismatch');
+          ok(app.decisionSnapshot.asOfSessionDate===s,'snapshot as-of mismatch');
+          ok(app.sourceDecision.decisionSnapshotId===app.decisionSnapshot.decisionSnapshotId,'app snapshot id mismatch');
+          ok(app.sourceDecision.semanticDecisionHash===app.decisionSnapshot.semanticDecisionHash,'app semantic hash mismatch');
+          ok(manifest.decisionSnapshotId===app.sourceDecision.decisionSnapshotId,'manifest snapshot mismatch');
+          ok(manifest.semanticDecisionHash===app.sourceDecision.semanticDecisionHash,'manifest semantic hash mismatch');
+          ok(manifest.currentSession===s,'manifest session mismatch');
+          ok(audit.session.decision===s&&audit.session.available===s,'audit session mismatch');
+          ok(audit.health.criticalUnresolved===0&&audit.health.highUnresolved===0,'material health issue present');
+          ok(app.health.guardStatus==='PASS','app guard not PASS');
+          ok(manifest.productionCutover===true,'production cutover regressed');
+          ok(manifest.certifiedRuntimeBundleMutated===false,'certified runtime bundle mutated');
+          ok(Array.isArray(app.decisionSnapshot.top5)&&app.decisionSnapshot.top5.length<=5,'top5 invalid');
+          console.log('G22_REFRESH_CONSISTENCY_PASS',JSON.stringify({
+            session:s,
+            snapshotId:app.sourceDecision.decisionSnapshotId,
+            recommendations:app.decisionSnapshot.top5.map(x=>x.ticker)
+          }));
+          NODE
+
+      - name: Persist refreshed Full App data
+        id: persist
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
+            echo "main advanced during refresh; refusing stale publication"
+            exit 1
+          }
+          git add astra-prod/app/data.json astra-prod/G22_FULL_APP_MANIFEST.json astra-prod/G22_SESSION_REFRESH.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "G22_REFRESH_NO_CHANGE"
+          else
+            git commit -m 'data(g22): refresh post-close Astra session'
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload refreshed production tree
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: Deploy refreshed Full App
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Publication summary
+        run: |
+          node <<'NODE'
+          const a=require('./astra-prod/G22_SESSION_REFRESH.json');
+          console.log('ASTRA_G22_POST_CLOSE_PUBLISHED '+JSON.stringify({
+            session:a.session.decision,
+            status:a.decision.status,
+            decisionSnapshotId:a.decision.decisionSnapshotId,
+            opportunities:a.decision.opportunities,
+            tickers:a.decision.tickers,
+            currentCanonical:a.health.currentCanonical.numerator+'/'+a.health.currentCanonical.denominator,
+            critical:a.health.criticalUnresolved,
+            high:a.health.highUnresolved,
+            productionCutover:a.productionCutover
+          }));
+          NODE
