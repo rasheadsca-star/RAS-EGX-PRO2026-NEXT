@@ -56,6 +56,8 @@ function recommendationRecord(appData,handoff,opportunity){
     sessionDate:ds.sessionDate,
     decisionTimestamp:appData.sourceDecision.refreshedAt||appData.generatedAt||null,
     effectiveFromSession:effective,
+    effectiveFromPolicy:'NEXT_FINALIZED_SESSION_AFTER_DECISION',
+    effectiveFromStatus:effective?'RESOLVED':'PENDING_NEXT_FINALIZED_SESSION',
     rank:opportunity.rank,
     decisionScore:finite(opportunity.decisionScore??opportunity.ranking?.score),
     entryPlan:{

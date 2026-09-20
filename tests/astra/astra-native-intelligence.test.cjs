@@ -136,3 +136,18 @@ test('KPI rates carry explicit denominator labels and reconcile expiry/cancelled
   assert.equal(s.metrics.activationRate.denominatorLabel,'Issued');
   assert.equal(s.metrics.winRate.denominatorLabel,'Closed Resolved Trades');
 });
+
+
+test('effective session policy is explicit without inventing a future session',()=>{
+  const app={
+    generatedAt:'2026-09-20T15:00:00Z',
+    sourceDecision:{decisionSnapshotId:'G09-DS-aaaaaaaaaaaaaaaaaaaaaaaa',semanticDecisionHash:'b'.repeat(64)},
+    decisionSnapshot:{decisionSnapshotId:'G09-DS-aaaaaaaaaaaaaaaaaaaaaaaa',semanticDecisionHash:'b'.repeat(64),sessionDate:'2099-01-01',top5:[{ticker:'ABUK',rank:1,decisionScore:1,entryPlan:{low:1,high:2},stopLoss:.5,targets:[3]}]}
+  };
+  const h={canonicalDataHead:'a'.repeat(40),materialFingerprint:'b'.repeat(64),producerRunId:1};
+  const ledger=mod.buildLedger(app,h,{records:[]});
+  const rec=ledger.records[0];
+  assert.equal(rec.effectiveFromSession,null);
+  assert.equal(rec.effectiveFromPolicy,'NEXT_FINALIZED_SESSION_AFTER_DECISION');
+  assert.equal(rec.effectiveFromStatus,'PENDING_NEXT_FINALIZED_SESSION');
+});

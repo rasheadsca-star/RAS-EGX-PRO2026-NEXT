@@ -1,0 +1,133 @@
+name: Astra Development Final Certification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop/post-g20-20260920
+    paths:
+      - 'scripts/astra/native/**'
+      - 'tests/astra/astra-native-*.cjs'
+      - 'tests/astra/astra-developer-critic-review.cjs'
+      - 'astra-prod/app/**'
+      - 'docs/astra/development/**'
+      - '.github/workflows/astra-development-*.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-development-final-certification
+  cancel-in-progress: true
+
+env:
+  FROZEN_BRANCH: frozen/production-20260920-c6e8b21
+  FROZEN_HEAD: c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Assert development-only boundary and frozen snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "develop/post-g20-20260920"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH"
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+
+          # Immutable production/decision inputs must be byte-identical to the frozen snapshot.
+          git diff --exit-code "origin/$FROZEN_BRANCH"...HEAD --             04_ACCEPTANCE_GATES.json             05_WORK_STATE.json             docs/astra/WORK_STATE.json             data/ops/g22-main-app-handoff.json             astra-prod/app/data.json             index.html             manifest.json             service-worker.js
+
+          # Existing production workflows are not allowed to be modified in this development task.
+          mapfile -t changed_wf < <(git diff --name-only "origin/$FROZEN_BRANCH"...HEAD -- .github/workflows)
+          for f in "${changed_wf[@]}"; do
+            case "$f" in
+              .github/workflows/astra-development-*.yml) ;;
+              *) echo "Unauthorized existing workflow mutation: $f"; exit 1 ;;
+            esac
+          done
+
+      - name: Assert development workflows cannot publish production
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in .github/workflows/astra-development-*.yml; do
+            ! grep -Eiq 'actions/deploy-pages@|pages:[[:space:]]*write|git push[^\n]*main|update_ref[^\n]*main' "$f"
+          done
+
+      - name: Rebuild deterministic Astra-native artifacts
+        run: |
+          node scripts/astra/native/workflow-inventory.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          git diff --exit-code -- astra-prod/app/intelligence docs/astra/development/WORKFLOW_INVENTORY.json
+
+      - name: Core Astra-native regression
+        run: node --test tests/astra/astra-native-intelligence.test.cjs
+
+      - name: Ten Developer Critic cycles on this exact HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          for cycle in $(seq 1 10); do
+            echo "=== Developer/Critic Cycle $cycle ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+          done
+
+      - name: Validate persisted accounting and universe
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const j=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const u=j('astra-prod/app/intelligence/market-universe.json');
+          const p=j('astra-prod/app/intelligence/performance-summary.json');
+          const l=j('astra-prod/app/intelligence/recommendation-ledger.json');
+          const o=j('astra-prod/app/intelligence/recommendation-outcomes.json');
+          if(u.activeCount!==224||u.intendedActive!==224||new Set(u.records.map(x=>x.ticker)).size!==224) throw Error('Certified active universe mismatch');
+          if(!p.reconciliation?.pass) throw Error('KPI reconciliation failed');
+          if(l.recordCount!==l.records.length||o.records.length!==l.records.length) throw Error('Ledger/outcome accounting mismatch');
+          for(const r of l.records){
+            if(r.effectiveFromPolicy!=='NEXT_FINALIZED_SESSION_AFTER_DECISION') throw Error('Missing explicit effective-session policy');
+            if(r.effectiveFromSession===null&&r.effectiveFromStatus!=='PENDING_NEXT_FINALIZED_SESSION') throw Error('Invalid pending effective-session status');
+          }
+          console.log({universe:u.activeCount,ledger:l.recordCount,outcomes:o.records.length,reconciliation:p.reconciliation.pass});
+          NODE
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Final six-profile browser certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/astra-final-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break || sleep 1; done
+          ASTRA_DEV_BASE=http://127.0.0.1:4173 node tests/astra/astra-native-browser-smoke.cjs
+
+      - name: Final immutability check
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
