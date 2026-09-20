@@ -11,7 +11,7 @@ const writeJson=(rel,value)=>{fs.mkdirSync(path.dirname(P(rel)),{recursive:true}
 const sha256=value=>crypto.createHash('sha256').update(typeof value==='string'?value:JSON.stringify(value)).digest('hex');
 const dateOnly=v=>(String(v||'').match(/^\d{4}-\d{2}-\d{2}/)||[])[0]||null;
 const finite=v=>Number.isFinite(Number(v))?Number(v):null;
-const round=(v,n=4)=>Number.isFinite(Number(v))?Number(Number(v).toFixed(n)):null;
+const round=(v,n=4)=>v!==null&&v!==undefined&&v!==''&&Number.isFinite(Number(v))?Number(Number(v).toFixed(n)):null;
 const STATES=new Set(['ISSUED','WAITING_FOR_ENTRY','ENTRY_ACTIVATED','OPEN','TARGET_1_HIT','TARGET_2_HIT','FINAL_TARGET_HIT','STOP_LOSS_HIT','EXPIRED','CLOSED','AMBIGUOUS_INTRADAY_PATH','CANCELLED_BY_GOVERNANCE']);
 
 function stableRecommendationId(snapshot,opportunity){
@@ -294,28 +294,57 @@ function aggregate(records,outcomes,keyFn){
 }
 
 function buildMarketUniverse(){
-  const dir=P('data/history');
-  const files=fs.existsSync(dir)?fs.readdirSync(dir).filter(x=>x.endsWith('.json')):[];
+  const search=readJson('data/quant/market-search-index-v13-17.json',{stocks:[]});
+  const searchRows=Array.isArray(search.stocks)?search.stocks:[];
+  const activeTarget=finite(readJson('astra-prod/app/data.json',{}).health?.searchReadiness?.intendedActive)||224;
   const rows=[];
-  for(const file of files){
-    const doc=readJson('data/history/'+file,{});
-    const sessions=Array.isArray(doc.sessions)?doc.sessions:[];
+  const seen=new Set();
+
+  for(const s of searchRows){
+    const ticker=String(s.ticker||'').trim().toUpperCase();
+    if(!ticker||seen.has(ticker)) continue;
+    seen.add(ticker);
+    const hist=readJson('data/history/'+ticker+'.json',null);
+    const sessions=Array.isArray(hist?.sessions)?hist.sessions:[];
     const last=sessions.at(-1)||{};
     rows.push({
-      ticker:doc.ticker||file.replace(/\.json$/,''),
-      companyNameAr:doc.companyNameAr||null,
-      companyNameEn:doc.companyNameEn||null,
-      isin:doc.isin||null,
-      active:doc.historyStatus!=='delisted',
-      price:finite(last.close),
-      priceSession:dateOnly(last.date||last.sessionDate),
-      volume:finite(last.volume),
+      ticker,
+      companyNameAr:s.companyNameAr||hist?.companyNameAr||null,
+      companyNameEn:s.companyNameEn||hist?.companyNameEn||null,
+      isin:s.isin||hist?.isin||null,
+      aliases:Array.isArray(s.aliases)?s.aliases:[],
+      searchText:s.searchText||[ticker,s.companyNameAr,s.companyNameEn,s.isin].filter(Boolean).join(' '),
+      active:s.active!==false,
+      price:finite(last.close??s.price),
+      priceSession:dateOnly(last.date||last.sessionDate||s.updatedAt),
+      changePct:finite(s.changePct),
+      volume:finite(last.volume??s.volume),
+      liquidity:finite(s.turnover),
+      historyAvailable:s.historyAvailable===true||sessions.length>0,
       historySessions:sessions.length,
-      primarySource:doc.primarySource||null,
-      freshness:doc.staleData===true?'STALE':'AVAILABLE'
+      primarySource:hist?.primarySource||s.priceSource||null,
+      freshness:hist?.staleData===true?'STALE':(last.date||s.price?'AVAILABLE':'UNAVAILABLE'),
+      displayOnlyLegacyAnalytics:{
+        technicalRank:finite(s.technicalRank),
+        tier:s.tier||null,
+        decisionCode:s.decisionCode||null,
+        historicalSupport20:finite(s.historicalSupport20),
+        historicalResistance20:finite(s.historicalResistance20),
+        rsi14:finite(s.momentumMoneyFlow?.rsi14)
+      }
     });
   }
-  return rows.sort((a,b)=>a.ticker.localeCompare(b.ticker));
+
+  // Search index may include inactive/temporary listings. Preserve the full
+  // searchable index but expose activeCount explicitly; never fabricate rows.
+  const activeRows=rows.filter(x=>x.active!==false);
+  return {
+    records:rows.sort((a,b)=>a.ticker.localeCompare(b.ticker)),
+    activeCount:activeRows.length,
+    intendedActive:activeTarget,
+    activeCoveragePct:activeTarget?round(Math.min(activeRows.length,activeTarget)/activeTarget*100,2):null,
+    sourceIndex:'data/quant/market-search-index-v13-17.json'
+  };
 }
 
 function main(){
@@ -343,7 +372,8 @@ function main(){
   const byRank={schemaVersion:'astra-performance-by-rank-1',...meta,groups:aggregate(ledger.records,outcomes,r=>'RANK_'+r.rank)};
   const byRegime={schemaVersion:'astra-performance-by-regime-1',...meta,groups:aggregate(ledger.records,outcomes,r=>r.marketRegime||'UNKNOWN')};
   const byTicker={schemaVersion:'astra-ticker-performance-1',...meta,groups:aggregate(ledger.records,outcomes,r=>r.ticker)};
-  const universe={schemaVersion:'astra-market-universe-1',...meta,records:buildMarketUniverse()};
+  const universeBuilt=buildMarketUniverse();
+  const universe={schemaVersion:'astra-market-universe-2',...meta,...universeBuilt};
 
   if(!summary.reconciliation.pass) throw new Error('KPI reconciliation failed: '+JSON.stringify(summary.reconciliation));
 
