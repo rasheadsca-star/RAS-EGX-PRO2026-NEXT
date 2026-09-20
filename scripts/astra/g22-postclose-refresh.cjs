@@ -63,6 +63,10 @@ function refreshSessionExceptions() {
   if (DECISION_ROOT === PROD_ROOT) return;
   const script = PROD('scripts/astra/g22-refresh-session-exceptions.cjs');
   ensure(fs.existsSync(script), 'G22 session-exception refresher unavailable');
+  const reviewDir = PROD('data');
+  for (const name of fs.readdirSync(reviewDir).filter(x => /^g22-reviewed-session-exceptions-\d{4}-\d{2}-\d{2}\.json$/.test(x))) {
+    fs.copyFileSync(PROD('data/' + name), DEC('data/' + name));
+  }
   cp.execFileSync(process.execPath, [script], {
     cwd: PROD_ROOT,
     env: { ...process.env, ASTRA_DECISION_ROOT: DECISION_ROOT, GITHUB_WORKSPACE: DECISION_ROOT },
@@ -203,7 +207,7 @@ function main() {
     sourceHead,
     certifiedBaselineHead,
     refreshedAt,
-    refreshPolicy: 'G22_POST_CLOSE_CERTIFIED_BASELINE_OPERATIONAL_REFRESH_V3',
+    refreshPolicy: 'G22_POST_CLOSE_CERTIFIED_BASELINE_OPERATIONAL_REFRESH_V4',
     refreshSource: 'G22_CERTIFIED_BASELINE + CURRENT_SESSION_PRICE_TRUTH -> CERTIFIED_G11_CONTEXT -> CERTIFIED_ASTRA_G09_PIPELINE_1',
     sourcePriceTruthGeneratedAt: priceTruth.generatedAt || null,
     certificationBaseline: baseline
