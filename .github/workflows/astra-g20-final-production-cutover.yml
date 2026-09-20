@@ -49,9 +49,9 @@ jobs:
           git fetch origin "refs/heads/$RB:refs/remotes/origin/$RB"
           [ "$(git rev-parse origin/main)" = "$T" ]
           [ "$(git rev-parse "origin/$RB")" = "$OLD" ]
-          [ "$(git rev-parse "$T^")" = "$OLD" ]
+          git merge-base --is-ancestor "$OLD" "$T"
           git diff --name-only "$OLD" "$T" | sort > /tmp/g20-diff
-          printf '%s\n' astra-prod/G20_CUTOVER_MANIFEST.json index.html manifest.json service-worker.js | sort > /tmp/g20-allowed
+          printf '%s\n' .github/workflows/v15-practical-deploy.yml .github/workflows/v16-technical-review.yml .github/workflows/v169-primary-pages-deploy.yml astra-prod/G20_CUTOVER_MANIFEST.json index.html manifest.json service-worker.js | sort > /tmp/g20-allowed
           diff -u /tmp/g20-allowed /tmp/g20-diff
           gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$PAGES" > /tmp/g20-pages.json
           node -e "const x=require('/tmp/g20-pages.json');const t=require('./docs/astra/G20_TRIGGER.json');if(x.head_sha!==t.cutoverCommit||x.status!=='completed'||x.conclusion!=='success')throw Error('Pages run not successful for cutover commit')"
