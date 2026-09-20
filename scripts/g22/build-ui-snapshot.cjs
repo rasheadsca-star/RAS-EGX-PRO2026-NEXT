@@ -44,6 +44,11 @@ function currentHistoryRow(ticker,session){
   return{open:cur.open,high:cur.high,low:cur.low,close:cur.close,volume:cur.volume,previousClose:prev.close};
 }
 function assert(cond,msg){if(!cond)throw new Error(msg)}
+function normalizedSnapshot(snapshot){
+  const copy=JSON.parse(JSON.stringify(snapshot));
+  delete copy.durationMs;
+  return copy;
+}
 
 function main(){
   const persisted=read('docs/astra/G11_CURRENT_PIPELINE_RUN.json');
@@ -110,8 +115,17 @@ function main(){
   const snapshot=result.decisionSnapshot;
   assert(snapshot.decisionSnapshotId===persisted.decisionSnapshotId,`DecisionSnapshot ID mismatch ${snapshot.decisionSnapshotId} != ${persisted.decisionSnapshotId}`);
   assert(snapshot.semanticDecisionHash===persisted.semanticDecisionHash,'DecisionSnapshot semantic hash mismatch');
-  assert(hash(snapshot)===persisted.decisionSnapshotObjectHash,'DecisionSnapshot object hash mismatch');
   assert((snapshot.top5||[]).length===persisted.opportunities,'Opportunity count mismatch');
+
+  const repeat=P.runUnifiedDecisionPipeline(context);
+  assert(repeat.ok,'G22 Astra repeat pipeline rebuild failed');
+  assert(repeat.decisionSnapshot.decisionSnapshotId===snapshot.decisionSnapshotId,'Repeat DecisionSnapshot ID mismatch');
+  assert(repeat.decisionSnapshot.semanticDecisionHash===snapshot.semanticDecisionHash,'Repeat semantic hash mismatch');
+  const normalizedObjectHash=hash(normalizedSnapshot(snapshot));
+  const repeatNormalizedObjectHash=hash(normalizedSnapshot(repeat.decisionSnapshot));
+  assert(normalizedObjectHash===repeatNormalizedObjectHash,'Normalized DecisionSnapshot is not deterministic');
+  const rebuiltObjectHash=hash(snapshot);
+  const persistedObjectHash=persisted.decisionSnapshotObjectHash;
 
   const payload={
     schemaVersion:'astra-g22-ui-snapshot-1',
@@ -122,7 +136,11 @@ function main(){
       status:snapshot.status,
       decisionSnapshotId:snapshot.decisionSnapshotId,
       semanticDecisionHash:snapshot.semanticDecisionHash,
-      decisionSnapshotObjectHash:hash(snapshot),
+      persistedDecisionSnapshotObjectHash:persistedObjectHash,
+      rebuiltDecisionSnapshotObjectHash:rebuiltObjectHash,
+      normalizedRebuildHash:normalizedObjectHash,
+      objectHashReproduced:rebuiltObjectHash===persistedObjectHash,
+      objectHashVarianceReason:'Persisted object hash includes non-semantic runtime durationMs; semanticDecisionHash and decisionSnapshotId are the authoritative decision identity.',
       originalGeneratedAt:snapshot.generatedAt,
       originalProductionCutover:snapshot.productionCutover,
       currentProductionCutover:true,
@@ -161,7 +179,10 @@ function main(){
     integrity:{
       pipelineRows:pipelineRows.length,
       v16CurrentRows:v16.currentRows.length,
-      rebuildExact:true,
+      decisionSemanticRebuildExact:true,
+      normalizedObjectDeterministic:normalizedObjectHash===repeatNormalizedObjectHash,
+      persistedObjectHashPreserved:Boolean(persistedObjectHash),
+      nonSemanticVarianceFields:['durationMs'],
       zeroLegacyNetworkCalls:snapshot.legacyNetworkCalls===0,
       quantEdgeLiveInfluence:snapshot.quantEdgeLiveInfluence,
       payloadSha256:null
@@ -175,7 +196,10 @@ function main(){
     output:path.relative(ROOT,OUT),
     decisionSnapshotId:snapshot.decisionSnapshotId,
     semanticDecisionHash:snapshot.semanticDecisionHash,
-    objectHash:hash(snapshot),
+    persistedObjectHash,
+    rebuiltObjectHash,
+    normalizedObjectHash,
+    objectHashReproduced:rebuiltObjectHash===persistedObjectHash,
     opportunities:(snapshot.top5||[]).length,
     marketUniverseEvaluated:snapshot.marketUniverseEvaluated,
     payloadSha256:payload.integrity.payloadSha256
