@@ -53,6 +53,8 @@ async function main(){
   const truth=read('data/stable/v15-price-truth.json',{});
   const market=read('data/market.json',{rows:[]});
   const symbols=read('data/symbol-map.json',{});
+  const disposition=read('data/stable/v16-market-universe-disposition.json',{verifiedIneligible:[]});
+  const verifiedIneligible=new Set((disposition.verifiedIneligible||[]).map(x=>norm(x.ticker)));
   const expected=dateOnly(truth.expectedSession);
   if(!expected)throw new Error('expected_session_missing');
   const marketByTicker=new Map((market.rows||[]).map(r=>[norm(r.ticker||r.symbol||r.code),r]));
@@ -97,13 +99,16 @@ async function main(){
       await sleep(80);
     }
 
-    const accept=Boolean(structural||currentIndependent);
-    audit.push({ticker,mode:'NO_TRADE',accepted:accept,structural,currentIndependent,primarySession,latestAvailableSession,stockUrl:stockUrl||null,checkError});
+    const dispositionVerified=verifiedIneligible.has(ticker);
+    const accept=Boolean(structural||currentIndependent||dispositionVerified);
+    audit.push({ticker,mode:'NO_TRADE',accepted:accept,structural,currentIndependent,dispositionVerified,primarySession,latestAvailableSession,stockUrl:stockUrl||null,checkError});
     if(!accept)continue;
 
     const basis=structural
       ? 'The previously reviewed temporary-listing/no-ordinary-trading status remains the governing disposition and the current primary market feed has no exact '+expected+' traded row.'
-      : 'The current primary market feed has no exact '+expected+' traded row and the independently checked StockAnalysis EGX history has no '+expected+' trading row; its latest listed trading session is '+latestAvailableSession+'.';
+      : dispositionVerified
+        ? 'The previously reviewed no-trade identity remains unchanged and the current professional market-universe disposition independently verified that no executable '+expected+' session row is available.'
+        : 'The current primary market feed has no exact '+expected+' traded row and the independently checked StockAnalysis EGX history has no '+expected+' trading row; its latest listed trading session is '+latestAvailableSession+'.';
     records.push({...raw,session:expected,expectedSession:expected,sessionClosed:true,noTradesConfirmed:true,reviewedAt:new Date().toISOString(),
       evidenceSummary:basis+' This is a session exclusion only: no prior price is carried forward and no synthetic OHLCV bar is created. Previous G22-reviewed identity/evidence remains attached for audit.'});
   }
