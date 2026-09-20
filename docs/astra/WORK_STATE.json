@@ -2,9 +2,9 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "G22_PENDING",
-  "current_gate": "G22",
-  "last_green_gate": "G21",
+  "current_phase": "PRODUCTION_FULL_APP_CERTIFIED",
+  "current_gate": "COMPLETE",
+  "last_green_gate": "G22",
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -30,7 +30,8 @@
     "G18 GREEN: legacy-off cutover was simulated only in an in-memory local routing harness; all 8 legacy families were disabled, Astra passed desktop/mobile and fail-closed checks, rollback restored the baseline root byte-exactly, main was unchanged, and no production cutover occurred.",
     "G19 GREEN: 10 consecutive independent destructive reviews passed on the fixed G18 recovery target with a fresh Actions run per cycle; production main stayed pinned, zero legacy/external runtime dependencies held, Chromium desktop/mobile and DecisionSnapshot identity passed, fail-closed and rollback integrity passed, and no real production cutover occurred.",
     "G20 GREEN: public GitHub Pages entrypoint was cut over to the certified Astra runtime with the prior main pinned on a dedicated rollback branch; the certified runtime and decision truth stayed byte-exact, legacy root service worker was decommissioned, and immediate desktop/mobile public-root verification passed.",
-    "G21 GREEN: post-cutover production remained pinned to the certified G20 main across three independent live byte probes; fresh desktop/mobile Chromium, fail-closed behavior, DecisionSnapshot identity, publisher exclusivity, rollback pin, zero legacy/external runtime references and zero unauthorized mutations all passed without redeploying production."
+    "G21 GREEN: post-cutover production remained pinned to the certified G20 main across three independent live byte probes; fresh desktop/mobile Chromium, fail-closed behavior, DecisionSnapshot identity, publisher exclusivity, rollback pin, zero legacy/external runtime references and zero unauthorized mutations all passed without redeploying production.",
+    "G22 GREEN: the public production root now opens the full Astra application with current Astra recommendations, full-market search/stock detail, local-only portfolio, recommendation history and system health; desktop/mobile production verification passed with exact DecisionSnapshot identity and zero legacy/external runtime dependency."
   ],
   "completed_gates": [
     "G01",
@@ -53,7 +54,8 @@
     "G18",
     "G19",
     "G20",
-    "G21"
+    "G21",
+    "G22"
   ],
   "failed_gates": [],
   "clean_review_streak": 10,
@@ -100,8 +102,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Build and certify the full Astra application UI, then cut over the public root only after exact DecisionSnapshot and browser acceptance. Do not use legacy decision sources.",
-  "last_updated": "2026-09-20T09:40:20.064Z",
+  "next_action": "G22 complete. Full Astra application is the public production entrypoint; no further gate is open.",
+  "last_updated": "2026-09-20T13:20:32.346Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -463,5 +465,28 @@
     "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
     "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
     "productionMutationAllowed": false
+  },
+  "g22_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35513168730,
+    "sourceCommit": "68b192af3e4e0b72dc00addcab36dfc5e601cd2f",
+    "productionMain": "eed5c7416d14841fe7b1df20b77ab5ceda7769de",
+    "previousProductionMain": "843232b9ff4924fb08576ba1fa7894d788ad56e2",
+    "rollbackProductionMain": "843232b9ff4924fb08576ba1fa7894d788ad56e2",
+    "rollbackBranch": "rollback/g22-main-20260920-843232b",
+    "pagesWorkflowRunId": 35513085205,
+    "publicRoot": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/",
+    "fullAppUrl": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/app/index.html",
+    "browserVersion": "152.0.7977.82",
+    "desktop": "PASS",
+    "mobile": "PASS",
+    "recommendationCount": 3,
+    "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+    "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+    "runtimeLegacyDependencyCount": 0,
+    "runtimeExternalReferences": 0,
+    "externalRequests": 0,
+    "unauthorizedMutations": 0,
+    "productionCutover": true
   }
 }
