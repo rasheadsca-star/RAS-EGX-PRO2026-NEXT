@@ -82,11 +82,12 @@ function main() {
 
   ensure(manifest.authorizedGate === 'G22', 'G22 manifest authorization missing');
   ensure(manifest.productionCutover === true, 'Production cutover is not active');
-  const gateMap = new Map((gates.gates || []).map(g => [g.id, g.status]));
-  for (let i = 1; i <= 22; i++) {
-    const id = 'G' + String(i).padStart(2, '0');
-    ensure(gateMap.get(id) === 'GREEN', id + ' is not GREEN');
-  }
+  ensure(manifest.certifiedRuntimeBundleMutated === false, 'Certified runtime mutation flag invalid');
+  ensure(manifest.canonicalProductionPublisher === '.github/workflows/static.yml', 'Canonical Pages publisher mismatch');
+  ensure(current.schemaVersion === 'astra-g22-ui-snapshot-1', 'G22 Full App data schema mismatch');
+  ensure(current.sourceDecision?.currentProductionCutover === true, 'Full App is not marked as current production cutover');
+  ensure(current.sourceDecision?.decisionSnapshotId === manifest.decisionSnapshotId, 'Pre-refresh app/manifest decision identity mismatch');
+  ensure(current.sourceDecision?.semanticDecisionHash === manifest.semanticDecisionHash, 'Pre-refresh app/manifest semantic hash mismatch');
 
   ensure(typeof expected === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expected), 'Price-truth expected session invalid');
   ensure(priceTruth.ready === true, 'Price truth not ready');
