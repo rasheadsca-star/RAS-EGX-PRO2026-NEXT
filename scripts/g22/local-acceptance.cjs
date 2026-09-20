@@ -60,7 +60,7 @@ async function profile(browser,name,viewport,isMobile,ticker){
   const checks={
     readyObject:Boolean(ready?.snapshotId&&ready?.semanticDecisionHash),
     recommendationCountMatches:recRows===Number(ready?.recommendations||0)&&recRows>0,
-    searchFoundRecommendation:stockText.includes(ticker)&&stockText.includes('ضمن توصيات Astra الحالية'),
+    searchFoundRecommendation:stockText.includes(ticker)&&stockText.includes('ضمن DecisionSnapshot الحالي'),
     portfolioLocalLifecycle:portfolioText.includes(ticker)&&portfolioStored,
     recommendationHistoryVisible:historyRows>0,
     healthShowsDecisionIdentity:healthText.includes(ready.snapshotId)&&healthText.includes(ready.semanticDecisionHash),
