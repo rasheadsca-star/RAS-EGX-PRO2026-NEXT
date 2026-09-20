@@ -304,7 +304,7 @@ function buildMarketUniverse(){
     const ticker=String(s.ticker||'').trim().toUpperCase();
     if(!ticker||seen.has(ticker)) continue;
     seen.add(ticker);
-    const hist=readJson('data/history/'+ticker+'.json',null);
+    const hist=readJson('data/history/'+ticker+'.json',{});
     const sessions=Array.isArray(hist?.sessions)?hist.sessions:[];
     const last=sessions.at(-1)||{};
     rows.push({
