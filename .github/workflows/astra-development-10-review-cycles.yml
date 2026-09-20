@@ -1,0 +1,65 @@
+name: Astra Development 10 Developer Critic Cycles
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop/post-g20-20260920
+    paths:
+      - 'tests/astra/astra-developer-critic-review.cjs'
+      - '.github/workflows/astra-development-10-review-cycles.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-development-10-review-cycles
+  cancel-in-progress: true
+
+jobs:
+  review-cycle:
+    strategy:
+      fail-fast: false
+      matrix:
+        cycle: [1,2,3,4,5,6,7,8,9,10]
+    runs-on: ubuntu-24.04
+    name: Developer-Critic Cycle ${{ matrix.cycle }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert development boundary
+        run: |
+          test "$GITHUB_REF_NAME" = "develop/post-g20-20260920"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Developer and critic assertions
+        run: node tests/astra/astra-developer-critic-review.cjs --cycle ${{ matrix.cycle }}
+      - name: Core regression suite
+        run: node --test tests/astra/astra-native-intelligence.test.cjs
+      - name: Decision snapshot mutation guard
+        run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+
+  mobile-browser-critic:
+    needs: review-cycle
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+      - run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+      - name: Independent mobile desktop critic smoke
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/astra-review-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break || sleep 1; done
+          ASTRA_DEV_BASE=http://127.0.0.1:4173 node tests/astra/astra-native-browser-smoke.cjs
