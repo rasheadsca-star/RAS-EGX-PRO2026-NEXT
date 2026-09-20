@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "astra-g20-cutover-plan-1",
+  "createdAt": "2026-09-20T09:24:45.772Z",
+  "status": "AUTHORIZED_PENDING",
+  "gate": "G20",
+  "preconditions": {
+    "g01ThroughG19": "GREEN",
+    "certified": true,
+    "cleanReviewStreak": 10,
+    "certifiedG19Target": "efab44f829364aeeba3943b505531879e3955216",
+    "recoveryHeadAtAuthorization": "9d236b14f2d3db80ffd901ecc1716e7a949179da",
+    "productionMain": "3ce76f81426885dae34ab9e921edba9975f35d52"
+  },
+  "rollback": {
+    "branch": "rollback/g20-main-20260920-3ce76f8",
+    "commit": "3ce76f81426885dae34ab9e921edba9975f35d52",
+    "rootBlob": "e89e66bca17c787befca09d42126ad88b835cfe2",
+    "serviceWorkerBlob": "d6b30daf04c20dd4960c9582f33b66af1061fdcf",
+    "manifestBlob": "5b92123d7ce30fb15e314d943b18d12bfd9c260c"
+  },
+  "target": {
+    "provider": "GITHUB_PAGES",
+    "publicRoot": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/",
+    "certifiedRuntime": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/runtime/v18/index.html",
+    "runtimeBlobs": {
+      "index.html": "90e52650d3794850ff4df6af7682622fe48335cc",
+      "resource-client.js": "1dcee646eac7218c240892bd29a4a0fc0560e4d0",
+      "app.js": "772d4a3f1049364d2aef5289c5c1e429fcdd40c3"
+    },
+    "runtimeBundleMustRemainByteExact": true
+  },
+  "allowedMainMutations": [
+    "index.html",
+    "service-worker.js",
+    "manifest.json",
+    "astra-prod/G20_CUTOVER_MANIFEST.json"
+  ],
+  "serviceWorkerPolicy": "DECOMMISSION_LEGACY_ROOT_WORKER_AND_NAVIGATE_EXISTING_CLIENTS_TO_CERTIFIED_ASTRA",
+  "productionCutover": false,
+  "g21Started": false
+}
