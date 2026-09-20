@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: write
-  pages: write
+  pages: read # ASTRA_SINGLE_PUBLISHER: static.yml is the only Pages publisher
   id-token: write
 
 concurrency:
@@ -89,7 +89,7 @@ jobs:
             done
           fi
       - name: Upload validated Pages artifact
-        if: steps.gate.outputs.eligible == 'true'
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/upload-pages-artifact@v3
         with: { path: . }
 
@@ -101,4 +101,6 @@ jobs:
       name: github-pages
       url: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/preview-v17/historical-recovery/
     steps:
-      - uses: actions/deploy-pages@v4
+      - name: Delegate Pages deployment to canonical publisher
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
