@@ -1,0 +1,161 @@
+name: Astra G21 Post-Cutover Production Verification
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g21-post-cutover-verify.cjs'
+      - 'astra/certification/g21-certify.cjs'
+      - '.github/workflows/astra-g21-post-cutover-verification.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: astra-g21-post-cutover-verification
+  cancel-in-progress: false
+
+jobs:
+  verify-and-certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g21]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G21 control boundary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          const a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json');
+          const base=require('./docs/astra/G21_BASELINE.json'),g20=require('./docs/astra/G20_CERTIFICATION.json');
+          for(let n=1;n<=20;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G21')!=='PENDING')throw Error('G21 not PENDING');
+          for(const s of [a,b])if(s.current_gate!=='G21'||s.current_phase!=='G21_PENDING'||s.last_green_gate!=='G20'||s.productionCutover!==true)throw Error('G21 state boundary invalid');
+          if(g20.status!=='GREEN'||g20.productionCutover!==true||g20.productionMain!==base.expectedProductionMain)throw Error('G20 certification boundary invalid');
+          NODE
+
+          EXPECTED="$(node -e "process.stdout.write(require('./docs/astra/G21_BASELINE.json').expectedProductionMain)")"
+          OLD="$(node -e "process.stdout.write(require('./docs/astra/G21_BASELINE.json').previousProductionMain)")"
+          RB="$(node -e "process.stdout.write(require('./docs/astra/G21_BASELINE.json').rollbackBranch)")"
+
+          git fetch origin main
+          git fetch origin "refs/heads/$RB:refs/remotes/origin/$RB"
+          [ "$(git rev-parse origin/main)" = "$EXPECTED" ]
+          [ "$(git rev-parse "origin/$RB")" = "$OLD" ]
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/static.yml/runs?branch=main&status=success&per_page=1" > /tmp/g21-pages.json
+          node <<'NODE'
+          const fs=require('fs');
+          const x=JSON.parse(fs.readFileSync('/tmp/g21-pages.json','utf8'));
+          const b=require('./docs/astra/G21_BASELINE.json');
+          const run=x.workflow_runs&&x.workflow_runs[0];
+          if(!run||run.head_sha!==b.expectedProductionMain||run.status!=='completed'||run.conclusion!=='success')throw Error('Latest canonical Pages run is not successful on expected production main');
+          fs.appendFileSync(process.env.GITHUB_ENV,'G21_LATEST_PAGES_RUN_ID='+run.id+'\n');
+          NODE
+
+      - name: Verify canonical publisher exclusivity from production main
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED="$(node -e "process.stdout.write(require('./docs/astra/G21_BASELINE.json').expectedProductionMain)")"
+          git show "$EXPECTED:.github/workflows/static.yml" > /tmp/g21-static.yml
+          grep -q "pages: write" /tmp/g21-static.yml
+          grep -q "actions/deploy-pages@v5" /tmp/g21-static.yml
+          for F in .github/workflows/v169-primary-pages-deploy.yml .github/workflows/v15-practical-deploy.yml .github/workflows/v16-technical-review.yml; do
+            git show "$EXPECTED:$F" > /tmp/g21-retired.yml
+            grep -q "RETIRED BY G20" /tmp/g21-retired.yml
+            grep -Fq 'if: ${{ false }}' /tmp/g21-retired.yml
+            ! grep -q "pages: write" /tmp/g21-retired.yml
+            ! grep -q "actions/deploy-pages@" /tmp/g21-retired.yml
+          done
+
+      - name: Verify scripts and zero-legacy boundary
+        run: |
+          node --check astra/certification/g21-post-cutover-verify.cjs
+          node --check astra/certification/g21-certify.cjs
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g21-legacy.json
+          node -e "const x=require('/tmp/g21-legacy.json');if(!x.clean||x.runtimeLegacyDependencyCount!==0||x.matches.length)process.exit(1)"
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Run G21 live post-cutover verification
+        env:
+          G21_SOURCE_HEAD: ${{ github.sha }}
+          G21_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g21-post-cutover-verify.cjs --write
+
+      - name: Reject verification-induced repository mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain | grep -vE '^.. docs/astra/G21_POST_CUTOVER_(EVIDENCE\.json|REPORT\.md)$' > /tmp/g21-unexpected-status || true
+          if [ -s /tmp/g21-unexpected-status ]; then
+            echo "Unexpected repository mutations during G21 verification:" >&2
+            cat /tmp/g21-unexpected-status >&2
+            exit 1
+          fi
+
+      - name: Validate G21 evidence
+        run: |
+          node <<'NODE'
+          const e=require('./docs/astra/G21_POST_CUTOVER_EVIDENCE.json');
+          if(e.status!=='PASS'||e.failedChecks.length)throw Error('G21 evidence is not PASS');
+          if(e.liveProbes.length!==3||!e.liveProbes.every(x=>x.status==='PASS'))throw Error('Independent live probes incomplete');
+          if(e.browser.desktop.status!=='PASS'||e.browser.mobile.status!=='PASS'||e.browser.failClosed.status!=='PASS')throw Error('Browser verification failed');
+          if(e.runtimeLegacyDependencyCount!==0||e.runtimeExternalReferences!==0||e.externalRequests!==0)throw Error('Runtime isolation regressed');
+          if(e.unauthorizedMutations!==0||e.productionCutover!==true)throw Error('Production state invalid');
+          if(e.checks.canonicalPublisherActive!==true||e.checks.retiredPublishersDisabled!==true)throw Error('Publisher exclusivity regressed');
+          NODE
+
+      - name: Promote G21
+        env:
+          G21_SOURCE_HEAD: ${{ github.sha }}
+          G21_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g21-certify.cjs --write
+
+      - name: Validate final G21 state
+        run: |
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          const c=require('./docs/astra/G21_CERTIFICATION.json'),a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json');
+          for(let n=1;n<=21;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(!g.certified||g.certified_through!=='G21'||g.releaseCutoverCertified!==true)throw Error('gate registry not G21 certified');
+          if(c.status!=='GREEN'||c.productionCutover!==true||c.runtimeLegacyDependencyCount!==0||c.runtimeExternalReferences!==0)throw Error('G21 cert invalid');
+          for(const s of [a,b])if(s.current_gate!=='COMPLETE'||s.last_green_gate!=='G21'||s.current_phase!=='PRODUCTION_POST_CUTOVER_VERIFIED'||s.productionCutover!==true)throw Error('final G21 state invalid');
+          NODE
+
+      - name: Persist G21 certification only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          [ "$REMOTE_HEAD" = "$GITHUB_SHA" ]
+          EXPECTED="$(node -e "process.stdout.write(require('./docs/astra/G21_BASELINE.json').expectedProductionMain)")"
+          [ "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$EXPECTED" ]
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/astra/G21_POST_CUTOVER_EVIDENCE.json docs/astra/G21_POST_CUTOVER_REPORT.md docs/astra/G21_CERTIFICATION.json 04_ACCEPTANCE_GATES.json 05_WORK_STATE.json docs/astra/WORK_STATE.json
+          git commit -m 'cert(g21): post-cutover production verification GREEN [skip g21]'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
