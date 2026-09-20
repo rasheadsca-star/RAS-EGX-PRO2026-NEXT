@@ -1,0 +1,110 @@
+name: Astra G20 Final Production Cutover Verification
+
+on:
+  push:
+    paths:
+      - 'docs/astra/G20_TRIGGER.json'
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: astra-g20-final-production-cutover
+  cancel-in-progress: false
+
+jobs:
+  verify-and-certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G20 control boundary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          const s=require('./05_WORK_STATE.json'),d=require('./docs/astra/WORK_STATE.json'),t=require('./docs/astra/G20_TRIGGER.json'),p=require('./docs/astra/G20_CUTOVER_PLAN.json');
+          for(let n=1;n<=19;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G20')!=='PENDING')throw Error('G20 not PENDING');
+          for(const x of [s,d])if(x.current_gate!=='G20'||x.current_phase!=='G20_PENDING'||x.last_green_gate!=='G19'||x.productionCutover!==false)throw Error('G20 state boundary invalid');
+          if(t.previousProductionMain!==p.rollback.commit||t.rollbackBranch!==p.rollback.branch)throw Error('rollback pin mismatch');
+          NODE
+          T="$(node -e "process.stdout.write(require('./docs/astra/G20_TRIGGER.json').cutoverCommit)")"
+          OLD="$(node -e "process.stdout.write(require('./docs/astra/G20_TRIGGER.json').previousProductionMain)")"
+          RB="$(node -e "process.stdout.write(require('./docs/astra/G20_TRIGGER.json').rollbackBranch)")"
+          PAGES="$(node -e "process.stdout.write(String(require('./docs/astra/G20_TRIGGER.json').pagesWorkflowRunId))")"
+          git fetch origin main
+          git fetch origin "refs/heads/$RB:refs/remotes/origin/$RB"
+          [ "$(git rev-parse origin/main)" = "$T" ]
+          [ "$(git rev-parse "origin/$RB")" = "$OLD" ]
+          [ "$(git rev-parse "$T^")" = "$OLD" ]
+          git diff --name-only "$OLD" "$T" | sort > /tmp/g20-diff
+          printf '%s\n' astra-prod/G20_CUTOVER_MANIFEST.json index.html manifest.json service-worker.js | sort > /tmp/g20-allowed
+          diff -u /tmp/g20-allowed /tmp/g20-diff
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$PAGES" > /tmp/g20-pages.json
+          node -e "const x=require('/tmp/g20-pages.json');const t=require('./docs/astra/G20_TRIGGER.json');if(x.head_sha!==t.cutoverCommit||x.status!=='completed'||x.conclusion!=='success')throw Error('Pages run not successful for cutover commit')"
+
+      - name: Verify scripts and legacy isolation
+        run: |
+          node --check astra/certification/g20-verify-cutover.cjs
+          node --check astra/certification/g20-certify.cjs
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g20-legacy.json
+          node -e "const x=require('/tmp/g20-legacy.json');if(!x.clean||x.runtimeLegacyDependencyCount!==0||x.matches.length)process.exit(1)"
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Verify public cutover live
+        env:
+          G20_SOURCE_HEAD: ${{ github.sha }}
+          G20_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g20-verify-cutover.cjs --write
+
+      - name: Promote G20
+        env:
+          G20_SOURCE_HEAD: ${{ github.sha }}
+          G20_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node astra/certification/g20-certify.cjs --write
+
+      - name: Validate final G20 state
+        run: |
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          const c=require('./docs/astra/G20_CERTIFICATION.json'),a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json');
+          for(let n=1;n<=20;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(!g.certified||g.certified_through!=='G20'||g.releaseCutoverCertified!==true)throw Error('gate registry not G20 certified');
+          if(c.status!=='GREEN'||c.productionCutover!==true||c.runtimeByteExact!==true||c.persistedTruthByteExact!==true)throw Error('G20 cert invalid');
+          for(const s of [a,b])if(s.current_gate!=='COMPLETE'||s.last_green_gate!=='G20'||s.current_phase!=='PRODUCTION_CUTOVER_CERTIFIED'||s.productionCutover!==true)throw Error('final state invalid');
+          NODE
+
+      - name: Persist G20 certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          [ "$REMOTE_HEAD" = "$GITHUB_SHA" ]
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/astra/G20_CUTOVER_EVIDENCE.json docs/astra/G20_CUTOVER_REPORT.md docs/astra/G20_CERTIFICATION.json 04_ACCEPTANCE_GATES.json 05_WORK_STATE.json docs/astra/WORK_STATE.json
+          git commit -m 'cert(g20): final production cutover GREEN'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
