@@ -5,7 +5,14 @@ const path=require('path');
 const cp=require('child_process');
 const crypto=require('crypto');
 const {parseHistory,hash}=require('../../astra/data-health/g11-data-health.cjs');
-const {listStrategyIds,getStrategyDescriptor}=require('../../astra/strategies/strategy-registry.cjs');
+let listStrategyIds,getStrategyDescriptor;
+try{
+  ({listStrategyIds,getStrategyDescriptor}=require('../../astra/strategies/strategy-registry.cjs'));
+}catch(_){
+  const {SPECS}=require('../../astra/strategies/g08-final-overlay.cjs');
+  listStrategyIds=()=>Object.keys(SPECS);
+  getStrategyDescriptor=id=>SPECS[String(id||'')]||null;
+}
 const P=require('../../astra/pipeline/g09-unified-decision-pipeline.cjs');
 
 const ROOT=path.resolve(__dirname,'../..');
