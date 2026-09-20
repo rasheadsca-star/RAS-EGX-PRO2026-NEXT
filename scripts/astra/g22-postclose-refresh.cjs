@@ -345,7 +345,9 @@ function main() {
       pagesPublished: mainAppStatus.pagesPublished === true,
       pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
       mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
-      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null,
+      canonicalDataHead: mainAppStatus.canonicalDataHead || null,
+      producerRunId: mainAppStatus.producerRunId || null
     },
     priceTruth: {
       generatedAt: priceTruth.generatedAt || null,
