@@ -2,9 +2,9 @@
   "version": 1,
   "project": "EGX PRO Standalone Unified Decision Engine",
   "repository": "RAS-EGX-PRO2026-NEXT",
-  "current_phase": "G21_PENDING",
-  "current_gate": "G21",
-  "last_green_gate": "G20",
+  "current_phase": "PRODUCTION_POST_CUTOVER_VERIFIED",
+  "current_gate": "COMPLETE",
+  "last_green_gate": "G21",
   "blocking_issues": [],
   "material_findings": [
     "G01-G05 baseline remains 20 engines, 18 strategies, 19 historical store groups and 8 legacy runtime/build dependencies.",
@@ -29,7 +29,8 @@
     "G17 GREEN: the isolated Astra GitHub Pages production surface passed live Chromium verification on production root, desktop and mobile; runtime and persisted decision truth remained byte-exact, requests remained same-origin only, and the live resource-outage scenario failed closed without any public/legacy cutover.",
     "G18 GREEN: legacy-off cutover was simulated only in an in-memory local routing harness; all 8 legacy families were disabled, Astra passed desktop/mobile and fail-closed checks, rollback restored the baseline root byte-exactly, main was unchanged, and no production cutover occurred.",
     "G19 GREEN: 10 consecutive independent destructive reviews passed on the fixed G18 recovery target with a fresh Actions run per cycle; production main stayed pinned, zero legacy/external runtime dependencies held, Chromium desktop/mobile and DecisionSnapshot identity passed, fail-closed and rollback integrity passed, and no real production cutover occurred.",
-    "G20 GREEN: public GitHub Pages entrypoint was cut over to the certified Astra runtime with the prior main pinned on a dedicated rollback branch; the certified runtime and decision truth stayed byte-exact, legacy root service worker was decommissioned, and immediate desktop/mobile public-root verification passed."
+    "G20 GREEN: public GitHub Pages entrypoint was cut over to the certified Astra runtime with the prior main pinned on a dedicated rollback branch; the certified runtime and decision truth stayed byte-exact, legacy root service worker was decommissioned, and immediate desktop/mobile public-root verification passed.",
+    "G21 GREEN: post-cutover production remained pinned to the certified G20 main across three independent live byte probes; fresh desktop/mobile Chromium, fail-closed behavior, DecisionSnapshot identity, publisher exclusivity, rollback pin, zero legacy/external runtime references and zero unauthorized mutations all passed without redeploying production."
   ],
   "completed_gates": [
     "G01",
@@ -51,7 +52,8 @@
     "G17",
     "G18",
     "G19",
-    "G20"
+    "G20",
+    "G21"
   ],
   "failed_gates": [],
   "clean_review_streak": 10,
@@ -98,8 +100,8 @@
     "runHash": "435f97a580beab6cdf809e948b3ea607b14b0016081e85fe3735ff58d092d4e3",
     "unexplainedDataLoss": 0
   },
-  "next_action": "Run G21 post-cutover production verification against the unchanged G20 production main; do not redeploy or mutate production.",
-  "last_updated": "2026-09-20T09:30:37.954Z",
+  "next_action": "G21 complete. Production cutover remains active and verified; no further gate is open.",
+  "last_updated": "2026-09-20T09:40:20.064Z",
   "g08_certification": {
     "status": "GREEN",
     "strategiesAccounted": "18/18",
@@ -430,6 +432,26 @@
     "runtimeUrl": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/astra-prod/runtime/v18/index.html",
     "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
     "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+    "productionCutover": true
+  },
+  "g21_certification": {
+    "status": "GREEN",
+    "workflowRunId": 35502906303,
+    "sourceCommit": "814221fe85c4d9d1eb604edc92423b4848038a3e",
+    "productionMain": "0955150d6cb8b7fa9d395a660e4cd2db6347d13d",
+    "rollbackBranch": "rollback/g20-main-20260920-3ce76f8",
+    "latestPagesWorkflowRunId": 35502424129,
+    "liveProbeRounds": 3,
+    "browserVersion": "152.0.7977.82",
+    "desktop": "PASS",
+    "mobile": "PASS",
+    "failClosed": "PASS",
+    "decisionSnapshotId": "G09-DS-5c4fe9389f6f72cd52d41ecd",
+    "semanticDecisionHash": "5c4fe9389f6f72cd52d41ecdee61432c24b071301eb1f4b566d1776052fe8260",
+    "runtimeLegacyDependencyCount": 0,
+    "runtimeExternalReferences": 0,
+    "externalRequests": 0,
+    "unauthorizedMutations": 0,
     "productionCutover": true
   }
 }
