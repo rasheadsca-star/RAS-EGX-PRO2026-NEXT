@@ -121,7 +121,7 @@ function pct(n, d) {
 function main() {
   const current = readProd('astra-prod/app/data.json');
   const manifest = readProd('astra-prod/G22_FULL_APP_MANIFEST.json');
-  const mainAppStatus = readProd('data/stable/v16-immediate-scan-status.json');
+  const mainAppStatus = readProd('data/ops/g22-main-app-handoff.json');
   const priceTruth = readDecision('data/stable/v15-price-truth.json');
   refreshSessionExceptions();
   refreshV16DomainExceptions();
@@ -154,15 +154,21 @@ function main() {
 
   ensure(DECISION_ROOT !== PROD_ROOT, 'Daily decision must execute from the pinned G22 certified baseline workspace');
   ensure(typeof expected === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expected), 'Price-truth expected session invalid');
-  ensure(mainAppStatus.final === true, 'MAIN APP session is not final');
-  ensure(mainAppStatus.sourceReady === true, 'MAIN APP source is not ready');
-  ensure(mainAppStatus.currentSessionReady === true, 'MAIN APP current session is not ready');
-  ensure(mainAppStatus.executionGrade === true, 'MAIN APP session is not execution-grade');
-  ensure(mainAppStatus.pagesPublished === true, 'MAIN APP final session has not been Pages-published');
-  ensure(mainAppStatus.sessionDate === expected, 'MAIN APP session != price-truth expected session');
-  ensure(mainAppStatus.expectedSession === expected, 'MAIN APP expected session mismatch');
-  ensure(mainAppStatus.pagesPublishedSession === expected, 'MAIN APP Pages-published session mismatch');
-  ensure(/^[0-9a-f]{64}$/.test(String(mainAppStatus.materialFingerprint || '')), 'MAIN APP material fingerprint invalid');
+  ensure(mainAppStatus.schemaVersion === 'g22-main-app-final-handoff-1', 'MAIN APP handoff marker schema invalid');
+  ensure(mainAppStatus.final === true, 'MAIN APP handoff session is not final');
+  ensure(mainAppStatus.sourceReady === true, 'MAIN APP handoff source is not ready');
+  ensure(mainAppStatus.currentSessionReady === true, 'MAIN APP handoff current session is not ready');
+  ensure(mainAppStatus.executionGrade === true, 'MAIN APP handoff session is not execution-grade');
+  ensure(mainAppStatus.pagesPublished === true, 'MAIN APP handoff has not been Pages-published');
+  ensure(mainAppStatus.sessionDate === expected, 'MAIN APP handoff session != price-truth expected session');
+  ensure(mainAppStatus.expectedSession === expected, 'MAIN APP handoff expected session mismatch');
+  ensure(Number(mainAppStatus.acceptedRows || 0) >= 200, 'MAIN APP handoff accepted rows below G22 floor');
+  ensure(Number(mainAppStatus.sourceSessionEvidenceCoveragePct || 0) >= 90, 'MAIN APP handoff source evidence below G22 floor');
+  ensure(/^[0-9a-f]{64}$/.test(String(mainAppStatus.materialFingerprint || '')), 'MAIN APP handoff material fingerprint invalid');
+  ensure(/^[0-9a-f]{40}$/.test(String(mainAppStatus.canonicalDataHead || '')), 'MAIN APP canonical data head invalid');
+  if (process.env.G22_MAIN_APP_CANONICAL_HEAD) {
+    ensure(mainAppStatus.canonicalDataHead === process.env.G22_MAIN_APP_CANONICAL_HEAD, 'MAIN APP canonical handoff head mismatch');
+  }
   ensure(priceTruth.ready === true, 'Price truth not ready');
   ensure(priceTruth.executionGrade === true, 'Price truth is not execution-grade');
   ensure(Number(priceTruth.acceptedRows || 0) >= 200, 'Price-truth accepted-row coverage below operational floor: ' + priceTruth.acceptedRows);
@@ -217,7 +223,7 @@ function main() {
     sourceHead,
     certifiedBaselineHead,
     refreshedAt,
-    refreshPolicy: 'G22_POST_CLOSE_FINAL_MAIN_APP_HANDOFF_V5',
+    refreshPolicy: 'G22_POST_CLOSE_IMMUTABLE_MAIN_APP_HANDOFF_V6',
     refreshSource: 'G22_CERTIFIED_BASELINE + CURRENT_SESSION_PRICE_TRUTH -> CERTIFIED_G11_CONTEXT -> CERTIFIED_ASTRA_G09_PIPELINE_1',
     sourcePriceTruthGeneratedAt: priceTruth.generatedAt || null,
     upstream: {
@@ -227,7 +233,9 @@ function main() {
       pagesPublished: mainAppStatus.pagesPublished === true,
       pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
       mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
-      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null,
+      canonicalDataHead: mainAppStatus.canonicalDataHead || null,
+      producerRunId: mainAppStatus.producerRunId || null
     },
     certificationBaseline: baseline
   };
@@ -267,7 +275,9 @@ function main() {
       pagesPublished: mainAppStatus.pagesPublished === true,
       pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
       mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
-      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null,
+      canonicalDataHead: mainAppStatus.canonicalDataHead || null,
+      producerRunId: mainAppStatus.producerRunId || null
     },
     priceTruth: {
       ready: priceTruth.ready,
@@ -297,7 +307,9 @@ function main() {
     pagesPublished: mainAppStatus.pagesPublished === true,
     pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
     mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
-    sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+    sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null,
+    canonicalDataHead: mainAppStatus.canonicalDataHead || null,
+    producerRunId: mainAppStatus.producerRunId || null
   };
   manifest.currentDecisionCoverage = {
     activeUniverse,
