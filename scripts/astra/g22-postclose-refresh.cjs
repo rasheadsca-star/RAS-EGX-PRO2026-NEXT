@@ -102,7 +102,7 @@ function main() {
   ensure(['DECISION_SNAPSHOT_READY', 'VALID_ZERO_OPPORTUNITY_SESSION'].includes(d.status), 'Decision status not publishable');
   ensure((d.legacyNetworkCalls || 0) === 0, 'Legacy network influence detected');
   ensure(critical === 0, 'Current health has CRITICAL findings: ' + critical);
-  ensure(high === 0, 'Current health has HIGH findings: ' + high);
+  ensure(high === 0, 'Current health has HIGH findings: ' + high + ' ' + JSON.stringify((h.issues.issues || []).filter(x => x.severity === 'HIGH')));
   ensure(/^G09-DS-[0-9a-f]{24}$/.test(d.decisionSnapshotId || ''), 'DecisionSnapshot ID invalid');
   ensure(/^[0-9a-f]{64}$/.test(d.semanticDecisionHash || ''), 'Semantic decision hash invalid');
 
