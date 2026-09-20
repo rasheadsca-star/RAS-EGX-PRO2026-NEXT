@@ -1,0 +1,159 @@
+name: Astra Candidate Preview 20260921
+
+on:
+  push:
+    branches:
+      - ops/astra-candidate-deploy-20260921
+    paths:
+      - '.github/workflows/astra-candidate-preview-20260921.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-candidate-preview-20260921
+  cancel-in-progress: true
+
+env:
+  CANDIDATE_REF: candidate/astra-20260921-b04d74b6
+  CANDIDATE_SHA: b04d74b6c8596ada64b42ee522318cdfe903603b
+  FROZEN_BRANCH: frozen/production-20260920-c6e8b21
+  FROZEN_HEAD: c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_6f2XtCiNK0pF3grt8rWCCOdnJoAy
+
+jobs:
+  deploy-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact certified candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_REF }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Assert exact candidate and frozen production
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH"
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+          echo "CANDIDATE_SHA=$CANDIDATE_SHA"
+          echo "FROZEN_HEAD=$FROZEN_HEAD"
+
+      - name: Re-run core Astra regression on candidate
+        run: node --test tests/astra/astra-native-intelligence.test.cjs
+
+      - name: Build minimal production-candidate static tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/astra-candidate-site"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE/astra-prod" "$STAGE/data/history" "$STAGE/data/quant" "$STAGE/data/rc2"
+          cp -a astra-prod/app "$STAGE/astra-prod/"
+          cp -a data/history/. "$STAGE/data/history/"
+          cp data/quant/market-search-index-v13-17.json "$STAGE/data/quant/"
+          cp data/quant/stock-intelligence-index.json "$STAGE/data/quant/"
+          cp data/rc2/recommendation-history.json "$STAGE/data/rc2/"
+          (
+            cd "$STAGE"
+            find astra-prod data -type f -print0 | sort -z | xargs -0 sha256sum > "$RUNNER_TEMP/astra-candidate.sha256"
+          )
+          test -s "$RUNNER_TEMP/astra-candidate.sha256"
+          echo "STAGE=$STAGE" >> "$GITHUB_ENV"
+          echo "STAGED_FILES=$(wc -l < "$RUNNER_TEMP/astra-candidate.sha256")" >> "$GITHUB_ENV"
+
+      - name: Require authorized Vercel token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN repository secret is not configured."
+            exit 78
+          fi
+
+      - name: Link isolated preview to existing research project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$STAGE/.vercel"
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > "$STAGE/.vercel/project.json"
+
+      - name: Deploy preview only
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$STAGE"
+          DEPLOYMENT_URL="$(npx --yes vercel@latest deploy --yes --token="$VERCEL_TOKEN")"
+          DEPLOYMENT_URL="${DEPLOYMENT_URL%/}"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "ASTRA_CANDIDATE_PREVIEW_URL=$DEPLOYMENT_URL"
+          echo "ASTRA_CANDIDATE_PREVIEW_URL=$DEPLOYMENT_URL" >> "$GITHUB_ENV"
+
+      - name: Verify deployed bytes against candidate staging
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$STAGE"
+          while read -r expected file; do
+            out="$RUNNER_TEMP/remote-$(echo "$file" | tr '/ ' '__')"
+            curl -fsSL --retry 3 --retry-delay 2 "$ASTRA_CANDIDATE_PREVIEW_URL/$file?sha=$CANDIDATE_SHA" -o "$out"
+            actual="$(sha256sum "$out" | awk '{print $1}')"
+            if [ "$actual" != "$expected" ]; then
+              echo "HASH_MISMATCH $file expected=$expected actual=$actual"
+              exit 1
+            fi
+          done < "$RUNNER_TEMP/astra-candidate.sha256"
+          echo "REMOTE_HASH_VERIFICATION_PASS files=$STAGED_FILES"
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Six-profile E2E against deployed preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          ASTRA_DEV_BASE="$ASTRA_CANDIDATE_PREVIEW_URL" node tests/astra/astra-native-browser-smoke.cjs
+
+      - name: Confirm frozen production remained untouched
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH" --force
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+
+      - name: Candidate evidence summary
+        shell: bash
+        run: |
+          {
+            echo "## Astra Production Candidate Preview"
+            echo "- Source certified SHA: `$CANDIDATE_SHA`"
+            echo "- Frozen production SHA: `$FROZEN_HEAD`"
+            echo "- Target: **Vercel Preview only**"
+            echo "- Preview URL: $ASTRA_CANDIDATE_PREVIEW_URL"
+            echo "- Staged files hash-verified: $STAGED_FILES"
+            echo "- Browser profiles: 6"
+            echo "- Production mutation: **NO**"
+          } >> "$GITHUB_STEP_SUMMARY"
