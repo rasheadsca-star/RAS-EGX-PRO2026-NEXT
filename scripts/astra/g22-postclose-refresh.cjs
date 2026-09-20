@@ -121,6 +121,7 @@ function pct(n, d) {
 function main() {
   const current = readProd('astra-prod/app/data.json');
   const manifest = readProd('astra-prod/G22_FULL_APP_MANIFEST.json');
+  const mainAppStatus = readProd('data/stable/v16-immediate-scan-status.json');
   const priceTruth = readDecision('data/stable/v15-price-truth.json');
   refreshSessionExceptions();
   refreshV16DomainExceptions();
@@ -153,6 +154,15 @@ function main() {
 
   ensure(DECISION_ROOT !== PROD_ROOT, 'Daily decision must execute from the pinned G22 certified baseline workspace');
   ensure(typeof expected === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(expected), 'Price-truth expected session invalid');
+  ensure(mainAppStatus.final === true, 'MAIN APP session is not final');
+  ensure(mainAppStatus.sourceReady === true, 'MAIN APP source is not ready');
+  ensure(mainAppStatus.currentSessionReady === true, 'MAIN APP current session is not ready');
+  ensure(mainAppStatus.executionGrade === true, 'MAIN APP session is not execution-grade');
+  ensure(mainAppStatus.pagesPublished === true, 'MAIN APP final session has not been Pages-published');
+  ensure(mainAppStatus.sessionDate === expected, 'MAIN APP session != price-truth expected session');
+  ensure(mainAppStatus.expectedSession === expected, 'MAIN APP expected session mismatch');
+  ensure(mainAppStatus.pagesPublishedSession === expected, 'MAIN APP Pages-published session mismatch');
+  ensure(/^[0-9a-f]{64}$/.test(String(mainAppStatus.materialFingerprint || '')), 'MAIN APP material fingerprint invalid');
   ensure(priceTruth.ready === true, 'Price truth not ready');
   ensure(priceTruth.executionGrade === true, 'Price truth is not execution-grade');
   ensure(Number(priceTruth.acceptedRows || 0) >= 200, 'Price-truth accepted-row coverage below operational floor: ' + priceTruth.acceptedRows);
@@ -207,9 +217,18 @@ function main() {
     sourceHead,
     certifiedBaselineHead,
     refreshedAt,
-    refreshPolicy: 'G22_POST_CLOSE_CERTIFIED_BASELINE_OPERATIONAL_REFRESH_V4',
+    refreshPolicy: 'G22_POST_CLOSE_FINAL_MAIN_APP_HANDOFF_V5',
     refreshSource: 'G22_CERTIFIED_BASELINE + CURRENT_SESSION_PRICE_TRUTH -> CERTIFIED_G11_CONTEXT -> CERTIFIED_ASTRA_G09_PIPELINE_1',
     sourcePriceTruthGeneratedAt: priceTruth.generatedAt || null,
+    upstream: {
+      engine: mainAppStatus.engine || 'V16_9_EQUAL_WEIGHT_BASKET',
+      final: mainAppStatus.final === true,
+      sessionDate: mainAppStatus.sessionDate || null,
+      pagesPublished: mainAppStatus.pagesPublished === true,
+      pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
+      mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
+      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+    },
     certificationBaseline: baseline
   };
   current.decisionSnapshot = d;
@@ -241,6 +260,15 @@ function main() {
       availableSession: available,
       freshnessStatus: h.sessionIntegrity.freshnessStatus
     },
+    upstream: {
+      engine: mainAppStatus.engine || 'V16_9_EQUAL_WEIGHT_BASKET',
+      final: mainAppStatus.final === true,
+      sessionDate: mainAppStatus.sessionDate || null,
+      pagesPublished: mainAppStatus.pagesPublished === true,
+      pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
+      mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
+      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+    },
     priceTruth: {
       ready: priceTruth.ready,
       executionGrade: priceTruth.executionGrade,
@@ -262,6 +290,15 @@ function main() {
   manifest.lastPostCloseRefreshAt = refreshedAt;
   manifest.currentDecisionSource = 'CERTIFIED_ASTRA_G09_PIPELINE_1_POST_CLOSE';
   manifest.currentDecisionBaselineHead = certifiedBaselineHead;
+  manifest.currentDecisionUpstream = {
+    engine: mainAppStatus.engine || 'V16_9_EQUAL_WEIGHT_BASKET',
+    final: mainAppStatus.final === true,
+    sessionDate: mainAppStatus.sessionDate || null,
+    pagesPublished: mainAppStatus.pagesPublished === true,
+    pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
+    mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
+    sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+  };
   manifest.currentDecisionCoverage = {
     activeUniverse,
     currentCanonical,
