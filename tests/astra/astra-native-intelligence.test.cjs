@@ -52,3 +52,87 @@ test('repository build preserves current DecisionSnapshot and produces reconcile
   assert.equal(ledger.records.length,3);
   assert.equal(ledger.records.every(r=>r.decisionSnapshotId==='G09-DS-018f3ecf434a0cc921814012'),true);
 });
+
+
+function recFixture(){
+  return {
+    recommendationId:'ASTRA-REC-TEST',decisionSnapshotId:'DS',semanticDecisionHash:'h',
+    ticker:'TEST',sessionDate:'2026-09-20',effectiveFromSession:'2026-09-21',
+    entryPlan:{low:10,high:11},stopLoss:9,targets:[12,13],rank:1,marketRegime:'NEUTRAL'
+  };
+}
+const row=(date,open,high,low,close,warnings=[])=>({date,open,high,low,close,volume:100,warnings});
+
+test('entry activation is evaluated only from effective session onward',()=>{
+  const o=mod.evaluateRows(recFixture(),[
+    row('2026-09-20',10.5,13,8,12),
+    row('2026-09-21',10.5,11.5,10.1,11)
+  ]);
+  assert.equal(o.entryActivated,true);
+  assert.equal(o.activationSession,'2026-09-21');
+  assert.equal(o.state,'OPEN');
+});
+
+test('entry not triggered expires without becoming win or loss',()=>{
+  const rows=Array.from({length:20},(_,i)=>row('2026-10-'+String(i+1).padStart(2,'0'),8,9,7,8));
+  const o=mod.evaluateRows(recFixture(),rows,{expirySessions:20});
+  assert.equal(o.state,'EXPIRED');
+  assert.equal(o.entryNotTriggered,true);
+  assert.equal(o.resolved,false);
+  assert.equal(o.returnPct,null);
+});
+
+test('same daily candle stop and target becomes ambiguous',()=>{
+  const o=mod.evaluateRows(recFixture(),[row('2026-09-21',10.5,12.2,8.8,11)]);
+  assert.equal(o.state,'AMBIGUOUS_INTRADAY_PATH');
+  assert.equal(o.ambiguous,true);
+  assert.equal(o.resolved,false);
+});
+
+test('gap outside entry range is recorded without invented execution price',()=>{
+  const o=mod.evaluateRows(recFixture(),[
+    row('2026-09-21',14,14.5,13.5,14),
+    row('2026-09-22',10.4,10.8,10.2,10.6)
+  ]);
+  assert.equal(o.entryActivated,true);
+  assert.equal(o.activationPrice,10.4);
+  assert.equal(o.timeline.some(x=>x.evidence==='GAP_ABOVE_ENTRY_RANGE'),true);
+});
+
+test('range touch from outside entry keeps execution price unknown',()=>{
+  const o=mod.evaluateRows(recFixture(),[row('2026-09-21',12,12.1,10.5,11)]);
+  assert.equal(o.entryActivated,true);
+  assert.equal(o.activationPrice,null);
+  assert.equal(o.activationPricePrecision,'ENTRY_RANGE_TOUCH_PRICE_UNKNOWN');
+});
+
+test('corporate action quarantine prevents ordinary win loss treatment',()=>{
+  const o=mod.evaluateRows(recFixture(),[row('2026-09-21',10.5,11,10,10.8,['corporate_action_stock_split'])]);
+  assert.equal(o.state,'CANCELLED_BY_GOVERNANCE');
+  assert.equal(o.resolved,false);
+});
+
+test('immutable G22 handoff rejects stale or under-covered inputs',()=>{
+  const app={sourceDecision:{session:'2026-09-20'}};
+  const good={final:true,pagesPublished:true,sourceReady:true,executionGrade:true,canonicalDataHead:'a'.repeat(40),materialFingerprint:'b'.repeat(64),acceptedRows:207,sourceSessionEvidenceCoveragePct:95,sessionDate:'2026-09-20',expectedSession:'2026-09-20'};
+  assert.equal(mod.validateHandoff(app,good).status,'PASS');
+  assert.equal(mod.validateHandoff(app,{...good,acceptedRows:199}).status,'FAIL');
+  assert.equal(mod.validateHandoff(app,{...good,sourceSessionEvidenceCoveragePct:89}).status,'FAIL');
+  assert.equal(mod.validateHandoff(app,{...good,pagesPublished:false}).status,'FAIL');
+  assert.equal(mod.validateHandoff(app,{...good,sessionDate:'2026-09-19'}).status,'FAIL');
+});
+
+test('KPI rates carry explicit denominator labels and reconcile expiry/cancelled states',()=>{
+  const records=['a','b','c'].map((x,i)=>({recommendationId:x,rank:i+1,marketRegime:'NEUTRAL',ticker:x}));
+  const outcomes=[
+    {recommendationId:'a',entryActivated:false,entryNotTriggered:true,state:'EXPIRED',target1Hit:false,target2Hit:false,finalTargetHit:false,stopLossHit:false,returnPct:null,timeline:[],sessionsHeld:0},
+    {recommendationId:'b',entryActivated:false,entryNotTriggered:false,state:'CANCELLED_BY_GOVERNANCE',target1Hit:false,target2Hit:false,finalTargetHit:false,stopLossHit:false,returnPct:null,timeline:[],sessionsHeld:0},
+    {recommendationId:'c',entryActivated:false,entryNotTriggered:false,state:'WAITING_FOR_ENTRY',target1Hit:false,target2Hit:false,finalTargetHit:false,stopLossHit:false,returnPct:null,timeline:[],sessionsHeld:0}
+  ];
+  const s=mod.summarize(records,outcomes);
+  assert.equal(s.reconciliation.pass,true);
+  assert.equal(s.metrics.entryNotTriggered,1);
+  assert.equal(s.metrics.governanceCancelled,1);
+  assert.equal(s.metrics.activationRate.denominatorLabel,'Issued');
+  assert.equal(s.metrics.winRate.denominatorLabel,'Closed Resolved Trades');
+});
