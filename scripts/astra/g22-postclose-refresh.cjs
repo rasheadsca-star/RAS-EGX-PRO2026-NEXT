@@ -59,6 +59,18 @@ function loadCertifiedHealthWithDecisionSnapshot() {
   }
 }
 
+function refreshSessionExceptions() {
+  if (DECISION_ROOT === PROD_ROOT) return;
+  const script = PROD('scripts/astra/g22-refresh-session-exceptions.cjs');
+  ensure(fs.existsSync(script), 'G22 session-exception refresher unavailable');
+  cp.execFileSync(process.execPath, [script], {
+    cwd: PROD_ROOT,
+    env: { ...process.env, ASTRA_DECISION_ROOT: DECISION_ROOT, GITHUB_WORKSPACE: DECISION_ROOT },
+    stdio: 'inherit',
+    maxBuffer: 32 * 1024 * 1024
+  });
+}
+
 function baselineFrom(data, manifest) {
   const existing = data?.sourceDecision?.certificationBaseline || manifest?.certificationBaseline;
   if (existing) return existing;
@@ -94,6 +106,7 @@ function main() {
   const current = readProd('astra-prod/app/data.json');
   const manifest = readProd('astra-prod/G22_FULL_APP_MANIFEST.json');
   const priceTruth = readDecision('data/stable/v15-price-truth.json');
+  refreshSessionExceptions();
   const h = loadCertifiedHealthWithDecisionSnapshot();
   const d = h?.pipeline?.decisionSnapshot;
 
