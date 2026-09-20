@@ -1,0 +1,42 @@
+name: Astra Development Native Intelligence
+on:
+  push:
+    branches:
+      - develop/post-g20-20260920
+    paths:
+      - 'scripts/astra/native/**'
+      - 'tests/astra/astra-native-intelligence.test.cjs'
+      - 'astra-prod/app/**'
+      - 'docs/astra/development/**'
+      - '.github/workflows/astra-development-native-intelligence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-development-native-intelligence
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert development-only boundary
+        run: |
+          test "$GITHUB_REF_NAME" = "develop/post-g20-20260920"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Build Astra-native intelligence
+        run: node scripts/astra/native/astra-intelligence.cjs
+      - name: Native intelligence tests
+        run: node --test tests/astra/astra-native-intelligence.test.cjs
+      - name: Syntax checks
+        run: |
+          node --check scripts/astra/native/astra-intelligence.cjs
+          node --check astra-prod/app/app.js
+      - name: Ensure current decision snapshot was not mutated
+        run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
