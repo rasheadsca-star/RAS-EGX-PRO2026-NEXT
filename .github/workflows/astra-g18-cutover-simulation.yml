@@ -1,0 +1,122 @@
+name: Astra G18 Legacy-off Cutover Simulation
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'astra/certification/g18-cutover-simulation.cjs'
+      - 'astra/certification/g18-certify.cjs'
+      - '.github/workflows/astra-g18-cutover-simulation.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-g18-cutover-simulation
+  cancel-in-progress: false
+
+jobs:
+  simulate-and-certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g18]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G18 boundary and pin production main
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json').gates,m=new Map(g.map(x=>[x.id,x.status]));
+          for(let n=1;n<=17;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G18')!=='PENDING'||m.get('G19')!=='PENDING')throw Error('G18/G19 boundary invalid');
+          const a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json'),g17=require('./docs/astra/G17_CERTIFICATION.json');
+          for(const s of [a,b])if(s.current_gate!=='G18'||s.last_green_gate!=='G17'||s.current_phase!=='G18_PENDING')throw Error('G18 state invalid');
+          if(g17.status!=='GREEN'||g17.productionCutover!==false||g17.runtimeLegacyDependencyCount!==0||g17.externalRequests!==0)throw Error('G17 regressed');
+          NODE
+          git fetch origin main
+          MAIN_HEAD="$(git rev-parse origin/main)"
+          EXPECTED="$(node -e "process.stdout.write(require('./docs/astra/G16_CERTIFICATION.json').deployment.productionCommit)")"
+          [ "$MAIN_HEAD" = "$EXPECTED" ] || { echo "main moved before G18: $MAIN_HEAD expected $EXPECTED"; exit 1; }
+          git show "$MAIN_HEAD:index.html" > /tmp/g18-baseline-root.html
+          echo "G18_PRODUCTION_MAIN_HEAD=$MAIN_HEAD" >> "$GITHUB_ENV"
+          echo "G18_EXPECTED_MAIN_HEAD=$EXPECTED" >> "$GITHUB_ENV"
+          echo "G18_BASELINE_ROOT_FILE=/tmp/g18-baseline-root.html" >> "$GITHUB_ENV"
+
+      - name: Verify scripts and zero-legacy boundary
+        run: |
+          node --check astra/certification/g18-cutover-simulation.cjs
+          node --check astra/certification/g18-certify.cjs
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g18-legacy.json
+          node -e "const x=require('/tmp/g18-legacy.json');if(!x.clean||x.runtimeLegacyDependencyCount!==0||x.matches.length)process.exit(1)"
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Run legacy-off cutover simulation
+        env:
+          G18_SOURCE_HEAD: \${{ github.sha }}
+          G18_WORKFLOW_RUN_ID: \${{ github.run_id }}
+        run: node astra/certification/g18-cutover-simulation.cjs --write
+
+      - name: Verify main remained unchanged after simulation
+        shell: bash
+        run: |
+          set -euo pipefail
+          AFTER="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
+          [ "$AFTER" = "$G18_PRODUCTION_MAIN_HEAD" ] || { echo "main changed during G18"; exit 1; }
+
+      - name: Validate G18 evidence
+        run: |
+          node <<'NODE'
+          const e=require('./docs/astra/G18_CUTOVER_SIMULATION_EVIDENCE.json');
+          if(e.status!=='PASS'||e.failedChecks.length)throw Error('G18 simulation not PASS');
+          if(e.cutoverSimulation.legacyDependencyIds.length!==8||!e.cutoverSimulation.legacyRoutes.every(x=>x.disabled))throw Error('legacy-off incomplete');
+          if(e.cutoverSimulation.desktop.status!=='PASS'||e.cutoverSimulation.mobile.status!=='PASS'||e.cutoverSimulation.failClosed.status!=='PASS')throw Error('browser simulation failed');
+          if(e.rollback.checks.baselineHashRestored!==true)throw Error('rollback not byte-exact');
+          if(e.productionCutover!==false||e.g19Increment!==0||e.runtimeLegacyDependencyCount!==0||e.externalRequests!==0)throw Error('simulation boundary violated');
+          NODE
+
+      - name: Promote G18 only after simulation PASS
+        env:
+          G18_SOURCE_HEAD: \${{ github.sha }}
+          G18_WORKFLOW_RUN_ID: \${{ github.run_id }}
+        run: node astra/certification/g18-certify.cjs --write
+
+      - name: Validate promoted G18 state
+        run: |
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json').gates,m=new Map(g.map(x=>[x.id,x.status]));
+          for(let n=1;n<=18;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G19')!=='PENDING')throw Error('G19 changed');
+          const c=require('./docs/astra/G18_CERTIFICATION.json'),a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json');
+          if(c.status!=='GREEN'||c.productionCutover!==false||c.g19Increment!==0)throw Error('G18 cert invalid');
+          for(const s of [a,b])if(s.current_gate!=='G19'||s.last_green_gate!=='G18'||s.current_phase!=='G19_PENDING'||s.clean_review_streak!==0)throw Error('G19 boundary invalid');
+          NODE
+
+      - name: Persist G18 certification only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/\${GITHUB_REF_NAME}" | awk '{print $1}')"
+          [ "$REMOTE_HEAD" = "$GITHUB_SHA" ]
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/astra/G18_CUTOVER_SIMULATION_EVIDENCE.json docs/astra/G18_CUTOVER_SIMULATION_REPORT.md docs/astra/G18_CERTIFICATION.json 04_ACCEPTANCE_GATES.json 05_WORK_STATE.json docs/astra/WORK_STATE.json
+          git commit -m 'cert(g18): legacy-off cutover simulation GREEN [skip g18]'
+          git push origin "HEAD:\${GITHUB_REF_NAME}"
