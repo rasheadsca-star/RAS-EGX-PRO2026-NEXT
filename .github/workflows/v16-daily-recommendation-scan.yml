@@ -34,7 +34,7 @@ env:
 
 permissions:
   contents: write
-  pages: write
+  pages: read # ASTRA_SINGLE_PUBLISHER: static.yml is the only Pages publisher
   id-token: write
 
 concurrency:
@@ -332,11 +332,11 @@ jobs:
         run: touch .nojekyll
 
       - name: Configure Pages
-        if: steps.already.outputs.skip != 'true'
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/configure-pages@v5
 
       - name: Upload complete MAIN APP
-        if: steps.already.outputs.skip != 'true'
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
@@ -352,7 +352,9 @@ jobs:
       - name: Deploy MAIN APP Pages — attempt 1
         id: deploy1
         continue-on-error: true
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
 
       - name: Wait before Pages retry 2
         if: steps.deploy1.outcome != 'success'
@@ -362,7 +364,9 @@ jobs:
         id: deploy2
         if: steps.deploy1.outcome != 'success'
         continue-on-error: true
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
 
       - name: Wait before Pages retry 3
         if: steps.deploy1.outcome != 'success' && steps.deploy2.outcome != 'success'
@@ -372,7 +376,9 @@ jobs:
         id: deploy3
         if: steps.deploy1.outcome != 'success' && steps.deploy2.outcome != 'success'
         continue-on-error: true
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
 
       - name: Require at least one successful Pages deployment
         id: deployment_result
