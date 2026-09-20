@@ -141,6 +141,35 @@ if (retiredMissing.length) findings.push({ id: 'EXPECTED_RETIRED_MISSING', actua
 if (retiredNotMarked.length) findings.push({ id: 'EXPECTED_RETIRED_UNMARKED', actual: retiredNotMarked });
 if (retiredStillDeploying.length) findings.push({ id: 'RETIRED_STILL_DEPLOYING', actual: retiredStillDeploying });
 
+
+function pushIsMainOnly(text) {
+  const lines = text.split(/\r?\n/);
+  const idx = lines.findIndex(line => /^  push:\s*/.test(line));
+  if (idx < 0) return true;
+  const first = lines[idx].trim();
+  if (first !== 'push:') {
+    return /branches\s*:\s*\[\s*['"]?main['"]?\s*\]/.test(first);
+  }
+  let end = idx + 1;
+  while (end < lines.length && !/^  [A-Za-z0-9_"'-]+:\s*/.test(lines[end])) end++;
+  const block = lines.slice(idx + 1, end).join('\n');
+  const m = block.match(/^    branches:\s*(.+)$/m);
+  if (!m) return false;
+  const value = m[1].trim();
+  return /^\[\s*['"]?main['"]?\s*\]$/.test(value);
+}
+
+const unsafePushTriggers = [];
+for (const fileRel of expectedRetired) {
+  const abs = path.join(ROOT, fileRel);
+  if (!fs.existsSync(abs)) continue;
+  const text = fs.readFileSync(abs, 'utf8');
+  if (!pushIsMainOnly(text)) unsafePushTriggers.push(fileRel);
+}
+if (unsafePushTriggers.length) {
+  findings.push({ id: 'UNSCOPED_PUSH_TRIGGERS', actual: unsafePushTriggers });
+}
+
 const result = {
   schemaVersion: 'astra-pages-single-publisher-audit-1',
   status: findings.length ? 'FAIL' : 'PASS',
@@ -150,6 +179,7 @@ const result = {
   pagesWriters,
   retiredPublisherCount: expectedRetired.length,
   activeAuxPagesActionsOutsideCanonical: auxActive.length,
+  unsafePushTriggerCount: unsafePushTriggers.length,
   findings
 };
 
