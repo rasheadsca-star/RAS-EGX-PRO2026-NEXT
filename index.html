@@ -1,44 +1,30 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#07101d">
-  <meta name="description" content="EGX PRO — Astra Certified Production">
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <link rel="manifest" href="manifest.json?v=g20-certified">
-  <title>EGX PRO — Astra Certified Production</title>
-  <style>
-    html,body{margin:0;min-height:100%;background:#07101d;color:#eef6ff;font-family:Tahoma,Arial,sans-serif}
-    body{display:grid;place-items:center;padding:24px;text-align:center}
-    main{max-width:680px;background:#0d1a2b;border:1px solid #263b56;border-radius:18px;padding:28px;box-shadow:0 16px 42px #0005}
-    h1{margin:0 0 12px;font-size:24px}p{color:#9db0c7;line-height:1.9}.status{color:#61dafb;font-size:12px}
-    a{display:inline-block;margin-top:15px;background:#124d70;border:1px solid #3b769a;color:#fff;text-decoration:none;padding:11px 16px;border-radius:10px}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071521">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="manifest" href="manifest.json?v=g22-full-app">
+<title>EGX PRO — Astra Full Application</title>
 </head>
 <body>
-  <!-- G20_PUBLIC_ENTRYPOINT -->
-  <main>
-    <h1>EGX PRO — Astra</h1>
-    <p>جارٍ فتح النسخة المعتمدة للإنتاج…</p>
-    <div class="status" id="status">Final Production Cutover · G20</div>
-    <a href="./astra-prod/runtime/v18/index.html?entry=g20-manual">فتح Astra الآن</a>
-  </main>
-  <script>
-  (async()=>{
-    'use strict';
-    const target='./astra-prod/runtime/v18/index.html?entry=g20-public&cutover=1';
-    try{
-      if('serviceWorker' in navigator){
-        const regs=await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.filter(r=>String(r.scope||'').includes('/RAS-EGX-PRO2026-NEXT/')).map(r=>r.unregister()));
-      }
-    }catch(_){}
-    location.replace(target);
-  })();
-  </script>
-  <noscript><a href="./astra-prod/runtime/v18/index.html?entry=g20-noscript">فتح Astra Standalone</a></noscript>
+<!-- G22_FULL_APP_ENTRYPOINT -->
+<script>
+(async()=>{
+  'use strict';
+  const target='./astra-prod/app/index.html?entry=g22-public&full=1';
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.filter(r=>String(r.scope||'').includes('/RAS-EGX-PRO2026-NEXT/')).map(r=>r.unregister()));
+    }
+  }catch(_){}
+  location.replace(target);
+})();
+</script>
+<noscript><a href="./astra-prod/app/index.html?entry=g22-noscript">فتح EGX PRO Astra</a></noscript>
 </body>
 </html>

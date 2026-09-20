@@ -1,8 +1,8 @@
-/* G20_SERVICE_WORKER_DECOMMISSION
- * Final Production Cutover: retire the legacy root worker without rewriting
- * the certified Astra runtime bundle.
+/* G22_SERVICE_WORKER_DECOMMISSION
+ * Full Application cutover: retire any legacy root worker and send existing
+ * clients to the certified Astra full application.
  */
-const G20_TARGET=new URL('./astra-prod/runtime/v18/index.html?entry=g20-service-worker',self.location.href).href;
+const G22_TARGET=new URL('./astra-prod/app/index.html?entry=g22-service-worker',self.location.href).href;
 self.addEventListener('install',event=>event.waitUntil(self.skipWaiting()));
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
@@ -12,9 +12,7 @@ self.addEventListener('activate',event=>{
     await Promise.all(windows.map(async client=>{
       try{
         const u=new URL(client.url);
-        if(u.origin===self.location.origin&&u.pathname.startsWith(new URL('./',self.location.href).pathname)){
-          await client.navigate(G20_TARGET);
-        }
+        if(u.origin===self.location.origin&&u.pathname.startsWith(new URL('./',self.location.href).pathname)) await client.navigate(G22_TARGET);
       }catch(_){}
     }));
   })());
