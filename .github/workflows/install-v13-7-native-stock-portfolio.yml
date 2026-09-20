@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: write
-  pages: write
+  pages: read # ASTRA_SINGLE_PUBLISHER: static.yml is the only Pages publisher
   id-token: write
 
 concurrency:
@@ -66,11 +66,15 @@ jobs:
           git add scripts/quant/v13-7-stock-intelligence.cjs scripts/quant/v13-7-acceptance.cjs data/v13-7-native-policy.json data/quant/stock-intelligence-index.json data/quant/stocks preview-v13/app/index.html preview-v13/app/stock-analysis.html preview-v13/app/portfolio.html
           if git diff --cached --quiet; then echo 'V13.7 already current'; else git commit -m 'Install V13.7 native stock analysis and portfolio'; git pull --rebase origin main; git push origin HEAD:main; fi
       - name: Configure Pages
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/configure-pages@v5
       - name: Upload repository
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
       - name: Deploy V13.7
         id: deployment
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
