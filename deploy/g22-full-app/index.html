@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071521">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta name="description" content="EGX PRO — Astra Full Application">
+<title>EGX PRO — Astra Full Application</title>
+<style>
+:root{color-scheme:dark;--bg:#06111d;--panel:#0b1f33;--panel2:#102b45;--line:#2b5674;--text:#ecf8ff;--muted:#91acbd;--blue:#38bdf8;--green:#36d995;--amber:#ffc857;--red:#ff6d7d;--shadow:#0007}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#04101b,#071a2b);color:var(--text);font-family:Tahoma,Arial,sans-serif}
+body{padding-bottom:70px}button,input,select{font:inherit}.wrap{max-width:1500px;margin:auto;padding:14px}.top{position:sticky;top:0;z-index:20;background:#06111df2;backdrop-filter:blur(10px);border-bottom:1px solid #173a52}
+.hero{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px;max-width:1500px;margin:auto}.hero h1{font-size:21px;margin:0}.hero p{margin:5px 0 0;color:var(--muted);font-size:11px}
+.badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}.badge{border:1px solid #3a6278;border-radius:999px;padding:5px 9px;font-size:10px;color:#dff6ff;background:#0c2638}.badge.good{border-color:#2e795d;color:#c9ffe7}.badge.warn{border-color:#8a7130;color:#ffe8aa}
+.nav{display:flex;gap:6px;overflow:auto;padding:0 14px 12px;max-width:1500px;margin:auto}.nav button{white-space:nowrap;border:1px solid #2d5872;background:#0b2031;color:#d9edf8;padding:8px 12px;border-radius:9px;cursor:pointer}.nav button.active{background:#14506f;border-color:#4aa8d2;color:white}
+.view{display:none}.view.active{display:block}.grid{display:grid;gap:10px}.grid.cards{grid-template-columns:repeat(6,minmax(0,1fr))}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.panel,.card{background:rgba(11,31,51,.96);border:1px solid var(--line);border-radius:15px;box-shadow:0 10px 30px var(--shadow)}.panel{padding:13px;margin-bottom:12px}.card{padding:12px}.card small{color:var(--muted);display:block}.card b{display:block;font-size:19px;margin-top:7px}.good{color:var(--green)!important}.bad{color:var(--red)!important}.warn{color:var(--amber)!important}.blue{color:var(--blue)!important}.muted{color:var(--muted);font-size:11px;line-height:1.7}.section-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.section-title h2{font-size:17px;margin:0}.section-title p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.table{overflow:auto;border-radius:10px;border:1px solid #234b63}table{width:100%;border-collapse:collapse;min-width:900px}th,td{padding:9px;border-bottom:1px solid #173d55;text-align:right;font-size:11px;vertical-align:top}th{background:#0f2a43;position:sticky;top:0}.ticker{color:var(--blue);font-weight:900}.tag{display:inline-block;border:1px solid #3a6278;border-radius:999px;padding:4px 7px;font-size:9px;margin:2px}.tag.good{border-color:#2e795d}.tag.warn{border-color:#8a7130}.tag.bad{border-color:#8c4252}
+.rec-card{display:grid;grid-template-columns:56px 1fr;gap:11px;align-items:start;padding:13px;border:1px solid #2c5872;background:#0c2235;border-radius:13px}.rank{width:48px;height:48px;border-radius:13px;background:#123e59;display:grid;place-items:center;font-size:20px;font-weight:900}.rec-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.rec-head h3{margin:0;font-size:17px}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:10px}.metric{background:#0a1b2a;border:1px solid #23485f;border-radius:9px;padding:8px}.metric small{display:block;color:var(--muted);font-size:9px}.metric b{display:block;margin-top:4px;font-size:12px}
+.searchbar{display:grid;grid-template-columns:1fr auto;gap:8px}.searchbar input,.form input,.form select{background:#091c2e;border:1px solid #376682;color:var(--text);padding:10px;border-radius:9px}.btn{background:#123c59;border:1px solid #3b769a;color:white;padding:9px 12px;border-radius:9px;cursor:pointer}.btn.danger{border-color:#8c4252;background:#35181e}.btn.good{border-color:#2e795d;background:#103124}.results{display:grid;gap:7px;margin-top:10px}.result{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px;border:1px solid #254c64;border-radius:10px;background:#0a1d2e;cursor:pointer}.result:hover{border-color:#4b8eaf}.result .name{font-size:11px;color:var(--muted)}
+.stock-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.stock-box{padding:10px;border:1px solid #28516a;border-radius:10px;background:#0a1d2e}.stock-box small{color:var(--muted);font-size:9px}.stock-box b{display:block;margin-top:5px}.notice{padding:10px;border:1px solid #6d5a2d;background:#302716;border-radius:10px;color:#ffe8a6;font-size:11px;line-height:1.8}.notice.good{border-color:#2e795d;background:#102820;color:#c9ffe7}.notice.bad{border-color:#8c4252;background:#2e171d;color:#ffd0d5}
+.form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px}.portfolio-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.bar{height:7px;background:#133148;border-radius:999px;overflow:hidden}.bar i{display:block;height:100%;background:#38bdf8}
+.chart{height:260px;border:1px solid #264e65;border-radius:10px;background:#071724;overflow:hidden}.chart svg{width:100%;height:100%}
+.empty{padding:28px;text-align:center;color:var(--muted)}.split{display:grid;grid-template-columns:1.1fr .9fr;gap:10px}.mono{font-family:Consolas,monospace;font-size:10px;word-break:break-all}
+footer{max-width:1500px;margin:20px auto;padding:0 14px;color:#7894a7;font-size:10px;line-height:1.7}
+@media(max-width:1100px){.grid.cards{grid-template-columns:repeat(3,1fr)}.grid.three{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:repeat(3,1fr)}.stock-grid{grid-template-columns:repeat(2,1fr)}.split{grid-template-columns:1fr}.portfolio-cards{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.wrap{padding:7px}.hero{align-items:flex-start;flex-direction:column}.badges{justify-content:flex-start}.grid.cards,.grid.two,.grid.three{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr 1fr}.form select{grid-column:1/-1}.form button{grid-column:1/-1}.portfolio-cards{grid-template-columns:1fr 1fr}.stock-grid{grid-template-columns:1fr 1fr}.rec-card{grid-template-columns:44px 1fr}.rank{width:40px;height:40px}.nav{padding-inline:7px}}
+@media(max-width:440px){.grid.cards,.grid.two,.grid.three,.portfolio-cards,.stock-grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.searchbar{grid-template-columns:1fr}.form{grid-template-columns:1fr}.form select,.form button{grid-column:auto}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="hero">
+    <div><h1>EGX PRO — Astra</h1><p>واجهة الإنتاج الكاملة · DecisionSnapshot واحد · بدون legacy decision fallback</p></div>
+    <div class="badges">
+      <span class="badge good" id="gateBadge">G22 UI</span>
+      <span class="badge" id="sessionBadge">جلسة —</span>
+      <span class="badge" id="snapshotBadge">Snapshot —</span>
+    </div>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-view="home" class="active">الرئيسية</button>
+    <button data-view="recommendations">توصيات Astra</button>
+    <button data-view="search">بحث السوق وتحليل السهم</button>
+    <button data-view="portfolio">المحفظة</button>
+    <button data-view="history">سجل التوصيات</button>
+    <button data-view="health">صحة النظام</button>
+  </nav>
+</div>
+
+<main class="wrap">
+  <section class="view active" id="view-home"></section>
+  <section class="view" id="view-recommendations"></section>
+  <section class="view" id="view-search"></section>
+  <section class="view" id="view-portfolio"></section>
+  <section class="view" id="view-history"></section>
+  <section class="view" id="view-health"></section>
+</main>
+
+<footer>
+Astra Full Application. بيانات البحث/السعر/التاريخ المساعدة لا تغيّر قرار Astra. لا يوجد اتصال بوسيط تداول ولا تنفيذ أوامر. عند غياب بيانات مؤكدة تُعرض كغير متاحة ولا يتم تقديرها.
+</footer>
+<script src="app.js?v=g22-full-ui"></script>
+</body>
+</html>
