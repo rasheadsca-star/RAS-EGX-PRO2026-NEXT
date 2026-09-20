@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: astra-development-native-intelligence
@@ -43,14 +43,3 @@ jobs:
           node --check astra-prod/app/astra-market-portfolio.js
       - name: Ensure current decision snapshot was not mutated
         run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
-      - name: Persist generated development intelligence only
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add astra-prod/app/intelligence
-          if ! git diff --cached --quiet; then
-            git commit -m "dev(astra): persist native intelligence artifacts [skip native]"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
