@@ -315,28 +315,30 @@ function aggregate(records,outcomes,keyFn){
 }
 
 function buildMarketUniverse(currentRecords=[],currentSession=null){
+  const certified=readJson('docs/astra/development/G22_ACTIVE_UNIVERSE.json');
   const search=readJson('data/quant/market-search-index-v13-17.json',{stocks:[]});
-  const searchRows=Array.isArray(search.stocks)?search.stocks:[];
-  const activeTarget=finite(readJson('astra-prod/app/data.json',{}).health?.searchReadiness?.intendedActive)||224;
-  const rows=[];
-  const seen=new Set();
+  const searchByTicker=new Map((search.stocks||[]).map(s=>[String(s.ticker||'').trim().toUpperCase(),s]));
   const currentByTicker=new Map(currentRecords.filter(r=>!currentSession||r.sessionDate===currentSession).map(r=>[r.ticker,r]));
+  const records=[];
 
-  for(const s of searchRows){
-    const ticker=String(s.ticker||'').trim().toUpperCase();
-    if(!ticker||seen.has(ticker)) continue;
-    seen.add(ticker);
-    const hist=readJson('data/history/'+ticker+'.json',{});
-    const sessions=Array.isArray(hist?.sessions)?hist.sessions:[];
+  for(const a of (certified.active||[])){
+    const ticker=String(a.ticker||'').trim().toUpperCase();
+    if(!ticker) continue;
+    const s=searchByTicker.get(ticker)||{};
+    let hist={}; try { hist=readJson('data/history/'+ticker+'.json'); } catch { hist={}; }
+    const sessions=Array.isArray(hist.sessions)?hist.sessions:[];
     const last=sessions.at(-1)||{};
-    rows.push({
+    const rec=currentByTicker.get(ticker)||null;
+    records.push({
       ticker,
-      companyNameAr:s.companyNameAr||hist?.companyNameAr||null,
-      companyNameEn:s.companyNameEn||hist?.companyNameEn||null,
-      isin:s.isin||hist?.isin||null,
+      securityId:a.securityId||('EGX:'+ticker),
+      companyNameAr:s.companyNameAr||a.companyNameAr||hist.companyNameAr||null,
+      companyNameEn:s.companyNameEn||a.companyNameEn||hist.companyNameEn||null,
+      isin:s.isin||hist.isin||null,
       aliases:Array.isArray(s.aliases)?s.aliases:[],
-      searchText:s.searchText||[ticker,s.companyNameAr,s.companyNameEn,s.isin].filter(Boolean).join(' '),
-      active:s.active!==false,
+      searchText:s.searchText||[ticker,s.companyNameAr,a.companyNameAr,s.companyNameEn,a.companyNameEn,s.isin].filter(Boolean).join(' '),
+      active:true,
+      listingStatus:a.listingStatus||'LISTED',
       price:finite(last.close??s.price),
       priceSession:dateOnly(last.date||last.sessionDate||s.updatedAt),
       changePct:finite(s.changePct),
@@ -344,45 +346,36 @@ function buildMarketUniverse(currentRecords=[],currentSession=null){
       liquidity:finite(s.turnover),
       historyAvailable:s.historyAvailable===true||sessions.length>0,
       historySessions:sessions.length,
-      primarySource:hist?.primarySource||s.priceSource||null,
-      freshness:hist?.staleData===true?'STALE':(last.date||s.price?'AVAILABLE':'UNAVAILABLE'),
+      primarySource:hist.primarySource||s.priceSource||null,
+      freshness:hist.staleData===true?'STALE':(last.date||s.price?'AVAILABLE':'UNAVAILABLE'),
       displayOnlyLegacyAnalytics:{
-        technicalRank:finite(s.technicalRank),
-        tier:s.tier||null,
-        decisionCode:s.decisionCode||null,
-        historicalSupport20:finite(s.historicalSupport20),
-        historicalResistance20:finite(s.historicalResistance20),
+        technicalRank:finite(s.technicalRank),tier:s.tier||null,decisionCode:s.decisionCode||null,
+        historicalSupport20:finite(s.historicalSupport20),historicalResistance20:finite(s.historicalResistance20),
         rsi14:finite(s.momentumMoneyFlow?.rsi14)
       },
       support:finite(s.historicalSupport20),
       resistance:finite(s.historicalResistance20),
       rsi14:finite(s.momentumMoneyFlow?.rsi14),
       verifiedPrice:finite(last.close??s.price),
-      priceSource:hist?.primarySource||s.priceSource||null,
-      astraCurrent:currentByTicker.has(ticker)?{
-        recommendationId:currentByTicker.get(ticker).recommendationId,
-        rank:currentByTicker.get(ticker).rank,
-        decisionScore:currentByTicker.get(ticker).decisionScore,
-        entryPlan:currentByTicker.get(ticker).entryPlan,
-        stopLoss:currentByTicker.get(ticker).stopLoss,
-        targets:currentByTicker.get(ticker).targets,
-        marketRegime:currentByTicker.get(ticker).marketRegime
+      priceSource:hist.primarySource||s.priceSource||null,
+      astraCurrent:rec?{
+        recommendationId:rec.recommendationId,rank:rec.rank,decisionScore:rec.decisionScore,
+        entryPlan:rec.entryPlan,stopLoss:rec.stopLoss,targets:rec.targets,marketRegime:rec.marketRegime
       }:null
     });
   }
 
-  // Search index may include inactive/temporary listings. Preserve the full
-  // searchable index but expose activeCount explicitly; never fabricate rows.
-  const activeRows=rows.filter(x=>x.active!==false);
+  const missingSearch=records.filter(r=>!searchByTicker.has(r.ticker)).map(r=>r.ticker);
   return {
-    records:rows.sort((a,b)=>a.ticker.localeCompare(b.ticker)),
-    activeCount:activeRows.length,
-    intendedActive:activeTarget,
-    activeCoveragePct:activeTarget?round(Math.min(activeRows.length,activeTarget)/activeTarget*100,2):null,
-    sourceIndex:'data/quant/market-search-index-v13-17.json'
+    records:records.sort((a,b)=>a.ticker.localeCompare(b.ticker)),
+    activeCount:records.length,
+    intendedActive:Number(certified.activeCount),
+    activeCoveragePct:certified.activeCount?round(records.length/certified.activeCount*100,2):null,
+    missingSearch,
+    sourceIndex:'data/quant/market-search-index-v13-17.json',
+    activeUniverseSource:{commit:certified.sourceCommit,artifact:certified.sourceArtifact}
   };
 }
-
 
 function sessionWindowRecords(records,name){
   const sessions=[...new Set(records.map(r=>r.sessionDate).filter(Boolean))].sort();
