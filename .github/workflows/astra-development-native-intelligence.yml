@@ -41,5 +41,23 @@ jobs:
           node --check astra-prod/app/app.js
           node --check astra-prod/app/astra-performance-history.js
           node --check astra-prod/app/astra-market-portfolio.js
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+      - name: Native UI browser smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/astra-dev-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break || sleep 1; done
+          ASTRA_DEV_BASE=http://127.0.0.1:4173 node tests/astra/astra-native-browser-smoke.cjs
       - name: Ensure current decision snapshot was not mutated
         run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
