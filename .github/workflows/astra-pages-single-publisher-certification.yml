@@ -1,0 +1,110 @@
+name: Astra Pages Single Publisher Certification
+
+on:
+  push:
+    branches:
+      - hardening/astra-pages-single-publisher-20260921
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/astra/native/pages-single-publisher-audit.cjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-pages-single-publisher-certification
+  cancel-in-progress: true
+
+env:
+  BASE_CERTIFIED_HEAD: b04d74b6c8596ada64b42ee522318cdfe903603b
+  FROZEN_BRANCH: frozen/production-20260920-c6e8b21
+  FROZEN_HEAD: c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae
+
+jobs:
+  certify-hardening:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Assert exact hardening boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "hardening/astra-pages-single-publisher-20260921"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git merge-base --is-ancestor "$BASE_CERTIFIED_HEAD" HEAD
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH"
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+
+          # No application, data, immutable decision input, or canonical publisher changes are allowed.
+          git diff --exit-code "$BASE_CERTIFIED_HEAD"...HEAD --             astra-prod/app             data             04_ACCEPTANCE_GATES.json             05_WORK_STATE.json             docs/astra/WORK_STATE.json             index.html             manifest.json             service-worker.js             .github/workflows/static.yml
+
+          # Hardening scope is limited to legacy workflow delegation plus its audit/certification harness.
+          while IFS= read -r f; do
+            case "$f" in
+              .github/workflows/*.yml|.github/workflows/*.yaml|scripts/astra/native/pages-single-publisher-audit.cjs) ;;
+              *) echo "OUT_OF_SCOPE_CHANGE: $f"; exit 1 ;;
+            esac
+          done < <(git diff --name-only "$BASE_CERTIFIED_HEAD"...HEAD)
+
+      - name: Syntax check audit
+        run: node --check scripts/astra/native/pages-single-publisher-audit.cjs
+
+      - name: Prove static.yml is the sole Pages publisher
+        run: node scripts/astra/native/pages-single-publisher-audit.cjs
+
+      - name: Core Astra-native regression
+        run: node --test tests/astra/astra-native-intelligence.test.cjs
+
+      - name: Ten sequential Developer-Critic cycles on exact hardening HEAD
+        shell: bash
+        run: |
+          set -euo pipefail
+          for cycle in $(seq 1 10); do
+            echo "=== Hardening Developer/Critic Cycle $cycle ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+          done
+
+      - name: Re-prove single publisher after ten cycles
+        run: node scripts/astra/native/pages-single-publisher-audit.cjs
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Six-profile browser smoke on unchanged Astra app
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/astra-hardening-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 20); do
+            curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break || sleep 1
+          done
+          ASTRA_DEV_BASE=http://127.0.0.1:4173 node tests/astra/astra-native-browser-smoke.cjs
+
+      - name: Final frozen and immutability proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH" --force
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+          git diff --exit-code "$BASE_CERTIFIED_HEAD"...HEAD -- astra-prod/app data .github/workflows/static.yml
+          node scripts/astra/native/pages-single-publisher-audit.cjs
