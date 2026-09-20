@@ -242,6 +242,7 @@ jobs:
           const app=read('astra-prod/app/data.json');
           const manifest=read('astra-prod/G22_FULL_APP_MANIFEST.json');
           const audit=read('astra-prod/G22_SESSION_REFRESH.json');
+          const main=read('data/stable/v16-immediate-scan-status.json');
           const s=audit.session.expected;
           const ok=(c,m)=>{if(!c)throw new Error(m)};
           ok(/^\d{4}-\d{2}-\d{2}$/.test(s),'audit session invalid');
@@ -254,6 +255,12 @@ jobs:
           ok(manifest.semanticDecisionHash===app.sourceDecision.semanticDecisionHash,'manifest semantic hash mismatch');
           ok(manifest.currentSession===s,'manifest session mismatch');
           ok(audit.session.decision===s&&audit.session.available===s,'audit session mismatch');
+          ok(audit?.upstream?.final===true,'audit upstream not final');
+          ok(audit?.upstream?.pagesPublished===true,'audit upstream not Pages-published');
+          ok(audit?.upstream?.sessionDate===s,'audit upstream session mismatch');
+          ok(audit?.upstream?.mainAppMaterialFingerprint===main.materialFingerprint,'audit upstream fingerprint mismatch');
+          ok(app?.sourceDecision?.upstream?.mainAppMaterialFingerprint===main.materialFingerprint,'app upstream fingerprint mismatch');
+          ok(manifest?.currentDecisionUpstream?.mainAppMaterialFingerprint===main.materialFingerprint,'manifest upstream fingerprint mismatch');
           ok(audit.health.criticalUnresolved===0,'CRITICAL health issue present');
           ok(String(audit.health.operationalGuardStatus||'').startsWith('PASS'),'operational guard not PASS');
           ok(String(app.health.guardStatus||'').startsWith('PASS'),'app guard not PASS');
