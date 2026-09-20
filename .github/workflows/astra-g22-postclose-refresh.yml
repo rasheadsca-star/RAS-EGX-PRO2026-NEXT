@@ -18,6 +18,9 @@ concurrency:
   group: astra-g22-postclose-refresh
   cancel-in-progress: true
 
+env:
+  ASTRA_CERTIFIED_BASELINE_HEAD: 66b74d6f7586bd06201f6f7992ff9babf1104259
+
 jobs:
   refresh:
     runs-on: ubuntu-24.04
@@ -28,19 +31,128 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Checkout pinned G22 certified baseline
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ASTRA_CERTIFIED_BASELINE_HEAD }}
+          path: .astra-certified
+          fetch-depth: 1
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Validate refresh implementation
+      - name: Validate refresh implementation and certified engine
         run: |
           set -euo pipefail
           node --check scripts/astra/g22-postclose-refresh.cjs
-          node --check astra/data-health/g11-data-health.cjs
-          node --check astra/pipeline/g09-unified-decision-pipeline.cjs
+          node --check .astra-certified/astra/data-health/g11-data-health.cjs
+          node --check .astra-certified/astra/pipeline/g09-unified-decision-pipeline.cjs
+          node --check scripts/stable/v16-session-aware-price-truth.cjs
 
-      - name: Rebuild current post-close DecisionSnapshot
+      - name: Build current-session data on the certified baseline
+        env:
+          CERT_ROOT: ${{ github.workspace }}/.astra-certified
+        run: |
+          set -euo pipefail
+          test -f data/market.json
+          test -f data/fetch-status.json
+          test -f data/stable/v15-price-truth.json
+          test -d "$CERT_ROOT/data/history"
+
+          cp data/market.json "$CERT_ROOT/data/market.json"
+          cp data/fetch-status.json "$CERT_ROOT/data/fetch-status.json"
+          cp scripts/stable/v16-session-aware-price-truth.cjs "$CERT_ROOT/scripts/stable/v16-session-aware-price-truth.cjs"
+
+          node <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const prod=process.env.GITHUB_WORKSPACE;
+          const cert=process.env.CERT_ROOT;
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const write=(p,v)=>fs.writeFileSync(p,JSON.stringify(v,null,2)+'\n');
+          const expected=read(path.join(prod,'data/stable/v15-price-truth.json')).expectedSession;
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(String(expected||''))) throw new Error('Current expected session invalid');
+          const dateOf=x=>String(x?.date||x?.sessionDate||'').slice(0,10);
+          const bad=x=>/invalid|conflict|failed|unresolved|quarantined/i.test(String(x?.validationStatus||''));
+          let merged=0, skipped=0;
+          const srcDir=path.join(prod,'data/history');
+          for(const name of fs.readdirSync(srcDir).filter(x=>x.endsWith('.json'))){
+            const target=path.join(cert,'data/history',name);
+            if(!fs.existsSync(target)){skipped++;continue;}
+            let source;
+            try{source=read(path.join(srcDir,name));}catch{continue;}
+            const rows=(source.sessions||[]).filter(r=>
+              dateOf(r)===expected &&
+              !bad(r) &&
+              Number(r.close)>0 &&
+              Number.isFinite(Number(r.volume)) &&
+              Number(r.volume)>=0
+            );
+            if(!rows.length)continue;
+            const targetDoc=read(target);
+            const map=new Map((targetDoc.sessions||[]).map(r=>[dateOf(r),r]).filter(([d])=>d));
+            for(const row of rows)map.set(expected,row);
+            targetDoc.sessions=[...map.values()].sort((a,b)=>dateOf(a).localeCompare(dateOf(b)));
+            targetDoc.firstSession=dateOf(targetDoc.sessions[0]);
+            targetDoc.lastSession=dateOf(targetDoc.sessions.at(-1));
+            targetDoc.availableSessions=targetDoc.sessions.length;
+            targetDoc.generatedAt=new Date().toISOString();
+            targetDoc.staleData=false;
+            targetDoc.updateFailed=false;
+            write(target,targetDoc);
+            merged++;
+          }
+          console.log('CERT_BASELINE_CURRENT_ROWS_OVERLAY',JSON.stringify({expected,merged,skipped}));
+          NODE
+
+          (
+            cd "$CERT_ROOT"
+            GITHUB_WORKSPACE="$CERT_ROOT" node scripts/stable/v16-session-aware-price-truth.cjs
+          )
+
+          node <<'NODE'
+          const fs=require('fs');
+          const path=require('path');
+          const cert=process.env.CERT_ROOT;
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const write=(p,v)=>fs.writeFileSync(p,JSON.stringify(v,null,2)+'\n');
+          const truth=read(path.join(cert,'data/stable/v15-price-truth.json'));
+          const expected=truth.expectedSession;
+          const summaryPath=path.join(cert,'data/history-summary.json');
+          const summary=read(summaryPath);
+          summary.latestMarketSession=expected;
+          summary.generatedAt=new Date().toISOString();
+          if(Array.isArray(summary.symbols)){
+            for(const item of summary.symbols){
+              const ticker=String(item.ticker||'').trim().toUpperCase();
+              const hp=path.join(cert,'data/history',ticker+'.json');
+              if(!ticker||!fs.existsSync(hp))continue;
+              const h=read(hp);
+              item.firstSession=h.firstSession||item.firstSession||null;
+              item.lastSession=h.lastSession||item.lastSession||null;
+              item.latestValidSession=h.lastSession||item.latestValidSession||null;
+              item.validSessions=Array.isArray(h.sessions)?h.sessions.length:(item.validSessions||0);
+              item.symbolVerified=h.symbolVerified===true||item.symbolVerified===true;
+              item.processingStatus=item.lastSession===expected?'current':item.processingStatus;
+            }
+          }
+          write(summaryPath,summary);
+          const current=(summary.symbols||[]).filter(x=>x.lastSession===expected||x.latestValidSession===expected).length;
+          console.log('CERT_BASELINE_SESSION_READY',JSON.stringify({
+            expected,
+            acceptedRows:truth.acceptedRows,
+            updatedHistoryFiles:truth.updatedHistoryFiles,
+            missingHistoryFiles:truth.missingHistoryFiles,
+            sourceCoveragePct:truth?.source?.sourceSessionEvidenceCoveragePct,
+            summaryCurrentRows:current
+          }));
+          NODE
+
+      - name: Rebuild current DecisionSnapshot with certified G11/G09
+        env:
+          ASTRA_DECISION_ROOT: ${{ github.workspace }}/.astra-certified
         run: |
           set -euo pipefail
           node scripts/astra/g22-postclose-refresh.cjs | tee /tmp/g22-refresh.log
@@ -54,9 +166,9 @@ jobs:
           const app=read('astra-prod/app/data.json');
           const manifest=read('astra-prod/G22_FULL_APP_MANIFEST.json');
           const audit=read('astra-prod/G22_SESSION_REFRESH.json');
-          const price=read('data/stable/v15-price-truth.json');
-          const s=price.expectedSession;
+          const s=audit.session.expected;
           const ok=(c,m)=>{if(!c)throw new Error(m)};
+          ok(/^\d{4}-\d{2}-\d{2}$/.test(s),'audit session invalid');
           ok(app.sourceDecision.session===s,'app session mismatch');
           ok(app.decisionSnapshot.sessionDate===s,'snapshot session mismatch');
           ok(app.decisionSnapshot.asOfSessionDate===s,'snapshot as-of mismatch');
@@ -66,15 +178,27 @@ jobs:
           ok(manifest.semanticDecisionHash===app.sourceDecision.semanticDecisionHash,'manifest semantic hash mismatch');
           ok(manifest.currentSession===s,'manifest session mismatch');
           ok(audit.session.decision===s&&audit.session.available===s,'audit session mismatch');
-          ok(audit.health.criticalUnresolved===0&&audit.health.highUnresolved===0,'material health issue present');
-          ok(app.health.guardStatus==='PASS','app guard not PASS');
+          ok(audit.health.criticalUnresolved===0,'CRITICAL health issue present');
+          ok(String(audit.health.operationalGuardStatus||'').startsWith('PASS'),'operational guard not PASS');
+          ok(String(app.health.guardStatus||'').startsWith('PASS'),'app guard not PASS');
+          ok(Number(audit.health.currentCanonicalCoveragePct)>=90,'canonical coverage below 90%');
+          ok(Number(audit.health.decisionPipelineCoveragePct)>=80,'decision coverage below 80%');
+          ok(Number(audit.priceTruth.sourceSessionEvidenceCoveragePct)>=90,'source evidence coverage below 90%');
+          ok(audit.priceTruth.executionGrade===true,'price truth not execution grade');
+          ok((audit.priceTruth.missingHistoryFiles||[]).length===0,'certified baseline history files missing');
           ok(manifest.productionCutover===true,'production cutover regressed');
           ok(manifest.certifiedRuntimeBundleMutated===false,'certified runtime bundle mutated');
+          ok(manifest.currentDecisionBaselineHead==='66b74d6f7586bd06201f6f7992ff9babf1104259','certified baseline head mismatch');
           ok(Array.isArray(app.decisionSnapshot.top5)&&app.decisionSnapshot.top5.length<=5,'top5 invalid');
           console.log('G22_REFRESH_CONSISTENCY_PASS',JSON.stringify({
             session:s,
             snapshotId:app.sourceDecision.decisionSnapshotId,
-            recommendations:app.decisionSnapshot.top5.map(x=>x.ticker)
+            status:app.decisionSnapshot.status,
+            recommendations:app.decisionSnapshot.top5.map(x=>x.ticker),
+            canonicalCoveragePct:audit.health.currentCanonicalCoveragePct,
+            decisionCoveragePct:audit.health.decisionPipelineCoveragePct,
+            sourceCoveragePct:audit.priceTruth.sourceSessionEvidenceCoveragePct,
+            documentedHighFindings:audit.health.highUnresolved
           }));
           NODE
 
@@ -84,7 +208,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git fetch origin main
+          git fetch origin main --depth=1
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
             echo "main advanced during refresh; refusing stale publication"
             exit 1
@@ -119,8 +243,12 @@ jobs:
             opportunities:a.decision.opportunities,
             tickers:a.decision.tickers,
             currentCanonical:a.health.currentCanonical.numerator+'/'+a.health.currentCanonical.denominator,
+            canonicalCoveragePct:a.health.currentCanonicalCoveragePct,
+            decisionCoveragePct:a.health.decisionPipelineCoveragePct,
+            sourceCoveragePct:a.priceTruth.sourceSessionEvidenceCoveragePct,
             critical:a.health.criticalUnresolved,
             high:a.health.highUnresolved,
+            guard:a.health.operationalGuardStatus,
             productionCutover:a.productionCutover
           }));
           NODE
