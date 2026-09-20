@@ -326,6 +326,15 @@ function main() {
       asOf: d.asOfSessionDate,
       freshnessStatus: h.sessionIntegrity.freshnessStatus
     },
+    upstream: {
+      engine: mainAppStatus.engine || 'V16_9_EQUAL_WEIGHT_BASKET',
+      final: mainAppStatus.final === true,
+      sessionDate: mainAppStatus.sessionDate || null,
+      pagesPublished: mainAppStatus.pagesPublished === true,
+      pagesPublishedAt: mainAppStatus.pagesPublishedAt || null,
+      mainAppMaterialFingerprint: mainAppStatus.materialFingerprint || null,
+      sourceSessionDataHash: mainAppStatus.sourceSessionDataHash || null
+    },
     priceTruth: {
       generatedAt: priceTruth.generatedAt || null,
       ready: priceTruth.ready,
