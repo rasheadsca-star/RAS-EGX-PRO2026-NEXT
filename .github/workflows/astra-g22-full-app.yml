@@ -1,0 +1,158 @@
+name: Astra G22 Full Application Production Certification
+
+on:
+  push:
+    paths:
+      - 'docs/astra/G22_TRIGGER.json'
+      - 'scripts/g22/live-verify.cjs'
+      - 'scripts/g22/certify.cjs'
+      - '.github/workflows/astra-g22-full-app.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: astra-g22-full-app
+  cancel-in-progress: false
+
+jobs:
+  verify-and-certify:
+    if: github.ref == 'refs/heads/astra/g11-guard37-recovery-20260916' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip g22]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify G22 control boundary
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          const a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json');
+          const base=require('./docs/astra/G22_BASELINE.json'),t=require('./docs/astra/G22_TRIGGER.json'),local=require('./docs/astra/G22_LOCAL_UI_EVIDENCE.json');
+          for(let n=1;n<=21;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(m.get('G22')!=='PENDING')throw Error('G22 not PENDING');
+          for(const s of [a,b])if(s.current_gate!=='G22'||s.current_phase!=='G22_PENDING'||s.last_green_gate!=='G21')throw Error('G22 work state invalid');
+          if(local.status!=='PASS'||local.failedChecks.length)throw Error('Local full-app acceptance not PASS');
+          if(t.previousProductionMain!==base.productionMainAtAuthorization||t.rollbackProductionMain!==base.rollbackProductionMain||t.rollbackBranch!==base.rollbackBranch)throw Error('G22 rollback baseline mismatch');
+          NODE
+
+          CUTOVER="$(node -e "process.stdout.write(require('./docs/astra/G22_TRIGGER.json').cutoverCommit)")"
+          PREV="$(node -e "process.stdout.write(require('./docs/astra/G22_TRIGGER.json').previousProductionMain)")"
+          RB="$(node -e "process.stdout.write(require('./docs/astra/G22_TRIGGER.json').rollbackBranch)")"
+          PAGES="$(node -e "process.stdout.write(String(require('./docs/astra/G22_TRIGGER.json').pagesWorkflowRunId))")"
+
+          git fetch origin main
+          git fetch origin "refs/heads/$RB:refs/remotes/origin/$RB"
+          [ "$(git rev-parse origin/main)" = "$CUTOVER" ]
+          [ "$(git rev-parse "origin/$RB")" = "$PREV" ]
+          git merge-base --is-ancestor "$PREV" "$CUTOVER"
+
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/$PAGES" > /tmp/g22-pages.json
+          node -e "const x=require('/tmp/g22-pages.json');const t=require('./docs/astra/G22_TRIGGER.json');if(x.head_sha!==t.cutoverCommit||x.status!=='completed'||x.conclusion!=='success')throw Error('Pages run not successful for G22 cutover')"
+
+      - name: Verify production diff is G22-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          PREV="$(node -e "process.stdout.write(require('./docs/astra/G22_TRIGGER.json').previousProductionMain)")"
+          CUTOVER="$(node -e "process.stdout.write(require('./docs/astra/G22_TRIGGER.json').cutoverCommit)")"
+          git diff --name-only "$PREV" "$CUTOVER" | sort > /tmp/g22-diff
+          printf '%s\n' \
+            astra-prod/G22_FULL_APP_MANIFEST.json \
+            astra-prod/app/app.js \
+            astra-prod/app/data.json \
+            astra-prod/app/index.html \
+            index.html \
+            manifest.json \
+            service-worker.js | sort > /tmp/g22-allowed
+          diff -u /tmp/g22-allowed /tmp/g22-diff
+
+      - name: Verify scripts and zero legacy
+        run: |
+          node --check scripts/g22/live-verify.cjs
+          node --check scripts/g22/certify.cjs
+          node --check deploy/g22-full-app/app.js
+          node astra/certification/legacy-isolation.cjs . --full > /tmp/g22-legacy.json
+          node -e "const x=require('/tmp/g22-legacy.json');if(!x.clean||x.runtimeLegacyDependencyCount!==0||x.matches.length)process.exit(1)"
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Run live full-application verification
+        env:
+          G22_SOURCE_HEAD: ${{ github.sha }}
+          G22_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node scripts/g22/live-verify.cjs --write
+
+      - name: Reject verification-induced mutations
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --porcelain | grep -vE '^.. docs/astra/G22_PRODUCTION_(EVIDENCE\.json|REPORT\.md)$' > /tmp/g22-unexpected || true
+          if [ -s /tmp/g22-unexpected ]; then
+            cat /tmp/g22-unexpected >&2
+            exit 1
+          fi
+
+      - name: Validate G22 evidence
+        run: |
+          node <<'NODE'
+          const e=require('./docs/astra/G22_PRODUCTION_EVIDENCE.json');
+          if(e.status!=='PASS'||e.failedChecks.length)throw Error('G22 evidence not PASS');
+          if(e.browser.desktop.status!=='PASS'||e.browser.mobile.status!=='PASS')throw Error('Desktop/mobile full app verification failed');
+          if(e.checks.fullAppBundleByteExact!==true||e.checks.rootTargetsFullApp!==true||e.checks.productionManifestValid!==true)throw Error('Full app cutover integrity failed');
+          if(e.runtimeLegacyDependencyCount!==0||e.runtimeExternalReferences!==0||e.externalRequests!==0)throw Error('Runtime isolation regressed');
+          if(e.unauthorizedMutations!==0||e.productionCutover!==true)throw Error('Production state invalid');
+          NODE
+
+      - name: Promote G22
+        env:
+          G22_SOURCE_HEAD: ${{ github.sha }}
+          G22_WORKFLOW_RUN_ID: ${{ github.run_id }}
+        run: node scripts/g22/certify.cjs --write
+
+      - name: Validate final G22 state
+        run: |
+          node <<'NODE'
+          const g=require('./04_ACCEPTANCE_GATES.json'),m=new Map(g.gates.map(x=>[x.id,x.status]));
+          const c=require('./docs/astra/G22_CERTIFICATION.json'),a=require('./05_WORK_STATE.json'),b=require('./docs/astra/WORK_STATE.json');
+          for(let n=1;n<=22;n++){const id='G'+String(n).padStart(2,'0');if(m.get(id)!=='GREEN')throw Error(id+' not GREEN')}
+          if(!g.certified||g.certified_through!=='G22')throw Error('Gate registry not G22 certified');
+          if(c.status!=='GREEN'||c.productionCutover!==true||c.runtimeLegacyDependencyCount!==0||c.runtimeExternalReferences!==0)throw Error('G22 cert invalid');
+          for(const s of [a,b])if(s.current_gate!=='COMPLETE'||s.last_green_gate!=='G22'||s.current_phase!=='PRODUCTION_FULL_APP_CERTIFIED')throw Error('Final G22 work state invalid');
+          NODE
+
+      - name: Persist G22 certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | awk '{print $1}')"
+          [ "$REMOTE_HEAD" = "$GITHUB_SHA" ]
+          CUTOVER="$(node -e "process.stdout.write(require('./docs/astra/G22_TRIGGER.json').cutoverCommit)")"
+          [ "$(git ls-remote origin refs/heads/main | awk '{print $1}')" = "$CUTOVER" ]
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/astra/G22_PRODUCTION_EVIDENCE.json docs/astra/G22_PRODUCTION_REPORT.md docs/astra/G22_CERTIFICATION.json 04_ACCEPTANCE_GATES.json 05_WORK_STATE.json docs/astra/WORK_STATE.json
+          git commit -m 'cert(g22): full application production GREEN [skip g22]'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
