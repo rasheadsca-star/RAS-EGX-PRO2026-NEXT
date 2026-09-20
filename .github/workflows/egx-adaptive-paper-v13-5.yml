@@ -18,7 +18,7 @@ on:
 
 permissions:
   contents: write
-  pages: write
+  pages: read # ASTRA_SINGLE_PUBLISHER: static.yml is the only Pages publisher
   id-token: write
 
 concurrency:
@@ -121,11 +121,11 @@ jobs:
           fi
 
       - name: Configure GitHub Pages
-        if: ${{ github.event_name == 'schedule' || inputs.mode == 'update' }}
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/configure-pages@v5
 
       - name: Upload repository for Pages
-        if: ${{ github.event_name == 'schedule' || inputs.mode == 'update' }}
+        if: ${{ false }} # ASTRA_SINGLE_PUBLISHER: static.yml owns Pages artifacts/deploy
         uses: actions/upload-pages-artifact@v3
         with:
           path: "."
@@ -133,4 +133,6 @@ jobs:
       - name: Deploy V13.5 pages
         if: ${{ github.event_name == 'schedule' || inputs.mode == 'update' }}
         id: deployment
-        uses: actions/deploy-pages@v4
+        run: |
+          echo "ASTRA_SINGLE_PUBLISHER: direct Pages deployment retired; .github/workflows/static.yml is canonical."
+          echo "page_url=https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/" >> "$GITHUB_OUTPUT"
