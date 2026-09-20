@@ -64,3 +64,12 @@ jobs:
           ASTRA_DEV_BASE=http://127.0.0.1:4173 node tests/astra/astra-native-browser-smoke.cjs
       - name: Ensure current decision snapshot was not mutated
         run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+      - name: Upload tested generated intelligence
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-development-generated-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            astra-prod/app/intelligence/*.json
+            docs/astra/development/WORKFLOW_INVENTORY.json
