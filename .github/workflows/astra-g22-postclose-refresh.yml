@@ -2,13 +2,22 @@ name: Astra G22 Post-Close Session Refresh
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ['EGX MAIN APP V16.9.2 P2 Automatic Scan']
+    types: [completed]
   schedule:
-    - cron: '30 13 * * 0-4'
+    # Hourly fallback only. The handoff guard uses Africa/Cairo and only
+    # permits 15:00-21:59 on EGX trading days after a final MAIN APP publish.
+    - cron: '10 12-19 * * 0-4'
   push:
     branches: ['main']
     paths:
       - '.github/workflows/astra-g22-postclose-refresh.yml'
       - 'scripts/astra/g22-postclose-refresh.cjs'
+      - 'scripts/astra/g22-postclose-handoff-guard.cjs'
+      - 'scripts/astra/g22-refresh-session-exceptions.cjs'
+      - 'scripts/astra/g22-refresh-v16-domain-exceptions.cjs'
+      - 'tests/astra/g22-postclose-handoff-guard.test.cjs'
 
 permissions:
   contents: write
@@ -22,13 +31,60 @@ env:
   ASTRA_CERTIFIED_BASELINE_HEAD: 66b74d6f7586bd06201f6f7992ff9babf1104259
 
 jobs:
+  handoff-guard:
+    runs-on: ubuntu-24.04
+    outputs:
+      run: ${{ steps.guard.outputs.run }}
+      reason: ${{ steps.guard.outputs.reason }}
+      session: ${{ steps.guard.outputs.session }}
+      fingerprint: ${{ steps.guard.outputs.fingerprint }}
+    steps:
+      - name: Checkout latest main for handoff decision
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate handoff guard
+        run: |
+          set -euo pipefail
+          node --check scripts/astra/g22-postclose-handoff-guard.cjs
+          node --test tests/astra/g22-postclose-handoff-guard.test.cjs
+
+      - name: Require final published MAIN APP session
+        id: guard
+        env:
+          G22_TRIGGER_EVENT: ${{ github.event_name }}
+          G22_UPSTREAM_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
+          G22_UPSTREAM_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch || '' }}
+          G22_UPSTREAM_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name || '' }}
+          G22_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          node scripts/astra/g22-postclose-handoff-guard.cjs
+
+      - name: Handoff decision summary
+        run: |
+          echo "run=${{ steps.guard.outputs.run }}"
+          echo "reason=${{ steps.guard.outputs.reason }}"
+          echo "session=${{ steps.guard.outputs.session }}"
+          echo "fingerprint=${{ steps.guard.outputs.fingerprint }}"
+
   refresh:
+    needs: handoff-guard
+    if: needs.handoff-guard.outputs.run == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout current production
         uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 1
 
       - name: Checkout pinned G22 certified baseline
@@ -47,6 +103,9 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/astra/g22-postclose-refresh.cjs
+          node --check scripts/astra/g22-postclose-handoff-guard.cjs
+          node --check scripts/astra/g22-refresh-session-exceptions.cjs
+          node --check scripts/astra/g22-refresh-v16-domain-exceptions.cjs
           node --check .astra-certified/astra/data-health/g11-data-health.cjs
           node --check .astra-certified/astra/pipeline/g09-unified-decision-pipeline.cjs
           node --check scripts/stable/v16-session-aware-price-truth.cjs
@@ -215,7 +274,8 @@ jobs:
             canonicalCoveragePct:audit.health.currentCanonicalCoveragePct,
             decisionCoveragePct:audit.health.decisionPipelineCoveragePct,
             sourceCoveragePct:audit.priceTruth.sourceSessionEvidenceCoveragePct,
-            documentedHighFindings:audit.health.highUnresolved
+            documentedHighFindings:audit.health.highUnresolved,
+            upstreamFingerprint:audit?.upstream?.mainAppMaterialFingerprint || null
           }));
           NODE
 
@@ -266,6 +326,7 @@ jobs:
             critical:a.health.criticalUnresolved,
             high:a.health.highUnresolved,
             guard:a.health.operationalGuardStatus,
-            productionCutover:a.productionCutover
+            productionCutover:a.productionCutover,
+            upstreamFingerprint:a?.upstream?.mainAppMaterialFingerprint || null
           }));
           NODE
