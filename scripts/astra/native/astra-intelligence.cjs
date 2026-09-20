@@ -124,28 +124,39 @@ function rowsForTicker(ticker){
 function overlapEntry(row,entry){return row.high>=entry.low&&row.low<=entry.high}
 function inside(v,lo,hi){return Number.isFinite(v)&&v>=lo&&v<=hi}
 
-function evaluateRecommendation(rec){
-  const rows=rowsForTicker(rec.ticker).filter(r=>r.date>rec.sessionDate);
+function corporateActionSignal(row){
+  const raw=[...(Array.isArray(row.warnings)?row.warnings:[]),row.validationStatus||''].join(' ').toUpperCase();
+  return /CORPORATE[_ -]?ACTION|STOCK[_ -]?SPLIT|REVERSE[_ -]?SPLIT|CAPITAL[_ -]?INCREASE|BONUS[_ -]?SHARES|CASH[_ -]?DISTRIBUTION|TICKER[_ -]?CHANGE|DELIST|SUSPENSION/.test(raw);
+}
+
+function evaluateRows(rec,rows,{expirySessions=20}={}){
+  const future=(rows||[]).filter(r=>r.date>rec.sessionDate).sort((a,b)=>a.date.localeCompare(b.date));
   const timeline=[{state:'ISSUED',session:rec.sessionDate,evidence:'DecisionSnapshot'}];
-  if(!rec.effectiveFromSession||rows.length===0){
+  if(!rec.effectiveFromSession||future.length===0){
     timeline.push({state:'WAITING_FOR_ENTRY',session:rec.effectiveFromSession||null,evidence:'No post-decision finalized session available'});
     return outcome(rec,'WAITING_FOR_ENTRY',timeline,{entryActivated:false,entryNotTriggered:false});
   }
-  let activated=false,activationSession=null,activationPrice=null,activationPrecision=null;
-  let t1=false,t2=false,final=false,stop=false,ambiguous=false,closedSession=null;
-  let sessionsHeld=0,timeToT1=null,timeToFinal=null;
-  const targets=rec.targets||[], t1Level=targets[0]??null,t2Level=targets[1]??null,finalLevel=targets.at(-1)??null;
+  const targets=rec.targets||[],finalLevel=targets.at(-1)??null;
+  let activated=false,activationSession=null,activationPrice=null,activationPrecision=null,sessionsHeld=0;
+  let t1=false,t2=false,final=false,stop=false,closedSession=null,timeToT1=null,timeToFinal=null;
 
-  for(const row of rows){
+  for(let i=0;i<future.length;i++){
+    const row=future[i];
     if(row.date<rec.effectiveFromSession) continue;
+    if(corporateActionSignal(row)){
+      timeline.push({state:'CANCELLED_BY_GOVERNANCE',session:row.date,evidence:'CORPORATE_ACTION_REVIEW_REQUIRED'});
+      return outcome(rec,'CANCELLED_BY_GOVERNANCE',timeline,{entryActivated:activated,activationSession,activationPrice,activationPrecision,sessionsHeld,governanceReason:'CORPORATE_ACTION_REVIEW_REQUIRED'});
+    }
     if(!activated){
-      if(!overlapEntry(row,rec.entryPlan)) continue;
-      const stopHit=Number.isFinite(rec.stopLoss)&&row.low<=rec.stopLoss;
-      const anyTarget=Number.isFinite(finalLevel)&&row.high>=finalLevel;
-      if(stopHit&&anyTarget){
-        ambiguous=true;activationSession=row.date;
-        timeline.push({state:'AMBIGUOUS_INTRADAY_PATH',session:row.date,evidence:'Daily candle touched entry, stop and target without intraday path'});
-        break;
+      if(row.open>rec.entryPlan.high && row.low>rec.entryPlan.high) timeline.push({state:'WAITING_FOR_ENTRY',session:row.date,evidence:'GAP_ABOVE_ENTRY_RANGE',gapEvent:true,open:row.open});
+      if(row.open<rec.entryPlan.low && row.high<rec.entryPlan.low) timeline.push({state:'WAITING_FOR_ENTRY',session:row.date,evidence:'GAP_BELOW_ENTRY_RANGE',gapEvent:true,open:row.open});
+      if(!overlapEntry(row,rec.entryPlan)){
+        const observed=future.filter(r=>r.date>=rec.effectiveFromSession&&r.date<=row.date).length;
+        if(observed>=expirySessions){
+          timeline.push({state:'EXPIRED',session:row.date,evidence:'ENTRY_NOT_TRIGGERED'});
+          return outcome(rec,'EXPIRED',timeline,{entryActivated:false,entryNotTriggered:true,closedSession:row.date,sessionsHeld:0});
+        }
+        continue;
       }
       activated=true;activationSession=row.date;
       if(inside(row.open,rec.entryPlan.low,rec.entryPlan.high)){activationPrice=row.open;activationPrecision='EXACT_SESSION_OPEN_INSIDE_ENTRY_ZONE'}
@@ -153,36 +164,43 @@ function evaluateRecommendation(rec){
       timeline.push({state:'ENTRY_ACTIVATED',session:row.date,evidence:activationPrecision});
       timeline.push({state:'OPEN',session:row.date,evidence:'Activated recommendation is open'});
     }
-    if(activated){
-      sessionsHeld++;
-      const stopHit=Number.isFinite(rec.stopLoss)&&row.low<=rec.stopLoss;
-      const targetHits=targets.map(t=>row.high>=t);
-      if(stopHit&&targetHits.some(Boolean)){
-        ambiguous=true;closedSession=row.date;
-        timeline.push({state:'AMBIGUOUS_INTRADAY_PATH',session:row.date,evidence:'Daily candle hit stop and target; order unavailable'});
-        break;
-      }
-      if(stopHit){
-        stop=true;closedSession=row.date;
-        timeline.push({state:'STOP_LOSS_HIT',session:row.date,level:rec.stopLoss});
-        timeline.push({state:'CLOSED',session:row.date,evidence:'Stop-loss resolution'});
-        break;
-      }
-      if(targetHits[0]&&!t1){t1=true;timeToT1=sessionsHeld;timeline.push({state:'TARGET_1_HIT',session:row.date,level:t1Level})}
-      if(targetHits[1]&&!t2){t2=true;timeline.push({state:'TARGET_2_HIT',session:row.date,level:t2Level})}
-      if(targetHits.length&&targetHits[targetHits.length-1]){
-        final=true;timeToFinal=sessionsHeld;closedSession=row.date;
-        timeline.push({state:'FINAL_TARGET_HIT',session:row.date,level:finalLevel});
-        timeline.push({state:'CLOSED',session:row.date,evidence:'Final target resolution'});
-        break;
-      }
+
+    sessionsHeld++;
+    const stopHit=Number.isFinite(rec.stopLoss)&&row.low<=rec.stopLoss;
+    const targetHits=targets.map(t=>row.high>=t);
+    if(stopHit&&targetHits.some(Boolean)){
+      timeline.push({state:'AMBIGUOUS_INTRADAY_PATH',session:row.date,evidence:'Daily OHLC touched stop and target; intraday order unavailable'});
+      return outcome(rec,'AMBIGUOUS_INTRADAY_PATH',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,ambiguous:true,sessionsHeld});
+    }
+    if(stopHit){
+      stop=true;closedSession=row.date;
+      timeline.push({state:'STOP_LOSS_HIT',session:row.date,level:rec.stopLoss});
+      timeline.push({state:'CLOSED',session:row.date,evidence:'Stop-loss resolution'});
+      return outcome(rec,'CLOSED',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,stopLossHit:true,closedSession,sessionsHeld});
+    }
+    if(targetHits[0]&&!t1){t1=true;timeToT1=sessionsHeld;timeline.push({state:'TARGET_1_HIT',session:row.date,level:targets[0]})}
+    if(targetHits[1]&&!t2){t2=true;timeline.push({state:'TARGET_2_HIT',session:row.date,level:targets[1]})}
+    if(targetHits.length&&targetHits[targetHits.length-1]){
+      final=true;timeToFinal=sessionsHeld;closedSession=row.date;
+      timeline.push({state:'FINAL_TARGET_HIT',session:row.date,level:finalLevel});
+      timeline.push({state:'CLOSED',session:row.date,evidence:'Final target resolution'});
+      return outcome(rec,'CLOSED',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,target1Hit:t1,target2Hit:t2,finalTargetHit:true,closedSession,sessionsHeld,timeToT1,timeToFinal});
     }
   }
 
-  if(ambiguous) return outcome(rec,'AMBIGUOUS_INTRADAY_PATH',timeline,{entryActivated:Boolean(activationSession),activationSession,activationPrice,activationPrecision,ambiguous:true,sessionsHeld});
-  if(!activated) return outcome(rec,'WAITING_FOR_ENTRY',timeline.concat([{state:'WAITING_FOR_ENTRY',session:rec.effectiveFromSession,evidence:'Entry zone not touched in available post-decision history'}]),{entryActivated:false,entryNotTriggered:false});
-  const finalState=stop?'CLOSED':final?'CLOSED':'OPEN';
-  return outcome(rec,finalState,timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,target1Hit:t1,target2Hit:t2,finalTargetHit:final,stopLossHit:stop,closedSession,sessionsHeld,timeToT1,timeToFinal});
+  if(activated) return outcome(rec,'OPEN',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,target1Hit:t1,target2Hit:t2,sessionsHeld,timeToT1,timeToFinal});
+  const observed=future.filter(r=>r.date>=rec.effectiveFromSession).length;
+  if(observed>=expirySessions){
+    const last=future.at(-1);
+    timeline.push({state:'EXPIRED',session:last?.date||rec.effectiveFromSession,evidence:'ENTRY_NOT_TRIGGERED'});
+    return outcome(rec,'EXPIRED',timeline,{entryActivated:false,entryNotTriggered:true,closedSession:last?.date||null,sessionsHeld:0});
+  }
+  timeline.push({state:'WAITING_FOR_ENTRY',session:future.at(-1)?.date||rec.effectiveFromSession,evidence:'Entry zone not touched in available post-decision history'});
+  return outcome(rec,'WAITING_FOR_ENTRY',timeline,{entryActivated:false,entryNotTriggered:false});
+}
+
+function evaluateRecommendation(rec){
+  return evaluateRows(rec,rowsForTicker(rec.ticker),{expirySessions:20});
 }
 
 function outcome(rec,state,timeline,extra={}){
@@ -232,6 +250,8 @@ function summarize(records,outcomes){
   const open=outcomes.filter(x=>x.state==='OPEN').length;
   const closed=outcomes.filter(x=>x.state==='CLOSED').length;
   const ambiguous=outcomes.filter(x=>x.state==='AMBIGUOUS_INTRADAY_PATH').length;
+  const expired=outcomes.filter(x=>x.state==='EXPIRED').length;
+  const governanceCancelled=outcomes.filter(x=>x.state==='CANCELLED_BY_GOVERNANCE').length;
   const t1=outcomes.filter(x=>x.target1Hit).length,t2=outcomes.filter(x=>x.target2Hit).length,final=outcomes.filter(x=>x.finalTargetHit).length,stop=outcomes.filter(x=>x.stopLossHit).length;
   const resolvedReturns=outcomes.map(x=>x.returnPct).filter(Number.isFinite);
   const positive=resolvedReturns.filter(x=>x>0),negative=resolvedReturns.filter(x=>x<0);
@@ -249,14 +269,15 @@ function summarize(records,outcomes){
     openTrades:open,
     closedTrades:closed,
     target1Hit:t1,target2Hit:t2,finalTargetHit:final,stopLossHit:stop,
-    expired:outcomes.filter(x=>x.state==='EXPIRED').length,
+    expired,
+    governanceCancelled,
     ambiguous,
-    activationRate:{numerator:activated,denominator:issued,pct:issued?round(activated/issued*100,2):null},
-    target1HitRate:{numerator:t1,denominator:activated,pct:activated?round(t1/activated*100,2):null},
-    finalTargetRate:{numerator:final,denominator:activated,pct:activated?round(final/activated*100,2):null},
-    stopLossRate:{numerator:stop,denominator:activated,pct:activated?round(stop/activated*100,2):null},
-    winRate:{numerator:wins,denominator:resolvedDirectional,pct:resolvedDirectional?round(wins/resolvedDirectional*100,2):null},
-    lossRate:{numerator:losses,denominator:resolvedDirectional,pct:resolvedDirectional?round(losses/resolvedDirectional*100,2):null},
+    activationRate:{numerator:activated,denominator:issued,denominatorLabel:'Issued',pct:issued?round(activated/issued*100,2):null},
+    target1HitRate:{numerator:t1,denominator:activated,denominatorLabel:'Activated',pct:activated?round(t1/activated*100,2):null},
+    finalTargetRate:{numerator:final,denominator:activated,denominatorLabel:'Activated',pct:activated?round(final/activated*100,2):null},
+    stopLossRate:{numerator:stop,denominator:activated,denominatorLabel:'Activated',pct:activated?round(stop/activated*100,2):null},
+    winRate:{numerator:wins,denominator:resolvedDirectional,denominatorLabel:'Closed Resolved Trades',pct:resolvedDirectional?round(wins/resolvedDirectional*100,2):null},
+    lossRate:{numerator:losses,denominator:resolvedDirectional,denominatorLabel:'Closed Resolved Trades',pct:resolvedDirectional?round(losses/resolvedDirectional*100,2):null},
     averageReturnPct:round(avg(resolvedReturns),4),
     medianReturnPct:round(median(resolvedReturns),4),
     averageWinnerPct:round(avg(positive),4),
@@ -271,7 +292,7 @@ function summarize(records,outcomes){
     historicalSessionsEvaluated:new Set(outcomes.flatMap(x=>x.timeline.map(t=>t.session).filter(Boolean))).size
   };
   const reconciliation={
-    issuedEqualsKnownStates:issued===waiting+open+closed+ambiguous,
+    issuedEqualsKnownStates:issued===waiting+open+closed+ambiguous+expired+governanceCancelled,
     activatedAccounting:activated===open+closed+ambiguous,
     noAmbiguousInWinLossDenominator:true,
     recommendationOutcomeOneToOne:records.every(r=>byId.has(r.recommendationId))&&outcomes.length===records.length
@@ -347,12 +368,27 @@ function buildMarketUniverse(){
   };
 }
 
+function validateHandoff(appData,handoff){
+  const checks={
+    final:handoff.final===true,
+    pagesPublished:handoff.pagesPublished===true,
+    sourceReady:handoff.sourceReady===true,
+    executionGrade:handoff.executionGrade===true,
+    canonicalDataHead:/^[0-9a-f]{40}$/.test(String(handoff.canonicalDataHead||'')),
+    materialFingerprint:/^[0-9a-f]{64}$/.test(String(handoff.materialFingerprint||'')),
+    acceptedRows:Number(handoff.acceptedRows)>=200,
+    sourceCoverage:Number(handoff.sourceSessionEvidenceCoveragePct)>=90,
+    sessionIdentity:appData.sourceDecision.session===handoff.sessionDate&&handoff.expectedSession===handoff.sessionDate
+  };
+  const failed=Object.entries(checks).filter(([,v])=>!v).map(([k])=>k);
+  return {status:failed.length?'FAIL':'PASS',checks,failedChecks:failed};
+}
+
 function main(){
   const appData=readJson('astra-prod/app/data.json');
   const handoff=readJson('data/ops/g22-main-app-handoff.json');
-  if(handoff.final!==true||handoff.pagesPublished!==true) throw new Error('Immutable handoff is not final/published');
-  if(!/^[0-9a-f]{40}$/.test(String(handoff.canonicalDataHead||''))) throw new Error('canonicalDataHead invalid');
-  if(appData.sourceDecision.session!==handoff.sessionDate) throw new Error('Astra session/handoff session mismatch');
+  const handoffCheck=validateHandoff(appData,handoff);
+  if(handoffCheck.status!=='PASS') throw new Error('Immutable handoff rejected: '+handoffCheck.failedChecks.join(','));
   if(appData.health.criticalUnresolved!==0) throw new Error('Current Astra decision has CRITICAL findings');
 
   const existing=readJson('astra-prod/app/intelligence/recommendation-ledger.json',{records:[]});
@@ -389,4 +425,4 @@ function main(){
 }
 
 if(require.main===module) main();
-module.exports={stableRecommendationId,recommendationRecord,buildLedger,evaluateRecommendation,summarize,aggregate,STATES};
+module.exports={stableRecommendationId,recommendationRecord,buildLedger,evaluateRecommendation,evaluateRows,validateHandoff,summarize,aggregate,STATES};
