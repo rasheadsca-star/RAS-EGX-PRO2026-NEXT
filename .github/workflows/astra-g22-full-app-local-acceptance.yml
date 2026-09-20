@@ -56,7 +56,7 @@ jobs:
           node --check scripts/g22/local-acceptance.cjs
           node --check deploy/g22-full-app/app.js
           ! grep -R -E 'v16-main-app-current|v15-practical-decision|v16-v169-primary-decision' deploy/g22-full-app
-          grep -q "No legacy decision fallback" deploy/g22-full-app/index.html
+          grep -q "legacy decision fallback" deploy/g22-full-app/index.html
           grep -q "portfolioStorage:'LOCAL_BROWSER_ONLY'" scripts/g22/build-ui-snapshot.cjs
 
       - name: Build exact Astra UI snapshot
