@@ -150,7 +150,7 @@ case 7:{
   for(const x of ['1M','3M','6M','1Y','MAX'])ok(histJs.includes("'"+x+"'")||histJs.includes('"'+x+'"'),'timeframe missing '+x);
   for(const x of ['Entry L','Entry H','Stop','T1','Support20','Resistance20'])ok(histJs.includes(x),'overlay missing '+x);
   ok(/astraCross/.test(histJs),'crosshair missing');
-  ok(/O '.test(histJs)&&/ H /.test(histJs)&&/ L /.test(histJs)&&/ C /.test(histJs),'exact OHLC tooltip missing');
+  ok(histJs.includes("O ")&&histJs.includes(" H ")&&histJs.includes(" L ")&&histJs.includes(" C "),'exact OHLC tooltip missing');
   ok(!/intraday.*synthetic|synthetic.*intraday/i.test(histJs),'synthetic intraday introduced');
   pass('Professional charts / overlays',[
     'Daily OHLC source only',
