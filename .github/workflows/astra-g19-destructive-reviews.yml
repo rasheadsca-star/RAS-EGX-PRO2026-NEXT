@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: astra-g19-consecutive-destructive-reviews
@@ -139,6 +140,17 @@ jobs:
             git commit -m "cert(g19): clean destructive review $STREAK/10"
           fi
           git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Dispatch next independent review
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          OUTCOME="$(cat docs/astra/G19_RUN_OUTCOME.txt | tr -d '\r\n')"
+          if [ "$OUTCOME" = "PASS" ]; then
+            gh workflow run astra-g19-destructive-reviews.yml --ref "$GITHUB_REF_NAME"
+          fi
 
       - name: Fail workflow after persisted failed review
         shell: bash
