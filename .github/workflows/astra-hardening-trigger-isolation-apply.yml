@@ -1,0 +1,130 @@
+name: Astra One-Time Trigger Isolation Apply
+
+on:
+  push:
+    branches:
+      - hardening/astra-pages-single-publisher-20260921
+    paths:
+      - '.github/workflows/astra-hardening-trigger-isolation-apply.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-hardening-trigger-isolation-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scope legacy publisher push triggers to main only
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const files=[
+            '.github/workflows/egx-adaptive-paper-v13-5.yml',
+            '.github/workflows/egx-eligibility-gated-paper-v13-2.yml',
+            '.github/workflows/egx-gap-diagnostics-approved-import.yml',
+            '.github/workflows/egx-historical-100-sample.yml',
+            '.github/workflows/egx-historical-seed-xlsx.yml',
+            '.github/workflows/egx-history-safety-eligibility-v13-1.yml',
+            '.github/workflows/egx-native-stock-portfolio-v13-7.yml',
+            '.github/workflows/egx-portfolio-risk-v13-8.yml',
+            '.github/workflows/egx-quant-research-v13-4.yml',
+            '.github/workflows/egx-seed-gap-completion.yml',
+            '.github/workflows/egx-starta-gap-auto-completion.yml',
+            '.github/workflows/egx-targeted-seven-repair-v13.yml',
+            '.github/workflows/fix-v13-3-preview-page.yml',
+            '.github/workflows/install-v13-4-quant-engine.yml',
+            '.github/workflows/install-v13-5-adaptive-paper (1).yml',
+            '.github/workflows/install-v13-5-adaptive-paper.yml',
+            '.github/workflows/install-v13-6-unified-interface.yml',
+            '.github/workflows/install-v13-7-native-stock-portfolio.yml',
+            '.github/workflows/install-v13-8-portfolio-risk.yml',
+            '.github/workflows/install-v13-9-recommendation-audit.yml',
+            '.github/workflows/main-app-intraday-ls1.yml',
+            '.github/workflows/main-app-post-basket-canonical-sync.yml',
+            '.github/workflows/mobile-hotfix-deploy.yml',
+            '.github/workflows/repair-v13-4-installation.yml',
+            '.github/workflows/repair-v133-final.yml',
+            '.github/workflows/v13-16-one-time-stabilize.yml',
+            '.github/workflows/v13-17-1-exact-fresh-production-universe.yml',
+            '.github/workflows/v13-17-1-session-truth-sync-final.yml',
+            '.github/workflows/v13-18-portfolio-lifecycle-permission-safe.yml',
+            '.github/workflows/v13-18-portfolio-lifecycle.yml',
+            '.github/workflows/v13-20-multi-session-purchase-priority-permission-safe.yml',
+            '.github/workflows/v13-20-stable-work-deploy.yml',
+            '.github/workflows/v14-recommendation-quality-recovery.yml',
+            '.github/workflows/v14-session-truth-recovery.yml',
+            '.github/workflows/v14-stable-decision-system.yml',
+            '.github/workflows/v16-daily-recommendation-scan.yml',
+            '.github/workflows/v16-v169-basket-engine.yml',
+            '.github/workflows/v17-historical-recovery-post-market.yml'
+          ];
+
+          function scopePush(src,file){
+            const lines=src.split(/\r?\n/);
+            const idx=lines.findIndex(l=>/^  push:\s*/.test(l));
+            if(idx<0) return src;
+            const tail=lines[idx].replace(/^  push:\s*/,'').trim();
+            if(tail){
+              if(/branches\s*:\s*\[\s*['"]?main['"]?\s*\]/.test(tail)) return src;
+              throw new Error(file+': unsupported inline push syntax: '+lines[idx]);
+            }
+            let end=idx+1;
+            while(end<lines.length && !/^  [A-Za-z0-9_"'-]+:\s*/.test(lines[end])) end++;
+            let b=-1;
+            for(let i=idx+1;i<end;i++){
+              if(/^    branches:\s*/.test(lines[i])){b=i;break;}
+            }
+            if(b<0){
+              lines.splice(idx+1,0,'    branches: ["main"]');
+              return lines.join('\n');
+            }
+            let bEnd=b+1;
+            if(/^    branches:\s*$/.test(lines[b])){
+              while(bEnd<end && /^\s{6,}-\s+/.test(lines[bEnd])) bEnd++;
+            }
+            lines.splice(b,bEnd-b,'    branches: ["main"]');
+            return lines.join('\n');
+          }
+
+          let changed=0;
+          for(const file of files){
+            const src=fs.readFileSync(file,'utf8');
+            const out=scopePush(src,file);
+            if(out!==src){fs.writeFileSync(file,out);changed++;}
+          }
+
+          function mainOnly(src){
+            const lines=src.split(/\r?\n/);
+            const idx=lines.findIndex(l=>/^  push:\s*/.test(l));
+            if(idx<0) return true;
+            let end=idx+1;
+            while(end<lines.length && !/^  [A-Za-z0-9_"'-]+:\s*/.test(lines[end])) end++;
+            return lines.slice(idx+1,end).some(l=>/^    branches:\s*\[\s*["']?main["']?\s*\]\s*$/.test(l));
+          }
+          const unsafe=files.filter(f=>!mainOnly(fs.readFileSync(f,'utf8')));
+          if(unsafe.length) throw new Error('Unsafe push triggers remain: '+unsafe.join(', '));
+          console.log(JSON.stringify({files:files.length,changed,unsafe:unsafe.length}));
+          NODE
+
+      - name: Remove one-time applier from final hardening tree
+        run: rm .github/workflows/astra-hardening-trigger-isolation-apply.yml
+
+      - name: Commit trigger isolation atomically
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows
+          git commit -m "hardening(astra): isolate legacy push triggers to main"
+          git push origin HEAD:hardening/astra-pages-single-publisher-20260921
