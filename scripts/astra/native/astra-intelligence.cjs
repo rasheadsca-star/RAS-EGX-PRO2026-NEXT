@@ -47,7 +47,7 @@ function recommendationRecord(appData,handoff,opportunity){
   const effective=nextHistorySession(opportunity.ticker,ds.sessionDate);
   const recId=stableRecommendationId(ds,opportunity);
   return {
-    schemaVersion:'astra-recommendation-record-1',
+    schemaVersion:'astra-recommendation-record-2',
     recommendationId:recId,
     decisionSnapshotId:ds.decisionSnapshotId,
     semanticDecisionHash:ds.semanticDecisionHash,
@@ -100,11 +100,20 @@ function buildLedger(appData,handoff,existing){
   for(const op of (ds.top5||ds.opportunities||[])){
     const rec=recommendationRecord(appData,handoff,op);
     if(!byId.has(rec.recommendationId)) byId.set(rec.recommendationId,rec);
+    else {
+      const prior=byId.get(rec.recommendationId);
+      byId.set(rec.recommendationId,{
+        ...prior,
+        schemaVersion:'astra-recommendation-record-2',
+        effectiveFromPolicy:prior.effectiveFromPolicy||rec.effectiveFromPolicy,
+        effectiveFromStatus:prior.effectiveFromStatus||(prior.effectiveFromSession?'RESOLVED':'PENDING_NEXT_FINALIZED_SESSION')
+      });
+    }
   }
   const records=Array.from(byId.values()).sort((a,b)=>String(a.sessionDate).localeCompare(String(b.sessionDate))||Number(a.rank)-Number(b.rank)||String(a.ticker).localeCompare(String(b.ticker)));
   const first=records[0]?.sessionDate||null,last=records.at(-1)?.sessionDate||null;
   return {
-    schemaVersion:'astra-recommendation-ledger-1',
+    schemaVersion:'astra-recommendation-ledger-2',
     generatedAt:deterministicGeneratedAt(appData,handoff),
     appendOnly:true,
     idempotent:true,
@@ -137,6 +146,8 @@ function corporateActionSignal(row){
 
 function evaluateRows(rec,rows,{expirySessions=20}={}){
   const future=(rows||[]).filter(r=>r.date>rec.sessionDate).sort((a,b)=>a.date.localeCompare(b.date));
+  const resolvedEffectiveFromSession=rec.effectiveFromSession||future[0]?.date||null;
+  rec={...rec,effectiveFromSession:resolvedEffectiveFromSession,effectiveFromStatus:resolvedEffectiveFromSession?'RESOLVED':'PENDING_NEXT_FINALIZED_SESSION'};
   const timeline=[{state:'ISSUED',session:rec.sessionDate,evidence:'DecisionSnapshot'}];
   if(!rec.effectiveFromSession||future.length===0){
     timeline.push({state:'WAITING_FOR_ENTRY',session:rec.effectiveFromSession||null,evidence:'No post-decision finalized session available'});
@@ -220,12 +231,14 @@ function outcome(rec,state,timeline,extra={}){
     if(Number.isFinite(exit)) returnPct=round((exit/extra.activationPrice-1)*100,4);
   }
   return {
-    schemaVersion:'astra-recommendation-outcome-1',
+    schemaVersion:'astra-recommendation-outcome-2',
     recommendationId:rec.recommendationId,
     ticker:rec.ticker,
     decisionSnapshotId:rec.decisionSnapshotId,
     sessionDate:rec.sessionDate,
     effectiveFromSession:rec.effectiveFromSession,
+    effectiveFromPolicy:rec.effectiveFromPolicy||'NEXT_FINALIZED_SESSION_AFTER_DECISION',
+    effectiveFromStatus:rec.effectiveFromStatus||(rec.effectiveFromSession?'RESOLVED':'PENDING_NEXT_FINALIZED_SESSION'),
     state,
     resolved,
     timeline,
@@ -447,7 +460,7 @@ function main(){
     inputHashes:{ledger:sha256(ledger.records),outcomes:sha256(outcomes)}
   };
 
-  const outcomeDoc={schemaVersion:'astra-recommendation-outcomes-1',...meta,records:outcomes};
+  const outcomeDoc={schemaVersion:'astra-recommendation-outcomes-2',...meta,records:outcomes};
   const windows=performanceWindows(ledger.records,outcomes);
   const summaryDoc={schemaVersion:'astra-performance-summary-2',...meta,...summary,counts:summary.metrics,rates:{activationRate:summary.metrics.activationRate,target1HitRate:summary.metrics.target1HitRate,finalTargetRate:summary.metrics.finalTargetRate,stopLossRate:summary.metrics.stopLossRate,winRate:summary.metrics.winRate,lossRate:summary.metrics.lossRate},returns:{averageReturnPct:summary.metrics.averageReturnPct,medianReturnPct:summary.metrics.medianReturnPct,averageWinnerPct:summary.metrics.averageWinnerPct,averageLoserPct:summary.metrics.averageLoserPct,profitFactor:summary.metrics.profitFactor,expectancyPct:summary.metrics.expectancyPct},timing:{averageHoldingSessions:summary.metrics.averageHoldingSessions,averageTimeToT1:summary.metrics.averageTimeToT1,averageTimeToFinalTarget:summary.metrics.averageTimeToFinalTarget},windows,currentOpportunities:(appData.decisionSnapshot.top5||[]).length};
   const byRank={schemaVersion:'astra-performance-by-rank-1',...meta,groups:aggregate(ledger.records,outcomes,r=>'RANK_'+r.rank)};

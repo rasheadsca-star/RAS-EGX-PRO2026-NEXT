@@ -182,3 +182,30 @@ test('workflow inventory does not classify development guard text as a publisher
   assert.equal(final.categories.includes('Competing publisher'),false);
   assert.equal(final.categories.includes('Dangerous'),false);
 });
+
+
+test('legacy ledger records are metadata-enriched without rewriting immutable decision',()=>{
+  const app={
+    generatedAt:'2026-09-20T15:00:00Z',
+    sourceDecision:{decisionSnapshotId:'G09-DS-aaaaaaaaaaaaaaaaaaaaaaaa',semanticDecisionHash:'b'.repeat(64)},
+    decisionSnapshot:{decisionSnapshotId:'G09-DS-aaaaaaaaaaaaaaaaaaaaaaaa',semanticDecisionHash:'b'.repeat(64),sessionDate:'2099-01-01',top5:[{ticker:'ABUK',rank:1,decisionScore:1,entryPlan:{low:1,high:2},stopLoss:.5,targets:[3]}]}
+  };
+  const h={canonicalDataHead:'a'.repeat(40),materialFingerprint:'b'.repeat(64),producerRunId:1};
+  const fresh=mod.buildLedger(app,h,{records:[]});
+  const old=JSON.parse(JSON.stringify(fresh.records[0]));
+  delete old.effectiveFromPolicy; delete old.effectiveFromStatus; old.schemaVersion='astra-recommendation-record-1';
+  const immutableBefore=JSON.stringify(old.immutableDecision);
+  const migrated=mod.buildLedger(app,h,{records:[old]}).records[0];
+  assert.equal(migrated.schemaVersion,'astra-recommendation-record-2');
+  assert.equal(migrated.effectiveFromPolicy,'NEXT_FINALIZED_SESSION_AFTER_DECISION');
+  assert.equal(migrated.effectiveFromStatus,'PENDING_NEXT_FINALIZED_SESSION');
+  assert.equal(JSON.stringify(migrated.immutableDecision),immutableBefore);
+});
+
+test('pending effective session resolves to first actual post-decision finalized row',()=>{
+  const rec={...recFixture(),effectiveFromSession:null,effectiveFromPolicy:'NEXT_FINALIZED_SESSION_AFTER_DECISION',effectiveFromStatus:'PENDING_NEXT_FINALIZED_SESSION'};
+  const o=mod.evaluateRows(rec,[row('2026-09-21',10.5,11.5,10.1,11)]);
+  assert.equal(o.effectiveFromSession,'2026-09-21');
+  assert.equal(o.effectiveFromStatus,'RESOLVED');
+  assert.equal(o.entryActivated,true);
+});
