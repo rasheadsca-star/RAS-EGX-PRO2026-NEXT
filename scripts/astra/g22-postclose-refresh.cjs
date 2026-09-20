@@ -190,7 +190,7 @@ function main() {
     sourceHead,
     certifiedBaselineHead,
     refreshedAt,
-    refreshPolicy: 'G22_POST_CLOSE_CERTIFIED_BASELINE_OPERATIONAL_REFRESH',
+    refreshPolicy: 'G22_POST_CLOSE_CERTIFIED_BASELINE_OPERATIONAL_REFRESH_V2',
     refreshSource: 'G22_CERTIFIED_BASELINE + CURRENT_SESSION_PRICE_TRUTH -> CERTIFIED_G11_CONTEXT -> CERTIFIED_ASTRA_G09_PIPELINE_1',
     sourcePriceTruthGeneratedAt: priceTruth.generatedAt || null,
     certificationBaseline: baseline
