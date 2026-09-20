@@ -89,6 +89,10 @@ function recommendationRecord(appData,handoff,opportunity){
   };
 }
 
+function deterministicGeneratedAt(appData,handoff){
+  return appData.sourceDecision?.refreshedAt||appData.generatedAt||handoff.generatedAt||handoff.createdAt||(appData.sourceDecision?.session?appData.sourceDecision.session+'T23:59:59.000Z':null)||'1970-01-01T00:00:00.000Z';
+}
+
 function buildLedger(appData,handoff,existing){
   const ds=appData.decisionSnapshot;
   const prior=Array.isArray(existing?.records)?existing.records:[];
@@ -101,7 +105,7 @@ function buildLedger(appData,handoff,existing){
   const first=records[0]?.sessionDate||null,last=records.at(-1)?.sessionDate||null;
   return {
     schemaVersion:'astra-recommendation-ledger-1',
-    generatedAt:new Date().toISOString(),
+    generatedAt:deterministicGeneratedAt(appData,handoff),
     appendOnly:true,
     idempotent:true,
     sourceSnapshot:sourceSnapshotRefs(appData,handoff),
@@ -437,7 +441,7 @@ function main(){
   const summary=summarize(ledger.records,outcomes);
   const sessionRange=ledger.sessionRange;
   const meta={
-    generatedAt:new Date().toISOString(),
+    generatedAt:deterministicGeneratedAt(appData,handoff),
     sourceSnapshot:ledger.sourceSnapshot,
     sessionRange,
     inputHashes:{ledger:sha256(ledger.records),outcomes:sha256(outcomes)}

@@ -1,5 +1,5 @@
 'use strict';
-const fs=require('fs'),path=require('path');
+const fs=require('fs'),path=require('path'),cp=require('child_process');
 const ROOT=path.resolve(__dirname,'../../..');
 const WF=path.join(ROOT,'.github','workflows');
 const files=fs.readdirSync(WF).filter(x=>/\.ya?ml$/i.test(x)).sort();
@@ -7,9 +7,10 @@ const rows=[];
 for(const file of files){
   const rel='.github/workflows/'+file;
   const src=fs.readFileSync(path.join(WF,file),'utf8');
-  const deployPages=/actions\/deploy-pages@/i.test(src);
-  const uploadPages=/actions\/upload-pages-artifact@/i.test(src);
-  const gitPush=/\bgit\s+push\b/i.test(src);
+  const executable=src.split(/\r?\n/).filter(line=>!/^\s*(?:#|!?\s*grep\b|echo\b)/i.test(line)).join('\n');
+  const deployPages=/^\s*(?:-\s*)?uses:\s*actions\/deploy-pages@/im.test(src);
+  const uploadPages=/^\s*(?:-\s*)?uses:\s*actions\/upload-pages-artifact@/im.test(src);
+  const gitPush=/\bgit\s+push\b/i.test(executable);
   const writesMarket=/data\/market\.json|data\/history\/|data\/stable\//i.test(src);
   const writesAstra=/astra-prod\//i.test(src);
   const workflowRun=/workflow_run:/i.test(src);
@@ -29,9 +30,11 @@ for(const file of files){
 }
 const competing=rows.filter(x=>x.deployPages&&!x.path.endsWith('/static.yml'));
 const dangerous=rows.filter(x=>x.categories.includes('Dangerous'));
+let sourceGeneratedAt='1970-01-01T00:00:00.000Z';
+try{sourceGeneratedAt=cp.execFileSync('git',['log','-1','--format=%cI','--','.github/workflows'],{cwd:ROOT,encoding:'utf8'}).trim()||sourceGeneratedAt}catch{}
 const out={
   schemaVersion:'astra-development-workflow-inventory-1',
-  generatedAt:new Date().toISOString(),
+  generatedAt:sourceGeneratedAt,
   canonicalAstraProductionPublisher:'.github/workflows/static.yml',
   totalWorkflows:rows.length,
   competingPublisherCandidates:competing.length,

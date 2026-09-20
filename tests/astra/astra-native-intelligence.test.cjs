@@ -151,3 +151,34 @@ test('effective session policy is explicit without inventing a future session',(
   assert.equal(rec.effectiveFromPolicy,'NEXT_FINALIZED_SESSION_AFTER_DECISION');
   assert.equal(rec.effectiveFromStatus,'PENDING_NEXT_FINALIZED_SESSION');
 });
+
+
+test('native artifact build is byte-reproducible for identical inputs',()=>{
+  const root=path.resolve(__dirname,'../..');
+  const paths=[
+    'astra-prod/app/intelligence/recommendation-ledger.json',
+    'astra-prod/app/intelligence/recommendation-outcomes.json',
+    'astra-prod/app/intelligence/performance-summary.json',
+    'astra-prod/app/intelligence/performance-by-rank.json',
+    'astra-prod/app/intelligence/performance-by-regime.json',
+    'astra-prod/app/intelligence/ticker-performance.json',
+    'astra-prod/app/intelligence/market-universe.json',
+    'astra-prod/app/intelligence/analytics-integrity.json'
+  ];
+  require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'});
+  const first=new Map(paths.map(p=>[p,fs.readFileSync(path.join(root,p),'utf8')]));
+  require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'});
+  for(const p of paths) assert.equal(fs.readFileSync(path.join(root,p),'utf8'),first.get(p),p+' is not byte-reproducible');
+});
+
+test('workflow inventory does not classify development guard text as a publisher',()=>{
+  const root=path.resolve(__dirname,'../..');
+  require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/workflow-inventory.cjs')],{cwd:root,stdio:'pipe'});
+  const inv=JSON.parse(fs.readFileSync(path.join(root,'docs/astra/development/WORKFLOW_INVENTORY.json'),'utf8'));
+  const final=inv.workflows.find(x=>x.path==='.github/workflows/astra-development-final-certification.yml');
+  assert.ok(final);
+  assert.equal(final.deployPages,false);
+  assert.equal(final.gitPush,false);
+  assert.equal(final.categories.includes('Competing publisher'),false);
+  assert.equal(final.categories.includes('Dangerous'),false);
+});
