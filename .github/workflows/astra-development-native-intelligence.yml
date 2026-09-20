@@ -39,6 +39,8 @@ jobs:
         run: |
           node --check scripts/astra/native/astra-intelligence.cjs
           node --check astra-prod/app/app.js
+          node --check astra-prod/app/astra-performance-history.js
+          node --check astra-prod/app/astra-market-portfolio.js
       - name: Ensure current decision snapshot was not mutated
         run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
       - name: Persist generated development intelligence only
