@@ -59,8 +59,23 @@ jobs:
           grep -q "legacy decision fallback" deploy/g22-full-app/index.html
           grep -q "portfolioStorage:'LOCAL_BROWSER_ONLY'" scripts/g22/build-ui-snapshot.cjs
 
-      - name: Build exact Astra UI snapshot
-        run: node scripts/g22/build-ui-snapshot.cjs
+      - name: Build exact Astra UI snapshot from pinned G11 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE="$(node -e "process.stdout.write(require('./docs/astra/G11_CURRENT_PIPELINE_RUN.json').sourceHead)")"
+          rm -rf /tmp/g22-g11
+          git worktree add --detach /tmp/g22-g11 "$SOURCE"
+          mkdir -p /tmp/g22-g11/scripts/g22 /tmp/g22-g11/deploy/g22-full-app /tmp/g22-g11/docs/astra
+          cp scripts/g22/build-ui-snapshot.cjs /tmp/g22-g11/scripts/g22/build-ui-snapshot.cjs
+          cp docs/astra/G11_CURRENT_PIPELINE_RUN.json /tmp/g22-g11/docs/astra/
+          cp docs/astra/G11_DATA_HEALTH_METRICS.json /tmp/g22-g11/docs/astra/
+          cp docs/astra/G11_DATA_HEALTH_ISSUES.json /tmp/g22-g11/docs/astra/
+          cp docs/astra/G11_GUARD37_EVIDENCE.json /tmp/g22-g11/docs/astra/
+          cp docs/astra/G21_CERTIFICATION.json /tmp/g22-g11/docs/astra/
+          (cd /tmp/g22-g11 && node scripts/g22/build-ui-snapshot.cjs)
+          cp /tmp/g22-g11/deploy/g22-full-app/data.json deploy/g22-full-app/data.json
+          git worktree remove --force /tmp/g22-g11
 
       - name: Validate exact rebuilt DecisionSnapshot
         run: |
