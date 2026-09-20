@@ -38,12 +38,13 @@ jobs:
       reason: ${{ steps.guard.outputs.reason }}
       session: ${{ steps.guard.outputs.session }}
       fingerprint: ${{ steps.guard.outputs.fingerprint }}
+      canonical_head: ${{ steps.guard.outputs.canonical_head }}
     steps:
       - name: Checkout latest main for handoff decision
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -63,6 +64,7 @@ jobs:
           G22_UPSTREAM_CONCLUSION: ${{ github.event.workflow_run.conclusion || '' }}
           G22_UPSTREAM_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch || '' }}
           G22_UPSTREAM_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name || '' }}
+          G22_UPSTREAM_RUN_ID: ${{ github.event.workflow_run.id || '' }}
           G22_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -74,6 +76,7 @@ jobs:
           echo "reason=${{ steps.guard.outputs.reason }}"
           echo "session=${{ steps.guard.outputs.session }}"
           echo "fingerprint=${{ steps.guard.outputs.fingerprint }}"
+          echo "canonical_head=${{ steps.guard.outputs.canonical_head }}"
 
   refresh:
     needs: handoff-guard
@@ -85,6 +88,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
+
+      - name: Checkout immutable MAIN APP final data snapshot
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.handoff-guard.outputs.canonical_head }}
+          path: .main-app-final
           fetch-depth: 1
 
       - name: Checkout pinned G22 certified baseline
@@ -116,15 +126,17 @@ jobs:
       - name: Build current-session data on the certified baseline
         env:
           CERT_ROOT: ${{ github.workspace }}/.astra-certified
+          PROD_DATA_ROOT: ${{ github.workspace }}/.main-app-final
         run: |
           set -euo pipefail
-          test -f data/market.json
-          test -f data/fetch-status.json
-          test -f data/stable/v15-price-truth.json
+          test -f "$PROD_DATA_ROOT/data/market.json"
+          test -f "$PROD_DATA_ROOT/data/fetch-status.json"
+          test -f "$PROD_DATA_ROOT/data/stable/v15-price-truth.json"
+          test -d "$PROD_DATA_ROOT/data/history"
           test -d "$CERT_ROOT/data/history"
 
-          cp data/market.json "$CERT_ROOT/data/market.json"
-          cp data/fetch-status.json "$CERT_ROOT/data/fetch-status.json"
+          cp "$PROD_DATA_ROOT/data/market.json" "$CERT_ROOT/data/market.json"
+          cp "$PROD_DATA_ROOT/data/fetch-status.json" "$CERT_ROOT/data/fetch-status.json"
           cp scripts/stable/v16-session-aware-price-truth.cjs "$CERT_ROOT/scripts/stable/v16-session-aware-price-truth.cjs"
           cp scripts/stable/v16-market-second-source-resolver.cjs "$CERT_ROOT/scripts/stable/v16-market-second-source-resolver.cjs"
           cp scripts/stable/v16-market-coverage-reconciler.cjs "$CERT_ROOT/scripts/stable/v16-market-coverage-reconciler.cjs"
@@ -133,7 +145,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const path=require('path');
-          const prod=process.env.GITHUB_WORKSPACE;
+          const prod=process.env.PROD_DATA_ROOT;
           const cert=process.env.CERT_ROOT;
           const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
           const write=(p,v)=>fs.writeFileSync(p,JSON.stringify(v,null,2)+'\n');
@@ -229,6 +241,7 @@ jobs:
       - name: Rebuild current DecisionSnapshot with certified G11/G09
         env:
           ASTRA_DECISION_ROOT: ${{ github.workspace }}/.astra-certified
+          G22_MAIN_APP_CANONICAL_HEAD: ${{ needs.handoff-guard.outputs.canonical_head }}
         run: |
           set -euo pipefail
           node scripts/astra/g22-postclose-refresh.cjs | tee /tmp/g22-refresh.log
@@ -242,7 +255,7 @@ jobs:
           const app=read('astra-prod/app/data.json');
           const manifest=read('astra-prod/G22_FULL_APP_MANIFEST.json');
           const audit=read('astra-prod/G22_SESSION_REFRESH.json');
-          const main=read('data/stable/v16-immediate-scan-status.json');
+          const main=read('data/ops/g22-main-app-handoff.json');
           const s=audit.session.expected;
           const ok=(c,m)=>{if(!c)throw new Error(m)};
           ok(/^\d{4}-\d{2}-\d{2}$/.test(s),'audit session invalid');
@@ -261,6 +274,10 @@ jobs:
           ok(audit?.upstream?.mainAppMaterialFingerprint===main.materialFingerprint,'audit upstream fingerprint mismatch');
           ok(app?.sourceDecision?.upstream?.mainAppMaterialFingerprint===main.materialFingerprint,'app upstream fingerprint mismatch');
           ok(manifest?.currentDecisionUpstream?.mainAppMaterialFingerprint===main.materialFingerprint,'manifest upstream fingerprint mismatch');
+          ok(audit?.upstream?.canonicalDataHead===main.canonicalDataHead,'audit immutable data head mismatch');
+          ok(app?.sourceDecision?.upstream?.canonicalDataHead===main.canonicalDataHead,'app immutable data head mismatch');
+          ok(manifest?.currentDecisionUpstream?.canonicalDataHead===main.canonicalDataHead,'manifest immutable data head mismatch');
+          ok(main.canonicalDataHead==='${{ needs.handoff-guard.outputs.canonical_head }}','guard canonical head drifted');
           ok(audit.health.criticalUnresolved===0,'CRITICAL health issue present');
           ok(String(audit.health.operationalGuardStatus||'').startsWith('PASS'),'operational guard not PASS');
           ok(String(app.health.guardStatus||'').startsWith('PASS'),'app guard not PASS');
@@ -292,20 +309,23 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git fetch origin main --depth=1
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
-            echo "main advanced during refresh; refusing stale publication"
-            exit 1
-          }
           git add astra-prod/app/data.json astra-prod/G22_FULL_APP_MANIFEST.json astra-prod/G22_SESSION_REFRESH.json
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "G22_REFRESH_NO_CHANGE"
           else
             git commit -m 'data(g22): refresh post-close Astra session'
-            git push origin HEAD:main
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            for attempt in 1 2 3; do
+              git fetch origin main
+              if git rebase origin/main && git push origin HEAD:main; then
+                echo "changed=true" >> "$GITHUB_OUTPUT"
+                echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+                break
+              fi
+              git rebase --abort >/dev/null 2>&1 || true
+              [ "$attempt" = "3" ] && exit 1
+              sleep $((attempt * 8))
+            done
           fi
 
       - name: Dispatch canonical Pages publisher
