@@ -50,6 +50,8 @@ jobs:
           node --check .astra-certified/astra/data-health/g11-data-health.cjs
           node --check .astra-certified/astra/pipeline/g09-unified-decision-pipeline.cjs
           node --check scripts/stable/v16-session-aware-price-truth.cjs
+          node --check scripts/stable/v16-market-second-source-resolver.cjs
+          node --check scripts/stable/v16-market-coverage-reconciler.cjs
 
       - name: Build current-session data on the certified baseline
         env:
@@ -64,6 +66,8 @@ jobs:
           cp data/market.json "$CERT_ROOT/data/market.json"
           cp data/fetch-status.json "$CERT_ROOT/data/fetch-status.json"
           cp scripts/stable/v16-session-aware-price-truth.cjs "$CERT_ROOT/scripts/stable/v16-session-aware-price-truth.cjs"
+          cp scripts/stable/v16-market-second-source-resolver.cjs "$CERT_ROOT/scripts/stable/v16-market-second-source-resolver.cjs"
+          cp scripts/stable/v16-market-coverage-reconciler.cjs "$CERT_ROOT/scripts/stable/v16-market-coverage-reconciler.cjs"
 
           node <<'NODE'
           const fs=require('fs');
@@ -110,6 +114,8 @@ jobs:
           (
             cd "$CERT_ROOT"
             GITHUB_WORKSPACE="$CERT_ROOT" node scripts/stable/v16-session-aware-price-truth.cjs
+            GITHUB_WORKSPACE="$CERT_ROOT" node scripts/stable/v16-market-second-source-resolver.cjs
+            GITHUB_WORKSPACE="$CERT_ROOT" node scripts/stable/v16-market-coverage-reconciler.cjs
           )
 
           node <<'NODE'
@@ -146,6 +152,7 @@ jobs:
             updatedHistoryFiles:truth.updatedHistoryFiles,
             missingHistoryFiles:truth.missingHistoryFiles,
             sourceCoveragePct:truth?.source?.sourceSessionEvidenceCoveragePct,
+            secondSourceRecoveredTickers:truth?.professionalCoverage?.secondSourceRecoveredTickers || truth?.secondSourceRecoveredTickers || [],
             summaryCurrentRows:current
           }));
           NODE
