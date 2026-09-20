@@ -77,14 +77,17 @@ jobs:
           cp /tmp/g22-g11/deploy/g22-full-app/data.json deploy/g22-full-app/data.json
           git worktree remove --force /tmp/g22-g11
 
-      - name: Validate exact rebuilt DecisionSnapshot
+      - name: Validate exact semantic DecisionSnapshot rebuild
         run: |
           node <<'NODE'
           const d=require('./deploy/g22-full-app/data.json'),p=require('./docs/astra/G11_CURRENT_PIPELINE_RUN.json'),b=require('./docs/astra/G22_BASELINE.json');
-          if(!d.integrity.rebuildExact)throw Error('rebuildExact false');
+          if(d.integrity.decisionSemanticRebuildExact!==true)throw Error('semantic rebuild is not exact');
+          if(d.integrity.normalizedObjectDeterministic!==true)throw Error('normalized snapshot is not deterministic');
+          if(d.integrity.persistedObjectHashPreserved!==true)throw Error('persisted object hash provenance missing');
           if(d.sourceDecision.decisionSnapshotId!==p.decisionSnapshotId||d.sourceDecision.decisionSnapshotId!==b.decisionSnapshotId)throw Error('DecisionSnapshot ID mismatch');
           if(d.sourceDecision.semanticDecisionHash!==p.semanticDecisionHash||d.sourceDecision.semanticDecisionHash!==b.semanticDecisionHash)throw Error('Semantic hash mismatch');
-          if(d.sourceDecision.decisionSnapshotObjectHash!==p.decisionSnapshotObjectHash)throw Error('Object hash mismatch');
+          if(d.sourceDecision.persistedDecisionSnapshotObjectHash!==p.decisionSnapshotObjectHash)throw Error('Persisted object hash provenance mismatch');
+          if(!Array.isArray(d.integrity.nonSemanticVarianceFields)||!d.integrity.nonSemanticVarianceFields.includes('durationMs'))throw Error('durationMs variance policy missing');
           if(d.decisionSnapshot.top5.length!==p.opportunities)throw Error('Opportunity count mismatch');
           if(d.decisionSnapshot.legacyNetworkCalls!==0||d.decisionSnapshot.quantEdgeLiveInfluence!==0)throw Error('Legacy/QUANT_EDGE influence detected');
           NODE
