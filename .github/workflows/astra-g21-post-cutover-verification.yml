@@ -76,7 +76,7 @@ jobs:
           for F in .github/workflows/v169-primary-pages-deploy.yml .github/workflows/v15-practical-deploy.yml .github/workflows/v16-technical-review.yml; do
             git show "$EXPECTED:$F" > /tmp/g21-retired.yml
             grep -q "RETIRED BY G20" /tmp/g21-retired.yml
-            grep -Fq 'if: ${{ false }}' /tmp/g21-retired.yml
+            grep -Eq '^[[:space:]]*if:[[:space:]].*false' /tmp/g21-retired.yml
             ! grep -q "pages: write" /tmp/g21-retired.yml
             ! grep -q "actions/deploy-pages@" /tmp/g21-retired.yml
           done
