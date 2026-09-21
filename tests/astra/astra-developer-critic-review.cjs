@@ -163,12 +163,23 @@ case 8:{
   assert.equal(universe.activeCount,224);
   assert.equal(universe.intendedActive,224);
   assert.equal(universe.records.filter(x=>x.active!==false).length,224);
-  ok(universe.records.some(x=>x.ticker==='GOUR'),'GOUR missing from full active search universe');
+  const gour=universe.records.find(x=>x.ticker==='GOUR');
+  ok(gour,'GOUR missing from full active search universe');
+  assert.equal(gour.historyAvailable,false);
+  assert.equal(gour.historySessions,0);
+  const missingHistory=universe.records.filter(x=>x.active!==false&&x.historyAvailable!==true);
+  ok(missingHistory.length>0,'missing-history boundary is not exercised');
+  ok(missingHistory.every(x=>Number(x.historySessions||0)===0),'unavailable history rows must expose zero sessions');
+  ok(/u\?\.historyAvailable===true/.test(marketJs),'stock UI does not gate history fetch on certified availability metadata');
+  ok(/لا توجد بيانات Daily OHLC موثقة/.test(marketJs),'explicit no-history explanation missing');
+  ok(/غير متاح/.test(marketJs),'unavailable analytics label missing');
   ok(/السهم موجود ضمن السوق الحالي، لكنه ليس ضمن فرص Astra لهذه الجلسة/.test(marketJs),'not-recommended message missing');
   ok(/Ticker · Arabic\/English name · ISIN/.test(marketJs),'search keys not disclosed');
   pass('Full-market search / stock intelligence',[
     '224/224 active universe searchable',
     'GOUR remains searchable even when not recommended',
+    'history fetch is gated by historyAvailable/historySessions',
+    'missing Daily OHLC is explicit and never estimated',
     'ticker/name/ISIN search contract',
     'not-recommended stocks remain visible'
   ]);
