@@ -112,6 +112,31 @@ test('range touch from outside entry keeps execution price unknown',()=>{
   assert.equal(o.activationPricePrecision,'ENTRY_RANGE_TOUCH_PRICE_UNKNOWN');
 });
 
+test('MFE and MAE use only exact observed post-activation OHLC against exact activation price',()=>{
+  const o=mod.evaluateRows(recFixture(),[
+    row('2026-09-21',10.5,11.4,10.0,11),
+    row('2026-09-22',11,11.8,10.2,11.5)
+  ]);
+  assert.equal(o.entryActivated,true);
+  assert.equal(o.activationPrice,10.5);
+  assert.equal(o.maxFavorableExcursionPct,12.381);
+  assert.equal(o.maxAdverseExcursionPct,-4.7619);
+});
+
+test('MFE and MAE remain unavailable when entry execution price is unknown',()=>{
+  const o=mod.evaluateRows(recFixture(),[row('2026-09-21',12,12.1,10.5,11)]);
+  assert.equal(o.activationPrice,null);
+  assert.equal(o.maxFavorableExcursionPct,null);
+  assert.equal(o.maxAdverseExcursionPct,null);
+});
+
+test('performance windows expose required 7 30 90 YTD and ALL views',()=>{
+  const records=['2026-01-01','2026-01-02','2026-01-03'].map((sessionDate,i)=>({recommendationId:'w'+i,sessionDate,rank:i+1,marketRegime:'NEUTRAL',ticker:'W'+i}));
+  const outcomes=records.map(r=>({recommendationId:r.recommendationId,entryActivated:false,entryNotTriggered:false,state:'WAITING_FOR_ENTRY',target1Hit:false,target2Hit:false,finalTargetHit:false,stopLossHit:false,returnPct:null,timeline:[{session:r.sessionDate}],sessionsHeld:0}));
+  const w=mod.performanceWindows(records,outcomes);
+  for(const k of ['7_SESSIONS','30_SESSIONS','90_SESSIONS','YTD','ALL']) assert.ok(w[k],k+' missing');
+});
+
 test('corporate action quarantine prevents ordinary win loss treatment',()=>{
   const o=mod.evaluateRows(recFixture(),[row('2026-09-21',10.5,11,10,10.8,['corporate_action_stock_split'])]);
   assert.equal(o.state,'CANCELLED_BY_GOVERNANCE');
