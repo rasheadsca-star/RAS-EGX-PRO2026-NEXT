@@ -1,0 +1,121 @@
+name: Astra Production Audit
+
+on:
+  pull_request:
+    branches: ['main']
+    paths:
+      - 'astra-prod/app/**'
+      - 'tests/astra/astra-pro-v3-browser-smoke.cjs'
+      - '.github/workflows/astra-production-audit.yml'
+      - '.github/workflows/astra-v3-vercel-production.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-production-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-candidate-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Freeze candidate truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "AUDIT_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          node --check astra-prod/app/astra-analytics-pro-v3.js
+          node --check tests/astra/astra-pro-v3-browser-smoke.cjs
+
+      - name: Ten consecutive decision and health reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          for cycle in $(seq 1 10); do
+            echo "=== ASTRA STATIC CLEAN CYCLE $cycle/10 ==="
+            node <<'NODE'
+          const fs=require('fs');
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const d=read('astra-prod/app/data.json');
+          const u=read('astra-prod/app/intelligence/market-universe.json');
+          const l=read('astra-prod/app/intelligence/recommendation-ledger.json');
+          const o=read('astra-prod/app/intelligence/recommendation-outcomes.json');
+          const p=read('astra-prod/app/intelligence/performance-summary.json');
+          const ok=(c,m)=>{if(!c)throw new Error(m)};
+          const s=d?.sourceDecision?.session;
+          const recs=d?.decisionSnapshot?.top5||d?.decisionSnapshot?.opportunities||[];
+          ok(/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')),'invalid session');
+          ok(d?.decisionSnapshot?.sessionDate===s&&d?.decisionSnapshot?.asOfSessionDate===s,'decision session mismatch');
+          ok(d?.sourceDecision?.upstream?.sessionDate===s,'source session mismatch');
+          ok(d?.sourceDecision?.upstream?.final===true&&d?.sourceDecision?.upstream?.pagesPublished===true,'upstream not finalized/published');
+          ok(d?.sourceDecision?.decisionSnapshotId===d?.decisionSnapshot?.decisionSnapshotId,'snapshot id mismatch');
+          ok(d?.sourceDecision?.semanticDecisionHash===d?.decisionSnapshot?.semanticDecisionHash,'semantic hash mismatch');
+          ok(d?.sourceDecision?.objectHashReproduced===true,'snapshot object hash not reproduced');
+          ok(d?.health?.criticalUnresolved===0,'critical finding unresolved');
+          ok(String(d?.health?.guardStatus||'').startsWith('PASS'),'guard not passing');
+          ok(d?.health?.sessionIntegrity?.freshnessStatus==='CURRENT','stale production truth');
+          ok(Number(d?.health?.coverage?.currentCanonicalPct)>=90,'canonical coverage below 90%');
+          ok(Number(d?.health?.coverage?.decisionPipelinePct)>=80,'decision coverage below 80%');
+          ok(Number(d?.health?.coverage?.sourceSessionEvidencePct)>=90,'source evidence below 90%');
+          ok(d?.health?.priceTruth?.executionGrade===true,'price truth not execution grade');
+          ok((d?.health?.priceTruth?.missingHistoryFiles||[]).length===0,'missing history files');
+          ok(recs.length<=5,'recommendation quota violation');
+          ok(new Set(recs.map(x=>x.ticker)).size===recs.length,'duplicate recommendations');
+          for(const r of recs){
+            const lo=Number(r.entryPlan?.low),hi=Number(r.entryPlan?.high),stop=Number(r.stopLoss),targets=(r.targets||[]).map(Number);
+            ok(Number.isFinite(lo)&&Number.isFinite(hi)&&lo<=hi,'invalid entry '+r.ticker);
+            ok(Number.isFinite(stop)&&stop<lo,'invalid stop '+r.ticker);
+            ok(targets.length>0&&targets.every(t=>Number.isFinite(t)&&t>hi),'invalid target '+r.ticker);
+          }
+          ok(Number(u?.activeCount||u?.records?.length)>0,'empty universe');
+          ok((l?.records||[]).length===recs.length,'ledger mismatch');
+          ok((o?.records||[]).length===(l?.records||[]).length,'outcome accounting mismatch');
+          ok(p?.reconciliation?.pass===true,'performance reconciliation failed');
+          console.log('ASTRA_STATIC_CYCLE_PASS',JSON.stringify({session:s,snapshot:d.sourceDecision.decisionSnapshotId,recommendations:recs.map(x=>x.ticker),critical:d.health.criticalUnresolved,high:d.health.highUnresolved,coverage:d.health.coverage}));
+          NODE
+            test "$(git rev-parse HEAD)" = "$AUDIT_HEAD"
+          done
+
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Ten consecutive universal-chart browser reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/astra-production-audit-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/astra-prod/app/pro-v3.html >/dev/null && break || sleep 1; done
+          for cycle in $(seq 1 10); do
+            echo "=== ASTRA BROWSER CLEAN CYCLE $cycle/10 ==="
+            ASTRA_PRO_BASE=http://127.0.0.1:4173 ASTRA_REVIEW_CYCLE="$cycle" node tests/astra/astra-pro-v3-browser-smoke.cjs
+            test "$(git rev-parse HEAD)" = "$AUDIT_HEAD"
+          done
+
+      - name: Final mutation guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$AUDIT_HEAD"
+          git diff --exit-code
