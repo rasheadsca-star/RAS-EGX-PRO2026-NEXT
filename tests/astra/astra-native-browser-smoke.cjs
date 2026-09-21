@@ -127,6 +127,22 @@ const profiles=[
       results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,professionalHomeVisible:true,staticProV2Banner:true,directProV2Entry:true,proV2Badge:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
       await ctx.close();
     }
+    const degraded=await browser.newContext({viewport:{width:390,height:844},locale:'ar-EG'});
+    await degraded.route('**/data/quant/stock-intelligence-index.json**',route=>route.abort('failed'));
+    const degradedPage=await degraded.newPage();
+    const degradedErrors=[];
+    degradedPage.on('pageerror',e=>degradedErrors.push(String(e)));
+    await degradedPage.goto(BASE+'/astra-prod/app/pro-v2.html?degraded='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
+    await degradedPage.waitForFunction(()=>Boolean(window.__ASTRA_G22_READY__),null,{timeout:30000});
+    assert.match(await degradedPage.locator('#view-home').innerText(),/تشغيل جزئي آمن/);
+    const bootHealth=await degradedPage.evaluate(()=>window.__ASTRA_G22_READY__.bootSources);
+    assert.equal(bootHealth.data.status,'READY');
+    assert.equal(bootHealth['stock-intelligence'].status,'UNAVAILABLE');
+    assert.equal(await degradedPage.locator('text=تعذر تحميل Astra Full Application').count(),0,'optional source failure must not collapse the application');
+    assert.equal(degradedErrors.length,0,'degraded safe boot page errors '+JSON.stringify(degradedErrors));
+    await degraded.close();
+    results.push({profile:'degraded-optional-source',safeBoot:true,criticalDataReady:true,optionalSourceUnavailable:true});
+
   } finally { await browser.close(); }
   console.log(JSON.stringify({status:'PASS',profiles:results},null,2));
 })().catch(e=>{console.error(e.stack||e);process.exit(1)});
