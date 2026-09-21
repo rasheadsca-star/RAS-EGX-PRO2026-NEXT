@@ -1,0 +1,224 @@
+name: Astra PRO v3 Vercel Production
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    paths:
+      - 'astra-prod/app/data.json'
+      - 'astra-prod/app/pro-v3.html'
+      - 'astra-prod/app/astra-core-pro-v3.js'
+      - 'astra-prod/app/astra-performance-pro-v3.js'
+      - 'astra-prod/app/astra-portfolio-pro-v3.js'
+      - 'astra-prod/app/astra-analytics-pro-v3.js'
+      - 'astra-prod/app/intelligence/**'
+      - '.github/workflows/astra-v3-vercel-production.yml'
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_VLE2UpNdZaLYaS5eoMJqnNHeyL0I
+  PRODUCTION_URL: https://egx-pro-astra-v3-live.vercel.app
+
+concurrency:
+  group: astra-pro-v3-vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Validate Astra decision truth before deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const app=JSON.parse(fs.readFileSync('astra-prod/app/data.json','utf8'));
+          const handoff=JSON.parse(fs.readFileSync('data/ops/g22-main-app-handoff.json','utf8'));
+          const ok=(c,m)=>{if(!c)throw new Error(m)};
+          const s=app?.sourceDecision?.session;
+          ok(/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')),'Invalid Astra session');
+          ok(app?.decisionSnapshot?.sessionDate===s,'DecisionSnapshot session mismatch');
+          ok(app?.decisionSnapshot?.asOfSessionDate===s,'DecisionSnapshot as-of mismatch');
+          ok(app?.sourceDecision?.decisionSnapshotId===app?.decisionSnapshot?.decisionSnapshotId,'Snapshot ID mismatch');
+          ok(app?.sourceDecision?.semanticDecisionHash===app?.decisionSnapshot?.semanticDecisionHash,'Semantic hash mismatch');
+          ok(app?.sourceDecision?.upstream?.final===true,'Upstream is not final');
+          ok(app?.sourceDecision?.upstream?.pagesPublished===true,'Upstream Pages is not final');
+          ok(app?.sourceDecision?.upstream?.sessionDate===s,'Upstream session mismatch');
+          ok(handoff?.final===true && handoff?.pagesPublished===true,'Latest handoff is not final/published');
+          ok(handoff?.sessionDate===s,'Astra data is older than latest finalized MAIN APP session');
+          ok(app?.sourceDecision?.upstream?.mainAppMaterialFingerprint===handoff?.materialFingerprint,'Astra snapshot material fingerprint is not latest finalized material');
+          ok(app?.sourceDecision?.currentProductionCutover===true,'Production cutover is false');
+          ok(Array.isArray(app?.decisionSnapshot?.top5) && app.decisionSnapshot.top5.length<=5,'Invalid top5');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SESSION='+s+'\n');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SNAPSHOT='+app.sourceDecision.decisionSnapshotId+'\n');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_TOP='+app.decisionSnapshot.top5.map(x=>x.ticker).join(',')+'\n');
+          console.log('ASTRA_PREDEPLOY_VALIDATION_PASS',JSON.stringify({
+            session:s,
+            snapshotId:app.sourceDecision.decisionSnapshotId,
+            tickers:app.decisionSnapshot.top5.map(x=>x.ticker),
+            fingerprint:handoff.materialFingerprint
+          }));
+          NODE
+
+      - name: Build minimal self-contained PRO v3 deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/astra-pro-v3"
+          rm -rf "$STAGE"
+          mkdir -p "$STAGE/astra-prod/app" "$STAGE/data/quant" "$STAGE/data/rc2"
+
+          cp astra-prod/app/pro-v3.html "$STAGE/astra-prod/app/"
+          cp astra-prod/app/astra-core-pro-v3.js "$STAGE/astra-prod/app/"
+          cp astra-prod/app/astra-performance-pro-v3.js "$STAGE/astra-prod/app/"
+          cp astra-prod/app/astra-portfolio-pro-v3.js "$STAGE/astra-prod/app/"
+          cp astra-prod/app/astra-analytics-pro-v3.js "$STAGE/astra-prod/app/"
+          cp astra-prod/app/data.json "$STAGE/astra-prod/app/"
+          cp -a astra-prod/app/intelligence "$STAGE/astra-prod/app/"
+
+          cp data/quant/market-search-index-v13-17.json "$STAGE/data/quant/"
+          cp data/quant/stock-intelligence-index.json "$STAGE/data/quant/"
+          cp data/rc2/recommendation-history.json "$STAGE/data/rc2/"
+          cp -a data/history "$STAGE/data/"
+
+          cat > "$STAGE/index.html" <<'HTML'
+          <!doctype html>
+          <html lang="ar" dir="rtl">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+            <meta http-equiv="refresh" content="0;url=/astra-prod/app/pro-v3.html">
+            <title>EGX PRO — Astra PRO v3</title>
+          </head>
+          <body style="font-family:Tahoma,Arial,sans-serif;background:#07111f;color:#fff;padding:24px">
+            <h1>EGX PRO — Astra PRO v3</h1>
+            <p>جاري فتح النسخة المستقلة…</p>
+            <p><a style="color:#6ef5bd" href="/astra-prod/app/pro-v3.html">فتح Astra PRO v3</a></p>
+          </body>
+          </html>
+          HTML
+
+          cat > "$STAGE/vercel.json" <<'JSON'
+          {
+            "version": 2,
+            "headers": [
+              {
+                "source": "/(.*)",
+                "headers": [
+                  {"key":"Cache-Control","value":"no-store, no-cache, must-revalidate, max-age=0"},
+                  {"key":"Pragma","value":"no-cache"},
+                  {"key":"Expires","value":"0"}
+                ]
+              }
+            ]
+          }
+          JSON
+
+          node <<'NODE'
+          const fs=require('fs');
+          const p=process.env.RUNNER_TEMP+'/astra-pro-v3';
+          const required=[
+            'index.html','vercel.json',
+            'astra-prod/app/pro-v3.html',
+            'astra-prod/app/astra-core-pro-v3.js',
+            'astra-prod/app/astra-performance-pro-v3.js',
+            'astra-prod/app/astra-portfolio-pro-v3.js',
+            'astra-prod/app/astra-analytics-pro-v3.js',
+            'astra-prod/app/data.json',
+            'astra-prod/app/intelligence/performance-summary.json',
+            'astra-prod/app/intelligence/recommendation-ledger.json',
+            'astra-prod/app/intelligence/recommendation-outcomes.json',
+            'astra-prod/app/intelligence/performance-by-rank.json',
+            'astra-prod/app/intelligence/performance-by-regime.json',
+            'astra-prod/app/intelligence/market-universe.json',
+            'astra-prod/app/intelligence/ticker-performance.json',
+            'data/quant/market-search-index-v13-17.json',
+            'data/quant/stock-intelligence-index.json',
+            'data/rc2/recommendation-history.json'
+          ];
+          for(const f of required){
+            const full=p+'/'+f;
+            if(!fs.existsSync(full) || !fs.statSync(full).size) throw new Error('Missing deployment asset '+f);
+          }
+          const html=fs.readFileSync(p+'/astra-prod/app/pro-v3.html','utf8');
+          if(!html.includes('PRO ANALYTICS v3 — LIVE') || !html.includes('DIRECT PRO V3 ENTRY')) throw new Error('PRO v3 UI markers missing');
+          const core=fs.readFileSync(p+'/astra-prod/app/astra-core-pro-v3.js','utf8');
+          if(!core.includes("loadJson('./data.json')")) throw new Error('PRO v3 does not bind to local data.json');
+          console.log('ASTRA_STAGE_PASS');
+          NODE
+
+      - name: Require authorized Vercel deployment token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN repository secret is not configured."
+            exit 78
+          fi
+
+      - name: Link exact Astra Vercel project
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/astra-pro-v3"
+          mkdir -p "$STAGE/.vercel"
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > "$STAGE/.vercel/project.json"
+
+      - name: Deploy current main to Astra production
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/astra-pro-v3"
+          DEPLOYMENT_URL="$(npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN")"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          echo "ASTRA_V3_DEPLOYED=$DEPLOYMENT_URL"
+
+      - name: Verify production alias is on the exact current snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          PASS=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            CB="$(date +%s%3N)-$attempt"
+            curl -fsSL --retry 2 "$PRODUCTION_URL/astra-prod/app/data.json?cb=$CB" -o /tmp/astra-live-data.json || true
+            curl -fsSL --retry 2 "$PRODUCTION_URL/astra-prod/app/pro-v3.html?cb=$CB" -o /tmp/astra-live-ui.html || true
+            if node - <<'NODE'
+          const fs=require('fs');
+          const expectedSession=process.env.ASTRA_SESSION;
+          const expectedSnapshot=process.env.ASTRA_SNAPSHOT;
+          let d;
+          try{d=JSON.parse(fs.readFileSync('/tmp/astra-live-data.json','utf8'))}catch{process.exit(1)}
+          const ui=fs.existsSync('/tmp/astra-live-ui.html')?fs.readFileSync('/tmp/astra-live-ui.html','utf8'):'';
+          if(d?.sourceDecision?.session!==expectedSession)process.exit(1);
+          if(d?.sourceDecision?.decisionSnapshotId!==expectedSnapshot)process.exit(1);
+          if(d?.decisionSnapshot?.sessionDate!==expectedSession)process.exit(1);
+          if(!ui.includes('PRO ANALYTICS v3 — LIVE') || !ui.includes('DIRECT PRO V3 ENTRY'))process.exit(1);
+          NODE
+            then
+              PASS=1
+              break
+            fi
+            sleep 5
+          done
+          [ "$PASS" = "1" ] || { echo "Production alias did not converge to expected Astra snapshot."; exit 1; }
+
+          curl -fsSI "$PRODUCTION_URL/astra-prod/app/data.json?cb=$(date +%s%3N)" -o /tmp/astra-headers.txt
+          grep -qi '^cache-control: .*no-store' /tmp/astra-headers.txt
+          echo "ASTRA_V3_PRODUCTION_PASS session=$ASTRA_SESSION snapshot=$ASTRA_SNAPSHOT top=$ASTRA_TOP"
