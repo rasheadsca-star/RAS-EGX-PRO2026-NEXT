@@ -212,6 +212,10 @@ case 9:{
   ok(!/fetch\([^)]*portfolio/i.test(marketJs),'portfolio appears to be sent over network');
   ok(indexHtml.includes('data-view="technical"')&&indexHtml.includes('view-technical'),'Technical Lab navigation/view missing');
   ok(indexHtml.includes('astra-professional-analytics.js'),'professional analytics bundle not loaded');
+  ok(/loadOptionalJson/.test(appJs),'optional display-source loader missing');
+  ok(/Only Astra DecisionSnapshot\/data\.json is critical/.test(appJs),'boot criticality boundary missing');
+  ok(/تشغيل جزئي آمن/.test(appJs),'safe degraded boot notice missing');
+  ok(/ASTRA_OPTIONAL_SOURCE_UNAVAILABLE/.test(appJs),'optional-source diagnostic signal missing');
   ok(indexHtml.includes('astra-professional-analytics.js?v=pro-v2-static-1'),'professional analytics cache-busted bundle version missing');
   ok(/Astra Professional Analytics/.test(proJs)&&/PRO ANALYTICS v2/.test(proJs)&&/proBuildBadge/.test(proJs),'visible professional analytics home integration missing');
   ok(/proHomeTechnical/.test(proJs)&&/proHomePerformance/.test(proJs),'home professional analytics navigation actions missing');
@@ -226,7 +230,8 @@ case 9:{
     'technical analytics explicitly interpretation-only',
     'Technical Lab is a first-class Astra view loaded from the native professional analytics bundle',
     'Professional Analytics v2 is visibly surfaced on the home dashboard with cache-busted bundle loading',
-    'direct uncached pro-v2.html entrypoint carries a static visible PRO v2 banner before JavaScript execution'
+    'direct uncached pro-v2.html entrypoint carries a static visible PRO v2 banner before JavaScript execution',
+    'optional search/intelligence/history source failures cannot collapse the critical Astra DecisionSnapshot boot'
   ]);
 break}
 case 10:{
