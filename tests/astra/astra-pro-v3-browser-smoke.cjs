@@ -62,6 +62,16 @@ async function returnContext(page,view,label){
       assert.equal(d?.sourceDecision?.upstream?.pagesPublished,true,name+' upstream not published');
       assert.equal(d?.sourceDecision?.decisionSnapshotId,d?.decisionSnapshot?.decisionSnapshotId,name+' snapshot id drift');
       assert.equal(d?.sourceDecision?.semanticDecisionHash,d?.decisionSnapshot?.semanticDecisionHash,name+' decision hash drift');
+      assert.equal(d?.health?.criticalUnresolved,0,name+' unresolved P0/critical health finding');
+      assert.equal(d?.health?.sessionIntegrity?.expectedSession,d?.sourceDecision?.session,name+' expected session drift');
+      assert.equal(d?.health?.sessionIntegrity?.availableSession,d?.sourceDecision?.session,name+' available session drift');
+      assert.equal(d?.health?.sessionIntegrity?.freshnessStatus,'CURRENT',name+' stale health state');
+      assert.ok(Number(d?.health?.coverage?.currentCanonicalPct)>=90,name+' canonical coverage below gate');
+      assert.ok(Number(d?.health?.coverage?.decisionPipelinePct)>=80,name+' decision coverage below gate');
+      assert.ok(Number(d?.health?.coverage?.sourceSessionEvidencePct)>=90,name+' source evidence coverage below gate');
+      assert.equal(d?.health?.priceTruth?.executionGrade,true,name+' price truth not execution grade');
+      assert.equal((d?.health?.priceTruth?.missingHistoryFiles||[]).length,0,name+' missing history files');
+      assert.match(String(d?.health?.guardStatus||''),/^PASS/,name+' operational guard not passing');
       assert.ok(recs.length<=5,name+' recommendations forced above five');
       assert.equal(new Set(recs.map(x=>x.ticker)).size,recs.length,name+' duplicate recommendation ticker');
       for(const r of recs){
