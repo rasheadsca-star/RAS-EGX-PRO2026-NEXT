@@ -1,0 +1,55 @@
+name: Astra Candidate Remote Diagnostic
+
+on:
+  push:
+    branches:
+      - ops/astra-candidate-certify-20260921
+    paths:
+      - '.github/workflows/astra-candidate-remote-diagnostic.yml'
+
+permissions: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Core
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+      - name: Diagnose immutable candidate boot
+        shell: bash
+        env:
+          BASE: https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@0c66c95afb4a18cb8d27e9ba0b467ed27fcb4afc
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          CHROME_BIN="$BROWSER" node <<'NODE'
+          const {chromium}=require('playwright-core');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_BIN,args:['--no-sandbox']});
+            const page=await browser.newPage({locale:'ar-EG'});
+            const responses=[],errors=[],consoleErrors=[];
+            page.on('response',r=>responses.push({status:r.status(),url:r.url(),ct:r.headers()['content-type']||''}));
+            page.on('pageerror',e=>errors.push(String(e)));
+            page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())});
+            await page.goto(process.env.BASE+'/astra-prod/app/index.html?diagnostic='+Date.now(),{waitUntil:'domcontentloaded',timeout:45000});
+            await page.waitForTimeout(12000);
+            const flags=await page.evaluate(()=>({
+              g22:window.__ASTRA_G22_READY__??null,
+              perf:window.__ASTRA_PERF_HISTORY__??null,
+              marketPortfolio:window.__ASTRA_MARKET_PORTFOLIO__??null,
+              title:document.title,
+              body:(document.body?.innerText||'').slice(0,1000)
+            }));
+            console.log('FLAGS '+JSON.stringify(flags,null,2));
+            console.log('ERRORS '+JSON.stringify(errors,null,2));
+            console.log('CONSOLE_ERRORS '+JSON.stringify(consoleErrors,null,2));
+            console.log('BAD '+JSON.stringify(responses.filter(x=>x.status>=400),null,2));
+            console.log('JSON_RESPONSES '+JSON.stringify(responses.filter(x=>/json/i.test(x.ct)||x.url.includes('.json')),null,2));
+            await browser.close();
+            if(flags.g22!==true||flags.perf!=='READY'||flags.marketPortfolio!=='READY')process.exit(2);
+          })().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          NODE
