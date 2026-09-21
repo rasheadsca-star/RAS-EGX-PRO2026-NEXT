@@ -18,8 +18,8 @@ const profiles=[
     for(const [name,width,height] of profiles){
       const ctx=await browser.newContext({viewport:{width,height},locale:'ar-EG'});
       const page=await ctx.newPage();
-      const external=[],errors=[],bad=[];
-      page.on('request',r=>{try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
+      const external=[],errors=[],bad=[],requests=[];
+      page.on('request',r=>{requests.push(r.url());try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
       page.on('pageerror',e=>errors.push(String(e)));
       page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
       await page.goto(BASE+'/astra-prod/app/index.html?devsmoke='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
@@ -48,6 +48,21 @@ const profiles=[
       await page.waitForTimeout(100);
       assert.match(await page.locator('#astraMarketRows').innerText(),/GOUR/);
       assert.match(await page.locator('#astraMarketRows').innerText(),/ليس ضمن فرص Astra/);
+      await page.locator('[data-native-stock="GOUR"]').click();
+      await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('GOUR'));
+      assert.match(await page.locator('#astraStock').innerText(),/لا توجد بيانات Daily OHLC موثقة/);
+      assert.equal(requests.some(u=>u.includes('/data/history/GOUR.json')),false,name+' must not request unavailable GOUR history');
+
+      await page.locator('#astraMarketQ').fill('TMGH');
+      await page.waitForTimeout(100);
+      await page.locator('[data-native-stock="TMGH"]').click();
+      await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('TMGH'));
+      const tmghBoxes=await page.locator('#astraStock .stock-box').allTextContents();
+      const tmghSupport=tmghBoxes.find(x=>x.includes('Support20'))||'';
+      const tmghResistance=tmghBoxes.find(x=>x.includes('Resistance20'))||'';
+      assert.ok(!tmghSupport.includes('غير متاح')&&!tmghSupport.includes('—'),name+' TMGH Support20 must use available history');
+      assert.ok(!tmghResistance.includes('غير متاح')&&!tmghResistance.includes('—'),name+' TMGH Resistance20 must use available history');
+      assert.equal(requests.some(u=>u.includes('/data/history/TMGH.json')),true,name+' TMGH history request missing');
 
       await page.locator('[data-view="portfolio"]').click();
       await page.waitForSelector('#view-portfolio.active');
@@ -58,7 +73,7 @@ const profiles=[
       assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
       assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
       assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-      results.push({name,width,height,historyRows,universe:badge,externalRequests:0,pageErrors:0,overflow:0});
+      results.push({name,width,height,historyRows,universe:badge,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
       await ctx.close();
     }
   } finally { await browser.close(); }
