@@ -212,7 +212,7 @@ case 9:{
   ok(!/fetch\([^)]*portfolio/i.test(marketJs),'portfolio appears to be sent over network');
   ok(indexHtml.includes('data-view="technical"')&&indexHtml.includes('view-technical'),'Technical Lab navigation/view missing');
   ok(indexHtml.includes('astra-professional-analytics.js'),'professional analytics bundle not loaded');
-  ok(indexHtml.includes('astra-professional-analytics.js?v=pro-analytics-2'),'professional analytics cache-busted bundle version missing');
+  ok(indexHtml.includes('astra-professional-analytics.js?v=pro-v2-static-1'),'professional analytics cache-busted bundle version missing');
   ok(/Astra Professional Analytics/.test(proJs)&&/PRO ANALYTICS v2/.test(proJs)&&/proBuildBadge/.test(proJs),'visible professional analytics home integration missing');
   ok(/proHomeTechnical/.test(proJs)&&/proHomePerformance/.test(proJs),'home professional analytics navigation actions missing');
   ok(indexHtml.includes('id="proStaticBanner"')&&indexHtml.includes('PRO ANALYTICS v2 — LIVE'),'static PRO v2 production banner missing');
