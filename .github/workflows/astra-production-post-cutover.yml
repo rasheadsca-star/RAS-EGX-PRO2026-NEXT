@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  CANDIDATE_HEAD: 4c39d84e646e8512ddfa17b532c86147ac2137e7
+  CANDIDATE_HEAD: b75ac6ba8e0b10dd2159c1bf9e862aa0a014c510
   PROD_BASE: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT
 
 jobs:
@@ -46,17 +46,23 @@ jobs:
           git diff --exit-code -- astra-prod/app/intelligence docs/astra/development/WORKFLOW_INVENTORY.json
           node --test tests/astra/astra-native-intelligence.test.cjs
 
-      - name: Wait for exact professional-analytics production propagation
+      - name: Wait for exact direct PRO v2 production propagation
         shell: bash
         run: |
           set -euo pipefail
-          expected="$(sha256sum astra-prod/app/astra-professional-analytics.js | awk '{print $1}')"
+          expected_pro="$(sha256sum astra-prod/app/astra-professional-analytics.js | awk '{print $1}')"
+          expected_direct="$(sha256sum astra-prod/app/pro-v2.html | awk '{print $1}')"
           ok=0
           for i in $(seq 1 90); do
             if curl -fsSL --retry 2 "$PROD_BASE/astra-prod/app/index.html?cutover=$RANDOM" -o /tmp/prod-index &&
+               curl -fsSL --retry 2 "$PROD_BASE/astra-prod/app/pro-v2.html?cutover=$RANDOM" -o /tmp/prod-direct &&
                curl -fsSL --retry 2 "$PROD_BASE/astra-prod/app/astra-professional-analytics.js?cutover=$RANDOM" -o /tmp/prod-pro; then
-              remote="$(sha256sum /tmp/prod-pro | awk '{print $1}')"
-              if grep -q 'astra-professional-analytics.js' /tmp/prod-index && [ "$remote" = "$expected" ]; then
+              remote_pro="$(sha256sum /tmp/prod-pro | awk '{print $1}')"
+              remote_direct="$(sha256sum /tmp/prod-direct | awk '{print $1}')"
+              if grep -q 'id="proStaticBanner"' /tmp/prod-index &&
+                 grep -q 'DIRECT PRO ENTRY' /tmp/prod-direct &&
+                 [ "$remote_pro" = "$expected_pro" ] &&
+                 [ "$remote_direct" = "$expected_direct" ]; then
                 ok=1
                 break
               fi
@@ -64,7 +70,7 @@ jobs:
             sleep 2
           done
           test "$ok" -eq 1
-          echo "PRODUCTION_PROPAGATION_READY professionalAnalyticsSha256=$expected"
+          echo "PRODUCTION_PROPAGATION_READY professionalAnalyticsSha256=$expected_pro directEntrySha256=$expected_direct"
 
       - name: Verify production bytes against candidate
         shell: bash
@@ -72,6 +78,7 @@ jobs:
           set -euo pipefail
           for p in \
             astra-prod/app/index.html \
+            astra-prod/app/pro-v2.html \
             astra-prod/app/app.js \
             astra-prod/app/astra-performance-history.js \
             astra-prod/app/astra-market-portfolio.js \
@@ -117,7 +124,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const evidence={
-            schemaVersion:'astra-production-post-cutover-pro-analytics-v2-1',
+            schemaVersion:'astra-production-post-cutover-direct-pro-v2-1',
             candidateHead:process.env.CANDIDATE_HEAD,
             productionBase:process.env.PROD_BASE,
             byteIdentity:'PASS',
@@ -132,6 +139,8 @@ jobs:
             productionCutover:true,
             professionalAnalytics:true,
             visibleHomeUpgrade:true,
+            staticProV2Banner:true,
+            directProV2Entry:true,
             proV2Badge:true,
             technicalLab:true,
             multiPaneChart:true,
@@ -148,6 +157,6 @@ jobs:
       - name: Upload post-cutover evidence
         uses: actions/upload-artifact@v4
         with:
-          name: astra-production-post-cutover-pro-analytics-v2-20260921
+          name: astra-production-post-cutover-direct-pro-v2-20260921
           path: /tmp/ASTRA_POST_CUTOVER.json
           if-no-files-found: error
