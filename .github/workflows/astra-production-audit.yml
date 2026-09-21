@@ -94,9 +94,14 @@ jobs:
             ok(targets.length>0&&targets.every(t=>Number.isFinite(t)&&t>hi),'invalid target '+r.ticker);
           }
           ok(Number(u?.activeCount||u?.records?.length)>0,'empty universe');
-          ok((l?.records||[]).length===recs.length,'ledger mismatch');
+          const currentLedger=(l?.records||[]).filter(r=>r.decisionSnapshotId===d.sourceDecision.decisionSnapshotId&&r.sessionDate===s);
+          ok(currentLedger.length===recs.length,'current-session ledger count mismatch');
+          ok(JSON.stringify(currentLedger.map(r=>r.ticker).sort())===JSON.stringify(recs.map(r=>r.ticker).sort()),'current-session ledger ticker identity mismatch');
           ok((o?.records||[]).length===(l?.records||[]).length,'outcome accounting mismatch');
           ok(p?.reconciliation?.pass===true,'performance reconciliation failed');
+          ok(p?.sourceSnapshot?.decisionSnapshotId===d.sourceDecision.decisionSnapshotId,'performance source snapshot stale');
+          ok(p?.sessionRange?.last===s,'performance session range stale');
+          ok(Number(p?.currentOpportunities)===recs.length,'performance current opportunity count mismatch');
           console.log('ASTRA_STATIC_CYCLE_PASS',JSON.stringify({session:s,snapshot:d.sourceDecision.decisionSnapshotId,recommendations:recs.map(x=>x.ticker),critical:d.health.criticalUnresolved,high:d.health.highUnresolved,coverage:d.health.coverage}));
           NODE
             test "$(git rev-parse HEAD)" = "$AUDIT_HEAD"
