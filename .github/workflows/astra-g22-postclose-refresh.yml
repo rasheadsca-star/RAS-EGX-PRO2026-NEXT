@@ -248,6 +248,12 @@ jobs:
           node scripts/astra/g22-postclose-refresh.cjs | tee /tmp/g22-refresh.log
           grep -q '^G22_POST_CLOSE_REFRESH ' /tmp/g22-refresh.log
 
+      - name: Rebuild Astra-native immutable history and performance
+        run: |
+          set -euo pipefail
+          node --check scripts/astra/native/astra-intelligence.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+
       - name: Verify publication consistency
         run: |
           node <<'NODE'
@@ -257,6 +263,9 @@ jobs:
           const manifest=read('astra-prod/G22_FULL_APP_MANIFEST.json');
           const audit=read('astra-prod/G22_SESSION_REFRESH.json');
           const main=read('data/ops/g22-main-app-handoff.json');
+          const ledger=read('astra-prod/app/intelligence/recommendation-ledger.json');
+          const outcomes=read('astra-prod/app/intelligence/recommendation-outcomes.json');
+          const perf=read('astra-prod/app/intelligence/performance-summary.json');
           const s=audit.session.expected;
           const ok=(c,m)=>{if(!c)throw new Error(m)};
           ok(/^\d{4}-\d{2}-\d{2}$/.test(s),'audit session invalid');
@@ -291,6 +300,15 @@ jobs:
           ok(manifest.certifiedRuntimeBundleMutated===false,'certified runtime bundle mutated');
           ok(manifest.currentDecisionBaselineHead==='66b74d6f7586bd06201f6f7992ff9babf1104259','certified baseline head mismatch');
           ok(Array.isArray(app.decisionSnapshot.top5)&&app.decisionSnapshot.top5.length<=5,'top5 invalid');
+          const recs=app.decisionSnapshot.top5||[];
+          const currentLedger=(ledger.records||[]).filter(r=>r.decisionSnapshotId===app.sourceDecision.decisionSnapshotId&&r.sessionDate===s);
+          ok(currentLedger.length===recs.length,'current-session ledger count mismatch');
+          ok(JSON.stringify(currentLedger.map(r=>r.ticker).sort())===JSON.stringify(recs.map(r=>r.ticker).sort()),'current-session ledger ticker identity mismatch');
+          ok((outcomes.records||[]).length===(ledger.records||[]).length,'history outcome accounting mismatch');
+          ok(perf.reconciliation?.pass===true,'performance reconciliation failed');
+          ok(perf.sourceSnapshot?.decisionSnapshotId===app.sourceDecision.decisionSnapshotId,'performance source snapshot stale');
+          ok(perf.sessionRange?.last===s,'performance session range stale');
+          ok(Number(perf.currentOpportunities)===recs.length,'performance current opportunity count mismatch');
           console.log('G22_REFRESH_CONSISTENCY_PASS',JSON.stringify({
             session:s,
             snapshotId:app.sourceDecision.decisionSnapshotId,
@@ -310,7 +328,7 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add astra-prod/app/data.json astra-prod/G22_FULL_APP_MANIFEST.json astra-prod/G22_SESSION_REFRESH.json
+          git add astra-prod/app/data.json astra-prod/G22_FULL_APP_MANIFEST.json astra-prod/G22_SESSION_REFRESH.json astra-prod/app/intelligence
           if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "G22_REFRESH_NO_CHANGE"
