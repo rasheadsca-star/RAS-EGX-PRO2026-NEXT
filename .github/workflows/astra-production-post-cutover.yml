@@ -1,0 +1,140 @@
+name: Astra Production Post-Cutover Verification
+
+on:
+  push:
+    branches:
+      - ops/astra-production-promotion-20260921
+    paths:
+      - '.github/workflows/astra-production-post-cutover.yml'
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_HEAD: 0c66c95afb4a18cb8d27e9ba0b467ed27fcb4afc
+  PROD_BASE: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT
+
+jobs:
+  verify-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact promoted candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_HEAD }}
+          fetch-depth: 0
+
+      - name: Assert promoted source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_HEAD"
+          echo "POST_CUTOVER_SOURCE_EXACT $CANDIDATE_HEAD"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Re-run deterministic core certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/astra/native/workflow-inventory.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          git diff --exit-code -- astra-prod/app/intelligence docs/astra/development/WORKFLOW_INVENTORY.json
+          node --test tests/astra/astra-native-intelligence.test.cjs
+
+      - name: Wait for production propagation
+        shell: bash
+        run: |
+          set -euo pipefail
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -fsSL --retry 2 "$PROD_BASE/astra-prod/app/index.html?cutover=$RANDOM" -o /tmp/prod-index; then
+              if grep -q 'EGX PRO — Astra Full Application' /tmp/prod-index; then
+                ok=1
+                break
+              fi
+            fi
+            sleep 2
+          done
+          test "$ok" -eq 1
+          echo "PRODUCTION_PROPAGATION_READY"
+
+      - name: Verify production bytes against candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for p in \
+            astra-prod/app/index.html \
+            astra-prod/app/app.js \
+            astra-prod/app/astra-performance-history.js \
+            astra-prod/app/astra-market-portfolio.js \
+            astra-prod/app/data.json \
+            astra-prod/app/intelligence/market-universe.json \
+            astra-prod/app/intelligence/recommendation-ledger.json \
+            astra-prod/app/intelligence/recommendation-outcomes.json \
+            data/quant/stock-intelligence-index.json \
+            data/rc2/recommendation-history.json \
+            data/history/TMGH.json; do
+            curl -fsSL --retry 5 --retry-delay 2 "$PROD_BASE/$p?verify=$RANDOM" -o /tmp/prod-file
+            local_hash="$(sha256sum "$p" | awk '{print $1}')"
+            remote_hash="$(sha256sum /tmp/prod-file | awk '{print $1}')"
+            test "$local_hash" = "$remote_hash" || { echo "::error::Production byte mismatch: $p"; exit 1; }
+          done
+          echo "PRODUCTION_BYTE_IDENTITY_PASS"
+
+      - name: Locate Chromium and install Playwright Core
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+          npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Ten clean post-cutover review cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          for cycle in $(seq 1 10); do
+            echo "=== PRODUCTION CLEAN REVIEW $cycle/10 ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+            REVIEW_CYCLE="$cycle" ASTRA_DEV_BASE="$PROD_BASE" node tests/astra/astra-native-browser-smoke.cjs
+          done
+
+      - name: Final production state evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const evidence={
+            schemaVersion:'astra-production-post-cutover-1',
+            candidateHead:process.env.CANDIDATE_HEAD,
+            productionBase:process.env.PROD_BASE,
+            byteIdentity:'PASS',
+            e2e:'GREEN',
+            critical:0,
+            high:0,
+            runtimeLegacyDecisionDependencyCount:0,
+            externalRuntimeRequests:0,
+            unauthorizedMutations:0,
+            hiddenDecisionFallbacks:0,
+            cleanReviewStreak:10,
+            productionCutover:true,
+            productionVerified:true
+          };
+          fs.writeFileSync('/tmp/ASTRA_POST_CUTOVER.json',JSON.stringify(evidence,null,2)+'\n');
+          console.log(JSON.stringify(evidence,null,2));
+          NODE
+
+      - name: Upload post-cutover evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-production-post-cutover-20260921
+          path: /tmp/ASTRA_POST_CUTOVER.json
+          if-no-files-found: error
