@@ -103,62 +103,50 @@ jobs:
           echo "Development workflow publication boundary already re-certified by Astra core certification step"
 
       - name: Select isolated candidate environment
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "${VERCEL_TOKEN:-}" ]; then
-            echo "DEPLOYMENT_PROVIDER=vercel" >> "$GITHUB_ENV"
-            echo "Candidate provider: Vercel preview"
-          else
-            DEPLOYMENT_URL="https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@$CANDIDATE_HEAD"
-            DEPLOYMENT_ID="jsdelivr-gh-$CANDIDATE_HEAD"
-            echo "DEPLOYMENT_PROVIDER=jsdelivr" >> "$GITHUB_ENV"
-            echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> "$GITHUB_ENV"
-            echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> "$GITHUB_ENV"
-            echo "Candidate provider: immutable jsDelivr GitHub commit snapshot"
-          fi
+          echo "DEPLOYMENT_PROVIDER=cloudflare-quick-tunnel" >> "$GITHUB_ENV"
+          echo "DEPLOYMENT_TARGET=ephemeral-public-preview" >> "$GITHUB_ENV"
+          echo "Candidate provider: Cloudflare Quick Tunnel over exact staged artifact"
 
       - name: Deploy exact runtime package to isolated candidate environment
         id: deploy
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          if [ "$DEPLOYMENT_PROVIDER" = "jsdelivr" ]; then
-            curl -fsSL --retry 3 "$DEPLOYMENT_URL/astra-prod/app/index.html?probe=$RANDOM" -o /tmp/candidate-index.html
-            test -s /tmp/candidate-index.html
-            grep -q 'EGX PRO — Astra Full Application' /tmp/candidate-index.html
-            echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
-            echo "IMMUTABLE_CDN_CANDIDATE_READY $DEPLOYMENT_URL"
-            exit 0
-          fi
-          mkdir -p stage/.vercel
-          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > stage/.vercel/project.json
-          cd stage
-          set +e
-          npx --yes vercel@37.16.0 deploy --yes --token="$VERCEL_TOKEN" > /tmp/vercel-deploy.log 2>&1
-          rc=$?
-          set -e
-          cat /tmp/vercel-deploy.log
-          test "$rc" -eq 0
-          DEPLOYMENT_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.vercel\.app' /tmp/vercel-deploy.log | tail -n1)"
-          test -n "$DEPLOYMENT_URL"
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory stage >/tmp/astra-candidate-http.log 2>&1 &
+          HTTP_PID=$!
+          echo "HTTP_PID=$HTTP_PID" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break
+            sleep 1
+          done
+          curl -fsSL --retry 4 --retry-delay 2             https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64             -o /tmp/cloudflared
+          chmod +x /tmp/cloudflared
+          /tmp/cloudflared --version
+          /tmp/cloudflared tunnel --url http://127.0.0.1:4173 --no-autoupdate >/tmp/cloudflared.log 2>&1 &
+          TUNNEL_PID=$!
+          echo "TUNNEL_PID=$TUNNEL_PID" >> "$GITHUB_ENV"
+          DEPLOYMENT_URL=""
+          for i in $(seq 1 60); do
+            DEPLOYMENT_URL="$(grep -Eo 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | tail -n1 || true)"
+            if [ -n "$DEPLOYMENT_URL" ]; then break; fi
+            kill -0 "$TUNNEL_PID" 2>/dev/null || { cat /tmp/cloudflared.log; exit 1; }
+            sleep 1
+          done
+          test -n "$DEPLOYMENT_URL" || { cat /tmp/cloudflared.log; echo "::error::Quick Tunnel URL not created"; exit 1; }
+          DEPLOYMENT_ID="cfqt-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> "$GITHUB_ENV"
+          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> "$GITHUB_ENV"
           echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
-          HOST="${DEPLOYMENT_URL#https://}"
-          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID" -o /tmp/vercel-deployment.json
-          node <<'NODE'
-          const fs=require('fs');
-          const d=JSON.parse(fs.readFileSync('/tmp/vercel-deployment.json','utf8'));
-          if(d.readyState!=='READY') throw new Error('Vercel preview not READY: '+d.readyState);
-          if(d.target==='production') throw new Error('Candidate deployment unexpectedly targeted production');
-          if(!d.id) throw new Error('Deployment ID missing');
-          fs.appendFileSync(process.env.GITHUB_ENV,'DEPLOYMENT_ID='+d.id+'\n');
-          console.log(JSON.stringify({deploymentId:d.id,url:d.url,target:d.target??'preview',readyState:d.readyState},null,2));
-          NODE
+          for i in $(seq 1 30); do
+            if curl -fsSL --retry 2 "$DEPLOYMENT_URL/astra-prod/app/index.html?probe=$RANDOM" -o /tmp/candidate-index.html; then break; fi
+            sleep 1
+          done
+          test -s /tmp/candidate-index.html
+          grep -q 'EGX PRO — Astra Full Application' /tmp/candidate-index.html
+          echo "PUBLIC_CANDIDATE_READY id=$DEPLOYMENT_ID url=$DEPLOYMENT_URL"
 
       - name: Verify critical deployed bytes match candidate
         shell: bash
@@ -273,8 +261,6 @@ jobs:
           done
 
       - name: Final immutability and deployment-state verification
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
@@ -282,22 +268,16 @@ jobs:
           git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH" --force
           test "$(git rev-parse "origin/$CANDIDATE_BRANCH")" = "$CANDIDATE_HEAD"
           test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
-          if [ "$DEPLOYMENT_PROVIDER" = "vercel" ]; then
-            HOST="${DEPLOYMENT_URL#https://}"
-            curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID" -o /tmp/vercel-final.json
-            node <<'NODE'
-          const fs=require('fs');
-          const d=JSON.parse(fs.readFileSync('/tmp/vercel-final.json','utf8'));
-          if(d.readyState!=='READY'||d.target==='production') throw new Error('Final deployment state invalid');
-          NODE
-          else
-            case "$DEPLOYMENT_URL" in
-              *"@$CANDIDATE_HEAD") ;;
-              *) echo "::error::Immutable CDN URL is not pinned to candidate SHA"; exit 1 ;;
-            esac
-            curl -fsSL --retry 3 "$DEPLOYMENT_URL/astra-prod/app/index.html?final=$RANDOM" -o /tmp/final-index
-            test "$(sha256sum /tmp/final-index | awk '{print $1}')" = "$(sha256sum stage/astra-prod/app/index.html | awk '{print $1}')"
-          fi
+          test "$DEPLOYMENT_PROVIDER" = "cloudflare-quick-tunnel"
+          test "$DEPLOYMENT_TARGET" = "ephemeral-public-preview"
+          case "$DEPLOYMENT_URL" in
+            https://*.trycloudflare.com) ;;
+            *) echo "::error::Candidate URL is not isolated Quick Tunnel HTTPS"; exit 1 ;;
+          esac
+          kill -0 "$HTTP_PID"
+          kill -0 "$TUNNEL_PID"
+          curl -fsSL --retry 3 "$DEPLOYMENT_URL/astra-prod/app/index.html?final=$RANDOM" -o /tmp/final-index
+          test "$(sha256sum /tmp/final-index | awk '{print $1}')" = "$(sha256sum stage/astra-prod/app/index.html | awk '{print $1}')"
           git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
           echo "FINAL_CANDIDATE_IMMUTABILITY_PASS"
 
@@ -321,7 +301,8 @@ jobs:
             deploymentId:process.env.DEPLOYMENT_ID,
             deploymentUrl:process.env.DEPLOYMENT_URL,
             deploymentProvider:process.env.DEPLOYMENT_PROVIDER,
-            deploymentTarget:process.env.DEPLOYMENT_PROVIDER==='vercel'?'preview':'immutable-cdn',
+            deploymentTarget:process.env.DEPLOYMENT_TARGET,
+            deploymentPersistent:false,
             e2e:'GREEN',
             critical:0,
             high:0,
