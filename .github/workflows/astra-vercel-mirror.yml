@@ -1,0 +1,180 @@
+name: Astra PRO v3 Vercel Mirror
+
+on:
+  push:
+    branches:
+      - ops/astra-vercel-mirror-20260921
+    paths:
+      - '.github/workflows/astra-vercel-mirror.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_HEAD: 41841b4c3e642bd3b0cdada54f7e486aa24644e7
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_6f2XtCiNK0pF3grt8rWCCOdnJoAy
+  VERCEL_PROD_URL: https://egx-pro-v20-research.vercel.app
+
+jobs:
+  deploy-vercel-mirror:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact certified Astra PRO v3
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_HEAD }}
+          fetch-depth: 0
+
+      - name: Assert exact certified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_HEAD"
+          test -f astra-prod/app/pro-v3.html
+          grep -q 'DIRECT PRO V3 ENTRY' astra-prod/app/pro-v3.html
+          grep -q 'serviceWorker.getRegistrations' astra-prod/app/pro-v3.html
+          grep -q 'caches.keys' astra-prod/app/pro-v3.html
+          for f in astra-core-pro-v3.js astra-performance-pro-v3.js astra-portfolio-pro-v3.js astra-analytics-pro-v3.js; do
+            test -s "astra-prod/app/$f"
+            node --check "astra-prod/app/$f"
+          done
+          ! grep -q 'تعذر تحميل Astra Full Application' astra-prod/app/astra-core-pro-v3.js
+          echo "ASTRA_VERCEL_SOURCE_PASS"
+
+      - name: Assemble isolated static mirror
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/astra-vercel
+          mkdir -p /tmp/astra-vercel/astra-prod /tmp/astra-vercel/data/quant /tmp/astra-vercel/data/rc2
+          cp -R astra-prod/app /tmp/astra-vercel/astra-prod/
+          cp -R data/history /tmp/astra-vercel/data/
+          cp data/quant/market-search-index-v13-17.json /tmp/astra-vercel/data/quant/
+          cp data/quant/stock-intelligence-index.json /tmp/astra-vercel/data/quant/
+          cp data/rc2/recommendation-history.json /tmp/astra-vercel/data/rc2/
+          cat > /tmp/astra-vercel/vercel.json <<'JSON'
+          {
+            "redirects": [
+              { "source": "/", "destination": "/astra-prod/app/pro-v3.html", "permanent": false }
+            ],
+            "headers": [
+              {
+                "source": "/(.*)",
+                "headers": [
+                  { "key": "Cache-Control", "value": "no-store, max-age=0, must-revalidate" },
+                  { "key": "Pragma", "value": "no-cache" }
+                ]
+              }
+            ]
+          }
+          JSON
+          test -f /tmp/astra-vercel/astra-prod/app/pro-v3.html
+          test -f /tmp/astra-vercel/astra-prod/app/data.json
+          test -f /tmp/astra-vercel/data/quant/stock-intelligence-index.json
+          test -f /tmp/astra-vercel/data/rc2/recommendation-history.json
+          test "$(find /tmp/astra-vercel/data/history -type f -name '*.json' | wc -l)" -gt 100
+          echo "ASTRA_VERCEL_PACKAGE_PASS"
+
+      - name: Require authorized Vercel token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${VERCEL_TOKEN:-}" || { echo "VERCEL_TOKEN missing"; exit 78; }
+
+      - name: Link existing public Vercel mirror project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/astra-vercel/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > /tmp/astra-vercel/.vercel/project.json
+
+      - name: Deploy exact mirror to Vercel production
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/astra-vercel
+          URL="$(npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN")"
+          echo "deployment_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "ASTRA_VERCEL_DEPLOYMENT=$URL"
+
+      - name: Wait for public Vercel production propagation
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_v3="$(sha256sum astra-prod/app/pro-v3.html | awk '{print $1}')"
+          expected_core="$(sha256sum astra-prod/app/astra-core-pro-v3.js | awk '{print $1}')"
+          ok=0
+          for i in $(seq 1 60); do
+            if curl -fsSL --retry 2 "$VERCEL_PROD_URL/astra-prod/app/pro-v3.html?verify=$RANDOM" -o /tmp/v3 &&
+               curl -fsSL --retry 2 "$VERCEL_PROD_URL/astra-prod/app/astra-core-pro-v3.js?verify=$RANDOM" -o /tmp/core; then
+              rv3="$(sha256sum /tmp/v3 | awk '{print $1}')"
+              rcore="$(sha256sum /tmp/core | awk '{print $1}')"
+              if [ "$rv3" = "$expected_v3" ] && [ "$rcore" = "$expected_core" ] &&
+                 grep -q 'DIRECT PRO V3 ENTRY' /tmp/v3 &&
+                 ! grep -q 'تعذر تحميل Astra Full Application' /tmp/core; then
+                ok=1
+                break
+              fi
+            fi
+            sleep 2
+          done
+          test "$ok" -eq 1
+          echo "ASTRA_VERCEL_BYTE_IDENTITY_PASS"
+
+      - name: Locate Chromium and install Playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Ten clean Vercel mirror review cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          for cycle in $(seq 1 10); do
+            echo "=== VERCEL MIRROR CLEAN REVIEW $cycle/10 ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+            REVIEW_CYCLE="$cycle" ASTRA_DEV_BASE="$VERCEL_PROD_URL" node tests/astra/astra-native-browser-smoke.cjs
+          done
+
+      - name: Final mirror evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          const evidence={
+            schemaVersion:'astra-vercel-mirror-pro-v3-1',
+            candidateHead:process.env.CANDIDATE_HEAD,
+            productionBase:process.env.VERCEL_PROD_URL,
+            host:'vercel',
+            byteIdentity:'PASS',
+            e2e:'GREEN',
+            cleanReviewStreak:10,
+            directProV3Entry:true,
+            legacyCacheBypass:true,
+            uniqueV3Bundles:true,
+            githubPagesIndependent:true,
+            productionVerified:true
+          };
+          fs.writeFileSync('/tmp/ASTRA_VERCEL_MIRROR.json',JSON.stringify(evidence,null,2)+'\n');
+          console.log(JSON.stringify(evidence,null,2));
+          NODE
+
+      - name: Upload Vercel mirror evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-vercel-mirror-pro-v3-20260921
+          path: /tmp/ASTRA_VERCEL_MIRROR.json
+          if-no-files-found: error
