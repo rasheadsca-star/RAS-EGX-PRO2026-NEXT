@@ -11,7 +11,7 @@
   const P=v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))?F(v,1)+'%':'—';
   const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
   const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:null;
-  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null};
+  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null,loadToken:0};
 
   async function load(p){
     const r=await fetch(p+(p.includes('?')?'&':'?')+'pro='+Date.now(),{cache:'no-store'});
@@ -223,7 +223,7 @@
   }
 
   async function loadTicker(ticker){
-    const out=$('#proLabBody');if(!out)return;
+    const token=++S.loadToken,out=$('#proLabBody');if(!out)return;
     const market=A(S.universe.records).find(x=>x.ticker===ticker),rec=A(S.ledger.records).find(x=>x.ticker===ticker);
     if(!market){out.innerHTML='<div class="panel"><div class="notice bad">السهم غير موجود في الـAstra universe.</div></div>';return}
     if(market.historyAvailable!==true||Number(market.historySessions||0)<=0){
@@ -234,8 +234,9 @@
     try{
       let doc=S.history.get(ticker);
       if(!doc){doc=await load('../../data/history/'+encodeURIComponent(ticker)+'.json');S.history.set(ticker,doc)}
+      if(token!==S.loadToken)return;
       const rows=clean(doc);renderTicker(ticker,market,rec,rows);
-    }catch(e){out.innerHTML='<div class="panel"><div class="notice bad">تعذر تحميل التاريخ الموثق: '+E(e.message||e)+'</div></div>'}
+    }catch(e){if(token!==S.loadToken)return;out.innerHTML='<div class="panel"><div class="notice bad">تعذر تحميل التاريخ الموثق: '+E(e.message||e)+'</div></div>'}
   }
 
   function renderTicker(ticker,market,rec,allRows){
