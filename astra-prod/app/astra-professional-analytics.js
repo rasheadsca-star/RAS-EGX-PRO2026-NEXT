@@ -348,21 +348,12 @@
     const entry=(Number(rec.entryPlan?.low)+Number(rec.entryPlan?.high))/2,stop=Number(rec.stopLoss),targets=A(rec.targets).map(Number).filter(Number.isFinite);
     if(!Number.isFinite(entry)||!Number.isFinite(stop)||!targets.length)return '';
     const vals=[stop,entry,...targets,price].filter(Number.isFinite),mn=Math.min(...vals),mx=Math.max(...vals),pad=(mx-mn)*.12||entry*.02,lo=mn-pad,hi=mx+pad,pos=v=>5+(v-lo)/(hi-lo)*90,risk=Math.abs(entry-stop),t1=targets[0],rr=risk?Math.abs(t1-entry)/risk:null;
+    const mark=(v,l)=>'<div class="rr-mark" style="left:'+pos(v)+'%"></div><span class="rr-label" style="left:'+pos(v)+'%">'+E(l)+'</span>';
     return '<div class="panel" style="margin-top:12px"><div class="section-title"><div><h2>Risk / Reward Visualizer</h2><p>الخطة المعروضة من Astra Recommendation Record نفسه</p></div><span class="tag good">IMMUTABLE PLAN</span></div>'+
-      '<div class="rr-wrap"><div class="rr-line"></div><div class="rr-seg-risk" style="left:'+pos(stop)+'%;width:'+(pos(entry)-pos(stop))+'%"></div><div class="rr-seg-reward" style="left:'+pos(entry)+'%;width:'+(pos(t1)-pos(entry))+'%"></div>'+
+      '<div class="rr-wrap"><div class="rr-line"></div><div class="rr-seg-risk" style="left:'+Math.min(pos(stop),pos(entry))+'%;width:'+Math.abs(pos(entry)-pos(stop))+'%"></div><div class="rr-seg-reward" style="left:'+Math.min(pos(entry),pos(t1))+'%;width:'+Math.abs(pos(t1)-pos(entry))+'%"></div>'+
       mark(stop,'STOP '+F(stop,3))+mark(entry,'ENTRY '+F(entry,3))+targets.map((t,i)=>mark(t,'T'+(i+1)+' '+F(t,3))).join('')+'</div>'+
       '<div class="rr-metrics">'+box('Risk to Stop',P((entry-stop)/entry*100),'from entry mid')+box('Reward to T1',P((t1-entry)/entry*100),'from entry mid')+box('R:R to T1',Number.isFinite(rr)?'1 : '+F(rr,2):'—','reward / risk')+box('Current vs Entry',P((price-entry)/entry*100),'Daily close')+'</div></div>';
   }
-  function mark(v,l){return '<div class="rr-mark" style="left:var(--x)"></div><span class="rr-label" style="left:var(--x)">'+E(l)+'</span>'.replaceAll('var(--x)',((5+(v-riskReward._lo)/(riskReward._hi-riskReward._lo)*90)||0)+'%')}
-  // marker helper receives bounds through temporary state only inside riskReward.
-  const rawRiskReward=riskReward;
-  riskReward=function(rec,price){
-    if(!rec)return rawRiskReward(rec,price);
-    const entry=(Number(rec.entryPlan?.low)+Number(rec.entryPlan?.high))/2,stop=Number(rec.stopLoss),targets=A(rec.targets).map(Number).filter(Number.isFinite),vals=[stop,entry,...targets,price].filter(Number.isFinite);
-    if(!Number.isFinite(entry)||!Number.isFinite(stop)||!targets.length)return '';
-    const mn=Math.min(...vals),mx=Math.max(...vals),pad=(mx-mn)*.12||entry*.02;riskReward._lo=mn-pad;riskReward._hi=mx+pad;
-    return rawRiskReward(rec,price);
-  };
 
   async function boot(){
     try{
