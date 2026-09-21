@@ -192,6 +192,7 @@ case 8:{
   ok(/Ticker · Arabic\/English name · ISIN/.test(marketJs),'search keys not disclosed');
   ok(/market\.historyAvailable!==true/.test(proJs),'Technical Lab does not fail closed on missing history');
   ok(/لن يتم طلب ملف تاريخ مفقود/.test(proJs),'Technical Lab missing explicit no-history contract');
+  ok(/loadToken/.test(proJs)&&/token!==S\.loadToken/.test(proJs),'Technical Lab stale-history render race guard missing');
   pass('Full-market search / stock intelligence',[
     '224/224 active universe searchable',
     'GOUR remains searchable even when not recommended',
@@ -199,7 +200,8 @@ case 8:{
     'missing Daily OHLC is explicit and never estimated',
     'ticker/name/ISIN search contract',
     'not-recommended stocks remain visible',
-    'Technical Lab fails closed without requesting unavailable history'
+    'Technical Lab fails closed without requesting unavailable history',
+    'stale async history loads cannot overwrite a newer ticker selection'
   ]);
 break}
 case 9:{
