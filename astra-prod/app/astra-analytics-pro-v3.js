@@ -414,16 +414,25 @@
       const ticker=tickerFromElement(el);
       if(!ticker)continue;
       el.dataset.chartTicker=ticker;
-      el.setAttribute('role','button');
-      el.setAttribute('tabindex','0');
-      el.setAttribute('aria-label','Open '+ticker+' professional technical chart');
       el.title='Open '+ticker+' Technical Chart';
+      const host=el.parentElement;
+      if(host){
+        host.dataset.chartTickerHost=ticker;
+        host.setAttribute('role','button');
+        host.setAttribute('tabindex','0');
+        host.setAttribute('aria-label','Open '+ticker+' professional technical chart');
+        host.title='Open '+ticker+' Technical Chart';
+      }else{
+        el.setAttribute('role','button');
+        el.setAttribute('tabindex','0');
+        el.setAttribute('aria-label','Open '+ticker+' professional technical chart');
+      }
     }
   }
   function ensureUniversalStyle(){
     if($('#astraUniversalChartStyle'))return;
     const style=document.createElement('style');style.id='astraUniversalChartStyle';
-    style.textContent='.ticker[data-chart-ticker]{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}.ticker[data-chart-ticker]:focus{outline:2px solid #62c7f0;outline-offset:3px;border-radius:4px}.pro-return-context{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:9px 11px;border:1px solid #315f79;border-radius:10px;background:#081b2b}.pro-return-context small{color:#8faebe}';
+    style.textContent='[data-chart-ticker-host],.ticker[data-chart-ticker]{cursor:pointer}.ticker[data-chart-ticker]{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}[data-chart-ticker-host]:focus,.ticker[data-chart-ticker]:focus{outline:2px solid #62c7f0;outline-offset:3px;border-radius:4px}.pro-return-context{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:9px 11px;border:1px solid #315f79;border-radius:10px;background:#081b2b}.pro-return-context small{color:#8faebe}';
     document.head.appendChild(style);
   }
   function renderReturnContext(){
@@ -464,14 +473,14 @@
     const observer=new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)decorateTickers(n)})));
     observer.observe(document.body,{subtree:true,childList:true});
     document.addEventListener('click',e=>{
-      const el=e.target?.closest?.('.ticker[data-chart-ticker]');if(!el)return;
+      const el=e.target?.closest?.('[data-chart-ticker-host],.ticker[data-chart-ticker]');if(!el)return;
       const ticker=tickerFromElement(el);if(!ticker)return;
       e.preventDefault();e.stopImmediatePropagation();
       void openStockChart(ticker);
     },true);
     document.addEventListener('keydown',e=>{
       if(e.key!=='Enter'&&e.key!==' ')return;
-      const el=e.target?.closest?.('.ticker[data-chart-ticker]');if(!el)return;
+      const el=e.target?.closest?.('[data-chart-ticker-host],.ticker[data-chart-ticker]');if(!el)return;
       const ticker=tickerFromElement(el);if(!ticker)return;
       e.preventDefault();e.stopImmediatePropagation();
       void openStockChart(ticker);
