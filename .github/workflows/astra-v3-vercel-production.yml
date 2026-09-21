@@ -13,6 +13,7 @@ on:
       - 'astra-prod/app/astra-portfolio-pro-v3.js'
       - 'astra-prod/app/astra-analytics-pro-v3.js'
       - 'astra-prod/app/intelligence/**'
+      - 'tests/astra/astra-pro-v3-browser-smoke.cjs'
       - '.github/workflows/astra-v3-vercel-production.yml'
 
 permissions:
@@ -59,6 +60,9 @@ jobs:
           ok(handoff?.final===true && handoff?.pagesPublished===true,'Latest handoff is not final/published');
           ok(handoff?.sessionDate===s,'Astra data is older than latest finalized MAIN APP session');
           ok(app?.sourceDecision?.upstream?.mainAppMaterialFingerprint===handoff?.materialFingerprint,'Astra snapshot material fingerprint is not latest finalized material');
+          ok(app?.sourceDecision?.upstream?.canonicalDataHead===handoff?.canonicalDataHead,'Astra canonical data HEAD is not the latest finalized handoff');
+          ok(String(app?.sourceDecision?.upstream?.producerRunId||'')===String(handoff?.producerRunId||''),'Astra producer run is not the latest finalized handoff');
+          ok(app?.sourceDecision?.upstream?.sourceSessionDataHash===handoff?.sourceSessionDataHash,'Astra source data hash is not the latest finalized handoff');
           ok(app?.sourceDecision?.currentProductionCutover===true,'Production cutover is false');
           ok(Array.isArray(app?.decisionSnapshot?.top5) && app.decisionSnapshot.top5.length<=5,'Invalid top5');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SESSION='+s+'\n');
@@ -160,6 +164,29 @@ jobs:
           console.log('ASTRA_STAGE_PASS');
           NODE
 
+      - name: Locate Chromium for pre-deploy acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+
+      - name: Install Playwright Core
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Pre-deploy PRO v3 browser acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGE="$RUNNER_TEMP/astra-pro-v3"
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory "$STAGE" >/tmp/astra-pro-v3-predeploy.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/astra-prod/app/pro-v3.html >/dev/null && break || sleep 1; done
+          ASTRA_PRO_BASE=http://127.0.0.1:4173 ASTRA_REVIEW_CYCLE=predeploy node tests/astra/astra-pro-v3-browser-smoke.cjs
+
       - name: Require authorized Vercel deployment token
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -223,3 +250,13 @@ jobs:
           curl -fsSI "$PRODUCTION_URL/astra-prod/app/data.json?cb=$(date +%s%3N)" -o /tmp/astra-headers.txt
           grep -qi '^cache-control: .*no-store' /tmp/astra-headers.txt
           echo "ASTRA_V3_PRODUCTION_PASS session=$ASTRA_SESSION snapshot=$ASTRA_SNAPSHOT top=$ASTRA_TOP"
+
+      - name: Ten consecutive clean live production reviews
+        shell: bash
+        run: |
+          set -euo pipefail
+          for cycle in $(seq 1 10); do
+            echo "=== ASTRA LIVE CLEAN CYCLE $cycle/10 ==="
+            ASTRA_PRO_BASE="$PRODUCTION_URL" ASTRA_REVIEW_CYCLE="$cycle" node tests/astra/astra-pro-v3-browser-smoke.cjs
+          done
+          echo "ASTRA_LIVE_CLEAN_STREAK=10"
