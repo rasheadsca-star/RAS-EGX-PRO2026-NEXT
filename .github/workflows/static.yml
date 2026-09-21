@@ -29,15 +29,15 @@ jobs:
       - name: Checkout exact certified Astra candidate
         uses: actions/checkout@v4
         with:
-          ref: b75ac6ba8e0b10dd2159c1bf9e862aa0a014c510
+          ref: 9583919d12bb9f85358a1f01cf41de838227796d
           fetch-depth: 0
 
       - name: Assert exact production promotion source
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "b75ac6ba8e0b10dd2159c1bf9e862aa0a014c510"
-          echo "PROMOTION_SOURCE_EXACT b75ac6ba8e0b10dd2159c1bf9e862aa0a014c510"
+          test "$(git rev-parse HEAD)" = "9583919d12bb9f85358a1f01cf41de838227796d"
+          echo "PROMOTION_SOURCE_EXACT 9583919d12bb9f85358a1f01cf41de838227796d"
 
       - name: Enforce Pages secret guard
         run: |
@@ -72,8 +72,12 @@ jobs:
           grep -q 'Risk / Reward Visualizer' astra-prod/app/astra-professional-analytics.js
           grep -q 'function channel(rows)' astra-prod/app/astra-professional-analytics.js
           grep -q 'token!==S.loadToken' astra-prod/app/astra-professional-analytics.js
+          grep -q 'loadOptionalJson' astra-prod/app/app.js
+          grep -q 'Only Astra DecisionSnapshot/data.json is critical' astra-prod/app/app.js
+          grep -q 'ASTRA_OPTIONAL_SOURCE_UNAVAILABLE' astra-prod/app/app.js
+          grep -q 'تشغيل جزئي آمن' astra-prod/app/app.js
           ! grep -Eiq 'fetch\([^)]*https?://' astra-prod/app/astra-professional-analytics.js
-          echo "ASTRA_DIRECT_PRO_V2_PRODUCTION_BUNDLE_PASS"
+          echo "ASTRA_RESILIENT_BOOT_PRODUCTION_BUNDLE_PASS"
 
       - name: Validate MAIN APP P2 deep portfolio bundle
         run: |
