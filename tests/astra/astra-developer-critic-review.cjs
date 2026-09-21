@@ -211,13 +211,17 @@ case 9:{
   ok(!/fetch\([^)]*portfolio/i.test(marketJs),'portfolio appears to be sent over network');
   ok(indexHtml.includes('data-view="technical"')&&indexHtml.includes('view-technical'),'Technical Lab navigation/view missing');
   ok(indexHtml.includes('astra-professional-analytics.js'),'professional analytics bundle not loaded');
+  ok(indexHtml.includes('astra-professional-analytics.js?v=pro-analytics-2'),'professional analytics cache-busted bundle version missing');
+  ok(/Astra Professional Analytics/.test(proJs)&&/PRO ANALYTICS v2/.test(proJs)&&/proBuildBadge/.test(proJs),'visible professional analytics home integration missing');
+  ok(/proHomeTechnical/.test(proJs)&&/proHomePerformance/.test(proJs),'home professional analytics navigation actions missing');
   ok(/Trend\/RSI\/ATR\/Support\/Resistance are interpretation-only/.test(marketJs),'analytics isolation note missing');
   pass('Portfolio privacy / stock analytics isolation',[
     'namespaced versioned localStorage only',
     'purchase price/quantity/date/notes supported',
     'no portfolio network persistence',
     'technical analytics explicitly interpretation-only',
-    'Technical Lab is a first-class Astra view loaded from the native professional analytics bundle'
+    'Technical Lab is a first-class Astra view loaded from the native professional analytics bundle',
+    'Professional Analytics v2 is visibly surfaced on the home dashboard with cache-busted bundle loading'
   ]);
 break}
 case 10:{
