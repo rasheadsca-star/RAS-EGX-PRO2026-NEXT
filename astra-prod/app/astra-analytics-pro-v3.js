@@ -103,6 +103,8 @@
         kpi('Avg Loser',m.averageLoserPct,'resolved losers',true)+
         kpi('Avg Time → T1',m.averageTimeToT1,'sessions')+
         kpi('Avg Holding',m.averageHoldingSessions,'sessions')+
+        kpi('Avg MFE',m.averageMfePct,m.mfeMeasuredCount?F(m.mfeMeasuredCount,0)+' exact-entry observations':'requires exact entry price',true)+
+        kpi('Avg MAE',m.averageMaePct,m.maeMeasuredCount?F(m.maeMeasuredCount,0)+' exact-entry observations':'requires exact entry price',true)+
         kpi('Closed Trades',m.closedTrades,'resolved/closed')+
         kpi('Waiting Entry',m.waitingForEntry,'not failures')+
         kpi('Ambiguous',m.ambiguous,'excluded from W/L')+
