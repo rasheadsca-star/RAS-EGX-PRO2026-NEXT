@@ -56,6 +56,7 @@ function evaluateHandoff(input) {
   const fingerprint = String(marker.materialFingerprint || '').trim().toLowerCase();
   const canonicalHead = String(marker.canonicalDataHead || '').trim().toLowerCase();
   const priorFingerprint = String(audit?.upstream?.mainAppMaterialFingerprint || '').trim().toLowerCase();
+  const priorCanonicalHead = String(audit?.upstream?.canonicalDataHead || '').trim().toLowerCase();
   const priorSession = dateOnly(audit?.session?.decision);
 
   const automatic = eventName === 'workflow_run' || eventName === 'schedule';
@@ -64,7 +65,9 @@ function evaluateHandoff(input) {
     session &&
     priorSession === session &&
     /^[0-9a-f]{64}$/.test(fingerprint) &&
-    priorFingerprint === fingerprint
+    priorFingerprint === fingerprint &&
+    /^[0-9a-f]{40}$/.test(canonicalHead) &&
+    priorCanonicalHead === canonicalHead
   );
 
   if (eventName === 'workflow_run') {
