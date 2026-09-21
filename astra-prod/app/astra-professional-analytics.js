@@ -29,7 +29,7 @@
     if($('#astraProStyle'))return;
     const s=document.createElement('style');s.id='astraProStyle';
     s.textContent=
-    '.pro-command{border-color:#356e8c;background:linear-gradient(145deg,#0b2135,#0d2940)}'+
+    '.pro-home{border-color:#3f7fa3;background:radial-gradient(circle at 85% 10%,#164765 0,#0b263b 28%,#081c2c 65%);position:relative;overflow:hidden}.pro-home:before{content:"PRO";position:absolute;left:16px;top:10px;font-size:64px;font-weight:900;color:#ffffff08;letter-spacing:4px}.pro-home-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}.pro-home h2{font-size:22px;margin:0}.pro-home-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}.pro-home-features{display:flex;gap:7px;flex-wrap:wrap}.pro-feature{padding:7px 9px;border:1px solid #3d708b;background:#0a2031;border-radius:999px;font-size:10px;color:#d9f1fb}.pro-cta{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.pro-live{border-color:#29966c!important;color:#bff8df!important}.pro-build{font-family:Consolas,monospace;font-size:9px;color:#8db2c5}.pro-command{border-color:#356e8c;background:linear-gradient(145deg,#0b2135,#0d2940)}'+
     '.pro-command-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.pro-command-head h2{margin:0 0 5px;font-size:19px}.pro-sub{color:#8faebe;font-size:11px;line-height:1.6}'+
     '.pro-balance{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-top:13px}.pro-side{background:#081b2b;border:1px solid #285069;border-radius:12px;padding:11px}.pro-side b{display:block;font-size:24px;margin-top:5px}.pro-vs{font-weight:900;color:#8da9b8}.pro-track{height:9px;border-radius:99px;background:#163348;overflow:hidden;margin-top:8px}.pro-track i{display:block;height:100%}.pro-target i{background:#36d995}.pro-stop i{background:#ff6d7d}'+
     '.pro-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:10px}.pro-kpi{padding:10px;border-radius:11px;background:#091c2c;border:1px solid #29516a}.pro-kpi small{display:block;color:#8faebe;font-size:9px}.pro-kpi b{display:block;margin-top:5px;font-size:16px}.pro-kpi em{display:block;margin-top:4px;color:#6f91a4;font-style:normal;font-size:9px}'+
@@ -40,7 +40,7 @@
     '.pro-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;color:#8faebe;font-size:10px}.pro-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:4px}'+
     '.rr-wrap{position:relative;height:82px;margin-top:12px;background:#071a29;border:1px solid #294e64;border-radius:12px;padding:16px 18px}.rr-line{position:absolute;left:5%;right:5%;top:40px;height:6px;background:#1b4056;border-radius:99px}.rr-seg-risk{position:absolute;top:40px;height:6px;background:#ff6d7d}.rr-seg-reward{position:absolute;top:40px;height:6px;background:#36d995}.rr-mark{position:absolute;top:28px;width:2px;height:30px;background:#dff6ff}.rr-label{position:absolute;top:8px;transform:translateX(-50%);font-size:9px;white-space:nowrap}.rr-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}'+
     '.pro-note{margin-top:9px;padding:9px 10px;border:1px solid #5d5131;background:#292318;border-radius:9px;color:#f3dfaa;font-size:10px;line-height:1.7}'+
-    '@media(max-width:1100px){.pro-kpis,.pro-summary,.sig-grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.pro-balance{grid-template-columns:1fr}.pro-vs{text-align:center}.pro-kpis,.pro-summary,.sig-grid{grid-template-columns:1fr 1fr}.rr-metrics{grid-template-columns:1fr 1fr}.pro-select{min-width:100%;width:100%}}@media(max-width:440px){.pro-kpis,.pro-summary,.sig-grid,.rr-metrics{grid-template-columns:1fr}}';
+    '@media(max-width:1100px){.pro-kpis,.pro-summary,.sig-grid{grid-template-columns:repeat(3,1fr)}.pro-home-kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.pro-balance{grid-template-columns:1fr}.pro-vs{text-align:center}.pro-kpis,.pro-summary,.sig-grid,.pro-home-kpis{grid-template-columns:1fr 1fr}.rr-metrics{grid-template-columns:1fr 1fr}.pro-select{min-width:100%;width:100%}}@media(max-width:440px){.pro-kpis,.pro-summary,.sig-grid,.rr-metrics,.pro-home-kpis{grid-template-columns:1fr}}';
     document.head.appendChild(s);
   }
 
@@ -48,6 +48,38 @@
     const pct=m&&Number.isFinite(Number(m.pct))?Number(m.pct):null;
     return {pct,n:m?.numerator??0,d:m?.denominator??0,label:m?.denominatorLabel||'—'};
   }
+  function renderHomeUpgrade(){
+    const host=$('#view-home');if(!host||$('#astraProHome'))return;
+    const m=S.summary.metrics||{},t=rateBlock(m.target1HitRate),st=rateBlock(m.stopLossRate),ft=rateBlock(m.finalTargetRate);
+    const recs=A(S.ledger.records).slice().sort((a,b)=>Number(a.rank)-Number(b.rank));
+    const panel=document.createElement('div');panel.id='astraProHome';panel.className='panel pro-home';
+    panel.innerHTML=
+      '<div class="pro-home-head"><div><h2>Astra Professional Analytics</h2><div class="pro-sub">لوحة التحليل الاحترافي الجديدة أصبحت جزءًا من الواجهة الرئيسية · Candles · Channels · Signature · KPIs · Risk/Reward</div></div><div><span class="tag good pro-live">● LIVE</span> <span class="tag">Build 98c71e4b</span><div class="pro-build">PRO-ANALYTICS-PRODUCTION</div></div></div>'+
+      '<div class="pro-home-kpis">'+
+        '<div class="pro-kpi"><small>T1 Hit Rate</small><b class="good">'+P(t.pct)+'</b><em>'+F(t.n,0)+' / '+F(t.d,0)+' '+E(t.label)+'</em></div>'+
+        '<div class="pro-kpi"><small>Stop Loss Rate</small><b class="bad">'+P(st.pct)+'</b><em>'+F(st.n,0)+' / '+F(st.d,0)+' '+E(st.label)+'</em></div>'+
+        '<div class="pro-kpi"><small>Final Target Rate</small><b>'+P(ft.pct)+'</b><em>'+F(ft.n,0)+' / '+F(ft.d,0)+' '+E(ft.label)+'</em></div>'+
+        '<div class="pro-kpi"><small>Expectancy</small><b>'+P(m.expectancyPct)+'</b><em>resolved trades only</em></div>'+
+      '</div>'+
+      '<div class="pro-home-features">'+
+        '<span class="pro-feature">🕯 Multi-Pane Candlesticks</span><span class="pro-feature">↗ Auto Price Channel</span><span class="pro-feature">✦ Technical Signature</span><span class="pro-feature">S/R + Fibonacci</span><span class="pro-feature">RSI + MACD + Volume</span><span class="pro-feature">Risk / Reward Visualizer</span>'+
+      '</div>'+
+      '<div class="pro-cta"><button class="btn good" id="proHomeTechnical">فتح Technical Lab</button><button class="btn" id="proHomePerformance">فتح Performance Command Center</button>'+
+      recs.slice(0,3).map(r=>'<button class="btn" data-pro-home-ticker="'+E(r.ticker)+'">حلّل '+E(r.ticker)+'</button>').join('')+'</div>'+
+      (t.d===0?'<div class="pro-note">مهم: توصيات اللقطة الحالية لم تدخل Entry بعد، لذلك نسب Target/Stop غير متاحة إحصائيًا حاليًا بدل إظهار 0% مضلل.</div>':'');
+    host.prepend(panel);
+    $('#proHomeTechnical').onclick=()=>document.querySelector('[data-view="technical"]')?.click();
+    $('#proHomePerformance').onclick=()=>document.querySelector('[data-view="performance"]')?.click();
+    $('[data-pro-home-ticker]').forEach(b=>b.onclick=()=>{
+      document.querySelector('[data-view="technical"]')?.click();
+      const sel=$('#proTicker');if(sel){sel.value=b.dataset.proHomeTicker;sel.dispatchEvent(new Event('change'))}
+    });
+    const badges=document.querySelector('.badges');
+    if(badges&&!$('#proBuildBadge'))badges.insertAdjacentHTML('afterbegin','<span class="badge good" id="proBuildBadge">PRO 98c71e4b</span>');
+    const nav=document.querySelector('[data-view="technical"]');
+    if(nav){nav.textContent='Technical Lab · NEW';nav.style.fontWeight='900'}
+  }
+
   function renderCommand(){
     const host=$('#view-performance');if(!host||$('#astraKpiCommand'))return;
     const m=S.summary.metrics||{},t=rateBlock(m.target1HitRate),st=rateBlock(m.stopLossRate);
@@ -365,7 +397,7 @@
         load('./intelligence/market-universe.json'),
         load('./intelligence/recommendation-ledger.json')
       ]);
-      renderCommand();renderLabShell();
+      renderHomeUpgrade();renderCommand();renderLabShell();
       window.__ASTRA_PRO_ANALYTICS__='READY';
     }catch(e){
       console.error('ASTRA_PRO_ANALYTICS_FAILED',e);
