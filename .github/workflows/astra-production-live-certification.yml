@@ -1,0 +1,240 @@
+name: Astra Live Production Certification
+
+on:
+  push:
+    branches:
+      - ops/astra-candidate-certify-20260921
+    paths:
+      - '.github/workflows/astra-production-live-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-production-live-certification-20260921
+  cancel-in-progress: false
+
+env:
+  PRODUCTION_HEAD: c81f873548d2a51afde85c8067b6b5b2bfb20eff
+  PRODUCTION_URL: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT
+  CERTIFIED_RUNTIME_HASH: 618441b41e65bb6f1607875e0c8e2cfa1bcb11d397a0bf2da5c6534b6717017e
+  PAGES_RUN_ID: "35579556714"
+  G06_RUN_ID: "35579556723"
+  SECRET_SCAN_RUN_ID: "35579556737"
+
+jobs:
+  certify-live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.PRODUCTION_HEAD }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Assert exact production pointer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRODUCTION_HEAD"
+          git fetch origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_HEAD"
+          echo "PRODUCTION_POINTER_PASS $PRODUCTION_HEAD"
+
+      - name: Re-certify deterministic Astra runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/astra/native/workflow-inventory.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          git diff --exit-code -- astra-prod/app/intelligence docs/astra/development/WORKFLOW_INVENTORY.json
+          node --test tests/astra/astra-native-intelligence.test.cjs
+
+      - name: Assemble and hash production runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf stage
+          mkdir -p stage/astra-prod stage/data/quant stage/data/rc2
+          cp -a astra-prod/app stage/astra-prod/app
+          cp -a data/history stage/data/history
+          cp -a data/quant/market-search-index-v13-17.json stage/data/quant/
+          cp -a data/quant/stock-intelligence-index.json stage/data/quant/
+          cp -a data/rc2/recommendation-history.json stage/data/rc2/
+          (
+            cd stage
+            find astra-prod/app data/history data/quant data/rc2 -type f -print0 | sort -z | xargs -0 sha256sum
+          ) > /tmp/astra-live-file-hashes.txt
+          ARTIFACT_HASH="$(sha256sum /tmp/astra-live-file-hashes.txt | awk '{print $1}')"
+          test "$ARTIFACT_HASH" = "$CERTIFIED_RUNTIME_HASH"
+          echo "ARTIFACT_HASH=$ARTIFACT_HASH" >> "$GITHUB_ENV"
+          echo "LIVE_RUNTIME_HASH_PASS $ARTIFACT_HASH"
+
+      - name: Verify live critical bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for p in             astra-prod/app/index.html             astra-prod/app/app.js             astra-prod/app/astra-performance-history.js             astra-prod/app/astra-market-portfolio.js             astra-prod/app/data.json             astra-prod/app/intelligence/market-universe.json             astra-prod/app/intelligence/recommendation-ledger.json             astra-prod/app/intelligence/recommendation-outcomes.json             data/quant/stock-intelligence-index.json             data/rc2/recommendation-history.json             data/history/TMGH.json; do
+            ok=0
+            for attempt in $(seq 1 12); do
+              if curl -fsSL --retry 2 -H 'Cache-Control: no-cache' "$PRODUCTION_URL/$p?live=$RANDOM" -o /tmp/live-file; then
+                local_hash="$(sha256sum "stage/$p" | awk '{print $1}')"
+                live_hash="$(sha256sum /tmp/live-file | awk '{print $1}')"
+                if [ "$local_hash" = "$live_hash" ]; then ok=1; break; fi
+              fi
+              sleep 3
+            done
+            test "$ok" -eq 1 || { echo "::error::Live byte mismatch: $p"; exit 1; }
+          done
+          echo "LIVE_BYTE_IDENTITY_PASS"
+
+      - name: Locate Chromium and install Playwright Core
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+          npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Ten clean live production cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/astra-live-e2e.cjs <<'NODE'
+          'use strict';
+          const {chromium}=require(process.cwd()+'/node_modules/playwright-core');
+          const assert=require('node:assert/strict');
+          const BASE=process.env.PRODUCTION_URL;
+          const CHROME=process.env.CHROME_BIN;
+          const cycle=process.env.REVIEW_CYCLE;
+          const profiles=[['w320',320,760],['w360',360,780],['w390',390,844],['w414',414,896],['w768',768,1024],['desktop',1440,1000]];
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:CHROME,args:['--no-sandbox']});
+            const out=[];
+            try{
+              for(const [name,width,height] of profiles){
+                const ctx=await browser.newContext({viewport:{width,height},locale:'ar-EG'});
+                const page=await ctx.newPage();
+                const external=[],errors=[],bad=[],requests=[];
+                page.on('request',r=>{requests.push(r.url());try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
+                page.on('pageerror',e=>errors.push(String(e)));
+                page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
+                await page.goto(BASE+'/astra-prod/app/index.html?production='+Date.now()+'&cycle='+cycle,{waitUntil:'networkidle',timeout:45000});
+                await page.waitForFunction(()=>window.__ASTRA_G22_READY__===true&&window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY',null,{timeout:30000});
+
+                await page.locator('[data-view="performance"]').click();
+                await page.waitForSelector('#view-performance.active');
+                assert.match(await page.locator('#view-performance').innerText(),/Astra Performance Intelligence/);
+
+                await page.locator('[data-view="history"]').click();
+                await page.waitForSelector('#view-history.active');
+                assert.equal(await page.locator('#astraHistRows tr').count(),3,name+' history count');
+
+                await page.locator('[data-view="search"]').click();
+                await page.waitForSelector('#view-search.active');
+                const badge=page.locator('#view-search [data-universe-active]').first();
+                assert.equal(await badge.getAttribute('data-universe-active'),'224');
+                assert.equal(await badge.getAttribute('data-universe-intended'),'224');
+
+                await page.locator('#astraMarketQ').fill('GOUR');
+                await page.waitForTimeout(120);
+                assert.match(await page.locator('#astraMarketRows').innerText(),/GOUR/);
+                assert.match(await page.locator('#astraMarketRows').innerText(),/ليس ضمن فرص Astra/);
+                await page.locator('[data-native-stock="GOUR"]').click();
+                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('GOUR'));
+                assert.match(await page.locator('#astraStock').innerText(),/لا توجد بيانات Daily OHLC موثقة/);
+                assert.equal(requests.some(u=>u.includes('/data/history/GOUR.json')),false,name+' GOUR unavailable history requested');
+
+                await page.locator('#astraMarketQ').fill('TMGH');
+                await page.waitForTimeout(120);
+                await page.locator('[data-native-stock="TMGH"]').click();
+                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('TMGH'));
+                const boxes=await page.locator('#astraStock .stock-box').allTextContents();
+                const support=boxes.find(x=>x.includes('Support20'))||'';
+                const resistance=boxes.find(x=>x.includes('Resistance20'))||'';
+                assert.ok(!support.includes('غير متاح')&&!support.includes('—'),name+' TMGH Support20 unavailable');
+                assert.ok(!resistance.includes('غير متاح')&&!resistance.includes('—'),name+' TMGH Resistance20 unavailable');
+                assert.equal(requests.some(u=>u.includes('/data/history/TMGH.json')),true,name+' TMGH history not requested');
+
+                await page.locator('[data-view="portfolio"]').click();
+                await page.waitForSelector('#view-portfolio.active');
+                await page.locator('#astraPfT').selectOption('GOUR');
+                await page.locator('#astraPfP').fill('10');
+                await page.locator('#astraPfQ').fill('5');
+                await page.locator('#astraPfD').fill('2026-09-20');
+                await page.locator('#astraPfN').fill('live-production-e2e');
+                await page.locator('#astraPfA').click();
+                assert.match(await page.locator('#astraPfB').innerText(),/GOUR/);
+                assert.match(await page.locator('#astraPfB').innerText(),/live-production-e2e/);
+                const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('egxpro.astra.portfolio.v2')||'[]'));
+                assert.equal(persisted.length,1);
+
+                const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
+                assert.ok(dims.sw<=dims.cw+2,name+' horizontal overflow '+JSON.stringify(dims));
+                assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
+                assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
+                assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
+                out.push({name,historyRows:3,universe:224,missingHistoryNo404:true,availableHistoryAnalytics:true,portfolioPersistence:true,externalRequests:0,pageErrors:0,badResponses:0,overflow:0});
+                await ctx.close();
+              }
+            }finally{await browser.close()}
+            console.log(JSON.stringify({cycle,status:'PASS',profiles:out},null,2));
+          })().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          NODE
+
+          for cycle in $(seq 1 10); do
+            echo "=== LIVE PRODUCTION CLEAN REVIEW $cycle/10 ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+            REVIEW_CYCLE="$cycle" node /tmp/astra-live-e2e.cjs
+          done
+
+      - name: Final live production immutability
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/main:refs/remotes/origin/main" --force
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_HEAD"
+          curl -fsSL -H 'Cache-Control: no-cache' "$PRODUCTION_URL/astra-prod/app/index.html?final=$RANDOM" -o /tmp/live-final-index
+          test "$(sha256sum /tmp/live-final-index | awk '{print $1}')" = "$(sha256sum stage/astra-prod/app/index.html | awk '{print $1}')"
+          echo "LIVE_PRODUCTION_IMMUTABILITY_PASS"
+
+      - name: Write live production evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p live-evidence
+          cat > live-evidence/CERTIFICATION.json <<EOF
+          {
+            "schemaVersion": "astra-live-production-certification-1",
+            "productionHead": "$PRODUCTION_HEAD",
+            "productionUrl": "$PRODUCTION_URL/astra-prod/app/index.html",
+            "runtimeArtifactSha256": "$ARTIFACT_HASH",
+            "pagesRunId": "$PAGES_RUN_ID",
+            "g06RunId": "$G06_RUN_ID",
+            "secretScanRunId": "$SECRET_SCAN_RUN_ID",
+            "e2e": "GREEN",
+            "cleanReviewStreak": 10,
+            "runtimeLegacyDecisionDependencyCount": 0,
+            "externalRuntimeRequests": 0,
+            "pageErrors": 0,
+            "badResponses": 0,
+            "liveProductionVerified": true
+          }
+          EOF
+          cat live-evidence/CERTIFICATION.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astra-live-production-certification-20260921
+          path: |
+            live-evidence/CERTIFICATION.json
+            /tmp/astra-live-file-hashes.txt
+          if-no-files-found: error
