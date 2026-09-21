@@ -11,7 +11,7 @@
   const P=v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))?F(v,1)+'%':'—';
   const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
   const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:null;
-  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null,app:null,loadToken:0,chartContext:null,universalInstalled:false};
+  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null,tickerPerf:null,app:null,loadToken:0,chartContext:null,universalInstalled:false};
 
   async function load(p){
     const r=await fetch(p+(p.includes('?')?'&':'?')+'pro='+Date.now(),{cache:'no-store'});
@@ -108,7 +108,11 @@
         kpi('Ambiguous',m.ambiguous,'excluded from W/L')+
         kpi('Target-Stop Edge',balance,balance===null?'requires activated sample':'percentage points',true)+
       '</div>'+
-      '<div class="pro-note">'+(sample===0?'العينة الحالية لم تُفعّل أي توصية بعد؛ لذلك Target/Stop/Win/Loss تبقى غير متاحة إحصائيًا بدل إظهار صفر مضلل.':'مقارنة Target مقابل Stop تستخدم نفس Activated denominator، لذلك الفارق قابل للمقارنة مباشرة.')+'</div>';
+      '<div class="pro-note">'+(sample===0?'العينة الحالية لم تُفعّل أي توصية بعد؛ لذلك Target/Stop/Win/Loss تبقى غير متاحة إحصائيًا بدل إظهار صفر مضلل.':'مقارنة Target مقابل Stop تستخدم نفس Activated denominator، لذلك الفارق قابل للمقارنة مباشرة.')+'</div>'+
+      '<div style="margin-top:12px"><div class="pro-command-head"><div><h3 style="margin:0">Performance by Ticker</h3><div class="pro-sub">كل سهم يفتح نفس Technical Chart الاحترافي مع الحفاظ على سياق صفحة الأداء</div></div><span class="tag">'+F(A(S.tickerPerf?.groups).length,0)+' tickers</span></div>'+
+      '<div class="table" style="margin-top:8px;max-height:360px;overflow:auto"><table><thead><tr><th>Ticker</th><th>Issued</th><th>Activated</th><th>T1 Rate</th><th>Stop Rate</th><th>Expectancy</th></tr></thead><tbody id="astraTickerPerfRows">'+
+      A(S.tickerPerf?.groups).map(g=>'<tr><td><b class="ticker">'+E(g.key)+'</b></td><td>'+F(g.metrics?.totalRecommendations,0)+'</td><td>'+F(g.metrics?.activatedRecommendations,0)+'</td><td>'+P(g.metrics?.target1HitRate?.pct)+'</td><td>'+P(g.metrics?.stopLossRate?.pct)+'</td><td>'+P(g.metrics?.expectancyPct)+'</td></tr>').join('')+
+      '</tbody></table></div></div>';
     host.prepend(panel);
   }
   function kpi(label,value,note,isPct){
@@ -490,10 +494,11 @@
   async function boot(){
     try{
       await waitReady();addStyle();
-      [S.summary,S.universe,S.ledger,S.app]=await Promise.all([
+      [S.summary,S.universe,S.ledger,S.tickerPerf,S.app]=await Promise.all([
         load('./intelligence/performance-summary.json'),
         load('./intelligence/market-universe.json'),
         load('./intelligence/recommendation-ledger.json'),
+        load('./intelligence/ticker-performance.json'),
         load('./data.json')
       ]);
       renderHomeUpgrade();renderCommand();renderLabShell();installUniversalChartAction();
