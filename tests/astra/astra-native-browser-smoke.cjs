@@ -24,6 +24,8 @@ const profiles=[
       page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
       await page.goto(BASE+'/astra-prod/app/index.html?devsmoke='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
       await page.waitForFunction(()=>window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY'&&window.__ASTRA_PRO_ANALYTICS__==='READY',null,{timeout:30000});
+      assert.equal(await page.locator('#proStaticBanner').count(),1,name+' static PRO v2 banner missing on index');
+      assert.match(await page.locator('#proStaticBanner').innerText(),/PRO ANALYTICS v2 — LIVE/);
 
       assert.equal(await page.locator('#astraProHome').count(),1,name+' visible Professional Analytics home panel missing');
       const proHomeText=await page.locator('#astraProHome').innerText();
@@ -108,12 +110,21 @@ const profiles=[
       await page.waitForSelector('#view-portfolio.active');
       assert.match(await page.locator('#view-portfolio').innerText(),/LOCAL ONLY/);
 
+      const direct=await ctx.newPage();
+      await direct.goto(BASE+'/astra-prod/app/pro-v2.html?directsmoke='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
+      await direct.waitForFunction(()=>window.__ASTRA_PRO_ANALYTICS__==='READY',null,{timeout:30000});
+      assert.match(await direct.title(),/PRO ANALYTICS v2/);
+      assert.equal(await direct.locator('#proStaticBanner').count(),1,name+' direct PRO v2 banner missing');
+      assert.match(await direct.locator('#proStaticBanner').innerText(),/DIRECT PRO ENTRY/);
+      assert.equal(await direct.locator('#proBuildBadge').innerText(),'PRO v2',name+' direct PRO v2 runtime badge missing');
+      await direct.close();
+
       const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
       assert.ok(dims.sw<=dims.cw+2,name+' horizontal overflow '+JSON.stringify(dims));
       assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
       assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
       assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-      results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,professionalHomeVisible:true,proV2Badge:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
+      results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,professionalHomeVisible:true,staticProV2Banner:true,directProV2Entry:true,proV2Badge:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
       await ctx.close();
     }
   } finally { await browser.close(); }
