@@ -17,7 +17,7 @@ on:
       - '.github/workflows/astra-v3-vercel-production.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
@@ -45,8 +45,11 @@ jobs:
           set -euo pipefail
           node <<'NODE'
           const fs=require('fs');
+          const crypto=require('crypto');
           const app=JSON.parse(fs.readFileSync('astra-prod/app/data.json','utf8'));
           const handoff=JSON.parse(fs.readFileSync('data/ops/g22-main-app-handoff.json','utf8'));
+          const ledger=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/recommendation-ledger.json','utf8'));
+          const perf=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/performance-summary.json','utf8'));
           const ok=(c,m)=>{if(!c)throw new Error(m)};
           const s=app?.sourceDecision?.session;
           ok(/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')),'Invalid Astra session');
@@ -65,6 +68,21 @@ jobs:
           ok(app?.sourceDecision?.upstream?.sourceSessionDataHash===handoff?.sourceSessionDataHash,'Astra source data hash is not the latest finalized handoff');
           ok(app?.sourceDecision?.currentProductionCutover===true,'Production cutover is false');
           ok(Array.isArray(app?.decisionSnapshot?.top5) && app.decisionSnapshot.top5.length<=5,'Invalid top5');
+          const recs=app.decisionSnapshot.top5||[];
+          const currentLedger=(ledger.records||[]).filter(r=>r.decisionSnapshotId===app.sourceDecision.decisionSnapshotId&&r.sessionDate===s);
+          ok(currentLedger.length===recs.length,'Current-session ledger count mismatch');
+          ok(JSON.stringify(currentLedger.map(r=>r.ticker).sort())===JSON.stringify(recs.map(r=>r.ticker).sort()),'Current-session ledger ticker mismatch');
+          ok(perf?.sourceSnapshot?.decisionSnapshotId===app.sourceDecision.decisionSnapshotId,'Performance snapshot is stale');
+          ok(perf?.sourceSnapshot?.canonicalDataHead===handoff.canonicalDataHead,'Performance canonical HEAD is stale');
+          ok(perf?.sourceSnapshot?.handoffFingerprint===handoff.materialFingerprint,'Performance handoff fingerprint is stale');
+          ok(String(perf?.sourceSnapshot?.handoffProducerRunId||'')===String(handoff.producerRunId||''),'Performance producer run is stale');
+          ok(perf?.sessionRange?.last===s,'Performance session range is stale');
+          ok(Number(perf?.currentOpportunities)===recs.length,'Performance current opportunities mismatch');
+          const generatorHash=crypto.createHash('sha256').update(fs.readFileSync('scripts/astra/native/astra-intelligence.cjs','utf8')).digest('hex');
+          ok(perf?.sourceSnapshot?.generatorSourceHash===generatorHash,'Performance generator hash is stale');
+          for(const w of ['7_SESSIONS','30_SESSIONS','90_SESSIONS','YTD','ALL']) ok(perf?.windows?.[w],w+' performance window missing');
+          ok(Object.prototype.hasOwnProperty.call(perf?.metrics||{},'averageMfePct'),'MFE KPI missing');
+          ok(Object.prototype.hasOwnProperty.call(perf?.metrics||{},'averageMaePct'),'MAE KPI missing');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SESSION='+s+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SNAPSHOT='+app.sourceDecision.decisionSnapshotId+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_TOP='+app.decisionSnapshot.top5.map(x=>x.ticker).join(',')+'\n');
@@ -255,8 +273,58 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          : > /tmp/astra-live-clean-cycles.jsonl
           for cycle in $(seq 1 10); do
             echo "=== ASTRA LIVE CLEAN CYCLE $cycle/10 ==="
             ASTRA_PRO_BASE="$PRODUCTION_URL" ASTRA_REVIEW_CYCLE="$cycle" node tests/astra/astra-pro-v3-browser-smoke.cjs
+            printf '{"cycle":%s,"status":"PASS","completedAt":"%s"}\n' "$cycle" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> /tmp/astra-live-clean-cycles.jsonl
           done
           echo "ASTRA_LIVE_CLEAN_STREAK=10"
+
+
+      - name: Persist ten-cycle live production evidence
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || { echo "Main advanced; refusing stale clean-streak evidence."; exit 1; }
+          mkdir -p docs/astra/production
+          node <<'NODE'
+          const fs=require('fs');
+          const app=JSON.parse(fs.readFileSync('astra-prod/app/data.json','utf8'));
+          const cycles=fs.readFileSync('/tmp/astra-live-clean-cycles.jsonl','utf8').trim().split(/\n+/).filter(Boolean).map(JSON.parse);
+          if(cycles.length!==10 || cycles.some((x,i)=>x.cycle!==i+1||x.status!=='PASS')) throw new Error('Invalid clean-cycle evidence');
+          const evidence={
+            schemaVersion:'astra-live-production-evidence-1',
+            verifiedAt:new Date().toISOString(),
+            workflowRunId:process.env.GITHUB_RUN_ID,
+            workflowRunAttempt:process.env.GITHUB_RUN_ATTEMPT,
+            verifiedHead:process.env.GITHUB_SHA,
+            productionUrl:process.env.PRODUCTION_URL,
+            deploymentUrl:process.env.DEPLOYMENT_URL,
+            session:process.env.ASTRA_SESSION,
+            decisionSnapshotId:process.env.ASTRA_SNAPSHOT,
+            recommendationTickers:String(process.env.ASTRA_TOP||'').split(',').filter(Boolean),
+            cleanReviewStreak:10,
+            reviewScope:[
+              'Recommendation -> Technical Chart',
+              'Search -> Technical Chart',
+              'Portfolio -> Technical Chart',
+              'History -> Technical Chart',
+              'Performance/KPI -> Technical Chart',
+              'mobile + desktop',
+              'live decision/history/performance identity',
+              'runtime response safety'
+            ],
+            cycles
+          };
+          fs.writeFileSync('docs/astra/production/LIVE_10_CLEAN_EVIDENCE.json',JSON.stringify(evidence,null,2)+'\n');
+          NODE
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/astra/production/LIVE_10_CLEAN_EVIDENCE.json
+          git diff --cached --quiet && exit 0
+          git commit -m "audit(astra): record 10 clean live production reviews"
+          git push origin HEAD:main
