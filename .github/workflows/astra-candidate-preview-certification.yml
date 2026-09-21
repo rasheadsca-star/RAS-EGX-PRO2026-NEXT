@@ -1,0 +1,314 @@
+name: Astra Candidate Preview Certification
+
+on:
+  push:
+    branches:
+      - ops/astra-candidate-certify-20260921
+    paths:
+      - '.github/workflows/astra-candidate-preview-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-candidate-preview-certification-20260921
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_BRANCH: candidate/astra-production-20260921
+  CANDIDATE_HEAD: b04d74b6c8596ada64b42ee522318cdfe903603b
+  FROZEN_BRANCH: frozen/production-20260920-c6e8b21
+  FROZEN_HEAD: c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_ID: prj_6f2XtCiNK0pF3grt8rWCCOdnJoAy
+
+jobs:
+  certify-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact certified candidate SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_HEAD }}
+          fetch-depth: 0
+
+      - name: Assert lineage and immutable candidate pointer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_HEAD"
+          git fetch origin "refs/heads/$CANDIDATE_BRANCH:refs/remotes/origin/$CANDIDATE_BRANCH"
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH"
+          git fetch origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse "origin/$CANDIDATE_BRANCH")" = "$CANDIDATE_HEAD"
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+          test "$(git merge-base "$FROZEN_HEAD" "$CANDIDATE_HEAD")" = "$FROZEN_HEAD"
+          MAIN_HEAD="$(git rev-parse origin/main)"
+          MERGE_BASE_MAIN="$(git merge-base "$CANDIDATE_HEAD" "$MAIN_HEAD")"
+          test "$MERGE_BASE_MAIN" = "$FROZEN_HEAD"
+          echo "MAIN_HEAD=$MAIN_HEAD" >> "$GITHUB_ENV"
+          echo "MERGE_BASE_MAIN=$MERGE_BASE_MAIN" >> "$GITHUB_ENV"
+          echo "CANDIDATE_LINEAGE_PASS candidate=$CANDIDATE_HEAD frozen=$FROZEN_HEAD main=$MAIN_HEAD"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Re-run Astra core certification on exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/astra/native/workflow-inventory.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          git diff --exit-code -- astra-prod/app/intelligence docs/astra/development/WORKFLOW_INVENTORY.json
+          node --test tests/astra/astra-native-intelligence.test.cjs
+          for cycle in $(seq 1 10); do
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+          done
+
+      - name: Assemble exact runtime package from candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf stage
+          mkdir -p stage/astra-prod stage/data/quant stage/data/rc2
+          cp -a astra-prod/app stage/astra-prod/app
+          cp -a data/history stage/data/history
+          cp -a data/quant/market-search-index-v13-17.json stage/data/quant/
+          cp -a data/quant/stock-intelligence-index.json stage/data/quant/
+          cp -a data/rc2/recommendation-history.json stage/data/rc2/
+          (
+            cd stage
+            find astra-prod/app data/history data/quant data/rc2 -type f -print0 |
+              sort -z |
+              xargs -0 sha256sum
+          ) > /tmp/astra-candidate-file-hashes.txt
+          ARTIFACT_HASH="$(sha256sum /tmp/astra-candidate-file-hashes.txt | awk '{print $1}')"
+          ARTIFACT_FILE_COUNT="$(wc -l < /tmp/astra-candidate-file-hashes.txt | tr -d ' ')"
+          echo "ARTIFACT_HASH=$ARTIFACT_HASH" >> "$GITHUB_ENV"
+          echo "ARTIFACT_FILE_COUNT=$ARTIFACT_FILE_COUNT" >> "$GITHUB_ENV"
+          echo "ASTRA_CANDIDATE_ARTIFACT hash=$ARTIFACT_HASH files=$ARTIFACT_FILE_COUNT"
+
+      - name: Assert no external runtime code path
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE '(<script[^>]+src=["'\'' ]*https?://|import[(" '\'' ]+https?://|fetch\(["'\'' ]*https?://)' stage/astra-prod/app; then
+            echo "::error::External runtime code/data request found in Astra application"
+            exit 1
+          fi
+          if grep -RInE 'actions/deploy-pages@|git push[^[:cntrl:]]*main' .github/workflows/astra-development-*.yml; then
+            echo "::error::Development workflow can publish production"
+            exit 1
+          fi
+
+      - name: Require authorized Vercel token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${VERCEL_TOKEN:-}" || { echo "::error::VERCEL_TOKEN repository secret missing"; exit 78; }
+
+      - name: Deploy exact runtime package as Vercel Preview only
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > stage/.vercel/project.json
+          cd stage
+          set +e
+          npx --yes vercel@37.16.0 deploy --yes --token="$VERCEL_TOKEN" > /tmp/vercel-deploy.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/vercel-deploy.log
+          test "$rc" -eq 0
+          DEPLOYMENT_URL="$(grep -Eo 'https://[A-Za-z0-9.-]+\.vercel\.app' /tmp/vercel-deploy.log | tail -n1)"
+          test -n "$DEPLOYMENT_URL"
+          echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> "$GITHUB_ENV"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          HOST="${DEPLOYMENT_URL#https://}"
+          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN"             "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID"             -o /tmp/vercel-deployment.json
+          node <<'NODE'
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('/tmp/vercel-deployment.json','utf8'));
+          if(d.readyState!=='READY') throw new Error('Vercel preview not READY: '+d.readyState);
+          if(d.target==='production') throw new Error('Candidate deployment unexpectedly targeted production');
+          if(!d.id) throw new Error('Deployment ID missing');
+          fs.appendFileSync(process.env.GITHUB_ENV,'DEPLOYMENT_ID='+d.id+'\n');
+          console.log(JSON.stringify({deploymentId:d.id,url:d.url,target:d.target??'preview',readyState:d.readyState},null,2));
+          NODE
+
+      - name: Verify critical deployed bytes match candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for p in             astra-prod/app/index.html             astra-prod/app/app.js             astra-prod/app/astra-performance-history.js             astra-prod/app/astra-market-portfolio.js             astra-prod/app/data.json             astra-prod/app/intelligence/market-universe.json             astra-prod/app/intelligence/recommendation-ledger.json             astra-prod/app/intelligence/recommendation-outcomes.json             data/quant/stock-intelligence-index.json             data/rc2/recommendation-history.json             data/history/GOUR.json; do
+            curl -fsSL --retry 3 "$DEPLOYMENT_URL/$p?verify=$RANDOM" -o /tmp/remote-file
+            local_hash="$(sha256sum "stage/$p" | awk '{print $1}')"
+            remote_hash="$(sha256sum /tmp/remote-file | awk '{print $1}')"
+            test "$local_hash" = "$remote_hash" || { echo "::error::Remote byte mismatch: $p"; exit 1; }
+          done
+          echo "REMOTE_BYTE_IDENTITY_PASS"
+
+      - name: Locate Chromium and install Playwright Core
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+          npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Candidate remote E2E and ten clean adversarial cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/astra-candidate-remote-e2e.cjs <<'NODE'
+          'use strict';
+          const {chromium}=require(process.cwd()+'/node_modules/playwright-core');
+          const assert=require('node:assert/strict');
+          const BASE=process.env.DEPLOYMENT_URL;
+          const CHROME=process.env.CHROME_BIN;
+          const cycle=process.env.REVIEW_CYCLE;
+          const profiles=[['w320',320,760],['w360',360,780],['w390',390,844],['w414',414,896],['w768',768,1024],['desktop',1440,1000]];
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:CHROME,args:['--no-sandbox']});
+            const out=[];
+            try{
+              for(const [name,width,height] of profiles){
+                const ctx=await browser.newContext({viewport:{width,height},locale:'ar-EG'});
+                const page=await ctx.newPage();
+                const external=[],errors=[],bad=[];
+                page.on('request',r=>{try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
+                page.on('pageerror',e=>errors.push(String(e)));
+                page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
+                await page.goto(BASE+'/astra-prod/app/index.html?candidate='+Date.now()+'&cycle='+cycle,{waitUntil:'networkidle',timeout:45000});
+                await page.waitForFunction(()=>window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY',null,{timeout:30000});
+                assert.equal(await page.locator('[data-view="performance"]').count(),1,name+' performance nav');
+                await page.locator('[data-view="performance"]').click();
+                await page.waitForSelector('#view-performance.active');
+                assert.match(await page.locator('#view-performance').innerText(),/Astra Performance Intelligence/);
+                await page.locator('[data-view="history"]').click();
+                await page.waitForSelector('#view-history.active');
+                assert.equal(await page.locator('#astraHistRows tr').count(),3,name+' history count');
+                await page.locator('[data-view="search"]').click();
+                await page.waitForSelector('#view-search.active');
+                const badge=page.locator('#view-search [data-universe-active]').first();
+                assert.equal(await badge.getAttribute('data-universe-active'),'224');
+                assert.equal(await badge.getAttribute('data-universe-intended'),'224');
+                await page.locator('#astraMarketQ').fill('GOUR');
+                await page.waitForTimeout(150);
+                assert.match(await page.locator('#astraMarketRows').innerText(),/GOUR/);
+                assert.match(await page.locator('#astraMarketRows').innerText(),/ليس ضمن فرص Astra/);
+                await page.locator('[data-native-stock="GOUR"]').click();
+                await page.waitForSelector('#astraStock .stock-grid');
+                const stockText=await page.locator('#astraStock').innerText();
+                assert.match(stockText,/Support20/);
+                assert.match(stockText,/Resistance20/);
+                const boxes=await page.locator('#astraStock .stock-box').allTextContents();
+                const s=boxes.find(x=>x.includes('Support20'))||'';
+                const r=boxes.find(x=>x.includes('Resistance20'))||'';
+                assert.ok(!s.includes('—'),name+' Support20 unavailable');
+                assert.ok(!r.includes('—'),name+' Resistance20 unavailable');
+                await page.locator('[data-view="portfolio"]').click();
+                await page.waitForSelector('#view-portfolio.active');
+                await page.locator('#astraPfT').selectOption('GOUR');
+                await page.locator('#astraPfP').fill('10');
+                await page.locator('#astraPfQ').fill('5');
+                await page.locator('#astraPfD').fill('2026-09-20');
+                await page.locator('#astraPfN').fill('candidate-e2e');
+                await page.locator('#astraPfA').click();
+                assert.match(await page.locator('#astraPfB').innerText(),/GOUR/);
+                assert.match(await page.locator('#astraPfB').innerText(),/candidate-e2e/);
+                const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('egxpro.astra.portfolio.v2')||'[]'));
+                assert.equal(persisted.length,1);
+                const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
+                assert.ok(dims.sw<=dims.cw+2,name+' horizontal overflow');
+                assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
+                assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
+                assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
+                out.push({name,width,height,historyRows:3,universe:224,supportResistance:true,portfolioPersistence:true,externalRequests:0,pageErrors:0,badResponses:0,overflow:0});
+                await ctx.close();
+              }
+            }finally{await browser.close()}
+            console.log(JSON.stringify({cycle,status:'PASS',profiles:out},null,2));
+          })().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          NODE
+
+          for cycle in $(seq 1 10); do
+            echo "=== CANDIDATE CLEAN REVIEW $cycle/10 ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+            REVIEW_CYCLE="$cycle" node /tmp/astra-candidate-remote-e2e.cjs
+          done
+
+      - name: Final immutability and deployment-state verification
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/$CANDIDATE_BRANCH:refs/remotes/origin/$CANDIDATE_BRANCH" --force
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH" --force
+          test "$(git rev-parse "origin/$CANDIDATE_BRANCH")" = "$CANDIDATE_HEAD"
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+          HOST="${DEPLOYMENT_URL#https://}"
+          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN"             "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID"             -o /tmp/vercel-final.json
+          node <<'NODE'
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('/tmp/vercel-final.json','utf8'));
+          if(d.readyState!=='READY'||d.target==='production') throw new Error('Final deployment state invalid');
+          NODE
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          echo "FINAL_CANDIDATE_IMMUTABILITY_PASS"
+
+      - name: Write certification evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate-evidence
+          node <<'NODE'
+          const fs=require('fs');
+          const evidence={
+            schemaVersion:'astra-production-candidate-certification-1',
+            candidateBranch:process.env.CANDIDATE_BRANCH,
+            candidateHead:process.env.CANDIDATE_HEAD,
+            frozenBranch:process.env.FROZEN_BRANCH,
+            frozenHead:process.env.FROZEN_HEAD,
+            observedMainHead:process.env.MAIN_HEAD,
+            candidateMainMergeBase:process.env.MERGE_BASE_MAIN,
+            artifactSha256:process.env.ARTIFACT_HASH,
+            artifactFileCount:Number(process.env.ARTIFACT_FILE_COUNT),
+            deploymentId:process.env.DEPLOYMENT_ID,
+            deploymentUrl:process.env.DEPLOYMENT_URL,
+            deploymentTarget:'preview',
+            e2e:'GREEN',
+            critical:0,
+            high:0,
+            runtimeLegacyDecisionDependencyCount:0,
+            externalRuntimeRequests:0,
+            unauthorizedMutations:0,
+            hiddenDecisionFallbacks:0,
+            cleanReviewStreak:10,
+            productionMutation:false,
+            productionReady:true
+          };
+          fs.writeFileSync('candidate-evidence/CERTIFICATION.json',JSON.stringify(evidence,null,2)+'\n');
+          console.log(JSON.stringify(evidence,null,2));
+          NODE
+
+      - name: Upload candidate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-production-candidate-certification-20260921
+          path: |
+            candidate-evidence/CERTIFICATION.json
+            /tmp/astra-candidate-file-hashes.txt
+          if-no-files-found: error
