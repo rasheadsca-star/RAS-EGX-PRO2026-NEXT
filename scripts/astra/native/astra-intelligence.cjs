@@ -38,7 +38,9 @@ function sourceSnapshotRefs(appData,handoff){
     semanticDecisionHash:appData.sourceDecision.semanticDecisionHash,
     canonicalDataHead:handoff.canonicalDataHead,
     handoffFingerprint:handoff.materialFingerprint,
-    handoffProducerRunId:handoff.producerRunId
+    handoffProducerRunId:handoff.producerRunId,
+    generatorVersion:'ASTRA_NATIVE_INTELLIGENCE_3',
+    generatorSourceHash:sha256(fs.readFileSync(__filename,'utf8'))
   };
 }
 
