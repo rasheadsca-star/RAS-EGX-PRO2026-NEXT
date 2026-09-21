@@ -67,7 +67,7 @@
         <div class="card"><small>جلسة القرار</small><b>${E(d.sourceDecision.session)}</b></div>
         <div class="card"><small>فرص Astra الحالية</small><b class="blue">${rows.length}</b></div>
         <div class="card"><small>Decision Ready</small><b>${E(h.decisionReady?.pipelineReadySecurities??'—')}</b></div>
-        <div class="card"><small>CRITICAL / HIGH</small><b class="good">${E(h.criticalUnresolved)} / ${E(h.highUnresolved)}</b></div>
+        <div class="card"><small>CRITICAL / HIGH</small><b class="${Number(h.criticalUnresolved)>0?'bad':Number(h.highUnresolved)>0?'warn':'good'}">${E(h.criticalUnresolved)} / ${E(h.highUnresolved)}</b></div>
         <div class="card"><small>Cash reserve</small><b>${P(rs.cashReservePct)}</b></div>
       </div>
       <div class="panel">
@@ -221,9 +221,9 @@
       <div class="grid cards">
         <div class="card"><small>Decision status</small><b class="good">${E(sd.status)}</b></div>
         <div class="card"><small>Freshness</small><b class="good">${E(h.freshness)}</b></div>
-        <div class="card"><small>CRITICAL</small><b class="good">${E(h.criticalUnresolved)}</b></div>
-        <div class="card"><small>HIGH</small><b class="good">${E(h.highUnresolved)}</b></div>
-        <div class="card"><small>Guard</small><b class="good">${E(h.guardStatus)}</b></div>
+        <div class="card"><small>CRITICAL</small><b class="${Number(h.criticalUnresolved)>0?'bad':'good'}">${E(h.criticalUnresolved)}</b></div>
+        <div class="card"><small>HIGH</small><b class="${Number(h.highUnresolved)>0?'warn':'good'}">${E(h.highUnresolved)}</b></div>
+        <div class="card"><small>Guard</small><b class="${String(h.guardStatus||'').startsWith('PASS_WITH')?'warn':String(h.guardStatus||'').startsWith('PASS')?'good':'bad'}">${E(h.guardStatus)}</b></div>
         <div class="card"><small>Production cutover</small><b class="good">TRUE</b></div>
       </div>
       <div class="panel"><div class="section-title"><div><h2>هوية القرار</h2></div></div>
