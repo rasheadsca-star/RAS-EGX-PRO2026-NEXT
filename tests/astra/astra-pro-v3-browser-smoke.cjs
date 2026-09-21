@@ -81,7 +81,12 @@ async function returnContext(page,view,label){
         assert.ok(targets.length&&targets.every(t=>Number.isFinite(t)&&t>hi),name+' invalid target '+r.ticker);
       }
       assert.equal(live.p?.reconciliation?.pass,true,name+' KPI reconciliation failed');
-      assert.equal(live.l?.records?.length,recs.length,name+' ledger/recommendation mismatch');
+      const currentLedger=(live.l?.records||[]).filter(r=>r.decisionSnapshotId===d.sourceDecision.decisionSnapshotId&&r.sessionDate===d.sourceDecision.session);
+      assert.equal(currentLedger.length,recs.length,name+' current-session ledger/recommendation count mismatch');
+      assert.deepEqual(currentLedger.map(r=>r.ticker).sort(),recs.map(r=>r.ticker).sort(),name+' current-session ledger ticker identity mismatch');
+      assert.equal(live.p?.sourceSnapshot?.decisionSnapshotId,d.sourceDecision.decisionSnapshotId,name+' KPI source snapshot stale');
+      assert.equal(live.p?.sessionRange?.last,d.sourceDecision.session,name+' KPI session range stale');
+      assert.equal(Number(live.p?.currentOpportunities),recs.length,name+' KPI current opportunity count mismatch');
       assert.ok(Number(live.u?.activeCount||live.u?.records?.length)>0,name+' universe empty');
 
       await page.locator('[data-view="recommendations"]').click();
