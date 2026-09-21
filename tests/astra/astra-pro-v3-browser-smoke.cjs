@@ -87,7 +87,9 @@ async function returnContext(page,view,label){
       await page.locator('[data-view="recommendations"]').click();
       await page.waitForSelector('#view-recommendations.active');
       const recTicker=(await page.locator('#view-recommendations .ticker').first().innerText()).trim().toUpperCase();
-      await page.locator('#view-recommendations .ticker').first().focus();
+      const recHost=page.locator('#view-recommendations [data-chart-ticker-host="'+recTicker+'"]').first();
+      assert.equal(await recHost.count(),1,name+' recommendation name/ticker host missing');
+      await recHost.focus();
       await page.keyboard.press('Enter');
       await expectTechnical(page,recTicker,name+' recommendation');
       await returnContext(page,'recommendations',name+' recommendation');
@@ -96,7 +98,9 @@ async function returnContext(page,view,label){
       await page.waitForSelector('#view-search.active');
       await page.locator('#astraMarketQ').fill('TMGH');
       await page.waitForFunction(()=>document.querySelector('#astraMarketRows .ticker')?.textContent.includes('TMGH'));
-      await page.locator('#astraMarketRows .ticker').first().click();
+      const searchHost=page.locator('#astraMarketRows [data-chart-ticker-host="TMGH"]').first();
+      assert.equal(await searchHost.count(),1,name+' search name/ticker host missing');
+      await searchHost.click();
       await expectTechnical(page,'TMGH',name+' search');
       await returnContext(page,'search',name+' search');
 
@@ -107,14 +111,14 @@ async function returnContext(page,view,label){
       await page.locator('#astraPfQ').fill('10');
       await page.locator('#astraPfA').click();
       await page.waitForFunction(()=>document.querySelector('#astraPfB .ticker')?.textContent.includes('TMGH'));
-      await page.locator('#astraPfB .ticker').first().click();
+      await page.locator('#astraPfB [data-chart-ticker-host="TMGH"]').first().click();
       await expectTechnical(page,'TMGH',name+' portfolio');
       await returnContext(page,'portfolio',name+' portfolio');
 
       await page.locator('[data-view="history"]').click();
       await page.waitForSelector('#view-history.active');
       const histTicker=(await page.locator('#astraHistRows .ticker').first().innerText()).trim().toUpperCase();
-      await page.locator('#astraHistRows .ticker').first().click();
+      await page.locator('#astraHistRows [data-chart-ticker-host="'+histTicker+'"]').first().click();
       await expectTechnical(page,histTicker,name+' history');
       await returnContext(page,'history',name+' history');
 
