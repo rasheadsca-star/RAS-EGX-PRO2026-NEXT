@@ -132,6 +132,7 @@ jobs:
         id: deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ steps.project.outputs.project_id }}
         shell: bash
         run: |
           set -euo pipefail
