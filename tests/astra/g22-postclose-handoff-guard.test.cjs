@@ -122,11 +122,29 @@ test('schedule is accepted only inside Cairo post-close fallback window', () => 
   assert.ok(r.reasons.includes('OUTSIDE_POST_CLOSE_FALLBACK_WINDOW'));
 });
 
-test('stale handoff session never passes', () => {
-  const x=fixture(); x.now={date:'2026-09-21',hour:16,minute:0,dow:1};
+test('latest completed session remains valid after Cairo midnight', () => {
+  const x=fixture(); x.now={date:'2026-09-21',hour:0,minute:20,dow:1};
+  const r=evaluateHandoff(x);
+  assert.equal(r.run,true);
+  assert.equal(r.session,'2026-09-20');
+});
+
+test('latest completed session remains valid across weekend/non-trading calendar days', () => {
+  const x=fixture(); x.now={date:'2026-09-22',hour:10,minute:0,dow:2};
+  const r=evaluateHandoff(x);
+  assert.equal(r.run,true);
+  assert.equal(r.session,'2026-09-20');
+});
+
+test('handoff session in Cairo future always fails closed', () => {
+  const x=fixture(); x.marker.sessionDate='2026-09-21'; x.marker.expectedSession='2026-09-21';
+  x.canonicalStatus.sessionDate='2026-09-21';
+  x.price.expectedSession='2026-09-21';
+  x.primary.sessionDate='2026-09-21';
+  x.now={date:'2026-09-20',hour:23,minute:55,dow:0};
   const r=evaluateHandoff(x);
   assert.equal(r.run,false);
-  assert.ok(r.reasons.includes('SESSION_NOT_CAIRO_TODAY'));
+  assert.ok(r.reasons.includes('HANDOFF_SESSION_IN_CAIRO_FUTURE'));
 });
 
 test('first workflow_run requires marker producer run identity', () => {
