@@ -90,11 +90,20 @@ test('fails closed when immutable canonical commit is unavailable', () => {
 
 test('automatic trigger skips fingerprint already processed for same session', () => {
   const x=fixture();
-  x.audit={session:{decision:'2026-09-20'},upstream:{mainAppMaterialFingerprint:'a'.repeat(64)}};
+  x.audit={session:{decision:'2026-09-20'},upstream:{mainAppMaterialFingerprint:'a'.repeat(64),canonicalDataHead:'b'.repeat(40)}};
   x.upstream.runId='999';
   const r=evaluateHandoff(x);
   assert.equal(r.run,false);
   assert.equal(r.reason,'ALREADY_PROCESSED_MAIN_APP_FINGERPRINT');
+});
+
+test('same material fingerprint with a new canonical head refreshes provenance', () => {
+  const x=fixture();
+  x.audit={session:{decision:'2026-09-20'},upstream:{mainAppMaterialFingerprint:'a'.repeat(64),canonicalDataHead:'d'.repeat(40)}};
+  const r=evaluateHandoff(x);
+  assert.equal(r.run,true);
+  assert.equal(r.duplicate,false);
+  assert.equal(r.canonicalHead,'b'.repeat(40));
 });
 
 test('manual dispatch can deliberately rebuild same finalized fingerprint', () => {
