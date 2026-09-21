@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
+const crypto = require('crypto');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const P = rel => path.join(ROOT, rel);
@@ -60,11 +61,17 @@ function evaluateHandoff(input) {
   const priorCanonicalHead = String(audit?.upstream?.canonicalDataHead || '').trim().toLowerCase();
   const priorSession = dateOnly(audit?.session?.decision);
   const intelligenceSource = intelligence?.sourceSnapshot || {};
+  let intelligenceGeneratorHash = '';
+  try {
+    intelligenceGeneratorHash = crypto.createHash('sha256').update(fs.readFileSync(P('scripts/astra/native/astra-intelligence.cjs'),'utf8')).digest('hex');
+  } catch {}
   const intelligenceCurrent = Boolean(
     dateOnly(intelligence?.sessionRange?.last) === session &&
     String(intelligenceSource.canonicalDataHead || '').trim().toLowerCase() === canonicalHead &&
     String(intelligenceSource.handoffFingerprint || '').trim().toLowerCase() === fingerprint &&
-    String(intelligenceSource.handoffProducerRunId || '') === String(marker.producerRunId || '')
+    String(intelligenceSource.handoffProducerRunId || '') === String(marker.producerRunId || '') &&
+    /^[0-9a-f]{64}$/.test(intelligenceGeneratorHash) &&
+    String(intelligenceSource.generatorSourceHash || '').trim().toLowerCase() === intelligenceGeneratorHash
   );
 
   const automatic = eventName === 'workflow_run' || eventName === 'schedule' || eventName === 'push';
