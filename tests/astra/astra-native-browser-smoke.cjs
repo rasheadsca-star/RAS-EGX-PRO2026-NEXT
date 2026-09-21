@@ -25,6 +25,17 @@ const profiles=[
       await page.goto(BASE+'/astra-prod/app/index.html?devsmoke='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
       await page.waitForFunction(()=>window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY'&&window.__ASTRA_PRO_ANALYTICS__==='READY',null,{timeout:30000});
 
+      assert.equal(await page.locator('#astraProHome').count(),1,name+' visible Professional Analytics home panel missing');
+      const proHomeText=await page.locator('#astraProHome').innerText();
+      assert.match(proHomeText,/Astra Professional Analytics/);
+      assert.match(proHomeText,/PRO ANALYTICS v2/);
+      assert.match(proHomeText,/Multi-Pane Candlesticks/);
+      assert.match(proHomeText,/Auto Price Channel/);
+      assert.match(proHomeText,/Technical Signature/);
+      assert.match(proHomeText,/Risk \/ Reward Visualizer/);
+      assert.equal(await page.locator('#proBuildBadge').innerText(),'PRO v2',name+' PRO v2 badge missing');
+      assert.match(await page.locator('[data-view="technical"]').innerText(),/NEW/);
+
       const nav=page.locator('[data-view="performance"]');
       assert.equal(await nav.count(),1,name+' performance nav missing');
       await nav.click();
@@ -102,7 +113,7 @@ const profiles=[
       assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
       assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
       assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-      results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
+      results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,professionalHomeVisible:true,proV2Badge:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
       await ctx.close();
     }
   } finally { await browser.close(); }
