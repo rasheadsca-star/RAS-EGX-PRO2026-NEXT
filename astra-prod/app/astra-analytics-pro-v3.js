@@ -11,7 +11,7 @@
   const P=v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))?F(v,1)+'%':'—';
   const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
   const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:null;
-  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null,loadToken:0};
+  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null,app:null,loadToken:0,chartContext:null,universalInstalled:false};
 
   async function load(p){
     const r=await fetch(p+(p.includes('?')?'&':'?')+'pro='+Date.now(),{cache:'no-store'});
@@ -282,7 +282,14 @@
     out.innerHTML=
       '<div class="panel"><div class="pro-command-head"><div><h2>'+E(ticker)+' — '+E(name)+'</h2><div class="pro-sub">جلسة '+E(last.date)+' · '+F(rows.length,0)+' جلسة بالرسم · المصدر '+E(market.primarySource)+' · '+(rec?'ضمن توصيات Astra الحالية':'خارج قائمة Astra الحالية')+'</div></div><span class="tag '+(rec?'good':'')+'">'+(rec?'ASTRA CURRENT':'MARKET UNIVERSE')+'</span></div>'+
       '<div class="pro-summary">'+
-        box('Close',F(last.close,3),'Daily OHLC')+
+        box('Validated Market Price',F(market?.price,3),E(market?.priceSession||S.app?.sourceDecision?.session||last.date))+
+        box('Chart Latest Close',F(last.close,3),'Daily OHLC · '+E(last.date))+
+        box('Decision Session',E(S.app?.sourceDecision?.session||'—'),'certified snapshot')+
+        box('Market Regime',E(S.app?.decisionSnapshot?.regime?.regime||'—'),'regime score '+E(S.app?.decisionSnapshot?.regime?.score??'—'))+
+        box('Astra Status',rec?'RECOMMENDED TODAY':'NOT RECOMMENDED TODAY',rec?'Rank #'+E(rec.rank):'market universe')+
+        box('Recommendation Entry',rec?(F(rec.entryPlan?.low,3)+' – '+F(rec.entryPlan?.high,3)):'—','distinct from current market price')+
+        box('Last Update',E(S.app?.generatedAt||S.app?.sourceDecision?.refreshedAt||'—'),'decision artifact')+
+        box('Confidence',E(rec?.confidenceLabel||rec?.confidence||'Not calibrated'),'never presented as probability')+
         box('EMA20 / EMA50',F(ind.ema20,3)+' / '+F(ind.ema50,3),'trend')+
         box('RSI14',F(ind.rsi,1),ind.rsi>=70?'overbought zone':ind.rsi<=30?'oversold zone':'normal zone')+
         box('MACD Hist',F(ind.macdHist,4),ind.macdHist>0?'positive':'negative')+
@@ -389,15 +396,98 @@
       '<div class="rr-metrics">'+box('Risk to Stop',P((entry-stop)/entry*100),'from entry mid')+box('Reward to T1',P((t1-entry)/entry*100),'from entry mid')+box('R:R to T1',Number.isFinite(rr)?'1 : '+F(rr,2):'—','reward / risk')+box('Current vs Entry',P((price-entry)/entry*100),'Daily close')+'</div></div>';
   }
 
+
+  function activeViewName(){
+    const v=document.querySelector('.view.active');
+    return v?.id?.replace(/^view-/,'')||'home';
+  }
+  function tickerFromElement(el){
+    const raw=String(el?.dataset?.chartTicker||el?.dataset?.ticker||el?.textContent||'').trim().toUpperCase();
+    const token=raw.match(/[A-Z0-9_.-]+/)?.[0]||'';
+    return A(S.universe?.records).some(x=>String(x.ticker).toUpperCase()===token)?token:'';
+  }
+  function decorateTickers(root=document){
+    const nodes=[];
+    if(root?.matches?.('.ticker'))nodes.push(root);
+    root?.querySelectorAll?.('.ticker').forEach(x=>nodes.push(x));
+    for(const el of nodes){
+      const ticker=tickerFromElement(el);
+      if(!ticker)continue;
+      el.dataset.chartTicker=ticker;
+      el.setAttribute('role','button');
+      el.setAttribute('tabindex','0');
+      el.setAttribute('aria-label','Open '+ticker+' professional technical chart');
+      el.title='Open '+ticker+' Technical Chart';
+    }
+  }
+  function ensureUniversalStyle(){
+    if($('#astraUniversalChartStyle'))return;
+    const style=document.createElement('style');style.id='astraUniversalChartStyle';
+    style.textContent='.ticker[data-chart-ticker]{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}.ticker[data-chart-ticker]:focus{outline:2px solid #62c7f0;outline-offset:3px;border-radius:4px}.pro-return-context{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:9px 11px;border:1px solid #315f79;border-radius:10px;background:#081b2b}.pro-return-context small{color:#8faebe}';
+    document.head.appendChild(style);
+  }
+  function renderReturnContext(){
+    const host=$('#view-technical'),body=$('#proLabBody');if(!host||!body)return;
+    $('#proReturnContext')?.remove();
+    const c=S.chartContext;if(!c||!c.view||c.view==='technical')return;
+    const labels={home:'الرئيسية',recommendations:'التوصيات',search:'بحث السوق',portfolio:'المحفظة',history:'السجل',performance:'الأداء',health:'صحة النظام'};
+    const bar=document.createElement('div');bar.id='proReturnContext';bar.className='pro-return-context';
+    bar.innerHTML='<small>تم فتح الرسم من: <b>'+E(labels[c.view]||c.view)+'</b> · سيتم الحفاظ على موضعك السابق.</small><button class="pro-btn" id="proReturnContextBtn">← عودة</button>';
+    body.before(bar);
+    $('#proReturnContextBtn').onclick=()=>{
+      const ctx=S.chartContext;S.chartContext=null;
+      document.querySelector('[data-view="'+CSS.escape(ctx.view)+'"]')?.click();
+      requestAnimationFrame(()=>window.scrollTo({top:Number(ctx.scrollY)||0,behavior:'instant'}));
+    };
+  }
+  async function openStockChart(ticker){
+    const symbol=String(ticker||'').trim().toUpperCase();
+    const market=A(S.universe?.records).find(x=>String(x.ticker).toUpperCase()===symbol);
+    if(!market)return false;
+    const from=activeViewName();
+    if(from!=='technical')S.chartContext={view:from,scrollY:window.scrollY,ticker:symbol};
+    document.querySelector('[data-view="technical"]')?.click();
+    const sel=$('#proTicker');
+    if(sel&&Array.from(sel.options).some(o=>o.value===symbol))sel.value=symbol;
+    await loadTicker(symbol);
+    renderReturnContext();
+    const h=$('#proLabBody h2');
+    if(h){h.setAttribute('tabindex','-1');h.focus({preventScroll:true})}
+    window.__ASTRA_LAST_OPENED_CHART__={ticker:symbol,from,session:S.app?.sourceDecision?.session||null};
+    return true;
+  }
+  function installUniversalChartAction(){
+    if(S.universalInstalled)return;
+    S.universalInstalled=true;ensureUniversalStyle();
+    window.openStockChart=openStockChart;
+    decorateTickers(document);
+    const observer=new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)decorateTickers(n)})));
+    observer.observe(document.body,{subtree:true,childList:true});
+    document.addEventListener('click',e=>{
+      const el=e.target?.closest?.('.ticker[data-chart-ticker]');if(!el)return;
+      const ticker=tickerFromElement(el);if(!ticker)return;
+      e.preventDefault();e.stopImmediatePropagation();
+      void openStockChart(ticker);
+    },true);
+    document.addEventListener('keydown',e=>{
+      if(e.key!=='Enter'&&e.key!==' ')return;
+      const el=e.target?.closest?.('.ticker[data-chart-ticker]');if(!el)return;
+      const ticker=tickerFromElement(el);if(!ticker)return;
+      e.preventDefault();e.stopImmediatePropagation();
+      void openStockChart(ticker);
+    },true);
+  }
+
   async function boot(){
     try{
       await waitReady();addStyle();
-      [S.summary,S.universe,S.ledger]=await Promise.all([
+      [S.summary,S.universe,S.ledger,S.app]=await Promise.all([
         load('./intelligence/performance-summary.json'),
         load('./intelligence/market-universe.json'),
-        load('./intelligence/recommendation-ledger.json')
+        load('./intelligence/recommendation-ledger.json'),
+        load('./data.json')
       ]);
-      renderHomeUpgrade();renderCommand();renderLabShell();
+      renderHomeUpgrade();renderCommand();renderLabShell();installUniversalChartAction();
       window.__ASTRA_PRO_ANALYTICS__='READY';
     }catch(e){
       console.error('ASTRA_PRO_ANALYTICS_FAILED',e);
