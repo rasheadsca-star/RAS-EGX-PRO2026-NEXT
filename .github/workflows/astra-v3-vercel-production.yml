@@ -60,6 +60,9 @@ jobs:
           ok(handoff?.final===true && handoff?.pagesPublished===true,'Latest handoff is not final/published');
           ok(handoff?.sessionDate===s,'Astra data is older than latest finalized MAIN APP session');
           ok(app?.sourceDecision?.upstream?.mainAppMaterialFingerprint===handoff?.materialFingerprint,'Astra snapshot material fingerprint is not latest finalized material');
+          ok(app?.sourceDecision?.upstream?.canonicalDataHead===handoff?.canonicalDataHead,'Astra canonical data HEAD is not the latest finalized handoff');
+          ok(String(app?.sourceDecision?.upstream?.producerRunId||'')===String(handoff?.producerRunId||''),'Astra producer run is not the latest finalized handoff');
+          ok(app?.sourceDecision?.upstream?.sourceSessionDataHash===handoff?.sourceSessionDataHash,'Astra source data hash is not the latest finalized handoff');
           ok(app?.sourceDecision?.currentProductionCutover===true,'Production cutover is false');
           ok(Array.isArray(app?.decisionSnapshot?.top5) && app.decisionSnapshot.top5.length<=5,'Invalid top5');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SESSION='+s+'\n');
