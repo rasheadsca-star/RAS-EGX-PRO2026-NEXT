@@ -46,10 +46,11 @@ const profiles=[
       assert.match(labText,/Relative Volume/);
       assert.match(labText,/Risk \/ Reward Visualizer/);
       assert.match(labText,/IMMUTABLE PLAN/);
-      assert.match(await page.locator('#proSvg').innerText(),/PRICE · Candlesticks/);
-      assert.match(await page.locator('#proSvg').innerText(),/VOLUME/);
-      assert.match(await page.locator('#proSvg').innerText(),/RSI \(14\)/);
-      assert.match(await page.locator('#proSvg').innerText(),/MACD \(12,26,9\)/);
+      const chartText=await page.locator('#proSvg').textContent();
+      assert.match(chartText,/PRICE · Candlesticks/);
+      assert.match(chartText,/VOLUME/);
+      assert.match(chartText,/RSI \(14\)/);
+      assert.match(chartText,/MACD \(12,26,9\)/);
       assert.equal(await page.locator('[data-pa-layer="channel"]').count(),1,name+' channel toggle missing');
       assert.equal(await page.locator('[data-pa-layer="fib"]').count(),1,name+' fibonacci toggle missing');
       assert.equal(await page.locator('[data-pa-layer="astra"]').count(),1,name+' Astra plan toggle missing');
