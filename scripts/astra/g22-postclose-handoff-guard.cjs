@@ -86,7 +86,11 @@ function evaluateHandoff(input) {
   if (!/^[0-9a-f]{40}$/.test(canonicalHead)) reasons.push('CANONICAL_DATA_HEAD_INVALID');
   if (!session) reasons.push('HANDOFF_SESSION_MISSING');
   if (!expected || expected !== session) reasons.push('HANDOFF_EXPECTED_SESSION_MISMATCH');
-  if (session && session !== now.date) reasons.push('SESSION_NOT_CAIRO_TODAY');
+  // Calendar date is not market-session truth. After midnight, on weekends, or
+  // across exchange holidays, the latest completed EGX session may legitimately
+  // be earlier than Cairo "today". Freshness is anchored to the immutable latest
+  // MAIN APP handoff plus matching canonical snapshot identities below.
+  if (session && now.date && session > now.date) reasons.push('HANDOFF_SESSION_IN_CAIRO_FUTURE');
 
   if (marker.final !== true) reasons.push('HANDOFF_NOT_FINAL');
   if (marker.sourceReady !== true) reasons.push('HANDOFF_SOURCE_NOT_READY');
