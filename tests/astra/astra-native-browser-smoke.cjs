@@ -119,12 +119,28 @@ const profiles=[
       assert.equal(await direct.locator('#proBuildBadge').innerText(),'PRO v2',name+' direct PRO v2 runtime badge missing');
       await direct.close();
 
+      const v3=await ctx.newPage();
+      const v3Errors=[];
+      v3.on('pageerror',e=>v3Errors.push(String(e)));
+      await v3.goto(BASE+'/astra-prod/app/pro-v3.html?v3smoke='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
+      await v3.waitForFunction(()=>window.__ASTRA_PRO_V3__?.status==='READY'&&Boolean(window.__ASTRA_G22_READY__),null,{timeout:30000});
+      assert.match(await v3.title(),/PRO ANALYTICS v3/);
+      assert.equal(await v3.locator('#proStaticBanner').count(),1,name+' PRO v3 static banner missing');
+      assert.match(await v3.locator('#proStaticBanner').innerText(),/DIRECT PRO V3 ENTRY/);
+      assert.match(await v3.locator('#proV3BootStatus').innerText(),/Legacy cache bypass active/);
+      assert.equal(await v3.locator('#proBuildBadge').innerText(),'PRO v3',name+' PRO v3 runtime badge missing');
+      assert.equal(await v3.locator('text=تعذر تحميل Astra Full Application').count(),0,name+' legacy full-app collapse message must be impossible on PRO v3');
+      const v3Bundles=await v3.evaluate(()=>window.__ASTRA_PRO_V3__.bundles);
+      assert.deepEqual(v3Bundles,['astra-core-pro-v3.js','astra-performance-pro-v3.js','astra-portfolio-pro-v3.js','astra-analytics-pro-v3.js']);
+      assert.equal(v3Errors.length,0,name+' PRO v3 page errors '+JSON.stringify(v3Errors));
+      await v3.close();
+
       const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
       assert.ok(dims.sw<=dims.cw+2,name+' horizontal overflow '+JSON.stringify(dims));
       assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
       assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
       assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-      results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,professionalHomeVisible:true,staticProV2Banner:true,directProV2Entry:true,proV2Badge:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
+      results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,professionalHomeVisible:true,staticProV2Banner:true,directProV2Entry:true,directProV3Entry:true,legacyCacheBypass:true,proV2Badge:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
       await ctx.close();
     }
     const degraded=await browser.newContext({viewport:{width:390,height:844},locale:'ar-EG'});
