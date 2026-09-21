@@ -3,8 +3,14 @@ name: Astra Production Audit
 on:
   pull_request:
     branches: ['main']
+  push:
+    branches: ['main']
     paths:
       - 'astra-prod/app/**'
+      - 'astra-prod/G22_SESSION_REFRESH.json'
+      - 'data/ops/g22-main-app-handoff.json'
+      - 'scripts/astra/g22-postclose-handoff-guard.cjs'
+      - 'tests/astra/g22-postclose-handoff-guard.test.cjs'
       - 'tests/astra/astra-pro-v3-browser-smoke.cjs'
       - '.github/workflows/astra-production-audit.yml'
       - '.github/workflows/astra-v3-vercel-production.yml'
@@ -36,7 +42,9 @@ jobs:
           set -euo pipefail
           echo "AUDIT_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
           node --check astra-prod/app/astra-analytics-pro-v3.js
+          node --check scripts/astra/g22-postclose-handoff-guard.cjs
           node --check tests/astra/astra-pro-v3-browser-smoke.cjs
+          node --test tests/astra/g22-postclose-handoff-guard.test.cjs
 
       - name: Ten consecutive decision and health reviews
         shell: bash
@@ -52,6 +60,7 @@ jobs:
           const l=read('astra-prod/app/intelligence/recommendation-ledger.json');
           const o=read('astra-prod/app/intelligence/recommendation-outcomes.json');
           const p=read('astra-prod/app/intelligence/performance-summary.json');
+          const handoff=read('data/ops/g22-main-app-handoff.json');
           const ok=(c,m)=>{if(!c)throw new Error(m)};
           const s=d?.sourceDecision?.session;
           const recs=d?.decisionSnapshot?.top5||d?.decisionSnapshot?.opportunities||[];
@@ -62,6 +71,12 @@ jobs:
           ok(d?.sourceDecision?.decisionSnapshotId===d?.decisionSnapshot?.decisionSnapshotId,'snapshot id mismatch');
           ok(d?.sourceDecision?.semanticDecisionHash===d?.decisionSnapshot?.semanticDecisionHash,'semantic hash mismatch');
           ok(d?.sourceDecision?.objectHashReproduced===true,'snapshot object hash not reproduced');
+          if(process.env.GITHUB_EVENT_NAME==='push'){
+            ok(d?.sourceDecision?.upstream?.canonicalDataHead===handoff?.canonicalDataHead,'canonical data head lineage drift');
+            ok(String(d?.sourceDecision?.upstream?.producerRunId||'')===String(handoff?.producerRunId||''),'producer run lineage drift');
+            ok(d?.sourceDecision?.upstream?.mainAppMaterialFingerprint===handoff?.materialFingerprint,'material fingerprint lineage drift');
+            ok(d?.sourceDecision?.upstream?.sourceSessionDataHash===handoff?.sourceSessionDataHash,'source data hash lineage drift');
+          }
           ok(d?.health?.criticalUnresolved===0,'critical finding unresolved');
           ok(String(d?.health?.guardStatus||'').startsWith('PASS'),'guard not passing');
           ok(d?.health?.sessionIntegrity?.freshnessStatus==='CURRENT','stale production truth');
