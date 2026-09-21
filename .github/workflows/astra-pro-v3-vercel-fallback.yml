@@ -105,7 +105,11 @@ jobs:
           set -euo pipefail
           API="https://api.vercel.com"
           AUTH="Authorization: Bearer $VERCEL_TOKEN"
-          BODY="$(curl -sS -w '\n%{http_code}' -X POST "$API/v10/projects?teamId=$VERCEL_ORG_ID"             -H "$AUTH" -H 'Content-Type: application/json'             --data "{"name":"$VERCEL_PROJECT_NAME","framework":null}")"
+          PAYLOAD="$(node -e 'process.stdout.write(JSON.stringify({name:process.env.VERCEL_PROJECT_NAME,framework:null}))')"
+          BODY="$(curl -sS -w '\n%{http_code}' -X POST "$API/v10/projects?teamId=$VERCEL_ORG_ID" \
+            -H "$AUTH" \
+            -H 'Content-Type: application/json' \
+            --data "$PAYLOAD")"
           HTTP="$(tail -n1 <<<"$BODY")"
           JSON_BODY="$(sed '$d' <<<"$BODY")"
           if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ]; then
