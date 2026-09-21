@@ -33,6 +33,10 @@ function fixture(overrides = {}) {
     },
     canonicalAvailable:true,
     audit:{session:{decision:'2026-09-19'},upstream:{}},
+    intelligence:{
+      sourceSnapshot:{canonicalDataHead:head,handoffFingerprint:fp,handoffProducerRunId:'123'},
+      sessionRange:{first:'2026-09-20',last:'2026-09-20'}
+    },
     now:{date:'2026-09-20',hour:16,minute:30,dow:0}
   };
   const out = structuredClone(base);
@@ -104,6 +108,19 @@ test('same material fingerprint with a new canonical head refreshes provenance',
   assert.equal(r.run,true);
   assert.equal(r.duplicate,false);
   assert.equal(r.canonicalHead,'b'.repeat(40));
+});
+
+test('exact decision provenance still refreshes when intelligence artifacts are stale', () => {
+  const x=fixture();
+  x.audit={session:{decision:'2026-09-20'},upstream:{mainAppMaterialFingerprint:'a'.repeat(64),canonicalDataHead:'b'.repeat(40)}};
+  x.intelligence={
+    sourceSnapshot:{canonicalDataHead:'d'.repeat(40),handoffFingerprint:'a'.repeat(64),handoffProducerRunId:'999'},
+    sessionRange:{first:'2026-09-19',last:'2026-09-19'}
+  };
+  const r=evaluateHandoff(x);
+  assert.equal(r.run,true);
+  assert.equal(r.duplicate,false);
+  assert.equal(r.intelligenceCurrent,false);
 });
 
 test('manual dispatch can deliberately rebuild same finalized fingerprint', () => {
