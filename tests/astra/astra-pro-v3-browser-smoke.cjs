@@ -127,6 +127,16 @@ async function returnContext(page,view,label){
       await expectTechnical(page,histTicker,name+' history');
       await returnContext(page,'history',name+' history');
 
+      await page.locator('[data-view="performance"]').click();
+      await page.waitForSelector('#view-performance.active');
+      await page.waitForSelector('#astraTickerPerfRows .ticker',{timeout:10000});
+      const perfTicker=(await page.locator('#astraTickerPerfRows .ticker').first().innerText()).trim().toUpperCase();
+      const perfHost=page.locator('#astraTickerPerfRows [data-chart-ticker-host="'+perfTicker+'"]').first();
+      assert.equal(await perfHost.count(),1,name+' performance ticker chart host missing');
+      await perfHost.click();
+      await expectTechnical(page,perfTicker,name+' performance');
+      await returnContext(page,'performance',name+' performance');
+
       const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
       assert.ok(dims.sw<=dims.cw+2,name+' horizontal page overflow '+JSON.stringify(dims));
       assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
