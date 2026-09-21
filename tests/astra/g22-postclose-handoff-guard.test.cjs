@@ -122,11 +122,27 @@ test('schedule is accepted only inside Cairo post-close fallback window', () => 
   assert.ok(r.reasons.includes('OUTSIDE_POST_CLOSE_FALLBACK_WINDOW'));
 });
 
-test('stale handoff session never passes', () => {
-  const x=fixture(); x.now={date:'2026-09-21',hour:16,minute:0,dow:1};
+test('scheduled stale handoff session never passes', () => {
+  const x=fixture({eventName:'schedule',now:{date:'2026-09-21',hour:16,minute:0,dow:1}});
   const r=evaluateHandoff(x);
   assert.equal(r.run,false);
   assert.ok(r.reasons.includes('SESSION_NOT_CAIRO_TODAY'));
+});
+
+test('push safely reconciles a finalized previous-day handoff when lineage drift remains', () => {
+  const x=fixture({eventName:'push',now:{date:'2026-09-21',hour:0,minute:30,dow:1}});
+  x.audit={session:{decision:'2026-09-20'},upstream:{mainAppMaterialFingerprint:'a'.repeat(64),canonicalDataHead:'d'.repeat(40)}};
+  const r=evaluateHandoff(x);
+  assert.equal(r.run,true);
+  assert.equal(r.duplicate,false);
+});
+
+test('push skips an already reconciled finalized handoff', () => {
+  const x=fixture({eventName:'push',now:{date:'2026-09-21',hour:0,minute:30,dow:1}});
+  x.audit={session:{decision:'2026-09-20'},upstream:{mainAppMaterialFingerprint:'a'.repeat(64),canonicalDataHead:'b'.repeat(40)}};
+  const r=evaluateHandoff(x);
+  assert.equal(r.run,false);
+  assert.equal(r.reason,'ALREADY_PROCESSED_MAIN_APP_FINGERPRINT');
 });
 
 test('first workflow_run requires marker producer run identity', () => {
