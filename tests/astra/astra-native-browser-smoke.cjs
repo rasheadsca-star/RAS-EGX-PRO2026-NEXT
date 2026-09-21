@@ -23,13 +23,41 @@ const profiles=[
       page.on('pageerror',e=>errors.push(String(e)));
       page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
       await page.goto(BASE+'/astra-prod/app/index.html?devsmoke='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
-      await page.waitForFunction(()=>window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY',null,{timeout:30000});
+      await page.waitForFunction(()=>window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY'&&window.__ASTRA_PRO_ANALYTICS__==='READY',null,{timeout:30000});
 
       const nav=page.locator('[data-view="performance"]');
       assert.equal(await nav.count(),1,name+' performance nav missing');
       await nav.click();
       await page.waitForSelector('#view-performance.active');
       assert.match(await page.locator('#view-performance').innerText(),/Astra Performance Intelligence/);
+      assert.match(await page.locator('#astraKpiCommand').innerText(),/Performance Command Center/);
+      assert.match(await page.locator('#astraKpiCommand').innerText(),/TARGETS ↔ STOPS/);
+      assert.match(await page.locator('#astraKpiCommand').innerText(),/Target 2 Rate/);
+
+      const proNav=page.locator('[data-view="technical"]');
+      assert.equal(await proNav.count(),1,name+' Technical Lab nav missing');
+      await proNav.click();
+      await page.waitForSelector('#view-technical.active');
+      await page.locator('#proTicker').selectOption('ABUK');
+      await page.waitForSelector('#proSvg');
+      const labText=await page.locator('#proLabBody').innerText();
+      assert.match(labText,/Technical Signature/);
+      assert.match(labText,/Channel Quality/);
+      assert.match(labText,/Relative Volume/);
+      assert.match(labText,/Risk \/ Reward Visualizer/);
+      assert.match(labText,/IMMUTABLE PLAN/);
+      assert.match(await page.locator('#proSvg').innerText(),/PRICE · Candlesticks/);
+      assert.match(await page.locator('#proSvg').innerText(),/VOLUME/);
+      assert.match(await page.locator('#proSvg').innerText(),/RSI \(14\)/);
+      assert.match(await page.locator('#proSvg').innerText(),/MACD \(12,26,9\)/);
+      assert.equal(await page.locator('[data-pa-layer="channel"]').count(),1,name+' channel toggle missing');
+      assert.equal(await page.locator('[data-pa-layer="fib"]').count(),1,name+' fibonacci toggle missing');
+      assert.equal(await page.locator('[data-pa-layer="astra"]').count(),1,name+' Astra plan toggle missing');
+      const beforeGour=requests.filter(u=>u.includes('/data/history/GOUR.json')).length;
+      await page.locator('#proTicker').selectOption('GOUR');
+      await page.waitForTimeout(250);
+      assert.match(await page.locator('#proLabBody').innerText(),/لا توجد Daily OHLC موثقة/);
+      assert.equal(requests.filter(u=>u.includes('/data/history/GOUR.json')).length,beforeGour,name+' Technical Lab must not request unavailable GOUR history');
 
       await page.locator('[data-view="history"]').click();
       await page.waitForSelector('#view-history.active');
@@ -73,7 +101,7 @@ const profiles=[
       assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
       assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
       assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-      results.push({name,width,height,historyRows,universe:badge,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
+      results.push({name,width,height,historyRows,universe:badge,professionalAnalytics:true,multiPaneChart:true,priceChannel:true,technicalSignature:true,riskReward:true,missingHistoryNo404:true,availableHistoryAnalytics:true,externalRequests:0,pageErrors:0,overflow:0});
       await ctx.close();
     }
   } finally { await browser.close(); }
