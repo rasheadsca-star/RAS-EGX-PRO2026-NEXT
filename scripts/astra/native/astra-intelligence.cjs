@@ -138,6 +138,13 @@ function rowsForTicker(ticker){
 
 function overlapEntry(row,entry){return row.high>=entry.low&&row.low<=entry.high}
 function inside(v,lo,hi){return Number.isFinite(v)&&v>=lo&&v<=hi}
+function excursion(activationPrice,activeHigh,activeLow){
+  if(!Number.isFinite(activationPrice)||!Number.isFinite(activeHigh)||!Number.isFinite(activeLow)) return {maxFavorableExcursionPct:null,maxAdverseExcursionPct:null};
+  return {
+    maxFavorableExcursionPct:round(Math.max(0,(activeHigh/activationPrice-1)*100),4),
+    maxAdverseExcursionPct:round(Math.min(0,(activeLow/activationPrice-1)*100),4)
+  };
+}
 
 function corporateActionSignal(row){
   const raw=[...(Array.isArray(row.warnings)?row.warnings:[]),row.validationStatus||''].join(' ').toUpperCase();
@@ -154,7 +161,7 @@ function evaluateRows(rec,rows,{expirySessions=20}={}){
     return outcome(rec,'WAITING_FOR_ENTRY',timeline,{entryActivated:false,entryNotTriggered:false});
   }
   const targets=rec.targets||[],finalLevel=targets.at(-1)??null;
-  let activated=false,activationSession=null,activationPrice=null,activationPrecision=null,sessionsHeld=0;
+  let activated=false,activationSession=null,activationPrice=null,activationPrecision=null,sessionsHeld=0,activeHigh=null,activeLow=null;
   let t1=false,t2=false,final=false,stop=false,closedSession=null,timeToT1=null,timeToFinal=null;
 
   for(let i=0;i<future.length;i++){
@@ -162,7 +169,7 @@ function evaluateRows(rec,rows,{expirySessions=20}={}){
     if(row.date<rec.effectiveFromSession) continue;
     if(corporateActionSignal(row)){
       timeline.push({state:'CANCELLED_BY_GOVERNANCE',session:row.date,evidence:'CORPORATE_ACTION_REVIEW_REQUIRED'});
-      return outcome(rec,'CANCELLED_BY_GOVERNANCE',timeline,{entryActivated:activated,activationSession,activationPrice,activationPrecision,sessionsHeld,governanceReason:'CORPORATE_ACTION_REVIEW_REQUIRED'});
+      return outcome(rec,'CANCELLED_BY_GOVERNANCE',timeline,{entryActivated:activated,activationSession,activationPrice,activationPrecision,sessionsHeld,...excursion(activationPrice,activeHigh,activeLow),governanceReason:'CORPORATE_ACTION_REVIEW_REQUIRED'});
     }
     if(!activated){
       if(row.open>rec.entryPlan.high && row.low>rec.entryPlan.high) timeline.push({state:'WAITING_FOR_ENTRY',session:row.date,evidence:'GAP_ABOVE_ENTRY_RANGE',gapEvent:true,open:row.open});
@@ -183,17 +190,19 @@ function evaluateRows(rec,rows,{expirySessions=20}={}){
     }
 
     sessionsHeld++;
+    activeHigh=activeHigh===null?row.high:Math.max(activeHigh,row.high);
+    activeLow=activeLow===null?row.low:Math.min(activeLow,row.low);
     const stopHit=Number.isFinite(rec.stopLoss)&&row.low<=rec.stopLoss;
     const targetHits=targets.map(t=>row.high>=t);
     if(stopHit&&targetHits.some(Boolean)){
       timeline.push({state:'AMBIGUOUS_INTRADAY_PATH',session:row.date,evidence:'Daily OHLC touched stop and target; intraday order unavailable'});
-      return outcome(rec,'AMBIGUOUS_INTRADAY_PATH',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,ambiguous:true,sessionsHeld});
+      return outcome(rec,'AMBIGUOUS_INTRADAY_PATH',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,ambiguous:true,sessionsHeld,...excursion(activationPrice,activeHigh,activeLow)});
     }
     if(stopHit){
       stop=true;closedSession=row.date;
       timeline.push({state:'STOP_LOSS_HIT',session:row.date,level:rec.stopLoss});
       timeline.push({state:'CLOSED',session:row.date,evidence:'Stop-loss resolution'});
-      return outcome(rec,'CLOSED',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,stopLossHit:true,closedSession,sessionsHeld});
+      return outcome(rec,'CLOSED',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,stopLossHit:true,closedSession,sessionsHeld,...excursion(activationPrice,activeHigh,activeLow)});
     }
     if(targetHits[0]&&!t1){t1=true;timeToT1=sessionsHeld;timeline.push({state:'TARGET_1_HIT',session:row.date,level:targets[0]})}
     if(targetHits[1]&&!t2){t2=true;timeline.push({state:'TARGET_2_HIT',session:row.date,level:targets[1]})}
@@ -201,11 +210,11 @@ function evaluateRows(rec,rows,{expirySessions=20}={}){
       final=true;timeToFinal=sessionsHeld;closedSession=row.date;
       timeline.push({state:'FINAL_TARGET_HIT',session:row.date,level:finalLevel});
       timeline.push({state:'CLOSED',session:row.date,evidence:'Final target resolution'});
-      return outcome(rec,'CLOSED',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,target1Hit:t1,target2Hit:t2,finalTargetHit:true,closedSession,sessionsHeld,timeToT1,timeToFinal});
+      return outcome(rec,'CLOSED',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,target1Hit:t1,target2Hit:t2,finalTargetHit:true,closedSession,sessionsHeld,timeToT1,timeToFinal,...excursion(activationPrice,activeHigh,activeLow)});
     }
   }
 
-  if(activated) return outcome(rec,'OPEN',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,target1Hit:t1,target2Hit:t2,sessionsHeld,timeToT1,timeToFinal});
+  if(activated) return outcome(rec,'OPEN',timeline,{entryActivated:true,activationSession,activationPrice,activationPrecision,target1Hit:t1,target2Hit:t2,sessionsHeld,timeToT1,timeToFinal,...excursion(activationPrice,activeHigh,activeLow)});
   const observed=future.filter(r=>r.date>=rec.effectiveFromSession).length;
   if(observed>=expirySessions){
     const last=future.at(-1);
@@ -256,6 +265,8 @@ function outcome(rec,state,timeline,extra={}){
     sessionsHeld:extra.sessionsHeld??0,
     timeToT1:extra.timeToT1??null,
     timeToFinalTarget:extra.timeToFinal??null,
+    maxFavorableExcursionPct:extra.maxFavorableExcursionPct??null,
+    maxAdverseExcursionPct:extra.maxAdverseExcursionPct??null,
     returnPct,
     sourceHistory:'data/history/'+rec.ticker+'.json'
   };
@@ -280,6 +291,7 @@ function summarize(records,outcomes){
   const grossWin=positive.reduce((s,x)=>s+x,0),grossLoss=Math.abs(negative.reduce((s,x)=>s+x,0));
   const holding=outcomes.filter(x=>x.entryActivated&&x.sessionsHeld>0).map(x=>x.sessionsHeld);
   const t1Times=outcomes.map(x=>x.timeToT1).filter(Number.isFinite),finalTimes=outcomes.map(x=>x.timeToFinalTarget).filter(Number.isFinite);
+  const mfe=outcomes.map(x=>x.maxFavorableExcursionPct).filter(Number.isFinite),mae=outcomes.map(x=>x.maxAdverseExcursionPct).filter(Number.isFinite);
   const metrics={
     totalRecommendations:issued,
     activatedRecommendations:activated,
@@ -306,6 +318,10 @@ function summarize(records,outcomes){
     averageHoldingSessions:round(avg(holding),2),
     averageTimeToT1:round(avg(t1Times),2),
     averageTimeToFinalTarget:round(avg(finalTimes),2),
+    averageMfePct:round(avg(mfe),4),
+    averageMaePct:round(avg(mae),4),
+    mfeMeasuredCount:mfe.length,
+    maeMeasuredCount:mae.length,
     bestRecommendation:resolvedReturns.length?outcomes.filter(x=>Number.isFinite(x.returnPct)).sort((a,b)=>b.returnPct-a.returnPct)[0]?.recommendationId:null,
     worstRecommendation:resolvedReturns.length?outcomes.filter(x=>Number.isFinite(x.returnPct)).sort((a,b)=>a.returnPct-b.returnPct)[0]?.recommendationId:null,
     historicalSessionsEvaluated:new Set(outcomes.flatMap(x=>x.timeline.map(t=>t.session).filter(Boolean))).size
@@ -403,8 +419,8 @@ function sessionWindowRecords(records,name){
     const y=String(sessions.at(-1)||'').slice(0,4);
     return records.filter(r=>String(r.sessionDate).startsWith(y+'-'));
   }
-  if(name==='5_SESSIONS'||name==='20_SESSIONS'){
-    const n=name==='5_SESSIONS'?5:20, keep=new Set(sessions.slice(-n));
+  if(['5_SESSIONS','7_SESSIONS','20_SESSIONS','30_SESSIONS','90_SESSIONS'].includes(name)){
+    const n=Number(name.split('_')[0]), keep=new Set(sessions.slice(-n));
     return records.filter(r=>keep.has(r.sessionDate));
   }
   const months=name==='3_MONTHS'?3:name==='6_MONTHS'?6:null;
@@ -417,7 +433,7 @@ function sessionWindowRecords(records,name){
 function performanceWindows(records,outcomes){
   const byId=new Map(outcomes.map(o=>[o.recommendationId,o]));
   const out={};
-  for(const name of ['5_SESSIONS','20_SESSIONS','3_MONTHS','6_MONTHS','YTD','ALL']){
+  for(const name of ['7_SESSIONS','30_SESSIONS','90_SESSIONS','YTD','ALL','5_SESSIONS','20_SESSIONS','3_MONTHS','6_MONTHS']){
     const recs=sessionWindowRecords(records,name);
     const os=recs.map(r=>byId.get(r.recommendationId)).filter(Boolean);
     out[name]={sampleSize:recs.length,...summarize(recs,os)};
