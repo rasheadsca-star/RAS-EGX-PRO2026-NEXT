@@ -102,21 +102,39 @@ jobs:
           fi
           echo "Development workflow publication boundary already re-certified by Astra core certification step"
 
-      - name: Require authorized Vercel token
+      - name: Select isolated candidate environment
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${VERCEL_TOKEN:-}" || { echo "::error::VERCEL_TOKEN repository secret missing"; exit 78; }
+          if [ -n "${VERCEL_TOKEN:-}" ]; then
+            echo "DEPLOYMENT_PROVIDER=vercel" >> "$GITHUB_ENV"
+            echo "Candidate provider: Vercel preview"
+          else
+            DEPLOYMENT_URL="https://cdn.jsdelivr.net/gh/rasheadsca-star/RAS-EGX-PRO2026-NEXT@$CANDIDATE_HEAD"
+            DEPLOYMENT_ID="jsdelivr-gh-$CANDIDATE_HEAD"
+            echo "DEPLOYMENT_PROVIDER=jsdelivr" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> "$GITHUB_ENV"
+            echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> "$GITHUB_ENV"
+            echo "Candidate provider: immutable jsDelivr GitHub commit snapshot"
+          fi
 
-      - name: Deploy exact runtime package as Vercel Preview only
+      - name: Deploy exact runtime package to isolated candidate environment
         id: deploy
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
+          if [ "$DEPLOYMENT_PROVIDER" = "jsdelivr" ]; then
+            curl -fsSL --retry 3 "$DEPLOYMENT_URL/astra-prod/app/index.html?probe=$RANDOM" -o /tmp/candidate-index.html
+            test -s /tmp/candidate-index.html
+            grep -q 'EGX PRO — Astra Full Application' /tmp/candidate-index.html
+            echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+            echo "IMMUTABLE_CDN_CANDIDATE_READY $DEPLOYMENT_URL"
+            exit 0
+          fi
           mkdir -p stage/.vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > stage/.vercel/project.json
           cd stage
@@ -131,7 +149,7 @@ jobs:
           echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> "$GITHUB_ENV"
           echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
           HOST="${DEPLOYMENT_URL#https://}"
-          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN"             "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID"             -o /tmp/vercel-deployment.json
+          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID" -o /tmp/vercel-deployment.json
           node <<'NODE'
           const fs=require('fs');
           const d=JSON.parse(fs.readFileSync('/tmp/vercel-deployment.json','utf8'));
@@ -256,13 +274,22 @@ jobs:
           git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH" --force
           test "$(git rev-parse "origin/$CANDIDATE_BRANCH")" = "$CANDIDATE_HEAD"
           test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
-          HOST="${DEPLOYMENT_URL#https://}"
-          curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN"             "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID"             -o /tmp/vercel-final.json
-          node <<'NODE'
+          if [ "$DEPLOYMENT_PROVIDER" = "vercel" ]; then
+            HOST="${DEPLOYMENT_URL#https://}"
+            curl -fsS -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v13/deployments/$HOST?teamId=$VERCEL_ORG_ID" -o /tmp/vercel-final.json
+            node <<'NODE'
           const fs=require('fs');
           const d=JSON.parse(fs.readFileSync('/tmp/vercel-final.json','utf8'));
           if(d.readyState!=='READY'||d.target==='production') throw new Error('Final deployment state invalid');
           NODE
+          else
+            case "$DEPLOYMENT_URL" in
+              *"@$CANDIDATE_HEAD") ;;
+              *) echo "::error::Immutable CDN URL is not pinned to candidate SHA"; exit 1 ;;
+            esac
+            curl -fsSL --retry 3 "$DEPLOYMENT_URL/astra-prod/app/index.html?final=$RANDOM" -o /tmp/final-index
+            test "$(sha256sum /tmp/final-index | awk '{print $1}')" = "$(sha256sum stage/astra-prod/app/index.html | awk '{print $1}')"
+          fi
           git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
           echo "FINAL_CANDIDATE_IMMUTABILITY_PASS"
 
@@ -285,7 +312,8 @@ jobs:
             artifactFileCount:Number(process.env.ARTIFACT_FILE_COUNT),
             deploymentId:process.env.DEPLOYMENT_ID,
             deploymentUrl:process.env.DEPLOYMENT_URL,
-            deploymentTarget:'preview',
+            deploymentProvider:process.env.DEPLOYMENT_PROVIDER,
+            deploymentTarget:process.env.DEPLOYMENT_PROVIDER==='vercel'?'preview':'immutable-cdn',
             e2e:'GREEN',
             critical:0,
             high:0,
