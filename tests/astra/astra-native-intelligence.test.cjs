@@ -44,13 +44,19 @@ test('repository build preserves current DecisionSnapshot and produces reconcile
   require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'});
   const after=fs.readFileSync(path.join(root,'astra-prod/app/data.json'),'utf8');
   assert.equal(after,before);
+  const app=JSON.parse(before);
   const summary=JSON.parse(fs.readFileSync(path.join(root,'astra-prod/app/intelligence/performance-summary.json'),'utf8'));
   const ledger=JSON.parse(fs.readFileSync(path.join(root,'astra-prod/app/intelligence/recommendation-ledger.json'),'utf8'));
+  const currentRecs=app.decisionSnapshot.top5||app.decisionSnapshot.opportunities||[];
+  const currentLedger=ledger.records.filter(r=>r.decisionSnapshotId===app.sourceDecision.decisionSnapshotId&&r.sessionDate===app.sourceDecision.session);
   assert.equal(summary.reconciliation.pass,true);
   assert.equal(ledger.appendOnly,true);
   assert.equal(ledger.idempotent,true);
-  assert.equal(ledger.records.length,3);
-  assert.equal(ledger.records.every(r=>r.decisionSnapshotId==='G09-DS-018f3ecf434a0cc921814012'),true);
+  assert.ok(ledger.records.length>=currentRecs.length);
+  assert.equal(currentLedger.length,currentRecs.length);
+  assert.deepEqual(currentLedger.map(r=>r.ticker).sort(),currentRecs.map(r=>r.ticker).sort());
+  assert.equal(summary.sourceSnapshot.decisionSnapshotId,app.sourceDecision.decisionSnapshotId);
+  assert.equal(summary.sessionRange.last,app.sourceDecision.session);
 });
 
 
