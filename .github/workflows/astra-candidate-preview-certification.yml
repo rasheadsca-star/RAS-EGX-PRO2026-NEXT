@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CANDIDATE_BRANCH: candidate/astra-production-20260921
-  CANDIDATE_HEAD: b04d74b6c8596ada64b42ee522318cdfe903603b
+  CANDIDATE_BRANCH: candidate/astra-production-20260921-r2
+  CANDIDATE_HEAD: 0c66c95afb4a18cb8d27e9ba0b467ed27fcb4afc
   FROZEN_BRANCH: frozen/production-20260920-c6e8b21
   FROZEN_HEAD: c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae
   VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
@@ -164,7 +164,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for p in             astra-prod/app/index.html             astra-prod/app/app.js             astra-prod/app/astra-performance-history.js             astra-prod/app/astra-market-portfolio.js             astra-prod/app/data.json             astra-prod/app/intelligence/market-universe.json             astra-prod/app/intelligence/recommendation-ledger.json             astra-prod/app/intelligence/recommendation-outcomes.json             data/quant/stock-intelligence-index.json             data/rc2/recommendation-history.json             data/history/GOUR.json; do
+          for p in             astra-prod/app/index.html             astra-prod/app/app.js             astra-prod/app/astra-performance-history.js             astra-prod/app/astra-market-portfolio.js             astra-prod/app/data.json             astra-prod/app/intelligence/market-universe.json             astra-prod/app/intelligence/recommendation-ledger.json             astra-prod/app/intelligence/recommendation-outcomes.json             data/quant/stock-intelligence-index.json             data/rc2/recommendation-history.json             data/history/TMGH.json; do
             curl -fsSL --retry 3 "$DEPLOYMENT_URL/$p?verify=$RANDOM" -o /tmp/remote-file
             local_hash="$(sha256sum "stage/$p" | awk '{print $1}')"
             remote_hash="$(sha256sum /tmp/remote-file | awk '{print $1}')"
@@ -201,8 +201,8 @@ jobs:
               for(const [name,width,height] of profiles){
                 const ctx=await browser.newContext({viewport:{width,height},locale:'ar-EG'});
                 const page=await ctx.newPage();
-                const external=[],errors=[],bad=[];
-                page.on('request',r=>{try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
+                const external=[],errors=[],bad=[],requests=[];
+                page.on('request',r=>{requests.push(r.url());try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
                 page.on('pageerror',e=>errors.push(String(e)));
                 page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
                 await page.goto(BASE+'/astra-prod/app/index.html?candidate='+Date.now()+'&cycle='+cycle,{waitUntil:'networkidle',timeout:45000});
@@ -224,15 +224,23 @@ jobs:
                 assert.match(await page.locator('#astraMarketRows').innerText(),/GOUR/);
                 assert.match(await page.locator('#astraMarketRows').innerText(),/ليس ضمن فرص Astra/);
                 await page.locator('[data-native-stock="GOUR"]').click();
-                await page.waitForSelector('#astraStock .stock-grid');
-                const stockText=await page.locator('#astraStock').innerText();
-                assert.match(stockText,/Support20/);
-                assert.match(stockText,/Resistance20/);
+                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('GOUR'));
+                const gourStock=await page.locator('#astraStock').innerText();
+                assert.match(gourStock,/Support20/);
+                assert.match(gourStock,/Resistance20/);
+                assert.match(gourStock,/لا توجد بيانات Daily OHLC موثقة/);
+                assert.equal(requests.some(u=>u.includes('/data/history/GOUR.json')),false,name+' unavailable GOUR history must not be requested');
+
+                await page.locator('#astraMarketQ').fill('TMGH');
+                await page.waitForTimeout(150);
+                await page.locator('[data-native-stock="TMGH"]').click();
+                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('TMGH'));
                 const boxes=await page.locator('#astraStock .stock-box').allTextContents();
                 const s=boxes.find(x=>x.includes('Support20'))||'';
                 const r=boxes.find(x=>x.includes('Resistance20'))||'';
-                assert.ok(!s.includes('—'),name+' Support20 unavailable');
-                assert.ok(!r.includes('—'),name+' Resistance20 unavailable');
+                assert.ok(!s.includes('غير متاح')&&!s.includes('—'),name+' TMGH Support20 unavailable');
+                assert.ok(!r.includes('غير متاح')&&!r.includes('—'),name+' TMGH Resistance20 unavailable');
+                assert.equal(requests.some(u=>u.includes('/data/history/TMGH.json')),true,name+' available TMGH history must be requested');
                 await page.locator('[data-view="portfolio"]').click();
                 await page.waitForSelector('#view-portfolio.active');
                 await page.locator('#astraPfT').selectOption('GOUR');
@@ -250,7 +258,7 @@ jobs:
                 assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
                 assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
                 assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-                out.push({name,width,height,historyRows:3,universe:224,supportResistance:true,portfolioPersistence:true,externalRequests:0,pageErrors:0,badResponses:0,overflow:0});
+                out.push({name,width,height,historyRows:3,universe:224,missingHistoryNo404:true,availableHistoryAnalytics:true,portfolioPersistence:true,externalRequests:0,pageErrors:0,badResponses:0,overflow:0});
                 await ctx.close();
               }
             }finally{await browser.close()}
