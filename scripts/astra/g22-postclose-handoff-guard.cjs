@@ -59,7 +59,7 @@ function evaluateHandoff(input) {
   const priorCanonicalHead = String(audit?.upstream?.canonicalDataHead || '').trim().toLowerCase();
   const priorSession = dateOnly(audit?.session?.decision);
 
-  const automatic = eventName === 'workflow_run' || eventName === 'schedule';
+  const automatic = eventName === 'workflow_run' || eventName === 'schedule' || eventName === 'push';
   const duplicate = Boolean(
     automatic &&
     session &&
@@ -86,7 +86,7 @@ function evaluateHandoff(input) {
   if (!/^[0-9a-f]{40}$/.test(canonicalHead)) reasons.push('CANONICAL_DATA_HEAD_INVALID');
   if (!session) reasons.push('HANDOFF_SESSION_MISSING');
   if (!expected || expected !== session) reasons.push('HANDOFF_EXPECTED_SESSION_MISMATCH');
-  if (session && session !== now.date) reasons.push('SESSION_NOT_CAIRO_TODAY');
+  if (eventName === 'schedule' && session && session !== now.date) reasons.push('SESSION_NOT_CAIRO_TODAY');
 
   if (marker.final !== true) reasons.push('HANDOFF_NOT_FINAL');
   if (marker.sourceReady !== true) reasons.push('HANDOFF_SOURCE_NOT_READY');
