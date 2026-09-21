@@ -51,6 +51,7 @@
   function renderCommand(){
     const host=$('#view-performance');if(!host||$('#astraKpiCommand'))return;
     const m=S.summary.metrics||{},t=rateBlock(m.target1HitRate),st=rateBlock(m.stopLossRate);
+    const activated=Number(m.activatedRecommendations)||0,t2Rate=activated?Number(m.target2Hit||0)/activated*100:null,finalRate=m.finalTargetRate?.pct??null;
     const balance=t.pct!==null&&st.pct!==null?t.pct-st.pct:null;
     const sample=t.d;
     const panel=document.createElement('div');panel.id='astraKpiCommand';panel.className='panel pro-command';
@@ -62,8 +63,8 @@
         '<div class="pro-side pro-stop"><small>Stop Loss Rate</small><b class="bad">'+P(st.pct)+'</b><span class="muted">'+F(st.n,0)+' / '+F(st.d,0)+' · '+E(st.label)+'</span><div class="pro-track"><i style="width:'+(st.pct===null?0:clamp(st.pct))+'%"></i></div></div>'+
       '</div>'+
       '<div class="pro-kpis">'+
-        kpi('Target 2',m.target2Hit,'hits')+
-        kpi('Final Target',m.finalTargetHit,'hits')+
+        kpi('Target 2 Rate',t2Rate,activated?F(m.target2Hit,0)+' / '+F(activated,0)+' Activated':'requires activated sample',true)+
+        kpi('Final Target Rate',finalRate,m.finalTargetRate?.denominator?F(m.finalTargetRate.numerator,0)+' / '+F(m.finalTargetRate.denominator,0)+' '+E(m.finalTargetRate.denominatorLabel):'requires activated sample',true)+
         kpi('Profit Factor',m.profitFactor,'closed trades')+
         kpi('Expectancy',m.expectancyPct,'per resolved trade',true)+
         kpi('Avg Winner',m.averageWinnerPct,'resolved winners',true)+
