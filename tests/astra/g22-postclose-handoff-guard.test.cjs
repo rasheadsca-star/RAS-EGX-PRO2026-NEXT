@@ -130,7 +130,7 @@ test('latest completed session remains valid after Cairo midnight', () => {
 });
 
 test('latest completed session remains valid across weekend/non-trading calendar days', () => {
-  const x=fixture(); x.now={date:'2026-09-22',hour:10,minute:0,dow:2};
+  const x=fixture(); x.now={date:'2026-09-25',hour:10,minute:0,dow:5};
   const r=evaluateHandoff(x);
   assert.equal(r.run,true);
   assert.equal(r.session,'2026-09-20');
