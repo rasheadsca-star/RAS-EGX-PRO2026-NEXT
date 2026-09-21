@@ -243,7 +243,7 @@ jobs:
                 await page.locator('#astraPfN').fill('integration-e2e');
                 await page.locator('#astraPfA').click();
                 assert.match(await page.locator('#astraPfB').innerText(),/GOUR/);
-                assert.match(await page.locator('#astraPfB').innerText(),/candidate-e2e/);
+                assert.match(await page.locator('#astraPfB').innerText(),/integration-e2e/);
                 const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('egxpro.astra.portfolio.v2')||'[]'));
                 assert.equal(persisted.length,1);
                 const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
