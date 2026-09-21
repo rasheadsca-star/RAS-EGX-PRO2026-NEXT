@@ -16,10 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CANDIDATE_BRANCH: candidate/astra-production-20260921-r2
-  CANDIDATE_HEAD: 0c66c95afb4a18cb8d27e9ba0b467ed27fcb4afc
-  FROZEN_BRANCH: frozen/production-20260920-c6e8b21
-  FROZEN_HEAD: c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae
+  CANDIDATE_BRANCH: candidate/astra-professional-analytics-20260921
+  CANDIDATE_HEAD: 479a01e4182a32c1c8d1bfd7bb47f0c90ed05b21
+  FROZEN_BRANCH: frozen/production-20260921-0c66c95a
+  FROZEN_HEAD: 0c66c95afb4a18cb8d27e9ba0b467ed27fcb4afc
   VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
   VERCEL_PROJECT_ID: prj_6f2XtCiNK0pF3grt8rWCCOdnJoAy
 
@@ -152,7 +152,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for p in             astra-prod/app/index.html             astra-prod/app/app.js             astra-prod/app/astra-performance-history.js             astra-prod/app/astra-market-portfolio.js             astra-prod/app/data.json             astra-prod/app/intelligence/market-universe.json             astra-prod/app/intelligence/recommendation-ledger.json             astra-prod/app/intelligence/recommendation-outcomes.json             data/quant/stock-intelligence-index.json             data/rc2/recommendation-history.json             data/history/TMGH.json; do
+          for p in             astra-prod/app/index.html             astra-prod/app/app.js             astra-prod/app/astra-performance-history.js             astra-prod/app/astra-market-portfolio.js             astra-prod/app/astra-professional-analytics.js             astra-prod/app/data.json             astra-prod/app/intelligence/market-universe.json             astra-prod/app/intelligence/recommendation-ledger.json             astra-prod/app/intelligence/recommendation-outcomes.json             data/quant/stock-intelligence-index.json             data/rc2/recommendation-history.json             data/history/TMGH.json; do
             curl -fsSL --retry 3 "$DEPLOYMENT_URL/$p?verify=$RANDOM" -o /tmp/remote-file
             local_hash="$(sha256sum "stage/$p" | awk '{print $1}')"
             remote_hash="$(sha256sum /tmp/remote-file | awk '{print $1}')"
@@ -174,90 +174,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat > /tmp/astra-candidate-remote-e2e.cjs <<'NODE'
-          'use strict';
-          const {chromium}=require(process.cwd()+'/node_modules/playwright-core');
-          const assert=require('node:assert/strict');
-          const BASE=process.env.DEPLOYMENT_URL;
-          const CHROME=process.env.CHROME_BIN;
-          const cycle=process.env.REVIEW_CYCLE;
-          const profiles=[['w320',320,760],['w360',360,780],['w390',390,844],['w414',414,896],['w768',768,1024],['desktop',1440,1000]];
-          (async()=>{
-            const browser=await chromium.launch({headless:true,executablePath:CHROME,args:['--no-sandbox']});
-            const out=[];
-            try{
-              for(const [name,width,height] of profiles){
-                const ctx=await browser.newContext({viewport:{width,height},locale:'ar-EG'});
-                const page=await ctx.newPage();
-                const external=[],errors=[],bad=[],requests=[];
-                page.on('request',r=>{requests.push(r.url());try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
-                page.on('pageerror',e=>errors.push(String(e)));
-                page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
-                await page.goto(BASE+'/astra-prod/app/index.html?candidate='+Date.now()+'&cycle='+cycle,{waitUntil:'networkidle',timeout:45000});
-                await page.waitForFunction(()=>window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY',null,{timeout:30000});
-                assert.equal(await page.locator('[data-view="performance"]').count(),1,name+' performance nav');
-                await page.locator('[data-view="performance"]').click();
-                await page.waitForSelector('#view-performance.active');
-                assert.match(await page.locator('#view-performance').innerText(),/Astra Performance Intelligence/);
-                await page.locator('[data-view="history"]').click();
-                await page.waitForSelector('#view-history.active');
-                assert.equal(await page.locator('#astraHistRows tr').count(),3,name+' history count');
-                await page.locator('[data-view="search"]').click();
-                await page.waitForSelector('#view-search.active');
-                const badge=page.locator('#view-search [data-universe-active]').first();
-                assert.equal(await badge.getAttribute('data-universe-active'),'224');
-                assert.equal(await badge.getAttribute('data-universe-intended'),'224');
-                await page.locator('#astraMarketQ').fill('GOUR');
-                await page.waitForTimeout(150);
-                assert.match(await page.locator('#astraMarketRows').innerText(),/GOUR/);
-                assert.match(await page.locator('#astraMarketRows').innerText(),/ليس ضمن فرص Astra/);
-                await page.locator('[data-native-stock="GOUR"]').click();
-                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('GOUR'));
-                const gourStock=await page.locator('#astraStock').innerText();
-                assert.match(gourStock,/Support20/);
-                assert.match(gourStock,/Resistance20/);
-                assert.match(gourStock,/لا توجد بيانات Daily OHLC موثقة/);
-                assert.equal(requests.some(u=>u.includes('/data/history/GOUR.json')),false,name+' unavailable GOUR history must not be requested');
-
-                await page.locator('#astraMarketQ').fill('TMGH');
-                await page.waitForTimeout(150);
-                await page.locator('[data-native-stock="TMGH"]').click();
-                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('TMGH'));
-                const boxes=await page.locator('#astraStock .stock-box').allTextContents();
-                const s=boxes.find(x=>x.includes('Support20'))||'';
-                const r=boxes.find(x=>x.includes('Resistance20'))||'';
-                assert.ok(!s.includes('غير متاح')&&!s.includes('—'),name+' TMGH Support20 unavailable');
-                assert.ok(!r.includes('غير متاح')&&!r.includes('—'),name+' TMGH Resistance20 unavailable');
-                assert.equal(requests.some(u=>u.includes('/data/history/TMGH.json')),true,name+' available TMGH history must be requested');
-                await page.locator('[data-view="portfolio"]').click();
-                await page.waitForSelector('#view-portfolio.active');
-                await page.locator('#astraPfT').selectOption('GOUR');
-                await page.locator('#astraPfP').fill('10');
-                await page.locator('#astraPfQ').fill('5');
-                await page.locator('#astraPfD').fill('2026-09-20');
-                await page.locator('#astraPfN').fill('candidate-e2e');
-                await page.locator('#astraPfA').click();
-                assert.match(await page.locator('#astraPfB').innerText(),/GOUR/);
-                assert.match(await page.locator('#astraPfB').innerText(),/candidate-e2e/);
-                const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('egxpro.astra.portfolio.v2')||'[]'));
-                assert.equal(persisted.length,1);
-                const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
-                assert.ok(dims.sw<=dims.cw+2,name+' horizontal overflow');
-                assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
-                assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
-                assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-                out.push({name,width,height,historyRows:3,universe:224,missingHistoryNo404:true,availableHistoryAnalytics:true,portfolioPersistence:true,externalRequests:0,pageErrors:0,badResponses:0,overflow:0});
-                await ctx.close();
-              }
-            }finally{await browser.close()}
-            console.log(JSON.stringify({cycle,status:'PASS',profiles:out},null,2));
-          })().catch(e=>{console.error(e.stack||e);process.exit(1)});
-          NODE
-
           for cycle in $(seq 1 10); do
             echo "=== CANDIDATE CLEAN REVIEW $cycle/10 ==="
             node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
-            REVIEW_CYCLE="$cycle" node /tmp/astra-candidate-remote-e2e.cjs
+            REVIEW_CYCLE="$cycle" ASTRA_DEV_BASE="$DEPLOYMENT_URL" node tests/astra/astra-native-browser-smoke.cjs
           done
 
       - name: Final immutability and deployment-state verification
@@ -321,7 +241,7 @@ jobs:
       - name: Upload candidate evidence
         uses: actions/upload-artifact@v4
         with:
-          name: astra-production-candidate-certification-20260921
+          name: astra-professional-analytics-candidate-certification-20260921
           path: |
             candidate-evidence/CERTIFICATION.json
             /tmp/astra-candidate-file-hashes.txt
