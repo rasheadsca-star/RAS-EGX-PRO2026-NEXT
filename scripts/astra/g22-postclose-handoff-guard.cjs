@@ -45,6 +45,7 @@ function evaluateHandoff(input) {
   const price = input.price || {};
   const primary = input.primary || {};
   const audit = input.audit || {};
+  const intelligence = input.intelligence || {};
   const now = input.now || cairoParts();
 
   const reasons = [];
@@ -58,6 +59,13 @@ function evaluateHandoff(input) {
   const priorFingerprint = String(audit?.upstream?.mainAppMaterialFingerprint || '').trim().toLowerCase();
   const priorCanonicalHead = String(audit?.upstream?.canonicalDataHead || '').trim().toLowerCase();
   const priorSession = dateOnly(audit?.session?.decision);
+  const intelligenceSource = intelligence?.sourceSnapshot || {};
+  const intelligenceCurrent = Boolean(
+    dateOnly(intelligence?.sessionRange?.last) === session &&
+    String(intelligenceSource.canonicalDataHead || '').trim().toLowerCase() === canonicalHead &&
+    String(intelligenceSource.handoffFingerprint || '').trim().toLowerCase() === fingerprint &&
+    String(intelligenceSource.handoffProducerRunId || '') === String(marker.producerRunId || '')
+  );
 
   const automatic = eventName === 'workflow_run' || eventName === 'schedule' || eventName === 'push';
   const duplicate = Boolean(
@@ -67,7 +75,8 @@ function evaluateHandoff(input) {
     /^[0-9a-f]{64}$/.test(fingerprint) &&
     priorFingerprint === fingerprint &&
     /^[0-9a-f]{40}$/.test(canonicalHead) &&
-    priorCanonicalHead === canonicalHead
+    priorCanonicalHead === canonicalHead &&
+    intelligenceCurrent
   );
 
   if (eventName === 'workflow_run') {
@@ -128,7 +137,8 @@ function evaluateHandoff(input) {
     session,
     fingerprint: fingerprint || null,
     canonicalHead: canonicalHead || null,
-    duplicate
+    duplicate,
+    intelligenceCurrent
   };
 }
 
@@ -168,6 +178,7 @@ function main() {
     primary,
     canonicalAvailable,
     audit: readJson('astra-prod/G22_SESSION_REFRESH.json'),
+    intelligence: readJson('astra-prod/app/intelligence/performance-summary.json'),
     now: cairoParts()
   });
 
