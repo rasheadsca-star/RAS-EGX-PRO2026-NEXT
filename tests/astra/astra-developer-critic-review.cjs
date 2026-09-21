@@ -24,6 +24,7 @@ const rank=j('astra-prod/app/intelligence/performance-by-rank.json');
 const regime=j('astra-prod/app/intelligence/performance-by-regime.json');
 const ticker=j('astra-prod/app/intelligence/ticker-performance.json');
 const universe=j('astra-prod/app/intelligence/market-universe.json');
+const appJs=t('astra-prod/app/app.js');
 const histJs=t('astra-prod/app/astra-performance-history.js');
 const marketJs=t('astra-prod/app/astra-market-portfolio.js');
 const proJs=t('astra-prod/app/astra-professional-analytics.js');
