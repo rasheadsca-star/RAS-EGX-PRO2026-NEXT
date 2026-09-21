@@ -242,7 +242,7 @@ function outcome(rec,state,timeline,extra={}){
     if(Number.isFinite(exit)) returnPct=round((exit/extra.activationPrice-1)*100,4);
   }
   return {
-    schemaVersion:'astra-recommendation-outcome-2',
+    schemaVersion:'astra-recommendation-outcome-3',
     recommendationId:rec.recommendationId,
     ticker:rec.ticker,
     decisionSnapshotId:rec.decisionSnapshotId,
@@ -478,9 +478,9 @@ function main(){
     inputHashes:{ledger:sha256(ledger.records),outcomes:sha256(outcomes)}
   };
 
-  const outcomeDoc={schemaVersion:'astra-recommendation-outcomes-2',...meta,records:outcomes};
+  const outcomeDoc={schemaVersion:'astra-recommendation-outcomes-3',...meta,records:outcomes};
   const windows=performanceWindows(ledger.records,outcomes);
-  const summaryDoc={schemaVersion:'astra-performance-summary-2',...meta,...summary,counts:summary.metrics,rates:{activationRate:summary.metrics.activationRate,target1HitRate:summary.metrics.target1HitRate,finalTargetRate:summary.metrics.finalTargetRate,stopLossRate:summary.metrics.stopLossRate,winRate:summary.metrics.winRate,lossRate:summary.metrics.lossRate},returns:{averageReturnPct:summary.metrics.averageReturnPct,medianReturnPct:summary.metrics.medianReturnPct,averageWinnerPct:summary.metrics.averageWinnerPct,averageLoserPct:summary.metrics.averageLoserPct,profitFactor:summary.metrics.profitFactor,expectancyPct:summary.metrics.expectancyPct},timing:{averageHoldingSessions:summary.metrics.averageHoldingSessions,averageTimeToT1:summary.metrics.averageTimeToT1,averageTimeToFinalTarget:summary.metrics.averageTimeToFinalTarget},windows,currentOpportunities:(appData.decisionSnapshot.top5||[]).length};
+  const summaryDoc={schemaVersion:'astra-performance-summary-3',...meta,...summary,counts:summary.metrics,rates:{activationRate:summary.metrics.activationRate,target1HitRate:summary.metrics.target1HitRate,finalTargetRate:summary.metrics.finalTargetRate,stopLossRate:summary.metrics.stopLossRate,winRate:summary.metrics.winRate,lossRate:summary.metrics.lossRate},returns:{averageReturnPct:summary.metrics.averageReturnPct,medianReturnPct:summary.metrics.medianReturnPct,averageWinnerPct:summary.metrics.averageWinnerPct,averageLoserPct:summary.metrics.averageLoserPct,profitFactor:summary.metrics.profitFactor,expectancyPct:summary.metrics.expectancyPct,averageMfePct:summary.metrics.averageMfePct,averageMaePct:summary.metrics.averageMaePct,mfeMeasuredCount:summary.metrics.mfeMeasuredCount,maeMeasuredCount:summary.metrics.maeMeasuredCount},timing:{averageHoldingSessions:summary.metrics.averageHoldingSessions,averageTimeToT1:summary.metrics.averageTimeToT1,averageTimeToFinalTarget:summary.metrics.averageTimeToFinalTarget},windows,currentOpportunities:(appData.decisionSnapshot.top5||[]).length};
   const byRank={schemaVersion:'astra-performance-by-rank-1',...meta,groups:aggregate(ledger.records,outcomes,r=>'RANK_'+r.rank)};
   const byRegime={schemaVersion:'astra-performance-by-regime-1',...meta,groups:aggregate(ledger.records,outcomes,r=>r.marketRegime||'UNKNOWN')};
   const byTicker={schemaVersion:'astra-ticker-performance-1',...meta,groups:aggregate(ledger.records,outcomes,r=>r.ticker)};
