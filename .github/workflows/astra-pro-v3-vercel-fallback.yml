@@ -1,0 +1,187 @@
+name: Astra PRO v3 Vercel Fallback Deploy
+
+on:
+  push:
+    branches:
+      - ops/astra-vercel-fallback-20260921
+    paths:
+      - '.github/workflows/astra-pro-v3-vercel-fallback.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_HEAD: 41841b4c3e642bd3b0cdada54f7e486aa24644e7
+  VERCEL_ORG_ID: team_FXiN7h7HXLs9fsZ0fCCc43FS
+  VERCEL_PROJECT_NAME: egx-pro-astra-v3-live
+
+jobs:
+  deploy-vercel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact Astra PRO v3 candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_HEAD }}
+          fetch-depth: 0
+
+      - name: Assert exact certified source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_HEAD"
+          test -f astra-prod/app/pro-v3.html
+          grep -q 'DIRECT PRO V3 ENTRY' astra-prod/app/pro-v3.html
+          grep -q 'serviceWorker.getRegistrations' astra-prod/app/pro-v3.html
+          grep -q 'caches.keys' astra-prod/app/pro-v3.html
+          for f in astra-core-pro-v3.js astra-performance-pro-v3.js astra-portfolio-pro-v3.js astra-analytics-pro-v3.js; do
+            test -s "astra-prod/app/$f"
+            node --check "astra-prod/app/$f"
+          done
+          ! grep -q 'تعذر تحميل Astra Full Application' astra-prod/app/astra-core-pro-v3.js
+          echo "ASTRA_PRO_V3_SOURCE_PASS"
+
+      - name: Require Vercel authorization
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${VERCEL_TOKEN:-}" || { echo "VERCEL_TOKEN repository secret missing"; exit 78; }
+
+      - name: Assemble isolated static Vercel package
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/astra-vercel
+          mkdir -p /tmp/astra-vercel/astra-prod /tmp/astra-vercel/data
+          cp -a astra-prod/app /tmp/astra-vercel/astra-prod/
+          cp -a data/quant /tmp/astra-vercel/data/
+          cp -a data/rc2 /tmp/astra-vercel/data/
+          cp -a data/history /tmp/astra-vercel/data/
+          cat > /tmp/astra-vercel/index.html <<'HTML'
+          <!doctype html>
+          <html lang="ar" dir="rtl">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <meta http-equiv="refresh" content="0;url=/astra-prod/app/pro-v3.html">
+            <title>EGX PRO — Astra PRO v3</title>
+          </head>
+          <body style="font-family:Tahoma,Arial,sans-serif;background:#07111f;color:#fff;padding:24px">
+            <h1>EGX PRO — Astra PRO v3</h1>
+            <p>جاري فتح النسخة المستقلة…</p>
+            <p><a style="color:#6ef5bd" href="/astra-prod/app/pro-v3.html">فتح Astra PRO v3</a></p>
+          </body>
+          </html>
+          HTML
+          cat > /tmp/astra-vercel/vercel.json <<'JSON'
+          {
+            "$schema":"https://openapi.vercel.sh/vercel.json",
+            "cleanUrls":false,
+            "trailingSlash":false,
+            "headers":[
+              {
+                "source":"/astra-prod/app/(.*)",
+                "headers":[
+                  {"key":"Cache-Control","value":"no-store, no-cache, must-revalidate, max-age=0"},
+                  {"key":"Pragma","value":"no-cache"}
+                ]
+              }
+            ]
+          }
+          JSON
+          test -f /tmp/astra-vercel/astra-prod/app/pro-v3.html
+          echo "VERCEL_PACKAGE_READY"
+
+      - name: Create or resolve independent Vercel project
+        id: project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          API="https://api.vercel.com"
+          AUTH="Authorization: Bearer $VERCEL_TOKEN"
+          BODY="$(curl -sS -w '\n%{http_code}' -X POST "$API/v10/projects?teamId=$VERCEL_ORG_ID"             -H "$AUTH" -H 'Content-Type: application/json'             --data "{"name":"$VERCEL_PROJECT_NAME","framework":null}")"
+          HTTP="$(tail -n1 <<<"$BODY")"
+          JSON_BODY="$(sed '$d' <<<"$BODY")"
+          if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ]; then
+            PROJECT_ID="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.id)" "$JSON_BODY")"
+          elif [ "$HTTP" = "409" ]; then
+            GET="$(curl -fsS "$API/v9/projects/$VERCEL_PROJECT_NAME?teamId=$VERCEL_ORG_ID" -H "$AUTH")"
+            PROJECT_ID="$(node -e "const j=JSON.parse(process.argv[1]); console.log(j.id)" "$GET")"
+          else
+            echo "$JSON_BODY"
+            echo "Unexpected Vercel project API status $HTTP"
+            exit 1
+          fi
+          test -n "$PROJECT_ID"
+          mkdir -p /tmp/astra-vercel/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$PROJECT_ID" > /tmp/astra-vercel/.vercel/project.json
+          echo "project_id=$PROJECT_ID" >> "$GITHUB_OUTPUT"
+          echo "VERCEL_PROJECT_READY $PROJECT_ID"
+
+      - name: Deploy Astra PRO v3 to Vercel production
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/astra-vercel
+          URL="$(npx --yes vercel@latest deploy --prod --yes --token="$VERCEL_TOKEN")"
+          echo "deployment_url=$URL" >> "$GITHUB_OUTPUT"
+          echo "VERCEL_DEPLOYMENT_URL=$URL"
+
+      - name: Verify canonical Vercel alias and PRO v3 runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://$VERCEL_PROJECT_NAME.vercel.app"
+          ok=0
+          for i in $(seq 1 40); do
+            ROOT="$(curl -fsSL --retry 2 "$BASE/?verify=$i" || true)"
+            PAGE="$(curl -fsSL --retry 2 "$BASE/astra-prod/app/pro-v3.html?verify=$i" || true)"
+            CORE="$(curl -fsSL --retry 2 "$BASE/astra-prod/app/astra-core-pro-v3.js?verify=$i" || true)"
+            ANALYTICS="$(curl -fsSL --retry 2 "$BASE/astra-prod/app/astra-analytics-pro-v3.js?verify=$i" || true)"
+            if grep -q 'EGX PRO — Astra PRO v3' <<<"$ROOT" &&
+               grep -q 'DIRECT PRO V3 ENTRY' <<<"$PAGE" &&
+               grep -q 'serviceWorker.getRegistrations' <<<"$PAGE" &&
+               grep -q 'caches.keys' <<<"$PAGE" &&
+               grep -q 'تعذر تحميل بيانات Astra الأساسية' <<<"$CORE" &&
+               ! grep -q 'تعذر تحميل Astra Full Application' <<<"$CORE" &&
+               grep -q 'PRO ANALYTICS v3' <<<"$ANALYTICS"; then
+              ok=1
+              break
+            fi
+            sleep 3
+          done
+          test "$ok" -eq 1
+          echo "VERCEL_PRO_V3_LIVE_PASS $BASE"
+
+      - name: Remote browser smoke against Vercel
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+          ASTRA_DEV_BASE="https://$VERCEL_PROJECT_NAME.vercel.app" node tests/astra/astra-native-browser-smoke.cjs
+
+      - name: Final Vercel evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat <<EOF
+          ASTRA_VERCEL_LIVE=true
+          CANDIDATE_HEAD=$CANDIDATE_HEAD
+          PROJECT=$VERCEL_PROJECT_NAME
+          URL=https://$VERCEL_PROJECT_NAME.vercel.app/astra-prod/app/pro-v3.html
+          GitHubPagesDependency=false
+          legacyCacheBypass=true
+          uniqueV3Bundles=true
+          EOF
