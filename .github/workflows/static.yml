@@ -29,15 +29,15 @@ jobs:
       - name: Checkout exact certified Astra candidate
         uses: actions/checkout@v4
         with:
-          ref: 98c71e4b7b7beb5917f4af903e27f2dba06af04d
+          ref: 4c39d84e646e8512ddfa17b532c86147ac2137e7
           fetch-depth: 0
 
       - name: Assert exact production promotion source
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "98c71e4b7b7beb5917f4af903e27f2dba06af04d"
-          echo "PROMOTION_SOURCE_EXACT 98c71e4b7b7beb5917f4af903e27f2dba06af04d"
+          test "$(git rev-parse HEAD)" = "4c39d84e646e8512ddfa17b532c86147ac2137e7"
+          echo "PROMOTION_SOURCE_EXACT 4c39d84e646e8512ddfa17b532c86147ac2137e7"
 
       - name: Enforce Pages secret guard
         run: |
@@ -59,12 +59,15 @@ jobs:
           grep -q 'id="view-technical"' astra-prod/app/index.html
           grep -q 'astra-professional-analytics.js' astra-prod/app/index.html
           grep -q 'Performance Command Center' astra-prod/app/astra-professional-analytics.js
+          grep -q 'Astra Professional Analytics' astra-prod/app/astra-professional-analytics.js
+          grep -q 'PRO ANALYTICS v2' astra-prod/app/astra-professional-analytics.js
+          grep -q 'astra-professional-analytics.js?v=pro-analytics-2' astra-prod/app/index.html
           grep -q 'Technical Signature' astra-prod/app/astra-professional-analytics.js
           grep -q 'Risk / Reward Visualizer' astra-prod/app/astra-professional-analytics.js
           grep -q 'function channel(rows)' astra-prod/app/astra-professional-analytics.js
           grep -q 'token!==S.loadToken' astra-prod/app/astra-professional-analytics.js
           ! grep -Eiq 'fetch\([^)]*https?://' astra-prod/app/astra-professional-analytics.js
-          echo "ASTRA_PROFESSIONAL_ANALYTICS_PRODUCTION_BUNDLE_PASS"
+          echo "ASTRA_PROFESSIONAL_ANALYTICS_V2_PRODUCTION_BUNDLE_PASS"
 
       - name: Validate MAIN APP P2 deep portfolio bundle
         run: |

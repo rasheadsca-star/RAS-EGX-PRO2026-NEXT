@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  CANDIDATE_HEAD: 98c71e4b7b7beb5917f4af903e27f2dba06af04d
+  CANDIDATE_HEAD: 4c39d84e646e8512ddfa17b532c86147ac2137e7
   PROD_BASE: https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT
 
 jobs:
@@ -117,7 +117,7 @@ jobs:
           node <<'NODE'
           const fs=require('fs');
           const evidence={
-            schemaVersion:'astra-production-post-cutover-pro-analytics-1',
+            schemaVersion:'astra-production-post-cutover-pro-analytics-v2-1',
             candidateHead:process.env.CANDIDATE_HEAD,
             productionBase:process.env.PROD_BASE,
             byteIdentity:'PASS',
@@ -131,6 +131,8 @@ jobs:
             cleanReviewStreak:10,
             productionCutover:true,
             professionalAnalytics:true,
+            visibleHomeUpgrade:true,
+            proV2Badge:true,
             technicalLab:true,
             multiPaneChart:true,
             priceChannel:true,
@@ -146,6 +148,6 @@ jobs:
       - name: Upload post-cutover evidence
         uses: actions/upload-artifact@v4
         with:
-          name: astra-production-post-cutover-pro-analytics-20260921
+          name: astra-production-post-cutover-pro-analytics-v2-20260921
           path: /tmp/ASTRA_POST_CUTOVER.json
           if-no-files-found: error
