@@ -30,6 +30,9 @@ const marketJs=t('astra-prod/app/astra-market-portfolio.js');
 const proJs=t('astra-prod/app/astra-professional-analytics.js');
 const indexHtml=t('astra-prod/app/index.html');
 const proEntry=t('astra-prod/app/pro-v2.html');
+const proV3Entry=t('astra-prod/app/pro-v3.html');
+const proV3Core=t('astra-prod/app/astra-core-pro-v3.js');
+const proV3Analytics=t('astra-prod/app/astra-analytics-pro-v3.js');
 const devWf=t('.github/workflows/astra-development-native-intelligence.yml');
 const builder=t('scripts/astra/native/astra-intelligence.cjs');
 const allowedStates=new Set(['ISSUED','WAITING_FOR_ENTRY','ENTRY_ACTIVATED','OPEN','TARGET_1_HIT','TARGET_2_HIT','FINAL_TARGET_HIT','STOP_LOSS_HIT','EXPIRED','CLOSED','AMBIGUOUS_INTRADAY_PATH','CANCELLED_BY_GOVERNANCE']);
@@ -222,6 +225,13 @@ case 9:{
   ok(/proHomeTechnical/.test(proJs)&&/proHomePerformance/.test(proJs),'home professional analytics navigation actions missing');
   ok(indexHtml.includes('id="proStaticBanner"')&&indexHtml.includes('PRO ANALYTICS v2 — LIVE'),'static PRO v2 production banner missing');
   ok(proEntry.includes('DIRECT PRO ENTRY')&&proEntry.includes('id="proStaticBanner"'),'direct PRO v2 entrypoint missing or not distinct');
+  ok(proV3Entry.includes('DIRECT PRO V3 ENTRY')&&proV3Entry.includes('id="proStaticBanner"'),'cache-proof PRO v3 entrypoint missing');
+  for(const x of ['astra-core-pro-v3.js','astra-performance-pro-v3.js','astra-portfolio-pro-v3.js','astra-analytics-pro-v3.js'])ok(proV3Entry.includes(x),'PRO v3 unique bundle missing '+x);
+  ok(/serviceWorker\.getRegistrations/.test(proV3Entry)&&/r\.unregister/.test(proV3Entry),'PRO v3 service-worker purge missing');
+  ok(/caches\.keys/.test(proV3Entry)&&/caches\.delete/.test(proV3Entry),'PRO v3 cache-storage purge missing');
+  ok(!proV3Core.includes('تعذر تحميل Astra Full Application'),'legacy full-application collapse message leaked into PRO v3 core');
+  ok(proV3Core.includes('تعذر تحميل بيانات Astra الأساسية'),'PRO v3 critical-data failure message missing');
+  ok(proV3Analytics.includes('PRO ANALYTICS v3')&&proV3Analytics.includes('PRO v3'),'PRO v3 runtime labels missing');
   ok(proEntry.includes('astra-professional-analytics.js?v=pro-v2-static-1'),'direct PRO v2 entry does not use cache-busted professional bundle');
   ok(/Trend\/RSI\/ATR\/Support\/Resistance are interpretation-only/.test(marketJs),'analytics isolation note missing');
   pass('Portfolio privacy / stock analytics isolation',[
@@ -232,7 +242,8 @@ case 9:{
     'Technical Lab is a first-class Astra view loaded from the native professional analytics bundle',
     'Professional Analytics v2 is visibly surfaced on the home dashboard with cache-busted bundle loading',
     'direct uncached pro-v2.html entrypoint carries a static visible PRO v2 banner before JavaScript execution',
-    'optional search/intelligence/history source failures cannot collapse the critical Astra DecisionSnapshot boot'
+    'optional search/intelligence/history source failures cannot collapse the critical Astra DecisionSnapshot boot',
+    'PRO v3 uses unique bundle filenames and purges legacy Service Worker/Cache Storage before loading runtime'
   ]);
 break}
 case 10:{
