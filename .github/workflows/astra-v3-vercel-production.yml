@@ -50,6 +50,7 @@ jobs:
           const handoff=JSON.parse(fs.readFileSync('data/ops/g22-main-app-handoff.json','utf8'));
           const ledger=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/recommendation-ledger.json','utf8'));
           const perf=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/performance-summary.json','utf8'));
+          const eligibility=JSON.parse(fs.readFileSync('docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json','utf8'));
           const ok=(c,m)=>{if(!c)throw new Error(m)};
           const s=app?.sourceDecision?.session;
           ok(/^\d{4}-\d{2}-\d{2}$/.test(String(s||'')),'Invalid Astra session');
@@ -83,6 +84,11 @@ jobs:
           for(const w of ['7_SESSIONS','30_SESSIONS','90_SESSIONS','YTD','ALL']) ok(perf?.windows?.[w],w+' performance window missing');
           ok(Object.prototype.hasOwnProperty.call(perf?.metrics||{},'averageMfePct'),'MFE KPI missing');
           ok(Object.prototype.hasOwnProperty.call(perf?.metrics||{},'averageMaePct'),'MAE KPI missing');
+          const approved=(eligibility.rows||[]).filter(x=>x.productionEligible===true);
+          ok(eligibility.status==='PASS'&&eligibility.productionEligibleCount===1&&approved.length===1,'Production strategy eligibility invariant failed');
+          ok(approved[0].strategyId==='PORTFOLIO_BASKET_EQUAL_WEIGHT','Unexpected production strategy');
+          ok(app?.decisionSnapshot?.strategyVersions?.PORTFOLIO_BASKET_EQUAL_WEIGHT===approved[0].sourceCommit,'Decision strategy version is not the certified source-pinned commit');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_VERIFIED_HEAD='+require('child_process').execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SESSION='+s+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SNAPSHOT='+app.sourceDecision.decisionSnapshotId+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_TOP='+app.decisionSnapshot.top5.map(x=>x.ticker).join(',')+'\n');
@@ -301,7 +307,7 @@ jobs:
             verifiedAt:new Date().toISOString(),
             workflowRunId:process.env.GITHUB_RUN_ID,
             workflowRunAttempt:process.env.GITHUB_RUN_ATTEMPT,
-            verifiedHead:process.env.GITHUB_SHA,
+            verifiedHead:process.env.ASTRA_VERIFIED_HEAD,
             productionUrl:process.env.PRODUCTION_URL,
             deploymentUrl:process.env.DEPLOYMENT_URL,
             session:process.env.ASTRA_SESSION,
