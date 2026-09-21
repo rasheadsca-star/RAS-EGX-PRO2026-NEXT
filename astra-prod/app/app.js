@@ -7,7 +7,18 @@
   const A=v=>Array.isArray(v)?v:[];
   const fmtDate=v=>v?String(v).slice(0,10):'—';
   const loadJson=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'cb='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});if(!r.ok)throw new Error(url+' HTTP '+r.status);return r.json()};
-  const state={data:null,search:null,stocks:null,history:null,searchMap:new Map(),stockMap:new Map(),recMap:new Map(),portfolio:[],selected:null,historyDoc:null};
+  const loadOptionalJson=async (name,url,fallback)=>{
+    try{
+      const value=await loadJson(url);
+      state.bootSources[name]={status:'READY',url,error:null};
+      return value;
+    }catch(error){
+      state.bootSources[name]={status:'UNAVAILABLE',url,error:String(error?.message||error)};
+      console.warn('ASTRA_OPTIONAL_SOURCE_UNAVAILABLE',name,state.bootSources[name].error);
+      return typeof fallback==='function'?fallback():fallback;
+    }
+  };
+  const state={data:null,search:null,stocks:null,history:null,searchMap:new Map(),stockMap:new Map(),recMap:new Map(),portfolio:[],selected:null,historyDoc:null,bootSources:{}};
   const PORT_KEY='egx-astra-g22-portfolio';
 
   function nameOf(t){
@@ -40,9 +51,17 @@
     </div>`;
   }
 
+  function bootSourceNotice(){
+    const bad=Object.entries(state.bootSources).filter(([,v])=>v?.status==='UNAVAILABLE');
+    if(!bad.length)return '';
+    return '<div class="notice" style="margin-bottom:12px"><b>تشغيل جزئي آمن:</b> قرار Astra الأساسي محمّل، لكن بعض مصادر العرض المساعدة غير متاحة على هذا الجهاز حاليًا: '+
+      bad.map(([k,v])=>E(k)+' ('+E(v.error)+')').join(' · ')+
+      '. لا يتم استخدام fallback لتغيير قرار Astra.</div>';
+  }
+
   function renderHome(){
     const d=state.data,h=d.health,ds=d.decisionSnapshot,rs=basket(),rows=recs();
-    $('#view-home').innerHTML=`
+    $('#view-home').innerHTML=bootSourceNotice()+`
       <div class="grid cards">
         <div class="card"><small>حالة Astra</small><b class="good">${E(ds.status)}</b></div>
         <div class="card"><small>جلسة القرار</small><b>${E(d.sourceDecision.session)}</b></div>
@@ -228,11 +247,13 @@
 
   async function boot(){
     try{
-      const [data,search,stocks,history]=await Promise.all([
-        loadJson('./data.json'),
-        loadJson('../../data/quant/market-search-index-v13-17.json'),
-        loadJson('../../data/quant/stock-intelligence-index.json'),
-        loadJson('../../data/rc2/recommendation-history.json')
+      // Only Astra DecisionSnapshot/data.json is critical. Search/intelligence/history are display-only.
+      const data=await loadJson('./data.json');
+      state.bootSources.data={status:'READY',url:'./data.json',error:null};
+      const [search,stocks,history]=await Promise.all([
+        loadOptionalJson('market-search','../../data/quant/market-search-index-v13-17.json',()=>({stocks:[]})),
+        loadOptionalJson('stock-intelligence','../../data/quant/stock-intelligence-index.json',()=>({stocks:[]})),
+        loadOptionalJson('recommendation-history','../../data/rc2/recommendation-history.json',()=>({records:[]}))
       ]);
       state.data=data;state.search=search;state.stocks=stocks;state.history=history;
       state.searchMap=new Map(A(search.stocks).map(x=>[x.ticker,x]));
@@ -246,9 +267,11 @@
       $$('#nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
       const params=new URLSearchParams(location.search);const v=params.get('view');if(v&&$('#view-'+v))switchView(v);
       document.documentElement.dataset.g22Ready='true';
-      window.__ASTRA_G22_READY__={snapshotId:data.sourceDecision.decisionSnapshotId,semanticDecisionHash:data.sourceDecision.semanticDecisionHash,recommendations:recs().length};
+      window.__ASTRA_G22_READY__={snapshotId:data.sourceDecision.decisionSnapshotId,semanticDecisionHash:data.sourceDecision.semanticDecisionHash,recommendations:recs().length,bootSources:state.bootSources};
     }catch(error){
-      document.body.innerHTML=`<main class="wrap"><div class="panel"><h2>تعذر تحميل Astra Full Application</h2><div class="notice bad">${E(error.message||error)}</div></div></main>`;
+      const main=document.querySelector('main.wrap');
+      if(main) main.innerHTML=`<div class="panel"><h2>تعذر تحميل بيانات Astra الأساسية</h2><div class="notice bad">${E(error.message||error)}</div><div class="notice" style="margin-top:10px">الواجهة نفسها محمّلة، لكن data.json الأساسي لم يصل. أعد فتح الصفحة أو تحقق من الاتصال؛ لن يتم إنشاء قرار بديل.</div></div>`;
+      else document.body.insertAdjacentHTML('beforeend',`<main class="wrap"><div class="panel"><h2>تعذر تحميل بيانات Astra الأساسية</h2><div class="notice bad">${E(error.message||error)}</div></div></main>`);
       console.error('ASTRA_G22_BOOT_FAILED',error);
     }
   }
