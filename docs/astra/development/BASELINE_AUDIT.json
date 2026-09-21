@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "astra-development-baseline-audit-1",
+  "generatedAt": "2026-09-20T15:51:00.000Z",
+  "branch": "develop/post-g20-20260920",
+  "frozenProductionHead": "c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae",
+  "certifiedG22BaselineHead": "66b74d6f7586bd06201f6f7992ff9babf1104259",
+  "productionArtifacts": {
+    "handoff": "data/ops/g22-main-app-handoff.json",
+    "handoffSession": "2026-09-20",
+    "canonicalDataHead": "6f33397d93cfb81e808e00eadcc923bfbac441e0",
+    "materialFingerprint": "ae75b05c0e41e0d98e5629503abcccb62da65b1f977e50abd7a785206f7683d9",
+    "producerRunId": 35518123112,
+    "pagesPublished": true,
+    "fullAppManifest": "astra-prod/G22_FULL_APP_MANIFEST.json",
+    "decisionSnapshotId": "G09-DS-018f3ecf434a0cc921814012",
+    "semanticDecisionHash": "018f3ecf434a0cc921814012bed43ac6f416b3be4fd88b288abfe055c3dd9689",
+    "currentSession": "2026-09-20",
+    "activeUniverse": 224,
+    "currentCanonical": 209,
+    "decisionReady": 207,
+    "sourceSessionEvidencePct": 95,
+    "critical": 0,
+    "highIssueClasses": 2,
+    "actualUnresolved": [
+      "GOUR"
+    ]
+  },
+  "stateDrift": {
+    "detected": true,
+    "severity": "HIGH",
+    "affected": [
+      "04_ACCEPTANCE_GATES.json",
+      "05_WORK_STATE.json",
+      "docs/astra/WORK_STATE.json"
+    ],
+    "observation": "Control-state files at the frozen head contain an older G11-blocked view while G22 production artifacts and live Actions evidence prove a later certified G22 state.",
+    "rule": "Do not silently mutate or trust stale control-state files. Development uses immutable G22 artifacts and canonicalDataHead as session truth until control-state reconciliation is explicitly certified."
+  },
+  "productionIsolation": {
+    "mainMutationAllowed": false,
+    "frozenBranchMutationAllowed": false,
+    "developmentOnly": true
+  }
+}

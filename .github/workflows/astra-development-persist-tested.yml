@@ -1,0 +1,66 @@
+name: Astra Development Persist Tested Intelligence
+on:
+  push:
+    branches:
+      - develop/post-g20-20260920
+    paths:
+      - 'docs/astra/development/PERSIST_REQUEST.json'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-development-persist-tested-intelligence
+  cancel-in-progress: false
+
+jobs:
+  persist:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert development-only boundary
+        run: |
+          test "$GITHUB_REF_NAME" = "develop/post-g20-20260920"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Build workflow inventory and Astra-native intelligence
+        run: |
+          node scripts/astra/native/workflow-inventory.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+      - name: Test generated intelligence
+        run: |
+          node --test tests/astra/astra-native-intelligence.test.cjs
+          node --check scripts/astra/native/astra-intelligence.cjs
+          node --check scripts/astra/native/workflow-inventory.cjs
+      - name: Protect immutable current decision inputs
+        run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+      - name: Reconcile persisted full-market universe
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const u=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/market-universe.json','utf8'));
+          const c=JSON.parse(fs.readFileSync('docs/astra/development/G22_ACTIVE_UNIVERSE.json','utf8'));
+          if(u.records.length!==c.activeCount||u.activeCount!==c.activeCount||new Set(u.records.map(x=>x.ticker)).size!==c.activeCount){
+            throw new Error('Persisted market universe does not reconcile to certified active universe');
+          }
+          console.log({active:u.activeCount,intended:u.intendedActive,unique:new Set(u.records.map(x=>x.ticker)).size});
+          NODE
+      - name: Persist exactly tested generated artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add astra-prod/app/intelligence/*.json docs/astra/development/WORKFLOW_INVENTORY.json
+          if git diff --cached --quiet; then
+            echo "No generated artifact changes to persist."
+            exit 0
+          fi
+          git commit -m "build(astra-dev): persist tested native intelligence [skip native]"
+          REMOTE="$(git ls-remote origin "refs/heads/$GITHUB_REF_NAME" | awk '{print $1}')"
+          test "$REMOTE" = "$GITHUB_SHA"
+          git push origin "HEAD:$GITHUB_REF_NAME"

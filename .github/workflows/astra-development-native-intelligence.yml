@@ -1,0 +1,75 @@
+name: Astra Development Native Intelligence
+on:
+  push:
+    branches:
+      - develop/post-g20-20260920
+    paths:
+      - 'scripts/astra/native/**'
+      - 'tests/astra/astra-native-*.cjs'
+      - 'astra-prod/app/**'
+      - 'docs/astra/development/**'
+      - '.github/workflows/astra-development-native-intelligence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-development-native-intelligence
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip native]')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert development-only boundary
+        run: |
+          test "$GITHUB_REF_NAME" = "develop/post-g20-20260920"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Workflow race inventory
+        run: node scripts/astra/native/workflow-inventory.cjs
+      - name: Build Astra-native intelligence
+        run: node scripts/astra/native/astra-intelligence.cjs
+      - name: Native intelligence tests
+        run: node --test tests/astra/astra-native-intelligence.test.cjs
+      - name: Syntax checks
+        run: |
+          node --check scripts/astra/native/astra-intelligence.cjs
+          node --check scripts/astra/native/workflow-inventory.cjs
+          node --check astra-prod/app/app.js
+          node --check astra-prod/app/astra-performance-history.js
+          node --check astra-prod/app/astra-market-portfolio.js
+      - name: Locate Chromium
+        shell: bash
+        run: |
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+      - name: Install Playwright Core only
+        run: npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+      - name: Native UI browser smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/astra-dev-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break || sleep 1; done
+          ASTRA_DEV_BASE=http://127.0.0.1:4173 node tests/astra/astra-native-browser-smoke.cjs
+      - name: Ensure current decision snapshot was not mutated
+        run: git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+      - name: Upload tested generated intelligence
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-development-generated-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            astra-prod/app/intelligence/*.json
+            docs/astra/development/WORKFLOW_INVENTORY.json

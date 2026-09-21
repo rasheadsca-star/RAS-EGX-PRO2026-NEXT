@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "astra-workflow-race-audit-1",
+  "generatedAt": "2026-09-20T15:51:00.000Z",
+  "scope": "development-only review of frozen production snapshot",
+  "canonicalPublisher": ".github/workflows/static.yml",
+  "findings": [
+    {
+      "id": "RACE-001",
+      "severity": "HIGH",
+      "area": "POST_CLOSE_CHAIN",
+      "evidence": [
+        "Multiple G22 refresh and Pages runs occurred within minutes for the same session.",
+        "G22 immutable handoff contains canonicalDataHead and materialFingerprint."
+      ],
+      "risk": "A later workflow reading moving main could rebuild the same finalized session from different market/history state.",
+      "correction": "All Astra finalized-session builders must resolve decision inputs from handoff.canonicalDataHead, never moving main."
+    },
+    {
+      "id": "RACE-002",
+      "severity": "HIGH",
+      "area": "CONTROL_STATE_DRIFT",
+      "evidence": [
+        "G22 production artifacts certify session 2026-09-20 while gate/work-state files in the frozen head still describe G11 blocked."
+      ],
+      "risk": "A developer may reopen old gates or apply incorrect regression assumptions.",
+      "correction": "Treat G22 artifacts + immutable handoff as production baseline; record state drift explicitly and avoid rewriting historical certification files in development."
+    },
+    {
+      "id": "RACE-003",
+      "severity": "MEDIUM",
+      "area": "LEGACY_AUTOMATION",
+      "evidence": [
+        "Legacy MAIN APP/cascade/history workflows still execute around G22."
+      ],
+      "risk": "Shared state may move after final handoff even when it must not change the certified Astra decision.",
+      "correction": "Classify legacy workflows as upstream market-data or read-only/support; no legacy workflow may publish Astra decision truth."
+    }
+  ],
+  "requiredControls": [
+    "immutable canonicalDataHead pin",
+    "materialFingerprint duplicate guard",
+    "pagesPublished guard",
+    "acceptedRows threshold",
+    "source evidence threshold",
+    "single canonical Astra publisher",
+    "no legacy decision fallback"
+  ]
+}
