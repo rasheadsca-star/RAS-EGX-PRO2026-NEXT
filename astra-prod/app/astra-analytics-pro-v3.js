@@ -54,7 +54,7 @@
     const recs=A(S.ledger.records).slice().sort((a,b)=>Number(a.rank)-Number(b.rank));
     const panel=document.createElement('div');panel.id='astraProHome';panel.className='panel pro-home';
     panel.innerHTML=
-      '<div class="pro-home-head"><div><h2>Astra Professional Analytics</h2><div class="pro-sub">لوحة التحليل الاحترافي الجديدة أصبحت جزءًا من الواجهة الرئيسية · Candles · Channels · Signature · KPIs · Risk/Reward</div></div><div><span class="tag good pro-live">● LIVE</span> <span class="tag">PRO ANALYTICS v2</span><div class="pro-build">PRO-ANALYTICS-PRODUCTION</div></div></div>'+
+      '<div class="pro-home-head"><div><h2>Astra Professional Analytics</h2><div class="pro-sub">لوحة التحليل الاحترافي الجديدة أصبحت جزءًا من الواجهة الرئيسية · Candles · Channels · Signature · KPIs · Risk/Reward</div></div><div><span class="tag good pro-live">● LIVE</span> <span class="tag">PRO ANALYTICS v3</span><div class="pro-build">PRO-ANALYTICS-PRODUCTION</div></div></div>'+
       '<div class="pro-home-kpis">'+
         '<div class="pro-kpi"><small>T1 Hit Rate</small><b class="good">'+P(t.pct)+'</b><em>'+F(t.n,0)+' / '+F(t.d,0)+' '+E(t.label)+'</em></div>'+
         '<div class="pro-kpi"><small>Stop Loss Rate</small><b class="bad">'+P(st.pct)+'</b><em>'+F(st.n,0)+' / '+F(st.d,0)+' '+E(st.label)+'</em></div>'+
@@ -75,7 +75,7 @@
       const sel=$('#proTicker');if(sel){sel.value=b.dataset.proHomeTicker;sel.dispatchEvent(new Event('change'))}
     });
     const badges=document.querySelector('.badges');
-    if(badges&&!$('#proBuildBadge'))badges.insertAdjacentHTML('afterbegin','<span class="badge good" id="proBuildBadge">PRO v2</span>');
+    if(badges&&!$('#proBuildBadge'))badges.insertAdjacentHTML('afterbegin','<span class="badge good" id="proBuildBadge">PRO v3</span>');
     const nav=document.querySelector('[data-view="technical"]');
     if(nav){nav.textContent='Technical Lab · NEW';nav.style.fontWeight='900'}
   }
