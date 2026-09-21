@@ -26,6 +26,8 @@ const ticker=j('astra-prod/app/intelligence/ticker-performance.json');
 const universe=j('astra-prod/app/intelligence/market-universe.json');
 const histJs=t('astra-prod/app/astra-performance-history.js');
 const marketJs=t('astra-prod/app/astra-market-portfolio.js');
+const proJs=t('astra-prod/app/astra-professional-analytics.js');
+const indexHtml=t('astra-prod/app/index.html');
 const devWf=t('.github/workflows/astra-development-native-intelligence.yml');
 const builder=t('scripts/astra/native/astra-intelligence.cjs');
 const allowedStates=new Set(['ISSUED','WAITING_FOR_ENTRY','ENTRY_ACTIVATED','OPEN','TARGET_1_HIT','TARGET_2_HIT','FINAL_TARGET_HIT','STOP_LOSS_HIT','EXPIRED','CLOSED','AMBIGUOUS_INTRADAY_PATH','CANCELLED_BY_GOVERNANCE']);
@@ -138,11 +140,15 @@ case 6:{
   if(perf.metrics.target1HitRate.denominator===0)assert.equal(perf.metrics.target1HitRate.pct,null);
   ok(rank.groups.every(x=>x.reconciliation.pass),'rank reconciliation failure');
   ok(regime.groups.every(x=>x.reconciliation.pass),'regime reconciliation failure');
+  ok(/TARGETS ↔ STOPS/.test(proJs),'Target-vs-Stop command-center comparison missing');
+  ok(/Target 2 Rate/.test(proJs)&&/Final Target Rate/.test(proJs),'target achievement rate KPIs missing');
+  ok(/requires activated sample/.test(proJs),'zero-denominator professional KPI guard missing');
   pass('KPI math / rank / regime',[
     'explicit denominator labels',
     'zero denominators remain null, never fake 0%',
     'global reconciliation PASS',
-    'rank and regime group reconciliation PASS'
+    'rank and regime group reconciliation PASS',
+    'professional Target-vs-Stop and T2/final target rates preserve explicit sample guards'
   ]);
 break}
 case 7:{
@@ -152,11 +158,20 @@ case 7:{
   ok(/astraCross/.test(histJs),'crosshair missing');
   ok(histJs.includes("O ")&&histJs.includes(" H ")&&histJs.includes(" L ")&&histJs.includes(" C "),'exact OHLC tooltip missing');
   ok(!/intraday.*synthetic|synthetic.*intraday/i.test(histJs),'synthetic intraday introduced');
+  for(const x of ['PRICE · Candlesticks','VOLUME','RSI (14)','MACD (12,26,9)','Technical Signature','Risk / Reward Visualizer','Regression Channel'])ok(proJs.includes(x),'professional analytics missing '+x);
+  for(const x of ['EMA20/50','SMA200','Price Channel','S/R','Fibonacci','Astra Plan'])ok(proJs.includes(x),'layer toggle missing '+x);
+  ok(/function channel\(rows\)/.test(proJs)&&/r2/.test(proJs)&&/slopePct/.test(proJs),'auto regression price channel contract missing');
+  ok(/function signature\(rows,ind,market\)/.test(proJs),'technical signature builder missing');
+  ok(!/fetch\([^\n]*https?:\/\//i.test(proJs),'professional analytics introduced external runtime fetch');
   pass('Professional charts / overlays',[
     'Daily OHLC source only',
     '1M/3M/6M/1Y/MAX',
     'entry/stop/target/support/resistance overlays',
-    'crosshair and exact OHLC tooltip'
+    'crosshair and exact OHLC tooltip',
+    'four-pane professional chart: price/candles, volume, RSI, MACD',
+    'distinct EMA/SMA/channel/S&R/Fibonacci/Astra-plan layers',
+    'Technical Signature and immutable-plan Risk/Reward visualizer',
+    'no external runtime fetch in professional analytics'
   ]);
 break}
 case 8:{
@@ -175,13 +190,16 @@ case 8:{
   ok(/غير متاح/.test(marketJs),'unavailable analytics label missing');
   ok(/السهم موجود ضمن السوق الحالي، لكنه ليس ضمن فرص Astra لهذه الجلسة/.test(marketJs),'not-recommended message missing');
   ok(/Ticker · Arabic\/English name · ISIN/.test(marketJs),'search keys not disclosed');
+  ok(/market\.historyAvailable!==true/.test(proJs),'Technical Lab does not fail closed on missing history');
+  ok(/لن يتم طلب ملف تاريخ مفقود/.test(proJs),'Technical Lab missing explicit no-history contract');
   pass('Full-market search / stock intelligence',[
     '224/224 active universe searchable',
     'GOUR remains searchable even when not recommended',
     'history fetch is gated by historyAvailable/historySessions',
     'missing Daily OHLC is explicit and never estimated',
     'ticker/name/ISIN search contract',
-    'not-recommended stocks remain visible'
+    'not-recommended stocks remain visible',
+    'Technical Lab fails closed without requesting unavailable history'
   ]);
 break}
 case 9:{
@@ -189,12 +207,15 @@ case 9:{
   ok(marketJs.includes("egxpro.astra.portfolio.v2"),'portfolio storage not namespaced/versioned');
   ok(/Purchase Price/.test(marketJs)&&/Quantity/.test(marketJs)&&/type="date"/.test(marketJs)&&/Notes/.test(marketJs),'portfolio fields incomplete');
   ok(!/fetch\([^)]*portfolio/i.test(marketJs),'portfolio appears to be sent over network');
+  ok(indexHtml.includes('data-view="technical"')&&indexHtml.includes('view-technical'),'Technical Lab navigation/view missing');
+  ok(indexHtml.includes('astra-professional-analytics.js'),'professional analytics bundle not loaded');
   ok(/Trend\/RSI\/ATR\/Support\/Resistance are interpretation-only/.test(marketJs),'analytics isolation note missing');
   pass('Portfolio privacy / stock analytics isolation',[
     'namespaced versioned localStorage only',
     'purchase price/quantity/date/notes supported',
     'no portfolio network persistence',
-    'technical analytics explicitly interpretation-only'
+    'technical analytics explicitly interpretation-only',
+    'Technical Lab is a first-class Astra view loaded from the native professional analytics bundle'
   ]);
 break}
 case 10:{
