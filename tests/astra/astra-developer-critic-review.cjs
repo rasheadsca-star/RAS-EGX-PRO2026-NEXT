@@ -28,6 +28,7 @@ const histJs=t('astra-prod/app/astra-performance-history.js');
 const marketJs=t('astra-prod/app/astra-market-portfolio.js');
 const proJs=t('astra-prod/app/astra-professional-analytics.js');
 const indexHtml=t('astra-prod/app/index.html');
+const proEntry=t('astra-prod/app/pro-v2.html');
 const devWf=t('.github/workflows/astra-development-native-intelligence.yml');
 const builder=t('scripts/astra/native/astra-intelligence.cjs');
 const allowedStates=new Set(['ISSUED','WAITING_FOR_ENTRY','ENTRY_ACTIVATED','OPEN','TARGET_1_HIT','TARGET_2_HIT','FINAL_TARGET_HIT','STOP_LOSS_HIT','EXPIRED','CLOSED','AMBIGUOUS_INTRADAY_PATH','CANCELLED_BY_GOVERNANCE']);
@@ -214,6 +215,9 @@ case 9:{
   ok(indexHtml.includes('astra-professional-analytics.js?v=pro-analytics-2'),'professional analytics cache-busted bundle version missing');
   ok(/Astra Professional Analytics/.test(proJs)&&/PRO ANALYTICS v2/.test(proJs)&&/proBuildBadge/.test(proJs),'visible professional analytics home integration missing');
   ok(/proHomeTechnical/.test(proJs)&&/proHomePerformance/.test(proJs),'home professional analytics navigation actions missing');
+  ok(indexHtml.includes('id="proStaticBanner"')&&indexHtml.includes('PRO ANALYTICS v2 — LIVE'),'static PRO v2 production banner missing');
+  ok(proEntry.includes('DIRECT PRO ENTRY')&&proEntry.includes('id="proStaticBanner"'),'direct PRO v2 entrypoint missing or not distinct');
+  ok(proEntry.includes('astra-professional-analytics.js?v=pro-v2-static-1'),'direct PRO v2 entry does not use cache-busted professional bundle');
   ok(/Trend\/RSI\/ATR\/Support\/Resistance are interpretation-only/.test(marketJs),'analytics isolation note missing');
   pass('Portfolio privacy / stock analytics isolation',[
     'namespaced versioned localStorage only',
@@ -221,7 +225,8 @@ case 9:{
     'no portfolio network persistence',
     'technical analytics explicitly interpretation-only',
     'Technical Lab is a first-class Astra view loaded from the native professional analytics bundle',
-    'Professional Analytics v2 is visibly surfaced on the home dashboard with cache-busted bundle loading'
+    'Professional Analytics v2 is visibly surfaced on the home dashboard with cache-busted bundle loading',
+    'direct uncached pro-v2.html entrypoint carries a static visible PRO v2 banner before JavaScript execution'
   ]);
 break}
 case 10:{
