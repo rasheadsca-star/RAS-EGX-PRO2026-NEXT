@@ -1,0 +1,338 @@
+name: Astra Production Integration Certification
+
+on:
+  push:
+    branches:
+      - ops/astra-candidate-certify-20260921
+    paths:
+      - '.github/workflows/astra-production-integration-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-production-integration-certification-20260921
+  cancel-in-progress: false
+
+env:
+  INTEGRATION_BRANCH: release/astra-production-integration-20260921
+  INTEGRATION_HEAD: d75e673087693984e1897f2699cf5c6c482b3c53
+  MAIN_BASE_HEAD: f2b234fa4cc779afc45857aaf6f9e2365d3d4886
+  CERTIFIED_CANDIDATE_BRANCH: candidate/astra-production-20260921-r2
+  CERTIFIED_CANDIDATE_HEAD: 0c66c95afb4a18cb8d27e9ba0b467ed27fcb4afc
+  FROZEN_BRANCH: frozen/production-20260920-c6e8b21
+  FROZEN_HEAD: c6e8b21205e5e7b7e92f9dbc6751cc7acd2caeae
+
+jobs:
+  certify-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact integration SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.INTEGRATION_HEAD }}
+          fetch-depth: 0
+
+      - name: Assert integration lineage and immutable pointers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$INTEGRATION_HEAD"
+          git fetch origin "refs/heads/$INTEGRATION_BRANCH:refs/remotes/origin/$INTEGRATION_BRANCH"
+          git fetch origin "refs/heads/$CERTIFIED_CANDIDATE_BRANCH:refs/remotes/origin/$CERTIFIED_CANDIDATE_BRANCH"
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH"
+          git fetch origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse "origin/$INTEGRATION_BRANCH")" = "$INTEGRATION_HEAD"
+          test "$(git rev-parse "origin/$CERTIFIED_CANDIDATE_BRANCH")" = "$CERTIFIED_CANDIDATE_HEAD"
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+          test "$(git rev-parse origin/main)" = "$MAIN_BASE_HEAD"
+          test "$(git merge-base "$MAIN_BASE_HEAD" "$INTEGRATION_HEAD")" = "$MAIN_BASE_HEAD"
+          test "$(git merge-base "$CERTIFIED_CANDIDATE_HEAD" "$INTEGRATION_HEAD")" = "$CERTIFIED_CANDIDATE_HEAD"
+          PARENTS="$(git rev-list --parents -n 1 "$INTEGRATION_HEAD")"
+          echo "$PARENTS" | grep -q "$MAIN_BASE_HEAD"
+          echo "$PARENTS" | grep -q "$CERTIFIED_CANDIDATE_HEAD"
+          echo "MAIN_HEAD=$MAIN_BASE_HEAD" >> "$GITHUB_ENV"
+          echo "MERGE_BASE_MAIN=$MAIN_BASE_HEAD" >> "$GITHUB_ENV"
+          echo "INTEGRATION_LINEAGE_PASS integration=$INTEGRATION_HEAD main=$MAIN_BASE_HEAD candidate=$CERTIFIED_CANDIDATE_HEAD frozen=$FROZEN_HEAD"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Re-run Astra core certification on exact integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/astra/native/workflow-inventory.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          git diff --exit-code -- astra-prod/app/intelligence docs/astra/development/WORKFLOW_INVENTORY.json
+          node --test tests/astra/astra-native-intelligence.test.cjs
+          for cycle in $(seq 1 10); do
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+          done
+
+      - name: Assemble exact runtime package from integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf stage
+          mkdir -p stage/astra-prod stage/data/quant stage/data/rc2
+          cp -a astra-prod/app stage/astra-prod/app
+          cp -a data/history stage/data/history
+          cp -a data/quant/market-search-index-v13-17.json stage/data/quant/
+          cp -a data/quant/stock-intelligence-index.json stage/data/quant/
+          cp -a data/rc2/recommendation-history.json stage/data/rc2/
+          (
+            cd stage
+            find astra-prod/app data/history data/quant data/rc2 -type f -print0 |
+              sort -z |
+              xargs -0 sha256sum
+          ) > /tmp/astra-integration-file-hashes.txt
+          ARTIFACT_HASH="$(sha256sum /tmp/astra-integration-file-hashes.txt | awk '{print $1}')"
+          ARTIFACT_FILE_COUNT="$(wc -l < /tmp/astra-integration-file-hashes.txt | tr -d ' ')"
+          echo "ARTIFACT_HASH=$ARTIFACT_HASH" >> "$GITHUB_ENV"
+          echo "ARTIFACT_FILE_COUNT=$ARTIFACT_FILE_COUNT" >> "$GITHUB_ENV"
+          echo "ASTRA_INTEGRATION_ARTIFACT hash=$ARTIFACT_HASH files=$ARTIFACT_FILE_COUNT"
+
+      - name: Assert no external runtime code path
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE '(<script[^>]+src=["'\'' ]*https?://|import[(" '\'' ]+https?://|fetch\(["'\'' ]*https?://)' stage/astra-prod/app; then
+            echo "::error::External runtime code/data request found in Astra application"
+            exit 1
+          fi
+          echo "Development workflow publication boundary already re-certified by Astra core certification step"
+
+      - name: Select isolated integration environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "DEPLOYMENT_PROVIDER=cloudflare-quick-tunnel" >> "$GITHUB_ENV"
+          echo "DEPLOYMENT_TARGET=ephemeral-public-preview" >> "$GITHUB_ENV"
+          echo "Integration provider: Cloudflare Quick Tunnel over exact staged artifact"
+
+      - name: Deploy exact runtime package to isolated integration environment
+        id: deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory stage >/tmp/astra-integration-http.log 2>&1 &
+          HTTP_PID=$!
+          echo "HTTP_PID=$HTTP_PID" >> "$GITHUB_ENV"
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break
+            sleep 1
+          done
+          curl -fsSL --retry 4 --retry-delay 2             https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64             -o /tmp/cloudflared
+          chmod +x /tmp/cloudflared
+          /tmp/cloudflared --version
+          /tmp/cloudflared tunnel --url http://127.0.0.1:4173 --no-autoupdate >/tmp/cloudflared.log 2>&1 &
+          TUNNEL_PID=$!
+          echo "TUNNEL_PID=$TUNNEL_PID" >> "$GITHUB_ENV"
+          DEPLOYMENT_URL=""
+          for i in $(seq 1 60); do
+            DEPLOYMENT_URL="$(grep -Eo 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | tail -n1 || true)"
+            if [ -n "$DEPLOYMENT_URL" ]; then break; fi
+            kill -0 "$TUNNEL_PID" 2>/dev/null || { cat /tmp/cloudflared.log; exit 1; }
+            sleep 1
+          done
+          test -n "$DEPLOYMENT_URL" || { cat /tmp/cloudflared.log; echo "::error::Quick Tunnel URL not created"; exit 1; }
+          DEPLOYMENT_ID="cfqt-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "DEPLOYMENT_URL=$DEPLOYMENT_URL" >> "$GITHUB_ENV"
+          echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> "$GITHUB_ENV"
+          echo "deployment_url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+          for i in $(seq 1 30); do
+            if curl -fsSL --retry 2 "$DEPLOYMENT_URL/astra-prod/app/index.html?probe=$RANDOM" -o /tmp/integration-index.html; then break; fi
+            sleep 1
+          done
+          test -s /tmp/integration-index.html
+          grep -q 'EGX PRO — Astra Full Application' /tmp/integration-index.html
+          echo "PUBLIC_INTEGRATION_READY id=$DEPLOYMENT_ID url=$DEPLOYMENT_URL"
+
+      - name: Verify critical deployed bytes match candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for p in             astra-prod/app/index.html             astra-prod/app/app.js             astra-prod/app/astra-performance-history.js             astra-prod/app/astra-market-portfolio.js             astra-prod/app/data.json             astra-prod/app/intelligence/market-universe.json             astra-prod/app/intelligence/recommendation-ledger.json             astra-prod/app/intelligence/recommendation-outcomes.json             data/quant/stock-intelligence-index.json             data/rc2/recommendation-history.json             data/history/TMGH.json; do
+            curl -fsSL --retry 3 "$DEPLOYMENT_URL/$p?verify=$RANDOM" -o /tmp/remote-file
+            local_hash="$(sha256sum "stage/$p" | awk '{print $1}')"
+            remote_hash="$(sha256sum /tmp/remote-file | awk '{print $1}')"
+            test "$local_hash" = "$remote_hash" || { echo "::error::Remote byte mismatch: $p"; exit 1; }
+          done
+          echo "REMOTE_BYTE_IDENTITY_PASS"
+
+      - name: Locate Chromium and install Playwright Core
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+          npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Candidate remote E2E and ten clean adversarial cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/astra-integration-remote-e2e.cjs <<'NODE'
+          'use strict';
+          const {chromium}=require(process.cwd()+'/node_modules/playwright-core');
+          const assert=require('node:assert/strict');
+          const BASE=process.env.DEPLOYMENT_URL;
+          const CHROME=process.env.CHROME_BIN;
+          const cycle=process.env.REVIEW_CYCLE;
+          const profiles=[['w320',320,760],['w360',360,780],['w390',390,844],['w414',414,896],['w768',768,1024],['desktop',1440,1000]];
+          (async()=>{
+            const browser=await chromium.launch({headless:true,executablePath:CHROME,args:['--no-sandbox']});
+            const out=[];
+            try{
+              for(const [name,width,height] of profiles){
+                const ctx=await browser.newContext({viewport:{width,height},locale:'ar-EG'});
+                const page=await ctx.newPage();
+                const external=[],errors=[],bad=[],requests=[];
+                page.on('request',r=>{requests.push(r.url());try{if(new URL(r.url()).origin!==new URL(BASE).origin)external.push(r.url())}catch{}});
+                page.on('pageerror',e=>errors.push(String(e)));
+                page.on('response',r=>{if(r.status()>=400)bad.push({url:r.url(),status:r.status()})});
+                await page.goto(BASE+'/astra-prod/app/index.html?candidate='+Date.now()+'&cycle='+cycle,{waitUntil:'networkidle',timeout:45000});
+                await page.waitForFunction(()=>window.__ASTRA_PERF_HISTORY__==='READY'&&window.__ASTRA_MARKET_PORTFOLIO__==='READY',null,{timeout:30000});
+                assert.equal(await page.locator('[data-view="performance"]').count(),1,name+' performance nav');
+                await page.locator('[data-view="performance"]').click();
+                await page.waitForSelector('#view-performance.active');
+                assert.match(await page.locator('#view-performance').innerText(),/Astra Performance Intelligence/);
+                await page.locator('[data-view="history"]').click();
+                await page.waitForSelector('#view-history.active');
+                assert.equal(await page.locator('#astraHistRows tr').count(),3,name+' history count');
+                await page.locator('[data-view="search"]').click();
+                await page.waitForSelector('#view-search.active');
+                const badge=page.locator('#view-search [data-universe-active]').first();
+                assert.equal(await badge.getAttribute('data-universe-active'),'224');
+                assert.equal(await badge.getAttribute('data-universe-intended'),'224');
+                await page.locator('#astraMarketQ').fill('GOUR');
+                await page.waitForTimeout(150);
+                assert.match(await page.locator('#astraMarketRows').innerText(),/GOUR/);
+                assert.match(await page.locator('#astraMarketRows').innerText(),/ليس ضمن فرص Astra/);
+                await page.locator('[data-native-stock="GOUR"]').click();
+                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('GOUR'));
+                const gourStock=await page.locator('#astraStock').innerText();
+                assert.match(gourStock,/Support20/);
+                assert.match(gourStock,/Resistance20/);
+                assert.match(gourStock,/لا توجد بيانات Daily OHLC موثقة/);
+                assert.equal(requests.some(u=>u.includes('/data/history/GOUR.json')),false,name+' unavailable GOUR history must not be requested');
+
+                await page.locator('#astraMarketQ').fill('TMGH');
+                await page.waitForTimeout(150);
+                await page.locator('[data-native-stock="TMGH"]').click();
+                await page.waitForFunction(()=>document.querySelector('#astraStock h2')?.textContent.includes('TMGH'));
+                const boxes=await page.locator('#astraStock .stock-box').allTextContents();
+                const s=boxes.find(x=>x.includes('Support20'))||'';
+                const r=boxes.find(x=>x.includes('Resistance20'))||'';
+                assert.ok(!s.includes('غير متاح')&&!s.includes('—'),name+' TMGH Support20 unavailable');
+                assert.ok(!r.includes('غير متاح')&&!r.includes('—'),name+' TMGH Resistance20 unavailable');
+                assert.equal(requests.some(u=>u.includes('/data/history/TMGH.json')),true,name+' available TMGH history must be requested');
+                await page.locator('[data-view="portfolio"]').click();
+                await page.waitForSelector('#view-portfolio.active');
+                await page.locator('#astraPfT').selectOption('GOUR');
+                await page.locator('#astraPfP').fill('10');
+                await page.locator('#astraPfQ').fill('5');
+                await page.locator('#astraPfD').fill('2026-09-20');
+                await page.locator('#astraPfN').fill('integration-e2e');
+                await page.locator('#astraPfA').click();
+                assert.match(await page.locator('#astraPfB').innerText(),/GOUR/);
+                assert.match(await page.locator('#astraPfB').innerText(),/candidate-e2e/);
+                const persisted=await page.evaluate(()=>JSON.parse(localStorage.getItem('egxpro.astra.portfolio.v2')||'[]'));
+                assert.equal(persisted.length,1);
+                const dims=await page.evaluate(()=>({sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth}));
+                assert.ok(dims.sw<=dims.cw+2,name+' horizontal overflow');
+                assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
+                assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
+                assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
+                out.push({name,width,height,historyRows:3,universe:224,missingHistoryNo404:true,availableHistoryAnalytics:true,portfolioPersistence:true,externalRequests:0,pageErrors:0,badResponses:0,overflow:0});
+                await ctx.close();
+              }
+            }finally{await browser.close()}
+            console.log(JSON.stringify({cycle,status:'PASS',profiles:out},null,2));
+          })().catch(e=>{console.error(e.stack||e);process.exit(1)});
+          NODE
+
+          for cycle in $(seq 1 10); do
+            echo "=== INTEGRATION CLEAN REVIEW $cycle/10 ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+            REVIEW_CYCLE="$cycle" node /tmp/astra-integration-remote-e2e.cjs
+          done
+
+      - name: Final immutability and deployment-state verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/$INTEGRATION_BRANCH:refs/remotes/origin/$INTEGRATION_BRANCH" --force
+          git fetch origin "refs/heads/$CERTIFIED_CANDIDATE_BRANCH:refs/remotes/origin/$CERTIFIED_CANDIDATE_BRANCH" --force
+          git fetch origin "refs/heads/$FROZEN_BRANCH:refs/remotes/origin/$FROZEN_BRANCH" --force
+          git fetch origin "refs/heads/main:refs/remotes/origin/main" --force
+          test "$(git rev-parse "origin/$INTEGRATION_BRANCH")" = "$INTEGRATION_HEAD"
+          test "$(git rev-parse "origin/$CERTIFIED_CANDIDATE_BRANCH")" = "$CERTIFIED_CANDIDATE_HEAD"
+          test "$(git rev-parse "origin/$FROZEN_BRANCH")" = "$FROZEN_HEAD"
+          test "$(git rev-parse origin/main)" = "$MAIN_BASE_HEAD"
+          test "$DEPLOYMENT_PROVIDER" = "cloudflare-quick-tunnel"
+          test "$DEPLOYMENT_TARGET" = "ephemeral-public-preview"
+          case "$DEPLOYMENT_URL" in
+            https://*.trycloudflare.com) ;;
+            *) echo "::error::Candidate URL is not isolated Quick Tunnel HTTPS"; exit 1 ;;
+          esac
+          kill -0 "$HTTP_PID"
+          kill -0 "$TUNNEL_PID"
+          curl -fsSL --retry 3 "$DEPLOYMENT_URL/astra-prod/app/index.html?final=$RANDOM" -o /tmp/final-index
+          test "$(sha256sum /tmp/final-index | awk '{print $1}')" = "$(sha256sum stage/astra-prod/app/index.html | awk '{print $1}')"
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          echo "FINAL_INTEGRATION_IMMUTABILITY_PASS"
+
+      - name: Write certification evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p integration-evidence
+          node <<'NODE'
+          const fs=require('fs');
+          const evidence={
+            schemaVersion:'astra-production-integration-certification-1',
+            integrationBranch:process.env.INTEGRATION_BRANCH,
+            integrationHead:process.env.INTEGRATION_HEAD,
+            mainBaseHead:process.env.MAIN_BASE_HEAD,
+            certifiedCandidateBranch:process.env.CERTIFIED_CANDIDATE_BRANCH,
+            certifiedCandidateHead:process.env.CERTIFIED_CANDIDATE_HEAD,
+            frozenBranch:process.env.FROZEN_BRANCH,
+            frozenHead:process.env.FROZEN_HEAD,
+            artifactSha256:process.env.ARTIFACT_HASH,
+            artifactFileCount:Number(process.env.ARTIFACT_FILE_COUNT),
+            deploymentId:process.env.DEPLOYMENT_ID,
+            deploymentUrl:process.env.DEPLOYMENT_URL,
+            deploymentProvider:process.env.DEPLOYMENT_PROVIDER,
+            deploymentTarget:process.env.DEPLOYMENT_TARGET,
+            deploymentPersistent:false,
+            e2e:'GREEN',
+            critical:0,
+            high:0,
+            runtimeLegacyDecisionDependencyCount:0,
+            externalRuntimeRequests:0,
+            unauthorizedMutations:0,
+            hiddenDecisionFallbacks:0,
+            cleanReviewStreak:10,
+            productionMutation:false,
+            integrationReady:true
+          };
+          fs.writeFileSync('integration-evidence/CERTIFICATION.json',JSON.stringify(evidence,null,2)+'\n');
+          console.log(JSON.stringify(evidence,null,2));
+          NODE
+
+      - name: Upload candidate evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-production-integration-certification-20260921
+          path: |
+            integration-evidence/CERTIFICATION.json
+            /tmp/astra-integration-file-hashes.txt
+          if-no-files-found: error
