@@ -1,0 +1,145 @@
+name: Astra G06 Scope Hotfix Certification
+
+on:
+  push:
+    branches:
+      - ops/astra-candidate-certify-20260921
+    paths:
+      - '.github/workflows/astra-g06-hotfix-certification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-g06-hotfix-certification-20260921
+  cancel-in-progress: false
+
+env:
+  HOTFIX_BRANCH: hotfix/astra-g06-scope-20260921
+  HOTFIX_HEAD: c81f873548d2a51afde85c8067b6b5b2bfb20eff
+  PRODUCTION_BASE_HEAD: d75e673087693984e1897f2699cf5c6c482b3c53
+  CERTIFIED_RUNTIME_HASH: 618441b41e65bb6f1607875e0c8e2cfa1bcb11d397a0bf2da5c6534b6717017e
+
+jobs:
+  certify-hotfix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.HOTFIX_HEAD }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Assert hotfix lineage and exact scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HOTFIX_HEAD"
+          git fetch origin "refs/heads/$HOTFIX_BRANCH:refs/remotes/origin/$HOTFIX_BRANCH"
+          git fetch origin "refs/heads/main:refs/remotes/origin/main"
+          test "$(git rev-parse "origin/$HOTFIX_BRANCH")" = "$HOTFIX_HEAD"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_BASE_HEAD"
+          test "$(git merge-base "$PRODUCTION_BASE_HEAD" "$HOTFIX_HEAD")" = "$PRODUCTION_BASE_HEAD"
+          changed="$(git diff --name-only "$PRODUCTION_BASE_HEAD" "$HOTFIX_HEAD")"
+          test "$changed" = "package.json"
+          echo "HOTFIX_SCOPE_PASS"
+
+      - name: G06 must be green under corrected scope
+        run: npm run test:astra:g06
+
+      - name: Re-certify Astra deterministic runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/astra/native/workflow-inventory.cjs
+          node scripts/astra/native/astra-intelligence.cjs
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          git diff --exit-code -- astra-prod/app/intelligence docs/astra/development/WORKFLOW_INVENTORY.json
+          node --test tests/astra/astra-native-intelligence.test.cjs
+
+      - name: Assert runtime artifact hash unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf stage
+          mkdir -p stage/astra-prod stage/data/quant stage/data/rc2
+          cp -a astra-prod/app stage/astra-prod/app
+          cp -a data/history stage/data/history
+          cp -a data/quant/market-search-index-v13-17.json stage/data/quant/
+          cp -a data/quant/stock-intelligence-index.json stage/data/quant/
+          cp -a data/rc2/recommendation-history.json stage/data/rc2/
+          (
+            cd stage
+            find astra-prod/app data/history data/quant data/rc2 -type f -print0 | sort -z | xargs -0 sha256sum
+          ) > /tmp/astra-hotfix-file-hashes.txt
+          ARTIFACT_HASH="$(sha256sum /tmp/astra-hotfix-file-hashes.txt | awk '{print $1}')"
+          test "$ARTIFACT_HASH" = "$CERTIFIED_RUNTIME_HASH"
+          echo "ARTIFACT_HASH=$ARTIFACT_HASH" >> "$GITHUB_ENV"
+          echo "RUNTIME_HASH_UNCHANGED $ARTIFACT_HASH"
+
+      - name: Locate Chromium and install Playwright Core
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$BROWSER"
+          echo "CHROME_BIN=$BROWSER" >> "$GITHUB_ENV"
+          "$BROWSER" --version
+          npm install --no-save --ignore-scripts --no-package-lock playwright-core@1.55.0
+
+      - name: Ten clean critic and six-profile browser cycles
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/astra-hotfix-http.log 2>&1 &
+          PID=$!
+          trap 'kill $PID || true' EXIT
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/astra-prod/app/index.html >/dev/null && break || sleep 1; done
+          for cycle in $(seq 1 10); do
+            echo "=== HOTFIX CLEAN REVIEW $cycle/10 ==="
+            node tests/astra/astra-developer-critic-review.cjs --cycle "$cycle"
+            ASTRA_DEV_BASE=http://127.0.0.1:4173 node tests/astra/astra-native-browser-smoke.cjs
+          done
+
+      - name: Final pointer and immutability verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/heads/$HOTFIX_BRANCH:refs/remotes/origin/$HOTFIX_BRANCH" --force
+          git fetch origin "refs/heads/main:refs/remotes/origin/main" --force
+          test "$(git rev-parse "origin/$HOTFIX_BRANCH")" = "$HOTFIX_HEAD"
+          test "$(git rev-parse origin/main)" = "$PRODUCTION_BASE_HEAD"
+          git diff --exit-code -- astra-prod/app/data.json data/ops/g22-main-app-handoff.json
+          echo "HOTFIX_CERTIFICATION_PASS"
+
+      - name: Write evidence
+        shell: bash
+        run: |
+          mkdir -p hotfix-evidence
+          cat > hotfix-evidence/CERTIFICATION.json <<EOF
+          {
+            "schemaVersion": "astra-g06-hotfix-certification-1",
+            "hotfixHead": "$HOTFIX_HEAD",
+            "productionBaseHead": "$PRODUCTION_BASE_HEAD",
+            "runtimeArtifactSha256": "$ARTIFACT_HASH",
+            "g06": "GREEN",
+            "cleanReviewStreak": 10,
+            "runtimeMutation": false,
+            "productionMutation": false,
+            "hotfixReady": true
+          }
+          EOF
+          cat hotfix-evidence/CERTIFICATION.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astra-g06-hotfix-certification-20260921
+          path: |
+            hotfix-evidence/CERTIFICATION.json
+            /tmp/astra-hotfix-file-hashes.txt
+          if-no-files-found: error
