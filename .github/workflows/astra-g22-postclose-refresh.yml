@@ -357,6 +357,16 @@ jobs:
           gh api --method POST             "repos/${{ github.repository }}/actions/workflows/static.yml/dispatches"             -f ref=main
           echo "STATIC_PAGES_DISPATCHED"
 
+      - name: Dispatch Astra PRO v3 production publisher
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${{ github.repository }}/actions/workflows/astra-v3-vercel-production.yml/dispatches" \
+            -f ref=main
+          echo "ASTRA_PRO_V3_PRODUCTION_DISPATCHED"
+
       - name: Publication summary
         run: |
           node <<'NODE'
