@@ -253,3 +253,78 @@ test('market-universe history availability exactly matches repository history ar
     if(!exists) assert.equal(Number(r.historySessions||0),0,r.ticker+' unavailable history must expose zero sessions');
   }
 });
+
+
+test('target touched before unknown intraday entry remains ambiguous',()=>{
+  const o=mod.evaluateRows(recFixture(),[row('2026-09-21',14,14,10.5,11)]);
+  assert.equal(o.state,'AMBIGUOUS_INTRADAY_PATH');
+  assert.equal(o.finalTargetHit,false);
+  assert.equal(o.returnPct,null);
+});
+
+test('prior target survives a later stop and gap fill uses observed open',()=>{
+  const o=mod.evaluateRows(recFixture(),[row('2026-09-21',10.5,12.1,10.1,11.5),row('2026-09-22',8,8.5,7.5,8)]);
+  assert.equal(o.target1Hit,true);
+  assert.equal(o.timeToT1,1);
+  assert.equal(o.stopLossHit,true);
+  assert.equal(o.exitPrice,8);
+  assert.equal(o.returnPct,-23.8095);
+});
+
+test('stop gap precedes later same-day target touches on an existing position',()=>{
+  const o=mod.evaluateRows(recFixture(),[row('2026-09-21',10.5,11,10,10.8),row('2026-09-22',8,14,7.5,13)]);
+  assert.equal(o.state,'CLOSED');
+  assert.equal(o.exitPrice,8);
+  assert.equal(o.finalTargetHit,false);
+});
+
+test('governance cancellation after activation reconciles and retains earlier target',()=>{
+  const r=recFixture();
+  const o=mod.evaluateRows(r,[row('2026-09-21',10.5,12.1,10.1,11.5),row('2026-09-22',10,11,9.5,10,['corporate_action_stock_split'])]);
+  assert.equal(o.state,'CANCELLED_BY_GOVERNANCE');
+  assert.equal(o.target1Hit,true);
+  assert.equal(mod.summarize([r],[o]).reconciliation.pass,true);
+  assert.equal(o.returnPct,null);
+});
+
+test('UI current plans reject prior session, prior snapshot and mismatched hash',()=>{
+  const code=fs.readFileSync(path.resolve(__dirname,'../../astra-prod/app/astra-analytics-pro-v3.js'),'utf8');
+  const fn=code.match(/  function currentRecommendations\(\)\{[\s\S]*?\n  \}/)[0];
+  const current={ticker:'ATQA',sessionDate:'2026-09-21',decisionSnapshotId:'new',semanticDecisionHash:'h',entryPlan:{low:13.472,high:13.568}};
+  const S={app:{sourceDecision:{session:'2026-09-21',decisionSnapshotId:'new',semanticDecisionHash:'h'}},ledger:{records:[{...current,sessionDate:'2026-09-20'},{...current,decisionSnapshotId:'old'},{...current,semanticDecisionHash:'wrong'},current]}};
+  const select=new Function('S','A',fn+';return currentRecommendations();');
+  assert.deepEqual(select(S,v=>Array.isArray(v)?v:[]),[current]);
+  S.ledger.records=[];
+  assert.deepEqual(select(S,v=>Array.isArray(v)?v:[]),[]);
+});
+
+test('UI rates preserve missing and zero-denominator values',()=>{
+  const code=fs.readFileSync(path.resolve(__dirname,'../../astra-prod/app/astra-analytics-pro-v3.js'),'utf8');
+  const fn=code.match(/  function rateBlock\(m\)\{[\s\S]*?\n  \}/)[0];
+  const rate=new Function('m',fn+';return rateBlock(m);');
+  assert.equal(rate({pct:null,denominator:0}).pct,null);
+  assert.equal(rate({pct:0,denominator:0}).pct,null);
+  assert.equal(rate({pct:0,denominator:3}).pct,0);
+});
+
+
+test('invalid or duplicated OHLC fails evaluation instead of manufacturing a result',()=>{
+  for(const rows of [[row('2026-09-21',10.5,9,10,11)],[row('2026-09-21',null,12,10,11)],[row('2026-09-21',10.5,12,10,11),row('2026-09-21',10.5,12,10,11)]]){
+    assert.throws(()=>mod.evaluateRows(recFixture(),rows),/Invalid or duplicate OHLC/);
+  }
+});
+
+test('chart rejects invalid OHLC and excludes future rows',()=>{
+  const code=fs.readFileSync(path.resolve(__dirname,'../../astra-prod/app/astra-analytics-pro-v3.js'),'utf8');
+  const fn=code.slice(code.indexOf('  function clean(doc){'),code.indexOf('  function ema('));
+  const clean=new Function('S','A','doc',fn+';return clean(doc);').bind(null,{app:{sourceDecision:{session:'2026-09-21'}}},v=>Array.isArray(v)?v:[]);
+  assert.throws(()=>clean({sessions:[row('2026-09-21',10,9,8,10)]}),/Invalid or duplicate OHLC/);
+  const valid=row('2026-09-21',10,12,9,11);
+  assert.equal(clean({sessions:[valid,row('2026-09-22',10,12,9,11)]}).length,1);
+  assert.throws(()=>clean({sessions:[valid,valid]}),/Invalid or duplicate OHLC/);
+});
+
+test('production portfolio bundle matches maintained source including snapshot and missing-price fixes',()=>{
+  const root=path.resolve(__dirname,'../..');
+  assert.equal(fs.readFileSync(path.join(root,'astra-prod/app/astra-market-portfolio.js'),'utf8'),fs.readFileSync(path.join(root,'astra-prod/app/astra-portfolio-pro-v3.js'),'utf8'));
+});

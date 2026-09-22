@@ -9,6 +9,7 @@ if(!CHROME) throw new Error('CHROME_BIN required');
 
 const profiles=[['mobile',390,844],['desktop',1440,1000]];
 
+let expectedRecommendations=[];
 async function expectTechnical(page,ticker,label){
   await page.waitForSelector('#view-technical.active',{timeout:15000});
   await page.waitForFunction(t=>document.querySelector('#proTicker')?.value===t,ticker,{timeout:15000});
@@ -21,6 +22,18 @@ async function expectTechnical(page,ticker,label){
   assert.equal(marketPrice,1,label+' validated market price missing');
   assert.equal(entry,1,label+' recommendation entry distinction missing');
   assert.equal(regime,1,label+' market regime missing');
+  const rec=expectedRecommendations.find(r=>r.ticker===ticker);
+  const fmt=v=>Number(v).toLocaleString('ar-EG',{maximumFractionDigits:3});
+  const displayedEntry=await page.locator('#proLabBody .pro-box').filter({hasText:'Recommendation Entry'}).locator('b').innerText();
+  assert.equal(displayedEntry,rec?fmt(rec.entryPlan.low)+' – '+fmt(rec.entryPlan.high):'—',label+' wrong snapshot entry plan');
+  const status=await page.locator('#proLabBody .pro-box').filter({hasText:'Astra Status'}).locator('b').innerText();
+  assert.equal(status,rec?'RECOMMENDED TODAY':'NOT RECOMMENDED TODAY',label+' wrong current classification');
+  if(rec){
+    const chart=await page.locator('#proLabBody').innerText();
+    assert.ok(chart.includes('Astra Stop '+fmt(rec.stopLoss)),label+' wrong stop overlay');
+    assert.ok(chart.includes('Astra T1 '+fmt(rec.targets[0])),label+' wrong target overlay');
+  }
+
 }
 
 async function returnContext(page,view,label){
@@ -55,6 +68,7 @@ async function returnContext(page,view,label){
         return {d,u,l,p};
       });
       const d=live.d, recs=d?.decisionSnapshot?.top5||d?.decisionSnapshot?.opportunities||[];
+      expectedRecommendations=recs;
       assert.match(String(d?.sourceDecision?.session||''),/^\d{4}-\d{2}-\d{2}$/,name+' invalid decision session');
       assert.equal(d?.decisionSnapshot?.sessionDate,d?.sourceDecision?.session,name+' snapshot session drift');
       assert.equal(d?.sourceDecision?.upstream?.sessionDate,d?.sourceDecision?.session,name+' source session drift');
@@ -91,13 +105,15 @@ async function returnContext(page,view,label){
 
       await page.locator('[data-view="recommendations"]').click();
       await page.waitForSelector('#view-recommendations.active');
-      const recTicker=(await page.locator('#view-recommendations .ticker').first().innerText()).trim().toUpperCase();
-      const recHost=page.locator('#view-recommendations [data-chart-ticker-host="'+recTicker+'"]').first();
-      assert.equal(await recHost.count(),1,name+' recommendation name/ticker host missing');
-      await recHost.focus();
-      await page.keyboard.press('Enter');
-      await expectTechnical(page,recTicker,name+' recommendation');
-      await returnContext(page,'recommendations',name+' recommendation');
+      for(const rec of recs){
+        const recTicker=rec.ticker;
+        const recHost=page.locator('#view-recommendations [data-chart-ticker-host="'+recTicker+'"]').first();
+        assert.equal(await recHost.count(),1,name+' recommendation name/ticker host missing');
+        await recHost.focus();
+        await page.keyboard.press('Enter');
+        await expectTechnical(page,recTicker,name+' recommendation');
+        await returnContext(page,'recommendations',name+' recommendation');
+      }
 
       await page.locator('[data-view="search"]').click();
       await page.waitForSelector('#view-search.active');

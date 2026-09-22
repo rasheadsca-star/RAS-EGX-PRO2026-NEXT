@@ -44,14 +44,18 @@
     document.head.appendChild(s);
   }
 
+  function currentRecommendations(){
+    const ds=S.app?.sourceDecision;
+    return A(S.ledger?.records).filter(r=>ds&&r.decisionSnapshotId===ds.decisionSnapshotId&&r.semanticDecisionHash===ds.semanticDecisionHash&&r.sessionDate===ds.session);
+  }
   function rateBlock(m){
-    const pct=m&&Number.isFinite(Number(m.pct))?Number(m.pct):null;
+    const pct=m&&m.pct!==null&&m.pct!==undefined&&m.pct!==''&&Number(m.denominator)>0&&Number.isFinite(Number(m.pct))?Number(m.pct):null;
     return {pct,n:m?.numerator??0,d:m?.denominator??0,label:m?.denominatorLabel||'—'};
   }
   function renderHomeUpgrade(){
     const host=$('#view-home');if(!host||$('#astraProHome'))return;
     const m=S.summary.metrics||{},t=rateBlock(m.target1HitRate),st=rateBlock(m.stopLossRate),ft=rateBlock(m.finalTargetRate);
-    const recs=A(S.ledger.records).slice().sort((a,b)=>Number(a.rank)-Number(b.rank));
+    const recs=currentRecommendations().slice().sort((a,b)=>Number(a.rank)-Number(b.rank));
     const panel=document.createElement('div');panel.id='astraProHome';panel.className='panel pro-home';
     panel.innerHTML=
       '<div class="pro-home-head"><div><h2>Astra Professional Analytics</h2><div class="pro-sub">لوحة التحليل الاحترافي الجديدة أصبحت جزءًا من الواجهة الرئيسية · Candles · Channels · Signature · KPIs · Risk/Reward</div></div><div><span class="tag good pro-live">● LIVE</span> <span class="tag">PRO ANALYTICS v3</span><div class="pro-build">PRO-ANALYTICS-PRODUCTION</div></div></div>'+
@@ -103,8 +107,8 @@
         kpi('Avg Loser',m.averageLoserPct,'resolved losers',true)+
         kpi('Avg Time → T1',m.averageTimeToT1,'sessions')+
         kpi('Avg Holding',m.averageHoldingSessions,'sessions')+
-        kpi('Avg MFE',m.averageMfePct,m.mfeMeasuredCount?F(m.mfeMeasuredCount,0)+' exact-entry observations':'requires exact entry price',true)+
-        kpi('Avg MAE',m.averageMaePct,m.maeMeasuredCount?F(m.maeMeasuredCount,0)+' exact-entry observations':'requires exact entry price',true)+
+        kpi('Avg MFE',m.averageMfePct,m.mfeMeasuredCount?F(m.mfeMeasuredCount,0)+' daily-candle envelopes':'requires exact entry price',true)+
+        kpi('Avg MAE',m.averageMaePct,m.maeMeasuredCount?F(m.maeMeasuredCount,0)+' daily-candle envelopes':'requires exact entry price',true)+
         kpi('Closed Trades',m.closedTrades,'resolved/closed')+
         kpi('Waiting Entry',m.waitingForEntry,'not failures')+
         kpi('Ambiguous',m.ambiguous,'excluded from W/L')+
@@ -124,10 +128,16 @@
   }
 
   function clean(doc){
-    return A(doc?.sessions||doc?.rows||doc).map(x=>({
+    const cutoff=S.app?.sourceDecision?.session,seen=new Set();
+    const rows=A(doc?.sessions||doc?.rows||doc).filter(x=>!cutoff||(x.date||x.sessionDate)<=cutoff).map(x=>({
       date:x.date||x.sessionDate,
       open:Number(x.open),high:Number(x.high),low:Number(x.low),close:Number(x.close),volume:Number(x.volume)||0
-    })).filter(x=>x.date&&[x.open,x.high,x.low,x.close].every(Number.isFinite)&&x.close>0).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    }));
+    for(const r of rows){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||![r.open,r.high,r.low,r.close].every(v=>Number.isFinite(v)&&v>0)||r.high<Math.max(r.open,r.close,r.low)||r.low>Math.min(r.open,r.close,r.high)||seen.has(r.date))throw Error('Invalid or duplicate OHLC: '+r.date);
+      seen.add(r.date);
+    }
+    return rows.sort((a,b)=>a.date.localeCompare(b.date));
   }
   function ema(vals,p){
     const out=Array(vals.length).fill(null);if(vals.length<p)return out;
@@ -246,7 +256,7 @@
   function renderLabShell(){
     const host=$('#view-technical');if(!host)return;
     const active=A(S.universe.records).filter(x=>x.active!==false);
-    const recSet=new Set(A(S.ledger.records).map(x=>x.ticker));
+    const recSet=new Set(currentRecommendations().map(x=>x.ticker));
     const sorted=active.slice().sort((a,b)=>(recSet.has(b.ticker)-recSet.has(a.ticker))||a.ticker.localeCompare(b.ticker));
     const preferred=sorted.find(x=>recSet.has(x.ticker)&&x.historyAvailable===true)||sorted.find(x=>x.historyAvailable===true)||sorted[0];
     host.innerHTML=
@@ -262,7 +272,7 @@
 
   async function loadTicker(ticker){
     const token=++S.loadToken,out=$('#proLabBody');if(!out)return;
-    const market=A(S.universe.records).find(x=>x.ticker===ticker),rec=A(S.ledger.records).find(x=>x.ticker===ticker);
+    const market=A(S.universe.records).find(x=>x.ticker===ticker),rec=currentRecommendations().find(x=>x.ticker===ticker);
     if(!market){out.innerHTML='<div class="panel"><div class="notice bad">السهم غير موجود في الـAstra universe.</div></div>';return}
     if(market.historyAvailable!==true||Number(market.historySessions||0)<=0){
       out.innerHTML='<div class="panel"><div class="section-title"><div><h2>'+E(ticker)+' — Technical Lab</h2></div></div><div class="notice">لا توجد Daily OHLC موثقة لهذا السهم. لن يتم طلب ملف تاريخ مفقود، ولن يتم تقدير Channel/Signature/MACD/RSI/Fibonacci. حالة Astra الحالية تبقى مستقلة.</div></div>';
