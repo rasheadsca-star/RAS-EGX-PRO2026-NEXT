@@ -47,6 +47,11 @@ jobs:
           node --check tests/astra/astra-pro-v3-browser-smoke.cjs
           node --test tests/astra/g22-postclose-handoff-guard.test.cjs
           node --test tests/astra/astra-native-intelligence.test.cjs
+          # The native-intelligence test intentionally regenerates the workflow inventory
+          # to validate classification logic. Restore the tracked baseline so the audit
+          # remains read-only and the final mutation guard detects only unintended writes.
+          git checkout -- docs/astra/development/WORKFLOW_INVENTORY.json
+          git diff --exit-code
 
       - name: Ten consecutive decision and health reviews
         shell: bash
