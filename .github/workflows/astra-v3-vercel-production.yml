@@ -92,6 +92,10 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_VERIFIED_HEAD='+require('child_process').execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SESSION='+s+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_SNAPSHOT='+app.sourceDecision.decisionSnapshotId+'\n');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_DECISION_HASH='+app.sourceDecision.semanticDecisionHash+'\n');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_FINGERPRINT='+handoff.materialFingerprint+'\n');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_CANONICAL_HEAD='+handoff.canonicalDataHead+'\n');
+          fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_PRODUCER_RUN='+String(handoff.producerRunId||'')+'\n');
           fs.appendFileSync(process.env.GITHUB_ENV,'ASTRA_TOP='+app.decisionSnapshot.top5.map(x=>x.ticker).join(',')+'\n');
           console.log('ASTRA_PREDEPLOY_VALIDATION_PASS',JSON.stringify({
             session:s,
@@ -295,8 +299,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          verify_latest_main_identity() {
+            node <<'NODE'
+          const cp=require('child_process');
+          const latest=cp.execFileSync('git',['rev-parse','origin/main'],{encoding:'utf8'}).trim();
+          const readAt=p=>JSON.parse(cp.execFileSync('git',['show',latest+':'+p],{encoding:'utf8',maxBuffer:64*1024*1024}));
+          const app=readAt('astra-prod/app/data.json');
+          const handoff=readAt('data/ops/g22-main-app-handoff.json');
+          const ok=(c,m)=>{if(!c)throw new Error(m)};
+          const expectedTickers=String(process.env.ASTRA_TOP||'').split(',').filter(Boolean).sort();
+          const latestTickers=(app?.decisionSnapshot?.top5||[]).map(x=>x.ticker).sort();
+          ok(app?.sourceDecision?.session===process.env.ASTRA_SESSION,'Main advanced to a different Astra session');
+          ok(app?.sourceDecision?.decisionSnapshotId===process.env.ASTRA_SNAPSHOT,'Main advanced to a different decision snapshot');
+          ok(app?.sourceDecision?.semanticDecisionHash===process.env.ASTRA_DECISION_HASH,'Main advanced to a different semantic decision hash');
+          ok(handoff?.materialFingerprint===process.env.ASTRA_FINGERPRINT,'Main advanced to a different handoff fingerprint');
+          ok(handoff?.canonicalDataHead===process.env.ASTRA_CANONICAL_HEAD,'Main advanced to a different canonical data HEAD');
+          ok(String(handoff?.producerRunId||'')===String(process.env.ASTRA_PRODUCER_RUN||''),'Main advanced to a different producer run');
+          ok(JSON.stringify(latestTickers)===JSON.stringify(expectedTickers),'Main advanced to a different recommendation set');
+          console.log('ASTRA_EVIDENCE_MAIN_IDENTITY_PASS',JSON.stringify({latest,session:app.sourceDecision.session,snapshot:app.sourceDecision.decisionSnapshotId,decisionHash:app.sourceDecision.semanticDecisionHash}));
+          NODE
+          }
+
           git fetch origin main
-          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || { echo "Main advanced; refusing stale clean-streak evidence."; exit 1; }
+          verify_latest_main_identity
           mkdir -p docs/astra/production
           node <<'NODE'
           const fs=require('fs');
@@ -334,4 +359,14 @@ jobs:
           git add docs/astra/production/LIVE_10_CLEAN_EVIDENCE.json
           git diff --cached --quiet && exit 0
           git commit -m "audit(astra): record 10 clean live production reviews"
-          git push origin HEAD:main
+          for attempt in 1 2 3; do
+            git fetch origin main
+            verify_latest_main_identity
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo "ASTRA_LIVE_EVIDENCE_PERSISTED"
+              exit 0
+            fi
+            git rebase --abort >/dev/null 2>&1 || true
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt * 5))
+          done
