@@ -198,7 +198,7 @@ async function returnContext(page,view,label){
       await claudePage.locator('#proOpenClaudeApp').click();
       await claudePage.waitForURL('https://egx-tfe-v20-fusion-rc2.vercel.app/**',{timeout:30000});
       await claudePage.waitForLoadState('domcontentloaded',{timeout:30000});
-      assert.match(await claudePage.getAttribute('body','innerHTML').catch(()=>''),/./,name+' CLAUDE destination did not render');
+      assert.ok((await claudePage.locator('body').innerText()).trim().length>0,name+' CLAUDE destination did not render');
       assert.ok((await claudePage.url()).startsWith('https://egx-tfe-v20-fusion-rc2.vercel.app/'),name+' CLAUDE click did not navigate to RC2');
       await claudePage.close();
 
