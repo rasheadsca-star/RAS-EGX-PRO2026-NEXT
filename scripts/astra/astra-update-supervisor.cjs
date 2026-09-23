@@ -67,6 +67,9 @@ function evaluateState(input = {}) {
   const now = input.now || cairoParts();
   const holidays = input.holidays instanceof Set ? input.holidays : parseHolidays(input.holidays);
   const expectedTradingSession = input.expectedTradingSession || latestExpectedTradingSession(now, holidays);
+  const nowMs = Number.isFinite(Number(input.nowMs)) ? Number(input.nowMs) : Date.now();
+  const handoffMs = Date.parse(String(handoff.generatedAt || ''));
+  const handoffAgeMinutes = Number.isFinite(handoffMs) ? Math.max(0, (nowMs - handoffMs) / 60000) : null;
 
   const desired = dateOnly(handoff.sessionDate);
   const handoffExpected = dateOnly(handoff.expectedSession);
@@ -156,12 +159,18 @@ function evaluateState(input = {}) {
     action = 'RECOVER_MAIN_APP';
     reason = sourceBehind ? 'LATEST_TRADING_SESSION_NOT_FINALIZED' : (handoffReasons[0] || 'MAIN_APP_HANDOFF_NOT_READY');
   } else if (handoffReady && !recommendationSnapshotCurrent) {
-    action = 'REFRESH_ASTRA';
-    reason = appSession !== desired ? 'ASTRA_SESSION_STALE' :
-      !upstreamIdentity ? 'ASTRA_UPSTREAM_IDENTITY_STALE' :
-      !recommendationIdentity ? 'ASTRA_RECOMMENDATION_LEDGER_STALE' :
-      !perfCurrent ? 'ASTRA_INTELLIGENCE_STALE' :
-      'ASTRA_RECOMMENDATION_SNAPSHOT_STALE';
+    const stalled = Number.isFinite(handoffAgeMinutes) && handoffAgeMinutes >= 45 && appSession !== desired;
+    if (stalled) {
+      action = 'RECOVER_MAIN_APP';
+      reason = 'ASTRA_REFRESH_STALLED_ESCALATE_SOURCE';
+    } else {
+      action = 'REFRESH_ASTRA';
+      reason = appSession !== desired ? 'ASTRA_SESSION_STALE' :
+        !upstreamIdentity ? 'ASTRA_UPSTREAM_IDENTITY_STALE' :
+        !recommendationIdentity ? 'ASTRA_RECOMMENDATION_LEDGER_STALE' :
+        !perfCurrent ? 'ASTRA_INTELLIGENCE_STALE' :
+        'ASTRA_RECOMMENDATION_SNAPSHOT_STALE';
+    }
   } else if (recommendationSnapshotCurrent && liveCurrent !== true) {
     action = 'DEPLOY_VERCEL';
     reason = liveCurrent === false ? 'VERCEL_LIVE_STALE' : 'VERCEL_LIVE_UNVERIFIED';
@@ -177,6 +186,7 @@ function evaluateState(input = {}) {
     expectedTradingSession,
     desiredSession: desired,
     appSession,
+    handoffAgeMinutes: handoffAgeMinutes === null ? null : Number(handoffAgeMinutes.toFixed(2)),
     handoffReady,
     handoffReasons,
     dataCurrent: handoffReady && desired === expectedTradingSession,
