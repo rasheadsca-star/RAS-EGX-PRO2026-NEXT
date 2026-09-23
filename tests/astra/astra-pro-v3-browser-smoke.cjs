@@ -155,7 +155,8 @@ async function returnContext(page,view,label){
       await page.locator('[data-view="performance"]').click();
       await page.waitForSelector('#view-performance.active');
       await page.waitForSelector('#astraRetroSimulator',{timeout:10000});
-      assert.match(await page.locator('#astraRetroSimulator').innerText(),/Retrospective Simulator/,name+' retrospective simulator panel missing');\n      assert.match(await page.locator('#astraRetroSimulator').innerText(),/UI CLAUDE/,name+' UI CLAUDE comparison label missing');
+      assert.match(await page.locator('#astraRetroSimulator').innerText(),/Retrospective Simulator/,name+' retrospective simulator panel missing');
+      assert.match(await page.locator('#astraRetroSimulator').innerText(),/UI CLAUDE/,name+' UI CLAUDE comparison label missing');
       const claudeKpi=page.locator('#astraRetroSimulator .pro-kpi').filter({hasText:'CLAUDE Avg Net'});
       assert.equal(await claudeKpi.count(),1,name+' CLAUDE retrospective KPI missing');
       await page.waitForSelector('#astraTickerPerfRows .ticker',{timeout:10000});
