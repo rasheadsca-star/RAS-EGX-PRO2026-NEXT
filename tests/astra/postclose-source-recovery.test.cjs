@@ -7,8 +7,8 @@ function fixture() {
     today: '2026-09-23', hour: 17,
     primary: { currentSessionReady: true, sessionDate: '2026-09-23', basketPlan: { sourceSessionReady: true } },
     scan: { pagesPublishedSession: '2026-09-23' },
-    marker: { sessionDate: '2026-09-23', materialFingerprint: 'a'.repeat(64), canonicalDataHead: 'b'.repeat(40) },
-    audit: { session: { decision: '2026-09-23', freshnessStatus: 'CURRENT' }, upstream: { mainAppMaterialFingerprint: 'a'.repeat(64), canonicalDataHead: 'b'.repeat(40) } }
+    marker: { sessionDate: '2026-09-23', final: true, sourceReady: true, executionGrade: true, pagesPublished: true, acceptedRows: 202, sourceSessionEvidenceCoveragePct: 90.18, materialFingerprint: 'a'.repeat(64), canonicalDataHead: 'b'.repeat(40) },
+    audit: { session: { decision: '2026-09-23', freshnessStatus: 'CURRENT' }, health: { currentCanonicalCoveragePct: 90.18 }, upstream: { mainAppMaterialFingerprint: 'a'.repeat(64), canonicalDataHead: 'b'.repeat(40) } }
   };
 }
 test('completed source and matching Astra session suppress redundant scans', () => {
@@ -16,7 +16,7 @@ test('completed source and matching Astra session suppress redundant scans', () 
 });
 test('source publication must not stop recovery after Astra rejected the new session', () => {
   const input = fixture(); input.audit.session.decision = '2026-09-22';
-  assert.deepEqual(postCloseComplete(input), { sourceComplete: true, astraComplete: false, skip: false });
+  assert.deepEqual(postCloseComplete(input), { sourceComplete: true, astraComplete: false, sourceCoveragePct: 90.18, canonicalCoveragePct: 90.18, skip: false });
 });
 test('missing or incomplete Astra evidence keeps source recovery enabled', () => {
   for (const audit of [{}, { session: { decision: '2026-09-23' } }]) {
@@ -35,5 +35,16 @@ test('intraday or unpublished source remains eligible for scanning', () => {
 });
 test('empty provenance never certifies completion', () => {
   const input = fixture(); input.marker = { sessionDate: input.today }; input.audit.upstream = {};
+  assert.equal(postCloseComplete(input).skip, false);
+});
+
+test('sub-90 source coverage never suppresses another recovery attempt', () => {
+  const input = fixture();
+  input.marker.sourceSessionEvidenceCoveragePct = 88.39;
+  assert.equal(postCloseComplete(input).skip, false);
+});
+test('sub-90 canonical coverage keeps healing active even when source evidence is high', () => {
+  const input = fixture();
+  input.audit.health.currentCanonicalCoveragePct = 89.29;
   assert.equal(postCloseComplete(input).skip, false);
 });
