@@ -8,10 +8,12 @@ on:
       - 'Astra G22 Post-Close Session Refresh'
     types: [completed]
   schedule:
-    # Continuous post-close watchdog. Completion events make recovery event-driven;
-    # these slots are the durable fallback if an event or deployment is missed.
+    # Completion events make recovery event-driven. The 15-minute post-close
+    # cadence accelerates healing, while the hourly 24/7 fallback means an
+    # unresolved session is never abandoned merely because a time window ended.
     - cron: '*/15 12-23 * * 0-4'
     - cron: '*/15 0-2 * * 1-5'
+    - cron: '17 * * * *'
   push:
     branches: ['main']
     paths:
