@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { evaluateState } = require('../../scripts/astra/astra-update-supervisor.cjs');
+const { evaluateState, parseHolidays } = require('../../scripts/astra/astra-update-supervisor.cjs');
 
 const now = { date:'2026-09-23', hour:18, minute:30, dow:3 };
 const handoff = {
@@ -113,4 +113,23 @@ test('repository-current state with unavailable live truth keeps deployment reco
   const out=state({live:null});
   assert.equal(out.action,'DEPLOY_VERCEL');
   assert.equal(out.reason,'VERCEL_LIVE_UNVERIFIED');
+});
+
+
+test('holiday parser accepts JSON-like and comma-separated configured dates',()=>{
+  const out=parseHolidays('["2026-01-07", "2026-04-13"];2026-07-23');
+  assert.equal(out.has('2026-01-07'),true);
+  assert.equal(out.has('2026-04-13'),true);
+  assert.equal(out.has('2026-07-23'),true);
+});
+
+test('stalled Astra refresh escalates to a fresh MAIN APP source cycle',()=>{
+  const staleApp=JSON.parse(JSON.stringify(app));
+  staleApp.sourceDecision.session='2026-09-22';
+  staleApp.decisionSnapshot.sessionDate='2026-09-22';
+  staleApp.decisionSnapshot.asOfSessionDate='2026-09-22';
+  const aged={...handoff,generatedAt:'2026-09-23T14:00:00.000Z'};
+  const out=state({app:staleApp,handoff:aged,nowMs:Date.parse('2026-09-23T15:00:00.000Z')});
+  assert.equal(out.action,'RECOVER_MAIN_APP');
+  assert.equal(out.reason,'ASTRA_REFRESH_STALLED_ESCALATE_SOURCE');
 });
