@@ -1,0 +1,125 @@
+name: Astra Self-Healing Update Supervisor
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - 'EGX MAIN APP V16.9.2 P2 Automatic Scan'
+      - 'Astra G22 Post-Close Session Refresh'
+      - 'Astra PRO v3 Vercel Production'
+    types: [completed]
+  schedule:
+    # Continuous post-close watchdog. Completion events make recovery event-driven;
+    # these slots are the durable fallback if an event or deployment is missed.
+    - cron: '*/15 12-23 * * 0-4'
+    - cron: '*/15 0-2 * * 1-5'
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/astra-self-healing-update.yml'
+      - 'scripts/astra/astra-update-supervisor.cjs'
+      - 'tests/astra/astra-update-supervisor.test.cjs'
+      - 'data/ops/g22-main-app-handoff.json'
+      - 'astra-prod/app/data.json'
+      - 'astra-prod/G22_SESSION_REFRESH.json'
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: astra-self-healing-update
+  cancel-in-progress: false
+
+jobs:
+  supervise:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EGX_MARKET_HOLIDAYS: ${{ vars.EGX_MARKET_HOLIDAYS }}
+      PRODUCTION_URL: https://egx-pro-astra-v3-live.vercel.app
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate supervisor contract
+        run: |
+          set -euo pipefail
+          node --check scripts/astra/astra-update-supervisor.cjs
+          node --test tests/astra/astra-update-supervisor.test.cjs
+
+      - name: Read live Astra truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIVE=/tmp/astra-live-data.json
+          rm -f "$LIVE"
+          curl -fsSL --retry 2 --retry-delay 2             "$PRODUCTION_URL/astra-prod/app/data.json?cb=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-$(date +%s)"             -o "$LIVE" || true
+          if node -e "JSON.parse(require('fs').readFileSync('$LIVE','utf8'))" 2>/dev/null; then
+            echo "ASTRA_LIVE_DATA_PATH=$LIVE" >> "$GITHUB_ENV"
+          else
+            rm -f "$LIVE"
+            echo "ASTRA_LIVE_DATA_PATH=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Diagnose data, recommendation and deployment freshness
+        id: state
+        env:
+          ASTRA_LIVE_DATA_PATH: ${{ env.ASTRA_LIVE_DATA_PATH }}
+        run: node scripts/astra/astra-update-supervisor.cjs
+
+      - name: Recover current-session market truth
+        if: steps.state.outputs.action == 'RECOVER_MAIN_APP'
+        shell: bash
+        run: |
+          set -euo pipefail
+          WF='v16-daily-recommendation-scan.yml'
+          ACTIVE=$(gh run list --workflow "$WF" --branch main --limit 20 --json status --jq '[.[] | select(.status=="queued" or .status=="in_progress")] | length')
+          if [ "$ACTIVE" -eq 0 ]; then
+            gh workflow run "$WF" --ref main
+            echo "Dispatched MAIN APP source recovery."
+          else
+            echo "MAIN APP recovery already active; no duplicate dispatch."
+          fi
+
+      - name: Rebuild Astra recommendations from latest finalized handoff
+        if: steps.state.outputs.action == 'REFRESH_ASTRA'
+        shell: bash
+        run: |
+          set -euo pipefail
+          WF='astra-g22-postclose-refresh.yml'
+          ACTIVE=$(gh run list --workflow "$WF" --branch main --limit 20 --json status --jq '[.[] | select(.status=="queued" or .status=="in_progress")] | length')
+          if [ "$ACTIVE" -eq 0 ]; then
+            gh workflow run "$WF" --ref main
+            echo "Dispatched Astra G22 refresh."
+          else
+            echo "Astra G22 refresh already active; no duplicate dispatch."
+          fi
+
+      - name: Redeploy current Astra snapshot to Vercel
+        if: steps.state.outputs.action == 'DEPLOY_VERCEL'
+        shell: bash
+        run: |
+          set -euo pipefail
+          WF='astra-v3-vercel-production.yml'
+          ACTIVE=$(gh run list --workflow "$WF" --branch main --limit 20 --json status --jq '[.[] | select(.status=="queued" or .status=="in_progress")] | length')
+          if [ "$ACTIVE" -eq 0 ]; then
+            gh workflow run "$WF" --ref main
+            echo "Dispatched Vercel production deployment."
+          else
+            echo "Vercel production deployment already active; no duplicate dispatch."
+          fi
+
+      - name: Enforce non-stale terminal state
+        if: steps.state.outputs.action == 'WAIT_FOR_FINAL_HANDOFF'
+        run: |
+          echo "::warning::Astra is waiting for a finalized execution-grade handoff. The scheduled supervisor will re-check and recover after the next eligible session."
