@@ -129,31 +129,38 @@
 
   function renderRetrospectiveComparison(){
     const host=$('#view-performance');if(!host||$('#astraRetroSimulator')||!S.retro)return;
-    const r=S.retro,a=r.astraReplay?.metrics||{},v=r.v169Native?.sessionSummary||{},m=r.v169Native?.memberMetrics||{},w=r.window||{};
-    const closed=Number(a.closedTrades)||0,targets=Number(a.finalTargetHit)||0,stops=Number(a.stopLossHit)||0,amb=Number(a.ambiguous)||0;
-    const outcomeWin=closed?targets/closed*100:null;
-    const lower=(closed+amb)?targets/(closed+amb)*100:null;
-    const upper=(closed+amb)?(targets+amb)/(closed+amb)*100:null;
+    const r=S.retro,w=r.window||{},a=r.sameWindow?.astraCommonPolicy||{},cl=r.sameWindow?.claudeRc2Frozen||{},live=r.currentSnapshot||{},full=r.claudeLiveFullHistory||{};
+    const delta=r.sameWindow?.deltas||{};
     const panel=document.createElement('div');panel.id='astraRetroSimulator';panel.className='panel pro-command';
     panel.innerHTML=
-      '<div class="pro-command-head"><div><h2>Retrospective Simulator · Astra vs V16.9</h2><div class="pro-sub">Replay تاريخي بقواعد Astra الحالية على توصيات EGX Pro Professional V16.9 المحفوظة · '+E(w.first)+' → '+E(w.last)+'</div></div><span class="tag">RETRO SIM '+E(r.simulatorVersion||'')+'</span></div>'+
-      '<div class="pro-kpis">'+
-        kpi('Historical Sessions',w.sessions,'V16.9 resolved sessions')+
-        kpi('Recommendations',w.recommendations,'historical members')+
-        kpi('Signal / Plan Parity',r.signalContract?.tickerAndPlanParityPct,'source contract',true)+
-        kpi('V16.9 Winning Sessions',v.winningSessionPct,F(v.winningSessions,0)+' / '+F(v.resolvedSessions,0),true)+
-        kpi('V16.9 Compounded Net',v.compoundedNetReturnPct,'native V16.9 methodology',true)+
-        kpi('V16.9 Max Drawdown',v.maximumDrawdownPct,'native V16.9 methodology',true)+
-        kpi('V16.9 Member Win Rate',m.memberWinRatePct,'native resolved members',true)+
-        kpi('Astra Target / Closed',outcomeWin,F(targets,0)+' targets / '+F(closed,0)+' closed states',true)+
-        kpi('Astra Ambiguous',amb,'daily OHLC cannot order intraday path')+
-        kpi('Astra Numeric Win Rate',a.winRate?.pct,F(a.winRate?.numerator,0)+' / '+F(a.winRate?.denominator,0)+' exact-return closed',true)+
-        kpi('Astra Gross Expectancy',a.expectancyPct,'exact-price closed trades only',true)+
-        kpi('Astra Profit Factor',a.profitFactor,'exact-price closed trades only')+
+      '<div class="pro-command-head"><div><h2>Retrospective Simulator · Astra vs UI CLAUDE / RC2</h2><div class="pro-sub">مقارنة حيادية على نفس النافذة وبنفس سياسة التنفيذ · '+E(w.first)+' → '+E(w.last)+'</div></div><span class="tag">NEUTRAL REPLAY '+E(r.simulatorVersion||'')+'</span></div>'+
+      '<div class="pro-balance">'+
+        '<div class="pro-side pro-target"><small>Astra · T1 Hit</small><b>'+P(a.target1Pct)+'</b><span class="muted">'+F(a.target1,0)+' / '+F(a.entered,0)+' entered · Avg Net '+P(a.avgNetPct)+'</span><div class="pro-track"><i style="width:'+clamp(a.target1Pct)+'%"></i></div></div>'+
+        '<div class="pro-vs">SAME RULES</div>'+
+        '<div class="pro-side pro-target"><small>UI CLAUDE / TFE V20 Fusion RC2 · T1 Hit</small><b>'+P(cl.target1Pct)+'</b><span class="muted">'+F(cl.target1,0)+' / '+F(cl.entered,0)+' entered · Avg Net '+P(cl.avgNetPct)+'</span><div class="pro-track"><i style="width:'+clamp(cl.target1Pct)+'%"></i></div></div>'+
       '</div>'+
-      '<div class="pro-note"><b>قراءة صحيحة:</b> Astra الحالية لا تمثل نموذج اختيار مستقل أمام V16.9؛ ranking = <b>ASTRA_G09_V16_9_SOURCE_ORDER_1</b> وخطة Entry/Stop/Target موروثة من V16.9. لذلك أي فرق في الأرقام هنا ناتج أساسًا عن قواعد التنفيذ والحوكمة واختلاف أفق الاحتفاظ/التكلفة، وليس دليلًا على Alpha جديد. '+(lower!==null?'ومع '+F(amb,0)+' حالة غامضة، معدل Target بين الحالات المغلقة+الغامضة يقع حسابيًا بين '+P(lower)+' و '+P(upper)+' حسب مسار intraday غير المعروف.':'')+'</div>';
+      '<div class="pro-kpis">'+
+        kpi('Astra Issued',a.issuedSignals,F(a.eligibleEpisodes,0)+' non-overlap episodes')+
+        kpi('Astra Entered',a.entered,F(a.expired,0)+' expired')+
+        kpi('Astra Stop Rate',a.stopPct,F(a.stops,0)+' stops',true)+
+        kpi('Astra Positive',a.positivePct,'net > 0 after 0.60% cost',true)+
+        kpi('Astra Avg Net',a.avgNetPct,'per entered trade',true)+
+        kpi('Astra Profit Factor',a.profitFactor,'neutral execution')+
+        kpi('CLAUDE Signals',cl.issuedSignals,F(cl.signalDates,0)+' signal dates')+
+        kpi('CLAUDE Entered',cl.entered,F(cl.expired,0)+' expired')+
+        kpi('CLAUDE Stop Rate',cl.stopPct,F(cl.stops,0)+' stops',true)+
+        kpi('CLAUDE Positive',cl.positivePct,'net > 0 after 0.60% cost',true)+
+        kpi('CLAUDE Avg Net',cl.avgNetPct,'per entered trade',true)+
+        kpi('CLAUDE Profit Factor',cl.profitFactor,'frozen RC2')+
+        kpi('T1 Delta Astra−CLAUDE',delta.target1Pct,'percentage points',true)+
+        kpi('Avg Net Delta',delta.avgNetPct,'percentage points',true)+
+        kpi('Today Overlap',live.overlapCount,F((live.astraTickers||[]).length,0)+' Astra vs '+F((live.claudeTickers||[]).length,0)+' CLAUDE')+
+        kpi('CLAUDE Full-History T1',full.target1Pct,F(full.entered,0)+' entered · Wilson LB '+P(full.wilson95LowerTarget1Pct),true)+
+      '</div>'+
+      '<div class="pro-note"><b>توصيات الجلسة '+E(live.session||'—')+':</b> Astra = <b>'+E((live.astraTickers||[]).join(' · ')||'لا توجد')+'</b> · UI CLAUDE/RC2 = <b>'+E((live.claudeTickers||[]).join(' · ')||'لا توجد')+'</b> · التداخل = <b>'+E((live.overlap||[]).join(' · ')||'لا يوجد')+'</b>.<br><b>منهج المقارنة:</b> Next-session entry · 3-session expiry · 10-session max hold · STOP_FIRST · 0.60% round-trip cost. إشارات RC2 أُعيد توليدها من المصدر المجمد <b>'+E(r.sources?.rc2FrozenCommit||'')+'</b> بدون look-ahead.</div>';
     host.prepend(panel);
   }
+
 
   function clean(doc){
     const cutoff=S.app?.sourceDecision?.session,seen=new Set();
@@ -574,7 +581,7 @@
         load('./intelligence/market-universe.json'),
         load('./intelligence/recommendation-ledger.json'),
         load('./intelligence/ticker-performance.json'),
-        load('./intelligence/retrospective-v169-comparison.json'),
+        load('./intelligence/retrospective-claude-comparison.json'),
         load('./data.json')
       ]);
       renderHomeUpgrade();renderCommand();renderRetrospectiveComparison();renderLabShell();installUniversalChartAction();
