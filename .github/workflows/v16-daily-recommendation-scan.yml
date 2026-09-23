@@ -12,6 +12,8 @@ on:
       - "scripts/stable/v16-source-session-quorum.cjs"
       - "scripts/stable/v16-v169-live-resolution-normalizer.cjs"
       - "scripts/stable/v16-main-app-professional-readiness.cjs"
+      - "scripts/stable/v16-postclose-scan-complete.cjs"
+      - "tests/astra/postclose-source-recovery.test.cjs"
   schedule:
     # GitHub cron is UTC. We schedule both Egypt UTC+2 and UTC+3 candidates,
     # then the preflight gate checks the real Africa/Cairo local clock.
@@ -109,8 +111,10 @@ jobs:
         id: already
         shell: bash
         run: |
+          node --test tests/astra/postclose-source-recovery.test.cjs
           node - <<'NODE'
           const fs = require('fs');
+          const { postCloseComplete } = require('./scripts/stable/v16-postclose-scan-complete.cjs');
           const read = f => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch { return {}; } };
           const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
             timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -120,14 +124,11 @@ jobs:
           const hour = Number(parts.hour);
           const primary = read('data/stable/v16-v169-primary-decision.json');
           const scan = read('data/stable/v16-immediate-scan-status.json');
-          const postClose = hour >= 15;
-          const final = postClose
-            && primary.currentSessionReady === true
-            && primary.sessionDate === today
-            && primary?.basketPlan?.sourceSessionReady === true
-            && scan.pagesPublishedSession === today;
-          console.log({ today, hour, postClose, primarySession: primary.sessionDate, currentSessionReady: primary.currentSessionReady, pagesPublishedSession: scan.pagesPublishedSession, final });
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `skip=${final ? 'true' : 'false'}\n`);
+          const marker = read('data/ops/g22-main-app-handoff.json');
+          const audit = read('astra-prod/G22_SESSION_REFRESH.json');
+          const completion = postCloseComplete({ today, hour, primary, scan, marker, audit });
+          console.log({ today, hour, primarySession: primary.sessionDate, astraSession: audit.session?.decision, ...completion });
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `skip=${completion.skip ? 'true' : 'false'}\n`);
           NODE
 
       - name: Validate MAIN APP engines
