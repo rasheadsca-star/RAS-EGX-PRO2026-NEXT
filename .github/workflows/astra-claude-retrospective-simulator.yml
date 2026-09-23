@@ -1,0 +1,77 @@
+name: Astra vs UI CLAUDE Retrospective Simulator
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    paths:
+      - 'scripts/astra/astra-claude-retrospective-comparison.mjs'
+      - '.github/workflows/astra-claude-retrospective-simulator.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-claude-retrospective-simulator
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout current Astra
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Checkout pinned UI CLAUDE RC2 source
+        uses: actions/checkout@v4
+        with:
+          ref: cf5f9e2f4db9e81dc8245becf45f280aa42dc010
+          path: _rc2
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Capture live UI CLAUDE truth
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 --retry-delay 2 'https://egx-tfe-v20-fusion-rc2.vercel.app/api?route=scan&limit=20' -o /tmp/rc2-scan.json
+          curl -fsSL --retry 3 --retry-delay 2 'https://egx-tfe-v20-fusion-rc2.vercel.app/api?route=simulate&scope=market&symbols=220' -o /tmp/rc2-sim.json
+          node -e "const a=require('/tmp/rc2-scan.json'),b=require('/tmp/rc2-sim.json'); if(a.engine!=='TFE_V20_FUSION_RC2'||b.engine!=='TFE_V20_FUSION_RC2') process.exit(2)"
+
+      - name: Run neutral retrospective comparison
+        env:
+          RC2_ROOT: ${{ github.workspace }}/_rc2
+          RC2_SCAN_PATH: /tmp/rc2-scan.json
+          RC2_SIM_PATH: /tmp/rc2-sim.json
+        run: |
+          set -euo pipefail
+          node --check scripts/astra/astra-claude-retrospective-comparison.mjs
+          node scripts/astra/astra-claude-retrospective-comparison.mjs
+
+      - name: Commit comparison outputs
+        run: |
+          set -euo pipefail
+          rm -rf _rc2
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/astra/ASTRA_CLAUDE_RETROSPECTIVE_COMPARISON.json \
+                  docs/astra/ASTRA_CLAUDE_RETROSPECTIVE_COMPARISON.md \
+                  astra-prod/app/intelligence/retrospective-claude-comparison.json
+          if git diff --cached --quiet; then
+            echo "No comparison output changes."
+            exit 0
+          fi
+          git commit -m "Update Astra comparison against UI CLAUDE RC2"
+          for attempt in 1 2 3; do
+            if git pull --rebase -X ours origin main && git push origin HEAD:main; then exit 0; fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt * 8))
+          done
