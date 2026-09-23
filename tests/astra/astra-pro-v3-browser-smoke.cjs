@@ -115,10 +115,14 @@ async function returnContext(page,view,label){
       const claudeAccess=page.locator('#astraClaudeAccess');
       assert.match(await claudeAccess.innerText(),/CLAUDE \/ TFE V20/,name+' CLAUDE access panel missing');
       const claudeLink=page.locator('#proOpenClaudeApp');
-      assert.equal(await claudeLink.count(),1,name+' CLAUDE open-app link missing');
+      assert.equal(await claudeLink.count(),1,name+' CLAUDE same-tab link missing');
       assert.equal(await claudeLink.getAttribute('href'),'https://egx-tfe-v20-fusion-rc2.vercel.app/',name+' CLAUDE app URL drift');
-      assert.equal(await claudeLink.getAttribute('target'),'_blank',name+' CLAUDE app link must open separately');
-      assert.match(String(await claudeLink.getAttribute('rel')),/noopener/,name+' CLAUDE app link missing noopener');
+      assert.equal(await claudeLink.getAttribute('target'),'_self',name+' CLAUDE primary link must use same-tab navigation');
+      const claudeNewTab=page.locator('#proOpenClaudeNewTab');
+      assert.equal(await claudeNewTab.count(),1,name+' CLAUDE new-tab fallback missing');
+      assert.equal(await claudeNewTab.getAttribute('href'),'https://egx-tfe-v20-fusion-rc2.vercel.app/',name+' CLAUDE new-tab URL drift');
+      assert.equal(await claudeNewTab.getAttribute('target'),'_blank',name+' CLAUDE fallback must open separately');
+      assert.match(String(await claudeNewTab.getAttribute('rel')),/noopener/,name+' CLAUDE new-tab link missing noopener');
       const claudeCards=page.locator('#astraClaudeAccess [data-claude-card]');
       assert.equal(await claudeCards.count(),(live.retro?.currentSnapshot?.claude||[]).length,name+' CLAUDE recommendation card count mismatch');
       const claudeText=await claudeAccess.innerText();
@@ -186,7 +190,19 @@ async function returnContext(page,view,label){
       assert.equal(external.length,0,name+' external requests '+JSON.stringify(external));
       assert.equal(errors.length,0,name+' page errors '+JSON.stringify(errors));
       assert.equal(bad.filter(x=>!x.url.includes('favicon')).length,0,name+' bad responses '+JSON.stringify(bad));
-      results.push({cycle:CYCLE,profile:name,session:d.sourceDecision.session,recommendations:recs.map(x=>x.ticker),universalChart:true,errors:0});
+
+      // Real navigation test: click the primary CLAUDE button in a fresh page and require the RC2 app to load.
+      const claudePage=await ctx.newPage();
+      await claudePage.goto(BASE+'/astra-prod/app/pro-v3.html?claude-open-test='+Date.now(),{waitUntil:'domcontentloaded',timeout:30000});
+      await claudePage.waitForFunction(()=>window.__ASTRA_PRO_V3__?.status==='READY'&&window.__ASTRA_PRO_ANALYTICS__==='READY',null,{timeout:30000});
+      await claudePage.locator('#proOpenClaudeApp').click();
+      await claudePage.waitForURL('https://egx-tfe-v20-fusion-rc2.vercel.app/**',{timeout:30000});
+      await claudePage.waitForLoadState('domcontentloaded',{timeout:30000});
+      assert.match(await claudePage.getAttribute('body','innerHTML').catch(()=>''),/./,name+' CLAUDE destination did not render');
+      assert.ok((await claudePage.url()).startsWith('https://egx-tfe-v20-fusion-rc2.vercel.app/'),name+' CLAUDE click did not navigate to RC2');
+      await claudePage.close();
+
+      results.push({cycle:CYCLE,profile:name,session:d.sourceDecision.session,recommendations:recs.map(x=>x.ticker),universalChart:true,claudeOpen:true,errors:0});
       await ctx.close();
     }
   } finally {await browser.close()}
