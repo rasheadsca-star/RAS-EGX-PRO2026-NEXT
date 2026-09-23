@@ -111,6 +111,20 @@ async function returnContext(page,view,label){
       assert.ok(Number(live.retro?.sameWindow?.astraCommonPolicy?.entered)>0,name+' Astra retrospective entered sample empty');
       assert.ok(Number(live.retro?.sameWindow?.claudeRc2Frozen?.entered)>0,name+' CLAUDE retrospective entered sample empty');
       assert.equal(live.retro?.currentSnapshot?.session,d.sourceDecision.session,name+' retrospective current-session drift');
+      await page.waitForSelector('#astraClaudeAccess',{timeout:10000});
+      const claudeAccess=page.locator('#astraClaudeAccess');
+      assert.match(await claudeAccess.innerText(),/CLAUDE \/ TFE V20/,name+' CLAUDE access panel missing');
+      const claudeLink=page.locator('#proOpenClaudeApp');
+      assert.equal(await claudeLink.count(),1,name+' CLAUDE open-app link missing');
+      assert.equal(await claudeLink.getAttribute('href'),'https://egx-tfe-v20-fusion-rc2.vercel.app/',name+' CLAUDE app URL drift');
+      assert.equal(await claudeLink.getAttribute('target'),'_blank',name+' CLAUDE app link must open separately');
+      assert.match(String(await claudeLink.getAttribute('rel')),/noopener/,name+' CLAUDE app link missing noopener');
+      const claudeCards=page.locator('#astraClaudeAccess [data-claude-card]');
+      assert.equal(await claudeCards.count(),(live.retro?.currentSnapshot?.claude||[]).length,name+' CLAUDE recommendation card count mismatch');
+      const claudeText=await claudeAccess.innerText();
+      for(const r of live.retro?.currentSnapshot?.claude||[]){
+        assert.ok(claudeText.includes(r.ticker),name+' CLAUDE recommendation ticker missing '+r.ticker);
+      }
 
       await page.locator('[data-view="recommendations"]').click();
       await page.waitForSelector('#view-recommendations.active');
