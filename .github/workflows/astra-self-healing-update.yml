@@ -73,8 +73,6 @@ jobs:
 
       - name: Diagnose data, recommendation and deployment freshness
         id: state
-        env:
-          ASTRA_LIVE_DATA_PATH: ${{ env.ASTRA_LIVE_DATA_PATH }}
         run: node scripts/astra/astra-update-supervisor.cjs
 
       - name: Recover current-session market truth
