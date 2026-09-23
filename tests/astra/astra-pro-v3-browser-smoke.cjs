@@ -59,13 +59,14 @@ async function returnContext(page,view,label){
       assert.equal(await page.evaluate(()=>typeof window.openStockChart),'function',name+' canonical openStockChart missing');
 
       const live=await page.evaluate(async()=>{
-        const [d,u,l,p]=await Promise.all([
+        const [d,u,l,p,retro]=await Promise.all([
           fetch('./data.json',{cache:'no-store'}).then(r=>r.json()),
           fetch('./intelligence/market-universe.json',{cache:'no-store'}).then(r=>r.json()),
           fetch('./intelligence/recommendation-ledger.json',{cache:'no-store'}).then(r=>r.json()),
-          fetch('./intelligence/performance-summary.json',{cache:'no-store'}).then(r=>r.json())
+          fetch('./intelligence/performance-summary.json',{cache:'no-store'}).then(r=>r.json()),
+          fetch('./intelligence/retrospective-v169-comparison.json',{cache:'no-store'}).then(r=>r.json())
         ]);
-        return {d,u,l,p};
+        return {d,u,l,p,retro};
       });
       const d=live.d, recs=d?.decisionSnapshot?.top5||d?.decisionSnapshot?.opportunities||[];
       expectedRecommendations=recs;
@@ -102,6 +103,10 @@ async function returnContext(page,view,label){
       assert.equal(live.p?.sessionRange?.last,d.sourceDecision.session,name+' KPI session range stale');
       assert.equal(Number(live.p?.currentOpportunities),recs.length,name+' KPI current opportunity count mismatch');
       assert.ok(Number(live.u?.activeCount||live.u?.records?.length)>0,name+' universe empty');
+      assert.equal(live.retro?.signalContract?.currentAstraRanking,'ASTRA_G09_V16_9_SOURCE_ORDER_1',name+' retrospective ranking lineage drift');
+      assert.equal(live.retro?.signalContract?.tickerAndPlanParityPct,100,name+' retrospective signal/plan parity drift');
+      assert.ok(Number(live.retro?.window?.sessions)>=20,name+' retrospective session sample unexpectedly small');
+      assert.ok(Number(live.retro?.window?.recommendations)>=80,name+' retrospective recommendation sample unexpectedly small');
 
       await page.locator('[data-view="recommendations"]').click();
       await page.waitForSelector('#view-recommendations.active');
@@ -145,6 +150,9 @@ async function returnContext(page,view,label){
 
       await page.locator('[data-view="performance"]').click();
       await page.waitForSelector('#view-performance.active');
+      await page.waitForSelector('#astraRetroSimulator',{timeout:10000});
+      assert.match(await page.locator('#astraRetroSimulator').innerText(),/Retrospective Simulator/,name+' retrospective simulator panel missing');
+      assert.match(await page.locator('#astraRetroSimulator').innerText(),/100/,name+' retrospective parity metric missing');
       await page.waitForSelector('#astraTickerPerfRows .ticker',{timeout:10000});
       const perfTicker=(await page.locator('#astraTickerPerfRows .ticker').first().innerText()).trim().toUpperCase();
       const perfHost=page.locator('#astraTickerPerfRows [data-chart-ticker-host="'+perfTicker+'"]').first();
