@@ -97,3 +97,20 @@ test('current repository with stale live deployment forces Vercel deployment',()
   assert.equal(out.action,'DEPLOY_VERCEL');
   assert.equal(out.reason,'VERCEL_LIVE_STALE');
 });
+
+
+test('holiday-aware expected session falls back to the prior trading day',()=>{
+  const holidayNow={date:'2026-09-24',hour:18,minute:0,dow:4};
+  const out=state({
+    now:holidayNow,
+    holidays:new Set(['2026-09-24']),
+    expectedTradingSession:'2026-09-23'
+  });
+  assert.equal(out.expectedTradingSession,'2026-09-23');
+});
+
+test('repository-current state with unavailable live truth keeps deployment recovery active',()=>{
+  const out=state({live:null});
+  assert.equal(out.action,'DEPLOY_VERCEL');
+  assert.equal(out.reason,'VERCEL_LIVE_UNVERIFIED');
+});
