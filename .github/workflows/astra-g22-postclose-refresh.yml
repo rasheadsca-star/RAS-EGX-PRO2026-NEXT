@@ -28,7 +28,9 @@ permissions:
 
 concurrency:
   group: astra-g22-postclose-refresh
-  cancel-in-progress: true
+  # Self-healing retries must never cancel a refresh that is already rebuilding
+  # the current immutable DecisionSnapshot. Later runs queue and dedupe safely.
+  cancel-in-progress: false
 
 env:
   ASTRA_CERTIFIED_BASELINE_HEAD: 66b74d6f7586bd06201f6f7992ff9babf1104259
