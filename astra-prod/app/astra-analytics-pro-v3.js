@@ -270,12 +270,32 @@
     if(preferred)loadTicker(preferred.ticker);
   }
 
+  function renderTechnicalFallback(ticker,market,rec,reason){
+    const out=$('#proLabBody');if(!out)return;
+    const session=S.app?.sourceDecision?.session||market?.priceSession||'—';
+    const regime=S.app?.decisionSnapshot?.regime;
+    const stop=rec&&Number.isFinite(Number(rec.stopLoss))?F(rec.stopLoss,3):'—';
+    const t1=rec&&Number.isFinite(Number(rec.targets?.[0]))?F(rec.targets[0],3):'—';
+    out.innerHTML=
+      '<div class="panel"><div class="pro-command-head"><div><h2>'+E(ticker)+' — Technical Lab</h2><div class="pro-sub">جلسة '+E(session)+' · بيانات السوق الحالية موثقة، لكن عمق Daily OHLC غير كافٍ لبناء الرسم الفني متعدد الجلسات.</div></div><span class="tag">NO SYNTHETIC CHART</span></div>'+
+      '<div class="pro-summary">'+
+        box('Validated Market Price',F(market?.price,3),E(market?.priceSession||session))+
+        box('Decision Session',E(session),'certified snapshot')+
+        box('Market Regime',E(regime?.regime||'—'),'regime score '+E(regime?.score??'—'))+
+        box('Astra Status',rec?'RECOMMENDED TODAY':'NOT RECOMMENDED TODAY',rec?'Rank #'+E(rec.rank):'market universe')+
+        box('Recommendation Entry',rec?(F(rec.entryPlan?.low,3)+' – '+F(rec.entryPlan?.high,3)):'—','distinct from current market price')+
+        box('Astra Stop',stop,'immutable recommendation plan')+
+        box('Astra T1',t1,'immutable recommendation plan')+
+      '</div>'+
+      '<div class="pro-note">'+E(reason)+' لا يتم اختلاق شموع أو مؤشرات فنية. '+(rec?('Astra Stop '+stop+' · Astra T1 '+t1):'')+'</div></div>';
+  }
+
   async function loadTicker(ticker){
     const token=++S.loadToken,out=$('#proLabBody');if(!out)return;
     const market=A(S.universe.records).find(x=>x.ticker===ticker),rec=currentRecommendations().find(x=>x.ticker===ticker);
     if(!market){out.innerHTML='<div class="panel"><div class="notice bad">السهم غير موجود في الـAstra universe.</div></div>';return}
     if(market.historyAvailable!==true||Number(market.historySessions||0)<=0){
-      out.innerHTML='<div class="panel"><div class="section-title"><div><h2>'+E(ticker)+' — Technical Lab</h2></div></div><div class="notice">لا توجد Daily OHLC موثقة لهذا السهم. لن يتم طلب ملف تاريخ مفقود، ولن يتم تقدير Channel/Signature/MACD/RSI/Fibonacci. حالة Astra الحالية تبقى مستقلة.</div></div>';
+      renderTechnicalFallback(ticker,market,rec,'لا توجد Daily OHLC موثقة كافية لهذا السهم؛ لذلك Channel/Signature/MACD/RSI/Fibonacci غير متاحة حاليًا.');
       return;
     }
     out.innerHTML='<div class="panel"><div class="empty">جارٍ بناء التحليل الفني متعدد الطبقات…</div></div>';
@@ -283,13 +303,17 @@
       let doc=S.history.get(ticker);
       if(!doc){doc=await load('../../data/history/'+encodeURIComponent(ticker)+'.json');S.history.set(ticker,doc)}
       if(token!==S.loadToken)return;
-      const rows=clean(doc);renderTicker(ticker,market,rec,rows);
-    }catch(e){if(token!==S.loadToken)return;out.innerHTML='<div class="panel"><div class="notice bad">تعذر تحميل التاريخ الموثق: '+E(e.message||e)+'</div></div>'}
+      const rows=clean(doc);
+      if(rows.length<30){renderTechnicalFallback(ticker,market,rec,'عدد جلسات Daily OHLC الموثقة أقل من 30 جلسة؛ لا يتم بناء تحليل فني ناقص.');return}
+      renderTicker(ticker,market,rec,rows);
+    }catch(e){
+      if(token!==S.loadToken)return;
+      renderTechnicalFallback(ticker,market,rec,'تعذر تحميل التاريخ الموثق: '+String(e?.message||e||'unknown'));
+    }
   }
 
   function renderTicker(ticker,market,rec,allRows){
     const out=$('#proLabBody');if(!out)return;
-    if(allRows.length<30){out.innerHTML='<div class="panel"><div class="notice">البيانات التاريخية أقل من 30 جلسة؛ لا يتم بناء تحليل احترافي ناقص.</div></div>';return}
     const closes=allRows.map(r=>r.close),e20=ema(closes,20),e50=ema(closes,50),s200=sma(closes,200),rs=rsi(closes),mc=macd(closes);
     const n=Math.min(allRows.length,S.range),start=allRows.length-n,rows=allRows.slice(start),last=rows.at(-1),lv=levels(allRows,last.close),fib=fibonacci(allRows),ch=channel(rows),a14=atr(allRows),rv=volumeRatio(allRows);
     const ind={ema20:e20.at(-1),ema50:e50.at(-1),sma200:s200.at(-1),rsi:rs.at(-1),macdLine:mc.line.at(-1),macdSignal:mc.signal.at(-1),macdHist:mc.hist.at(-1),atr:a14,relVol:rv,channel:ch};
