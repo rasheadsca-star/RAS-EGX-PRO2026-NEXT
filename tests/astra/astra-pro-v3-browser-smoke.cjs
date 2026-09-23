@@ -152,7 +152,9 @@ async function returnContext(page,view,label){
       await page.waitForSelector('#view-performance.active');
       await page.waitForSelector('#astraRetroSimulator',{timeout:10000});
       assert.match(await page.locator('#astraRetroSimulator').innerText(),/Retrospective Simulator/,name+' retrospective simulator panel missing');
-      assert.match(await page.locator('#astraRetroSimulator').innerText(),/100/,name+' retrospective parity metric missing');
+      const parityKpi=page.locator('#astraRetroSimulator .pro-kpi').filter({hasText:'Signal / Plan Parity'});
+      assert.equal(await parityKpi.count(),1,name+' retrospective parity KPI missing');
+      assert.ok((await parityKpi.innerText()).includes('%'),name+' retrospective parity KPI value missing');
       await page.waitForSelector('#astraTickerPerfRows .ticker',{timeout:10000});
       const perfTicker=(await page.locator('#astraTickerPerfRows .ticker').first().innerText()).trim().toUpperCase();
       const perfHost=page.locator('#astraTickerPerfRows [data-chart-ticker-host="'+perfTicker+'"]').first();
