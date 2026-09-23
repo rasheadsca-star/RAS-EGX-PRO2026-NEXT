@@ -42,7 +42,7 @@ function dowOf(date) {
 }
 
 function parseHolidays(raw) {
-  return new Set(String(raw || '').split(/[\s,;]+/).map(x => x.trim()).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)));
+  return new Set(String(raw || '').match(/\d{4}-\d{2}-\d{2}/g) || []);
 }
 
 function latestExpectedTradingSession(now, holidays = new Set()) {
