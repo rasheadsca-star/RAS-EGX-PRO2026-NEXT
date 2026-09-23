@@ -11,7 +11,7 @@
   const P=v=>v!==null&&v!==undefined&&Number.isFinite(Number(v))?F(v,1)+'%':'—';
   const clamp=(v,a=0,b=100)=>Math.max(a,Math.min(b,Number(v)||0));
   const mean=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:null;
-  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null,tickerPerf:null,app:null,loadToken:0,chartContext:null,universalInstalled:false};
+  const S={history:new Map(),range:100,universe:null,ledger:null,summary:null,tickerPerf:null,retro:null,app:null,loadToken:0,chartContext:null,universalInstalled:false};
 
   async function load(p){
     const r=await fetch(p+(p.includes('?')?'&':'?')+'pro='+Date.now(),{cache:'no-store'});
@@ -125,6 +125,34 @@
     let v='—';
     if(value!==null&&value!==undefined&&Number.isFinite(Number(value)))v=isPct?P(value):F(value,2);
     return '<div class="pro-kpi"><small>'+E(label)+'</small><b>'+E(v)+'</b><em>'+E(note)+'</em></div>';
+  }
+
+  function renderRetrospectiveComparison(){
+    const host=$('#view-performance');if(!host||$('#astraRetroSimulator')||!S.retro)return;
+    const r=S.retro,a=r.astraReplay?.metrics||{},v=r.v169Native?.sessionSummary||{},m=r.v169Native?.memberMetrics||{},w=r.window||{};
+    const closed=Number(a.closedTrades)||0,targets=Number(a.finalTargetHit)||0,stops=Number(a.stopLossHit)||0,amb=Number(a.ambiguous)||0;
+    const outcomeWin=closed?targets/closed*100:null;
+    const lower=(closed+amb)?targets/(closed+amb)*100:null;
+    const upper=(closed+amb)?(targets+amb)/(closed+amb)*100:null;
+    const panel=document.createElement('div');panel.id='astraRetroSimulator';panel.className='panel pro-command';
+    panel.innerHTML=
+      '<div class="pro-command-head"><div><h2>Retrospective Simulator · Astra vs V16.9</h2><div class="pro-sub">Replay تاريخي بقواعد Astra الحالية على توصيات EGX Pro Professional V16.9 المحفوظة · '+E(w.first)+' → '+E(w.last)+'</div></div><span class="tag">RETRO SIM '+E(r.simulatorVersion||'')+'</span></div>'+
+      '<div class="pro-kpis">'+
+        kpi('Historical Sessions',w.sessions,'V16.9 resolved sessions')+
+        kpi('Recommendations',w.recommendations,'historical members')+
+        kpi('Signal / Plan Parity',r.signalContract?.tickerAndPlanParityPct,'source contract',true)+
+        kpi('V16.9 Winning Sessions',v.winningSessionPct,F(v.winningSessions,0)+' / '+F(v.resolvedSessions,0),true)+
+        kpi('V16.9 Compounded Net',v.compoundedNetReturnPct,'native V16.9 methodology',true)+
+        kpi('V16.9 Max Drawdown',v.maximumDrawdownPct,'native V16.9 methodology',true)+
+        kpi('V16.9 Member Win Rate',m.memberWinRatePct,'native resolved members',true)+
+        kpi('Astra Target / Closed',outcomeWin,F(targets,0)+' targets / '+F(closed,0)+' closed states',true)+
+        kpi('Astra Ambiguous',amb,'daily OHLC cannot order intraday path')+
+        kpi('Astra Numeric Win Rate',a.winRate?.pct,F(a.winRate?.numerator,0)+' / '+F(a.winRate?.denominator,0)+' exact-return closed',true)+
+        kpi('Astra Gross Expectancy',a.expectancyPct,'exact-price closed trades only',true)+
+        kpi('Astra Profit Factor',a.profitFactor,'exact-price closed trades only')+
+      '</div>'+
+      '<div class="pro-note"><b>قراءة صحيحة:</b> Astra الحالية لا تمثل نموذج اختيار مستقل أمام V16.9؛ ranking = <b>ASTRA_G09_V16_9_SOURCE_ORDER_1</b> وخطة Entry/Stop/Target موروثة من V16.9. لذلك أي فرق في الأرقام هنا ناتج أساسًا عن قواعد التنفيذ والحوكمة واختلاف أفق الاحتفاظ/التكلفة، وليس دليلًا على Alpha جديد. '+(lower!==null?'ومع '+F(amb,0)+' حالة غامضة، معدل Target بين الحالات المغلقة+الغامضة يقع حسابيًا بين '+P(lower)+' و '+P(upper)+' حسب مسار intraday غير المعروف.':'')+'</div>';
+    host.prepend(panel);
   }
 
   function clean(doc){
@@ -541,14 +569,15 @@
   async function boot(){
     try{
       await waitReady();addStyle();
-      [S.summary,S.universe,S.ledger,S.tickerPerf,S.app]=await Promise.all([
+      [S.summary,S.universe,S.ledger,S.tickerPerf,S.retro,S.app]=await Promise.all([
         load('./intelligence/performance-summary.json'),
         load('./intelligence/market-universe.json'),
         load('./intelligence/recommendation-ledger.json'),
         load('./intelligence/ticker-performance.json'),
+        load('./intelligence/retrospective-v169-comparison.json'),
         load('./data.json')
       ]);
-      renderHomeUpgrade();renderCommand();renderLabShell();installUniversalChartAction();
+      renderHomeUpgrade();renderCommand();renderRetrospectiveComparison();renderLabShell();installUniversalChartAction();
       window.__ASTRA_PRO_ANALYTICS__='READY';
     }catch(e){
       console.error('ASTRA_PRO_ANALYTICS_FAILED',e);
