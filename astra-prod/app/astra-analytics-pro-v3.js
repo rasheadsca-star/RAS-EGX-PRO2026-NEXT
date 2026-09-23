@@ -93,7 +93,7 @@
     const panel=document.createElement('div');panel.id='astraClaudeAccess';panel.className='panel pro-claude';
     panel.innerHTML=
       '<div class="pro-claude-head"><div><h2>CLAUDE / TFE V20</h2><div class="pro-sub">اطّلع على توصيات TFE V20 Fusion RC2 من داخل Astra، أو افتح التطبيق الأصلي كاملًا في نافذة مستقلة.</div></div>'+
-      '<div class="pro-claude-actions"><span class="tag '+(inSync?'good':'warn')+'">SESSION '+E(session)+'</span><a id="proOpenClaudeApp" class="btn good pro-claude-open" href="https://egx-tfe-v20-fusion-rc2.vercel.app/" target="_blank" rel="noopener noreferrer">فتح تطبيق CLAUDE / TFE V20 ↗</a></div></div>'+
+      '<div class="pro-claude-actions"><span class="tag '+(inSync?'good':'warn')+'">SESSION '+E(session)+'</span><a id="proOpenClaudeApp" class="btn good pro-claude-open" href="https://egx-tfe-v20-fusion-rc2.vercel.app/" target="_self">فتح CLAUDE / TFE V20 هنا</a><a id="proOpenClaudeNewTab" class="btn pro-claude-open" href="https://egx-tfe-v20-fusion-rc2.vercel.app/" target="_blank" rel="noopener noreferrer">فتح في نافذة جديدة ↗</a></div></div>'+
       (claude.length?
         '<div class="pro-claude-grid">'+claude.map(r=>
           '<div class="pro-claude-card" data-claude-card="'+E(r.ticker)+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b class="ticker">'+E(r.ticker)+'</b><small>Rank '+E(r.rank??'—')+' · '+E(r.decision||'RESEARCH')+'</small></div><span class="tag">Fusion '+E(F(r.fusionRank,1))+'</span></div>'+
