@@ -40,7 +40,8 @@
     '.pro-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;color:#8faebe;font-size:10px}.pro-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:4px}'+
     '.rr-wrap{position:relative;height:82px;margin-top:12px;background:#071a29;border:1px solid #294e64;border-radius:12px;padding:16px 18px}.rr-line{position:absolute;left:5%;right:5%;top:40px;height:6px;background:#1b4056;border-radius:99px}.rr-seg-risk{position:absolute;top:40px;height:6px;background:#ff6d7d}.rr-seg-reward{position:absolute;top:40px;height:6px;background:#36d995}.rr-mark{position:absolute;top:28px;width:2px;height:30px;background:#dff6ff}.rr-label{position:absolute;top:8px;transform:translateX(-50%);font-size:9px;white-space:nowrap}.rr-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:9px}'+
     '.pro-note{margin-top:9px;padding:9px 10px;border:1px solid #5d5131;background:#292318;border-radius:9px;color:#f3dfaa;font-size:10px;line-height:1.7}'+
-    '@media(max-width:1100px){.pro-kpis,.pro-summary,.sig-grid{grid-template-columns:repeat(3,1fr)}.pro-home-kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.pro-balance{grid-template-columns:1fr}.pro-vs{text-align:center}.pro-kpis,.pro-summary,.sig-grid,.pro-home-kpis{grid-template-columns:1fr 1fr}.rr-metrics{grid-template-columns:1fr 1fr}.pro-select{min-width:100%;width:100%}}@media(max-width:440px){.pro-kpis,.pro-summary,.sig-grid,.rr-metrics,.pro-home-kpis{grid-template-columns:1fr}}';
+    '.pro-claude{border-color:#6c5aa7;background:radial-gradient(circle at 10% 0,#2a2248 0,#101b2c 46%,#081724 100%)}.pro-claude-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.pro-claude-head h2{margin:0}.pro-claude-actions{display:flex;gap:8px;flex-wrap:wrap}.pro-claude-open{display:inline-flex;align-items:center;gap:6px;text-decoration:none}.pro-claude-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.pro-claude-card{border:1px solid #4a4770;background:#0c1b2a;border-radius:12px;padding:11px}.pro-claude-card .ticker{font-size:18px}.pro-claude-card small{display:block;color:#9fb4c4;margin-top:3px}.pro-claude-plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.pro-claude-plan span{display:block;background:#0a2434;border:1px solid #29475c;border-radius:8px;padding:7px;font-size:9px}.pro-claude-plan b{display:block;font-size:11px;margin-top:2px}.pro-claude-empty{padding:14px;border:1px dashed #4a4770;border-radius:10px;color:#aabccb;margin-top:12px}.pro-claude-sync{font-size:9px;color:#8da5b6;margin-top:8px}'+
+    '@media(max-width:1100px){.pro-kpis,.pro-summary,.sig-grid{grid-template-columns:repeat(3,1fr)}.pro-home-kpis{grid-template-columns:repeat(2,1fr)}.pro-claude-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:700px){.pro-claude-grid{grid-template-columns:1fr}.pro-balance{grid-template-columns:1fr}.pro-vs{text-align:center}.pro-kpis,.pro-summary,.sig-grid,.pro-home-kpis{grid-template-columns:1fr 1fr}.rr-metrics{grid-template-columns:1fr 1fr}.pro-select{min-width:100%;width:100%}}@media(max-width:440px){.pro-kpis,.pro-summary,.sig-grid,.rr-metrics,.pro-home-kpis{grid-template-columns:1fr}}';
     document.head.appendChild(s);
   }
 
@@ -82,6 +83,27 @@
     if(badges&&!$('#proBuildBadge'))badges.insertAdjacentHTML('afterbegin','<span class="badge good" id="proBuildBadge">PRO v3</span>');
     const nav=document.querySelector('[data-view="technical"]');
     if(nav){nav.textContent='Technical Lab · NEW';nav.style.fontWeight='900'}
+  }
+
+  function renderClaudeAccess(){
+    const host=$('#view-home');if(!host||$('#astraClaudeAccess')||!S.retro)return;
+    const snap=S.retro.currentSnapshot||{},claude=A(snap.claude),session=snap.session||S.app?.sourceDecision?.session||'—';
+    const inSync=!snap.session||!S.app?.sourceDecision?.session||snap.session===S.app.sourceDecision.session;
+    const panel=document.createElement('div');panel.id='astraClaudeAccess';panel.className='panel pro-claude';
+    panel.innerHTML=
+      '<div class="pro-claude-head"><div><h2>CLAUDE / TFE V20</h2><div class="pro-sub">اطّلع على توصيات TFE V20 Fusion RC2 من داخل Astra، أو افتح التطبيق الأصلي كاملًا في نافذة مستقلة.</div></div>'+
+      '<div class="pro-claude-actions"><span class="tag '+(inSync?'good':'warn')+'">SESSION '+E(session)+'</span><a id="proOpenClaudeApp" class="btn good pro-claude-open" href="https://egx-tfe-v20-fusion-rc2.vercel.app/" target="_blank" rel="noopener noreferrer">فتح تطبيق CLAUDE / TFE V20 ↗</a></div></div>'+
+      (claude.length?
+        '<div class="pro-claude-grid">'+claude.map(r=>
+          '<div class="pro-claude-card" data-claude-card="'+E(r.ticker)+'"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div><b class="ticker">'+E(r.ticker)+'</b><small>Rank '+E(r.rank??'—')+' · '+E(r.decision||'RESEARCH')+'</small></div><span class="tag">Fusion '+E(F(r.fusionRank,1))+'</span></div>'+
+          '<div class="pro-claude-plan"><span>Entry Low<b>'+E(F(r.entryLow,4))+'</b></span><span>Entry High<b>'+E(F(r.entryHigh,4))+'</b></span><span>Stop<b>'+E(F(r.stop,4))+'</b></span><span>T1<b>'+E(F(r.target1,4))+'</b></span></div>'+
+          '<div style="margin-top:9px"><button class="pro-btn" data-claude-chart="'+E(r.ticker)+'">فتح الرسم داخل Astra</button></div></div>'
+        ).join('')+'</div>':
+        '<div class="pro-claude-empty">لا توجد توصيات منشورة من CLAUDE / TFE V20 في اللقطة المتزامنة الحالية. يمكنك فتح التطبيق الأصلي لمراجعة حالة الفحص والبوابات مباشرة.</div>')+
+      '<div class="pro-claude-sync">Source: TFE V20 Fusion RC2 · Research Only · Last synchronized comparison: '+E(S.retro.generatedAt||'—')+(inSync?'':' · تنبيه: لقطة CLAUDE ليست على نفس جلسة Astra الحالية')+'</div>';
+    const anchor=$('#astraProHome');
+    if(anchor)anchor.after(panel);else host.prepend(panel);
+    $$('[data-claude-chart]').forEach(b=>b.onclick=()=>window.openStockChart?.(b.dataset.claudeChart));
   }
 
   function renderCommand(){
@@ -584,7 +606,7 @@
         load('./intelligence/retrospective-claude-comparison.json'),
         load('./data.json')
       ]);
-      renderHomeUpgrade();renderCommand();renderRetrospectiveComparison();renderLabShell();installUniversalChartAction();
+      renderHomeUpgrade();renderClaudeAccess();renderCommand();renderRetrospectiveComparison();renderLabShell();installUniversalChartAction();
       window.__ASTRA_PRO_ANALYTICS__='READY';
     }catch(e){
       console.error('ASTRA_PRO_ANALYTICS_FAILED',e);
