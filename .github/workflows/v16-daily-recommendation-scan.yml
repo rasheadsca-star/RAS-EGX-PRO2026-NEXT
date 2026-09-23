@@ -190,12 +190,14 @@ jobs:
           const fs = require('fs');
           const p = JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json', 'utf8'));
           const minimum = Number(p.minimumExecutionRows || 80);
+          const minimumCoveragePct = 90;
+          const coveragePct = Number(p?.source?.sourceSessionEvidenceCoveragePct || 0);
           const ready = p.ready === true
             && p.executionGrade === true
             && Boolean(p.expectedSession)
             && Number(p.acceptedRows || 0) >= minimum
-            && Number(p?.source?.sourceSessionEvidenceCoveragePct || 0) >= 80;
-          console.log({ expectedSession:p.expectedSession, ready:p.ready, executionGrade:p.executionGrade, acceptedRows:p.acceptedRows, minimum, sourceSessionEvidenceCoveragePct:p?.source?.sourceSessionEvidenceCoveragePct, sourceReady:ready });
+            && coveragePct >= minimumCoveragePct;
+          console.log({ expectedSession:p.expectedSession, ready:p.ready, executionGrade:p.executionGrade, acceptedRows:p.acceptedRows, minimum, coveragePct, minimumCoveragePct, sourceReady:ready });
           process.exit(ready ? 0 : 1);
           NODE
             then
