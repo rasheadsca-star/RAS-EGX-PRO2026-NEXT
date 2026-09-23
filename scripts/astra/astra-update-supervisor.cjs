@@ -137,7 +137,7 @@ function evaluateState(input = {}) {
     perfCurrent
   );
 
-  const sourceBehind = Boolean(expectedTradingSession && (!desired || desired < expectedTradingSession));
+  const sourceBehind = Boolean(expectedTradingSession && (!desired || desired !== expectedTradingSession));
   const sourceCurrentButUnhealthy = Boolean(expectedTradingSession && desired === expectedTradingSession && !handoffReady);
 
   let liveCurrent = null;
