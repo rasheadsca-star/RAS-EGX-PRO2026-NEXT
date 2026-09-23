@@ -418,7 +418,18 @@
     return v?.id?.replace(/^view-/,'')||'home';
   }
   function tickerFromElement(el){
-    const raw=String(el?.dataset?.chartTicker||el?.dataset?.ticker||el?.textContent||'').trim().toUpperCase();
+    // Prefer the explicit host identity. Falling back to textContent can fail
+    // when a recommendation row starts with rank/Arabic/company text instead
+    // of the ticker, which breaks keyboard and delegated click chart routing.
+    const raw=String(
+      el?.dataset?.chartTickerHost||
+      el?.dataset?.chartTicker||
+      el?.dataset?.ticker||
+      el?.querySelector?.('.ticker')?.dataset?.chartTicker||
+      el?.querySelector?.('.ticker')?.textContent||
+      el?.textContent||
+      ''
+    ).trim().toUpperCase();
     const token=raw.match(/[A-Z0-9_.-]+/)?.[0]||'';
     return A(S.universe?.records).some(x=>String(x.ticker).toUpperCase()===token)?token:'';
   }
