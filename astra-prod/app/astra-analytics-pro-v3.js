@@ -1,4 +1,5 @@
 'use strict';
+// CLAUDE_ACCESS_INTEGRATION_V1
 (function(){
   if(window.__ASTRA_PRO_ANALYTICS_BOOT__)return;
   window.__ASTRA_PRO_ANALYTICS_BOOT__=true;
