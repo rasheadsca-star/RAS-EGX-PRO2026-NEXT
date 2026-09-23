@@ -6,7 +6,6 @@ on:
     workflows:
       - 'EGX MAIN APP V16.9.2 P2 Automatic Scan'
       - 'Astra G22 Post-Close Session Refresh'
-      - 'Astra PRO v3 Vercel Production'
     types: [completed]
   schedule:
     # Continuous post-close watchdog. Completion events make recovery event-driven;
@@ -17,6 +16,7 @@ on:
     branches: ['main']
     paths:
       - '.github/workflows/astra-self-healing-update.yml'
+      - '.github/workflows/astra-g22-postclose-refresh.yml'
       - 'scripts/astra/astra-update-supervisor.cjs'
       - 'tests/astra/astra-update-supervisor.test.cjs'
       - 'data/ops/g22-main-app-handoff.json'
@@ -33,6 +33,9 @@ concurrency:
 
 jobs:
   supervise:
+    # Successful dependency completions get an immediate follow-up. Failures are
+    # retried by the 15-minute schedule, preventing a rapid failure loop.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
