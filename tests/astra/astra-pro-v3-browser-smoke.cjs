@@ -64,7 +64,7 @@ async function returnContext(page,view,label){
           fetch('./intelligence/market-universe.json',{cache:'no-store'}).then(r=>r.json()),
           fetch('./intelligence/recommendation-ledger.json',{cache:'no-store'}).then(r=>r.json()),
           fetch('./intelligence/performance-summary.json',{cache:'no-store'}).then(r=>r.json()),
-          fetch('./intelligence/retrospective-v169-comparison.json',{cache:'no-store'}).then(r=>r.json())
+          fetch('./intelligence/retrospective-claude-comparison.json',{cache:'no-store'}).then(r=>r.json())
         ]);
         return {d,u,l,p,retro};
       });
@@ -103,10 +103,14 @@ async function returnContext(page,view,label){
       assert.equal(live.p?.sessionRange?.last,d.sourceDecision.session,name+' KPI session range stale');
       assert.equal(Number(live.p?.currentOpportunities),recs.length,name+' KPI current opportunity count mismatch');
       assert.ok(Number(live.u?.activeCount||live.u?.records?.length)>0,name+' universe empty');
-      assert.equal(live.retro?.signalContract?.currentAstraRanking,'ASTRA_G09_V16_9_SOURCE_ORDER_1',name+' retrospective ranking lineage drift');
-      assert.equal(live.retro?.signalContract?.tickerAndPlanParityPct,100,name+' retrospective signal/plan parity drift');
-      assert.ok(Number(live.retro?.window?.sessions)>=20,name+' retrospective session sample unexpectedly small');
-      assert.ok(Number(live.retro?.window?.recommendations)>=80,name+' retrospective recommendation sample unexpectedly small');
+      assert.equal(live.retro?.sources?.rc2Engine,'TFE_V20_FUSION_RC2',name+' retrospective comparator engine drift');
+      assert.equal(live.retro?.integrity?.rc2FrozenCommitPinned,true,name+' retrospective RC2 source not pinned');
+      assert.equal(live.retro?.integrity?.noFutureDataInSignalGeneration,true,name+' retrospective lookahead guard failed');
+      assert.equal(live.retro?.integrity?.sameExecutionPolicyForReportedSameWindowMetrics,true,name+' retrospective execution policy mismatch');
+      assert.ok(Number(live.retro?.window?.astraRecordedSessions)>=20,name+' retrospective session sample unexpectedly small');
+      assert.ok(Number(live.retro?.sameWindow?.astraCommonPolicy?.entered)>0,name+' Astra retrospective entered sample empty');
+      assert.ok(Number(live.retro?.sameWindow?.claudeRc2Frozen?.entered)>0,name+' CLAUDE retrospective entered sample empty');
+      assert.equal(live.retro?.currentSnapshot?.session,d.sourceDecision.session,name+' retrospective current-session drift');
 
       await page.locator('[data-view="recommendations"]').click();
       await page.waitForSelector('#view-recommendations.active');
@@ -151,10 +155,9 @@ async function returnContext(page,view,label){
       await page.locator('[data-view="performance"]').click();
       await page.waitForSelector('#view-performance.active');
       await page.waitForSelector('#astraRetroSimulator',{timeout:10000});
-      assert.match(await page.locator('#astraRetroSimulator').innerText(),/Retrospective Simulator/,name+' retrospective simulator panel missing');
-      const parityKpi=page.locator('#astraRetroSimulator .pro-kpi').filter({hasText:'Signal / Plan Parity'});
-      assert.equal(await parityKpi.count(),1,name+' retrospective parity KPI missing');
-      assert.ok((await parityKpi.innerText()).includes('%'),name+' retrospective parity KPI value missing');
+      assert.match(await page.locator('#astraRetroSimulator').innerText(),/Retrospective Simulator/,name+' retrospective simulator panel missing');\n      assert.match(await page.locator('#astraRetroSimulator').innerText(),/UI CLAUDE/,name+' UI CLAUDE comparison label missing');
+      const claudeKpi=page.locator('#astraRetroSimulator .pro-kpi').filter({hasText:'CLAUDE Avg Net'});
+      assert.equal(await claudeKpi.count(),1,name+' CLAUDE retrospective KPI missing');
       await page.waitForSelector('#astraTickerPerfRows .ticker',{timeout:10000});
       const perfTicker=(await page.locator('#astraTickerPerfRows .ticker').first().innerText()).trim().toUpperCase();
       const perfHost=page.locator('#astraTickerPerfRows [data-chart-ticker-host="'+perfTicker+'"]').first();
