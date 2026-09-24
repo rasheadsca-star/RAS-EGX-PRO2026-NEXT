@@ -134,11 +134,13 @@ function ensurePanel() {
   panel = document.createElement('article');
   panel.id = PANEL_ID;
   panel.className = 'panel';
-  const grid = document.getElementById('recommendationGrid');
-  const recPanel = grid?.closest('.panel');
-  const selected = document.getElementById('selectedPanel');
-  if (recPanel) recPanel.insertAdjacentElement('afterend', panel);
-  else if (selected) selected.insertAdjacentElement('beforebegin', panel);
+  // Historical lifecycle belongs in Evidence, not in today's recommendation area.
+  // This prevents the latest archived signal from being mistaken for a current-session recommendation
+  // when the current session legitimately publishes zero recommendations.
+  const evidenceView = document.getElementById('view-evidence');
+  const evidenceGrid = evidenceView?.querySelector('.evidence-grid');
+  if (evidenceGrid) evidenceGrid.insertAdjacentElement('afterend', panel);
+  else if (evidenceView) evidenceView.appendChild(panel);
   else document.getElementById('view-dashboard')?.appendChild(panel);
   return panel;
 }
@@ -272,12 +274,12 @@ function render(signals, results = lastResults, error = null) {
   const phaseLabel = phase.phase === 'OPEN' ? 'الجلسة متوقعة مفتوحة' : phase.phase === 'PRE_OPEN' ? 'قبل الافتتاح' : phase.phase === 'POST_CLOSE' ? 'بعد الإغلاق' : 'خارج أيام التداول المعتادة';
   panel.innerHTML = `
     <div class="sm-head">
-      <div><h2>متابعة الجلسة للمرشحين</h2><p>تحديث تلقائي كل 5 دقائق أثناء نافذة جلسة EGX. السعر من مصدر متأخر 15 دقيقة ويحدّث <b>موقف الخطة المجمدة فقط</b> — لا يغيّر RC2 أو Fusion Rank.</p></div>
+      <div><h2>متابعة نتائج التوصيات السابقة</h2><p><b>هذه ليست توصيات اليوم.</b> هذا القسم يتابع فقط نتائج خطط منشورة في جلسات سابقة، مثل تفعيل الدخول أو الهدف أو وقف الخسارة. توصيات الجلسة الحالية تظهر حصريًا في قسم «أفضل الفرص بعد بوابات RC2».</p></div>
       <div class="sm-actions"><span class="badge ${summaryCls}">${esc(summary)}</span><button class="btn" id="sessionMonitorRefresh" type="button">تحديث المتابعة الآن</button></div>
     </div>
     <div class="sm-source"><span>${esc(phaseLabel)} · القاهرة ${esc(phase.time)}</span><span>آخر جلب: ${lastGeneratedAt ? esc(new Date(lastGeneratedAt).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})) : '—'} · Poll 5m · Source delay 15m</span></div>
     ${completedSession ? `<div class="sm-evidence-banner"><b>آخر توصيات مكتملة التقييم: ${esc(completedSession)} — تحقق فعلي ${completedEvidence.achieved}/${completedEvidence.total}</b><br><span>${completedEvidence.achievedPct === null ? '—' : pct(completedEvidence.achievedPct)} حققت هدفًا بعد تفعيل الدخول · لم يتفعل الدخول ${completedEvidence.missedEntry}/${completedEvidence.total}${completedEvidence.targetsWithoutEntry ? ` · ${completedEvidence.targetsWithoutEntry} منها لمس الأهداف بدون دخول` : ''}</span></div>` : ''}
-    ${results.length ? `<div class="sm-outcome-summary"><div class="sm-kpi"><small>تحقق فعلي بعد الدخول</small><b>${outcome.achieved}/${outcome.total}</b><span>${outcome.achievedPct === null ? '—' : pct(outcome.achievedPct)} من توصيات الجلسة</span></div><div class="sm-kpi"><small>دخلت فعليًا</small><b>${outcome.entered}/${outcome.total}</b><span>النجاح لا يُحتسب قبل Entry</span></div><div class="sm-kpi"><small>لم يتفعل الدخول</small><b>${outcome.missedEntry}/${outcome.total}</b><span>${outcome.targetsWithoutEntry ? `${outcome.targetsWithoutEntry} لمس الأهداف بدون دخول` : '—'}</span></div></div>` : ''}
+    ${results.length ? `<div class="sm-note"><b>تنبيه:</b> الحالات أدناه تخص توصيات تاريخية مجمّدة وليست قائمة شراء للجلسة الحالية.</div><div class="sm-outcome-summary"><div class="sm-kpi"><small>تحقق فعلي بعد الدخول</small><b>${outcome.achieved}/${outcome.total}</b><span>${outcome.achievedPct === null ? '—' : pct(outcome.achievedPct)} من توصيات الجلسة</span></div><div class="sm-kpi"><small>دخلت فعليًا</small><b>${outcome.entered}/${outcome.total}</b><span>النجاح لا يُحتسب قبل Entry</span></div><div class="sm-kpi"><small>لم يتفعل الدخول</small><b>${outcome.missedEntry}/${outcome.total}</b><span>${outcome.targetsWithoutEntry ? `${outcome.targetsWithoutEntry} لمس الأهداف بدون دخول` : '—'}</span></div></div>` : ''}
     ${error ? `<div class="sm-empty red">تعذر تحديث مصدر المتابعة: ${esc(error)}</div>` : !signals.length ? '<div class="sm-empty">في انتظار تحميل توصيات RC2 المجمدة من الواجهة…</div>' : `
       <div class="sm-grid">${results.map(result => {
         const [label, cls] = stateMeta(result.state);
