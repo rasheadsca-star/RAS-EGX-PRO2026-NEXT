@@ -37,7 +37,9 @@ jobs:
           grep -q "لا توجد توصيات منشورة لجلسة" tfe-v20/public/ui-v169.js
           grep -q "view-evidence" tfe-v20/public/session-monitor.js
           cd tfe-v20
-          npm test
+          node --check public/ui-v169.js
+          node --check public/session-monitor.js
+          node --test test/session-monitor.test.js test/ui-contract.test.js test/ops-v169.test.js
 
       - name: Require Vercel token
         env:
