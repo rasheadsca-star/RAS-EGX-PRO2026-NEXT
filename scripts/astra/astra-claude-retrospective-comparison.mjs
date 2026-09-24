@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 'use strict';
+// refresh-trigger: keep currentSnapshot synchronized with current Astra session
 
 import fs from 'node:fs';
 import path from 'node:path';
