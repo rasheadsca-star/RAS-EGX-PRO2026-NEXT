@@ -1,24 +1,24 @@
-# تقرير جلسة 2026-09-23
+# تقرير جلسة 2026-09-24
 
 - حالة التشغيل: **يحتاج متابعة**
 - الأول فنيًا: **—**
 - أول B للمراقبة: **—**
 - الجاهز ورقيًا: **لا يوجد**
 - إشارات جديدة: **0**
-- دخول جديد: **20**
-- صفقات مغلقة: **20**
+- دخول جديد: **0**
+- صفقات مغلقة: **25**
 - منتهية دون دخول: **0**
 
 ## حالة الاستراتيجيات
 
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 518, PF 1.0767, Average R 0.0433
-- breakout: RESEARCH_ONLY — صفقات مغلقة 107, PF 1.4803, Average R 0.243
-- pullback: RESEARCH_ONLY — صفقات مغلقة 84, PF 0.948, Average R -0.0284
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 533, PF 1.0347, Average R 0.0199
+- breakout: RESEARCH_ONLY — صفقات مغلقة 110, PF 1.3989, Average R 0.2078
+- pullback: RESEARCH_ONLY — صفقات مغلقة 91, PF 0.8171, Average R -0.107
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 95.98%, below preferred 98%.
+- تحذير: Data coverage is 96.43%, below preferred 98%.
 - تحذير: 44 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `630b8f22e2eaa3fcd29cb1a386ac2d0c6eea123ca8928283a6c87ac3baf38a9c`
+بصمة التقرير: `780d7366d3e754df3216bfdf1bf17912621a4a448dffa3610c340a94dea73ca4`
