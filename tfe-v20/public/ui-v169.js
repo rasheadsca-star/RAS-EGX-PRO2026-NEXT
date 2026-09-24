@@ -141,7 +141,7 @@ function renderRecs(){
       <div class="rec-verdict ${p.cls}">${p.status==='blocked'?'لا تُنشر قبل إزالة سبب الحجب/المصالحة.':p.status==='eligible'?'مرشح RC2 داخل منطقة مناسبة للمراجعة اليدوية.':'مرشح RC2 لكن التنفيذ ينتظر Pullback/تأكيد المنطقة.'}</div>
       <button class="btn" data-select="${E(x.ticker)}">تحليل كامل</button>
     </article>`
-  }).join(''):'<div class="empty">لا توجد فرص في هذا الفلتر.</div>';
+  }).join(''):`<div class="empty"><b>لا توجد توصيات منشورة لجلسة ${E(S.scan?.universe?.sessionDate||'—')}.</b><br>تم تحديث RC2 وفحص ${E(S.scan?.summary?.scanned||0)} سهمًا، لكن لم يجتز أي سهم جميع بوابات النشر. توصيات الجلسات السابقة تظهر فقط في قسم «السجل الحي والاختبارات».</div>`;
   $('recommendationGrid').querySelectorAll('[data-select]').forEach(b=>b.onclick=()=>selectTicker(b.dataset.select));
 }
 
