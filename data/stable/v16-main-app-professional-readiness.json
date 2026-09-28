@@ -1,36 +1,41 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-09-28T06:56:39.577Z",
+  "generatedAt": "2026-09-28T08:45:40.489Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-09-27",
-  "professionalReadinessScore": 71,
-  "foundationQualityScore": 71.3,
-  "stage": "ADVANCED_PILOT",
-  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 63,
+  "stage": "PILOT",
+  "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "WALK_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 24.34,
-      "scorePct": 97.4,
+      "points": 15.99,
+      "scorePct": 64,
       "details": {
-        "currentExecutionGrade": true,
+        "currentExecutionGrade": false,
         "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 94.4,
+        "currentSourceSessionEvidenceCoveragePct": 0.5,
         "publishedDecisionEvidenceCoveragePct": 94.4,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 180,
-        "currentAcceptedRows": 202,
-        "verifiedRows": 202,
-        "inputRows": 216,
+        "currentAcceptedRows": 0,
+        "verifiedRows": 180,
+        "inputRows": 208,
         "evidenceCoveragePct": 94.4,
-        "verifiedRowsRatioPct": 93.5,
-        "currentSourceHealth": "EXECUTION_GRADE"
+        "verifiedRowsRatioPct": 86.5,
+        "currentSourceHealth": "BLOCKED"
       },
       "requirements": [
+        {
+          "code": "EXECUTION_GRADE",
+          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+          "hard": true
+        },
         {
           "code": "SOURCE_EVIDENCE_100",
           "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 94.4% إلى 100%",
@@ -38,7 +43,7 @@
         },
         {
           "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 202/216",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 180/208",
           "hard": false
         }
       ]
@@ -168,12 +173,18 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": false,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_DRAWDOWN",
       "labelAr": "Maximum Drawdown أفضل من -15%",
@@ -220,7 +231,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 202/216",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 180/208",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -238,6 +249,12 @@
     }
   ],
   "requirementsTo100": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_DRAWDOWN",
       "labelAr": "Maximum Drawdown أفضل من -15%",
@@ -282,7 +299,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 202/216",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 180/208",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -306,11 +323,11 @@
     "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-09-28T06:56:20.728Z",
+    "priceTruthGeneratedAt": "2026-09-28T08:45:38.831Z",
     "basketGeneratedAt": "2026-09-28T06:56:30.712739+00:00",
     "liveGeneratedAt": "2026-09-28T06:56:36.707564+00:00",
-    "canonicalSnapshotHash": "5e9b3fc723d3d36878d1912dce0a33ee630f700b44de4e5251283383d310407f",
-    "consensusGeneratedAt": "2026-09-28T06:56:38.222Z",
+    "canonicalSnapshotHash": "c8c6d55729076a79c62dcdc61dbcb73c7df40e47bee595b44cbc1d2c41cc1aea",
+    "consensusGeneratedAt": "2026-09-28T08:45:39.095Z",
     "intelligenceSnapshotGeneratedAt": "2026-09-27T19:59:48.610Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -345,5 +362,5 @@
       ]
     }
   },
-  "readinessHash": "7a742ebad72c8fa95a74d932be92fb8d181f4e16f75e0c4058a6afae2cd51853"
+  "readinessHash": "2d38d1b92e81b70b0ec89ab158a419d39dc3be4bae5060d3defe23f95ef3a43d"
 }
