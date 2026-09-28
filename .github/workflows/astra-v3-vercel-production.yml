@@ -16,6 +16,7 @@ on:
       - 'astra-prod/app/astra-analytics-pro-v3.js'
       - 'astra-prod/app/intelligence/**'
       - 'tests/astra/astra-pro-v3-browser-smoke.cjs'
+      - 'scripts/astra/astra-claude-retrospective-comparison.mjs'
       - '.github/workflows/astra-v3-vercel-production.yml'
 
 permissions:
@@ -41,6 +42,40 @@ jobs:
           ref: main
           fetch-depth: 1
 
+      # GITHUB_TOKEN data commits do not trigger the separate comparison workflow.
+      # Build the comparison from this exact checkout before testing/publishing it.
+      - name: Checkout pinned comparison engine
+        uses: actions/checkout@v4
+        with:
+          ref: cf5f9e2f4db9e81dc8245becf45f280aa42dc010
+          path: _rc2
+          fetch-depth: 1
+
+      - name: Capture comparison source data
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --connect-timeout 15 --max-time 120 --retry 2 'https://egx-tfe-v20-fusion-rc2.vercel.app/api?route=scan&limit=20' -o "$RUNNER_TEMP/astra-rc2-scan.json"
+          curl -fsSL --connect-timeout 15 --max-time 120 --retry 2 'https://egx-tfe-v20-fusion-rc2.vercel.app/api?route=simulate&scope=market&symbols=220' -o "$RUNNER_TEMP/astra-rc2-sim.json"
+          node - <<'NODE'
+          const fs=require('fs');
+          for(const name of ['scan','sim']) {
+            const data=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/astra-rc2-'+name+'.json','utf8'));
+            if(data.engine!=='TFE_V20_FUSION_RC2') throw new Error('Unexpected comparison source: '+name);
+          }
+          NODE
+
+      - name: Rebuild comparison for the deployment snapshot
+        env:
+          RC2_ROOT: ${{ github.workspace }}/_rc2
+          RC2_SCAN_PATH: ${{ runner.temp }}/astra-rc2-scan.json
+          RC2_SIM_PATH: ${{ runner.temp }}/astra-rc2-sim.json
+        run: |
+          set -euo pipefail
+          node --check scripts/astra/astra-claude-retrospective-comparison.mjs
+          node scripts/astra/astra-claude-retrospective-comparison.mjs
+          rm -rf _rc2
+
       - name: Validate Astra decision truth before deployment
         shell: bash
         run: |
@@ -52,6 +87,7 @@ jobs:
           const handoff=JSON.parse(fs.readFileSync('data/ops/g22-main-app-handoff.json','utf8'));
           const ledger=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/recommendation-ledger.json','utf8'));
           const perf=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/performance-summary.json','utf8'));
+          const retro=JSON.parse(fs.readFileSync('astra-prod/app/intelligence/retrospective-claude-comparison.json','utf8'));
           const eligibility=JSON.parse(fs.readFileSync('docs/astra/PRODUCTION_ELIGIBILITY_AUDIT.json','utf8'));
           const ok=(c,m)=>{if(!c)throw new Error(m)};
           const s=app?.sourceDecision?.session;
@@ -72,6 +108,9 @@ jobs:
           ok(app?.sourceDecision?.currentProductionCutover===true,'Production cutover is false');
           ok(Array.isArray(app?.decisionSnapshot?.top5) && app.decisionSnapshot.top5.length<=5,'Invalid top5');
           const recs=app.decisionSnapshot.top5||[];
+          ok(retro?.currentSnapshot?.session===s,'Comparison current session is stale');
+          const comparisonRecs=recs.map(x=>({ticker:x.ticker,rank:x.rank,entryLow:x.entryPlan?.low??null,entryHigh:x.entryPlan?.high??null,stop:x.stopLoss??null,target1:x.targets?.[0]??null,score:x.decisionScore??x.ranking?.score??null}));
+          ok(JSON.stringify(retro?.currentSnapshot?.astra)===JSON.stringify(comparisonRecs),'Comparison recommendation plans do not match the deployment snapshot');
           const currentLedger=(ledger.records||[]).filter(r=>r.decisionSnapshotId===app.sourceDecision.decisionSnapshotId&&r.sessionDate===s);
           ok(currentLedger.length===recs.length,'Current-session ledger count mismatch');
           ok(JSON.stringify(currentLedger.map(r=>r.ticker).sort())===JSON.stringify(recs.map(r=>r.ticker).sort()),'Current-session ledger ticker mismatch');
@@ -357,7 +396,10 @@ jobs:
           NODE
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/astra/production/LIVE_10_CLEAN_EVIDENCE.json
+          git add docs/astra/production/LIVE_10_CLEAN_EVIDENCE.json \
+            docs/astra/ASTRA_CLAUDE_RETROSPECTIVE_COMPARISON.json \
+            docs/astra/ASTRA_CLAUDE_RETROSPECTIVE_COMPARISON.md \
+            astra-prod/app/intelligence/retrospective-claude-comparison.json
           git diff --cached --quiet && exit 0
           git commit -m "audit(astra): record 10 clean live production reviews"
           for attempt in 1 2 3; do
