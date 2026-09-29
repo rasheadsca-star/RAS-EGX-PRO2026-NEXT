@@ -69,8 +69,7 @@ current recommendations or to the already-observed test period.
 This branch contains the history-continuity proposal, a corrected research execution
 module, regression tests, and a reproducible audit of the same preserved signals.
 The live recommendation generator and its current trading parameters have not changed.
-Before promotion: replay the complete certified pipeline on the immutable handoff,
-explain recommendation/regime changes, reconcile source warnings and apply a shared
+Before promotion: reconcile source warnings and apply a shared
 corrected policy to both engines before replacing the live comparison.
 
 ## Measured execution audit
@@ -105,3 +104,25 @@ Validation: 12 targeted tests pass. Actual CPCI history grows from 130 certified
 rows to 137 (rather than 131); EGTS and SNFC grow from 134 to 141 (rather than 135).
 The helper restores the six intervening observations as well as the current bar.
 This verifies the merge, not the downstream certified decision engine.
+
+## Controlled certified-engine replay completed
+
+The complete post-close build was subsequently run in isolated worktrees using
+certified baseline `66b74d6f7586bd06201f6f7992ff9babf1104259` and immutable handoff
+`37bb15f57a24e3a13f50bff7388a17510500be4b`. All 186 eligible history overlays passed.
+G11/G09, native intelligence rebuilding and the workflow's publication consistency
+assertions passed locally. No deployment or merge to main was performed.
+
+A control run then removed only the intervening appended bars while holding all
+other prepared inputs fixed. It reproduced the published snapshot exactly:
+`G09-DS-d2d748f91751b6a15333519f`, selecting CPCI, EGTS, SNFC. Restoring those bars
+produced `G09-DS-d669478bbe1cfe76e1e4b063`, selecting ADRI, SDTI, SNFC. This isolates
+the history overlay as the cause of this selection change; strategy parameters
+were identical. The evidence summary is in `HISTORY_CONTINUITY_REPLAY_2026-09-29.json`.
+
+Complete-history coverage was 206/224 current canonical securities (91.96%) and
+205/224 decision-ready securities (91.52%), with source evidence coverage 96.8%.
+There were no CRITICAL findings, but two documented HIGH coverage findings remain.
+The guard result was PASS_WITH_DOCUMENTED_COVERAGE_GAPS, not a clean all-market
+data certificate. This result validates the correction's effect; it does not
+establish that the newly selected stocks will be profitable.
