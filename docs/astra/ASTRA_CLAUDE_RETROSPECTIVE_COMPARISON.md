@@ -1,6 +1,6 @@
 # Astra PRO v3 vs EGX Pro Professional V16.9 UI CLAUDE
 
-Generated: 2026-09-28T21:43:16.516Z
+Generated: 2026-09-29T14:11:53.436Z
 
 ## Identity
 - Current Astra: **EGX PRO — Astra PRO ANALYTICS v3**
@@ -9,8 +9,8 @@ Generated: 2026-09-28T21:43:16.516Z
 - Frozen RC2 source: **cf5f9e2f4db9e81dc8245becf45f280aa42dc010**
 
 ## Current-session recommendations
-- Session: **2026-09-28**
-- Astra: **CPCI, EGTS, SNFC**
+- Session: **2026-09-29**
+- Astra: **CPCI, GPIM, ALCN**
 - UI CLAUDE / RC2: **none**
 - Overlap: **none**
 
@@ -33,12 +33,12 @@ Window: **2026-08-04 → 2026-09-13**. Both sides are evaluated with next-sessio
 
 ## UI CLAUDE built-in full-history simulator
 - Entered: **87**
-- T1: **70.1%**
+- T1: **71.3%**
 - Stop: **26.4%**
-- Positive: **70.1%**
-- Avg net: **0.84%**
-- Profit factor: **1.67**
-- Wilson 95% lower T1: **59.8%**
+- Positive: **71.3%**
+- Avg net: **0.89%**
+- Profit factor: **1.71**
+- Wilson 95% lower T1: **61%**
 
 ## Interpretation constraints
 - The same-window table is the primary apples-to-apples comparison.
