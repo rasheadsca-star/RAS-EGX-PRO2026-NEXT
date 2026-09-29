@@ -126,3 +126,39 @@ There were no CRITICAL findings, but two documented HIGH coverage findings remai
 The guard result was PASS_WITH_DOCUMENTED_COVERAGE_GAPS, not a clean all-market
 data certificate. This result validates the correction's effect; it does not
 establish that the newly selected stocks will be profitable.
+
+## Source-policy alignment and evidence gate
+
+`scripts/astra/research/source-policy-audit.cjs` now screens the preserved signals
+against the pinned one-session policy without reclassifying historical strategy
+versions. Eight additional regression tests cover opening cancellation, missing
+market sessions, publication ordering, reconstructed prices and unproven execution.
+All 20 focused tests pass. Run the script to reproduce
+`SOURCE_POLICY_AUDIT_2026-09-29.json`.
+
+The 102 saved recommendations are not a homogeneous policy sample: 27 record five
+holding sessions and 75 record one. The 27 remain a separate policy cohort rather
+than being retroactively rewritten as one-session recommendations. Of the 75:
+
+- 16 fail the source's opening-price cancellation rules, even if prices later
+  return to the entry zone.
+- 13 require session-data review: 10 have unresolved/reconstructed evidence and
+  three lack a unique bar for the next date in the stored market calendar.
+- 46 need intraday evidence of morning liquidity, entry timing and the one-session
+  exit. A daily range touch is not sufficient confirmation.
+
+No episode in this audit is certified as an actual execution. The certified net
+return is null, not zero. This describes missing evidence, not proof that no trades
+occurred. Opening cancellation states are model decisions, not broker orders.
+
+The source research basket's original walk-forward metric uses next-close versus
+signal-close returns minus 0.60%; it does not implement the published opening and
+morning-liquidity conditions. Its published one-session label alone therefore does
+not establish a tradable backtest. Certified G09 leaves unfilled weight in cash,
+even though the older source's Arabic prose suggests redistribution. The certified
+KEEP_CASH rule takes precedence for a future execution-policy implementation.
+
+Next validation requires time-stamped publication and intraday liquidity/fill
+evidence, a defined measurable morning-liquidity rule, and explicit one-session
+exit semantics. Then freeze the policy and evaluate a chronological holdout not
+used in these diagnostics. No new holdout result or live-policy change is claimed.
