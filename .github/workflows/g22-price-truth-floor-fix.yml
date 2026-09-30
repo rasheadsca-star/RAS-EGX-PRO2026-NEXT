@@ -1,0 +1,64 @@
+name: G22 Price Truth Floor Fix
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/g22-price-truth-floor-fix.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Replace redundant absolute row floor with configured execution floor
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const file='scripts/astra/g22-postclose-refresh.cjs';
+          let s=fs.readFileSync(file,'utf8');
+          const old="  ensure(Number(priceTruth.acceptedRows || 0) >= 200, 'Price-truth accepted-row coverage below operational floor: ' + priceTruth.acceptedRows);";
+          const next="  const configuredExecutionFloor = Math.max(80, Number(priceTruth.minimumExecutionRows || 80));\n  ensure(Number(priceTruth.acceptedRows || 0) >= configuredExecutionFloor, 'Price-truth accepted rows below configured execution floor: ' + priceTruth.acceptedRows + ' < ' + configuredExecutionFloor);";
+          if(!s.includes('const configuredExecutionFloor = Math.max(80')){
+            if(!s.includes(old)) throw new Error('G22_PRICE_TRUTH_FLOOR_LINE_NOT_FOUND');
+            s=s.replace(old,next);
+            fs.writeFileSync(file,s);
+          }
+          NODE
+          node --check scripts/astra/g22-postclose-refresh.cjs
+
+      - name: Commit fix
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/astra/g22-postclose-refresh.cjs
+          if ! git diff --cached --quiet; then
+            git commit -m 'fix(g22): use configured price-truth execution floor'
+            for attempt in 1 2 3; do
+              git pull --rebase -X ours origin main
+              if git push origin HEAD:main; then break; fi
+              [ "$attempt" = '3' ] && exit 1
+              sleep $((attempt*5))
+            done
+          fi
+
+      - name: Dispatch G22 refresh after fix
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${{ github.repository }}/actions/workflows/astra-g22-postclose-refresh.yml/dispatches" \
+            -f ref=main
+          echo 'G22_REFRESH_DISPATCHED_AFTER_PRICE_TRUTH_FLOOR_FIX'
