@@ -1,0 +1,34 @@
+name: G22 Refresh Kick
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/g22-refresh-kick.yml'
+  workflow_run:
+    workflows: ['EGX MAIN APP V16.9.2 P2 Automatic Scan']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: g22-refresh-kick
+  cancel-in-progress: true
+
+jobs:
+  dispatch:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch G22 post-close refresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${{ github.repository }}/actions/workflows/astra-g22-postclose-refresh.yml/dispatches" \
+            -f ref=main
+          echo "G22_POST_CLOSE_REFRESH_DISPATCHED"
