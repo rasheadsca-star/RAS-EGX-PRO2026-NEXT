@@ -21,7 +21,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout RC2 UI source
         uses: actions/checkout@v4
@@ -29,17 +29,21 @@ jobs:
           ref: release/rc2-frozen
           fetch-depth: 1
 
-      - name: Verify current-session UI separation patch
+      - name: Verify current-session UI and watchlist contracts
         shell: bash
         run: |
           set -euo pipefail
           grep -q "هذه ليست توصيات اليوم" tfe-v20/public/session-monitor.js
           grep -q "لا توجد توصيات منشورة لجلسة" tfe-v20/public/ui-v169.js
           grep -q "view-evidence" tfe-v20/public/session-monitor.js
+          grep -q "WATCHLIST_ONLY_NOT_A_RECOMMENDATION" tfe-v20/src/watchlist.js
+          grep -q "High-Potential Watchlist" tfe-v20/public/watchlist.html
           cd tfe-v20
           node --check public/ui-v169.js
           node --check public/session-monitor.js
-          node --test test/session-monitor.test.js test/ui-contract.test.js test/ops-v169.test.js
+          node --check api/watchlist.js
+          node --check src/watchlist.js
+          node --test test/session-monitor.test.js test/ui-contract.test.js test/ops-v169.test.js test/watchlist.test.js
 
       - name: Require Vercel token
         env:
@@ -59,21 +63,36 @@ jobs:
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
           npx --yes vercel@latest deploy --prod --yes --token "$VERCEL_TOKEN"
 
-      - name: Verify production UI and current scan
+      - name: Verify production UI, current scan and watchlist
         shell: bash
         run: |
           set -euo pipefail
-          stamp="$(date +%s)"
           for i in 1 2 3 4 5 6; do
+            stamp="$(date +%s)"
             html="$(curl -fsSL --max-time 30 "$RC2_PRODUCTION_URL/?t=$stamp" || true)"
             js="$(curl -fsSL --max-time 30 "$RC2_PRODUCTION_URL/ui-v169.js?t=$stamp" || true)"
             monitor="$(curl -fsSL --max-time 30 "$RC2_PRODUCTION_URL/session-monitor.js?t=$stamp" || true)"
+            watchpage="$(curl -fsSL --max-time 30 "$RC2_PRODUCTION_URL/watchlist.html?t=$stamp" || true)"
+            market="$(curl -fsSL --max-time 60 "$RC2_PRODUCTION_URL/api/index?route=market-index&t=$stamp" || true)"
             scan="$(curl -fsSL --max-time 180 "$RC2_PRODUCTION_URL/api/index?route=scan&limit=50&t=$stamp" || true)"
+            watch="$(curl -fsSL --max-time 180 "$RC2_PRODUCTION_URL/api/watchlist?limit=20&t=$stamp" || true)"
             if grep -q "لا توجد توصيات منشورة لجلسة" <<<"$js" \
               && grep -q "هذه ليست توصيات اليوم" <<<"$monitor" \
-              && node -e 'const d=JSON.parse(process.argv[1]); if(d?.engine!=="TFE_V20_FUSION_RC2"||d?.universe?.sessionDate!=="2026-09-24"||!Array.isArray(d?.recommendations)) process.exit(1)' "$scan"; then
-              echo "RC2_PRODUCTION_UI_VERIFIED"
-              node -e 'const d=JSON.parse(process.argv[1]); console.log(JSON.stringify({session:d.universe?.sessionDate,scanned:d.summary?.scanned,publicationEligibleTotal:d.summary?.publicationEligibleTotal,returned:d.summary?.returned,tickers:d.recommendations?.map(x=>x.ticker)}))' "$scan"
+              && grep -q "High-Potential Watchlist" <<<"$watchpage" \
+              && node -e '
+                const market=JSON.parse(process.argv[1]),scan=JSON.parse(process.argv[2]),watch=JSON.parse(process.argv[3]);
+                const current=market?.sessionDate;
+                if(!current)process.exit(1);
+                if(scan?.engine!=="TFE_V20_FUSION_RC2"||scan?.universe?.sessionDate!==current||!Array.isArray(scan?.recommendations))process.exit(1);
+                if(watch?.engine!=="TFE_V20_FUSION_RC2"||watch?.sessionDate!==current||watch?.mode!=="RESEARCH_WATCHLIST_ONLY"||!Array.isArray(watch?.highPotentialCandidates))process.exit(1);
+                if(watch?.permissions?.executionAllowed!==false||watch?.permissions?.recommendationMutationAllowed!==false)process.exit(1);
+                if(watch.highPotentialCandidates.some(x=>x?.recommendation!==false||x?.executionAllowed!==false||x?.watchlistOnly!==true))process.exit(1);
+              ' "$market" "$scan" "$watch"; then
+              echo "RC2_PRODUCTION_UI_AND_WATCHLIST_VERIFIED"
+              node -e '
+                const scan=JSON.parse(process.argv[1]),watch=JSON.parse(process.argv[2]);
+                console.log(JSON.stringify({session:scan.universe?.sessionDate,scanned:scan.summary?.scanned,publicationEligibleTotal:scan.summary?.publicationEligibleTotal,officialTickers:scan.recommendations?.map(x=>x.ticker),highPotentialTotal:watch.summary?.highPotentialTotal,highPotentialTickers:watch.highPotentialCandidates?.map(x=>x.ticker)}));
+              ' "$scan" "$watch"
               exit 0
             fi
             sleep 20
