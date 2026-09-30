@@ -1,0 +1,73 @@
+name: RC2 Eligibility Diagnostics
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rc2-eligibility-diagnostics.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rc2-eligibility-diagnostics
+  cancel-in-progress: true
+
+env:
+  RC2_PRODUCTION_URL: "https://egx-tfe-v20-fusion-rc2.vercel.app"
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch RC2 production scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          stamp="$(date +%s)"
+          curl --fail --silent --show-error --max-time 180 \
+            "$RC2_PRODUCTION_URL/api/index?route=scan&limit=20&t=$stamp" \
+            -o /tmp/rc2-scan.json
+
+      - name: Report eligibility diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('fs');
+          const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
+          if (scan?.ok !== true) throw new Error('RC2 scan is not OK');
+          if (scan?.engine !== 'TFE_V20_FUSION_RC2') throw new Error(`Unexpected engine: ${scan?.engine}`);
+
+          const reasons = Object.entries(scan.rejectionReasonCounts || {})
+            .sort((a,b) => b[1] - a[1])
+            .map(([reason,count]) => ({ reason, count }));
+          const rejectedSample = Array.isArray(scan.rejectedSample) ? scan.rejectedSample.slice(0,20) : [];
+          const withheld = Array.isArray(scan.withheldForReconciliation) ? scan.withheldForReconciliation.slice(0,20) : [];
+          const diagnostics = {
+            generatedAt: scan.generatedAt ?? null,
+            sourceCommit: scan.sourceCommit ?? null,
+            sessionDate: scan.universe?.sessionDate ?? null,
+            scanned: scan.summary?.scanned ?? null,
+            technicalEligibleTotal: scan.summary?.technicalEligibleTotal ?? null,
+            publicationEligibleTotal: scan.summary?.publicationEligibleTotal ?? null,
+            withheldForPriceReconciliation: scan.summary?.withheldForPriceReconciliation ?? null,
+            rejected: scan.summary?.rejected ?? null,
+            returned: scan.summary?.returned ?? null,
+            topRejectionReasons: reasons,
+            rejectedSample,
+            withheldSample: withheld,
+            recommendationTickers: (scan.recommendations || []).map(x => x.ticker),
+            executionAllowed: scan.permissions?.executionAllowed ?? null,
+            automaticOrders: scan.permissions?.automaticOrders ?? null,
+          };
+          console.log(`RC2_ELIGIBILITY_DIAGNOSTICS:${JSON.stringify(diagnostics)}`);
+          NODE
+
+      - name: Confirm non-invasive diagnostic contract
+        run: |
+          echo "SCORING MODEL CHANGED: false"
+          echo "THRESHOLDS CHANGED: false"
+          echo "EXECUTION BEHAVIOR CHANGED: false"
+          echo "PURPOSE: explain why production publicationEligibleTotal may be zero"
