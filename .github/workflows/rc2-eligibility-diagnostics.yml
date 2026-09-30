@@ -19,7 +19,7 @@ env:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - name: Fetch RC2 production scan
         shell: bash
@@ -63,6 +63,66 @@ jobs:
             automaticOrders: scan.permissions?.automaticOrders ?? null,
           };
           console.log(`RC2_ELIGIBILITY_DIAGNOSTICS:${JSON.stringify(diagnostics)}`);
+          NODE
+
+      - name: Measure full-market score distributions and near misses
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const base = process.env.RC2_PRODUCTION_URL;
+          const stamp = Date.now();
+          const fetchJson = async (url) => {
+            const r = await fetch(url, { headers: { 'cache-control': 'no-cache' } });
+            if (!r.ok) throw new Error(`${r.status} ${url}`);
+            return r.json();
+          };
+          const market = await fetchJson(`${base}/api/index?route=market-index&t=${stamp}`);
+          const tickers = (market.symbols || []).filter(x => x.currentRc2UniverseCandidate).map(x => x.ticker);
+          const rows = [];
+          const errors = [];
+          for (let i=0; i<tickers.length; i+=12) {
+            const batch = tickers.slice(i,i+12);
+            const settled = await Promise.allSettled(batch.map(async ticker => {
+              const x = await fetchJson(`${base}/api/index?route=analyze&ticker=${encodeURIComponent(ticker)}&t=${stamp}`);
+              const r = x.result || {};
+              return {
+                ticker,
+                eligible: Boolean(r.eligible),
+                publicationEligible: Boolean(r.publicationEligible),
+                core: Number(r.scores?.core),
+                research: Number(r.scores?.research),
+                liquidity: Number(r.scores?.liquidity),
+                sr: Number(r.scores?.supportResistance),
+                quality: Number(r.scores?.dataQuality),
+                structuralNetRR: Number(r.tradePlan?.structuralNetRR),
+                alignmentState: r.tradePlan?.alignmentState ?? null,
+                reasons: Array.isArray(r.reasonCodes) ? r.reasonCodes : [],
+              };
+            }));
+            settled.forEach((x,j) => x.status === 'fulfilled' ? rows.push(x.value) : errors.push({ticker:batch[j],error:String(x.reason?.message||x.reason)}));
+          }
+          const finite = (key) => rows.map(x=>x[key]).filter(Number.isFinite).sort((a,b)=>a-b);
+          const pct = (a,p) => a.length ? a[Math.min(a.length-1, Math.max(0, Math.floor((a.length-1)*p)))] : null;
+          const stats = (key) => { const a=finite(key); return {n:a.length,min:a[0]??null,p25:pct(a,.25),p50:pct(a,.50),p75:pct(a,.75),p90:pct(a,.90),p95:pct(a,.95),max:a.at(-1)??null}; };
+          const near = [...rows]
+            .sort((a,b)=>(b.research-a.research)||(b.core-a.core)||(b.structuralNetRR-a.structuralNetRR)||a.ticker.localeCompare(b.ticker))
+            .slice(0,20);
+          const reasonCounts = {};
+          for (const x of rows) for (const r of x.reasons) reasonCounts[r]=(reasonCounts[r]||0)+1;
+          const report = {
+            sessionDate: market.sessionDate ?? null,
+            requested: tickers.length,
+            completed: rows.length,
+            errors,
+            eligible: rows.filter(x=>x.eligible).length,
+            publicationEligible: rows.filter(x=>x.publicationEligible).length,
+            thresholds: {core:70,research:72,liquidity:55,sr:55,structuralNetRR:0.70},
+            distributions: {core:stats('core'),research:stats('research'),liquidity:stats('liquidity'),supportResistance:stats('sr'),dataQuality:stats('quality'),structuralNetRR:stats('structuralNetRR')},
+            reasonCounts: Object.entries(reasonCounts).sort((a,b)=>b[1]-a[1]).map(([reason,count])=>({reason,count})),
+            nearMisses: near,
+          };
+          console.log(`RC2_FULL_MARKET_SCORE_DIAGNOSTICS:${JSON.stringify(report)}`);
           NODE
 
       - name: Confirm non-invasive diagnostic contract
