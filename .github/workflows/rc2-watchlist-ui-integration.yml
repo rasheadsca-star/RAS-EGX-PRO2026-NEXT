@@ -1,0 +1,42 @@
+name: RC2 Watchlist UI Integration
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rc2-watchlist-ui-integration.yml"
+
+permissions:
+  contents: read
+
+env:
+  RC2_PRODUCTION_URL: "https://egx-tfe-v20-fusion-rc2.vercel.app"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify production watchlist trade-plan presentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          stamp="$(date +%s)"
+          page="$(curl -fsSL --max-time 60 "$RC2_PRODUCTION_URL/watchlist.html?t=$stamp")"
+          watch="$(curl -fsSL --max-time 180 "$RC2_PRODUCTION_URL/api/watchlist?limit=20&t=$stamp")"
+          grep -q "منطقة الدخول" <<<"$page"
+          grep -q "وقف الخسارة" <<<"$page"
+          grep -q "الهدف الأول" <<<"$page"
+          grep -q "الهدف الثاني" <<<"$page"
+          node -e '
+            const d=JSON.parse(process.argv[1]);
+            if(!Array.isArray(d.highPotentialCandidates)) process.exit(1);
+            for(const x of d.highPotentialCandidates){
+              if(!x.tradePlan) process.exit(1);
+              for(const k of ["entryLow","entryHigh","stop","target1","target2"]){
+                if(!Number.isFinite(Number(x.tradePlan[k]))) process.exit(1);
+              }
+              if(x.recommendation!==false||x.executionAllowed!==false||x.watchlistOnly!==true) process.exit(1);
+            }
+          ' "$watch"
+          echo "RC2_WATCHLIST_TRADE_PLAN_UI_VERIFIED"
