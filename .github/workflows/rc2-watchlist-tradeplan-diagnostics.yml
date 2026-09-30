@@ -17,11 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
-      - name: Fetch current watchlist trade plans
+      - name: Fetch current watchlist trade plans and confidence evidence
         shell: bash
         run: |
           set -euo pipefail
-          stamp="$(date +%s)"
           node - <<'NODE'
           const base = process.env.RC2_PRODUCTION_URL;
           const stamp = Date.now();
@@ -29,6 +28,8 @@ jobs:
           const r = await fetch(url,{headers:{'cache-control':'no-cache'}});
           if(!r.ok) throw new Error(`${r.status} ${url}`);
           const d = await r.json();
+          if(d?.schemaVersion !== '20.tfe.watchlist.2') throw new Error(`Unexpected schema ${d?.schemaVersion}`);
+          if(d?.permissions?.executionAllowed !== false || d?.permissions?.recommendationMutationAllowed !== false) throw new Error('Safety permission regression');
           const rows = (d.highPotentialCandidates || []).map(x => ({
             rank:x.rank,
             ticker:x.ticker,
@@ -42,8 +43,34 @@ jobs:
             structuralNetRR:x.tradePlan?.structuralNetRR ?? null,
             alignmentState:x.tradePlan?.alignmentState ?? null,
             candidateScore:x.candidateScore ?? null,
+            confidenceV2:x.confidenceV2 ? {
+              version:x.confidenceV2.version,
+              overall:x.confidenceV2.overallConfidenceScore,
+              grade:x.confidenceV2.confidenceGrade,
+              evidenceLevel:x.confidenceV2.evidenceLevel,
+              calibratedTarget1ProbabilityPct:x.confidenceV2.calibratedTarget1ProbabilityPct,
+              wilsonLower95Pct:x.confidenceV2.conservativeTarget1WilsonLower95Pct,
+              historicalTrades:x.confidenceV2.historical?.tradeCount ?? null,
+              dataQuality:x.confidenceV2.components?.dataQuality ?? null,
+              setupQuality:x.confidenceV2.components?.setupQuality ?? null,
+              historicalEvidence:x.confidenceV2.components?.historicalEvidence ?? null,
+              regimeFit:x.confidenceV2.components?.regimeFit ?? null,
+              regime:x.confidenceV2.regime?.current?.label ?? null,
+              regimeMatchedTrades:x.confidenceV2.regime?.matchedTrades ?? null,
+              walkForwardStability:x.confidenceV2.components?.walkForwardStability ?? null,
+              walkForwardStatus:x.confidenceV2.walkForward?.status ?? null,
+            } : null,
             recommendation:x.recommendation,
             executionAllowed:x.executionAllowed,
           }));
-          console.log(`RC2_WATCHLIST_TRADE_PLANS:${JSON.stringify({sessionDate:d.sessionDate,rows})}`);
+          if(rows.some(x => x.recommendation !== false || x.executionAllowed !== false)) throw new Error('Watchlist execution contract regression');
+          if(rows.some(x => !x.confidenceV2 || x.confidenceV2.version !== 'CONFIDENCE_ENGINE_V2')) throw new Error('Confidence V2 missing from candidate');
+          const report = {
+            sessionDate:d.sessionDate,
+            schemaVersion:d.schemaVersion,
+            summary:d.summary,
+            officialCandidatesWithConfidenceV2:(d.officialCandidatesWithConfidenceV2 || []).map(x=>({ticker:x.ticker,confidenceV2:x.confidenceV2 || null})),
+            rows,
+          };
+          console.log(`RC2_WATCHLIST_CONFIDENCE_V2:${JSON.stringify(report)}`);
           NODE
