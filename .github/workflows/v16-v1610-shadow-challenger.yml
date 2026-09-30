@@ -1,0 +1,101 @@
+name: V16.10 Exposure-Aware Shadow Challenger
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - v16-10-exposure-aware-shadow
+    paths:
+      - 'scripts/research/v16-v1610-exposure-challenger.py'
+      - 'tests/astra/v1610-exposure-challenger.test.py'
+      - '.github/workflows/v16-v1610-shadow-challenger.yml'
+  schedule:
+    - cron: '30 17 * * 0-4'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v16-v1610-shadow-challenger-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evaluate-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Unit test portfolio accounting
+        run: python3 tests/astra/v1610-exposure-challenger.test.py
+
+      - name: Evaluate V16.10 shadow challenger
+        run: python3 scripts/research/v16-v1610-exposure-challenger.py
+
+      - name: Verify shadow output contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('data/research/v16-v1610-exposure-challenger.json')
+          x = json.loads(p.read_text())
+          assert x['schemaVersion'] == '16.10.0-exposure-accounted-shadow'
+          assert x['shadowOnly'] is True
+          assert x['automaticPromotionAllowed'] is False
+          assert x['productionFilesWritten'] is False
+          assert x['methodology']['maximumPortfolioAllocationPct'] == 50.0
+          assert x['methodology']['roundTripCostPctOfDeployedCapital'] == 0.60
+          assert x['methodology']['gateThresholdsUnchanged'] is True
+          assert x['acceptanceGate']['maximumDrawdownAboveMinus15'] == (x['portfolioCapitalMetrics']['maximumDrawdownPct'] >= -15.0)
+          assert x['championParity']['passed'] is True, x['championParity']
+          print(json.dumps({
+              'status': x['status'],
+              'shadowEligible': x['shadowEligible'],
+              'fullExposureDD': x['fullExposureReferenceMetrics']['maximumDrawdownPct'],
+              'portfolioDD': x['portfolioCapitalMetrics']['maximumDrawdownPct'],
+              'portfolioAverage': x['portfolioCapitalMetrics']['averageNetReturnPct'],
+              'portfolioPF': x['portfolioCapitalMetrics']['profitFactor'],
+              'portfolioWinRate': x['portfolioCapitalMetrics']['sessionWinRatePct'],
+              'gate': x['acceptanceGate'],
+          }, indent=2))
+          PY
+
+      - name: Verify frozen V16.9 pilot remains intact
+        run: node scripts/stable/v16-main-app-pilot-lock-guard.cjs
+
+      - name: Ensure no frozen methodology file changed
+        run: |
+          git diff --exit-code -- \
+            scripts/research/v16-v169-basket-engine.py \
+            scripts/research/v16-two-stage-predictor.py \
+            scripts/stable/v16-publish-v169-basket.cjs \
+            data/stable/v16-v169-release-lock.json
+
+      - name: Persist shadow evidence
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/research/v16-v1610-exposure-challenger.json data/stable/v16-main-app-pilot-lock-status.json
+          if git diff --cached --quiet; then
+            echo 'No shadow evidence changes to commit.'
+            exit 0
+          fi
+          git commit -m 'research(v16.10): refresh exposure-aware shadow evidence'
+          for attempt in 1 2 3; do
+            if git pull --rebase -X ours origin "${GITHUB_REF_NAME}" && git push origin HEAD:"${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            [ "$attempt" = '3' ] && exit 1
+            sleep $((attempt * 5))
+          done
