@@ -49,4 +49,7 @@ test('sub-90 canonical coverage keeps healing active even when source evidence i
   assert.equal(postCloseComplete(input).skip, false);
 });
 
-// Touch point used to trigger the canonical V16 post-fix validation workflow.
+// The canonical MAIN APP workflow already executes this file on every run.
+// Import the status-integrity suite here so the overwrite regression is also
+// enforced without adding a second workflow entry point.
+require('../stable/v16-canonical-status-integrity.test.cjs');
