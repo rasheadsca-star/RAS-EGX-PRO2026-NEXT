@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""V16.10 shadow challenger.
+"""V16.10 exposure-aware shadow challenger with degradation guard.
 
-This challenger preserves the frozen V16.9 ranking, online training, basket-size
-selection and 0.60% round-trip cost assumption.  Its only methodological change
-is to evaluate returns, transaction costs and drawdown on total portfolio capital
-at the same 50% maximum allocation used by the production pilot publisher.
+The frozen V16.9 ranking/model and basket-size selection are preserved. V16.10
+adds two research-only risk controls:
+1) portfolio accounting at the same 50% maximum allocation used by the pilot;
+2) an ex-ante trailing-validation guard that stays in cash when the immediately
+   preceding 8-session validation window is degraded.
 
-It is research-only.  It never writes V16.9 decision files and cannot promote
-itself into production.
+The guard is fixed for each next 5-session block, uses no current/future outcome,
+and never writes production decision files.
 """
 import json
 import math
@@ -45,6 +46,14 @@ BLOCK_SIZE = 5
 LOOKBACK = 8
 GATE_MAX_DRAWDOWN_PCT = -15.0
 
+# Pre-declared degradation guard. These are not optimized per session. The guard
+# evaluates only the preceding V16.9 validation window and then remains fixed for
+# the entire next block.
+GUARD_MIN_AVERAGE_NET_RETURN_PCT = 0.0
+GUARD_MIN_PROFIT_FACTOR = 1.0
+GUARD_MIN_WIN_RATE_PCT = 50.0
+GUARD_MAX_DRAWDOWN_FLOOR_PCT = -10.0
+
 
 def safe_mean(values, default=0.0):
     clean = [v for v in values if isinstance(v, (int, float)) and math.isfinite(v)]
@@ -75,8 +84,8 @@ def aggregate(sessions, field):
 
 
 def objective(metrics):
-    # Kept byte-for-byte equivalent in intent to V16.9 so basket-size selection
-    # remains based on the original full-basket validation economics.
+    # Identical in intent to V16.9; risk overlay does not alter which basket size
+    # the champion logic would have selected.
     return (
         (metrics['averageNetReturnPct'] or -5.0)
         + 0.15 * math.log(max(metrics['profitFactor'] or 0.1, 0.1))
@@ -86,18 +95,31 @@ def objective(metrics):
 
 
 def portfolio_return_from_basket_net(basket_net_pct):
-    """Translate deployed-capital return into total-portfolio return."""
     return round_value(float(basket_net_pct) * EXPOSURE, 4)
 
 
-def acceptance_gate(metrics):
+def degradation_guard(validation_metrics):
+    reasons = []
+    if (validation_metrics.get('averageNetReturnPct') or 0.0) <= GUARD_MIN_AVERAGE_NET_RETURN_PCT:
+        reasons.append('TRAILING_AVERAGE_NOT_POSITIVE')
+    if (validation_metrics.get('profitFactor') or 0.0) < GUARD_MIN_PROFIT_FACTOR:
+        reasons.append('TRAILING_PROFIT_FACTOR_BELOW_1')
+    if (validation_metrics.get('sessionWinRatePct') or 0.0) < GUARD_MIN_WIN_RATE_PCT:
+        reasons.append('TRAILING_WIN_RATE_BELOW_50')
+    if (validation_metrics.get('maximumDrawdownPct') or -100.0) < GUARD_MAX_DRAWDOWN_FLOOR_PCT:
+        reasons.append('TRAILING_DRAWDOWN_BELOW_MINUS10')
+    return {'passed': not reasons, 'reasons': reasons}
+
+
+def acceptance_gate(active_metrics, calendar_metrics=None):
+    calendar_metrics = calendar_metrics or active_metrics
     return {
-        'minimumSessions': metrics['sessions'] >= 20,
-        'positiveAverageNetReturn': (metrics['averageNetReturnPct'] or 0.0) > 0.0,
-        'positiveCompoundedReturn': (metrics['compoundedNetReturnPct'] or 0.0) > 0.0,
-        'profitFactorAtLeast120': (metrics['profitFactor'] or 0.0) >= 1.20,
-        'maximumDrawdownAboveMinus15': (metrics['maximumDrawdownPct'] or -100.0) >= GATE_MAX_DRAWDOWN_PCT,
-        'sessionWinRateAtLeast45': (metrics['sessionWinRatePct'] or 0.0) >= 45.0,
+        'minimumSessions': active_metrics['sessions'] >= 20,
+        'positiveAverageNetReturn': (active_metrics['averageNetReturnPct'] or 0.0) > 0.0,
+        'positiveCompoundedReturn': (calendar_metrics['compoundedNetReturnPct'] or 0.0) > 0.0,
+        'profitFactorAtLeast120': (active_metrics['profitFactor'] or 0.0) >= 1.20,
+        'maximumDrawdownAboveMinus15': (calendar_metrics['maximumDrawdownPct'] or -100.0) >= GATE_MAX_DRAWDOWN_PCT,
+        'sessionWinRateAtLeast45': (active_metrics['sessionWinRatePct'] or 0.0) >= 45.0,
     }
 
 
@@ -117,7 +139,12 @@ def parity_check(full_metrics, champion_metrics):
         else:
             delta = abs(float(left) - float(right))
             same = delta <= (0.001 if key != 'sessions' else 0.0)
-        diffs[key] = {'challengerRaw': left, 'champion': right, 'absDiff': round_value(delta, 6) if delta is not None else None, 'match': same}
+        diffs[key] = {
+            'challengerRaw': left,
+            'champion': right,
+            'absDiff': round_value(delta, 6) if delta is not None else None,
+            'match': same,
+        }
         passed = passed and same
     return {'passed': passed, 'fields': diffs}
 
@@ -213,25 +240,39 @@ def main():
             choices.append((objective(metrics), size, metrics))
         choices.sort(reverse=True, key=lambda item: item[0])
         chosen = choices[0][1]
+        selected_validation = choices[0][2]
+        guard = degradation_guard(selected_validation)
         block = sessions[block_start:block_start + BLOCK_SIZE]
         usage[str(chosen)] += len(block)
         for session in block:
             basket_net = session[f'basket{chosen}NetPct']
+            portfolio_net = portfolio_return_from_basket_net(basket_net)
             blocked_sessions.append({
                 'signalDate': session['signalDate'],
                 'outcomeDate': session['outcomeDate'],
                 'basketSize': chosen,
                 'tickers': session['rankedTickers'][:chosen],
                 'basketNetReturnPct': basket_net,
-                'portfolioNetReturnPct': portfolio_return_from_basket_net(basket_net),
+                'portfolioNetReturnPct': portfolio_net,
+                'riskGuardPassed': guard['passed'],
+                'riskGuardReasons': guard['reasons'],
+                'exposurePct': MAX_PORTFOLIO_ALLOCATION_PCT if guard['passed'] else 0.0,
+                'guardedPortfolioNetReturnPct': portfolio_net if guard['passed'] else 0.0,
                 'top10Hits': session[f'basket{chosen}Top10Hits'],
-                'validationMetrics': choices[0][2],
+                'validationMetrics': selected_validation,
             })
 
     full_exposure_metrics = aggregate(blocked_sessions, 'basketNetReturnPct')
     full_exposure_metrics['averageTop10Hits'] = round_value(safe_mean([s['top10Hits'] for s in blocked_sessions]), 3)
     portfolio_metrics = aggregate(blocked_sessions, 'portfolioNetReturnPct')
     portfolio_metrics['averageTop10Hits'] = full_exposure_metrics['averageTop10Hits']
+
+    active_guarded = [s for s in blocked_sessions if s['riskGuardPassed']]
+    guarded_active_metrics = aggregate(active_guarded, 'guardedPortfolioNetReturnPct')
+    guarded_calendar_metrics = aggregate(blocked_sessions, 'guardedPortfolioNetReturnPct')
+    guarded_calendar_metrics['activeSessions'] = len(active_guarded)
+    guarded_calendar_metrics['cashSessions'] = len(blocked_sessions) - len(active_guarded)
+    guarded_calendar_metrics['exposureRatePct'] = round_value(len(active_guarded) / max(1, len(blocked_sessions)) * 100.0, 2)
 
     champion = json.loads(CHAMPION_REPORT.read_text(encoding='utf-8')) if CHAMPION_REPORT.exists() else {}
     champion_metrics = champion.get('blockedWalkForwardMetrics', {})
@@ -244,6 +285,8 @@ def main():
         current_choices.append((objective(metrics), size, metrics))
     current_choices.sort(reverse=True, key=lambda item: item[0])
     current_size = current_choices[0][1]
+    current_validation = current_choices[0][2]
+    current_guard = degradation_guard(current_validation)
 
     final_weights = train([0.0] * len(rows[0]['xNew']), rows, 'yTop10', 'xNew', 55, 0.028)
     latest_date = dates[-1]
@@ -283,15 +326,16 @@ def main():
             'holdingSessions': 1,
         })
 
-    gate = acceptance_gate(portfolio_metrics)
+    gate = acceptance_gate(guarded_active_metrics, guarded_calendar_metrics)
     shadow_eligible = parity['passed'] and all(gate.values())
     recent_20 = blocked_sessions[-20:] if len(blocked_sessions) >= 20 else blocked_sessions
-    recent_20_metrics = aggregate(recent_20, 'portfolioNetReturnPct')
+    recent_20_plain = aggregate(recent_20, 'portfolioNetReturnPct')
+    recent_20_guarded = aggregate(recent_20, 'guardedPortfolioNetReturnPct')
 
     report = {
-        'schemaVersion': '16.10.0-exposure-accounted-shadow',
+        'schemaVersion': '16.10.1-exposure-accounted-degradation-guard-shadow',
         'generatedAt': datetime.now(timezone.utc).isoformat(),
-        'engine': 'V16_10_EXPOSURE_AWARE_SHADOW',
+        'engine': 'V16_10_EXPOSURE_AWARE_DEGRADATION_GUARD_SHADOW',
         'status': 'SHADOW_GATE_PASSED' if shadow_eligible else ('PARITY_MISMATCH' if not parity['passed'] else 'SHADOW_GATE_NOT_PASSED'),
         'shadowOnly': True,
         'automaticPromotionAllowed': False,
@@ -299,30 +343,46 @@ def main():
         'shadowEligible': shadow_eligible,
         'methodology': {
             'rankingAndModel': 'Identical to frozen V16.9 two-stage ranking and online walk-forward training.',
-            'basketSelection': f'Identical V16.9 basket-size selection: previous {LOOKBACK} sessions, fixed for next {BLOCK_SIZE}.',
+            'basketSelection': f'Identical V16.9 basket-size selection: previous {LOOKBACK} sessions and fixed for next {BLOCK_SIZE}.',
             'holdingSessions': 1,
             'roundTripCostPctOfDeployedCapital': COST_PCT_DEPLOYED,
             'maximumPortfolioAllocationPct': MAX_PORTFOLIO_ALLOCATION_PCT,
-            'cashReservePct': 100.0 - MAX_PORTFOLIO_ALLOCATION_PCT,
-            'portfolioAccounting': 'Portfolio return = V16.9 deployed-basket net return × 50% exposure; transaction-cost impact therefore scales with deployed notional.',
+            'cashReservePctWhenActive': 100.0 - MAX_PORTFOLIO_ALLOCATION_PCT,
+            'portfolioAccounting': 'Portfolio return = V16.9 deployed-basket net return × 50% exposure.',
+            'degradationGuard': {
+                'lookbackSessions': LOOKBACK,
+                'fixedForwardBlockSessions': BLOCK_SIZE,
+                'minimumAverageNetReturnPctExclusive': GUARD_MIN_AVERAGE_NET_RETURN_PCT,
+                'minimumProfitFactor': GUARD_MIN_PROFIT_FACTOR,
+                'minimumWinRatePct': GUARD_MIN_WIN_RATE_PCT,
+                'maximumDrawdownFloorPct': GUARD_MAX_DRAWDOWN_FLOOR_PCT,
+                'failureAction': 'ABSTAIN_AND_HOLD_100_PERCENT_CASH',
+            },
             'gateThresholdsUnchanged': True,
             'futureLeakageForbidden': True,
             'currentSessionOutcomeUsedForSelection': False,
         },
         'championParity': parity,
         'fullExposureReferenceMetrics': full_exposure_metrics,
-        'portfolioCapitalMetrics': portfolio_metrics,
-        'recent20PortfolioMetricsDiagnosticOnly': recent_20_metrics,
+        'portfolioCapitalMetricsWithoutGuard': portfolio_metrics,
+        'guardedActiveSessionMetrics': guarded_active_metrics,
+        'guardedCalendarPortfolioMetrics': guarded_calendar_metrics,
+        'recent20PortfolioMetricsWithoutGuard': recent_20_plain,
+        'recent20GuardedPortfolioMetrics': recent_20_guarded,
         'basketSizeUsage': usage,
         'acceptanceGate': gate,
         'currentSignalDate': latest_date,
         'currentBasketSize': current_size,
-        'currentBasketValidationFullExposure': current_choices[0][2],
+        'currentBasketValidationFullExposure': current_validation,
+        'currentRiskGuard': current_guard,
+        'currentAction': 'SHADOW_DEPLOY_50_PERCENT' if current_guard['passed'] else 'ABSTAIN_100_PERCENT_CASH',
         'currentShadowBasket': shadow_basket,
+        'currentExecutableShadowBasket': shadow_basket if current_guard['passed'] else [],
         'recentBlockedSessions': blocked_sessions[-15:],
         'notesAr': [
             'هذه نسخة Shadow منفصلة ولا تعدّل V16.9 المجمد ولا تنشر أوامر أو توصيات تنفيذية تلقائيًا.',
-            'التغيير الوحيد هو محاسبة المخاطر والعائد على إجمالي رأس المال وفق حد التعرض الفعلي 50% المستخدم في الـPilot.',
+            'حد التعرض عند السماح بالدخول 50% فقط من إجمالي رأس المال، والباقي نقد.',
+            'عند تدهور نافذة التحقق السابقة يتم الامتناع الكامل عن الدخول بدل إجبار النظام على إصدار توصيات.',
             'حد أقصى للتراجع -15% وباقي بوابة القبول لم يتم تخفيفها.',
         ],
     }
@@ -332,9 +392,14 @@ def main():
         'shadowEligible': shadow_eligible,
         'championParityPassed': parity['passed'],
         'fullExposureReferenceMetrics': full_exposure_metrics,
-        'portfolioCapitalMetrics': portfolio_metrics,
+        'portfolioCapitalMetricsWithoutGuard': portfolio_metrics,
+        'guardedActiveSessionMetrics': guarded_active_metrics,
+        'guardedCalendarPortfolioMetrics': guarded_calendar_metrics,
+        'recent20WithoutGuard': recent_20_plain,
+        'recent20WithGuard': recent_20_guarded,
         'acceptanceGate': gate,
-        'currentBasketSize': current_size,
+        'currentAction': report['currentAction'],
+        'currentRiskGuard': current_guard,
         'currentShadowBasket': shadow_basket,
     }, ensure_ascii=False, indent=2))
 
