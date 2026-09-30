@@ -102,12 +102,33 @@ jobs:
             }));
             settled.forEach((x,j) => x.status === 'fulfilled' ? rows.push(x.value) : errors.push({ticker:batch[j],error:String(x.reason?.message||x.reason)}));
           }
+          const T={core:70,research:72,liquidity:55,sr:55,structuralNetRR:0.70};
           const finite = (key) => rows.map(x=>x[key]).filter(Number.isFinite).sort((a,b)=>a-b);
           const pct = (a,p) => a.length ? a[Math.min(a.length-1, Math.max(0, Math.floor((a.length-1)*p)))] : null;
           const stats = (key) => { const a=finite(key); return {n:a.length,min:a[0]??null,p25:pct(a,.25),p50:pct(a,.50),p75:pct(a,.75),p90:pct(a,.90),p95:pct(a,.95),max:a.at(-1)??null}; };
-          const near = [...rows]
-            .sort((a,b)=>(b.research-a.research)||(b.core-a.core)||(b.structuralNetRR-a.structuralNetRR)||a.ticker.localeCompare(b.ticker))
-            .slice(0,20);
+          const deficits = x => ({
+            core: Math.max(0,T.core-(Number.isFinite(x.core)?x.core:-Infinity)),
+            research: Math.max(0,T.research-(Number.isFinite(x.research)?x.research:-Infinity)),
+            liquidity: Math.max(0,T.liquidity-(Number.isFinite(x.liquidity)?x.liquidity:-Infinity)),
+            sr: Math.max(0,T.sr-(Number.isFinite(x.sr)?x.sr:-Infinity)),
+            structuralNetRR: Math.max(0,T.structuralNetRR-(Number.isFinite(x.structuralNetRR)?x.structuralNetRR:-Infinity)),
+          });
+          const critical = new Set(['QUALITY_BLOCKED','INSUFFICIENT_HISTORY','TRADE_PLAN_UNAVAILABLE','DO_NOT_CHASE','BELOW_ENTRY_WAIT']);
+          const enriched = rows.map(x => {
+            const d=deficits(x);
+            const failedScoreGates=Object.values(d).filter(v=>v>0).length;
+            const criticalReasons=x.reasons.filter(r=>critical.has(r));
+            const nearMiss = !x.eligible && criticalReasons.length===0 && failedScoreGates<=2 && d.core<=8 && d.research<=8 && d.liquidity<=10 && d.sr<=10 && d.structuralNetRR<=0.20;
+            const closeness =
+              (Number.isFinite(x.core)?Math.min(1,x.core/T.core):0)*0.30 +
+              (Number.isFinite(x.research)?Math.min(1,x.research/T.research):0)*0.30 +
+              (Number.isFinite(x.liquidity)?Math.min(1,x.liquidity/T.liquidity):0)*0.10 +
+              (Number.isFinite(x.sr)?Math.min(1,x.sr/T.sr):0)*0.10 +
+              (Number.isFinite(x.structuralNetRR)?Math.min(1,x.structuralNetRR/T.structuralNetRR):0)*0.20;
+            return {...x,deficits:d,failedScoreGates,criticalReasons,nearMiss,closeness:Number(closeness.toFixed(4))};
+          });
+          const nearMisses=enriched.filter(x=>x.nearMiss).sort((a,b)=>b.closeness-a.closeness||b.research-a.research||b.core-a.core||a.ticker.localeCompare(b.ticker)).slice(0,25);
+          const bestRejected=[...enriched].filter(x=>!x.eligible).sort((a,b)=>b.closeness-a.closeness||b.research-a.research||b.core-a.core||a.ticker.localeCompare(b.ticker)).slice(0,25);
           const reasonCounts = {};
           for (const x of rows) for (const r of x.reasons) reasonCounts[r]=(reasonCounts[r]||0)+1;
           const report = {
@@ -115,12 +136,14 @@ jobs:
             requested: tickers.length,
             completed: rows.length,
             errors,
-            eligible: rows.filter(x=>x.eligible).length,
+            qualified: rows.filter(x=>x.eligible).length,
             publicationEligible: rows.filter(x=>x.publicationEligible).length,
-            thresholds: {core:70,research:72,liquidity:55,sr:55,structuralNetRR:0.70},
+            highPotentialNearMiss: nearMisses.length,
+            thresholds:T,
             distributions: {core:stats('core'),research:stats('research'),liquidity:stats('liquidity'),supportResistance:stats('sr'),dataQuality:stats('quality'),structuralNetRR:stats('structuralNetRR')},
             reasonCounts: Object.entries(reasonCounts).sort((a,b)=>b[1]-a[1]).map(([reason,count])=>({reason,count})),
-            nearMisses: near,
+            nearMisses,
+            bestRejected,
           };
           console.log(`RC2_FULL_MARKET_SCORE_DIAGNOSTICS:${JSON.stringify(report)}`);
           NODE
@@ -130,4 +153,4 @@ jobs:
           echo "SCORING MODEL CHANGED: false"
           echo "THRESHOLDS CHANGED: false"
           echo "EXECUTION BEHAVIOR CHANGED: false"
-          echo "PURPOSE: explain why production publicationEligibleTotal may be zero"
+          echo "PURPOSE: classify qualified vs high-potential near-miss opportunities without fabricating recommendations"
