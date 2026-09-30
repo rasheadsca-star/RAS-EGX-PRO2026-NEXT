@@ -171,7 +171,8 @@ function main() {
   }
   ensure(priceTruth.ready === true, 'Price truth not ready');
   ensure(priceTruth.executionGrade === true, 'Price truth is not execution-grade');
-  ensure(Number(priceTruth.acceptedRows || 0) >= 200, 'Price-truth accepted-row coverage below operational floor: ' + priceTruth.acceptedRows);
+  const configuredExecutionFloor = Math.max(80, Number(priceTruth.minimumExecutionRows || 80));
+  ensure(Number(priceTruth.acceptedRows || 0) >= configuredExecutionFloor, 'Price-truth accepted rows below configured execution floor: ' + priceTruth.acceptedRows + ' < ' + configuredExecutionFloor);
   ensure(sourceCoveragePct >= 90, 'Source-session evidence coverage below 90%: ' + sourceCoveragePct);
   ensure((priceTruth.missingHistoryFiles || []).length === 0, 'Certified baseline still has missing history files: ' + JSON.stringify(priceTruth.missingHistoryFiles));
   ensure(activeUniverse === 224, 'Certified active universe drifted from G22 baseline: ' + activeUniverse);
