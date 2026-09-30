@@ -1,7 +1,7 @@
 {
-  "schemaVersion": "16.10.0-exposure-accounted-shadow",
-  "generatedAt": "2026-09-30T19:55:19.412481+00:00",
-  "engine": "V16_10_EXPOSURE_AWARE_SHADOW",
+  "schemaVersion": "16.10.1-exposure-accounted-degradation-guard-shadow",
+  "generatedAt": "2026-09-30T19:58:42.280013+00:00",
+  "engine": "V16_10_EXPOSURE_AWARE_DEGRADATION_GUARD_SHADOW",
   "status": "SHADOW_GATE_PASSED",
   "shadowOnly": true,
   "automaticPromotionAllowed": false,
@@ -9,12 +9,21 @@
   "shadowEligible": true,
   "methodology": {
     "rankingAndModel": "Identical to frozen V16.9 two-stage ranking and online walk-forward training.",
-    "basketSelection": "Identical V16.9 basket-size selection: previous 8 sessions, fixed for next 5.",
+    "basketSelection": "Identical V16.9 basket-size selection: previous 8 sessions and fixed for next 5.",
     "holdingSessions": 1,
     "roundTripCostPctOfDeployedCapital": 0.6,
     "maximumPortfolioAllocationPct": 50.0,
-    "cashReservePct": 50.0,
-    "portfolioAccounting": "Portfolio return = V16.9 deployed-basket net return × 50% exposure; transaction-cost impact therefore scales with deployed notional.",
+    "cashReservePctWhenActive": 50.0,
+    "portfolioAccounting": "Portfolio return = V16.9 deployed-basket net return × 50% exposure.",
+    "degradationGuard": {
+      "lookbackSessions": 8,
+      "fixedForwardBlockSessions": 5,
+      "minimumAverageNetReturnPctExclusive": 0.0,
+      "minimumProfitFactor": 1.0,
+      "minimumWinRatePct": 50.0,
+      "maximumDrawdownFloorPct": -10.0,
+      "failureAction": "ABSTAIN_AND_HOLD_100_PERCENT_CASH"
+    },
     "gateThresholdsUnchanged": true,
     "futureLeakageForbidden": true,
     "currentSessionOutcomeUsedForSelection": false
@@ -84,7 +93,7 @@
     "worstSessionPct": -7.078,
     "averageTop10Hits": 0.928
   },
-  "portfolioCapitalMetrics": {
+  "portfolioCapitalMetricsWithoutGuard": {
     "sessions": 69,
     "averageNetReturnPct": 0.2717,
     "medianNetReturnPct": -0.0607,
@@ -96,7 +105,32 @@
     "worstSessionPct": -3.539,
     "averageTop10Hits": 0.928
   },
-  "recent20PortfolioMetricsDiagnosticOnly": {
+  "guardedActiveSessionMetrics": {
+    "sessions": 40,
+    "averageNetReturnPct": 0.5364,
+    "medianNetReturnPct": -0.1124,
+    "sessionWinRatePct": 47.5,
+    "profitFactor": 1.751,
+    "compoundedNetReturnPct": 22.361,
+    "maximumDrawdownPct": -7.039,
+    "bestSessionPct": 6.981,
+    "worstSessionPct": -3.539
+  },
+  "guardedCalendarPortfolioMetrics": {
+    "sessions": 69,
+    "averageNetReturnPct": 0.311,
+    "medianNetReturnPct": 0.0,
+    "sessionWinRatePct": 27.536,
+    "profitFactor": 1.751,
+    "compoundedNetReturnPct": 22.361,
+    "maximumDrawdownPct": -7.039,
+    "bestSessionPct": 6.981,
+    "worstSessionPct": -3.539,
+    "activeSessions": 40,
+    "cashSessions": 29,
+    "exposureRatePct": 57.97
+  },
+  "recent20PortfolioMetricsWithoutGuard": {
     "sessions": 20,
     "averageNetReturnPct": -0.751,
     "medianNetReturnPct": -0.994,
@@ -106,6 +140,17 @@
     "maximumDrawdownPct": -14.7,
     "bestSessionPct": 1.439,
     "worstSessionPct": -3.492
+  },
+  "recent20GuardedPortfolioMetrics": {
+    "sessions": 20,
+    "averageNetReturnPct": -0.3287,
+    "medianNetReturnPct": 0.0,
+    "sessionWinRatePct": 10.0,
+    "profitFactor": 0.1,
+    "compoundedNetReturnPct": -6.435,
+    "maximumDrawdownPct": -7.039,
+    "bestSessionPct": 0.65,
+    "worstSessionPct": -2.533
   },
   "basketSizeUsage": {
     "3": 30,
@@ -133,6 +178,15 @@
     "bestSessionPct": 3.829,
     "worstSessionPct": -3.304
   },
+  "currentRiskGuard": {
+    "passed": false,
+    "reasons": [
+      "TRAILING_AVERAGE_NOT_POSITIVE",
+      "TRAILING_PROFIT_FACTOR_BELOW_1",
+      "TRAILING_WIN_RATE_BELOW_50"
+    ]
+  },
+  "currentAction": "ABSTAIN_100_PERCENT_CASH",
   "currentShadowBasket": [
     {
       "rank": 1,
@@ -183,6 +237,7 @@
       "holdingSessions": 1
     }
   ],
+  "currentExecutableShadowBasket": [],
   "recentBlockedSessions": [
     {
       "signalDate": "2026-09-09",
@@ -196,6 +251,10 @@
       ],
       "basketNetReturnPct": -2.0142,
       "portfolioNetReturnPct": -1.0071,
+      "riskGuardPassed": true,
+      "riskGuardReasons": [],
+      "exposurePct": 50.0,
+      "guardedPortfolioNetReturnPct": -1.0071,
       "top10Hits": 1,
       "validationMetrics": {
         "sessions": 8,
@@ -222,6 +281,14 @@
       ],
       "basketNetReturnPct": 2.8781,
       "portfolioNetReturnPct": 1.439,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 3,
       "validationMetrics": {
         "sessions": 8,
@@ -248,6 +315,14 @@
       ],
       "basketNetReturnPct": -4.0353,
       "portfolioNetReturnPct": -2.0177,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 1,
       "validationMetrics": {
         "sessions": 8,
@@ -274,6 +349,14 @@
       ],
       "basketNetReturnPct": 2.1819,
       "portfolioNetReturnPct": 1.091,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 2,
       "validationMetrics": {
         "sessions": 8,
@@ -300,6 +383,14 @@
       ],
       "basketNetReturnPct": -6.9841,
       "portfolioNetReturnPct": -3.492,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 0,
       "validationMetrics": {
         "sessions": 8,
@@ -326,6 +417,14 @@
       ],
       "basketNetReturnPct": -1.3932,
       "portfolioNetReturnPct": -0.6966,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 0,
       "validationMetrics": {
         "sessions": 8,
@@ -352,6 +451,15 @@
       ],
       "basketNetReturnPct": -2.4401,
       "portfolioNetReturnPct": -1.2201,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 0,
       "validationMetrics": {
         "sessions": 8,
@@ -378,6 +486,15 @@
       ],
       "basketNetReturnPct": -2.9645,
       "portfolioNetReturnPct": -1.4823,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 1,
       "validationMetrics": {
         "sessions": 8,
@@ -404,6 +521,15 @@
       ],
       "basketNetReturnPct": -2.7579,
       "portfolioNetReturnPct": -1.3789,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 0,
       "validationMetrics": {
         "sessions": 8,
@@ -430,6 +556,15 @@
       ],
       "basketNetReturnPct": 2.8537,
       "portfolioNetReturnPct": 1.4268,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 2,
       "validationMetrics": {
         "sessions": 8,
@@ -456,6 +591,15 @@
       ],
       "basketNetReturnPct": 1.2346,
       "portfolioNetReturnPct": 0.6173,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 3,
       "validationMetrics": {
         "sessions": 8,
@@ -482,6 +626,15 @@
       ],
       "basketNetReturnPct": -1.9617,
       "portfolioNetReturnPct": -0.9808,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 2,
       "validationMetrics": {
         "sessions": 8,
@@ -508,6 +661,15 @@
       ],
       "basketNetReturnPct": 0.0917,
       "portfolioNetReturnPct": 0.0459,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 2,
       "validationMetrics": {
         "sessions": 8,
@@ -534,6 +696,15 @@
       ],
       "basketNetReturnPct": -1.5138,
       "portfolioNetReturnPct": -0.7569,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 1,
       "validationMetrics": {
         "sessions": 8,
@@ -560,6 +731,15 @@
       ],
       "basketNetReturnPct": -2.0805,
       "portfolioNetReturnPct": -1.0402,
+      "riskGuardPassed": false,
+      "riskGuardReasons": [
+        "TRAILING_AVERAGE_NOT_POSITIVE",
+        "TRAILING_PROFIT_FACTOR_BELOW_1",
+        "TRAILING_WIN_RATE_BELOW_50",
+        "TRAILING_DRAWDOWN_BELOW_MINUS10"
+      ],
+      "exposurePct": 0.0,
+      "guardedPortfolioNetReturnPct": 0.0,
       "top10Hits": 0,
       "validationMetrics": {
         "sessions": 8,
@@ -576,7 +756,8 @@
   ],
   "notesAr": [
     "هذه نسخة Shadow منفصلة ولا تعدّل V16.9 المجمد ولا تنشر أوامر أو توصيات تنفيذية تلقائيًا.",
-    "التغيير الوحيد هو محاسبة المخاطر والعائد على إجمالي رأس المال وفق حد التعرض الفعلي 50% المستخدم في الـPilot.",
+    "حد التعرض عند السماح بالدخول 50% فقط من إجمالي رأس المال، والباقي نقد.",
+    "عند تدهور نافذة التحقق السابقة يتم الامتناع الكامل عن الدخول بدل إجبار النظام على إصدار توصيات.",
     "حد أقصى للتراجع -15% وباقي بوابة القبول لم يتم تخفيفها."
   ]
 }
