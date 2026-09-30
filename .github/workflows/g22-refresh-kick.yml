@@ -11,7 +11,7 @@ on:
     types: [completed]
 
 permissions:
-  contents: read
+  contents: write
   actions: write
 
 concurrency:
@@ -22,13 +22,87 @@ jobs:
   dispatch:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
       - name: Dispatch G22 post-close refresh
+        id: dispatch
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           gh api --method POST \
             "repos/${{ github.repository }}/actions/workflows/astra-g22-postclose-refresh.yml/dispatches" \
             -f ref=main
           echo "G22_POST_CLOSE_REFRESH_DISPATCHED"
+
+      - name: Resolve dispatched run
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED_AT: ${{ steps.dispatch.outputs.started_at }}
+        run: |
+          set -euo pipefail
+          RUN_ID=""
+          for i in $(seq 1 30); do
+            RUN_ID=$(gh run list --workflow astra-g22-postclose-refresh.yml --event workflow_dispatch --limit 10 \
+              --json databaseId,createdAt \
+              --jq '[.[] | select(.createdAt >= env.STARTED_AT)] | sort_by(.createdAt) | last | .databaseId // empty')
+            if [ -n "$RUN_ID" ]; then break; fi
+            sleep 4
+          done
+          test -n "$RUN_ID"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "G22_REFRESH_RUN_ID=$RUN_ID"
+
+      - name: Wait for G22 result
+        id: wait
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -o pipefail
+          gh run watch "$RUN_ID" --exit-status --interval 5
+
+      - name: Persist failed G22 diagnostics
+        if: steps.wait.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p docs/astra
+          META=$(gh run view "$RUN_ID" --json databaseId,status,conclusion,createdAt,updatedAt,url,headSha,event)
+          LOG=$(gh run view "$RUN_ID" --log-failed 2>&1 || true)
+          META="$META" LOG="$LOG" node - <<'NODE'
+          const fs=require('fs');
+          const meta=JSON.parse(process.env.META||'{}');
+          const out={
+            schemaVersion:'g22-refresh-diagnostic-1',
+            capturedAt:new Date().toISOString(),
+            ...meta,
+            failedLog:String(process.env.LOG||'').slice(-60000)
+          };
+          fs.writeFileSync('docs/astra/g22-last-refresh-diagnostic.json',JSON.stringify(out,null,2)+'\n');
+          NODE
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/astra/g22-last-refresh-diagnostic.json
+          git commit -m 'diagnostics(g22): capture failed post-close refresh' || exit 0
+          for attempt in 1 2 3; do
+            git pull --rebase -X ours origin main
+            if git push origin HEAD:main; then exit 0; fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt*5))
+          done
+
+      - name: Require refresh success
+        if: steps.wait.outcome != 'success'
+        run: exit 1
