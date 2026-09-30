@@ -136,7 +136,7 @@ jobs:
           const freshness = JSON.parse(fs.readFileSync('data/stable/v16-recommendation-freshness.json', 'utf8'));
           const decision = JSON.parse(fs.readFileSync('data/stable/v15-practical-decision.json', 'utf8'));
           const out = {
-            schemaVersion: '16.3.3',
+            schemaVersion: '16.3.3-mobile-hotfix-sidecar',
             generatedAt: new Date().toISOString(),
             trigger: process.env.GITHUB_EVENT_NAME || null,
             attempts: Number(process.env.ATTEMPTS || 0),
@@ -154,7 +154,7 @@ jobs:
               ? 'تم مسح السوق وتحليل الأسهم ونشر توصيات الجلسة الحالية.'
               : 'تم مسح السوق فورًا، لكن مصدر الأسعار لم يقدم جلسة حالية بدرجة تنفيذ؛ أبقيت توصيات الجلسة السابقة كمرجع فقط.',
           };
-          fs.writeFileSync('data/stable/v16-immediate-scan-status.json', JSON.stringify(out, null, 2) + '\n');
+          fs.writeFileSync('data/stable/v16-mobile-hotfix-scan-status.json', JSON.stringify(out, null, 2) + '\n');
           console.log(out);
           NODE
           echo "fresh=$FRESH" >> "$GITHUB_OUTPUT"
@@ -194,7 +194,7 @@ jobs:
           set -euo pipefail
           node - <<'NODE'
           const fs = require('fs');
-          const scan = JSON.parse(fs.readFileSync('data/stable/v16-immediate-scan-status.json', 'utf8'));
+          const scan = JSON.parse(fs.readFileSync('data/stable/v16-mobile-hotfix-scan-status.json', 'utf8'));
           const out = {
             schemaVersion: '16.3.3',
             generatedAt: new Date().toISOString(),
