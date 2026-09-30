@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Unit test portfolio accounting
+      - name: Unit test portfolio accounting and degradation guard
         run: python3 tests/astra/v1610-exposure-challenger.test.py
 
       - name: Evaluate V16.10 shadow challenger
@@ -48,23 +48,36 @@ jobs:
           from pathlib import Path
           p = Path('data/research/v16-v1610-exposure-challenger.json')
           x = json.loads(p.read_text())
-          assert x['schemaVersion'] == '16.10.0-exposure-accounted-shadow'
+          assert x['schemaVersion'] == '16.10.1-exposure-accounted-degradation-guard-shadow'
           assert x['shadowOnly'] is True
           assert x['automaticPromotionAllowed'] is False
           assert x['productionFilesWritten'] is False
           assert x['methodology']['maximumPortfolioAllocationPct'] == 50.0
           assert x['methodology']['roundTripCostPctOfDeployedCapital'] == 0.60
           assert x['methodology']['gateThresholdsUnchanged'] is True
-          assert x['acceptanceGate']['maximumDrawdownAboveMinus15'] == (x['portfolioCapitalMetrics']['maximumDrawdownPct'] >= -15.0)
+          assert x['methodology']['futureLeakageForbidden'] is True
           assert x['championParity']['passed'] is True, x['championParity']
+          cal = x['guardedCalendarPortfolioMetrics']
+          act = x['guardedActiveSessionMetrics']
+          assert x['acceptanceGate']['maximumDrawdownAboveMinus15'] == (cal['maximumDrawdownPct'] >= -15.0)
+          assert x['acceptanceGate']['minimumSessions'] == (act['sessions'] >= 20)
+          assert x['currentAction'] in ('SHADOW_DEPLOY_50_PERCENT', 'ABSTAIN_100_PERCENT_CASH')
+          if not x['currentRiskGuard']['passed']:
+              assert x['currentExecutableShadowBasket'] == []
           print(json.dumps({
               'status': x['status'],
               'shadowEligible': x['shadowEligible'],
               'fullExposureDD': x['fullExposureReferenceMetrics']['maximumDrawdownPct'],
-              'portfolioDD': x['portfolioCapitalMetrics']['maximumDrawdownPct'],
-              'portfolioAverage': x['portfolioCapitalMetrics']['averageNetReturnPct'],
-              'portfolioPF': x['portfolioCapitalMetrics']['profitFactor'],
-              'portfolioWinRate': x['portfolioCapitalMetrics']['sessionWinRatePct'],
+              'plain50DD': x['portfolioCapitalMetricsWithoutGuard']['maximumDrawdownPct'],
+              'guardedDD': cal['maximumDrawdownPct'],
+              'guardedCompounded': cal['compoundedNetReturnPct'],
+              'activeSessions': act['sessions'],
+              'guardedPF': act['profitFactor'],
+              'guardedWinRate': act['sessionWinRatePct'],
+              'recent20Plain': x['recent20PortfolioMetricsWithoutGuard']['compoundedNetReturnPct'],
+              'recent20Guarded': x['recent20GuardedPortfolioMetrics']['compoundedNetReturnPct'],
+              'currentAction': x['currentAction'],
+              'currentRiskGuard': x['currentRiskGuard'],
               'gate': x['acceptanceGate'],
           }, indent=2))
           PY
@@ -81,7 +94,6 @@ jobs:
             data/stable/v16-v169-release-lock.json
 
       - name: Persist shadow evidence
-        if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
@@ -91,7 +103,7 @@ jobs:
             echo 'No shadow evidence changes to commit.'
             exit 0
           fi
-          git commit -m 'research(v16.10): refresh exposure-aware shadow evidence'
+          git commit -m 'research(v16.10): refresh exposure-aware degradation-guard evidence'
           for attempt in 1 2 3; do
             if git pull --rebase -X ours origin "${GITHUB_REF_NAME}" && git push origin HEAD:"${GITHUB_REF_NAME}"; then
               exit 0
