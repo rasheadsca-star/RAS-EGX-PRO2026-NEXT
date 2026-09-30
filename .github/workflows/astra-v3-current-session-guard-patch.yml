@@ -1,0 +1,77 @@
+name: Astra V3 Current Session Guard Patch
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/astra-v3-current-session-guard-patch.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: astra-v3-current-session-guard-patch
+  cancel-in-progress: true
+
+jobs:
+  patch-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Wire current-session guard into PRO v3 boot
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const file='astra-prod/app/pro-v3.html';
+          let s=fs.readFileSync(file,'utf8');
+          const old="const bundles=['astra-core-pro-v3.js','astra-performance-pro-v3.js','astra-portfolio-pro-v3.js','astra-analytics-pro-v3.js'];";
+          const next="const bundles=['astra-core-pro-v3.js','astra-performance-pro-v3.js','astra-portfolio-pro-v3.js','astra-analytics-pro-v3.js','astra-current-session-guard.js'];";
+          if(!s.includes('astra-current-session-guard.js')){
+            if(!s.includes(old)) throw new Error('PRO_V3_BUNDLE_LIST_NOT_FOUND');
+            s=s.replace(old,next);
+            fs.writeFileSync(file,s);
+          }
+          NODE
+          test -f astra-prod/app/astra-current-session-guard.js
+          node --check astra-prod/app/astra-current-session-guard.js
+          grep -q "astra-current-session-guard.js" astra-prod/app/pro-v3.html
+
+      - name: Commit patch
+        id: persist
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add astra-prod/app/pro-v3.html astra-prod/app/astra-current-session-guard.js
+          if git diff --cached --quiet; then
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          else
+            git commit -m 'fix(astra-v3): suppress stale prior-session recommendations'
+            for attempt in 1 2 3; do
+              git pull --rebase -X ours origin main
+              if git push origin HEAD:main; then
+                echo 'changed=true' >> "$GITHUB_OUTPUT"
+                break
+              fi
+              [ "$attempt" = '3' ] && exit 1
+              sleep $((attempt*5))
+            done
+          fi
+
+      - name: Dispatch Astra PRO v3 production deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            "repos/${{ github.repository }}/actions/workflows/astra-v3-vercel-production.yml/dispatches" \
+            -f ref=main
+          echo 'ASTRA_PRO_V3_PRODUCTION_DISPATCHED'
