@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildConfidenceV2, classifyRegime } from '../src/confidenceV2.js';
+import { buildConfidenceV2, classifyRegime } from '../sidecars/confidence-v2.js';
 
 function bars(n=240){
   const out=[];
@@ -71,4 +71,11 @@ test('regime classifier identifies a persistent uptrend',()=>{
   const r=classifyRegime(bars());
   assert.ok(['BULL','BULL_EARLY'].includes(r.trend));
   assert.ok(['LOW','NORMAL','HIGH'].includes(r.volatility));
+});
+
+test('confidence sidecar never mutates recommendation or execution state',()=>{
+  const c=buildConfidenceV2({analysis,bars:bars(),historicalConfidence:historyFrom([]),mode:'WATCHLIST_SHADOW_RESEARCH_ONLY'});
+  assert.equal(c.scoringImpact,'NONE');
+  assert.equal(c.recommendationMutationAllowed,false);
+  assert.equal(c.executionAllowed,false);
 });
