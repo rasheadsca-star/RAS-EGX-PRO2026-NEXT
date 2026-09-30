@@ -93,6 +93,7 @@ function buildMainAppGovernance() {
   const fetchStatus = readJson(FILES.fetchStatus, {});
   const market = readJson(FILES.market, {});
   const scanStatus = readJson(FILES.scanStatus, {});
+  const previousSnapshot = readJson(FILES.snapshot, {});
   const now = new Date().toISOString();
 
   const criticalErrors = [];
@@ -107,6 +108,11 @@ function buildMainAppGovernance() {
     rank: finite(row?.rank, index + 1),
     portfolioWeightPct: finite(row?.portfolioWeightPct, 0),
   }));
+  const researchCandidates = Array.isArray(decision.researchWatchlist) ? decision.researchWatchlist : [];
+  const productionGate = decision?.basketPlan?.acceptanceGate || {};
+  const productionGateBlockers = Object.entries(productionGate)
+    .filter(([, passed]) => passed === false)
+    .map(([name]) => name);
 
   const tickers = recommendations.map(row => row.ticker).filter(Boolean);
   if (tickers.length !== recommendations.length) criticalErrors.push('MISSING_TICKER');
@@ -191,6 +197,28 @@ function buildMainAppGovernance() {
     systemState = 'HEALTHY';
   }
 
+  const marketDataHealth = (!sessionAligned || !executionGrade || !sourceSessionReady)
+    ? 'BLOCKED'
+    : (sourceCoveragePct < HEALTHY_SOURCE_SESSION_COVERAGE_PCT || rejectedRows > 0 || droppedRows > 0)
+      ? 'DEGRADED'
+      : 'HEALTHY';
+  const modelProductionHealth = recommendations.length >= 3 ? 'READY' : 'NO_PRODUCTION_BASKET';
+
+  const scanSession = scanStatus.sessionDate || scanStatus.decisionSession || null;
+  const previousScanSameSession = Boolean(
+    previousSnapshot?.sessionDate === decisionSession
+    && (!scanSession || scanSession === decisionSession)
+  );
+  const scanFinal = typeof scanStatus.final === 'boolean'
+    ? scanStatus.final
+    : previousScanSameSession && previousSnapshot?.scanCycle?.final === true;
+  const scanPagesPublished = typeof scanStatus.pagesPublished === 'boolean'
+    ? scanStatus.pagesPublished
+    : previousScanSameSession && previousSnapshot?.scanCycle?.pagesPublished === true;
+  if (typeof scanStatus.final !== 'boolean' || typeof scanStatus.pagesPublished !== 'boolean') {
+    warnings.push('SCAN_STATUS_PUBLICATION_FIELDS_MISSING_PRESERVED_FROM_CANONICAL_SNAPSHOT');
+  }
+
   const executionAllowed = executionReady && (systemState === 'HEALTHY' || systemState === 'DEGRADED');
   const marketUpdatedAt = market.updatedAt || market.generatedAt || fetchStatus.generatedAt || null;
   const decisionBuiltAt = decision.generatedAt || null;
@@ -252,6 +280,12 @@ function buildMainAppGovernance() {
     executionAllowed: finalExecutionAllowed,
     researchReady,
     executionReady: finalExecutionAllowed,
+    recommendationDiagnostics: {
+      productionRecommendationCount: recommendations.length,
+      researchCandidateCount: researchCandidates.length,
+      productionGatePassed: decision?.basketPlan?.passed === true,
+      productionGateBlockers,
+    },
     governance: {
       engineLocked: engineId === ENGINE_ID,
       activeEngine: ENGINE_ID,
@@ -290,7 +324,8 @@ function buildMainAppGovernance() {
       priceTruthAgeMinutes: isoAgeMinutes(priceTruthAt),
     },
     readiness: {
-      marketDataHealth: finalState === 'HEALTHY' ? 'HEALTHY' : finalState === 'DEGRADED' ? 'DEGRADED' : 'BLOCKED',
+      marketDataHealth,
+      modelProductionHealth,
       researchReadiness: researchReady,
       executionReadiness: finalExecutionAllowed,
       modelConfidenceSeparatedFromExecution: true,
@@ -323,10 +358,10 @@ function buildMainAppGovernance() {
       comparisonCanChangeProfessionalReadiness: false,
     },
     scanCycle: {
-      latestStatusAt: scanStatus.generatedAt || null,
-      attempts: finite(scanStatus.attempts, 0),
-      final: scanStatus.final === true,
-      pagesPublished: scanStatus.pagesPublished === true,
+      latestStatusAt: scanStatus.generatedAt || previousSnapshot?.scanCycle?.latestStatusAt || null,
+      attempts: finite(scanStatus.attempts, finite(previousSnapshot?.scanCycle?.attempts, 0)),
+      final: scanFinal,
+      pagesPublished: scanPagesPublished,
       nominalCairoSlots: ['10:15', '14:15'],
       postCloseHourlyFrom: '15:00',
       postCloseHourlyUntil: '21:00',
@@ -369,6 +404,10 @@ function buildMainAppGovernance() {
     sessionAligned,
     marketSession,
     decisionSession,
+    marketDataHealth: snapshot?.readiness?.marketDataHealth || marketDataHealth,
+    modelProductionHealth: snapshot?.readiness?.modelProductionHealth || modelProductionHealth,
+    productionRecommendationCount: snapshot?.recommendationDiagnostics?.productionRecommendationCount ?? recommendations.length,
+    researchCandidateCount: snapshot?.recommendationDiagnostics?.researchCandidateCount ?? researchCandidates.length,
     sourceSessionEvidenceCoveragePct: sourceCoveragePct,
     plannedAllocationPct: snapshot?.portfolioPolicy?.plannedAllocationPct ?? plannedAllocationPct,
     sourceRoundedAllocationPct,
