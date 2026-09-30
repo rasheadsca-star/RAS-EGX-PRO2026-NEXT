@@ -1,0 +1,49 @@
+name: RC2 Watchlist Trade Plan Diagnostics
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rc2-watchlist-tradeplan-diagnostics.yml"
+
+permissions:
+  contents: read
+
+env:
+  RC2_PRODUCTION_URL: "https://egx-tfe-v20-fusion-rc2.vercel.app"
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch current watchlist trade plans
+        shell: bash
+        run: |
+          set -euo pipefail
+          stamp="$(date +%s)"
+          node - <<'NODE'
+          const base = process.env.RC2_PRODUCTION_URL;
+          const stamp = Date.now();
+          const url = `${base}/api/watchlist?limit=20&t=${stamp}`;
+          const r = await fetch(url,{headers:{'cache-control':'no-cache'}});
+          if(!r.ok) throw new Error(`${r.status} ${url}`);
+          const d = await r.json();
+          const rows = (d.highPotentialCandidates || []).map(x => ({
+            rank:x.rank,
+            ticker:x.ticker,
+            tier:x.tier || x.opportunityTier || x.decision || null,
+            price:x.price ?? null,
+            entryLow:x.tradePlan?.entryLow ?? null,
+            entryHigh:x.tradePlan?.entryHigh ?? null,
+            stop:x.tradePlan?.stop ?? null,
+            target1:x.tradePlan?.target1 ?? null,
+            target2:x.tradePlan?.target2 ?? null,
+            structuralNetRR:x.tradePlan?.structuralNetRR ?? null,
+            alignmentState:x.tradePlan?.alignmentState ?? null,
+            candidateScore:x.candidateScore ?? null,
+            recommendation:x.recommendation,
+            executionAllowed:x.executionAllowed,
+          }));
+          console.log(`RC2_WATCHLIST_TRADE_PLANS:${JSON.stringify({sessionDate:d.sessionDate,rows})}`);
+          NODE
