@@ -48,3 +48,5 @@ test('sub-90 canonical coverage keeps healing active even when source evidence i
   input.audit.health.currentCanonicalCoveragePct = 89.29;
   assert.equal(postCloseComplete(input).skip, false);
 });
+
+// Touch point used to trigger the canonical V16 post-fix validation workflow.
