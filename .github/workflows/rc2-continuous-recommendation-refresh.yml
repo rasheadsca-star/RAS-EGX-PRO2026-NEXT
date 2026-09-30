@@ -84,12 +84,28 @@ jobs:
             refreshedAt: new Date().toISOString(), engine: scan.engine, sourceCommit: scan.sourceCommit ?? null,
             sessionDate: effectiveSession, recommendationSessionDate: recommendationSession,
             marketSessionDate: marketSession, universeSessionDate: universeSession,
-            scanned: scan.summary?.scanned ?? null, publicationEligibleTotal: scan.summary?.publicationEligibleTotal ?? null,
+            scanned: scan.summary?.scanned ?? null,
+            technicalEligibleTotal: scan.summary?.technicalEligibleTotal ?? null,
+            publicationEligibleTotal: scan.summary?.publicationEligibleTotal ?? null,
+            withheldForPriceReconciliation: scan.summary?.withheldForPriceReconciliation ?? null,
+            rejected: scan.summary?.rejected ?? null,
             returned: scan.summary?.returned ?? scan.recommendations.length, tickers: scan.recommendations.map(x => x.ticker),
             executionAllowed: scan.permissions.executionAllowed, automaticOrders: scan.permissions.automaticOrders,
             marketSymbols: market.symbols.length, scoringModelChanged: false
           };
+          const diagnostics = {
+            refreshedAt: summary.refreshedAt,
+            sessionDate: effectiveSession,
+            scanned: summary.scanned,
+            technicalEligibleTotal: summary.technicalEligibleTotal,
+            publicationEligibleTotal: summary.publicationEligibleTotal,
+            withheldForPriceReconciliation: summary.withheldForPriceReconciliation,
+            rejected: summary.rejected,
+            rejectionReasonCounts: scan.rejectionReasonCounts ?? {},
+            rejectedSample: Array.isArray(scan.rejectedSample) ? scan.rejectedSample.slice(0, 40) : []
+          };
           console.log(`RC2_CONTINUOUS_REFRESH_PASS:${JSON.stringify(summary)}`);
+          console.log(`RC2_ELIGIBILITY_DIAGNOSTICS:${JSON.stringify(diagnostics)}`);
           NODE
 
           ok=0
@@ -209,5 +225,6 @@ jobs:
           echo "CACHE PROPAGATION: validator tolerates the upstream 5-minute repository cache window"
           echo "CADENCE: every 15 minutes during Cairo operating window"
           echo "PUBLISHED HISTORY: append-only after Cairo post-close"
+          echo "DIAGNOSTICS: rejection reason counts and rejected sample logged every refresh"
           echo "FINANCIAL IMPACT ON RECOMMENDATIONS: NONE"
           echo "EXECUTION: BLOCKED"
