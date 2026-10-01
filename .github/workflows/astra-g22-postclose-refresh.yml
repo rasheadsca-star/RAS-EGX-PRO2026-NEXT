@@ -15,6 +15,8 @@ on:
       - '.github/workflows/astra-g22-postclose-refresh.yml'
       - 'data/ops/g22-main-app-handoff.json'
       - 'scripts/astra/g22-postclose-refresh.cjs'
+      - 'scripts/astra/g22-history-continuity.cjs'
+      - 'tests/astra/g22-history-continuity.test.cjs'
       - 'scripts/astra/g22-postclose-handoff-guard.cjs'
       - 'scripts/astra/g22-refresh-session-exceptions.cjs'
       - 'scripts/astra/g22-refresh-v16-domain-exceptions.cjs'
@@ -118,6 +120,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/astra/g22-postclose-refresh.cjs
+          node --test tests/astra/g22-history-continuity.test.cjs
           node --check scripts/astra/g22-postclose-handoff-guard.cjs
           node --check scripts/astra/g22-refresh-session-exceptions.cjs
           node --check scripts/astra/g22-refresh-v16-domain-exceptions.cjs
@@ -157,7 +160,7 @@ jobs:
           const expected=read(path.join(prod,'data/stable/v15-price-truth.json')).expectedSession;
           if(!/^\d{4}-\d{2}-\d{2}$/.test(String(expected||''))) throw new Error('Current expected session invalid');
           const dateOf=x=>String(x?.date||x?.sessionDate||'').slice(0,10);
-          const bad=x=>/invalid|conflict|failed|unresolved|quarantined/i.test(String(x?.validationStatus||''));
+          const {mergeFinalizedHistory}=require('./scripts/astra/g22-history-continuity.cjs');
           let merged=0, skipped=0;
           const srcDir=path.join(prod,'data/history');
           for(const name of fs.readdirSync(srcDir).filter(x=>x.endsWith('.json'))){
@@ -165,24 +168,9 @@ jobs:
             if(!fs.existsSync(target)){skipped++;continue;}
             let source;
             try{source=read(path.join(srcDir,name));}catch{continue;}
-            const rows=(source.sessions||[]).filter(r=>
-              dateOf(r)===expected &&
-              !bad(r) &&
-              Number(r.close)>0 &&
-              Number.isFinite(Number(r.volume)) &&
-              Number(r.volume)>=0
-            );
-            if(!rows.length)continue;
-            const targetDoc=read(target);
-            const map=new Map((targetDoc.sessions||[]).map(r=>[dateOf(r),r]).filter(([d])=>d));
-            for(const row of rows)map.set(expected,row);
-            targetDoc.sessions=[...map.values()].sort((a,b)=>dateOf(a).localeCompare(dateOf(b)));
-            targetDoc.firstSession=dateOf(targetDoc.sessions[0]);
-            targetDoc.lastSession=dateOf(targetDoc.sessions.at(-1));
-            targetDoc.availableSessions=targetDoc.sessions.length;
+            const targetDoc=mergeFinalizedHistory(read(target),source,expected);
+            if(!targetDoc)continue;
             targetDoc.generatedAt=new Date().toISOString();
-            targetDoc.staleData=false;
-            targetDoc.updateFailed=false;
             write(target,targetDoc);
             merged++;
           }
