@@ -1,0 +1,74 @@
+name: UCP Current Session Orchestrator
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["EGX V16.9 Basket Engine"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/ucp-current-session-orchestrator.yml"
+  schedule:
+    - cron: "12 14-20 * * 0-4"
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: ucp-current-session-orchestrator
+  cancel-in-progress: true
+
+jobs:
+  orchestrate:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Evaluate current-session alignment
+        id: alignment
+        shell: bash
+        run: |
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+          const fs = require('fs');
+          const read = p => { try { return JSON.parse(fs.readFileSync(p,'utf8')); } catch { return {}; } };
+          const primary = read('data/stable/v16-v169-primary-decision.json');
+          const regime = read('data/stable/v16-market-regime.json');
+          const price = read('data/stable/v15-price-truth.json');
+          const v17 = read('data/v17/current.json');
+          const expected = primary.sessionDate || price.expectedSession || null;
+          const regimeSession = regime?.metrics?.sessionDate || regime?.sessionDate || null;
+          const priceSession = price?.expectedSession || null;
+          const inputsReady = Boolean(expected && regimeSession === expected && (!priceSession || priceSession === expected));
+          const v17Aligned = Boolean(inputsReady && v17?.sessionDate === expected);
+          console.log(`expected=${expected || ''}`);
+          console.log(`inputs_ready=${inputsReady ? 'true':'false'}`);
+          console.log(`v17_aligned=${v17Aligned ? 'true':'false'}`);
+          console.error(JSON.stringify({expected,regimeSession,priceSession,v17Session:v17?.sessionDate||null,inputsReady,v17Aligned}));
+          NODE
+
+      - name: Rebuild V17 for current session when stale
+        if: steps.alignment.outputs.inputs_ready == 'true' && steps.alignment.outputs.v17_aligned != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run v17-build-review.yml --repo "$GITHUB_REPOSITORY" --ref main
+
+      - name: Refresh RC2 current-session snapshot
+        if: steps.alignment.outputs.inputs_ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ucp-rc2-current-session.yml --repo "$GITHUB_REPOSITORY" --ref main
+
+      - name: Report orchestration decision
+        run: |
+          echo "Expected session: ${{ steps.alignment.outputs.expected }}"
+          echo "Inputs ready: ${{ steps.alignment.outputs.inputs_ready }}"
+          echo "V17 already aligned: ${{ steps.alignment.outputs.v17_aligned }}"
+          echo "Execution permissions: unchanged / blocked"
