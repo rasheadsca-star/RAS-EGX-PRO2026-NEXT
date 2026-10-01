@@ -41,8 +41,10 @@ function normalizeV1610(report, priceTruth, fallback) {
   const expectedSession = priceTruth.expectedSession || fallback.expectedLatestSession || fallback.sessionDate || null;
   const sourceSessionReady = priceTruth.ready === true && report.methodology?.futureLeakageForbidden === true && currentSession === expectedSession;
   const guardPassed = guard.passed === true;
-  const executionAllowed = currentAction === 'SHADOW_DEPLOY_50_PERCENT' && guardPassed && executable.length >= MIN_RESEARCH_CANDIDATES && sourceSessionReady;
-  const productionRecommendations = executionAllowed ? executable : [];
+  const shadowReady = currentAction === 'SHADOW_DEPLOY_50_PERCENT' && guardPassed && executable.length >= MIN_RESEARCH_CANDIDATES && sourceSessionReady;
+  // V16.10 remains shadow-only: it can expose a watchlist but never grants Main App execution authority.
+  const executionAllowed = false;
+  const productionRecommendations = [];
   const researchWatchlist = currentBasket.map(item => ({
     ticker: String(item?.ticker || '').trim().toUpperCase(),
     companyNameAr: item?.companyNameAr || null,
@@ -61,7 +63,7 @@ function normalizeV1610(report, priceTruth, fallback) {
   const historicalGate = clone(report.acceptanceGate || {});
   historicalGate.degradationGuardPassed = guardPassed;
   historicalGate.currentSourceSessionReady = sourceSessionReady;
-  const status = executionAllowed ? 'V16_10_READY_PENDING_OPEN' : 'V16_10_CASH_MODE';
+  const status = shadowReady ? 'V16_10_SHADOW_READY' : 'V16_10_CASH_MODE';
   const reasonCodes = guardPassed ? [] : (Array.isArray(guard.reasons) ? guard.reasons : ['DEGRADATION_GUARD_ACTIVE']);
   const memberWeight = executionAllowed && executable.length ? 50 / executable.length : 0;
   return {
@@ -70,11 +72,11 @@ function normalizeV1610(report, priceTruth, fallback) {
     sessionDate: currentSession,
     expectedLatestSession: expectedSession,
     mode: 'V16_10_EXPOSURE_AWARE_GOVERNANCE',
-    practicalReady: executionAllowed,
+    practicalReady: false,
     professionalEvidenceReady: false,
-    evidenceTier: executionAllowed ? 'SHADOW_GOVERNANCE' : 'CASH_MODE',
+    evidenceTier: shadowReady ? 'SHADOW_GOVERNANCE' : 'CASH_MODE',
     status,
-    statusAr: executionAllowed ? 'محرك V16.10 اجتاز بوابة الحماية الحالية؛ التنفيذ الفعلي ما زال معلقًا على تأكيد الافتتاح.' : 'وضع حماية نقدي: V16.10 منع الدخول لأن نافذة التحقق السابقة متدهورة.',
+    statusAr: shadowReady ? 'V16.10 جاهز كقائمة Shadow للمراقبة فقط؛ لا توجد صلاحية تنفيذ إنتاجية.' : 'وضع حماية نقدي: V16.10 منع الدخول لأن نافذة التحقق السابقة متدهورة.',
     selectedModel: {
       id: V1610_ENGINE_ID,
       labelAr: 'محرك V16.10 للتعرض الواعي وحماية رأس المال',
@@ -84,9 +86,9 @@ function normalizeV1610(report, priceTruth, fallback) {
       testPassed: report.championParity?.passed === true,
       pilotPassed: false,
       professionalEvidencePassed: false,
-      evidenceTier: executionAllowed ? 'SHADOW_GOVERNANCE' : 'CASH_MODE',
-      pilotRiskMode: executionAllowed ? '50_PERCENT_CAPITAL_MAX' : 'NO_TRADE',
-      stabilityLabelAr: executionAllowed ? 'اجتاز اختبارات الحماية ويظل التنفيذ معلقًا على تأكيد الافتتاح' : 'حماية نقدية مفعلة بسبب تدهور نافذة التحقق الأخيرة',
+      evidenceTier: shadowReady ? 'SHADOW_GOVERNANCE' : 'CASH_MODE',
+      pilotRiskMode: 'NO_TRADE',
+      stabilityLabelAr: shadowReady ? 'اجتاز اختبارات الحماية كـShadow فقط' : 'حماية نقدية مفعلة بسبب تدهور نافذة التحقق الأخيرة',
       stabilityReasonsAr: reasonCodes.length ? reasonCodes.map(code => 'Risk Guard: ' + code) : ['لا توجد أسباب حجب حالية في نافذة التحقق السابقة.'],
     },
     validatedModels: [V1610_ENGINE_ID],
@@ -127,7 +129,7 @@ function normalizeV1610(report, priceTruth, fallback) {
     currentSessionReady: sourceSessionReady,
     basketPlan: {
       engine: report.schemaVersion,
-      passed: executionAllowed,
+      passed: false,
       signalDate: currentSession,
       expectedMarketSession: expectedSession,
       sourceSessionReady,
@@ -136,9 +138,9 @@ function normalizeV1610(report, priceTruth, fallback) {
       sourceSessionEvidenceCoveragePct: finite(priceTruth.source?.sourceSessionEvidenceCoveragePct, 0),
       sourcePriceTruthGeneratedAt: priceTruth.generatedAt || null,
       basketSize: productionRecommendations.length,
-      totalAllocationPct: executionAllowed ? 50 : 0,
-      cashReservePct: executionAllowed ? 50 : 100,
-      memberPortfolioWeightPct: memberWeight,
+      totalAllocationPct: 0,
+      cashReservePct: 100,
+      memberPortfolioWeightPct: 0,
       holdingSessions: 1,
       unfilledMemberPolicy: 'KEEP_CASH',
       rebalancePolicyAr: 'لا يُعاد توزيع وزن السهم غير المتفعل؛ يظل نقدًا.',
@@ -150,6 +152,7 @@ function normalizeV1610(report, priceTruth, fallback) {
     researchCandidateCount: researchWatchlist.length,
     productionRecommendationCount: productionRecommendations.length,
     currentAction,
+    shadowReady,
     riskGuard: {
       active: !guardPassed,
       passed: guardPassed,
