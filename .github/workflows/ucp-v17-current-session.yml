@@ -1,0 +1,75 @@
+name: UCP V17 Current Session Governance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/ucp-v17-current-session.yml"
+      - "scripts/ucp/build-v17-governance-snapshot.cjs"
+  schedule:
+    - cron: "16 14-20 * * 0-4"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ucp-v17-current-session-governance
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate builder
+        run: node --check scripts/ucp/build-v17-governance-snapshot.cjs
+
+      - name: Build UCP V17 current-session governance snapshot
+        run: node scripts/ucp/build-v17-governance-snapshot.cjs
+
+      - name: Enforce UCP V17 safety contract
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const x=JSON.parse(fs.readFileSync('data/v17/ucp-current-session.json','utf8'));
+          if(x?.permissions?.executionAllowed!==false) throw new Error('UCP_V17_EXECUTION_PERMISSION_BREACH');
+          if(x?.permissions?.automaticOrders!==false) throw new Error('UCP_V17_AUTO_ORDER_PERMISSION_BREACH');
+          if(x?.championChallenger?.promotionAllowed!==false) throw new Error('UCP_V17_PROMOTION_PERMISSION_BREACH');
+          if(x?.systemHealth?.sessionAligned===true && x?.readiness?.executionGrade===true){
+            if(!['READY_FOR_NEXT_SESSION_REVIEW','RESEARCH_READY_EXECUTION_BLOCKED'].includes(x.status)) throw new Error(`UCP_V17_BAD_READY_STATUS:${x.status}`);
+          }
+          if(Array.isArray(x.recommendations)&&x.recommendations.length===0&&x?.systemHealth?.sessionAligned===true&&x?.readiness?.executionGrade===true){
+            if(x.status!=='RESEARCH_READY_EXECUTION_BLOCKED') throw new Error('UCP_V17_ZERO_BASKET_NOT_FAIL_CLOSED');
+          }
+          console.log(JSON.stringify({sessionDate:x.sessionDate,status:x.status,recommendations:x.recommendations?.length||0,sessionAligned:x.systemHealth?.sessionAligned,executionGrade:x.readiness?.executionGrade}));
+          NODE
+
+      - name: Commit UCP V17 snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/v17/ucp-current-session.json
+          if git diff --cached --quiet; then
+            echo "UCP V17 current-session snapshot unchanged"
+            exit 0
+          fi
+          git commit -m "Publish UCP V17 current-session governance"
+          for attempt in 1 2 3; do
+            if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt * 8))
+          done
