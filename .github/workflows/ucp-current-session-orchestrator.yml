@@ -42,26 +42,29 @@ jobs:
           const primary = read('data/stable/v16-v169-primary-decision.json');
           const regime = read('data/stable/v16-market-regime.json');
           const price = read('data/stable/v15-price-truth.json');
-          const v17 = read('data/v17/current.json');
+          const v17 = read('data/v17/ucp-current-session.json');
+          const rc2 = read('data/rc2/current-session.json');
           const expected = primary.sessionDate || price.expectedSession || null;
           const regimeSession = regime?.metrics?.sessionDate || regime?.sessionDate || null;
           const priceSession = price?.expectedSession || null;
           const inputsReady = Boolean(expected && regimeSession === expected && (!priceSession || priceSession === expected));
-          const v17Aligned = Boolean(inputsReady && v17?.sessionDate === expected);
+          const v17Aligned = Boolean(inputsReady && v17?.sessionDate === expected && v17?.systemHealth?.sessionAligned === true);
+          const rc2Aligned = Boolean(inputsReady && rc2?.sessionDate === expected && rc2?.sessionAligned === true);
           console.log(`expected=${expected || ''}`);
           console.log(`inputs_ready=${inputsReady ? 'true':'false'}`);
           console.log(`v17_aligned=${v17Aligned ? 'true':'false'}`);
-          console.error(JSON.stringify({expected,regimeSession,priceSession,v17Session:v17?.sessionDate||null,inputsReady,v17Aligned}));
+          console.log(`rc2_aligned=${rc2Aligned ? 'true':'false'}`);
+          console.error(JSON.stringify({expected,regimeSession,priceSession,v17Session:v17?.sessionDate||null,rc2Session:rc2?.sessionDate||null,inputsReady,v17Aligned,rc2Aligned}));
           NODE
 
-      - name: Rebuild V17 for current session when stale
+      - name: Refresh zero-safe V17 governance snapshot
         if: steps.alignment.outputs.inputs_ready == 'true' && steps.alignment.outputs.v17_aligned != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run v17-build-review.yml --repo "$GITHUB_REPOSITORY" --ref main
+        run: gh workflow run ucp-v17-current-session.yml --repo "$GITHUB_REPOSITORY" --ref main
 
       - name: Refresh RC2 current-session snapshot
-        if: steps.alignment.outputs.inputs_ready == 'true'
+        if: steps.alignment.outputs.inputs_ready == 'true' && steps.alignment.outputs.rc2_aligned != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run ucp-rc2-current-session.yml --repo "$GITHUB_REPOSITORY" --ref main
@@ -70,5 +73,6 @@ jobs:
         run: |
           echo "Expected session: ${{ steps.alignment.outputs.expected }}"
           echo "Inputs ready: ${{ steps.alignment.outputs.inputs_ready }}"
-          echo "V17 already aligned: ${{ steps.alignment.outputs.v17_aligned }}"
+          echo "UCP V17 already aligned: ${{ steps.alignment.outputs.v17_aligned }}"
+          echo "RC2 already aligned: ${{ steps.alignment.outputs.rc2_aligned }}"
           echo "Execution permissions: unchanged / blocked"
