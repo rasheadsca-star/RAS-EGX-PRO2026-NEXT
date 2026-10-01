@@ -291,7 +291,8 @@ function buildMainAppGovernance() {
     },
     governance: {
       engineLocked: ALLOWED_ENGINE_IDS.includes(engineId),
-      activeEngine: engineId,
+      activeEngine: V169_ENGINE_ID,
+      activeShadowEngine: engineId,
       automaticPromotionAllowed: false,
       failClosed: true,
       conservativeAmbiguity: true,
