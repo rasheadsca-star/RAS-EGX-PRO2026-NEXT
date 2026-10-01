@@ -1,0 +1,125 @@
+name: UCP RC2 Current Session Snapshot
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/ucp-rc2-current-session.yml"
+  schedule:
+    - cron: "18 14-20 * * 0-4"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ucp-rc2-current-session
+  cancel-in-progress: true
+
+env:
+  RC2_PRODUCTION_URL: "https://egx-tfe-v20-fusion-rc2.vercel.app"
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch RC2 scan and market state
+        shell: bash
+        run: |
+          set -euo pipefail
+          stamp="$(date +%s)"
+          curl --fail --silent --show-error --max-time 180 \
+            "$RC2_PRODUCTION_URL/api/index?route=scan&limit=30&t=$stamp" -o /tmp/rc2-scan.json
+          curl --fail --silent --show-error --max-time 60 \
+            "$RC2_PRODUCTION_URL/api/index?route=market-index&t=$stamp" -o /tmp/rc2-market.json
+
+      - name: Build immutable current-session research snapshot
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
+          const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
+          const fail = m => { throw new Error(m); };
+          if (scan?.ok !== true) fail('RC2_SCAN_NOT_OK');
+          if (scan?.engine !== 'TFE_V20_FUSION_RC2') fail(`RC2_ENGINE_MISMATCH:${scan?.engine}`);
+          if (scan?.mode !== 'RESEARCH_ONLY') fail(`RC2_MODE_NOT_RESEARCH_ONLY:${scan?.mode}`);
+          if (scan?.permissions?.executionAllowed !== false) fail('RC2_EXECUTION_PERMISSION_BREACH');
+          if (scan?.permissions?.automaticOrders !== false) fail('RC2_AUTOMATIC_ORDERS_PERMISSION_BREACH');
+          if (scan?.permissions?.automaticChampionPromotion !== false) fail('RC2_AUTOMATIC_PROMOTION_PERMISSION_BREACH');
+          if (market?.ok !== true || !Array.isArray(market?.symbols)) fail('RC2_MARKET_INDEX_INVALID');
+          const recommendations = Array.isArray(scan.recommendations) ? scan.recommendations : [];
+          const recSessions = [...new Set(recommendations.map(x=>x?.sessionDate).filter(Boolean))].sort();
+          if (recSessions.length > 1) fail(`RC2_MIXED_RECOMMENDATION_SESSIONS:${recSessions.join(',')}`);
+          const recommendationSession = recSessions[0] || null;
+          const marketSession = market?.sessionDate || null;
+          const universeSession = scan?.universe?.sessionDate || null;
+          if (recommendationSession && marketSession && recommendationSession !== marketSession) {
+            fail(`RC2_RECOMMENDATION_MARKET_SESSION_MISMATCH:${recommendationSession}:${marketSession}`);
+          }
+          const effectiveSession = recommendationSession || marketSession || universeSession || null;
+          if (!effectiveSession) fail('RC2_EFFECTIVE_SESSION_MISSING');
+          const snapshot = {
+            schemaVersion: 'rasheed-egx-ucp-rc2-current-session/v1',
+            generatedAt: new Date().toISOString(),
+            engine: 'TFE_V20_FUSION_RC2',
+            mode: 'RESEARCH_ONLY',
+            sessionDate: effectiveSession,
+            recommendationSessionDate: recommendationSession,
+            marketSessionDate: marketSession,
+            universeSessionDate: universeSession,
+            sessionAligned: !recommendationSession || !marketSession || recommendationSession === marketSession,
+            sourceCommit: scan.sourceCommit || null,
+            permissions: {
+              researchOnly: true,
+              executionAllowed: false,
+              productionAllocation: false,
+              automaticOrders: false,
+              automaticChampionPromotion: false
+            },
+            summary: {
+              scanned: scan?.summary?.scanned ?? null,
+              technicalEligibleTotal: scan?.summary?.technicalEligibleTotal ?? null,
+              publicationEligibleTotal: scan?.summary?.publicationEligibleTotal ?? null,
+              withheldForPriceReconciliation: scan?.summary?.withheldForPriceReconciliation ?? null,
+              rejected: scan?.summary?.rejected ?? null,
+              returned: recommendations.length,
+              marketSymbols: market.symbols.length
+            },
+            rejectionReasonCounts: scan?.rejectionReasonCounts || {},
+            rejectedSample: Array.isArray(scan?.rejectedSample) ? scan.rejectedSample.slice(0,50) : [],
+            recommendations,
+            notes: [
+              'Snapshot records zero candidates as a valid research outcome; no recommendation is invented.',
+              'Execution, automatic orders, production allocation and automatic Champion promotion remain disabled.'
+            ]
+          };
+          fs.mkdirSync('data/rc2',{recursive:true});
+          fs.writeFileSync('data/rc2/current-session.json',JSON.stringify(snapshot,null,2)+'\n');
+          console.log(JSON.stringify({sessionDate:effectiveSession,returned:recommendations.length,summary:snapshot.summary,rejectionReasonCounts:snapshot.rejectionReasonCounts},null,2));
+          NODE
+
+      - name: Commit current-session snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/rc2/current-session.json
+          if git diff --cached --quiet; then
+            echo "RC2 current-session snapshot unchanged"
+            exit 0
+          fi
+          git commit -m "Publish RC2 current-session research snapshot"
+          for attempt in 1 2 3; do
+            if git pull --rebase -X ours origin main && git push origin HEAD:main; then break; fi
+            [ "$attempt" = "3" ] && exit 1
+            sleep $((attempt * 8))
+          done
