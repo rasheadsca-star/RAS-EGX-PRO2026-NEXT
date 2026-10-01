@@ -17,8 +17,11 @@ if (engine === V1610_ENGINE_ID) {
   assert.strictEqual(decision.governanceResolution.shadowOnly, true);
   assert.strictEqual(decision.governanceResolution.automaticPromotionAllowed, false);
   assert.ok(decision.governanceResolution.reportAgeMinutes <= MAX_V1610_AGE_MINUTES);
-  assert.ok(['V16_10_READY_PENDING_OPEN', 'V16_10_CASH_MODE'].includes(decision.status));
-  assert.strictEqual(decision.productionRecommendationCount, decision.recommendations.length);
+  assert.ok(['V16_10_SHADOW_READY', 'V16_10_CASH_MODE'].includes(decision.status));
+  assert.strictEqual(decision.executionAllowed, false);
+  assert.strictEqual(decision.selectedModel.watchOnly, true);
+  assert.strictEqual(decision.productionRecommendationCount, 0);
+  assert.strictEqual(decision.recommendations.length, 0);
   assert.ok(decision.researchCandidateCount >= 0);
   assert.strictEqual(decision.basketPlan.totalAllocationPct <= 50, true);
   if (decision.status === 'V16_10_CASH_MODE') {
