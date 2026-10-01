@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync } = require('child_process');
+const { resolveDecision } = require('./v16-main-app-decision-adapter.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const P = relative => path.join(ROOT, relative);
@@ -19,7 +20,9 @@ const FILES = {
   ledgerReconcile: P('scripts/stable/v16-main-app-ledger-reconcile.cjs'),
 };
 
-const ENGINE_ID = 'V16_9_EQUAL_WEIGHT_BASKET';
+const V1610_ENGINE_ID = 'V16_10_EXPOSURE_AWARE_DEGRADATION_GUARD_SHADOW';
+const V169_ENGINE_ID = 'V16_9_EQUAL_WEIGHT_BASKET';
+const ALLOWED_ENGINE_IDS = [V1610_ENGINE_ID, V169_ENGINE_ID];
 const MAX_TOTAL_ALLOCATION_PCT = 50;
 const ALLOCATION_ROUNDING_TOLERANCE_PCT = 0.03;
 const MIN_SOURCE_SESSION_COVERAGE_PCT = 90;
@@ -88,7 +91,7 @@ function reconcilePublishedSignal() {
 }
 
 function buildMainAppGovernance() {
-  const decision = readJson(FILES.decision, {});
+  const decision = resolveDecision();
   const priceTruth = readJson(FILES.priceTruth, {});
   const fetchStatus = readJson(FILES.fetchStatus, {});
   const market = readJson(FILES.market, {});
@@ -99,7 +102,7 @@ function buildMainAppGovernance() {
   const criticalErrors = [];
   const warnings = [];
   const engineId = decision?.selectedModel?.id || null;
-  if (engineId !== ENGINE_ID) criticalErrors.push(`UNEXPECTED_ENGINE:${engineId || 'MISSING'}`);
+  if (!ALLOWED_ENGINE_IDS.includes(engineId)) criticalErrors.push(`UNEXPECTED_ENGINE:${engineId || 'MISSING'}`);
 
   const sourceRecommendations = Array.isArray(decision.recommendations) ? decision.recommendations : [];
   const recommendations = sourceRecommendations.map((row, index) => ({
@@ -142,7 +145,7 @@ function buildMainAppGovernance() {
     && Math.max(...sourceWeights) - Math.min(...sourceWeights) <= 0.02;
   const overflowPct = round(sourceRoundedAllocationPct - MAX_TOTAL_ALLOCATION_PCT, 4);
   const canNormalizeRoundedEqualWeights = (
-    engineId === ENGINE_ID
+    ALLOWED_ENGINE_IDS.includes(engineId)
     && recommendations.length > 0
     && declaredTotalAllocationPct <= MAX_TOTAL_ALLOCATION_PCT
     && Math.abs(sourceRoundedAllocationPct - declaredTotalAllocationPct) <= ALLOCATION_ROUNDING_TOLERANCE_PCT
@@ -237,7 +240,7 @@ function buildMainAppGovernance() {
   if (executionAllowed) {
     const immutablePayload = {
       sessionDate: decisionSession,
-      engineId: ENGINE_ID,
+      engineId,
       recommendations: recommendations.map(row => ({
         ticker: row.ticker,
         entryLow: finite(row.entryLow),
@@ -247,7 +250,7 @@ function buildMainAppGovernance() {
         portfolioWeightPct: finite(row.portfolioWeightPct),
       })),
     };
-    signalId = `${decisionSession}:${ENGINE_ID}`;
+    signalId = `${decisionSession}:${engineId}`;
     signalHash = hash(immutablePayload);
     const existing = ledger.entries.find(entry => entry.signalId === signalId);
     if (existing && existing.signalHash !== signalHash) {
@@ -287,8 +290,9 @@ function buildMainAppGovernance() {
       productionGateBlockers,
     },
     governance: {
-      engineLocked: engineId === ENGINE_ID,
-      activeEngine: ENGINE_ID,
+      engineLocked: ALLOWED_ENGINE_IDS.includes(engineId),
+      activeEngine: V169_ENGINE_ID,
+      activeShadowEngine: engineId,
       automaticPromotionAllowed: false,
       failClosed: true,
       conservativeAmbiguity: true,
@@ -369,7 +373,7 @@ function buildMainAppGovernance() {
   };
 
   const snapshotHash = hash({
-    engine: ENGINE_ID,
+    engine: engineId,
     state: finalState,
     executionAllowed: finalExecutionAllowed,
     marketSession,

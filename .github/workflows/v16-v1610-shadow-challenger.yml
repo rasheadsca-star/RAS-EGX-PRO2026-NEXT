@@ -6,9 +6,13 @@ on:
     branches:
       - main
       - v16-10-exposure-aware-shadow
+      - v16-10-governance-integration
     paths:
       - 'scripts/research/v16-v1610-exposure-challenger.py'
+      - 'scripts/stable/v16-main-app-governance.cjs'
+      - 'scripts/stable/v16-main-app-decision-adapter.cjs'
       - 'tests/astra/v1610-exposure-challenger.test.py'
+      - 'tests/astra/v1610-governance-adapter.test.cjs'
       - '.github/workflows/v16-v1610-shadow-challenger.yml'
   schedule:
     - cron: '30 17 * * 0-4'
@@ -82,6 +86,12 @@ jobs:
           }, indent=2))
           PY
 
+      - name: Rebuild canonical MAIN APP governance snapshot
+        run: node scripts/stable/v16-main-app-governance.cjs
+
+      - name: Verify V16.10 governance adapter contract
+        run: node tests/astra/v1610-governance-adapter.test.cjs
+
       - name: Verify frozen V16.9 pilot remains intact
         run: node scripts/stable/v16-main-app-pilot-lock-guard.cjs
 
@@ -98,16 +108,10 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/v16-v1610-exposure-challenger.json data/stable/v16-main-app-pilot-lock-status.json
+          git add data/research/v16-v1610-exposure-challenger.json data/stable/v16-main-app-pilot-lock-status.json data/stable/v16-main-app-current.json data/stable/v16-main-app-signal-ledger.json data/stable/v16-main-app-ledger-reconcile.json
           if git diff --cached --quiet; then
             echo 'No shadow evidence changes to commit.'
             exit 0
           fi
           git commit -m 'research(v16.10): refresh exposure-aware degradation-guard evidence'
-          for attempt in 1 2 3; do
-            if git pull --rebase -X ours origin "${GITHUB_REF_NAME}" && git push origin HEAD:"${GITHUB_REF_NAME}"; then
-              exit 0
-            fi
-            [ "$attempt" = '3' ] && exit 1
-            sleep $((attempt * 5))
-          done
+          git push origin HEAD:"${GITHUB_REF_NAME}"
