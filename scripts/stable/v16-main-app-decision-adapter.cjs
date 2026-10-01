@@ -73,6 +73,7 @@ function normalizeV1610(report, priceTruth, fallback) {
     expectedLatestSession: expectedSession,
     mode: 'V16_10_EXPOSURE_AWARE_GOVERNANCE',
     practicalReady: false,
+    executionAllowed: false,
     professionalEvidenceReady: false,
     evidenceTier: shadowReady ? 'SHADOW_GOVERNANCE' : 'CASH_MODE',
     status,
