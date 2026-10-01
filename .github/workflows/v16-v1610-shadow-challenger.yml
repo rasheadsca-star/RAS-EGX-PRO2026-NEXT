@@ -108,16 +108,10 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add data/research/v16-v1610-exposure-challenger.json data/stable/v16-main-app-pilot-lock-status.json data/stable/v16-main-app-current.json data/stable/v16-main-app-signal-ledger.json
+          git add data/research/v16-v1610-exposure-challenger.json data/stable/v16-main-app-pilot-lock-status.json data/stable/v16-main-app-current.json data/stable/v16-main-app-signal-ledger.json data/stable/v16-main-app-ledger-reconcile.json
           if git diff --cached --quiet; then
             echo 'No shadow evidence changes to commit.'
             exit 0
           fi
           git commit -m 'research(v16.10): refresh exposure-aware degradation-guard evidence'
-          for attempt in 1 2 3; do
-            if git pull --rebase -X ours origin "${GITHUB_REF_NAME}" && git push origin HEAD:"${GITHUB_REF_NAME}"; then
-              exit 0
-            fi
-            [ "$attempt" = '3' ] && exit 1
-            sleep $((attempt * 5))
-          done
+          git push origin HEAD:"${GITHUB_REF_NAME}"
