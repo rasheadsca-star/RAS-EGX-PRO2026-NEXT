@@ -347,6 +347,39 @@ async function main() {
     candidates: rr68Incremental,
   };
 
+  const marketScoreboard = enriched
+    .map((row) => ({
+      ticker: row.ticker,
+      sessionDate: row.sessionDate,
+      eligible: row.eligible === true,
+      publicationEligible: row.publicationEligible === true,
+      qualityState: row.qualityState,
+      publicationHold: row.publicationHold === true,
+      scores: {
+        core: row.core,
+        research: row.research,
+        liquidity: row.liquidity,
+        supportResistance: row.sr,
+        dataQuality: row.quality,
+      },
+      structuralNetRR: row.structuralNetRR,
+      alignmentState: row.alignmentState,
+      price: row.price,
+      tradePlan: row.tradePlan,
+      reasonCodes: row.reasons,
+      deficits: row.deficits,
+      nearMiss: row.nearMiss === true,
+      gateDistance: row.gateDistance,
+      closeness: row.closeness,
+    }))
+    .sort((a, b) =>
+      Number(b.eligible) - Number(a.eligible) ||
+      Number(b.nearMiss) - Number(a.nearMiss) ||
+      (b.scores.research ?? -1) - (a.scores.research ?? -1) ||
+      (b.scores.core ?? -1) - (a.scores.core ?? -1) ||
+      a.ticker.localeCompare(b.ticker)
+    );
+
   const report = {
     schemaVersion: 'rasheed-egx-rc2-calibration-diagnostics/v1',
     generatedAt: new Date().toISOString(),
@@ -377,6 +410,7 @@ async function main() {
     bestRejected,
     sensitivityScenarios: scenarios,
     challenger,
+    marketScoreboard,
     safety: {
       scoringModelChanged: false,
       productionThresholdsChanged: false,
@@ -397,6 +431,7 @@ async function main() {
     nearMissCount: report.nearMissCount,
     singleScoreGateMissCount: report.singleScoreGateMissCount,
     sensitivityScenarios: report.sensitivityScenarios,
+    scoreboardCount: report.marketScoreboard.length,
     challenger: {
       id: report.challenger.id,
       candidateCount: report.challenger.candidateCount,
