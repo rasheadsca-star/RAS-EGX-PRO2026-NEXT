@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop/v20-integrated-decision-platform
+      - research/rc2-rr-calibration-20261001
     paths:
       - 'tfe-v20/**'
       - '.github/workflows/tfe-v20-audit.yml'
@@ -57,10 +58,22 @@ jobs:
           node --check scripts/evaluate-forward.mjs
           node --check scripts/regime-report.mjs
           node --check scripts/long-history-validation.mjs
+          node --check scripts/rr-calibration-scenario.mjs
       - name: Full functional and destructive tests
         run: npm test
       - name: Independent red-team stability gate
         run: npm run red-team
+      - name: Research-only RR calibration grid
+        if: success()
+        run: |
+          set -euo pipefail
+          for rr in 0.70 0.68 0.65 0.60 0.55; do
+            echo "=== RC2 RR CALIBRATION rr=$rr ==="
+            RC2_MIN_STRUCTURAL_NET_RR="$rr" node scripts/rr-calibration-scenario.mjs
+          done
+          echo "PRODUCTION MUTATION: false"
+          echo "EXECUTION ALLOWED: false"
+
       - name: Stage exact runtime artifact
         if: success()
         run: |
