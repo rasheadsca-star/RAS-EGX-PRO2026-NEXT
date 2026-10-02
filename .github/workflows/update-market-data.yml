@@ -6,8 +6,10 @@ on:
     paths:
       - '.github/workflows/update-market-data.yml'
   schedule:
+    # Intraday collection remains useful for monitoring.
     - cron: '20 8 * * 0-4'
-    - cron: '15 12 * * 0-4'
+    # Repeated post-close retries cover Cairo UTC+2/+3 and the delayed public feed.
+    - cron: '45 12,13,14 * * 0-4'
 
 permissions:
   contents: write
