@@ -35,6 +35,7 @@ const sessionDate = decision.sessionDate || priceTruth.expectedSession || null;
 const regimeSession = regime?.metrics?.sessionDate || regime?.sessionDate || null;
 const priceSession = priceTruth.expectedSession || null;
 const sourceSession = fetchStatus.lastSession || fetchStatus.sessionDate || priceSession || sessionDate;
+const sourceSessionDataHash = decision?.basketPlan?.sourceSessionDataHash || null;
 const sessionAligned = Boolean(
   sessionDate && regimeSession === sessionDate && sourceSession === sessionDate &&
   (!priceSession || priceSession === sessionDate)
@@ -90,6 +91,7 @@ const snapshot = {
       ? 'الجلسة متطابقة، لكن البوابة الحالية لم تُصدر سلة؛ لا يتم اختلاق توصية ويظل التنفيذ محظورًا.'
       : 'حوكمة UCP أوقفت الجلسة لعدم تطابق المصدر أو عدم اكتمال درجة التنفيذ.',
   sessionDate,
+  sourceSessionDataHash,
   engine: {
     id: 'V17_GOVERNANCE_SPINE',
     sourceSelectionEngine: engineId,
@@ -141,6 +143,7 @@ const snapshot = {
     decisionSession: sessionDate,
     regimeSession,
     priceSession,
+    sourceSessionDataHash,
     staleDataBlocked: !sessionAligned,
     zeroRecommendationStateValid: recommendations.length === 0
   },
@@ -167,6 +170,7 @@ console.log(JSON.stringify({
   sessionAligned,
   executionGrade,
   recommendationCount: recommendations.length,
+  sourceSessionDataHash,
   regime: snapshot.market.regime,
   riskMultiplier: snapshot.market.riskMultiplier,
   executionAllowed: false
