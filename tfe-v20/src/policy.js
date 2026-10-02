@@ -1,13 +1,18 @@
+const envNum = (name, fallback) => {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) ? n : fallback;
+};
+
 export const POLICY = Object.freeze({
   engineId: 'TFE_V20_FUSION_RC2',
   schemaVersion: '20.tfe.2',
   minBars: 60,
-  minCoreScore: 70,
-  minResearchScore: 72,
-  minLiquidityScore: 55,
-  minSrScore: 55,
+  minCoreScore: envNum('RC2_MIN_CORE_SCORE', 70),
+  minResearchScore: envNum('RC2_MIN_RESEARCH_SCORE', 72),
+  minLiquidityScore: envNum('RC2_MIN_LIQUIDITY_SCORE', 55),
+  minSrScore: envNum('RC2_MIN_SR_SCORE', 55),
   minSrMethods: 2,
-  minStructuralNetRR: 0.70,
+  minStructuralNetRR: envNum('RC2_MIN_STRUCTURAL_NET_RR', 0.70),
   precisionTargetR: 0.80,
   maxPullbackDistanceAtr: 0.70,
   entryAtr: 0.38,
