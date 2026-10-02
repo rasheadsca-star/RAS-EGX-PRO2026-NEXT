@@ -59,6 +59,22 @@ jobs:
           const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
           const calibration = fs.existsSync('/tmp/rc2-calibration.json') ? JSON.parse(fs.readFileSync('/tmp/rc2-calibration.json','utf8')) : null;
           const fail = m => { throw new Error(m); };
+          if (calibration?.challenger) {
+            const challenger = calibration.challenger;
+            if (challenger.id !== 'TFE_V20_FUSION_RC2_RR68_CHALLENGER') fail('RC2_CHALLENGER_ID_MISMATCH');
+            if (challenger.baseEngine !== 'TFE_V20_FUSION_RC2') fail('RC2_CHALLENGER_BASE_ENGINE_MISMATCH');
+            if (challenger.mode !== 'RESEARCH_ONLY' || challenger.researchOnly !== true) fail('RC2_CHALLENGER_NOT_RESEARCH_ONLY');
+            if (challenger.executionAllowed !== false || challenger.automaticPromotionAllowed !== false) fail('RC2_CHALLENGER_PERMISSION_BREACH');
+            if (Number(challenger?.policyDiff?.minStructuralNetRR?.frozenChampion) !== 0.70) fail('RC2_CHALLENGER_FROZEN_RR_MISMATCH');
+            if (Number(challenger?.policyDiff?.minStructuralNetRR?.challenger) !== 0.68) fail('RC2_CHALLENGER_RR68_MISMATCH');
+            for (const item of challenger.candidates || []) {
+              if (item.permissions?.executionAllowed !== false || item.permissions?.automaticOrders !== false || item.permissions?.automaticChampionPromotion !== false) {
+                fail(`RC2_CHALLENGER_CANDIDATE_PERMISSION_BREACH:${item.ticker || 'UNKNOWN'}`);
+              }
+              if (item.quality?.publicationHold === true) fail(`RC2_CHALLENGER_PUBLICATION_HOLD:${item.ticker || 'UNKNOWN'}`);
+              if (!(Number(item.tradePlan?.structuralNetRR) >= 0.68)) fail(`RC2_CHALLENGER_RR_BELOW_POLICY:${item.ticker || 'UNKNOWN'}`);
+            }
+          }
           if (scan?.ok !== true) fail('RC2_SCAN_NOT_OK');
           if (scan?.engine !== 'TFE_V20_FUSION_RC2') fail(`RC2_ENGINE_MISMATCH:${scan?.engine}`);
           if (scan?.mode !== 'RESEARCH_ONLY') fail(`RC2_MODE_NOT_RESEARCH_ONLY:${scan?.mode}`);
