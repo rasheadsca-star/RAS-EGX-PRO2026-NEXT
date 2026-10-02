@@ -49,6 +49,7 @@ jobs:
           const regimeSession = regime?.metrics?.sessionDate || regime?.sessionDate || null;
           const priceSession = price?.expectedSession || null;
           const fetchSession = fetchStatus?.expectedSession || null;
+          const sourceSessionDataHash = primary?.basketPlan?.sourceSessionDataHash || null;
           const inputsReady = Boolean(
             expected &&
             regimeSession === expected &&
@@ -87,8 +88,14 @@ jobs:
             rc2?.sessionDate === expected &&
             rc2?.sessionAligned === true
           );
-          const v17Fresh = Boolean(v17Aligned && time(v17?.generatedAt) >= v17RequiredFreshAt);
-          const rc2Fresh = Boolean(rc2Aligned && time(rc2?.generatedAt) >= rc2RequiredFreshAt);
+          const v17Fresh = Boolean(
+            v17Aligned &&
+            (sourceSessionDataHash ? v17?.sourceSessionDataHash === sourceSessionDataHash : time(v17?.generatedAt) >= v17RequiredFreshAt)
+          );
+          const rc2Fresh = Boolean(
+            rc2Aligned &&
+            (sourceSessionDataHash ? rc2?.sourceSessionDataHash === sourceSessionDataHash : time(rc2?.generatedAt) >= rc2RequiredFreshAt)
+          );
           const sourceUpdatedAtMs = Math.max(v17RequiredFreshAt, rc2RequiredFreshAt, 0);
           const sourceUpdatedAt = sourceUpdatedAtMs ? new Date(sourceUpdatedAtMs).toISOString() : '';
 
