@@ -15,6 +15,22 @@ const THRESHOLDS = Object.freeze({
   structuralNetRR: 0.70,
 });
 
+const RR68_CHALLENGER = Object.freeze({
+  id: 'TFE_V20_FUSION_RC2_RR68_CHALLENGER',
+  baseEngine: 'TFE_V20_FUSION_RC2',
+  mode: 'RESEARCH_ONLY',
+  researchOnly: true,
+  executionAllowed: false,
+  automaticPromotionAllowed: false,
+  thresholds: Object.freeze({
+    core: 70,
+    research: 72,
+    liquidity: 55,
+    sr: 55,
+    structuralNetRR: 0.68,
+  }),
+});
+
 const SCORE_GATES = new Set([
   'CORE_SCORE_LOW',
   'RESEARCH_SCORE_LOW',
@@ -161,6 +177,21 @@ async function main() {
         quality: finiteNumber(r.scores?.dataQuality),
         structuralNetRR: finiteNumber(r.tradePlan?.structuralNetRR),
         alignmentState: r.tradePlan?.alignmentState ?? null,
+        price: finiteNumber(r.price),
+        tradePlan: r.tradePlan ? {
+          entryLow: finiteNumber(r.tradePlan.entryLow),
+          entryHigh: finiteNumber(r.tradePlan.entryHigh),
+          stop: finiteNumber(r.tradePlan.stop),
+          target1: finiteNumber(r.tradePlan.target1),
+          target2: finiteNumber(r.tradePlan.target2),
+          structuralNetRR: finiteNumber(r.tradePlan.structuralNetRR),
+          precisionNetRR: finiteNumber(r.tradePlan.precisionNetRR),
+          alignmentState: r.tradePlan.alignmentState ?? null,
+          distanceAtr: finiteNumber(r.tradePlan.distanceAtr),
+          entryExpirySessions: finiteNumber(r.tradePlan.entryExpirySessions),
+          maxHoldSessions: finiteNumber(r.tradePlan.maxHoldSessions),
+          roundTripCostPct: finiteNumber(r.tradePlan.roundTripCostPct),
+        } : null,
         reasons: Array.isArray(r.reasonCodes) ? r.reasonCodes : [],
         qualityState: r.quality?.state ?? null,
         publicationHold: Boolean(r.quality?.publicationHold),
@@ -242,6 +273,80 @@ async function main() {
     scenarioCount(rows, { ...THRESHOLDS, core: 62, research: 65 }),
   ];
 
+  const rr68Incremental = enriched
+    .filter(row =>
+      row.eligible !== true &&
+      row.publicationHold !== true &&
+      allNumericGatesPass(row, RR68_CHALLENGER.thresholds) &&
+      row.reasons.length > 0 &&
+      row.reasons.every(reason => reason === 'STRUCTURAL_RR_LOW')
+    )
+    .sort((a,b) =>
+      (b.research ?? -1) - (a.research ?? -1) ||
+      (b.core ?? -1) - (a.core ?? -1) ||
+      (b.structuralNetRR ?? -Infinity) - (a.structuralNetRR ?? -Infinity) ||
+      a.ticker.localeCompare(b.ticker)
+    )
+    .map((row, index) => ({
+      rank: index + 1,
+      ticker: row.ticker,
+      sessionDate: row.sessionDate,
+      decision: row.alignmentState === 'IN_ENTRY_RANGE'
+        ? 'RESEARCH_BUY_ZONE_CHALLENGER'
+        : 'RESEARCH_PENDING_PULLBACK_CHALLENGER',
+      publicationState: 'RESEARCH_CHALLENGER',
+      publicationEligible: false,
+      technicalEligible: false,
+      challengerEligible: true,
+      candidateSource: RR68_CHALLENGER.id,
+      scores: {
+        core: row.core,
+        technical: row.core,
+        research: row.research,
+        liquidity: row.liquidity,
+        supportResistance: row.sr,
+        dataQuality: row.quality,
+        fusionRank: null,
+      },
+      price: row.price,
+      tradePlan: row.tradePlan,
+      reasonCodes: ['RR68_CHALLENGER_ONLY'],
+      frozenPolicyReasonCodes: [...row.reasons],
+      quality: {
+        state: row.qualityState,
+        publicationHold: false,
+      },
+      permissions: {
+        researchOnly: true,
+        executionAllowed: false,
+        productionAllocation: false,
+        automaticOrders: false,
+        automaticChampionPromotion: false,
+      },
+    }));
+
+  const challenger = {
+    id: RR68_CHALLENGER.id,
+    baseEngine: RR68_CHALLENGER.baseEngine,
+    mode: RR68_CHALLENGER.mode,
+    researchOnly: true,
+    executionAllowed: false,
+    automaticPromotionAllowed: false,
+    sessionDate: market.sessionDate || null,
+    policyDiff: {
+      minStructuralNetRR: {
+        frozenChampion: THRESHOLDS.structuralNetRR,
+        challenger: RR68_CHALLENGER.thresholds.structuralNetRR,
+        delta: Number((RR68_CHALLENGER.thresholds.structuralNetRR - THRESHOLDS.structuralNetRR).toFixed(4)),
+      },
+      allOtherHardGates: 'UNCHANGED',
+    },
+    historicalEvidenceRef: 'data/rc2/rr-calibration-2026-10-01.json',
+    selectionRationale: '0.68 was the smallest tested RR relaxation that added current-session opportunity coverage while preserving retrospective profit factor at 1.66 and improving the Wilson lower bound versus the 0.70 frozen baseline.',
+    candidateCount: rr68Incremental.length,
+    candidates: rr68Incremental,
+  };
+
   const report = {
     schemaVersion: 'rasheed-egx-rc2-calibration-diagnostics/v1',
     generatedAt: new Date().toISOString(),
@@ -271,6 +376,7 @@ async function main() {
     singleGateMisses,
     bestRejected,
     sensitivityScenarios: scenarios,
+    challenger,
     safety: {
       scoringModelChanged: false,
       productionThresholdsChanged: false,
@@ -291,6 +397,12 @@ async function main() {
     nearMissCount: report.nearMissCount,
     singleScoreGateMissCount: report.singleScoreGateMissCount,
     sensitivityScenarios: report.sensitivityScenarios,
+    challenger: {
+      id: report.challenger.id,
+      candidateCount: report.challenger.candidateCount,
+      tickers: report.challenger.candidates.map(x => x.ticker),
+      policyDiff: report.challenger.policyDiff,
+    },
     topNearMisses: report.nearMisses.slice(0, 10).map(x => ({
       ticker: x.ticker,
       core: x.core,
