@@ -58,6 +58,8 @@ jobs:
           const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
           const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
           const calibration = fs.existsSync('/tmp/rc2-calibration.json') ? JSON.parse(fs.readFileSync('/tmp/rc2-calibration.json','utf8')) : null;
+          const primary = JSON.parse(fs.readFileSync('data/stable/v16-v169-primary-decision.json','utf8'));
+          const sourceSessionDataHash = primary?.basketPlan?.sourceSessionDataHash || null;
           const fail = m => { throw new Error(m); };
           if (calibration?.challenger) {
             const challenger = calibration.challenger;
@@ -103,6 +105,7 @@ jobs:
             marketSessionDate: marketSession,
             universeSessionDate: universeSession,
             sessionAligned: !recommendationSession || !marketSession || recommendationSession === marketSession,
+            sourceSessionDataHash,
             sourceCommit: scan.sourceCommit || null,
             permissions: {
               researchOnly: true,
@@ -132,7 +135,7 @@ jobs:
           };
           fs.mkdirSync('data/rc2',{recursive:true});
           fs.writeFileSync('data/rc2/current-session.json',JSON.stringify(snapshot,null,2)+'\n');
-          console.log(JSON.stringify({sessionDate:effectiveSession,returned:recommendations.length,summary:snapshot.summary,rejectionReasonCounts:snapshot.rejectionReasonCounts},null,2));
+          console.log(JSON.stringify({sessionDate:effectiveSession,sourceSessionDataHash,returned:recommendations.length,summary:snapshot.summary,rejectionReasonCounts:snapshot.rejectionReasonCounts},null,2));
           NODE
 
       - name: Commit current-session snapshot
