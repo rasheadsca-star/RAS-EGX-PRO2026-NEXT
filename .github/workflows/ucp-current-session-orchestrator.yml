@@ -39,6 +39,7 @@ jobs:
           node - <<'NODE' >> "$GITHUB_OUTPUT"
           const fs = require('fs');
           const read = p => { try { return JSON.parse(fs.readFileSync(p,'utf8')); } catch { return {}; } };
+          const fetchStatus = read('data/fetch-status.json');
           const primary = read('data/stable/v16-v169-primary-decision.json');
           const regime = read('data/stable/v16-market-regime.json');
           const price = read('data/stable/v15-price-truth.json');
@@ -47,24 +48,83 @@ jobs:
           const expected = primary.sessionDate || price.expectedSession || null;
           const regimeSession = regime?.metrics?.sessionDate || regime?.sessionDate || null;
           const priceSession = price?.expectedSession || null;
-          const inputsReady = Boolean(expected && regimeSession === expected && (!priceSession || priceSession === expected));
-          const v17Aligned = Boolean(inputsReady && v17?.sessionDate === expected && v17?.systemHealth?.sessionAligned === true);
-          const rc2Aligned = Boolean(inputsReady && rc2?.sessionDate === expected && rc2?.sessionAligned === true);
+          const fetchSession = fetchStatus?.expectedSession || null;
+          const sourceSessionDataHash = primary?.basketPlan?.sourceSessionDataHash || null;
+          const inputsReady = Boolean(
+            expected &&
+            regimeSession === expected &&
+            (!priceSession || priceSession === expected) &&
+            (!fetchSession || fetchSession === expected) &&
+            price?.executionGrade === true
+          );
+
+          const time = value => {
+            const parsed = Date.parse(String(value || ''));
+            return Number.isFinite(parsed) ? parsed : 0;
+          };
+          const maxTime = (...values) => Math.max(...values.map(time), 0);
+
+          // Session equality is necessary but not sufficient. Same-session data
+          // can be refreshed after the close, so downstream snapshots must be
+          // newer than the inputs that produced them.
+          const v17RequiredFreshAt = maxTime(
+            primary?.generatedAt,
+            regime?.generatedAt,
+            price?.generatedAt
+          );
+          const rc2RequiredFreshAt = maxTime(
+            fetchStatus?.generatedAt,
+            price?.generatedAt,
+            primary?.generatedAt
+          );
+
+          const v17Aligned = Boolean(
+            inputsReady &&
+            v17?.sessionDate === expected &&
+            v17?.systemHealth?.sessionAligned === true
+          );
+          const rc2Aligned = Boolean(
+            inputsReady &&
+            rc2?.sessionDate === expected &&
+            rc2?.sessionAligned === true
+          );
+          const v17Fresh = Boolean(
+            v17Aligned &&
+            (sourceSessionDataHash ? v17?.sourceSessionDataHash === sourceSessionDataHash : time(v17?.generatedAt) >= v17RequiredFreshAt)
+          );
+          const rc2Fresh = Boolean(
+            rc2Aligned &&
+            (sourceSessionDataHash ? rc2?.sourceSessionDataHash === sourceSessionDataHash : time(rc2?.generatedAt) >= rc2RequiredFreshAt)
+          );
+          const sourceUpdatedAtMs = Math.max(v17RequiredFreshAt, rc2RequiredFreshAt, 0);
+          const sourceUpdatedAt = sourceUpdatedAtMs ? new Date(sourceUpdatedAtMs).toISOString() : '';
+
           console.log(`expected=${expected || ''}`);
           console.log(`inputs_ready=${inputsReady ? 'true':'false'}`);
           console.log(`v17_aligned=${v17Aligned ? 'true':'false'}`);
           console.log(`rc2_aligned=${rc2Aligned ? 'true':'false'}`);
-          console.error(JSON.stringify({expected,regimeSession,priceSession,v17Session:v17?.sessionDate||null,rc2Session:rc2?.sessionDate||null,inputsReady,v17Aligned,rc2Aligned}));
+          console.log(`v17_fresh=${v17Fresh ? 'true':'false'}`);
+          console.log(`rc2_fresh=${rc2Fresh ? 'true':'false'}`);
+          console.log(`source_updated_at=${sourceUpdatedAt}`);
+          console.error(JSON.stringify({
+            expected,fetchSession,regimeSession,priceSession,inputsReady,
+            primaryGeneratedAt:primary?.generatedAt||null,
+            priceGeneratedAt:price?.generatedAt||null,
+            fetchGeneratedAt:fetchStatus?.generatedAt||null,
+            v17Session:v17?.sessionDate||null,v17GeneratedAt:v17?.generatedAt||null,v17Aligned,v17Fresh,
+            rc2Session:rc2?.sessionDate||null,rc2GeneratedAt:rc2?.generatedAt||null,rc2Aligned,rc2Fresh,
+            sourceUpdatedAt
+          }));
           NODE
 
       - name: Refresh zero-safe V17 governance snapshot
-        if: steps.alignment.outputs.inputs_ready == 'true' && steps.alignment.outputs.v17_aligned != 'true'
+        if: steps.alignment.outputs.inputs_ready == 'true' && steps.alignment.outputs.v17_fresh != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run ucp-v17-current-session.yml --repo "$GITHUB_REPOSITORY" --ref main
 
       - name: Refresh RC2 current-session snapshot
-        if: steps.alignment.outputs.inputs_ready == 'true' && steps.alignment.outputs.rc2_aligned != 'true'
+        if: steps.alignment.outputs.inputs_ready == 'true' && steps.alignment.outputs.rc2_fresh != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run ucp-rc2-current-session.yml --repo "$GITHUB_REPOSITORY" --ref main
@@ -73,6 +133,9 @@ jobs:
         run: |
           echo "Expected session: ${{ steps.alignment.outputs.expected }}"
           echo "Inputs ready: ${{ steps.alignment.outputs.inputs_ready }}"
-          echo "UCP V17 already aligned: ${{ steps.alignment.outputs.v17_aligned }}"
-          echo "RC2 already aligned: ${{ steps.alignment.outputs.rc2_aligned }}"
+          echo "UCP V17 session aligned: ${{ steps.alignment.outputs.v17_aligned }}"
+          echo "UCP V17 fresh vs latest inputs: ${{ steps.alignment.outputs.v17_fresh }}"
+          echo "RC2 session aligned: ${{ steps.alignment.outputs.rc2_aligned }}"
+          echo "RC2 fresh vs latest inputs: ${{ steps.alignment.outputs.rc2_fresh }}"
+          echo "Latest source update: ${{ steps.alignment.outputs.source_updated_at }}"
           echo "Execution permissions: unchanged / blocked"
