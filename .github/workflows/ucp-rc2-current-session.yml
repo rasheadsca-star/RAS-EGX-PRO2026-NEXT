@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/ucp-rc2-current-session.yml"
+      - "scripts/ucp/rc2-calibration-diagnostics.cjs"
   schedule:
     - cron: "18 14-20 * * 0-4"
 
@@ -30,6 +31,11 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Fetch RC2 scan and market state
         shell: bash
         run: |
@@ -40,6 +46,10 @@ jobs:
           curl --fail --silent --show-error --max-time 60 \
             "$RC2_PRODUCTION_URL/api/index?route=market-index&t=$stamp" -o /tmp/rc2-market.json
 
+      - name: Measure full-market score distribution and near misses
+        shell: bash
+        run: node scripts/ucp/rc2-calibration-diagnostics.cjs
+
       - name: Build immutable current-session research snapshot
         shell: bash
         run: |
@@ -47,6 +57,7 @@ jobs:
           const fs = require('fs');
           const scan = JSON.parse(fs.readFileSync('/tmp/rc2-scan.json','utf8'));
           const market = JSON.parse(fs.readFileSync('/tmp/rc2-market.json','utf8'));
+          const calibration = fs.existsSync('/tmp/rc2-calibration.json') ? JSON.parse(fs.readFileSync('/tmp/rc2-calibration.json','utf8')) : null;
           const fail = m => { throw new Error(m); };
           if (scan?.ok !== true) fail('RC2_SCAN_NOT_OK');
           if (scan?.engine !== 'TFE_V20_FUSION_RC2') fail(`RC2_ENGINE_MISMATCH:${scan?.engine}`);
@@ -95,10 +106,12 @@ jobs:
             },
             rejectionReasonCounts: scan?.rejectionReasonCounts || {},
             rejectedSample: Array.isArray(scan?.rejectedSample) ? scan.rejectedSample.slice(0,50) : [],
+            calibrationDiagnostics: calibration,
             recommendations,
             notes: [
               'Snapshot records zero candidates as a valid research outcome; no recommendation is invented.',
-              'Execution, automatic orders, production allocation and automatic Champion promotion remain disabled.'
+              'Execution, automatic orders, production allocation and automatic Champion promotion remain disabled.',
+              'Calibration diagnostics are observational only and do not change the frozen RC2 scoring policy or thresholds.'
             ]
           };
           fs.mkdirSync('data/rc2',{recursive:true});
