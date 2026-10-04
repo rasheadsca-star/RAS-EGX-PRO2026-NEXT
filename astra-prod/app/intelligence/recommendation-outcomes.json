@@ -1,22 +1,22 @@
 {
   "schemaVersion": "astra-recommendation-outcomes-3",
-  "generatedAt": "2026-09-30T22:05:49.241Z",
+  "generatedAt": "2026-10-04T13:16:06.965Z",
   "sourceSnapshot": {
-    "decisionSnapshotId": "G09-DS-3bdba8ba54a47d160a8587b2",
-    "semanticDecisionHash": "3bdba8ba54a47d160a8587b24fc54708bb3c978d1f24cf3b8c37ebbc0ecf558b",
-    "canonicalDataHead": "40d519b7a1ce81ea25ca779c323aec4404283f91",
-    "handoffFingerprint": "fb8d91d988cee5f78d24042031a3e03d844023d1f68da5b59b003437e59c7622",
-    "handoffProducerRunId": "36754146379",
+    "decisionSnapshotId": "G09-DS-f8551d324943bc4be74f30da",
+    "semanticDecisionHash": "f8551d324943bc4be74f30da53413669aa792afb8277e3b86151219362e12390",
+    "canonicalDataHead": "8cd9d67a73f0ad2a96ba201a7c68a1a39c6e7237",
+    "handoffFingerprint": "b0aca08a065336069c6f2c9a42e2d253e261b25c3db95f62c1c104a12b6bbddb",
+    "handoffProducerRunId": "37204638607",
     "generatorVersion": "ASTRA_NATIVE_INTELLIGENCE_3",
     "generatorSourceHash": "d6bdf0d5da9d2c7b119fcea7db20119342aaaeeabe55bf8a4e6ac2151ca73787"
   },
   "sessionRange": {
     "first": "2026-09-20",
-    "last": "2026-09-30"
+    "last": "2026-10-04"
   },
   "inputHashes": {
-    "ledger": "62a6fb6bb0cf4a91d5816bf7b4d2403f5e8d875c26dc2ac326fb8ce3a6503f13",
-    "outcomes": "d8c5eaca488e97413f7c788ad70a1f39d5e932961b4d078a6cad946cbc8e6cf8"
+    "ledger": "f2115dce24c6bcd8fb9e10bdfa376d417edb733905d7e17a232ba6781ff642f7",
+    "outcomes": "01e7a55cd0ae81f396cc6112209873fe2bd3723517bb31d361d3a5e7b71df7cd"
   },
   "records": [
     {
@@ -1236,11 +1236,11 @@
       "ticker": "RUBX",
       "decisionSnapshotId": "G09-DS-3bdba8ba54a47d160a8587b2",
       "sessionDate": "2026-09-30",
-      "effectiveFromSession": null,
+      "effectiveFromSession": "2026-10-01",
       "effectiveFromPolicy": "NEXT_FINALIZED_SESSION_AFTER_DECISION",
-      "effectiveFromStatus": "PENDING_NEXT_FINALIZED_SESSION",
-      "state": "WAITING_FOR_ENTRY",
-      "resolved": false,
+      "effectiveFromStatus": "RESOLVED",
+      "state": "CLOSED",
+      "resolved": true,
       "timeline": [
         {
           "state": "ISSUED",
@@ -1248,32 +1248,52 @@
           "evidence": "DecisionSnapshot"
         },
         {
-          "state": "WAITING_FOR_ENTRY",
-          "session": null,
-          "evidence": "No post-decision finalized session available"
+          "state": "ENTRY_ACTIVATED",
+          "session": "2026-10-01",
+          "evidence": "EXACT_SESSION_OPEN_INSIDE_ENTRY_ZONE"
+        },
+        {
+          "state": "OPEN",
+          "session": "2026-10-01",
+          "evidence": "Activated recommendation is open"
+        },
+        {
+          "state": "TARGET_1_HIT",
+          "session": "2026-10-01",
+          "level": 15.0309
+        },
+        {
+          "state": "FINAL_TARGET_HIT",
+          "session": "2026-10-01",
+          "level": 15.0309
+        },
+        {
+          "state": "CLOSED",
+          "session": "2026-10-01",
+          "evidence": "Final target resolution"
         }
       ],
-      "entryActivated": false,
+      "entryActivated": true,
       "entryNotTriggered": false,
-      "activationSession": null,
-      "activationPrice": null,
-      "activationPricePrecision": null,
-      "target1Hit": false,
+      "activationSession": "2026-10-01",
+      "activationPrice": 14.31,
+      "activationPricePrecision": "EXACT_SESSION_OPEN_INSIDE_ENTRY_ZONE",
+      "target1Hit": true,
       "target2Hit": false,
-      "finalTargetHit": false,
+      "finalTargetHit": true,
       "stopLossHit": false,
       "ambiguous": false,
       "governanceReason": null,
-      "closedSession": null,
-      "sessionsHeld": 0,
-      "timeToT1": null,
-      "timeToFinalTarget": null,
-      "maxFavorableExcursionPct": null,
-      "maxAdverseExcursionPct": null,
-      "exitPrice": null,
+      "closedSession": "2026-10-01",
+      "sessionsHeld": 1,
+      "timeToT1": 1,
+      "timeToFinalTarget": 1,
+      "maxFavorableExcursionPct": 6.9182,
+      "maxAdverseExcursionPct": 0,
+      "exitPrice": 15.0309,
       "returnModel": "DAILY_OHLC_GROSS_FULL_POSITION_NO_FEES_OR_SLIPPAGE",
       "excursionPrecision": "FULL_DAILY_CANDLE_ENVELOPE_MAY_INCLUDE_POST_EXIT_EXTREMES",
-      "returnPct": null,
+      "returnPct": 5.0377,
       "sourceHistory": "data/history/RUBX.json"
     },
     {
@@ -1328,6 +1348,72 @@
       "ticker": "CPCI",
       "decisionSnapshotId": "G09-DS-3bdba8ba54a47d160a8587b2",
       "sessionDate": "2026-09-30",
+      "effectiveFromSession": "2026-10-01",
+      "effectiveFromPolicy": "NEXT_FINALIZED_SESSION_AFTER_DECISION",
+      "effectiveFromStatus": "RESOLVED",
+      "state": "CLOSED",
+      "resolved": true,
+      "timeline": [
+        {
+          "state": "ISSUED",
+          "session": "2026-09-30",
+          "evidence": "DecisionSnapshot"
+        },
+        {
+          "state": "ENTRY_ACTIVATED",
+          "session": "2026-10-01",
+          "evidence": "EXACT_SESSION_OPEN_INSIDE_ENTRY_ZONE"
+        },
+        {
+          "state": "OPEN",
+          "session": "2026-10-01",
+          "evidence": "Activated recommendation is open"
+        },
+        {
+          "state": "TARGET_1_HIT",
+          "session": "2026-10-01",
+          "level": 589.384
+        },
+        {
+          "state": "FINAL_TARGET_HIT",
+          "session": "2026-10-01",
+          "level": 589.384
+        },
+        {
+          "state": "CLOSED",
+          "session": "2026-10-01",
+          "evidence": "Final target resolution"
+        }
+      ],
+      "entryActivated": true,
+      "entryNotTriggered": false,
+      "activationSession": "2026-10-01",
+      "activationPrice": 576.31,
+      "activationPricePrecision": "EXACT_SESSION_OPEN_INSIDE_ENTRY_ZONE",
+      "target1Hit": true,
+      "target2Hit": false,
+      "finalTargetHit": true,
+      "stopLossHit": false,
+      "ambiguous": false,
+      "governanceReason": null,
+      "closedSession": "2026-10-01",
+      "sessionsHeld": 1,
+      "timeToT1": 1,
+      "timeToFinalTarget": 1,
+      "maxFavorableExcursionPct": 4.1106,
+      "maxAdverseExcursionPct": -1.0949,
+      "exitPrice": 589.384,
+      "returnModel": "DAILY_OHLC_GROSS_FULL_POSITION_NO_FEES_OR_SLIPPAGE",
+      "excursionPrecision": "FULL_DAILY_CANDLE_ENVELOPE_MAY_INCLUDE_POST_EXIT_EXTREMES",
+      "returnPct": 2.2686,
+      "sourceHistory": "data/history/CPCI.json"
+    },
+    {
+      "schemaVersion": "astra-recommendation-outcome-3",
+      "recommendationId": "ASTRA-REC-760c9dc04e6c701865843e07",
+      "ticker": "ALCN",
+      "decisionSnapshotId": "G09-DS-f8551d324943bc4be74f30da",
+      "sessionDate": "2026-10-04",
       "effectiveFromSession": null,
       "effectiveFromPolicy": "NEXT_FINALIZED_SESSION_AFTER_DECISION",
       "effectiveFromStatus": "PENDING_NEXT_FINALIZED_SESSION",
@@ -1336,7 +1422,7 @@
       "timeline": [
         {
           "state": "ISSUED",
-          "session": "2026-09-30",
+          "session": "2026-10-04",
           "evidence": "DecisionSnapshot"
         },
         {
@@ -1366,7 +1452,99 @@
       "returnModel": "DAILY_OHLC_GROSS_FULL_POSITION_NO_FEES_OR_SLIPPAGE",
       "excursionPrecision": "FULL_DAILY_CANDLE_ENVELOPE_MAY_INCLUDE_POST_EXIT_EXTREMES",
       "returnPct": null,
-      "sourceHistory": "data/history/CPCI.json"
+      "sourceHistory": "data/history/ALCN.json"
+    },
+    {
+      "schemaVersion": "astra-recommendation-outcome-3",
+      "recommendationId": "ASTRA-REC-d74867cddd7202b962007d83",
+      "ticker": "CANA",
+      "decisionSnapshotId": "G09-DS-f8551d324943bc4be74f30da",
+      "sessionDate": "2026-10-04",
+      "effectiveFromSession": null,
+      "effectiveFromPolicy": "NEXT_FINALIZED_SESSION_AFTER_DECISION",
+      "effectiveFromStatus": "PENDING_NEXT_FINALIZED_SESSION",
+      "state": "WAITING_FOR_ENTRY",
+      "resolved": false,
+      "timeline": [
+        {
+          "state": "ISSUED",
+          "session": "2026-10-04",
+          "evidence": "DecisionSnapshot"
+        },
+        {
+          "state": "WAITING_FOR_ENTRY",
+          "session": null,
+          "evidence": "No post-decision finalized session available"
+        }
+      ],
+      "entryActivated": false,
+      "entryNotTriggered": false,
+      "activationSession": null,
+      "activationPrice": null,
+      "activationPricePrecision": null,
+      "target1Hit": false,
+      "target2Hit": false,
+      "finalTargetHit": false,
+      "stopLossHit": false,
+      "ambiguous": false,
+      "governanceReason": null,
+      "closedSession": null,
+      "sessionsHeld": 0,
+      "timeToT1": null,
+      "timeToFinalTarget": null,
+      "maxFavorableExcursionPct": null,
+      "maxAdverseExcursionPct": null,
+      "exitPrice": null,
+      "returnModel": "DAILY_OHLC_GROSS_FULL_POSITION_NO_FEES_OR_SLIPPAGE",
+      "excursionPrecision": "FULL_DAILY_CANDLE_ENVELOPE_MAY_INCLUDE_POST_EXIT_EXTREMES",
+      "returnPct": null,
+      "sourceHistory": "data/history/CANA.json"
+    },
+    {
+      "schemaVersion": "astra-recommendation-outcome-3",
+      "recommendationId": "ASTRA-REC-c46c0ec0344d2cd98eb1d5e2",
+      "ticker": "ADRI",
+      "decisionSnapshotId": "G09-DS-f8551d324943bc4be74f30da",
+      "sessionDate": "2026-10-04",
+      "effectiveFromSession": null,
+      "effectiveFromPolicy": "NEXT_FINALIZED_SESSION_AFTER_DECISION",
+      "effectiveFromStatus": "PENDING_NEXT_FINALIZED_SESSION",
+      "state": "WAITING_FOR_ENTRY",
+      "resolved": false,
+      "timeline": [
+        {
+          "state": "ISSUED",
+          "session": "2026-10-04",
+          "evidence": "DecisionSnapshot"
+        },
+        {
+          "state": "WAITING_FOR_ENTRY",
+          "session": null,
+          "evidence": "No post-decision finalized session available"
+        }
+      ],
+      "entryActivated": false,
+      "entryNotTriggered": false,
+      "activationSession": null,
+      "activationPrice": null,
+      "activationPricePrecision": null,
+      "target1Hit": false,
+      "target2Hit": false,
+      "finalTargetHit": false,
+      "stopLossHit": false,
+      "ambiguous": false,
+      "governanceReason": null,
+      "closedSession": null,
+      "sessionsHeld": 0,
+      "timeToT1": null,
+      "timeToFinalTarget": null,
+      "maxFavorableExcursionPct": null,
+      "maxAdverseExcursionPct": null,
+      "exitPrice": null,
+      "returnModel": "DAILY_OHLC_GROSS_FULL_POSITION_NO_FEES_OR_SLIPPAGE",
+      "excursionPrecision": "FULL_DAILY_CANDLE_ENVELOPE_MAY_INCLUDE_POST_EXIT_EXTREMES",
+      "returnPct": null,
+      "sourceHistory": "data/history/ADRI.json"
     }
   ]
 }
