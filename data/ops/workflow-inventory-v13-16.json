@@ -1,22 +1,22 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-10-01T12:11:41.048Z",
+  "generatedAt": "2026-10-04T11:38:20.149Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 144,
-    "scheduled": 45,
-    "scheduledLegacy": 45,
+    "total": 147,
+    "scheduled": 48,
+    "scheduledLegacy": 48,
     "pageDeployers": 40,
-    "repositoryWriters": 110,
+    "repositoryWriters": 112,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "45 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "48 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "40 workflows can deploy GitHub Pages.",
-    "110 workflows can write to the repository."
+    "112 workflows can write to the repository."
   ],
   "scheduledLegacy": [
     {
@@ -147,11 +147,32 @@
       ]
     },
     {
+      "filename": "ucp-current-session-orchestrator.yml",
+      "name": "UCP Current Session Orchestrator",
+      "schedules": [
+        "12 14-20 * * 0-4"
+      ]
+    },
+    {
+      "filename": "ucp-rc2-current-session.yml",
+      "name": "UCP RC2 Current Session Snapshot",
+      "schedules": [
+        "18 14-20 * * 0-4"
+      ]
+    },
+    {
+      "filename": "ucp-v17-current-session.yml",
+      "name": "UCP V17 Current Session Governance",
+      "schedules": [
+        "16 14-20 * * 0-4"
+      ]
+    },
+    {
       "filename": "update-market-data.yml",
       "name": "Update EGX Market Data",
       "schedules": [
         "20 8 * * 0-4",
-        "15 12 * * 0-4"
+        "45 12,13,14 * * 0-4"
       ]
     },
     {
@@ -1641,6 +1662,54 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "ucp-current-session-orchestrator.yml",
+      "relativePath": ".github/workflows/ucp-current-session-orchestrator.yml",
+      "name": "UCP Current Session Orchestrator",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "12 14-20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "ucp-rc2-current-session.yml",
+      "relativePath": ".github/workflows/ucp-rc2-current-session.yml",
+      "name": "UCP RC2 Current Session Snapshot",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "18 14-20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "ucp-v17-current-session.yml",
+      "relativePath": ".github/workflows/ucp-v17-current-session.yml",
+      "name": "UCP V17 Current Session Governance",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "16 14-20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "update-market-data.yml",
       "relativePath": ".github/workflows/update-market-data.yml",
       "name": "Update EGX Market Data",
@@ -1649,7 +1718,7 @@
       "hasSchedule": true,
       "schedules": [
         "20 8 * * 0-4",
-        "15 12 * * 0-4"
+        "45 12,13,14 * * 0-4"
       ],
       "hasWorkflowDispatch": true,
       "hasPush": true,
