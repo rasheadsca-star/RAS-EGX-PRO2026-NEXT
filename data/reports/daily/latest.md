@@ -11,8 +11,8 @@
 
 ## حالة الاستراتيجيات
 
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 552, PF 0.9846, Average R -0.009
-- breakout: RESEARCH_ONLY — صفقات مغلقة 118, PF 1.3509, Average R 0.1847
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 554, PF 0.9867, Average R -0.0078
+- breakout: RESEARCH_ONLY — صفقات مغلقة 120, PF 1.3443, Average R 0.179
 - pullback: RESEARCH_ONLY — صفقات مغلقة 98, PF 0.7529, Average R -0.147
 
 ## ملاحظات التشغيل
@@ -21,4 +21,4 @@
 - تحذير: 48 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `0c684201e2c9800ebd5110ad7e225a056b94af2cdb1e2c4936c03841395dcdc9`
+بصمة التقرير: `536058842119a99ef5a974db14fb2c65b5611ba04c349ad4fca0a8a622163318`
