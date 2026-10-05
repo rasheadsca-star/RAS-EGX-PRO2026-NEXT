@@ -6,6 +6,10 @@ run-name: MAIN APP V16.9.2 P2 scan for ${{ github.sha }}
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Install & Run V13.17.1 Final Session Truth Sync"]
+    types: [completed]
+    branches: [main]
   push:
     paths:
       - ".github/workflows/v16-daily-recommendation-scan.yml"
@@ -45,6 +49,7 @@ concurrency:
 
 jobs:
   preflight:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       run: ${{ steps.clock.outputs.run }}
