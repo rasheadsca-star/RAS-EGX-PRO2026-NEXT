@@ -1,17 +1,17 @@
 {
-  "schemaVersion": "16.9.2-session-bound-production-basket-pilot",
-  "generatedAt": "2026-10-07T18:04:59.780Z",
+  "schemaVersion": "16.6.1-calibration-review",
+  "generatedAt": "2026-10-07T19:16:40.865Z",
   "sessionDate": "2026-10-07",
-  "mode": "EQUAL_WEIGHT_BASKET_PILOT",
+  "mode": "TRIPLE_BARRIER_CALIBRATION_REVIEW",
   "practicalReady": false,
   "professionalEvidenceReady": false,
-  "evidenceTier": "BASKET_GATE_BLOCKED",
-  "status": "V16_9_BASKET_GATE_BLOCKED",
-  "statusAr": "لم تجتز سلة V16.9 بوابة الأداء، لذلك لا توجد خطة تنفيذ منشورة.",
+  "evidenceTier": "MODEL_CALIBRATION_REVIEW",
+  "status": "MODEL_CALIBRATION_UNDER_REVIEW",
+  "statusAr": "يوجد في السوق فرص محتملة، لكن معايرة V16.6 الحالية غير صالحة لاختيارها بثقة؛ النتائج معروضة للمراقبة فقط لحين التصحيح.",
   "selectedModel": {
-    "id": "V16_9_EQUAL_WEIGHT_BASKET",
-    "labelAr": "محرك السلة الاحتمالية متساوية الأوزان",
-    "profile": "RESEARCH_ONLY",
+    "id": "V16_6_TRIPLE_BARRIER",
+    "labelAr": "محرك Triple-Barrier الاحتمالي ببوابة إنتاج",
+    "profile": "CALIBRATION_UNDER_REVIEW",
     "watchOnly": true,
     "development": {
       "signals": 86,
@@ -52,14 +52,16 @@
     "validationPassed": false,
     "testPassed": false,
     "stabilityScore": 10,
-    "stabilityLabelAr": "لم يجتز بوابة السلة",
+    "stabilityLabelAr": "المعايرة قيد التصحيح — لا يعني غياب الفرص من السوق",
     "stabilityReasonsAr": [
-      "لم تثبت أفضلية موجبة خارج العينة."
+      "التشخيص أثبت وجود فرص رابحة فعلية في كل جلسات الاختبار.",
+      "شروط الاحتمال والهدف/الوقف الحالية رفضت جميع الأسهم بسبب خلل في المعايرة.",
+      "المرشحون معروضون للبحث فقط إلى أن يتم تصحيح النموذج وإعادة الاختبار."
     ],
     "pilotPassed": false,
-    "pilotRiskMode": "NO_TRADE",
+    "pilotRiskMode": "RESEARCH_ONLY",
     "professionalEvidencePassed": false,
-    "evidenceTier": "BASKET_GATE_BLOCKED",
+    "evidenceTier": "MODEL_CALIBRATION_REVIEW",
     "selectionScore": 19
   },
   "validatedModels": [],
@@ -227,64 +229,404 @@
   "researchWatchlist": [
     {
       "rank": 1,
-      "ticker": "SIPC",
-      "companyNameAr": "سبأ الدولية للأدوية",
-      "weightPct": 33.33,
-      "close": 6.17,
-      "entryLow": 6.1382,
-      "entryHigh": 6.2018,
-      "stopLoss": 5.8126,
-      "target1": 6.6466,
-      "probabilityTop10Pct": 9.23,
-      "rsi14": 54,
-      "volumeRatio20": 3.48,
-      "holdingSessions": 1,
+      "ticker": "MAAL",
+      "companyNameAr": "مرسيليا المصرية الخليجية",
+      "expectedValuePct": -0.128,
+      "probabilityEntryPct": 63.57,
+      "probabilityTargetPct": 20.68,
+      "probabilityStopPct": 23.97,
+      "probabilityTimeExitPct": 55.35,
+      "probabilityPositivePct": 38.12,
+      "targetStopRatio": 0.86,
+      "qualityScore": -0.1603,
+      "effectiveModelSupport": 0,
+      "matchedModels": [],
+      "entryLow": 10.8051,
+      "entryHigh": 10.9949,
+      "stopLoss": 9.8566,
+      "target1": 12.3229,
+      "close": 10.9,
+      "rsi14": 72.4,
+      "volumeRatio20": 0.31,
+      "momentumFailureRiskPct": 3.3,
+      "marketRegime": "NEUTRAL",
       "morningConfirmation": {
-        "cancelIfOpenAbove": 6.2018,
-        "cancelIfOpenBelow": 5.8126,
-        "ruleAr": "لا يُنفذ السهم إذا افتتح أعلى نطاق الدخول أو ظهرت سيولة ضعيفة أول 10–15 دقيقة؛ يعاد توزيع وزنه بالتساوي على الأسهم المتبقية."
-      }
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 10.9949,
+        "cancelIfOpenBelowStop": 9.8566,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
     },
     {
       "rank": 2,
-      "ticker": "SNFC",
-      "companyNameAr": "الشرقية الوطنية للأمن الغذائي",
-      "weightPct": 33.33,
-      "close": 11.64,
-      "entryLow": 11.6178,
-      "entryHigh": 11.6622,
-      "stopLoss": 11.3906,
-      "target1": 11.9726,
-      "probabilityTop10Pct": 8.95,
-      "rsi14": 69.2,
-      "volumeRatio20": 1.39,
-      "holdingSessions": 1,
+      "ticker": "RUBX",
+      "companyNameAr": "روبيكس",
+      "expectedValuePct": -0.127,
+      "probabilityEntryPct": 66.38,
+      "probabilityTargetPct": 20.67,
+      "probabilityStopPct": 24.6,
+      "probabilityTimeExitPct": 54.72,
+      "probabilityPositivePct": 37.69,
+      "targetStopRatio": 0.84,
+      "qualityScore": -0.2112,
+      "effectiveModelSupport": 0.4589,
+      "matchedModels": [
+        "MOMENTUM_ACCELERATION",
+        "TREND_RESUMPTION",
+        "LIQUID_LEADERS"
+      ],
+      "entryLow": 17.8107,
+      "entryHigh": 18.1893,
+      "stopLoss": 15.9179,
+      "target1": 20.8393,
+      "close": 18,
+      "rsi14": 64.1,
+      "volumeRatio20": 1.12,
+      "momentumFailureRiskPct": 18.7,
+      "marketRegime": "NEUTRAL",
       "morningConfirmation": {
-        "cancelIfOpenAbove": 11.6622,
-        "cancelIfOpenBelow": 11.3906,
-        "ruleAr": "لا يُنفذ السهم إذا افتتح أعلى نطاق الدخول أو ظهرت سيولة ضعيفة أول 10–15 دقيقة؛ يعاد توزيع وزنه بالتساوي على الأسهم المتبقية."
-      }
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 18.1893,
+        "cancelIfOpenBelowStop": 15.9179,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
     },
     {
       "rank": 3,
-      "ticker": "EGBE",
-      "companyNameAr": "البنك المصري الخليجي",
-      "weightPct": 33.33,
-      "close": 0.54,
-      "entryLow": 0.5389,
-      "entryHigh": 0.5411,
-      "stopLoss": 0.5278,
-      "target1": 0.5563,
-      "probabilityTop10Pct": 8.92,
-      "rsi14": 70,
-      "volumeRatio20": 1.09,
-      "holdingSessions": 1,
+      "ticker": "SIPC",
+      "companyNameAr": "سبأ الدولية للأدوية",
+      "expectedValuePct": -0.15,
+      "probabilityEntryPct": 61.47,
+      "probabilityTargetPct": 22.18,
+      "probabilityStopPct": 25.14,
+      "probabilityTimeExitPct": 52.69,
+      "probabilityPositivePct": 38.22,
+      "targetStopRatio": 0.88,
+      "qualityScore": -0.2118,
+      "effectiveModelSupport": 0.2192,
+      "matchedModels": [
+        "PRE_BREAKOUT_ACCUMULATION"
+      ],
+      "entryLow": 6.1303,
+      "entryHigh": 6.2097,
+      "stopLoss": 5.7331,
+      "target1": 6.7657,
+      "close": 6.17,
+      "rsi14": 54,
+      "volumeRatio20": 3.48,
+      "momentumFailureRiskPct": 11.7,
+      "marketRegime": "NEUTRAL",
       "morningConfirmation": {
-        "cancelIfOpenAbove": 0.5411,
-        "cancelIfOpenBelow": 0.5278,
-        "ruleAr": "لا يُنفذ السهم إذا افتتح أعلى نطاق الدخول أو ظهرت سيولة ضعيفة أول 10–15 دقيقة؛ يعاد توزيع وزنه بالتساوي على الأسهم المتبقية."
-      }
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 6.2097,
+        "cancelIfOpenBelowStop": 5.7331,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
+    },
+    {
+      "rank": 4,
+      "ticker": "UEFM",
+      "companyNameAr": "مطاحن مصر العليا",
+      "expectedValuePct": -0.2,
+      "probabilityEntryPct": 59.52,
+      "probabilityTargetPct": 20.7,
+      "probabilityStopPct": 24.61,
+      "probabilityTimeExitPct": 54.69,
+      "probabilityPositivePct": 38.07,
+      "targetStopRatio": 0.84,
+      "qualityScore": -0.2134,
+      "effectiveModelSupport": 0.1004,
+      "matchedModels": [
+        "REVERSAL_CONFIRMATION"
+      ],
+      "entryLow": 516.4595,
+      "entryHigh": 523.5405,
+      "stopLoss": 481.0545,
+      "target1": 573.1075,
+      "close": 520,
+      "rsi14": 50.7,
+      "volumeRatio20": 1.64,
+      "momentumFailureRiskPct": 0,
+      "marketRegime": "NEUTRAL",
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 523.5405,
+        "cancelIfOpenBelowStop": 481.0545,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
+    },
+    {
+      "rank": 5,
+      "ticker": "MIPH",
+      "companyNameAr": "مينا فارم",
+      "expectedValuePct": -0.196,
+      "probabilityEntryPct": 64.1,
+      "probabilityTargetPct": 20.13,
+      "probabilityStopPct": 24.1,
+      "probabilityTimeExitPct": 55.77,
+      "probabilityPositivePct": 38.03,
+      "targetStopRatio": 0.84,
+      "qualityScore": -0.2137,
+      "effectiveModelSupport": 0,
+      "matchedModels": [],
+      "entryLow": 822.6506,
+      "entryHigh": 836.1494,
+      "stopLoss": 755.1563,
+      "target1": 930.6414,
+      "close": 829.4,
+      "rsi14": 47.4,
+      "volumeRatio20": 0.38,
+      "momentumFailureRiskPct": 0,
+      "marketRegime": "NEUTRAL",
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 836.1494,
+        "cancelIfOpenBelowStop": 755.1563,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
+    },
+    {
+      "rank": 6,
+      "ticker": "PHTV",
+      "companyNameAr": "بيراميزا للفنادق",
+      "expectedValuePct": -0.22,
+      "probabilityEntryPct": 59.51,
+      "probabilityTargetPct": 20.16,
+      "probabilityStopPct": 24.23,
+      "probabilityTimeExitPct": 55.61,
+      "probabilityPositivePct": 37.93,
+      "targetStopRatio": 0.83,
+      "qualityScore": -0.2378,
+      "effectiveModelSupport": 0,
+      "matchedModels": [],
+      "entryLow": 349.4882,
+      "entryHigh": 354.1318,
+      "stopLoss": 326.2704,
+      "target1": 386.6368,
+      "close": 351.81,
+      "rsi14": 52.3,
+      "volumeRatio20": 0.28,
+      "momentumFailureRiskPct": 0,
+      "marketRegime": "NEUTRAL",
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 354.1318,
+        "cancelIfOpenBelowStop": 326.2704,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
+    },
+    {
+      "rank": 7,
+      "ticker": "EDFM",
+      "companyNameAr": "مطاحن شرق الدلتا",
+      "expectedValuePct": -0.239,
+      "probabilityEntryPct": 57.43,
+      "probabilityTargetPct": 20.94,
+      "probabilityStopPct": 24.8,
+      "probabilityTimeExitPct": 54.26,
+      "probabilityPositivePct": 38.11,
+      "targetStopRatio": 0.84,
+      "qualityScore": -0.2525,
+      "effectiveModelSupport": 0.1004,
+      "matchedModels": [
+        "REVERSAL_CONFIRMATION"
+      ],
+      "entryLow": 408.1171,
+      "entryHigh": 411.8829,
+      "stopLoss": 389.2886,
+      "target1": 438.2429,
+      "close": 410,
+      "rsi14": 51.1,
+      "volumeRatio20": 1.93,
+      "momentumFailureRiskPct": 0,
+      "marketRegime": "NEUTRAL",
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 411.8829,
+        "cancelIfOpenBelowStop": 389.2886,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
+    },
+    {
+      "rank": 8,
+      "ticker": "SDTI",
+      "companyNameAr": "شرم دريمز",
+      "expectedValuePct": -0.25,
+      "probabilityEntryPct": 63.46,
+      "probabilityTargetPct": 20.65,
+      "probabilityStopPct": 24.38,
+      "probabilityTimeExitPct": 54.97,
+      "probabilityPositivePct": 37.88,
+      "targetStopRatio": 0.85,
+      "qualityScore": -0.2628,
+      "effectiveModelSupport": 0.3434,
+      "matchedModels": [
+        "TREND_RESUMPTION",
+        "LIQUID_LEADERS"
+      ],
+      "entryLow": 86.5566,
+      "entryHigh": 87.4434,
+      "stopLoss": 82.1223,
+      "target1": 93.6514,
+      "close": 87,
+      "rsi14": 71.4,
+      "volumeRatio20": 0.76,
+      "momentumFailureRiskPct": 1.8,
+      "marketRegime": "NEUTRAL",
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 87.4434,
+        "cancelIfOpenBelowStop": 82.1223,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
+    },
+    {
+      "rank": 9,
+      "ticker": "AMOC",
+      "companyNameAr": "الإسكندرية للزيوت المعدنية",
+      "expectedValuePct": -0.257,
+      "probabilityEntryPct": 61.13,
+      "probabilityTargetPct": 21.17,
+      "probabilityStopPct": 24.83,
+      "probabilityTimeExitPct": 54,
+      "probabilityPositivePct": 37.9,
+      "targetStopRatio": 0.85,
+      "qualityScore": -0.2691,
+      "effectiveModelSupport": 0.2192,
+      "matchedModels": [
+        "PRE_BREAKOUT_ACCUMULATION"
+      ],
+      "entryLow": 14.4394,
+      "entryHigh": 14.5606,
+      "stopLoss": 13.8337,
+      "target1": 15.4086,
+      "close": 14.5,
+      "rsi14": 59.6,
+      "volumeRatio20": 1.75,
+      "momentumFailureRiskPct": 0.7,
+      "marketRegime": "NEUTRAL",
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 14.5606,
+        "cancelIfOpenBelowStop": 13.8337,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
+    },
+    {
+      "rank": 10,
+      "ticker": "ROTO",
+      "companyNameAr": "رواد السياحة",
+      "expectedValuePct": -0.251,
+      "probabilityEntryPct": 58.96,
+      "probabilityTargetPct": 20.53,
+      "probabilityStopPct": 24.69,
+      "probabilityTimeExitPct": 54.78,
+      "probabilityPositivePct": 37.94,
+      "targetStopRatio": 0.83,
+      "qualityScore": -0.2757,
+      "effectiveModelSupport": 0,
+      "matchedModels": [],
+      "entryLow": 40.6568,
+      "entryHigh": 41.0632,
+      "stopLoss": 38.6246,
+      "target1": 43.9082,
+      "close": 40.86,
+      "rsi14": 48.9,
+      "volumeRatio20": 1.22,
+      "momentumFailureRiskPct": 1.5,
+      "marketRegime": "NEUTRAL",
+      "morningConfirmation": {
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 41.0632,
+        "cancelIfOpenBelowStop": 38.6246,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
     }
   ],
-  "primaryDecisionSource": "V16_9_ISOLATED_FILE_SESSION_BOUND"
+  "primaryDecisionSource": "V16_9_ISOLATED_FILE_SESSION_BOUND",
+  "productionGate": {
+    "engine": "16.6.0-triple-barrier-research",
+    "passed": false,
+    "interpretation": "MODEL_FAILED_TO_DISCRIMINATE; THIS IS NOT EVIDENCE THAT THE MARKET HAS NO OPPORTUNITIES",
+    "acceptanceGate": {
+      "minimumEvaluatedSessions": true,
+      "positiveAverageReturn": false,
+      "positiveCompoundedReturn": false,
+      "profitFactorAtLeast125": false,
+      "maximumDrawdownAboveMinus10": false,
+      "targetStopRatioAtLeast125": false,
+      "tradeWinRateAtLeast45": false,
+      "allowsNoTradeDays": true
+    },
+    "walkForwardMetrics": {
+      "evaluatedSessions": 72,
+      "tradedSessions": 0,
+      "noTradeSessions": 72,
+      "sessionWinRatePct": 0,
+      "averageNetPortfolioReturnPct": 0,
+      "medianNetPortfolioReturnPct": 0,
+      "compoundedNetReturnPct": 0,
+      "maximumDrawdownPct": 0,
+      "profitFactor": null,
+      "selectedTrades": 0,
+      "targets": 0,
+      "stops": 0,
+      "timeExits": 0,
+      "targetStopRatio": 0,
+      "tradeWinRatePct": 0
+    },
+    "currentSelectionMeta": {
+      "reason": "NO_CANDIDATE_PASSED_GATES"
+    }
+  }
 }
