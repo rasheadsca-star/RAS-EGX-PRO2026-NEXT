@@ -1,44 +1,49 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-10-11T21:00:08.196Z",
+  "generatedAt": "2026-10-11T21:08:16.580Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-10-11",
-  "professionalReadinessScore": 71,
+  "professionalReadinessScore": 59,
   "foundationQualityScore": 71.4,
-  "stage": "ADVANCED_PILOT",
-  "stageAr": "Pilot متقدم — الاعتماد المهني غير مكتمل",
+  "stage": "PILOT",
+  "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "WALK_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 24.44,
-      "scorePct": 97.7,
+      "points": 24.39,
+      "scorePct": 97.6,
       "details": {
         "currentExecutionGrade": true,
         "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 95.3,
-        "publishedDecisionEvidenceCoveragePct": 95.3,
-        "publishedDecisionEvidenceReady": true,
-        "publishedEvidenceRows": 180,
+        "currentSourceSessionEvidenceCoveragePct": 94.9,
+        "publishedDecisionEvidenceCoveragePct": 94.9,
+        "publishedDecisionEvidenceReady": false,
+        "publishedEvidenceRows": 0,
         "currentAcceptedRows": 201,
         "verifiedRows": 201,
-        "inputRows": 213,
-        "evidenceCoveragePct": 95.3,
-        "verifiedRowsRatioPct": 94.4,
+        "inputRows": 214,
+        "evidenceCoveragePct": 94.9,
+        "verifiedRowsRatioPct": 93.9,
         "currentSourceHealth": "EXECUTION_GRADE"
       },
       "requirements": [
         {
+          "code": "PUBLISHED_DECISION_EVIDENCE",
+          "labelAr": "وجود دليل جلسة موثق وكافٍ للقرار المنشور نفسه",
+          "hard": true
+        },
+        {
           "code": "SOURCE_EVIDENCE_100",
-          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.3% إلى 100%",
+          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 94.9% إلى 100%",
           "hard": false
         },
         {
           "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 201/213",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 201/214",
           "hard": false
         }
       ]
@@ -168,12 +173,18 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": false,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
+    {
+      "code": "PUBLISHED_DECISION_EVIDENCE",
+      "labelAr": "وجود دليل جلسة موثق وكافٍ للقرار المنشور نفسه",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_DRAWDOWN",
       "labelAr": "Maximum Drawdown أفضل من -15%",
@@ -214,13 +225,13 @@
   "softGaps": [
     {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.3% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 94.9% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 201/213",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 201/214",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -238,6 +249,12 @@
     }
   ],
   "requirementsTo100": [
+    {
+      "code": "PUBLISHED_DECISION_EVIDENCE",
+      "labelAr": "وجود دليل جلسة موثق وكافٍ للقرار المنشور نفسه",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_DRAWDOWN",
       "labelAr": "Maximum Drawdown أفضل من -15%",
@@ -276,13 +293,13 @@
     },
     {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.3% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 94.9% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 201/213",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 201/214",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -306,11 +323,11 @@
     "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-10-11T20:19:01.146Z",
+    "priceTruthGeneratedAt": "2026-10-11T21:08:14.686Z",
     "basketGeneratedAt": "2026-10-11T20:19:16.452419+00:00",
     "liveGeneratedAt": "2026-10-11T20:19:25.226602+00:00",
-    "canonicalSnapshotHash": "b65ec72e55e546807ecf907e973a4ff221ef486348d9cb11a98729413d4bcb3c",
-    "consensusGeneratedAt": "2026-10-11T20:19:27.181Z",
+    "canonicalSnapshotHash": "c9a2a45b7766bff883891cee07b8bd79b650bbd3e1cbb989a67d2ffc7e20054e",
+    "consensusGeneratedAt": "2026-10-11T21:08:15.434Z",
     "intelligenceSnapshotGeneratedAt": "2026-10-11T21:00:08.053Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -345,5 +362,5 @@
       ]
     }
   },
-  "readinessHash": "0b0f59864dd715c3de69aea252ab4643adaa1f7a4ace579d54fd523be327f957"
+  "readinessHash": "d775f709b86878c7289c3c8762cc660da96ad094347b1b91f794b96363fd1ab7"
 }
