@@ -1,6 +1,6 @@
 {
   "schemaVersion": "13.9.0",
-  "generatedAt": "2026-10-12T14:08:26.848Z",
+  "generatedAt": "2026-10-12T22:07:44.309Z",
   "latestMarketSession": "2026-10-12",
   "drawdownMethod": "compounded_equity_peak_to_trough",
   "productionPolicyUnchanged": true,
@@ -2312,11 +2312,153 @@
       "companyNameEn": "Alexandria New Medical Center",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 148,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 5,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 149
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 98453568
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 0.66
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 10.81
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": false,
+          "detail": -9.57
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "42.3 > 47.915 > 86.61"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -7.16
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 26.9
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.66
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 41.25
+        }
+      ],
+      "failedConditions": [
+        "القوة النسبية: -9.57",
+        "ترتيب الاتجاه: 42.3 > 47.915 > 86.61",
+        "ميل متوسط 20: -7.16",
+        "منطقة RSI: 26.9",
+        "دعم الحجم: 0.66"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 8.7,
+      "rawSignalScore": 16.6,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 149,
+      "historyConfidence": 75.27,
+      "price": 42.3,
+      "plan": {
+        "entryLow": 42.0462,
+        "entryHigh": 42.6807,
+        "stopLoss": 39.9678,
+        "target1": 46.6756,
+        "target2": 48.5921,
+        "riskPct": 5.655,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -12.639,
+        "return20Pct": -21.999,
+        "relativeStrength20Pct": -9.57,
+        "rsi14": 26.92,
+        "atrPct": 10.815,
+        "volumeRatio20": 0.661,
+        "averageTurnover20Egp": 98453568,
+        "sma20": 47.9155,
+        "sma50": 86.6102,
+        "support20": 40.15,
+        "resistance20": 59.75
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "AMIA",
@@ -9097,11 +9239,150 @@
       "companyNameEn": "e-finance for Digital and Financial Investments S.A.E.",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 2,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 69808860
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 0.65
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 3.43
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 17
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "24.01 > 23.565 > 23.715"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": true,
+          "detail": 1.28
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": true,
+          "detail": 52.6
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.65
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 5.66
+        }
+      ],
+      "failedConditions": [
+        "ترتيب الاتجاه: 24.01 > 23.565 > 23.715",
+        "دعم الحجم: 0.65"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 47.7,
+      "rawSignalScore": 55.8,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 74.25,
+      "price": 24.01,
+      "plan": {
+        "entryLow": 23.9113,
+        "entryHigh": 24.1334,
+        "stopLoss": 22.9114,
+        "target1": 26.0221,
+        "target2": 26.9109,
+        "riskPct": 4.625,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -0.539,
+        "return20Pct": 4.573,
+        "relativeStrength20Pct": 17.002,
+        "rsi14": 52.56,
+        "atrPct": 3.426,
+        "volumeRatio20": 0.653,
+        "averageTurnover20Egp": 69808860,
+        "sma20": 23.5645,
+        "sma50": 23.7154,
+        "support20": 20.2,
+        "resistance20": 25.37
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "EGAL",
@@ -9416,11 +9697,151 @@
       "companyNameEn": "Egyptian Gulf Bank",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 159,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 3,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 160
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 134706
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": false,
+          "detail": 0.19
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 2.47
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 14.35
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "0.53 > 0.518 > 0.525"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": true,
+          "detail": 0.88
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": true,
+          "detail": 53.8
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.19
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 1.89
+        }
+      ],
+      "failedConditions": [
+        "نشاط الحجم الحالي: 0.19",
+        "ترتيب الاتجاه: 0.53 > 0.518 > 0.525",
+        "دعم الحجم: 0.19"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 34.7,
+      "rawSignalScore": 42.7,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 160,
+      "historyConfidence": 74.9,
+      "price": 0.53,
+      "plan": {
+        "entryLow": 0.5284,
+        "entryHigh": 0.532,
+        "stopLoss": 0.5125,
+        "target1": 0.562,
+        "target2": 0.5761,
+        "riskPct": 3.333,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": 0,
+        "return20Pct": 1.923,
+        "relativeStrength20Pct": 14.352,
+        "rsi14": 53.79,
+        "atrPct": 2.469,
+        "volumeRatio20": 0.189,
+        "averageTurnover20Egp": 134706,
+        "sma20": 0.518,
+        "sma50": 0.525,
+        "support20": 0.49,
+        "resistance20": 0.54
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "EGCH",
@@ -10871,10 +11292,11 @@
       "sector": null,
       "sessionId": "2026-10-12",
       "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 99,
-      "eligibilityStatus": "inactive_delisted"
+      "failedGate": "safety_eligibility",
+      "failedGateLabelAr": "محجوب بواسطة الأهلية أو السلامة",
+      "historySessions": 100,
+      "eligibilityStatus": "inactive_delisted",
+      "decisionEligible": false
     },
     {
       "ticker": "ETEL",
@@ -11033,11 +11455,151 @@
       "companyNameEn": "Egyptian Transport & Commercial Services EGYTRANS NOSCO",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 3,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 10630087
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 3.13
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 3.62
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 5.58
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "10.06 > 10.652 > 10.875"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -1.03
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 36.5
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": true,
+          "detail": 3.13
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 12.72
+        }
+      ],
+      "failedConditions": [
+        "ترتيب الاتجاه: 10.06 > 10.652 > 10.875",
+        "ميل متوسط 20: -1.03",
+        "منطقة RSI: 36.5"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 36,
+      "rawSignalScore": 44.2,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 73.9,
+      "price": 10.06,
+      "plan": {
+        "entryLow": 10.0163,
+        "entryHigh": 10.1147,
+        "stopLoss": 9.7893,
+        "target1": 10.5626,
+        "target2": 10.7836,
+        "riskPct": 2.744,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -8.462,
+        "return20Pct": -6.852,
+        "relativeStrength20Pct": 5.577,
+        "rsi14": 36.49,
+        "atrPct": 3.623,
+        "volumeRatio20": 3.129,
+        "averageTurnover20Egp": 10630087,
+        "sma20": 10.652,
+        "sma50": 10.875,
+        "support20": 9.82,
+        "resistance20": 11.34
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "EXPA",
@@ -11356,10 +11918,11 @@
       "sector": null,
       "sessionId": "2026-10-12",
       "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 117,
-      "eligibilityStatus": "manual_adjustment_review"
+      "failedGate": "safety_eligibility",
+      "failedGateLabelAr": "محجوب بواسطة الأهلية أو السلامة",
+      "historySessions": 118,
+      "eligibilityStatus": "manual_adjustment_review",
+      "decisionEligible": false
     },
     {
       "ticker": "FERC",
@@ -14496,11 +15059,152 @@
       "companyNameEn": "Juhayna Food Industries S.A.E.",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 4,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 16949164
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 0.73
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 2.7
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 5.14
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "24.68 > 25.812 > 26.816"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -2.04
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 33.3
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.73
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 11.22
+        }
+      ],
+      "failedConditions": [
+        "ترتيب الاتجاه: 24.68 > 25.812 > 26.816",
+        "ميل متوسط 20: -2.04",
+        "منطقة RSI: 33.3",
+        "دعم الحجم: 0.73"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 27.2,
+      "rawSignalScore": 35.6,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 73.15,
+      "price": 24.68,
+      "plan": {
+        "entryLow": 24.6,
+        "entryHigh": 24.78,
+        "stopLoss": 23.7899,
+        "target1": 26.3102,
+        "target2": 27.0302,
+        "riskPct": 3.646,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -3.518,
+        "return20Pct": -7.288,
+        "relativeStrength20Pct": 5.141,
+        "rsi14": 33.34,
+        "atrPct": 2.7,
+        "volumeRatio20": 0.729,
+        "averageTurnover20Egp": 16949164,
+        "sma20": 25.812,
+        "sma50": 26.816,
+        "support20": 24.4,
+        "resistance20": 27.45
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "KABO",
@@ -14970,11 +15674,152 @@
       "companyNameEn": "Lecico Egypt",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 4,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 20061342
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 0.7
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 4.8
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 7.21
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "31.98 > 32.901 > 33.852"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -0.14
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 43
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.7
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 11.32
+        }
+      ],
+      "failedConditions": [
+        "ترتيب الاتجاه: 31.98 > 32.901 > 33.852",
+        "ميل متوسط 20: -0.14",
+        "منطقة RSI: 43",
+        "دعم الحجم: 0.7"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 30.4,
+      "rawSignalScore": 38.4,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 75,
+      "price": 31.98,
+      "plan": {
+        "entryLow": 31.7959,
+        "entryHigh": 32.2101,
+        "stopLoss": 30.2428,
+        "target1": 35.1713,
+        "target2": 36.5794,
+        "riskPct": 5.5,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -4.651,
+        "return20Pct": -5.216,
+        "relativeStrength20Pct": 7.212,
+        "rsi14": 42.98,
+        "atrPct": 4.798,
+        "volumeRatio20": 0.698,
+        "averageTurnover20Egp": 20061342,
+        "sma20": 32.9005,
+        "sma50": 33.8516,
+        "support20": 28.86,
+        "resistance20": 35.6
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "LUTS",
@@ -17607,11 +18452,153 @@
       "companyNameEn": "Mohandes Insurance Company",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 5,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 12819696
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": false,
+          "detail": 0.42
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 6.27
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 9.7
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "33.57 > 35.408 > 35.858"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -2.45
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 42.7
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.42
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 16.03
+        }
+      ],
+      "failedConditions": [
+        "نشاط الحجم الحالي: 0.42",
+        "ترتيب الاتجاه: 33.57 > 35.408 > 35.858",
+        "ميل متوسط 20: -2.45",
+        "منطقة RSI: 42.7",
+        "دعم الحجم: 0.42"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 27.3,
+      "rawSignalScore": 35.3,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 75.15,
+      "price": 33.57,
+      "plan": {
+        "entryLow": 33.3686,
+        "entryHigh": 33.8721,
+        "stopLoss": 31.87,
+        "target1": 36.771,
+        "target2": 38.1713,
+        "riskPct": 5.206,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -5.993,
+        "return20Pct": -2.724,
+        "relativeStrength20Pct": 9.705,
+        "rsi14": 42.73,
+        "atrPct": 6.267,
+        "volumeRatio20": 0.415,
+        "averageTurnover20Egp": 12819696,
+        "sma20": 35.4075,
+        "sma50": 35.8578,
+        "support20": 32,
+        "resistance20": 38.95
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "MOSC",
@@ -19038,11 +20025,152 @@
       "companyNameEn": "El-Ebour Co. for Real Estate Investment",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 4,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 13604422
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 0.88
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 6.74
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": false,
+          "detail": -0.98
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "26.28 > 28.273 > 30.937"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -3.37
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 38.6
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": true,
+          "detail": 0.88
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 25.57
+        }
+      ],
+      "failedConditions": [
+        "القوة النسبية: -0.98",
+        "ترتيب الاتجاه: 26.28 > 28.273 > 30.937",
+        "ميل متوسط 20: -3.37",
+        "منطقة RSI: 38.6"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 16.4,
+      "rawSignalScore": 24.8,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 73.15,
+      "price": 26.28,
+      "plan": {
+        "entryLow": 26.1223,
+        "entryHigh": 26.5165,
+        "stopLoss": 24.8719,
+        "target1": 28.925,
+        "target2": 30.0831,
+        "riskPct": 5.5,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -9.348,
+        "return20Pct": -13.41,
+        "relativeStrength20Pct": -0.982,
+        "rsi14": 38.63,
+        "atrPct": 6.738,
+        "volumeRatio20": 0.88,
+        "averageTurnover20Egp": 13604422,
+        "sma20": 28.2725,
+        "sma50": 30.9368,
+        "support20": 22.8,
+        "resistance20": 33
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "OCDI",
@@ -19357,11 +20485,152 @@
       "companyNameEn": "ODIN Investments",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 150,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 4,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 151
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 8651945
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 0.91
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 5.96
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": false,
+          "detail": -2.7
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "2.3 > 2.599 > 2.896"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -3.11
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 31.6
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": true,
+          "detail": 0.91
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 27.83
+        }
+      ],
+      "failedConditions": [
+        "القوة النسبية: -2.7",
+        "ترتيب الاتجاه: 2.3 > 2.599 > 2.896",
+        "ميل متوسط 20: -3.11",
+        "منطقة RSI: 31.6"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 13.6,
+      "rawSignalScore": 21.7,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 151,
+      "historyConfidence": 74.65,
+      "price": 2.3,
+      "plan": {
+        "entryLow": 2.2862,
+        "entryHigh": 2.3206,
+        "stopLoss": 2.1767,
+        "target1": 2.5314,
+        "target2": 2.6328,
+        "riskPct": 5.5,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -10.156,
+        "return20Pct": -15.129,
+        "relativeStrength20Pct": -2.701,
+        "rsi14": 31.59,
+        "atrPct": 5.958,
+        "volumeRatio20": 0.912,
+        "averageTurnover20Egp": 8651945,
+        "sma20": 2.5985,
+        "sma50": 2.8958,
+        "support20": 2.35,
+        "resistance20": 2.94
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "OFH",
@@ -20303,11 +21572,153 @@
       "companyNameEn": "Palm Hills Developments S.A.E.",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 5,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 93318247
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": false,
+          "detail": 0.48
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 3.47
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 3.81
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "12.61 > 13.105 > 14.21"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -2.89
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 32.6
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.48
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 13.01
+        }
+      ],
+      "failedConditions": [
+        "نشاط الحجم الحالي: 0.48",
+        "ترتيب الاتجاه: 12.61 > 13.105 > 14.21",
+        "ميل متوسط 20: -2.89",
+        "منطقة RSI: 32.6",
+        "دعم الحجم: 0.48"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 22.3,
+      "rawSignalScore": 30.4,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 74.25,
+      "price": 12.61,
+      "plan": {
+        "entryLow": 12.5574,
+        "entryHigh": 12.6757,
+        "stopLoss": 12.3235,
+        "target1": 13.144,
+        "target2": 13.3785,
+        "riskPct": 2.323,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -4.325,
+        "return20Pct": -8.623,
+        "relativeStrength20Pct": 3.805,
+        "rsi14": 32.6,
+        "atrPct": 3.473,
+        "volumeRatio20": 0.482,
+        "averageTurnover20Egp": 93318247,
+        "sma20": 13.105,
+        "sma50": 14.21,
+        "support20": 12.36,
+        "resistance20": 14.25
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "PHTV",
@@ -21722,11 +23133,151 @@
       "companyNameEn": "Remco Tourism Villages Construction",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 3,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 2609620
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 1.45
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 3.65
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 0.09
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "3.48 > 3.695 > 3.872"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -2.44
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 34.2
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": true,
+          "detail": 1.45
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 16.95
+        }
+      ],
+      "failedConditions": [
+        "ترتيب الاتجاه: 3.48 > 3.695 > 3.872",
+        "ميل متوسط 20: -2.44",
+        "منطقة RSI: 34.2"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 24.7,
+      "rawSignalScore": 32.7,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 75.15,
+      "price": 3.48,
+      "plan": {
+        "entryLow": 3.4647,
+        "entryHigh": 3.4991,
+        "stopLoss": 3.3578,
+        "target1": 3.7053,
+        "target2": 3.8046,
+        "riskPct": 3.564,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -4.918,
+        "return20Pct": -12.343,
+        "relativeStrength20Pct": 0.086,
+        "rsi14": 34.19,
+        "atrPct": 3.652,
+        "volumeRatio20": 1.451,
+        "averageTurnover20Egp": 2609620,
+        "sma20": 3.6945,
+        "sma50": 3.8716,
+        "support20": 3.37,
+        "resistance20": 4.07
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "RUBX",
@@ -21894,11 +23445,152 @@
       "companyNameEn": "alBaraka Bank Egypt",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 4,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 19282177
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 0.63
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 3.46
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 7.88
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "21.8 > 23.269 > 23.313"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -0.75
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 38.9
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": false,
+          "detail": 0.63
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 18.35
+        }
+      ],
+      "failedConditions": [
+        "ترتيب الاتجاه: 21.8 > 23.269 > 23.313",
+        "ميل متوسط 20: -0.75",
+        "منطقة RSI: 38.9",
+        "دعم الحجم: 0.63"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 28.1,
+      "rawSignalScore": 36.3,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 73.9,
+      "price": 21.8,
+      "plan": {
+        "entryLow": 21.7096,
+        "entryHigh": 21.913,
+        "stopLoss": 20.7935,
+        "target1": 23.6433,
+        "target2": 24.4575,
+        "riskPct": 4.666,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -6.398,
+        "return20Pct": -4.553,
+        "relativeStrength20Pct": 7.875,
+        "rsi14": 38.86,
+        "atrPct": 3.457,
+        "volumeRatio20": 0.632,
+        "averageTurnover20Egp": 19282177,
+        "sma20": 23.2685,
+        "sma50": 23.3128,
+        "support20": 21.6,
+        "resistance20": 25.8
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "SCEM",
@@ -24378,11 +26070,151 @@
       "companyNameEn": "Talaat Moustafa Group Holding",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 151,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 3,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 152
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 207206971
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": true,
+          "detail": 1.16
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 2.48
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 0.22
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "ترتيب الاتجاه",
+          "pass": false,
+          "detail": "84.39 > 90.192 > 94.701"
+        },
+        {
+          "id": "sma20Slope",
+          "labelAr": "ميل متوسط 20",
+          "pass": false,
+          "detail": -3.04
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "منطقة RSI",
+          "pass": false,
+          "detail": 25
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "دعم الحجم",
+          "pass": true,
+          "detail": 1.16
+        },
+        {
+          "id": "resistanceRoom",
+          "labelAr": "مساحة حتى المقاومة",
+          "pass": true,
+          "detail": 16.32
+        }
+      ],
+      "failedConditions": [
+        "ترتيب الاتجاه: 84.39 > 90.192 > 94.701",
+        "ميل متوسط 20: -3.04",
+        "منطقة RSI: 25"
+      ],
+      "strategyId": "trend_follow",
+      "strategyLabelAr": "اتجاه قوي مع سيولة",
+      "variantId": "balanced",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 576,
+        "closedTrades": 547,
+        "cancelledTrades": 29,
+        "wins": 220,
+        "losses": 327,
+        "winRatePct": 40.22,
+        "profitFactor": 0.949,
+        "averageReturnPct": -0.144,
+        "averageR": -0.035,
+        "medianR": -0.779,
+        "maxDrawdownPct": 97.107,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 17.3418,
+        "legacyAdditiveDrawdownPct": 323.487,
+        "sameBarStopFirstCount": 1
+      },
+      "recommendationScore": 21.8,
+      "rawSignalScore": 30,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 152,
+      "historyConfidence": 73.9,
+      "price": 84.39,
+      "plan": {
+        "entryLow": 84.1386,
+        "entryHigh": 84.7043,
+        "stopLoss": 81.5919,
+        "target1": 89.5146,
+        "target2": 91.7782,
+        "riskPct": 3.352,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": -5.094,
+        "return20Pct": -12.213,
+        "relativeStrength20Pct": 0.216,
+        "rsi14": 25.03,
+        "atrPct": 2.483,
+        "volumeRatio20": 1.16,
+        "averageTurnover20Egp": 207206971,
+        "sma20": 90.1915,
+        "sma50": 94.7006,
+        "support20": 84.4,
+        "resistance20": 98.16
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "TRTO",
@@ -24402,11 +26234,158 @@
       "companyNameEn": "Upper Egypt Mills Company",
       "sector": null,
       "sessionId": "2026-10-12",
-      "stage": "HARD_REJECT",
-      "failedGate": "history_freshness",
-      "failedGateLabelAr": "التاريخ غير محدث حتى آخر جلسة",
-      "historySessions": 149,
-      "eligibilityStatus": "complete_recent"
+      "stage": "SIGNAL_CONDITIONS_FAILED",
+      "strictPaperAllowed": false,
+      "signalPassed": false,
+      "failedConditionCount": 4,
+      "conditions": [
+        {
+          "id": "warmup",
+          "labelAr": "اكتمال المؤشرات",
+          "pass": true,
+          "detail": 150
+        },
+        {
+          "id": "turnover",
+          "labelAr": "متوسط قيمة التداول",
+          "pass": true,
+          "detail": 4055795
+        },
+        {
+          "id": "volumeSessions",
+          "labelAr": "جلسات حجم تداول صالحة",
+          "pass": true,
+          "detail": 20
+        },
+        {
+          "id": "volumeRatioFloor",
+          "labelAr": "نشاط الحجم الحالي",
+          "pass": false,
+          "detail": 0.55
+        },
+        {
+          "id": "atr",
+          "labelAr": "توفر قياس المخاطرة",
+          "pass": true,
+          "detail": 5.34
+        },
+        {
+          "id": "relativeStrength",
+          "labelAr": "القوة النسبية",
+          "pass": true,
+          "detail": 8.71
+        },
+        {
+          "id": "trendStructure",
+          "labelAr": "الاتجاه المتوسط صاعد",
+          "pass": false,
+          "detail": null
+        },
+        {
+          "id": "nearSma20",
+          "labelAr": "الاقتراب من متوسط 20",
+          "pass": true,
+          "detail": 1.14
+        },
+        {
+          "id": "touchedZone",
+          "labelAr": "اختبار منطقة الدعم",
+          "pass": true,
+          "detail": 1.14
+        },
+        {
+          "id": "rsiRange",
+          "labelAr": "RSI مناسب للارتداد",
+          "pass": true,
+          "detail": 48.7
+        },
+        {
+          "id": "rsiRecovery",
+          "labelAr": "تحسن RSI",
+          "pass": false,
+          "detail": "52.1 → 48.7"
+        },
+        {
+          "id": "volumeRatio",
+          "labelAr": "سيولة كافية",
+          "pass": false,
+          "detail": 0.55
+        }
+      ],
+      "failedConditions": [
+        "نشاط الحجم الحالي: 0.55",
+        "الاتجاه المتوسط صاعد: لم يتحقق",
+        "تحسن RSI: 52.1 → 48.7",
+        "سيولة كافية: 0.55"
+      ],
+      "strategyId": "pullback",
+      "strategyLabelAr": "ارتداد من دعم داخل اتجاه صاعد",
+      "variantId": "wide",
+      "strategyValidationStatus": "RESEARCH_ONLY",
+      "strategyResearchValidated": false,
+      "strategyProductionEligible": false,
+      "strategyValidationMetrics": {
+        "totalSignals": 216,
+        "closedTrades": 205,
+        "cancelledTrades": 11,
+        "wins": 88,
+        "losses": 117,
+        "winRatePct": 42.93,
+        "profitFactor": 0.987,
+        "averageReturnPct": -0.033,
+        "averageR": -0.031,
+        "medianR": -0.454,
+        "maxDrawdownPct": 80.585,
+        "drawdownMethod": "compounded_equity_peak_to_trough",
+        "startingEquityIndex": 100,
+        "endingEquityIndex": 69.2426,
+        "legacyAdditiveDrawdownPct": 157.065,
+        "sameBarStopFirstCount": 0
+      },
+      "recommendationScore": 37.8,
+      "rawSignalScore": 46,
+      "eligibilityDecision": true,
+      "eligibilityStatus": "complete_recent",
+      "regimeAllowed": false,
+      "bearishBlock": true,
+      "volatilityBlock": false,
+      "marketRegime": "BEARISH",
+      "scorePaperPass": false,
+      "scoreWatchPass": false,
+      "historySessions": 150,
+      "historyConfidence": 73.9,
+      "price": 503.68,
+      "plan": {
+        "entryLow": 500.6579,
+        "entryHigh": 507.7108,
+        "stopLoss": 476.4542,
+        "target1": 554.0986,
+        "target2": 576.2827,
+        "riskPct": 5.5,
+        "riskReward1": 1.8,
+        "validEntrySessions": 1,
+        "maximumHoldingSessions": 10,
+        "cancelConditionsAr": [
+          "إلغاء الإشارة إذا افتتحت الجلسة التالية أعلى من الحد الأعلى للدخول بأكثر من 3%.",
+          "إلغاء الإشارة إذا كسر السعر وقف الخسارة قبل تنفيذ الدخول.",
+          "الإشارة صالحة لجلسة دخول واحدة فقط."
+        ]
+      },
+      "indicators": {
+        "return5Pct": 0.752,
+        "return20Pct": -3.718,
+        "relativeStrength20Pct": 8.711,
+        "rsi14": 48.72,
+        "atrPct": 5.335,
+        "volumeRatio20": 0.555,
+        "averageTurnover20Egp": 4055795,
+        "sma20": 498.0005,
+        "sma50": 524.502,
+        "support20": 407.57,
+        "resistance20": 550
+      },
+      "status": "WATCH_CONDITIONAL",
+      "statusLabelAr": "مراقبة مشروطة"
     },
     {
       "ticker": "UEGC",
