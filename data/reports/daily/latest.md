@@ -1,4 +1,4 @@
-# تقرير جلسة 2026-10-12
+# تقرير جلسة 2026-10-13
 
 - حالة التشغيل: **يحتاج متابعة**
 - الأول فنيًا: **—**
@@ -17,8 +17,8 @@
 
 ## ملاحظات التشغيل
 
-- تحذير: Data coverage is 94.2%, below preferred 98%.
+- تحذير: Data coverage is 94.64%, below preferred 98%.
 - تحذير: 48 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `d60cccfdbc8dad27e6a534eba0547e12bfc280cd0deffebf2eddf4bec5fcef85`
+بصمة التقرير: `c88d5e63c499779e2954bd421ce44fb637ad5c45b23a6634c65c1adb87b890a4`
