@@ -62,6 +62,8 @@ jobs:
           set -euo pipefail
           node --check scripts/fetch-market-data.js
           node --check scripts/stable/v15-missing-symbol-fallback.cjs
+          node --check scripts/stable/v15-live-price-truth.cjs
+          node --check scripts/stable/v16-session-aware-price-truth.cjs
           node --check scripts/intraday/v13-12-intraday-monitor.cjs
           node --check scripts/stable/v16-source-session-quorum.cjs
           node --check scripts/stable/v16-ls1-late-session-opportunity.cjs
@@ -82,15 +84,29 @@ jobs:
           # evidence and downgrade/withhold actions when current truth is absent.
           exit 0
 
-      - name: Restore explicit same-session evidence after intraday refresh
+      - name: Validate session and price truth after intraday refresh
         shell: bash
         run: |
           set +e
-          node scripts/stable/v16-source-session-quorum.cjs
+          # The raw fetcher replaces fetch-status.json. Run the existing full
+          # validator to restore session/quality fields from the new snapshot;
+          # never carry executionGrade forward from an older fetch.
+          node scripts/stable/v15-live-price-truth.cjs
           SESSION_CODE=$?
           set -e
           if [ "$SESSION_CODE" -ne 0 ] && [ "$SESSION_CODE" -ne 2 ]; then exit "$SESSION_CODE"; fi
           test -s data/stable/v16-source-session-quorum-report.json
+          node - <<'NODE'
+          const fs = require('fs');
+          const status = JSON.parse(fs.readFileSync('data/fetch-status.json', 'utf8'));
+          const truth = JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json', 'utf8'));
+          if (typeof status.executionGrade !== 'boolean' || !status.expectedSession) {
+            throw new Error('Validated fetch session and quality fields are required');
+          }
+          if (status.expectedSession !== truth.expectedSession || status.executionGrade !== truth.executionGrade) {
+            throw new Error('Fetch status and price truth must describe the same validation');
+          }
+          NODE
           echo "source_session_quorum_exit=$SESSION_CODE"
 
       - name: Rebuild intraday monitor
@@ -129,7 +145,11 @@ jobs:
             data/source-fetch-report.json \
             data/source-gateway-report.json \
             data/session-calendar.json \
+            data/history \
             data/intraday \
+            data/stable/v15-price-truth.json \
+            data/stable/v16-source-session-evidence.json \
+            data/stable/v16-session-repair-report.json \
             data/stable/v16-source-session-quorum-report.json \
             data/stable/v16-ls1-late-session-opportunities.json \
             data/stable/v16-ls1-history.json \
