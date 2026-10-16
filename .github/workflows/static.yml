@@ -8,6 +8,9 @@ on:
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+  schedule:
+    # Rebuild research snapshots from latest committed session, including late revisions.
+    - cron: '15 12-21 * * 0-5'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -76,6 +79,11 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
+      - name: Validate and build trend breakout divergence signals
+        run: |
+          node --test tests/trend-divergence.test.cjs
+          node scripts/research/build-trend-divergence.cjs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
