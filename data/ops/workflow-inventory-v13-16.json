@@ -1,20 +1,20 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-10-15T15:20:36.308Z",
+  "generatedAt": "2026-10-18T10:10:46.914Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
     "total": 147,
-    "scheduled": 48,
-    "scheduledLegacy": 48,
+    "scheduled": 49,
+    "scheduledLegacy": 49,
     "pageDeployers": 40,
     "repositoryWriters": 112,
     "emergency": 2
   },
   "status": "WARNING",
   "warnings": [
-    "48 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "49 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "40 workflows can deploy GitHub Pages.",
     "112 workflows can write to the repository."
   ],
@@ -144,6 +144,13 @@
       "name": "RC2 Continuous Recommendation Refresh",
       "schedules": [
         "8,23,38,53 6-18 * * 0-4"
+      ]
+    },
+    {
+      "filename": "static.yml",
+      "name": "Deploy static content to Pages",
+      "schedules": [
+        "15 12-21 * * 0-5"
       ]
     },
     {
@@ -1653,8 +1660,10 @@
       "name": "Deploy static content to Pages",
       "isPrimary": false,
       "isEmergency": false,
-      "hasSchedule": false,
-      "schedules": [],
+      "hasSchedule": true,
+      "schedules": [
+        "15 12-21 * * 0-5"
+      ],
       "hasWorkflowDispatch": true,
       "hasPush": true,
       "deploysPages": true,
