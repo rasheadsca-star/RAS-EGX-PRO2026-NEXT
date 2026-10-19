@@ -230,6 +230,23 @@ jobs:
           }
           write(summaryPath,summary);
           const current=(summary.symbols||[]).filter(x=>x.lastSession===expected||x.latestValidSession===expected).length;
+          const historyDir=path.join(cert,'data/history');
+          const historicCurrent=[];
+          for(const name of fs.readdirSync(historyDir).filter(n=>n.endsWith('.json'))){
+            try{
+              const h=read(path.join(historyDir,name));
+              if((h.sessions||[]).some(r=>String(r.date||r.sessionDate||'').slice(0,10)===expected && Number(r.close)>0)){
+                historicCurrent.push(name.replace(/\.json$/,'').toUpperCase());
+              }
+            }catch{}
+          }
+          const summaryCurrent=new Set((summary.symbols||[]).filter(x=>x.lastSession===expected||x.latestValidSession===expected).map(x=>String(x.ticker||'').toUpperCase()));
+          console.log('G22_HISTORY_SUMMARY_COVERAGE_DIAGNOSTIC',JSON.stringify({
+            expected,historyCurrentCount:historicCurrent.length,summaryCurrentCount:summaryCurrent.size,
+            historyCurrentMissingFromSummary:historicCurrent.filter(t=>!summaryCurrent.has(t)).sort(),
+            summaryCurrentMissingFromHistory:([...summaryCurrent].filter(t=>!historicCurrent.includes(t))).sort(),
+            note:'Diagnostics only; no market data or acceptance threshold changed'
+          }));
           console.log('CERT_BASELINE_SESSION_READY',JSON.stringify({
             expected,
             acceptedRows:truth.acceptedRows,
