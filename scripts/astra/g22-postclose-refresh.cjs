@@ -181,6 +181,19 @@ function main() {
   ensure(h.sessionIntegrity.freshnessStatus === 'CURRENT', 'Session freshness is not CURRENT');
   ensure(critical === 0, 'Current health has CRITICAL findings: ' + critical + ' ' + JSON.stringify((h.issues.issues || []).filter(x => x.severity === 'CRITICAL')));
   ensure(disallowedHigh.length === 0, 'Disallowed HIGH findings: ' + JSON.stringify(disallowedHigh));
+  if (currentCoveragePct < 90) {
+    console.error('G22_COVERAGE_BLOCKER', JSON.stringify({
+      expectedSession: expected,
+      activeUniverse,
+      currentCanonical,
+      shortfallTo90Pct: Math.max(0, Math.ceil(activeUniverse * 0.90) - currentCanonical),
+      currentCoveragePct,
+      sourceCoveragePct,
+      pipelineReady,
+      unresolvedHighIssues: highIssues.map(x => ({code:x.code, ticker:x.ticker || null, message:x.message || null})),
+      guidance: 'Restore verified current-session canonical rows; do not relax production thresholds or fabricate decisions'
+    }));
+  }
   ensure(currentCoveragePct >= 90, 'Current canonical coverage below 90%: ' + currentCoveragePct);
   ensure(pipelineCoveragePct >= 80, 'Decision pipeline coverage below 80%: ' + pipelineCoveragePct);
   ensure(h.pipeline.ok === true, 'Unified decision pipeline failed: ' + JSON.stringify(h.pipeline.diagnostics || []));
