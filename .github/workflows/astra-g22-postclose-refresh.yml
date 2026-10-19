@@ -223,7 +223,7 @@ jobs:
               // Derive summary freshness from verified session rows, not potentially stale
               // history-file metadata. Never invent rows or bypass quality checks.
               const validRows=(Array.isArray(h.sessions)?h.sessions:[]).filter(r=>
-                /^\\d{4}-\\d{2}-\\d{2}$/.test(String(r.date||r.sessionDate||'').slice(0,10)) &&
+                /^\d{4}-\d{2}-\d{2}$/.test(String(r.date||r.sessionDate||'').slice(0,10)) &&
                 !/invalid|conflict|failed|unresolved|quarantined/i.test(String(r.validationStatus||'')) &&
                 Number(r.close)>0 && Number.isFinite(Number(r.volume)) && Number(r.volume)>=0
               );
