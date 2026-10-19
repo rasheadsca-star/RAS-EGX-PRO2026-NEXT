@@ -220,10 +220,18 @@ jobs:
               const hp=path.join(cert,'data/history',ticker+'.json');
               if(!ticker||!fs.existsSync(hp))continue;
               const h=read(hp);
-              item.firstSession=h.firstSession||item.firstSession||null;
-              item.lastSession=h.lastSession||item.lastSession||null;
-              item.latestValidSession=h.lastSession||item.latestValidSession||null;
-              item.validSessions=Array.isArray(h.sessions)?h.sessions.length:(item.validSessions||0);
+              // Derive summary freshness from verified session rows, not potentially stale
+              // history-file metadata. Never invent rows or bypass quality checks.
+              const validRows=(Array.isArray(h.sessions)?h.sessions:[]).filter(r=>
+                /^\\d{4}-\\d{2}-\\d{2}$/.test(String(r.date||r.sessionDate||'').slice(0,10)) &&
+                !/invalid|conflict|failed|unresolved|quarantined/i.test(String(r.validationStatus||'')) &&
+                Number(r.close)>0 && Number.isFinite(Number(r.volume)) && Number(r.volume)>=0
+              );
+              const validDates=validRows.map(r=>String(r.date||r.sessionDate).slice(0,10)).sort();
+              item.firstSession=validDates[0]||h.firstSession||item.firstSession||null;
+              item.lastSession=validDates.at(-1)||h.lastSession||item.lastSession||null;
+              item.latestValidSession=validDates.at(-1)||item.latestValidSession||null;
+              item.validSessions=validRows.length;
               item.symbolVerified=h.symbolVerified===true||item.symbolVerified===true;
               item.processingStatus=item.lastSession===expected?'current':item.processingStatus;
             }
