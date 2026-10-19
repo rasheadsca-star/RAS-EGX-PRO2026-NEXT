@@ -236,6 +236,34 @@ jobs:
               item.processingStatus=item.lastSession===expected?'current':item.processingStatus;
             }
           }
+          // Reconcile source-verified current sessions missing from the summary.
+          // Do not infer prices, restore quarantined tickers, or relax any gate.
+          const known=new Set((summary.symbols||[]).map(x=>String(x.ticker||'').toUpperCase()));
+          const added=[];
+          for(const name of fs.readdirSync(path.join(cert,'data/history')).filter(x=>x.endsWith('.json'))){
+            const ticker=name.slice(0,-5).toUpperCase();
+            if(known.has(ticker))continue;
+            const h=read(path.join(cert,'data/history',name));
+            // Explicitly require an independently corroborated and warning-free current row.
+            const row=(h.sessions||[]).find(r=>
+              String(r.date||r.sessionDate||'').slice(0,10)===expected &&
+              Number(r.close)>0 && Number.isFinite(Number(r.volume)) && Number(r.volume)>=0 &&
+              Array.isArray(r.verifiedBy) && r.verifiedBy.length>=2 &&
+              (!Array.isArray(r.warnings)||r.warnings.length===0) &&
+              !/invalid|conflict|failed|unresolved|quarantined/i.test(String(r.validationStatus||''))
+            );
+            if(!row||h.symbolVerified!==true||!Array.isArray(summary.symbols))continue;
+            summary.symbols.push({
+              ticker,companyNameAr:h.companyNameAr||null,companyNameEn:h.companyNameEn||null,
+              symbolVerified:true,availableSessions:h.sessions.length,firstSession:h.firstSession||null,
+              lastSession:expected,latestValidSession:expected,validSessions:h.sessions.length,
+              processingStatus:'current',sourceFile:'data/history/'+name,
+              primarySource:row.primarySource||row.source||null,
+              verificationSources:row.verifiedBy,currentSessionMatched:true,sessionLagged:false
+            });
+            known.add(ticker);added.push(ticker);
+          }
+          console.log('G22_VERIFIED_SUMMARY_RECONCILIATION',JSON.stringify({expected,added}));
           write(summaryPath,summary);
           const current=(summary.symbols||[]).filter(x=>x.lastSession===expected||x.latestValidSession===expected).length;
           const historyDir=path.join(cert,'data/history');
