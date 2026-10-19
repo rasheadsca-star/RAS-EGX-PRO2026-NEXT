@@ -79,6 +79,8 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Validate and build trend breakout divergence signals
         run: |
@@ -94,3 +96,35 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+      - name: Verify live V16.9 public routes
+        env:
+          PUBLIC_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python3 - <<'PY'
+          import os, time, urllib.request
+          base=os.environ['PUBLIC_URL'].rstrip('/')
+          routes={
+            '/preview-v16/app/v169.html':'EGX Pro V16.9',
+            '/preview-v16/app/index.html':'EGX Pro Professional',
+            '/preview-v16/app/launch.js':None,
+            '/preview-v16/app/app.js':None,
+            '/preview-v16/app/styles.css':None
+          }
+          for attempt in range(1, 13):
+              try:
+                  for route,marker in routes.items():
+                      url=base+route+'?release='+os.environ.get('GITHUB_SHA','')[:12]
+                      with urllib.request.urlopen(urllib.request.Request(url,headers={'Cache-Control':'no-cache'}), timeout=25) as response:
+                          if response.status!=200:
+                              raise RuntimeError(f'{route}: HTTP {response.status}')
+                          body=response.read().decode('utf-8')
+                          if marker and marker not in body:
+                              raise RuntimeError(f'{route}: expected app identifier missing')
+                  print('V16.9 LIVE ROUTES VERIFIED',base,flush=True)
+                  break
+              except Exception as exc:
+                  print(f'V16.9 URL attempt {attempt}/12 failed: {exc}',flush=True)
+                  if attempt==12: raise
+                  time.sleep(10)
+          PY
