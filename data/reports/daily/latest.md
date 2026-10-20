@@ -11,14 +11,15 @@
 
 ## حالة الاستراتيجيات
 
-- trend_follow: RESEARCH_ONLY — صفقات مغلقة 559, PF 0.9781, Average R -0.0129
-- breakout: RESEARCH_ONLY — صفقات مغلقة 120, PF 1.3443, Average R 0.179
-- pullback: RESEARCH_ONLY — صفقات مغلقة 102, PF 0.7274, Average R -0.1641
+- trend_follow: RESEARCH_ONLY — صفقات مغلقة 561, PF 0.9719, Average R -0.0166
+- breakout: RESEARCH_ONLY — صفقات مغلقة 121, PF 1.322, Average R 0.1689
+- pullback: RESEARCH_ONLY — صفقات مغلقة 104, PF 0.7034, Average R -0.1812
 
 ## ملاحظات التشغيل
 
+- تحذير: Candidate market data age reached 1385.1 minutes.
 - تحذير: Data coverage is 93.75%, below preferred 98%.
 - تحذير: 49 scheduled legacy workflow(s) may cause independent updates.
 - تحذير: 40 workflows can deploy Pages.
 
-بصمة التقرير: `c74067da8a14e3393746c45a447f650d5b9cbbb8897d1b2ad2c3bca13ca16de3`
+بصمة التقرير: `7d745f989ef2b8bbff558022d344477cec8d9758661e972222968ced4bd384a7`
