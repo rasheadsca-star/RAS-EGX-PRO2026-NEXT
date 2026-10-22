@@ -17,5 +17,21 @@ jobs:
           node-version: '22'
       - name: Run fail-closed unit tests
         run: node --test egx-elite/diagnose-data-gate.test.cjs
-      - name: Explain current data gate without modifying it
-        run: node egx-elite/diagnose-data-gate.cjs
+      - name: Record blockers without masking production gate
+        shell: bash
+        run: |
+          set +e
+          node egx-elite/diagnose-data-gate.cjs > data-gate-diagnostics.json
+          exit_code=$?
+          set -e
+          cat data-gate-diagnostics.json
+          if [ "$exit_code" -ne 0 ] && [ "$exit_code" -ne 2 ]; then
+            exit "$exit_code"
+          fi
+          echo "Diagnostic-only workflow: exit 2 denotes BLOCKED input data."
+          echo "This does not override Astra Production Audit or authorize publication."
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-elite-data-gate-report
+          path: data-gate-diagnostics.json
