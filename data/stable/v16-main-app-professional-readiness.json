@@ -8,7 +8,7 @@
   "stage": "PILOT",
   "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "DATA_SESSION_HARD_GATE",
+  "capReason": "WALK_FORWARD_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
@@ -17,7 +17,7 @@
       "points": 16.5,
       "scorePct": 66,
       "details": {
-        "currentExecutionGrade": false,
+        "currentExecutionGrade": true,
         "sessionAligned": true,
         "currentSourceSessionEvidenceCoveragePct": 95.3,
         "publishedDecisionEvidenceCoveragePct": 97.2,
@@ -32,13 +32,8 @@
       },
       "requirements": [
         {
-          "code": "EXECUTION_GRADE",
-          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
-          "hard": true
-        },
-        {
           "code": "SOURCE_EVIDENCE_100",
-          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.2% إلى 100%",
+          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.3% إلى 100%",
           "hard": false
         },
         {
@@ -52,18 +47,23 @@
       "id": "V169_WALK_FORWARD",
       "labelAr": "ثبات V16.9 خارج العينة",
       "weight": 25,
-      "points": 13.5,
-      "scorePct": 54,
+      "points": 11,
+      "scorePct": 44,
       "details": {
-        "sessions": 84,
+        "sessions": 85,
         "minimumSessions": 30,
-        "averageNetReturnPct": 0.2963,
-        "profitFactor": 1.226,
-        "sessionWinRatePct": 45.24,
-        "maximumDrawdownPct": -36.359,
+        "averageNetReturnPct": 0.2313,
+        "profitFactor": 1.167,
+        "sessionWinRatePct": 48.24,
+        "maximumDrawdownPct": -41.428,
         "acceptanceGatePassed": false
       },
       "requirements": [
+        {
+          "code": "WF_PF",
+          "labelAr": "Profit Factor خارج العينة ≥ 1.20",
+          "hard": true
+        },
         {
           "code": "WF_DRAWDOWN",
           "labelAr": "Maximum Drawdown أفضل من -15%",
@@ -173,17 +173,17 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": false,
+    "dataAndSessionIntegrity": true,
     "walkForwardEvidence": false,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
     {
-      "code": "EXECUTION_GRADE",
-      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "code": "WF_PF",
+      "labelAr": "Profit Factor خارج العينة ≥ 1.20",
       "hard": true,
-      "axis": "DATA_SESSION_INTEGRITY"
+      "axis": "V169_WALK_FORWARD"
     },
     {
       "code": "WF_DRAWDOWN",
@@ -225,7 +225,7 @@
   "softGaps": [
     {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.2% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.3% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -250,10 +250,10 @@
   ],
   "requirementsTo100": [
     {
-      "code": "EXECUTION_GRADE",
-      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "code": "WF_PF",
+      "labelAr": "Profit Factor خارج العينة ≥ 1.20",
       "hard": true,
-      "axis": "DATA_SESSION_INTEGRITY"
+      "axis": "V169_WALK_FORWARD"
     },
     {
       "code": "WF_DRAWDOWN",
@@ -293,7 +293,7 @@
     },
     {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 97.2% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.3% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
