@@ -1,0 +1,21 @@
+name: EGX ELITE Data Gate Diagnostics
+on:
+  pull_request:
+    paths:
+      - 'egx-elite/**'
+      - '.github/workflows/egx-elite-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run fail-closed unit tests
+        run: node --test egx-elite/diagnose-data-gate.test.cjs
+      - name: Explain current data gate without modifying it
+        run: node egx-elite/diagnose-data-gate.cjs
