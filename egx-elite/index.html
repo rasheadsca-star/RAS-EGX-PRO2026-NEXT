@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EGX ELITE — إشارات ورقية</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color-scheme:dark}body{background:#0b1424;color:#e8effc;margin:0}main{max-width:1100px;margin:auto;padding:24px}h1{margin-bottom:4px}header,section{background:#13223a;border:1px solid #334565;border-radius:14px;padding:18px;margin-bottom:16px}small,.dim{color:#b3c2d8}.pill{color:#ffe49b;font-weight:bold}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.cards section{margin:0}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:9px;border-bottom:1px solid #334565;text-align:right;white-space:nowrap}.scroller{overflow:auto}a{color:#9dccff}h2{font-size:19px}
+</style></head><body><main>
+<header><h1>EGX ELITE</h1><p>لوحة للعرض فقط — لا تنفّذ أوامر تداول ولا تشغّل المحرك.</p><p class="pill">PAPER_ONLY / PROMISING_NOT_PROVEN</p><p id="updated" class="dim">جارٍ قراءة اللقطة المنشورة...</p></header>
+<div class="cards"><section>آخر جلسة<h2 id="date">—</h2></section><section>حالة السوق<h2 id="market">—</h2></section><section>عدد الإشارات الورقية<h2 id="count">—</h2></section><section>حالة التأهيل<h2 id="status">—</h2></section></div>
+<section><h2>إشارات V4A</h2><div id="signals" class="scroller"></div></section>
+<section><h2>المحفظة الأساسية EW_TOP60</h2><div id="core" class="scroller"></div></section>
+<section><h2>المحفظة البديلة LOWVOL_60_top10</h2><div id="alternative" class="scroller"></div></section>
+<section><h2>صفقات ورقية مغلقة</h2><div id="ledger" class="scroller"></div></section>
+<section><h2>الأداء الشهري</h2><div id="performance" class="scroller"></div></section>
+<section><h2>مقارنة مباشر وYahoo</h2><div id="reconciliation" class="scroller"></div></section>
+<section><h2>بوابة الاعتماد</h2><div id="qualification" class="scroller"></div></section>
+<p class="dim">البيانات منشورة يدويًا من نتائج فعلية؛ قد تكون متأخرة. عدم وجود لقطة ليس إشارة بعدم وجود فرص. المحتوى بحثي وورقي فقط.</p>
+</main><script>
+'use strict';
+const get=id=>document.getElementById(id);
+function renderRows(id,items){
+ const node=get(id);node.replaceChildren();
+ if(!Array.isArray(items)||!items.length){node.textContent='لا توجد نتائج فعلية منشورة.';return;}
+ const keys=[...new Set(items.filter(x=>x&&typeof x==='object').flatMap(x=>Object.keys(x)))].slice(0,16);
+ const table=document.createElement('table'),head=table.createTHead().insertRow();
+ keys.forEach(k=>{const th=document.createElement('th');th.textContent=k;head.append(th);});
+ const body=table.createTBody();
+ items.slice(0,150).forEach(item=>{const row=body.insertRow();keys.forEach(k=>{const cell=row.insertCell();let v=item?.[k];cell.textContent=v===undefined||v===null?'—':typeof v==='object'?JSON.stringify(v):String(v);});});
+ node.append(table);
+}
+function portfolio(id,part){
+ const weights=part?.weights;renderRows(id,weights&&typeof weights==='object'?Object.entries(weights).map(([symbol,weight])=>({symbol,weight,change:part?.changes?.[symbol]??0})):[]);
+}
+(async()=>{
+ try{
+  const r=await fetch('./snapshot.json?cache='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('snapshot.json غير متاح');
+  const d=await r.json(),v=d.daily||null,q=d.qualification||null;
+  get('updated').textContent='آخر نشر (UTC): '+(d.published_at_utc||'غير محدد')+' | جلسة: '+(v?.date||'لا توجد بيانات');
+  get('date').textContent=v?.date||'لا بيانات';
+  get('market').textContent=v?String(v.market||'—')+' | '+String(v.market_ratio??'—'):'—';
+  get('count').textContent=v?.signals?.length??'—';get('status').textContent=q?.state||'غير مؤهل';
+  renderRows('signals',v?.signals);portfolio('core',d.monthly?.EW_TOP60);portfolio('alternative',d.monthly?.LOWVOL_60_top10);
+  renderRows('ledger',d.ledger);renderRows('performance',d.performance);renderRows('reconciliation',d.reconciliation);
+  renderRows('qualification',q?.criteria?Object.entries(q.criteria).map(([condition,met])=>({condition,met})):[]);
+ }catch(e){get('updated').textContent='تعذر تحميل لقطة النتائج: '+e.message;}
+})();
+</script></body></html>
