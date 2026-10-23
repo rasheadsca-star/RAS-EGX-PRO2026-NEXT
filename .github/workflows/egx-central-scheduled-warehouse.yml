@@ -9,7 +9,7 @@ on:
     # Cron is UTC. Two collection windows reduce stale-source risk.
     - cron: '15 16,20 * * 0-4'
 permissions:
-  contents: read
+  contents: write
   actions: read
 concurrency:
   group: egx-central-scheduled-research
@@ -89,6 +89,34 @@ jobs:
           python egx-central/check_ledger_continuity.py "${prior[@]}" --current artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/ledger_continuity_report.json
       - name: Assert warehouse integrity and no trading promotion
         run: python egx-central/verify_warehouse.py --output artifacts/egx-central-scheduled
+      - name: Back up verified research ledger to dedicated history branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research-backup
+          python egx-central/backup_evidence.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output research-backup/free_source_evidence.sqlite --manifest research-backup/manifest.json
+          git -C research-backup init
+          git -C research-backup config user.name 'github-actions[bot]'
+          git -C research-backup config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C research-backup remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git -C research-backup ls-remote --exit-code --heads origin egx-research-ledger >/dev/null; then
+            git -C research-backup fetch --depth=1 origin egx-research-ledger
+            git -C research-backup checkout -B egx-research-ledger FETCH_HEAD
+            # Preserve old evidence and fail closed if anything disappeared.
+            if [[ -s research-backup/free_source_evidence.sqlite ]]; then
+              python egx-central/check_ledger_continuity.py --previous research-backup/free_source_evidence.sqlite --current artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/git_backup_continuity.json
+            fi
+          else
+            git -C research-backup checkout --orphan egx-research-ledger
+          fi
+          python egx-central/backup_evidence.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output research-backup/free_source_evidence.sqlite --manifest research-backup/manifest.json
+          git -C research-backup add free_source_evidence.sqlite manifest.json
+          if ! git -C research-backup diff --cached --quiet; then
+            git -C research-backup commit -m "research: append-only evidence snapshot ${GITHUB_RUN_ID}"
+            git -C research-backup push origin HEAD:refs/heads/egx-research-ledger
+          fi
       - name: Publish database, immutable provenance and freshness report as workflow artifact
         if: always()
         uses: actions/upload-artifact@v4
