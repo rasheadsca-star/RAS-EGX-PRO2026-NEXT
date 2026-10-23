@@ -31,6 +31,8 @@ jobs:
         run: python egx-central/promotion_gate.py --db artifacts/egx-central-audit/branch_evidence.sqlite --output artifacts/egx-central-audit
       - name: Review latest source evidence and market session
         run: python egx-central/main_source_quality.py --output artifacts/egx-central-audit
+      - name: Cross-check source splices against available corporate action records
+        run: python egx-central/corporate_action_review.py --quality artifacts/egx-central-audit/main_source_quality.json --output artifacts/egx-central-audit
       - name: Upload isolated evidence and report
         if: always()
         uses: actions/upload-artifact@v4
