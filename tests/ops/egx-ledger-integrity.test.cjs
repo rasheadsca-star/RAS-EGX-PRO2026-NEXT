@@ -1,0 +1,10 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {check}=require('../../scripts/ops/egx-ledger-integrity.cjs');
+const calendar={closures:[{date:'2026-10-08',status:'confirmed_exchange_closure',source:'evidence'}]};
+const row={id:'X',evaluationStatus:'TARGET_HIT',entryDate:'2026-10-07',exitDate:'2026-10-11',evaluationWindowDates:['2026-10-07','2026-10-11']};
+const report={records:[row],summary:{resolvedTrades:1,successRatePct:100}};
+test('clean ledger passes',()=>assert.equal(check({records:[row]},report,calendar).pass,true));
+test('holiday exit fails closed',()=>assert.equal(check({records:[{...row,exitDate:'2026-10-08'}]},report,calendar).pass,false));
+test('holiday inside holding window fails closed',()=>assert.equal(check({records:[{...row,evaluationWindowDates:['2026-10-08']}]},report,calendar).pass,false));
+test('wrong reported success rate is detected',()=>assert.equal(check({records:[row]},{...report,summary:{resolvedTrades:1,successRatePct:41}},calendar).pass,false));
