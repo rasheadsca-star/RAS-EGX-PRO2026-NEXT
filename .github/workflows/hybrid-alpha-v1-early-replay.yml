@@ -20,6 +20,18 @@ jobs:
         run: node --test tests/research/hybrid-alpha-v1-early-replay.test.cjs
       - name: Recompute exploratory historical comparisons
         run: node scripts/research/hybrid-alpha-v1-early-replay.cjs
+      - name: Write comparison to GitHub Actions job summary
+        if: success()
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const r=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-early-replay.json','utf8'));
+          const lines=['## Hybrid Alpha V1 — Exploratory Replay','Research only; NOT certified historical parity.','', '| Model | Trades | Win rate | Mean net return | Profit factor |','|---|---:|---:|---:|---:|'];
+          for(const x of r.variants)lines.push('| '+x.variant+' | '+x.signals+' | '+(x.winRatePct??'N/A')+'% | '+(x.meanNetReturnPct??'N/A')+'% | '+(x.profitFactor??'N/A')+' |');
+          lines.push('', 'Coverage: '+r.coverage.tradable+' eligible ticker files out of '+r.coverage.files+'.');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\\n')+'\\n');
+          if(r.variants.every(x=>x.signals===0))throw Error('No trades in any research variant; results not interpretable');
+          NODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:
