@@ -6,13 +6,14 @@ from pathlib import Path
 def prioritize(candidates,db,out):
     obj=json.loads(Path(candidates).read_text(encoding="utf-8"))
     if obj.get("read_only") is not True:raise ValueError("Expected read-only retry plan")
-    con=sqlite3.connect(f"file:{Path(db).resolve()}?mode=ro",uri=True)
     records=collections.defaultdict(set)
-    try:
-        for sym,session,status in con.execute("SELECT symbol,session,status FROM observations"):
-            if status!="QUARANTINED":raise ValueError("Unsafe ledger status")
-            records[str(sym).upper()].add(str(session))
-    finally:con.close()
+    if Path(db).exists():
+        con=sqlite3.connect(f"file:{Path(db).resolve()}?mode=ro",uri=True)
+        try:
+            for sym,session,status in con.execute("SELECT symbol,session,status FROM observations"):
+                if status!="QUARANTINED":raise ValueError("Unsafe ledger status")
+                records[str(sym).upper()].add(str(session))
+        finally:con.close()
     ordered=[]
     for item in obj.get("candidates",[]):
         symbol=str(item.get("symbol","")).upper()
