@@ -23,7 +23,7 @@ def audit(folder):
                           "action":"RECHECK_PUBLIC_SOURCES_NO_AUTOMATIC_PROMOTION"})
     (p/"retry_candidates.json").write_text(json.dumps({"latest_observed_session":latest,
         "source_main_commit":meta.get("main_commit"),"candidate_count":len(retry),
-        "candidates":retry,"read_only":True,"market_holiday_not_verified":True},indent=2)+"\\n")
+        "candidates":retry,"read_only":True,"market_holiday_not_verified":True},indent=2)+"\n")
     n=len(per)
     fresh=sum(1 for dates in per.values() if latest in dates)
     historical=[(sym,len(dates),max(dates)) for sym,dates in per.items()]
