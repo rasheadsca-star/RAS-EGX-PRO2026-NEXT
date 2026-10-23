@@ -1,0 +1,39 @@
+name: EGX Unified Three Strategy Benchmark
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/research/egx-comparable-three-strategy-v1.cjs'
+      - 'tests/research/egx-comparable-three-strategy-v1.test.cjs'
+      - 'scripts/research/egx-strategy-challengers-v1.cjs'
+      - '.github/workflows/egx-unified-three-strategy.yml'
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check shared-replay tests
+        run: node --test tests/research/egx-comparable-three-strategy-v1.test.cjs
+      - name: Compare strategies with identical execution and eligible universe
+        run: node scripts/research/egx-comparable-three-strategy-v1.cjs
+      - name: Write historical comparison
+        if: success()
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const r=JSON.parse(fs.readFileSync('data/research/egx-comparable-three-strategy-v1.json','utf8'));
+          const lines=['## EGX Unified Three Strategy Comparison','Research only; chronological partitions are not an untouched out-of-sample test.','','| Period | Model | Trades | Win % | Mean net % | Profit factor |','|---|---|---:|---:|---:|---:|'];
+          for(const group of r.byPeriod)for(const x of group.variants)lines.push('| '+group.period+' | '+x.variant+' | '+x.trades+' | '+(x.winRatePct??'N/A')+' | '+(x.meanNetReturnPct??'N/A')+' | '+(x.profitFactor??'N/A')+' |');
+          lines.push('','Ticker files eligible: '+r.coverage.eligible+' / '+r.coverage.files+'. Unresolved: '+r.unresolved);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join(String.fromCharCode(10))+String.fromCharCode(10));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-unified-three-strategy-comparison
+          path: data/research/egx-comparable-three-strategy-v1.json
