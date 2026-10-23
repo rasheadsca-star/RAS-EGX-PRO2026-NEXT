@@ -32,6 +32,7 @@ def inspect(source,output):
     symbols[str(stock.get("symbol"))].add(state)
     if currency!="EGP":flags["non_egp_currency"]+=1
     if d is not None and d.weekday() in (4,5):flags["cairo_weekend"]+=1
+    if d is not None and d.weekday() in (4,5) and currency!="EGP":flags["weekend_and_non_egp"]+=1
     if state!="METADATA_CONSISTENT_UNVERIFIED" and len(examples)<30:
      examples.append({"symbol":stock.get("symbol"),"session":bar.get("session"),"state":state,"currency":currency,"timezone":zone})
  report={"schema":"egx-yahoo-identity-time-audit-1","counts":dict(counts),"overlapping_flags":dict(flags),"symbol_flags":{k:sorted(v) for k,v in symbols.items()},"examples":examples,
