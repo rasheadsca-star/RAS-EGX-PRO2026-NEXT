@@ -6,6 +6,7 @@
 </style></head><body><main>
 <header><h1>EGX ELITE</h1><p>لوحة للعرض فقط — لا تنفّذ أوامر تداول ولا تشغّل المحرك.</p><p class="pill">PAPER_ONLY / PROMISING_NOT_PROVEN</p><p id="updated" class="dim">جارٍ قراءة اللقطة المنشورة...</p></header>
 <div class="cards"><section>آخر جلسة<h2 id="date">—</h2></section><section>حالة السوق<h2 id="market">—</h2></section><section>عدد الإشارات الورقية<h2 id="count">—</h2></section><section>حالة التأهيل<h2 id="status">—</h2></section></div>
+<section><h2>بيانات السوق المتاحة — عرض معلوماتي فقط</h2><p id="source-state" class="dim">جارٍ التحقق من مصدر الأسعار المنشور...</p><div id="market-rows" class="scroller"></div></section>
 <section><h2>إشارات V4A</h2><div id="signals" class="scroller"></div></section>
 <section><h2>المحفظة الأساسية EW_TOP60</h2><div id="core" class="scroller"></div></section>
 <section><h2>المحفظة البديلة LOWVOL_60_top10</h2><div id="alternative" class="scroller"></div></section>
@@ -42,5 +43,28 @@ function portfolio(id,part){
   renderRows('ledger',d.ledger);renderRows('performance',d.performance);renderRows('reconciliation',d.reconciliation);
   renderRows('qualification',q?.criteria?Object.entries(q.criteria).map(([condition,met])=>({condition,met})):[]);
  }catch(e){get('updated').textContent='تعذر تحميل لقطة النتائج: '+e.message;}
+})();
+
+// The live repository price-truth file is informational, not V4A signals.
+(async()=>{
+ try {
+  const [p,h]=await Promise.all([
+   fetch('../data/stable/v15-price-truth.json',{cache:'no-store'}),
+   fetch('../data/ops/g22-main-app-handoff.json',{cache:'no-store'})
+  ]);
+  if(!p.ok||!h.ok)throw Error('ملف المصدر غير متاح');
+  const d=await p.json(),handoff=await h.json();
+  const valid=d.expectedSession===handoff.sessionDate;
+  const accepted=Number(d.acceptedRows||0),required=200;
+  get('source-state').textContent='الجلسة: '+String(d.expectedSession||'—')+
+   ' | المصدر: '+String(d.source?.name||'—')+
+   ' | مقبولة: '+accepted+'/'+String(d.source?.inputRows||'—')+
+   ' | مرفوضة: '+String(d.rejectedRows??'—')+
+   ' | تطابق التسليم: '+(valid?'نعم':'لا')+
+   ' | اعتماد Astra: '+(accepted>=required&&valid?'يتطلب فحص الإنتاج':'موقوف — أقل من 200')+
+   ' | هذه أسعار رصد وليست إشارات أو توصيات';
+  const rows=Array.isArray(d.sampleAccepted)?d.sampleAccepted.filter(x=>x&&x.sourceSessionDate===d.expectedSession&&Number.isFinite(Number(x.close))):[];
+  renderRows('market-rows',rows.map(x=>({symbol:x.ticker,close:x.close,session:x.sourceSessionDate,source:d.source?.name,quality:(x.warnings||[]).join('; ')||'no recorded warning'})));
+ } catch(e){get('source-state').textContent='تعذر تحميل البيانات المتاحة: '+e.message;}
 })();
 </script></body></html>
