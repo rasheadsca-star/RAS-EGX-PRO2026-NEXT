@@ -18,7 +18,7 @@ SOURCES.extend((branch, f"data/history/{symbol}.json", "ohlcv") for branch in
  for symbol in ("ABUK", "COMI"))
 MAX_BYTES=8_000_000
 BRANCH_REFS={}
-HISTORY_BRANCHES=("v18-global-strategy-ensemble-20260906","v19-egx-chat-gpt","research/egx-meta-engine-v1-20260829")
+HISTORY_BRANCHES=("main","v18-global-strategy-ensemble-20260906","v19-egx-chat-gpt","research/egx-meta-engine-v1-20260829")
 
 def discover_history_sources():
     """Enumerate actual historical JSON files rather than hardcoding tickers."""
@@ -100,7 +100,7 @@ def run(output,fetch=fetch_git):
         for symbol,day,n,lo,hi in discrepancy_rows:
             writer.writerow((symbol,day,n,lo,hi,round((hi/lo-1)*100,5)))
     db.close()
-    report={"generated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"scope":"remote branches only","production_data_modified":False,"candidate_count_quarantined":count,"cross_branch_close_gap_over_3pct":len(discrepancy_rows),"unique_symbol_dates":unique,"symbols_with_candidates":symbols,"candidates_by_branch":dict(by_branch),"sqlite_integrity":integrity,"files":results}
+    report={"generated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"scope":"remote branches only","production_data_modified":False,"candidate_count_quarantined":count,"cross_branch_close_gap_over_3pct":len(discrepancy_rows),"unique_symbol_dates":unique,"symbols_with_candidates":symbols,"candidates_by_branch":dict(by_branch),"source_commit_shas":dict(BRANCH_REFS),"sqlite_integrity":integrity,"files":results}
     (output/"report.json").write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     if integrity!="ok": raise RuntimeError("SQLITE_INTEGRITY_FAILED")
     return report
