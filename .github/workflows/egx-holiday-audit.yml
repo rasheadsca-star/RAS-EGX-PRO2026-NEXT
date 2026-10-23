@@ -7,6 +7,9 @@ on:
       - 'data/egx-exchange-closures.json'
       - 'scripts/ops/audit-egx-holidays.cjs'
       - 'tests/ops/egx-holiday-audit.test.cjs'
+      - 'tests/ops/egx-session-math.test.cjs'
+      - 'scripts/ops/egx-session-math.cjs'
+      - 'scripts/astra/astra-update-supervisor.cjs'
       - '.github/workflows/egx-holiday-audit.yml'
   schedule:
     - cron: '15 6 * * *'
@@ -21,7 +24,7 @@ jobs:
         with:
           node-version: '22'
       - name: Unit tests
-        run: node --test tests/ops/egx-holiday-audit.test.cjs
+        run: node --test tests/ops/egx-holiday-audit.test.cjs tests/ops/egx-session-math.test.cjs
       - name: Audit historical calendar
         run: |
           node scripts/ops/audit-egx-holidays.cjs > egx-holiday-audit.json
