@@ -53,8 +53,10 @@ jobs:
         run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-audit/branch_evidence.sqlite --fallback artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit
       - name: Triage unmatched sessions and source price conflicts
         run: python egx-central/free_feed_triage.py --db artifacts/egx-central-audit/branch_evidence.sqlite --fallback artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit
+      - name: Drop already recorded unchanged candles before quarantine ingest
+        run: python egx-central/filter_repeat_candidates.py --source artifacts/egx-central-audit/free_source_fallback_report.json --ledger artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/filtered_candidates.json --report artifacts/egx-central-audit/dedupe_report.json
       - name: Preserve quarantined candidate observations in evidence SQLite
-        run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-audit/free_source_fallback_report.json --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/free_source_evidence_report.json
+        run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-audit/filtered_candidates.json --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/free_source_evidence_report.json
       - name: Audit quarantined OHLCV evidence and source conflicts
         run: python egx-central/audit_evidence_quality.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/evidence_quality_report.json
       - name: Compare complete OHLCV across research evidence providers
