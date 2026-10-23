@@ -14,6 +14,7 @@ def inspect(source,output):
    currency=str(meta.get("currency") or "").upper()
    zone=meta.get("exchangeTimezoneName")
    for bar in attempt.get("candidate",[]):
+    d=None
     try:
      d=datetime.date.fromisoformat(bar["session"])
      utc=datetime.date.fromisoformat(bar["utc_session"])
@@ -30,7 +31,7 @@ def inspect(source,output):
     counts[state]+=1
     symbols[str(stock.get("symbol"))].add(state)
     if currency!="EGP":flags["non_egp_currency"]+=1
-    if d.weekday() in (4,5) if "d" in locals() and isinstance(d,datetime.date) else False:flags["cairo_weekend"]+=1
+    if d is not None and d.weekday() in (4,5):flags["cairo_weekend"]+=1
     if state!="METADATA_CONSISTENT_UNVERIFIED" and len(examples)<30:
      examples.append({"symbol":stock.get("symbol"),"session":bar.get("session"),"state":state,"currency":currency,"timezone":zone})
  report={"schema":"egx-yahoo-identity-time-audit-1","counts":dict(counts),"overlapping_flags":dict(flags),"symbol_flags":{k:sorted(v) for k,v in symbols.items()},"examples":examples,
