@@ -12,6 +12,10 @@ SOURCES = [
  ("research/egx-meta-engine-v1-20260829", "data/v20/forward-evaluation.json", "strategy"),
  ("research/egx-meta-engine-v1-20260829", "data/v20/forward-resolution-status.json", "strategy"),
 ]
+# Raw OHLCV files are audited separately from legacy strategy artifacts.
+SOURCES.extend((branch, f"data/history/{symbol}.json", "ohlcv") for branch in
+ ("v18-global-strategy-ensemble-20260906", "v19-egx-chat-gpt", "research/egx-meta-engine-v1-20260829")
+ for symbol in ("ABUK", "COMI"))
 MAX_BYTES=8_000_000
 
 def classify(obj):
