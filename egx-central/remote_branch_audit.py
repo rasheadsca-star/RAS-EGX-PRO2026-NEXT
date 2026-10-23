@@ -87,8 +87,20 @@ def run(output,fetch=fetch_git):
     unique=db.execute("SELECT COUNT(DISTINCT symbol || ':' || session) FROM remote_price_candidates").fetchone()[0]
     symbols=db.execute("SELECT COUNT(DISTINCT symbol) FROM remote_price_candidates").fetchone()[0]
     by_branch=db.execute("SELECT branch,COUNT(*) FROM remote_price_candidates GROUP BY branch").fetchall()
+    discrepancy_rows=db.execute("""
+       SELECT symbol,session,COUNT(*) AS n,MIN(close),MAX(close)
+       FROM remote_price_candidates GROUP BY symbol,session
+       HAVING COUNT(*)>1 AND MAX(close)>MIN(close)*1.03
+       ORDER BY (MAX(close)/MIN(close)) DESC
+    """).fetchall()
+    import csv
+    with (output/"cross_branch_close_discrepancies.csv").open("w",newline="",encoding="utf-8") as stream:
+        writer=csv.writer(stream)
+        writer.writerow(("symbol","session","branch_rows","min_close","max_close","gap_percent"))
+        for symbol,day,n,lo,hi in discrepancy_rows:
+            writer.writerow((symbol,day,n,lo,hi,round((hi/lo-1)*100,5)))
     db.close()
-    report={"generated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"scope":"remote branches only","production_data_modified":False,"candidate_count_quarantined":count,"unique_symbol_dates":unique,"symbols_with_candidates":symbols,"candidates_by_branch":dict(by_branch),"sqlite_integrity":integrity,"files":results}
+    report={"generated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"scope":"remote branches only","production_data_modified":False,"candidate_count_quarantined":count,"cross_branch_close_gap_over_3pct":len(discrepancy_rows),"unique_symbol_dates":unique,"symbols_with_candidates":symbols,"candidates_by_branch":dict(by_branch),"sqlite_integrity":integrity,"files":results}
     (output/"report.json").write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     if integrity!="ok": raise RuntimeError("SQLITE_INTEGRITY_FAILED")
     return report
