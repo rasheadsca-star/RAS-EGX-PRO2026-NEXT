@@ -16,13 +16,15 @@ async function check(endpoint,symbol){
    let root;try{root=JSON.parse(body)}catch{return {...evidence,status:'NON_JSON'}}
    const result=root.chart?.result?.[0],quote=result?.indicators?.quote?.[0],timestamp=result?.timestamp;
    if(result?.meta?.symbol&&String(result.meta.symbol).split('.')[0].toUpperCase()!==symbol)return {...evidence,status:'SYMBOL_MISMATCH'};
+   evidence.yahoo_meta={symbol:result?.meta?.symbol||null,exchangeName:result?.meta?.exchangeName||null,currency:result?.meta?.currency||null,exchangeTimezoneName:result?.meta?.exchangeTimezoneName||null};
    if(!Array.isArray(timestamp)||!Array.isArray(quote?.close))return {...evidence,status:'NO_PRICE_SERIES'};
    const candidate=[];
    for(let i=0;i<timestamp.length;i++){
-    const d=new Date(timestamp[i]*1000).toISOString().slice(0,10);
+    const utcDate=new Date(timestamp[i]*1000).toISOString().slice(0,10);
+    const d=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(timestamp[i]*1000));
     const o=quote.open?.[i],h=quote.high?.[i],l=quote.low?.[i],c=quote.close?.[i],v=quote.volume?.[i];
     if([o,h,l,c,v].every(x=>typeof x==='number'&&Number.isFinite(x)&&x>0)&&h>=Math.max(o,c,l)&&l<=Math.min(o,c,h))
-      candidate.push({session:d,open:o,high:h,low:l,close:c,volume:v,status:'UNVERIFIED_PUBLIC_RESEARCH'});
+      candidate.push({session:d,utc_session:utcDate,raw_timestamp:timestamp[i],open:o,high:h,low:l,close:c,volume:v,status:'UNVERIFIED_PUBLIC_RESEARCH'});
    }
    return {...evidence,status:candidate.length?'CANDIDATE_UNVERIFIED':'NO_VALID_BARS',candidate:candidate.slice(-260)};
   }
