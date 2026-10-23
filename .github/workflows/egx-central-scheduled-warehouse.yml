@@ -10,6 +10,7 @@ on:
     - cron: '15 16,20 * * 0-4'
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: egx-central-scheduled-research
   cancel-in-progress: false
@@ -60,6 +61,21 @@ jobs:
         run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
       - name: Triage unmatched sessions and source price conflicts
         run: python egx-central/free_feed_triage.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
+      - name: Restore last successful scheduled research ledger safely
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          last_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow egx-central-scheduled-warehouse.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+          if [[ -z "$last_id" ]]; then
+            echo "No prior successful warehouse run: initialize ledger on first run"
+          else
+            mkdir -p previous-egx-ledger
+            gh run download "$last_id" --repo "$GITHUB_REPOSITORY" --name egx-central-research-warehouse --dir previous-egx-ledger
+            test -s previous-egx-ledger/free_source_evidence.sqlite
+            python egx-central/restore_evidence.py --source previous-egx-ledger/free_source_evidence.sqlite --dest artifacts/egx-central-scheduled/free_source_evidence.sqlite
+          fi
       - name: Preserve quarantined candidate observations in evidence SQLite
         run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/free_source_evidence_report.json
       - name: Assert warehouse integrity and no trading promotion
