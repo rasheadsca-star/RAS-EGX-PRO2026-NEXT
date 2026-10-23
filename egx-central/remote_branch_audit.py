@@ -17,6 +17,7 @@ SOURCES.extend((branch, f"data/history/{symbol}.json", "ohlcv") for branch in
  ("v18-global-strategy-ensemble-20260906", "v19-egx-chat-gpt", "research/egx-meta-engine-v1-20260829")
  for symbol in ("ABUK", "COMI"))
 MAX_BYTES=8_000_000
+BRANCH_REFS={}
 HISTORY_BRANCHES=("v18-global-strategy-ensemble-20260906","v19-egx-chat-gpt","research/egx-meta-engine-v1-20260829")
 
 def discover_history_sources():
@@ -25,6 +26,7 @@ def discover_history_sources():
     for branch in HISTORY_BRANCHES:
         subprocess.run(["git","fetch","--no-tags","--depth=1","origin",branch],check=True,
                        stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+        BRANCH_REFS[branch]=subprocess.run(["git","rev-parse","FETCH_HEAD"],check=True,capture_output=True,text=True).stdout.strip()
         names=subprocess.run(["git","ls-tree","--name-only","FETCH_HEAD:data/history"],
                              check=True,capture_output=True,text=True,timeout=30).stdout.splitlines()
         result.extend((branch,"data/history/"+name,"ohlcv") for name in names
@@ -47,8 +49,10 @@ def init(db):
     db.execute("CREATE TABLE IF NOT EXISTS remote_price_candidates(branch TEXT,path TEXT,sha256 TEXT,symbol TEXT,session TEXT,high REAL,low REAL,close REAL,volume REAL,status TEXT NOT NULL DEFAULT 'QUARANTINED_UNVERIFIED',PRIMARY KEY(branch,path,sha256,symbol,session))")
 
 def fetch_git(branch,path):
-    subprocess.run(["git","fetch","--no-tags","--depth=1","origin",branch],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
-    return subprocess.run(["git","show",f"FETCH_HEAD:{path}"],check=True,capture_output=True,timeout=60).stdout
+    if branch not in BRANCH_REFS:
+        subprocess.run(["git","fetch","--no-tags","--depth=1","origin",branch],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+        BRANCH_REFS[branch]=subprocess.run(["git","rev-parse","FETCH_HEAD"],check=True,capture_output=True,text=True).stdout.strip()
+    return subprocess.run(["git","show",f"{BRANCH_REFS[branch]}:{path}"],check=True,capture_output=True,timeout=60).stdout
 
 def run(output,fetch=fetch_git):
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
