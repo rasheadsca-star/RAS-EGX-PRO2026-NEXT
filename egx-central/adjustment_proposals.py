@@ -22,15 +22,18 @@ def proposals(dbfile,actionsfile,outdir):
     counters=collections.Counter()
     with (out/"corporate_action_adjustment_proposals.csv").open("w",encoding="utf-8",newline="") as f:
         w=csv.writer(f)
-        w.writerow(["symbol","ex_date","type","value","previous_close","hypothetical_factor","status"])
+        w.writerow(["symbol","ex_date","type","value","previous_close","previous_session","gap_calendar_days","hypothetical_factor","status"])
         for sym,day,kind,value in sorted(unique):
             seq=bars.get(sym,{})
             prev_dates=[d for d in seq if d<day]
-            prev=seq[max(prev_dates)] if prev_dates else None
+            prev_day=max(prev_dates) if prev_dates else None
+            prev=seq[prev_day] if prev_day else None
+            gap=(datetime.date.fromisoformat(day)-datetime.date.fromisoformat(prev_day)).days if prev_day else None
             factor=None
             status="NOT_COMPUTABLE"
             try:
                 if prev is None: status="MISSING_PRE_EX_DATE_CLOSE"
+                elif gap>7: status="STALE_PRE_EVENT_CLOSE"
                 elif kind=="dividend":
                     amount=float(value)
                     if not (math.isfinite(amount) and 0<=amount<prev): status="INVALID_DIVIDEND_TO_PRE_CLOSE"
@@ -43,10 +46,10 @@ def proposals(dbfile,actionsfile,outdir):
                 else:status="UNSUPPORTED_EVENT"
             except (ValueError,ZeroDivisionError):status="INVALID_EVENT_VALUE"
             counters[status]+=1
-            w.writerow([sym,day,kind,value,prev if prev is not None else "",round(factor,12) if factor is not None else "",status])
+            w.writerow([sym,day,kind,value,prev if prev is not None else "",prev_day or "",gap if gap is not None else "",round(factor,12) if factor is not None else "",status])
     report={"schema":"egx-corporate-action-proposal-1","unique_actions":len(unique),"statuses":dict(counters),
       "adjustments_applied":0,"canonical_prices_changed":False,
-      "policy":"Factors are indicative; ex-date, split ratio, pre-event close and source adjustment history require independent verification"}
+      "maximum_pre_event_gap_days":7,"policy":"Factors are indicative; ex-date, split ratio, pre-event close and source adjustment history require independent verification"}
     (out/"corporate_action_adjustment_report.json").write_text(json.dumps(report,indent=2)+"\n")
     return report
 
