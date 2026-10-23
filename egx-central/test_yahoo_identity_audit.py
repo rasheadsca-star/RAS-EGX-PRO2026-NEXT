@@ -11,5 +11,7 @@ class IdentityAuditTests(unittest.TestCase):
    f.write_text(json.dumps({"rows":[{"symbol":"COMI","attempts":[{"source":"yahoo_chart","yahoo_meta":meta,"candidate":[bar]}]}]}))
    result=m.inspect(f,out)
    self.assertEqual(result["certified_sessions"],0)
+   self.assertEqual(result["overlapping_flags"]["non_egp_currency"],1)
+   self.assertIn("COMI",result["symbol_flags"])
    self.assertNotIn("METADATA_CONSISTENT_UNVERIFIED",result["counts"])
 if __name__=="__main__":unittest.main()
