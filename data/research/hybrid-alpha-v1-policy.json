@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "hybrid-alpha-research-v1",
+  "status": "RESEARCH_ONLY",
+  "executionEnabled": false,
+  "frozenAt": "2026-10-24",
+  "timezone": "Africa/Cairo",
+  "sourceRegistry": "docs/astra/STRATEGY_RECONSTRUCTION_MATRIX.json",
+  "candidateFamilies": [
+    {
+      "id": "BREAKOUT",
+      "variant": "strict",
+      "minBars": 55
+    },
+    {
+      "id": "VOLATILITY_CONTRACTION_PATTERN",
+      "minBars": 35
+    },
+    {
+      "id": "SEPA_QVUA_NEAR_FIRST_THEN_FORMING",
+      "minBars": 253
+    },
+    {
+      "id": "V20_NATIVE_MULTI_COMPONENT_COMPOSITE",
+      "minBars": 0
+    },
+    {
+      "id": "PORTFOLIO_BASKET_EQUAL_WEIGHT",
+      "minBars": 0
+    }
+  ],
+  "comparisons": [
+    [
+      "BREAKOUT"
+    ],
+    [
+      "BREAKOUT",
+      "VOLATILITY_CONTRACTION_PATTERN"
+    ],
+    [
+      "BREAKOUT",
+      "V20_NATIVE_MULTI_COMPONENT_COMPOSITE"
+    ],
+    [
+      "BREAKOUT",
+      "VOLATILITY_CONTRACTION_PATTERN",
+      "V20_NATIVE_MULTI_COMPONENT_COMPOSITE"
+    ],
+    [
+      "BREAKOUT",
+      "VOLATILITY_CONTRACTION_PATTERN",
+      "V20_NATIVE_MULTI_COMPONENT_COMPOSITE",
+      "PORTFOLIO_BASKET_EQUAL_WEIGHT"
+    ]
+  ],
+  "rules": {
+    "pointInTime": true,
+    "decisionAfterClose": true,
+    "entryNextEligibleSession": true,
+    "costPct": 0.6,
+    "entrySlippagePct": 0.15,
+    "closedDayExclusion": true,
+    "insufficientHistory": "INELIGIBLE",
+    "unsupportedSignals": "NOT_EVALUABLE",
+    "riskLimit": "NO_LIVE_EXECUTION",
+    "noThresholdRefitOnTest": true,
+    "freezeBeforeOutOfSample": true,
+    "comparisonUniverse": "same_symbols_dates_and_trading_costs"
+  },
+  "notes": "Registry minimum bars are discovery metadata only; cross-family strategy parity not yet certified. Composite and basket require compatible historical inputs."
+}
