@@ -1,6 +1,13 @@
 name: EGX holiday calendar integrity
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'data/session-calendar.json'
+      - 'data/egx-exchange-closures.json'
+      - 'scripts/ops/audit-egx-holidays.cjs'
+      - 'tests/ops/egx-holiday-audit.test.cjs'
+      - '.github/workflows/egx-holiday-audit.yml'
   schedule:
     - cron: '15 6 * * *'
 jobs:
@@ -13,12 +20,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Audit retrospective sessions against evidence-backed closures
-        shell: bash
+      - name: Unit tests
+        run: node --test tests/ops/egx-holiday-audit.test.cjs
+      - name: Audit historical calendar
         run: |
-          node scripts/ops/audit-egx-holidays.cjs > egx-holiday-audit.json || echo "Historical calendar discrepancy found; see artifact."
+          node scripts/ops/audit-egx-holidays.cjs > egx-holiday-audit.json
           cat egx-holiday-audit.json
       - uses: actions/upload-artifact@v4
         with:
           name: egx-holiday-audit
           path: egx-holiday-audit.json
+      - name: Block verified calendar conflicts
+        run: node scripts/ops/audit-egx-holidays.cjs --strict
