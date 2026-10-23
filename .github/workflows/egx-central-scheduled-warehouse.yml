@@ -163,6 +163,7 @@ jobs:
           python egx-central/verify_backup_manifest.py --db research-backup/free_source_evidence.sqlite --manifest research-backup/manifest.json
           python egx-central/ledger_history.py --history research-backup/ledger_history.jsonl --manifest research-backup/manifest.json --run "${GITHUB_RUN_ID}"
           python egx-central/verify_ledger_history.py --history research-backup/ledger_history.jsonl --manifest research-backup/manifest.json
+          cp artifacts/egx-central-scheduled/candle_holiday_audit.json research-backup/candle_holiday_audit.json
           cp artifacts/egx-central-scheduled/egx_holiday_review.json research-backup/egx_holiday_review.json
           cp artifacts/egx-central-scheduled/holiday_source_watch.json research-backup/holiday_source_watch.json
           cp artifacts/egx-central-scheduled/weekend_consistency_report.json research-backup/weekend_consistency_report.json
@@ -174,7 +175,7 @@ jobs:
           cp artifacts/egx-central-scheduled/evidence_quality_report.json research-backup/evidence_quality_report.json
           cp artifacts/egx-central-scheduled/full_candle_compare_report.json research-backup/full_candle_compare_report.json
           cp artifacts/egx-central-scheduled/ledger_continuity_report.json research-backup/ledger_continuity_report.json
-          git -C research-backup add free_source_evidence.sqlite manifest.json ledger_history.jsonl evidence_quality_report.json full_candle_compare_report.json ledger_continuity_report.json coverage_efficiency_report.json session_gain_report.json dedupe_report.json legacy_weekend_report.json cumulative_weekend_report.json weekend_consistency_report.json egx_holiday_review.json holiday_source_watch.json
+          git -C research-backup add free_source_evidence.sqlite manifest.json ledger_history.jsonl evidence_quality_report.json full_candle_compare_report.json ledger_continuity_report.json coverage_efficiency_report.json session_gain_report.json dedupe_report.json legacy_weekend_report.json cumulative_weekend_report.json weekend_consistency_report.json egx_holiday_review.json holiday_source_watch.json candle_holiday_audit.json
           if ! git -C research-backup diff --cached --quiet; then
             git -C research-backup commit -m "research: append-only evidence snapshot ${GITHUB_RUN_ID}"
             git -C research-backup push origin HEAD:refs/heads/egx-research-ledger
