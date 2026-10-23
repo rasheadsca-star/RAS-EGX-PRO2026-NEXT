@@ -1,0 +1,30 @@
+name: EGX ELITE Readiness Report
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'egx-elite/preflight.py'
+      - '.github/workflows/egx-elite-readiness.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Generate true input readiness report
+        run: python3 egx-elite/preflight.py
+      - name: Store report if changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add egx-elite/preflight.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Update EGX ELITE readiness report"
+            git push origin HEAD:main
+          fi
