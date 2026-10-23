@@ -1,0 +1,38 @@
+name: EGX PRO Independent Strategy Challengers
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/research/egx-strategy-challengers-v1.cjs'
+      - 'tests/research/egx-strategy-challengers-v1.test.cjs'
+      - '.github/workflows/egx-strategy-challengers-v1.yml'
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests for independent strategies
+        run: node --test tests/research/egx-strategy-challengers-v1.test.cjs
+      - name: Evaluate daily momentum and trend pullback
+        run: node scripts/research/egx-strategy-challengers-v1.cjs
+      - name: Research summary
+        if: success()
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const r=JSON.parse(fs.readFileSync('data/research/egx-strategy-challengers-v1.json','utf8'));
+          const lines=['## Independent EGX strategy challengers','Research only; exploratory historical results; no strategy certified for trading.','', '| Strategy | Closed trades | Win rate | Mean net return | Profit factor |','|---|---:|---:|---:|---:|'];
+          for(const x of r.variants)lines.push('| '+x.variant+' | '+x.trades+' | '+(x.winRatePct??'N/A')+'% | '+(x.meanNetReturnPct??'N/A')+'% | '+(x.profitFactor??'N/A')+' |');
+          lines.push('','History files: '+r.coverage.files+', eligible tickers: '+r.coverage.eligible+', unresolved signals: '+r.unresolved);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join(String.fromCharCode(10))+String.fromCharCode(10));
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-strategy-challengers-v1
+          path: data/research/egx-strategy-challengers-v1.json
