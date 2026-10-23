@@ -128,6 +128,8 @@ jobs:
         run: python egx-central/cumulative_weekend_audit.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/cumulative_weekend_report.json
       - name: Audit research session calendar
         run: python egx-central/research_calendar_audit.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/research_calendar_report.json
+      - name: Enforce agreement between calendar audits
+        run: python egx-central/weekend_audit_consistency.py --calendar artifacts/egx-central-scheduled/research_calendar_report.json --cumulative artifacts/egx-central-scheduled/cumulative_weekend_report.json --output artifacts/egx-central-scheduled/weekend_consistency_report.json
       - name: Assert warehouse integrity and no trading promotion
         run: python egx-central/verify_warehouse.py --output artifacts/egx-central-scheduled
       - name: Back up verified research ledger to dedicated history branch
