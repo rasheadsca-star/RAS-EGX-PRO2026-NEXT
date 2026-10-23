@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Audited, isolated import of branch archives; never writes production datasets."""
-import argparse, datetime, hashlib, json, sqlite3, subprocess
+import argparse, datetime, hashlib, json, sqlite3, subprocess, math, collections
 from pathlib import Path
 
 SOURCES = [
@@ -17,6 +17,20 @@ SOURCES.extend((branch, f"data/history/{symbol}.json", "ohlcv") for branch in
  ("v18-global-strategy-ensemble-20260906", "v19-egx-chat-gpt", "research/egx-meta-engine-v1-20260829")
  for symbol in ("ABUK", "COMI"))
 MAX_BYTES=8_000_000
+HISTORY_BRANCHES=("v18-global-strategy-ensemble-20260906","v19-egx-chat-gpt","research/egx-meta-engine-v1-20260829")
+
+def discover_history_sources():
+    """Enumerate actual historical JSON files rather than hardcoding tickers."""
+    result=[]
+    for branch in HISTORY_BRANCHES:
+        subprocess.run(["git","fetch","--no-tags","--depth=1","origin",branch],check=True,
+                       stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+        names=subprocess.run(["git","ls-tree","--name-only","FETCH_HEAD:data/history"],
+                             check=True,capture_output=True,text=True,timeout=30).stdout.splitlines()
+        result.extend((branch,"data/history/"+name,"ohlcv") for name in names
+                      if name.endswith(".json") and "/" not in name)
+    return sorted(set(result))
+
 
 def classify(obj):
     if not isinstance(obj,dict): return "NON_OBJECT"
@@ -40,7 +54,9 @@ def run(output,fetch=fetch_git):
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     db=sqlite3.connect(output/"branch_evidence.sqlite")
     init(db);results=[]
-    for branch,path,role in SOURCES:
+    # Test injections retain the static manifest so unit tests never need network.
+    sources=sorted(set(SOURCES+discover_history_sources())) if fetch is fetch_git else SOURCES
+    for branch,path,role in sources:
         record=dict(branch=branch,path=path,role=role,status="FETCH_FAILED",classification="NOT_AVAILABLE",candidates=0)
         try:
             raw=fetch(branch,path)
@@ -53,7 +69,8 @@ def run(output,fetch=fetch_git):
                     symbol=str(row.get("ticker") or obj.get("ticker") or "").strip().upper()
                     day=datetime.date.fromisoformat(str(row["date"])[:10]).isoformat()
                     h,l,c,v=[float(row[k]) for k in ("high","low","close","volume")]
-                    if not symbol or min(h,l,c,v)<=0 or h<max(l,c) or l>c: continue
+                    if (not symbol or not all(math.isfinite(n) for n in (h,l,c,v))
+                        or min(h,l,c,v)<=0 or h<max(l,c) or l>c): continue
                     db.execute("INSERT OR IGNORE INTO remote_price_candidates(branch,path,sha256,symbol,session,high,low,close,volume) VALUES(?,?,?,?,?,?,?,?,?)",(branch,path,digest,symbol,day,h,l,c,v))
                     record["candidates"]+=1
         except Exception as e:
@@ -63,8 +80,11 @@ def run(output,fetch=fetch_git):
     db.commit()
     integrity=db.execute("PRAGMA integrity_check").fetchone()[0]
     count=db.execute("SELECT COUNT(*) FROM remote_price_candidates").fetchone()[0]
+    unique=db.execute("SELECT COUNT(DISTINCT symbol || ':' || session) FROM remote_price_candidates").fetchone()[0]
+    symbols=db.execute("SELECT COUNT(DISTINCT symbol) FROM remote_price_candidates").fetchone()[0]
+    by_branch=db.execute("SELECT branch,COUNT(*) FROM remote_price_candidates GROUP BY branch").fetchall()
     db.close()
-    report={"generated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"scope":"remote branches only","production_data_modified":False,"candidate_count_quarantined":count,"sqlite_integrity":integrity,"files":results}
+    report={"generated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"scope":"remote branches only","production_data_modified":False,"candidate_count_quarantined":count,"unique_symbol_dates":unique,"symbols_with_candidates":symbols,"candidates_by_branch":dict(by_branch),"sqlite_integrity":integrity,"files":results}
     (output/"report.json").write_text(json.dumps(report,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     if integrity!="ok": raise RuntimeError("SQLITE_INTEGRITY_FAILED")
     return report
