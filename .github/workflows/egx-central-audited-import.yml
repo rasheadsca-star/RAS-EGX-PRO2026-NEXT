@@ -51,6 +51,8 @@ jobs:
         run: node egx-central/free_source_fallback.js artifacts/egx-central-audit/retry_candidates.json artifacts/egx-central-audit/free_source_fallback_report.json
       - name: Diagnose raw timestamp day alignment
         run: python egx-central/session_timestamp_diagnostics.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/timestamp_diagnostics_report.json
+      - name: Inventory source provenance
+        run: python egx-central/provenance_inventory.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/provenance_inventory_report.json
       - name: Audit Yahoo market metadata and Cairo date conversion
         run: python egx-central/yahoo_identity_audit.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/yahoo_identity_report.json
       - name: Detail suspicious weekend sessions by ticker
