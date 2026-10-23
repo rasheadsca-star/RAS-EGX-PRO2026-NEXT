@@ -1,0 +1,3 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');const {audit}=require('../../scripts/research/hybrid-alpha-v1-compression-filter.cjs');
+test('compression only subsets the frozen ATR+extension pair',()=>{const f={closePosition:0.8,extensionSma20Pct:3,atr14Pct:4,preBreakoutRange5Pct:4};const r=audit({trades:[{variant:'breakout',netReturnPct:2,signalFeatures:f},{variant:'breakout',netReturnPct:-5,signalFeatures:{...f,preBreakoutRange5Pct:9}},{variant:'breakout',netReturnPct:-5,signalFeatures:{...f,atr14Pct:9}}]});assert.equal(r.pair.n,2);assert.equal(r.triple.n,1);assert.equal(r.pairRejectedByThird.n,1);assert.equal(r.pass,true)});
