@@ -71,6 +71,8 @@ jobs:
         run: python egx-central/full_candle_compare.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/full_candle_compare_report.json
       - name: Measure genuine historical coverage versus repeated evidence
         run: python egx-central/coverage_efficiency.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/coverage_efficiency_report.json
+      - name: Separate archived anomalous dates from newly fetched research sessions
+        run: python egx-central/legacy_weekend_reconcile.py --feed artifacts/egx-central-audit/free_source_fallback_report.json --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/legacy_weekend_report.json
       - name: Audit research session calendar
         run: python egx-central/research_calendar_audit.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/research_calendar_report.json
       - name: Assert warehouse integrity and no trading promotion
