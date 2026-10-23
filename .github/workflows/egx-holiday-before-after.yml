@@ -7,6 +7,8 @@ on:
       - 'scripts/ops/egx-holiday-before-after.cjs'
       - 'scripts/ops/egx-session-math.cjs'
       - 'data/egx-exchange-closures.json'
+      - 'scripts/ops/egx-ledger-integrity.cjs'
+      - 'tests/ops/egx-ledger-integrity.test.cjs'
 jobs:
   compare:
     runs-on: ubuntu-latest
@@ -19,8 +21,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify guardrail unit tests
+        run: node --test tests/ops/egx-ledger-integrity.test.cjs
       - name: Re-evaluate archived recommendations and produce before-after audit
         run: node scripts/ops/egx-holiday-before-after.cjs
+      - name: Validate corrected ledger and reported metrics
+        run: node scripts/ops/egx-ledger-integrity.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
