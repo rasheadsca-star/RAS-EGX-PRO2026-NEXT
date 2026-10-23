@@ -120,7 +120,8 @@ jobs:
           fi
           python egx-central/backup_evidence.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output research-backup/free_source_evidence.sqlite --manifest research-backup/manifest.json
           python egx-central/verify_backup_manifest.py --db research-backup/free_source_evidence.sqlite --manifest research-backup/manifest.json
-          git -C research-backup add free_source_evidence.sqlite manifest.json
+          python egx-central/ledger_history.py --history research-backup/ledger_history.jsonl --manifest research-backup/manifest.json --run "${GITHUB_RUN_ID}"
+          git -C research-backup add free_source_evidence.sqlite manifest.json ledger_history.jsonl
           if ! git -C research-backup diff --cached --quiet; then
             git -C research-backup commit -m "research: append-only evidence snapshot ${GITHUB_RUN_ID}"
             git -C research-backup push origin HEAD:refs/heads/egx-research-ledger
