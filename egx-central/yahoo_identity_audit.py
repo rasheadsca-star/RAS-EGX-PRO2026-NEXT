@@ -4,7 +4,7 @@ import argparse,collections,datetime,json
 from pathlib import Path
 def inspect(source,output):
  data=json.loads(Path(source).read_text())
- counts=collections.Counter();examples=[]
+ counts=collections.Counter();examples=[];flags=collections.Counter();symbols=collections.defaultdict(set)
  for stock in data.get("rows",[]):
   expected=str(stock.get("symbol","")).upper()+".CA"
   for attempt in stock.get("attempts",[]):
@@ -28,9 +28,12 @@ def inspect(source,output):
      elif d.weekday() in (4,5):state="CAIRO_WEEKEND_REVIEW"
      else:state="METADATA_CONSISTENT_UNVERIFIED"
     counts[state]+=1
+    symbols[str(stock.get("symbol"))].add(state)
+    if currency!="EGP":flags["non_egp_currency"]+=1
+    if d.weekday() in (4,5) if "d" in locals() and isinstance(d,datetime.date) else False:flags["cairo_weekend"]+=1
     if state!="METADATA_CONSISTENT_UNVERIFIED" and len(examples)<30:
      examples.append({"symbol":stock.get("symbol"),"session":bar.get("session"),"state":state,"currency":currency,"timezone":zone})
- report={"schema":"egx-yahoo-identity-time-audit-1","counts":dict(counts),"examples":examples,
+ report={"schema":"egx-yahoo-identity-time-audit-1","counts":dict(counts),"overlapping_flags":dict(flags),"symbol_flags":{k:sorted(v) for k,v in symbols.items()},"examples":examples,
   "certified_sessions":0,"v4a_eligible":False,"production_modified":False,
   "warning":"Yahoo metadata and timestamp consistency do not prove an official EGX session or trading entitlement."}
  Path(output).write_text(json.dumps(report,indent=2)+"\n")
