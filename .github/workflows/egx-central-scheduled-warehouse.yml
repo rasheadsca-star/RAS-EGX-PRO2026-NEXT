@@ -52,6 +52,8 @@ jobs:
         run: python egx-central/research_price_eligibility.py --output artifacts/egx-central-scheduled
       - name: Report EGX research coverage and last observed session
         run: python egx-central/market_freshness.py --output artifacts/egx-central-scheduled
+      - name: Recheck stale EGX public quote pages (read-only)
+        run: node egx-central/targeted_retry.js artifacts/egx-central-scheduled/retry_candidates.json artifacts/egx-central-scheduled/targeted_retry_report.json
       - name: Assert warehouse integrity and no trading promotion
         run: python egx-central/verify_warehouse.py --output artifacts/egx-central-scheduled
       - name: Publish database, immutable provenance and freshness report as workflow artifact
