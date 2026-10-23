@@ -40,12 +40,15 @@ async function main(){
    finally{clearTimeout(timeout)}
   }
   const found=tries.some(t=>t.http_status===200&&t.quote_marker_present);
-  results.push({symbol,previous_session:item.last_session,quote,parse_failure_reason:!found?'NO_QUOTE_MARKER':!quote?'QUOTE_PATTERN_NOT_MATCHED':null,status:found?'PUBLIC_QUOTE_PAGE_REACHABLE_NOT_SESSION_VERIFIED':'RETRY_NO_VERIFIED_QUOTE',tries});
+  const reasons=tries.map(t=>t.error?'NETWORK_ERROR':t.http_status!==200?'HTTP_ERROR':!t.quote_marker_present?'NO_QUOTE_MARKER':!t.parsed_quote?'QUOTE_PATTERN_NOT_MATCHED':t.parsed_quote.ohlcv_structurally_valid?'UNDATED_OHLCV':'INCOMPLETE_OHLCV');
+  const diagnostic=quote?(quote.ohlcv_structurally_valid?'UNDATED_OHLCV':'INCOMPLETE_OHLCV'):(reasons.includes('QUOTE_PATTERN_NOT_MATCHED')?'QUOTE_PATTERN_NOT_MATCHED':reasons.includes('NO_QUOTE_MARKER')?'NO_QUOTE_MARKER':reasons[reasons.length-1]||'UNKNOWN');
+  results.push({symbol,previous_session:item.last_session,quote,diagnostic,parse_failure_reason:quote?null:diagnostic,status:found?'PUBLIC_QUOTE_PAGE_REACHABLE_NOT_SESSION_VERIFIED':'RETRY_NO_VERIFIED_QUOTE',tries});
  }
- const report={schema:'egx-targeted-retry-1',generated_at:new Date().toISOString(),source_main_commit:input.source_main_commit,
+ const diagnostics=Object.fromEntries([...new Set(results.map(r=>r.diagnostic||'INVALID_SYMBOL'))].sort().map(k=>[k,results.filter(r=>(r.diagnostic||'INVALID_SYMBOL')===k).length]));
+ const report={schema:'egx-targeted-retry-2',generated_at:new Date().toISOString(),source_main_commit:input.source_main_commit,
    requested:candidates.length,reachable:results.filter(r=>r.status==='PUBLIC_QUOTE_PAGE_REACHABLE_NOT_SESSION_VERIFIED').length,
-   parsed_close_count:results.filter(r=>r.quote&&r.quote.close>0).length,verified_ohlcv:0,production_written:false,automatic_promotion:false,results};
+   diagnostic_counts:diagnostics,parsed_close_count:results.filter(r=>r.quote&&r.quote.close>0).length,verified_ohlcv:0,production_written:false,automatic_promotion:false,results};
  fs.mkdirSync(path.dirname(outFile),{recursive:true});fs.writeFileSync(outFile,JSON.stringify(report,null,2)+'\n');
- console.log(JSON.stringify({requested:report.requested,reachable:report.reachable,parsed_close_count:report.parsed_close_count,verified_ohlcv:0,production_written:false}));
+ console.log(JSON.stringify({requested:report.requested,reachable:report.reachable,parsed_close_count:report.parsed_close_count,diagnostic_counts:diagnostics,verified_ohlcv:0,production_written:false}));
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
