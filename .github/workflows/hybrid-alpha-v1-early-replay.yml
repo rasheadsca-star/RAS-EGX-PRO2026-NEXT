@@ -13,6 +13,8 @@ on:
       - 'tests/research/hybrid-alpha-v1-quality-cohort.test.cjs'
       - 'scripts/research/hybrid-alpha-v1-chronological.cjs'
       - 'tests/research/hybrid-alpha-v1-chronological.test.cjs'
+      - 'scripts/research/hybrid-alpha-v1-filter-lab.cjs'
+      - 'tests/research/hybrid-alpha-v1-filter-lab.test.cjs'
 jobs:
   replay:
     runs-on: ubuntu-latest
@@ -31,6 +33,8 @@ jobs:
         run: node --test tests/research/hybrid-alpha-v1-quality-cohort.test.cjs
       - name: Validate chronological robustness analysis
         run: node --test tests/research/hybrid-alpha-v1-chronological.test.cjs
+      - name: Validate three-factor filter lab
+        run: node --test tests/research/hybrid-alpha-v1-filter-lab.test.cjs
       - name: Recompute exploratory historical comparisons
         run: node scripts/research/hybrid-alpha-v1-early-replay.cjs
       - name: Compare breakout trades accepted and rejected by VCP
@@ -39,6 +43,8 @@ jobs:
         run: node scripts/research/hybrid-alpha-v1-quality-cohort.cjs
       - name: Evaluate frozen filter across earlier and later periods
         run: node scripts/research/hybrid-alpha-v1-chronological.cjs
+      - name: Compare three independent filter cohorts and combination
+        run: node scripts/research/hybrid-alpha-v1-filter-lab.cjs
       - name: Write comparison to GitHub Actions job summary
         if: success()
         run: |
@@ -48,6 +54,7 @@ jobs:
           const c=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-cohort-audit.json','utf8'));
           const q=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-quality-cohort.json','utf8'));
           const time=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-chronological.json','utf8'));
+          const lab=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-filter-lab.json','utf8'));
           const lines=['## Hybrid Alpha V1 — Exploratory Replay','Research only; NOT certified historical parity.','', '| Model | Trades | Win rate | Mean net return | Profit factor |','|---|---:|---:|---:|---:|'];
           for(const x of r.variants)lines.push('| '+x.variant+' | '+x.signals+' | '+(x.winRatePct??'N/A')+'% | '+(x.meanNetReturnPct??'N/A')+'% | '+(x.profitFactor??'N/A')+' |');
           lines.push('', 'Coverage: '+r.coverage.tradable+' eligible ticker files out of '+r.coverage.files+'.');
@@ -57,6 +64,8 @@ jobs:
           for(const [name,v] of [['Accepted',q.accepted],['Rejected',q.rejected],['Unavailable',q.unavailable]])lines.push('| '+name+' | '+v.trades+' | '+(v.winRatePct??'N/A')+'% | '+(v.meanNetReturnPct??'N/A')+'% |');
           lines.push('', '### Chronological robustness (not untouched OOS)','| Period | Baseline trades | Filtered trades | Baseline mean | Filtered mean |','|---|---:|---:|---:|---:|');
           for(const w of time.results)lines.push('| '+w.window+' | '+w.baseline.trades+' | '+w.accepted.trades+' | '+(w.baseline.meanNetReturnPct??'N/A')+'% | '+(w.accepted.meanNetReturnPct??'N/A')+'% |');
+          lines.push('', '### Three-factor filter laboratory','| Filter | Accepted | Win rate | Mean net | Rejected mean net |','|---|---:|---:|---:|---:|');
+          for(const [name,x] of Object.entries(lab.filters))lines.push('| '+name+' | '+x.accepted.n+' | '+x.accepted.winRate+'% | '+x.accepted.meanNet+'% | '+x.rejected.meanNet+'% |');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join(String.fromCharCode(10))+String.fromCharCode(10));
           if(r.variants.every(x=>x.signals===0))throw Error('No trades in any research variant; results not interpretable');
           NODE
@@ -69,3 +78,4 @@ jobs:
             data/research/hybrid-alpha-v1-cohort-audit.json
             data/research/hybrid-alpha-v1-quality-cohort.json
             data/research/hybrid-alpha-v1-chronological.json
+            data/research/hybrid-alpha-v1-filter-lab.json
