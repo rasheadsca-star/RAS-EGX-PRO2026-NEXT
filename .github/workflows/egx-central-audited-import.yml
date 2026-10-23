@@ -93,6 +93,10 @@ jobs:
         run: python egx-central/chronological_holdout_diagnostic.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/chronological_holdout_report.json
       - name: Enforce agreement between calendar audits
         run: python egx-central/weekend_audit_consistency.py --calendar artifacts/egx-central-audit/research_calendar_report.json --cumulative artifacts/egx-central-audit/cumulative_weekend_report.json --output artifacts/egx-central-audit/weekend_consistency_report.json
+      - name: Review current EGX holiday calendar with cited source classifications
+        run: python egx-central/egx_holiday_review.py --start "$(TZ=Africa/Cairo date +%Y)-01-01" --end "$(TZ=Africa/Cairo date +%Y)-12-31" --output artifacts/egx-central-audit/egx_holiday_review.json
+      - name: Fetch holiday announcement sources for freshness evidence
+        run: python egx-central/holiday_source_watch.py --output artifacts/egx-central-audit/holiday_source_watch.json
       - name: Assert warehouse integrity and no trading promotion
         run: python egx-central/verify_warehouse.py --output artifacts/egx-central-audit
       - name: Upload isolated evidence and report
