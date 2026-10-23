@@ -51,6 +51,8 @@ jobs:
         run: node egx-central/free_source_fallback.js artifacts/egx-central-audit/retry_candidates.json artifacts/egx-central-audit/free_source_fallback_report.json
       - name: Audit Yahoo market metadata and Cairo date conversion
         run: python egx-central/yahoo_identity_audit.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/yahoo_identity_report.json
+      - name: Detail suspicious weekend sessions by ticker
+        run: python egx-central/date_concentration.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/date_concentration_report.json
       - name: Compare free-source candles to main archive (quarantine only)
         run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-audit/branch_evidence.sqlite --fallback artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit
       - name: Triage unmatched sessions and source price conflicts
