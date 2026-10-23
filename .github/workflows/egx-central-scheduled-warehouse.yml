@@ -61,20 +61,27 @@ jobs:
         run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
       - name: Triage unmatched sessions and source price conflicts
         run: python egx-central/free_feed_triage.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
-      - name: Restore last successful scheduled research ledger safely
+      - name: Restore persistent research ledger first (fall back to last good artifact)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          last_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow egx-central-scheduled-warehouse.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
-          if [[ -z "$last_id" ]]; then
-            echo "No prior successful warehouse run: initialize ledger on first run"
-          else
-            mkdir -p previous-egx-ledger
-            gh run download "$last_id" --repo "$GITHUB_REPOSITORY" --name egx-central-research-warehouse --dir previous-egx-ledger
-            test -s previous-egx-ledger/free_source_evidence.sqlite
+          mkdir -p previous-egx-ledger
+          if gh api "repos/$GITHUB_REPOSITORY/branches/egx-research-ledger" >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch egx-research-ledger "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" previous-research-checkout
+            cp previous-research-checkout/free_source_evidence.sqlite previous-egx-ledger/free_source_evidence.sqlite
             python egx-central/restore_evidence.py --source previous-egx-ledger/free_source_evidence.sqlite --dest artifacts/egx-central-scheduled/free_source_evidence.sqlite
+            echo "Research ledger restored from permanent branch"
+          else
+            last_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow egx-central-scheduled-warehouse.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+            if [[ -n "$last_id" ]]; then
+              gh run download "$last_id" --repo "$GITHUB_REPOSITORY" --name egx-central-research-warehouse --dir previous-egx-ledger
+              test -s previous-egx-ledger/free_source_evidence.sqlite
+              python egx-central/restore_evidence.py --source previous-egx-ledger/free_source_evidence.sqlite --dest artifacts/egx-central-scheduled/free_source_evidence.sqlite
+            else
+              echo "First baseline: no prior permanent or successful artifact available"
+            fi
           fi
       - name: Preserve quarantined candidate observations in evidence SQLite
         run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/free_source_evidence_report.json
