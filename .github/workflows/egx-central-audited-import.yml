@@ -49,6 +49,8 @@ jobs:
         run: node egx-central/targeted_retry.js artifacts/egx-central-audit/retry_candidates.json artifacts/egx-central-audit/targeted_retry_report.json
       - name: Probe free alternative public data feeds (quarantine only)
         run: node egx-central/free_source_fallback.js artifacts/egx-central-audit/retry_candidates.json artifacts/egx-central-audit/free_source_fallback_report.json
+      - name: Compare free-source candles to main archive (quarantine only)
+        run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-audit/branch_evidence.sqlite --fallback artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit
       - name: Assert warehouse integrity and no trading promotion
         run: python egx-central/verify_warehouse.py --output artifacts/egx-central-audit
       - name: Upload isolated evidence and report
