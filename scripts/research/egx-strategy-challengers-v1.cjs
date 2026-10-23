@@ -63,4 +63,4 @@ function main(){
  const output={schemaVersion:'egx-strategy-challengers-v1',generatedAt:new Date().toISOString(),researchOnly:true,policy,coverage:audit,variants,unresolved:r.unresolved.length,trades:r.trades,limitations:['Exploratory, not out-of-sample','Relative rank computed against available historical rows, not certified contemporaneous listing universe; survivorship bias possible','No portfolio capital/market impact simulation','Legacy breakout baseline differs in eligibility and censoring treatment; comparisons are indicative only','Unverified source parity and omitted corporate-action checks']};
  const dest=path.join(root,'data/research/egx-strategy-challengers-v1.json');fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,JSON.stringify(output,null,2)+'\n');console.log(JSON.stringify({coverage:audit,variants,unresolved:output.unresolved},null,2));
 }
-if(require.main===module)main();module.exports={features,backtest,summarize,policy};
+if(require.main===module)main();module.exports={features,backtest,summarize,policy,loadUniverse};
