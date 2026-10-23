@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
+if(process.env.EGX_ENABLE_LIVE_TRADING==='true')throw new Error('Research replay must not enable live trading');
 const read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
 const {confirmedClosures,isTradingSession}=require('../ops/egx-session-math.cjs');
 const round=(v,n=3)=>Number(v.toFixed(n));
