@@ -3,8 +3,10 @@
 const fs=require('fs');
 const path=require('path');
 const crypto=require('crypto');
+const {confirmedClosures,isTradingSession}=require('../../ops/egx-session-math.cjs');
 
 const ROOT=path.resolve(__dirname,'../../..');
+const EGX_CLOSURES=confirmedClosures(ROOT);
 const P=(...x)=>path.join(ROOT,...x);
 const readJson=(rel,fallback=null)=>{try{return JSON.parse(fs.readFileSync(P(rel),'utf8'))}catch(e){if(fallback!==null)return fallback;throw e}};
 const writeJson=(rel,value)=>{fs.mkdirSync(path.dirname(P(rel)),{recursive:true});fs.writeFileSync(P(rel),JSON.stringify(value,null,2)+'\n')};
@@ -29,7 +31,7 @@ function stableRecommendationId(snapshot,opportunity){
 
 function nextHistorySession(ticker,afterDate){
   const doc=readJson('data/history/'+ticker+'.json',{sessions:[]});
-  return (doc.sessions||[]).map(x=>dateOnly(x.date||x.sessionDate)).filter(Boolean).sort().find(d=>d>afterDate)||null;
+  return (doc.sessions||[]).map(x=>dateOnly(x.date||x.sessionDate)).filter(d=>d&&isTradingSession(d,EGX_CLOSURES)).sort().find(d=>d>afterDate)||null;
 }
 
 function sourceSnapshotRefs(appData,handoff){
@@ -154,7 +156,7 @@ function corporateActionSignal(row){
 }
 
 function evaluateRows(rec,rows,{expirySessions=20}={}){
-  const future=(rows||[]).filter(r=>r.date>rec.sessionDate).sort((a,b)=>a.date.localeCompare(b.date));
+  const future=(rows||[]).filter(r=>r.date>rec.sessionDate&&isTradingSession(r.date,EGX_CLOSURES)).sort((a,b)=>a.date.localeCompare(b.date));
   const seen=new Set();
   for(const r of future){
     if(![r.open,r.high,r.low,r.close].every(v=>Number.isFinite(v)&&v>0)||r.high<Math.max(r.open,r.close,r.low)||r.low>Math.min(r.open,r.close,r.high)||seen.has(r.date)){
