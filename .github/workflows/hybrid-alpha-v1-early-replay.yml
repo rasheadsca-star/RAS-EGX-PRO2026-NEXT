@@ -17,6 +17,8 @@ on:
       - 'tests/research/hybrid-alpha-v1-filter-lab.test.cjs'
       - 'scripts/research/hybrid-alpha-v1-pair-temporal.cjs'
       - 'tests/research/hybrid-alpha-v1-pair-temporal.test.cjs'
+      - 'scripts/research/hybrid-alpha-v1-compression-filter.cjs'
+      - 'tests/research/hybrid-alpha-v1-compression-filter.test.cjs'
 jobs:
   replay:
     runs-on: ubuntu-latest
@@ -39,6 +41,8 @@ jobs:
         run: node --test tests/research/hybrid-alpha-v1-filter-lab.test.cjs
       - name: Validate paired-filter historical thirds
         run: node --test tests/research/hybrid-alpha-v1-pair-temporal.test.cjs
+      - name: Validate third compression filter
+        run: node --test tests/research/hybrid-alpha-v1-compression-filter.test.cjs
       - name: Recompute exploratory historical comparisons
         run: node scripts/research/hybrid-alpha-v1-early-replay.cjs
       - name: Compare breakout trades accepted and rejected by VCP
@@ -51,6 +55,8 @@ jobs:
         run: node scripts/research/hybrid-alpha-v1-filter-lab.cjs
       - name: Test extension ATR historical robustness
         run: node scripts/research/hybrid-alpha-v1-pair-temporal.cjs
+      - name: Test compression as a third filter
+        run: node scripts/research/hybrid-alpha-v1-compression-filter.cjs
       - name: Write comparison to GitHub Actions job summary
         if: success()
         run: |
@@ -62,6 +68,7 @@ jobs:
           const time=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-chronological.json','utf8'));
           const lab=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-filter-lab.json','utf8'));
           const pair=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-pair-temporal.json','utf8'));
+          const compression=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-compression-filter.json','utf8'));
           const lines=['## Hybrid Alpha V1 — Exploratory Replay','Research only; NOT certified historical parity.','', '| Model | Trades | Win rate | Mean net return | Profit factor |','|---|---:|---:|---:|---:|'];
           for(const x of r.variants)lines.push('| '+x.variant+' | '+x.signals+' | '+(x.winRatePct??'N/A')+'% | '+(x.meanNetReturnPct??'N/A')+'% | '+(x.profitFactor??'N/A')+' |');
           lines.push('', 'Coverage: '+r.coverage.tradable+' eligible ticker files out of '+r.coverage.files+'.');
@@ -75,6 +82,8 @@ jobs:
           for(const [name,x] of Object.entries(lab.filters))lines.push('| '+name+' | '+x.accepted.n+' | '+x.accepted.winRate+'% | '+x.accepted.meanNet+'% | '+x.rejected.meanNet+'% |');
           lines.push('', '### Extension + ATR robustness (historical thirds; not untouched OOS)','| Period | Breakout trades | Baseline mean | Extension mean | Pair trades | Pair mean |','|---|---:|---:|---:|---:|---:|');
           for(const w of pair.results)lines.push('| '+w.segment+' | '+w.breakout.n+' | '+w.breakout.meanNet+'% | '+w.extension.meanNet+'% | '+w.extensionAtr.n+' | '+w.extensionAtr.meanNet+'% |');
+          lines.push('', '### Third filter: pre-breakout compression','| Group | Trades | Win rate | Mean net | Profit factor |','|---|---:|---:|---:|---:|');
+          for(const [name,v] of [['Extension+ATR',compression.pair],['Plus compression',compression.triple],['Rejected by compression',compression.pairRejectedByThird]])lines.push('| '+name+' | '+v.n+' | '+(v.winRate??'N/A')+'% | '+(v.meanNet??'N/A')+'% | '+(v.profitFactor??'N/A')+' |');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join(String.fromCharCode(10))+String.fromCharCode(10));
           if(r.variants.every(x=>x.signals===0))throw Error('No trades in any research variant; results not interpretable');
           NODE
@@ -89,3 +98,4 @@ jobs:
             data/research/hybrid-alpha-v1-chronological.json
             data/research/hybrid-alpha-v1-filter-lab.json
             data/research/hybrid-alpha-v1-pair-temporal.json
+            data/research/hybrid-alpha-v1-compression-filter.json
