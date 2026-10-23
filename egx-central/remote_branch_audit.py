@@ -22,8 +22,8 @@ def classify(obj):
     if not isinstance(obj,dict): return "NON_OBJECT"
     sessions=obj.get("sessions")
     if isinstance(sessions,list):
-        if sessions and all(isinstance(r,dict) and all(k in r for k in ("ticker","date","high","low","close","volume")) for r in sessions):
-            return "CANDIDATE_OHLCV_REQUIRES_AUDIT"
+        if sessions and all(isinstance(r,dict) and all(k in r for k in ("date","high","low","close","volume")) for r in sessions):
+            return "CANDIDATE_OHLCV_REQUIRES_AUDIT" if obj.get("ticker") or all(r.get("ticker") for r in sessions) else "SESSIONS_MISSING_SYMBOL"
         return "SESSIONS_NOT_CANDLE_SERIES"
     if isinstance(obj.get("records"),list): return "RECORDS_REQUIRE_SCHEMA_INSPECTION"
     return "NON_PRICE_EVIDENCE"
@@ -50,7 +50,7 @@ def run(output,fetch=fetch_git):
             record.update(status="FETCHED",classification=kind,bytes=len(raw),sha256=digest)
             if kind=="CANDIDATE_OHLCV_REQUIRES_AUDIT":
                 for row in obj["sessions"]:
-                    symbol=str(row["ticker"]).strip().upper()
+                    symbol=str(row.get("ticker") or obj.get("ticker") or "").strip().upper()
                     day=datetime.date.fromisoformat(str(row["date"])[:10]).isoformat()
                     h,l,c,v=[float(row[k]) for k in ("high","low","close","volume")]
                     if not symbol or min(h,l,c,v)<=0 or h<max(l,c) or l>c: continue
