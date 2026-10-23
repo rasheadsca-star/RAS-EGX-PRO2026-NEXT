@@ -41,10 +41,13 @@ async function main(){
  const [inputFile,outFile]=process.argv.slice(2);
  if(!inputFile||!outFile)throw Error('Need retry queue and output');
  const input=JSON.parse(fs.readFileSync(inputFile,'utf8'));if(input.read_only!==true||!Array.isArray(input.candidates))throw Error('unsafe queue');
- const rows=[];for(const row of input.candidates.slice(0,60)){
-  const symbol=String(row.symbol||'').toUpperCase();if(!/^[A-Z0-9_-]{2,12}$/.test(symbol))continue;
-  const attempts=[];for(const endpoint of endpoints)attempts.push(await check(endpoint,symbol));
-  rows.push({symbol,attempts});
+ const candidates=input.candidates.slice(0,60).map(r=>String(r.symbol||'').toUpperCase()).filter(s=>/^[A-Z0-9_-]{2,12}$/.test(s));
+ const rows=[];
+ for(let start=0;start<candidates.length;start+=4){
+  const batch=await Promise.all(candidates.slice(start,start+4).map(async symbol=>({
+   symbol,attempts:await Promise.all(endpoints.map(endpoint=>check(endpoint,symbol)))
+  })));
+  rows.push(...batch);
  }
  const counts={};for(const row of rows)for(const a of row.attempts)counts[a.status]=(counts[a.status]||0)+1;
  const result={schema:'egx-free-source-fallback-1',requested:rows.length,attempts:counts,independent_price_matches_confirmed:0,
