@@ -38,8 +38,10 @@ jobs:
         run: python egx-central/promotion_gate.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --output artifacts/egx-central-scheduled
       - name: Review latest source evidence and market session
         run: python egx-central/main_source_quality.py --output artifacts/egx-central-scheduled
+      - name: Validate corporate-action snapshot availability
+        run: python egx-central/check_corporate_actions.py --actions egx-central/data/corporate_actions.csv --output artifacts/egx-central-scheduled/corporate_action_source_status.json
       - name: Cross-check source splices against available corporate action records
-        run: python egx-central/corporate_action_review.py --quality artifacts/egx-central-scheduled/main_source_quality.json --output artifacts/egx-central-scheduled
+        run: python egx-central/corporate_action_review.py --quality artifacts/egx-central-scheduled/main_source_quality.json --output artifacts/egx-central-scheduled --actions egx-central/data/corporate_actions.csv
       - name: Publish database, immutable provenance and freshness report as workflow artifact
         if: always()
         uses: actions/upload-artifact@v4
