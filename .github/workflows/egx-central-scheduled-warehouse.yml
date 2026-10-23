@@ -101,6 +101,8 @@ jobs:
             prior=(--previous previous-egx-ledger/free_source_evidence.sqlite)
           fi
           python egx-central/check_ledger_continuity.py "${prior[@]}" --current artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/ledger_continuity_report.json
+      - name: Reconcile source historical sessions with saved research ledger
+        run: python egx-central/feed_ledger_reconcile.py --feed artifacts/egx-central-scheduled/free_source_fallback_report.json --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/feed_ledger_reconcile_report.json
       - name: Audit quarantined OHLCV evidence and source conflicts
         run: python egx-central/audit_evidence_quality.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/evidence_quality_report.json
       - name: Compare complete OHLCV across research evidence providers
