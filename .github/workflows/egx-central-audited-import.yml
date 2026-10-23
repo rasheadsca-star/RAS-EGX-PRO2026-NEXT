@@ -39,6 +39,8 @@ jobs:
         run: python egx-central/adjustment_proposals.py --db artifacts/egx-central-audit/branch_evidence.sqlite --actions egx-central/data/corporate_actions.csv --output artifacts/egx-central-audit
       - name: Generate research-only adjusted-close series (never a trading input)
         run: python egx-central/research_adjusted_close.py --db artifacts/egx-central-audit/branch_evidence.sqlite --proposals artifacts/egx-central-audit/corporate_action_adjustment_proposals.csv --output artifacts/egx-central-audit
+      - name: Detect possible double adjustment in provider prices
+        run: python egx-central/provider_adjustment_audit.py --output artifacts/egx-central-audit
       - name: Upload isolated evidence and report
         if: always()
         uses: actions/upload-artifact@v4
