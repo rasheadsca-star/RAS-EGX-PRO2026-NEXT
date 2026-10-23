@@ -124,6 +124,8 @@ jobs:
           python egx-central/session_gain.py "${previous[@]}" --current artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/session_gain_report.json
       - name: Separate archived anomalous dates from newly fetched research sessions
         run: python egx-central/legacy_weekend_reconcile.py --feed artifacts/egx-central-scheduled/free_source_fallback_report.json --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/legacy_weekend_report.json
+      - name: Check full ledger weekend dates
+        run: python egx-central/cumulative_weekend_audit.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/cumulative_weekend_report.json
       - name: Audit research session calendar
         run: python egx-central/research_calendar_audit.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/research_calendar_report.json
       - name: Assert warehouse integrity and no trading promotion
