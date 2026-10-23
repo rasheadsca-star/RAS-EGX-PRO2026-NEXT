@@ -53,14 +53,6 @@ jobs:
         run: python egx-central/research_price_eligibility.py --output artifacts/egx-central-scheduled
       - name: Report EGX research coverage and last observed session
         run: python egx-central/market_freshness.py --output artifacts/egx-central-scheduled
-      - name: Recheck stale EGX public quote pages (read-only)
-        run: node egx-central/targeted_retry.js artifacts/egx-central-scheduled/retry_candidates.json artifacts/egx-central-scheduled/targeted_retry_report.json
-      - name: Probe free alternative public data feeds (quarantine only)
-        run: node egx-central/free_source_fallback.js artifacts/egx-central-scheduled/retry_candidates.json artifacts/egx-central-scheduled/free_source_fallback_report.json
-      - name: Compare free-source candles to main archive (quarantine only)
-        run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
-      - name: Triage unmatched sessions and source price conflicts
-        run: python egx-central/free_feed_triage.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
       - name: Restore persistent research ledger first (fall back to last good artifact)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -84,6 +76,16 @@ jobs:
               echo "First baseline: no prior permanent or successful artifact available"
             fi
           fi
+      - name: Prioritize fresh historical coverage instead of duplicate quote checks
+        run: python egx-central/prioritize_retry.py --candidates artifacts/egx-central-scheduled/retry_candidates.json --ledger artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/prioritized_retry_candidates.json
+      - name: Recheck stale EGX public quote pages (read-only)
+        run: node egx-central/targeted_retry.js artifacts/egx-central-scheduled/prioritized_retry_candidates.json artifacts/egx-central-scheduled/targeted_retry_report.json
+      - name: Probe free alternative public data feeds (quarantine only)
+        run: node egx-central/free_source_fallback.js artifacts/egx-central-scheduled/prioritized_retry_candidates.json artifacts/egx-central-scheduled/free_source_fallback_report.json
+      - name: Compare free-source candles to main archive (quarantine only)
+        run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
+      - name: Triage unmatched sessions and source price conflicts
+        run: python egx-central/free_feed_triage.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
       - name: Preserve quarantined candidate observations in evidence SQLite
         run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/free_source_evidence_report.json
       - name: Assert historical research ledger continuity
