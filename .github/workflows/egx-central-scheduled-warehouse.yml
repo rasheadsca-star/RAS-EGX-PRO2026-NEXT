@@ -70,6 +70,7 @@ jobs:
           mkdir -p previous-egx-ledger
           if gh api "repos/$GITHUB_REPOSITORY/branches/egx-research-ledger" >/dev/null 2>&1; then
             git clone --quiet --depth 1 --branch egx-research-ledger "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" previous-research-checkout
+            python egx-central/verify_backup_manifest.py --db previous-research-checkout/free_source_evidence.sqlite --manifest previous-research-checkout/manifest.json
             cp previous-research-checkout/free_source_evidence.sqlite previous-egx-ledger/free_source_evidence.sqlite
             python egx-central/restore_evidence.py --source previous-egx-ledger/free_source_evidence.sqlite --dest artifacts/egx-central-scheduled/free_source_evidence.sqlite
             echo "Research ledger restored from permanent branch"
@@ -118,6 +119,7 @@ jobs:
             git -C research-backup checkout --orphan egx-research-ledger
           fi
           python egx-central/backup_evidence.py --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --output research-backup/free_source_evidence.sqlite --manifest research-backup/manifest.json
+          python egx-central/verify_backup_manifest.py --db research-backup/free_source_evidence.sqlite --manifest research-backup/manifest.json
           git -C research-backup add free_source_evidence.sqlite manifest.json
           if ! git -C research-backup diff --cached --quiet; then
             git -C research-backup commit -m "research: append-only evidence snapshot ${GITHUB_RUN_ID}"
