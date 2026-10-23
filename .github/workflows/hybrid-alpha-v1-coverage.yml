@@ -5,6 +5,8 @@ on:
     paths:
       - 'data/research/hybrid-alpha-v1-policy.json'
       - 'scripts/research/hybrid-alpha-v1-coverage.cjs'
+      - 'scripts/research/hybrid-alpha-v1-coverage-v2.cjs'
+      - 'tests/research/hybrid-alpha-v1-coverage.test.cjs'
       - 'docs/astra/STRATEGY_RECONSTRUCTION_MATRIX.json'
 jobs:
   coverage:
@@ -16,9 +18,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Audit point-in-time strategy data coverage
-        run: node scripts/research/hybrid-alpha-v1-coverage.cjs
+      - name: Validate OHLC coverage rules
+        run: node --test tests/research/hybrid-alpha-v1-coverage.test.cjs
+      - name: Audit strategy data coverage
+        run: node scripts/research/hybrid-alpha-v1-coverage-v2.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: hybrid-alpha-v1-research-coverage
-          path: data/research/hybrid-alpha-v1-coverage.json
+          path: data/research/hybrid-alpha-v1-coverage-v2.json
