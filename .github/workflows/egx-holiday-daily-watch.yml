@@ -1,0 +1,33 @@
+name: EGX Holiday Source Daily Watch
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * *'
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/egx-central-v4-safe-ingest-20261023
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit test Egyptian closure and candidate classifications
+        run: python -m unittest discover -s egx-central -p 'test_egx_holiday_review.py' -v
+      - name: Review source holiday candidates for calendar year
+        run: |
+          Y=$(TZ=Africa/Cairo date +%Y)
+          python egx-central/egx_holiday_review.py --start "$Y-01-01" --end "$Y-12-31" --output artifacts/egx-holiday-watch/calendar.json
+      - name: Fetch latest source snapshots without certifying closure dates
+        run: python egx-central/holiday_source_watch.py --output artifacts/egx-holiday-watch/sources.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-holiday-daily-watch
+          path: artifacts/egx-holiday-watch/
+          retention-days: 30
