@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { confirmedClosures } = require('../ops/egx-session-math.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const P = rel => path.join(ROOT, rel);
@@ -66,6 +67,7 @@ function evaluateState(input = {}) {
   const live = input.live || null;
   const now = input.now || cairoParts();
   const holidays = input.holidays instanceof Set ? input.holidays : parseHolidays(input.holidays);
+  for (const day of confirmedClosures(ROOT)) holidays.add(day);
   const expectedTradingSession = input.expectedTradingSession || latestExpectedTradingSession(now, holidays);
   const nowMs = Number.isFinite(Number(input.nowMs)) ? Number(input.nowMs) : Date.now();
   const handoffMs = Date.parse(String(handoff.generatedAt || ''));
