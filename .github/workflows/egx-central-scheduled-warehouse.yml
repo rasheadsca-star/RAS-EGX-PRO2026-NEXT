@@ -58,6 +58,8 @@ jobs:
         run: node egx-central/free_source_fallback.js artifacts/egx-central-scheduled/retry_candidates.json artifacts/egx-central-scheduled/free_source_fallback_report.json
       - name: Compare free-source candles to main archive (quarantine only)
         run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
+      - name: Triage unmatched sessions and source price conflicts
+        run: python egx-central/free_feed_triage.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --output artifacts/egx-central-scheduled
       - name: Assert warehouse integrity and no trading promotion
         run: python egx-central/verify_warehouse.py --output artifacts/egx-central-scheduled
       - name: Publish database, immutable provenance and freshness report as workflow artifact
