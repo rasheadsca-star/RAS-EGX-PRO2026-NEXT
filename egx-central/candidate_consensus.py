@@ -21,9 +21,12 @@ def build(db_path,outdir):
             status="CROSS_BRANCH_CONFLICT" if span>3 else "UNVERIFIED_BRANCH_AGREEMENT"
             summary[status]+=1
             writer.writerow((sym,day,len(vals),len({v[0] for v in vals}),round(span,5),status))
+    latest=max((day for (_,day) in groups),default=None)
+    earliest=min((day for (_,day) in groups),default=None)
+    latest_symbols=len({sym for (sym,day) in groups if day==latest})
     con.close()
     report={"schema":"egx-research-candidate-consensus-1","generated_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),
-      "unique_symbol_sessions":len(groups),"status_counts":dict(summary),
+      "unique_symbol_sessions":len(groups),"earliest_session":earliest,"latest_observed_session":latest,"symbols_on_latest_session":latest_symbols,"status_counts":dict(summary),
       "certified_ohlcv_count":0,"production_ready":False,
       "warning":"Historical branch overlap is NOT independent source confirmation. No paper or live strategy may consume this export as canonical prices."}
     (out/"consensus_report.json").write_text(json.dumps(report,indent=2)+"\n")
