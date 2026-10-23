@@ -9,11 +9,11 @@ class CalendarAuditTests(unittest.TestCase):
    con.execute("CREATE TABLE observations(symbol TEXT,session TEXT,status TEXT)")
    con.executemany("INSERT INTO observations VALUES (?,?,?)",[
     ("COMI","2026-10-22","QUARANTINED"),("COMI","2026-10-22","QUARANTINED"),
-    ("COMI","2026-10-23","QUARANTINED"),("ABUK","bad","QUARANTINED")])
+    ("COMI","2026-10-23","QUARANTINED"),("COMI","2026-10-24","QUARANTINED"),("COMI","2026-10-25","QUARANTINED"),("ABUK","bad","QUARANTINED")])
    con.commit();con.close()
    r=cal.inspect(db,p/"out.json")
-   self.assertEqual(r["unique_symbol_sessions"],1)
-   self.assertEqual(r["counts"]["WEEKEND_REVIEW"],1)
+   self.assertEqual(r["unique_symbol_sessions"],2)
+   self.assertEqual(r["counts"]["WEEKEND_REVIEW"],2)
    self.assertEqual(r["counts"]["INVALID_DATE"],1)
    self.assertEqual(r["certified_sessions"],0)
 if __name__=="__main__":unittest.main()
