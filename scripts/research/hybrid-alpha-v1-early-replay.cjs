@@ -27,6 +27,7 @@ function indicators(window,config){
 }
 function replay(rows,config){
  const signalRows=[],trades=[];
+ const blockedUntil={breakout:-1,vcp:-1,hybrid:-1};
  for(let i=54;i<rows.length-1;i++){
   const features=indicators(rows.slice(0,i+1),config);
   if(!features)continue;
@@ -34,11 +35,11 @@ function replay(rows,config){
   const next=rows[i+1],entry=next.open*(1+config.research.entrySlippagePct/100);
   const future=rows.slice(i+1,i+1+config.research.maximumHoldingSessions);
   if(!future.length||entry<=0)continue;
-  const stop=entry*0.95,target=entry*1.09;let exit=future.at(-1).close,status='TIME_EXIT';
-  for(const bar of future){if(bar.low<=stop){exit=stop;status='STOP';break}if(bar.high>=target){exit=target;status='TARGET';break}}
-  const net=round((exit/entry-1)*100-config.research.roundTripCostPct);
+  const stop=entry*0.95,target=entry*1.09;let exit=future.at(-1).close,status='TIME_EXIT',exitOffset=future.length-1;
+  for(let j=0;j<future.length;j++){const bar=future[j];if(bar.low<=stop){exit=stop;status='STOP';exitOffset=j;break}if(bar.high>=target){exit=target;status='TARGET';exitOffset=j;break}}
+  const exitIndex=i+1+exitOffset,net=round((exit/entry-1)*100-config.research.roundTripCostPct);
   signalRows.push({date:rows[i].date,signals:labels});
-  for(const label of labels)trades.push({variant:label,signalDate:rows[i].date,entryDate:next.date,netReturnPct:net,status});
+  for(const label of labels){if(i<blockedUntil[label])continue;blockedUntil[label]=exitIndex;trades.push({variant:label,signalDate:rows[i].date,entryDate:next.date,exitDate:rows[exitIndex].date,netReturnPct:net,status});}
  }
  return {signalRows,trades};
 }
@@ -59,7 +60,7 @@ function main(){
   const result=replay(rows,config);for(const trade of result.trades)aggregate.push({...trade,ticker:doc.ticker||name.slice(0,-5)});
  }
  const variants=['breakout','vcp','hybrid'].map(v=>({variant:v,...summarize(aggregate.filter(x=>x.variant===v))}));
- const result={schemaVersion:'hybrid-alpha-early-replay-1',generatedAt:new Date().toISOString(),researchOnly:true,method:'research proxy, NO strategy parity certification; simple 5% stop 9% target and next-session open; no overlapping-position control',coverage,variants,trades:aggregate,limitations:['VCP uses explicit proxy, not recovered exact V18 implementation','Relative strength vs index and independent historical universe screening are not implemented','Results are exploratory in-sample and must not be used for live recommendations','Same symbol may have overlapping signals; not a realistic portfolio equity curve']};
+ const result={schemaVersion:'hybrid-alpha-early-replay-1',generatedAt:new Date().toISOString(),researchOnly:true,method:'research proxy, NO strategy parity certification; simple 5% stop 9% target and next-session open; per-ticker per-variant overlapping positions blocked',coverage,variants,trades:aggregate,limitations:['VCP uses explicit proxy, not recovered exact V18 implementation','Relative strength vs index and independent historical universe screening are not implemented','Results are exploratory in-sample and must not be used for live recommendations' ,'No portfolio-level cash allocation or realistic portfolio equity curve']};
  const dst=path.join(root,'data/research/hybrid-alpha-v1-early-replay.json');fs.mkdirSync(path.dirname(dst),{recursive:true});fs.writeFileSync(dst,JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({coverage,variants},null,2));
 }
 if(require.main===module)main();
