@@ -1,0 +1,11 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const {isTradingSession,sessionsBetween}=require('../../scripts/ops/egx-session-math.cjs');
+const {latestExpectedTradingSession}=require('../../scripts/astra/astra-update-supervisor.cjs');
+const closed=new Set(['2026-10-08','2026-05-26','2026-05-27','2026-05-28','2026-05-31']);
+test('Thursday closure excluded',()=>assert.equal(isTradingSession('2026-10-08',closed),false));
+test('Tuesday Oct 6 is not inferred as closure',()=>assert.equal(isTradingSession('2026-10-06',closed),true));
+test('Friday and Saturday excluded',()=>{assert.equal(isTradingSession('2026-10-09',closed),false);assert.equal(isTradingSession('2026-10-10',closed),false);});
+test('session distance skips national holiday and weekend',()=>assert.equal(sessionsBetween('2026-10-07','2026-10-11',closed),1));
+test('expected previous session skips Thursday holiday',()=>assert.equal(latestExpectedTradingSession({date:'2026-10-11',hour:9,dow:0},closed),'2026-10-07'));
