@@ -1,0 +1,24 @@
+name: EGX holiday calendar integrity
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 6 * * *'
+jobs:
+  holiday-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit retrospective sessions against evidence-backed closures
+        shell: bash
+        run: |
+          node scripts/ops/audit-egx-holidays.cjs > egx-holiday-audit.json || echo "Historical calendar discrepancy found; see artifact."
+          cat egx-holiday-audit.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-holiday-audit
+          path: egx-holiday-audit.json
