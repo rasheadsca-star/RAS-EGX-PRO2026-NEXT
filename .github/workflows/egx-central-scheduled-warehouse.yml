@@ -1,0 +1,41 @@
+name: EGX Central - Periodic Research Warehouse
+on:
+  workflow_dispatch:
+  schedule:
+    # Egypt market days Sunday-Thursday, after main market-data workflows.
+    # Cron is UTC. Two collection windows reduce stale-source risk.
+    - cron: '15 16,20 * * 0-4'
+permissions:
+  contents: read
+concurrency:
+  group: egx-central-scheduled-research
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout isolated development importer
+        uses: actions/checkout@v4
+        with:
+          ref: feature/egx-central-v4-safe-ingest-20261023
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify importer tests
+        run: python -m unittest discover -s egx-central -p 'test_*.py' -v
+      - name: Rebuild central research warehouse from latest main and historical branches
+        run: python egx-central/remote_branch_audit.py --output artifacts/egx-central-scheduled
+      - name: Reconcile duplicates and preserve research-only status
+        run: python egx-central/candidate_consensus.py --db artifacts/egx-central-scheduled/branch_evidence.sqlite --output artifacts/egx-central-scheduled
+      - name: Publish database, immutable provenance and freshness report as workflow artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-central-research-warehouse
+          path: artifacts/egx-central-scheduled/
+          retention-days: 30
+          if-no-files-found: warn
