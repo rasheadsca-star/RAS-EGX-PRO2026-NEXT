@@ -43,6 +43,8 @@ jobs:
         run: python egx-central/provider_adjustment_audit.py --output artifacts/egx-central-audit
       - name: Classify raw and provider-adjusted bars for research only
         run: python egx-central/research_price_eligibility.py --output artifacts/egx-central-audit
+      - name: Report EGX research coverage and last observed session
+        run: python egx-central/market_freshness.py --output artifacts/egx-central-audit
       - name: Assert warehouse integrity and no trading promotion
         run: python egx-central/verify_warehouse.py --output artifacts/egx-central-audit
       - name: Upload isolated evidence and report
