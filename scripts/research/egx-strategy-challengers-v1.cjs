@@ -1,0 +1,66 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
+if(process.env.EGX_ENABLE_LIVE_TRADING==='true')throw Error('Research only; live trading prohibited');
+const {confirmedClosures,isTradingSession}=require('../ops/egx-session-math.cjs');
+const cfg=require('../../data/v13-4-quant-policy.json').research;
+const policy=Object.freeze({minBars:65,minimumTurnover20:100000,momentum20MinPct:3,relativeRankTopFraction:0.25,minUniversePeers:15,shortSma:20,longSma:50,pullbackMinPct:-4,pullbackMaxPct:1.0,stopPct:5,targetPct:9});
+const mean=a=>a.reduce((x,y)=>x+y,0)/a.length,round=(n,d=3)=>+n.toFixed(d);
+function features(rows,i){
+ if(i<54)return null;
+ const w=rows.slice(i-54,i+1),c=w.at(-1),prev=w.slice(-21,-1),sma20=mean(w.slice(-20).map(x=>x.close)),sma50=mean(w.slice(-50).map(x=>x.close));
+ const turnover20=mean(prev.map(x=>x.close*x.volume)),momentum20Pct=100*(c.close/w.at(-21).close-1);
+ return {turnover20,momentum20Pct,sma20,sma50,above50:c.close>sma50,pullbackPct:100*(c.close/sma20-1),uptrend:sma20>sma50&&sma20>mean(w.slice(-25,-5).map(x=>x.close))};
+}
+function summarize(trades){const r=trades.map(x=>x.netReturnPct),wins=r.filter(x=>x>0),loss=r.filter(x=>x<0);return {trades:r.length,winRatePct:r.length?round(100*wins.length/r.length,2):null,meanNetReturnPct:r.length?round(mean(r)):null,profitFactor:loss.length?round(wins.reduce((a,b)=>a+b,0)/(-loss.reduce((a,b)=>a+b,0))):null};}
+function backtest(universe,research=cfg){
+ const byDate=new Map(),trades=[],unresolved=[],blocked=new Set();
+ for(const [ticker,rows] of Object.entries(universe)){
+  for(let i=54;i<rows.length-1;i++){
+   const f=features(rows,i);if(!f||f.turnover20<policy.minimumTurnover20)continue;
+   if(!byDate.has(rows[i].date))byDate.set(rows[i].date,[]);
+   byDate.get(rows[i].date).push({ticker,rows,i,f});
+  }
+ }
+ const dates=[...byDate.keys()].sort(),busy=new Map();
+ for(const date of dates){
+  const picks=byDate.get(date),peers=picks.map(p=>p.f.momentum20Pct).sort((a,b)=>b-a),peerMin=peers.length>=policy.minUniversePeers;
+  const cutoff=peerMin?peers[Math.max(0,Math.ceil(peers.length*policy.relativeRankTopFraction)-1)]:Infinity;
+  const signals=[];
+  for(const p of picks){
+   const f=p.f;const momentum=peerMin&&f.uptrend&&f.above50&&f.momentum20Pct>=Math.max(policy.momentum20MinPct,cutoff);
+   const pullback=f.uptrend&&f.above50&&f.pullbackPct>=policy.pullbackMinPct&&f.pullbackPct<=policy.pullbackMaxPct&&p.rows[p.i].close>p.rows[p.i-1].close;
+   if(momentum)signals.push({...p,variant:'relative_momentum'});
+   if(pullback)signals.push({...p,variant:'trend_pullback'});
+  }
+  for(const p of signals){
+   const key=p.variant+'|'+p.ticker;if((busy.get(key)||'')>=date)continue;
+   const next=p.rows[p.i+1];const entry=next.open*(1+research.entrySlippagePct/100),future=p.rows.slice(p.i+1,p.i+1+research.maximumHoldingSessions);
+   if(!(entry>0))continue;
+   const stop=entry*(1-policy.stopPct/100),target=entry*(1+policy.targetPct/100);
+   let exit=null,status='',offset=-1;
+   for(let k=0;k<future.length;k++){const bar=future[k];if(bar.low<=stop){exit=stop;status='STOP';offset=k;break}if(bar.high>=target){exit=target;status='TARGET';offset=k;break}}
+   if(exit===null&&future.length<research.maximumHoldingSessions){unresolved.push({ticker:p.ticker,variant:p.variant,signalDate:date});continue}
+   if(exit===null){exit=future.at(-1).close;offset=future.length-1;status='TIME_EXIT'}
+   const exitDate=future[offset].date;busy.set(key,exitDate);
+   trades.push({ticker:p.ticker,variant:p.variant,signalDate:date,entryDate:next.date,exitDate,status,netReturnPct:round((exit/entry-1)*100-research.roundTripCostPct)});
+  }
+ }
+ return {trades,unresolved,dates:dates.length};
+}
+function loadUniverse(){
+ const closed=confirmedClosures(root),dir=path.join(root,'data/history'),universe={},audit={files:0,eligible:0,discarded:0};
+ for(const name of fs.readdirSync(dir).filter(x=>x.endsWith('.json'))){
+  audit.files++;let doc;try{doc=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8'))}catch{continue}if(!Array.isArray(doc.sessions))continue;
+  const rows=doc.sessions.map(x=>({date:String(x.date||x.sessionDate||'').slice(0,10),open:Number(x.open),high:Number(x.high),low:Number(x.low),close:Number(x.close),volume:Number(x.volume),invalid:x.validationStatus==='source_conflict'||(x.warnings||[]).some(y=>/price_conflict/i.test(String(y)))})).filter(x=>/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.date)&&isTradingSession(x.date,closed)&&!x.invalid&&[x.open,x.high,x.low,x.close,x.volume].every(Number.isFinite)&&x.low>0&&x.volume>0&&x.high>=Math.max(x.open,x.close,x.low)&&x.low<=Math.min(x.open,x.close,x.high));
+  rows.sort((a,b)=>a.date.localeCompare(b.date));const seen=new Set(),clean=rows.filter(x=>{if(seen.has(x.date))return false;seen.add(x.date);return true});
+  if(clean.length<policy.minBars){audit.discarded++;continue}
+  universe[doc.ticker||name.slice(0,-5)]=clean;audit.eligible++;
+ }return {universe,audit};
+}
+function main(){
+ const {universe,audit}=loadUniverse(),r=backtest(universe),variants=['relative_momentum','trend_pullback'].map(variant=>({variant,...summarize(r.trades.filter(x=>x.variant===variant))}));
+ const output={schemaVersion:'egx-strategy-challengers-v1',generatedAt:new Date().toISOString(),researchOnly:true,policy,coverage:audit,variants,unresolved:r.unresolved.length,trades:r.trades,limitations:['Exploratory, not out-of-sample','Relative rank computed against available historical rows, not certified contemporaneous listing universe; survivorship bias possible','No portfolio capital/market impact simulation','Legacy breakout baseline differs in eligibility and censoring treatment; comparisons are indicative only','Unverified source parity and omitted corporate-action checks']};
+ const dest=path.join(root,'data/research/egx-strategy-challengers-v1.json');fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest,JSON.stringify(output,null,2)+'\n');console.log(JSON.stringify({coverage:audit,variants,unresolved:output.unresolved},null,2));
+}
+if(require.main===module)main();module.exports={features,backtest,summarize,policy};
