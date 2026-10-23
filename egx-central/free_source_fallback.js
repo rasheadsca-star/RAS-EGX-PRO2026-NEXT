@@ -26,11 +26,11 @@ async function check(endpoint,symbol){
    }
    return {...evidence,status:candidate.length?'CANDIDATE_UNVERIFIED':'NO_VALID_BARS',candidate:candidate.slice(-5)};
   }
-  const lines=body.trim().split(/\\r?\\n/);
+  const lines=body.trim().split(/\r?\n/);
   if(!/^Date,Open,High,Low,Close,Volume/i.test(lines[0]||''))return {...evidence,status:'NOT_EXPECTED_CSV'};
   const bars=[];
   for(const line of lines.slice(-6)){const [d,o,h,l,c,v]=line.split(',');const nums=[o,h,l,c,v].map(Number);
-   if(/^\\d{4}-\\d{2}-\\d{2}$/.test(d)&&nums.every(x=>Number.isFinite(x)&&x>0)&&nums[1]>=Math.max(nums[0],nums[2],nums[3])&&nums[2]<=Math.min(nums[0],nums[1],nums[3]))
+   if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&nums.every(x=>Number.isFinite(x)&&x>0)&&nums[1]>=Math.max(nums[0],nums[2],nums[3])&&nums[2]<=Math.min(nums[0],nums[1],nums[3]))
     bars.push({session:d,open:nums[0],high:nums[1],low:nums[2],close:nums[3],volume:nums[4],status:'UNVERIFIED_PUBLIC_RESEARCH'});
   }
   return {...evidence,status:bars.length?'CANDIDATE_UNVERIFIED':'NO_VALID_BARS',candidate:bars};
