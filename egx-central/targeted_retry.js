@@ -2,8 +2,8 @@
 // Recheck lagged EGX symbols against public Mubasher pages, research-only; never write production.
 const fs=require('fs'),crypto=require('crypto'),path=require('path');
 function parseQuote(html,symbol){
- const plain=html.replace(/<script[\\s\\S]*?<\\/script>/gi,' ').replace(/<style[\\s\\S]*?<\\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\\s+/g,' ');
- const m=plain.match(/Last update:\\s*([^\\.]+?market time)\\.\\s*([0-9][0-9,.]*)\\s+([+\\-−–]?[0-9][0-9,.]*)\\s+([+\\-−–]?[0-9][0-9,.]*)%/i);
+ const plain=html.replace(/<script[\s\S]*?<\/script>/gi,' ').replace(/<style[\s\S]*?<\/style>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+ const m=plain.match(/Last update:\s*([^\.]+?market time)\.\s*([0-9][0-9,.]*)\s+([+\-−–]?[0-9][0-9,.]*)\s+([+\-−–]?[0-9][0-9,.]*)%/i);
  if(!m)return null;
  const price=Number(m[2].replace(/,/g,''));
  if(!Number.isFinite(price)||price<=0)return null;
