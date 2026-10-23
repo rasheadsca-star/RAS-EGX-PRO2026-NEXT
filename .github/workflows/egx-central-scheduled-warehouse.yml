@@ -89,7 +89,7 @@ jobs:
       - name: Filter old research bars
         run: python egx-central/filter_repeat_candidates.py --source artifacts/egx-central-scheduled/free_source_fallback_report.json --ledger artifacts/egx-central-scheduled/free_source_evidence.sqlite --output artifacts/egx-central-scheduled/filtered_candidates.json --report artifacts/egx-central-scheduled/dedupe_report.json
       - name: Preserve quarantined candidate observations in evidence SQLite
-        run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-scheduled/free_source_fallback_report.json --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/free_source_evidence_report.json
+        run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-scheduled/filtered_candidates.json --db artifacts/egx-central-scheduled/free_source_evidence.sqlite --report artifacts/egx-central-scheduled/free_source_evidence_report.json
       - name: Assert historical research ledger continuity
         shell: bash
         run: |
