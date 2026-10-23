@@ -2,7 +2,7 @@
 // Zero-cost, research-only auxiliary public-source collector. Never modifies trading data.
 const fs=require('fs'),path=require('path'),crypto=require('crypto');
 const endpoints=[
- {source:'yahoo_chart',url:s=>'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(s+'.CA')+'?range=5d&interval=1d'},
+ {source:'yahoo_chart',url:s=>'https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(s+'.CA')+'?range=1y&interval=1d'},
  {source:'stooq_daily',url:s=>'https://stooq.com/q/d/l/?s='+encodeURIComponent(s+'.eg')+'&i=d'}
 ];
 async function check(endpoint,symbol){
@@ -24,12 +24,12 @@ async function check(endpoint,symbol){
     if([o,h,l,c,v].every(x=>typeof x==='number'&&Number.isFinite(x)&&x>0)&&h>=Math.max(o,c,l)&&l<=Math.min(o,c,h))
       candidate.push({session:d,open:o,high:h,low:l,close:c,volume:v,status:'UNVERIFIED_PUBLIC_RESEARCH'});
    }
-   return {...evidence,status:candidate.length?'CANDIDATE_UNVERIFIED':'NO_VALID_BARS',candidate:candidate.slice(-5)};
+   return {...evidence,status:candidate.length?'CANDIDATE_UNVERIFIED':'NO_VALID_BARS',candidate:candidate.slice(-260)};
   }
   const lines=body.trim().split(/\r?\n/);
   if(!/^Date,Open,High,Low,Close,Volume/i.test(lines[0]||''))return {...evidence,status:'NOT_EXPECTED_CSV'};
   const bars=[];
-  for(const line of lines.slice(-6)){const [d,o,h,l,c,v]=line.split(',');const nums=[o,h,l,c,v].map(Number);
+  for(const line of lines.slice(-262)){const [d,o,h,l,c,v]=line.split(',');const nums=[o,h,l,c,v].map(Number);
    if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&nums.every(x=>Number.isFinite(x)&&x>0)&&nums[1]>=Math.max(nums[0],nums[2],nums[3])&&nums[2]<=Math.min(nums[0],nums[1],nums[3]))
     bars.push({session:d,open:nums[0],high:nums[1],low:nums[2],close:nums[3],volume:nums[4],status:'UNVERIFIED_PUBLIC_RESEARCH'});
   }
