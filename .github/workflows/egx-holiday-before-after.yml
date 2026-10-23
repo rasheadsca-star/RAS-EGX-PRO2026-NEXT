@@ -1,0 +1,30 @@
+name: EGX Holiday Retrospective V15 Re-evaluation
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/stable/v15-recommendation-evaluator.cjs'
+      - 'scripts/ops/egx-holiday-before-after.cjs'
+      - 'scripts/ops/egx-session-math.cjs'
+      - 'data/egx-exchange-closures.json'
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Re-evaluate archived recommendations and produce before-after audit
+        run: node scripts/ops/egx-holiday-before-after.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-holiday-before-after
+          path: |
+            data/ops/egx-holiday-before-after.json
+            data/stable/v15-recommendation-evaluation.json
