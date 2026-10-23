@@ -1,6 +1,9 @@
 name: EGX Central - Periodic Research Warehouse
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/egx-central-scheduled-warehouse.yml"
   schedule:
     # Egypt market days Sunday-Thursday, after main market-data workflows.
     # Cron is UTC. Two collection windows reduce stale-source risk.
