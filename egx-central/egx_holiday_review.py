@@ -20,7 +20,7 @@ VENUE_CLOSURES={"2026-10-08":{"reason":"Armed Forces Day observed","source":EGX_
 def classify(day):
  d=datetime.date.fromisoformat(day)
  if d.weekday() in (4,5):return {"status":"WEEKEND","source":"Egyptian Exchange Sun-Thu weekly schedule"}
- if day in VENUE_CLOSURES:return {"status":"EXCHANGE_CLOSED_CONFIRMED","**":None,**VENUE_CLOSURES[day]}
+ if day in VENUE_CLOSURES:return {"status":"EXCHANGE_CLOSED_CONFIRMED",**VENUE_CLOSURES[day]}
  if day in GOV_DATES:return {"status":"POSSIBLE_HOLIDAY_REVIEW","reason":GOV_DATES[day],"source":GOV}
  return {"status":"UNVERIFIED_POTENTIAL_SESSION","source":None}
 def report(start,end,output):
