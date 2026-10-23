@@ -17,7 +17,7 @@ def inspect(db,output):
                 date=None
             if date is None:
                 counts["INVALID_DATE"]+=1
-            elif date.weekday()>=4:
+            elif date.weekday() in (4,5):
                 counts["WEEKEND_REVIEW"]+=1
             else:
                 counts["WEEKDAY_UNVERIFIED"]+=1
