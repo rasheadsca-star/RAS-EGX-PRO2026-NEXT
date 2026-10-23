@@ -10,6 +10,8 @@ const DECISION_PATH = path.join(ROOT, 'data/stable/v15-practical-decision.json')
 const LEDGER_PATH = path.join(ROOT, 'data/stable/v15-recommendation-ledger.json');
 const REPORT_PATH = path.join(ROOT, 'data/stable/v15-recommendation-evaluation.json');
 const HISTORY_DIR = path.join(ROOT, 'data/history');
+const { confirmedClosures, isTradingSession } = require('../ops/egx-session-math.cjs');
+const VERIFIED_EGX_CLOSURES = confirmedClosures(ROOT);
 const DECISION_REPO_PATH = 'data/stable/v15-practical-decision.json';
 const AUDIT_START_AT = process.env.EGX_RECOMMENDATION_EVAL_START || '2026-08-02T22:10:00.000Z';
 const MAX_GIT_SNAPSHOTS = Math.max(20, Math.min(Number(process.env.EGX_EVAL_GIT_SNAPSHOTS || 160), 500));
@@ -152,7 +154,7 @@ function historySessions(ticker) {
       open: num(row.open, num(row.close)), high: num(row.high, num(row.close)),
       low: num(row.low, num(row.close)), close: num(row.close), volume: num(row.volume, 0)
     }))
-    .filter(row => row.date && row.close > 0 && row.open > 0 && row.high >= Math.max(row.open, row.close) && row.low <= Math.min(row.open, row.close) && row.low > 0)
+    .filter(row => row.date && isTradingSession(row.date, VERIFIED_EGX_CLOSURES) && row.close > 0 && row.open > 0 && row.high >= Math.max(row.open, row.close) && row.low <= Math.min(row.open, row.close) && row.low > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 function netReturnPct(exitPrice, entryPrice, costsPct) {
