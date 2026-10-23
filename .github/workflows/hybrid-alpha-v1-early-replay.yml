@@ -30,7 +30,7 @@ jobs:
           const lines=['## Hybrid Alpha V1 — Exploratory Replay','Research only; NOT certified historical parity.','', '| Model | Trades | Win rate | Mean net return | Profit factor |','|---|---:|---:|---:|---:|'];
           for(const x of r.variants)lines.push('| '+x.variant+' | '+x.signals+' | '+(x.winRatePct??'N/A')+'% | '+(x.meanNetReturnPct??'N/A')+'% | '+(x.profitFactor??'N/A')+' |');
           lines.push('', 'Coverage: '+r.coverage.tradable+' eligible ticker files out of '+r.coverage.files+'.');
-          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\\n')+'\\n');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join(String.fromCharCode(10))+String.fromCharCode(10));
           if(r.variants.every(x=>x.signals===0))throw Error('No trades in any research variant; results not interpretable');
           NODE
       - uses: actions/upload-artifact@v4
