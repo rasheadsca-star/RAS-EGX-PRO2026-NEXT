@@ -26,7 +26,11 @@ function indicators(window,config){
  const momentum20Pct=(c.close/window.at(-21).close-1)*100;
  const avgTurnover20=sma(previous.map(x=>x.close*x.volume));
  const aboveSma50=c.close>sma(window.slice(-50).map(x=>x.close));
- return {breakout,vcp,hybrid:breakout&&vcp,rs,volumeRatio:vr,momentum20Pct,avgTurnover20,aboveSma50};
+ const closePosition=(c.high-c.low)>0?(c.close-c.low)/(c.high-c.low):null;
+ const extensionSma20Pct=(c.close/sma(window.slice(-20).map(x=>x.close))-1)*100;
+ const periods=window.slice(-15);const trueRanges=periods.map((bar,i)=>Math.max(bar.high-bar.low,Math.abs(bar.high-(i?periods[i-1].close:window.at(-16).close)),Math.abs(bar.low-(i?periods[i-1].close:window.at(-16).close))));
+ const atr14Pct=sma(trueRanges.slice(-14))/c.close*100;
+ return {breakout,vcp,hybrid:breakout&&vcp,rs,volumeRatio:vr,momentum20Pct,avgTurnover20,aboveSma50,closePosition,extensionSma20Pct,atr14Pct};
 }
 function replay(rows,config){
  const signalRows=[],trades=[];
@@ -42,7 +46,7 @@ function replay(rows,config){
   for(let j=0;j<future.length;j++){const bar=future[j];if(bar.low<=stop){exit=stop;status='STOP';exitOffset=j;break}if(bar.high>=target){exit=target;status='TARGET';exitOffset=j;break}}
   const exitIndex=i+1+exitOffset,net=round((exit/entry-1)*100-config.research.roundTripCostPct);
   signalRows.push({date:rows[i].date,signals:labels});
-  for(const label of labels){if(i<blockedUntil[label])continue;blockedUntil[label]=exitIndex;trades.push({variant:label,signalDate:rows[i].date,entryDate:next.date,exitDate:rows[exitIndex].date,netReturnPct:net,status,signalFeatures:{volumeRatio:round(features.volumeRatio),momentum20Pct:round(features.momentum20Pct),avgTurnover20:round(features.avgTurnover20,0),aboveSma50:features.aboveSma50}});}
+  for(const label of labels){if(i<blockedUntil[label])continue;blockedUntil[label]=exitIndex;trades.push({variant:label,signalDate:rows[i].date,entryDate:next.date,exitDate:rows[exitIndex].date,netReturnPct:net,status,signalFeatures:{volumeRatio:round(features.volumeRatio),momentum20Pct:round(features.momentum20Pct),avgTurnover20:round(features.avgTurnover20,0),aboveSma50:features.aboveSma50,closePosition:features.closePosition===null?null:round(features.closePosition),extensionSma20Pct:round(features.extensionSma20Pct),atr14Pct:round(features.atr14Pct)}});}
  }
  return {signalRows,trades};
 }
