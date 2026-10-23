@@ -1,0 +1,31 @@
+name: EGX Central - Audited Branch Import
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (read only)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test importer safety
+        run: python -m unittest discover -s egx-central -p 'test_*.py' -v
+      - name: Fetch and classify historical archives
+        run: python egx-central/remote_branch_audit.py --output artifacts/egx-central-audit
+      - name: Upload isolated evidence and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-central-remote-branch-audit
+          path: artifacts/egx-central-audit/
+          if-no-files-found: warn
+          retention-days: 14
