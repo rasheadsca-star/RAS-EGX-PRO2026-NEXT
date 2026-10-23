@@ -1,22 +1,26 @@
 import unittest
 from pathlib import Path
 
-class ScheduledResearchArchiveContract(unittest.TestCase):
-    def test_calendar_reports_are_generated_and_backed_up(self):
+class ResearchAuditContract(unittest.TestCase):
+    def test_calendar_reports_created_and_published_as_artifacts(self):
         root=Path(__file__).resolve().parent.parent
-        workflow=(root/".github/workflows/egx-central-scheduled-warehouse.yml").read_text()
+        workflow=(root/".github/workflows/egx-central-audited-import.yml").read_text()
         for report,script in [
             ("cumulative_weekend_report.json","cumulative_weekend_audit.py"),
             ("legacy_weekend_report.json","legacy_weekend_reconcile.py")]:
             self.assertIn("python egx-central/"+script,workflow)
-            self.assertIn("cp artifacts/egx-central-scheduled/"+report+" research-backup/"+report,workflow)
-            add_line=next(line for line in workflow.splitlines() if "git -C research-backup add " in line)
-            self.assertIn(report,add_line)
-    def test_calendar_quality_does_not_enable_trading(self):
-        for file in ("cumulative_weekend_audit.py","legacy_weekend_reconcile.py"):
-            content=(Path(__file__).parent/file).read_text()
-            self.assertIn('"production_modified":False',content)
-            self.assertIn('"certified_sessions":0',content) if file.startswith("legacy") else self.assertIn('"trading_eligible":False',content)
+            self.assertIn("artifacts/egx-central-audit/"+report,workflow)
+        self.assertIn("actions/upload-artifact@v4",workflow)
+        self.assertIn("path: artifacts/egx-central-audit/",workflow)
+
+    def test_research_only_guards(self):
+        for name in ("cumulative_weekend_audit.py","legacy_weekend_reconcile.py"):
+            code=(Path(__file__).parent/name).read_text()
+            self.assertIn('"production_modified":False',code)
+            if name=="cumulative_weekend_audit.py":
+                self.assertIn('"trading_eligible":False',code)
+            else:
+                self.assertIn('"v4a_eligible":False',code)
 
 if __name__=="__main__":
     unittest.main()
