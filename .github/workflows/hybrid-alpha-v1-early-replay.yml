@@ -7,6 +7,8 @@ on:
       - 'tests/research/hybrid-alpha-v1-early-replay.test.cjs'
       - 'data/v13-4-quant-policy.json'
       - '.github/workflows/hybrid-alpha-v1-early-replay.yml'
+      - 'scripts/research/hybrid-alpha-v1-cohort-audit.cjs'
+      - 'tests/research/hybrid-alpha-v1-cohort-audit.test.cjs'
 jobs:
   replay:
     runs-on: ubuntu-latest
@@ -19,17 +21,24 @@ jobs:
           node-version: '22'
       - name: Validate research replay functions
         run: node --test tests/research/hybrid-alpha-v1-early-replay.test.cjs
+      - name: Validate cohort comparison
+        run: node --test tests/research/hybrid-alpha-v1-cohort-audit.test.cjs
       - name: Recompute exploratory historical comparisons
         run: node scripts/research/hybrid-alpha-v1-early-replay.cjs
+      - name: Compare breakout trades accepted and rejected by VCP
+        run: node scripts/research/hybrid-alpha-v1-cohort-audit.cjs
       - name: Write comparison to GitHub Actions job summary
         if: success()
         run: |
           node - <<'NODE'
           const fs=require('node:fs');
           const r=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-early-replay.json','utf8'));
+          const c=JSON.parse(fs.readFileSync('data/research/hybrid-alpha-v1-cohort-audit.json','utf8'));
           const lines=['## Hybrid Alpha V1 — Exploratory Replay','Research only; NOT certified historical parity.','', '| Model | Trades | Win rate | Mean net return | Profit factor |','|---|---:|---:|---:|---:|'];
           for(const x of r.variants)lines.push('| '+x.variant+' | '+x.signals+' | '+(x.winRatePct??'N/A')+'% | '+(x.meanNetReturnPct??'N/A')+'% | '+(x.profitFactor??'N/A')+' |');
           lines.push('', 'Coverage: '+r.coverage.tradable+' eligible ticker files out of '+r.coverage.files+'.');
+          lines.push('', '### Breakout cohorts', '| Cohort | Trades | Win rate | Mean net return | Stops | Targets |','|---|---:|---:|---:|---:|---:|');
+          for(const [name,v] of [['VCP accepted',c.accepted],['VCP rejected',c.rejected]])lines.push('| '+name+' | '+v.trades+' | '+v.winRatePct+'% | '+v.meanNetReturnPct+'% | '+v.stopHits+' | '+v.targetHits+' |');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join(String.fromCharCode(10))+String.fromCharCode(10));
           if(r.variants.every(x=>x.signals===0))throw Error('No trades in any research variant; results not interpretable');
           NODE
@@ -37,4 +46,6 @@ jobs:
         if: always()
         with:
           name: hybrid-alpha-early-replay
-          path: data/research/hybrid-alpha-v1-early-replay.json
+          path: |
+            data/research/hybrid-alpha-v1-early-replay.json
+            data/research/hybrid-alpha-v1-cohort-audit.json
