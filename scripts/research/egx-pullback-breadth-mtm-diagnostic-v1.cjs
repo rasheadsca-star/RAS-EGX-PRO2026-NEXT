@@ -20,7 +20,7 @@ function portfolio(universe,ledger,gate,options={}){
   function equityAtClose(){let total=cash;for(const p of active){const bar=lookup.get(p.ticker)?.get(date);if(bar){p.lastClose=bar.close}else staleMarks++;total+=p.principal*(p.lastClose/p.entryOpen)}return total}
   for(const t of todays){
    if(active.length>=maxPositions||active.some(p=>p.ticker===t.ticker))continue;
-   const entryBar=lookup.get(t.ticker)?.get(date);if(!entryBar||!(entryBar.open>0))continue;
+   const entryBar=lookup.get(t.ticker)?.get(date);if(!entryBar||entryBar.executable===false||!(entryBar.open>0))continue;
    const availableEquity=cash+active.reduce((sum,p)=>sum+p.principal*(p.lastClose/p.entryOpen),0);
    const principal=Math.min(cash,availableEquity/maxPositions);if(!(principal>0))continue;
    cash-=principal;active.push({...t,principal,entryOpen:entryBar.open*(1+policy.execution.entrySlippagePct/100),lastClose:entryBar.open*(1+policy.execution.entrySlippagePct/100)});executed.push(t);
