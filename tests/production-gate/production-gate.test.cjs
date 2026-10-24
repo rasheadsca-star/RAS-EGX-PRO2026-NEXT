@@ -4,20 +4,22 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),cp=require('node:child_process');
 const REPO=path.resolve(__dirname,'../..');
 const FIXTURE=path.join(REPO,'tests/fixtures/astra-hermetic');
-const BUILD=path.join(REPO,'scripts/astra/native/astra-intelligence.cjs');
-const GATE=path.join(REPO,'scripts/astra/native/production-gate.cjs');
+const BUILD_REL='scripts/astra/native/astra-intelligence.cjs';
+const GATE_REL='scripts/astra/native/production-gate.cjs';
+function copyPrograms(root){for(const rel of [BUILD_REL,GATE_REL,'scripts/ops/egx-session-math.cjs']){const to=path.join(root,rel);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(path.join(REPO,rel),to)}}
 const OUT=['recommendation-ledger','recommendation-outcomes','performance-summary','performance-by-rank','performance-by-regime','ticker-performance','market-universe','analytics-integrity'].map(n=>'astra-prod/app/intelligence/'+n+'.json');
 function makeFixture(t){
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'astra-gate-tests-'));
   t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
   fs.cpSync(FIXTURE,root,{recursive:true});
+  copyPrograms(root);
   return root;
 }
 function build(root){
-  return cp.spawnSync(process.execPath,[BUILD],{cwd:root,env:{...process.env,ASTRA_INTELLIGENCE_ROOT:root,ASTRA_ALLOW_ROOT_OVERRIDE:'1',GITHUB_ACTIONS:'true'},encoding:'utf8'});
+  return cp.spawnSync(process.execPath,[path.join(root,BUILD_REL)],{cwd:root,env:{...process.env,ASTRA_INTELLIGENCE_ROOT:root,ASTRA_ALLOW_ROOT_OVERRIDE:'1',GITHUB_ACTIONS:'true'},encoding:'utf8'});
 }
 function gate(root){
-  const out=cp.spawnSync(process.execPath,[GATE,root],{cwd:root,env:{...process.env,GITHUB_ACTIONS:'true'},encoding:'utf8'});
+  const out=cp.spawnSync(process.execPath,[path.join(root,GATE_REL),root],{cwd:root,env:{...process.env,GITHUB_ACTIONS:'true'},encoding:'utf8'});
   let report;try{report=JSON.parse(out.stdout)}catch(e){throw new Error('unparseable gate output '+out.stdout+' '+out.stderr)}
   return {code:out.status,report};
 }
@@ -66,4 +68,38 @@ test('production gate reports missing required input without side effects',t=>{
   assert.equal(r.code,1);
   assert.equal(r.report.reason,'GATE_INPUT_ERROR');
   assert.deepEqual(r.report.sideEffects,[]);
+});
+
+test('production gate detects mutated input with exit 3',t=>{
+  const root=certifiedRoot(t);
+  const builder=path.join(root,BUILD_REL);
+  fs.appendFileSync(builder,`
+if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.env.ASTRA_INTELLIGENCE_ROOT,'astra-prod/app/data.json'),'evil');
+`);
+  // Override passes to gate's child process only in this disposable fixture.
+  const out=cp.spawnSync(process.execPath,[path.join(root,GATE_REL),root],{
+    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1'},encoding:'utf8'
+  });
+  const report=JSON.parse(out.stdout);
+  assert.equal(out.status,3,JSON.stringify(report));
+  assert.ok(report.sideEffects.some(s=>s.includes('INPUT_CHANGED astra-prod/app/data.json')));
+});
+test('production gate detects git status mutation outside input hash set',t=>{
+  const root=certifiedRoot(t);
+  const git=(args)=>cp.execFileSync('git',args,{cwd:root,encoding:'utf8'});
+  git(['init','-q']);
+  git(['-c','user.email=ci@example.invalid','-c','user.name=CI Test','commit','--allow-empty','-qm','seed']);
+  fs.writeFileSync(path.join(root,'unrelated.txt'),'baseline');
+  git(['add','unrelated.txt']);
+  git(['-c','user.email=ci@example.invalid','-c','user.name=CI Test','commit','-qm','baseline']);
+  const builder=path.join(root,BUILD_REL);
+  fs.appendFileSync(builder,`
+if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.env.ASTRA_INTELLIGENCE_ROOT,'unrelated.txt'),'evil');
+`);
+  const out=cp.spawnSync(process.execPath,[path.join(root,GATE_REL),root],{
+    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1'},encoding:'utf8'
+  });
+  const report=JSON.parse(out.stdout);
+  assert.equal(out.status,3,JSON.stringify(report));
+  assert.ok(report.sideEffects.includes('GIT_STATUS_CHANGED'),JSON.stringify(report));
 });
