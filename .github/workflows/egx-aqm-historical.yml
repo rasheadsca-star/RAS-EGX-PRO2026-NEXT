@@ -5,6 +5,10 @@ on:
     paths:
       - '.github/workflows/egx-aqm-historical.yml'
       - 'scripts/research/egx-aqm-research-v1.cjs'
+      - 'scripts/research/egx-aqm-exit-policies-v1.cjs'
+      - 'tests/research/egx-aqm-exit-policies-v1.test.cjs'
+      - 'scripts/research/egx-aqm-exit-cohort-comparison-v1.cjs'
+      - 'tests/research/egx-aqm-exit-cohort-comparison-v1.test.cjs'
       - 'scripts/research/egx-aqm-breakout-extension-sensitivity-v1.cjs'
       - 'tests/research/egx-aqm-breakout-extension-sensitivity-v1.test.cjs'
       - 'tests/research/egx-aqm-research-v1.test.cjs'
@@ -26,10 +30,14 @@ jobs:
         run: node --test tests/research/egx-aqm-research-v1.test.cjs
       - name: Check breakout sensitivity does not alter pullback or strict gate
         run: node --test tests/research/egx-aqm-breakout-extension-sensitivity-v1.test.cjs
+      - name: Validate paired exits and fixed-entry cohort
+        run: node --test tests/research/egx-aqm-exit-policies-v1.test.cjs tests/research/egx-aqm-exit-cohort-comparison-v1.test.cjs
       - name: Run AQM pullback and breakout research on canonical main archive
         run: node scripts/research/egx-aqm-research-v1.cjs
       - name: Diagnose breakout-only ATR extension without changing pullback
         run: node scripts/research/egx-aqm-breakout-extension-sensitivity-v1.cjs
+      - name: Compare three exit rules with identical entry tape and risk allocations
+        run: node scripts/research/egx-aqm-exit-cohort-comparison-v1.cjs
       - name: Explain scope and readiness
         shell: bash
         run: |
@@ -51,5 +59,6 @@ jobs:
           path: |
             data/research/egx-aqm-initial-historical-diagnostic-v1.json
             data/research/egx-aqm-breakout-extension-sensitivity-v1.json
+            data/research/egx-aqm-exit-cohort-comparison-v1.json
           retention-days: 30
           if-no-files-found: warn
