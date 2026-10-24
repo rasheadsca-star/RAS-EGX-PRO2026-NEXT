@@ -20,7 +20,16 @@ for(const script of scripts){
       t.skip('repository itself is under temp; symlink escape prerequisite is false');
       return;
     }
-    fs.symlinkSync(ROOT,link,'dir');
+    // Link to an isolated stand-in, NEVER the live checkout: a regressed guard may run the builder.
+    const escaped=fs.mkdtempSync(path.join(path.dirname(fs.realpathSync(os.tmpdir())),'astra-outside-'));
+    t.after(()=>fs.rmSync(escaped,{recursive:true,force:true}));
+    const copy=(src,dst)=>{fs.mkdirSync(path.dirname(dst),{recursive:true});fs.copyFileSync(src,dst);};
+    copy(path.join(ROOT,'scripts/astra/native/workflow-inventory.cjs'),path.join(escaped,'scripts/astra/native/workflow-inventory.cjs'));
+    copy(path.join(ROOT,'scripts/astra/native/astra-intelligence.cjs'),path.join(escaped,'scripts/astra/native/astra-intelligence.cjs'));
+    copy(path.join(ROOT,'data/egx-exchange-closures.json'),path.join(escaped,'data/egx-exchange-closures.json'));
+    fs.mkdirSync(path.join(escaped,'.github/workflows'),{recursive:true});
+    fs.writeFileSync(path.join(escaped,'.github/workflows/sample.yml'),'name: sample\\non: workflow_dispatch\\n');
+    fs.symlinkSync(escaped,link,'dir');
     const out=invoke(script,{ASTRA_INTELLIGENCE_ROOT:link});
     assert.notEqual(out.status,0);
     assert.match(out.stderr,/blocked in GitHub Actions/);
