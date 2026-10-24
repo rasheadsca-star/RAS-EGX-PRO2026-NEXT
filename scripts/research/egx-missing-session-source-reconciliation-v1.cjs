@@ -14,7 +14,7 @@ function diagnose(universe,closed=confirmedClosures(root)){
  const observed=[...seen.keys()].sort(),min=observed[0],max=observed.at(-1);
  const intervals=[],missing=[],classes={exchangeClosed:0,marketWideDataMissing:0,tickerSpecificAbsence:0,lowMarketCoverage:0};
  if(!min||!max)return {coverage:{},classes,missing,intervals};
- const threshold=Math.max(3,Math.floor(Object.keys(first).length*.1));
+ const threshold=Math.max(1,Math.floor(Object.keys(first).length*.1));
  for(let d=min;d<=max;d=shiftDay(d,1)){
   if(!isTradingSession(d,closed)){classes.exchangeClosed++;continue}
   if(!seen.has(d)){classes.marketWideDataMissing++;intervals.push({date:d,status:'MARKET_WIDE_UNOBSERVED',action:'VERIFY_EXCHANGE_SESSION_AND_RETRIEVE_SOURCE'});continue}
