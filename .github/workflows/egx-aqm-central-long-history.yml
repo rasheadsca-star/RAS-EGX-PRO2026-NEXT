@@ -1,0 +1,52 @@
+name: EGX AQM From Existing Central Long History
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/egx-aqm-central-long-history.yml'
+      - 'scripts/research/egx-aqm-central-long-history-research-v1.cjs'
+      - 'scripts/research/egx-central-research-ohlcv-gateway-v1.cjs'
+      - 'tests/research/egx-central-research-ohlcv-gateway-v1.test.cjs'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Checkout EXISTING central branch research sources (read-only)
+        uses: actions/checkout@v4
+        with:
+          ref: egx-research-ledger
+          path: sources/central-ledger
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /raw-long-history-gzip/*.json.gz
+            /raw-long-history-quality.json
+      - name: Gate test of actual long-history candle reader
+        run: node --test tests/research/egx-central-research-ohlcv-gateway-v1.test.cjs
+      - name: Run AQM with restored central history research source, never live
+        run: node scripts/research/egx-aqm-central-long-history-research-v1.cjs
+      - name: Expose research results and strict noncertification
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs'),r=JSON.parse(fs.readFileSync('data/research/egx-aqm-central-long-history-research-v1.json'));
+          const lines=['## AQM on EXISTING central long-history research source','',
+            'Long-history source used: '+r.input+'; eligible verified-for-research ticker files: '+r.coverage.usableSymbols+
+            '; production eligible: **NO**; official EGX30/fundamental/event history: **NOT CERTIFIED**.','',
+            '| Turnover threshold EGP | Variant | Signals | Closed trades | Return % | Max DD % | Stale bars |',
+            '|---:|---|---:|---:|---:|---:|---:|'];
+          for(const x of r.results)for(const m of x.strategies)lines.push('| '+x.minimumTurnoverEgp+' | '+m.variant+' | '+m.signals+' | '+m.closedTrades+' | '+m.returnPct+' | '+m.maxDrawdownPct+' | '+m.staleMarks+' |');
+          lines.push('','NOT independent OOS. No live recommendations. Qualifying subset is selected with hindsight for data matching; survivor and corporate action bias possible.');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-aqm-read-existing-central-long-history
+          path: data/research/egx-aqm-central-long-history-research-v1.json
+          retention-days: 30
