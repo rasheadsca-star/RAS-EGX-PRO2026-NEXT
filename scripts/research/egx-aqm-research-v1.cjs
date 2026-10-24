@@ -143,7 +143,7 @@ function main(){
  }
  const result={schemaVersion:'egx-aqm-initial-historical-diagnostic-1',generatedAt:new Date().toISOString(),productionReady:false,liveTradingEnabled:false,priceInput:'main archive via canonical executable OHLCV gateway, no central quarantine promotion',coverage:audit,strict:{status:'BLOCKED_MISSING_HISTORICAL_INPUTS',signalCount:strict.signals.length,missing:strict.asOfAudit.missing},exploratoryTechnicalProxy:runs,truthfulness:'Technical proxy outcomes are not complete AQM historical validation, and previously viewed historical sessions cannot be untouched OOS'};
  const output=path.join(root,'data/research/egx-aqm-initial-historical-diagnostic-v1.json');fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
- console.log(JSON.stringify({strict:result.strict,diagnostics:runs.map(x=>({liquidityFloorEgp:x.liquidityFloorEgp,signalCount:x.signalCount,signalCountsByVariant:x.signalCountsByVariant,variants:x.variants.map(z=>({variant:z.variant,portfolioReturnPct:z.portfolioReturnPct,maxDrawdownPct:z.maxDrawdownPct,closedTrades:z.closedTrades,staleMarkSessions:z.staleMarkSessions}))}))},null,2));
+ console.log(JSON.stringify({strict:result.strict,diagnostics:runs.map(x=>({liquidityFloorEgp:x.liquidityFloorEgp,signalCount:x.signalCount,setupFunnel:x.setupFunnel,rejections:x.rejections,signalCountsByVariant:x.signalCountsByVariant,variants:x.variants.map(z=>({variant:z.variant,portfolioReturnPct:z.portfolioReturnPct,maxDrawdownPct:z.maxDrawdownPct,closedTrades:z.closedTrades,winRatePct:z.winRatePct,exitReasonCounts:z.exitReasonCounts,topLosses:z.topLosses,staleMarkSessions:z.staleMarkSessions}))}))},null,2));
 }
 if(require.main===module)main();
 module.exports={technical,computeSignals,replay};
