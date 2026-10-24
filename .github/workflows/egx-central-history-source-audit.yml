@@ -1,0 +1,77 @@
+name: EGX Central Historical Source Reconciliation
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/egx-central-history-source-audit.yml'
+      - 'scripts/research/egx-central-history-cross-repo-inventory-v1.cjs'
+      - 'tests/research/egx-central-history-cross-repo-inventory-v1.test.cjs'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout current EGX repository
+        uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Checkout legacy V0.1 sources read-only
+        uses: actions/checkout@v4
+        with:
+          repository: rasheadsca-star/RAS-EGX0.1
+          ref: main
+          path: sources/legacy-01
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /data/history.json
+            /data/history-50.json
+            /data/v20/technical-history.json
+      - name: Checkout legacy EGX-PRO2026 sources read-only
+        uses: actions/checkout@v4
+        with:
+          repository: rasheadsca-star/RAS-EGX-PRO2026
+          ref: main
+          path: sources/legacy-pro2026
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /data/history.json
+            /data/postclose/history-v13-14.json
+      - name: Checkout existing central research ledger reports read-only
+        uses: actions/checkout@v4
+        with:
+          ref: egx-research-ledger
+          path: sources/central-ledger
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /manifest.json
+            /coverage_efficiency_report.json
+            /evidence_quality_report.json
+      - name: Test source and candle classification
+        run: node --test tests/research/egx-central-history-cross-repo-inventory-v1.test.cjs
+      - name: Produce non-destructive source reconciliation report
+        run: node scripts/research/egx-central-history-cross-repo-inventory-v1.cjs
+      - name: Publish historical source facts and explicit no-promotion state
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const r=JSON.parse(fs.readFileSync('data/research/egx-central-history-cross-repo-inventory-v1.json'));
+          const lines=['## Actual stored candle depth (not headline coverage statistics)','',
+           'This inventory covers the existing central evidence branch plus two older GitHub repositories. No source has been promoted into live recommendations.',
+           '','| Store | Status | Stocks | Stocks >=250 | Stocks >=500 | Maximum valid unreviewed candle dates |',
+           '|---|---|---:|---:|---:|---:|'];
+          lines.push('| Main executable archive | Research-only | '+r.mainArchiveExecutableDepth.stocks+
+            ' | '+r.mainArchiveExecutableDepth.atLeast250+' | '+r.mainArchiveExecutableDepth.atLeast500+' | '+r.mainArchiveExecutableDepth.maximum+' |');
+          for(const s of r.sources)lines.push('| '+s.id+' | '+s.status+' | '+(s.stocks??'—')+' | '+(s.stocksAtLeast250??'—')+' | '+(s.stocksAtLeast500??'—')+' | '+(s.maximumUsableDates??'—')+' |');
+          lines.push('','**'+r.promotionDecision+'**: raw daily OHLCV date/provenance, conflicting ticks and corporate actions require validation. 10-year statistical summary does not itself represent executable candles.');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-cross-repo-central-data-inventory
+          path: data/research/egx-central-history-cross-repo-inventory-v1.json
+          if-no-files-found: warn
+          retention-days: 30
