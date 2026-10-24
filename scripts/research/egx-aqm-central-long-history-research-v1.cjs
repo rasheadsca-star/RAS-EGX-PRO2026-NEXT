@@ -13,8 +13,9 @@ function evaluateResearch(){
   const strategies=['aqm_pullback','aqm_breakout'].map(variant=>{
    const x=replay(r.universe,scan.signals,variant,{riskPerTradePct:.5});
    return {variant,signals:scan.signals.filter(s=>s.variant===variant).length,closedTrades:x.closedTrades,
-    returnPct:x.portfolioReturnPct,maxDrawdownPct:x.maxDrawdownPct,staleMarks:x.staleMarkSessions,
-    openPositions:x.openPositions,winRatePct:x.winRatePct}
+    diagnosticReturnPct:x.portfolioReturnPct,certifiedReturnPct:x.reportableCertifiedPortfolioReturnPct,
+    markIntegrity:x.markIntegrity,maximumDiagnosticDrawdownPct:x.maxDrawdownPct,staleMarks:x.staleMarkSessions,
+    openPositions:x.openPositions,winRatePct:x.winRatePct,qualification:'RESEARCH_ONLY_NOT_CERTIFIED'}
   });
   diagnostics.push({minimumTurnoverEgp:liquidity,strategies,assessedTradeDates:scan.datesWithLongHistory});
  }
@@ -22,7 +23,7 @@ function evaluateResearch(){
   input:'egx-research-ledger/raw-long-history-gzip/*.json.gz',
   provenance:'Existing V17 10-year source collector and reconciliation quality report',
   coverage:r.audit,
-  strictSignals:strict.signals.length,productionEligible:false,independentOOS:false,
+  strictSignals:strict.signals.length,productionEligible:false,independentOOS:false,marksMustBeFreshForCertification:true,
   results:diagnostics,limitations:r.limitations.concat([
    'Only 33 of the 242 rehydrated source files initially pass internal matching rules; this is NOT a complete contemporaneous EGX universe',
    'The central history was retrieved and inspected before this diagnostic, so no date is a newly untouched historical holdout',
