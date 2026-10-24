@@ -76,13 +76,14 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
  const quotes=new Map(Object.entries(universe).map(([ticker,rows])=>[ticker,new Map(rows.map(b=>[b.date,b]))]));
  const pending=new Map(),nextDate=new Map(marketDates.slice(0,-1).map((date,i)=>[date,marketDates[i+1]]));
  for(const s of signals.filter(x=>x.variant===variant)){const date=nextDate.get(s.date);if(date){const arr=pending.get(date)||[];arr.push(s);pending.set(date,arr)}}
- let cash=initial,peak=initial,maxDD=0,month=null,monthStart=initial,monthlyHaltDays=0,missingMarks=0,partialExits=0;
+ let cash=initial,peak=initial,maxDD=0,month=null,monthStart=initial,monthlyHaltDays=0,monthlyHaltLatched=false,missingMarks=0,partialExits=0;
  const positions=[],trades=[],curve=[];
  const fee=p.roundTripFeesPct/200,entrySlip=p.entrySlippagePct/100,exitSlip=p.exitSlippagePct/100;
  for(const date of marketDates){
-  const m=date.slice(0,7);if(month!==m){month=m;monthStart=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0)}
+  const m=date.slice(0,7);if(month!==m){month=m;monthlyHaltLatched=false;monthStart=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0)}
   const preEquity=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0);
-  const halted=preEquity<monthStart*(1-p.monthlyLossHaltPct/100);
+  if(preEquity<monthStart*(1-p.monthlyLossHaltPct/100))monthlyHaltLatched=true;
+  const halted=monthlyHaltLatched;
   if(halted)monthlyHaltDays++;
   // Entries are generated at the previous global session close. No same-session signal is visible at the open.
   for(const s of (pending.get(date)||[]).slice().sort((a,b)=>b.score-a.score||a.ticker.localeCompare(b.ticker))){
@@ -119,6 +120,7 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
    }
   }
   const equity=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0);
+  if(equity<monthStart*(1-p.monthlyLossHaltPct/100))monthlyHaltLatched=true;
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,(peak-equity)/peak*100);
   curve.push({date,equityEgp:round(equity,2),cashEgp:round(cash,2),openPositions:positions.length});
  }
