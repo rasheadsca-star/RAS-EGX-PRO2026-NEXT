@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/egx-aqm-central-long-history.yml'
       - 'scripts/research/egx-aqm-central-long-history-research-v1.cjs'
+      - 'scripts/research/egx-aqm-single-trading-readiness-gate-v1.cjs'
+      - 'tests/research/egx-aqm-single-trading-readiness-gate-v1.test.cjs'
       - 'scripts/research/egx-central-price-conflict-attribution-v1.cjs'
       - 'tests/research/egx-central-price-conflict-attribution-v1.test.cjs'
       - 'scripts/research/egx-central-research-ohlcv-gateway-v1.cjs'
@@ -43,6 +45,10 @@ jobs:
           node scripts/research/egx-central-price-conflict-attribution-v1.cjs
       - name: Run AQM with restored central history research source, never live
         run: node scripts/research/egx-aqm-central-long-history-research-v1.cjs
+      - name: Validate single production readiness gate and issue final research-only report
+        run: |
+          node --test tests/research/egx-aqm-single-trading-readiness-gate-v1.test.cjs
+          node scripts/research/egx-aqm-single-trading-readiness-gate-v1.cjs
       - name: Expose research results and strict noncertification
         run: |
           node - <<'NODE'
@@ -68,6 +74,10 @@ jobs:
             lines.push('| '+x.minimumTurnoverEgp+' | '+m.variant+' | '+q.stalePositionSessions+' | '+q.maxStaleAgeSessions+
               ' | '+q.maxStaleExposedEgp+' | '+q.status+' | **NOT CERTIFIED** |');
           }
+          const gate=JSON.parse(fs.readFileSync('data/research/egx-aqm-single-trading-readiness-gate-v1.json'));
+          lines.push('','### Final single decision gate: '+gate.status,
+            'No executable buy recommendations or broker automation can be authorized. Approved strategies: '+gate.approvedStrategies+'.');
+          for(const g of gate.scenarios)lines.push(g.liquidityFloorEgp+' EGP / '+g.variant+': '+g.blockers.join(', '));
           lines.push('','NOT independent OOS. No live recommendations. The 5% stale-mark haircut is a hypothetical scenario, NOT an observed fill. Qualifying subset selected with hindsight; corporate-action and universe survivorship bias possible.');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
           NODE
@@ -78,4 +88,5 @@ jobs:
           path: |
             data/research/egx-aqm-central-long-history-research-v1.json
             data/research/egx-central-price-conflict-attribution-v1.json
+            data/research/egx-aqm-single-trading-readiness-gate-v1.json
           retention-days: 30
