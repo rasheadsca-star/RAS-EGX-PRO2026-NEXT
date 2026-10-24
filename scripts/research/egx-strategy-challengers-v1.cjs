@@ -5,6 +5,7 @@ if(process.env.EGX_ENABLE_LIVE_TRADING==='true')throw Error('Research only; live
 const {confirmedClosures,isTradingSession}=require('../ops/egx-session-math.cjs');
 const cfg=require('../../data/v13-4-quant-policy.json').research;
 const {tradingWindow,tradeForwardWindow,executable}=require('./egx-executable-session-series-v1.cjs');
+const {resolveExit}=require('./egx-research-execution-fills-v1.cjs');
 const policy=Object.freeze({minBars:65,minimumTurnover20:100000,momentum20MinPct:3,relativeRankTopFraction:0.25,minUniversePeers:15,shortSma:20,longSma:50,pullbackMinPct:-4,pullbackMaxPct:1.0,stopPct:5,targetPct:9});
 const mean=a=>a.reduce((x,y)=>x+y,0)/a.length,round=(n,d=3)=>+n.toFixed(d);
 function features(rows,i){
@@ -40,11 +41,9 @@ function backtest(universe,research=cfg){
    const next=p.rows[p.i+1];if(!executable(next))continue;
    const entry=next.open*(1+research.entrySlippagePct/100),future=tradeForwardWindow(p.rows,p.i+1,research.maximumHoldingSessions);
    if(!(entry>0))continue;
-   const stop=entry*(1-policy.stopPct/100),target=entry*(1+policy.targetPct/100);
-   let exit=null,status='',offset=-1;
-   for(let k=0;k<future.length;k++){const bar=future[k];if(bar.executable===false)continue;if(bar.low<=stop){exit=stop;status='STOP';offset=k;break}if(bar.high>=target){exit=target;status='TARGET';offset=k;break}}
-   if(exit===null&&future.length<research.maximumHoldingSessions){unresolved.push({ticker:p.ticker,variant:p.variant,signalDate:date});continue}
-   if(exit===null){exit=future.at(-1).close;offset=future.length-1;status='TIME_EXIT'}
+   const fill=resolveExit(future,entry,research.maximumHoldingSessions,policy.stopPct,policy.targetPct);
+   if(!fill){unresolved.push({ticker:p.ticker,variant:p.variant,signalDate:date});continue}
+   const {exitPrice:exit,offset,status}=fill;
    const exitDate=future[offset].date;busy.set(key,exitDate);
    trades.push({ticker:p.ticker,variant:p.variant,signalDate:date,entryDate:next.date,exitDate,status,netReturnPct:round((exit/entry-1)*100-research.roundTripCostPct)});
   }
