@@ -21,7 +21,7 @@ for(const script of scripts){
       return;
     }
     // Link to an isolated stand-in, NEVER the live checkout: a regressed guard may run the builder.
-    const escaped=fs.mkdtempSync(path.join(path.dirname(fs.realpathSync(os.tmpdir())),'astra-outside-'));
+    const escaped=fs.mkdtempSync(path.join(path.dirname(ROOT),'astra-outside-'));
     t.after(()=>fs.rmSync(escaped,{recursive:true,force:true}));
     const copy=(src,dst)=>{fs.mkdirSync(path.dirname(dst),{recursive:true});fs.copyFileSync(src,dst);};
     copy(path.join(ROOT,'scripts/astra/native/workflow-inventory.cjs'),path.join(escaped,'scripts/astra/native/workflow-inventory.cjs'));
