@@ -1,0 +1,47 @@
+name: EGX AQM Historical Research
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/egx-aqm-historical.yml'
+      - 'scripts/research/egx-aqm-research-v1.cjs'
+      - 'tests/research/egx-aqm-research-v1.test.cjs'
+      - 'data/research/egx-aqm-policy-v1.json'
+      - 'scripts/research/egx-executable-session-series-v1.cjs'
+      - 'scripts/research/egx-canonical-ohlcv-gateway.cjs'
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate strict safety, point-in-time signals and 4-position risk
+        run: node --test tests/research/egx-aqm-research-v1.test.cjs
+      - name: Run AQM pullback and breakout research on canonical main archive
+        run: node scripts/research/egx-aqm-research-v1.cjs
+      - name: Explain scope and readiness
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p=JSON.parse(fs.readFileSync('data/research/egx-aqm-initial-historical-diagnostic-v1.json','utf8'));
+          const lines=['## AQM: strict model vs limited technical diagnostics',
+            '**FULL MODEL: BLOCKED**. Missing point-in-time index, finance, events, sector, and halt certification. No production recommendation.',
+            '', '| Diagnostic volume threshold (EGP/day) | Variant | Signals | Closed trades | Mark-to-market % | Max drawdown % | Stale marks |',
+            '|---:|---|---:|---:|---:|---:|---:|'];
+          for(const r of p.exploratoryTechnicalProxy)for(const v of r.variants)lines.push('|'+r.liquidityFloorEgp+'|'+v.variant+'|'+r.signalCountsByVariant[v.variant]+'|'+v.closedTrades+'|'+v.portfolioReturnPct+'|'+v.maxDrawdownPct+'|'+v.staleMarkSessions+'|');
+          lines.push('','All results research only; no untouched out-of-sample, not EGX30-certified, no historical as-of fundamental or corporate-action certification.');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-aqm-initial-historical-diagnostic
+          path: data/research/egx-aqm-initial-historical-diagnostic-v1.json
+          retention-days: 30
+          if-no-files-found: warn
