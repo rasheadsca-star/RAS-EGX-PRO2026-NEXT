@@ -13,6 +13,8 @@ on:
       - 'tests/research/egx-market-top-four-first-v1.test.cjs'
       - 'scripts/research/egx-strategy-top-four-tournament-v1.cjs'
       - 'tests/research/egx-strategy-top-four-tournament-v1.test.cjs'
+      - 'scripts/research/egx-topfour-breadth-regime-v1.cjs'
+      - 'tests/research/egx-topfour-breadth-regime-v1.test.cjs'
 jobs:
   compare:
     runs-on: ubuntu-latest
@@ -31,6 +33,8 @@ jobs:
         run: node --test tests/research/egx-market-top-four-first-v1.test.cjs
       - name: Test per-strategy independent best-four rankings
         run: node --test tests/research/egx-strategy-top-four-tournament-v1.test.cjs
+      - name: Test market breadth gate
+        run: node --test tests/research/egx-topfour-breadth-regime-v1.test.cjs
       - name: Compare strategies with identical execution and eligible universe
         run: node scripts/research/egx-comparable-three-strategy-v1.cjs
       - name: Rank and evaluate no-more-than-four selected positions per strategy
@@ -39,6 +43,8 @@ jobs:
         run: node scripts/research/egx-market-top-four-first-v1.cjs
       - name: Compare each strategy's own top-four-ranked stocks
         run: node scripts/research/egx-strategy-top-four-tournament-v1.cjs
+      - name: Assess top-four strategy portfolios with market breadth regime
+        run: node scripts/research/egx-topfour-breadth-regime-v1.cjs
       - name: Write historical comparison
         if: success()
         run: |
@@ -48,6 +54,7 @@ jobs:
           const p=JSON.parse(fs.readFileSync('data/research/egx-top-four-portfolio-v1.json','utf8'));
           const market=JSON.parse(fs.readFileSync('data/research/egx-market-top-four-first-v1.json','utf8'));
           const tour=JSON.parse(fs.readFileSync('data/research/egx-strategy-top-four-tournament-v1.json','utf8'));
+          const regime=JSON.parse(fs.readFileSync('data/research/egx-topfour-breadth-regime-v1.json','utf8'));
           const lines=['## EGX Unified Three Strategy Comparison','Research only; chronological partitions are not an untouched out-of-sample test.','','| Period | Model | Trades | Win % | Mean net % | Profit factor |','|---|---|---:|---:|---:|---:|'];
           for(const group of r.byPeriod)for(const x of group.variants)lines.push('| '+group.period+' | '+x.variant+' | '+x.trades+' | '+(x.winRatePct??'N/A')+' | '+(x.meanNetReturnPct??'N/A')+' | '+(x.profitFactor??'N/A')+' |');
           lines.push('','Ticker files eligible: '+r.coverage.eligible+' / '+r.coverage.files+'. Unresolved: '+r.unresolved);
@@ -57,6 +64,8 @@ jobs:
           for(const m of market.models)lines.push('| '+m.variant+' | '+m.shortlistedTradeCount+' | '+m.selectedTrades+' | '+m.totalReturnPct+' |');
           lines.push('', '### Independent per-strategy top-four tournament','| Model | Total signals | Selected trades | Portfolio return % | Win % |','|---|---:|---:|---:|---:|');
           for(const x of tour.models)lines.push('| '+x.variant+' | '+x.totalCandidateSignals+' | '+x.portfolio.selectedTrades+' | '+x.portfolio.totalReturnPct+' | '+x.portfolio.winRatePct+' |');
+          lines.push('', '### Market breadth on top-four portfolios (exploratory)','| Model | Baseline return % | Gated return % | Baseline trades | Gated trades |','|---|---:|---:|---:|---:|');
+          for(const [i,x] of regime.filtered.entries())lines.push('| '+x.variant+' | '+regime.baseline[i].totalReturnPct+' | '+x.totalReturnPct+' | '+regime.baseline[i].selectedTrades+' | '+x.selectedTrades+' |');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join(String.fromCharCode(10))+String.fromCharCode(10));
           NODE
       - uses: actions/upload-artifact@v4
@@ -68,3 +77,4 @@ jobs:
             data/research/egx-top-four-portfolio-v1.json
             data/research/egx-market-top-four-first-v1.json
             data/research/egx-strategy-top-four-tournament-v1.json
+            data/research/egx-topfour-breadth-regime-v1.json
