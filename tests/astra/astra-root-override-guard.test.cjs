@@ -8,8 +8,13 @@ const cp=require('node:child_process');
 const ROOT=path.resolve(__dirname,'../..');
 const scripts=['scripts/astra/native/astra-intelligence.cjs','scripts/astra/native/workflow-inventory.cjs'];
 function invoke(script,overrides={}){
+  const isolated=fs.mkdtempSync(path.join(os.tmpdir(),'astra-guard-execution-'));
+  const copy=(relative)=>{const dest=path.join(isolated,relative);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(ROOT,relative),dest)};
+  for(const rel of ['scripts/astra/native/astra-intelligence.cjs','scripts/astra/native/workflow-inventory.cjs','scripts/ops/egx-session-math.cjs','data/egx-exchange-closures.json'])copy(rel);
+  fs.mkdirSync(path.join(isolated,'.github/workflows'),{recursive:true});
+  fs.writeFileSync(path.join(isolated,'.github/workflows/fixture.yml'),'name: fixture\\non: workflow_dispatch\\n');
   const env={...process.env,GITHUB_ACTIONS:'true',ASTRA_ALLOW_ROOT_OVERRIDE:'1',...overrides};
-  return cp.spawnSync(process.execPath,[path.join(ROOT,script)],{cwd:ROOT,env,encoding:'utf8'});
+  try{return cp.spawnSync(process.execPath,[path.join(isolated,script)],{cwd:isolated,env,encoding:'utf8'});}finally{fs.rmSync(isolated,{recursive:true,force:true});}
 }
 for(const script of scripts){
   test(script+' blocks a temp-directory symlink pointing to repository',t=>{
