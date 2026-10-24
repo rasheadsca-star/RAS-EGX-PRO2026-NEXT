@@ -103,3 +103,33 @@ if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(proc
   assert.equal(out.status,3,JSON.stringify(report));
   assert.ok(report.sideEffects.includes('GIT_STATUS_CHANGED'),JSON.stringify(report));
 });
+
+test('history is copied, never writable through a symlink to source history',t=>{
+  const root=certifiedRoot(t);
+  const source=path.join(root,'data/history/AAAA.json');
+  const baseline=fs.readFileSync(source);
+  const builder=path.join(root,BUILD_REL);
+  fs.appendFileSync(builder,`
+if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.cwd(),'data/history/AAAA.json'),'evil');
+`);
+  const out=cp.spawnSync(process.execPath,[path.join(root,GATE_REL),root],{
+    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1'},encoding:'utf8'
+  });
+  const report=JSON.parse(out.stdout);
+  assert.notEqual(out.status,null,out.stderr);
+  assert.deepEqual(fs.readFileSync(source),baseline,'source history was modified via gate temp root');
+  assert.deepEqual(report.sideEffects,[],'gate source must remain immutable');
+});
+test('production gate detects malicious source-history mutation with exit 3',t=>{
+  const root=certifiedRoot(t);
+  const builder=path.join(root,BUILD_REL);
+  fs.appendFileSync(builder,`
+if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.env.EVIL_TARGET,'data/history/AAAA.json'),'evil');
+`);
+  const out=cp.spawnSync(process.execPath,[path.join(root,GATE_REL),root],{
+    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1',EVIL_TARGET:root},encoding:'utf8'
+  });
+  const report=JSON.parse(out.stdout);
+  assert.equal(out.status,3,JSON.stringify(report));
+  assert.ok(report.sideEffects.includes('INPUT_CHANGED data/history/*'),JSON.stringify(report));
+});
