@@ -6,6 +6,7 @@ const policy=require('../../data/research/egx-aqm-policy-v1.json');
 const {loadUniverse}=require('./egx-strategy-challengers-v1.cjs');
 const {executable,tradingWindow}=require('./egx-executable-session-series-v1.cjs');
 const {breadthByDate}=require('./egx-topfour-breadth-regime-v1.cjs');
+const {STYLES,act:exitAction}=require('./egx-aqm-exit-policies-v1.cjs');
 const avg=a=>a.reduce((s,x)=>s+x,0)/a.length;
 const round=(n,d=3)=>+n.toFixed(d);
 function technical(rows,i){
@@ -76,13 +77,15 @@ function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurn
  }
  return {signals,reasons,setupFunnel,asOfAudit,datesWithLongHistory:byDate.size,breadthDates:breadth.size};
 }
-function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
+function replay(universe,signals,variant,{initial=policy.risk.initialEgp,exitStyle='partial',riskPerTradePct=policy.risk.riskPerTradePct}={}){
+ if(!STYLES.includes(exitStyle))throw Error('Invalid exitStyle');
+ if(!(riskPerTradePct>0&&riskPerTradePct<=1))throw Error('Invalid research risk percentage');
  const p=policy.risk,marketDates=[...new Set(Object.values(universe).flatMap(rows=>rows.map(b=>b.date)))].sort();
  const quotes=new Map(Object.entries(universe).map(([ticker,rows])=>[ticker,new Map(rows.map(b=>[b.date,b]))]));
  const pending=new Map(),nextDate=new Map(marketDates.slice(0,-1).map((date,i)=>[date,marketDates[i+1]]));
  for(const s of signals.filter(x=>x.variant===variant)){const date=nextDate.get(s.date);if(date){const arr=pending.get(date)||[];arr.push(s);pending.set(date,arr)}}
  let cash=initial,peak=initial,maxDD=0,month=null,monthStart=initial,monthlyHaltDays=0,monthlyHaltLatched=false,missingMarks=0,partialExits=0;
- const positions=[],trades=[],curve=[];
+ const positions=[],trades=[],curve=[],openedEntries=[];
  const fee=p.roundTripFeesPct/200,entrySlip=p.entrySlippagePct/100,exitSlip=p.exitSlippagePct/100;
  for(const date of marketDates){
   const m=date.slice(0,7);if(month!==m){month=m;monthlyHaltLatched=false;monthStart=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0)}
@@ -98,7 +101,7 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
    const exposure=positions.reduce((v,x)=>v+x.qty*x.lastClose,0);
    const entry=q.open*(1+entrySlip),stop=entry-p.stopAtrMultiple*s.atr14;
    if(!(stop>0&&stop<entry))continue;
-   const maxFromRisk=equity*p.riskPerTradePct/100/(entry-stop)*entry;
+   const maxFromRisk=equity*riskPerTradePct/100/(entry-stop)*entry;
    const maxFromWeight=equity*p.maxWeightPct/100;
    const maxFromExposure=Math.max(0,equity*s.marketExposureMaxPct/100-exposure);
    const maxFromLiquidity=s.turnover20*p.maxDailyTurnoverParticipationPct/100;
@@ -106,21 +109,24 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
    const qty=Math.floor(nominal/entry);
    if(qty<=0)continue;
    const cost=qty*entry*(1+fee);if(cost>cash+1e-7)continue;
-   cash-=cost;positions.push({ticker:s.ticker,variant,score:s.score,dateOpened:date,qty,initialQty:qty,entry,stop,atr:s.atr14,target1:entry+p.firstTargetAtrMultiple*s.atr14,target2:entry+p.secondTargetAtrMultiple*s.atr14,hitFirst:false,holdingBars:0,lastClose:entry,totalCost:cost,proceeds:0,exitReason:null});
+   cash-=cost;
+   const opened={ticker:s.ticker,variant,score:s.score,signalDate:s.date,dateOpened:date,qty,entry,atr:s.atr14,stop,turnover20:s.turnover20,fee,slippage:entrySlip,originalCost:cost};
+   openedEntries.push(opened);
+   positions.push({...opened,initialQty:qty,target1:entry+p.firstTargetAtrMultiple*s.atr14,target2:entry+p.secondTargetAtrMultiple*s.atr14,hitFirst:false,holdingBars:0,lastClose:entry,totalCost:cost,proceeds:0,exitReason:null});
   }
   for(let j=positions.length-1;j>=0;j--){
    const pos=positions[j],bar=quotes.get(pos.ticker)?.get(date);
    if(!bar||!executable(bar)){missingMarks++;continue}
    pos.holdingBars++;pos.lastClose=bar.close;
    const sell=(qty,price)=>{const received=qty*price*(1-exitSlip)*(1-fee);cash+=received;pos.proceeds+=received;pos.qty-=qty};
-   // Intraday OHLC has unknown ordering: test stop before all profit targets.
-   if(bar.low<=pos.stop){pos.exitReason=bar.open<pos.stop?'STOP_GAP':'STOP';sell(pos.qty,Math.min(bar.open,pos.stop));}
-   else if(pos.hitFirst&&bar.high>=pos.target2){pos.exitReason='TARGET2';sell(pos.qty,pos.target2)}
-   else if(!pos.hitFirst&&bar.high>=pos.target1){
-    const part=Math.max(1,Math.ceil(pos.qty*p.firstSaleFraction));sell(part,pos.target1);pos.hitFirst=true;pos.stop=Math.max(pos.stop,pos.entry);partialExits++;
-   }else if(pos.holdingBars>=p.maxHoldingExecutableSessions){pos.exitReason='TIME_EXIT';sell(pos.qty,bar.close)}
+   // OHLC ordering is unknown. Stop is conservative first; trailing updates after the close.
+   const action=exitAction(pos,bar,exitStyle,p.maxHoldingExecutableSessions);
+   for(const fill of action.sells)sell(fill.qty,fill.price);
+   if(action.reason)pos.exitReason=action.reason;
+   if(action.firstTarget){pos.hitFirst=true;pos.stop=Math.max(pos.stop,pos.entry);partialExits++}
+   if(action.nextStop!==undefined)pos.stop=action.nextStop;
    if(pos.qty===0){
-    trades.push({ticker:pos.ticker,variant,entryDate:pos.dateOpened,exitDate:date,score:pos.score,netPnlEgp:round(pos.proceeds-pos.totalCost,2),netReturnPct:round(100*(pos.proceeds/pos.totalCost-1)),holdingBars:pos.holdingBars,exitReason:pos.exitReason,firstTargetHit:pos.hitFirst});
+    trades.push({ticker:pos.ticker,variant,entryDate:pos.dateOpened,exitDate:date,score:pos.score,netPnlEgp:round(pos.proceeds-pos.totalCost,2),netReturnPct:round(100*(pos.proceeds/pos.totalCost-1)),holdingBars:pos.holdingBars,exitReason:pos.exitReason,firstTargetHit:pos.hitFirst,entryPrice:round(pos.entry,6),initialQty:pos.initialQty,entryAtr:round(pos.atr,6),exitStyle});
     positions.splice(j,1);
    }
   }
@@ -130,7 +136,7 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
   curve.push({date,equityEgp:round(equity,2),cashEgp:round(cash,2),openPositions:positions.length});
  }
  const nav=curve.at(-1)?.equityEgp??initial,positive=trades.filter(x=>x.netPnlEgp>0).length;
- return {variant,researchOnly:true,portfolioReturnPct:round(100*(nav/initial-1)),endEquityEgp:nav,maxDrawdownPct:round(maxDD),closedTrades:trades.length,winRatePct:trades.length?round(positive/trades.length*100):null,openPositions:positions.length,partialExits,staleMarkSessions:missingMarks,monthlyHaltDays,initialEgp:initial,tradeLedger:trades,equityCurve:curve,limitations:['Research-only technical proxy; sector cap and fundamental/event/index checks not certified','Unadjusted OHLCV may have corporate actions; intrabar ordering unknown','Open positions marked at close without liquidation fees','Known universe and source uncertainty may introduce survivorship and price-source bias']};
+ return {variant,exitStyle,riskPerTradePct,researchOnly:true,openedEntries,portfolioReturnPct:round(100*(nav/initial-1)),endEquityEgp:nav,maxDrawdownPct:round(maxDD),closedTrades:trades.length,winRatePct:trades.length?round(positive/trades.length*100):null,openPositions:positions.length,partialExits,staleMarkSessions:missingMarks,monthlyHaltDays,initialEgp:initial,tradeLedger:trades,equityCurve:curve,limitations:['Research-only technical proxy; sector cap and fundamental/event/index checks not certified','Unadjusted OHLCV may have corporate actions; intrabar ordering unknown','Open positions marked at close without liquidation fees','Known universe and source uncertainty may introduce survivorship and price-source bias']};
 }
 function main(){
  const {universe,audit}=loadUniverse();
