@@ -1,6 +1,7 @@
 'use strict';
 const fs=require('fs'),path=require('path'),cp=require('child_process');
-const ROOT=path.resolve(__dirname,'../../..');
+// ASTRA_INTELLIGENCE_ROOT is for hermetic test roots; the production default is unchanged.
+const ROOT=process.env.ASTRA_INTELLIGENCE_ROOT?path.resolve(process.env.ASTRA_INTELLIGENCE_ROOT):path.resolve(__dirname,'../../..');
 const WF=path.join(ROOT,'.github','workflows');
 const files=fs.readdirSync(WF).filter(x=>/\.ya?ml$/i.test(x)).sort();
 const rows=[];
