@@ -11,7 +11,7 @@ permissions:
 jobs:
   restore:
     runs-on: ubuntu-latest
-    timeout-minutes: 24
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,8 +19,8 @@ jobs:
           node-version: '22'
       - name: Test real daily candles, adjusted source and reconciliation rules
         run: node --test tests/research/egx-central-long-history-restore-audit-v1.test.cjs
-      - name: Rehydrate original 10-year daily OHLCV using EXISTING V17 collector (25 high-coverage stocks)
-        run: node scripts/v17/historical-recovery/long-history/ingest.cjs --symbols=COMI,ABUK,ETEL,FWRY,SWDY,TMGH,EAST,EGAL,JUFO,HRHO,ORHD,CCAP,RMDA,SKPC,ALCN,MASR,HDBK,PHDC,ORAS,AMOC,EFID,CIEB,OLFI,RAYA,MTIE
+      - name: Restore original 10-year candles for all mapped active securities using existing V17 collector
+        run: node scripts/v17/historical-recovery/long-history/ingest.cjs
       - name: Audit source identities and compare with main data before ANY promotion
         run: node scripts/research/egx-central-long-history-restore-audit-v1.cjs
       - name: Print completeness without claiming automatic certification
@@ -50,10 +50,17 @@ jobs:
           git -C research-backup remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git -C research-backup fetch --depth=1 origin egx-research-ledger
           git -C research-backup checkout -B egx-research-ledger FETCH_HEAD
-          mkdir -p research-backup/raw-long-history
-          cp data/v17/historical-recovery/history/*.json research-backup/raw-long-history/
+          mkdir -p research-backup/raw-long-history-gzip
+          python - <<'PY'
+          import gzip, pathlib
+          source=pathlib.Path('data/v17/historical-recovery/history')
+          target=pathlib.Path('research-backup/raw-long-history-gzip')
+          for original in sorted(source.glob('*.json')):
+              (target/(original.name+'.gz')).write_bytes(gzip.compress(original.read_bytes(),compresslevel=9,mtime=0))
+          print('Archived original source documents:',len(list(source.glob('*.json'))))
+          PY
           cp data/research/egx-central-long-history-restoration-quality-v1.json research-backup/raw-long-history-quality.json
-          git -C research-backup add raw-long-history/ raw-long-history-quality.json
+          git -C research-backup add raw-long-history-gzip/ raw-long-history-quality.json
           if ! git -C research-backup diff --cached --quiet; then
             git -C research-backup commit -m "research: preserve original ten-year OHLCV source candles ${GITHUB_RUN_ID} (NO AUTO PROMOTION)"
             git -C research-backup push origin HEAD:refs/heads/egx-research-ledger
@@ -63,7 +70,7 @@ jobs:
         with:
           name: egx-original-long-history-recovered-research-only
           path: |
-            data/v17/historical-recovery/history/*.json
+            research-backup/raw-long-history-gzip/*.json.gz
             data/v17/historical-recovery/long-history/retrieval-report.json
             data/research/egx-central-long-history-restoration-quality-v1.json
           if-no-files-found: warn
