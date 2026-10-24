@@ -39,7 +39,7 @@ function backtest(universe,research=cfg){
    if(!(entry>0))continue;
    const stop=entry*(1-policy.stopPct/100),target=entry*(1+policy.targetPct/100);
    let exit=null,status='',offset=-1;
-   for(let k=0;k<future.length;k++){const bar=future[k];if(bar.low<=stop){exit=stop;status='STOP';offset=k;break}if(bar.high>=target){exit=target;status='TARGET';offset=k;break}}
+   for(let k=0;k<future.length;k++){const bar=future[k];if(bar.executable===false)continue;if(bar.low<=stop){exit=stop;status='STOP';offset=k;break}if(bar.high>=target){exit=target;status='TARGET';offset=k;break}}
    if(exit===null&&future.length<research.maximumHoldingSessions){unresolved.push({ticker:p.ticker,variant:p.variant,signalDate:date});continue}
    if(exit===null){exit=future.at(-1).close;offset=future.length-1;status='TIME_EXIT'}
    const exitDate=future[offset].date;busy.set(key,exitDate);
