@@ -51,6 +51,13 @@ function pairedCohort(universe,entries,style){
   normalizedCohortReturnPct:results.length?round(100*results.reduce((v,x)=>v+x.realizedPlusOpenPnlEgp,0)/results.reduce((v,x)=>v+x.grossInvestmentEgp,0)):null,
   exitReasons:exits,tradeResults:results};
 }
+function auditHistoricalDepth(universe){
+ const counts=Object.entries(universe).map(([ticker,rows])=>({ticker,executableBars:rows.filter(executable).length,firstDate:rows[0]?.date||null,lastDate:rows.at(-1)?.date||null}));
+ counts.sort((a,b)=>b.executableBars-a.executableBars);
+ return {minimumBarsByThreshold:{'120':counts.filter(x=>x.executableBars>=120).length,'250':counts.filter(x=>x.executableBars>=250).length,'500':counts.filter(x=>x.executableBars>=500).length},
+ universeSymbols:counts.length,maximumExecutableBars:counts[0]?.executableBars??0,topCoverage:counts.slice(0,12),
+  noMarketWideHistoryClaim:true,note:'This checks currently loaded main-archive executable OHLCV only, not every historical branch or quarantined central evidence.'};
+}
 function compare(universe,signals,{liquidityFloorEgp=30000000}={}){
  const base=replay(universe,signals,'aqm_pullback',{exitStyle:'partial',riskPerTradePct:1});
  const comparisons=STYLES.map(exitStyle=>{
@@ -65,7 +72,7 @@ function compare(universe,signals,{liquidityFloorEgp=30000000}={}){
  return {schemaVersion:'egx-aqm-exit-cohort-comparison-v1',generatedAt:new Date().toISOString(),researchOnly:true,
   methodology:'One fixed signal tape; three executable exit policies at 1% and 0.5% risk. Actual portfolio entries may differ as exits free cash and slots at different times. Separately compare all exit policies on the exact baseline entry dates, quantities, price, ATR and entry costs.',
   liquidityFloorEgp,entrySignals:signals.filter(s=>s.variant==='aqm_pullback').length,
-  initialCapitalEgp:policy.risk.initialEgp,entryBaselineCount:base.openedEntries.length,
+  initialCapitalEgp:policy.risk.initialEgp,entryBaselineCount:base.openedEntries.length,historicalDepth:auditHistoricalDepth(universe),
   baselineLossDiagnosis:{closed:base.closedTrades,losing:baseLosses.length,winners:base.tradeLedger.filter(x=>x.netPnlEgp>0).length,
    gapLosses:baseLosses.filter(x=>x.exitReason==='STOP_GAP').length,
    lossByTicker:baseLosses.map(t=>({ticker:t.ticker,entryDate:t.entryDate,exitDate:t.exitDate,reason:t.exitReason,pnlEgp:t.netPnlEgp,netReturnPct:t.netReturnPct}))},
@@ -79,6 +86,6 @@ if(require.main===module){
  const result=compare(universe,scan.signals);
  const dst=path.join(root,'data/research/egx-aqm-exit-cohort-comparison-v1.json');
  fs.writeFileSync(dst,JSON.stringify(result,null,2)+'\n');
- console.log(JSON.stringify({baselineLossDiagnosis:result.baselineLossDiagnosis,comparisons:result.comparisons},null,2));
+ console.log(JSON.stringify({historicalDepth:result.historicalDepth,baselineLossDiagnosis:result.baselineLossDiagnosis,comparisons:result.comparisons},null,2));
 }
-module.exports={pairedCohort,compare};
+module.exports={pairedCohort,compare,auditHistoricalDepth};
