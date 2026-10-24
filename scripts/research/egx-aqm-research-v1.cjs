@@ -26,7 +26,7 @@ function technical(rows,i){
  const start=Date.parse(rows.find(executable).date+'T00:00:00Z'),current=Date.parse(last.date+'T00:00:00Z');
  return {date:last.date,ticker:undefined,price:last.close,turnover20,avgVol20,volumeRatio:last.volume/avgVol20,atr14,sma20,sma50,sma100,sixMonth,lookback20,ageDays:(current-start)/86400000,priceDistanceAtr:(last.close-sma20)/atr14,pullback,breakout,green,trend:last.close>sma50&&sma50>sma100};
 }
-function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurnover20Egp,marketMode='technicalDiagnostic',indexHistory=null,pointInTimeFundamentals=null,eventCalendar=null,sectorHistory=null,haltHistory=null}={}){
+function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurnover20Egp,breakoutMaxDistanceAtr=policy.selection.maxDistanceFromSma20Atr,marketMode='technicalDiagnostic',indexHistory=null,pointInTimeFundamentals=null,eventCalendar=null,sectorHistory=null,haltHistory=null}={}){
  const byDate=new Map(),reasons={no120BarHistory:0,thinLiquidity:0,tooYoungOrCheap:0,weakTrend:0,overextended:0,notTop20Pct:0,noEntrySetup:0,scoreUnder70:0,weakBreadth:0,missingStrictInputs:0};
  const setupFunnel={longHistoryTradingBars:0,rawPullback:0,rawBreakout:0,liquidPullback:0,liquidBreakout:0,trendQualifiedPullback:0,trendQualifiedBreakout:0,notOverextendedPullback:0,notOverextendedBreakout:0,topRankPullback:0,topRankBreakout:0,scoredPullback:0,scoredBreakout:0};
  for(const [ticker,rows] of Object.entries(universe)){
@@ -53,12 +53,12 @@ function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurn
    if(f.ageDays<s.minCalendarListingAgeDays||f.price<s.minimumPriceEgp){reasons.tooYoungOrCheap++;continue}
    if(!f.trend){reasons.weakTrend++;continue}
    if(f.pullback)setupFunnel.trendQualifiedPullback++;if(f.breakout)setupFunnel.trendQualifiedBreakout++;
-   if(f.lookback20>=s.max20dMomentumPct||f.priceDistanceAtr>=s.maxDistanceFromSma20Atr){reasons.overextended++;continue}
-   if(f.pullback)setupFunnel.notOverextendedPullback++;if(f.breakout)setupFunnel.notOverextendedBreakout++;
+   if(f.lookback20>=s.max20dMomentumPct||(f.priceDistanceAtr>=s.maxDistanceFromSma20Atr&&!(f.breakout&&f.priceDistanceAtr<breakoutMaxDistanceAtr))){reasons.overextended++;continue}
+   if(f.pullback&&f.priceDistanceAtr<s.maxDistanceFromSma20Atr)setupFunnel.notOverextendedPullback++;if(f.breakout&&f.priceDistanceAtr<breakoutMaxDistanceAtr)setupFunnel.notOverextendedBreakout++;
    const idx=rank.get(f.ticker);
    if(idx>=Math.max(1,Math.ceil(marketRank.length*s.relativeStrengthTopFraction))){reasons.notTop20Pct++;continue}
-   if(f.pullback)setupFunnel.topRankPullback++;if(f.breakout)setupFunnel.topRankBreakout++;
-   const variants=['aqm_pullback','aqm_breakout'].filter(k=>k==='aqm_pullback'?f.pullback:f.breakout);
+   if(f.pullback&&f.priceDistanceAtr<s.maxDistanceFromSma20Atr)setupFunnel.topRankPullback++;if(f.breakout&&f.priceDistanceAtr<breakoutMaxDistanceAtr)setupFunnel.topRankBreakout++;
+   const variants=['aqm_pullback','aqm_breakout'].filter(k=>k==='aqm_pullback'?(f.pullback&&f.priceDistanceAtr<s.maxDistanceFromSma20Atr):(f.breakout&&f.priceDistanceAtr<breakoutMaxDistanceAtr));
    if(!variants.length){reasons.noEntrySetup++;continue}
    // Proxy only. The full model also requires EGX30 as-of SMA100, index-relative momentum, filings, events, sector and halt checks.
    const rs=Math.round(25*(1-idx/Math.max(1,marketRank.length-1)));
