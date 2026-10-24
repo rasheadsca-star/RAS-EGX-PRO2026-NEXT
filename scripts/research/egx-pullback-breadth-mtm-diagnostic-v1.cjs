@@ -27,7 +27,7 @@ function portfolio(universe,ledger,gate,options={}){
   }
   const equity=equityAtClose();peak=Math.max(peak,equity);maxDrawdown=Math.max(maxDrawdown,100*(peak-equity)/peak);curve.push({date,equityEgp:rounded(equity),cashEgp:rounded(cash),openPositions:active.length});
  }
- return {totalReturnPct:rounded(((curve.at(-1)?.equityEgp??initial)/initial-1)*100),endEquityEgp:curve.at(-1)?.equityEgp??initial,markToMarketMaxDrawdownPct:rounded(maxDrawdown),executedTrades:executed.length,staleMarks,endingOpenPositions:active.length,curve};
+ return {accountingAudit:{usesLedgerExitReturns:true,usesLastAvailableCloseForMissingDays:true,entryBookedOnEntryDate:true,exitsSettledAtSessionStart:true},totalReturnPct:rounded(((curve.at(-1)?.equityEgp??initial)/initial-1)*100),endEquityEgp:curve.at(-1)?.equityEgp??initial,markToMarketMaxDrawdownPct:rounded(maxDrawdown),executedTrades:executed.length,staleMarks,endingOpenPositions:active.length,curve};
 }
 function main(){
  const {universe}=loadUniverse(),breadth=breadthByDate(universe),ledger=JSON.parse(fs.readFileSync(path.join(root,'data/research/egx-comparable-three-strategy-v1.json'),'utf8')).trades;
