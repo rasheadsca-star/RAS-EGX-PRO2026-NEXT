@@ -1,0 +1,49 @@
+name: EGX Restore Original Long History OHLCV
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/egx-long-history-restore-raw.yml'
+      - 'scripts/research/egx-central-long-history-restore-audit-v1.cjs'
+      - 'tests/research/egx-central-long-history-restore-audit-v1.test.cjs'
+permissions:
+  contents: read
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test real daily candles, adjusted source and reconciliation rules
+        run: node --test tests/research/egx-central-long-history-restore-audit-v1.test.cjs
+      - name: Rehydrate original 10-year daily OHLCV using EXISTING V17 collector (small pilot)
+        run: node scripts/v17/historical-recovery/long-history/ingest.cjs --symbols=COMI,ABUK,ETEL,FWRY
+      - name: Audit source identities and compare with main data before ANY promotion
+        run: node scripts/research/egx-central-long-history-restore-audit-v1.cjs
+      - name: Print completeness without claiming automatic certification
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs'),r=JSON.parse(fs.readFileSync('data/research/egx-central-long-history-restoration-quality-v1.json'));
+          const lines=['## Restore original 10-year candles from the previously used V17 collector','',
+            'Read-only research output. Raw price candles and adjustments saved in workflow artifact; NOT auto-promoted to any trading strategies.',
+            '','| Symbol | Historical raw daily dates | Source identity and quality | Disagreements >2% | Historical candidate |',
+            '|---|---:|---|---:|---|'];
+          for(const s of r.stocks)lines.push('| '+s.ticker+' | '+s.uniqueValidDays+' | '+s.status+' | '+s.overlapLargeMismatchCount+' | '+s.researchHistoryCandidate+' |');
+          lines.push('','With >=250 raw daily dates: '+r.summary.retrievedWith250Bars+'; research-quality candidates: '+r.summary.structurallyCandidate+
+            '; production-certified: 0. Corporate actions and historical source conflicts must be resolved before merging.',
+            '','**Note:** Recreating 10-year OHLCV from the same existing ingester addresses a storage omission: past compact reports stored statistics without preserving raw daily candles.');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-original-long-history-recovered-research-only
+          path: |
+            data/v17/historical-recovery/history/*.json
+            data/v17/historical-recovery/long-history/retrieval-report.json
+            data/research/egx-central-long-history-restoration-quality-v1.json
+          if-no-files-found: warn
+          retention-days: 30
