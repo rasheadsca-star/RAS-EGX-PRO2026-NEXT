@@ -19,3 +19,9 @@ test('zero volume reference candle never triggers a trade exit',()=>{
  assert.equal(x.closedCount,0);assert.equal(x.tradeResults[0].missingOrReferenceBars,1);
 });
 test('fixed-entry cohort never uses unexecuted planned entries',()=>{const x=pairedCohort({ABC:[]},[],'partial');assert.equal(x.entryCount,0);assert.equal(x.normalizedCohortReturnPct,null)});
+
+test('historical depth audit reports actual executable bars, not synthetic sessions',()=>{
+ const {auditHistoricalDepth}=require('../../scripts/research/egx-aqm-exit-cohort-comparison-v1.cjs');
+ const bars=Array.from({length:260},(_,i)=>({date:String(i),volume:i%10===0?0:100,executable:i%10!==0}));
+ const r=auditHistoricalDepth({ABC:bars});assert.equal(r.minimumBarsByThreshold['120'],1);assert.equal(r.minimumBarsByThreshold['250'],0);assert.equal(r.maximumExecutableBars,234);
+});
