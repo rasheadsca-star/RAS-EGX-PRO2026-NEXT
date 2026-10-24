@@ -7,9 +7,14 @@ const {candle}=require('./egx-central-history-cross-repo-inventory-v1.cjs');
 function verifyDoc(doc,mainRows=[]){
  const sessions=Array.isArray(doc.sessions)?doc.sessions:[];
  const byDate=new Map(),problems=[];
- let adjustedMissing=0,synthetic=0;
+ let adjustedMissing=0,synthetic=0,invalidRows=0;const invalidReasonCounts={},invalidExamples=[];
  for(const r of sessions){
-  const bar=candle(r);if(!bar){problems.push('INVALID_OR_INCOMPLETE_OHLCV');continue}
+  const bar=candle(r);if(!bar){invalidRows++;
+   const missing=['date','open','high','low','close','volume'].filter(k=>r?.[k]===null||r?.[k]===undefined);
+   const kind=missing.length?'MISSING_'+missing.join('_').toUpperCase():!(Number(r.low)>0&&Number(r.open)>0&&Number(r.close)>0)?'NON_POSITIVE_PRICE': 'BAD_OHLC_GEOMETRY_OR_NONFINITE';
+   invalidReasonCounts[kind]=(invalidReasonCounts[kind]||0)+1;
+   if(invalidExamples.length<5)invalidExamples.push({date:r?.date||null,reason:kind,ohlcv:{open:r?.open,high:r?.high,low:r?.low,close:r?.close,volume:r?.volume}});
+   continue}
   if(!byDate.has(bar.date))byDate.set(bar.date,[]);
   byDate.get(bar.date).push(bar);
   if(!(Number(r.adjustedClose)>0))adjustedMissing++;
@@ -31,7 +36,7 @@ function verifyDoc(doc,mainRows=[]){
  return {ticker:doc.ticker,status:doc.dataQualityStatus,sourceSymbol:doc.sourceSymbol,source:doc.source,
   rawDailyRows:sessions.length,uniqueValidDays:byDate.size,firstDate:[...byDate.keys()].sort()[0]||null,lastDate:[...byDate.keys()].sort().at(-1)||null,
   overlapCount:overlap.length,overlapLargeMismatchCount:largeMismatch.length,largestMismatchPct:overlap.length?+Math.max(...overlap.map(x=>x.relativeCloseDiffPct)).toFixed(3):null,
-  adjustedMissing,synthetic,duplicateConflicts:conflicts,problems:[...new Set(problems)],
+  adjustedMissing,synthetic,invalidRows,invalidReasonCounts,invalidExamples,duplicateConflicts:conflicts,problems:[...new Set(problems)],
   researchHistoryCandidate:!problems.length,fullProductionCertification:false,
   sampleMismatch:largeMismatch.slice(0,6),
   rawFilePreserved:true};
