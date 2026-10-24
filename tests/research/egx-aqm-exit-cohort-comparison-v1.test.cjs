@@ -14,7 +14,7 @@ test('gap through stop incurs realistic loss for every style',()=>{
  for(const style of ['partial','full_target','trailing']){const x=pairedCohort(u,[entry],style);assert.equal(x.exitReasons.STOP_GAP,1);assert.ok(x.sumMarkedPnlEgp<-1500)}
 });
 test('zero volume reference candle never triggers a trade exit',()=>{
- const u={ABC:[mk(d[0],100,101,99,100),mk(d[1],100,102,99,101),{...mk(d[2],70,71,60,70),volume:0,executable:false},mk(d[3],100,110,99,108)]};
+ const u={ABC:[mk(d[0],100,101,99,100),mk(d[1],100,102,99,101),{...mk(d[2],70,71,60,70),volume:0,executable:false},mk(d[3],100,109,99,108)]};
  const x=pairedCohort(u,[entry],'full_target');
  assert.equal(x.closedCount,0);assert.equal(x.tradeResults[0].missingOrReferenceBars,1);
 });
