@@ -44,15 +44,13 @@ for(const script of scripts){
 }
 
 for(const script of scripts){
-  test(script+' defaults to production root with unset or empty override',()=>{
-    for(const override of [undefined,'']){
-      const env={...process.env,GITHUB_ACTIONS:'true'};
-      delete env.ASTRA_ALLOW_ROOT_OVERRIDE;
-      if(override===undefined)delete env.ASTRA_INTELLIGENCE_ROOT;
-      else env.ASTRA_INTELLIGENCE_ROOT=override;
-      const result=cp.spawnSync(process.execPath,[path.join(ROOT,script)],{cwd:ROOT,env,encoding:'utf8'});
-      assert.doesNotMatch(result.stderr,/NON-PRODUCTION ROOT OVERRIDE|blocked in GitHub Actions/);
-    }
+  test(script+' defaults to repository root without executing the builder',()=>{
+    // Static contract: invoking production builders here would mutate tracked artifacts.
+    const source=fs.readFileSync(path.join(ROOT,script),'utf8');
+    assert.match(source,/const DEFAULT_ROOT=path\.resolve\(__dirname,'\.\.\/\.\.\/\.\.'\);/);
+    assert.match(source,/const ROOT_OVERRIDE=process\.env\.ASTRA_INTELLIGENCE_ROOT;/);
+    assert.match(source,/ROOT_OVERRIDE\?path\.resolve\(ROOT_OVERRIDE\):DEFAULT_ROOT/);
+    assert.match(source,/if\(ROOT_OVERRIDE\) process\.stderr\.write/);
   });
   test(script+' rejects wrong authorization flags',t=>{
     const temp=fs.mkdtempSync(path.join(os.tmpdir(),'astra-root-guard-'));
