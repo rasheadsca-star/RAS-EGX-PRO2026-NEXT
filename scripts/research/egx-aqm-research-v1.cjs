@@ -87,14 +87,19 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp,exitSty
  for(const s of signals.filter(x=>x.variant===variant)){const date=nextDate.get(s.date);if(date){const arr=pending.get(date)||[];arr.push(s);pending.set(date,arr)}}
  let cash=initial,peak=initial,maxDD=0,month=null,monthStart=initial,monthlyHaltDays=0,monthlyHaltLatched=false,missingMarks=0,partialExits=0;
  let stalePositionSessions=0,staleDays=0,maxStaleAgeSessions=0,maxStaleExposedEgp=0,stressedMaxDrawdown=0,stressedPeak=initial,lastMarkInspection=null;
+ let blockedEntryDaysStale=0,missingPositionQuoteSessions=0,nonExecutablePositionQuoteSessions=0,maxHypotheticalStaleLossEgp=0;
  const positions=[],trades=[],curve=[],openedEntries=[];
  const fee=p.roundTripFeesPct/200,entrySlip=p.entrySlippagePct/100,exitSlip=p.exitSlippagePct/100;
  for(const [dateIndex,date] of marketDates.entries()){
   const m=date.slice(0,7);if(month!==m){month=m;monthlyHaltLatched=false;monthStart=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0)}
   const preEquity=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0);
   if(preEquity<monthStart*(1-p.monthlyLossHaltPct/100))monthlyHaltLatched=true;
-  const halted=monthlyHaltLatched;
-  if(halted)monthlyHaltDays++;
+  // At the opening, use only positions' marks known through the PRIOR market session.
+  // A missing current-session bar is discovered only later; never look ahead to it.
+  const staleBeforeEntry=positions.some(pos=>!Number.isInteger(pos.lastMarkIndex)||pos.lastMarkIndex<dateIndex-1);
+  const halted=monthlyHaltLatched||staleBeforeEntry;
+  if(monthlyHaltLatched)monthlyHaltDays++;
+  if(staleBeforeEntry)blockedEntryDaysStale++;
   // Entries are generated at the previous global session close. No same-session signal is visible at the open.
   for(const s of (pending.get(date)||[]).slice().sort((a,b)=>b.score-a.score||a.ticker.localeCompare(b.ticker))){
    if(halted||positions.length>=policy.selection.maxPositions||positions.some(x=>x.ticker===s.ticker))continue;
@@ -118,7 +123,12 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp,exitSty
   }
   for(let j=positions.length-1;j>=0;j--){
    const pos=positions[j],bar=quotes.get(pos.ticker)?.get(date);
-   if(!bar||!executable(bar)){missingMarks++;continue}
+   if(!bar||!executable(bar)){
+    missingMarks++;
+    if(!bar)missingPositionQuoteSessions++;
+    else nonExecutablePositionQuoteSessions++;
+    continue;
+   }
    pos.holdingBars++;pos.lastClose=bar.close;pos.lastMarkIndex=dateIndex;pos.lastMarkDate=date;
    const sell=(qty,price)=>{const received=qty*price*(1-exitSlip)*(1-fee);cash+=received;pos.proceeds+=received;pos.qty-=qty};
    // OHLC ordering is unknown. Stop is conservative first; trailing updates after the close.
@@ -138,17 +148,22 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp,exitSty
   if(inspection.stalePositionCount)staleDays++;
   maxStaleAgeSessions=Math.max(maxStaleAgeSessions,inspection.maxStaleAgeSessions);
   maxStaleExposedEgp=Math.max(maxStaleExposedEgp,inspection.stalePositionNotionalEgp);
+  maxHypotheticalStaleLossEgp=Math.max(maxHypotheticalStaleLossEgp,inspection.stressUnrealizedLossEgp);
   const equity=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0);
   const stressedEquity=equity-inspection.stressUnrealizedLossEgp;
   stressedPeak=Math.max(stressedPeak,stressedEquity);
   stressedMaxDrawdown=Math.max(stressedMaxDrawdown,(stressedPeak-stressedEquity)/stressedPeak*100);
   if(equity<monthStart*(1-p.monthlyLossHaltPct/100))monthlyHaltLatched=true;
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,(peak-equity)/peak*100);
-  curve.push({date,equityEgp:round(equity,2),cashEgp:round(cash,2),openPositions:positions.length,staleOpenPositions:inspection.stalePositionCount,staleNotionalEgp:round(inspection.stalePositionNotionalEgp,2),hypotheticalFivePctStaleHaircutEquityEgp:round(stressedEquity,2)});
+  curve.push({date,equityEgp:round(equity,2),cashEgp:round(cash,2),openPositions:positions.length,staleOpenPositions:inspection.stalePositionCount,staleNotionalEgp:round(inspection.stalePositionNotionalEgp,2),hypotheticalAgeBasedHaircutEquityEgp:round(stressedEquity,2),blockedNewEntryDueToKnownStaleMark:staleBeforeEntry});
  }
  const nav=curve.at(-1)?.equityEgp??initial,positive=trades.filter(x=>x.netPnlEgp>0).length;
  const markIntegrity=eligibilityFromMarks({stalePositionSessions,staleDays,endStalePositions:lastMarkInspection?.stalePositionCount||0,maxStaleAgeSessions});
- const markRisk={...markIntegrity,maxStaleExposedEgp:round(maxStaleExposedEgp,2),hypotheticalFivePctHaircutMaximumDrawdownPct:round(stressedMaxDrawdown)};
+ const markRisk={...markIntegrity,maxStaleExposedEgp:round(maxStaleExposedEgp,2),
+  hypotheticalFivePctPerStaleSessionMaximumDrawdownPct:round(stressedMaxDrawdown),
+  maximumHypotheticalStaleLossEgp:round(maxHypotheticalStaleLossEgp,2),
+  missingPositionQuoteSessions,nonExecutablePositionQuoteSessions,blockedEntryDaysStale,
+  stressNote:'Hypothetical last-close haircut rises 5% per stale market session, capped at 30%; NOT observed price, NOT a fill'};
  return {variant,exitStyle,riskPerTradePct,researchOnly:true,openedEntries,portfolioReturnPct:round(100*(nav/initial-1)),endEquityEgp:nav,maxDrawdownPct:round(maxDD),closedTrades:trades.length,winRatePct:trades.length?round(positive/trades.length*100):null,openPositions:positions.length,partialExits,staleMarkSessions:missingMarks,markIntegrity:markRisk,reportableCertifiedPortfolioReturnPct:null,monthlyHaltDays,initialEgp:initial,tradeLedger:trades,equityCurve:curve,limitations:['Research-only technical proxy; sector cap and fundamental/event/index checks not certified','Unadjusted OHLCV may have corporate actions; intrabar ordering unknown','Open positions marked at last available close without liquidation fees; stale marks are a hard research qualification failure','Known universe and source uncertainty may introduce survivorship and price-source bias']};
 }
 function main(){
