@@ -53,6 +53,15 @@ jobs:
         run: node --test tests/research/egx-central-vs-main-coverage-audit.test.cjs
       - name: Report central versus main data quality without promoting research evidence
         run: node scripts/research/egx-central-vs-main-coverage-audit.cjs
+      - name: Report canonical OHLCV rejection reasons
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const {build}=require('./scripts/research/egx-canonical-ohlcv-gateway.cjs');
+          const {audit}=build();
+          fs.writeFileSync('data/research/egx-canonical-rejection-audit-v1.json',JSON.stringify({generatedAt:new Date().toISOString(),audit},null,2)+'\n');
+          console.log(JSON.stringify(audit,null,2));
+          NODE
       - name: Check shared-replay tests
         run: node --test tests/research/egx-comparable-three-strategy-v1.test.cjs
       - name: Test top-four selection and cash constraints
@@ -127,3 +136,4 @@ jobs:
             data/research/egx-missing-market-sessions-sensitivity-v1.json
             data/research/egx-missing-session-source-reconciliation-v1.json
             data/research/egx-central-vs-main-coverage-audit.json
+            data/research/egx-canonical-rejection-audit-v1.json
