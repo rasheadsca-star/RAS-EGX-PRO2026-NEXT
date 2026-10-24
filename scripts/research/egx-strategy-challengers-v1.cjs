@@ -4,11 +4,12 @@ const root=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 if(process.env.EGX_ENABLE_LIVE_TRADING==='true')throw Error('Research only; live trading prohibited');
 const {confirmedClosures,isTradingSession}=require('../ops/egx-session-math.cjs');
 const cfg=require('../../data/v13-4-quant-policy.json').research;
+const {tradingWindow,tradeForwardWindow,executable}=require('./egx-executable-session-series-v1.cjs');
 const policy=Object.freeze({minBars:65,minimumTurnover20:100000,momentum20MinPct:3,relativeRankTopFraction:0.25,minUniversePeers:15,shortSma:20,longSma:50,pullbackMinPct:-4,pullbackMaxPct:1.0,stopPct:5,targetPct:9});
 const mean=a=>a.reduce((x,y)=>x+y,0)/a.length,round=(n,d=3)=>+n.toFixed(d);
 function features(rows,i){
- if(i<54)return null;
- const w=rows.slice(i-54,i+1),c=w.at(-1),prev=w.slice(-21,-1),sma20=mean(w.slice(-20).map(x=>x.close)),sma50=mean(w.slice(-50).map(x=>x.close));
+ const w=tradingWindow(rows,i,55);if(!w)return null;
+ const c=w.at(-1),prev=w.slice(-21,-1),sma20=mean(w.slice(-20).map(x=>x.close)),sma50=mean(w.slice(-50).map(x=>x.close));
  const turnover20=mean(prev.map(x=>x.close*x.volume)),momentum20Pct=100*(c.close/w.at(-21).close-1);
  return {turnover20,momentum20Pct,sma20,sma50,above50:c.close>sma50,pullbackPct:100*(c.close/sma20-1),uptrend:sma20>sma50&&sma20>mean(w.slice(-25,-5).map(x=>x.close))};
 }
@@ -17,6 +18,7 @@ function backtest(universe,research=cfg){
  const byDate=new Map(),trades=[],unresolved=[],blocked=new Set();
  for(const [ticker,rows] of Object.entries(universe)){
   for(let i=54;i<rows.length-1;i++){
+   if(!executable(rows[i])||!executable(rows[i+1]))continue;
    const f=features(rows,i);if(!f||f.turnover20<policy.minimumTurnover20)continue;
    if(!byDate.has(rows[i].date))byDate.set(rows[i].date,[]);
    byDate.get(rows[i].date).push({ticker,rows,i,f});
@@ -35,7 +37,8 @@ function backtest(universe,research=cfg){
   }
   for(const p of signals){
    const key=p.variant+'|'+p.ticker;if((busy.get(key)||'')>=date)continue;
-   const next=p.rows[p.i+1];const entry=next.open*(1+research.entrySlippagePct/100),future=p.rows.slice(p.i+1,p.i+1+research.maximumHoldingSessions);
+   const next=p.rows[p.i+1];if(!executable(next))continue;
+   const entry=next.open*(1+research.entrySlippagePct/100),future=tradeForwardWindow(p.rows,p.i+1,research.maximumHoldingSessions);
    if(!(entry>0))continue;
    const stop=entry*(1-policy.stopPct/100),target=entry*(1+policy.targetPct/100);
    let exit=null,status='',offset=-1;
