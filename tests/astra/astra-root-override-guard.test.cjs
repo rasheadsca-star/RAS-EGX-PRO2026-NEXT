@@ -28,7 +28,7 @@ for(const script of scripts){
     copy(path.join(ROOT,'scripts/astra/native/astra-intelligence.cjs'),path.join(escaped,'scripts/astra/native/astra-intelligence.cjs'));
     copy(path.join(ROOT,'data/egx-exchange-closures.json'),path.join(escaped,'data/egx-exchange-closures.json'));
     fs.mkdirSync(path.join(escaped,'.github/workflows'),{recursive:true});
-    fs.writeFileSync(path.join(escaped,'.github/workflows/sample.yml'),'name: sample\\non: workflow_dispatch\\n');
+    fs.writeFileSync(path.join(escaped,'.github/workflows/sample.yml'),'name: sample\non: workflow_dispatch\n');
     fs.symlinkSync(escaped,link,'dir');
     const out=invoke(script,{ASTRA_INTELLIGENCE_ROOT:link});
     assert.notEqual(out.status,0);
