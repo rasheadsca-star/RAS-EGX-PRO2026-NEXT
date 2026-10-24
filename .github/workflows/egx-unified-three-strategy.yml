@@ -8,6 +8,8 @@ on:
       - 'scripts/research/egx-strategy-challengers-v1.cjs'
       - 'scripts/research/egx-canonical-ohlcv-gateway.cjs'
       - 'scripts/research/egx-executable-session-series-v1.cjs'
+      - 'scripts/research/egx-research-execution-fills-v1.cjs'
+      - 'tests/research/egx-research-execution-fills-v1.test.cjs'
       - 'tests/research/egx-executable-session-series-v1.test.cjs'
       - 'tests/research/egx-canonical-ohlcv-gateway.test.cjs'
       - '.github/workflows/egx-unified-three-strategy.yml'
@@ -49,6 +51,8 @@ jobs:
             manifest.json
             evidence_quality_report.json
             coverage_efficiency_report.json
+      - name: Test stop-gap and intraday conservative execution fills
+        run: node --test tests/research/egx-research-execution-fills-v1.test.cjs
       - name: Test executable trading session indicator calculations
         run: node --test tests/research/egx-executable-session-series-v1.test.cjs
       - name: Test canonical OHLCV gateway
