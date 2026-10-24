@@ -7,7 +7,7 @@ on:
       - 'scripts/research/egx-central-long-history-restore-audit-v1.cjs'
       - 'tests/research/egx-central-long-history-restore-audit-v1.test.cjs'
 permissions:
-  contents: read
+  contents: write
 jobs:
   restore:
     runs-on: ubuntu-latest
@@ -37,6 +37,27 @@ jobs:
             '','**Note:** Recreating 10-year OHLCV from the same existing ingester addresses a storage omission: past compact reports stored statistics without preserving raw daily candles.');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
           NODE
+      - name: Persist restored raw daily candles in EXISTING central research branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research-backup
+          git -C research-backup init
+          git -C research-backup config user.name 'github-actions[bot]'
+          git -C research-backup config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C research-backup remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git -C research-backup fetch --depth=1 origin egx-research-ledger
+          git -C research-backup checkout -B egx-research-ledger FETCH_HEAD
+          mkdir -p research-backup/raw-long-history
+          cp data/v17/historical-recovery/history/*.json research-backup/raw-long-history/
+          cp data/research/egx-central-long-history-restoration-quality-v1.json research-backup/raw-long-history-quality.json
+          git -C research-backup add raw-long-history/ raw-long-history-quality.json
+          if ! git -C research-backup diff --cached --quiet; then
+            git -C research-backup commit -m "research: preserve original ten-year OHLCV source candles ${GITHUB_RUN_ID} (NO AUTO PROMOTION)"
+            git -C research-backup push origin HEAD:refs/heads/egx-research-ledger
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
