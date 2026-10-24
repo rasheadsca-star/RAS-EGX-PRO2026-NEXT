@@ -2,7 +2,30 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('fs'),path=require('path'),os=require('os');
+
+// --- Hermetic harness: unit tests never read or write production data. ---
+const REPO=path.resolve(__dirname,'../..');
+const SOURCE_FIXTURE=path.join(__dirname,'../fixtures/astra-hermetic');
+const FIXTURE=fs.mkdtempSync(path.join(os.tmpdir(),'astra-module-fixture-'));
+fs.cpSync(SOURCE_FIXTURE,FIXTURE,{recursive:true});
+// The module resolves ROOT (closures, history) at require time: point it at the fixture BEFORE requiring,
+// so in-process tests cannot read production data either.
+process.env.ASTRA_INTELLIGENCE_ROOT=FIXTURE;
+process.env.ASTRA_ALLOW_ROOT_OVERRIDE='1';
 const mod=require('../../scripts/astra/native/astra-intelligence.cjs');
+const {confirmedClosures,isTradingSession}=require('../../scripts/ops/egx-session-math.cjs');
+const TMP_ROOTS=[];
+test.after(()=>{for(const d of [...TMP_ROOTS,FIXTURE])fs.rmSync(d,{recursive:true,force:true})});
+const BUILD=path.join(REPO,'scripts/astra/native/astra-intelligence.cjs');
+const INVENTORY=path.join(REPO,'scripts/astra/native/workflow-inventory.cjs');
+function hermeticRoot(){const t=fs.mkdtempSync(path.join(os.tmpdir(),'astra-hermetic-'));TMP_ROOTS.push(t);fs.cpSync(FIXTURE,t,{recursive:true});return t}
+function runScript(script,root){return require('child_process').execFileSync(process.execPath,[script],{cwd:root,env:{...process.env,ASTRA_INTELLIGENCE_ROOT:root},stdio:'pipe'})}
+// Trading sessions that respect weekends (Fri/Sat) and confirmed exchange closures.
+function tradingSessionsAfter(date,count,closed=confirmedClosures(FIXTURE)){
+  const out=[];let d=new Date(date+'T12:00:00Z');
+  while(out.length<count){d.setUTCDate(d.getUTCDate()+1);const iso=d.toISOString().slice(0,10);if(isTradingSession(iso,closed))out.push(iso)}
+  return out;
+}
 
 test('recommendation identity is stable and snapshot-linked',()=>{
   const ds={decisionSnapshotId:'G09-DS-aaaaaaaaaaaaaaaaaaaaaaaa',semanticDecisionHash:'b'.repeat(64),sessionDate:'2026-09-20'};
@@ -38,10 +61,10 @@ test('KPI denominators exclude ambiguous outcomes from win/loss',()=>{
   assert.equal(s.metrics.ambiguous,1);
 });
 
-test('repository build preserves current DecisionSnapshot and produces reconciled native intelligence',()=>{
-  const root=path.resolve(__dirname,'../..');
+test('build preserves DecisionSnapshot and produces reconciled native intelligence (hermetic fixture)',()=>{
+  const root=hermeticRoot();
   const before=fs.readFileSync(path.join(root,'astra-prod/app/data.json'),'utf8');
-  require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'});
+  runScript(BUILD,root);
   const after=fs.readFileSync(path.join(root,'astra-prod/app/data.json'),'utf8');
   assert.equal(after,before);
   const app=JSON.parse(before);
@@ -57,6 +80,38 @@ test('repository build preserves current DecisionSnapshot and produces reconcile
   assert.deepEqual(currentLedger.map(r=>r.ticker).sort(),currentRecs.map(r=>r.ticker).sort());
   assert.equal(summary.sourceSnapshot.decisionSnapshotId,app.sourceDecision.decisionSnapshotId);
   assert.equal(summary.sessionRange.last,app.sourceDecision.session);
+});
+
+test('build refuses a handoff that fails the production safety gate (acceptedRows 199)',()=>{
+  const root=hermeticRoot();
+  const f=path.join(root,'data/ops/g22-main-app-handoff.json');
+  const h=JSON.parse(fs.readFileSync(f,'utf8'));h.acceptedRows=199;fs.writeFileSync(f,JSON.stringify(h));
+  assert.throws(()=>runScript(BUILD,root),e=>/Immutable handoff rejected: acceptedRows/.test(String(e.stderr||e.message)));
+  assert.equal(fs.existsSync(path.join(root,'astra-prod/app/intelligence/recommendation-ledger.json')),false);
+});
+
+test('validateHandoff keeps every production gate (negative cases)',()=>{
+  const app=JSON.parse(fs.readFileSync(path.join(FIXTURE,'astra-prod/app/data.json'),'utf8'));
+  const ok=JSON.parse(fs.readFileSync(path.join(FIXTURE,'data/ops/g22-main-app-handoff.json'),'utf8'));
+  assert.equal(mod.validateHandoff(app,ok).status,'PASS');
+  assert.equal(mod.validateHandoff(app,{...ok,acceptedRows:200}).status,'PASS');
+  const cases=[
+    ['acceptedRows',{acceptedRows:199}],
+    ['sourceCoverage',{sourceSessionEvidenceCoveragePct:89.9}],
+    ['sessionIdentity',{sessionDate:'2026-09-19'}],
+    ['sessionIdentity',{expectedSession:'2026-09-21'}],
+    ['materialFingerprint',{materialFingerprint:''}],
+    ['canonicalDataHead',{canonicalDataHead:'abc'}],
+    ['sourceReady',{sourceReady:false}],
+    ['executionGrade',{executionGrade:false}],
+    ['final',{final:false}],
+    ['pagesPublished',{pagesPublished:false}]
+  ];
+  for(const [gate,patch] of cases){
+    const r=mod.validateHandoff(app,{...ok,...patch});
+    assert.equal(r.status,'FAIL',gate+' must fail');
+    assert.ok(r.failedChecks.includes(gate),gate+' must be reported, got '+r.failedChecks);
+  }
 });
 
 
@@ -80,7 +135,8 @@ test('entry activation is evaluated only from effective session onward',()=>{
 });
 
 test('entry not triggered expires without becoming win or loss',()=>{
-  const rows=Array.from({length:20},(_,i)=>row('2026-10-'+String(i+1).padStart(2,'0'),8,9,7,8));
+  const rows=tradingSessionsAfter('2026-09-20',20).map(d=>row(d,8,9,7,8));
+  assert.equal(rows.length,20);
   const o=mod.evaluateRows(recFixture(),rows,{expirySessions:20});
   assert.equal(o.state,'EXPIRED');
   assert.equal(o.entryNotTriggered,true);
@@ -185,26 +241,25 @@ test('effective session policy is explicit without inventing a future session',(
 
 
 test('native artifact build is byte-reproducible for identical inputs',()=>{
-  const root=path.resolve(__dirname,'../..');
   const paths=[
-    'astra-prod/app/intelligence/recommendation-ledger.json',
-    'astra-prod/app/intelligence/recommendation-outcomes.json',
-    'astra-prod/app/intelligence/performance-summary.json',
-    'astra-prod/app/intelligence/performance-by-rank.json',
-    'astra-prod/app/intelligence/performance-by-regime.json',
-    'astra-prod/app/intelligence/ticker-performance.json',
-    'astra-prod/app/intelligence/market-universe.json',
-    'astra-prod/app/intelligence/analytics-integrity.json'
-  ];
-  require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'});
+    'recommendation-ledger.json','recommendation-outcomes.json','performance-summary.json','performance-by-rank.json',
+    'performance-by-regime.json','ticker-performance.json','market-universe.json','analytics-integrity.json'
+  ].map(x=>'astra-prod/app/intelligence/'+x);
+  const root=hermeticRoot();
+  runScript(BUILD,root);
   const first=new Map(paths.map(p=>[p,fs.readFileSync(path.join(root,p),'utf8')]));
-  require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'});
+  runScript(BUILD,root);
   for(const p of paths) assert.equal(fs.readFileSync(path.join(root,p),'utf8'),first.get(p),p+' is not byte-reproducible');
+  // An independent root with identical inputs must also produce identical bytes.
+  const root2=hermeticRoot();
+  runScript(BUILD,root2);
+  for(const p of paths) assert.equal(fs.readFileSync(path.join(root2,p),'utf8'),first.get(p),p+' differs across roots');
 });
 
 test('workflow inventory does not classify development guard text as a publisher',()=>{
-  const root=path.resolve(__dirname,'../..');
-  require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/workflow-inventory.cjs')],{cwd:root,stdio:'pipe'});
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'astra-inventory-'));TMP_ROOTS.push(root);
+  fs.cpSync(path.join(__dirname,'../fixtures/astra-hermetic-workflows'),path.join(root,'.github/workflows'),{recursive:true});
+  runScript(INVENTORY,root);
   const inv=JSON.parse(fs.readFileSync(path.join(root,'docs/astra/development/WORKFLOW_INVENTORY.json'),'utf8'));
   const final=inv.workflows.find(x=>x.path==='.github/workflows/astra-development-final-certification.yml');
   assert.ok(final);
@@ -239,19 +294,6 @@ test('pending effective session resolves to first actual post-decision finalized
   assert.equal(o.effectiveFromSession,'2026-09-21');
   assert.equal(o.effectiveFromStatus,'RESOLVED');
   assert.equal(o.entryActivated,true);
-});
-
-
-test('market-universe history availability exactly matches repository history artifacts',()=>{
-  const root=path.resolve(__dirname,'../..');
-  const universe=JSON.parse(fs.readFileSync(path.join(root,'astra-prod/app/intelligence/market-universe.json'),'utf8'));
-  const active=universe.records.filter(x=>x.active!==false);
-  assert.equal(active.length,224);
-  for(const r of active){
-    const exists=fs.existsSync(path.join(root,'data/history',r.ticker+'.json'));
-    assert.equal(Boolean(r.historyAvailable),exists,r.ticker+' historyAvailable/file mismatch');
-    if(!exists) assert.equal(Number(r.historySessions||0),0,r.ticker+' unavailable history must expose zero sessions');
-  }
 });
 
 
