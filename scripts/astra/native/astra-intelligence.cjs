@@ -6,7 +6,13 @@ const crypto=require('crypto');
 const {confirmedClosures,isTradingSession}=require('../../ops/egx-session-math.cjs');
 
 // ASTRA_INTELLIGENCE_ROOT is for hermetic test roots; the production default is unchanged.
-const ROOT=process.env.ASTRA_INTELLIGENCE_ROOT?path.resolve(process.env.ASTRA_INTELLIGENCE_ROOT):path.resolve(__dirname,'../../..');
+const DEFAULT_ROOT=path.resolve(__dirname,'../../..');
+const ROOT_OVERRIDE=process.env.ASTRA_INTELLIGENCE_ROOT;
+if(ROOT_OVERRIDE && process.env.GITHUB_ACTIONS==='true' && process.env.ASTRA_PRODUCTION_RUN==='1'){
+  throw new Error('ASTRA_INTELLIGENCE_ROOT is forbidden during production GitHub Actions runs');
+}
+const ROOT=ROOT_OVERRIDE?path.resolve(ROOT_OVERRIDE):DEFAULT_ROOT;
+if(ROOT_OVERRIDE) process.stderr.write('[ASTRA] NON-PRODUCTION ROOT OVERRIDE: '+ROOT+'\\n');
 const EGX_CLOSURES=confirmedClosures(ROOT);
 const P=(...x)=>path.join(ROOT,...x);
 const readJson=(rel,fallback=null)=>{try{return JSON.parse(fs.readFileSync(P(rel),'utf8'))}catch(e){if(fallback!==null)return fallback;throw e}};
