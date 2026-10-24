@@ -8,6 +8,7 @@ const {decision:quality}=require('./hybrid-alpha-v1-filter-lab.cjs');
 const policyDoc=require('../../data/v13-4-quant-policy.json');
 const cost=policyDoc.research;
 const {tradingWindow,tradeForwardWindow,executable}=require('./egx-executable-session-series-v1.cjs');
+const {resolveExit}=require('./egx-research-execution-fills-v1.cjs');
 const mean=a=>a.reduce((x,y)=>x+y,0)/a.length,round=(v,n=3)=>Number(v.toFixed(n));
 const strategies=['breakout_filtered','relative_momentum','trend_pullback'];
 function stats(a){
@@ -42,15 +43,10 @@ function simulate(universe,config=cost){
     const key=id+'|'+p.ticker;if((busy.get(key)||'')>=date)continue;
     const next=p.rows[p.i+1],entry=next.open*(1+config.entrySlippagePct/100);
     if(!(entry>0))continue;
-    const future=tradeForwardWindow(p.rows,p.i+1,config.maximumHoldingSessions),stop=entry*.95,target=entry*1.09;
-    let exit=null,offset=-1,status='';
-    for(let k=0;k<future.length;k++){
-     if(future[k].executable===false)continue;
-     if(future[k].low<=stop){exit=stop;offset=k;status='STOP';break}
-     if(future[k].high>=target){exit=target;offset=k;status='TARGET';break}
-    }
-    if(exit===null&&future.length<config.maximumHoldingSessions){openAtEnd.push({ticker:p.ticker,variant:id,signalDate:date});continue}
-    if(exit===null){offset=future.length-1;if(offset<0){openAtEnd.push({ticker:p.ticker,variant:id,signalDate:date,reason:'NO_EXECUTABLE_EXIT'});continue}exit=future[offset].close;status='TIME_EXIT'}
+    const future=tradeForwardWindow(p.rows,p.i+1,config.maximumHoldingSessions);
+    const fill=resolveExit(future,entry,config.maximumHoldingSessions,cp.stopPct,cp.targetPct);
+    if(!fill){openAtEnd.push({ticker:p.ticker,variant:id,signalDate:date,reason:'RIGHT_CENSORED'});continue}
+    const {exitPrice:exit,offset,status}=fill;
     const score=id==='breakout_filtered'?Math.max(0,Math.min(100,55+p.b.volumeRatio*5+p.c.momentum20Pct*.6-p.b.atr14Pct*2)):id==='relative_momentum'?Math.max(0,Math.min(100,50+p.c.momentum20Pct*1.2-p.b.atr14Pct)):Math.max(0,Math.min(100,78-Math.abs(p.c.pullbackPct+1.5)*6-p.b.atr14Pct));
     const trade={ticker:p.ticker,variant:id,signalDate:date,entryDate:next.date,exitDate:future[offset].date,status,signalScore:round(score),entryPrice:round(entry,6),exitPrice:round(exit,6),netReturnPct:round((exit/entry-1)*100-config.roundTripCostPct)};
     trades.push(trade);busy.set(key,trade.exitDate);
@@ -61,7 +57,7 @@ function simulate(universe,config=cost){
 }
 function report(sim){
  const dates=[...new Set(sim.trades.map(x=>x.signalDate))].sort(),cut=dates[Math.floor(dates.length*.70)]||null;
- return {schemaVersion:'egx-comparable-three-strategy-v1',generatedAt:new Date().toISOString(),researchOnly:true,sharedExecution:{entry:'next-supplied-session-open',slippagePct:cost.entrySlippagePct,roundTripCostPct:cost.roundTripCostPct,stopPct:5,targetPct:9,maxHoldingSessions:cost.maximumHoldingSessions,sameBarRule:'stop-first',rightCensoredUnresolvedExcluded:true,indicatorBars:'last 55 executable bars only',holdingBars:'max holding count in executable bars; zero-volume references ignored'},historicalSplit:{boundaryDate:cut,note:'Diagnostic only: model rules were selected after seeing earlier pooled historical results; NOT an untouched OOS validation.'},byPeriod:['all','earlier','later'].map(period=>({period,variants:strategies.map(variant=>({variant,...stats(sim.trades.filter(t=>t.variant===variant&&(period==='all'||(period==='earlier'?t.signalDate<cut:t.signalDate>=cut))))}))})),unresolved:sim.unresolved.length,tradeCount:sim.trades.length,limitations:['Historical strategy choice already conditioned on prior sample performance','Ticker availability can introduce survivorship and listing bias','No portfolio capital constraints, position sizing, market impact or corporate-action audit','Daily bar OHLC order unknown; stop-first is conservative','Same-historical-universe comparison is exploratory and not certified strategy parity']};
+ return {schemaVersion:'egx-comparable-three-strategy-v1',generatedAt:new Date().toISOString(),researchOnly:true,sharedExecution:{entry:'next-supplied-session-open',slippagePct:cost.entrySlippagePct,roundTripCostPct:cost.roundTripCostPct,stopPct:5,targetPct:9,maxHoldingSessions:cost.maximumHoldingSessions,sameBarRule:'stop-first, gaps below stop fill at opening price',rightCensoredUnresolvedExcluded:true,indicatorBars:'last 55 executable bars only',holdingBars:'max holding count in executable bars; zero-volume references ignored'},historicalSplit:{boundaryDate:cut,note:'Diagnostic only: model rules were selected after seeing earlier pooled historical results; NOT an untouched OOS validation.'},byPeriod:['all','earlier','later'].map(period=>({period,variants:strategies.map(variant=>({variant,...stats(sim.trades.filter(t=>t.variant===variant&&(period==='all'||(period==='earlier'?t.signalDate<cut:t.signalDate>=cut))))}))})),unresolved:sim.unresolved.length,tradeCount:sim.trades.length,limitations:['Historical strategy choice already conditioned on prior sample performance','Ticker availability can introduce survivorship and listing bias','No portfolio capital constraints, position sizing, market impact or corporate-action audit','Daily bar OHLC order unknown; stop-first is conservative','Same-historical-universe comparison is exploratory and not certified strategy parity']};
 }
 if(require.main===module){const {universe,audit}=loadUniverse(),r=simulate(universe),out={...report(r),coverage:audit,trades:r.trades};const p=path.join(root,'data/research/egx-comparable-three-strategy-v1.json');fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,JSON.stringify(out,null,2)+'\n');console.log(JSON.stringify({coverage:audit,byPeriod:out.byPeriod,unresolved:out.unresolved},null,2));}
 module.exports={simulate,report,stats};
