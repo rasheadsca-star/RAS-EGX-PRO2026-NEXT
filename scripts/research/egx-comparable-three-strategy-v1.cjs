@@ -47,7 +47,8 @@ function simulate(universe,config=cost){
     }
     if(exit===null&&future.length<config.maximumHoldingSessions){openAtEnd.push({ticker:p.ticker,variant:id,signalDate:date});continue}
     if(exit===null){exit=future.at(-1).close;offset=future.length-1;status='TIME_EXIT'}
-    const trade={ticker:p.ticker,variant:id,signalDate:date,entryDate:next.date,exitDate:future[offset].date,status,netReturnPct:round((exit/entry-1)*100-config.roundTripCostPct)};
+    const score=id==='breakout_filtered'?(p.b.volumeRatio*10+p.c.momentum20Pct-p.b.atr14Pct):id==='relative_momentum'?p.c.momentum20Pct:p.c.momentum20Pct-Math.abs(p.c.pullbackPct)*2;
+    const trade={ticker:p.ticker,variant:id,signalDate:date,entryDate:next.date,exitDate:future[offset].date,status,signalScore:round(score),netReturnPct:round((exit/entry-1)*100-config.roundTripCostPct)};
     trades.push(trade);busy.set(key,trade.exitDate);
    }
   }
