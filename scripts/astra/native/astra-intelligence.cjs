@@ -5,7 +5,8 @@ const path=require('path');
 const crypto=require('crypto');
 const {confirmedClosures,isTradingSession}=require('../../ops/egx-session-math.cjs');
 
-const ROOT=path.resolve(__dirname,'../../..');
+// ASTRA_INTELLIGENCE_ROOT is for hermetic test roots; the production default is unchanged.
+const ROOT=process.env.ASTRA_INTELLIGENCE_ROOT?path.resolve(process.env.ASTRA_INTELLIGENCE_ROOT):path.resolve(__dirname,'../../..');
 const EGX_CLOSURES=confirmedClosures(ROOT);
 const P=(...x)=>path.join(ROOT,...x);
 const readJson=(rel,fallback=null)=>{try{return JSON.parse(fs.readFileSync(P(rel),'utf8'))}catch(e){if(fallback!==null)return fallback;throw e}};
