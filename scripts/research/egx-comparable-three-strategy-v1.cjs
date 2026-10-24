@@ -17,6 +17,7 @@ function simulate(universe,config=cost){
  const calendar=new Map(),trades=[],openAtEnd=[];
  for(const [ticker,rows] of Object.entries(universe)){
   for(let i=54;i<rows.length-1;i++){
+   if(rows[i].executable===false||rows[i+1].executable===false)continue;
    const c=challengerFeatures(rows,i);const b=breakoutFeatures(rows.slice(0,i+1),policyDoc);
    if(!c||!b||!Number.isFinite(c.turnover20)||c.turnover20<cp.minimumTurnover20)continue;
    const date=rows[i].date;if(!calendar.has(date))calendar.set(date,[]);
@@ -42,11 +43,12 @@ function simulate(universe,config=cost){
     const future=p.rows.slice(p.i+1,p.i+1+config.maximumHoldingSessions),stop=entry*.95,target=entry*1.09;
     let exit=null,offset=-1,status='';
     for(let k=0;k<future.length;k++){
+     if(future[k].executable===false)continue;
      if(future[k].low<=stop){exit=stop;offset=k;status='STOP';break}
      if(future[k].high>=target){exit=target;offset=k;status='TARGET';break}
     }
     if(exit===null&&future.length<config.maximumHoldingSessions){openAtEnd.push({ticker:p.ticker,variant:id,signalDate:date});continue}
-    if(exit===null){exit=future.at(-1).close;offset=future.length-1;status='TIME_EXIT'}
+    if(exit===null){offset=future.findLastIndex(bar=>bar.executable!==false);if(offset<0){openAtEnd.push({ticker:p.ticker,variant:id,signalDate:date,reason:'NO_EXECUTABLE_EXIT'});continue}exit=future[offset].close;status='TIME_EXIT'}
     const score=id==='breakout_filtered'?Math.max(0,Math.min(100,55+p.b.volumeRatio*5+p.c.momentum20Pct*.6-p.b.atr14Pct*2)):id==='relative_momentum'?Math.max(0,Math.min(100,50+p.c.momentum20Pct*1.2-p.b.atr14Pct)):Math.max(0,Math.min(100,78-Math.abs(p.c.pullbackPct+1.5)*6-p.b.atr14Pct));
     const trade={ticker:p.ticker,variant:id,signalDate:date,entryDate:next.date,exitDate:future[offset].date,status,signalScore:round(score),netReturnPct:round((exit/entry-1)*100-config.roundTripCostPct)};
     trades.push(trade);busy.set(key,trade.exitDate);
