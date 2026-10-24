@@ -67,3 +67,25 @@ test('fresh prices are not stale, but price source remains unverified',()=>{
  assert.equal(r.markIntegrity.completeSessionMarks,true);
  assert.equal(r.markIntegrity.capitalPerformanceCertified,false);
 });
+
+test('stale prior-market-day position valuation blocks further buying without foresight',()=>{
+ const dates=['2026-01-04','2026-01-05','2026-01-06','2026-01-07'];
+ const make=date=>({date,open:100,high:102,low:99,close:100,volume:100000,executable:true});
+ const universe={AAA:dates.slice(0,2).map(make),BBB:dates.map(make)};
+ const signal=ticker=>({ticker,date:ticker==='AAA'?dates[0]:dates[2],variant:'aqm_pullback',score:80,atr14:5,turnover20:30000000,marketExposureMaxPct:100});
+ const run=replay(universe,[signal('AAA'),signal('BBB')],'aqm_pullback');
+ assert.equal(run.openedEntries.length,1);
+ assert.equal(run.openedEntries[0].ticker,'AAA');
+ assert.equal(run.markIntegrity.blockedEntryDaysStale,1);
+ assert.equal(run.markIntegrity.missingPositionQuoteSessions,2);
+ assert.equal(run.equityCurve.at(-1).blockedNewEntryDueToKnownStaleMark,true);
+});
+test('zero-volume position mark is distinct from no available quotation',()=>{
+ const dates=['2026-01-04','2026-01-05','2026-01-06'];
+ const make=date=>({date,open:100,high:102,low:99,close:100,volume:100000,executable:true});
+ const a=dates.map(make);a[2]={...a[2],volume:0,executable:false};
+ const r=replay({AAA:a,BBB:dates.map(make)},[{ticker:'AAA',date:dates[0],variant:'aqm_pullback',score:80,atr14:5,turnover20:30000000,marketExposureMaxPct:100}],'aqm_pullback');
+ assert.equal(r.markIntegrity.missingPositionQuoteSessions,0);
+ assert.equal(r.markIntegrity.nonExecutablePositionQuoteSessions,1);
+ assert.equal(r.markIntegrity.completeSessionMarks,false);
+});
