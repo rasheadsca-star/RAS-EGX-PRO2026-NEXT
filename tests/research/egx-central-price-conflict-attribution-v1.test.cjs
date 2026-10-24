@@ -18,3 +18,18 @@ test('aligned prices need no repair, while invalid long OHLCV does not count as 
 test('officialVerified from secondary source is a claim, not automatic reclassification',()=>{
  assert.equal(classifyMainProvenance({officialVerified:true}),'MAIN_CLAIMS_OFFICIAL_VERIFICATION');
 });
+
+test('persistent tenfold cross-feed scale is flagged for corporate action or identity review, never adjusted',()=>{
+ const ds=['2026-09-01','2026-09-02','2026-09-03','2026-09-06'];
+ const raw=ds.map((date,i)=>bar(date,70+i));
+ const main=ds.map((date,i)=>({...bar(date,(70+i)*10),source:'mubasher'}));
+ const x=reconcileOne({ticker:'ORAS',sessions:raw},{sessions:main});
+ assert.equal(x.conflictCount,4);
+ assert.equal(x.suspectedScaleMismatch.classification,'STABLE_PRICE_SCALE_DISAGREEMENT_REQUIRES_CA_OR_IDENTITY_PROOF');
+ assert.equal(x.suspectedScaleMismatch.autoAdjustAllowed,false);
+ assert.ok(Math.abs(x.suspectedScaleMismatch.approximateMainToSourceFactor-10)<0.001);
+});
+test('isolated high price mismatch is not labelled a persistent price-scale issue',()=>{
+ const x=reconcileOne({ticker:'ABC',sessions:[bar('2026-09-01',70)]},{sessions:[bar('2026-09-01',700)]});
+ assert.equal(x.suspectedScaleMismatch,null);
+});
