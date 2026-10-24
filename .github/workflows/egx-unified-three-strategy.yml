@@ -9,6 +9,8 @@ on:
       - 'scripts/research/egx-canonical-ohlcv-gateway.cjs'
       - 'scripts/research/egx-executable-session-series-v1.cjs'
       - 'scripts/research/egx-research-execution-fills-v1.cjs'
+      - 'scripts/research/egx-historical-profit-qualification-v1.cjs'
+      - 'tests/research/egx-historical-profit-qualification-v1.test.cjs'
       - 'tests/research/egx-research-execution-fills-v1.test.cjs'
       - 'tests/research/egx-executable-session-series-v1.test.cjs'
       - 'tests/research/egx-canonical-ohlcv-gateway.test.cjs'
@@ -51,6 +53,8 @@ jobs:
             manifest.json
             evidence_quality_report.json
             coverage_efficiency_report.json
+      - name: Test historical profit qualification gate
+        run: node --test tests/research/egx-historical-profit-qualification-v1.test.cjs
       - name: Test stop-gap and intraday conservative execution fills
         run: node --test tests/research/egx-research-execution-fills-v1.test.cjs
       - name: Test executable trading session indicator calculations
@@ -106,6 +110,8 @@ jobs:
         run: node scripts/research/egx-topfour-breadth-regime-v1.cjs
       - name: Run frozen pullback regime daily marked-to-market diagnostic
         run: node scripts/research/egx-pullback-breadth-mtm-diagnostic-v1.cjs
+      - name: Check historical qualification across cash and mark-to-market ledgers
+        run: node scripts/research/egx-historical-profit-qualification-v1.cjs
       - name: Write historical comparison
         if: success()
         run: |
@@ -140,6 +146,7 @@ jobs:
             data/research/egx-strategy-top-four-tournament-v1.json
             data/research/egx-topfour-breadth-regime-v1.json
             data/research/egx-pullback-breadth-mtm-diagnostic-v1.json
+            data/research/egx-historical-profit-qualification-v1.json
             data/research/egx-historical-trade-ledger-audit-v1.json
             data/research/egx-missing-market-sessions-sensitivity-v1.json
             data/research/egx-missing-session-source-reconciliation-v1.json
