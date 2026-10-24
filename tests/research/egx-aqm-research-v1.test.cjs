@@ -34,3 +34,16 @@ test('gap-through-stop leads negative result including costs, not optimistic sto
  const r=replay({AAA:bars},[{ticker:'AAA',date:'2026-01-04',variant:'aqm_pullback',score:80,atr14:5,turnover20:30000000,marketExposureMaxPct:100}],'aqm_pullback');
  assert.equal(r.closedTrades,1);assert.ok(r.tradeLedger[0].netPnlEgp<0);
 });
+
+test('a 6 percent monthly drawdown disables new entries for that month',()=>{
+ const dates=['2026-01-04','2026-01-05','2026-01-06','2026-01-07'];
+ const abc=dates.map((date,i)=>({date,open:i>=2?50:100,high:i>=2?51:101,low:i>=2?49:99,close:i>=2?50:100,volume:1000000,executable:true}));
+ const bbb=dates.map(date=>({date,open:100,high:101,low:99,close:100,volume:1000000,executable:true}));
+ const r=replay({ABC:abc,BBB:bbb},[
+  {ticker:'ABC',date:dates[0],variant:'aqm_pullback',score:90,atr14:5,turnover20:30000000,marketExposureMaxPct:100},
+  {ticker:'BBB',date:dates[2],variant:'aqm_pullback',score:90,atr14:5,turnover20:30000000,marketExposureMaxPct:100}
+ ],'aqm_pullback');
+ assert.equal(r.closedTrades,1);
+ assert.equal(r.equityCurve[3].openPositions,0);
+ assert.ok(r.monthlyHaltDays>=1);
+});
