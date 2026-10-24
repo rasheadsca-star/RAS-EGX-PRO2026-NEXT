@@ -41,7 +41,7 @@ function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurn
  const s=policy.selection,breadth=breadthByDate(universe),signals=[],asOfAudit={strictRequiredInputsPresent:!!(indexHistory&&pointInTimeFundamentals&&eventCalendar&&sectorHistory&&haltHistory),missing:[],mode:marketMode};
  for(const [name,ok] of [['egx30History',!!indexHistory],['pointInTimeFundamentals',!!pointInTimeFundamentals],['corporateEventCalendar',!!eventCalendar],['sectorHistory',!!sectorHistory],['haltHistory',!!haltHistory]])if(!ok)asOfAudit.missing.push(name);
  const strict=marketMode==='strict';
- if(strict&&asOfAudit.missing.length)return {signals:[],reasons:{...reasons,missingStrictInputs:asOfAudit.missing.length},asOfAudit,datesWithLongHistory:byDate.size,breadthDates:breadth.size};
+ if(strict)return {signals:[],reasons:{...reasons,missingStrictInputs:asOfAudit.missing.length},asOfAudit:{...asOfAudit,fullAsOfCertificationImplemented:false,reason:'Full as-of EGX30, financial, event, sector and halt verification has not been implemented or certified'},datesWithLongHistory:byDate.size,breadthDates:breadth.size};
  for(const [date,features] of [...byDate].sort((a,b)=>a[0].localeCompare(b[0]))){
   // Rank among all observable long-history securities, before strategy-specific hard filters.
   const marketRank=features.slice().sort((a,b)=>b.sixMonth-a.sixMonth||a.ticker.localeCompare(b.ticker));
