@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "egx-pullback-breadth-frozen-1",
+  "frozenOn": "2026-10-24",
+  "researchOnly": true,
+  "candidate": "trend_pullback",
+  "minimumSignalScore": 60,
+  "maxOpenPositions": 4,
+  "initialPaperCapitalEgp": 100000,
+  "marketBreadth": {
+    "minBreadthPct": 45,
+    "minEligibleStocks": 30,
+    "minAverageTurnover20Egp": 100000
+  },
+  "execution": {
+    "entry": "next trading bar open",
+    "entrySlippagePct": 0.15,
+    "roundTripCostPct": 0.6,
+    "stopLossPct": 5,
+    "targetPct": 9,
+    "maxHoldingSessions": 10,
+    "sameBarConflict": "stop-first"
+  },
+  "evaluation": {
+    "chronologicalTrainFraction": 0.7,
+    "embargoCalendarDays": 15,
+    "claimOfUntouchedOutOfSample": false,
+    "condition": "Do not call later historical slice independent OOS because models and thresholds have been developed after examining the historical data."
+  },
+  "productionEnabled": false
+}
