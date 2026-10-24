@@ -74,11 +74,11 @@ test('production gate detects mutated input with exit 3',t=>{
   const root=certifiedRoot(t);
   const builder=path.join(root,BUILD_REL);
   fs.appendFileSync(builder,`
-if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.env.ASTRA_INTELLIGENCE_ROOT,'astra-prod/app/data.json'),'evil');
+if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.env.EVIL_TARGET,'astra-prod/app/data.json'),'evil');
 `);
   // Override passes to gate's child process only in this disposable fixture.
   const out=cp.spawnSync(process.execPath,[path.join(root,GATE_REL),root],{
-    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1'},encoding:'utf8'
+    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1',EVIL_TARGET:root},encoding:'utf8'
   });
   const report=JSON.parse(out.stdout);
   assert.equal(out.status,3,JSON.stringify(report));
@@ -94,10 +94,10 @@ test('production gate detects git status mutation outside input hash set',t=>{
   git(['-c','user.email=ci@example.invalid','-c','user.name=CI Test','commit','-qm','baseline']);
   const builder=path.join(root,BUILD_REL);
   fs.appendFileSync(builder,`
-if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.env.ASTRA_INTELLIGENCE_ROOT,'unrelated.txt'),'evil');
+if(process.env.EVIL==='1')require('fs').appendFileSync(require('path').join(process.env.EVIL_TARGET,'unrelated.txt'),'evil');
 `);
   const out=cp.spawnSync(process.execPath,[path.join(root,GATE_REL),root],{
-    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1'},encoding:'utf8'
+    cwd:root,env:{...process.env,GITHUB_ACTIONS:'true',EVIL:'1',EVIL_TARGET:root},encoding:'utf8'
   });
   const report=JSON.parse(out.stdout);
   assert.equal(out.status,3,JSON.stringify(report));
