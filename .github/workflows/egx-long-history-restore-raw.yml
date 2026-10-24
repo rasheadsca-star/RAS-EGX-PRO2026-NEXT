@@ -11,7 +11,7 @@ permissions:
 jobs:
   restore:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 24
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,8 +19,8 @@ jobs:
           node-version: '22'
       - name: Test real daily candles, adjusted source and reconciliation rules
         run: node --test tests/research/egx-central-long-history-restore-audit-v1.test.cjs
-      - name: Rehydrate original 10-year daily OHLCV using EXISTING V17 collector (small pilot)
-        run: node scripts/v17/historical-recovery/long-history/ingest.cjs --symbols=COMI,ABUK,ETEL,FWRY
+      - name: Rehydrate original 10-year daily OHLCV using EXISTING V17 collector (25 high-coverage stocks)
+        run: node scripts/v17/historical-recovery/long-history/ingest.cjs --symbols=COMI,ABUK,ETEL,FWRY,SWDY,TMGH,EAST,EGAL,JUFO,HRHO,ORHD,CCAP,RMDA,SKPC,ALCN,MASR,HDBK,PHDC,ORAS,AMOC,EFID,CIEB,OLFI,RAYA,MTIE
       - name: Audit source identities and compare with main data before ANY promotion
         run: node scripts/research/egx-central-long-history-restore-audit-v1.cjs
       - name: Print completeness without claiming automatic certification
