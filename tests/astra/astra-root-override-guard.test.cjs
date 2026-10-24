@@ -16,6 +16,10 @@ for(const script of scripts){
     const temp=fs.mkdtempSync(path.join(os.tmpdir(),'astra-root-guard-'));
     t.after(()=>fs.rmSync(temp,{recursive:true,force:true}));
     const link=path.join(temp,'repo-link');
+    if(fs.realpathSync(ROOT).startsWith(fs.realpathSync(os.tmpdir())+path.sep)){
+      t.skip('repository itself is under temp; symlink escape prerequisite is false');
+      return;
+    }
     fs.symlinkSync(ROOT,link,'dir');
     const out=invoke(script,{ASTRA_INTELLIGENCE_ROOT:link});
     assert.notEqual(out.status,0);
@@ -36,5 +40,33 @@ for(const script of scripts){
     const out=invoke(script,{ASTRA_INTELLIGENCE_ROOT:temp});
     assert.match(out.stderr,/\[ASTRA\] NON-PRODUCTION ROOT OVERRIDE: [^\r\n]+\n/);
     assert.doesNotMatch(out.stderr,/blocked in GitHub Actions/);
+  });
+}
+
+for(const script of scripts){
+  test(script+' defaults to production root with unset or empty override',()=>{
+    for(const override of [undefined,'']){
+      const env={...process.env,GITHUB_ACTIONS:'true'};
+      delete env.ASTRA_ALLOW_ROOT_OVERRIDE;
+      if(override===undefined)delete env.ASTRA_INTELLIGENCE_ROOT;
+      else env.ASTRA_INTELLIGENCE_ROOT=override;
+      const result=cp.spawnSync(process.execPath,[path.join(ROOT,script)],{cwd:ROOT,env,encoding:'utf8'});
+      assert.doesNotMatch(result.stderr,/NON-PRODUCTION ROOT OVERRIDE|blocked in GitHub Actions/);
+    }
+  });
+  test(script+' rejects wrong authorization flags',t=>{
+    const temp=fs.mkdtempSync(path.join(os.tmpdir(),'astra-root-guard-'));
+    t.after(()=>fs.rmSync(temp,{recursive:true,force:true}));
+    for(const flag of ['true','yes','0']){
+      const result=invoke(script,{ASTRA_INTELLIGENCE_ROOT:temp,ASTRA_ALLOW_ROOT_OVERRIDE:flag});
+      assert.notEqual(result.status,0);
+      assert.match(result.stderr,/blocked in GitHub Actions/);
+    }
+  });
+  test(script+' fails closed for missing override root',()=>{
+    const missing=path.join(os.tmpdir(),'astra-definitely-missing-root-'+process.pid+'-'+Date.now());
+    const result=invoke(script,{ASTRA_INTELLIGENCE_ROOT:missing});
+    assert.notEqual(result.status,0);
+    assert.match(result.stderr,/ENOENT|blocked in GitHub Actions/);
   });
 }
