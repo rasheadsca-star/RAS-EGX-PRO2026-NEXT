@@ -6,13 +6,13 @@ const ROOT_OVERRIDE=process.env.ASTRA_INTELLIGENCE_ROOT;
 if(ROOT_OVERRIDE && process.env.GITHUB_ACTIONS==='true'){
   const os=require('os');
   const realTemp=fs.realpathSync(os.tmpdir());
-  const resolved=path.resolve(ROOT_OVERRIDE);
+  const resolved=fs.realpathSync(path.resolve(ROOT_OVERRIDE));
   const underTemp=resolved.startsWith(realTemp+path.sep);
   if(process.env.ASTRA_ALLOW_ROOT_OVERRIDE!=='1' || !underTemp){
     throw new Error('ASTRA_INTELLIGENCE_ROOT blocked in GitHub Actions: explicit test-only authorization and temp root required');
   }
 }
-const ROOT=ROOT_OVERRIDE?path.resolve(ROOT_OVERRIDE):DEFAULT_ROOT;
+const ROOT=ROOT_OVERRIDE && process.env.GITHUB_ACTIONS==='true'?fs.realpathSync(path.resolve(ROOT_OVERRIDE)):(ROOT_OVERRIDE?path.resolve(ROOT_OVERRIDE):DEFAULT_ROOT);
 if(ROOT_OVERRIDE) process.stderr.write('[ASTRA] NON-PRODUCTION ROOT OVERRIDE: '+ROOT+'\n');
 const WF=path.join(ROOT,'.github','workflows');
 const files=fs.readdirSync(WF).filter(x=>/\.ya?ml$/i.test(x)).sort();
