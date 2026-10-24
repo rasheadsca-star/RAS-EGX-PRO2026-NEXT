@@ -1,7 +1,13 @@
 'use strict';
 const fs=require('fs'),path=require('path'),cp=require('child_process');
 // ASTRA_INTELLIGENCE_ROOT is for hermetic test roots; the production default is unchanged.
-const ROOT=process.env.ASTRA_INTELLIGENCE_ROOT?path.resolve(process.env.ASTRA_INTELLIGENCE_ROOT):path.resolve(__dirname,'../../..');
+const DEFAULT_ROOT=path.resolve(__dirname,'../../..');
+const ROOT_OVERRIDE=process.env.ASTRA_INTELLIGENCE_ROOT;
+if(ROOT_OVERRIDE && process.env.GITHUB_ACTIONS==='true' && process.env.ASTRA_PRODUCTION_RUN==='1'){
+  throw new Error('ASTRA_INTELLIGENCE_ROOT is forbidden during production GitHub Actions runs');
+}
+const ROOT=ROOT_OVERRIDE?path.resolve(ROOT_OVERRIDE):DEFAULT_ROOT;
+if(ROOT_OVERRIDE) process.stderr.write('[ASTRA] NON-PRODUCTION ROOT OVERRIDE: '+ROOT+'\\n');
 const WF=path.join(ROOT,'.github','workflows');
 const files=fs.readdirSync(WF).filter(x=>/\.ya?ml$/i.test(x)).sort();
 const rows=[];
