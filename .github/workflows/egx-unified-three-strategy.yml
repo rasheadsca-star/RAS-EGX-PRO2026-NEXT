@@ -15,6 +15,9 @@ on:
       - 'tests/research/egx-strategy-top-four-tournament-v1.test.cjs'
       - 'scripts/research/egx-topfour-breadth-regime-v1.cjs'
       - 'tests/research/egx-topfour-breadth-regime-v1.test.cjs'
+      - 'scripts/research/egx-pullback-breadth-mtm-diagnostic-v1.cjs'
+      - 'tests/research/egx-pullback-breadth-mtm-diagnostic-v1.test.cjs'
+      - 'data/research/egx-pullback-breadth-frozen-policy-v1.json'
 jobs:
   compare:
     runs-on: ubuntu-latest
@@ -35,6 +38,8 @@ jobs:
         run: node --test tests/research/egx-strategy-top-four-tournament-v1.test.cjs
       - name: Test market breadth gate
         run: node --test tests/research/egx-topfour-breadth-regime-v1.test.cjs
+      - name: Test frozen pullback mark-to-market diagnostic
+        run: node --test tests/research/egx-pullback-breadth-mtm-diagnostic-v1.test.cjs
       - name: Compare strategies with identical execution and eligible universe
         run: node scripts/research/egx-comparable-three-strategy-v1.cjs
       - name: Rank and evaluate no-more-than-four selected positions per strategy
@@ -45,6 +50,8 @@ jobs:
         run: node scripts/research/egx-strategy-top-four-tournament-v1.cjs
       - name: Assess top-four strategy portfolios with market breadth regime
         run: node scripts/research/egx-topfour-breadth-regime-v1.cjs
+      - name: Run frozen pullback regime daily marked-to-market diagnostic
+        run: node scripts/research/egx-pullback-breadth-mtm-diagnostic-v1.cjs
       - name: Write historical comparison
         if: success()
         run: |
@@ -78,3 +85,4 @@ jobs:
             data/research/egx-market-top-four-first-v1.json
             data/research/egx-strategy-top-four-tournament-v1.json
             data/research/egx-topfour-breadth-regime-v1.json
+            data/research/egx-pullback-breadth-mtm-diagnostic-v1.json
