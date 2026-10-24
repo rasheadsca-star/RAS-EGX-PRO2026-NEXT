@@ -48,16 +48,7 @@ function backtest(universe,research=cfg){
  }
  return {trades,unresolved,dates:dates.length};
 }
-function loadUniverse(){
- const closed=confirmedClosures(root),dir=path.join(root,'data/history'),universe={},audit={files:0,eligible:0,discarded:0};
- for(const name of fs.readdirSync(dir).filter(x=>x.endsWith('.json'))){
-  audit.files++;let doc;try{doc=JSON.parse(fs.readFileSync(path.join(dir,name),'utf8'))}catch{continue}if(!Array.isArray(doc.sessions))continue;
-  const rows=doc.sessions.map(x=>({date:String(x.date||x.sessionDate||'').slice(0,10),open:Number(x.open),high:Number(x.high),low:Number(x.low),close:Number(x.close),volume:Number(x.volume),invalid:x.validationStatus==='source_conflict'||(x.warnings||[]).some(y=>/price_conflict/i.test(String(y)))})).filter(x=>/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(x.date)&&isTradingSession(x.date,closed)&&!x.invalid&&[x.open,x.high,x.low,x.close,x.volume].every(Number.isFinite)&&x.low>0&&x.volume>0&&x.high>=Math.max(x.open,x.close,x.low)&&x.low<=Math.min(x.open,x.close,x.high));
-  rows.sort((a,b)=>a.date.localeCompare(b.date));const seen=new Set(),clean=rows.filter(x=>{if(seen.has(x.date))return false;seen.add(x.date);return true});
-  if(clean.length<policy.minBars){audit.discarded++;continue}
-  universe[doc.ticker||name.slice(0,-5)]=clean;audit.eligible++;
- }return {universe,audit};
-}
+function loadUniverse(){return require('./egx-canonical-ohlcv-gateway.cjs').build(root)}
 function main(){
  const {universe,audit}=loadUniverse(),r=backtest(universe),variants=['relative_momentum','trend_pullback'].map(variant=>({variant,...summarize(r.trades.filter(x=>x.variant===variant))}));
  const output={schemaVersion:'egx-strategy-challengers-v1',generatedAt:new Date().toISOString(),researchOnly:true,policy,coverage:audit,variants,unresolved:r.unresolved.length,trades:r.trades,limitations:['Exploratory, not out-of-sample','Relative rank computed against available historical rows, not certified contemporaneous listing universe; survivorship bias possible','No portfolio capital/market impact simulation','Legacy breakout baseline differs in eligibility and censoring treatment; comparisons are indicative only','Unverified source parity and omitted corporate-action checks']};
