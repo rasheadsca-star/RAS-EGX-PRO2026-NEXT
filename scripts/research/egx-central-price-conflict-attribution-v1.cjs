@@ -11,6 +11,17 @@ function classifyMainProvenance(bar){
  if(bar.officialVerified===true)return 'MAIN_CLAIMS_OFFICIAL_VERIFICATION';
  return 'MAIN_SECONDARY_OR_UNVERIFIED';
 }
+function suspectedStableScale(conflicts){
+ const a=conflicts.filter(x=>x.sourceClose>0&&x.mainClose>0).map(x=>x.mainClose/x.sourceClose).sort((x,y)=>x-y);
+ if(a.length<3)return null;
+ const median=a[Math.floor(a.length/2)],p10=a[Math.floor((a.length-1)*0.1)],p90=a[Math.ceil((a.length-1)*0.9)];
+ if(!(median>=2||median<=0.5))return null;
+ const relativeSpread=(p90-p10)/median;
+ if(relativeSpread>0.05)return null;
+ return {classification:'STABLE_PRICE_SCALE_DISAGREEMENT_REQUIRES_CA_OR_IDENTITY_PROOF',
+  approximateMainToSourceFactor:+median.toFixed(4),ratioRelativeSpreadPct:+(100*relativeSpread).toFixed(3),
+  sampledConflictingDates:a.length,autoAdjustAllowed:false};
+}
 function reconcileOne(doc,mainDoc,{thresholdPct=2}={}){
  const main=new Map((mainDoc?.sessions||[]).filter(x=>x&&x.date).map(x=>[x.date,x]));
  const unique=new Map();
@@ -41,6 +52,7 @@ function reconcileOne(doc,mainDoc,{thresholdPct=2}={}){
  return {ticker:doc.ticker,sourceQuality:doc.dataQualityStatus,
   validSourceDailyCount:unique.size,invalidHistoricalCandles,overlapDays:overlaps.length,
   conflictCount:conflicts.length,weakMainEvidenceDisagreements:suspected,
+  suspectedScaleMismatch:suspectedStableScale(conflicts),
   conflictWithNonReconstructedMain:conflicts.length-suspected,
   maximumDisagreementPct:conflicts.length?Math.max(...conflicts.map(x=>x.differencePct)):0,
   byCause:provenanceCounts,byPriority:reviewCounts,conflicts:conflicts.slice(0,20),
@@ -68,10 +80,11 @@ function analyze(base=root){
   for(const [k,v]of Object.entries(r.byCause))totals.causeCounts[k]=(totals.causeCounts[k]||0)+v;
  }
  out.sort((a,b)=>b.conflictCount-a.conflictCount||a.ticker.localeCompare(b.ticker));
+ totals.suspectedStableScaleMismatchSymbols=out.filter(x=>x.suspectedScaleMismatch).length;
  return {schemaVersion:'egx-central-price-conflict-attribution-v1',generatedAt:new Date().toISOString(),status:'RESEARCH_EVIDENCE_NO_PRICE_WINNER',source:'existing egx-research-ledger raw long history vs main session provenance',thresholdPct:2,totals,
   priorityStocks:out.filter(x=>x.conflictCount).slice(0,35),allTickerAggregates:out.map(({conflicts,...r})=>r),
   nextAction:'Verify mismatching dates against exchange-certified or genuinely independent dated OHLCV; never auto-adjust, interpolate, or merge disputed candles',
   productionPromotionAllowed:false,researchEligibilityAutomaticallyUpgraded:false};
 }
 if(require.main===module){const r=analyze();const file=path.join(root,'data/research/egx-central-price-conflict-attribution-v1.json');fs.writeFileSync(file,JSON.stringify(r,null,2)+'\n');console.log(JSON.stringify({totals:r.totals,priorityStocks:r.priorityStocks.slice(0,8)},null,2))}
-module.exports={classifyMainProvenance,reconcileOne,analyze};
+module.exports={classifyMainProvenance,suspectedStableScale,reconcileOne,analyze};
