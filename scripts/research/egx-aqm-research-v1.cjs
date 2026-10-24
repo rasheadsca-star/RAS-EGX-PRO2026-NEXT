@@ -28,13 +28,12 @@ function technical(rows,i){
 }
 function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurnover20Egp,marketMode='technicalDiagnostic',indexHistory=null,pointInTimeFundamentals=null,eventCalendar=null,sectorHistory=null,haltHistory=null}={}){
  const byDate=new Map(),reasons={no120BarHistory:0,thinLiquidity:0,tooYoungOrCheap:0,weakTrend:0,overextended:0,notTop20Pct:0,noEntrySetup:0,scoreUnder70:0,weakBreadth:0,missingStrictInputs:0};
- const stockIndex=new Map(),barsByDate=new Map();
+ const setupFunnel={longHistoryTradingBars:0,rawPullback:0,rawBreakout:0,liquidPullback:0,liquidBreakout:0,trendQualifiedPullback:0,trendQualifiedBreakout:0,notOverextendedPullback:0,notOverextendedBreakout:0,topRankPullback:0,topRankBreakout:0,scoredPullback:0,scoredBreakout:0};
  for(const [ticker,rows] of Object.entries(universe)){
-  const dates=new Map(rows.map((b,i)=>[b.date,i]));stockIndex.set(ticker,dates);barsByDate.set(ticker,dates);
   for(let i=0;i<rows.length;i++){
    if(!executable(rows[i]))continue;
    const f=technical(rows,i);if(!f){reasons.no120BarHistory++;continue}
-   f.ticker=ticker;f.index=i;
+   f.ticker=ticker;f.index=i;setupFunnel.longHistoryTradingBars++;
    const arr=byDate.get(f.date)||[];arr.push(f);byDate.set(f.date,arr);
   }
  }
@@ -48,12 +47,17 @@ function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurn
   const rank=new Map(marketRank.map((f,i)=>[f.ticker,i]));
   const b=breadth.get(date),breadthGood=!!b&&b.eligible>=s.minBreadthUniverse&&b.breadthPct>s.minBreadthPct;
   for(const f of features){
+   if(f.pullback)setupFunnel.rawPullback++;if(f.breakout)setupFunnel.rawBreakout++;
    if(!(f.turnover20>=liquidityEgp)){reasons.thinLiquidity++;continue}
+   if(f.pullback)setupFunnel.liquidPullback++;if(f.breakout)setupFunnel.liquidBreakout++;
    if(f.ageDays<s.minCalendarListingAgeDays||f.price<s.minimumPriceEgp){reasons.tooYoungOrCheap++;continue}
    if(!f.trend){reasons.weakTrend++;continue}
+   if(f.pullback)setupFunnel.trendQualifiedPullback++;if(f.breakout)setupFunnel.trendQualifiedBreakout++;
    if(f.lookback20>=s.max20dMomentumPct||f.priceDistanceAtr>=s.maxDistanceFromSma20Atr){reasons.overextended++;continue}
+   if(f.pullback)setupFunnel.notOverextendedPullback++;if(f.breakout)setupFunnel.notOverextendedBreakout++;
    const idx=rank.get(f.ticker);
    if(idx>=Math.max(1,Math.ceil(marketRank.length*s.relativeStrengthTopFraction))){reasons.notTop20Pct++;continue}
+   if(f.pullback)setupFunnel.topRankPullback++;if(f.breakout)setupFunnel.topRankBreakout++;
    const variants=['aqm_pullback','aqm_breakout'].filter(k=>k==='aqm_pullback'?f.pullback:f.breakout);
    if(!variants.length){reasons.noEntrySetup++;continue}
    // Proxy only. The full model also requires EGX30 as-of SMA100, index-relative momentum, filings, events, sector and halt checks.
@@ -64,12 +68,13 @@ function computeSignals(universe,{liquidityEgp=policy.selection.minimumDailyTurn
     const timing=variant==='aqm_breakout'?20:Math.round(15+5*Math.min(1,Math.max(0,(f.sma20-f.price)/f.atr14+1)));
     const score=rs+trend+liquidity+timing+market; // Fundamental: deliberately zero without as-of filings.
     if(score<s.minScore){reasons.scoreUnder70++;continue}
+    if(variant==='aqm_pullback')setupFunnel.scoredPullback++;else setupFunnel.scoredBreakout++;
     signals.push({ticker:f.ticker,date,variant,score,parts:{relativeStrength:rs,trend,liquidity,timing,fundamental:0,market},price:f.price,atr14:f.atr14,turnover20:round(f.turnover20),breadthPct:b?.breadthPct??null,marketExposureMaxPct:breadthGood?100:30,technicalProxyOnly:true,asOfSixMonthReturnPct:round(f.sixMonth)});
    }
    if(!breadthGood)reasons.weakBreadth++;
   }
  }
- return {signals,reasons,asOfAudit,datesWithLongHistory:byDate.size,breadthDates:breadth.size};
+ return {signals,reasons,setupFunnel,asOfAudit,datesWithLongHistory:byDate.size,breadthDates:breadth.size};
 }
 function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
  const p=policy.risk,marketDates=[...new Set(Object.values(universe).flatMap(rows=>rows.map(b=>b.date)))].sort();
@@ -101,7 +106,7 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
    const qty=Math.floor(nominal/entry);
    if(qty<=0)continue;
    const cost=qty*entry*(1+fee);if(cost>cash+1e-7)continue;
-   cash-=cost;positions.push({ticker:s.ticker,variant,score:s.score,dateOpened:date,qty,initialQty:qty,entry,stop,atr:s.atr14,target1:entry+p.firstTargetAtrMultiple*s.atr14,target2:entry+p.secondTargetAtrMultiple*s.atr14,hitFirst:false,holdingBars:0,lastClose:entry,totalCost:cost,proceeds:0});
+   cash-=cost;positions.push({ticker:s.ticker,variant,score:s.score,dateOpened:date,qty,initialQty:qty,entry,stop,atr:s.atr14,target1:entry+p.firstTargetAtrMultiple*s.atr14,target2:entry+p.secondTargetAtrMultiple*s.atr14,hitFirst:false,holdingBars:0,lastClose:entry,totalCost:cost,proceeds:0,exitReason:null});
   }
   for(let j=positions.length-1;j>=0;j--){
    const pos=positions[j],bar=quotes.get(pos.ticker)?.get(date);
@@ -109,13 +114,13 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp}={}){
    pos.holdingBars++;pos.lastClose=bar.close;
    const sell=(qty,price)=>{const received=qty*price*(1-exitSlip)*(1-fee);cash+=received;pos.proceeds+=received;pos.qty-=qty};
    // Intraday OHLC has unknown ordering: test stop before all profit targets.
-   if(bar.low<=pos.stop){sell(pos.qty,Math.min(bar.open,pos.stop));}
-   else if(pos.hitFirst&&bar.high>=pos.target2){sell(pos.qty,pos.target2)}
+   if(bar.low<=pos.stop){pos.exitReason=bar.open<pos.stop?'STOP_GAP':'STOP';sell(pos.qty,Math.min(bar.open,pos.stop));}
+   else if(pos.hitFirst&&bar.high>=pos.target2){pos.exitReason='TARGET2';sell(pos.qty,pos.target2)}
    else if(!pos.hitFirst&&bar.high>=pos.target1){
     const part=Math.max(1,Math.ceil(pos.qty*p.firstSaleFraction));sell(part,pos.target1);pos.hitFirst=true;pos.stop=Math.max(pos.stop,pos.entry);partialExits++;
-   }else if(pos.holdingBars>=p.maxHoldingExecutableSessions){sell(pos.qty,bar.close)}
+   }else if(pos.holdingBars>=p.maxHoldingExecutableSessions){pos.exitReason='TIME_EXIT';sell(pos.qty,bar.close)}
    if(pos.qty===0){
-    trades.push({ticker:pos.ticker,variant,entryDate:pos.dateOpened,exitDate:date,score:pos.score,netPnlEgp:round(pos.proceeds-pos.totalCost,2),netReturnPct:round(100*(pos.proceeds/pos.totalCost-1)),holdingBars:pos.holdingBars});
+    trades.push({ticker:pos.ticker,variant,entryDate:pos.dateOpened,exitDate:date,score:pos.score,netPnlEgp:round(pos.proceeds-pos.totalCost,2),netReturnPct:round(100*(pos.proceeds/pos.totalCost-1)),holdingBars:pos.holdingBars,exitReason:pos.exitReason,firstTargetHit:pos.hitFirst});
     positions.splice(j,1);
    }
   }
@@ -133,8 +138,8 @@ function main(){
  const runs=[];
  for(const minLiquidity of [policy.selection.minimumDailyTurnover20Egp,policy.selection.alternativeDiagnosticMinTurnoverEgp]){
   const scan=computeSignals(universe,{marketMode:'technicalDiagnostic',liquidityEgp:minLiquidity});
-  const variants=['aqm_pullback','aqm_breakout'].map(v=>{const x=replay(universe,scan.signals,v);const {equityCurve,tradeLedger,...summary}=x;return {...summary,lastTenTrades:tradeLedger.slice(-10)}});
-  runs.push({liquidityFloorEgp:minLiquidity,signalCount:scan.signals.length,signalCountsByVariant:Object.fromEntries(['aqm_pullback','aqm_breakout'].map(v=>[v,scan.signals.filter(x=>x.variant===v).length])),rejections:scan.reasons,variants});
+  const variants=['aqm_pullback','aqm_breakout'].map(v=>{const x=replay(universe,scan.signals,v);const {equityCurve,tradeLedger,...summary}=x;return {...summary,exitReasonCounts:tradeLedger.reduce((o,t)=>(o[t.exitReason]=(o[t.exitReason]||0)+1,o),{}),winningTrades:tradeLedger.filter(t=>t.netPnlEgp>0).length,losingTrades:tradeLedger.filter(t=>t.netPnlEgp<0).length,topLosses:tradeLedger.filter(t=>t.netPnlEgp<0).sort((a,b)=>a.netPnlEgp-b.netPnlEgp).slice(0,10),lastTenTrades:tradeLedger.slice(-10)}});
+  runs.push({liquidityFloorEgp:minLiquidity,signalCount:scan.signals.length,setupFunnel:scan.setupFunnel,signalCountsByVariant:Object.fromEntries(['aqm_pullback','aqm_breakout'].map(v=>[v,scan.signals.filter(x=>x.variant===v).length])),rejections:scan.reasons,variants});
  }
  const result={schemaVersion:'egx-aqm-initial-historical-diagnostic-1',generatedAt:new Date().toISOString(),productionReady:false,liveTradingEnabled:false,priceInput:'main archive via canonical executable OHLCV gateway, no central quarantine promotion',coverage:audit,strict:{status:'BLOCKED_MISSING_HISTORICAL_INPUTS',signalCount:strict.signals.length,missing:strict.asOfAudit.missing},exploratoryTechnicalProxy:runs,truthfulness:'Technical proxy outcomes are not complete AQM historical validation, and previously viewed historical sessions cannot be untouched OOS'};
  const output=path.join(root,'data/research/egx-aqm-initial-historical-diagnostic-v1.json');fs.writeFileSync(output,JSON.stringify(result,null,2)+'\n');
