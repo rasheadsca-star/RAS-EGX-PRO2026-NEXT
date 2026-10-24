@@ -47,3 +47,23 @@ test('a 6 percent monthly drawdown disables new entries for that month',()=>{
  assert.equal(r.equityCurve[3].openPositions,0);
  assert.ok(r.monthlyHaltDays>=1);
 });
+
+test('an open position with no current daily quote is explicitly unqualified, not shown as certified profit',()=>{
+ const dates=['2026-01-04','2026-01-05','2026-01-06'];
+ const candle=date=>({date,open:100,high:102,low:99,close:100,volume:100000,executable:true});
+ const u={AAA:dates.slice(0,2).map(candle),BBB:dates.map(candle)};
+ const signals=[{ticker:'AAA',date:dates[0],variant:'aqm_pullback',score:80,atr14:5,turnover20:30000000,marketExposureMaxPct:100}];
+ const r=replay(u,signals,'aqm_pullback');
+ assert.equal(r.openPositions,1);assert.equal(r.markIntegrity.completeSessionMarks,false);
+ assert.equal(r.markIntegrity.stalePositionSessions,1);
+ assert.equal(r.equityCurve.at(-1).staleOpenPositions,1);
+ assert.equal(r.reportableCertifiedPortfolioReturnPct,null);
+ assert.ok(r.markIntegrity.maxStaleExposedEgp>0);
+});
+test('fresh prices are not stale, but price source remains unverified',()=>{
+ const dates=['2026-01-04','2026-01-05','2026-01-06'];
+ const rows=dates.map(date=>({date,open:100,high:102,low:99,close:100,volume:100000,executable:true}));
+ const r=replay({AAA:rows},[{ticker:'AAA',date:dates[0],variant:'aqm_pullback',score:80,atr14:5,turnover20:30000000,marketExposureMaxPct:100}],'aqm_pullback');
+ assert.equal(r.markIntegrity.completeSessionMarks,true);
+ assert.equal(r.markIntegrity.capitalPerformanceCertified,false);
+});
