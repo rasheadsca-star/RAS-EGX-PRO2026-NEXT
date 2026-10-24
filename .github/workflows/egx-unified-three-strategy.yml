@@ -22,6 +22,8 @@ on:
       - 'tests/research/egx-historical-trade-ledger-audit-v1.test.cjs'
       - 'scripts/research/egx-missing-market-sessions-sensitivity-v1.cjs'
       - 'tests/research/egx-missing-market-sessions-sensitivity-v1.test.cjs'
+      - 'scripts/research/egx-missing-session-source-reconciliation-v1.cjs'
+      - 'tests/research/egx-missing-session-source-reconciliation-v1.test.cjs'
 jobs:
   compare:
     runs-on: ubuntu-latest
@@ -48,12 +50,16 @@ jobs:
         run: node --test tests/research/egx-historical-trade-ledger-audit-v1.test.cjs
       - name: Check market calendar gap exclusions
         run: node --test tests/research/egx-missing-market-sessions-sensitivity-v1.test.cjs
+      - name: Test missing-session source reconciliation
+        run: node --test tests/research/egx-missing-session-source-reconciliation-v1.test.cjs
       - name: Compare strategies with identical execution and eligible universe
         run: node scripts/research/egx-comparable-three-strategy-v1.cjs
       - name: Check historical trade entry/exit coverage
         run: node scripts/research/egx-historical-trade-ledger-audit-v1.cjs
       - name: Run missing market sessions sensitivity
         run: node scripts/research/egx-missing-market-sessions-sensitivity-v1.cjs
+      - name: Classify missing EGX sessions without price imputation
+        run: node scripts/research/egx-missing-session-source-reconciliation-v1.cjs
       - name: Rank and evaluate no-more-than-four selected positions per strategy
         run: node scripts/research/egx-top-four-portfolio-v1.cjs
       - name: Rank market stocks first then compare strategies on same top four
@@ -100,3 +106,4 @@ jobs:
             data/research/egx-pullback-breadth-mtm-diagnostic-v1.json
             data/research/egx-historical-trade-ledger-audit-v1.json
             data/research/egx-missing-market-sessions-sensitivity-v1.json
+            data/research/egx-missing-session-source-reconciliation-v1.json
