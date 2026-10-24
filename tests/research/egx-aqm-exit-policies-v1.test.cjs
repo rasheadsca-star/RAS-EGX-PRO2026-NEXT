@@ -1,0 +1,12 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {STYLES,act}=require('../../scripts/research/egx-aqm-exit-policies-v1.cjs');
+const state=()=>({qty:100,stop:95,entry:100,atr:4,target1:104,target2:110,holdingBars:3,hitFirst:false});
+const bar=(open,high,low,close)=>({open,high,low,close,volume:1000,executable:true});
+test('all policies preserve worse price on stop gaps',()=>{for(const s of STYLES){const x=act(state(),bar(88,92,87,90),s,12);assert.equal(x.sells[0].price,88);assert.equal(x.reason,'STOP_GAP')}});
+test('stop takes precedence on same bar both target and stop',()=>{for(const s of STYLES){const x=act(state(),bar(100,120,90,110),s,12);assert.equal(x.reason,'STOP');assert.equal(x.sells[0].price,95)}});
+test('partial exit only half at first ATR target',()=>{const x=act(state(),bar(102,105,100,104),'partial',12);assert.equal(x.sells[0].qty,50);assert.equal(x.sells[0].price,104);assert.equal(x.firstTarget,true)});
+test('full target ignores first ATR touch',()=>{assert.equal(act(state(),bar(102,105,100,104),'full_target',12).sells.length,0);assert.equal(act(state(),bar(108,111,102,110),'full_target',12).reason,'TARGET2')});
+test('trailing stop computed from close for the next bar, not same bar',()=>{const x=act(state(),bar(110,117,101,115),'trailing',12);assert.equal(x.sells.length,0);assert.equal(x.nextStop,109)});
+test('time exit applies to all policies',()=>{for(const s of STYLES){const p={...state(),holdingBars:12};assert.equal(act(p,bar(100,103,98,101),s,12).reason,'TIME_EXIT')}});
+test('reference-only nontrading bar does not trigger stop or move trailing stop',()=>{const x=act(state(),{...bar(70,71,69,70),volume:0,executable:false},'trailing',12);assert.equal(x.sells.length,0);assert.equal(x.nextStop,undefined)});
