@@ -6,6 +6,8 @@ on:
       - 'scripts/research/egx-comparable-three-strategy-v1.cjs'
       - 'tests/research/egx-comparable-three-strategy-v1.test.cjs'
       - 'scripts/research/egx-strategy-challengers-v1.cjs'
+      - 'scripts/research/egx-canonical-ohlcv-gateway.cjs'
+      - 'tests/research/egx-canonical-ohlcv-gateway.test.cjs'
       - '.github/workflows/egx-unified-three-strategy.yml'
       - 'scripts/research/egx-top-four-portfolio-v1.cjs'
       - 'tests/research/egx-top-four-portfolio-v1.test.cjs'
@@ -45,6 +47,8 @@ jobs:
             manifest.json
             evidence_quality_report.json
             coverage_efficiency_report.json
+      - name: Test canonical OHLCV gateway
+        run: node --test tests/research/egx-canonical-ohlcv-gateway.test.cjs
       - name: Test central/main eligibility audit
         run: node --test tests/research/egx-central-vs-main-coverage-audit.test.cjs
       - name: Report central versus main data quality without promoting research evidence
