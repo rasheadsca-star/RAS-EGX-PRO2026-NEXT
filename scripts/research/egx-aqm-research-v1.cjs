@@ -7,6 +7,7 @@ const {loadUniverse}=require('./egx-strategy-challengers-v1.cjs');
 const {executable,tradingWindow}=require('./egx-executable-session-series-v1.cjs');
 const {breadthByDate}=require('./egx-topfour-breadth-regime-v1.cjs');
 const {STYLES,act:exitAction}=require('./egx-aqm-exit-policies-v1.cjs');
+const {inspectMarks,eligibilityFromMarks}=require('./egx-aqm-mark-integrity-v1.cjs');
 const avg=a=>a.reduce((s,x)=>s+x,0)/a.length;
 const round=(n,d=3)=>+n.toFixed(d);
 function technical(rows,i){
@@ -85,9 +86,10 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp,exitSty
  const pending=new Map(),nextDate=new Map(marketDates.slice(0,-1).map((date,i)=>[date,marketDates[i+1]]));
  for(const s of signals.filter(x=>x.variant===variant)){const date=nextDate.get(s.date);if(date){const arr=pending.get(date)||[];arr.push(s);pending.set(date,arr)}}
  let cash=initial,peak=initial,maxDD=0,month=null,monthStart=initial,monthlyHaltDays=0,monthlyHaltLatched=false,missingMarks=0,partialExits=0;
+ let stalePositionSessions=0,staleDays=0,maxStaleAgeSessions=0,maxStaleExposedEgp=0,stressedMaxDrawdown=0,stressedPeak=initial,lastMarkInspection=null;
  const positions=[],trades=[],curve=[],openedEntries=[];
  const fee=p.roundTripFeesPct/200,entrySlip=p.entrySlippagePct/100,exitSlip=p.exitSlippagePct/100;
- for(const date of marketDates){
+ for(const [dateIndex,date] of marketDates.entries()){
   const m=date.slice(0,7);if(month!==m){month=m;monthlyHaltLatched=false;monthStart=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0)}
   const preEquity=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0);
   if(preEquity<monthStart*(1-p.monthlyLossHaltPct/100))monthlyHaltLatched=true;
@@ -112,12 +114,12 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp,exitSty
    cash-=cost;
    const opened={ticker:s.ticker,variant,score:s.score,signalDate:s.date,dateOpened:date,qty,entry,atr:s.atr14,stop,turnover20:s.turnover20,fee,slippage:entrySlip,originalCost:cost};
    openedEntries.push(opened);
-   positions.push({...opened,initialQty:qty,target1:entry+p.firstTargetAtrMultiple*s.atr14,target2:entry+p.secondTargetAtrMultiple*s.atr14,hitFirst:false,holdingBars:0,lastClose:entry,totalCost:cost,proceeds:0,exitReason:null});
+   positions.push({...opened,lastMarkIndex:dateIndex,lastMarkDate:date,initialQty:qty,target1:entry+p.firstTargetAtrMultiple*s.atr14,target2:entry+p.secondTargetAtrMultiple*s.atr14,hitFirst:false,holdingBars:0,lastClose:entry,totalCost:cost,proceeds:0,exitReason:null});
   }
   for(let j=positions.length-1;j>=0;j--){
    const pos=positions[j],bar=quotes.get(pos.ticker)?.get(date);
    if(!bar||!executable(bar)){missingMarks++;continue}
-   pos.holdingBars++;pos.lastClose=bar.close;
+   pos.holdingBars++;pos.lastClose=bar.close;pos.lastMarkIndex=dateIndex;pos.lastMarkDate=date;
    const sell=(qty,price)=>{const received=qty*price*(1-exitSlip)*(1-fee);cash+=received;pos.proceeds+=received;pos.qty-=qty};
    // OHLC ordering is unknown. Stop is conservative first; trailing updates after the close.
    const action=exitAction(pos,bar,exitStyle,p.maxHoldingExecutableSessions);
@@ -130,13 +132,24 @@ function replay(universe,signals,variant,{initial=policy.risk.initialEgp,exitSty
     positions.splice(j,1);
    }
   }
+  const inspection=inspectMarks(positions,dateIndex);
+  lastMarkInspection=inspection;
+  stalePositionSessions+=inspection.stalePositionCount;
+  if(inspection.stalePositionCount)staleDays++;
+  maxStaleAgeSessions=Math.max(maxStaleAgeSessions,inspection.maxStaleAgeSessions);
+  maxStaleExposedEgp=Math.max(maxStaleExposedEgp,inspection.stalePositionNotionalEgp);
   const equity=cash+positions.reduce((v,x)=>v+x.qty*x.lastClose,0);
+  const stressedEquity=equity-inspection.stressUnrealizedLossEgp;
+  stressedPeak=Math.max(stressedPeak,stressedEquity);
+  stressedMaxDrawdown=Math.max(stressedMaxDrawdown,(stressedPeak-stressedEquity)/stressedPeak*100);
   if(equity<monthStart*(1-p.monthlyLossHaltPct/100))monthlyHaltLatched=true;
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,(peak-equity)/peak*100);
-  curve.push({date,equityEgp:round(equity,2),cashEgp:round(cash,2),openPositions:positions.length});
+  curve.push({date,equityEgp:round(equity,2),cashEgp:round(cash,2),openPositions:positions.length,staleOpenPositions:inspection.stalePositionCount,staleNotionalEgp:round(inspection.stalePositionNotionalEgp,2),hypotheticalFivePctStaleHaircutEquityEgp:round(stressedEquity,2)});
  }
  const nav=curve.at(-1)?.equityEgp??initial,positive=trades.filter(x=>x.netPnlEgp>0).length;
- return {variant,exitStyle,riskPerTradePct,researchOnly:true,openedEntries,portfolioReturnPct:round(100*(nav/initial-1)),endEquityEgp:nav,maxDrawdownPct:round(maxDD),closedTrades:trades.length,winRatePct:trades.length?round(positive/trades.length*100):null,openPositions:positions.length,partialExits,staleMarkSessions:missingMarks,monthlyHaltDays,initialEgp:initial,tradeLedger:trades,equityCurve:curve,limitations:['Research-only technical proxy; sector cap and fundamental/event/index checks not certified','Unadjusted OHLCV may have corporate actions; intrabar ordering unknown','Open positions marked at close without liquidation fees','Known universe and source uncertainty may introduce survivorship and price-source bias']};
+ const markIntegrity=eligibilityFromMarks({stalePositionSessions,staleDays,endStalePositions:lastMarkInspection?.stalePositionCount||0,maxStaleAgeSessions});
+ const markRisk={...markIntegrity,maxStaleExposedEgp:round(maxStaleExposedEgp,2),hypotheticalFivePctHaircutMaximumDrawdownPct:round(stressedMaxDrawdown)};
+ return {variant,exitStyle,riskPerTradePct,researchOnly:true,openedEntries,portfolioReturnPct:round(100*(nav/initial-1)),endEquityEgp:nav,maxDrawdownPct:round(maxDD),closedTrades:trades.length,winRatePct:trades.length?round(positive/trades.length*100):null,openPositions:positions.length,partialExits,staleMarkSessions:missingMarks,markIntegrity:markRisk,reportableCertifiedPortfolioReturnPct:null,monthlyHaltDays,initialEgp:initial,tradeLedger:trades,equityCurve:curve,limitations:['Research-only technical proxy; sector cap and fundamental/event/index checks not certified','Unadjusted OHLCV may have corporate actions; intrabar ordering unknown','Open positions marked at last available close without liquidation fees; stale marks are a hard research qualification failure','Known universe and source uncertainty may introduce survivorship and price-source bias']};
 }
 function main(){
  const {universe,audit}=loadUniverse();
