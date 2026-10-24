@@ -19,7 +19,19 @@ test.after(()=>{for(const d of [...TMP_ROOTS,FIXTURE])fs.rmSync(d,{recursive:tru
 const BUILD=path.join(REPO,'scripts/astra/native/astra-intelligence.cjs');
 const INVENTORY=path.join(REPO,'scripts/astra/native/workflow-inventory.cjs');
 function hermeticRoot(){const t=fs.mkdtempSync(path.join(os.tmpdir(),'astra-hermetic-'));TMP_ROOTS.push(t);fs.cpSync(FIXTURE,t,{recursive:true});return t}
-function runScript(script,root){return require('child_process').execFileSync(process.execPath,[script],{cwd:root,env:{...process.env,ASTRA_INTELLIGENCE_ROOT:root},stdio:'pipe'})}
+function runScript(script,root){
+  // Run a COPY of the builder. A deliberately broken ROOT override must never execute
+  // a mutating script whose __dirname points into the production checkout.
+  const rel=path.relative(REPO,script);
+  assert.ok(['scripts/astra/native/astra-intelligence.cjs','scripts/astra/native/workflow-inventory.cjs'].includes(rel));
+  const target=path.join(root,rel);
+  fs.mkdirSync(path.dirname(target),{recursive:true});
+  fs.copyFileSync(script,target);
+  const ops=path.join(root,'scripts/ops/egx-session-math.cjs');
+  fs.mkdirSync(path.dirname(ops),{recursive:true});
+  fs.copyFileSync(path.join(REPO,'scripts/ops/egx-session-math.cjs'),ops);
+  return require('child_process').execFileSync(process.execPath,[target],{cwd:root,env:{...process.env,ASTRA_INTELLIGENCE_ROOT:root,ASTRA_ALLOW_ROOT_OVERRIDE:'1'},stdio:'pipe'});
+}
 // Trading sessions that respect weekends (Fri/Sat) and confirmed exchange closures.
 function tradingSessionsAfter(date,count,closed=confirmedClosures(FIXTURE)){
   const out=[];let d=new Date(date+'T12:00:00Z');
