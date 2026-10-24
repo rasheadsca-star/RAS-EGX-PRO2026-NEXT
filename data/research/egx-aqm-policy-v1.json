@@ -1,0 +1,60 @@
+{
+  "schemaVersion": "egx-aqm-research-policy-1",
+  "researchOnly": true,
+  "productionEnabled": false,
+  "selection": {
+    "maxPositions": 4,
+    "minScore": 70,
+    "minimumExecutableHistory": 120,
+    "relativeStrengthLookback": 120,
+    "relativeStrengthTopFraction": 0.2,
+    "minimumDailyTurnover20Egp": 30000000,
+    "alternativeDiagnosticMinTurnoverEgp": 10000000,
+    "minimumPriceEgp": 3,
+    "minCalendarListingAgeDays": 183,
+    "minEarningsPublicationLagDays": 0,
+    "max20dMomentumPct": 25,
+    "maxDistanceFromSma20Atr": 1.5,
+    "breakoutVolumeRatio": 1.5,
+    "minBreadthPct": 50,
+    "minBreadthUniverse": 30
+  },
+  "risk": {
+    "initialEgp": 100000,
+    "riskPerTradePct": 1,
+    "maxWeightPct": 15,
+    "maxSectorWeightPct": 30,
+    "maxDailyTurnoverParticipationPct": 1,
+    "monthlyLossHaltPct": 6,
+    "stopAtrMultiple": 1.5,
+    "firstTargetAtrMultiple": 1,
+    "secondTargetAtrMultiple": 2.5,
+    "firstSaleFraction": 0.5,
+    "maxHoldingExecutableSessions": 12,
+    "entrySlippagePct": 0.15,
+    "exitSlippagePct": 0.15,
+    "roundTripFeesPct": 0.6
+  },
+  "market": {
+    "fullInvestedMaxPct": 100,
+    "partialInvestedMaxPct": 30,
+    "downtrendInvestedMaxPct": 25
+  },
+  "fundamental": {
+    "requirePositiveProfit": true,
+    "requirePositiveProfitGrowth": true,
+    "requireReasonableLeverage": true,
+    "noEventWithinCalendarDays": 5
+  },
+  "dataRequirements": [
+    "Official or independently certified EGX30 daily index with 100-bar SMA, as-of date",
+    "Historical financial filings with available-at publication dates",
+    "Historical earnings, distributions and corporate-action calendars with announcement timestamps",
+    "Point-in-time sector classifications and liquidity/halts",
+    "Corporate-action-adjusted OHLCV or explicitly vetted unadjusted execution series"
+  ],
+  "modes": {
+    "strict": "Fail closed when benchmark, fundamentals, event schedule, sector or halt certification are unavailable",
+    "technicalDiagnostic": "Explicitly incomplete proxy uses observed cross-sectional breadth and returns, not the full AQM model or trading advice"
+  }
+}
