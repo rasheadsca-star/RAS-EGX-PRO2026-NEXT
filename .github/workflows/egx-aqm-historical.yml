@@ -50,6 +50,13 @@ jobs:
             '|---:|---|---:|---:|---:|---:|---:|'];
           for(const r of p.exploratoryTechnicalProxy)for(const v of r.variants)lines.push('|'+r.liquidityFloorEgp+'|'+v.variant+'|'+r.signalCountsByVariant[v.variant]+'|'+v.closedTrades+'|'+v.portfolioReturnPct+'|'+v.maxDrawdownPct+'|'+v.staleMarkSessions+'|');
           lines.push('','All results research only; no untouched out-of-sample, not EGX30-certified, no historical as-of fundamental or corporate-action certification.');
+          const c=JSON.parse(fs.readFileSync('data/research/egx-aqm-exit-cohort-comparison-v1.json','utf8'));
+          lines.push('', '### Same-signal-tape exit and sizing comparison (30m EGP/day liquidity)','',
+            '| Exit policy | Risk 1% portfolio | Risk 0.5% portfolio | Paired cohort on unchanged entries |',
+            '|---|---:|---:|---:|');
+          for(const v of c.comparisons)lines.push('| '+v.exitStyle+' | '+v.portfolioRisk1Pct.returnPct+'% | '+v.portfolioRiskHalfPct.returnPct+'% | '+v.baselineEntryMatchedCohort.normalizedCohortReturnPct+'% |');
+          lines.push('', 'Historical depth for 188 eligible symbols: >=120 candles: '+c.historicalDepth.minimumBarsByThreshold['120']+', >=250: '+c.historicalDepth.minimumBarsByThreshold['250']+', >=500: '+c.historicalDepth.minimumBarsByThreshold['500']+'.');
+          lines.push('Paired cohort holds actual entry fills constant, but does not model competition for capital; full portfolio simulations have changing entries as exits free positions. None of these historical tests is independent OOS.');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,lines.join('\n')+'\n');
           NODE
       - uses: actions/upload-artifact@v4
