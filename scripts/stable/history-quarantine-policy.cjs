@@ -33,7 +33,7 @@ function evaluation({runId, expectedSession, sourceEligible, acceptedRows, accep
   if (manifest.length + missing.size !== acceptedRows || manifest.some(x=>x.date!==expectedSession)) throw new Error('MANIFEST_COUNT_OR_SESSION_MISMATCH');
   const rejectedMap=new Map();
   for(const entry of rejected) {
-    if(!entry?.ticker || !entry?.reason || rejectedMap.has(entry.ticker) || manifest.some(x=>x.ticker===entry.ticker))
+    if(!entry?.ticker || !entry?.reason || rejectedMap.has(entry.ticker) || manifest.some(x=>x.ticker===entry.ticker) || missing.has(entry.ticker))
       throw new Error('INVALID_REJECTED_ENTRY');
     rejectedMap.set(entry.ticker,entry.reason);
   }
