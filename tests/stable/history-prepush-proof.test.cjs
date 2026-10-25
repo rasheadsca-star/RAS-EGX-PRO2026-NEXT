@@ -24,8 +24,8 @@ function fixture(t){
  fs.writeFileSync(path.join(root,'data/stable/v15-price-truth.json'),JSON.stringify(report));
  return {root,assessmentFile,baselineFile,expectedRunId:'run-verified'};
 }
-test('prepush requires complete run-bound R8 R9 and publication success',t=>{
- const f=fixture(t);assert.equal(prepush(f).status,'PASS');
+test('prepush rejects valid but under-200 history as not execution-grade',t=>{
+ const f=fixture(t);assert.throws(()=>prepush(f),/PREPUSH_INSUFFICIENT_EXECUTION_ROWS:1\/1/);
 });
 test('prepush blocks stale run and rebase-swapped producer report',t=>{
  const f=fixture(t);assert.throws(()=>prepush({...f,expectedRunId:'other'}),/PREPUSH_STALE_RUN/);
