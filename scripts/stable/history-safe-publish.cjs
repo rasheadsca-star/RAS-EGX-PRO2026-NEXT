@@ -3,7 +3,7 @@
 // No -X ours; the immutable pre-merge assessment and baseline MUST preexist.
 const cp=require('node:child_process'),fs=require('node:fs');
 const {prepush}=require('./history-prepush-proof.cjs');
-function publish({root,assessmentFile,baselineFile,expectedRunId,branch='main',remote='origin',execute,lockLease=null,journal=null}){
+function publish({root,assessmentFile,baselineFile,expectedRunId,branch='main',remote='origin',execute,lockLease=null,journal=null,proofCheck=prepush}){
  if(!lockLease||typeof lockLease.verify!=='function')throw new Error('PUBLISH_CROSS_RUN_LOCK_REQUIRED');
  lockLease.verify();
  if(!/^[a-zA-Z0-9._/-]+$/.test(branch)||! /^[a-zA-Z0-9._-]+$/.test(remote))throw new Error('INVALID_PUBLISH_REF');
@@ -19,7 +19,7 @@ function publish({root,assessmentFile,baselineFile,expectedRunId,branch='main',r
  call('rebase',remote+'/'+branch);
  // The proof must inspect exactly the files AFTER rebase.
  lockLease.verify();
- const proof=prepush({root,assessmentFile,baselineFile,expectedRunId});
+ const proof=proofCheck({root,assessmentFile,baselineFile,expectedRunId});
  if(proof.status!=='PASS')throw new Error('PREPUSH_PROOF_INCOMPLETE');
  if(call('status','--porcelain'))throw new Error('POST_REBASE_DIRTY_CHECKOUT');
  // Freeze the exact commit being published and persist intent BEFORE push.
