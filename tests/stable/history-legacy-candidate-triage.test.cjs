@@ -14,3 +14,14 @@ test('future fake or ill-formed date is rejected',()=>{
  const row={date:'not-a-date',open:10,high:11,low:9,close:10,volume:4};
  assert.equal(triage({missing:['X'],source:{symbols:{X:[row]}}})[0].validCount,0);
 });
+
+test('historical .CA alias is recognized without inventing a current ticker series',()=>{
+ const row={date:'2026-07-02',open:10,high:11,low:9,close:10,volume:40};
+ const onlySuffix=triage({missing:['ACTF'],source:{symbols:{'ACTF.CA':[row]}}});
+ assert.equal(onlySuffix[0].status,'STRUCTURAL_CANDIDATE_ONLY');
+ assert.equal(onlySuffix[0].resolvedSymbol,'ACTF.CA');
+ const aliasCollision=triage({missing:['ACTF'],source:{symbols:{ACTF:[row],'ACTF.CA':[row]}}});
+ assert.equal(aliasCollision[0].status,'AMBIGUOUS_SYMBOL_ALIAS');
+ const emptyAlias=triage({missing:['ACTF'],source:{symbols:{'ACTF.CA':[]}}});
+ assert.equal(emptyAlias[0].status,'NO_SOURCE_CANDIDATE');
+});
