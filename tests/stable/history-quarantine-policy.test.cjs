@@ -84,3 +84,14 @@ test('B2 accepted-but-missing ticker cannot simultaneously be rejected',()=>{
   acceptedRows:1,accepted:[],missingHistory:['BONY'],
   rejected:[{ticker:'BONY',reason:'REPORTED_CHANGE_MISMATCH'}]}),/INVALID_REJECTED_ENTRY/);
 });
+
+test('R21 refuses path traversal and unsafe ticker in all assessment categories',()=>{
+ for(const ticker of ['../outside','..','.','MIPH/OTHER','miph','X\\\\Y']){
+  assert.throws(()=>evaluation({runId:'r21',expectedSession:day,sourceEligible:true,acceptedRows:1,
+    accepted:[{...row(),ticker}],rejected:[]}),/INVALID_ACCEPTED_ROW/);
+  assert.throws(()=>evaluation({runId:'r21',expectedSession:day,sourceEligible:true,acceptedRows:0,
+    accepted:[],rejected:[{ticker,reason:'REPORTED_CHANGE_MISMATCH'}]}),/INVALID_REJECTED_ENTRY/);
+  assert.throws(()=>evaluation({runId:'r21',expectedSession:day,sourceEligible:true,acceptedRows:1,
+    accepted:[],missingHistory:[ticker],rejected:[]}),/INVALID_MISSING_HISTORY/);
+ }
+});
