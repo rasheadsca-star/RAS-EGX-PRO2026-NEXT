@@ -14,6 +14,8 @@ on:
       - 'tests/stable/history-producer-assessment.test.cjs'
       - 'scripts/stable/history-transaction-journal.cjs'
       - 'tests/stable/history-transaction-journal.test.cjs'
+      - 'scripts/stable/history-writer-audit.cjs'
+      - 'tests/stable/history-writer-audit.test.cjs'
       - 'scripts/stable/v16-session-aware-price-truth.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   push:
@@ -32,6 +34,8 @@ on:
       - 'tests/stable/history-producer-assessment.test.cjs'
       - 'scripts/stable/history-transaction-journal.cjs'
       - 'tests/stable/history-transaction-journal.test.cjs'
+      - 'scripts/stable/history-writer-audit.cjs'
+      - 'tests/stable/history-writer-audit.test.cjs'
       - 'scripts/stable/v16-session-aware-price-truth.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   workflow_dispatch:
@@ -50,7 +54,8 @@ jobs:
           node --check scripts/stable/v16-session-aware-price-truth.cjs
           node --check scripts/stable/history-producer-assessment.cjs
           node --check scripts/stable/history-transaction-journal.cjs
+          node --check scripts/stable/history-writer-audit.cjs
           node --check scripts/stable/history-r9-report-binding.cjs
           node --check scripts/stable/history-r8-integrity.cjs
       - name: Test history quarantine policy
-        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-producer-assessment.test.cjs tests/stable/history-transaction-journal.test.cjs
+        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-producer-assessment.test.cjs tests/stable/history-transaction-journal.test.cjs tests/stable/history-writer-audit.test.cjs
