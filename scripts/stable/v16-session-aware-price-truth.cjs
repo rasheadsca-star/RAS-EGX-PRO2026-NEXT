@@ -2,6 +2,11 @@
 'use strict';
 
 const fs = require('fs');
+const crypto = require('node:crypto');
+const { prepare: prepareHistoryAssessment } = require('./history-producer-assessment.cjs');
+const { capture: captureR8, verify: verifyR8 } = require('./history-r8-integrity.cjs');
+const { verifyTruthBinding } = require('./history-r9-report-binding.cjs');
+const { verifyPublication } = require('./history-publication-gate.cjs');
 const path = require('path');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
@@ -445,7 +450,32 @@ async function main() {
   const unique = new Map();
   for (const row of accepted) unique.set(row.ticker, row);
   const acceptedRows = [...unique.values()];
+  // Optional guarded integration. Disabled until journal/recovery and concurrency controls pass.
+  // Assessment is frozen BEFORE merge; the baseline is captured before ANY accepted history writes.
+  const guardedHistory = process.env.EGX_HISTORY_GUARDED_INTEGRATION === '1';
+  const guardedRunId = process.env.GITHUB_RUN_ID
+    ? String(process.env.GITHUB_RUN_ID) + '-' + String(process.env.GITHUB_RUN_ATTEMPT || '1')
+    : 'local-' + crypto.randomUUID();
+  const bound = guardedHistory ? prepareHistoryAssessment({root:ROOT,expectedSession,
+    runId:guardedRunId,sourceEligible,marketRows:evidencedRows,acceptedRows,rejected:rejected.filter(x=>x.ticker),dropped}) : null;
+  const eligibleAffected = bound ? new Set(bound.assessment.accepted.map(x=>x.ticker)) : null;
+  if(bound){
+    for(const row of rejected.filter(x=>x.ticker)){
+      const file=path.join(HISTORY_DIR,row.ticker+'.json');
+      if(!fs.existsSync(file))continue;
+      const document=readJson(file,{});
+      if((document.sessions||[]).some(x=>x?.source==='v16_session_aware_price_truth'&&dateOnly(x.date||x.sessionDate)===expectedSession))eligibleAffected.add(row.ticker);
+    }
+  }
+  const preMergeBaseline = bound ? captureR8({root:ROOT,expectedSession,
+    affectedTickers:eligibleAffected,assessment:require('./history-quarantine-policy.cjs').evaluation(bound.assessment)}) : null;
   const mergeResult = mergeIntoHistory(acceptedRows);
+  if(bound){
+    if(mergeResult.updated!==bound.reportFields.updatedHistoryFiles ||
+       JSON.stringify([...mergeResult.missingHistoryFiles].sort())!==JSON.stringify([...bound.reportFields.missingHistoryFiles].sort()))
+      throw new Error('HISTORY_MERGE_ASSESSMENT_MISMATCH');
+    verifyR8({root:ROOT,baseline:preMergeBaseline,affectedTickers:eligibleAffected});
+  }
   const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS && mergeResult.updated >= MIN_EXECUTION_ROWS;
 
   const acceptedMap = new Map(acceptedRows.map(row => [row.ticker, row]));
@@ -525,6 +555,17 @@ async function main() {
     sampleRejected: rejected.slice(0, 80),
     sampleDropped: dropped.slice(0, 50)
   };
+  if(bound){
+    if(!ready)throw new Error('HISTORY_BOUND_REPORT_NOT_READY');
+    Object.assign(report,bound.reportFields);
+    verifyTruthBinding({assessment:bound.assessment,report});
+    const assessmentFile=path.join(process.env.RUNNER_TEMP || path.join(ROOT,'data/stable'),
+      'v16-history-assessment-'+guardedRunId+'.json');
+    writeJson(assessmentFile,bound.assessment);
+    verifyPublication({assessmentFile,root:ROOT,expectedRunId:guardedRunId});
+    report.historyGuard={mode:'premerge-verified',runId:guardedRunId,
+      warning:'NOT_CRASH_SAFE_NO_PRODUCTION_PUBLISH_AUTHORIZATION'};
+  }
   writeJson(OUT_PATH, report);
 
   writeJson(FETCH_STATUS_PATH, {
