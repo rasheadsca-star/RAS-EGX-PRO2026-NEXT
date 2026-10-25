@@ -1,22 +1,22 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-10-22T15:47:01.996Z",
+  "generatedAt": "2026-10-25T10:30:02.289Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 147,
-    "scheduled": 49,
-    "scheduledLegacy": 49,
-    "pageDeployers": 40,
-    "repositoryWriters": 112,
-    "emergency": 2
+    "total": 162,
+    "scheduled": 52,
+    "scheduledLegacy": 52,
+    "pageDeployers": 41,
+    "repositoryWriters": 115,
+    "emergency": 3
   },
   "status": "WARNING",
   "warnings": [
-    "49 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
-    "40 workflows can deploy GitHub Pages.",
-    "112 workflows can write to the repository."
+    "52 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "41 workflows can deploy GitHub Pages.",
+    "115 workflows can write to the repository."
   ],
   "scheduledLegacy": [
     {
@@ -43,6 +43,13 @@
       ]
     },
     {
+      "filename": "egx-central-scheduled-warehouse.yml",
+      "name": "EGX Central - Periodic Research Warehouse",
+      "schedules": [
+        "15 16,20 * * 0-4"
+      ]
+    },
+    {
       "filename": "egx-eligibility-gated-paper-v13-2.yml",
       "name": "EGX Eligibility-Gated Decision & Paper Trading — V13.2",
       "schedules": [
@@ -54,6 +61,20 @@
       "name": "EGX Historical 100 Sessions — V12.5 Cleanup & Fallback",
       "schedules": [
         "30 15 * * 0-4"
+      ]
+    },
+    {
+      "filename": "egx-holiday-audit.yml",
+      "name": "EGX holiday calendar integrity",
+      "schedules": [
+        "15 6 * * *"
+      ]
+    },
+    {
+      "filename": "egx-holiday-daily-watch.yml",
+      "name": "EGX Holiday Source Daily Watch",
+      "schedules": [
+        "0 5 * * *"
       ]
     },
     {
@@ -767,6 +788,64 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "egx-aqm-central-long-history.yml",
+      "relativePath": ".github/workflows/egx-aqm-central-long-history.yml",
+      "name": "EGX AQM From Existing Central Long History",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-aqm-historical.yml",
+      "relativePath": ".github/workflows/egx-aqm-historical.yml",
+      "name": "EGX AQM Historical Research",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-central-history-source-audit.yml",
+      "relativePath": ".github/workflows/egx-central-history-source-audit.yml",
+      "name": "EGX Central Historical Source Reconciliation",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-central-scheduled-warehouse.yml",
+      "relativePath": ".github/workflows/egx-central-scheduled-warehouse.yml",
+      "name": "EGX Central - Periodic Research Warehouse",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "15 16,20 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "egx-eligibility-gated-paper-v13-2.yml",
       "relativePath": ".github/workflows/egx-eligibility-gated-paper-v13-2.yml",
       "name": "EGX Eligibility-Gated Decision & Paper Trading — V13.2",
@@ -779,6 +858,48 @@
       "hasWorkflowDispatch": true,
       "hasPush": false,
       "deploysPages": true,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-elite-gate.yml",
+      "relativePath": ".github/workflows/egx-elite-gate.yml",
+      "name": "EGX ELITE Data Gate Diagnostics",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": false,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-elite-pages.yml",
+      "relativePath": ".github/workflows/egx-elite-pages.yml",
+      "name": "Publish EGX ELITE Read Only Dashboard",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": true,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-elite-readiness.yml",
+      "relativePath": ".github/workflows/egx-elite-readiness.yml",
+      "name": "EGX ELITE Readiness Report",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
       "writesRepository": true,
       "classification": "LEGACY_OR_AUXILIARY"
     },
@@ -839,6 +960,66 @@
       "deploysPages": true,
       "writesRepository": true,
       "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-holiday-audit.yml",
+      "relativePath": ".github/workflows/egx-holiday-audit.yml",
+      "name": "EGX holiday calendar integrity",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "15 6 * * *"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-holiday-before-after.yml",
+      "relativePath": ".github/workflows/egx-holiday-before-after.yml",
+      "name": "EGX Holiday Retrospective V15 Re-evaluation",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-holiday-daily-watch.yml",
+      "relativePath": ".github/workflows/egx-holiday-daily-watch.yml",
+      "name": "EGX Holiday Source Daily Watch",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "0 5 * * *"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": false,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-long-history-restore-raw.yml",
+      "relativePath": ".github/workflows/egx-long-history-restore-raw.yml",
+      "name": "EGX Restore Original Long History OHLCV",
+      "isPrimary": false,
+      "isEmergency": true,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": true,
+      "classification": "EMERGENCY"
     },
     {
       "filename": "egx-native-stock-portfolio-v13-7.yml",
@@ -995,6 +1176,20 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "egx-strategy-challengers-v1.yml",
+      "relativePath": ".github/workflows/egx-strategy-challengers-v1.yml",
+      "name": "EGX PRO Independent Strategy Challengers",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "egx-targeted-seven-repair-v13.yml",
       "relativePath": ".github/workflows/egx-targeted-seven-repair-v13.yml",
       "name": "EGX Targeted Seven-Symbol Repair — V13.0",
@@ -1006,6 +1201,20 @@
       "hasPush": false,
       "deploysPages": true,
       "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-unified-three-strategy.yml",
+      "relativePath": ".github/workflows/egx-unified-three-strategy.yml",
+      "name": "EGX Unified Three Strategy Benchmark",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
@@ -1174,6 +1383,34 @@
       "hasSchedule": false,
       "schedules": [],
       "hasWorkflowDispatch": false,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "hybrid-alpha-v1-coverage.yml",
+      "relativePath": ".github/workflows/hybrid-alpha-v1-coverage.yml",
+      "name": "EGX Hybrid Alpha V1 Research Coverage",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "hybrid-alpha-v1-early-replay.yml",
+      "relativePath": ".github/workflows/hybrid-alpha-v1-early-replay.yml",
+      "name": "EGX Hybrid Alpha Early Replay Research",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
       "hasPush": true,
       "deploysPages": false,
       "writesRepository": false,
