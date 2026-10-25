@@ -18,9 +18,9 @@ function backend({cwd,remote='origin'}){
   return rows.length?rows[0].split(/\s+/)[0]:null;
  }
  function createRef(ref,token){
-  // A branch creation is guaranteed create-only only if the unique owner token
-  // cannot fast-forward from another possible owner's commit.
-  const result=git(cwd,['push','--porcelain',remote,token+':'+ref]);
+  // A zero-old-object lease refuses creation if the ref exists, including
+  // when a competing token could otherwise fast-forward the existing ref.
+  const result=git(cwd,['push','--porcelain','--force-with-lease='+ref+':'+('0'.repeat(40)),remote,token+':'+ref]);
   return result.ok;
  }
  function deleteRef(ref,token){
