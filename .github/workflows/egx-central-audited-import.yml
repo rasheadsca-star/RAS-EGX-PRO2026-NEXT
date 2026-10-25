@@ -1,0 +1,111 @@
+name: EGX Central - Audited Branch Import
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'egx-central/**'
+      - '.github/workflows/egx-central-audited-import.yml'
+permissions:
+  contents: read
+jobs:
+  archive-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout (read only)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test importer safety
+        run: python -m unittest discover -s egx-central -p 'test_*.py' -v
+      - name: Fetch and classify historical archives
+        run: python egx-central/remote_branch_audit.py --output artifacts/egx-central-audit
+      - name: Derive research-only cross-branch consensus
+        run: python egx-central/candidate_consensus.py --db artifacts/egx-central-audit/branch_evidence.sqlite --output artifacts/egx-central-audit
+      - name: Verify provenance promotion gate
+        run: python egx-central/promotion_gate.py --db artifacts/egx-central-audit/branch_evidence.sqlite --output artifacts/egx-central-audit
+      - name: Review latest source evidence and market session
+        run: python egx-central/main_source_quality.py --output artifacts/egx-central-audit
+      - name: Validate corporate-action snapshot availability
+        run: python egx-central/check_corporate_actions.py --actions egx-central/data/corporate_actions.csv --output artifacts/egx-central-audit/corporate_action_source_status.json
+      - name: Cross-check source splices against available corporate action records
+        run: python egx-central/corporate_action_review.py --quality artifacts/egx-central-audit/main_source_quality.json --output artifacts/egx-central-audit --actions egx-central/data/corporate_actions.csv
+      - name: Prepare hypothetical adjustment factors without modifying prices
+        run: python egx-central/adjustment_proposals.py --db artifacts/egx-central-audit/branch_evidence.sqlite --actions egx-central/data/corporate_actions.csv --output artifacts/egx-central-audit
+      - name: Generate research-only adjusted-close series (never a trading input)
+        run: python egx-central/research_adjusted_close.py --db artifacts/egx-central-audit/branch_evidence.sqlite --proposals artifacts/egx-central-audit/corporate_action_adjustment_proposals.csv --output artifacts/egx-central-audit
+      - name: Detect possible double adjustment in provider prices
+        run: python egx-central/provider_adjustment_audit.py --output artifacts/egx-central-audit
+      - name: Classify raw and provider-adjusted bars for research only
+        run: python egx-central/research_price_eligibility.py --output artifacts/egx-central-audit
+      - name: Report EGX research coverage and last observed session
+        run: python egx-central/market_freshness.py --output artifacts/egx-central-audit
+      - name: Recheck stale EGX public quote pages (read-only)
+        run: node egx-central/targeted_retry.js artifacts/egx-central-audit/retry_candidates.json artifacts/egx-central-audit/targeted_retry_report.json
+      - name: Probe free alternative public data feeds (quarantine only)
+        run: node egx-central/free_source_fallback.js artifacts/egx-central-audit/retry_candidates.json artifacts/egx-central-audit/free_source_fallback_report.json
+      - name: Diagnose raw timestamp day alignment
+        run: python egx-central/session_timestamp_diagnostics.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/timestamp_diagnostics_report.json
+      - name: Inventory source provenance
+        run: python egx-central/provenance_inventory.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/provenance_inventory_report.json
+      - name: Audit Yahoo market metadata and Cairo date conversion
+        run: python egx-central/yahoo_identity_audit.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/yahoo_identity_report.json
+      - name: Detail suspicious weekend sessions by ticker
+        run: python egx-central/date_concentration.py --source artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit/date_concentration_report.json
+      - name: Compare free-source candles to main archive (quarantine only)
+        run: python egx-central/free_source_reconcile.py --db artifacts/egx-central-audit/branch_evidence.sqlite --fallback artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit
+      - name: Triage unmatched sessions and source price conflicts
+        run: python egx-central/free_feed_triage.py --db artifacts/egx-central-audit/branch_evidence.sqlite --fallback artifacts/egx-central-audit/free_source_fallback_report.json --output artifacts/egx-central-audit
+      - name: Drop already recorded unchanged candles before quarantine ingest
+        run: python egx-central/filter_repeat_candidates.py --source artifacts/egx-central-audit/free_source_fallback_report.json --ledger artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/filtered_candidates.json --report artifacts/egx-central-audit/dedupe_report.json
+      - name: Preserve quarantined candidate observations in evidence SQLite
+        run: python egx-central/evidence_ledger.py --fallback artifacts/egx-central-audit/filtered_candidates.json --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/free_source_evidence_report.json
+      - name: Reconcile source historical sessions with saved research ledger
+        run: python egx-central/feed_ledger_reconcile.py --feed artifacts/egx-central-audit/free_source_fallback_report.json --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/feed_ledger_reconcile_report.json
+      - name: Audit quarantined OHLCV evidence and source conflicts
+        run: python egx-central/audit_evidence_quality.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/evidence_quality_report.json
+      - name: Compare complete OHLCV across research evidence providers
+        run: python egx-central/full_candle_compare.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/full_candle_compare_report.json
+      - name: Measure genuine historical coverage versus repeated evidence
+        run: python egx-central/coverage_efficiency.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --report artifacts/egx-central-audit/coverage_efficiency_report.json
+      - name: Separate archived anomalous dates from newly fetched research sessions
+        run: python egx-central/legacy_weekend_reconcile.py --feed artifacts/egx-central-audit/free_source_fallback_report.json --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/legacy_weekend_report.json
+      - name: Audit weekend dates across all quarantined research evidence
+        run: python egx-central/cumulative_weekend_audit.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/cumulative_weekend_report.json
+      - name: Audit research session calendar
+        run: python egx-central/research_calendar_audit.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/research_calendar_report.json
+      - name: Report independent-provider coverage gaps
+        run: python egx-central/provider_gap_report.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/provider_gap_report.json
+      - name: Calculate research volume liquidity proxies and support resistance
+        run: python egx-central/research_market_tools.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/research_market_tools_report.json
+      - name: Compare exploratory breakout and volume outcomes without trades
+        run: python egx-central/exploratory_signal_outcomes.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/exploratory_outcomes_report.json
+      - name: Audit nonoverlapping breakout events and statistical uncertainty
+        run: python egx-central/nonoverlap_signal_audit.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/nonoverlap_signal_report.json
+      - name: Assess next-open paper fills with friction and stop
+        run: python egx-central/next_open_paper_experiment.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/next_open_paper_report.json
+      - name: Diagnose fixed-rule chronological research holdout
+        run: python egx-central/chronological_holdout_diagnostic.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/chronological_holdout_report.json
+      - name: Enforce agreement between calendar audits
+        run: python egx-central/weekend_audit_consistency.py --calendar artifacts/egx-central-audit/research_calendar_report.json --cumulative artifacts/egx-central-audit/cumulative_weekend_report.json --output artifacts/egx-central-audit/weekend_consistency_report.json
+      - name: Review current EGX holiday calendar with cited source classifications
+        run: python egx-central/egx_holiday_review.py --start "$(TZ=Africa/Cairo date +%Y)-01-01" --end "$(TZ=Africa/Cairo date +%Y)-12-31" --output artifacts/egx-central-audit/egx_holiday_review.json
+      - name: Fetch holiday announcement sources for freshness evidence
+        run: python egx-central/holiday_source_watch.py --output artifacts/egx-central-audit/holiday_source_watch.json
+      - name: Flag historical price candles on EGX closure dates
+        run: python egx-central/candle_holiday_audit.py --db artifacts/egx-central-audit/free_source_evidence.sqlite --output artifacts/egx-central-audit/candle_holiday_audit.json
+      - name: Assert warehouse integrity and no trading promotion
+        run: python egx-central/verify_warehouse.py --output artifacts/egx-central-audit
+      - name: Upload isolated evidence and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-central-remote-branch-audit
+          path: artifacts/egx-central-audit/
+          if-no-files-found: warn
+          retention-days: 14
