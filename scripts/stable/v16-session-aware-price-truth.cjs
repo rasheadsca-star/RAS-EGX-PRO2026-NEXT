@@ -490,13 +490,17 @@ async function main() {
         throw new Error('GUARDED_REJECTED_CANDLE_REQUIRES_RECONCILIATION:'+row.ticker);
     }
   }
-  const mergeResult = mergeIntoHistory(acceptedRows);
-  if(bound){
-    if(mergeResult.updated!==bound.reportFields.updatedHistoryFiles ||
-       JSON.stringify([...mergeResult.missingHistoryFiles].sort())!==JSON.stringify([...bound.reportFields.missingHistoryFiles].sort()))
-      throw new Error('HISTORY_MERGE_ASSESSMENT_MISMATCH');
-    verifyR8({root:ROOT,baseline:preMergeBaseline,affectedTickers:eligibleAffected});
-  }
+  const mergeResult = bound
+    ? require('./history-guarded-merge.cjs').run({
+      root:ROOT,runId:guardedRunId,rows:acceptedRows,generatedAt:new Date().toISOString(),
+      validate:result=>{
+        if(result.updated!==bound.reportFields.updatedHistoryFiles ||
+           JSON.stringify([...result.missingHistoryFiles].sort())!==JSON.stringify([...bound.reportFields.missingHistoryFiles].sort()))
+          throw new Error('HISTORY_MERGE_ASSESSMENT_MISMATCH');
+        verifyR8({root:ROOT,baseline:preMergeBaseline,affectedTickers:eligibleAffected});
+      }
+    })
+    : mergeIntoHistory(acceptedRows);
   const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS && mergeResult.updated >= MIN_EXECUTION_ROWS;
 
   const acceptedMap = new Map(acceptedRows.map(row => [row.ticker, row]));
