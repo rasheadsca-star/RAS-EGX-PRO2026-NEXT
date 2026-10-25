@@ -1,0 +1,39 @@
+name: S1 Isolated History R8 R9 Policy Gate
+on:
+  pull_request:
+    paths:
+      - 'scripts/stable/history-quarantine-policy.cjs'
+      - 'tests/stable/history-quarantine-policy.test.cjs'
+      - 'scripts/stable/history-publication-gate.cjs'
+      - 'tests/stable/history-publication-gate.test.cjs'
+      - 'scripts/stable/history-r8-integrity.cjs'
+      - 'tests/stable/history-r8-integrity.test.cjs'
+      - 'scripts/stable/history-r9-report-binding.cjs'
+      - 'tests/stable/history-r9-report-binding.test.cjs'
+      - '.github/workflows/pr97-history-quarantine-policy.yml'
+  push:
+    branches:
+      - 's1/history-policy-r8-r9-isolated'
+    paths:
+      - 'scripts/stable/history-quarantine-policy.cjs'
+      - 'tests/stable/history-quarantine-policy.test.cjs'
+      - 'scripts/stable/history-publication-gate.cjs'
+      - 'tests/stable/history-publication-gate.test.cjs'
+      - 'scripts/stable/history-r8-integrity.cjs'
+      - 'tests/stable/history-r8-integrity.test.cjs'
+      - 'scripts/stable/history-r9-report-binding.cjs'
+      - 'tests/stable/history-r9-report-binding.test.cjs'
+      - '.github/workflows/pr97-history-quarantine-policy.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quarantine-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test history quarantine policy
+        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs
