@@ -20,7 +20,15 @@ function walk(root){
  }
  scan(base);return result.sort();
 }
-function snapshot({root,expectedSession,affectedTickers}){
+function snapshot({root,expectedSession,affectedTickers,assessment=null}){
+ // When an assessment is supplied, derive permissible affected symbols from it.
+ // An unrestricted Set is not sufficient evidence of authorization.
+ if(assessment){
+  const accepted=assessment.manifest, rejected=assessment.rejected;
+  if(!assessment.sourceEligible||assessment.expectedSession!==expectedSession||!Array.isArray(accepted)||!(rejected instanceof Map))throw new Error('INVALID_AFFECTED_ASSESSMENT');
+  const authorized=new Set([...accepted.map(x=>x.ticker),...rejected.keys()]);
+  if(authorized.size!==affectedTickers.size||[...affectedTickers].some(x=>!authorized.has(x)))throw new Error('UNAUTHORIZED_AFFECTED_SET');
+ }
  if(typeof expectedSession!=='string'||!DATE.test(expectedSession)||new Date(expectedSession+'T00:00:00Z').toISOString().slice(0,10)!==expectedSession
     ||!(affectedTickers instanceof Set)||[...affectedTickers].some(t=>!symbol.test(t)))throw new Error('INVALID_HISTORY_BASELINE_ARGS');
  const affected=[...affectedTickers].sort(),files={};
@@ -37,6 +45,7 @@ function snapshot({root,expectedSession,affectedTickers}){
    futureRows:doc.sessions.filter(row=>dateOf(row)>expectedSession).length,
    ...(affectedTickers.has(ticker)?{}:{fileSha256:sha(bytes)})};
  }
+ for(const ticker of affected){if(!Object.hasOwn(files,ticker+'.json'))throw new Error('AFFECTED_TICKER_HISTORY_MISSING:'+ticker);}
  return {schemaVersion:2,expectedSession,affected,affectedSha256:hash(affected),files};
 }
 function capture(args){return snapshot(args);}
