@@ -38,3 +38,12 @@ test('after safe rebase, invalid proof refuses push without rewriting evidence',
  assert.deepEqual(calls.map(a=>a[0]),['branch','status','fetch','rebase']);
  assert.equal(fs.readFileSync(f.assessmentFile,'utf8'),'{}');
 });
+
+test('publication aborts if writer lease is lost immediately after rebase',t=>{
+ const f=fixture(t),calls=[];let count=0;
+ const lockLease={verify:()=>{count++;if(count===2)throw new Error('HISTORY_WRITER_LOCK_LOST');}};
+ assert.throws(()=>publish({...f,lockLease,execute:args=>{
+  calls.push(args);return args[0]==='branch'?'main':'';
+ }}),/HISTORY_WRITER_LOCK_LOST/);
+ assert.equal(calls.some(args=>args[0]==='push'),false);
+});
