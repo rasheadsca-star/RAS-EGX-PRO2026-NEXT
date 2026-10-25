@@ -78,3 +78,9 @@ test('repeated reject is idempotent; rejection does not recreate candle',()=>{
  assert.equal(first.quarantined.length,1);assert.equal(second.quarantined.length,0);
  assert.equal(second.document,first.document);
 });
+
+test('B2 accepted-but-missing ticker cannot simultaneously be rejected',()=>{
+ assert.throws(()=>evaluation({runId:'run-overlap',expectedSession:day,sourceEligible:true,
+  acceptedRows:1,accepted:[],missingHistory:['BONY'],
+  rejected:[{ticker:'BONY',reason:'REPORTED_CHANGE_MISMATCH'}]}),/INVALID_REJECTED_ENTRY/);
+});
