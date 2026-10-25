@@ -6,6 +6,8 @@ on:
       - 'tests/stable/history-quarantine-policy.test.cjs'
       - 'scripts/stable/history-publication-gate.cjs'
       - 'tests/stable/history-publication-gate.test.cjs'
+      - 'scripts/stable/history-r8-integrity.cjs'
+      - 'tests/stable/history-r8-integrity.test.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   push:
     branches:
@@ -15,6 +17,8 @@ on:
       - 'tests/stable/history-quarantine-policy.test.cjs'
       - 'scripts/stable/history-publication-gate.cjs'
       - 'tests/stable/history-publication-gate.test.cjs'
+      - 'scripts/stable/history-r8-integrity.cjs'
+      - 'tests/stable/history-r8-integrity.test.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   workflow_dispatch:
 permissions:
@@ -28,4 +32,4 @@ jobs:
         with:
           node-version: '22'
       - name: Test history quarantine policy
-        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs
+        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs
