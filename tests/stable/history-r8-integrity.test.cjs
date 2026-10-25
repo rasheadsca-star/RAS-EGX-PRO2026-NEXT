@@ -93,3 +93,19 @@ test('R17 denies absent ticker in affected set and unapproved expansion at captu
  assert.throws(()=>capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH','FAIT']),assessment}),/UNAUTHORIZED_AFFECTED_SET/);
  assert.throws(()=>capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH'])}),/AFFECTED_ASSESSMENT_REQUIRED/);
 });
+
+test('R18 rejected ticker without target candle stays byte-protected and cannot be marked affected',t=>{
+ const f=fixture(t),assessmentWithReject={...assessment,rejected:new Map([['FAIT','REPORTED_CHANGE_MISMATCH']])};
+ assert.throws(()=>capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH','FAIT']),
+   assessment:assessmentWithReject}),/UNAUTHORIZED_AFFECTED_SET/);
+ const baseline=capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH']),assessment:assessmentWithReject});
+ f.write('FAIT',[{date:'2026-10-22',close:43.31}],{staleData:true});
+ assert.throws(()=>verify({root:f.root,baseline,affectedTickers:new Set(['MIPH'])}),/UNAFFECTED_HISTORY_FILE_CHANGED/);
+});
+test('R18 rejected ticker with exact removable candle must join affected set',t=>{
+ const f=fixture(t),assessmentWithReject={...assessment,rejected:new Map([['FAIT','REPORTED_CHANGE_MISMATCH']])};
+ f.write('FAIT',[{date:'2026-10-22',close:43.31},{date:day,source:'v16_session_aware_price_truth',close:42}]);
+ assert.throws(()=>capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH']),assessment:assessmentWithReject}),/UNAUTHORIZED_AFFECTED_SET/);
+ const base=capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH','FAIT']),assessment:assessmentWithReject});
+ assert.deepEqual(base.affected,['FAIT','MIPH']);
+});
