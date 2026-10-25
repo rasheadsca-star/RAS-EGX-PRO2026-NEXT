@@ -1,0 +1,13 @@
+name: fixture - development guard text must not look like a publisher
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard text only (a grep that forbids publishing; it is not a publisher)
+        run: |
+          ! grep -Eiq 'actions/deploy-pages@|pages:[[:space:]]*write|git push[^\n]*main|update_ref[^\n]*main' "$f"

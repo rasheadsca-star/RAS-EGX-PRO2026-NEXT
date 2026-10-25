@@ -5,7 +5,20 @@ const path=require('path');
 const crypto=require('crypto');
 const {confirmedClosures,isTradingSession}=require('../../ops/egx-session-math.cjs');
 
-const ROOT=path.resolve(__dirname,'../../..');
+// ASTRA_INTELLIGENCE_ROOT is for hermetic test roots; the production default is unchanged.
+const DEFAULT_ROOT=path.resolve(__dirname,'../../..');
+const ROOT_OVERRIDE=process.env.ASTRA_INTELLIGENCE_ROOT;
+if(ROOT_OVERRIDE && process.env.GITHUB_ACTIONS==='true'){
+  const os=require('os');
+  const realTemp=fs.realpathSync(os.tmpdir());
+  const resolved=fs.realpathSync(path.resolve(ROOT_OVERRIDE));
+  const underTemp=resolved.startsWith(realTemp+path.sep);
+  if(process.env.ASTRA_ALLOW_ROOT_OVERRIDE!=='1' || !underTemp){
+    throw new Error('ASTRA_INTELLIGENCE_ROOT blocked in GitHub Actions: explicit test-only authorization and temp root required');
+  }
+}
+const ROOT=ROOT_OVERRIDE && process.env.GITHUB_ACTIONS==='true'?fs.realpathSync(path.resolve(ROOT_OVERRIDE)):(ROOT_OVERRIDE?path.resolve(ROOT_OVERRIDE):DEFAULT_ROOT);
+if(ROOT_OVERRIDE) process.stderr.write('[ASTRA] NON-PRODUCTION ROOT OVERRIDE: '+ROOT+'\n');
 const EGX_CLOSURES=confirmedClosures(ROOT);
 const P=(...x)=>path.join(ROOT,...x);
 const readJson=(rel,fallback=null)=>{try{return JSON.parse(fs.readFileSync(P(rel),'utf8'))}catch(e){if(fallback!==null)return fallback;throw e}};
