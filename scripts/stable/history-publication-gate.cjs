@@ -10,7 +10,7 @@ function verifyPublication({assessmentFile,root=process.cwd(),expectedRunId}) {
   if(payload.runId!==expectedRunId)throw new Error('STALE_PUBLICATION_RUN');
   if(payload.sourceEligible!==true)throw new Error('SOURCE_INELIGIBLE');
   const e=evaluation(payload);
-  if(e.manifest.length!==e.acceptedRows)throw new Error('INVALID_PUBLICATION_COUNT');
+  if(e.manifest.length+e.missingHistory.length!==e.acceptedRows)throw new Error('INVALID_PUBLICATION_COUNT');
   const history={};
   for(const item of e.manifest) {
     const file=path.join(root,'data','history',item.ticker+'.json');
@@ -18,6 +18,10 @@ function verifyPublication({assessmentFile,root=process.cwd(),expectedRunId}) {
     history[item.ticker]=JSON.parse(fs.readFileSync(file,'utf8'));
   }
   verifyManifest(e.manifest,history);
+  for(const ticker of e.missingHistory){
+    const file=path.join(root,'data','history',ticker+'.json');
+    if(fs.existsSync(file))throw new Error('DECLARED_MISSING_HISTORY_EXISTS:'+ticker);
+  }
   // Rejected tickers are a negative assertion: no quarantinable candle may survive.
   for(const [ticker] of e.rejected) {
     const file=path.join(root,'data','history',ticker+'.json');
