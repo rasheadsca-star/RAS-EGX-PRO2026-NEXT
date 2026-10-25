@@ -49,3 +49,14 @@ test('real Git backend compare-and-delete rejects stale expected SHA',t=>{
  assert.equal(transport.deleteRef('refs/heads/egx-history-writer-lease',first.token),false);
  assert.equal(transport.readRef('refs/heads/egx-history-writer-lease'),second.token);
 });
+
+test('lease creation is absent-ref CAS even if new token fast-forwards occupied ref',t=>{
+ const f=fixture(t),first=f.writer('first');
+ first.driver.acquire(first.token);
+ command(first.cwd,'commit','--allow-empty','-m','descendant token must not take lock');
+ const descendant=command(first.cwd,'rev-parse','HEAD');
+ const transport=backend({cwd:first.cwd});
+ assert.equal(transport.createRef('refs/heads/egx-history-writer-lease',descendant),false);
+ assert.equal(transport.readRef('refs/heads/egx-history-writer-lease'),first.token);
+ first.driver.release();
+});
