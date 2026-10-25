@@ -13,6 +13,21 @@ function durable(file, bytes) {
  const dir=fs.openSync(path.dirname(file),'r');try{fs.fsyncSync(dir);}finally{fs.closeSync(dir);}
 }
 function txnPath(root){return path.join(root,'data/quarantine/history-transaction-intent.json');}
+function checkedRecord(record) {
+ if(!record||record.schemaVersion!==1||record.status!=='prepared'||typeof record.runId!=='string'||!record.runId||!Array.isArray(record.entries)||!record.entries.length)throw new Error('INVALID_TRANSACTION_JOURNAL');
+ const seen=new Set();
+ for(const e of record.entries){
+  if(!e||typeof e.ticker!=='string'||!/^[A-Z0-9._-]+$/.test(e.ticker)||e.ticker==='.'||e.ticker==='..'||seen.has(e.ticker))throw new Error('INVALID_JOURNAL_TICKER');
+  seen.add(e.ticker);
+  for(const side of ['before','after']){
+   const encoded=e[side+'Base64'];const digest=e[side+'Sha256'];
+   if(typeof encoded!=='string'||typeof digest!=='string'||!/^[a-f0-9]{64}$/.test(digest)||Buffer.from(encoded,'base64').toString('base64')!==encoded||sha(Buffer.from(encoded,'base64'))!==digest)
+    throw new Error('JOURNAL_CONTENT_HASH_MISMATCH:'+e.ticker);
+  }
+ }
+ return record;
+}
+function storedRecord(root){return checkedRecord(JSON.parse(fs.readFileSync(txnPath(root),'utf8')));}
 function begin({root,runId,updates}) {
  if(!runId||!Array.isArray(updates)||!updates.length)throw new Error('INVALID_HISTORY_TRANSACTION');
  const intent=txnPath(root);
@@ -25,8 +40,10 @@ function begin({root,runId,updates}) {
   seen.add(ticker);
   const filename=path.join(root,'data/history',ticker+'.json');
   const before=fs.readFileSync(filename);
+  if(!Array.isArray(JSON.parse(before.toString('utf8'))?.sessions))throw new Error('INVALID_EXISTING_HISTORY:'+ticker);
   const after=Buffer.from(typeof update.after==='string'?update.after:JSON.stringify(update.after,null,2)+'\n');
-  JSON.parse(after.toString('utf8'));
+  const parsed=JSON.parse(after.toString('utf8'));
+  if(!parsed||!Array.isArray(parsed.sessions))throw new Error('INVALID_STAGED_HISTORY:'+ticker);
   entries.push({ticker,beforeSha256:sha(before),afterSha256:sha(after),beforeBase64:before.toString('base64'),afterBase64:after.toString('base64')});
  }
  const record={schemaVersion:1,runId,status:'prepared',entries};
@@ -35,6 +52,8 @@ function begin({root,runId,updates}) {
 }
 function apply({root,record,faultAfter=-1}) {
  if(!fs.existsSync(txnPath(root)))throw new Error('MISSING_TRANSACTION_INTENT');
+ const stored=storedRecord(root);checkedRecord(record);
+ if(sha(Buffer.from(JSON.stringify(stored.entries)))!==sha(Buffer.from(JSON.stringify(record.entries)))||stored.runId!==record.runId)throw new Error('JOURNAL_RECORD_MISMATCH');
  for(let i=0;i<record.entries.length;i++){
   const e=record.entries[i],file=path.join(root,'data/history',e.ticker+'.json');
   const current=sha(fs.readFileSync(file));
@@ -46,8 +65,7 @@ function apply({root,record,faultAfter=-1}) {
 function recover({root}) {
  const file=txnPath(root);
  if(!fs.existsSync(file))return {recovered:false};
- const record=JSON.parse(fs.readFileSync(file,'utf8'));
- if(record.schemaVersion!==1||!Array.isArray(record.entries))throw new Error('INVALID_TRANSACTION_JOURNAL');
+ const record=storedRecord(root);
  // Fail closed rather than overwrite externally modified files.
  for(const e of record.entries){
   const filename=path.join(root,'data/history',e.ticker+'.json');
@@ -61,6 +79,8 @@ function recover({root}) {
 function complete({root,record}) {
  const file=txnPath(root);
  if(!fs.existsSync(file))throw new Error('MISSING_TRANSACTION_INTENT');
+ const stored=storedRecord(root);checkedRecord(record);
+ if(stored.runId!==record.runId||sha(Buffer.from(JSON.stringify(stored.entries)))!==sha(Buffer.from(JSON.stringify(record.entries))))throw new Error('JOURNAL_RECORD_MISMATCH');
  for(const e of record.entries){
   if(sha(fs.readFileSync(path.join(root,'data/history',e.ticker+'.json')))!==e.afterSha256)throw new Error('INCOMPLETE_TRANSACTION:'+e.ticker);
  }
