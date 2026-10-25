@@ -49,3 +49,25 @@ test('invalid or duplicate ticker is rejected before journal creation',t=>{
  assert.throws(()=>begin({root:f.root,runId:'run-1',updates:[f.updates[0],f.updates[0]]}),/INVALID_TRANSACTION_TICKER/);
  assert.equal(fs.existsSync(txnPath(f.root)),false);
 });
+
+test('tampering journal source path is rejected before recovery modifies any files',t=>{
+ const f=fixture(t);begin({root:f.root,runId:'run-1',updates:f.updates});
+ const j=txnPath(f.root),record=JSON.parse(fs.readFileSync(j,'utf8'));
+ record.entries[0].ticker='../outside';fs.writeFileSync(j,JSON.stringify(record));
+ assert.throws(()=>recover({root:f.root}),/INVALID_JOURNAL_TICKER/);
+ assert.deepEqual(f.snapshot(),f.original);
+});
+test('tampering original snapshot digest fails closed',t=>{
+ const f=fixture(t);begin({root:f.root,runId:'run-1',updates:f.updates});
+ const j=txnPath(f.root),record=JSON.parse(fs.readFileSync(j,'utf8'));
+ record.entries[0].beforeBase64=Buffer.from('not original').toString('base64');
+ fs.writeFileSync(j,JSON.stringify(record));
+ assert.throws(()=>recover({root:f.root}),/JOURNAL_CONTENT_HASH_MISMATCH/);
+ assert.deepEqual(f.snapshot(),f.original);
+});
+test('different in-memory record cannot be used to apply another journal',t=>{
+ const f=fixture(t),record=begin({root:f.root,runId:'run-1',updates:f.updates});
+ const forged={...record,entries:[{...record.entries[0],ticker:'FAIT'},record.entries[1]]};
+ assert.throws(()=>apply({root:f.root,record:forged}),/INVALID_JOURNAL_TICKER|JOURNAL_RECORD_MISMATCH/);
+ assert.deepEqual(f.snapshot(),f.original);
+});
