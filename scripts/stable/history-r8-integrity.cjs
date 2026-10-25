@@ -1,43 +1,67 @@
 'use strict';
-// R8 scoped immutable baseline. Capture AFTER legitimate reconciliation,
-// verify AGAIN AFTER rebase; a baseline made from post-rebase files is not evidence.
+// Baseline must be captured before the operation it guards. The phase-A and
+// phase-B snapshots must be independently retained; never rebase the baseline.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const {hash}=require('./history-quarantine-policy.cjs');
 const sha=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
-function filesAt(root) {
- const dir=path.join(root,'data/history');
- return fs.readdirSync(dir).filter(x=>/^[A-Z0-9._-]+\.json$/.test(x)).sort();
-}
-function capture({root,expectedSession,affectedTickers}) {
- if(!/^\d{4}-\d{2}-\d{2}$/.test(expectedSession)||!(affectedTickers instanceof Set))
-  throw new Error('INVALID_HISTORY_BASELINE_ARGS');
- const files={};
- for(const name of filesAt(root)){
-  const bytes=fs.readFileSync(path.join(root,'data/history',name));
-  const doc=JSON.parse(bytes);
-  if(!Array.isArray(doc.sessions))throw new Error('INVALID_BASELINE_HISTORY:'+name);
-  const previous=doc.sessions.filter(row=>String(row?.date||row?.sessionDate||'').slice(0,10)<expectedSession);
-  files[name]={previousSha256:hash(previous),previousRows:previous.length,
-   ...(affectedTickers.has(name.slice(0,-5))?{}:{fileSha256:sha(bytes)})};
+const DATE=/^\d{4}-\d{2}-\d{2}$/;
+const symbol=/^[A-Z0-9._-]+$/;
+function dateOf(row){return String(row?.date||row?.sessionDate||'').slice(0,10);}
+function walk(root){
+ const base=path.join(root,'data/history'), result=[];
+ function scan(dir,prefix=''){
+  for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
+   const rel=prefix?prefix+'/'+entry.name:entry.name;
+   if(entry.isSymbolicLink())throw new Error('HISTORY_SYMLINK_FORBIDDEN:'+rel);
+   if(entry.isDirectory())scan(path.join(dir,entry.name),rel);
+   else if(entry.isFile())result.push(rel);
+   else throw new Error('INVALID_HISTORY_ENTRY:'+rel);
+  }
  }
- return {schemaVersion:1,expectedSession,files};
+ scan(base);return result.sort();
 }
-function verify({root,baseline,affectedTickers}) {
- if(!baseline||baseline.schemaVersion!==1||!(affectedTickers instanceof Set)||!baseline.files)
-  throw new Error('INVALID_HISTORY_BASELINE');
- const names=filesAt(root);
- const original=Object.keys(baseline.files).sort();
- if(JSON.stringify(names)!==JSON.stringify(original))throw new Error('HISTORY_FILESET_CHANGED');
- for(const name of names) {
-  const bytes=fs.readFileSync(path.join(root,'data/history',name));
+function snapshot({root,expectedSession,affectedTickers}){
+ if(typeof expectedSession!=='string'||!DATE.test(expectedSession)||new Date(expectedSession+'T00:00:00Z').toISOString().slice(0,10)!==expectedSession
+    ||!(affectedTickers instanceof Set)||[...affectedTickers].some(t=>!symbol.test(t)))throw new Error('INVALID_HISTORY_BASELINE_ARGS');
+ const affected=[...affectedTickers].sort(),files={};
+ for(const rel of walk(root)){
+  const bytes=fs.readFileSync(path.join(root,'data/history',rel));
+  const isSymbol=symbol.test(rel.slice(0,-5))&&rel.endsWith('.json')&&!rel.includes('/');
+  const ticker=isSymbol?rel.slice(0,-5):null;
+  if(!ticker) { files[rel]={fileSha256:sha(bytes)};continue; }
   const doc=JSON.parse(bytes);
-  if(!Array.isArray(doc.sessions))throw new Error('INVALID_HISTORY_DOCUMENT:'+name);
-  const rows=doc.sessions.filter(row=>String(row?.date||row?.sessionDate||'').slice(0,10)<baseline.expectedSession);
-  const entry=baseline.files[name];
-  if(rows.length!==entry.previousRows||hash(rows)!==entry.previousSha256)
-   throw new Error('PREVIOUS_SESSIONS_CHANGED:'+name);
-  if(!affectedTickers.has(name.slice(0,-5)) && sha(bytes)!==entry.fileSha256)
-   throw new Error('UNAFFECTED_HISTORY_FILE_CHANGED:'+name);
+  if(!Array.isArray(doc.sessions))throw new Error('INVALID_BASELINE_HISTORY:'+rel);
+  const prev=doc.sessions.filter(row=>dateOf(row)<expectedSession);
+  files[rel]={previousSha256:hash(prev),previousRows:prev.length,
+   futureSha256:hash(doc.sessions.filter(row=>dateOf(row)>expectedSession)),
+   futureRows:doc.sessions.filter(row=>dateOf(row)>expectedSession).length,
+   ...(affectedTickers.has(ticker)?{}:{fileSha256:sha(bytes)})};
+ }
+ return {schemaVersion:2,expectedSession,affected,affectedSha256:hash(affected),files};
+}
+function capture(args){return snapshot(args);}
+function verify({root,baseline,affectedTickers}){
+ if(!baseline||baseline.schemaVersion!==2||!Array.isArray(baseline.affected)||!baseline.files
+    ||!(affectedTickers instanceof Set))throw new Error('INVALID_HISTORY_BASELINE');
+ const affected=[...affectedTickers].sort();
+ if(hash(affected)!==baseline.affectedSha256||JSON.stringify(affected)!==JSON.stringify(baseline.affected))
+  throw new Error('AFFECTED_SET_CHANGED');
+ const names=walk(root),original=Object.keys(baseline.files).sort();
+ if(JSON.stringify(names)!==JSON.stringify(original))throw new Error('HISTORY_FILESET_CHANGED');
+ for(const rel of names){
+  const bytes=fs.readFileSync(path.join(root,'data/history',rel));
+  const entry=baseline.files[rel];
+  if('fileSha256' in entry && sha(bytes)!==entry.fileSha256)
+   throw new Error('UNAFFECTED_HISTORY_FILE_CHANGED:'+rel);
+  if(!('previousSha256' in entry))continue;
+  const doc=JSON.parse(bytes);
+  if(!Array.isArray(doc.sessions))throw new Error('INVALID_HISTORY_DOCUMENT:'+rel);
+  const prior=doc.sessions.filter(row=>dateOf(row)<baseline.expectedSession);
+  const future=doc.sessions.filter(row=>dateOf(row)>baseline.expectedSession);
+  if(prior.length!==entry.previousRows||hash(prior)!==entry.previousSha256)
+   throw new Error('PREVIOUS_SESSIONS_CHANGED:'+rel);
+  if(future.length!==entry.futureRows||hash(future)!==entry.futureSha256)
+   throw new Error('FUTURE_SESSIONS_CHANGED:'+rel);
  }
  return {verifiedFiles:names.length,previousSessionsIntact:true,unaffectedFilesIntact:true};
 }
