@@ -10,6 +10,9 @@ on:
       - 'tests/stable/history-r8-integrity.test.cjs'
       - 'scripts/stable/history-r9-report-binding.cjs'
       - 'tests/stable/history-r9-report-binding.test.cjs'
+      - 'scripts/stable/history-producer-assessment.cjs'
+      - 'tests/stable/history-producer-assessment.test.cjs'
+      - 'scripts/stable/v16-session-aware-price-truth.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   push:
     branches:
@@ -23,6 +26,9 @@ on:
       - 'tests/stable/history-r8-integrity.test.cjs'
       - 'scripts/stable/history-r9-report-binding.cjs'
       - 'tests/stable/history-r9-report-binding.test.cjs'
+      - 'scripts/stable/history-producer-assessment.cjs'
+      - 'tests/stable/history-producer-assessment.test.cjs'
+      - 'scripts/stable/v16-session-aware-price-truth.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   workflow_dispatch:
 permissions:
@@ -36,4 +42,4 @@ jobs:
         with:
           node-version: '22'
       - name: Test history quarantine policy
-        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs
+        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-producer-assessment.test.cjs
