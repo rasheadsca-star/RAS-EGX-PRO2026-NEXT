@@ -12,7 +12,7 @@ function triage({missing,source}){
    const ok=nums.every(x=>typeof x==='number'&&Number.isFinite(x)&&x>0)
     &&r.low<=Math.min(r.open,r.close)&&r.high>=Math.max(r.open,r.close)
     &&r.high>=r.low&&Number.isFinite(r.volume)&&r.volume>=0
-    &&/^\\d{4}-\\d{2}-\\d{2}$/.test(r.date);
+    &&/^\d{4}-\d{2}-\d{2}$/.test(r.date);
    (ok?valid:rejected).push({date:r.date,reason:ok?'STRUCTURALLY_VALID':'INVALID_OHLCV'});
   }
   return {ticker,status:rejected.length?'REVIEW_INVALID_CANDLES':'STRUCTURAL_CANDIDATE_ONLY',
