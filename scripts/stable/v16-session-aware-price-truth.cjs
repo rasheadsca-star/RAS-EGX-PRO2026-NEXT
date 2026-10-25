@@ -470,6 +470,22 @@ async function main() {
   }
   const preMergeBaseline = bound ? captureR8({root:ROOT,expectedSession,
     affectedTickers:eligibleAffected,assessment:require('./history-quarantine-policy.cjs').evaluation(bound.assessment)}) : null;
+  if(bound){
+    // Fail before any accepted-history writes if this scan cannot meet the
+    // unchanged 200-row execution gate or if rejected contamination remains.
+    const expectedReady = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS
+      && bound.assessment.accepted.length >= MIN_EXECUTION_ROWS;
+    if(!expectedReady)throw new Error('GUARDED_HISTORY_NOT_EXECUTION_GRADE');
+    for(const row of rejected.filter(x=>x.ticker)){
+      const file=path.join(HISTORY_DIR,row.ticker+'.json');
+      if(!fs.existsSync(file))continue;
+      const doc=readJson(file,{});
+      if(!Array.isArray(doc.sessions))throw new Error('GUARDED_REJECTED_HISTORY_MALFORMED:'+row.ticker);
+      if(doc.sessions.some(x=>x?.source==='v16_session_aware_price_truth'
+          &&dateOnly(x.date||x.sessionDate)===expectedSession))
+        throw new Error('GUARDED_REJECTED_CANDLE_REQUIRES_RECONCILIATION:'+row.ticker);
+    }
+  }
   const mergeResult = mergeIntoHistory(acceptedRows);
   if(bound){
     if(mergeResult.updated!==bound.reportFields.updatedHistoryFiles ||
