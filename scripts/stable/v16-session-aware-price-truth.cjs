@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const crypto = require('node:crypto');
+const os = require('node:os');
 const { prepare: prepareHistoryAssessment } = require('./history-producer-assessment.cjs');
 const { capture: captureR8, verify: verifyR8 } = require('./history-r8-integrity.cjs');
 const { verifyTruthBinding } = require('./history-r9-report-binding.cjs');
@@ -559,7 +560,7 @@ async function main() {
     if(!ready)throw new Error('HISTORY_BOUND_REPORT_NOT_READY');
     Object.assign(report,bound.reportFields);
     verifyTruthBinding({assessment:bound.assessment,report});
-    const assessmentFile=path.join(process.env.RUNNER_TEMP || path.join(ROOT,'data/stable'),
+    const assessmentFile=path.join(process.env.RUNNER_TEMP || os.tmpdir(),
       'v16-history-assessment-'+guardedRunId+'.json');
     writeJson(assessmentFile,bound.assessment);
     verifyPublication({assessmentFile,root:ROOT,expectedRunId:guardedRunId});
