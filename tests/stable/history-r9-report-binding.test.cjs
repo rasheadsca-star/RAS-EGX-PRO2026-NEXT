@@ -5,11 +5,14 @@ const {verifyTruthBinding}=require('../../scripts/stable/history-r9-report-bindi
 const row={ticker:'MIPH',date:'2026-10-25',source:'v16_session_aware_price_truth',close:683.5};
 function fixture(){
  const assessment={runId:'run-25-001',expectedSession:'2026-10-25',sourceEligible:true,acceptedRows:2,
- accepted:[row],missingHistory:['BONY'],rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]};
+ accepted:[row],missingHistory:['BONY'],rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}],
+ inputRows:3,inputSymbols:['MIPH','BONY','FAIT'],dropped:[]};
  const a=evaluation(assessment);
  const report={schemaVersion:'16.3.5-session-aware-price-truth-bound',runId:a.runId,expectedSession:a.expectedSession,
  acceptedRows:2,updatedHistoryFiles:1,missingHistoryFiles:['BONY'],manifestSha256:a.manifestSha256,
- rejectedFull:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]};
+ rejectedFull:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}],droppedFull:[],
+ sourceEligible:true,ready:true,executionGrade:true,inputRows:3,
+ inputSymbolsSha256:hash(['BONY','FAIT','MIPH']),rejectedRows:1,droppedRows:0};
  return {assessment,report};
 }
 test('R9 complete matching producer report permits binding',()=>{
@@ -26,4 +29,29 @@ test('R9 rejects forged run, counts, manifest, missing history and rejected clas
   const f=fixture();Object.assign(f.report,patch);
   assert.throws(()=>verifyTruthBinding(f),/R9_PRODUCER_REPORT_MISMATCH/);
  }
+});
+
+test('R25 refuses false ready and executionGrade',()=>{
+ for(const patch of [{ready:false},{executionGrade:false},{sourceEligible:false}]){
+  const f=fixture();Object.assign(f.report,patch);
+  assert.throws(()=>verifyTruthBinding(f),/R9_PRODUCER_REPORT_MISMATCH/);
+ }
+});
+test('R26 rejects disappearing classifications and invented input symbols',()=>{
+ const f=fixture();f.assessment.inputSymbols=['MIPH','BONY','ARCC'];
+ assert.throws(()=>verifyTruthBinding(f),/R9_CLASSIFICATION_CONSERVATION_FAILED/);
+ const g=fixture();g.assessment.rejected=[];
+ assert.throws(()=>verifyTruthBinding(g),/R9_CLASSIFICATION_CONSERVATION_FAILED/);
+});
+test('R27 accepts multiple missing and rejected symbols irrespective of order',()=>{
+ const f=fixture();
+ f.assessment.missingHistory=['TANM','BONY'];
+ f.assessment.rejected=[{ticker:'SEIG',reason:'SESSION_STALE'},{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}];
+ f.assessment.acceptedRows=3;f.assessment.inputRows=5;f.assessment.inputSymbols=['SEIG','MIPH','TANM','FAIT','BONY'];
+ const a=evaluation(f.assessment);
+ Object.assign(f.report,{acceptedRows:3,updatedHistoryFiles:1,missingHistoryFiles:['TANM','BONY'],
+  manifestSha256:a.manifestSha256,rejectedRows:2,inputRows:5,
+  inputSymbolsSha256:hash(['BONY','FAIT','MIPH','SEIG','TANM']),
+  rejectedFull:[{ticker:'SEIG',reason:'SESSION_STALE'},{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
+ assert.equal(verifyTruthBinding(f).classifiedRows,5);
 });
