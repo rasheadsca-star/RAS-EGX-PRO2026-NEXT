@@ -23,7 +23,8 @@ function walk(root){
 function snapshot({root,expectedSession,affectedTickers,assessment=null}){
  // When an assessment is supplied, derive permissible affected symbols from it.
  // An unrestricted Set is not sufficient evidence of authorization.
- if(assessment){
+ if(!assessment)throw new Error('AFFECTED_ASSESSMENT_REQUIRED');
+ {
   const accepted=assessment.manifest, rejected=assessment.rejected;
   if(!assessment.sourceEligible||assessment.expectedSession!==expectedSession||!Array.isArray(accepted)||!(rejected instanceof Map))throw new Error('INVALID_AFFECTED_ASSESSMENT');
   const authorized=new Set([...accepted.map(x=>x.ticker),...rejected.keys()]);
