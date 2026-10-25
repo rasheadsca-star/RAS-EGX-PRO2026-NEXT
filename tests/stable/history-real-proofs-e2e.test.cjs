@@ -51,7 +51,7 @@ test('real Git lock + journal + genuine R8/R9 + push + independent recovery',t=>
  f.lock.release();
 });
 test('real R9 tampering stops before persistent journal and push',t=>{
- const f=fixture(t),doc=JSON.parse(fs.readFileSync(f.reportFile));doc.runId='wrong';fs.writeFileSync(f.reportFile,JSON.stringify(doc));
+ const f=fixture(t),doc=JSON.parse(fs.readFileSync(f.reportFile));doc.runId='wrong';fs.writeFileSync(f.reportFile,JSON.stringify(doc));git(f.root,'add','.');git(f.root,'commit','-m','tampered report');
  assert.throws(()=>publish(f.opts),/R9_PRODUCER_REPORT_MISMATCH/);
  assert.equal(git(f.root,'ls-remote','--heads','origin','main').split(/\s+/)[0],f.baseSha);
  assert.throws(()=>f.store.reconcile({runId:'real-proof-1',remoteSha:f.baseSha}));
@@ -60,7 +60,8 @@ test('real R9 tampering stops before persistent journal and push',t=>{
 test('real historical session tampering blocks R8 before publication',t=>{
  const f=fixture(t),filename=path.join(f.root,'data/history/MIPH.json');
  const doc=JSON.parse(fs.readFileSync(filename));doc.sessions[0].close=999;fs.writeFileSync(filename,JSON.stringify(doc));
- assert.throws(()=>publish(f.opts),/DIRTY_PUBLICATION_CHECKOUT/);
+ git(f.root,'add','.');git(f.root,'commit','-m','tampered history');
+ assert.throws(()=>publish(f.opts),/PREVIOUS_SESSIONS_CHANGED/);
  assert.equal(git(f.root,'ls-remote','--heads','origin','main').split(/\s+/)[0],f.baseSha);
  f.lock.release();
 });
