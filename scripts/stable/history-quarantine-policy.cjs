@@ -69,8 +69,10 @@ function verifyManifest(manifest,historyByTicker) {
   for(const entry of manifest) {
     if(!entry?.ticker||!validDate(entry.date)||!entry.rowSha256||seen.has(entry.ticker)) throw new Error('INVALID_MANIFEST_ENTRY');
     seen.add(entry.ticker);
-    const matches=(historyByTicker[entry.ticker]?.sessions||[]).filter(row=>dateOf(row)===entry.date&&hash(row)===entry.rowSha256);
-    if(matches.length!==1) throw new Error('MANIFEST_HISTORY_HASH_MISMATCH:'+entry.ticker);
+    const sessions=historyByTicker[entry.ticker]?.sessions;
+    if(!Array.isArray(sessions)) throw new Error('MANIFEST_HISTORY_HASH_MISMATCH:'+entry.ticker);
+    const sameDate=sessions.filter(row=>dateOf(row)===entry.date);
+    if(sameDate.length!==1 || hash(sameDate[0])!==entry.rowSha256) throw new Error('MANIFEST_HISTORY_HASH_MISMATCH:'+entry.ticker);
   }
   return true;
 }
