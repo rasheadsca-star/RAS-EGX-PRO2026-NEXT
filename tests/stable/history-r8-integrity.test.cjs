@@ -109,3 +109,28 @@ test('R18 rejected ticker with exact removable candle must join affected set',t=
  const base=capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH','FAIT']),assessment:assessmentWithReject});
  assert.deepEqual(base.affected,['FAIT','MIPH']);
 });
+
+test('R19 prior-session producer candle on rejected ticker remains byte-protected',t=>{
+ const f=fixture(t),rejected={...assessment,rejected:new Map([['FAIT','REPORTED_CHANGE_MISMATCH']])};
+ f.write('FAIT',[{date:'2026-10-22',source:'v16_session_aware_price_truth',close:43}]);
+ assert.throws(()=>capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH','FAIT']),assessment:rejected}),/UNAUTHORIZED_AFFECTED_SET/);
+ const baseline=capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH']),assessment:rejected});
+ assert.deepEqual(baseline.affected,['MIPH']);
+});
+test('R19 current-session foreign source on rejected ticker remains byte-protected',t=>{
+ const f=fixture(t),rejected={...assessment,rejected:new Map([['FAIT','REPORTED_CHANGE_MISMATCH']])};
+ f.write('FAIT',[{date:day,source:'independent_source',close:43}]);
+ assert.throws(()=>capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH','FAIT']),assessment:rejected}),/UNAUTHORIZED_AFFECTED_SET/);
+ const baseline=capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH']),assessment:rejected});
+ assert.deepEqual(baseline.affected,['MIPH']);
+});
+test('R20 rejected ticker with missing file is not authorized as affected',t=>{
+ const f=fixture(t),rejected={...assessment,rejected:new Map([['GHOST','REPORTED_CHANGE_MISMATCH']])};
+ assert.deepEqual(capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH']),assessment:rejected}).affected,['MIPH']);
+});
+test('R20 malformed rejected history fails closed at baseline capture',t=>{
+ const f=fixture(t),rejected={...assessment,rejected:new Map([['FAIT','REPORTED_CHANGE_MISMATCH']])};
+ f.write('FAIT',[]);
+ fs.writeFileSync(path.join(f.root,'data/history/FAIT.json'),JSON.stringify({bad:'no sessions'}));
+ assert.throws(()=>capture({root:f.root,expectedSession:day,affectedTickers:new Set(['MIPH']),assessment:rejected}),/INVALID_REJECTED_HISTORY:FAIT/);
+});
