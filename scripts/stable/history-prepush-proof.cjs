@@ -19,15 +19,15 @@ function prepush({root,assessmentFile,baselineFile,expectedRunId}){
  const report=JSON.parse(fs.readFileSync(reportPath,'utf8'));
  // Binding ensures the report was produced for exactly the frozen run.
  const bound=verifyTruthBinding({assessment,report});
+ // Baseline is captured BEFORE local producer writes, retained outside checkout.
+ const affected=new Set(baseline.affected);
+ const integrity=verify({root,baseline,affectedTickers:affected});
+ const publication=verifyPublication({root,assessmentFile,expectedRunId});
  // Publication readiness is distinct from integrity on tiny fixtures.
  // Never convert a passing R8/R9 into execution-grade approval below 200.
  const MIN_EXECUTION_ROWS=200;
  if(bound.acceptedRows<MIN_EXECUTION_ROWS||bound.writtenRows<MIN_EXECUTION_ROWS)
   throw new Error('PREPUSH_INSUFFICIENT_EXECUTION_ROWS:'+bound.acceptedRows+'/'+bound.writtenRows);
- // Baseline is captured BEFORE local producer writes, retained outside checkout.
- const affected=new Set(baseline.affected);
- const integrity=verify({root,baseline,affectedTickers:affected});
- const publication=verifyPublication({root,assessmentFile,expectedRunId});
  return {status:'PASS',runId:expectedRunId,session:a.expectedSession,bound,integrity,publication};
 }
 if(require.main===module){
