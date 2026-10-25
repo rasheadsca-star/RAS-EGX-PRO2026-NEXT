@@ -21,6 +21,8 @@ function walk(root){
  scan(base);return result.sort();
 }
 function snapshot({root,expectedSession,affectedTickers,assessment=null}){
+ if(typeof expectedSession!=='string'||!DATE.test(expectedSession)||new Date(expectedSession+'T00:00:00Z').toISOString().slice(0,10)!==expectedSession
+    ||!(affectedTickers instanceof Set)||[...affectedTickers].some(t=>!symbol.test(t)))throw new Error('INVALID_HISTORY_BASELINE_ARGS');
  // When an assessment is supplied, derive permissible affected symbols from it.
  // An unrestricted Set is not sufficient evidence of authorization.
  if(!assessment)throw new Error('AFFECTED_ASSESSMENT_REQUIRED');
@@ -30,8 +32,6 @@ function snapshot({root,expectedSession,affectedTickers,assessment=null}){
   const authorized=new Set([...accepted.map(x=>x.ticker),...rejected.keys()]);
   if(authorized.size!==affectedTickers.size||[...affectedTickers].some(x=>!authorized.has(x)))throw new Error('UNAUTHORIZED_AFFECTED_SET');
  }
- if(typeof expectedSession!=='string'||!DATE.test(expectedSession)||new Date(expectedSession+'T00:00:00Z').toISOString().slice(0,10)!==expectedSession
-    ||!(affectedTickers instanceof Set)||[...affectedTickers].some(t=>!symbol.test(t)))throw new Error('INVALID_HISTORY_BASELINE_ARGS');
  const affected=[...affectedTickers].sort(),files={};
  for(const rel of walk(root)){
   const bytes=fs.readFileSync(path.join(root,'data/history',rel));
