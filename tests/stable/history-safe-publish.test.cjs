@@ -14,25 +14,25 @@ test('cannot publish without explicit cross-run writer lock',t=>{
 });
 test('refuses wrong branch before fetching or rebasing',t=>{
  const f=fixture(t),calls=[];
- assert.throws(()=>publish({...f,lockConfirmed:true,execute:a=>{calls.push(a);return 'feature';}}),/WRONG_PUBLICATION_BRANCH/);
+ assert.throws(()=>publish({...f,lockLease:{verify:()=>true},execute:a=>{calls.push(a);return 'feature';}}),/WRONG_PUBLICATION_BRANCH/);
  assert.deepEqual(calls,[['branch','--show-current']]);
 });
 test('refuses dirty checkout before fetch and does not push',t=>{
  const f=fixture(t),calls=[];
- assert.throws(()=>publish({...f,lockConfirmed:true,execute:a=>{
+ assert.throws(()=>publish({...f,lockLease:{verify:()=>true},execute:a=>{
   calls.push(a);return a[0]==='branch'?'main':' M data/history/MIPH.json';
  }}),/DIRTY_PUBLICATION_CHECKOUT/);
  assert.deepEqual(calls.map(a=>a[0]),['branch','status']);
 });
 test('requires frozen evidence files and rejects untrusted ref names',t=>{
  const f=fixture(t);
- assert.throws(()=>publish({...f,branch:'main;echo hacked',lockConfirmed:true,execute:()=>''}),/INVALID_PUBLISH_REF/);
+ assert.throws(()=>publish({...f,branch:'main;echo hacked',lockLease:{verify:()=>true},execute:()=>''}),/INVALID_PUBLISH_REF/);
  fs.unlinkSync(f.baselineFile);
- assert.throws(()=>publish({...f,lockConfirmed:true,execute:()=>''}),/FROZEN_EVIDENCE_REQUIRED/);
+ assert.throws(()=>publish({...f,lockLease:{verify:()=>true},execute:()=>''}),/FROZEN_EVIDENCE_REQUIRED/);
 });
 test('after safe rebase, invalid proof refuses push without rewriting evidence',t=>{
  const f=fixture(t),calls=[];
- assert.throws(()=>publish({...f,lockConfirmed:true,execute:a=>{
+ assert.throws(()=>publish({...f,lockLease:{verify:()=>true},execute:a=>{
   calls.push(a);return a[0]==='branch'?'main':'';
  }}));
  assert.deepEqual(calls.map(a=>a[0]),['branch','status','fetch','rebase']);
