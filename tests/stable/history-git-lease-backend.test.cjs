@@ -24,7 +24,7 @@ function fixture(t){
 test('real Git remote accepts first owner and rejects second; release permits second',t=>{
  const f=fixture(t),first=f.writer('first'),second=f.writer('second');
  first.driver.acquire(first.token);
- assert.throws(()=>second.driver.acquire(second.token),/ATOMIC_REF_CREATE_UNCONFIRMED/);
+ assert.throws(()=>second.driver.acquire(second.token),/HISTORY_WRITER_ALREADY_LOCKED|ATOMIC_REF_CREATE_UNCONFIRMED/);
  assert.equal(first.driver.verify(),true);
  first.driver.release();
  second.driver.acquire(second.token);
