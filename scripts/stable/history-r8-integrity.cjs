@@ -27,9 +27,17 @@ function snapshot({root,expectedSession,affectedTickers,assessment=null}){
  // An unrestricted Set is not sufficient evidence of authorization.
  if(!assessment)throw new Error('AFFECTED_ASSESSMENT_REQUIRED');
  {
-  const accepted=assessment.manifest, rejected=assessment.rejected;
-  if(!assessment.sourceEligible||assessment.expectedSession!==expectedSession||!Array.isArray(accepted)||!(rejected instanceof Map))throw new Error('INVALID_AFFECTED_ASSESSMENT');
-  const authorized=new Set([...accepted.map(x=>x.ticker),...rejected.keys()]);
+  const accepted=assessment.manifest, rejected=assessment.rejected, missing=assessment.missingHistory||[];
+  if(!assessment.sourceEligible||assessment.expectedSession!==expectedSession||!Array.isArray(accepted)||!Array.isArray(missing)||!(rejected instanceof Map))throw new Error('INVALID_AFFECTED_ASSESSMENT');
+  const authorized=new Set(accepted.map(x=>x.ticker));
+  // Only rejected tickers with a removable current-session candle may change.
+  for(const [ticker] of rejected){
+    const file=path.join(root,'data/history',ticker+'.json');
+    if(!fs.existsSync(file))continue;
+    const doc=JSON.parse(fs.readFileSync(file,'utf8'));
+    if(!Array.isArray(doc.sessions))throw new Error('INVALID_REJECTED_HISTORY:'+ticker);
+    if(doc.sessions.some(row=>row?.source==='v16_session_aware_price_truth'&&dateOf(row)===expectedSession))authorized.add(ticker);
+  }
   if(authorized.size!==affectedTickers.size||[...affectedTickers].some(x=>!authorized.has(x)))throw new Error('UNAUTHORIZED_AFFECTED_SET');
  }
  const affected=[...affectedTickers].sort(),files={};
