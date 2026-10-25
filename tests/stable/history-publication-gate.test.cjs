@@ -37,3 +37,23 @@ test('rejects stale run and bad/incomplete assessments',t=>{
  f.writeAssessment({sourceEligible:false});assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/SOURCE_INELIGIBLE/);
  f.writeAssessment({acceptedRows:2});assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/MANIFEST_COUNT_OR_SESSION_MISMATCH/);
 });
+
+test('R6 blocks rejected candle surviving rebase even when accepted manifest valid',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ const dir=path.join(f.root,'data/history');
+ fs.writeFileSync(path.join(dir,'FAIT.json'),JSON.stringify({sessions:[{ticker:'FAIT',date:day,source:'v16_session_aware_price_truth',close:40.58}]}));
+ f.writeAssessment({rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
+ assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/REJECTED_CANDLE_STILL_PUBLISHED:FAIT/);
+});
+test('R6 permits rejected symbol without session candle or with foreign source',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ const dir=path.join(f.root,'data/history');
+ fs.writeFileSync(path.join(dir,'FAIT.json'),JSON.stringify({sessions:[{ticker:'FAIT',date:day,source:'independent_approved',close:40.58}]}));
+ f.writeAssessment({rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
+ assert.equal(verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}).verifiedRows,1);
+});
+test('R7 blocks conflicting same-date candle even when one matches accepted digest',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ f.writeHistory([f.row,{...f.row,close:690}]);
+ assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/MANIFEST_HISTORY_HASH_MISMATCH/);
+});
