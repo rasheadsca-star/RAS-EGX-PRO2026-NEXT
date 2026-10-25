@@ -57,3 +57,39 @@ test('R7 blocks conflicting same-date candle even when one matches accepted dige
  f.writeHistory([f.row,{...f.row,close:690}]);
  assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/MANIFEST_HISTORY_HASH_MISMATCH/);
 });
+
+test('R6-c previous-session candle from producer remains allowed for explicitly rejected ticker',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ fs.writeFileSync(path.join(f.root,'data/history/FAIT.json'),JSON.stringify({sessions:[
+  {ticker:'FAIT',date:'2026-10-22',source:'v16_session_aware_price_truth',close:43.31}
+ ]}));
+ f.writeAssessment({rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
+ assert.equal(verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}).verifiedRows,1);
+});
+test('R6-d sessionDate-only rejected candle is blocked',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ fs.writeFileSync(path.join(f.root,'data/history/FAIT.json'),JSON.stringify({sessions:[
+  {ticker:'FAIT',sessionDate:day,source:'v16_session_aware_price_truth',close:40.58}
+ ]}));
+ f.writeAssessment({rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
+ assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/REJECTED_CANDLE_STILL_PUBLISHED:FAIT/);
+});
+test('R6-e missing history file of rejected ticker is permitted',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ f.writeAssessment({rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
+ assert.equal(fs.existsSync(path.join(f.root,'data/history/FAIT.json')),false);
+ assert.equal(verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}).verifiedRows,1);
+});
+test('R6-f malformed rejected ticker history without sessions is blocked',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ fs.writeFileSync(path.join(f.root,'data/history/FAIT.json'),JSON.stringify({ticker:'FAIT',lastSession:day}));
+ f.writeAssessment({rejected:[{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
+ assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/INVALID_REJECTED_HISTORY:FAIT/);
+});
+test('unassessed NOT_IN_MARKET history does not enter reject assertion',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ fs.writeFileSync(path.join(f.root,'data/history/SEIG.json'),JSON.stringify({sessions:[
+  {ticker:'SEIG',date:day,source:'v16_session_aware_price_truth',close:149.57}
+ ]}));
+ assert.equal(verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}).verifiedRows,1);
+});
