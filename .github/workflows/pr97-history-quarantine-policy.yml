@@ -20,6 +20,8 @@ on:
       - 'tests/stable/history-prepush-proof.test.cjs'
       - 'scripts/stable/history-guarded-merge.cjs'
       - 'tests/stable/history-guarded-merge.test.cjs'
+      - 'scripts/stable/history-safe-publish.cjs'
+      - 'tests/stable/history-safe-publish.test.cjs'
       - 'scripts/stable/v16-session-aware-price-truth.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   push:
@@ -44,6 +46,8 @@ on:
       - 'tests/stable/history-prepush-proof.test.cjs'
       - 'scripts/stable/history-guarded-merge.cjs'
       - 'tests/stable/history-guarded-merge.test.cjs'
+      - 'scripts/stable/history-safe-publish.cjs'
+      - 'tests/stable/history-safe-publish.test.cjs'
       - 'scripts/stable/v16-session-aware-price-truth.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   workflow_dispatch:
@@ -65,7 +69,8 @@ jobs:
           node --check scripts/stable/history-writer-audit.cjs
           node --check scripts/stable/history-prepush-proof.cjs
           node --check scripts/stable/history-guarded-merge.cjs
+          node --check scripts/stable/history-safe-publish.cjs
           node --check scripts/stable/history-r9-report-binding.cjs
           node --check scripts/stable/history-r8-integrity.cjs
       - name: Test history quarantine policy
-        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-producer-assessment.test.cjs tests/stable/history-transaction-journal.test.cjs tests/stable/history-writer-audit.test.cjs tests/stable/history-prepush-proof.test.cjs tests/stable/history-guarded-merge.test.cjs
+        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-producer-assessment.test.cjs tests/stable/history-transaction-journal.test.cjs tests/stable/history-writer-audit.test.cjs tests/stable/history-prepush-proof.test.cjs tests/stable/history-guarded-merge.test.cjs tests/stable/history-safe-publish.test.cjs
