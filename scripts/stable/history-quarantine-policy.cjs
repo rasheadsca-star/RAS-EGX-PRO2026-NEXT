@@ -21,25 +21,30 @@ function acceptedManifest(rows) {
   }
   return [...map.values()].sort(tickerSort);
 }
-function evaluation({runId, expectedSession, sourceEligible, acceptedRows, accepted, rejected}) {
+function evaluation({runId, expectedSession, sourceEligible, acceptedRows, accepted, rejected, missingHistory = []}) {
   if (!runId || !validDate(expectedSession) || !Number.isInteger(acceptedRows) || acceptedRows < 0
-    || !Array.isArray(accepted) || !Array.isArray(rejected)) throw new Error('INVALID_EVALUATION');
+    || !Array.isArray(accepted) || !Array.isArray(rejected) || !Array.isArray(missingHistory)) throw new Error('INVALID_EVALUATION');
   const manifest=acceptedManifest(accepted);
-  if (manifest.length !== acceptedRows || manifest.some(x=>x.date!==expectedSession)) throw new Error('MANIFEST_COUNT_OR_SESSION_MISMATCH');
+  const missing=new Set();
+  for(const ticker of missingHistory){
+    if(typeof ticker!=='string'||!/^[A-Z0-9._-]+$/.test(ticker)||missing.has(ticker)||manifest.some(x=>x.ticker===ticker))throw new Error('INVALID_MISSING_HISTORY');
+    missing.add(ticker);
+  }
+  if (manifest.length + missing.size !== acceptedRows || manifest.some(x=>x.date!==expectedSession)) throw new Error('MANIFEST_COUNT_OR_SESSION_MISMATCH');
   const rejectedMap=new Map();
   for(const entry of rejected) {
     if(!entry?.ticker || !entry?.reason || rejectedMap.has(entry.ticker) || manifest.some(x=>x.ticker===entry.ticker))
       throw new Error('INVALID_REJECTED_ENTRY');
     rejectedMap.set(entry.ticker,entry.reason);
   }
-  return {runId,expectedSession,sourceEligible:sourceEligible===true,acceptedRows,manifest,
-    manifestSha256:hash({runId,expectedSession,manifest}),rejected:rejectedMap};
+  return {runId,expectedSession,sourceEligible:sourceEligible===true,acceptedRows,manifest,missingHistory:[...missing].sort(),
+    manifestSha256:hash({runId,expectedSession,manifest,missingHistory:[...missing].sort()}),rejected:rejectedMap};
 }
 function reconcile({document,ticker,expectedSession,assessment,generatedAt}) {
   if(!validDate(expectedSession) || !ticker || !Array.isArray(document?.sessions)) throw new Error('INVALID_RECONCILIATION_INPUT');
   if(!assessment || assessment.expectedSession!==expectedSession || !assessment.runId || !(assessment.rejected instanceof Map)
-    || !Array.isArray(assessment.manifest) || assessment.manifest.length!==assessment.acceptedRows
-    || assessment.manifestSha256!==hash({runId:assessment.runId,expectedSession,manifest:assessment.manifest}))
+    || !Array.isArray(assessment.manifest) || !Array.isArray(assessment.missingHistory) || assessment.manifest.length+assessment.missingHistory.length!==assessment.acceptedRows
+    || assessment.manifestSha256!==hash({runId:assessment.runId,expectedSession,manifest:assessment.manifest,missingHistory:assessment.missingHistory}))
     throw new Error('INVALID_EVALUATION');
   // A failed/ineligible scan cannot quarantine existing historical candles.
   if(!assessment.sourceEligible) return {document,quarantined:[]};
