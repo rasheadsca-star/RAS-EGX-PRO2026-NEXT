@@ -93,3 +93,20 @@ test('unassessed NOT_IN_MARKET history does not enter reject assertion',t=>{
  ]}));
  assert.equal(verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}).verifiedRows,1);
 });
+
+test('B2 accepts explicitly declared accepted ticker without a history file',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ f.writeAssessment({acceptedRows:2,missingHistory:['BONY']});
+ assert.equal(verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}).verifiedRows,1);
+});
+test('B2 blocks missing accepted ticker not explicitly declared or materialized',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ f.writeAssessment({acceptedRows:2,accepted:[f.row,{ticker:'BONY',date:day,source:'v16_session_aware_price_truth',close:2}]});
+ assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/ENOENT/);
+});
+test('B2 rejects declared missing symbol that actually has history',t=>{
+ const f=fixture();t.after(()=>fs.rmSync(f.root,{recursive:true,force:true}));
+ f.writeAssessment({acceptedRows:2,missingHistory:['BONY']});
+ fs.writeFileSync(path.join(f.root,'data/history/BONY.json'),JSON.stringify({sessions:[]}));
+ assert.throws(()=>verifyPublication({assessmentFile:f.assessmentFile,root:f.root,expectedRunId:'run-123'}),/DECLARED_MISSING_HISTORY_EXISTS:BONY/);
+});
