@@ -1,0 +1,27 @@
+name: PR97 History Quarantine Policy Gate
+on:
+  pull_request:
+    paths:
+      - 'scripts/stable/history-quarantine-policy.cjs'
+      - 'tests/stable/history-quarantine-policy.test.cjs'
+      - '.github/workflows/pr97-history-quarantine-policy.yml'
+  push:
+    branches:
+      - 'fix/history-quarantine-transaction-v1'
+    paths:
+      - 'scripts/stable/history-quarantine-policy.cjs'
+      - 'tests/stable/history-quarantine-policy.test.cjs'
+      - '.github/workflows/pr97-history-quarantine-policy.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quarantine-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test history quarantine policy
+        run: node --test tests/stable/history-quarantine-policy.test.cjs
