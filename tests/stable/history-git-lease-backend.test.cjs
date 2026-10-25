@@ -40,3 +40,12 @@ test('real Git compare-and-delete refuses stale owner after remote replacement',
  const current=backend({cwd:first.cwd}).readRef('refs/heads/egx-history-writer-lease');
  assert.equal(current,second.token);
 });
+
+test('real Git backend compare-and-delete rejects stale expected SHA',t=>{
+ const f=fixture(t),first=f.writer('first'),second=f.writer('second');
+ first.driver.acquire(first.token);
+ command(second.cwd,'push','--force','origin',second.token+':refs/heads/egx-history-writer-lease');
+ const transport=backend({cwd:first.cwd});
+ assert.equal(transport.deleteRef('refs/heads/egx-history-writer-lease',first.token),false);
+ assert.equal(transport.readRef('refs/heads/egx-history-writer-lease'),second.token);
+});
