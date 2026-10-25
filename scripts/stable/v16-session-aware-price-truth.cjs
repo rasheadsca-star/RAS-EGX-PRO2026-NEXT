@@ -388,7 +388,12 @@ function mergeIntoHistory(rows) {
 
 async function main() {
   const expectedSession = expectedLatestCompletedSessionCairo();
-  const repair = repairKnownContaminatedHistory();
+  // Guarded mode must not mutate ANY history file before R8 capture.
+  // Legacy repair is temporarily suppressed pending a journaled integration.
+  const guardedHistory = process.env.EGX_HISTORY_GUARDED_INTEGRATION === '1';
+  const repair = guardedHistory
+    ? {scannedFiles:0,repairedFiles:0,removedRows:0,tickers:[],deferred:true}
+    : repairKnownContaminatedHistory();
   writeJson(REPAIR_PATH, {
     schemaVersion: '16.3.4-session-repair',
     generatedAt: new Date().toISOString(),
@@ -453,7 +458,6 @@ async function main() {
   const acceptedRows = [...unique.values()];
   // Optional guarded integration. Disabled until journal/recovery and concurrency controls pass.
   // Assessment is frozen BEFORE merge; the baseline is captured before ANY accepted history writes.
-  const guardedHistory = process.env.EGX_HISTORY_GUARDED_INTEGRATION === '1';
   const guardedRunId = process.env.GITHUB_RUN_ID
     ? String(process.env.GITHUB_RUN_ID) + '-' + String(process.env.GITHUB_RUN_ATTEMPT || '1')
     : 'local-' + crypto.randomUUID();
