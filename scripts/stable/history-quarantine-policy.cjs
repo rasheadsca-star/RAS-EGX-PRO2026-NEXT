@@ -2,6 +2,8 @@
 const crypto = require('node:crypto');
 const SOURCE = 'v16_session_aware_price_truth';
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const TICKER = /^[A-Z0-9._-]+$/;
+function validTicker(ticker) { return typeof ticker === 'string' && TICKER.test(ticker) && ticker !== '.' && ticker !== '..'; }
 const tickerSort = (a,b) => a.ticker < b.ticker ? -1 : a.ticker > b.ticker ? 1 : 0;
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
@@ -15,7 +17,7 @@ function acceptedManifest(rows) {
   if (!Array.isArray(rows)) throw new Error('INVALID_ACCEPTED_ROWS');
   const map = new Map();
   for (const row of rows) {
-    if (!row?.ticker || !validDate(dateOf(row))) throw new Error('INVALID_ACCEPTED_ROW');
+    if (!validTicker(row?.ticker) || !validDate(dateOf(row))) throw new Error('INVALID_ACCEPTED_ROW');
     if (map.has(row.ticker)) throw new Error('DUPLICATE_ACCEPTED_TICKER');
     map.set(row.ticker, { ticker: row.ticker, date: dateOf(row), rowSha256: hash(row) });
   }
@@ -27,13 +29,13 @@ function evaluation({runId, expectedSession, sourceEligible, acceptedRows, accep
   const manifest=acceptedManifest(accepted);
   const missing=new Set();
   for(const ticker of missingHistory){
-    if(typeof ticker!=='string'||!/^[A-Z0-9._-]+$/.test(ticker)||missing.has(ticker)||manifest.some(x=>x.ticker===ticker))throw new Error('INVALID_MISSING_HISTORY');
+    if(!validTicker(ticker)||missing.has(ticker)||manifest.some(x=>x.ticker===ticker))throw new Error('INVALID_MISSING_HISTORY');
     missing.add(ticker);
   }
   if (manifest.length + missing.size !== acceptedRows || manifest.some(x=>x.date!==expectedSession)) throw new Error('MANIFEST_COUNT_OR_SESSION_MISMATCH');
   const rejectedMap=new Map();
   for(const entry of rejected) {
-    if(!entry?.ticker || !entry?.reason || rejectedMap.has(entry.ticker) || manifest.some(x=>x.ticker===entry.ticker) || missing.has(entry.ticker))
+    if(!validTicker(entry?.ticker) || !entry?.reason || rejectedMap.has(entry.ticker) || manifest.some(x=>x.ticker===entry.ticker) || missing.has(entry.ticker))
       throw new Error('INVALID_REJECTED_ENTRY');
     rejectedMap.set(entry.ticker,entry.reason);
   }
@@ -72,7 +74,7 @@ function verifyManifest(manifest,historyByTicker) {
   if(!Array.isArray(manifest)) throw new Error('INVALID_MANIFEST');
   const seen=new Set();
   for(const entry of manifest) {
-    if(!entry?.ticker||!validDate(entry.date)||!entry.rowSha256||seen.has(entry.ticker)) throw new Error('INVALID_MANIFEST_ENTRY');
+    if(!validTicker(entry?.ticker)||!validDate(entry.date)||!entry.rowSha256||seen.has(entry.ticker)) throw new Error('INVALID_MANIFEST_ENTRY');
     seen.add(entry.ticker);
     const sessions=historyByTicker[entry.ticker]?.sessions;
     if(!Array.isArray(sessions)) throw new Error('MANIFEST_HISTORY_HASH_MISMATCH:'+entry.ticker);
