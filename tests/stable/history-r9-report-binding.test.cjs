@@ -55,3 +55,36 @@ test('R27 accepts multiple missing and rejected symbols irrespective of order',(
   rejectedFull:[{ticker:'SEIG',reason:'SESSION_STALE'},{ticker:'FAIT',reason:'REPORTED_CHANGE_MISMATCH'}]});
  assert.equal(verifyTruthBinding(f).classifiedRows,5);
 });
+
+test('R28 rejects ineligible assessment even with otherwise sound report',()=>{
+ const f=fixture();f.assessment.sourceEligible=false;
+ assert.throws(()=>verifyTruthBinding(f),/R9_SOURCE_NOT_ELIGIBLE/);
+});
+test('R28 pins all reported row counts and input digest independently',()=>{
+ const changes=[{rejectedRows:2},{droppedRows:1},{inputRows:4},
+  {inputSymbolsSha256:'0'.repeat(64)}];
+ for(const change of changes){const f=fixture();Object.assign(f.report,change);
+  assert.throws(()=>verifyTruthBinding(f),/R9_PRODUCER_REPORT_MISMATCH/);
+ }
+});
+test('R28 requires conservation of accepted rejected dropped equals input',()=>{
+ const f=fixture();f.report.inputRows=4;f.assessment.inputRows=4;
+ f.assessment.inputSymbols.push('ARCC');f.report.inputSymbolsSha256=hash(['ARCC','BONY','FAIT','MIPH']);
+ assert.throws(()=>verifyTruthBinding(f),/R9_CLASSIFICATION_CONSERVATION_FAILED/);
+});
+test('R28 checks dropped records and noncanonical order with multiple dropped symbols',()=>{
+ const f=fixture();
+ f.assessment.dropped=[{ticker:'ZEUS',reason:'STALE'},{ticker:'ARCC',reason:'NO_PRICE'}];
+ f.assessment.inputSymbols=['ZEUS','MIPH','ARCC','BONY','FAIT'];
+ f.assessment.inputRows=5;
+ Object.assign(f.report,{droppedRows:2,inputRows:5,inputSymbolsSha256:hash(['ARCC','BONY','FAIT','MIPH','ZEUS']),
+  droppedFull:[{ticker:'ARCC',reason:'NO_PRICE'},{ticker:'ZEUS',reason:'STALE'}]});
+ assert.equal(verifyTruthBinding(f).classifiedRows,5);
+ f.report.droppedFull=[{ticker:'ARCC',reason:'NO_PRICE'},{ticker:'KABO',reason:'STALE'}];
+ assert.throws(()=>verifyTruthBinding(f),/R9_PRODUCER_REPORT_MISMATCH/);
+});
+test('R28 rejects malformed dropped ticker rather than trusting coercion',()=>{
+ const f=fixture();f.assessment.dropped=[{ticker:'../outside',reason:'STALE'}];
+ f.assessment.inputSymbols.push('../outside');f.assessment.inputRows=4;
+ assert.throws(()=>verifyTruthBinding(f),/R9_CLASSIFICATION_CONSERVATION_FAILED/);
+});
