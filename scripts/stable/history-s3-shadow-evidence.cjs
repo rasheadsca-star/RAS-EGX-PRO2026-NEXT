@@ -39,4 +39,11 @@ function run({root,runId,startedAt,generatedAt,artifact,remoteRef,expectedRemote
  }
  return evidence;
 }
-module.exports={run};
+function evidenceGate(e){
+ return e?.mode==='SHADOW_ONLY'&&e.passed===true&&e.stages?.preflight==='PASS'
+  &&e.stages?.quarantine==='PASS'&&e.stages?.staticGuard==='PASS'
+  &&e.stages?.r8==='PASS'&&e.stages?.rebase==='PASS'
+  &&e.rebase?.cleanMerge===true&&e.r8?.previousSessionsIntact===true
+  &&e.r8?.unaffectedFilesIntact===true&&Array.isArray(e.errors)&&e.errors.length===0;
+}
+module.exports={run,evidenceGate};
