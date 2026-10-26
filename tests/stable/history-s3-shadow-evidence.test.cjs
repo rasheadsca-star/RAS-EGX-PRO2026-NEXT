@@ -14,14 +14,17 @@ function fixture(){
  const report={schemaVersion:'16.3.4-session-aware-price-truth',ready:true,executionGrade:true,generatedAt:'2026-10-25T08:30:00Z',expectedSession:date,source:{realFetch:true,preciseSource:true,inputRows:3},acceptedRows:2,rejectedRows:1,droppedRows:0,updatedHistoryFiles:1,missingHistoryFiles:['MISSING'],sampleRejected:[{ticker:'BAD',reason:'WRONG_SOURCE'}],sampleDropped:[]};
  fs.writeFileSync(path.join(root,'data/stable/v15-price-truth.json'),JSON.stringify(report));
  cp.execFileSync('git',['-C',root,'add','.']);cp.execFileSync('git',['-C',root,'commit','-qm','baseline']);
- return {root,art,run:()=>run({root,runId:'R1',startedAt:'2026-10-25T07:00:00Z',generatedAt:'2026-10-25T09:00:00Z',artifact:art}),cleanup:()=>{fs.rmSync(root,{recursive:true,force:true});fs.rmSync(art,{force:true})}};
+ const remoteSha=cp.execFileSync('git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8'}).trim();
+ cp.execFileSync('git',['-C',root,'branch','remote-baseline']);
+ return {root,art,run:()=>run({root,runId:'R1',startedAt:'2026-10-25T07:00:00Z',generatedAt:'2026-10-25T09:00:00Z',artifact:art,remoteRef:'remote-baseline',expectedRemoteSha:remoteSha}),cleanup:()=>{fs.rmSync(root,{recursive:true,force:true});fs.rmSync(art,{force:true})}};
 }
 test('integrated shadow evidence includes quarantine, S2 guard, R8 with no push',()=>{
  const f=fixture();try{
   const result=f.run();assert.equal(result.passed,true,JSON.stringify(result));
-  assert.deepEqual(result.stages,{preflight:'PASS',quarantine:'PASS',staticGuard:'PASS',r8:'PASS'});
+  assert.deepEqual(result.stages,{preflight:'PASS',quarantine:'PASS',staticGuard:'PASS',r8:'PASS',rebase:'PASS'});
   assert.equal(result.quarantined.length,1);
   assert.equal(result.headAfter,result.head);
+  assert.equal(result.rebase.cleanMerge,true);
   assert.equal(JSON.parse(fs.readFileSync(f.art)).passed,true);
  }finally{f.cleanup()}
 });
