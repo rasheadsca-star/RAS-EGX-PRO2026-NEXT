@@ -40,7 +40,7 @@ function isRequire(node) {
     node.callee?.type === 'Identifier' && node.callee.name === 'require';
 }
 function isHistorySpecifier(value) {
-  return typeof value === 'string' && /(?:^|\\/)history-[^/\\]+(?:\\.cjs|\\.js)?$/.test(value);
+  return typeof value === 'string' && /(^|[\\/])history-[^\\/]+$/.test(value);
 }
 function staticGuard(repoRoot = root) {
   const producer = path.join(repoRoot, 'scripts/stable/v16-session-aware-price-truth.cjs');
