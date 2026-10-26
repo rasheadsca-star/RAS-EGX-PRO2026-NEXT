@@ -35,6 +35,8 @@ function staticGuard(root){
  const ast=acorn.parse(src,{ecmaVersion:'latest',sourceType:'script',allowHashBang:true});
  const violations=[];
  if(src.includes(FLAG)) violations.push('Activation flag in producer');
+ const directCalls=new WeakSet();
+ visit(ast,n=>{if(n.type==='CallExpression'&&isRequire(n.callee)) directCalls.add(n.callee)});
  visit(ast,n=>{
   if(n.type==='Identifier'&&n.name==='require'){
    // A direct literal call is permitted only for NON-history dependencies.
@@ -58,13 +60,4 @@ function staticGuard(root){
   if(fs.readFileSync(wf,'utf8').includes(FLAG)) violations.push('Activation flag in '+path.relative(root,wf));
  return violations;
 }
-// Mark direct require callee identifiers before walking the syntax tree.
-const directCalls=new WeakSet();
-const originalStaticGuard=staticGuard;
-function checkedGuard(root){
- const src=fs.readFileSync(path.join(root,'scripts/stable/v16-session-aware-price-truth.cjs'),'utf8');
- const ast=acorn.parse(src,{ecmaVersion:'latest',sourceType:'script',allowHashBang:true});
- visit(ast,n=>{if(n.type==='CallExpression'&&isRequire(n.callee)) directCalls.add(n.callee)});
- return originalStaticGuard(root);
-}
-module.exports={staticGuard:checkedGuard};
+module.exports={staticGuard};
