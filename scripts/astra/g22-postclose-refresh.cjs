@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const cp = require('child_process');
 const Module = require('module');
+const {produce:coverageAttribution}=require('./g22-coverage-attribution.cjs');
 
 const PROD_ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const DECISION_ROOT = path.resolve(process.env.ASTRA_DECISION_ROOT || PROD_ROOT);
@@ -182,6 +183,16 @@ function main() {
   ensure(critical === 0, 'Current health has CRITICAL findings: ' + critical + ' ' + JSON.stringify((h.issues.issues || []).filter(x => x.severity === 'CRITICAL')));
   ensure(disallowedHigh.length === 0, 'Disallowed HIGH findings: ' + JSON.stringify(disallowedHigh));
   if (currentCoveragePct < 90) {
+    const secondPath=DEC('data/stable/v16-market-second-source-evidence.json');
+    let secondSource={};
+    try{if(fs.existsSync(secondPath))secondSource=JSON.parse(fs.readFileSync(secondPath,'utf8'))}catch(e){
+      console.error('G22_COVERAGE_EVIDENCE_READ_ERROR',e.message);
+    }
+    try{
+      const artifact=coverageAttribution({expected,activeUniverse,currentCanonical,priceTruth,secondSource,
+       outPath:process.env.G22_ATTRIBUTION_OUT||'/tmp/g22-coverage-attribution.json'});
+      console.error('G22_COVERAGE_ATTRIBUTION',JSON.stringify({shortfall:artifact.shortfall,required:artifact.required,rejectedCount:artifact.rejectedCount}));
+    }catch(e){console.error('G22_COVERAGE_ATTRIBUTION_WRITE_ERROR',e.message)}
     console.error('G22_COVERAGE_BLOCKER', JSON.stringify({
       expectedSession: expected,
       activeUniverse,
