@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),cp=require('node:child_process');
-const {run}=require('../../scripts/stable/history-s3-shadow-evidence.cjs');
+const {run,evidenceGate}=require('../../scripts/stable/history-s3-shadow-evidence.cjs');
 function fixture(){
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'egx-evidence-')),art=path.join(os.tmpdir(),'egx-shadow-art-'+path.basename(root)+'.json');
  cp.execFileSync('git',['init','-q',root]);
@@ -21,6 +21,7 @@ function fixture(){
 test('integrated shadow evidence includes quarantine, S2 guard, R8 with no push',()=>{
  const f=fixture();try{
   const result=f.run();assert.equal(result.passed,true,JSON.stringify(result));
+  assert.equal(evidenceGate(result),true);
   assert.deepEqual(result.stages,{preflight:'PASS',quarantine:'PASS',staticGuard:'PASS',r8:'PASS',rebase:'PASS'});
   assert.equal(result.quarantined.length,1);
   assert.equal(result.headAfter,result.head);
@@ -32,7 +33,20 @@ test('static guard violation fails closed and reports evidence',()=>{
  const f=fixture();try{
   fs.writeFileSync(path.join(f.root,'scripts/stable/v16-session-aware-price-truth.cjs'),"eval('1');\n");
   const result=f.run();assert.equal(result.passed,false);
+  assert.equal(evidenceGate(result),false);
   assert.ok(result.errors.some(x=>x.includes('S3_STATIC_GUARD')));
   assert.equal(JSON.parse(fs.readFileSync(f.art)).passed,false);
  }finally{f.cleanup()}
+});
+
+test('evidence gate rejects missing or forged partial validation',()=>{
+ const clean={mode:'SHADOW_ONLY',passed:true,stages:{preflight:'PASS',quarantine:'PASS',staticGuard:'PASS',r8:'PASS',rebase:'PASS'},rebase:{cleanMerge:true},r8:{previousSessionsIntact:true,unaffectedFilesIntact:true},errors:[]};
+ assert.equal(evidenceGate(clean),true);
+ for(const change of [
+  {...clean,stages:{...clean.stages,rebase:'NOT_MEASURED'}},
+  {...clean,rebase:{cleanMerge:false}},
+  {...clean,r8:{previousSessionsIntact:false,unaffectedFilesIntact:true}},
+  {...clean,errors:['MISSING_REPORT']},
+  {...clean,passed:false},
+ ])assert.equal(evidenceGate(change),false);
 });
