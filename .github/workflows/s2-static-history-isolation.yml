@@ -1,0 +1,27 @@
+name: S2 static history isolation
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/stable/v16-session-aware-price-truth.cjs'
+      - '.github/**'
+      - 'tests/stable/s2/**'
+  push:
+    branches:
+      - 's2/static-history-isolation-only'
+    paths:
+      - 'scripts/stable/v16-session-aware-price-truth.cjs'
+      - '.github/**'
+      - 'tests/stable/s2/**'
+permissions:
+  contents: read
+jobs:
+  s2-static-isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --prefix tests/stable/s2
+      - run: npm test --prefix tests/stable/s2
