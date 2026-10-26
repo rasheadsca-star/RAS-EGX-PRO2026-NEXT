@@ -44,7 +44,7 @@
     const d=state.data,h=d.health,ds=d.decisionSnapshot,rs=basket(),rows=recs();
     $('#view-home').innerHTML=`
       <div class="grid cards">
-        <div class="card"><small>حالة Astra</small><b class="good">${E(ds.status)}</b></div>
+        <div class="card"><small>حالة Astra</small><b class="${state.sessionAligned?'good':'bad'}">${state.sessionAligned?E(ds.status):'محجوب — القرار أقدم من التسليم'}</b></div>
         <div class="card"><small>جلسة القرار</small><b>${E(d.sourceDecision.session)}</b></div>
         <div class="card"><small>فرص Astra الحالية</small><b class="blue">${rows.length}</b></div>
         <div class="card"><small>Decision Ready</small><b>${E(h.decisionReady?.pipelineReadySecurities??'—')}</b></div>
@@ -200,8 +200,8 @@
     const d=state.data,h=d.health,sd=d.sourceDecision;
     $('#view-health').innerHTML=`
       <div class="grid cards">
-        <div class="card"><small>Decision status</small><b class="good">${E(sd.status)}</b></div>
-        <div class="card"><small>Freshness</small><b class="good">${E(h.freshness)}</b></div>
+        <div class="card"><small>Decision status</small><b class="${state.sessionAligned?'good':'bad'}">${state.sessionAligned?E(sd.status):'BLOCKED_STALE_DECISION'}</b></div>
+        <div class="card"><small>Freshness</small><b class="${state.sessionAligned?'good':'bad'}">${state.sessionAligned?E(h.freshness):'STALE / BLOCKED'}</b></div>
         <div class="card"><small>CRITICAL</small><b class="good">${E(h.criticalUnresolved)}</b></div>
         <div class="card"><small>HIGH</small><b class="good">${E(h.highUnresolved)}</b></div>
         <div class="card"><small>Guard</small><b class="good">${E(h.guardStatus)}</b></div>
