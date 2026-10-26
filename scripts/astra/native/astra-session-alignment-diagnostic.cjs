@@ -12,7 +12,10 @@ function inspect(root){
   priceReportMatchesHandoff:price?.expectedSession===expected,
   handoffEligible:handoff?.final===true&&handoff?.sourceReady===true&&handoff?.executionGrade===true&&Number(handoff?.acceptedRows)>=200
  };
- return {schemaVersion:1,mode:'READ_ONLY',status:Object.values(checks).every(Boolean)?'PASS':'BLOCKED_STALE_DECISION',
+ const safe=Object.values(checks).every(Boolean);
+ return {schemaVersion:1,mode:'READ_ONLY',status:safe?'PASS':'BLOCKED_STALE_DECISION',
+  recommendationDisplay:safe?'ELIGIBLE_FOR_FURTHER_CHECKS':'BLOCK_STALE_RECOMMENDATIONS',
+  latestVerifiedSession:checks.priceReportMatchesHandoff?expected:null,
   decisionSession:actual,handoffSession:expected,priceReportSession:price?.expectedSession||null,
   checks,action:checks.decisionMatchesHandoff?'NONE':'REBUILD_DECISION_FROM_VERIFIED_SESSION;DO_NOT_RELABEL_OLD_DECISION'};
 }
