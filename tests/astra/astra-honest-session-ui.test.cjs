@@ -7,6 +7,8 @@ test('Astra browser shell parses and has fail-closed immutable session gating',(
  assert.match(script,/handoff&&handoff\.final===true/);
  assert.match(script,/BLOCK|محجوبة/);
  assert.match(script,/\.catch\(\(\)=>null\)/);
+ assert.match(script,/BLOCKED_STALE_DECISION/);
+ assert.match(script,/STALE \/ BLOCKED/);
  assert.match(script,/التوصيات محجوبة: جلسة القرار لا تطابق/);
  assert.match(script,/state\.sessionAligned\?\(state\.data\?\.decisionSnapshot\?\.basket/);
 });
