@@ -10,7 +10,8 @@ function simulate({candidate,remote,gate,artifact}){
   result.candidateHead=git(candidate,'rev-parse','HEAD');
   result.remoteBefore=git(candidate,'ls-remote',remote,'refs/heads/main').split(/\s+/)[0]||null;
   if(!result.remoteBefore)throw Error('REMOTE_MAIN_MISSING');
-  gate();
+  const ok=gate();
+  if(ok!==true)throw Error('GATE_NOT_PASSED');
   result.gate='PASS';
   // Simulation requires an explicit pass but uses only an isolated test remote.
   if(!path.resolve(remote).startsWith(path.resolve(os.tmpdir())+path.sep))throw Error('NON_TEMP_REMOTE_FORBIDDEN');
@@ -19,7 +20,7 @@ function simulate({candidate,remote,gate,artifact}){
   git(candidate,'push',remote,'HEAD:refs/heads/main');
   result.remoteAfter=git(candidate,'ls-remote',remote,'refs/heads/main').split(/\s+/)[0]||null;
   result.pass=result.remoteAfter===result.candidateHead;
- }catch(e){result.error=String(e.message||e).split('\n')[0];}
+ }catch(e){result.gate='FAIL';result.error=String(e.message||e).split('\n')[0];}
  finally{
   try{result.remoteAfter=git(candidate,'ls-remote',remote,'refs/heads/main').split(/\s+/)[0]||null}catch{}
   fs.writeFileSync(artifact,JSON.stringify(result,null,2)+'\n');
