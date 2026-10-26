@@ -15,7 +15,7 @@
     return s.companyNameAr||s.companyNameEn||'';
   }
   function recs(){return state.sessionAligned?A(state.data?.decisionSnapshot?.top5):[]}
-  function basket(){return state.data?.decisionSnapshot?.basket||{}}
+  function basket(){return state.sessionAligned?(state.data?.decisionSnapshot?.basket||{}):{}}
   function riskOf(o){return o?.risk||{}}
   function target(o,i=0){
     const t=A(o?.targets);
@@ -52,8 +52,8 @@
         <div class="card"><small>Cash reserve</small><b>${P(rs.cashReservePct)}</b></div>
       </div>
       <div class="panel">
-        <div class="section-title"><div><h2>أفضل فرص Astra</h2><p>الحد الأقصى 5؛ المعروض هو العدد الحقيقي الناتج من الـDecisionSnapshot.</p></div><span class="tag good">Snapshot exact rebuild</span></div>
-        <div class="grid">${rows.length?rows.map(recCard).join(''):'<div class="empty">لا توجد فرص صالحة في اللقطة الحالية.</div>'}</div>
+        <div class="section-title"><div><h2>أفضل فرص Astra</h2><p>الحد الأقصى 5؛ المعروض هو العدد الحقيقي الناتج من الـDecisionSnapshot.</p></div><span class="tag ${state.sessionAligned?'good':'bad'}">${state.sessionAligned?'Snapshot exact rebuild':'STALE — BLOCKED'}</span></div>
+        <div class="grid">${rows.length?rows.map(recCard).join('') :`<div class="empty">${state.sessionAligned?'لا توجد فرص صالحة في اللقطة الحالية.':'التوصيات محجوبة: جلسة القرار لا تطابق جلسة بيانات السوق.'}</div>`}</div>
       </div>
       <div class="grid two">
         <div class="panel"><div class="section-title"><div><h2>حالة السوق والبيانات</h2></div></div>
@@ -84,7 +84,7 @@
         <div class="card"><small>Total exposure</small><b>${P(rs.totalExposurePct)}</b></div>
         <div class="card"><small>Cash reserve</small><b>${P(rs.cashReservePct)}</b></div>
       </div>
-      <div class="panel"><div class="notice good">هذه هي الفرص الفعلية الناتجة من Astra snapshot المعتمد. إذا كان العدد أقل من 5 فلا يتم إنشاء أسهم إضافية لملء القائمة.</div></div>`;
+      <div class="panel"><div class="notice ${state.sessionAligned?'good':'bad'}">${state.sessionAligned?'هذه هي الفرص الفعلية الناتجة من Astra snapshot المعتمد.':'التوصيات محجوبة بسبب اختلاف جلسة القرار عن جلسة التسليم. لا تعتبر صفراً من الفرص.'} إذا كان العدد أقل من 5 فلا يتم إنشاء أسهم إضافية لملء القائمة.</div></div>`;
   }
 
   function mergedStock(ticker){
