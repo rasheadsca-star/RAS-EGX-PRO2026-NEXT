@@ -37,8 +37,18 @@ function execute({root,runId,startedAt,generatedAt,shadow=true}){
   if(result.quarantined.length)writes.push({file:c.file,ticker:c.ticker,document:result.document,quarantined:result.quarantined});
  }
  // This helper is intentionally scoped to shadow worktrees; R8 verification is an independent phase.
- for(const w of writes)fs.writeFileSync(w.file,JSON.stringify(w.document,null,2)+'\n');
- const checked=derive({root,runId,startedAt});
- return {result:checked.summary,quarantined:writes.flatMap(w=>w.quarantined.map(q=>({ticker:q.ticker,rowSha256:q.rowSha256,reason:q.rejectionReason})))};
+ const originals=writes.map(w=>({file:w.file,bytes:fs.readFileSync(w.file)}));
+ try{
+  for(const w of writes)fs.writeFileSync(w.file,JSON.stringify(w.document,null,2)+'\n');
+  const checked=derive({root,runId,startedAt});
+  return {result:checked.summary,quarantined:writes.flatMap(w=>w.quarantined.map(q=>({ticker:q.ticker,rowSha256:q.rowSha256,reason:q.rejectionReason})))};
+ }catch(error){
+  const restoreErrors=[];
+  for(const entry of originals){
+   try{fs.writeFileSync(entry.file,entry.bytes)}catch(e){restoreErrors.push(entry.file+':'+e.message)}
+  }
+  if(restoreErrors.length)throw new AggregateError([error,...restoreErrors.map(e=>new Error(e))],'S3_ROLLBACK_FAILED');
+  throw error;
+ }
 }
 module.exports={execute};
