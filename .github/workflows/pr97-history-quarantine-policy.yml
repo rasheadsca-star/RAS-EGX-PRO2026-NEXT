@@ -58,5 +58,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install pinned S2 parser dependency
+        run: npm ci --prefix tests/stable/s2 --ignore-scripts
       - name: Test history quarantine policy
         run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-s3-assessment-adapter.test.cjs tests/stable/history-s3-shadow-quarantine.test.cjs tests/stable/history-s3-shadow-r8-integration.test.cjs tests/stable/history-s3-push-simulator.test.cjs tests/stable/history-s3-shadow-preflight.test.cjs tests/stable/history-s3-shadow-evidence.test.cjs
