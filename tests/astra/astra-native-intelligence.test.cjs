@@ -80,7 +80,11 @@ test('entry activation is evaluated only from effective session onward',()=>{
 });
 
 test('entry not triggered expires without becoming win or loss',()=>{
-  const rows=Array.from({length:20},(_,i)=>row('2026-10-'+String(i+1).padStart(2,'0'),8,9,7,8));
+  // Trading sessions, not 20 calendar days (weekends cannot expire an entry).
+  const days=Array.from({length:31},(_,i)=>new Date(Date.UTC(2026,9,i+1)))
+    .filter(d=>d.getUTCDay()!==5&&d.getUTCDay()!==6).slice(0,20);
+  assert.equal(days.length,20);
+  const rows=days.map(d=>row(d.toISOString().slice(0,10),8,9,7,8));
   const o=mod.evaluateRows(recFixture(),rows,{expirySessions:20});
   assert.equal(o.state,'EXPIRED');
   assert.equal(o.entryNotTriggered,true);
