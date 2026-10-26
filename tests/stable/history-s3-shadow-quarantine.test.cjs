@@ -40,3 +40,20 @@ test('runner refuses any non-shadow invocation',()=>{
    generatedAt:'2026-10-25T08:15:00Z',shadow:false}),/S3_SHADOW_ONLY/);
  }finally{fs.rmSync(f.root,{recursive:true,force:true})}
 });
+
+test('stale report restores quarantined history byte for byte',()=>{
+ const f=fixture();try{
+  const file=path.join(f.dir,'BAD.json'),before=fs.readFileSync(file);
+  f.report.generatedAt='2026-10-25T06:00:00Z';f.save();
+  assert.throws(f.run,/STALE_REPORT/);
+  assert.deepEqual(fs.readFileSync(file),before);
+ }finally{fs.rmSync(f.root,{recursive:true,force:true})}
+});
+test('count mismatch after quarantine restores original history bytes',()=>{
+ const f=fixture();try{
+  const file=path.join(f.dir,'BAD.json'),before=fs.readFileSync(file);
+  f.report.updatedHistoryFiles=2;f.save();
+  assert.throws(f.run,/ACCEPTED_COUNT_MISMATCH/);
+  assert.deepEqual(fs.readFileSync(file),before);
+ }finally{fs.rmSync(f.root,{recursive:true,force:true})}
+});
