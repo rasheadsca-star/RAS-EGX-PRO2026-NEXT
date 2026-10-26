@@ -10,9 +10,14 @@ on:
       - 'tests/stable/history-r8-integrity.test.cjs'
       - 'scripts/stable/history-r9-report-binding.cjs'
       - 'tests/stable/history-r9-report-binding.test.cjs'
+      - 'scripts/stable/history-s3-assessment-adapter.cjs'
+      - 'tests/stable/history-s3-assessment-adapter.test.cjs'
+      - 'scripts/stable/history-s3-assessment-adapter.cjs'
+      - 'tests/stable/history-s3-assessment-adapter.test.cjs'
       - '.github/workflows/pr97-history-quarantine-policy.yml'
   push:
     branches:
+      - 's3/b1-history-shadow-gate'
       - 's1/history-policy-r8-r9-isolated'
     paths:
       - 'scripts/stable/history-quarantine-policy.cjs'
@@ -36,4 +41,4 @@ jobs:
         with:
           node-version: '22'
       - name: Test history quarantine policy
-        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs
+        run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-s3-assessment-adapter.test.cjs
