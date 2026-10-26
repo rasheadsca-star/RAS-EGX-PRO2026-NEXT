@@ -33,7 +33,8 @@ function derive({root,runId,startedAt,reportPath}){
  }
  const dir=path.join(root,'data/history'),history={},accepted=[];
  for(const ent of fs.readdirSync(dir,{withFileTypes:true})){
-  if(!ent.isFile()||ent.isSymbolicLink()||!ent.name.endsWith('.json'))abort('UNEXPECTED_HISTORY_ENTRY');
+  if(!ent.isFile()||ent.isSymbolicLink())abort('UNEXPECTED_HISTORY_ENTRY');
+  if(!ent.name.endsWith('.json'))continue; // R8 separately protects non-JSON bytes.
   const t=ent.name.slice(0,-5);
   if(!symbol(t)||missing.has(t))abort('INVALID_HISTORY_FILE:'+t);
   const doc=JSON.parse(fs.readFileSync(path.join(dir,ent.name),'utf8'));
@@ -44,6 +45,7 @@ function derive({root,runId,startedAt,reportPath}){
   if(current.length){
    if(rejected.has(t)||dropped.has(t))abort('REJECTED_CANDLE_STILL_PUBLISHED:'+t);
    if(current[0].ticker!==t||current[0].sourceSessionDate!==session)abort('BAD_PRODUCER_IDENTITY:'+t);
+   if(!Number.isFinite(Date.parse(current[0].fetchedAt))||Date.parse(current[0].fetchedAt)<Date.parse(startedAt))abort('STALE_ACCEPTED_CANDLE:'+t);
    accepted.push(current[0]);
   }
  }
