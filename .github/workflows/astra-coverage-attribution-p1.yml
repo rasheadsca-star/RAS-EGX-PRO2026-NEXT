@@ -1,0 +1,23 @@
+name: Astra Coverage Attribution P1
+on:
+  pull_request:
+    paths:
+      - 'scripts/astra/g22-coverage-attribution.cjs'
+      - 'scripts/astra/g22-postclose-refresh.cjs'
+      - 'tests/astra/g22-coverage-attribution.test.cjs'
+      - '.github/workflows/astra-g22-postclose-refresh.yml'
+      - '.github/workflows/astra-coverage-attribution-p1.yml'
+  push:
+    branches: [fix/astra-coverage-evidence-p1]
+permissions:
+  contents: read
+jobs:
+  coverage-evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/astra/g22-postclose-refresh.cjs
+      - run: node --test tests/astra/g22-coverage-attribution.test.cjs
