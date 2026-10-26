@@ -15,13 +15,14 @@ test('stale Astra is blocked and immutable inputs remain unchanged',()=>{
   const file=path.join(f.root,'astra-prod/app/data.json'),original=fs.readFileSync(file);
   const result=inspect(f.root);
   assert.equal(result.status,'BLOCKED_STALE_DECISION');
+  assert.equal(result.recommendationDisplay,'BLOCK_STALE_RECOMMENDATIONS');
   assert.equal(result.checks.decisionMatchesHandoff,false);
   assert.match(result.action,/DO_NOT_RELABEL_OLD_DECISION/);
   assert.deepEqual(fs.readFileSync(file),original);
  }finally{f.cleanup()}
 });
 test('aligned verified handoff passes',()=>{
- const f=make('2026-10-26');try{assert.equal(inspect(f.root).status,'PASS')}finally{f.cleanup()}
+ const f=make('2026-10-26');try{assert.equal(inspect(f.root).status,'PASS');assert.equal(inspect(f.root).recommendationDisplay,'ELIGIBLE_FOR_FURTHER_CHECKS')}finally{f.cleanup()}
 });
 test('a newer decision does not override mismatched price evidence',()=>{
  const f=make('2026-10-26');try{
