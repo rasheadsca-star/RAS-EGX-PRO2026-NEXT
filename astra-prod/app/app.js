@@ -233,19 +233,19 @@
         loadJson('../../data/quant/market-search-index-v13-17.json'),
         loadJson('../../data/quant/stock-intelligence-index.json'),
         loadJson('../../data/rc2/recommendation-history.json'),
-        loadJson('../../data/ops/g22-main-app-handoff.json')
+        loadJson('../../data/ops/g22-main-app-handoff.json').catch(()=>null)
       ]);
       state.data=data;state.search=search;state.stocks=stocks;state.history=history;state.handoff=handoff;
-      state.sessionAligned=Boolean(handoff.final===true&&handoff.pagesPublished===true&&handoff.sourceReady===true&&handoff.executionGrade===true&&handoff.sessionDate===handoff.expectedSession&&data.sourceDecision.session===handoff.sessionDate);
+      state.sessionAligned=Boolean(handoff&&handoff.final===true&&handoff.pagesPublished===true&&handoff.sourceReady===true&&handoff.executionGrade===true&&handoff.sessionDate===handoff.expectedSession&&data.sourceDecision.session===handoff.sessionDate);
       state.searchMap=new Map(A(search.stocks).map(x=>[x.ticker,x]));
       state.stockMap=new Map(A(stocks.stocks).map(x=>[x.ticker,x]));
       state.recMap=new Map(recs().map(x=>[x.ticker,x]));
       loadPortfolio();
-      $('#sessionBadge').textContent='قرار '+data.sourceDecision.session+' | تسليم '+handoff.sessionDate;
+      $('#sessionBadge').textContent='قرار '+data.sourceDecision.session+' | تسليم '+(handoff?.sessionDate||'غير متاح');
       $('#snapshotBadge').textContent='Snapshot '+data.sourceDecision.decisionSnapshotId.slice(-8);
       renderHome();renderRecommendations();renderPortfolio();renderHistory();renderHealth();
       if(!state.sessionAligned){
-        const message='التوصيات الجديدة محجوبة: آخر قرار '+data.sourceDecision.session+'، وجلسة البيانات المسلّمة '+handoff.sessionDate+'. لا توجد توصية حديثة معتمدة.';
+        const message='التوصيات الجديدة محجوبة: آخر قرار '+data.sourceDecision.session+'، وجلسة البيانات المسلّمة '+(handoff?.sessionDate||'غير متاحة')+'. لا توجد توصية حديثة معتمدة.';
         const panel=document.createElement('div');panel.className='notice bad';panel.setAttribute('role','alert');panel.textContent=message;
         const view=$('#view-recommendations');if(view)view.prepend(panel);
       }
