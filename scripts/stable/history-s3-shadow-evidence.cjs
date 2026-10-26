@@ -5,7 +5,8 @@ const {preflight}=require('./history-s3-shadow-preflight.cjs');
 const {execute}=require('./history-s3-shadow-quarantine.cjs');
 const {verify}=require('./history-r8-integrity.cjs');
 const {staticGuard}=require('../../tests/stable/s2/history-static-guard.cjs');
-function run({root,runId,startedAt,generatedAt,artifact}){
+const {measure}=require('./history-s3-rebase-probe.cjs');
+function run({root,runId,startedAt,generatedAt,artifact,remoteRef,expectedRemoteSha}){
  if(!artifact||!path.isAbsolute(artifact))throw Error('S3_ARTIFACT_REQUIRED');
  const evidence={schemaVersion:1,mode:'SHADOW_ONLY',runId,passed:false,stages:{},quarantined:[],errors:[]};
  let pre;
@@ -19,7 +20,14 @@ function run({root,runId,startedAt,generatedAt,artifact}){
   evidence.stages.staticGuard='PASS';
   evidence.r8=verify({root:pre.root,baseline:pre.baseline,affectedTickers:pre.affectedTickers});
   evidence.stages.r8='PASS';
-  evidence.passed=true;
+  if(remoteRef||expectedRemoteSha){
+   if(!remoteRef||!expectedRemoteSha)throw Error('S3_REMOTE_CONTEXT_INCOMPLETE');
+   evidence.rebase=measure({root:pre.root,remoteRef,expectedRemoteSha});
+   evidence.stages.rebase='PASS';
+  }else{
+   evidence.stages.rebase='NOT_MEASURED';
+  }
+  evidence.passed=evidence.stages.rebase==='PASS' && evidence.rebase.cleanMerge===true;
  }catch(error){evidence.errors.push(String(error?.message||error));}
  finally{
   // Artifact is outside the protected checkout to avoid modifying git worktree.
