@@ -21,6 +21,14 @@ test('negative test matrix rejects dangerous loaders',()=>{
  "const flag='EGX_HISTORY_GUARDED_INTEGRATION'",
  "import('./history-r8-integrity.cjs')",
  "require(x)",
+ "module['require']('./history-r8-integrity.cjs')",
+ "require('module')._load('./history-r8-integrity.cjs')",
+ "require('vm')",
+ "require('child_process')",
+ "[].constructor.constructor('return 1')()",
+ "require('./history/x')",
+ "require('./History-x')",
+ "const v='EGX_'+'HISTORY_GUARDED_INTEGRATION'",
  "require?.('./history-r9-report-binding.cjs')"
  ];
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'egx-s2-'));
