@@ -7,14 +7,14 @@
   const A=v=>Array.isArray(v)?v:[];
   const fmtDate=v=>v?String(v).slice(0,10):'—';
   const loadJson=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'cb='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});if(!r.ok)throw new Error(url+' HTTP '+r.status);return r.json()};
-  const state={data:null,search:null,stocks:null,history:null,searchMap:new Map(),stockMap:new Map(),recMap:new Map(),portfolio:[],selected:null,historyDoc:null};
+  const state={data:null,search:null,stocks:null,history:null,searchMap:new Map(),stockMap:new Map(),recMap:new Map(),portfolio:[],selected:null,historyDoc:null,sessionAligned:false,handoff:null};
   const PORT_KEY='egx-astra-g22-portfolio';
 
   function nameOf(t){
     const s=state.searchMap.get(t)||state.stockMap.get(t)||{};
     return s.companyNameAr||s.companyNameEn||'';
   }
-  function recs(){return A(state.data?.decisionSnapshot?.top5)}
+  function recs(){return state.sessionAligned?A(state.data?.decisionSnapshot?.top5):[]}
   function basket(){return state.data?.decisionSnapshot?.basket||{}}
   function riskOf(o){return o?.risk||{}}
   function target(o,i=0){
@@ -228,20 +228,27 @@
 
   async function boot(){
     try{
-      const [data,search,stocks,history]=await Promise.all([
+      const [data,search,stocks,history,handoff]=await Promise.all([
         loadJson('./data.json'),
         loadJson('../../data/quant/market-search-index-v13-17.json'),
         loadJson('../../data/quant/stock-intelligence-index.json'),
-        loadJson('../../data/rc2/recommendation-history.json')
+        loadJson('../../data/rc2/recommendation-history.json'),
+        loadJson('../../data/ops/g22-main-app-handoff.json')
       ]);
-      state.data=data;state.search=search;state.stocks=stocks;state.history=history;
+      state.data=data;state.search=search;state.stocks=stocks;state.history=history;state.handoff=handoff;
+      state.sessionAligned=Boolean(handoff.final===true&&handoff.pagesPublished===true&&handoff.sourceReady===true&&handoff.executionGrade===true&&handoff.sessionDate===handoff.expectedSession&&data.sourceDecision.session===handoff.sessionDate);
       state.searchMap=new Map(A(search.stocks).map(x=>[x.ticker,x]));
       state.stockMap=new Map(A(stocks.stocks).map(x=>[x.ticker,x]));
       state.recMap=new Map(recs().map(x=>[x.ticker,x]));
       loadPortfolio();
-      $('#sessionBadge').textContent='جلسة '+data.sourceDecision.session;
+      $('#sessionBadge').textContent='قرار '+data.sourceDecision.session+' | تسليم '+handoff.sessionDate;
       $('#snapshotBadge').textContent='Snapshot '+data.sourceDecision.decisionSnapshotId.slice(-8);
       renderHome();renderRecommendations();renderPortfolio();renderHistory();renderHealth();
+      if(!state.sessionAligned){
+        const message='التوصيات الجديدة محجوبة: آخر قرار '+data.sourceDecision.session+'، وجلسة البيانات المسلّمة '+handoff.sessionDate+'. لا توجد توصية حديثة معتمدة.';
+        const panel=document.createElement('div');panel.className='notice bad';panel.setAttribute('role','alert');panel.textContent=message;
+        const view=$('#view-recommendations');if(view)view.prepend(panel);
+      }
       renderSearchShell();doSearch();
       $$('#nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
       const params=new URLSearchParams(location.search);const v=params.get('view');if(v&&$('#view-'+v))switchView(v);
