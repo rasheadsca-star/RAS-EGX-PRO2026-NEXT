@@ -305,6 +305,17 @@ jobs:
           node scripts/astra/g22-postclose-refresh.cjs | tee /tmp/g22-refresh.log
           grep -q '^G22_POST_CLOSE_REFRESH ' /tmp/g22-refresh.log
 
+      - name: Archive coverage attribution on blocked refresh
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g22-coverage-attribution
+          path: |
+            /tmp/g22-coverage-attribution.json
+            .astra-certified/data/stable/v16-market-second-source-evidence.json
+            .astra-certified/data/stable/v16-market-universe-disposition.json
+          if-no-files-found: warn
+
       - name: Rebuild Astra-native immutable history and performance
         run: |
           set -euo pipefail
