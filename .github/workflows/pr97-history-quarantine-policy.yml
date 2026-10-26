@@ -15,6 +15,7 @@ on:
       - 'scripts/stable/history-s3-shadow-quarantine.cjs'
       - 'tests/stable/history-s3-shadow-quarantine.test.cjs'
       - 'tests/stable/history-s3-shadow-r8-integration.test.cjs'
+      - 'scripts/stable/history-s3-test-c1.cjs'
       - 'scripts/stable/history-s3-validated-push.cjs'
       - 'tests/stable/history-s3-validated-push.test.cjs'
       - 'scripts/stable/history-s3-rebase-probe.cjs'
@@ -44,6 +45,7 @@ on:
       - 'scripts/stable/history-s3-shadow-quarantine.cjs'
       - 'tests/stable/history-s3-shadow-quarantine.test.cjs'
       - 'tests/stable/history-s3-shadow-r8-integration.test.cjs'
+      - 'scripts/stable/history-s3-test-c1.cjs'
       - 'scripts/stable/history-s3-validated-push.cjs'
       - 'tests/stable/history-s3-validated-push.test.cjs'
       - 'scripts/stable/history-s3-rebase-probe.cjs'
@@ -70,3 +72,24 @@ jobs:
         run: npm ci --prefix tests/stable/s2 --ignore-scripts
       - name: Test history quarantine policy
         run: node --test tests/stable/history-quarantine-policy.test.cjs tests/stable/history-publication-gate.test.cjs tests/stable/history-r8-integrity.test.cjs tests/stable/history-r9-report-binding.test.cjs tests/stable/history-s3-assessment-adapter.test.cjs tests/stable/history-s3-shadow-quarantine.test.cjs tests/stable/history-s3-shadow-r8-integration.test.cjs tests/stable/history-s3-push-simulator.test.cjs tests/stable/history-s3-shadow-preflight.test.cjs tests/stable/history-s3-shadow-evidence.test.cjs tests/stable/history-s3-rebase-probe.test.cjs tests/stable/history-s3-validated-push.test.cjs
+
+  frozen-test-c1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned S2 parser dependency
+        run: npm ci --prefix tests/stable/s2 --ignore-scripts
+      - name: Replay immutable 2026-10-25 C1 in a disposable worktree
+        run: node scripts/stable/history-s3-test-c1.cjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/s3-test-c1.json"
+      - name: Archive C1 evidence even when rejected
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-test-c1-evidence
+          path: ${{ runner.temp }}/s3-test-c1.json
+          if-no-files-found: warn
