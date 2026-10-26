@@ -29,7 +29,7 @@ function staticString(node){
 }
 function isRequire(n){return n?.type==='Identifier'&&n.name==='require'}
 function member(n,obj,prop){return n?.type==='MemberExpression'&&!n.computed&&n.object?.type==='Identifier'&&n.object.name===obj&&n.property?.name===prop}
-function isHistory(s){return typeof s==='string'&&/(^|[\\/])history-[^\\/]+$/.test(s)}
+const ALLOWED=new Set(['fs','path','node:fs','node:path']);
 function staticGuard(root){
  const src=fs.readFileSync(path.join(root,'scripts/stable/v16-session-aware-price-truth.cjs'),'utf8');
  const ast=acorn.parse(src,{ecmaVersion:'latest',sourceType:'script',allowHashBang:true});
@@ -46,11 +46,15 @@ function staticGuard(root){
   if(n.type==='CallExpression'){
    if(isRequire(n.callee)){
     if(n.arguments.length!==1||staticString(n.arguments[0])===null) violations.push('Dynamic require at '+n.start);
-    else if(isHistory(staticString(n.arguments[0]))) violations.push('History require at '+n.start);
+    else if(!ALLOWED.has(staticString(n.arguments[0]))) violations.push('Disallowed require at '+n.start);
    }
    if(member(n.callee,'module','require')) violations.push('module.require at '+n.start);
   }
-  if(n.type==='MemberExpression'&&member(n,'module','require')) violations.push('module.require reference at '+n.start);
+  if(n.type==='MemberExpression'){
+   const prop=n.computed?staticString(n.property):n.property?.name;
+   if(prop==='require'||prop==='constructor'||(n.computed&&prop===null))
+    violations.push('Unsafe property access at '+n.start);
+  }
   if(n.type==='Identifier'&&['eval','Function','createRequire'].includes(n.name)) violations.push('Unsafe dynamic loader at '+n.start);
   if(n.type==='ImportExpression') violations.push('Dynamic import at '+n.start);
   if(n.type==='ImportDeclaration'||n.type==='ExportNamedDeclaration'&&n.source||n.type==='ExportAllDeclaration')
