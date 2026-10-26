@@ -27,6 +27,15 @@ function staticString(node){
  if(node?.type==='TemplateLiteral'&&node.expressions.length===0) return node.quasis[0].value.cooked;
  return null;
 }
+function constantString(n){
+ const direct=staticString(n);
+ if(direct!==null) return direct;
+ if(n?.type==='BinaryExpression'&&n.operator==='+'){
+  const left=constantString(n.left),right=constantString(n.right);
+  return left!==null&&right!==null?left+right:null;
+ }
+ return null;
+}
 function isRequire(n){return n?.type==='Identifier'&&n.name==='require'}
 function member(n,obj,prop){return n?.type==='MemberExpression'&&!n.computed&&n.object?.type==='Identifier'&&n.object.name===obj&&n.property?.name===prop}
 const ALLOWED=new Set(['fs','path','node:fs','node:path']);
@@ -38,6 +47,7 @@ function staticGuard(root){
  const directCalls=new WeakSet();
  visit(ast,n=>{if(n.type==='CallExpression'&&isRequire(n.callee)) directCalls.add(n.callee)});
  visit(ast,n=>{
+  if(n.type==='BinaryExpression'&&constantString(n)===FLAG) violations.push('Constructed activation flag at '+n.start);
   if(n.type==='Identifier'&&n.name==='require'){
    // A direct literal call is permitted only for NON-history dependencies.
    // All other uses (aliases, access, bind/call/apply, references) are forbidden.
@@ -51,8 +61,8 @@ function staticGuard(root){
    if(member(n.callee,'module','require')) violations.push('module.require at '+n.start);
   }
   if(n.type==='MemberExpression'){
-   const prop=n.computed?staticString(n.property):n.property?.name;
-   if(prop==='require'||prop==='constructor'||(n.computed&&prop===null))
+   const prop=n.computed?constantString(n.property):n.property?.name;
+   if(prop==='require'||prop==='constructor')
     violations.push('Unsafe property access at '+n.start);
   }
   if(n.type==='Identifier'&&['eval','Function','createRequire'].includes(n.name)) violations.push('Unsafe dynamic loader at '+n.start);
