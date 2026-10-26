@@ -21,4 +21,11 @@ jobs:
         run: node --test tests/astra/astra-session-alignment-diagnostic.test.cjs
       - name: Inspect actual decision-to-handoff alignment (nonblocking)
         continue-on-error: true
-        run: node scripts/astra/native/astra-session-alignment-diagnostic.cjs .
+        run: node scripts/astra/native/astra-session-alignment-diagnostic.cjs . > "$RUNNER_TEMP/astra-session-alignment.json"
+      - name: Archive session alignment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-session-alignment-evidence
+          path: ${{ runner.temp }}/astra-session-alignment.json
+          if-no-files-found: error
