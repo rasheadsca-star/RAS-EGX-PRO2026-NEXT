@@ -14,7 +14,7 @@ function fixture(){
 test('failed safety gate never attempts push and leaves remote SHA intact',()=>{
  const f=fixture();try{
   const r=simulate({candidate:f.work,remote:f.remote,artifact:f.artifact,gate:()=>{throw Error('R8_PREVIOUS_SESSIONS_CHANGED')}});
-  assert.equal(r.gate,'NOT_RUN');assert.equal(r.pushAttempted,false);assert.equal(r.remoteAfter,f.before);
+  assert.equal(r.gate,'FAIL');assert.equal(r.pushAttempted,false);assert.equal(r.remoteAfter,f.before);
   assert.equal(JSON.parse(fs.readFileSync(f.artifact)).remoteAfter,f.before);
  }finally{f.cleanup()}
 });
@@ -23,4 +23,17 @@ test('passed safety gate can push only to temporary bare remote',()=>{
   const r=simulate({candidate:f.work,remote:f.remote,artifact:f.artifact,gate:()=>true});
   assert.equal(r.gate,'PASS');assert.equal(r.pass,true);assert.notEqual(r.remoteAfter,f.before);
  }finally{f.cleanup()}
+});
+
+test('false, null, undefined, zero and object all block push without moving remote',()=>{
+ for(const value of [false,null,undefined,0,{}]){
+  const f=fixture();
+  try{
+   const r=simulate({candidate:f.work,remote:f.remote,artifact:f.artifact,gate:()=>value});
+   assert.equal(r.gate,'FAIL');
+   assert.equal(r.error,'GATE_NOT_PASSED');
+   assert.equal(r.pushAttempted,false);
+   assert.equal(r.remoteAfter,f.before);
+  }finally{f.cleanup()}
+ }
 });
