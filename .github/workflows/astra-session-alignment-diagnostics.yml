@@ -1,0 +1,24 @@
+name: Astra Session Alignment Diagnostics
+on:
+  push:
+    branches: [fix/astra-session-identity-diagnostics]
+  pull_request:
+    paths:
+      - 'scripts/astra/native/astra-session-alignment-diagnostic.cjs'
+      - 'tests/astra/astra-session-alignment-diagnostic.test.cjs'
+      - '.github/workflows/astra-session-alignment-diagnostics.yml'
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate fail-closed alignment logic
+        run: node --test tests/astra/astra-session-alignment-diagnostic.test.cjs
+      - name: Inspect actual decision-to-handoff alignment (nonblocking)
+        continue-on-error: true
+        run: node scripts/astra/native/astra-session-alignment-diagnostic.cjs .
