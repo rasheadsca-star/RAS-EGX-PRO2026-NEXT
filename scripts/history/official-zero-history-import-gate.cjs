@@ -15,6 +15,7 @@ function evaluateOfficialBootstrap({item,entry,existing,latestMarketSession,revi
   if(!latestMarketSession||!rows.some(x=>x.date===latestMarketSession))reasons.push('current_exact_session_required');
   if(!String(item?.sourceUrl||'').startsWith('https://'))reasons.push('source_url_required');
   if(new Set(rows.map(x=>x.date)).size!==rows.length)reasons.push('duplicate_dates');
+  if(latestMarketSession&&rows.some(x=>String(x.date||'')>latestMarketSession))reasons.push('post_session_lookahead');
  }
  return {eligible:reasons.length===0,zeroHistory:zero,currency,reasons};
 }
