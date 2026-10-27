@@ -1,20 +1,20 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-10-25T14:30:32.063Z",
+  "generatedAt": "2026-10-27T11:22:37.591Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 162,
-    "scheduled": 52,
-    "scheduledLegacy": 52,
+    "total": 170,
+    "scheduled": 53,
+    "scheduledLegacy": 53,
     "pageDeployers": 41,
     "repositoryWriters": 115,
     "emergency": 3
   },
   "status": "WARNING",
   "warnings": [
-    "52 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "53 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "41 workflows can deploy GitHub Pages.",
     "115 workflows can write to the repository."
   ],
@@ -75,6 +75,13 @@
       "name": "EGX Holiday Source Daily Watch",
       "schedules": [
         "0 5 * * *"
+      ]
+    },
+    {
+      "filename": "egx-independent-history-recovery.yml",
+      "name": "EGX Independent Historical Data Recovery",
+      "schedules": [
+        "45 17 * * 0-4"
       ]
     },
     {
@@ -918,6 +925,20 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "egx-historic-price-audit.yml",
+      "relativePath": ".github/workflows/egx-historic-price-audit.yml",
+      "name": "EGX Historical Truth Audit Isolation",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": false,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "egx-historical-100-sample.yml",
       "relativePath": ".github/workflows/egx-historical-100-sample.yml",
       "name": "EGX Historical 100 Sessions — V12.5 Cleanup & Fallback",
@@ -1008,6 +1029,22 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "egx-independent-history-recovery.yml",
+      "relativePath": ".github/workflows/egx-independent-history-recovery.yml",
+      "name": "EGX Independent Historical Data Recovery",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "45 17 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "egx-long-history-restore-raw.yml",
       "relativePath": ".github/workflows/egx-long-history-restore-raw.yml",
       "name": "EGX Restore Original Long History OHLCV",
@@ -1020,6 +1057,20 @@
       "deploysPages": false,
       "writesRepository": true,
       "classification": "EMERGENCY"
+    },
+    {
+      "filename": "egx-naHO-trTO-usd-parity.yml",
+      "relativePath": ".github/workflows/egx-naHO-trTO-usd-parity.yml",
+      "name": "EGX NAHO TRTO USD Identity Parity",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": false,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
     },
     {
       "filename": "egx-native-stock-portfolio-v13-7.yml",
@@ -1148,6 +1199,20 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "egx-quarantine-schema-keys.yml",
+      "relativePath": ".github/workflows/egx-quarantine-schema-keys.yml",
+      "name": "Verify EGX Structural Non-Security Quarantine",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": false,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "egx-seed-gap-completion.yml",
       "relativePath": ".github/workflows/egx-seed-gap-completion.yml",
       "name": "EGX Historical Seed Gap Completion — V12.7",
@@ -1212,6 +1277,34 @@
       "hasSchedule": false,
       "schedules": [],
       "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-universe-identity-audit.yml",
+      "relativePath": ".github/workflows/egx-universe-identity-audit.yml",
+      "name": "EGX Universe Identity and Discovery Audit",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": false,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-usd-identity-parity.yml",
+      "relativePath": ".github/workflows/egx-usd-identity-parity.yml",
+      "name": "EGX USD Share-Class Identity Parity",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": false,
       "hasPush": true,
       "deploysPages": false,
       "writesRepository": false,
@@ -1764,6 +1857,20 @@
       "classification": "LEGACY_OR_AUXILIARY"
     },
     {
+      "filename": "pr97-history-quarantine-policy.yml",
+      "relativePath": ".github/workflows/pr97-history-quarantine-policy.yml",
+      "name": "S1 Isolated History R8 R9 Policy Gate",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
       "filename": "rc2-continuous-recommendation-refresh.yml",
       "relativePath": ".github/workflows/rc2-continuous-recommendation-refresh.yml",
       "name": "RC2 Continuous Recommendation Refresh",
@@ -1876,6 +1983,20 @@
       "deploysPages": false,
       "writesRepository": true,
       "classification": "EMERGENCY"
+    },
+    {
+      "filename": "s2-static-history-isolation.yml",
+      "relativePath": ".github/workflows/s2-static-history-isolation.yml",
+      "name": "S2 static history isolation",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": false,
+      "schedules": [],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
+      "writesRepository": false,
+      "classification": "LEGACY_OR_AUXILIARY"
     },
     {
       "filename": "security-secret-scan.yml",
