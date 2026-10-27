@@ -57,11 +57,15 @@ jobs:
           node --test tests/research/egx-independent-history-recovery.test.cjs
       - name: Build historical archive inventory and quarantine ledger
         run: node scripts/research/egx-independent-history-recovery.cjs
+      - name: Build single quarantined central SQLite research database
+        run: |
+          python3 scripts/research/egx-recovery-sqlite.py
+          python3 -c "import json; j=json.load(open('artifacts/history-recovery/central-ledger-manifest.json')); assert j['counts']['automatically_promoted']==0 and j['integrityCheck']=='ok'"
       - name: Stage external source evidence (never update canonical history)
-        if: github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.probe_sources == true)
+        if: github.event_name != 'workflow_dispatch' || inputs.probe_sources == true
         continue-on-error: true
         env:
-          EGX_RECOVERY_SYMBOLS: BONY,TANM,KRDI,CEFM
+          EGX_RECOVERY_SYMBOLS: BONY,TANM,KRDI,CEFM,DTPP,POUL
         run: node scripts/research/egx-independent-source-probes.cjs
       - name: Assert no production or history mutations
         run: |
