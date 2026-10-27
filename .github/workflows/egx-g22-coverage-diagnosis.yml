@@ -1,0 +1,27 @@
+name: EGX G22 Coverage Blocker Evidence
+on:
+  pull_request:
+    paths:
+      - 'scripts/research/egx-g22-coverage-diagnosis.cjs'
+      - '.github/workflows/egx-g22-coverage-diagnosis.yml'
+  push:
+    branches: [fix/egx-g22-minimum-coverage-report]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/research/egx-g22-coverage-diagnosis.cjs
+      - run: node scripts/research/egx-g22-coverage-diagnosis.cjs
+      - run: git diff --exit-code -- data/history data/stable astra-prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-g22-coverage-${{ github.run_id }}
+          path: unified-console/g22-coverage-status.json
