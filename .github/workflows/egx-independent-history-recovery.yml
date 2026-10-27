@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - 'scripts/research/egx-independent-history-recovery.cjs'
+      - 'scripts/stable/v15-last-accepted-truth-audit.cjs'
+      - 'tests/stable/v15-last-accepted-truth-audit.test.cjs'
       - 'scripts/research/egx-independent-source-probes.cjs'
       - 'scripts/research/egx-public-symbol-identity-probe.cjs'
       - 'tests/research/egx-public-symbol-identity-probe.test.cjs'
@@ -68,6 +70,13 @@ jobs:
           node --test tests/research/egx-directfn-exact-session-probe.test.cjs
           node --test tests/research/egx-g11-readiness-triage.test.cjs
           node --test tests/research/egx-independent-history-recovery.test.cjs
+      - name: Freeze audit-only previous accepted price truth from pinned G22 Git commit
+        env:
+          EGX_AUDIT_FETCH_ANCHOR: '1'
+          EGX_AUDIT_OUT: artifacts/history-recovery/v15-last-accepted-price-truth-audit.json
+        run: |
+          node scripts/stable/v15-last-accepted-truth-audit.cjs
+          node --test tests/stable/v15-last-accepted-truth-audit.test.cjs
       - name: Audit exact-session G11 strategy readiness per ticker
         run: node scripts/research/egx-g11-readiness-triage.cjs
       - name: Measure source-exact feature exclusions for four current-session tickers
