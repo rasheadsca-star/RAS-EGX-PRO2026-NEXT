@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-const priceChangeConsistency=require('./v16-price-change-consistency.cjs');
 const fs = require('fs');
 const path = require('path');
 
@@ -301,7 +300,15 @@ function normalizeMarketRow(row, expectedSession, sourceName, generatedAt) {
   const jumpPct = priorTrusted > 0 ? Math.abs(close / priorTrusted - 1) * 100 : null;
   const impliedChangePct = previousClose > 0 ? (close / previousClose - 1) * 100 : null;
   const reportedChangePct = n(row?.changePct);
-  const changeConsistent = priceChangeConsistency.changeConsistent({close,previousClose,reportedChangePct,tolerancePct:3});
+  const changeConsistent = (() => {
+    if (impliedChangePct === null || reportedChangePct === null) return true;
+    if (Math.abs(impliedChangePct - reportedChangePct) <= 3) return true;
+    const halfTick=0.005;
+    if (!(close>0&&previousClose>halfTick)) return false;
+    const low=((close-halfTick)/(previousClose+halfTick)-1)*100;
+    const high=((close+halfTick)/(previousClose-halfTick)-1)*100;
+    return reportedChangePct>=low-0.01&&reportedChangePct<=high+0.01;
+  })();
 
   if (jumpPct !== null && jumpPct > MAX_SINGLE_SESSION_JUMP_PCT) {
     return {
