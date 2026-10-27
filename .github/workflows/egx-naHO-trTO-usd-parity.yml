@@ -1,0 +1,25 @@
+name: EGX NAHO TRTO USD Identity Parity
+on:
+  push:
+    branches: [fix/egx-usd-naHO-trTO-precision-review-20261027]
+  pull_request:
+    paths:
+      - 'data/symbol-map.json'
+      - 'tests/history/egx-usd-naHO-trTO.test.cjs'
+      - '.github/workflows/egx-naHO-trTO-usd-parity.yml'
+permissions:
+  contents: read
+jobs:
+  test-mapping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/history/egx-usd-naHO-trTO.test.cjs
+      - run: node --test tests/history/egx-structural-non-security-quarantine.test.cjs
+      - run: |
+          git diff --exit-code -- data/history/ data/stable/ data/market.json astra/ astra-prod/
