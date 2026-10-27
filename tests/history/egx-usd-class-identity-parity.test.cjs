@@ -9,11 +9,11 @@ test('USD security class identities GTEX and VLMR are preserved without source-v
   assert.equal(m.symbolVerified,false);
   const meta={symbol:ticker+'.CA',currency:'USD',exchangeName:'CAI',fullExchangeName:'EGX',shortName:ticker};
   const x=identityCheck(meta,ticker+'.CA',m,null);
-  assert.equal(x.currencyMatches,true);
-  assert.equal(x.exactSymbol,true);
+  assert.doesNotMatch(x.warnings.join('|'),/currency_mismatch/);
+  assert.equal(x.evidence.returnedSymbol,ticker+'.CA');
   assert.equal(x.verified,true);
   const wrong={...meta,currency:'EGP'};
-  assert.equal(identityCheck(wrong,ticker+'.CA',m,null).currencyMatches,false);
+  assert.match(identityCheck(wrong,ticker+'.CA',m,null).warnings.join('|'),/currency_mismatch:EGP/);
  }
 });
 test('separate VLMRA EGP share class and true active universe retained',()=>{
