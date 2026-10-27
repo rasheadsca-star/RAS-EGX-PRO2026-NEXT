@@ -80,6 +80,9 @@ jobs:
           git fetch origin main
           REMOTE_SESSION=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(JSON.parse(s).expectedSession))")
           [ "$REMOTE_SESSION" = "$(cat /tmp/egx-recovery-session)" ] || { echo 'SESSION_ADVANCED_ABORT_STALE_REPAIR'; exit 1; }
+          REMOTE_ACCEPTED=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(String(JSON.parse(s).acceptedRows)))")
+          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('artifacts/recovery-before-price-truth.json')).acceptedRows")
+          [ "$REMOTE_ACCEPTED" = "$BASE_ACCEPTED" ] || { echo 'ACCEPTED_ROWS_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
           while read -r ticker; do
             [ -z "$ticker" ] || git add "data/history/$ticker.json"
           done < /tmp/egx-recovered-tickers
@@ -89,4 +92,7 @@ jobs:
           git pull --rebase -X ours origin main
           REMOTE_SESSION=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(JSON.parse(s).expectedSession))")
           [ "$REMOTE_SESSION" = "$(cat /tmp/egx-recovery-session)" ] || { echo 'SESSION_ADVANCED_ABORT_STALE_REPAIR'; exit 1; }
+          REMOTE_ACCEPTED=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(String(JSON.parse(s).acceptedRows)))")
+          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('artifacts/recovery-before-price-truth.json')).acceptedRows")
+          [ "$REMOTE_ACCEPTED" = "$BASE_ACCEPTED" ] || { echo 'ACCEPTED_ROWS_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
           git push origin HEAD:main
