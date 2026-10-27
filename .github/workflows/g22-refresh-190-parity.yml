@@ -8,6 +8,8 @@ on:
       - 'scripts/stable/v16-verified-incremental-recovery.cjs'
       - 'tests/stable/v16-verified-incremental-recovery.test.cjs'
       - 'tests/stable/egx-verified-incremental-workflow.test.cjs'
+      - 'scripts/stable/v16-market-coverage-reconciler.cjs'
+      - 'tests/stable/v16-market-coverage-reconciler.test.cjs'
 permissions:
   contents: read
 jobs:
@@ -24,7 +26,7 @@ jobs:
       - run: node --test tests/astra/g22-g11-blocker-evidence.test.cjs
       - run: node --test tests/astra/g22-v16-g11-crosswalk.test.cjs
       - run: node --test tests/astra/g22-recovery-priorities.test.cjs
-      - run: node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs
+      - run: node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs
       - run: node --test tests/astra/g22-exact-active-universe.test.cjs
       - run: python3 -m py_compile scripts/research/egx-v16-feature-exclusions.py
       - run: node --test tests/astra/g22-postclose-handoff-guard.test.cjs

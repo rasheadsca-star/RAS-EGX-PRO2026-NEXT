@@ -10,6 +10,8 @@ on:
     paths:
       - ".github/workflows/egx-verified-incremental-recovery.yml"
       - "scripts/stable/v16-verified-incremental-recovery.cjs"
+      - "scripts/stable/v16-market-coverage-reconciler.cjs"
+      - "tests/stable/v16-market-coverage-reconciler.test.cjs"
 
 permissions:
   contents: write
@@ -35,7 +37,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/stable/v16-verified-incremental-recovery.cjs
-          node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs
+          node --check scripts/stable/v16-market-coverage-reconciler.cjs
+          node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs
       - name: Freeze same-session baseline
         run: |
           set -euo pipefail

@@ -118,6 +118,21 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
   return { ticker, merged: true, provider: evidence.provider, close: base.close, mode: ohlcMode, createdHistorySeed: document.schemaVersion === '16.9.2-current-session-second-source-seed' };
 }
 
+function reconcileFetchStatus(status, { now, ready, executionGrade, acceptedRows, rejectedRows, inputRows, effectiveMatchingRows, effectiveCoveragePct, cumulativeSecondSourceTickers, expectedSession }) {
+  if (!(Number.isInteger(acceptedRows) && acceptedRows >= 0 && Number.isInteger(rejectedRows) && rejectedRows >= 0 && Number.isInteger(inputRows) && inputRows >= acceptedRows)) throw new Error('INVALID_RECONCILED_ROW_COUNTS');
+  if (acceptedRows + rejectedRows > inputRows) throw new Error('RECONCILED_COUNTS_EXCEED_SOURCE_INPUT');
+  return {
+    ...status, generatedAt: now, ok: ready, executionGrade,
+    expectedSession, inputRows, marketRows: acceptedRows, currentSessionRows: acceptedRows,
+    rejectedCurrentSessionRows: rejectedRows,
+    coveragePct: inputRows ? round(acceptedRows / inputRows * 100, 2) : 0,
+    verifiedSessionRows: effectiveMatchingRows, sourceSessionEvidenceCoveragePct: effectiveCoveragePct,
+    secondSourceRecoveredRows: cumulativeSecondSourceTickers.length,
+    secondSourceRecoveredTickers: cumulativeSecondSourceTickers,
+    message: `Accepted ${acceptedRows} verified EGX prices for session ${expectedSession}; independently verified recovery is tracked separately.`
+  };
+}
+
 function main() {
   const price = readJson(PRICE_PATH, {}), sourceEvidence = readJson(EVIDENCE_PATH, {}), second = readJson(SECOND_PATH, {}), market = readJson(MARKET_PATH, { rows: [] }), fetchStatus = readJson(FETCH_STATUS_PATH, {});
   const expectedSession = dateOnly(price.expectedSession || second.expectedSession || sourceEvidence.expectedSession);
@@ -193,14 +208,13 @@ function main() {
   sourceEvidence.effectiveSecondSourceRecords = [...priorEvidenceRecords.values()].filter(r => cumulativeSecondSourceTickers.includes(norm(r.ticker)));
   writeJson(EVIDENCE_PATH, sourceEvidence);
 
-  fetchStatus.generatedAt = now; fetchStatus.ok = ready; fetchStatus.executionGrade = executionGrade; fetchStatus.marketRows = acceptedRows; fetchStatus.currentSessionRows = acceptedRows;
-  fetchStatus.verifiedSessionRows = effectiveMatchingRows; fetchStatus.sourceSessionEvidenceCoveragePct = effectiveCoveragePct;
-  fetchStatus.secondSourceRecoveredRows = cumulativeSecondSourceTickers.length; fetchStatus.secondSourceRecoveredTickers = cumulativeSecondSourceTickers;
-  writeJson(FETCH_STATUS_PATH, fetchStatus);
+  const reconciledFetchStatus = reconcileFetchStatus(fetchStatus, { now, ready, executionGrade, acceptedRows, rejectedRows: finalRejected.length, inputRows, effectiveMatchingRows, effectiveCoveragePct, cumulativeSecondSourceTickers, expectedSession });
+  writeJson(FETCH_STATUS_PATH, reconciledFetchStatus);
 
   console.log(JSON.stringify({ expectedSession, inputRows, originalAcceptedRows, recoveredRowsThisRun: recoveredCount, acceptedRows, rejectedRows: finalRejected.length, primarySessionRows: primaryMatchingRows,
     cumulativeSecondSourceSessionRows: cumulativeSecondSourceTickers.length, verifiedExpectedSessionRows: effectiveMatchingRows, sourceSessionEvidenceCoveragePct: effectiveCoveragePct, executionGrade, ready,
     recoveredTickersThisRun: acceptedRecovered.map(r => r.ticker), cumulativeSecondSourceTickers, unresolvedTickers: finalRejected.map(r => norm(r.ticker)) }, null, 2));
   if (!executionGrade) process.exitCode = 2;
 }
-main();
+if (require.main === module) main();
+module.exports = { reconcileFetchStatus };
