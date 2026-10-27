@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - 'scripts/research/egx-independent-history-recovery.cjs'
+      - 'scripts/research/egx-licensed-ohlcv-intake.py'
+      - 'tests/research/test_egx_licensed_ohlcv_intake.py'
       - 'scripts/research/egx-recovery-focus.cjs'
       - 'tests/research/egx-recovery-focus.test.cjs'
       - 'scripts/stable/v15-last-accepted-truth-audit.cjs'
@@ -81,6 +83,16 @@ jobs:
         run: |
           node scripts/stable/v15-last-accepted-truth-audit.cjs
           node --test tests/stable/v15-last-accepted-truth-audit.test.cjs
+      - name: Prepare licensed vendor 59-gap data request and fail-closed intake
+        run: |
+          python3 -m unittest discover -s tests/research -p 'test_egx_licensed_ohlcv_intake.py' -v
+          python3 scripts/research/egx-licensed-ohlcv-intake.py
+          python3 - <<'PY'
+          import json
+          x=json.load(open('artifacts/history-recovery/licensed-vendor-intake-review.json'))
+          assert x['requestCount']>0 and x['automaticallyPromoted']==0 and x['received']==0
+          print('EGX_VENDOR_REQUEST_PENDING',x['requestCount'])
+          PY
       - name: Audit exact-session G11 strategy readiness per ticker
         run: node scripts/research/egx-g11-readiness-triage.cjs
       - name: Measure source-exact feature exclusions for four current-session tickers
