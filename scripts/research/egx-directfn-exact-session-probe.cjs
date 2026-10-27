@@ -17,7 +17,7 @@ function dateFromHeader(html){
  return n?m[3]+'-'+String(n).padStart(2,'0')+'-'+String(Number(m[1])).padStart(2,'0'):null;
 }
 function parse(html,expected){
- const headerDate=dateFromHeader(html),attempt=[];
+ const headerDate=dateFromHeader(html),header=strip(html).slice(0,1000),marketClosed=/\b(?:EGX\s+)?Closed\b/i.test(header),attempt=[];
  const trs=String(html).match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi)||[];
  for(const tr of trs){
   const cells=(tr.match(/<td\b[^>]*>[\s\S]*?<\/td>/gi)||[]).map(strip);
@@ -32,11 +32,11 @@ function parse(html,expected){
      &&Number.isInteger(volume)&&volume>=0;
   attempt.push({ticker,open,high,low,close,volume,change,changePct,
     sourceDate:headerDate,expectedSession:expected,
-    status:headerDate!==expected?'STALE_OR_WRONG_SESSION':validOHLC?'RESEARCH_VALID_CANDLE':'INVALID_OHLCV',
+    status:headerDate!==expected?'STALE_OR_WRONG_SESSION':!marketClosed?'UNFINALIZED_SOURCE_STATUS':validOHLC?'RESEARCH_VALID_CANDLE':'INVALID_OHLCV',
     source:URL,promotionApproved:false});
  }
  const found=new Map();for(const row of attempt)if(!found.has(row.ticker))found.set(row.ticker,row);
- return {sourceDate:headerDate,expectedSession:expected,exactSession:headerDate===expected,
+ return {sourceDate:headerDate,expectedSession:expected,sourceMarketClosed:marketClosed,exactSession:headerDate===expected&&marketClosed,
   parsedRows:attempt.length,validExactSession:[...found.values()].filter(x=>x.status==='RESEARCH_VALID_CANDLE').length,
   rows:[...found.values()]};
 }
@@ -60,7 +60,7 @@ async function run(){
   source:URL,expectedSession:expected,noAutoPromotion:true,status:'FETCH_FAILED',error:String(e.message).slice(0,250)}}
  finally{clearTimeout(timer)}
  fs.mkdirSync(OUT,{recursive:true});fs.writeFileSync(path.join(OUT,'directfn-exact-session-probe.json'),JSON.stringify(result,null,2)+'\n');
- console.log('EGX_DIRECTFN_PROBE',JSON.stringify({date:result.sourceDate,expected:result.expectedSession,
+ console.log('EGX_DIRECTFN_PROBE',JSON.stringify({date:result.sourceDate,closed:result.sourceMarketClosed,expected:result.expectedSession,
   http:result.httpStatus||null,rows:result.parsedRows||0,valid:result.validExactSession||0,
   focus:result.focus?.map(x=>x.ticker)||[],error:result.error||null}));
  return result;
