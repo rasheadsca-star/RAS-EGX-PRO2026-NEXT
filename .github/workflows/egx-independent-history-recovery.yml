@@ -7,6 +7,8 @@ on:
       - 'scripts/research/egx-independent-history-recovery.cjs'
       - 'scripts/research/egx-independent-source-probes.cjs'
       - 'scripts/research/egx-g11-readiness-triage.cjs'
+      - 'scripts/research/egx-directfn-exact-session-probe.cjs'
+      - 'tests/research/egx-directfn-exact-session-probe.test.cjs'
       - 'tests/research/egx-g11-readiness-triage.test.cjs'
       - 'tests/research/egx-independent-history-recovery.test.cjs'
       - '.github/workflows/egx-independent-history-recovery.yml'
@@ -57,6 +59,8 @@ jobs:
           node --check scripts/research/egx-independent-history-recovery.cjs
           node --check scripts/research/egx-independent-source-probes.cjs
           node --check scripts/research/egx-g11-readiness-triage.cjs
+          node --check scripts/research/egx-directfn-exact-session-probe.cjs
+          node --test tests/research/egx-directfn-exact-session-probe.test.cjs
           node --test tests/research/egx-g11-readiness-triage.test.cjs
           node --test tests/research/egx-independent-history-recovery.test.cjs
       - name: Audit exact-session G11 strategy readiness per ticker
@@ -67,6 +71,8 @@ jobs:
         run: |
           python3 scripts/research/egx-recovery-sqlite.py
           python3 -c "import json; j=json.load(open('artifacts/history-recovery/central-ledger-manifest.json')); assert j['counts']['automatically_promoted']==0 and j['integrityCheck']=='ok'"
+      - name: Probe DirectFN exact-date EOD candles without promotion
+        run: node scripts/research/egx-directfn-exact-session-probe.cjs
       - name: Stage external source evidence (never update canonical history)
         if: github.event_name != 'workflow_dispatch' || inputs.probe_sources == true
         continue-on-error: true
