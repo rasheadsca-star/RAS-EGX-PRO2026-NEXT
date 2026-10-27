@@ -3,6 +3,7 @@
 // Independent, fail-closed historic OHLCV inventory. Outputs are RESEARCH ONLY.
 // No writes to data/history, stable, Astra, decision snapshots, or paper ledgers.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {focusFromPersistent}=require('./egx-recovery-focus.cjs');
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const OUT=path.resolve(process.env.EGX_RECOVERY_OUT||path.join(ROOT,'artifacts/history-recovery'));
 const asDate=x=>{const s=String(x||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return null;const d=new Date(s+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===s?s:null};
@@ -29,6 +30,8 @@ function sources(root=ROOT){
 }
 function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
  const truth=read(path.join(root,'data/stable/v15-price-truth.json'),{});
+ const historySummary=read(path.join(root,'data/history-summary.json'),{});
+ const rawSymbols=read(path.join(root,'data/symbol-map.json'),{});
  const expected=asDate(cutoff||truth.expectedSession);
  if(!expected)throw Error('Expected session missing: fail closed');
  const all=new Map(),scanned=[],blocked=[];
@@ -38,7 +41,9 @@ function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
   for(const file of fs.readdirSync(source.dir).filter(x=>/^[A-Za-z0-9._-]+\.json$/.test(x)).sort()){
    files++;
    const t=ticker(file.slice(0,-5)),doc=read(path.join(source.dir,file),null);
-   if(!doc||ticker(doc.ticker)!==t||doc.exchange&&String(doc.exchange).toUpperCase()!=='EGX'||doc.currency&&String(doc.currency).toUpperCase()!=='EGP'){
+   const match=Array.isArray(rawSymbols)?rawSymbols.find(x=>ticker(x?.ticker)===t):rawSymbols[t];
+   const expectedCurrency=String(match?.currency||'EGP').toUpperCase();
+   if(!doc||ticker(doc.ticker)!==t||doc.exchange&&String(doc.exchange).toUpperCase()!=='EGX'||doc.currency&&String(doc.currency).toUpperCase()!==expectedCurrency){
     identityRejected++;blocked.push({ticker:t,source:source.id,reason:'FILE_IDENTITY_EXCHANGE_OR_CURRENCY_CONFLICT'});continue
    }
    const rows=Array.isArray(doc.sessions)?doc.sessions:[];
@@ -60,7 +65,9 @@ function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
   scanned.push({id:source.id,available:true,files,valid:validCount,rejected,identityRejected,readOnly:true});
  }
  if(!scanned[0]?.available||scanned[0].files===0)throw Error('Main archive absent: fail closed');
- const focus=[...new Set(Array.isArray(truth.missingHistoryFiles)?truth.missingHistoryFiles.map(ticker):[])];
+ const focusItems=focusFromPersistent({truth,historySummary,symbolMap:rawSymbols,expectedSession:expected});
+ const focus=focusItems.map(x=>x.ticker);
+ const focusReasonBy=new Map(focusItems.map(x=>[x.ticker,x.reasons]));
  let overlapDates=0,conflictDates=0,researchCandidates=0,mainSymbols=0;
  const conflicts=[],candidates=[],symbolStats=[],focusRecords=[];
  for(const stock of [...all.values()].sort((a,b)=>a.ticker.localeCompare(b.ticker))){
@@ -108,14 +115,13 @@ function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
     status:mainDates.has(expected)?'MAIN_ALREADY_HAS_SESSION':legacyDates.has(expected)?'UNVERIFIED_HISTORIC_ALTERNATIVE':'CURRENT_SESSION_NOT_RECOVERED'});
  }
  for(const t of focus.filter(t=>!all.has(t)))focusRecords.push({ticker:t,expectedSession:expected,status:'NOT_FOUND_IN_ANY_SCANNED_ARCHIVE'});
- const historySummary=read(path.join(root,'data/history-summary.json'),{});
- const rawSymbols=read(path.join(root,'data/symbol-map.json'),{});
  const mapped=Array.isArray(rawSymbols)?rawSymbols:Object.values(rawSymbols);
  const mapByTicker=new Map(mapped.filter(x=>x?.ticker).map(x=>[ticker(x.ticker),x]));
  const summaryByTicker=new Map((historySummary.symbols||[]).filter(x=>x?.ticker).map(x=>[ticker(x.ticker),x]));
  for(const item of focusRecords){
    const h=summaryByTicker.get(item.ticker)||{},identity=mapByTicker.get(item.ticker)||{};
    const error=String(h.lastUpdateError||'');
+   item.focusReasons=focusReasonBy.get(item.ticker)||[];
    item.sourceTriage={
      mappedActive:identity.active===false?false:identity.active===true?true:null,
      historicalSessions:Number(h.availableSessions||0),
@@ -133,6 +139,8 @@ function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
    expectedSession:expected,mode:'RESEARCH_STAGING_ONLY',noAutomaticPromotion:true,
    sources:scanned,summary:{archiveSymbols:all.size,mainSymbols,missingLatestSourceFocus:focus.length,focusWithLegacyExpected:focusRecords.filter(x=>x.legacyHasExpected).length,
      focusYahoo404:focusRecords.filter(x=>x.sourceTriage?.failureCode==='YAHOO_SYMBOL_HTTP_404').length,
+     focusNoHistory:focusRecords.filter(x=>x.focusReasons?.includes('NO_HISTORIC_BARS')).length,
+     focusStaleCurrent:focusRecords.filter(x=>x.focusReasons?.includes('EXPECTED_SESSION_HISTORY_GAP')).length,
      overlapDates,conflictDates,conflictAffectedSymbols:conflictTickerSet.size,researchCandidates,
      candidateRowsInConflictSymbols:legacyCandidateConflicted,priorityCandidatesWithoutObservedConflict:researchCandidates-legacyCandidateConflicted,blockedRecords:blocked.length},
    focus:focusRecords,stockCoverage:symbolStats,conflictExamples:conflicts.slice(0,100)};

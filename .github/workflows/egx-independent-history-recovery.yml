@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - 'scripts/research/egx-independent-history-recovery.cjs'
+      - 'scripts/research/egx-recovery-focus.cjs'
+      - 'tests/research/egx-recovery-focus.test.cjs'
       - 'scripts/stable/v15-last-accepted-truth-audit.cjs'
       - 'tests/stable/v15-last-accepted-truth-audit.test.cjs'
       - 'scripts/research/egx-independent-source-probes.cjs'
@@ -62,6 +64,8 @@ jobs:
       - name: Static validation and adversarial unit tests
         run: |
           node --check scripts/research/egx-independent-history-recovery.cjs
+          node --check scripts/research/egx-recovery-focus.cjs
+          node --test tests/research/egx-recovery-focus.test.cjs
           node --check scripts/research/egx-independent-source-probes.cjs
           node --check scripts/research/egx-public-symbol-identity-probe.cjs
           node --test tests/research/egx-public-symbol-identity-probe.test.cjs
