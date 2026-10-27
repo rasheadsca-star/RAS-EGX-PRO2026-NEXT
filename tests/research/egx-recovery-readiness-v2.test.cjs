@@ -40,3 +40,16 @@ test('missing issue evidence fails closed',()=>{
  const a=exercise(d=>delete d['docs/astra/G11_DATA_HEALTH_ISSUES.json']);
  assert.equal(a.status,2);assert.ok(a.output.blockers.includes('G11_SEVERE_FINDINGS'));
 });
+
+test('missing critical-severity count blocks, not coerced to zero',()=>{
+ const a=exercise(d=>delete d['docs/astra/G11_DATA_HEALTH_ISSUES.json'].criticalUnresolved);
+ assert.equal(a.status,2);assert.ok(a.output.blockers.includes('G11_SEVERE_FINDINGS'));
+});
+test('negative or unparseable coverage blocks',()=>{
+ const a=exercise(d=>d['docs/astra/G11_DATA_HEALTH_METRICS.json'].decisionPipeline.pipelineReadySecurities=-1);
+ assert.equal(a.status,2);assert.ok(a.output.blockers.includes('IMPOSSIBLE_COVERAGE'));
+});
+test('G19 not green blocks full Astra certification',()=>{
+ const a=exercise(d=>d['04_ACCEPTANCE_GATES.json'].gates[2].status='PENDING');
+ assert.equal(a.status,2);assert.ok(a.output.blockers.includes('ASTRA_FULL_CERTIFICATION_MISSING'));
+});
