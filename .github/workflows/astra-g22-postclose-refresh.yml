@@ -305,6 +305,26 @@ jobs:
           node scripts/astra/g22-postclose-refresh.cjs | tee /tmp/g22-refresh.log
           grep -q '^G22_POST_CLOSE_REFRESH ' /tmp/g22-refresh.log
 
+      - name: Audit V16 exclusions from same certified G11 baseline
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ -f .astra-certified/data/symbol-map.json ] && [ -f .astra-certified/data/stable/v15-price-truth.json ]; then
+            GITHUB_WORKSPACE="${{ github.workspace }}/.astra-certified" python3 scripts/research/egx-v16-feature-exclusions.py
+          else
+            echo "V16_CERTIFIED_AUDIT_SKIPPED_NO_BASELINE"
+          fi
+
+      - name: Preserve certified-baseline V16 exclusion audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g22-v16-certified-feature-rejections-${{ github.run_id }}
+          path: .astra-certified/artifacts/research/v16-feature-exclusion-audit.json
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Preserve per-ticker G11 blocker evidence when refresh fails
         if: always()
         uses: actions/upload-artifact@v4
