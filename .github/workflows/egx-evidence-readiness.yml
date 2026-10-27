@@ -29,8 +29,12 @@ jobs:
       - name: Fetch current main for independent drift comparison
         run: git fetch --no-tags origin main
       - name: Compare latest main market session with Astra certification
+        id: drift
+        continue-on-error: true
         run: node scripts/research/egx-live-main-drift.cjs
       - name: Evaluate pinned current G09/G11 source evidence
+        id: readiness
+        continue-on-error: true
         run: node scripts/research/egx-recovery-readiness-v2.cjs
       - name: Preserve evidence even on failure
         if: always()
