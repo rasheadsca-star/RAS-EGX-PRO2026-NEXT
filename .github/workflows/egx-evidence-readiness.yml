@@ -45,3 +45,6 @@ jobs:
             artifacts/history-recovery/readiness-evidence.json
             artifacts/history-recovery/main-session-drift.json
           if-no-files-found: warn
+      - name: Enforce blocked gate outcome
+        if: steps.drift.outcome == 'failure' || steps.readiness.outcome == 'failure'
+        run: exit 2
