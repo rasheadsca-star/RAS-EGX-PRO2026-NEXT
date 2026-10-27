@@ -53,20 +53,36 @@ function classify(current,candidate,handoff,commit){
 function audit(){
  const current=read(PRICE),handoff=read(HANDOFF);
  let candidate=null,commit=null,scanned=0,reason='NO_VALID_HISTORICAL_GIT_PRICE_TRUTH';
- const result=cp.spawnSync('git',['log','--max-count=400','--format=%H','--',PRICE],
-  {cwd:ROOT,encoding:'utf8',timeout:15000,maxBuffer:128*1024});
- if(result.status===0){
-  for(const hash of result.stdout.split(/\s+/).filter(x=>/^[a-f0-9]{40}$/.test(x))){
+ const anchored=[handoff.canonicalDataHead,handoff.producerHeadSha]
+   .filter(x=>/^[a-f0-9]{40}$/.test(String(x||'')));
+ const git=(args,timeout=7000)=>cp.spawnSync('git',args,
+   {cwd:ROOT,encoding:'utf8',timeout,maxBuffer:4*1024*1024});
+ const scan=(hash)=>{
    scanned++;
-   const x=cp.spawnSync('git',['show',hash+':'+PRICE],
-     {cwd:ROOT,encoding:'utf8',timeout:4000,maxBuffer:4*1024*1024});
-   if(x.status!==0)continue;
+   let x=git(['show',hash+':'+PRICE],5000);
+   if(x.status!==0&&process.env.EGX_AUDIT_FETCH_ANCHOR==='1'&&anchored.includes(hash)){
+     // One shallow, exact-SHA fetch: no full repository history necessary.
+     const fetch=git(['fetch','--no-tags','--depth=1','origin',hash],25000);
+     if(fetch.status===0)x=git(['show',hash+':'+PRICE],5000);
+   }
+   if(x.status!==0)return false;
    try{
-    const d=JSON.parse(x.stdout);
-    if(eligible(d,handoff)){candidate=d;commit=hash;reason='MATCHED_HISTORICAL_VALIDATED_HANDOFF';break}
-   }catch{}
-  }
- }else reason='GIT_HISTORY_NOT_AVAILABLE';
+     const d=JSON.parse(x.stdout);
+     if(!eligible(d,handoff))return false;
+     candidate=d;commit=hash;reason='MATCHED_IMMUTABLE_HANDOFF_ANCHOR';
+     return true;
+   }catch{return false}
+ };
+ for(const sha of anchored)if(scan(sha))break;
+ if(!candidate){
+   const result=git(['log','--max-count=100','--format=%H','--',PRICE],12000);
+   if(result.status===0){
+     for(const sha of result.stdout.split(/\s+/).filter(x=>/^[a-f0-9]{40}$/.test(x))){
+       if(anchored.includes(sha))continue;
+       if(scan(sha)){reason='MATCHED_HISTORICAL_VALIDATED_HANDOFF';break}
+     }
+   }else reason='GIT_HISTORY_NOT_AVAILABLE';
+ }
  const out=classify(current,candidate,handoff,commit);
  out.historicalSourceStatus=candidate?reason:reason;
  out.gitHistoryObjectsScanned=scanned;
