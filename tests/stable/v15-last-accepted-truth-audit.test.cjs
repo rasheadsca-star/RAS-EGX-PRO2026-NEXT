@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {eligible,classify}=require('../../scripts/stable/v15-last-accepted-truth-audit.cjs');
 const candidate={ready:true,executionGrade:true,expectedSession:'2026-10-26',
-  minimumExecutionRows:180,acceptedRows:204,updatedHistoryFiles:180,generatedAt:'2026-10-27T05:05:00.000Z',
+  minimumExecutionRows:80,acceptedRows:204,updatedHistoryFiles:180,generatedAt:'2026-10-27T05:05:00.000Z',
   source:{preciseSource:true,realFetch:true,verifiedExpectedSessionRows:204}};
 const handoff={sourceReady:true,currentSessionReady:true,final:true,executionGrade:true,
   sessionDate:'2026-10-26',acceptedRows:204};
