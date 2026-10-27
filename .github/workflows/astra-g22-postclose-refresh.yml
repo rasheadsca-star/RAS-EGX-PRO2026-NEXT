@@ -311,7 +311,11 @@ jobs:
         run: |
           set -euo pipefail
           if [ -f .astra-certified/data/symbol-map.json ] && [ -f .astra-certified/data/stable/v15-price-truth.json ]; then
-            GITHUB_WORKSPACE="${{ github.workspace }}/.astra-certified" python3 scripts/research/egx-v16-feature-exclusions.py
+            if [ -f artifacts/history-recovery/g22-certified-g11-active-tickers.json ]; then
+              GITHUB_WORKSPACE="${{ github.workspace }}/.astra-certified" python3 scripts/research/egx-v16-feature-exclusions.py --universe-file "${{ github.workspace }}/artifacts/history-recovery/g22-certified-g11-active-tickers.json"
+            else
+              echo "V16_CERTIFIED_AUDIT_SKIPPED_G11_UNIVERSE_NOT_AVAILABLE"
+            fi
           else
             echo "V16_CERTIFIED_AUDIT_SKIPPED_NO_BASELINE"
           fi

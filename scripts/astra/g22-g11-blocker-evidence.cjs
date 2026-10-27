@@ -24,6 +24,8 @@ function diagnose(h,expected){
 function emit(h,expected,out){
  const report=diagnose(h,expected);
  fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(report,null,2)+'\n');
+ const active=(h.universe?.records||[]).filter(x=>x.active!==false).map(x=>x.ticker).sort();
+ fs.writeFileSync(path.join(path.dirname(out),'g22-certified-g11-active-tickers.json'),JSON.stringify({session:expected,tickers:active},null,2)+'\n');
  console.log('G22_G11_TICKER_DIAGNOSTICS '+JSON.stringify({session:report.session,counts:report.counts,currentShortfall:report.missingToCurrent90,pipelineShortfall:report.missingToPipeline80,reasonCounts:Object.fromEntries(Object.entries(report.reasons).map(([k,v])=>[k,v.length]))}));
  return report;
 }

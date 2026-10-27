@@ -19,6 +19,8 @@ jobs:
       - run: node --check scripts/astra/g22-postclose-refresh.cjs
       - run: node --test tests/astra/g22-g11-blocker-evidence.test.cjs
       - run: node --test tests/astra/g22-v16-g11-crosswalk.test.cjs
+      - run: node --test tests/astra/g22-exact-active-universe.test.cjs
+      - run: python3 -m py_compile scripts/research/egx-v16-feature-exclusions.py
       - run: node --test tests/astra/g22-postclose-handoff-guard.test.cjs
       - name: Verify both 190-row gates stay aligned
         run: |
