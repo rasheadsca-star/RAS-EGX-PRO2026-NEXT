@@ -1,0 +1,36 @@
+name: EGX Historical Archive Candidate Audit
+on:
+  push:
+    branches: [research/egx-legacy-row-audit-20261027]
+  pull_request:
+    paths:
+      - 'scripts/research/egx-legacy-row-census.cjs'
+      - 'tests/research/egx-legacy-row-census.test.cjs'
+      - '.github/workflows/egx-legacy-row-census.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate archive audit
+        run: |
+          node --check scripts/research/egx-legacy-row-census.cjs
+          node --test tests/research/egx-legacy-row-census.test.cjs
+      - name: Produce candidate census
+        run: node scripts/research/egx-legacy-row-census.cjs
+      - name: Assert market-data files unchanged
+        run: git diff --exit-code -- data/history data/stable
+      - name: Upload review-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-legacy-row-census-${{ github.run_id }}
+          path: artifacts/history-recovery/legacy-row-census.json
+          if-no-files-found: error
