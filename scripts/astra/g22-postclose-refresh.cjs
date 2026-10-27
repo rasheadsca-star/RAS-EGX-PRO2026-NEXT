@@ -191,7 +191,7 @@ function main() {
     let disposition={};
     try{const fp=DEC('data/stable/v16-market-universe-disposition.json');if(fs.existsSync(fp))disposition=JSON.parse(fs.readFileSync(fp,'utf8'))}catch(e){console.error('G22_DISPOSITION_EVIDENCE_READ_ERROR',e.message)}
     try{
-      const artifact=coverageAttribution({expected,activeUniverse,currentCanonical,pipelineReady,priceTruth,secondSource,disposition,
+      const artifact=coverageAttribution({expected,activeUniverse,currentCanonical,pipelineReady,priceTruth,secondSource,disposition,readinessIssues:h?.issues?.issues||[],pipelineDiagnostics:h?.pipeline?.diagnostics||[],
        outPath:process.env.G22_ATTRIBUTION_OUT||'/tmp/g22-coverage-attribution.json'});
       console.error('G22_COVERAGE_ATTRIBUTION',JSON.stringify({canonicalShortfall:artifact.shortfall,canonicalRequired:artifact.required,pipelineShortfall:artifact.pipelineShortfall,pipelineRequired:artifact.pipelineRequired,totalRejectedRows:artifact.totalRejectedRows}));
     }catch(e){console.error('G22_COVERAGE_ATTRIBUTION_WRITE_ERROR',e.message)}
