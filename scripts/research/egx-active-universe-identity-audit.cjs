@@ -11,7 +11,10 @@ function assess({map,history,search,market,truth}){
  const indexed=new Set((search?.stocks||[]).map(x=>String(x.ticker||'').toUpperCase()));
  const marketRows=new Set((market?.rows||[]).map(x=>String(x.symbol||x.ticker||x.code||'').toUpperCase()));
  const histBy=new Map((history?.symbols||[]).map(x=>[x.ticker,x]));
+ // A failed intraday refresh can overwrite v15 truth with acceptedRows=0 and no
+ // missingHistoryFiles. Therefore never equate an empty array to a healed universe.
  const rejected=new Set((truth?.missingHistoryFiles||[]).map(String));
+ const truthReady=truth?.ready===true&&truth?.executionGrade===true&&Number(truth.acceptedRows)>0;
  const records=active.map(entry=>{
    const t=String(entry.ticker).toUpperCase(),h=histBy.get(t)||{};
    const discovery=entry.discoverySources||[];
@@ -24,7 +27,8 @@ function assess({map,history,search,market,truth}){
    if(!indexed.has(t))categories.push('MARKET_SEARCH_INDEX_ABSENT');
    if(!marketRows.has(t))categories.push('MARKET_PRICE_ROW_ABSENT_NOT_DELISTING_PROOF');
    if(h.symbolVerified!==true)categories.push('NO_VERIFIED_HISTORY_IDENTITY');
-   if(rejected.has(t))categories.push('SOURCE_HISTORY_GAP');
+   if(rejected.has(t)||(!h.sourceFile&&Number(h.availableSessions||0)===0))categories.push('SOURCE_HISTORY_GAP');
+   if(String(h.lastUpdateError||'').includes('HTTP 404'))categories.push('YAHOO_SYMBOL_HTTP_404');
    if(h.lastSession&&truth?.expectedSession&&h.lastSession<truth.expectedSession)categories.push('CURRENT_SESSION_HISTORY_STALE');
    return {ticker:t,companyNameAr:entry.companyNameAr||null,companyNameEn:entry.companyNameEn||null,
     isin:entry.isin||null,mappedCurrency:entry.currency||null,marketRowPresent:marketRows.has(t),
@@ -37,9 +41,15 @@ function assess({map,history,search,market,truth}){
  const notIndexed=records.filter(x=>!x.marketSearchIndexPresent);
  const withoutIdentity=records.filter(x=>!x.historyIdentityVerified);
  return {schemaVersion:'egx-active-universe-identity-audit-1',generatedAt:new Date().toISOString(),
-  expectedSession:truth?.expectedSession||null,readOnly:true,productionDataMutated:false,
+  expectedSession:truth?.expectedSession||null,priceTruthReady:truthReady,
+  priceTruthGeneratedAt:truth?.generatedAt||null,
+  priceTruthAcceptedRows:truth?.acceptedRows??null,priceTruthRejectedRows:truth?.rejectedRows??null,
+  sourceHistorySummaryGeneratedAt:history?.generatedAt||null,
+  readOnly:true,productionDataMutated:false,
   summary:{mappedActive:active.length,unindexedActive:notIndexed.length,unverifiedIdentity:withoutIdentity.length,
-    apparentStructuralKeys:suspect.length,missingHistorySource:records.filter(x=>x.categories.includes('SOURCE_HISTORY_GAP')).length},
+    apparentStructuralKeys:suspect.length,missingHistorySource:records.filter(x=>x.categories.includes('SOURCE_HISTORY_GAP')).length,
+    yahoo404Symbols:records.filter(x=>x.categories.includes('YAHOO_SYMBOL_HTTP_404')).length,
+    priceTruthUnavailable:!truthReady},
   structuralReview:suspect,unindexedActive:notIndexed,identityUnverified:withoutIdentity,records};
 }
 if(require.main===module){
