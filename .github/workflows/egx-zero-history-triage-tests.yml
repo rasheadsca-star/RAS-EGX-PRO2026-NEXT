@@ -1,0 +1,23 @@
+name: EGX Zero History Triage Tests
+on:
+  push:
+    branches: [work/egx-zero-history-triage-20261027]
+  pull_request:
+    paths:
+      - 'scripts/research/egx-daily-gap-watch.cjs'
+      - 'tests/research/egx-daily-gap-watch.test.cjs'
+      - '.github/workflows/egx-zero-history-triage-tests.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/research/egx-daily-gap-watch.cjs
+      - run: node --test tests/research/egx-daily-gap-watch.test.cjs
