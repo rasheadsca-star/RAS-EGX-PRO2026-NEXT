@@ -8,7 +8,7 @@ test('coverage 200/224 is blocked at 202 without changing acceptance',()=>{
   const report={acceptedRows:200,sampleRejected:[{ticker:'CEFM',reason:'REPORTED_CHANGE_MISMATCH'}],missingHistoryFiles:['XYZ']};
   const before=JSON.stringify(report);
   const doc=produce({expected:'2026-10-26',activeUniverse:224,currentCanonical:200,pipelineReady:116,priceTruth:report,
-   secondSource:{records:{CEFM:{status:'UNRESOLVED'},ABC:{attempts:[{provider:'YAHOO_CHART',status:'NO_SESSION'}]}}},disposition:{unresolved:[{ticker:'ABC',reason:'MISSING_VERIFIED_SESSION'}],verifiedIneligible:[]},readinessIssues:[{severity:'HIGH',code:'CURRENT_SESSION_GAP',ticker:'ABC',message:'No verified current session'},{severity:'HIGH',code:'CURRENT_SESSION_GAP',ticker:'XYZ'}],pipelineDiagnostics:[{code:'NOT_READY',ticker:'ABC'}],outPath:target});
+   secondSource:{records:{CEFM:{status:'UNRESOLVED'},ABC:{attempts:[{provider:'YAHOO_CHART',status:'NO_SESSION'}]}}},disposition:{unresolved:[{ticker:'ABC',reason:'MISSING_VERIFIED_SESSION'}],verifiedIneligible:[]},readinessIssues:[{severity:'HIGH',code:'CURRENT_SESSION_GAP',ticker:'ABC',message:'No verified current session'},{severity:'HIGH',code:'CURRENT_SESSION_GAP',ticker:'XYZ'}],pipelineDiagnostics:[{code:'NOT_READY',ticker:'ABC'}],strategyReadiness:{productionCritical:{readySecurities:116,globalTrainingSessions:51,globalTrainingRows:3100,minimumSourceSessions:50,minimumSourceUniverse:60},rows:[{ticker:'ABC',productionCritical:true,status:'INSUFFICIENT_HISTORY',reason:'MINIMUM_BARS_56',validHistorySessions:12},{ticker:'XYZ',productionCritical:true,status:'READY',reason:'DATA_REQUIREMENTS_SATISFIED',validHistorySessions:80}]},outPath:target});
   assert.equal(doc.required,202);assert.equal(doc.shortfall,2);assert.equal(doc.coveragePct,200/224*100);
   assert.equal(doc.details[0].secondary.status,'UNRESOLVED');
   assert.equal(doc.pipelineRequired,180);
@@ -17,6 +17,10 @@ test('coverage 200/224 is blocked at 202 without changing acceptance',()=>{
   assert.equal(doc.readinessIssueCount,2);
   assert.equal(doc.readinessIssuesByCode.CURRENT_SESSION_GAP,2);
   assert.equal(doc.pipelineDiagnostics[0].ticker,'ABC');
+  assert.equal(doc.productionReadiness.readySecurities,116);
+  assert.equal(doc.productionReadiness.globalTrainingSessions,51);
+  assert.equal(doc.productionReadiness.blockedReasons.MINIMUM_BARS_56,1);
+  assert.equal(doc.productionReadiness.records.find(x=>x.ticker==='ABC').validHistorySessions,12);
   assert.equal(doc.canonicalCoverageGate,'BLOCKED');
   assert.equal(doc.totalRejectedRows,null);
   assert.equal(doc.sampledRejectedCount,1);
