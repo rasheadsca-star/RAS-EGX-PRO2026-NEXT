@@ -6,6 +6,8 @@ on:
     paths:
       - 'scripts/research/egx-independent-history-recovery.cjs'
       - 'scripts/research/egx-independent-source-probes.cjs'
+      - 'scripts/research/egx-public-symbol-identity-probe.cjs'
+      - 'tests/research/egx-public-symbol-identity-probe.test.cjs'
       - 'scripts/research/egx-g11-readiness-triage.cjs'
       - 'scripts/research/egx-directfn-exact-session-probe.cjs'
       - 'scripts/research/egx-g11-feature-rejections.py'
@@ -59,6 +61,8 @@ jobs:
         run: |
           node --check scripts/research/egx-independent-history-recovery.cjs
           node --check scripts/research/egx-independent-source-probes.cjs
+          node --check scripts/research/egx-public-symbol-identity-probe.cjs
+          node --test tests/research/egx-public-symbol-identity-probe.test.cjs
           node --check scripts/research/egx-g11-readiness-triage.cjs
           node --check scripts/research/egx-directfn-exact-session-probe.cjs
           node --test tests/research/egx-directfn-exact-session-probe.test.cjs
@@ -76,6 +80,8 @@ jobs:
           python3 -c "import json; j=json.load(open('artifacts/history-recovery/central-ledger-manifest.json')); assert j['counts']['automatically_promoted']==0 and j['integrityCheck']=='ok'"
       - name: Probe DirectFN exact-date EOD candles without promotion
         run: node scripts/research/egx-directfn-exact-session-probe.cjs
+      - name: Reconcile unavailable symbols to explicit public ticker pages (not official listing)
+        run: node scripts/research/egx-public-symbol-identity-probe.cjs
       - name: Stage external source evidence (never update canonical history)
         if: github.event_name != 'workflow_dispatch' || inputs.probe_sources == true
         continue-on-error: true
