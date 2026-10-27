@@ -41,3 +41,18 @@ test('ISIN conflict blocks cross-repository promotion',()=>{
   assert.ok(x.ledger.blocked.some(z=>z.reason==='ISIN_CONFLICT_ACROSS_ARCHIVES'));
  }finally{fs.rmSync(root,{force:true,recursive:true})}
 });
+
+test('USD EGX share-class historic file is not incorrectly discarded as non-EGP',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'egx-recover-usd-'));
+ try{
+  put(root,'data/stable/v15-price-truth.json',{expectedSession:'2026-10-26',ready:false,acceptedRows:0,missingHistoryFiles:[]});
+  put(root,'data/symbol-map.json',{GTEX:{ticker:'GTEX',active:true,currency:'USD'}});
+  put(root,'data/history-summary.json',{symbols:[{ticker:'GTEX',availableSessions:1,lastSession:'2026-10-20',symbolVerified:true}]});
+  put(root,'data/history/GTEX.json',{ticker:'GTEX',exchange:'EGX',currency:'USD',symbolVerified:true,
+   sessions:[{ticker:'GTEX',date:'2026-10-20',open:1.2,high:1.3,low:1.1,close:1.25,volume:10000}]});
+  const x=inventory({root,out:path.join(root,'reports')});
+  assert.equal(x.report.summary.mainSymbols,1);
+  assert.equal(x.report.sources.find(z=>z.id==='main').identityRejected,0);
+  assert.equal(x.report.focus.some(z=>z.ticker==='GTEX'),true);
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+});
