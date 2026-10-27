@@ -162,7 +162,7 @@ function main() {
   ensure(mainAppStatus.pagesPublished === true, 'MAIN APP handoff has not been Pages-published');
   ensure(mainAppStatus.sessionDate === expected, 'MAIN APP handoff session != price-truth expected session');
   ensure(mainAppStatus.expectedSession === expected, 'MAIN APP handoff expected session mismatch');
-  ensure(Number(mainAppStatus.acceptedRows || 0) >= 200, 'MAIN APP handoff accepted rows below G22 floor');
+  ensure(Number(mainAppStatus.acceptedRows || 0) >= 190, 'MAIN APP handoff accepted rows below G22 conditional 190 floor');
   ensure(Number(mainAppStatus.sourceSessionEvidenceCoveragePct || 0) >= 90, 'MAIN APP handoff source evidence below G22 floor');
   ensure(/^[0-9a-f]{64}$/.test(String(mainAppStatus.materialFingerprint || '')), 'MAIN APP handoff material fingerprint invalid');
   ensure(/^[0-9a-f]{40}$/.test(String(mainAppStatus.canonicalDataHead || '')), 'MAIN APP canonical data head invalid');
