@@ -8,12 +8,15 @@ test('coverage 200/224 is blocked at 202 without changing acceptance',()=>{
   const report={acceptedRows:200,sampleRejected:[{ticker:'CEFM',reason:'REPORTED_CHANGE_MISMATCH'}],missingHistoryFiles:['XYZ']};
   const before=JSON.stringify(report);
   const doc=produce({expected:'2026-10-26',activeUniverse:224,currentCanonical:200,pipelineReady:116,priceTruth:report,
-   secondSource:{records:{CEFM:{status:'UNRESOLVED'},ABC:{attempts:[{provider:'YAHOO_CHART',status:'NO_SESSION'}]}}},disposition:{unresolved:[{ticker:'ABC',reason:'MISSING_VERIFIED_SESSION'}],verifiedIneligible:[]},outPath:target});
+   secondSource:{records:{CEFM:{status:'UNRESOLVED'},ABC:{attempts:[{provider:'YAHOO_CHART',status:'NO_SESSION'}]}}},disposition:{unresolved:[{ticker:'ABC',reason:'MISSING_VERIFIED_SESSION'}],verifiedIneligible:[]},readinessIssues:[{severity:'HIGH',code:'CURRENT_SESSION_GAP',ticker:'ABC',message:'No verified current session'},{severity:'HIGH',code:'CURRENT_SESSION_GAP',ticker:'XYZ'}],pipelineDiagnostics:[{code:'NOT_READY',ticker:'ABC'}],outPath:target});
   assert.equal(doc.required,202);assert.equal(doc.shortfall,2);assert.equal(doc.coveragePct,200/224*100);
   assert.equal(doc.details[0].secondary.status,'UNRESOLVED');
   assert.equal(doc.pipelineRequired,180);
   assert.equal(doc.pipelineShortfall,64);
   assert.equal(doc.pipelineCoverageGate,'BLOCKED');
+  assert.equal(doc.readinessIssueCount,2);
+  assert.equal(doc.readinessIssuesByCode.CURRENT_SESSION_GAP,2);
+  assert.equal(doc.pipelineDiagnostics[0].ticker,'ABC');
   assert.equal(doc.canonicalCoverageGate,'BLOCKED');
   assert.equal(doc.totalRejectedRows,null);
   assert.equal(doc.sampledRejectedCount,1);
