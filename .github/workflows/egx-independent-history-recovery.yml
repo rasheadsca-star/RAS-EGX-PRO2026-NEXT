@@ -8,6 +8,7 @@ on:
       - 'scripts/research/egx-independent-source-probes.cjs'
       - 'scripts/research/egx-g11-readiness-triage.cjs'
       - 'scripts/research/egx-directfn-exact-session-probe.cjs'
+      - 'scripts/research/egx-g11-feature-rejections.py'
       - 'tests/research/egx-directfn-exact-session-probe.test.cjs'
       - 'tests/research/egx-g11-readiness-triage.test.cjs'
       - 'tests/research/egx-independent-history-recovery.test.cjs'
@@ -65,6 +66,8 @@ jobs:
           node --test tests/research/egx-independent-history-recovery.test.cjs
       - name: Audit exact-session G11 strategy readiness per ticker
         run: node scripts/research/egx-g11-readiness-triage.cjs
+      - name: Measure source-exact feature exclusions for four current-session tickers
+        run: python3 scripts/research/egx-g11-feature-rejections.py
       - name: Build historical archive inventory and quarantine ledger
         run: node scripts/research/egx-independent-history-recovery.cjs
       - name: Build single quarantined central SQLite research database
