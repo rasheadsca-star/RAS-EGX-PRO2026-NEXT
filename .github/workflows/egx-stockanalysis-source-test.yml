@@ -1,0 +1,36 @@
+name: EGX External OHLCV Source Verification
+on:
+  push:
+    branches: [research/egx-stockanalysis-recovery-20261027]
+  pull_request:
+    paths:
+      - 'scripts/research/egx-stockanalysis-ohlcv-stage.cjs'
+      - '.github/workflows/egx-stockanalysis-source-test.yml'
+permissions:
+  contents: read
+jobs:
+  independent-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: node --check scripts/research/egx-stockanalysis-ohlcv-stage.cjs
+      - name: Stage external historical source bars read-only
+        run: node scripts/research/egx-stockanalysis-ohlcv-stage.cjs
+      - name: Confirm no canonical market writes
+        if: always()
+        run: git diff --exit-code -- data/history/ data/stable/ docs/astra/ astra-prod/
+      - name: Retain data source evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-stockanalysis-stage-${{ github.run_id }}
+          path: artifacts/history-recovery/stockanalysis-stage/
+          retention-days: 30
+          if-no-files-found: error
