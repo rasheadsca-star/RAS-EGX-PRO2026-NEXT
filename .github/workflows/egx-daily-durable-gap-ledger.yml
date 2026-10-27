@@ -1,0 +1,51 @@
+name: EGX Daily Durable Gap Ledger (research only)
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 19 * * 0-4'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: egx-daily-gap-ledger-research
+  cancel-in-progress: false
+jobs:
+  ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch authoritative main price snapshot
+        run: git fetch --no-tags origin main
+      - name: Restore previous ledger artifact where available
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/history-recovery
+          RUN=$(gh run list --workflow egx-daily-durable-gap-ledger.yml --branch work/egx-recovery-audit-20261027 --status success --limit 15 --json databaseId --jq '.[0].databaseId // empty' || true)
+          if [ -n "$RUN" ]; then
+            gh run download "$RUN" --name egx-daily-gap-ledger --dir /tmp/egx-prior || true
+            if [ -f /tmp/egx-prior/daily-gap-watch.json ]; then
+              cp /tmp/egx-prior/daily-gap-watch.json artifacts/history-recovery/daily-gap-watch.json
+            fi
+          fi
+      - name: Test gap accounting
+        run: node --test tests/research/egx-daily-gap-watch.test.cjs
+      - name: Build source-pinned gap ledger
+        env:
+          EGX_MARKET_REF: origin/main
+        run: node scripts/research/egx-daily-gap-watch.cjs
+      - name: Upload durable ledger
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-daily-gap-ledger
+          path: artifacts/history-recovery/daily-gap-watch.json
+          retention-days: 90
+          if-no-files-found: error
