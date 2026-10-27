@@ -333,6 +333,22 @@ jobs:
             echo "G22_CROSSWALK_SKIPPED_EVIDENCE_MISSING"
           fi
 
+      - name: Rank actionable G22 repairs
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ -f artifacts/history-recovery/g22-v16-g11-crosswalk.json ]; then
+            node scripts/astra/g22-recovery-priorities.cjs artifacts/history-recovery/g22-v16-g11-crosswalk.json artifacts/history-recovery/g22-recovery-priorities.json
+          fi
+
+      - name: Upload G22 repair priorities
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g22-recovery-priorities-${{ github.run_id }}
+          path: artifacts/history-recovery/g22-recovery-priorities.json
+          if-no-files-found: ignore
+
       - name: Preserve V16 and G11 exclusion crosswalk
         if: always()
         uses: actions/upload-artifact@v4
