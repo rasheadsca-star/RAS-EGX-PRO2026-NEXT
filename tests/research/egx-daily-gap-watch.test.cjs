@@ -15,7 +15,7 @@ test('rerunning same exchange session does not increment gap persistence',()=>{
 });
 
 test('unverified zero-history ticker requires identity reconciliation',()=>{
- const x=build(truth('2026-10-27',['BONY']),summary);
+ const x=build(truth('2026-10-27',['BONY']),{symbols:[{ticker:'BONY',availableSessions:0,lastSession:null,symbolVerified:false}]});
  assert.equal(x.records[0].recoveryClass,'ZERO_HISTORY_IDENTITY_UNVERIFIED');
  assert.match(x.records[0].nextAction,/VERIFY_EXCHANGE_SECURITY_IDENTITY/);
  assert.equal(x.records[0].eligibleForTrading,false);
