@@ -36,8 +36,7 @@ function summarize(h,truth){
   affectedTickers:x.affectedTickers||[],summary:x.summary}));
  return {schemaVersion:'egx-g11-data-recovery-diagnostics-1',generatedAt:new Date().toISOString(),
   mode:'READ_ONLY_CERTIFIED_G11_SHADOW',expectedSession:expected,g11ExpectedSession:actual,
-  exactSessionMatch:expected===actual,stalePublicDecision:false,sourceReady:false,
-  productionEligible:false,
+  exactSessionMatch:expected===actual,productionEligible:false,
   metrics:{activeUniverse:universe,currentCanonical:canonical,requiredCanonical:minCanonical,
    canonicalShortfall:Math.max(0,minCanonical-canonical),pipelineReady,requiredPipeline:minPipeline,
    pipelineShortfall:Math.max(0,minPipeline-pipelineReady),
