@@ -1,0 +1,44 @@
+name: EGX Historical Truth Audit Isolation
+on:
+  push:
+    branches: [fix/intraday-last-good-truth-audit-ledger-20261027]
+  pull_request:
+    paths:
+      - 'scripts/stable/v15-last-accepted-truth-audit.cjs'
+      - 'tests/stable/v15-last-accepted-truth-audit.test.cjs'
+      - '.github/workflows/main-app-intraday-ls1.yml'
+      - '.github/workflows/egx-historic-price-audit.yml'
+permissions:
+  contents: read
+jobs:
+  forensic-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and adversarial tests
+        run: |
+          node --check scripts/stable/v15-last-accepted-truth-audit.cjs
+          node --test tests/stable/v15-last-accepted-truth-audit.test.cjs
+      - name: Recover only immutable signed historical quote evidence
+        run: |
+          node scripts/stable/v15-last-accepted-truth-audit.cjs
+          node - <<'NODE'
+          const fs=require('fs'),d=JSON.parse(fs.readFileSync('data/ops/v15-last-accepted-price-truth-audit.json'));
+          if(d.executionAllowed!==false||d.activeDecisionSource!=='data/stable/v15-price-truth.json')throw Error('Fail closed invariant broken');
+          if(d.historicalEvidence&&!d.historicalEvidence.corroboratedWithImmutableHandoff)throw Error('History lacks handoff parity');
+          console.log('LAST_CERTIFIED_SOURCE',JSON.stringify({status:d.historicalSourceStatus,rows:d.historicalEvidence?.acceptedRows,commit:d.historicalEvidence?.commit,activeFailClosed:d.activeFailClosed}));
+          NODE
+      - name: No production data mutation
+        run: |
+          git diff --exit-code -- data/history/ data/stable/ data/market.json data/symbol-map.json astra/ astra-prod/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-forensic-last-accepted-price-truth
+          path: data/ops/v15-last-accepted-price-truth-audit.json
+          retention-days: 30
