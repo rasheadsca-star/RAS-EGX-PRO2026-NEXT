@@ -12,6 +12,7 @@ on:
       - "scripts/stable/v16-verified-incremental-recovery.cjs"
       - "scripts/stable/v16-market-coverage-reconciler.cjs"
       - "tests/stable/v16-market-coverage-reconciler.test.cjs"
+      - "tests/stable/v16-recovered-history-persistence.test.cjs"
 
 permissions:
   contents: write
@@ -38,7 +39,7 @@ jobs:
           set -euo pipefail
           node --check scripts/stable/v16-verified-incremental-recovery.cjs
           node --check scripts/stable/v16-market-coverage-reconciler.cjs
-          node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs
+          node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs tests/stable/v16-recovered-history-persistence.test.cjs
       - name: Freeze same-session baseline
         run: |
           set -euo pipefail
