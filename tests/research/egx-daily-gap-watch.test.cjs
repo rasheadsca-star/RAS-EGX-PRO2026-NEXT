@@ -7,3 +7,9 @@ test('current missing symbols are quarantined',()=>{const x=build(truth('2026-10
 test('persistent gap increments across observed sessions',()=>{const p=build(truth('2026-10-26',['BONY']),summary),n=build(truth('2026-10-27',['BONY']),summary,p);assert.equal(n.records[0].consecutiveObservedSessions,2);assert.equal(n.records[0].firstObservedSession,'2026-10-26')});
 test('exiting missing list never certifies recovery',()=>{const p=build(truth('2026-10-26',['BONY']),summary),n=build(truth('2026-10-27',[]),summary,p);assert.equal(n.recovered[0].status,'NO_LONGER_MISSING_IN_PRICE_TRUTH_NOT_YET_CERTIFIED');assert.equal(n.productionEligibility,false)});
 test('missing list must be explicit and duplicate-free',()=>{assert.throws(()=>build({expectedSession:'2026-10-27'},summary),/MISSING_EXPLICIT/);assert.throws(()=>build(truth('2026-10-27',['BONY','BONY']),summary),/DUPLICATE/)});
+
+test('rerunning same exchange session does not increment gap persistence',()=>{
+ const first=build(truth('2026-10-27',['BONY']),summary);
+ const second=build(truth('2026-10-27',['BONY']),summary,first);
+ assert.equal(second.records[0].consecutiveObservedSessions,1);
+});

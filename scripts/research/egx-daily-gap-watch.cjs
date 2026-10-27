@@ -13,7 +13,7 @@ function build(truth,summary,prior={}){
  const old=new Map((prior.records||[]).map(x=>[x.ticker,x]));
  const records=unique.map(t=>{
   const h=history.get(t)||{},p=old.get(t);
-  const consecutive=p&&p.lastObservedSession<truth.expectedSession?Number(p.consecutiveObservedSessions||0)+1:1;
+  const consecutive=p&&p.lastObservedSession===truth.expectedSession?Number(p.consecutiveObservedSessions||1):p&&p.lastObservedSession<truth.expectedSession?Number(p.consecutiveObservedSessions||0)+1:1;
   return {ticker:t,firstObservedSession:p?.firstObservedSession||truth.expectedSession,lastObservedSession:truth.expectedSession,
    consecutiveObservedSessions:consecutive,lastHistorySession:h.lastSession||null,availableSessions:h.availableSessions??null,
    symbolVerified:h.symbolVerified===true,status:'SOURCE_GAP_UNRESOLVED',
