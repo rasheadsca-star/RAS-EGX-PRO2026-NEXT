@@ -8,6 +8,8 @@ on:
       - '.github/workflows/egx-evidence-readiness.yml'
       - 'tests/research/egx-recovery-readiness-v2.test.cjs'
       - 'scripts/research/egx-live-main-drift.cjs'
+      - 'scripts/research/egx-daily-gap-watch.cjs'
+      - 'tests/research/egx-daily-gap-watch.test.cjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +28,10 @@ jobs:
         run: node --check scripts/research/egx-recovery-readiness-v2.cjs
       - name: Test fail-closed behavior with controlled fixtures
         run: node --test tests/research/egx-recovery-readiness-v2.test.cjs
+      - name: Test daily gap-state accounting
+        run: node --test tests/research/egx-daily-gap-watch.test.cjs
+      - name: Build read-only daily gap list
+        run: node scripts/research/egx-daily-gap-watch.cjs
       - name: Fetch current main for independent drift comparison
         run: git fetch --no-tags origin main
       - name: Compare latest main market session with Astra certification
@@ -44,6 +50,7 @@ jobs:
           path: |
             artifacts/history-recovery/readiness-evidence.json
             artifacts/history-recovery/main-session-drift.json
+            artifacts/history-recovery/daily-gap-watch.json
           if-no-files-found: warn
       - name: Enforce blocked gate outcome
         if: steps.drift.outcome == 'failure' || steps.readiness.outcome == 'failure'
