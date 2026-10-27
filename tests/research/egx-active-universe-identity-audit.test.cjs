@@ -20,3 +20,13 @@ test('real mapped security with strong dated price evidence must never be sugges
  assert.equal(j.summary.apparentStructuralKeys,0);
  assert.equal(j.summary.unverifiedIdentity,0);
 });
+
+test('intraday overwrite with empty missingHistoryFiles cannot make historical 404 gaps disappear',()=>{
+ const j=assess({map:{BONY:{ticker:'BONY',active:true,discoverySources:['data/universe-index.json']}},
+  history:{generatedAt:'2026-10-26',symbols:[{ticker:'BONY',processingStatus:'failed',
+   availableSessions:0,lastUpdateError:'Yahoo history failed: HTTP 404'}]},
+  search:{stocks:[]},market:{rows:[]},truth:{ready:false,executionGrade:false,acceptedRows:0,rejectedRows:192,missingHistoryFiles:[]}});
+ assert.equal(j.summary.priceTruthUnavailable,true);
+ assert.equal(j.summary.missingHistorySource,1);
+ assert.equal(j.summary.yahoo404Symbols,1);
+});
