@@ -1,0 +1,21 @@
+name: G22 Conditional 190 Floor Acceptance
+on:
+  pull_request:
+    paths:
+      - 'scripts/astra/g22-postclose-handoff-guard.cjs'
+      - 'tests/astra/g22-postclose-handoff-guard.test.cjs'
+      - '.github/workflows/g22-conditional-190-acceptance.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/astra/g22-postclose-handoff-guard.test.cjs
+      - run: git diff --exit-code -- data/history data/stable astra-prod
