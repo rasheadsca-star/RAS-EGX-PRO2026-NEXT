@@ -29,7 +29,7 @@ function classify(current,candidate,handoff,commit){
  const currentReady=Boolean(current.ready===true&&current.executionGrade===true);
  const accepted=eligible(candidate,handoff);
  const sameDate=Boolean(accepted&&candidate.expectedSession===current.expectedSession);
- return {schemaVersion:'egx-last-accepted-price-truth-audit-1',createdAt:new Date().toISOString(),
+ return {schemaVersion:'egx-last-accepted-price-truth-audit-1',createdAt:current.generatedAt||null,
   purpose:'AUDIT_ONLY_NO_TRADING_NO_PRODUCTION_FALLBACK',
   activeDecisionSource:'data/stable/v15-price-truth.json',
   activeFailClosed:!currentReady,
