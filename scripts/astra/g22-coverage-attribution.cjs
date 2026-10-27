@@ -1,7 +1,7 @@
 'use strict';
 // P1 evidence only: no acceptance changes or manual resurrection of rejected symbols.
 const fs=require('node:fs'),path=require('node:path');
-function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,priceTruth,secondSource={},disposition={},outPath}){
+function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,priceTruth,secondSource={},disposition={},readinessIssues=[],pipelineDiagnostics=[],outPath}){
  const rejected=Array.isArray(priceTruth?.sampleRejected)?priceTruth.sampleRejected:[];
  const missing=Array.isArray(priceTruth?.missingHistoryFiles)?priceTruth.missingHistoryFiles:[];
  const details=rejected.map(r=>({
@@ -18,6 +18,8 @@ function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,pr
  for(const r of (Array.isArray(disposition?.verifiedIneligible)?disposition.verifiedIneligible:[])){
   if(r?.ticker&&!observed.has(r.ticker)){details.push({ticker:r.ticker,classification:'VERIFIED_INELIGIBLE',reason:r.reason||null,secondary:secondSource?.records?.[r.ticker]??null});observed.add(r.ticker)}
  }
+ const findings=Array.isArray(readinessIssues)?readinessIssues.map(x=>({severity:x?.severity||null,code:x?.code||'UNKNOWN',ticker:x?.ticker||null,message:x?.message||null})):[];
+ const issuesByCode=Object.fromEntries([...new Set(findings.map(x=>x.code))].sort().map(code=>[code,findings.filter(x=>x.code===code).length]));
  const required=Math.ceil(activeUniverse*.9);
  const pipelineRequired=Math.ceil(activeUniverse*.8);
  const hasPipeline=Number.isFinite(pipelineReady)&&pipelineReady>=0;
@@ -29,6 +31,8 @@ function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,pr
   pipelineShortfall:hasPipeline?Math.max(0,pipelineRequired-pipelineReady):null,
   pipelineCoveragePct:hasPipeline&&activeUniverse?100*pipelineReady/activeUniverse:null,
   pipelineCoverageGate:hasPipeline?(pipelineReady>=pipelineRequired?'PASS':'BLOCKED'):'NOT_MEASURED',
+  readinessIssueCount:findings.length,readinessIssuesByCode:issuesByCode,readinessIssues:findings,
+  pipelineDiagnostics:Array.isArray(pipelineDiagnostics)?pipelineDiagnostics:[],
   sourceAcceptedRows:priceTruth?.acceptedRows??null,
   sampledRejectedCount:rejected.length,totalRejectedRows:priceTruth?.rejectedRows??null,missingHistoryCount:missing.length,
   unresolvedDispositionCount:Array.isArray(disposition?.unresolved)?disposition.unresolved.length:null,
