@@ -1,0 +1,80 @@
+#!/usr/bin/env node
+'use strict';
+// Incident-forensics only. The live price truth remains FAIL-CLOSED on source failure.
+// Older validated Git objects are NEVER a fallback feed or an executable snapshot.
+const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process'),crypto=require('node:crypto');
+const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
+const PRICE='data/stable/v15-price-truth.json';
+const HANDOFF='data/ops/g22-main-app-handoff.json';
+const OUT='data/ops/v15-last-accepted-price-truth-audit.json';
+function read(file){try{return JSON.parse(fs.readFileSync(path.join(ROOT,file),'utf8'))}catch{return{}}}
+const iso=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))?String(s):null;
+function eligible(doc,handoff){
+ if(!doc||doc.ready!==true||doc.executionGrade!==true||!iso(doc.expectedSession))return false;
+ const minimum=Number(doc.minimumExecutionRows||180);
+ if(!Number.isFinite(minimum)||minimum<180)return false;
+ if(!(doc.acceptedRows>=minimum&&doc.updatedHistoryFiles>=minimum))return false;
+ if(doc.source?.preciseSource!==true||doc.source?.realFetch!==true)return false;
+ if(!(doc.source?.verifiedExpectedSessionRows>=minimum))return false;
+ // Handoff may be absent, but if supplied require independent source/session/count parity.
+ if(handoff&&Object.keys(handoff).length){
+  if(!(handoff.sourceReady===true&&handoff.currentSessionReady===true
+    &&handoff.executionGrade===true&&handoff.final===true
+    &&doc.expectedSession===handoff.sessionDate
+    &&doc.acceptedRows===handoff.acceptedRows))return false;
+ }
+ return true;
+}
+function classify(current,candidate,handoff,commit){
+ const currentReady=Boolean(current.ready===true&&current.executionGrade===true);
+ const accepted=eligible(candidate,handoff);
+ const sameDate=Boolean(accepted&&candidate.expectedSession===current.expectedSession);
+ return {schemaVersion:'egx-last-accepted-price-truth-audit-1',createdAt:new Date().toISOString(),
+  purpose:'AUDIT_ONLY_NO_TRADING_NO_PRODUCTION_FALLBACK',
+  activeDecisionSource:'data/stable/v15-price-truth.json',
+  activeFailClosed:!currentReady,
+  current:{session:iso(current.expectedSession),ready:currentReady,
+   acceptedRows:Number.isFinite(Number(current.acceptedRows))?Number(current.acceptedRows):null,
+   sourceSessionVerifiedRows:current.source?.verifiedExpectedSessionRows??null,
+   generatedAt:current.generatedAt||null},
+  historicalEvidence:accepted?{commit,session:candidate.expectedSession,
+   acceptedRows:candidate.acceptedRows,updatedHistoryFiles:candidate.updatedHistoryFiles,
+   verifiedExpectedSessionRows:candidate.source.verifiedExpectedSessionRows,
+   reportSha256:crypto.createHash('sha256').update(JSON.stringify(candidate)).digest('hex'),
+   corroboratedWithImmutableHandoff:Boolean(handoff&&Object.keys(handoff).length),
+   sameTargetSessionAsFailedAttempt:sameDate}:null,
+  needsLicensedData:Boolean(!currentReady),
+  executionAllowed:false,producerStatus:'RESEARCH_EVIDENCE_ONLY',
+  warning:'Historical success is forensic evidence only; never resurrect stale prices for execution.'};
+}
+function audit(){
+ const current=read(PRICE),handoff=read(HANDOFF);
+ let candidate=null,commit=null,scanned=0,reason='NO_VALID_HISTORICAL_GIT_PRICE_TRUTH';
+ const result=cp.spawnSync('git',['log','--max-count=400','--format=%H','--',PRICE],
+  {cwd:ROOT,encoding:'utf8',timeout:15000,maxBuffer:128*1024});
+ if(result.status===0){
+  for(const hash of result.stdout.split(/\s+/).filter(x=>/^[a-f0-9]{40}$/.test(x))){
+   scanned++;
+   const x=cp.spawnSync('git',['show',hash+':'+PRICE],
+     {cwd:ROOT,encoding:'utf8',timeout:4000,maxBuffer:4*1024*1024});
+   if(x.status!==0)continue;
+   try{
+    const d=JSON.parse(x.stdout);
+    if(eligible(d,handoff)){candidate=d;commit=hash;reason='MATCHED_HISTORICAL_VALIDATED_HANDOFF';break}
+   }catch{}
+  }
+ }else reason='GIT_HISTORY_NOT_AVAILABLE';
+ const out=classify(current,candidate,handoff,commit);
+ out.historicalSourceStatus=candidate?reason:reason;
+ out.gitHistoryObjectsScanned=scanned;
+ const file=path.join(ROOT,OUT);
+ fs.mkdirSync(path.dirname(file),{recursive:true});
+ fs.writeFileSync(file,JSON.stringify(out,null,2)+'\n','utf8');
+ console.log('EGX_PRICE_TRUTH_AUDIT',JSON.stringify({
+  currentReady:out.current.ready,currentAccepted:out.current.acceptedRows,
+  historicAccepted:out.historicalEvidence?.acceptedRows||0,commit:out.historicalEvidence?.commit||null,
+  found:!!candidate,scanned}));
+ return out;
+}
+if(require.main===module)try{audit()}catch(e){console.error(e);process.exitCode=1}
+module.exports={eligible,classify,audit};
