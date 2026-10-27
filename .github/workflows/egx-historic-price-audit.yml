@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -26,6 +26,8 @@ jobs:
           node --check scripts/stable/v15-last-accepted-truth-audit.cjs
           node --test tests/stable/v15-last-accepted-truth-audit.test.cjs
       - name: Recover only immutable signed historical quote evidence
+        env:
+          EGX_AUDIT_FETCH_ANCHOR: '1'
         run: |
           node scripts/stable/v15-last-accepted-truth-audit.cjs
           node - <<'NODE'
