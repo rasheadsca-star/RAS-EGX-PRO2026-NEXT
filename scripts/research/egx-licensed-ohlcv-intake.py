@@ -54,6 +54,8 @@ def examine(row,mapped,cutoff):
     dateval=str(row.get("date") or "").strip()
     if not date_ok(dateval) or dateval>cutoff:
         reasons.append("INVALID_OR_FUTURE_SESSION")
+    elif date.fromisoformat(dateval).weekday() in (4,5):
+        reasons.append("NON_EGX_TRADING_DAY_FRIDAY_SATURDAY")
     source_date=str(row.get("source_session_date") or "").strip()
     if dateval!=source_date:reasons.append("SOURCE_DATE_MISMATCH")
     currency=str(row.get("currency") or "").upper()
@@ -64,6 +66,8 @@ def examine(row,mapped,cutoff):
         reasons.append("INVALID_OR_MISSING_ISIN")
     elif m_isin and r_isin!=m_isin:reasons.append("OFFICIAL_MAP_ISIN_CONFLICT")
     elif not m_isin:hold.append("ISIN_LISTING_CONFIRMATION_REQUIRED")
+    if mapped[ticker].get("symbolVerified") is not True:
+        hold.append("EXISTING_CANONICAL_SYMBOL_IDENTITY_UNVERIFIED")
     vals={p:numeric(row.get(p)) for p in ("open","high","low","close","volume")}
     if any(vals[p] is None for p in vals) or any(vals[p] is not None and vals[p]<=0 for p in ("open","high","low","close")):
         reasons.append("MISSING_OR_NONPOSITIVE_OHLCV")
@@ -118,6 +122,7 @@ def intake(root=ROOT,out=OUT,source_file=None,cutoff=None):
             seen=set()
             for row in reader:
                 result["received"]+=1
+                if result["received"]>250000:raise ValueError("Input over 250000 rows; split into audited batches")
                 k=(str(row.get("ticker") or "").upper(),row.get("date"))
                 status,reasons,holds=examine(row,mapped,expected)
                 if k in seen:status="REJECTED";reasons.append("DUPLICATE_SYMBOL_SESSION_IN_VENDOR_FILE")
