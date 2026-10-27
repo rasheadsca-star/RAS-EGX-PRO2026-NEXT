@@ -1,0 +1,36 @@
+name: EGX Gann Historical Capability Audit
+on:
+  push:
+    branches: [feature/egx-v18-v169-capability-convergence-20261027]
+  pull_request:
+    paths:
+      - 'scripts/research/egx-gann-history-crosswalk.cjs'
+      - 'scripts/research/egx-v18-v169-feature-convergence.cjs'
+      - '.github/workflows/egx-gann-convergence-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate and count actual sessions
+        run: |
+          node --check scripts/research/egx-gann-history-crosswalk.cjs
+          node scripts/research/egx-gann-history-crosswalk.cjs
+          node --check scripts/research/egx-v18-v169-feature-convergence.cjs
+          node scripts/research/egx-v18-v169-feature-convergence.cjs
+      - name: Assert canonical market unchanged
+        run: git diff --exit-code -- data/history data/stable astra-prod
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-gann-capabilities-${{ github.run_id }}
+          path: artifacts/research/
+          retention-days: 30
+          if-no-files-found: error
