@@ -22,7 +22,7 @@ function parse(html,expected){
  for(const tr of trs){
   const cells=(tr.match(/<td\b[^>]*>[\s\S]*?<\/td>/gi)||[]).map(strip);
   if(cells.length<9)continue;
-  const sym=cells.findIndex(c=>/^[A-Z0-9]{2,7}$/.test(c));
+  const sym=/^[A-Z0-9]{2,7}$/.test(cells[1]||'')?1:cells.findIndex(c=>/^[A-Z0-9]{2,7}$/.test(c));
   // DirectFN published table: Company, Symbol, Open, Last, High, Low, Change, Change %, Volume, Turnover
   if(sym<0||sym+7>=cells.length)continue;
   const ticker=cells[sym];const vals=cells.slice(sym+1,sym+8).map(s=>Number(s.replace(/,/g,'').replace('%','')));
