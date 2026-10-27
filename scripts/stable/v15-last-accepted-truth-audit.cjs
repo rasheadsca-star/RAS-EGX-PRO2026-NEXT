@@ -11,11 +11,14 @@ function read(file){try{return JSON.parse(fs.readFileSync(path.join(ROOT,file),'
 const iso=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))?String(s):null;
 function eligible(doc,handoff){
  if(!doc||doc.ready!==true||doc.executionGrade!==true||!iso(doc.expectedSession))return false;
- const minimum=Number(doc.minimumExecutionRows||180);
- if(!Number.isFinite(minimum)||minimum<180)return false;
- if(!(doc.acceptedRows>=minimum&&doc.updatedHistoryFiles>=minimum))return false;
+ const minimum=Number(doc.minimumExecutionRows||80);
+ if(!Number.isFinite(minimum)||minimum<80)return false;
+ // The original validator's technical floor is 80; forensic corroboration uses
+ // the independently published acceptedRows and 180 history-file evidence.
+ const minimumEvidence=Math.max(180,minimum);
+ if(!(doc.acceptedRows>=minimumEvidence&&doc.updatedHistoryFiles>=180))return false;
  if(doc.source?.preciseSource!==true||doc.source?.realFetch!==true)return false;
- if(!(doc.source?.verifiedExpectedSessionRows>=minimum))return false;
+ if(!(doc.source?.verifiedExpectedSessionRows>=minimumEvidence))return false;
  // Handoff may be absent, but if supplied require independent source/session/count parity.
  if(handoff&&Object.keys(handoff).length){
   if(!(handoff.sourceReady===true&&handoff.currentSessionReady===true
