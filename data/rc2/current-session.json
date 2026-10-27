@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rasheed-egx-ucp-rc2-current-session/v1",
-  "generatedAt": "2026-10-27T13:18:26.691Z",
+  "generatedAt": "2026-10-27T16:52:12.466Z",
   "engine": "TFE_V20_FUSION_RC2",
   "mode": "RESEARCH_ONLY",
   "sessionDate": "2026-10-27",
@@ -8,7 +8,7 @@
   "marketSessionDate": "2026-10-27",
   "universeSessionDate": "2026-10-27",
   "sessionAligned": true,
-  "sourceSessionDataHash": "f8ea278cfdb01c06953807a09f82a2c18abf20d7223248453521d0f5bf03abb3",
+  "sourceSessionDataHash": "f5f89e1b6e57226dc59b4e1744cbbe8b8ba15bcafdb6ed86e46b3d4706632e69",
   "sourceCommit": "11690af2adf49bb50829b5d26e0340efc34ee19b",
   "permissions": {
     "researchOnly": true,
@@ -33,7 +33,7 @@
     "SR_CONFLUENCE_FAIL": 24,
     "QUALITY_BLOCKED": 13,
     "LIQUIDITY_GATE_FAIL": 8,
-    "DO_NOT_CHASE": 5,
+    "DO_NOT_CHASE": 6,
     "TRADE_PLAN_UNAVAILABLE": 1
   },
   "rejectedSample": [
@@ -642,7 +642,8 @@
       "ticker": "CLHO",
       "reasonCodes": [
         "CORE_SCORE_LOW",
-        "RESEARCH_SCORE_LOW"
+        "RESEARCH_SCORE_LOW",
+        "DO_NOT_CHASE"
       ],
       "quality": "REVIEW",
       "reviewFlags": [
@@ -687,7 +688,7 @@
   ],
   "calibrationDiagnostics": {
     "schemaVersion": "rasheed-egx-rc2-calibration-diagnostics/v1",
-    "generatedAt": "2026-10-27T13:18:26.633Z",
+    "generatedAt": "2026-10-27T16:52:12.400Z",
     "sessionDate": "2026-10-27",
     "source": "RC2_PRODUCTION_ANALYZE_ROUTE",
     "requested": 175,
@@ -756,7 +757,7 @@
         "p90": 52.32,
         "p95": 55.57,
         "max": 64.4,
-        "mean": 44.4617
+        "mean": 44.4589
       },
       "liquidity": {
         "n": 175,
@@ -776,11 +777,11 @@
         "p10": 54.44,
         "p25": 57.4,
         "p50": 65.7,
-        "p75": 71.55,
+        "p75": 71.75,
         "p90": 76.86,
         "p95": 79.14,
         "max": 90.7,
-        "mean": 65.4543
+        "mean": 65.4663
       },
       "dataQuality": {
         "n": 175,
@@ -801,10 +802,10 @@
         "p25": 0.143,
         "p50": 0.346,
         "p75": 0.593,
-        "p90": 0.8794,
+        "p90": 0.8866,
         "p95": 1.0146,
         "max": 3.209,
-        "mean": 0.4219
+        "mean": 0.4231
       }
     },
     "reasonCounts": [
@@ -834,7 +835,7 @@
       },
       {
         "reason": "DO_NOT_CHASE",
-        "count": 5
+        "count": 6
       },
       {
         "reason": "TRADE_PLAN_UNAVAILABLE",
@@ -1390,36 +1391,37 @@
         "eligible": false,
         "publicationEligible": false,
         "core": 18.8,
-        "research": 53.4,
+        "research": 52.9,
         "liquidity": 99.3,
-        "sr": 69.6,
+        "sr": 71.7,
         "quality": 78,
-        "structuralNetRR": 0.737,
-        "alignmentState": "PENDING_PULLBACK",
+        "structuralNetRR": 0.934,
+        "alignmentState": "DO_NOT_CHASE",
         "price": 13.8,
         "tradePlan": {
-          "entryLow": 13.2267,
-          "entryHigh": 13.4593,
-          "stop": 12.7981,
-          "target1": 14.053,
-          "target2": 14.0867,
-          "structuralNetRR": 0.737,
-          "precisionNetRR": 0.691,
-          "alignmentState": "PENDING_PULLBACK",
-          "distanceAtr": 0.556,
+          "entryLow": 13.12,
+          "entryHigh": 13.3567,
+          "stop": 12.6839,
+          "target1": 13.9591,
+          "target2": 14.14,
+          "structuralNetRR": 0.934,
+          "precisionNetRR": 0.694,
+          "alignmentState": "DO_NOT_CHASE",
+          "distanceAtr": 0.711,
           "entryExpirySessions": 3,
           "maxHoldSessions": 10,
           "roundTripCostPct": 0.6
         },
         "reasons": [
           "CORE_SCORE_LOW",
-          "RESEARCH_SCORE_LOW"
+          "RESEARCH_SCORE_LOW",
+          "DO_NOT_CHASE"
         ],
         "qualityState": "REVIEW",
         "publicationHold": false,
         "deficits": {
           "core": 51.2,
-          "research": 18.6,
+          "research": 19.1,
           "liquidity": 0,
           "sr": 0,
           "structuralNetRR": 0
@@ -1428,12 +1430,14 @@
           "core",
           "research"
         ],
-        "criticalReasons": [],
+        "criticalReasons": [
+          "DO_NOT_CHASE"
+        ],
         "otherReasons": [],
         "singleScoreGateMiss": false,
         "nearMiss": false,
-        "closeness": 0.7125,
-        "gateDistance": 4.6533
+        "closeness": 0.7103,
+        "gateDistance": 4.6867
       },
       {
         "ticker": "FAITA",
@@ -3231,42 +3235,43 @@
         "publicationHold": false,
         "scores": {
           "core": 18.8,
-          "research": 53.4,
+          "research": 52.9,
           "liquidity": 99.3,
-          "supportResistance": 69.6,
+          "supportResistance": 71.7,
           "dataQuality": 78
         },
-        "structuralNetRR": 0.737,
-        "alignmentState": "PENDING_PULLBACK",
+        "structuralNetRR": 0.934,
+        "alignmentState": "DO_NOT_CHASE",
         "price": 13.8,
         "tradePlan": {
-          "entryLow": 13.2267,
-          "entryHigh": 13.4593,
-          "stop": 12.7981,
-          "target1": 14.053,
-          "target2": 14.0867,
-          "structuralNetRR": 0.737,
-          "precisionNetRR": 0.691,
-          "alignmentState": "PENDING_PULLBACK",
-          "distanceAtr": 0.556,
+          "entryLow": 13.12,
+          "entryHigh": 13.3567,
+          "stop": 12.6839,
+          "target1": 13.9591,
+          "target2": 14.14,
+          "structuralNetRR": 0.934,
+          "precisionNetRR": 0.694,
+          "alignmentState": "DO_NOT_CHASE",
+          "distanceAtr": 0.711,
           "entryExpirySessions": 3,
           "maxHoldSessions": 10,
           "roundTripCostPct": 0.6
         },
         "reasonCodes": [
           "CORE_SCORE_LOW",
-          "RESEARCH_SCORE_LOW"
+          "RESEARCH_SCORE_LOW",
+          "DO_NOT_CHASE"
         ],
         "deficits": {
           "core": 51.2,
-          "research": 18.6,
+          "research": 19.1,
           "liquidity": 0,
           "sr": 0,
           "structuralNetRR": 0
         },
         "nearMiss": false,
-        "gateDistance": 4.6533,
-        "closeness": 0.7125
+        "gateDistance": 4.6867,
+        "closeness": 0.7103
       },
       {
         "ticker": "ORAS",
