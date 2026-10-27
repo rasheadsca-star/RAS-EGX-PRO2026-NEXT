@@ -19,5 +19,7 @@ test('same accepted count is not enough to override a changed canonical truth',(
  assert.equal((step.match(/PRICE_TRUTH_CHANGED_ABORT_CONCURRENT_REPAIR/g)||[]).length,2);
  assert.match(step,/BASE_TRUTH_BLOB=\$\(git hash-object artifacts\/recovery-before-price-truth\.json\)/);
  assert.match(step,/REMOTE_TRUTH_BLOB=\$\(git rev-parse origin\/main:data\/stable\/v15-price-truth\.json\)/);
+ assert.match(step,/cp artifacts\\/recovery-before-price-truth\\.json \\/tmp\\/egx-recovery-before-price-truth\\.json/);
+ assert.equal((step.match(/\\/tmp\\/egx-recovery-before-price-truth\\.json/g)||[]).length,5);
  assert.match(step,/SESSION_ADVANCED_ABORT_STALE_REPAIR/);
 });
