@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/stable/v16-verified-incremental-recovery.cjs
-          node --test tests/stable/v16-verified-incremental-recovery.test.cjs
+          node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs
       - name: Freeze same-session baseline
         run: |
           set -euo pipefail
@@ -77,22 +77,38 @@ jobs:
           fs.writeFileSync('/tmp/egx-recovery-session',j.session);
           fs.writeFileSync('/tmp/egx-recovered-tickers',j.recovered.join('\n'));
           NODE
+          # Keep immutable baseline outside the ephemeral worktree before stashing.
+          cp artifacts/recovery-before-price-truth.json /tmp/egx-recovery-before-price-truth.json
           git fetch origin main
           REMOTE_SESSION=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(JSON.parse(s).expectedSession))")
           [ "$REMOTE_SESSION" = "$(cat /tmp/egx-recovery-session)" ] || { echo 'SESSION_ADVANCED_ABORT_STALE_REPAIR'; exit 1; }
           REMOTE_ACCEPTED=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(String(JSON.parse(s).acceptedRows)))")
-          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('artifacts/recovery-before-price-truth.json')).acceptedRows")
+          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('/tmp/egx-recovery-before-price-truth.json')).acceptedRows")
           [ "$REMOTE_ACCEPTED" = "$BASE_ACCEPTED" ] || { echo 'ACCEPTED_ROWS_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
+          # Row count alone cannot detect changed prices, source identity or provenance.
+          BASE_TRUTH_BLOB=$(git hash-object /tmp/egx-recovery-before-price-truth.json)
+          REMOTE_TRUTH_BLOB=$(git rev-parse origin/main:data/stable/v15-price-truth.json)
+          [ "$REMOTE_TRUTH_BLOB" = "$BASE_TRUTH_BLOB" ] || { echo 'PRICE_TRUTH_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
           while read -r ticker; do
             [ -z "$ticker" ] || git add "data/history/$ticker.json"
           done < /tmp/egx-recovered-tickers
           git add data/stable/v15-price-truth.json data/fetch-status.json data/stable/v16-source-session-evidence.json data/stable/v16-market-second-source-evidence.json
           git diff --cached --quiet && { echo 'NO_VERIFIED_CHANGES'; exit 1; }
           git commit -m "Recover independently verified EGX current-session rows"
-          git pull --rebase -X ours origin main
+          # Source resolvers also edit uncommitted diagnostics. Preserve them off the
+          # worktree before rebasing; never include them in the published commit.
+          git stash push --include-untracked -m "verified-recovery-worktree-${{ github.run_id }}"
+          [ -z "$(git status --porcelain --untracked-files=no)" ] || { echo 'DIRTY_WORKTREE_ABORT_REBASE'; exit 1; }
+          git fetch origin main
+          # Never silently choose a side for conflicting financial market data.
+          git rebase origin/main
           REMOTE_SESSION=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(JSON.parse(s).expectedSession))")
           [ "$REMOTE_SESSION" = "$(cat /tmp/egx-recovery-session)" ] || { echo 'SESSION_ADVANCED_ABORT_STALE_REPAIR'; exit 1; }
           REMOTE_ACCEPTED=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(String(JSON.parse(s).acceptedRows)))")
-          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('artifacts/recovery-before-price-truth.json')).acceptedRows")
+          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('/tmp/egx-recovery-before-price-truth.json')).acceptedRows")
           [ "$REMOTE_ACCEPTED" = "$BASE_ACCEPTED" ] || { echo 'ACCEPTED_ROWS_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
+          # Row count alone cannot detect changed prices, source identity or provenance.
+          BASE_TRUTH_BLOB=$(git hash-object /tmp/egx-recovery-before-price-truth.json)
+          REMOTE_TRUTH_BLOB=$(git rev-parse origin/main:data/stable/v15-price-truth.json)
+          [ "$REMOTE_TRUTH_BLOB" = "$BASE_TRUTH_BLOB" ] || { echo 'PRICE_TRUTH_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
           git push origin HEAD:main
