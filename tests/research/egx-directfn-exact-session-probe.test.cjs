@@ -27,3 +27,11 @@ test('missing source date is never assumed current',()=>{
  assert.equal(dateFromHeader(h),null);
  assert.equal(parse(h,'2026-10-26').validExactSession,0);
 });
+
+test('same dated page while market is Open is not accepted as final',()=>{
+ const html='<div>EGX Open 26 Oct 2026</div>'+row('ACAP','ACAP','8.31','8.27','8.41','8.23','201913');
+ const x=parse(html,'2026-10-26');
+ assert.equal(x.exactSession,false);
+ assert.equal(x.rows[0].status,'UNFINALIZED_SOURCE_STATUS');
+ assert.equal(x.validExactSession,0);
+});
