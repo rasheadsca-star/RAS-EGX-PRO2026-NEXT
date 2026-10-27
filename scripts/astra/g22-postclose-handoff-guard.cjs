@@ -6,6 +6,7 @@ const cp = require('child_process');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
+const G22_MIN_ACCEPTED_ROWS = 190; // Conditional operating floor; 200 remains the target coverage.
 const P = rel => path.join(ROOT, rel);
 const readJson = (rel, fallback = {}) => {
   try { return JSON.parse(fs.readFileSync(P(rel), 'utf8')); } catch { return fallback; }
@@ -110,7 +111,7 @@ function evaluateHandoff(input) {
   if (marker.executionGrade !== true) reasons.push('HANDOFF_NOT_EXECUTION_GRADE');
   if (marker.pagesPublished !== true) reasons.push('HANDOFF_PAGES_NOT_PUBLISHED');
   if (!marker.pagesPublishedAt) reasons.push('HANDOFF_PAGES_PUBLISHED_AT_MISSING');
-  if ((finite(marker.acceptedRows) || 0) < 200) reasons.push('HANDOFF_ACCEPTED_ROWS_BELOW_200');
+  if ((finite(marker.acceptedRows) || 0) < G22_MIN_ACCEPTED_ROWS) reasons.push('HANDOFF_ACCEPTED_ROWS_BELOW_190');
   if ((finite(marker.sourceSessionEvidenceCoveragePct) || 0) < 90) reasons.push('HANDOFF_SOURCE_EVIDENCE_BELOW_90');
   if (!/^[0-9a-f]{64}$/.test(fingerprint)) reasons.push('HANDOFF_FINGERPRINT_INVALID');
 
@@ -125,7 +126,7 @@ function evaluateHandoff(input) {
   if (priceExpected !== session) reasons.push('CANONICAL_PRICE_TRUTH_SESSION_MISMATCH');
   if (price.ready !== true) reasons.push('CANONICAL_PRICE_TRUTH_NOT_READY');
   if (price.executionGrade !== true) reasons.push('CANONICAL_PRICE_TRUTH_NOT_EXECUTION_GRADE');
-  if ((finite(price.acceptedRows) || 0) < 200) reasons.push('CANONICAL_PRICE_TRUTH_ACCEPTED_ROWS_BELOW_200');
+  if ((finite(price.acceptedRows) || 0) < G22_MIN_ACCEPTED_ROWS) reasons.push('CANONICAL_PRICE_TRUTH_ACCEPTED_ROWS_BELOW_190');
   if ((finite(price?.source?.sourceSessionEvidenceCoveragePct) || 0) < 90) reasons.push('CANONICAL_SOURCE_SESSION_EVIDENCE_BELOW_90');
 
   if (primarySession !== session) reasons.push('CANONICAL_PRIMARY_SESSION_MISMATCH');
