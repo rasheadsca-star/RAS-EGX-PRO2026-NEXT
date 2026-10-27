@@ -6,6 +6,8 @@ on:
     paths:
       - 'scripts/research/egx-independent-history-recovery.cjs'
       - 'scripts/research/egx-independent-source-probes.cjs'
+      - 'scripts/research/egx-g11-readiness-triage.cjs'
+      - 'tests/research/egx-g11-readiness-triage.test.cjs'
       - 'tests/research/egx-independent-history-recovery.test.cjs'
       - '.github/workflows/egx-independent-history-recovery.yml'
   workflow_dispatch:
@@ -54,7 +56,11 @@ jobs:
         run: |
           node --check scripts/research/egx-independent-history-recovery.cjs
           node --check scripts/research/egx-independent-source-probes.cjs
+          node --check scripts/research/egx-g11-readiness-triage.cjs
+          node --test tests/research/egx-g11-readiness-triage.test.cjs
           node --test tests/research/egx-independent-history-recovery.test.cjs
+      - name: Audit exact-session G11 strategy readiness per ticker
+        run: node scripts/research/egx-g11-readiness-triage.cjs
       - name: Build historical archive inventory and quarantine ledger
         run: node scripts/research/egx-independent-history-recovery.cjs
       - name: Build single quarantined central SQLite research database
