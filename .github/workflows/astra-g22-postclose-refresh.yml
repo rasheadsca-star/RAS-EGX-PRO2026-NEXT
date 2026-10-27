@@ -305,6 +305,15 @@ jobs:
           node scripts/astra/g22-postclose-refresh.cjs | tee /tmp/g22-refresh.log
           grep -q '^G22_POST_CLOSE_REFRESH ' /tmp/g22-refresh.log
 
+      - name: Preserve per-ticker G11 blocker evidence when refresh fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g22-g11-blockers-${{ github.run_id }}
+          path: artifacts/history-recovery/g22-g11-current-blockers.json
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Rebuild Astra-native immutable history and performance
         run: |
           set -euo pipefail

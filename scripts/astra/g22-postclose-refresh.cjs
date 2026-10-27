@@ -138,6 +138,8 @@ function main() {
   const currentCanonical = Number(h?.metrics?.currentCanonicalSecurities?.numerator || 0);
   const pipelineReady = Number(h?.metrics?.decisionPipeline?.pipelineReadySecurities || 0);
   const currentCoveragePct = pct(currentCanonical, activeUniverse);
+  // Publish per-ticker data-health evidence even when a later hard gate blocks G22.
+  require('./g22-g11-blocker-evidence.cjs').emit(h,expected,PROD('artifacts/history-recovery/g22-g11-current-blockers.json'));
   const pipelineCoveragePct = pct(pipelineReady, activeUniverse);
   const sourceCoveragePct = Number(priceTruth?.source?.sourceSessionEvidenceCoveragePct || 0);
   const allowedOperationalHighCodes = new Set(['CURRENT_SESSION_GAP', 'REGIME_INPUT_INCOMPLETE']);
