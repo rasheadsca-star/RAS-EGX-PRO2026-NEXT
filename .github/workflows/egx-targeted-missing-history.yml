@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/research/egx-targeted-source-staging.cjs'
       - 'scripts/research/egx-independent-source-probes.cjs'
+      - 'scripts/research/egx-targeted-stage-assessment.cjs'
       - '.github/workflows/egx-targeted-missing-history.yml'
   pull_request:
     paths:
@@ -29,8 +30,11 @@ jobs:
         run: |
           node --check scripts/research/egx-targeted-source-staging.cjs
           node --check scripts/research/egx-independent-source-probes.cjs
+          node --check scripts/research/egx-targeted-stage-assessment.cjs
       - name: Stage missing historical source evidence without promotion
         run: node scripts/research/egx-targeted-source-staging.cjs
+      - name: Classify source evidence separately from approved recovery
+        run: node scripts/research/egx-targeted-stage-assessment.cjs
       - name: Assert no market-data changes
         if: always()
         run: git diff --exit-code -- data/history data/stable docs/astra astra-prod
