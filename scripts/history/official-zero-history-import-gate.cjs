@@ -13,7 +13,9 @@ function evaluateOfficialBootstrap({item,entry,existing,latestMarketSession,revi
   if(!review?.reviewedBy||!review?.reviewedAt)reasons.push('review_record_required');
   if(rows.length<60)reasons.push('at_least_60_sessions_required');
   if(!latestMarketSession||!rows.some(x=>x.date===latestMarketSession))reasons.push('current_exact_session_required');
-  if(!String(item?.sourceUrl||'').startsWith('https://'))reasons.push('source_url_required');
+  let officialHost=false;
+  try { const u=new URL(String(item?.sourceUrl||''));officialHost=u.protocol==='https:' && (u.hostname==='egx.com.eg'||u.hostname.endsWith('.egx.com.eg')||u.hostname==='egidegypt.com'||u.hostname.endsWith('.egidegypt.com')); } catch {}
+  if(!officialHost)reasons.push('recognized_official_egx_origin_required');
   if(new Set(rows.map(x=>x.date)).size!==rows.length)reasons.push('duplicate_dates');
   if(latestMarketSession&&rows.some(x=>String(x.date||'')>latestMarketSession))reasons.push('post_session_lookahead');
  }
