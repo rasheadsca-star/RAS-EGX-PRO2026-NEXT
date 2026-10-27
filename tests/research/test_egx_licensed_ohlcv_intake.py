@@ -18,13 +18,14 @@ class IntakeTests(unittest.TestCase):
     def test_unknown_issuer_wrong_currency_or_future_dated_bar_fails(self):
         for patch in [{"ticker":"BOGUS"},{"currency":"USD"},{"date":"2026-10-27"},
           {"source_session_date":"2026-10-25"},{"high":"100"},{"volume":"4.7M"},
-          {"final_eod":"NO"}]:
+          {"final_eod":"NO"},{"date":"2026-10-23","source_session_date":"2026-10-23"}]:
             status,*_=mod.examine({**self.record,**patch},self.mapped,"2026-10-26")
             self.assertEqual(status,"REJECTED",patch)
     def test_unconfirmed_identity_and_second_source_are_held(self):
         s,_,hold=mod.examine(self.record,{"COMI":{"ticker":"COMI","active":True,"currency":"EGP","isin":None,"symbolVerified":False}},"2026-10-26")
         self.assertEqual(s,"HOLD")
         self.assertIn("ISIN_LISTING_CONFIRMATION_REQUIRED",hold)
+        self.assertIn("EXISTING_CANONICAL_SYMBOL_IDENTITY_UNVERIFIED",hold)
         s,_,hold=mod.examine({**self.record,"second_source":"EGID_LICENSED"},self.mapped,"2026-10-26")
         self.assertEqual(s,"HOLD")
         self.assertIn("INDEPENDENT_SECOND_SOURCE_EXACT_SESSION_REQUIRED",hold)
