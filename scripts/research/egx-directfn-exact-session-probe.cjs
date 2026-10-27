@@ -3,6 +3,7 @@
 // DirectFN public website independent date-specific research probe.
 // Page data is for discovery only; no automatic promotion, no source timestamp inference.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const {focusFromPersistent}=require('./egx-recovery-focus.cjs');
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const OUT=path.resolve(process.env.EGX_RECOVERY_OUT||path.join(ROOT,'artifacts/history-recovery'));
 const URL='https://www.directfn.com.eg/tradingData.aspx';
@@ -50,7 +51,10 @@ async function run(){
   const body=await res.text();
   if(body.length>1500000)throw Error('Unusually large response');
   const parsed=parse(body,expected),hash=crypto.createHash('sha256').update(body).digest('hex');
-  const focus=new Set((JSON.parse(fs.readFileSync(path.join(ROOT,'data/stable/v15-price-truth.json'),'utf8')).missingHistoryFiles)||[]);
+  const latestTruth=JSON.parse(fs.readFileSync(path.join(ROOT,'data/stable/v15-price-truth.json'),'utf8'));
+  const hist=JSON.parse(fs.readFileSync(path.join(ROOT,'data/history-summary.json'),'utf8'));
+  const symbols=JSON.parse(fs.readFileSync(path.join(ROOT,'data/symbol-map.json'),'utf8'));
+  const focus=new Set(focusFromPersistent({truth:latestTruth,historySummary:hist,symbolMap:symbols,expectedSession:expected}).map(x=>x.ticker));
   result={schemaVersion:'egx-directfn-exact-session-research-1',checkedAt:new Date().toISOString(),
    source:URL,httpStatus:res.status,finalUrl:res.url,sha256:hash,bodyBytes:body.length,
    ...parsed,focus:parsed.rows.filter(x=>focus.has(x.ticker)),
