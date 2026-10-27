@@ -1,0 +1,57 @@
+name: EGX Gann Real Engine Operational Test
+on:
+  push:
+    branches: [feature/egx-gann-operational-smoke-20261027]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/egx-gann-real-engine-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  run-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate actual Gann engine
+        run: |
+          node --check gann-fusion-x/scripts/build-snapshot.cjs
+          node --check gann-fusion-x/engine/planner.js
+          node --check gann-fusion-x/engine/fusion.js
+      - name: Execute real Gann scan on stored market data
+        run: node gann-fusion-x/scripts/build-snapshot.cjs
+      - name: Audit scan evidence and forbid fake readiness
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const scan=JSON.parse(fs.readFileSync('gann-fusion-x/data/current.json'));
+          const truth=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json'));
+          const review=JSON.parse(fs.readFileSync('gann-fusion-x/data/review.json'));
+          if(scan.sessionDate!==truth.expectedSession)throw Error('ENGINE_STALE_SESSION');
+          if(!Array.isArray(scan.all)||scan.all.length<1)throw Error('NO_REAL_STOCK_ANALYSIS');
+          if(scan.guardrails?.automaticOrders!==false)throw Error('UNSAFE_EXECUTION_ENABLED');
+          const summary={schemaVersion:'egx-gann-live-engine-smoke-1',session:scan.sessionDate,analyzed:scan.all.length,
+          fresh:scan.market?.freshCount,actionable:scan.funnelSummary?.speculative?.actionable||0,
+          reviewPassed:review.passed,reviewMajor:review.major,reviewCritical:review.critical,executionEligible:false};
+          fs.mkdirSync('artifacts/research',{recursive:true});
+          fs.writeFileSync('artifacts/research/gann-real-engine-run.json',JSON.stringify(summary,null,2)+'\n');
+          console.log('EGX_REAL_GANN_RUN',JSON.stringify(summary));
+          NODE
+      - name: Assert original price truth unchanged
+        run: git diff --exit-code -- data/history/ data/stable/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-gann-real-engine-${{ github.run_id }}
+          path: |
+            artifacts/research/gann-real-engine-run.json
+            gann-fusion-x/data/current.json
+            gann-fusion-x/data/review.json
+          if-no-files-found: warn
+          retention-days: 30
