@@ -2,6 +2,7 @@
 'use strict';
 
 const path = require('path');
+const { evaluateOfficialBootstrap } = require('./official-zero-history-import-gate.cjs');
 const { mergeAndValidate, validateSession } = require('./history-validator.cjs');
 const { readHistory, writeHistory } = require('./history-storage.cjs');
 const { historyStatus, buildSummary, buildSessionCalendar } = require('./history-summary-builder.cjs');
@@ -197,7 +198,8 @@ async function main() {
       if (!item.approved) throw new Error('ticker_not_approved');
       if (!item.identityVerifiedByAdmin) throw new Error('identity_not_verified_by_admin');
       if (!entry) throw new Error('ticker_missing_from_symbol_map');
-      if (!existing || !Array.isArray(existing.sessions) || !existing.sessions.length) throw new Error('existing_history_missing');
+      const bootstrap = evaluateOfficialBootstrap({item,entry,existing,latestMarketSession,review:payload});
+      if (!bootstrap.eligible) throw new Error('bootstrap_preflight:' + bootstrap.reasons.join(','));
       if (!acceptedSources.has(item.source)) throw new Error(`unapproved_source:${item.source || 'missing'}`);
       if (!String(item.sourceUrl || '').trim()) throw new Error('source_url_or_file_reference_missing');
       if (item.isin && entry.isin && String(item.isin).toUpperCase() !== String(entry.isin).toUpperCase()) throw new Error('isin_mismatch');
@@ -207,7 +209,7 @@ async function main() {
       if (confidence < 65) throw new Error('source_confidence_below_import_threshold');
       const normalized = [];
       for (const raw of item.sessions) {
-        const session = normalizeSession(ticker, raw, item, confidence, startedAt);
+        const session = normalizeSession(ticker, {...raw,currency:bootstrap.currency}, item, confidence, startedAt);
         const checked = validateSession(session);
         if (!checked.valid) {
           quarantine.push({ ticker, date: raw?.date || null, errors: checked.errors, row: raw });
@@ -215,24 +217,25 @@ async function main() {
         }
         normalized.push(checked.session);
       }
-      const existingLast = base.previousLastSession;
+      if(bootstrap.zeroHistory && normalized.length<60) throw new Error('insufficient_validated_official_bootstrap_rows');
+      const existingLast = base.previousLastSession || '';
       const newer = normalized.filter((session) => session.date > existingLast);
       const duplicates = normalized.filter((session) => session.date <= existingLast);
       if (!newer.length) throw new Error('no_new_sessions_after_existing_last_date');
 
-      const merged = mergeAndValidate(existing.sessions, newer, Number(config.targetSessions || 100));
+      const merged = mergeAndValidate(Array.isArray(existing?.sessions)?existing.sessions:[], newer, Number(config.targetSessions || 100));
       const lastSession = merged.sessions.at(-1)?.date || existingLast;
       const lag = latestMarketSession ? dateDiffDays(latestMarketSession, lastSession) : null;
       const recentEnough = lag !== null && lag <= Number(config.maxMarketSessionLagCalendarDays || 14);
       const becameComplete100 = base.beforeSessions < 100 && merged.sessions.length >= 100;
       const verificationSources = unique([
-        ...(existing.verificationSources || []),
+        ...(existing?.verificationSources || []),
         item.source,
         ...(item.verificationSources || []),
       ]);
       const official = item.source === 'egx_official' || verificationSources.includes('egx_official');
       const warnings = unique([
-        ...(existing.warnings || []).filter((warning) => warning !== 'historical_seed_requires_recent_gap_fill'),
+        ...(existing?.warnings || []).filter((warning) => warning !== 'historical_seed_requires_recent_gap_fill'),
         'approved_gap_import_applied',
         !official ? 'official_egx_verification_not_available' : null,
         !recentEnough ? `latest_session_lags_market:${lag ?? 'unknown'}_calendar_days` : null,
@@ -241,7 +244,11 @@ async function main() {
       ]);
 
       const next = {
-        ...existing,
+        ...(existing || {}),
+        ticker,
+        currency: bootstrap.currency,
+        exchange: 'EGX',
+        isin: entry.isin || null,
         schemaVersion: '12.8.0',
         generatedAt: nowIso(),
         availableSessions: merged.sessions.length,
