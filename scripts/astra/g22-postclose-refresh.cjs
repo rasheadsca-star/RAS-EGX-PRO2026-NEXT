@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const cp = require('child_process');
 const Module = require('module');
+const {produce:coverageAttribution}=require('./g22-coverage-attribution.cjs');
 
 const PROD_ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const DECISION_ROOT = path.resolve(process.env.ASTRA_DECISION_ROOT || PROD_ROOT);
@@ -181,7 +182,19 @@ function main() {
   ensure(h.sessionIntegrity.freshnessStatus === 'CURRENT', 'Session freshness is not CURRENT');
   ensure(critical === 0, 'Current health has CRITICAL findings: ' + critical + ' ' + JSON.stringify((h.issues.issues || []).filter(x => x.severity === 'CRITICAL')));
   ensure(disallowedHigh.length === 0, 'Disallowed HIGH findings: ' + JSON.stringify(disallowedHigh));
-  if (currentCoveragePct < 90) {
+  if (currentCoveragePct < 90 || pipelineCoveragePct < 80) {
+    const secondPath=DEC('data/stable/v16-market-second-source-evidence.json');
+    let secondSource={};
+    try{if(fs.existsSync(secondPath))secondSource=JSON.parse(fs.readFileSync(secondPath,'utf8'))}catch(e){
+      console.error('G22_COVERAGE_EVIDENCE_READ_ERROR',e.message);
+    }
+    let disposition={};
+    try{const fp=DEC('data/stable/v16-market-universe-disposition.json');if(fs.existsSync(fp))disposition=JSON.parse(fs.readFileSync(fp,'utf8'))}catch(e){console.error('G22_DISPOSITION_EVIDENCE_READ_ERROR',e.message)}
+    try{
+      const artifact=coverageAttribution({expected,activeUniverse,currentCanonical,pipelineReady,priceTruth,secondSource,disposition,readinessIssues:h?.issues?.issues||[],pipelineDiagnostics:h?.pipeline?.diagnostics||[],strategyReadiness:h?.strategyReadiness||{},
+       outPath:process.env.G22_ATTRIBUTION_OUT||'/tmp/g22-coverage-attribution.json'});
+      console.error('G22_COVERAGE_ATTRIBUTION',JSON.stringify({canonicalShortfall:artifact.shortfall,canonicalRequired:artifact.required,pipelineShortfall:artifact.pipelineShortfall,pipelineRequired:artifact.pipelineRequired,totalRejectedRows:artifact.totalRejectedRows}));
+    }catch(e){console.error('G22_COVERAGE_ATTRIBUTION_WRITE_ERROR',e.message)}
     console.error('G22_COVERAGE_BLOCKER', JSON.stringify({
       expectedSession: expected,
       activeUniverse,
@@ -190,6 +203,8 @@ function main() {
       currentCoveragePct,
       sourceCoveragePct,
       pipelineReady,
+      pipelineRequired: Math.ceil(activeUniverse * 0.80),
+      pipelineShortfallTo80Pct: Math.max(0, Math.ceil(activeUniverse * 0.80) - pipelineReady),
       unresolvedHighIssues: highIssues.map(x => ({code:x.code, ticker:x.ticker || null, message:x.message || null})),
       guidance: 'Restore verified current-session canonical rows; do not relax production thresholds or fabricate decisions'
     }));
