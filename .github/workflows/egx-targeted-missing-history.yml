@@ -7,6 +7,7 @@ on:
       - 'scripts/research/egx-targeted-source-staging.cjs'
       - 'scripts/research/egx-independent-source-probes.cjs'
       - 'scripts/research/egx-targeted-stage-assessment.cjs'
+      - 'scripts/research/egx-targeted-identity-requests.cjs'
       - '.github/workflows/egx-targeted-missing-history.yml'
   pull_request:
     paths:
@@ -31,6 +32,9 @@ jobs:
           node --check scripts/research/egx-targeted-source-staging.cjs
           node --check scripts/research/egx-independent-source-probes.cjs
           node --check scripts/research/egx-targeted-stage-assessment.cjs
+          node --check scripts/research/egx-targeted-identity-requests.cjs
+      - name: Generate exact identity and ISIN reconciliation requests
+        run: node scripts/research/egx-targeted-identity-requests.cjs
       - name: Stage missing historical source evidence without promotion
         run: node scripts/research/egx-targeted-source-staging.cjs
       - name: Classify source evidence separately from approved recovery
