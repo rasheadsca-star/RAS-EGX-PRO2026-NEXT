@@ -1,0 +1,40 @@
+name: EGX Universe Identity and Discovery Audit
+on:
+  push:
+    branches: [fix/g11-universe-discovery-hardening-20261027]
+  pull_request:
+    paths:
+      - 'scripts/history/full-market-universe-builder.cjs'
+      - 'scripts/research/egx-active-universe-identity-audit.cjs'
+      - 'tests/history/full-market-universe-structural-keys.test.cjs'
+      - 'tests/research/egx-active-universe-identity-audit.test.cjs'
+      - '.github/workflows/egx-universe-identity-audit.yml'
+permissions:
+  contents: read
+jobs:
+  universe-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and deterministic regression tests
+        run: |
+          node --check scripts/history/full-market-universe-builder.cjs
+          node --check scripts/research/egx-active-universe-identity-audit.cjs
+          node --test tests/history/full-market-universe-structural-keys.test.cjs tests/research/egx-active-universe-identity-audit.test.cjs
+      - name: Evidence-only identity audit
+        run: node scripts/research/egx-active-universe-identity-audit.cjs
+      - name: No production source mutation
+        run: |
+          git diff --exit-code -- data/symbol-map.json data/history/ data/stable/ data/market.json data/ops/ astra/ astra-prod/
+          node -e "const d=require('./artifacts/universe-identity/evidence.json');if(d.records.some(x=>x.automaticallyExclude!==false))process.exit(1)"
+      - name: Preserve auditable per-ticker evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-active-universe-identity-review
+          path: artifacts/universe-identity/evidence.json
+          retention-days: 30
