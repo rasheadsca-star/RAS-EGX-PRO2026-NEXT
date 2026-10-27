@@ -6,7 +6,7 @@ const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_pro
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const PRICE='data/stable/v15-price-truth.json';
 const HANDOFF='data/ops/g22-main-app-handoff.json';
-const OUT='data/ops/v15-last-accepted-price-truth-audit.json';
+const OUT=process.env.EGX_AUDIT_OUT||'data/ops/v15-last-accepted-price-truth-audit.json';
 function read(file){try{return JSON.parse(fs.readFileSync(path.join(ROOT,file),'utf8'))}catch{return{}}}
 const iso=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))?String(s):null;
 function eligible(doc,handoff){
