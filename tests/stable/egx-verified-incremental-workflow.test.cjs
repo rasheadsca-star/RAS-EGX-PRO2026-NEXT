@@ -23,3 +23,9 @@ test('baseline survives stash and concurrent truth changes abort publication',()
  assert.equal(step.split('/tmp/egx-recovery-before-price-truth.json').length-1,5);
  assert.ok(step.includes('SESSION_ADVANCED_ABORT_STALE_REPAIR'));
 });
+test('last recovered ticker is not dropped when staging and every recovered history must be present in commit',()=>{
+ assert.ok(step.includes("j.recovered.join('\\n')+'\\n'"));
+ assert.equal(step.split('while IFS= read -r ticker || [ -n "$ticker" ]; do').length-1,2);
+ assert.ok(step.includes('RECOVERED_HISTORY_NOT_STAGED:$ticker'));
+ assert.ok(step.includes('git diff --cached --name-only -- "data/history/$ticker.json"'));
+});
