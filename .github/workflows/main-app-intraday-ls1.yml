@@ -63,6 +63,7 @@ jobs:
           node --check scripts/fetch-market-data.js
           node --check scripts/stable/v15-missing-symbol-fallback.cjs
           node --check scripts/stable/v15-live-price-truth.cjs
+          node --check scripts/stable/v15-last-accepted-truth-audit.cjs
           node --check scripts/stable/v16-session-aware-price-truth.cjs
           node --check scripts/intraday/v13-12-intraday-monitor.cjs
           node --check scripts/stable/v16-source-session-quorum.cjs
@@ -109,6 +110,9 @@ jobs:
           NODE
           echo "source_session_quorum_exit=$SESSION_CODE"
 
+      - name: Save audit-only last validated historical truth reference
+        run: node scripts/stable/v15-last-accepted-truth-audit.cjs
+
       - name: Rebuild intraday monitor
         run: node scripts/intraday/v13-12-intraday-monitor.cjs
 
@@ -148,6 +152,7 @@ jobs:
             data/history \
             data/intraday \
             data/stable/v15-price-truth.json \
+            data/ops/v15-last-accepted-price-truth-audit.json \
             data/stable/v16-source-session-evidence.json \
             data/stable/v16-session-repair-report.json \
             data/stable/v16-source-session-quorum-report.json \
