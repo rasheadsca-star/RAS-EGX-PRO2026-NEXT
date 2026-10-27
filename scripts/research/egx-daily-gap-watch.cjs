@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 // Read-only gap state ledger: no prices are created, changed, or promoted.
-const fs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs'),path=require('node:path'),cp=require('node:child_process');
+function gitJson(root,ref,file){try{return JSON.parse(cp.execFileSync('git',['show',ref+':'+file],{cwd:root,encoding:'utf8'}))}catch{return null}}
+
 function build(truth,summary,prior={}){
  if(!truth||typeof truth.expectedSession!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(truth.expectedSession))throw Error('MISSING_EXACT_PRICE_SESSION');
  if(!Array.isArray(truth.missingHistoryFiles))throw Error('MISSING_EXPLICIT_HISTORY_GAPS');
@@ -25,7 +27,11 @@ function main(){
  const root=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd()),read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
  const out=path.resolve(root,process.env.EGX_RECOVERY_OUT||'artifacts/history-recovery'),priorPath=path.join(out,'daily-gap-watch.json');
  const prior=fs.existsSync(priorPath)?JSON.parse(fs.readFileSync(priorPath,'utf8')):{};
- const doc=build(read('data/stable/v15-price-truth.json'),read('data/history-summary.json'),prior);
+ const source=process.env.EGX_MARKET_REF||null;
+ const truth=source?gitJson(root,source,'data/stable/v15-price-truth.json'):read('data/stable/v15-price-truth.json');
+ const summary=source?gitJson(root,source,'data/history-summary.json'):read('data/history-summary.json');
+ if(!truth||!summary)throw Error('MARKET_SOURCE_EVIDENCE_MISSING');
+ const doc=build(truth,summary,prior);
  if(prior.session&&prior.session>doc.session)throw Error('SESSION_REGRESSION');
  fs.mkdirSync(out,{recursive:true});fs.writeFileSync(priorPath,JSON.stringify(doc,null,2)+'\n');
  console.log(JSON.stringify({session:doc.session,unresolved:doc.unresolvedCount,recoveredNotCertified:doc.recovered.length}));
