@@ -33,6 +33,29 @@ for ticker in active:
             feature=base_feature(h,idx)
             record["baseFeature"]=bool(feature and feature.get("date")==date)
             record["reason"]="FEATURE_OK" if record["baseFeature"] else "BASE_FEATURE_REJECTED"
+            if not record["baseFeature"]:
+                base=src
+                close=bars[idx]["close"]
+                atr=base["atr"](bars,idx)
+                previous=bars[idx-1]["close"]
+                atr_pct=100*atr/close if atr is not None and close>0 else None
+                one_day_return=100*(close/previous-1) if previous>0 else None
+                previous_volume_mean=base["sma"](bars,idx-1,20,"volume")
+                record["atrPct"]=round(atr_pct,4) if atr_pct is not None else None
+                record["oneDayReturnPct"]=round(one_day_return,4) if one_day_return is not None else None
+                record["previousVolumeMean20"]=previous_volume_mean
+                if previous_volume_mean is None or previous_volume_mean<=0:
+                    record["rootCause"]="NON_POSITIVE_20_SESSION_BASELINE_VOLUME"
+                elif atr_pct is None:
+                    record["rootCause"]="ATR_NOT_COMPUTABLE"
+                elif atr_pct<0.4:
+                    record["rootCause"]="ATR_BELOW_V16_MINIMUM_0_4_PCT"
+                elif atr_pct>14:
+                    record["rootCause"]="ATR_ABOVE_V16_MAXIMUM_14_PCT"
+                elif one_day_return is not None and abs(one_day_return)>30:
+                    record["rootCause"]="DAILY_MOVE_ABOVE_V16_30_PCT"
+                else:
+                    record["rootCause"]="OTHER_FEATURE_REJECTION_REQUIRES_MANUAL_REVIEW"
     except Exception as e:
         record["reason"]="PARSE_OR_FEATURE_ERROR";record["diagnostic"]=str(e)[:160]
     rows.append(record)
