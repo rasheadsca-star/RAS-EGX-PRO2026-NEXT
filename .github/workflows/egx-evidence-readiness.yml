@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/research/egx-recovery-readiness-v2.cjs'
       - '.github/workflows/egx-evidence-readiness.yml'
+      - 'tests/research/egx-recovery-readiness-v2.test.cjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,6 +22,8 @@ jobs:
           node-version: '22'
       - name: Validate script syntax
         run: node --check scripts/research/egx-recovery-readiness-v2.cjs
+      - name: Test fail-closed behavior with controlled fixtures
+        run: node --test tests/research/egx-recovery-readiness-v2.test.cjs
       - name: Evaluate pinned current G09/G11 source evidence
         run: node scripts/research/egx-recovery-readiness-v2.cjs
       - name: Preserve evidence even on failure
