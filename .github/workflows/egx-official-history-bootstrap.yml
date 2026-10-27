@@ -1,0 +1,30 @@
+name: EGX Official Zero-History Import Gate
+on:
+  push:
+    branches: [fix/official-egx-zero-history-import-gate-20261027]
+  pull_request:
+    paths:
+      - 'scripts/history/approved-gap-importer.cjs'
+      - 'scripts/history/official-zero-history-import-gate.cjs'
+      - 'tests/history/official-zero-history-import-gate.test.cjs'
+      - '.github/workflows/egx-official-history-bootstrap.yml'
+permissions:
+  contents: read
+jobs:
+  validate-bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          node --check scripts/history/approved-gap-importer.cjs
+          node --check scripts/history/official-zero-history-import-gate.cjs
+          node --test tests/history/official-zero-history-import-gate.test.cjs
+      - name: Reject unapproved template without mutating history
+        run: |
+          node scripts/history/approved-gap-importer.cjs
+          git diff --exit-code -- data/history/ data/symbol-map.json data/stable/
