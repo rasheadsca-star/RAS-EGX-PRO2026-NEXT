@@ -108,12 +108,31 @@ function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
     status:mainDates.has(expected)?'MAIN_ALREADY_HAS_SESSION':legacyDates.has(expected)?'UNVERIFIED_HISTORIC_ALTERNATIVE':'CURRENT_SESSION_NOT_RECOVERED'});
  }
  for(const t of focus.filter(t=>!all.has(t)))focusRecords.push({ticker:t,expectedSession:expected,status:'NOT_FOUND_IN_ANY_SCANNED_ARCHIVE'});
+ const historySummary=read(path.join(root,'data/history-summary.json'),{});
+ const rawSymbols=read(path.join(root,'data/symbol-map.json'),{});
+ const mapped=Array.isArray(rawSymbols)?rawSymbols:Object.values(rawSymbols);
+ const mapByTicker=new Map(mapped.filter(x=>x?.ticker).map(x=>[ticker(x.ticker),x]));
+ const summaryByTicker=new Map((historySummary.symbols||[]).filter(x=>x?.ticker).map(x=>[ticker(x.ticker),x]));
+ for(const item of focusRecords){
+   const h=summaryByTicker.get(item.ticker)||{},identity=mapByTicker.get(item.ticker)||{};
+   const error=String(h.lastUpdateError||'');
+   item.sourceTriage={
+     mappedActive:identity.active===false?false:identity.active===true?true:null,
+     historicalSessions:Number(h.availableSessions||0),
+     historicalLastSession:h.lastSession||null,
+     identityVerified:h.symbolVerified===true,
+     failureCode:error.includes('HTTP 404')?'YAHOO_SYMBOL_HTTP_404':error?'SOURCE_RETRIEVAL_FAILED':'NO_SOURCE_ERROR_RECORDED',
+     action:'VERIFY_EXCHANGE_LISTING_AND_SECURITY_IDENTITY_THEN_FETCH_OFFICIAL_OR_LICENSED_DATED_OHLCV',
+     autoPromote:false
+   };
+ }
  const conflictTickerSet=new Set(conflicts.map(x=>x.ticker));
  for(const candidate of candidates)candidate.reviewBucket=conflictTickerSet.has(candidate.ticker)?'HOLD_CROSS_SOURCE_PRICE_CONFLICT':'GAP_NEEDS_INDEPENDENT_PARITY';
  const legacyCandidateConflicted=candidates.filter(x=>x.reviewBucket==='HOLD_CROSS_SOURCE_PRICE_CONFLICT').length;
  const report={schemaVersion:'egx-independent-history-recovery-1',generatedAt:new Date().toISOString(),
    expectedSession:expected,mode:'RESEARCH_STAGING_ONLY',noAutomaticPromotion:true,
    sources:scanned,summary:{archiveSymbols:all.size,mainSymbols,missingLatestSourceFocus:focus.length,focusWithLegacyExpected:focusRecords.filter(x=>x.legacyHasExpected).length,
+     focusYahoo404:focusRecords.filter(x=>x.sourceTriage?.failureCode==='YAHOO_SYMBOL_HTTP_404').length,
      overlapDates,conflictDates,conflictAffectedSymbols:conflictTickerSet.size,researchCandidates,
      candidateRowsInConflictSymbols:legacyCandidateConflicted,priorityCandidatesWithoutObservedConflict:researchCandidates-legacyCandidateConflicted,blockedRecords:blocked.length},
    focus:focusRecords,stockCoverage:symbolStats,conflictExamples:conflicts.slice(0,100)};
