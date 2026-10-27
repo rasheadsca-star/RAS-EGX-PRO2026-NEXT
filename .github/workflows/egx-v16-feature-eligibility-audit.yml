@@ -1,0 +1,27 @@
+name: V16 Feature Eligibility Audit
+on:
+  pull_request:
+    paths:
+      - 'scripts/research/egx-v16-feature-exclusions.py'
+      - '.github/workflows/egx-v16-feature-eligibility-audit.yml'
+  push:
+    branches: [research/v16-feature-rejection-audit-20261027]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m py_compile scripts/research/egx-v16-feature-exclusions.py
+      - run: python scripts/research/egx-v16-feature-exclusions.py
+      - run: git diff --exit-code -- data/history data/stable astra-prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-v16-feature-eligibility-${{ github.run_id }}
+          path: artifacts/research/v16-feature-exclusion-audit.json
