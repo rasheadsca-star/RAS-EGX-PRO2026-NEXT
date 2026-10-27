@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Read-only V16 source-feature exclusion audit. No acceptance-gate modification."""
+import json, os, runpy, collections
+from pathlib import Path
+
+ROOT=Path(os.getenv("GITHUB_WORKSPACE") or ".").resolve()
+src=runpy.run_path(str(ROOT/"scripts/research/v16-two-stage-predictor.py"),run_name="g11_v16_research_audit")
+norm_hist=src["norm_hist"]
+base_feature=src["base_feature"]
+date=json.loads((ROOT/"data/stable/v15-price-truth.json").read_text())["expectedSession"]
+raw=json.loads((ROOT/"data/symbol-map.json").read_text())
+items=raw if isinstance(raw,list) else list(raw.values())
+active=sorted({str(x.get("ticker") or "").upper().strip() for x in items if x.get("active") is not False and x.get("ticker")})
+rows=[]
+for ticker in active:
+    p=ROOT/"data/history"/(ticker+".json")
+    record={"ticker":ticker,"session":date,"reason":None,"validSessions":0,"lastDate":None,"currentBar":False,"baseFeature":False}
+    if not p.exists():
+        record["reason"]="HISTORY_FILE_MISSING";rows.append(record);continue
+    try:
+        h=norm_hist(p)
+        bars=[x for x in h["rows"] if x["date"]<=date]
+        record["validSessions"]=len(bars)
+        record["lastDate"]=bars[-1]["date"] if bars else None
+        record["currentBar"]=record["lastDate"]==date
+        record["symbolSourceEligible"]=bool(h["ok"])
+        if not h["ok"]:record["reason"]="SOURCE_HISTORY_NOT_ELIGIBLE"
+        elif len(bars)<60:record["reason"]="LESS_THAN_60_BARS"
+        elif not record["currentBar"]:record["reason"]="NO_CURRENT_SESSION_BAR"
+        else:
+            idx=len(bars)-1
+            h["rows"]=bars
+            feature=base_feature(h,idx)
+            record["baseFeature"]=bool(feature and feature.get("date")==date)
+            record["reason"]="FEATURE_OK" if record["baseFeature"] else "BASE_FEATURE_REJECTED"
+    except Exception as e:
+        record["reason"]="PARSE_OR_FEATURE_ERROR";record["diagnostic"]=str(e)[:160]
+    rows.append(record)
+counts=dict(sorted(collections.Counter(x["reason"] for x in rows).items()))
+out={"schemaVersion":"egx-v16-feature-exclusion-audit-1","session":date,"active":len(active),"reasonCounts":counts,"v16FeatureEligible":counts.get("FEATURE_OK",0),"records":rows,"eligibleForExecution":False,"note":"Read-only V16 feature computation diagnostic; not a certified G11 G09 output"}
+folder=ROOT/"artifacts/research";folder.mkdir(parents=True,exist_ok=True)
+(folder/"v16-feature-exclusion-audit.json").write_text(json.dumps(out,ensure_ascii=False,indent=2)+"\n")
+print("V16_FEATURE_REJECTION_AUDIT",json.dumps({"active":out["active"],"featureEligible":out["v16FeatureEligible"],"reasons":counts}))
