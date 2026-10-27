@@ -5,7 +5,7 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const ROOT=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const OUT=path.resolve(process.env.EGX_RECOVERY_OUT||path.join(ROOT,'artifacts/history-recovery'));
-const asDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x||''))?String(x):null;
+const asDate=x=>{const s=String(x||'');if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return null;const d=new Date(s+'T00:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===s?s:null};
 const num=x=>x===null||x===undefined||x===''?null:Number.isFinite(Number(x))?Number(x):null;
 const ticker=x=>String(x||'').trim().toUpperCase().replace(/[^A-Z0-9._-]/g,'');
 const sha=x=>crypto.createHash('sha256').update(JSON.stringify(x)).digest('hex');
@@ -108,10 +108,14 @@ function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
     status:mainDates.has(expected)?'MAIN_ALREADY_HAS_SESSION':legacyDates.has(expected)?'UNVERIFIED_HISTORIC_ALTERNATIVE':'CURRENT_SESSION_NOT_RECOVERED'});
  }
  for(const t of focus.filter(t=>!all.has(t)))focusRecords.push({ticker:t,expectedSession:expected,status:'NOT_FOUND_IN_ANY_SCANNED_ARCHIVE'});
+ const conflictTickerSet=new Set(conflicts.map(x=>x.ticker));
+ for(const candidate of candidates)candidate.reviewBucket=conflictTickerSet.has(candidate.ticker)?'HOLD_CROSS_SOURCE_PRICE_CONFLICT':'GAP_NEEDS_INDEPENDENT_PARITY';
+ const legacyCandidateConflicted=candidates.filter(x=>x.reviewBucket==='HOLD_CROSS_SOURCE_PRICE_CONFLICT').length;
  const report={schemaVersion:'egx-independent-history-recovery-1',generatedAt:new Date().toISOString(),
    expectedSession:expected,mode:'RESEARCH_STAGING_ONLY',noAutomaticPromotion:true,
    sources:scanned,summary:{archiveSymbols:all.size,mainSymbols,missingLatestSourceFocus:focus.length,focusWithLegacyExpected:focusRecords.filter(x=>x.legacyHasExpected).length,
-     overlapDates,conflictDates,researchCandidates,blockedRecords:blocked.length},
+     overlapDates,conflictDates,conflictAffectedSymbols:conflictTickerSet.size,researchCandidates,
+     candidateRowsInConflictSymbols:legacyCandidateConflicted,priorityCandidatesWithoutObservedConflict:researchCandidates-legacyCandidateConflicted,blockedRecords:blocked.length},
    focus:focusRecords,stockCoverage:symbolStats,conflictExamples:conflicts.slice(0,100)};
  const ledger={schemaVersion:'egx-independent-history-candidates-1',expectedSession:expected,productionEligible:false,
    rule:'No source overwrite, no auto-approval, old archives never confer current-session proof',
