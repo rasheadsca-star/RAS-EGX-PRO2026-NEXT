@@ -1,0 +1,25 @@
+name: EGX USD Share-Class Identity Parity
+on:
+  push:
+    branches: [fix/egx-usd-trading-symbol-currency-parity]
+  pull_request:
+    paths:
+      - 'data/symbol-map.json'
+      - 'tests/history/egx-usd-class-identity-parity.test.cjs'
+      - '.github/workflows/egx-usd-identity-parity.yml'
+permissions:
+  contents: read
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/history/egx-usd-class-identity-parity.test.cjs
+      - run: node --test tests/history/egx-structural-non-security-quarantine.test.cjs
+      - run: |
+          git diff --exit-code -- data/history/ data/stable/ astra/ astra-prod/ data/ops/
