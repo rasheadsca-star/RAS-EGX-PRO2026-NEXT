@@ -1,0 +1,96 @@
+name: EGX Independent Historical Data Recovery
+on:
+  push:
+    branches: [research/independent-history-recovery-hub-20261027]
+  pull_request:
+    paths:
+      - 'scripts/research/egx-independent-history-recovery.cjs'
+      - 'scripts/research/egx-independent-source-probes.cjs'
+      - 'scripts/research/egx-g11-readiness-triage.cjs'
+      - 'scripts/research/egx-directfn-exact-session-probe.cjs'
+      - 'scripts/research/egx-g11-feature-rejections.py'
+      - 'tests/research/egx-directfn-exact-session-probe.test.cjs'
+      - 'tests/research/egx-g11-readiness-triage.test.cjs'
+      - 'tests/research/egx-independent-history-recovery.test.cjs'
+      - '.github/workflows/egx-independent-history-recovery.yml'
+  workflow_dispatch:
+    inputs:
+      probe_sources:
+        description: 'Stage Yahoo and probe EGX/Mubasher for discovery only'
+        required: false
+        type: boolean
+        default: true
+  schedule:
+    - cron: '45 17 * * 0-4'
+permissions:
+  contents: read
+concurrency:
+  group: egx-history-recovery-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  recovery-readonly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout current history read-only
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Checkout legacy 100-session archive read-only
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: rasheadsca-star/RAS-EGX-PRO2026
+          ref: main
+          path: sources/legacy-ras-egx-pro2026
+          persist-credentials: false
+      - name: Checkout V11 earliest repository where accessible
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          repository: rasheadsca-star/RAS-EGX0.1
+          ref: main
+          path: sources/legacy-ras-egx01
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static validation and adversarial unit tests
+        run: |
+          node --check scripts/research/egx-independent-history-recovery.cjs
+          node --check scripts/research/egx-independent-source-probes.cjs
+          node --check scripts/research/egx-g11-readiness-triage.cjs
+          node --check scripts/research/egx-directfn-exact-session-probe.cjs
+          node --test tests/research/egx-directfn-exact-session-probe.test.cjs
+          node --test tests/research/egx-g11-readiness-triage.test.cjs
+          node --test tests/research/egx-independent-history-recovery.test.cjs
+      - name: Audit exact-session G11 strategy readiness per ticker
+        run: node scripts/research/egx-g11-readiness-triage.cjs
+      - name: Measure source-exact feature exclusions for four current-session tickers
+        run: python3 scripts/research/egx-g11-feature-rejections.py
+      - name: Build historical archive inventory and quarantine ledger
+        run: node scripts/research/egx-independent-history-recovery.cjs
+      - name: Build single quarantined central SQLite research database
+        run: |
+          python3 scripts/research/egx-recovery-sqlite.py
+          python3 -c "import json; j=json.load(open('artifacts/history-recovery/central-ledger-manifest.json')); assert j['counts']['automatically_promoted']==0 and j['integrityCheck']=='ok'"
+      - name: Probe DirectFN exact-date EOD candles without promotion
+        run: node scripts/research/egx-directfn-exact-session-probe.cjs
+      - name: Stage external source evidence (never update canonical history)
+        if: github.event_name != 'workflow_dispatch' || inputs.probe_sources == true
+        continue-on-error: true
+        env:
+          EGX_RECOVERY_SYMBOLS: BONY,TANM,KRDI,CEFM,DTPP,POUL
+        run: node scripts/research/egx-independent-source-probes.cjs
+      - name: Assert no production or history mutations
+        run: |
+          git diff --exit-code -- data/history/ data/stable/ astra/ astra-prod/ data/ops/
+          git diff --exit-code -- scripts/stable/
+      - name: Upload evidence and gap candidates for human validation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-recovery-research-${{ github.run_id }}
+          path: artifacts/history-recovery/
+          if-no-files-found: warn
+          retention-days: 14
