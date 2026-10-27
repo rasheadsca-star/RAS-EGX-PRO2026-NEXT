@@ -316,6 +316,28 @@ jobs:
             echo "V16_CERTIFIED_AUDIT_SKIPPED_NO_BASELINE"
           fi
 
+      - name: Crosswalk certified V16 vs G11 exclusion evidence
+        if: always()
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          g=artifacts/history-recovery/g22-g11-current-blockers.json
+          v=.astra-certified/artifacts/research/v16-feature-exclusion-audit.json
+          if [ -f "$g" ] && [ -f "$v" ]; then
+            node scripts/astra/g22-v16-g11-crosswalk.cjs "$g" "$v" artifacts/history-recovery/g22-v16-g11-crosswalk.json
+          else
+            echo "G22_CROSSWALK_SKIPPED_EVIDENCE_MISSING"
+          fi
+
+      - name: Preserve V16 and G11 exclusion crosswalk
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g22-v16-g11-crosswalk-${{ github.run_id }}
+          path: artifacts/history-recovery/g22-v16-g11-crosswalk.json
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Preserve certified-baseline V16 exclusion audit
         if: always()
         uses: actions/upload-artifact@v4
