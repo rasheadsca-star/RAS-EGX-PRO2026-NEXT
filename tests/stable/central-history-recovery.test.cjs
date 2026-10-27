@@ -43,3 +43,22 @@ test('ticker mismatch is not accepted',()=>{
   assert.equal(report.candidates.length,0);assert.equal(report.rejections[0].reason,'TICKER_IDENTITY_CONFLICT');
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('cross-repository bundle stages valid legacy history and quarantines invalid OHLCV',()=>{
+ const {dir,put}=fixture();try{
+  put('data/recovery/legacy-ras-egx-pro2026-history50-20260702.json',{
+   mode:'QUARANTINED_NO_CANONICAL_WRITE',
+   sourceRepository:'rasheadsca-star/RAS-EGX-PRO2026',sourcePath:'data/history-50.json',
+   sourceBlobSha:'abcdef12345',sourceGeneratedAt:'2026-07-03T00:00:00Z',
+   symbols:{ABC:[b('2026-07-02'),{...b('2026-07-03'),low:15}]}
+  });
+  const report=analyze({root:dir,archivePaths:[]});
+  assert.equal(report.summary.archivalCandidateFiles,1);
+  assert.equal(report.summary.archivalNewSessionRows,1);
+  assert.equal(report.candidates[0].invalidBars,1);
+  assert.equal(report.candidates[0].stageStatus,'MALFORMED_OR_CONFLICTING_QUARANTINE');
+  assert.equal(report.candidates[0].eligibleForAutomaticCanonicalWrite,false);
+  assert.equal(report.candidates[0].additionalDates[0],'2026-07-02');
+  assert.equal(report.summary.canonicalRowsWritten,0);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
