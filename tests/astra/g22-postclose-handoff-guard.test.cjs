@@ -76,11 +76,11 @@ test('fails closed below G22 source evidence threshold', () => {
   assert.ok(r.reasons.includes('HANDOFF_SOURCE_EVIDENCE_BELOW_90'));
 });
 
-test('fails closed below G22 200 accepted-row floor', () => {
-  const x=fixture(); x.marker.acceptedRows=199;
+test('fails closed below G22 190 accepted-row floor', () => {
+  const x=fixture(); x.marker.acceptedRows=189;
   const r=evaluateHandoff(x);
   assert.equal(r.run,false);
-  assert.ok(r.reasons.includes('HANDOFF_ACCEPTED_ROWS_BELOW_200'));
+  assert.ok(r.reasons.includes('HANDOFF_ACCEPTED_ROWS_BELOW_190'));
 });
 
 test('fails closed when canonical snapshot fingerprint differs from marker', () => {
@@ -182,4 +182,14 @@ test('first workflow_run requires marker producer run identity', () => {
   const r=evaluateHandoff(x);
   assert.equal(r.run,false);
   assert.ok(r.reasons.includes('HANDOFF_PRODUCER_RUN_MISMATCH'));
+});
+
+test('conditionally accepts 193 verified rows without relaxing source or session checks', () => {
+  const x=fixture(); x.marker.acceptedRows=193; x.price.acceptedRows=193;
+  const r=evaluateHandoff(x); assert.equal(r.run,true,JSON.stringify(r.reasons));
+});
+test('rejects canonical price truth below 190', () => {
+  const x=fixture(); x.price.acceptedRows=189;
+  const r=evaluateHandoff(x); assert.equal(r.run,false);
+  assert.ok(r.reasons.includes('CANONICAL_PRICE_TRUTH_ACCEPTED_ROWS_BELOW_190'));
 });
