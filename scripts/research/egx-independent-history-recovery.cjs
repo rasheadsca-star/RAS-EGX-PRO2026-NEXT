@@ -41,7 +41,9 @@ function inventory({root=ROOT,out=OUT,cutoff,extraSources=[]}={}){
   for(const file of fs.readdirSync(source.dir).filter(x=>/^[A-Za-z0-9._-]+\.json$/.test(x)).sort()){
    files++;
    const t=ticker(file.slice(0,-5)),doc=read(path.join(source.dir,file),null);
-   if(!doc||ticker(doc.ticker)!==t||doc.exchange&&String(doc.exchange).toUpperCase()!=='EGX'||doc.currency&&String(doc.currency).toUpperCase()!=='EGP'){
+   const match=Array.isArray(rawSymbols)?rawSymbols.find(x=>ticker(x?.ticker)===t):rawSymbols[t];
+   const expectedCurrency=String(match?.currency||'EGP').toUpperCase();
+   if(!doc||ticker(doc.ticker)!==t||doc.exchange&&String(doc.exchange).toUpperCase()!=='EGX'||doc.currency&&String(doc.currency).toUpperCase()!==expectedCurrency){
     identityRejected++;blocked.push({ticker:t,source:source.id,reason:'FILE_IDENTITY_EXCHANGE_OR_CURRENCY_CONFLICT'});continue
    }
    const rows=Array.isArray(doc.sessions)?doc.sessions:[];
