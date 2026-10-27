@@ -1,0 +1,25 @@
+name: EGX G22 Rejected Source Triage
+on:
+  pull_request:
+    paths:
+      - 'scripts/research/egx-g22-rejected-row-triage.cjs'
+      - '.github/workflows/egx-g22-rejected-triage.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/research/egx-g22-rejected-row-triage.cjs
+      - run: node scripts/research/egx-g22-rejected-row-triage.cjs
+      - run: git diff --exit-code -- data/history data/stable astra-prod
+      - uses: actions/upload-artifact@v4
+        with:
+          name: g22-rejected-triage-${{ github.run_id }}
+          path: artifacts/history-recovery/g22-rejected-row-triage.json
