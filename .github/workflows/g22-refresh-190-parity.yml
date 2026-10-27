@@ -1,0 +1,31 @@
+name: G22 Refresh 190 Parity
+on:
+  pull_request:
+    paths:
+      - 'scripts/astra/g22-postclose-refresh.cjs'
+      - '.github/workflows/g22-refresh-190-parity.yml'
+permissions:
+  contents: read
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/astra/g22-postclose-refresh.cjs
+      - run: node --test tests/astra/g22-postclose-handoff-guard.test.cjs
+      - name: Verify both 190-row gates stay aligned
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),assert=require('assert');
+          const a=fs.readFileSync('scripts/astra/g22-postclose-refresh.cjs','utf8');
+          const b=fs.readFileSync('scripts/astra/g22-postclose-handoff-guard.cjs','utf8');
+          assert.match(a,/mainAppStatus\.acceptedRows \|\| 0\) >= 190/);
+          assert.match(b,/G22_MIN_ACCEPTED_ROWS = 190/);
+          assert.doesNotMatch(a,/mainAppStatus\.acceptedRows \|\| 0\) >= 200/);
+          NODE
+      - run: git diff --exit-code -- data/history data/stable astra-prod
