@@ -4,6 +4,9 @@ on:
     paths:
       - 'scripts/astra/g22-postclose-refresh.cjs'
       - '.github/workflows/g22-refresh-190-parity.yml'
+      - '.github/workflows/egx-verified-incremental-recovery.yml'
+      - 'scripts/stable/v16-verified-incremental-recovery.cjs'
+      - 'tests/stable/v16-verified-incremental-recovery.test.cjs'
 permissions:
   contents: read
 jobs:
@@ -20,6 +23,7 @@ jobs:
       - run: node --test tests/astra/g22-g11-blocker-evidence.test.cjs
       - run: node --test tests/astra/g22-v16-g11-crosswalk.test.cjs
       - run: node --test tests/astra/g22-recovery-priorities.test.cjs
+      - run: node --test tests/stable/v16-verified-incremental-recovery.test.cjs
       - run: node --test tests/astra/g22-exact-active-universe.test.cjs
       - run: python3 -m py_compile scripts/research/egx-v16-feature-exclusions.py
       - run: node --test tests/astra/g22-postclose-handoff-guard.test.cjs
