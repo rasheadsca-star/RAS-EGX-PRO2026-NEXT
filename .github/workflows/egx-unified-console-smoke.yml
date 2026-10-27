@@ -1,0 +1,23 @@
+name: EGX Unified Console Smoke
+on:
+  pull_request:
+    paths:
+      - 'unified-console/**'
+      - 'tests/research/egx-unified-console.test.cjs'
+      - '.github/workflows/egx-unified-console-smoke.yml'
+  push:
+    branches: [feature/egx-unified-console-safe]
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/research/egx-unified-console.test.cjs
+      - run: git diff --exit-code -- data/history data/stable astra-prod
