@@ -17,7 +17,8 @@ function build(truth,summary,prior={}){
   return {ticker:t,firstObservedSession:p?.firstObservedSession||truth.expectedSession,lastObservedSession:truth.expectedSession,
    consecutiveObservedSessions:consecutive,lastHistorySession:h.lastSession||null,availableSessions:h.availableSessions??null,
    symbolVerified:h.symbolVerified===true,status:'SOURCE_GAP_UNRESOLVED',
-   nextAction:'VERIFY_IDENTITY_CHECK_LISTING_SESSION_STATUS_FETCH_INDEPENDENT_OHLCV',
+   recoveryClass:!h.symbolVerified&&Number(h.availableSessions||0)===0?'ZERO_HISTORY_IDENTITY_UNVERIFIED':!h.symbolVerified?'IDENTITY_UNVERIFIED':Number(h.availableSessions||0)===0?'ZERO_HISTORY_VERIFIED_IDENTITY':'CURRENT_SESSION_OR_SOURCE_GAP',
+   nextAction:!h.symbolVerified?'VERIFY_EXCHANGE_SECURITY_IDENTITY_BEFORE_ANY_OHLCV_PROMOTION':'FETCH_INDEPENDENT_OHLCV_AND_VALIDATE_SESSION_CORPORATE_ACTIONS',
    eligibleForTrading:false};
  });
  const recovered=(prior.records||[]).filter(x=>!unique.includes(x.ticker)).map(x=>({ticker:x.ticker,previousStatus:x.status,status:'NO_LONGER_MISSING_IN_PRICE_TRUTH_NOT_YET_CERTIFIED',lastObservedSession:x.lastObservedSession}));

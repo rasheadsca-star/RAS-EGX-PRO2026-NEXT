@@ -13,3 +13,15 @@ test('rerunning same exchange session does not increment gap persistence',()=>{
  const second=build(truth('2026-10-27',['BONY']),summary,first);
  assert.equal(second.records[0].consecutiveObservedSessions,1);
 });
+
+test('unverified zero-history ticker requires identity reconciliation',()=>{
+ const x=build(truth('2026-10-27',['BONY']),{symbols:[{ticker:'BONY',availableSessions:0,lastSession:null,symbolVerified:false}]});
+ assert.equal(x.records[0].recoveryClass,'ZERO_HISTORY_IDENTITY_UNVERIFIED');
+ assert.match(x.records[0].nextAction,/VERIFY_EXCHANGE_SECURITY_IDENTITY/);
+ assert.equal(x.records[0].eligibleForTrading,false);
+});
+test('verified historical ticker with current gap requires session recovery',()=>{
+ const x=build(truth('2026-10-27',['BONY']),{symbols:[{ticker:'BONY',lastSession:'2026-10-26',availableSessions:100,symbolVerified:true}]});
+ assert.equal(x.records[0].recoveryClass,'CURRENT_SESSION_OR_SOURCE_GAP');
+ assert.match(x.records[0].nextAction,/FETCH_INDEPENDENT_OHLCV/);
+});
