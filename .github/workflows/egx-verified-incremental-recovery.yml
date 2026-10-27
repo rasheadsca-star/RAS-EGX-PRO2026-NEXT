@@ -1,0 +1,98 @@
+name: EGX Verified Incremental Source Recovery
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["EGX MAIN APP V16.9.2 P2 Automatic Scan"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/egx-verified-incremental-recovery.yml"
+      - "scripts/stable/v16-verified-incremental-recovery.cjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: egx-verified-incremental-recovery
+  cancel-in-progress: false
+
+jobs:
+  verified-recovery:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate recovery implementation
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-verified-incremental-recovery.cjs
+          node --test tests/stable/v16-verified-incremental-recovery.test.cjs
+      - name: Freeze same-session baseline
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cp data/stable/v15-price-truth.json artifacts/recovery-before-price-truth.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const p=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json'));
+          if(p.ready!==true||p.executionGrade!==true||!/^\d{4}-\d{2}-\d{2}$/.test(p.expectedSession||''))throw Error('SOURCE_NOT_EXECUTION_GRADE');
+          NODE
+      - name: Seek independent same-session evidence
+        run: node scripts/stable/v16-market-second-source-resolver.cjs
+      - name: Quarantine unverified identities and incomplete OHLCV
+        run: node scripts/stable/v16-verified-incremental-recovery.cjs filter
+      - name: Apply only independently verified recovery
+        run: node scripts/stable/v16-market-coverage-reconciler.cjs
+      - name: Verify exact recovered rows and unchanged gates
+        id: check
+        run: node scripts/stable/v16-verified-incremental-recovery.cjs verify
+      - name: Archive exact-session evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-incremental-evidence-${{ github.run_id }}
+          path: |
+            artifacts/verified-incremental-recovery-result.json
+            data/stable/v16-market-second-source-evidence.json
+          retention-days: 14
+      - name: Commit only proven data recovery
+        if: steps.check.outputs.recovered != '0'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node - <<'NODE'
+          const fs=require('fs');
+          const j=JSON.parse(fs.readFileSync('artifacts/verified-incremental-recovery-result.json'));
+          if(!j.increment||j.increment<1)throw Error('NO_VERIFIED_RECOVERY');
+          fs.writeFileSync('/tmp/egx-recovery-session',j.session);
+          fs.writeFileSync('/tmp/egx-recovered-tickers',j.recovered.join('\n'));
+          NODE
+          git fetch origin main
+          REMOTE_SESSION=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(JSON.parse(s).expectedSession))")
+          [ "$REMOTE_SESSION" = "$(cat /tmp/egx-recovery-session)" ] || { echo 'SESSION_ADVANCED_ABORT_STALE_REPAIR'; exit 1; }
+          REMOTE_ACCEPTED=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(String(JSON.parse(s).acceptedRows)))")
+          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('artifacts/recovery-before-price-truth.json')).acceptedRows")
+          [ "$REMOTE_ACCEPTED" = "$BASE_ACCEPTED" ] || { echo 'ACCEPTED_ROWS_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
+          while read -r ticker; do
+            [ -z "$ticker" ] || git add "data/history/$ticker.json"
+          done < /tmp/egx-recovered-tickers
+          git add data/stable/v15-price-truth.json data/fetch-status.json data/stable/v16-source-session-evidence.json data/stable/v16-market-second-source-evidence.json
+          git diff --cached --quiet && { echo 'NO_VERIFIED_CHANGES'; exit 1; }
+          git commit -m "Recover independently verified EGX current-session rows"
+          git pull --rebase -X ours origin main
+          REMOTE_SESSION=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(JSON.parse(s).expectedSession))")
+          [ "$REMOTE_SESSION" = "$(cat /tmp/egx-recovery-session)" ] || { echo 'SESSION_ADVANCED_ABORT_STALE_REPAIR'; exit 1; }
+          REMOTE_ACCEPTED=$(git show origin/main:data/stable/v15-price-truth.json | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>process.stdout.write(String(JSON.parse(s).acceptedRows)))")
+          BASE_ACCEPTED=$(node -p "JSON.parse(require('fs').readFileSync('artifacts/recovery-before-price-truth.json')).acceptedRows")
+          [ "$REMOTE_ACCEPTED" = "$BASE_ACCEPTED" ] || { echo 'ACCEPTED_ROWS_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
+          git push origin HEAD:main
