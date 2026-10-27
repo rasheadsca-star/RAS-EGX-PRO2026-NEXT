@@ -103,6 +103,36 @@ function analyze({root=ROOT,archivePaths=null,expected=null}={}){
    stageStatus:gated?'OVERLAP_VALIDATED_NEEDS_INDEPENDENT_SECOND_SOURCE':'QUARANTINED_UNVERIFIED',
    eligibleForAutomaticCanonicalWrite:false});
  }
+ // Explicit cross-repository legacy snapshot imported with Git blob SHA provenance.
+ const bundlePath='data/recovery/legacy-ras-egx-pro2026-history50-20260702.json';
+ const bundle=readRel(bundlePath,null);
+ if(bundle?.mode==='QUARANTINED_NO_CANONICAL_WRITE'&&bundle?.sourceRepository&&bundle?.sourceBlobSha&&bundle?.symbols){
+  report.summary.archiveFilesScanned++;
+  for(const [t,rows] of Object.entries(bundle.symbols)){
+   if(!targetSet.has(t)||!Array.isArray(rows)||!rows.length)continue;
+   const reference=known.get(t)||new Map();
+   let overlaps=0,conflicts=0,bad=0;
+   const news=[];
+   for(const row of rows){
+    const bar=validBar(row,session,t);
+    if(!bar){bad++;continue}
+    const ref=reference.get(bar.date);
+    if(!ref){news.push(bar);continue}
+    if(Math.abs(ref.close-bar.close)<=Math.max(0.005,ref.close*0.002)&&Math.abs(ref.volume-bar.volume)<=Math.max(1,ref.volume*0.03))overlaps++;
+    else conflicts++;
+   }
+   report.summary.archivalCandidateFiles++;
+   report.summary.archivalNewSessionRows+=news.length;
+   const stageStatus=bad||conflicts?'MALFORMED_OR_CONFLICTING_QUARANTINE':
+    overlaps>=3?'OVERLAP_VALIDATED_NEEDS_INDEPENDENT_SECOND_SOURCE':'SINGLE_ARCHIVE_SOURCE_UNVERIFIED';
+   report.candidates.push({ticker:t,sourceFile:bundlePath,sourceRepository:bundle.sourceRepository,
+    sourceRepositoryFile:bundle.sourcePath,sourceBlobSha:bundle.sourceBlobSha,sourceGeneratedAt:bundle.sourceGeneratedAt,
+    sourceTrust:'ARCHIVE_REQUIRES_INDEPENDENT_CONFIRMATION',
+    overlaps,conflicts,invalidBars:bad,additionalDates:news.map(x=>x.date).sort(),
+    additionalBars:news.sort((a,b)=>a.date.localeCompare(b.date)),
+    stageStatus,eligibleForAutomaticCanonicalWrite:false});
+  }
+ }
  report.candidates.sort((a,b)=>a.ticker.localeCompare(b.ticker)||a.sourceFile.localeCompare(b.sourceFile));
  return report;
 }
