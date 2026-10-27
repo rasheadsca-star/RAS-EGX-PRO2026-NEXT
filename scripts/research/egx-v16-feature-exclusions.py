@@ -36,11 +36,11 @@ for ticker in active:
             if not record["baseFeature"]:
                 base=src
                 close=bars[idx]["close"]
-                atr=base["atr"](bars,idx)
+                atr=base["BASE"]["atr"](bars,idx)
                 previous=bars[idx-1]["close"]
                 atr_pct=100*atr/close if atr is not None and close>0 else None
                 one_day_return=100*(close/previous-1) if previous>0 else None
-                previous_volume_mean=base["sma"](bars,idx-1,20,"volume")
+                previous_volume_mean=base["BASE"]["sma"](bars,idx-1,20,"volume")
                 record["atrPct"]=round(atr_pct,4) if atr_pct is not None else None
                 record["oneDayReturnPct"]=round(one_day_return,4) if one_day_return is not None else None
                 record["previousVolumeMean20"]=previous_volume_mean
