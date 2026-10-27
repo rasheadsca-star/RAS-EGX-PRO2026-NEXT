@@ -5,6 +5,8 @@ on:
   pull_request:
     paths:
       - 'scripts/research/egx-independent-history-recovery.cjs'
+      - 'scripts/research/egx-pinned-session-gap-crosswalk.cjs'
+      - 'tests/research/egx-pinned-session-gap-crosswalk.test.cjs'
       - 'scripts/research/egx-licensed-ohlcv-intake.py'
       - 'tests/research/test_egx_licensed_ohlcv_intake.py'
       - 'scripts/research/egx-recovery-focus.cjs'
@@ -66,6 +68,8 @@ jobs:
       - name: Static validation and adversarial unit tests
         run: |
           node --check scripts/research/egx-independent-history-recovery.cjs
+          node --check scripts/research/egx-pinned-session-gap-crosswalk.cjs
+          node --test tests/research/egx-pinned-session-gap-crosswalk.test.cjs
           node --check scripts/research/egx-recovery-focus.cjs
           node --test tests/research/egx-recovery-focus.test.cjs
           node --check scripts/research/egx-independent-source-probes.cjs
@@ -97,6 +101,10 @@ jobs:
         run: node scripts/research/egx-g11-readiness-triage.cjs
       - name: Measure source-exact feature exclusions for four current-session tickers
         run: python3 scripts/research/egx-g11-feature-rejections.py
+      - name: Cross-reference signed historical Oct 26 source bars to unresolved security gaps (no import)
+        env:
+          EGX_AUDIT_FETCH_ANCHOR: '1'
+        run: node scripts/research/egx-pinned-session-gap-crosswalk.cjs
       - name: Build historical archive inventory and quarantine ledger
         run: node scripts/research/egx-independent-history-recovery.cjs
       - name: Build single quarantined central SQLite research database
