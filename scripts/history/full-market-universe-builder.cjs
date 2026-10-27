@@ -43,6 +43,8 @@ const GENERIC_OBJECT_KEYS = new Set([
   'rows', 'data', 'items', 'stocks', 'symbols', 'results', 'opportunities', 'ranking',
   'candidates', 'meta', 'chart', 'result', 'indicators', 'quote', 'adjclose', 'history',
   'sessions', 'market', 'summary', 'coverage', 'sources', 'status', 'details',
+  // Output schema collection/decision keys, never instrument identities.
+  'blocks', 'buckets', 'follow', 'risk', 'rules',
 ]);
 
 const TICKER_PATHS = [
@@ -229,4 +231,5 @@ function main() {
   }, null, 2));
 }
 
-main();
+if (require.main === module) main();
+module.exports = { normalizeTicker, collectFromObject, buildEntry };
