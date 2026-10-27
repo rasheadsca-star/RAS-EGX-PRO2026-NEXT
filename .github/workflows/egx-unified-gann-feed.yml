@@ -1,0 +1,57 @@
+name: EGX Unified Gann Research Feed
+on:
+  pull_request:
+    paths:
+      - 'scripts/research/egx-unified-gann-feed.cjs'
+      - 'tests/research/egx-unified-gann-feed.test.cjs'
+      - 'unified-console/index.html'
+      - '.github/workflows/egx-unified-gann-feed.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '25 17 * * 0-4'
+permissions:
+  contents: write
+concurrency:
+  group: egx-unified-gann-feed
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test feed and existing console
+        run: |
+          node --check scripts/research/egx-unified-gann-feed.cjs
+          node --test tests/research/egx-unified-gann-feed.test.cjs tests/research/egx-unified-console.test.cjs
+      - name: Run actual Gann engine from canonical history
+        run: node gann-fusion-x/scripts/build-snapshot.cjs
+      - name: Build exact-session display-only feed
+        run: node scripts/research/egx-unified-gann-feed.cjs
+      - name: Guard production history and decision files
+        run: git diff --exit-code -- data/history data/stable astra-prod
+      - name: Upload result regardless of outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-unified-gann-feed-${{ github.run_id }}
+          path: |
+            unified-console/gann-research.json
+            gann-fusion-x/data/review.json
+          if-no-files-found: warn
+      - name: Publish research feed to main after review only
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add unified-console/gann-research.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'data: publish current Gann research-only snapshot'
+          git push origin HEAD:main
