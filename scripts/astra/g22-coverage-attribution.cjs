@@ -1,7 +1,7 @@
 'use strict';
 // P1 evidence only: no acceptance changes or manual resurrection of rejected symbols.
 const fs=require('node:fs'),path=require('node:path');
-function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,priceTruth,secondSource={},disposition={},readinessIssues=[],pipelineDiagnostics=[],outPath}){
+function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,priceTruth,secondSource={},disposition={},readinessIssues=[],pipelineDiagnostics=[],strategyReadiness={},outPath}){
  const rejected=Array.isArray(priceTruth?.sampleRejected)?priceTruth.sampleRejected:[];
  const missing=Array.isArray(priceTruth?.missingHistoryFiles)?priceTruth.missingHistoryFiles:[];
  const details=rejected.map(r=>({
@@ -20,6 +20,10 @@ function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,pr
  }
  const findings=Array.isArray(readinessIssues)?readinessIssues.map(x=>({severity:x?.severity||null,code:x?.code||'UNKNOWN',ticker:x?.ticker||null,message:x?.message||null})):[];
  const issuesByCode=Object.fromEntries([...new Set(findings.map(x=>x.code))].sort().map(code=>[code,findings.filter(x=>x.code===code).length]));
+ const productionRows=(Array.isArray(strategyReadiness?.rows)?strategyReadiness.rows:[])
+  .filter(x=>x?.productionCritical===true)
+  .map(x=>({ticker:x.ticker||null,status:x.status||null,reason:x.reason||null,validHistorySessions:x.validHistorySessions??null}));
+ const blockedReasons=Object.fromEntries([...new Set(productionRows.filter(x=>x.status!=='READY').map(x=>x.reason||'UNKNOWN'))].sort().map(reason=>[reason,productionRows.filter(x=>x.status!=='READY'&&(x.reason||'UNKNOWN')===reason).length]));
  const required=Math.ceil(activeUniverse*.9);
  const pipelineRequired=Math.ceil(activeUniverse*.8);
  const hasPipeline=Number.isFinite(pipelineReady)&&pipelineReady>=0;
@@ -33,6 +37,7 @@ function produce({expected,activeUniverse,currentCanonical,pipelineReady=null,pr
   pipelineCoverageGate:hasPipeline?(pipelineReady>=pipelineRequired?'PASS':'BLOCKED'):'NOT_MEASURED',
   readinessIssueCount:findings.length,readinessIssuesByCode:issuesByCode,readinessIssues:findings,
   pipelineDiagnostics:Array.isArray(pipelineDiagnostics)?pipelineDiagnostics:[],
+  productionReadiness:{readySecurities:strategyReadiness?.productionCritical?.readySecurities??null,globalTrainingSessions:strategyReadiness?.productionCritical?.globalTrainingSessions??null,globalTrainingRows:strategyReadiness?.productionCritical?.globalTrainingRows??null,minimumSourceSessions:strategyReadiness?.productionCritical?.minimumSourceSessions??null,minimumSourceUniverse:strategyReadiness?.productionCritical?.minimumSourceUniverse??null,blockedReasons,records:productionRows},
   sourceAcceptedRows:priceTruth?.acceptedRows??null,
   sampledRejectedCount:rejected.length,totalRejectedRows:priceTruth?.rejectedRows??null,missingHistoryCount:missing.length,
   unresolvedDispositionCount:Array.isArray(disposition?.unresolved)?disposition.unresolved.length:null,
