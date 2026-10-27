@@ -7,6 +7,7 @@ const crypto = require('crypto');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const G22_MIN_ACCEPTED_ROWS = 190; // Conditional operating floor; 200 remains the target coverage.
+// Post-merge operational verification: re-evaluate the immutable main-app handoff on push.
 const P = rel => path.join(ROOT, rel);
 const readJson = (rel, fallback = {}) => {
   try { return JSON.parse(fs.readFileSync(P(rel), 'utf8')); } catch { return fallback; }
