@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-10-27T21:37:17.719Z",
+  "generatedAt": "2026-10-27T22:00:41.833Z",
   "expectedSession": "2026-10-27",
   "ready": true,
   "executionGrade": true,
@@ -14,10 +14,14 @@
     "realFetch": true,
     "inputRows": 213,
     "verifiedExpectedSessionRows": 205,
-    "sourceSessionEvidenceCoveragePct": 96.24
+    "sourceSessionEvidenceCoveragePct": 96.2,
+    "primaryVerifiedExpectedSessionRows": 205,
+    "secondSourceVerifiedSessionRows": 0,
+    "secondSourceVerifiedSessionTickers": [],
+    "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 193,
-  "rejectedRows": 20,
+  "acceptedRows": 195,
+  "rejectedRows": 18,
   "droppedRows": 0,
   "updatedHistoryFiles": 172,
   "missingHistoryFiles": [
@@ -489,6 +493,30 @@
       "warnings": [
         "partial_ohlc_reconstructed_from_close_or_previous_close"
       ]
+    },
+    {
+      "ticker": "TRTO",
+      "date": "2026-10-27",
+      "close": 0.06,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "REPORTED_CHANGE_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-10-27",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
+    },
+    {
+      "ticker": "NAHO",
+      "date": "2026-10-27",
+      "close": 0.13,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "REPORTED_CHANGE_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-10-27",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
@@ -629,28 +657,6 @@
     },
     {
       "rejected": true,
-      "ticker": "TRTO",
-      "reason": "REPORTED_CHANGE_MISMATCH",
-      "close": 0.06,
-      "previousClose": 0.06,
-      "reportedChangePct": 5.36,
-      "impliedChangePct": 0,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-10-27"
-    },
-    {
-      "rejected": true,
-      "ticker": "NAHO",
-      "reason": "REPORTED_CHANGE_MISMATCH",
-      "close": 0.13,
-      "previousClose": 0.12,
-      "reportedChangePct": 3.23,
-      "impliedChangePct": 8.33,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-10-27"
-    },
-    {
-      "rejected": true,
       "ticker": "SEIGA",
       "reason": "SOURCE_SESSION_MISMATCH",
       "sourceSessionDate": "2002-02-05",
@@ -678,5 +684,59 @@
       "expectedSession": "2026-10-27"
     }
   ],
-  "sampleDropped": []
+  "sampleDropped": [],
+  "secondSourceReconciliation": {
+    "enabled": true,
+    "failClosed": true,
+    "expectedSession": "2026-10-27",
+    "targetRejectedRowsThisRun": 20,
+    "resolverApprovedRowsThisRun": 2,
+    "recoveredRowsThisRun": 2,
+    "unresolvedRows": 18,
+    "recoveredTickersThisRun": [
+      "TRTO",
+      "NAHO"
+    ],
+    "cumulativeSecondSourceSessionTickers": [],
+    "unresolvedTickers": [
+      "DTPP",
+      "POUL",
+      "ARVA",
+      "ORHD",
+      "EPPK",
+      "PHGC",
+      "MEGM",
+      "ARAB",
+      "ORWE",
+      "DCCC",
+      "GMCI",
+      "CPME",
+      "UNIP",
+      "MMAT",
+      "SEIGA",
+      "ESRS",
+      "IRAX",
+      "TORA"
+    ],
+    "historyResults": [
+      {
+        "ticker": "TRTO",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 0.06,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      },
+      {
+        "ticker": "NAHO",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 0.13,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      }
+    ],
+    "changesAlphaOrRanking": false,
+    "changesEntryStopTargetAllocation": false
+  }
 }

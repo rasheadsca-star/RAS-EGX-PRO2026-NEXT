@@ -1,7 +1,7 @@
 {
   "schemaVersion": "16.9.2-market-second-source-evidence-v3",
-  "generatedAt": "2026-08-25T08:57:41.845Z",
-  "expectedSession": "2026-08-24",
+  "generatedAt": "2026-10-27T22:00:41.708Z",
+  "expectedSession": "2026-10-27",
   "policy": {
     "failClosed": true,
     "providers": [
@@ -13,21 +13,517 @@
     "strategyMutation": false,
     "rule": "Same-session anomalies require independent same-session price confirmation; reported-change anomalies also compare independent change percent when available. Stale primary rows require an independent exact-session replacement and are never promoted from stale timestamps alone."
   },
-  "targetCount": 1,
-  "approvedCount": 0,
-  "unresolvedCount": 1,
-  "approvedTickers": [],
+  "targetCount": 20,
+  "approvedCount": 2,
+  "unresolvedCount": 18,
+  "approvedTickers": [
+    "TRTO",
+    "NAHO"
+  ],
   "unresolvedTickers": [
-    "DCCC"
+    "DTPP",
+    "POUL",
+    "ARVA",
+    "ORHD",
+    "EPPK",
+    "PHGC",
+    "MEGM",
+    "ARAB",
+    "ORWE",
+    "DCCC",
+    "GMCI",
+    "CPME",
+    "UNIP",
+    "MMAT",
+    "SEIGA",
+    "ESRS",
+    "IRAX",
+    "TORA"
   ],
   "records": {
+    "DTPP": {
+      "ticker": "DTPP",
+      "originalReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DTPP/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 42.99
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "DTPP.CA",
+            "conflict": true,
+            "localDifferencePct": 78.7413,
+            "warnings": [
+              "latest_close_conflict:24.4605%",
+              "corporate_action_review_required"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/DTPP/history/",
+          "sessionDate": "2026-10-27",
+          "close": 42.99,
+          "open": 39.86,
+          "high": 43.7,
+          "low": 41.08,
+          "volume": 595203,
+          "previousClose": 39.86,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "POUL": {
+      "ticker": "POUL",
+      "originalReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/POUL/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 9.41
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "POUL.CA",
+            "conflict": true,
+            "localDifferencePct": 76.9474,
+            "warnings": [
+              "latest_close_conflict:0.7105%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/POUL/history/",
+          "sessionDate": "2026-10-27",
+          "close": 9.43,
+          "open": 9.03,
+          "high": 9.5,
+          "low": 9.2,
+          "volume": 6734569,
+          "previousClose": 9.03,
+          "priceDifferencePct": 0.212,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "ARVA": {
+      "ticker": "ARVA",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ARVA/",
+        "sourceSessionDate": "2026-08-16",
+        "close": 14.99
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "ARVA.CA",
+            "conflict": true,
+            "localDifferencePct": 84.524,
+            "warnings": [
+              "latest_close_conflict:11.9674%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/ARVA/history/",
+          "sessionDate": "2026-10-27",
+          "close": 6.57,
+          "open": 5.48,
+          "high": 6.57,
+          "low": 5.56,
+          "volume": 7327908,
+          "previousClose": 5.48,
+          "priceDifferencePct": 128.158,
+          "primaryPriceAgreementRequired": false,
+          "replacementForStalePrimary": true
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "ORHD": {
+      "ticker": "ORHD",
+      "originalReason": "EXTREME_JUMP_REQUIRES_SECOND_SOURCE",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ORHD/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 9.68
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "ORHD.CA",
+            "conflict": true,
+            "localDifferencePct": 64.4706,
+            "warnings": [
+              "latest_close_conflict:2.7712%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/ORHD/history/",
+          "sessionDate": "2026-10-27",
+          "close": 9.7,
+          "open": 9.17,
+          "high": 10,
+          "low": 9.15,
+          "volume": 16039260,
+          "previousClose": 9.17,
+          "priceDifferencePct": 0.206,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "EPPK": {
+      "ticker": "EPPK",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EPPK/",
+        "sourceSessionDate": "2026-09-08",
+        "close": 10.29
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "EPPK.CA",
+            "conflict": true,
+            "localDifferencePct": 44.8203,
+            "warnings": [
+              "latest_close_conflict:6.2016%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/EPPK/history/",
+              "status": "NO_EXPECTED_SESSION",
+              "latestAvailableSession": "2026-10-07",
+              "latestAvailableClose": 9.78
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/EPPK/history/?p=1",
+              "status": "NO_EXPECTED_SESSION",
+              "latestAvailableSession": "2026-10-07",
+              "latestAvailableClose": 9.78
+            }
+          ]
+        }
+      ]
+    },
+    "PHGC": {
+      "ticker": "PHGC",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/PHGC/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 0.08
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "CHANGE_PCT_DISAGREEMENT",
+              "sigmaChangePct": 2.67,
+              "primaryReportedChangePct": 4.05
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "FETCH_FAILED",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/PHGC.CA?period1=1792800000&period2=1793491200&interval=1d&events=history&includeAdjustedClose=true",
+          "error": "HTTP_404"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/PHGC/history/",
+          "sessionDate": "2026-10-27",
+          "close": 0.08,
+          "open": 0.07,
+          "high": 0.08,
+          "low": 0.07,
+          "volume": 175925400,
+          "previousClose": 0.07,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "MEGM": {
+      "ticker": "MEGM",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
+        "sourceSessionDate": "2022-04-28",
+        "close": 17.69
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "MEGM.CA",
+            "conflict": true,
+            "localDifferencePct": 29.1125,
+            "warnings": [
+              "latest_close_conflict:29.1125%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/MEGM/history/",
+              "status": "NO_EXPECTED_SESSION",
+              "latestAvailableSession": "2026-10-26",
+              "latestAvailableClose": 12.54
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/MEGM/history/?p=1",
+              "status": "NO_EXPECTED_SESSION",
+              "latestAvailableSession": "2026-10-26",
+              "latestAvailableClose": 12.54
+            }
+          ]
+        }
+      ]
+    },
+    "ARAB": {
+      "ticker": "ARAB",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ARAB/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 0.23
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "APPROVED",
+          "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+          "sessionDate": "2026-10-27",
+          "close": 0.234,
+          "open": null,
+          "high": null,
+          "low": null,
+          "volume": 517.36,
+          "previousClose": null,
+          "changePct": 3.54,
+          "priceDifferencePct": 1.709,
+          "pageTimestamp": null,
+          "provenance": "SIGMA_LIVE_PAGE_FETCHED_WITHIN_POST_CLOSE_GRACE_WINDOW"
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "ORWE": {
+      "ticker": "ORWE",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ORWE/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 24.01
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "PRICE_DISAGREEMENT",
+              "close": 23,
+              "primaryClose": 24.01,
+              "priceDifferencePct": 4.391
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "ORWE.CA",
+            "conflict": true,
+            "localDifferencePct": 11.7017,
+            "warnings": [
+              "latest_close_conflict:0.9379%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/ORWE/history/",
+              "status": "PRICE_DISAGREEMENT",
+              "close": 23,
+              "priceDifferencePct": 4.391
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/ORWE/history/?p=1",
+              "status": "PRICE_DISAGREEMENT",
+              "close": 23,
+              "priceDifferencePct": 4.391
+            }
+          ]
+        }
+      ]
+    },
     "DCCC": {
       "ticker": "DCCC",
       "originalReason": "SOURCE_SESSION_MISMATCH",
       "primary": {
         "source": "mubasher_symbol_pages",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DCCC/",
-        "sourceSessionDate": null,
+        "sourceSessionDate": "2008-04-07",
         "close": 9.35
       },
       "approved": false,
@@ -64,6 +560,594 @@
           ]
         }
       ]
+    },
+    "GMCI": {
+      "ticker": "GMCI",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/GMCI/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 1.48
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "GMCI.CA",
+            "conflict": true,
+            "localDifferencePct": 53.3333,
+            "warnings": [
+              "latest_close_conflict:5.914%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/GMCI/history/",
+          "sessionDate": "2026-10-27",
+          "close": 1.48,
+          "open": 1.54,
+          "high": 1.53,
+          "low": 1.47,
+          "volume": 377219,
+          "previousClose": 1.54,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "CPME": {
+      "ticker": "CPME",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/CPME/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 36.95
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "FETCH_FAILED",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/CPME.CA?period1=1792800000&period2=1793491200&interval=1d&events=history&includeAdjustedClose=true",
+          "error": "HTTP_404"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/CPME/history/",
+          "sessionDate": "2026-10-27",
+          "close": 36.95,
+          "open": 33.89,
+          "high": 37,
+          "low": 32.5,
+          "volume": 266930,
+          "previousClose": 33.89,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "UNIP": {
+      "ticker": "UNIP",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/UNIP/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 0.28
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "UNIP.CA",
+            "conflict": true,
+            "localDifferencePct": 46.3636,
+            "warnings": [
+              "latest_close_conflict:14.2424%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/UNIP/history/",
+          "sessionDate": "2026-10-27",
+          "close": 0.28,
+          "open": 0.27,
+          "high": 0.29,
+          "low": 0.27,
+          "volume": 30045980,
+          "previousClose": 0.27,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "MMAT": {
+      "ticker": "MMAT",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MMAT/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 4.4
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "MMAT.CA",
+            "conflict": true,
+            "localDifferencePct": 37.3938,
+            "warnings": [
+              "latest_close_conflict:0%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/MMAT/history/",
+          "sessionDate": "2026-10-27",
+          "close": 4.4,
+          "open": 4.52,
+          "high": 4.74,
+          "low": 4.3,
+          "volume": 244954,
+          "previousClose": 4.52,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ],
+      "quarantineReason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+    },
+    "TRTO": {
+      "ticker": "TRTO",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/TRTO/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 0.06
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/TRTO/history/",
+        "sessionDate": "2026-10-27",
+        "close": 0.06,
+        "open": 0.06,
+        "high": 0.06,
+        "low": 0.05,
+        "volume": 149537,
+        "previousClose": 0.06,
+        "priceDifferencePct": 0,
+        "primaryPriceAgreementRequired": true,
+        "replacementForStalePrimary": false
+      },
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_SYMBOL_IDENTITY",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/TRTO.CA?period1=1792800000&period2=1793491200&interval=1d&events=history&includeAdjustedClose=true",
+          "returned": "TRTO",
+          "exchangeName": "CAI",
+          "currency": "USD"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/TRTO/history/",
+          "sessionDate": "2026-10-27",
+          "close": 0.06,
+          "open": 0.06,
+          "high": 0.06,
+          "low": 0.05,
+          "volume": 149537,
+          "previousClose": 0.06,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ]
+    },
+    "NAHO": {
+      "ticker": "NAHO",
+      "originalReason": "REPORTED_CHANGE_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/NAHO/",
+        "sourceSessionDate": "2026-10-27",
+        "close": 0.13
+      },
+      "approved": true,
+      "approvedEvidence": {
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "status": "APPROVED",
+        "url": "https://stockanalysis.com/quote/egx/NAHO/history/",
+        "sessionDate": "2026-10-27",
+        "close": 0.13,
+        "open": 0.12,
+        "high": 0.13,
+        "low": 0.13,
+        "volume": 97867,
+        "previousClose": 0.12,
+        "priceDifferencePct": 0,
+        "primaryPriceAgreementRequired": true,
+        "replacementForStalePrimary": false
+      },
+      "attempts": [
+        {
+          "provider": "SIGMA_CAPITAL_LIVE_MARKET",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://www.sigma-cap.com/main/x_homepage?u_sess=1",
+              "status": "PAGE_SESSION_MISMATCH",
+              "pageDate": "2026-10-28"
+            },
+            {
+              "url": "https://www.sigma-cap.com/main/x_market_page.overview?u_sess=%27",
+              "status": "TICKER_NOT_IN_VISIBLE_MARKET_TABLE",
+              "pageDate": null
+            },
+            {
+              "url": "https://sigmacapital.com.eg/main/x_market_page.overview?u_sess=%27",
+              "status": "FETCH_FAILED",
+              "error": "fetch failed"
+            }
+          ]
+        },
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_SYMBOL_IDENTITY",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/NAHO.CA?period1=1792800000&period2=1793491200&interval=1d&events=history&includeAdjustedClose=true",
+          "returned": "NAHO",
+          "exchangeName": "CAI",
+          "currency": "USD"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "APPROVED",
+          "url": "https://stockanalysis.com/quote/egx/NAHO/history/",
+          "sessionDate": "2026-10-27",
+          "close": 0.13,
+          "open": 0.12,
+          "high": 0.13,
+          "low": 0.13,
+          "volume": 97867,
+          "previousClose": 0.12,
+          "priceDifferencePct": 0,
+          "primaryPriceAgreementRequired": true,
+          "replacementForStalePrimary": false
+        }
+      ]
+    },
+    "SEIGA": {
+      "ticker": "SEIGA",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
+        "sourceSessionDate": "2002-02-05",
+        "close": 5.41
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "REJECTED_IDENTITY_CONFLICT",
+          "identity": {
+            "yahooSymbol": "SEIGA.CA",
+            "conflict": true,
+            "localDifferencePct": 1069.8706,
+            "warnings": [
+              "latest_close_conflict:1069.8706%"
+            ]
+          }
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/SEIGA/history/",
+              "status": "NO_EXPECTED_SESSION",
+              "latestAvailableSession": "2026-10-26",
+              "latestAvailableClose": 0.95
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/SEIGA/history/?p=1",
+              "status": "NO_EXPECTED_SESSION",
+              "latestAvailableSession": "2026-10-26",
+              "latestAvailableClose": 0.95
+            }
+          ]
+        }
+      ]
+    },
+    "ESRS": {
+      "ticker": "ESRS",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ESRS/",
+        "sourceSessionDate": "2026-10-26",
+        "close": 141
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "FETCH_FAILED",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/ESRS.CA?period1=1792800000&period2=1793491200&interval=1d&events=history&includeAdjustedClose=true",
+          "error": "HTTP_404"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/ESRS/history/",
+              "status": "FETCH_FAILED",
+              "error": "HTTP_404"
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/ESRS/history/?p=1",
+              "status": "FETCH_FAILED",
+              "error": "HTTP_404"
+            }
+          ]
+        }
+      ]
+    },
+    "IRAX": {
+      "ticker": "IRAX",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/IRAX/",
+        "sourceSessionDate": "2026-10-26",
+        "close": 1250
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "FETCH_FAILED",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/IRAX.CA?period1=1792800000&period2=1793491200&interval=1d&events=history&includeAdjustedClose=true",
+          "error": "HTTP_404"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/IRAX/history/",
+              "status": "FETCH_FAILED",
+              "error": "HTTP_404"
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/IRAX/history/?p=1",
+              "status": "FETCH_FAILED",
+              "error": "HTTP_404"
+            }
+          ]
+        }
+      ]
+    },
+    "TORA": {
+      "ticker": "TORA",
+      "originalReason": "SOURCE_SESSION_MISMATCH",
+      "primary": {
+        "source": "mubasher_symbol_pages",
+        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/TORA/",
+        "sourceSessionDate": "2026-10-26",
+        "close": 53.02
+      },
+      "approved": false,
+      "approvedEvidence": null,
+      "attempts": [
+        {
+          "provider": "YAHOO_CHART",
+          "status": "FETCH_FAILED",
+          "url": "https://query1.finance.yahoo.com/v8/finance/chart/TORA.CA?period1=1792800000&period2=1793491200&interval=1d&events=history&includeAdjustedClose=true",
+          "error": "HTTP_404"
+        },
+        {
+          "provider": "STOCKANALYSIS_EGX_HISTORY",
+          "status": "UNRESOLVED",
+          "attempts": [
+            {
+              "url": "https://stockanalysis.com/quote/egx/TORA/history/",
+              "status": "FETCH_FAILED",
+              "error": "HTTP_404"
+            },
+            {
+              "url": "https://stockanalysis.com/quote/egx/TORA/history/?p=1",
+              "status": "FETCH_FAILED",
+              "error": "HTTP_404"
+            }
+          ]
+        }
+      ]
     }
+  },
+  "incrementalIdentityAndOhlcvGuard": {
+    "expectedSession": "2026-10-27",
+    "quarantined": [
+      {
+        "ticker": "DTPP",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "POUL",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "ARVA",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "ORHD",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "PHGC",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "ARAB",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "GMCI",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "CPME",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "UNIP",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      },
+      {
+        "ticker": "MMAT",
+        "reason": "EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED"
+      }
+    ],
+    "policy": "Existing verified ISIN history, active symbol, independent exact session and fully observed OHLCV only; no new history seed."
   }
 }
