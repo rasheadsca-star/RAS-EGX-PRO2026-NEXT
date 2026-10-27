@@ -12,6 +12,7 @@ on:
       - "scripts/stable/v16-verified-incremental-recovery.cjs"
       - "scripts/stable/v16-market-coverage-reconciler.cjs"
       - "tests/stable/v16-market-coverage-reconciler.test.cjs"
+      - "tests/stable/v16-recovered-history-persistence.test.cjs"
 
 permissions:
   contents: write
@@ -38,7 +39,7 @@ jobs:
           set -euo pipefail
           node --check scripts/stable/v16-verified-incremental-recovery.cjs
           node --check scripts/stable/v16-market-coverage-reconciler.cjs
-          node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs
+          node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/egx-verified-incremental-workflow.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs tests/stable/v16-recovered-history-persistence.test.cjs
       - name: Freeze same-session baseline
         run: |
           set -euo pipefail
@@ -78,7 +79,7 @@ jobs:
           const j=JSON.parse(fs.readFileSync('artifacts/verified-incremental-recovery-result.json'));
           if(!j.increment||j.increment<1)throw Error('NO_VERIFIED_RECOVERY');
           fs.writeFileSync('/tmp/egx-recovery-session',j.session);
-          fs.writeFileSync('/tmp/egx-recovered-tickers',j.recovered.join('\n'));
+          fs.writeFileSync('/tmp/egx-recovered-tickers',j.recovered.join('\n')+'\n');
           NODE
           # Keep immutable baseline outside the ephemeral worktree before stashing.
           cp artifacts/recovery-before-price-truth.json /tmp/egx-recovery-before-price-truth.json
@@ -92,11 +93,18 @@ jobs:
           BASE_TRUTH_BLOB=$(git hash-object /tmp/egx-recovery-before-price-truth.json)
           REMOTE_TRUTH_BLOB=$(git rev-parse origin/main:data/stable/v15-price-truth.json)
           [ "$REMOTE_TRUTH_BLOB" = "$BASE_TRUTH_BLOB" ] || { echo 'PRICE_TRUTH_CHANGED_ABORT_CONCURRENT_REPAIR'; exit 1; }
-          while read -r ticker; do
+          while IFS= read -r ticker || [ -n "$ticker" ]; do
             [ -z "$ticker" ] || git add "data/history/$ticker.json"
           done < /tmp/egx-recovered-tickers
           git add data/stable/v15-price-truth.json data/fetch-status.json data/stable/v16-source-session-evidence.json data/stable/v16-market-second-source-evidence.json
           git diff --cached --quiet && { echo 'NO_VERIFIED_CHANGES'; exit 1; }
+          # Fail closed if even the final recovered ticker was not staged.
+          while IFS= read -r ticker || [ -n "$ticker" ]; do
+            [ -z "$ticker" ] && continue
+            git diff --cached --name-only -- "data/history/$ticker.json" | grep -Fxq "data/history/$ticker.json" || {
+              echo "RECOVERED_HISTORY_NOT_STAGED:$ticker"; exit 1;
+            }
+          done < /tmp/egx-recovered-tickers
           git commit -m "Recover independently verified EGX current-session rows"
           # Source resolvers also edit uncommitted diagnostics. Preserve them off the
           # worktree before rebasing; never include them in the published commit.
