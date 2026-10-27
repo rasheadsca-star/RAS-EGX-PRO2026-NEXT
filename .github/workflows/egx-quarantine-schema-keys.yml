@@ -1,0 +1,53 @@
+name: Verify EGX Structural Non-Security Quarantine
+on:
+  push:
+    branches: [fix/egx-quarantine-five-watchlist-non-securities]
+  pull_request:
+    paths:
+      - 'data/symbol-map.json'
+      - 'tests/history/egx-structural-non-security-quarantine.test.cjs'
+      - '.github/workflows/egx-quarantine-schema-keys.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify only metadata keys quarantined
+        run: node --test tests/history/egx-structural-non-security-quarantine.test.cjs
+      - name: Verify unchanged G11 gate requirements and no unblocked execution
+        run: |
+          mkdir -p artifacts/universe-quarantine
+          node - <<'NODE'
+          const fs=require('fs');
+          const h=require('./astra/data-health/g11-data-health.cjs').buildHealth();
+          const active=h.metrics.activeUniverse.count;
+          const canonical=h.metrics.currentCanonicalSecurities.numerator;
+          const pipeline=h.metrics.decisionPipeline.pipelineReadySecurities;
+          if(active!==237)throw Error('Unexpected active universe cardinality '+active);
+          const requiredCanonical=Math.ceil(active*.9),requiredPipeline=Math.ceil(active*.8);
+          if(requiredCanonical!==214||requiredPipeline!==190)throw Error('Gate thresholds changed');
+          const doc={session:h.sessionIntegrity.latestExpectedSession,active,canonical,pipeline,
+            requiredCanonical,requiredPipeline,canonicalPass:canonical>=requiredCanonical,
+            pipelinePass:pipeline>=requiredPipeline,g11Gate:h.gateStatus,
+            action:'No live publication. Structural-key exclusion is not an evidence substitute.'};
+          fs.writeFileSync('artifacts/universe-quarantine/impact.json',JSON.stringify(doc,null,2));
+          console.log('EGX_STRUCTURAL_QUARANTINE_IMPACT',JSON.stringify(doc));
+          NODE
+      - name: Check no data mutation
+        run: git diff --exit-code -- data/history/ data/stable/ astra/ astra-prod/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-structural-key-quarantine-impact
+          path: artifacts/universe-quarantine/
+          retention-days: 30
