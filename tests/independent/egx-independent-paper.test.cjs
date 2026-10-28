@@ -139,3 +139,24 @@ test('a clean 60-bar series has an independently dated price observation',()=>{
  assert.deepEqual(x.datedPriceObservations[0].indicatorBlockers,[]);
  assert.equal(x.datedPriceObservations[0].state,'DATED_PRICE_OBSERVATION_NOT_A_SIGNAL');
 });
+
+test('plausible historical OHLCV without dated provenance cannot produce SMA/ATR research candidates',()=>{
+ const bars=sample.map(r=>({...r}));
+ delete bars[30].sourceSessionEvidence;
+ const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:bars})});
+ assert.equal(x.datedPriceObservations.length,1);
+ assert.equal(x.datedPriceObservations[0].cleanLookbackBars,59);
+ assert.deepEqual(x.datedPriceObservations[0].indicatorBlockers,['UNVERIFIED_HISTORICAL_OHLCV']);
+ assert.equal(x.datedPriceObservations[0].indicatorReady,false);
+ assert.deepEqual(x.verifiedCandidates,[]);assert.deepEqual(x.researchWatchlist,[]);
+ assert.deepEqual(x.watchlist,[]);assert.deepEqual(x.recommendations,[]);
+});
+test('conflicted or undated historical source metadata blocks indicator eligibility',()=>{
+ for(const mutate of [r=>{r.warnings=['source_conflict'];},r=>{r.fetchedAt='not-a-timestamp';}]){
+  const bars=sample.map(r=>({...r}));mutate(bars[30]);
+  const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:bars})});
+  assert.equal(x.datedPriceObservations[0].indicatorReady,false);
+  assert.equal(x.datedPriceObservations[0].cleanLookbackBars,59);
+  assert.deepEqual(x.verifiedCandidates,[]);assert.deepEqual(x.researchWatchlist,[]);
+ }
+});
