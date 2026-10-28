@@ -1,0 +1,54 @@
+name: EGX Persisted Price Acceptance Regression
+on:
+  pull_request:
+    paths:
+      - "scripts/stable/v16-session-aware-price-truth.cjs"
+      - "tests/stable/v16-persisted-price-acceptance.test.cjs"
+      - ".github/workflows/egx-persisted-price-acceptance.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verified-history:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Source integrity regression
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-session-aware-price-truth.cjs
+          node --test tests/stable/v16-persisted-price-acceptance.test.cjs
+      - name: Audit real immutable handoff versus persisted OHLCV
+        run: |
+          node - <<'NODE'
+          const cp=require('child_process'),fs=require('fs'),path=require('path'),vm=require('vm');
+          const src=fs.readFileSync('scripts/stable/v16-session-aware-price-truth.cjs','utf8');
+          const start=src.indexOf('function partitionPersistable('),end=src.indexOf('function mergeIntoHistory(');
+          if(start<0||end<=start)throw Error('PRODUCER_GUARD_MISSING');
+          const context={fs,path,
+            n:(v,f=null)=>v===null||v===undefined||v===''?f:Number.isFinite(Number(v))?Number(v):f,
+            normSymbol:v=>String(v||'').trim().toUpperCase().replace(/\.CA$/i,'').replace(/[^A-Z0-9._-]/g,''),
+            dateOnly:v=>(String(v||'').match(/^(\d{4}-\d{2}-\d{2})/)||[])[1]||null,
+            readJson:(p,f=null)=>{try{return JSON.parse(fs.readFileSync(p,'utf8'));}catch{return f;}}
+          };
+          const {partitionPersistable}=vm.runInNewContext(src.slice(start,end)+';({partitionPersistable})',context);
+          const marker=JSON.parse(fs.readFileSync('data/ops/g22-main-app-handoff.json','utf8'));
+          const at=p=>JSON.parse(cp.execFileSync('git',['show',marker.canonicalDataHead+':'+p],{encoding:'utf8'}));
+          const market=at('data/market.json'),truth=at('data/stable/v15-price-truth.json');
+          if(marker.acceptedRows!==truth.acceptedRows||marker.sessionDate!==truth.expectedSession)throw Error('SIGNED_SOURCE_MISMATCH');
+          const rows=market.rows.filter(r=>r.sourceSessionDate===marker.sessionDate).map(r=>({
+            ticker:r.symbol,date:marker.sessionDate,sourceSessionDate:r.sourceSessionDate,
+            open:r.open,high:r.high,low:r.low,close:r.price??r.last,volume:r.volume,warnings:[]
+          }));
+          const p=partitionPersistable(rows,'data/history');
+          console.log('SIGNED_MARKET_PERSISTENCE_AUDIT',JSON.stringify({
+            signedAccepted:marker.acceptedRows,identityAndHistoryEligible:p.accepted.length,
+            missingOrUnverified:p.rejected.map(r=>({ticker:r.ticker,reason:r.reason}))
+          }));
+          if(p.accepted.length>rows.length)throw Error('IMPOSSIBLE_PERSISTENCE_COUNT');
+          NODE

@@ -342,6 +342,43 @@ function normalizeMarketRow(row, expectedSession, sourceName, generatedAt) {
   };
 }
 
+// Count only rows that can be written to an already identity-verified history.
+// S2 isolation forbids importing a history writer into this producer.
+function partitionPersistable(rows, historyDir) {
+  const accepted = [], rejected = [];
+  for (const row of rows) {
+    const ticker = normSymbol(row.ticker);
+    const file = path.join(historyDir, ticker + '.json');
+    const h = readJson(file, null);
+    const identityOk = h?.symbolVerified === true && normSymbol(h.ticker) === ticker
+      && (!h.isin || /^EG[A-Z0-9]{9,}$/i.test(String(h.isin)));
+    const observed = ['open','high','low','close','volume'].every(k => n(row[k]) !== null)
+      && n(row.open) > 0 && n(row.low) > 0
+      && n(row.high) >= Math.max(n(row.open), n(row.close))
+      && n(row.low) <= Math.min(n(row.open), n(row.close)) && n(row.volume) >= 0;
+    const sourceOk = dateOnly(row.sourceSessionDate) === dateOnly(row.date) && observed
+      && !row.warnings?.includes('partial_ohlc_reconstructed_from_close_or_previous_close');
+    if (!identityOk || !sourceOk) {
+      rejected.push({...row, reason: !h ? 'HISTORY_FILE_MISSING'
+        : !identityOk ? 'SYMBOL_IDENTITY_NOT_VERIFIED' : 'OBSERVED_SESSION_OHLCV_INVALID'});
+    } else accepted.push(row);
+  }
+  return {accepted, rejected};
+}
+function verifyPersisted(rows, historyDir) {
+  const missing = [];
+  for (const row of rows) {
+    const h = readJson(path.join(historyDir, normSymbol(row.ticker) + '.json'), null);
+    const bar = h?.sessions?.find(s => dateOnly(s.date || s.sessionDate) === dateOnly(row.date));
+    const same = bar && ['open','high','low','close','volume'].every(k =>
+      n(bar[k]) !== null && Math.abs(n(row[k]) - n(bar[k])) <= 0.000001 * Math.max(1, Math.abs(n(row[k]))));
+    if (!h?.symbolVerified || !bar || !same || dateOnly(bar.sourceSessionDate) !== dateOnly(row.date))
+      missing.push(normSymbol(row.ticker));
+  }
+  if (missing.length) throw Error('ACCEPTED_OHLCV_NOT_PERSISTED_' + missing.join(','));
+  return rows.length;
+}
+
 function mergeIntoHistory(rows) {
   let updated = 0;
   const missingHistoryFiles = [];
@@ -444,9 +481,15 @@ async function main() {
 
   const unique = new Map();
   for (const row of accepted) unique.set(row.ticker, row);
-  const acceptedRows = [...unique.values()];
+  // A quote is not accepted until its mapped, verified history file exists.
+  // Otherwise acceptedRows could exceed actual persisted same-session OHLCV.
+  const partition = partitionPersistable([...unique.values()], HISTORY_DIR);
+  const acceptedRows = partition.accepted;
+  rejected.push(...partition.rejected);
   const mergeResult = mergeIntoHistory(acceptedRows);
-  const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS && mergeResult.updated >= MIN_EXECUTION_ROWS;
+  verifyPersisted(acceptedRows, HISTORY_DIR);
+  const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS
+    && mergeResult.updated === acceptedRows.length;
 
   const acceptedMap = new Map(acceptedRows.map(row => [row.ticker, row]));
   const rejectedMap = new Map(rejected.filter(row => row.ticker).map(row => [row.ticker, row]));
