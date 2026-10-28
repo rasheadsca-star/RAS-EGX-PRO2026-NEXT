@@ -13,7 +13,7 @@ class Integrity(unittest.TestCase):
         good = dict(date='2026-10-20', open=10, high=11, low=9, close=10, volume=0)
         rows = [good, {**good, 'date':'2026-10-21', 'volume':None},
                 {**good, 'date':'2026-10-22', 'warnings':['partial_ohlc_reconstructed_from_close']},
-                {**good, 'date':'2026-10-23'}, {**good, 'date':'2026-10-23', 'close':10.5},
+                {**good, 'date':'2026-10-15'}, {**good, 'date':'2026-10-15', 'close':10.5},
                 {**good, 'date':'2026-10-24', 'validationStatus':'quarantined'}]
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory)/'TEST.json'
@@ -26,7 +26,7 @@ class Integrity(unittest.TestCase):
         # 62 market dates, 60 securities. Tomorrow's base_feature is absent
         # for T00; its observed loss must remain a label for today's signal.
         from datetime import date, timedelta
-        days = [(date(2026, 1, 1)+timedelta(days=i)).isoformat() for i in range(62)]
+        days = [(date(2026, 1, 1)+timedelta(days=i)).isoformat() for i in range(100) if (date(2026, 1, 1)+timedelta(days=i)).weekday() not in (4, 5)][:62]
         histories = {}
         for n in range(60):
             ticker=f'T{n:02}'
