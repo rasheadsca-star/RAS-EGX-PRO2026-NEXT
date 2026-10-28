@@ -2,7 +2,7 @@
 // Independent, fail-closed, paper-only engine. No Astra dependencies.
 const fs=require('node:fs'),path=require('node:path');
 const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
-const {walkForwardBacktest}=require('./walkforward-backtest.cjs');
+const {walkForwardBacktest,strictProvenance}=require('./walkforward-backtest.cjs');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const day=s=>typeof s==='string'?s.slice(0,10):'';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -75,7 +75,9 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
   const recent=bars.slice(-60),dates=recent.map(r=>day(r.date||r.sessionDate));
   const c=recent.at(-1),currency=String(h.currency||c.currency||sym.currency||'').toUpperCase();
   if(c.currency&&currency!==String(c.currency).toUpperCase())continue;
-  const cleanBars=recent.filter(historicalBarValid).length;
+  // Indicator eligibility must use the same full dated provenance as OOS tests.
+  // Plausible OHLCV alone cannot create an SMA/ATR research candidate.
+  const cleanBars=recent.filter(r=>strictProvenance(r,historicalBarValid)).length;
   const indicatorBlockers=[];
   if(recent.length!==60)indicatorBlockers.push('INSUFFICIENT_LOOKBACK_BARS');
   if(new Set(dates).size!==recent.length)indicatorBlockers.push('DUPLICATE_LOOKBACK_SESSION');
