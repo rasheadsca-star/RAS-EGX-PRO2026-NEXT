@@ -38,7 +38,8 @@ function streak(rows,ok,calendar,target){
 function auditTicker(ticker,meta,history,calendar,actions=[],rawSha=null,target=null){
  const entries=Array.isArray(history?.sessions)?history.sessions:[];
  const ordered=entries.map((r,i)=>({...r,__auditIndex:i}))
-  .sort((a,b)=>String(day(a)||'').localeCompare(String(day(b)||''))||a.__auditIndex-b.__auditIndex);
+  .sort((a,b)=>String(day(a)||'').localeCompare(String(day(b)||''))||a.__auditIndex-b.__auditIndex)
+  .map((r,i)=>({...r,__auditSortedIndex:i}));
  const mapIsin=String(meta?.isin||'').toUpperCase();
  const fileIsin=String(history?.isin||'').toUpperCase();
  const identity={mappedIsin:mapIsin||null,historyIsin:fileIsin||null,
@@ -81,7 +82,7 @@ function auditTicker(ticker,meta,history,calendar,actions=[],rawSha=null,target=
   if(i>=0)flag(i,'CORPORATE_ACTION_REVIEW_REQUIRED');
  }
  const shapeOK=r=>structural(r)&&dates.get(day(r))?.length===1&&calendar.includes(day(r));
- const strictOK=r=>identity.strict&&shapeOK(r)&&!quarantines.has(r.__auditIndex);
+ const strictOK=r=>identity.strict&&shapeOK(r)&&!quarantines.has(r.__auditSortedIndex);
  const shape=streak(ordered,shapeOK,calendar,target);
  const strict=streak(ordered,strictOK,calendar,target);
  const sortedDates=[...dates.keys()].filter(iso).sort();
