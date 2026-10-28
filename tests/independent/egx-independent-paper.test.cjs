@@ -175,3 +175,32 @@ test('copied positive-volume OHL bars block indicator eligibility without losing
  assert.deepEqual(x.watchlist,[]);
  assert.deepEqual(x.recommendations,[]);
 });
+
+test('independent CLI keeps dated research available when Astra handoff is missing or malformed',()=>{
+ const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+ const {spawnSync}=require('node:child_process');
+ const script=path.resolve(__dirname,'../../scripts/independent/egx-independent-paper.cjs');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'egx-independent-no-astra-'));
+ try{
+  for(const dir of ['data/stable','data/ops','data/history','unified-console'])
+   fs.mkdirSync(path.join(root,dir),{recursive:true});
+  const put=(p,x)=>fs.writeFileSync(path.join(root,p),JSON.stringify(x));
+  put('data/stable/v15-price-truth.json',
+   {expectedSession:session,ready:false,executionGrade:false,acceptedRows:0,sampleAccepted:[]});
+  put('data/symbol-map.json',[{ticker:'TEST',active:true,currency:'EGP',exchange:'EGX'}]);
+  put('data/history/TEST.json',
+   {ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:sample});
+  for(const malformed of [false,true]){
+   if(malformed)fs.writeFileSync(path.join(root,'data/ops/g22-main-app-handoff.json'),'{not-json');
+   const proc=spawnSync(process.execPath,[script],{cwd:root,env:{...process.env,GITHUB_WORKSPACE:root},encoding:'utf8'});
+   assert.equal(proc.status,0,proc.stderr||proc.stdout);
+   const out=JSON.parse(fs.readFileSync(path.join(root,'unified-console/independent-paper.json'),'utf8'));
+   assert.equal(out.status,'RESEARCH_ONLY_PRICE_GATE_BLOCKED');
+   assert.equal(out.datedPriceObservations.length,1);
+   assert.equal(out.researchWatchlist.length,1);
+   assert.ok(out.diagnostics.includes('ASTRA_HANDOFF_NOT_ALIGNED_INFORMATIONAL'));
+   assert.deepEqual(out.recommendations,[]);
+   assert.equal(out.executable,false);
+  }
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+});
