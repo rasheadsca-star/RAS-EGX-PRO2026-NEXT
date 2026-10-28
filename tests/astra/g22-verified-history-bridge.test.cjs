@@ -7,8 +7,8 @@ function fixture(){
  const prod=path.join(root,'prod'),cert=path.join(root,'cert');
  for(const dir of [prod,cert]){fs.mkdirSync(path.join(dir,'data/history'),{recursive:true});fs.mkdirSync(path.join(dir,'data/stable'),{recursive:true});}
  const put=(base,name,value)=>fs.writeFileSync(path.join(base,name),JSON.stringify(value));
- put(prod,'data/stable/v15-price-truth.json',{expectedSession:'2026-10-27',ready:true,executionGrade:true,acceptedRows:2,rejectedRows:1,droppedRows:0,source:{inputRows:3}});
- put(prod,'data/fetch-status.json',{expectedSession:'2026-10-27',ok:true,executionGrade:true,marketRows:2,inputRows:3,coveragePct:66.67});
+ put(prod,'data/stable/v15-price-truth.json',{expectedSession:'2026-10-27',ready:true,executionGrade:true,acceptedRows:2,rejectedRows:1,droppedRows:0,source:{inputRows:3,verifiedExpectedSessionRows:3,sourceSessionEvidenceCoveragePct:100}});
+ put(prod,'data/fetch-status.json',{expectedSession:'2026-10-27',ok:true,executionGrade:true,marketRows:2,currentSessionRows:2,rejectedCurrentSessionRows:1,droppedCurrentSessionRows:0,inputRows:3,sourceSessionVerifiedRows:3,sourceSessionEvidenceCoveragePct:100,coveragePct:66.67});
  const identity={ticker:'AALR',symbolVerified:true,isin:'EGS01081C016',currency:'EGP'};
  put(cert,'data/history/AALR.json',{...identity,sessions:[bar('2026-09-17',315,{validationStatus:'starta_exact_egx_source_validated'})]});
  put(prod,'data/history/AALR.json',{...identity,isin:null,sessions:[bar('2026-09-20',306),bar('2026-10-25',301,{warnings:['partial_ohlc_reconstructed_from_close_or_previous_close']}),bar('2026-10-26',189),bar('2026-10-27',205)]});
