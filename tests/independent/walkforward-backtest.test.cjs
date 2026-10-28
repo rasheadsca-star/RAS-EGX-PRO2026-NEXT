@@ -90,3 +90,19 @@ test('changed close with repeated positive-volume OHL also blocks OOS',()=>{
  assert.equal(out.status,'STALE_COPIED_BAR_IN_LOOKBACK');
  assert.equal(out.tradeCount,0);
 });
+
+test('unresolved corporate-action candidate blocks OOS even when OHLCV is source-stamped',()=>{
+ const bars=fixture(),event={ticker:'TEST',date:bars[75].date,status:'review_required',reason:'large_unadjusted_close_change'};
+ const blocked=run(bars,{ticker:'TEST',corporateActions:[event]});
+ assert.equal(blocked.status,'UNRESOLVED_CORPORATE_ACTION_CANDIDATE_IN_STUDY');
+ assert.deepEqual(blocked.pendingCorporateActionDates,[bars[75].date]);
+ assert.equal(blocked.tradeCount,0);assert.equal(blocked.performanceCertified,false);
+ assert.equal(blocked.trades,undefined);
+ // An already resolved candidate or a different security must not trigger a false block.
+ assert.equal(run(bars,{ticker:'TEST',corporateActions:[{...event,status:'resolved'}]}).status,
+  'OOS_RESEARCH_RESULTS_NOT_CERTIFIED');
+ assert.equal(run(bars,{ticker:'OTHER',corporateActions:[event]}).status,
+  'OOS_RESEARCH_RESULTS_NOT_CERTIFIED');
+ assert.equal(run(bars,{ticker:'TEST',corporateActions:[{...event,date:'2026-10-28'}]}).status,
+  'OOS_RESEARCH_RESULTS_NOT_CERTIFIED');
+});
