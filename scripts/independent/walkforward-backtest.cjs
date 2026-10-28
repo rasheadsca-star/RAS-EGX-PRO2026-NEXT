@@ -2,6 +2,7 @@
 // Fixed-policy chronological OUT-OF-SAMPLE research backtest, never an order engine.
 // No optimization, no inferred bars, no lookahead; trade at NEXT session's open.
 const {copiedBarReasons}=require('./stale-bar-detector.cjs');
+const {pendingCorporateActionCandidates}=require('./corporate-action-gate.cjs');
 const POLICY=Object.freeze({
  trainBars:100,minOosBars:40,fast:20,slow:50,atrBars:14,
  minTurnoverEgp:1000000,maxAtrPct:0.10,maxEntryGapAtr:0.5,
@@ -40,7 +41,7 @@ function signalAt(bars,index,p=POLICY){
  return {date:current.date||current.sessionDate,close:current.close,atr:a,
   sma20:fast,sma50:slow,averageVolume20:v};
 }
-function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP'}={}){
+function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP',ticker=null,corporateActions=[]}={}){
  const assumptions={...policy,entryTiming:'NEXT_SESSION_OPEN',signalTiming:'PRIOR_SESSION_CLOSE',
   costs:'FIXED_HYPOTHETICAL_BPS_EACH_SIDE',ambiguousIntrabar:'STOP_FIRST',
   overlappingPositions:false,parameterSearch:false};
@@ -54,6 +55,11 @@ function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP'}={}){
   copiedBarKinds:copied.reduce((acc,x)=>(acc[x.reason]=(acc[x.reason]||0)+1,acc),{})
  });
  // Fail closed on ANY contaminated candle in the study window.
+ const pendingActions=pendingCorporateActionCandidates(corporateActions,ticker,
+  bars[0]?.date||bars[0]?.sessionDate,bars.at(-1)?.date||bars.at(-1)?.sessionDate);
+ if(pendingActions.length)return blocked('UNRESOLVED_CORPORATE_ACTION_CANDIDATE_IN_STUDY',{
+  pendingCorporateActionDates:[...new Set(pendingActions.map(x=>x.date))]
+ });
  if(bars.some((r,i)=>!strictProvenance(r,barValid)||
    (i>0&&(r.date||r.sessionDate)<=(bars[i-1].date||bars[i-1].sessionDate))))
   return blocked('UNVERIFIED_OR_DUPLICATE_HISTORICAL_OHLCV',{barsAvailable:bars.length});

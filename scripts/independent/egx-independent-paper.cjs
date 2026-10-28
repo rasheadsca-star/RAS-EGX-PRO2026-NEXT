@@ -4,6 +4,7 @@ const fs=require('node:fs'),path=require('node:path');
 const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
 const {walkForwardBacktest,strictProvenance}=require('./walkforward-backtest.cjs');
 const {copiedBarReasons}=require('./stale-bar-detector.cjs');
+const {pendingCorporateActionCandidates}=require('./corporate-action-gate.cjs');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const day=s=>typeof s==='string'?s.slice(0,10):'';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -41,7 +42,7 @@ function currentEvidenceValid(r,session){
    Number.isFinite(Date.parse(String(r.fetchedAt||'')))&&
    !r.warnings?.some(x=>/invalid|conflict|quarantined|unresolved/i.test(String(x)));
 }
-function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
+function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190,corporateActions=[]}){
  const aggregateReady=day(price?.expectedSession)===session&&price?.ready===true&&
    price?.executionGrade===true&&Number(price?.acceptedRows||0)>=minimumRows;
  const handoffAligned=day(handoff?.sessionDate)===session&&
@@ -84,6 +85,8 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
   if(new Set(dates).size!==recent.length)indicatorBlockers.push('DUPLICATE_LOOKBACK_SESSION');
   if(cleanBars!==recent.length)indicatorBlockers.push('UNVERIFIED_HISTORICAL_OHLCV');
   if(copiedBarReasons(recent).length)indicatorBlockers.push('STALE_COPIED_BAR_IN_LOOKBACK');
+  const pendingActions=pendingCorporateActionCandidates(corporateActions,ticker,dates[0],session);
+  if(pendingActions.length)indicatorBlockers.push('UNRESOLVED_CORPORATE_ACTION_CANDIDATE_IN_LOOKBACK');
   const indicatorReady=indicatorBlockers.length===0;
   // Dated observations are NOT indicator-ready candidates or trade signals.
   // This exposes independently sourced current prices without laundering
@@ -104,7 +107,7 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
   // Fixed, chronological holdout; every candle requires independently dated provenance.
   // No result is a certification or a live/paper order. A dirty archive blocks the test.
   const {trades:researchTrades,...oos}=walkForwardBacktest(bars,{
-   barValid:historicalBarValid,currency
+   barValid:historicalBarValid,currency,ticker,corporateActions
   });
   result.verifiedCandidates.push({ticker,session,close:c.close,currency,score,liquid,trending,evidenceLevel,
    outOfSample:oos});
@@ -149,7 +152,8 @@ function main(){
  catch(e){if(e?.code!=='ENOENT'&&!(e instanceof SyntaxError))throw e;}
  const symbols=read('data/symbol-map.json');
  const output=evaluate({price,handoff,symbols,session:day(price.expectedSession),
-  loadHistory:t=>read('data/history/'+t+'.json')});
+  loadHistory:t=>read('data/history/'+t+'.json'),
+  corporateActions:read('data/corporate-actions.json').candidates});
  const out=path.join(ROOT,'unified-console/independent-paper.json');
  fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(output,null,2)+'\n');
  console.log('EGX_INDEPENDENT_PAPER '+JSON.stringify({status:output.status,blockers:output.blockers,watch:output.watchlist.length,research:output.researchWatchlist.length,candidates:output.verifiedCandidates.length,datedPrices:output.datedPriceObservations.length}));
