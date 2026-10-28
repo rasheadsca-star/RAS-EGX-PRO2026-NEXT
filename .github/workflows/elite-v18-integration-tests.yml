@@ -1,0 +1,38 @@
+name: EGX ELITE V18 integration tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/elite-v18-integrated-20261028
+    paths:
+      - 'scripts/integration/**'
+      - 'tests/integration/**'
+      - 'astra-prod/app/elite-decision.html'
+      - 'astra-prod/app/v18-evidence-compare.js'
+      - '.github/workflows/elite-v18-integration-tests.yml'
+  pull_request:
+    paths:
+      - 'scripts/integration/**'
+      - 'tests/integration/**'
+      - 'astra-prod/app/elite-decision.html'
+      - 'astra-prod/app/v18-evidence-compare.js'
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V18 comparison regression tests
+        run: node --test tests/integration/v18-evidence-comparison.test.cjs
+      - name: Syntax check for integrated browser scripts
+        run: |
+          node --check astra-prod/app/v18-evidence-compare.js
+          node --check astra-prod/app/research-opportunities.js
+      - name: Verify integration links
+        run: |
+          node -e "const fs=require('fs');const a=fs.readFileSync('astra-prod/app/index.html','utf8'),b=fs.readFileSync('astra-prod/app/elite-decision.html','utf8');if(!a.includes('elite-decision.html')||!b.includes('v18-evidence-compare.js'))process.exit(1)"
