@@ -36,21 +36,22 @@ function validateSigned(marker,truth,status,market,failedSession){
  return {session,accepted,input,coveragePct:num(status.coveragePct)};
 }
 function verifyHistory(root,market,session,accepted){
- const matched=new Set();
+ const matched=new Set(),unmatched=[];
  for(const r of market.rows||[]){
   const t=ticker(r.symbol||r.ticker);
   const quote={...r,close:r.close??r.price??r.last};
   if(!/^[A-Z0-9]{3,8}$/.test(t)||day(r.sourceSessionDate)!==session||!observed(quote))continue;
-  let h;try{h=JSON.parse(fs.readFileSync(path.join(root,'data/history',t+'.json'),'utf8'));}catch{continue;}
+  let h;try{h=JSON.parse(fs.readFileSync(path.join(root,'data/history',t+'.json'),'utf8'));}catch{unmatched.push(t+':NO_HISTORY');continue;}
   // Published canonical histories can have verified ticker identity without ISIN.
   // This is retention only: no new security is admitted or recovered here.
   if(h.symbolVerified!==true||ticker(h.ticker)!==t
-    ||(h.isin && !/^EG[A-Z0-9]{9,}$/i.test(String(h.isin))))continue;
+    ||(h.isin && !/^EG[A-Z0-9]{9,}$/i.test(String(h.isin)))){unmatched.push(t+':IDENTITY');continue;}
   const bar=(h.sessions||[]).find(x=>day(x.date||x.sessionDate)===session);
-  if(!bar||!observed(bar))continue;
+  if(!bar||!observed(bar)){unmatched.push(t+':NO_VALID_BAR');continue;}
   if(['open','high','low','close','volume'].every(k=>equal(quote[k],bar[k])))matched.add(t);
+  else unmatched.push(t+':OHLCV_MISMATCH');
  }
- if(matched.size<accepted)throw Error('SIGNED_HISTORY_BAR_MISMATCH_'+matched.size+'_OF_'+accepted);
+ if(matched.size<accepted)throw Error('SIGNED_HISTORY_BAR_MISMATCH_'+matched.size+'_OF_'+accepted+' '+unmatched.join(','));
  return matched.size;
 }
 function gitJson(sha,p){return JSON.parse(cp.execFileSync('git',['show',sha+':'+p],{cwd:ROOT,encoding:'utf8',maxBuffer:32*1024*1024}));}
