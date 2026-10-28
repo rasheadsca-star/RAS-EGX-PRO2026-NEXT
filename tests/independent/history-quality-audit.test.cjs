@@ -17,6 +17,7 @@ test('structural permits a numeric partial bar but strict quarantines it',()=>{
  assert.equal(structural(bars[3]),true);
  const x=audit(bars);
  assert.equal(x.structurallyValidRows,7);
+ assert.equal(x.sourceProvenanceAcceptedRows,6);
  assert.equal(x.strictlyAcceptedRows,6);
  assert.equal(x.partialOrSyntheticRows,1);
  assert.equal(x.currentConsecutive.structural,7);
@@ -69,6 +70,7 @@ test('invalid ISIN checksum and source evidence both block strict eligibility',(
  const x=auditTicker('TEST',meta,{...hist(bars),isin:'EG0000000000'},calendar,[],'sha','2026-10-28');
  assert.equal(x.identity.strict,false);
  assert.equal(x.strictlyAcceptedRows,0);
+ assert.equal(x.sourceProvenanceAcceptedRows,6);
  assert.equal(x.structurallyValidRows,7);
 });
 test('report is deterministic with fixed metadata and never certifies OOS',()=>{
@@ -81,6 +83,7 @@ test('report is deterministic with fixed metadata and never certifies OOS',()=>{
  assert.equal(a.summary.historyFiles,1);
  assert.equal(a.summary.missingHistoryFiles,1);
  assert.equal(a.summary.currentEligibility.strict60,0);
+ assert.equal(a.summary.medianLongestSourceProvenanceConsecutive,7);
  assert.equal(a.summary.medianLongestStrictConsecutive,7);
  assert.equal(a.calendar.officialExchangeCalendar,false);
  assert.equal(a.performanceCertified,false);
