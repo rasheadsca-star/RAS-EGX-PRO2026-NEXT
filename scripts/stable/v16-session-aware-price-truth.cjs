@@ -99,7 +99,7 @@ function parseSourceSessionDate(value, expectedSession) {
 
   // Accept explicitly dated D/M/YYYY source timestamps, but never infer a
   // trading session from a time-only quote or the local fetch timestamp.
-  const numeric = text.match(/(?:^|[^\\d])(\\d{1,2})[\\/.-](\\d{1,2})[\\/.-](20\\d{2})(?!\\d)/);
+  const numeric = text.match(/(?:^|[^\d])(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})(?!\d)/);
   if (numeric) {
     const day = Number(numeric[1]), month = Number(numeric[2]), year = Number(numeric[3]);
     const check = new Date(Date.UTC(year, month - 1, day));
