@@ -48,7 +48,11 @@ function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP'}={}){
   tradeCount:0,assumptions,...extra});
  if(currency!=='EGP')return blocked('EGP_LIQUIDITY_UNIT_UNVERIFIED');
  if(!Array.isArray(bars)||typeof barValid!=='function')return blocked('INVALID_INPUT');
- if(copiedBarReasons(bars).length)return blocked('STALE_COPIED_BAR_IN_LOOKBACK',{copiedBarCount:copiedBarReasons(bars).length});
+ const copied=copiedBarReasons(bars);
+ if(copied.length)return blocked('STALE_COPIED_BAR_IN_LOOKBACK',{
+  copiedBarCount:copied.length,
+  copiedBarKinds:copied.reduce((acc,x)=>(acc[x.reason]=(acc[x.reason]||0)+1,acc),{})
+ });
  // Fail closed on ANY contaminated candle in the study window.
  if(bars.some((r,i)=>!strictProvenance(r,barValid)||
    (i>0&&(r.date||r.sessionDate)<=(bars[i-1].date||bars[i-1].sessionDate))))
