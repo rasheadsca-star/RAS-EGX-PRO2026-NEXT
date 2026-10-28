@@ -187,7 +187,8 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Record successful scan deployment
+      - name: Record scan deployment (fresh or archival)
+        # A Pages deployment can succeed even if the source has no certified fresh prices.
         env:
           DEPLOYED_URL: ${{ steps.deployment.outputs.page_url }}
         run: |
@@ -222,3 +223,20 @@ jobs:
               sleep $((attempt * 8))
             done
           fi
+
+      - name: Enforce execution-grade market freshness before downstream V18 publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const scan=JSON.parse(fs.readFileSync('data/stable/v16-mobile-hotfix-scan-status.json','utf8'));
+          const status=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
+          const ready=scan.acceptedFreshSession===true && status.ok===true && status.executionGrade===true && Number(status.currentSessionRows)>=80 && scan.expectedSession===status.expectedSession;
+          if(!ready){
+            console.error('::error::EGX_SOURCE_SESSION_NOT_CERTIFIED: archival Pages deployment is allowed, but V18 refresh MUST NOT be triggered.');
+            console.error(JSON.stringify({expectedSession:scan.expectedSession,acceptedFreshSession:scan.acceptedFreshSession,currentSessionRows:status.currentSessionRows,sourceEvidenceRows:status.sourceSessionVerifiedRows,minimum:80}));
+            process.exit(1);
+          }
+          console.log('EGX_CURRENT_SESSION_EXECUTION_GRADE_PASS',scan.expectedSession);
+          NODE
