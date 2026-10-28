@@ -42,18 +42,17 @@ function sourceLabel(provider) {
   if (provider === 'SIGMA_CAPITAL_LIVE_MARKET') return 'sigma_capital_independent_live_session_confirmation';
   return 'stockanalysis_egx_independent_session_confirmation';
 }
-function validOhlc(row, closeOverride = null, requireObservedRange = false) {
-  const close = n(closeOverride ?? row?.close ?? row?.price ?? row?.last);
-  const observedOpen = n(row?.open), observedHigh = n(row?.high), observedLow = n(row?.low);
-  if (requireObservedRange && !(observedOpen > 0 && observedHigh > 0 && observedLow > 0)) return null;
-  const open = observedOpen ?? close;
-  const high = observedHigh ?? Math.max(open, close);
-  const low = observedLow ?? Math.min(open, close);
+// Only persist actually observed OHLCV. A confirmed close alone is not a candle.
+function validOhlc(row, closeOverride = null) {
+  if (!row || row.volume === null || row.volume === undefined || row.volume === '') return null;
+  const close = n(closeOverride ?? row.close ?? row.price ?? row.last);
+  const open = n(row.open), high = n(row.high), low = n(row.low), volume = n(row.volume);
   if (!(close > 0 && open > 0 && high > 0 && low > 0)) return null;
-  const tick = Math.max(0.01, close * 0.0025);
-  if (high + tick < Math.max(open, close) || low - tick > Math.min(open, close)) return null;
-  return { close, open, high: Math.max(high, open, close), low: Math.min(low, open, close), volume: n(row?.volume) };
+  if (!Number.isInteger(volume) || volume < 0) return null;
+  if (high < Math.max(open, close) || low > Math.min(open, close) || low > high) return null;
+  return { close, open, high, low, volume };
 }
+
 function minimalHistoryDocument(ticker, marketRow, provider) {
   return {
     schemaVersion: '16.9.2-current-session-second-source-seed', ticker,
@@ -78,14 +77,14 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
   const primaryClose = n(marketRow?.price ?? marketRow?.last ?? marketRow?.close);
   let base = null, ohlcMode = null;
   if (sameSessionConfirmation) {
-    base = validOhlc(marketRow, primaryClose, false);
+    base = validOhlc(marketRow, primaryClose);
     ohlcMode = base ? 'PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED' : null;
     if (!base && evidence.provider !== 'SIGMA_CAPITAL_LIVE_MARKET') {
-      base = validOhlc(evidence, n(evidence.close), true);
+      base = validOhlc(evidence, n(evidence.close));
       ohlcMode = base ? 'SECOND_SOURCE_OHLC_AFTER_PRIMARY_CLOSE_CONFIRMATION' : null;
     }
   } else {
-    base = validOhlc(evidence, n(evidence.close), true);
+    base = validOhlc(evidence, n(evidence.close));
     ohlcMode = base ? 'SECOND_SOURCE_EXACT_SESSION_REPLACEMENT' : null;
   }
   if (!base) return { ticker, merged: false, reason: 'NO_VALID_OHLC_AFTER_EXACT_SESSION_CONFIRMATION' };
@@ -217,4 +216,4 @@ function main() {
   if (!executionGrade) process.exitCode = 2;
 }
 if (require.main === module) main();
-module.exports = { reconcileFetchStatus };
+module.exports = { reconcileFetchStatus, validOhlc };
