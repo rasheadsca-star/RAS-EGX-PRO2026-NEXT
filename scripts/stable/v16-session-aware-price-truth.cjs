@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const {partitionPersistable,verifyPersisted}=require('./v16-persisted-price-acceptance.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const HISTORY_DIR = path.join(ROOT, 'data/history');
@@ -444,9 +445,15 @@ async function main() {
 
   const unique = new Map();
   for (const row of accepted) unique.set(row.ticker, row);
-  const acceptedRows = [...unique.values()];
+  // A quote is not accepted until its mapped, verified history file exists.
+  // Otherwise acceptedRows could exceed actual persisted same-session OHLCV.
+  const partition = partitionPersistable([...unique.values()], HISTORY_DIR);
+  const acceptedRows = partition.accepted;
+  rejected.push(...partition.rejected);
   const mergeResult = mergeIntoHistory(acceptedRows);
-  const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS && mergeResult.updated >= MIN_EXECUTION_ROWS;
+  verifyPersisted(acceptedRows, HISTORY_DIR);
+  const ready = sourceEligible && acceptedRows.length >= MIN_EXECUTION_ROWS
+    && mergeResult.updated === acceptedRows.length;
 
   const acceptedMap = new Map(acceptedRows.map(row => [row.ticker, row]));
   const rejectedMap = new Map(rejected.filter(row => row.ticker).map(row => [row.ticker, row]));
