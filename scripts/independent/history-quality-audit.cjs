@@ -22,15 +22,15 @@ function structural(r){
 }
 function streak(rows,ok,calendar,target){
  const indexes=new Map(calendar.map((d,i)=>[d,i]));
- let longest=0,trailing=0,current=0,last=-2,previous=null,lastDay=null;
+ let longest=0,trailing=0,current=0,last=-2,lastDay=null;
  for(const r of rows){
   const d=day(r),idx=indexes.get(d);
-  if(!ok(r)||idx===undefined){current=0;last=-2;previous=null;continue}
+  if(!ok(r)||idx===undefined){current=0;last=-2;continue}
   // A duplicate date is already quarantined by the caller.
   const consecutive=idx===last+1;
   current=consecutive?current+1:1;
   longest=Math.max(longest,current);
-  last=idx;previous=r;lastDay=d;
+  last=idx;lastDay=d;
  }
  if(lastDay===target)trailing=current;
  return {longest,trailing};
@@ -125,7 +125,7 @@ function rankRecovery(rows){
 }
 function buildAudit({symbols,histories,calendar,actions=[],target,sourceShas={},generatedAt=null,sourceCommitSha=null}){
  if(!iso(target)||!Array.isArray(calendar)||calendar.some(d=>!iso(d))||
-    new Set(calendar).size!==calendar.length||calendar.some((d,i)=>i>0&&d<=calendar[i-1]))
+    new Set(calendar).size!==calendar.length||calendar.some((d,i)=>i>0&&d<=calendar[i-1])||calendar.at(-1)!==target)
   throw Error('INVALID_OBSERVED_SESSION_CALENDAR');
  const names=[...new Set([...Object.keys(symbols).filter(t=>symbols[t]?.active!==false),...Object.keys(histories)])]
   .filter(t=>/^[A-Z0-9]{2,12}$/.test(t)).sort();
