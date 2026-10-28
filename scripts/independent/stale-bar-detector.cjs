@@ -7,6 +7,9 @@ function copiedBarReasons(bars){
  if(!Array.isArray(bars))return issues;
  for(let i=1;i<bars.length;i++){
   const prev=bars[i-1],curr=bars[i];
+  const pd=prev?.date||prev?.sessionDate,cd=curr?.date||curr?.sessionDate;
+  // Sorting/duplicate checks belong upstream; do not call bad order a copied trading session.
+  if(!(typeof pd==='string'&&typeof cd==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(pd)&&/^\\d{4}-\\d{2}-\\d{2}$/.test(cd)&&cd>pd))continue;
   if(!(prev&&curr&&Number(curr.volume)>0&&Number(prev.volume)>0))continue;
   const ohl=['open','high','low'].every(k=>eq(curr[k],prev[k]));
   if(!ohl)continue;
