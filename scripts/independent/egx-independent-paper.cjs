@@ -45,7 +45,7 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
  const handoffAligned=day(handoff?.sessionDate)===session&&
    handoff?.acceptedRows===price?.acceptedRows;
  const result={schemaVersion:'egx-independent-paper-v2',session,mode:'PAPER_ONLY',executable:false,
-  status:'BLOCKED',blockers:[],diagnostics:[],verifiedCandidates:[],researchWatchlist:[],
+  status:'BLOCKED',blockers:[],diagnostics:[],datedPriceObservations:[],verifiedCandidates:[],researchWatchlist:[],
   recommendations:[],watchlist:[],
   inputs:{priceAccepted:price?.acceptedRows??null,handoffAccepted:handoff?.acceptedRows??null,
    aggregatePriceReady:aggregateReady,handoffAligned}};
@@ -70,11 +70,20 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
      (sym.exchange&&h.exchange&&String(sym.exchange).toUpperCase()!==String(h.exchange).toUpperCase()))continue;
   const bars=(Array.isArray(h.sessions)?h.sessions:[]).filter(r=>day(r?.date||r?.sessionDate)<=session)
     .sort((a,b)=>day(a.date||a.sessionDate).localeCompare(day(b.date||b.sessionDate)));
-  if(bars.length<60||!currentEvidenceValid(bars.at(-1),session))continue;
+  if(!currentEvidenceValid(bars.at(-1),session))continue;
   const recent=bars.slice(-60),dates=recent.map(r=>day(r.date||r.sessionDate));
-  if(new Set(dates).size!==recent.length||recent.some(r=>!historicalBarValid(r)))continue;
   const c=recent.at(-1),currency=String(h.currency||c.currency||sym.currency||'').toUpperCase();
   if(c.currency&&currency!==String(c.currency).toUpperCase())continue;
+  const cleanBars=recent.filter(historicalBarValid).length;
+  const indicatorReady=recent.length===60&&new Set(dates).size===60&&cleanBars===60;
+  // Dated observations are NOT indicator-ready candidates or trade signals.
+  // This exposes independently sourced current prices without laundering
+  // synthetic historical candles into SMA/ATR calculations.
+  result.datedPriceObservations.push({ticker,session,close:c.close,currency,
+   cleanLookbackBars:cleanBars,lookbackBars:recent.length,indicatorReady,
+   evidenceLevel:c.secondSourceConfirmed===true?'CROSS_PROVIDER_CONFIRMED':'DATED_PROVIDER_EVIDENCE',
+   state:'DATED_PRICE_OBSERVATION_NOT_A_SIGNAL'});
+  if(!indicatorReady)continue;
   const m20=sma(recent,20),m50=sma(recent,50),a=atr(recent);
   const avgVolume=recent.slice(-21,-1).reduce((s,r)=>s+r.volume,0)/20;
   if(!a||a<=0||avgVolume<=0)continue;
@@ -99,11 +108,12 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
    }
   }
  }
+ result.datedPriceObservations.sort((a,b)=>a.ticker.localeCompare(b.ticker));
  result.verifiedCandidates.sort((a,b)=>a.ticker.localeCompare(b.ticker));
  result.researchWatchlist.sort((a,b)=>a.ticker.localeCompare(b.ticker));
  result.watchlist.sort((a,b)=>a.ticker.localeCompare(b.ticker));
  result.status=aggregateReady?'RESEARCH_READY_PAPER_VALIDATION_REQUIRED':
-   result.verifiedCandidates.length?'RESEARCH_ONLY_PRICE_GATE_BLOCKED':'BLOCKED';
+   (result.verifiedCandidates.length||result.datedPriceObservations.length)?'RESEARCH_ONLY_PRICE_GATE_BLOCKED':'BLOCKED';
  result.blockers.push('NO_INDEPENDENT_OUT_OF_SAMPLE_PERFORMANCE_CERTIFICATION');
  // No execution-grade recommendations until forward/paper validation exists.
  return result;
@@ -116,7 +126,7 @@ function main(){
   loadHistory:t=>read('data/history/'+t+'.json')});
  const out=path.join(ROOT,'unified-console/independent-paper.json');
  fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(output,null,2)+'\n');
- console.log('EGX_INDEPENDENT_PAPER '+JSON.stringify({status:output.status,blockers:output.blockers,watch:output.watchlist.length,research:output.researchWatchlist.length,candidates:output.verifiedCandidates.length}));
+ console.log('EGX_INDEPENDENT_PAPER '+JSON.stringify({status:output.status,blockers:output.blockers,watch:output.watchlist.length,research:output.researchWatchlist.length,candidates:output.verifiedCandidates.length,datedPrices:output.datedPriceObservations.length}));
 }
 if(require.main===module)main();
 module.exports={evaluate,validBar,historicalBarValid,currentEvidenceValid,atr};
