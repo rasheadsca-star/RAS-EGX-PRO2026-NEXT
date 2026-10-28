@@ -3,6 +3,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
 const dateOK=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&
+  !Number.isNaN(Date.parse(s+'T00:00:00Z'))&&
   new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
 const same=(a,b)=>a.ticker===b.ticker&&a.session===b.session&&a.close===b.close&&a.currency===b.currency;
 function verifiedSnapshot(source){
