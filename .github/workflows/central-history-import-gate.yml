@@ -28,6 +28,8 @@ jobs:
           test -f data/central-history/feasibility.json
           test -d data/central-history/quarantine
           test -d data/central-history/verified
+          test -f scripts/history-central/lib/resolve.cjs
+          test -f scripts/history-central/lib/validate.cjs
       - name: Run independent warehouse unit tests
         run: node --test tests/history-central/central-history.test.cjs
       - name: Run existing independent paper unit tests
@@ -39,5 +41,9 @@ jobs:
           const f=JSON.parse(fs.readFileSync('data/central-history/feasibility.json','utf8'));
           // This workflow deliberately does not publish or sync research data to production.
           if(f.executionReady===true || f.performanceCertified===true) throw Error('Unsafe warehouse readiness claim');
+          const census=JSON.parse(fs.readFileSync('data/central-history/census.json','utf8'));
+          const manifest=JSON.parse(fs.readFileSync('data/central-history/manifest.json','utf8'));
+          if(!manifest.files || !census.tickers || !f.segmentCounts) throw Error('Missing warehouse evidence tables');
+          if(!fs.existsSync('data/central-history/README.md')) throw Error('Missing warehouse usage restrictions');
           console.log('Warehouse retained in research-only validation');
           NODE
