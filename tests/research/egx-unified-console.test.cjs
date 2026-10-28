@@ -63,6 +63,44 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  }
  assert.ok(by('independentBlockers').textContent.includes('أسباب الحجب'));
  assert.ok(by('astraStatus').textContent.includes('أرشيفي'));
- assert.ok(by('marketStatus').textContent.includes('غير معتمد'));
+ const truth=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
+ const priceReady=truth.ready===true&&truth.executionGrade===true&&Number.isInteger(truth.acceptedRows)&&truth.acceptedRows>0;
+ assert.ok(by('marketStatus').textContent.includes(priceReady?'أسعار مؤرخة اجتازت بوابة المصدر':'غير معتمد'));
  assert.ok(by('paperLedger').textContent.includes('أوامر تداول: صفر'));
+ const radar=by('researchRadarResults').children;
+ const v16=JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json','utf8'));
+ const quant=JSON.parse(fs.readFileSync('data/quant/daily-recommendations.json','utf8'));
+ const gann=JSON.parse(fs.readFileSync('unified-console/gann-research.json','utf8'));
+ const expected=[...(v16.researchWatchlist||[]),...(quant.status==='WATCH_ONLY'?quant.watchCandidates||[]:[]),
+  ...(gann.reviewPassed===true?gann.watchRadar||[]:[])].map(x=>x.ticker);
+ assert.equal(radar.length,new Set(expected).size,'one dated research row per unique ticker');
+ const tickers=radar.map(row=>row.children[0].textContent);
+ assert.equal(new Set(tickers).size,radar.length,'one row per ticker, never duplicate signals');
+ const find=t=>radar.find(row=>row.children[0].textContent===t).children.map(c=>c.textContent);
+ const faita=find('FAITA');
+ assert.ok(faita[1].includes('V16 2026-10-28'));
+ assert.ok(faita[2].includes('مؤشرات OHLCV محجوبة'));
+ const mfpc=find('MFPC');
+ assert.ok(mfpc[1].includes('Quant 2026-10-27 (أرشيف)'));
+ assert.ok(mfpc[1].includes('Gann 2026-10-27 (أرشيف)'));
+ for(const row of radar)assert.equal(row.children[3].textContent,'RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ');
+ const health=JSON.parse(fs.readFileSync('data/source-health.json','utf8'));
+ const fetchStatus=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
+ if(fetchStatus.marketRows+fetchStatus.rejectedCurrentSessionRows===fetchStatus.inputRows)
+  assert.ok(by('sourceHealthInfo').textContent.includes(fetchStatus.marketRows+' / '+fetchStatus.inputRows));
+ assert.ok(by('sourceHealthInfo').textContent.includes(health.coveragePct.toFixed(1)+'%'));
+ assert.ok(by('sourceHealthInfo').textContent.includes('تأخر المصدر: '+(health.delayed?'نعم':'لا')));
+ assert.ok(by('researchRadarIntro').textContent.includes('executionReady='+String(v16.executionReady===true)));
+});
+
+test('unified MVP consumes V16 and Quant source dates without V16 probability-as-calibration',()=>{
+ assert.ok(html.includes('data/stable/v16-main-app-current.json'));
+ assert.ok(html.includes('data/quant/daily-recommendations.json'));
+ assert.ok(html.includes('data/source-health.json'));
+ assert.ok(html.includes('data/fetch-status.json'));
+ assert.ok(html.includes('accepted/inputRows'));
+ assert.ok(html.includes('researchRadarResults'));
+ assert.ok(html.includes('RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ'));
+ assert.ok(!html.includes('hasValidatedProbability'));
+ assert.ok(!html.includes('probabilityTop10Pct'));
 });
