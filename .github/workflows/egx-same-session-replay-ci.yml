@@ -4,6 +4,7 @@ on:
     paths:
       - 'scripts/stable/v16-same-session-recovery-replay.cjs'
       - 'tests/stable/v16-same-session-recovery-replay.test.cjs'
+      - 'tests/stable/v16-same-session-recovery-integration.test.cjs'
       - '.github/workflows/v16-daily-recommendation-scan.yml'
       - '.github/workflows/egx-same-session-replay-ci.yml'
   push:
@@ -11,6 +12,7 @@ on:
     paths:
       - 'scripts/stable/v16-same-session-recovery-replay.cjs'
       - 'tests/stable/v16-same-session-recovery-replay.test.cjs'
+      - 'tests/stable/v16-same-session-recovery-integration.test.cjs'
       - '.github/workflows/v16-daily-recommendation-scan.yml'
       - '.github/workflows/egx-same-session-replay-ci.yml'
 permissions:
@@ -30,4 +32,4 @@ jobs:
           node --check scripts/stable/v16-verified-incremental-recovery.cjs
           node --check scripts/stable/v16-market-coverage-reconciler.cjs
       - name: Fail-closed same-session replay regression tests
-        run: node --test tests/stable/v16-same-session-recovery-replay.test.cjs tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs
+        run: node --test tests/stable/v16-same-session-recovery-replay.test.cjs tests/stable/v16-same-session-recovery-integration.test.cjs tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs
