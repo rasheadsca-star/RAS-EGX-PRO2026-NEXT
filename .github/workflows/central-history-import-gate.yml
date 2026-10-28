@@ -1,0 +1,43 @@
+name: Central History Import Gate
+on:
+  pull_request:
+    paths:
+      - 'scripts/history-central/**'
+      - 'tests/history-central/**'
+      - 'data/central-history/**'
+      - '.github/workflows/central-history-import-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require actual warehouse and source code
+        run: |
+          set -euo pipefail
+          test -f scripts/history-central/build-central-history.cjs
+          test -f scripts/history-central/feasibility.cjs
+          test -f tests/history-central/central-history.test.cjs
+          test -f data/central-history/manifest.json
+          test -f data/central-history/census.json
+          test -f data/central-history/feasibility.json
+          test -d data/central-history/quarantine
+          test -d data/central-history/symbols
+      - name: Run independent warehouse unit tests
+        run: node --test tests/history-central/central-history.test.cjs
+      - name: Run existing independent paper unit tests
+        run: node --test tests/independent/*.test.cjs
+      - name: Prohibit automatic activation or orders
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const f=JSON.parse(fs.readFileSync('data/central-history/feasibility.json','utf8'));
+          // This workflow deliberately does not publish or sync research data to production.
+          if(f.executionReady===true || f.performanceCertified===true) throw Error('Unsafe warehouse readiness claim');
+          console.log('Warehouse retained in research-only validation');
+          NODE
