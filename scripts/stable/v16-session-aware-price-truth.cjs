@@ -94,32 +94,21 @@ const MONTHS = new Map([
 ]);
 function parseSourceSessionDate(value, expectedSession) {
   const text = String(value || '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
-  const iso = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
-  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
-
-  // Accept explicitly dated D/M/YYYY source timestamps, but never infer a
-  // trading session from a time-only quote or the local fetch timestamp.
-  const numeric = text.match(/(?:^|[^\d])(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})(?!\d)/);
-  if (numeric) {
-    const day = Number(numeric[1]), month = Number(numeric[2]), year = Number(numeric[3]);
-    const check = new Date(Date.UTC(year, month - 1, day));
-    if (check.getUTCFullYear() === year && check.getUTCMonth() === month - 1 && check.getUTCDate() === day)
-      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  function valid(year, month, day) {
+    const dt = new Date(Date.UTC(year, month - 1, day));
+    if (dt.getUTCFullYear() !== year || dt.getUTCMonth() !== month - 1 || dt.getUTCDate() !== day) return null;
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
-
-  const yearFallback = Number(String(expectedSession || '').slice(0, 4)) || new Date().getUTCFullYear();
-  let match = text.match(/\b(\d{1,2})\s+(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)(?:\s+(20\d{2}))?\b/i);
-  if (match) {
-    const month = MONTHS.get(match[2].toLowerCase());
-    const year = Number(match[3] || yearFallback);
-    if (month) return `${year}-${String(month).padStart(2, '0')}-${String(Number(match[1])).padStart(2, '0')}`;
-  }
-  match = text.match(/\b(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)\s+(\d{1,2})(?:\s+(20\d{2}))?\b/i);
-  if (match) {
-    const month = MONTHS.get(match[1].toLowerCase());
-    const year = Number(match[3] || yearFallback);
-    if (month) return `${year}-${String(month).padStart(2, '0')}-${String(Number(match[2])).padStart(2, '0')}`;
-  }
+  // Date is evidence only when the actual source includes an explicit year.
+  // Never derive the session year from fetch time or expectedSession.
+  let match = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
+  if (match) return valid(Number(match[1]), Number(match[2]), Number(match[3]));
+  match = text.match(/(?:^|[^\d])(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})(?!\d)/);
+  if (match) return valid(Number(match[3]), Number(match[2]), Number(match[1]));
+  match = text.match(/\b(\d{1,2})\s+(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)\s+(20\d{2})\b/i);
+  if (match) return valid(Number(match[3]), MONTHS.get(match[2].toLowerCase()), Number(match[1]));
+  match = text.match(/\b(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)\s+(\d{1,2})\s+(20\d{2})\b/i);
+  if (match) return valid(Number(match[3]), MONTHS.get(match[1].toLowerCase()), Number(match[2]));
   return null;
 }
 
