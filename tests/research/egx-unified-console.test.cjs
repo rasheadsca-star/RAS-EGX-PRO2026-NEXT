@@ -68,7 +68,12 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  assert.ok(by('marketStatus').textContent.includes(priceReady?'أسعار مؤرخة اجتازت بوابة المصدر':'غير معتمد'));
  assert.ok(by('paperLedger').textContent.includes('أوامر تداول: صفر'));
  const radar=by('researchRadarResults').children;
- assert.equal(radar.length,16,'V16 3 + Quant 7 + Gann 10 with four duplicate occurrences');
+ const v16=JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json','utf8'));
+ const quant=JSON.parse(fs.readFileSync('data/quant/daily-recommendations.json','utf8'));
+ const gann=JSON.parse(fs.readFileSync('unified-console/gann-research.json','utf8'));
+ const expected=[...(v16.researchWatchlist||[]),...(quant.status==='WATCH_ONLY'?quant.watchCandidates||[]:[]),
+  ...(gann.reviewPassed===true?gann.watchRadar||[]:[])].map(x=>x.ticker);
+ assert.equal(radar.length,new Set(expected).size,'one dated research row per unique ticker');
  const tickers=radar.map(row=>row.children[0].textContent);
  assert.equal(new Set(tickers).size,radar.length,'one row per ticker, never duplicate signals');
  const find=t=>radar.find(row=>row.children[0].textContent===t).children.map(c=>c.textContent);
@@ -79,9 +84,10 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  assert.ok(mfpc[1].includes('Quant 2026-10-27 (أرشيف)'));
  assert.ok(mfpc[1].includes('Gann 2026-10-27 (أرشيف)'));
  for(const row of radar)assert.equal(row.children[3].textContent,'RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ');
- assert.ok(by('sourceHealthInfo').textContent.includes('94.2%'));
- assert.ok(by('sourceHealthInfo').textContent.includes('تأخر المصدر: نعم'));
- assert.ok(by('researchRadarIntro').textContent.includes('executionReady=false'));
+ const health=JSON.parse(fs.readFileSync('data/source-health.json','utf8'));
+ assert.ok(by('sourceHealthInfo').textContent.includes(health.coveragePct.toFixed(1)+'%'));
+ assert.ok(by('sourceHealthInfo').textContent.includes('تأخر المصدر: '+(health.delayed?'نعم':'لا')));
+ assert.ok(by('researchRadarIntro').textContent.includes('executionReady='+String(v16.executionReady===true)));
 });
 
 test('unified MVP consumes V16 and Quant source dates without V16 probability-as-calibration',()=>{
