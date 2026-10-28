@@ -65,3 +65,15 @@ test('prior-session evidence never enters current-session truth',()=>{
     assert.equal(read(root,'data/stable/v15-price-truth.json').acceptedRows,1);
   } finally {fs.rmSync(root,{recursive:true,force:true});}
 });
+test('missing primary candle is recovered only from observed independent full candle with exact provenance',()=>{
+ const root=fixture();
+ try{
+  const m=read(root,'data/market.json');m.rows.find(r=>r.symbol==='TRTO').high=null;write(root,'data/market.json',m);
+  const p=read(root,'data/stable/v15-price-truth.json');p.sampleRejected.find(r=>r.ticker==='TRTO').reason='OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION';write(root,'data/stable/v15-price-truth.json',p);
+  const result=run(root);assert.equal(result.status,0,result.stderr+'\n'+result.stdout);
+  const bar=read(root,'data/history/TRTO.json').sessions.find(x=>x.date===DATE);
+  assert.equal(bar.ohlcMode,'SECOND_SOURCE_EXACT_SESSION_REPLACEMENT');
+  assert.equal(bar.high,0.06);assert.match(bar.sourceSessionEvidence,/independent_second_source_.*_exact_session_replacement/);
+  assert.equal(read(root,'data/stable/v15-price-truth.json').acceptedRows,3);
+ }finally{fs.rmSync(root,{recursive:true,force:true});}
+});
