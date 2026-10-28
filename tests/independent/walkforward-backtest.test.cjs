@@ -78,6 +78,7 @@ test('full positive-volume OHLC copy blocks OOS rather than fabricating performa
  const out=run(bars);
  assert.equal(out.status,'STALE_COPIED_BAR_IN_LOOKBACK');
  assert.equal(out.copiedBarCount,1);
+ assert.deepEqual(out.copiedBarKinds,{REPEATED_OHLCV:1});
  assert.equal(out.tradeCount,0);
  assert.equal(out.performanceCertified,false);
  assert.equal(out.trades,undefined);
