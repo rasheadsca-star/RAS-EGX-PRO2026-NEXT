@@ -15,6 +15,7 @@ on:
       - '.github/workflows/astra-g22-postclose-refresh.yml'
       - 'data/ops/g22-main-app-handoff.json'
       - 'scripts/astra/g22-postclose-refresh.cjs'
+      - 'scripts/astra/g22-verified-history-overlay.cjs'
       - 'scripts/astra/g22-postclose-handoff-guard.cjs'
       - 'scripts/astra/g22-refresh-session-exceptions.cjs'
       - 'scripts/astra/g22-refresh-v16-domain-exceptions.cjs'
@@ -143,51 +144,15 @@ jobs:
           cp "$PROD_DATA_ROOT/data/market.json" "$CERT_ROOT/data/market.json"
           cp "$PROD_DATA_ROOT/data/fetch-status.json" "$CERT_ROOT/data/fetch-status.json"
           cp scripts/stable/v16-session-aware-price-truth.cjs "$CERT_ROOT/scripts/stable/v16-session-aware-price-truth.cjs"
+          cp scripts/stable/v16-verified-incremental-recovery.cjs "$CERT_ROOT/scripts/stable/v16-verified-incremental-recovery.cjs"
           cp scripts/stable/v16-market-second-source-resolver.cjs "$CERT_ROOT/scripts/stable/v16-market-second-source-resolver.cjs"
           cp scripts/stable/v16-market-coverage-reconciler.cjs "$CERT_ROOT/scripts/stable/v16-market-coverage-reconciler.cjs"
           cp scripts/stable/v16-market-universe-disposition.cjs "$CERT_ROOT/scripts/stable/v16-market-universe-disposition.cjs"
 
-          node <<'NODE'
-          const fs=require('fs');
-          const path=require('path');
-          const prod=process.env.PROD_DATA_ROOT;
-          const cert=process.env.CERT_ROOT;
-          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
-          const write=(p,v)=>fs.writeFileSync(p,JSON.stringify(v,null,2)+'\n');
-          const expected=read(path.join(prod,'data/stable/v15-price-truth.json')).expectedSession;
-          if(!/^\d{4}-\d{2}-\d{2}$/.test(String(expected||''))) throw new Error('Current expected session invalid');
-          const dateOf=x=>String(x?.date||x?.sessionDate||'').slice(0,10);
-          const bad=x=>/invalid|conflict|failed|unresolved|quarantined/i.test(String(x?.validationStatus||''));
-          let merged=0, skipped=0;
-          const srcDir=path.join(prod,'data/history');
-          for(const name of fs.readdirSync(srcDir).filter(x=>x.endsWith('.json'))){
-            const target=path.join(cert,'data/history',name);
-            if(!fs.existsSync(target)){skipped++;continue;}
-            let source;
-            try{source=read(path.join(srcDir,name));}catch{continue;}
-            const rows=(source.sessions||[]).filter(r=>
-              dateOf(r)===expected &&
-              !bad(r) &&
-              Number(r.close)>0 &&
-              Number.isFinite(Number(r.volume)) &&
-              Number(r.volume)>=0
-            );
-            if(!rows.length)continue;
-            const targetDoc=read(target);
-            const map=new Map((targetDoc.sessions||[]).map(r=>[dateOf(r),r]).filter(([d])=>d));
-            for(const row of rows)map.set(expected,row);
-            targetDoc.sessions=[...map.values()].sort((a,b)=>dateOf(a).localeCompare(dateOf(b)));
-            targetDoc.firstSession=dateOf(targetDoc.sessions[0]);
-            targetDoc.lastSession=dateOf(targetDoc.sessions.at(-1));
-            targetDoc.availableSessions=targetDoc.sessions.length;
-            targetDoc.generatedAt=new Date().toISOString();
-            targetDoc.staleData=false;
-            targetDoc.updateFailed=false;
-            write(target,targetDoc);
-            merged++;
-          }
-          console.log('CERT_BASELINE_CURRENT_ROWS_OVERLAY',JSON.stringify({expected,merged,skipped}));
-          NODE
+          # Restore every observed, source-validated intermediate historical bar.
+          # The pinned engine and strategy remain unchanged; reconstructed bars
+          # are refused and all conflicts are retained as audit evidence.
+          node scripts/astra/g22-verified-history-overlay.cjs
 
           (
             cd "$CERT_ROOT"

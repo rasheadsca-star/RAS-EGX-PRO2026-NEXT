@@ -99,19 +99,19 @@ function baselineFrom(data, manifest) {
   };
 }
 
-function validateOpportunity(row) {
-  ensure(row && typeof row.ticker === 'string' && row.ticker.length > 0, 'Opportunity ticker missing');
-  ensure(Number.isFinite(Number(row.rank)), row.ticker + ': rank invalid');
+function validateOpportunity(row, session) {
+  const number = value => value !== null && value !== undefined && typeof value !== 'boolean' && String(value).trim() !== '' && Number.isFinite(Number(value));
+  ensure(row && /^[A-Z0-9._-]+$/.test(row.ticker || ''), 'Opportunity ticker missing or invalid');
+  ensure(number(row.rank) && Number.isInteger(Number(row.rank)) && Number(row.rank) >= 1, row.ticker + ': rank invalid');
   const risk = row.risk || {};
-  const entry = Number(risk.entry ?? row.entryPlan?.high);
-  const stop = Number(risk.stopLoss ?? row.stopLoss);
-  if (Number.isFinite(entry) && Number.isFinite(stop)) {
-    ensure(stop < entry, row.ticker + ': stop must be below entry');
-  }
-  const targets = Array.isArray(row.targets) ? row.targets : (Array.isArray(risk.targets) ? risk.targets : []);
-  if (Number.isFinite(entry) && targets.length) {
-    ensure(targets.some(v => Number(v) > entry), row.ticker + ': no target above entry');
-  }
+  const low = row.entryPlan?.low, entry = row.entryPlan?.high, stop = row.stopLoss;
+  ensure([low,entry,stop].every(number) && Number(low)>0 && Number(entry)>=Number(low) && Number(stop)>0 && Number(stop)<Number(low), row.ticker + ': observed entry range and stop required');
+  const targets = row.targets;
+  ensure(Array.isArray(targets) && targets.length>0 && targets.every(v=>number(v)&&Number(v)>Number(entry)), row.ticker + ': executable targets required');
+  ensure(number(risk.entry)&&Number(risk.entry)===Number(entry)&&number(risk.stopLoss)&&Number(risk.stopLoss)===Number(stop), row.ticker + ': risk/public entry-stop mismatch');
+  ensure(Array.isArray(risk.targets)&&JSON.stringify(risk.targets.map(Number))===JSON.stringify(targets.map(Number)), row.ticker + ': risk/public target mismatch');
+  ensure(Array.isArray(row.evidence)&&row.evidence.length>0&&row.strategyExecutionRef, row.ticker + ': evidence and strategy provenance required');
+  if (session) ensure((row.trace?.inputSnapshotRefs||[]).includes('G11-CAN-'+row.ticker+'-'+session), row.ticker + ': current canonical source reference required');
 }
 
 function pct(n, d) {
@@ -211,7 +211,9 @@ function main() {
 
   const top5 = Array.isArray(d.top5) ? d.top5 : [];
   ensure(top5.length <= 5, 'Top opportunities exceed 5');
-  top5.forEach(validateOpportunity);
+  ensure(new Set(top5.map(row=>row.ticker)).size===top5.length, 'Duplicate published opportunity ticker');
+  ensure(top5.length>0 || d.status==='VALID_ZERO_OPPORTUNITY_SESSION', 'Empty opportunities require explicit valid-zero status');
+  top5.forEach(row=>validateOpportunity(row,expected));
 
   const sourceHead = gitHead(PROD_ROOT);
   const certifiedBaselineHead = process.env.ASTRA_CERTIFIED_BASELINE_HEAD || gitHead(DECISION_ROOT);
@@ -434,4 +436,5 @@ function main() {
   }) + '\n');
 }
 
-main();
+if (require.main === module) main();
+module.exports={validateOpportunity};

@@ -1,0 +1,21 @@
+name: EGX Observed Price and History Regression
+on:
+  pull_request:
+    paths:
+      - 'scripts/astra/g22-verified-history-overlay.cjs'
+      - 'tests/astra/g22-verified-history-overlay.test.cjs'
+      - 'scripts/astra/g22-postclose-refresh.cjs'
+      - 'tests/astra/g22-opportunity-contract.test.cjs'
+      - '.github/workflows/astra-g22-postclose-refresh.yml'
+      - '.github/workflows/egx-observed-data-regression.yml'
+permissions:
+  contents: read
+jobs:
+  observed-data:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/astra/g22-verified-history-overlay.test.cjs tests/astra/g22-opportunity-contract.test.cjs
