@@ -101,3 +101,20 @@ test('cross-provider evidence level is explicit, not inferred from one provider'
  assert.equal(x.verifiedCandidates[0].evidenceLevel,'CROSS_PROVIDER_CONFIRMED');
  const y=run();assert.equal(y.verifiedCandidates[0].evidenceLevel,'DATED_PROVIDER_EVIDENCE');
 });
+
+test('partially reconstructed 60-bar history remains an observation, never an SMA/ATR signal',()=>{
+ const bars=sample.map(r=>({...r}));
+ bars[30].warnings=['partial_ohlc_reconstructed_from_close_or_previous_close'];
+ const x=run({price:{expectedSession:session,ready:false,executionGrade:false,acceptedRows:0},
+  loadHistory:()=>({ticker:'TEST',currency:'EGP',symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+ assert.equal(x.datedPriceObservations.length,1);
+ assert.equal(x.datedPriceObservations[0].indicatorReady,false);
+ assert.equal(x.datedPriceObservations[0].cleanLookbackBars,59);
+ assert.deepEqual(x.verifiedCandidates,[]);assert.deepEqual(x.researchWatchlist,[]);
+ assert.deepEqual(x.watchlist,[]);assert.deepEqual(x.recommendations,[]);
+});
+test('a clean 60-bar series has an independently dated price observation',()=>{
+ const x=run();assert.equal(x.datedPriceObservations.length,1);
+ assert.equal(x.datedPriceObservations[0].indicatorReady,true);
+ assert.equal(x.datedPriceObservations[0].state,'DATED_PRICE_OBSERVATION_NOT_A_SIGNAL');
+});
