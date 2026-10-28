@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store"><title>EGX PRO — خطة الجلسة القادمة</title>
+<style>
+:root{color-scheme:dark;font-family:Tahoma,Arial,sans-serif;background:#081625;color:#ecf4fc}
+*{box-sizing:border-box}body{margin:0;padding:22px;max-width:1160px;margin-inline:auto}
+h1{font-size:1.65rem;margin:0 0 10px}p{line-height:1.9}.muted{color:#afc0d0}
+header,.panel,.stock{background:#11253a;border:1px solid #254361;border-radius:14px;padding:18px;margin-bottom:16px}
+a{color:#8cceff}.toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+button{padding:10px 18px;border-radius:8px;background:#236cac;color:white;border:0;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.metric{background:#081827;padding:10px;border-radius:8px}.metric small{display:block;color:#a6bcd2}.metric strong{font-size:1.1rem}
+.warning{border-right:5px solid #edba4b}.error{border-right:5px solid #f16d6d}
+.status{color:#f5cd78}h2{font-size:1.17rem}
+</style></head><body>
+<header><div class="toolbar"><div><h1>EGX PRO — خطة التداول الورقي للجلسة القادمة</h1>
+<div class="muted" id="date">جارٍ فحص مصدر البيانات…</div></div><div><button id="refresh">تحديث البيانات</button> <a href="./astra-prod/app/index.html">الواجهة الأصلية Astra</a></div></div></header>
+<section class="panel warning" id="summary">تحميل خطة المحرك…</section>
+<section id="stocks" class="grid"></section>
+<section class="panel"><strong>قواعد الأمان:</strong> هذه فرص بحثية مشروطة وليست توصيات شراء معتمدة. لا تداول حقيقي. لا تنفيذ إذا كان سجل الأسعار قديمًا، أو لم يتم تحقق شروط الدخول، أو إذا كانت الجلسة التالية قد انتهت. المراكز والأرباح المعروضة هي محاكاة فقط.</section>
+<script>
+'use strict';
+const el=id=>document.getElementById(id), esc=s=>String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=x=>Number.isFinite(Number(x))?Number(x).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+const day=s=>new Date(s+'T12:00:00Z');
+function nextTradingSession(s){const d=day(s);for(let k=0;k<7;k++){d.setUTCDate(d.getUTCDate()+1);if(d.getUTCDay()!==5&&d.getUTCDay()!==6)return d.toISOString().slice(0,10)}return null}
+function render(d){
+if(!/^\d{4}-\d{2}-\d{2}$/.test(d.sessionId||''))throw Error('تاريخ الجلسة غير صالح');
+const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const next=nextTradingSession(d.sessionId),fresh=(d.sessionId===today||next===today);
+const items=Array.isArray(d.watchCandidates)?d.watchCandidates:[];
+el('date').textContent='تاريخ بيانات الأسعار: '+d.sessionId+' | جلسة الدخول التالية المتوقعة: '+next+' | تحديث الملف: '+(d.generatedAt||'غير معروف');
+const approved=Array.isArray(d.paperCandidates)?d.paperCandidates:[];
+el('summary').className='panel '+(fresh?'warning':'error');
+el('summary').innerHTML='<strong>'+(fresh?'بيانات حديثة نسبيًا — فرص مشروطة فقط':'بيانات غير صالحة لجلسة اليوم — للعرض التاريخي فقط')+'</strong><p>إشارات ورقية معتمدة: '+approved.length+' | مراقبة مشروطة: '+items.length+' | حالة السوق: '+esc(d.marketRegime?.labelAr||d.marketRegime?.code)+'</p><p>لا تتحول الفرص البحثية إلى توصيات شراء تلقائيًا. يجب اعتماد الاستراتيجية ومراقبة تنفيذ شروط الدخول.</p>';
+el('stocks').innerHTML=items.map((x,i)=>{const p=x.plan||{};return '<article class="stock"><h2>'+(i+1)+'. '+esc(x.companyNameAr||x.companyNameEn||x.ticker)+' — '+esc(x.ticker)+'</h2><p class="status">'+esc(x.statusLabelAr||'مراقبة مشروطة')+' · '+esc(x.strategyValidationStatus||'غير معتمد')+'</p><div class="metrics">'+[['الإغلاق',x.price],['بداية الدخول',p.entryLow],['نهاية الدخول',p.entryHigh],['هدف أول',p.target1],['هدف ثانٍ',p.target2],['وقف الخسارة',p.stopLoss]].map(a=>'<div class="metric"><small>'+a[0]+'</small><strong>'+fmt(a[1])+'</strong></div>').join('')+'</div><p class="muted">نسبة العائد/المخاطرة المتوقعة: '+fmt(p.riskReward1)+' · صلاحية الدخول: '+esc(p.validEntrySessions)+' جلسة</p>'+(x.failedConditions?.length?'<p>شروط غير مكتملة: '+esc(x.failedConditions.join('، '))+'</p>':'')+'</article>'}).join('')||'<p>لا توجد فرص مراقبة في الملف.</p>';
+}
+async function load(){try{const r=await fetch('./data/quant/daily-recommendations.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);render(await r.json())}catch(e){el('summary').className='panel error';el('summary').textContent='تعذر تحميل بيانات المحرك: '+e.message;el('stocks').innerHTML=''}}
+el('refresh').onclick=load;load();
+</script></body></html>
