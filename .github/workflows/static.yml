@@ -157,6 +157,26 @@ jobs:
                   assert 'independent-paper-ledger.json' in html
                   assert 'id="archivedPriceResults"' in html
                   assert 'id="independentBlockers"' in html
+                  assert 'id="researchRadarResults"' in html
+                  assert 'data/stable/v16-main-app-current.json' in html
+                  assert 'data/quant/daily-recommendations.json' in html
+                  assert 'data/source-health.json' in html
+                  v16 = json.loads(get('/data/stable/v16-main-app-current.json'))
+                  quant = json.loads(get('/data/quant/daily-recommendations.json'))
+                  source = json.loads(get('/data/source-health.json'))
+                  gann = json.loads(get('/unified-console/gann-research.json'))
+                  assert v16['executionReady'] is False and v16['practicalReady'] is False
+                  assert quant['status'] == 'WATCH_ONLY' and quant['liveExecutionEnabled'] is False
+                  assert source['delayed'] is True
+                  assert v16['sessionDate'] == '2026-10-28'
+                  assert quant['sessionId'] == '2026-10-27'
+                  assert gann['sourceSession'] == '2026-10-27'
+                  sources = [v16['researchWatchlist'], quant['watchCandidates'], gann['watchRadar']]
+                  tickers = {p['ticker'] for group in sources for p in group}
+                  assert len(tickers) == 16
+                  print('RESEARCH_RADAR_LIVE_E2E_PASS',len(tickers),'unique',
+                        'v16='+v16['sessionDate'],'quant='+quant['sessionId'],
+                        'gann='+gann['sourceSession'],'orders=0',flush=True)
                   assert 'شموع OHLCV غير موثقة أو معاد بناؤها' in html
                   assert 'جلسة الأسعار المستهدفة — لا تعني الاعتماد' in html
                   assert 'أرشيف فقط — ليس سعر اليوم ولا إشارة دخول' in html
