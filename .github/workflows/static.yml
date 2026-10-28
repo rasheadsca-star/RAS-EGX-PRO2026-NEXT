@@ -90,6 +90,8 @@ jobs:
       - name: Validate independent paper and rendered MVP safety
         run: |
           set -euo pipefail
+          node --check scripts/independent/history-quality-audit.cjs
+          node scripts/independent/history-quality-audit.cjs
           node --check scripts/independent/egx-independent-paper.cjs
           node --test tests/independent/*.test.cjs tests/research/egx-unified-console.test.cjs
 
@@ -162,11 +164,25 @@ jobs:
                   assert 'data/quant/daily-recommendations.json' in html
                   assert 'data/source-health.json' in html
                   assert 'data/fetch-status.json' in html
+                  assert 'history-quality-audit.json' in html
+                  assert 'id="historyAuditSummary"' in html
                   v16 = json.loads(get('/data/stable/v16-main-app-current.json'))
                   quant = json.loads(get('/data/quant/daily-recommendations.json'))
                   source = json.loads(get('/data/source-health.json'))
                   fetch_status = json.loads(get('/data/fetch-status.json'))
                   gann = json.loads(get('/unified-console/gann-research.json'))
+                  history_audit = json.loads(get('/unified-console/history-quality-audit.json'))
+                  assert history_audit['mode'] == 'RESEARCH_ONLY'
+                  assert history_audit['executionReady'] is False
+                  assert history_audit['performanceCertified'] is False
+                  assert history_audit['orders'] == []
+                  assert history_audit['calendar']['officialExchangeCalendar'] is False
+                  assert history_audit['auditDate'] == history_audit['calendar']['latest']
+                  assert history_audit['summary']['strictAcceptedRows'] <= history_audit['summary']['structuralAcceptedRows']
+                  assert history_audit['summary']['currentEligibility']['strict60'] <= history_audit['summary']['currentEligibility']['structural60']
+                  assert history_audit['summary']['currentEligibility']['strict140'] <= history_audit['summary']['currentEligibility']['structural140']
+                  assert len(history_audit['top10Recovery']) <= 10
+                  print('HISTORY_QUALITY_AUDIT_LIVE_E2E_PASS', history_audit['auditDate'],history_audit['summary']['historyFiles'],history_audit['summary']['medianLongestStrictConsecutive'],flush=True)
                   import re
                   assert isinstance(v16.get('executionReady'),bool)
                   assert isinstance(quant.get('liveExecutionEnabled'),bool)

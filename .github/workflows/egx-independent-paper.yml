@@ -8,6 +8,8 @@ on:
     - cron: '30 13-17 * * 0-4'
   pull_request:
     paths:
+      - 'scripts/independent/history-quality-audit.cjs'
+      - 'tests/independent/history-quality-audit.test.cjs'
       - 'scripts/independent/egx-independent-paper.cjs'
       - 'scripts/independent/walkforward-backtest.cjs'
       - 'scripts/independent/stale-bar-detector.cjs'
@@ -23,6 +25,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/independent/history-quality-audit.cjs'
+      - 'tests/independent/history-quality-audit.test.cjs'
       - 'scripts/independent/egx-independent-paper.cjs'
       - 'scripts/independent/walkforward-backtest.cjs'
       - 'scripts/independent/stale-bar-detector.cjs'
@@ -53,6 +57,7 @@ jobs:
           node-version: '22'
       - name: Validate independent paper engine
         run: |
+          node --check scripts/independent/history-quality-audit.cjs
           node --check scripts/independent/egx-independent-paper.cjs
           node --check scripts/independent/walkforward-backtest.cjs
           node --check scripts/independent/stale-bar-detector.cjs
@@ -61,6 +66,7 @@ jobs:
           node --test tests/independent/*.test.cjs
       - name: Build explicitly paper-only independent status
         run: |
+          node scripts/independent/history-quality-audit.cjs
           node scripts/independent/egx-independent-paper.cjs
           node scripts/independent/preserve-verified-paper.cjs
       - name: Archive evidence, including blocked states
@@ -68,6 +74,7 @@ jobs:
         with:
           name: egx-independent-paper-${{ github.run_id }}
           path: |
+            unified-console/history-quality-audit.json
             unified-console/independent-paper.json
             unified-console/independent-last-verified.json
             unified-console/independent-paper-ledger.json
@@ -77,13 +84,14 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add unified-console/independent-paper.json unified-console/independent-last-verified.json unified-console/independent-paper-ledger.json
+          git add unified-console/history-quality-audit.json unified-console/independent-paper.json unified-console/independent-last-verified.json unified-console/independent-paper-ledger.json
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Update independently gated paper decision status"
           git pull --rebase origin main
           # Rebuild against freshest main after rebase, to avoid publishing stale snapshots.
+          node scripts/independent/history-quality-audit.cjs
           node scripts/independent/egx-independent-paper.cjs
           node scripts/independent/preserve-verified-paper.cjs
-          git add unified-console/independent-paper.json unified-console/independent-last-verified.json unified-console/independent-paper-ledger.json
+          git add unified-console/history-quality-audit.json unified-console/independent-paper.json unified-console/independent-last-verified.json unified-console/independent-paper-ledger.json
           git commit --amend --no-edit
           git push origin HEAD:main

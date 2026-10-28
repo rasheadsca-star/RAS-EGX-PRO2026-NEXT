@@ -108,3 +108,41 @@ test('unified MVP consumes V16 and Quant source dates without V16 probability-as
  assert.ok(!html.includes('hasValidatedProbability'));
  assert.ok(!html.includes('probabilityTop10Pct'));
 });
+
+test('MVP displays reproducible OHLCV audit counts separately from paper recommendations',async()=>{
+ assert.ok(html.includes('history-quality-audit.json'));
+ assert.ok(html.includes('id="historyAuditSummary"'));
+ assert.ok(html.includes('id="historyAuditTop10"'));
+ const elements=new Map();
+ class Element{constructor(){this.textContent='';this.children=[];this.listeners={}}
+  appendChild(x){this.children.push(x);return x}
+  replaceChildren(...x){this.children=x}
+  addEventListener(k,f){this.listeners[k]=f}}
+ const by=id=>{if(!elements.has(id))elements.set(id,new Element());return elements.get(id)};
+ const report={schemaVersion:'egx-history-quality-audit-v1',mode:'RESEARCH_ONLY',
+  executionReady:false,performanceCertified:false,auditDate:'2026-10-28',
+  generatedAt:'2026-10-28T20:00:00Z',inputsSha256:'abcd1234',
+  calendar:{officialExchangeCalendar:false,latest:'2026-10-28'},
+  summary:{historyFiles:201,rawInputRows:8000,structuralAcceptedRows:5000,
+   strictAcceptedRows:100,medianLongestStrictConsecutive:3,medianTrailingAtOwnLatestSourceProvenance:3,medianLongestSourceProvenanceConsecutive:13,
+   currentEligibility:{structural60:8,strict60:0,structural140:0,strict140:0}},
+  tickers:[{ticker:'TEST'}],
+  top10Recovery:[{ticker:'TEST',latestSession:'2026-10-28',structuralTrailing:8,
+   strictTrailing:3,isinChecksumValid:true,licenseStatus:'NO_EXPLICIT_USAGE_RIGHTS'}]};
+ const fetch=async url=>{
+  const relative=String(url).split('?')[0].replace(/^\.\.\//,'');
+  const data=relative==='unified-console/history-quality-audit.json'?report:
+   JSON.parse(fs.readFileSync(path.join(process.cwd(),relative),'utf8'));
+  return {ok:true,json:async()=>data};
+ };
+ const code=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ const context={document:{getElementById:by,createElement:()=>new Element()},fetch,console};
+ vm.runInNewContext(code+';globalThis.__refreshForTest=refresh;',context);
+ await context.__refreshForTest();
+ assert.ok(by('historyAuditSummary').textContent.includes('8000'));
+ assert.ok(by('historyAuditSummary').textContent.includes('صارم 0'));
+ assert.ok(by('historyAuditCalendar').textContent.includes('لا أيام تقويمية'));
+ assert.equal(by('historyAuditTop10').children.length,1);
+ assert.ok(by('historyAuditTop10').children[0].children.some(x=>x.textContent==='حقوق الاستخدام غير موثقة'));
+ assert.ok(by('paperLedger').textContent.includes('أوامر تداول: صفر'));
+});
