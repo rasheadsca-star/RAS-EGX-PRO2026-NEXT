@@ -204,3 +204,20 @@ test('independent CLI keeps dated research available when Astra handoff is missi
   }
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 });
+
+test('unresolved price discontinuity preserves dated observation but blocks SMA/ATR and signals',()=>{
+ const event={ticker:'TEST',date:sample[35].date,status:'review_required',reason:'large_unadjusted_close_change'};
+ const blocked=run({corporateActions:[event]});
+ assert.equal(blocked.datedPriceObservations.length,1);
+ assert.equal(blocked.datedPriceObservations[0].indicatorReady,false);
+ assert.ok(blocked.datedPriceObservations[0].indicatorBlockers.includes(
+  'UNRESOLVED_CORPORATE_ACTION_CANDIDATE_IN_LOOKBACK'));
+ assert.deepEqual(blocked.verifiedCandidates,[]);
+ assert.deepEqual(blocked.researchWatchlist,[]);
+ assert.deepEqual(blocked.watchlist,[]);
+ assert.deepEqual(blocked.recommendations,[]);
+ const resolved=run({corporateActions:[{...event,status:'resolved'}]});
+ assert.equal(resolved.datedPriceObservations[0].indicatorReady,true);
+ const other=run({corporateActions:[{...event,ticker:'OTHER'}]});
+ assert.equal(other.datedPriceObservations[0].indicatorReady,true);
+});
