@@ -1,0 +1,61 @@
+name: EGX Independent Paper Decision (Astra-Free)
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["EGX MAIN APP V16.9.2 P2 Automatic Scan"]
+    types: [completed]
+  schedule:
+    - cron: '30 13-17 * * 0-4'
+  pull_request:
+    paths:
+      - 'scripts/independent/egx-independent-paper.cjs'
+      - 'tests/independent/egx-independent-paper.test.cjs'
+      - '.github/workflows/egx-independent-paper.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/independent/egx-independent-paper.cjs'
+      - 'tests/independent/egx-independent-paper.test.cjs'
+      - '.github/workflows/egx-independent-paper.yml'
+permissions:
+  contents: write
+concurrency:
+  group: egx-independent-paper
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || 'main' }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate independent paper engine
+        run: |
+          node --check scripts/independent/egx-independent-paper.cjs
+          node --test tests/independent/egx-independent-paper.test.cjs
+      - name: Build explicitly paper-only independent status
+        run: node scripts/independent/egx-independent-paper.cjs
+      - name: Archive evidence, including blocked states
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-independent-paper-${{ github.run_id }}
+          path: unified-console/independent-paper.json
+      - name: Publish paper-only status when source files are current
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add unified-console/independent-paper.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Update independently gated paper decision status"
+          git pull --rebase origin main
+          # Rebuild against freshest main after rebase, to avoid publishing stale snapshots.
+          node scripts/independent/egx-independent-paper.cjs
+          git add unified-console/independent-paper.json
+          git commit --amend --no-edit
+          git push origin HEAD:main
