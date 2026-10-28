@@ -15,7 +15,7 @@
     <h1>EGX PRO V18.2</h1>
     <p>جاري تحميل مركز القرار الحي والتحقق من أحدث نسخة موثقة...</p>
     <p style="color:#ffd18b;font-size:14px">تنبيه: توصيات النسخة المحملة قد تكون لجلسة قديمة. راجع تاريخ الجلسة قبل أي استخدام.</p>
-    <p><a href="./market-status.html" style="color:#8edcff;font-weight:bold">عرض حالة أسعار السوق المؤرخة والتوصيات المعتمدة بصورة مستقلة</a></p>
+    <p><a href="https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/v18-live/market-status.html" style="color:#8edcff;font-weight:bold">عرض حالة أسعار السوق المؤرخة والتوصيات المعتمدة بصورة مستقلة</a></p>
     <div class="status" id="status">V18_DURABLE_BOOTSTRAP_V3</div>
   </main>
   <script>
@@ -83,8 +83,11 @@
           try {
             status.textContent = `تحميل النسخة الحية — ${round}/3 — مصدر ${i + 1}/${SOURCES.length}`;
             const html = validateShell(await fetchText(SOURCES[i]));
+            // Keep a visible date/freshness link after the remote shell replaces this bootstrap.
+            const statusBanner = '<aside style="position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#122b42;color:#fff;padding:8px 12px;text-align:center;font:13px Arial,Tahoma,sans-serif;border-top:1px solid #44627a"><a style="color:#9ee9ff" target="_blank" rel="noopener noreferrer" href="https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/v18-live/market-status.html">تحقق من جلسة الأسعار وحالة اعتماد التوصيات قبل التداول</a></aside>';
+            const rendered = html.replace(/<\\/body>/i, statusBanner + '</body>');
             document.open();
-            document.write(html);
+            document.write(rendered);
             document.close();
             return;
           } catch (error) {
