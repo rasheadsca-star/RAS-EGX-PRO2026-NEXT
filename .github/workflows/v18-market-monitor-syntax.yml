@@ -1,0 +1,27 @@
+name: V18 Read-Only Market Monitor Syntax
+on:
+  push:
+    paths:
+      - "v18-live/index.html"
+      - ".github/workflows/v18-market-monitor-syntax.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Extract inline script and validate JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const html = fs.readFileSync('v18-live/index.html','utf8');
+          const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)];
+          if (!scripts.length) throw Error('No inline JavaScript in V18 bootstrap');
+          fs.writeFileSync('/tmp/v18-bootstrap.js',scripts.map(x=>x[1]).join('\\n'));
+          NODE
+          node --check /tmp/v18-bootstrap.js
