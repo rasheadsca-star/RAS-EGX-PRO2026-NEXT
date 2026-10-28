@@ -77,12 +77,16 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  const tickers=radar.map(row=>row.children[0].textContent);
  assert.equal(new Set(tickers).size,radar.length,'one row per ticker, never duplicate signals');
  const find=t=>radar.find(row=>row.children[0].textContent===t).children.map(c=>c.textContent);
+ // Compare each label with its actual source session; source dates advance independently.
+ // An old Quant/Gann snapshot must be archived, but a same-session update must not.
+ const sourceLabel=(name,sourceSession)=>name+' '+sourceSession+
+  (sourceSession===truth.expectedSession?'':' (أرشيف)');
  const faita=find('FAITA');
- assert.ok(faita[1].includes('V16 2026-10-28'));
+ assert.ok(faita[1].includes(sourceLabel('V16',v16.sessionDate)));
  assert.ok(faita[2].includes('مؤشرات OHLCV محجوبة'));
  const mfpc=find('MFPC');
- assert.ok(mfpc[1].includes('Quant 2026-10-27 (أرشيف)'));
- assert.ok(mfpc[1].includes('Gann 2026-10-27 (أرشيف)'));
+ assert.ok(mfpc[1].includes(sourceLabel('Quant',quant.sessionId)));
+ assert.ok(mfpc[1].includes(sourceLabel('Gann',gann.sourceSession)));
  for(const row of radar)assert.equal(row.children[3].textContent,'RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ');
  const health=JSON.parse(fs.readFileSync('data/source-health.json','utf8'));
  const fetchStatus=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
