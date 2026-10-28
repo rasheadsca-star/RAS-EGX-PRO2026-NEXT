@@ -22,7 +22,7 @@ test('canonical source dates agree and display data has a dated provenance',()=>
  assert.equal(quant.sessionId,price.expectedSession,'quant and price truth sessions diverged');
  assert.ok(Array.isArray(main.researchWatchlist),'main watchlist must exist');
  assert.ok(Array.isArray(quant.watchCandidates),'quant watchlist must exist');
- assert.equal(main.executionReady,true===false,'research route must not claim certified execution');
+ assert.notEqual(main.executionReady,true,'research route must not claim certified execution');
  assert.notEqual(main.practicalReady,true,'main gate cannot be bypassed in viewer');
  assert.notEqual(quant.liveExecutionEnabled,true,'quant feed must not enable live orders');
 });
