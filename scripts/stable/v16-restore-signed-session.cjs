@@ -39,12 +39,13 @@ function verifyHistory(root,market,session,accepted){
  const matched=new Set();
  for(const r of market.rows||[]){
   const t=ticker(r.symbol||r.ticker);
-  if(!/^[A-Z0-9]{3,8}$/.test(t)||day(r.sourceSessionDate)!==session||!observed(r))continue;
+  const quote={...r,close:r.close??r.price??r.last};
+  if(!/^[A-Z0-9]{3,8}$/.test(t)||day(r.sourceSessionDate)!==session||!observed(quote))continue;
   let h;try{h=JSON.parse(fs.readFileSync(path.join(root,'data/history',t+'.json'),'utf8'));}catch{continue;}
   if(h.symbolVerified!==true||!/^EG[A-Z0-9]{9,}$/i.test(String(h.isin||'')))continue;
   const bar=(h.sessions||[]).find(x=>day(x.date||x.sessionDate)===session);
   if(!bar||!observed(bar))continue;
-  if(['open','high','low','close','volume'].every(k=>equal(k==='close'&&r.price!==undefined?r.price:r[k],bar[k])))matched.add(t);
+  if(['open','high','low','close','volume'].every(k=>equal(quote[k],bar[k])))matched.add(t);
  }
  if(matched.size<accepted)throw Error('SIGNED_HISTORY_BAR_MISMATCH_'+matched.size+'_OF_'+accepted);
  return matched.size;
