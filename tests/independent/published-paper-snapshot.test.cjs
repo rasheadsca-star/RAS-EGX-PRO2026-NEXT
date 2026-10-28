@@ -36,3 +36,9 @@ test('MVP archive table remains available even when current price fetch is block
  assert.ok(html.includes('archiveRows=archiveOK?archive.datedPriceObservations.filter'));
  assert.ok(html.includes('أرشيف فقط — ليس سعر اليوم ولا إشارة دخول'));
 });
+
+test('indicator lookback count is explicitly source-provenance based in the live UI',()=>{
+ const html=fs.readFileSync('unified-console/index.html','utf8');
+ assert.ok(html.includes('شموع OHLCV موثقة المصدر من آخر 60'));
+ assert.ok(html.includes('توثيق المصدر وتاريخ الجلسة ورابط المصدر وتوقيت الجلب لكل شمعة'));
+});
