@@ -5,6 +5,7 @@
 <main><div class="cards"><div class="card"><label>جلسة الأسعار المعتمدة بالمصدر</label><div id="marketDate" class="metric">—</div><span id="marketStatus" class="tag">جارٍ الفحص</span></div><div class="card"><label>أسهم مصدر الأسعار المقبولة</label><div id="accepted" class="metric">—</div><span class="small">لا تعني اعتماد جميع الاستراتيجيات</span></div><div class="card"><label>جلسة Astra</label><div id="astraDate" class="metric">—</div><span id="astraStatus" class="tag">جارٍ الفحص</span></div><div class="card"><label>جلسة Gann المنشورة</label><div id="gannDate" class="metric">—</div><span id="gannStatus" class="tag">جارٍ الفحص</span></div></div>
 <div id="safety" class="notice">لا تُعرض خطط تداول باعتبارها حالية إلا إذا تطابقت جلسة إصدارها مع جلسة السوق المتاحة.</div>
 <section class="panel"><h2>الفرص المحفوظة في Astra</h2><p id="astraIntro" class="small">جارٍ التحميل</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الترتيب</th><th>الدخول</th><th>الوقف</th><th>الهدف الأول</th><th>الحالة</th></tr></thead><tbody id="opps"><tr><td colspan="6">جارٍ التحميل</td></tr></tbody></table></div></section>
+<section class="panel"><h2>المحرك المستقل — مراقبة بحثية فقط</h2><p id="independentIntro" class="small">جارٍ التحقق من بيانات OHLCV المؤرخة</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الجلسة</th><th>العملة</th><th>الدخول النظري</th><th>الوقف النظري</th><th>الهدف النظري</th><th>الاعتماد</th></tr></thead><tbody id="independentResults"><tr><td colspan="7">جارٍ التحميل</td></tr></tbody></table></div><p class="bad">هذه نتائج بحثية مؤرخة وليست توصيات تداول أو أوامر أو إثباتًا لأداء الاستراتيجية.</p></section>
 <section class="panel"><h2>نتائج Gann الفعلية — بحث فقط</h2><p id="gannIntro" class="small">جارٍ التحميل</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الدرجة</th><th>آخر سعر</th><th>حالة التوصية</th></tr></thead><tbody id="gannResults"><tr><td colspan="4">جارٍ التحميل</td></tr></tbody></table></div></section><section class="panel"><h2>توافق المحركات ومصادر التشغيل</h2><div id="summary"></div><div class="actions"><a href="../gann-fusion-x/app/index-v1.html">فتح Gann Fusion X</a><a href="../astra-prod/app/index.html">فتح Astra</a><a href="../v18-live/index.html">فتح V18.2</a><a href="../data/history-summary.json">قاعدة التاريخ الحالية</a></div></section>
 <section class="panel"><h2>وضع التداول</h2><p class="bad"><strong>التنفيذ الآلي والتداول الورقي التنفيذي مغلقان في هذه الواجهة.</strong></p><p class="small">الصفحة تحليلية؛ كل حالة مبنية على ملفات JSON المقروءة لحظة التحديث، ولا تتصل بالوسيط ولا ترسل أوامر.</p></section></main>
 <script>
@@ -15,9 +16,9 @@ function cell(row,s){const t=document.createElement('td');t.textContent=String(s
 function renderOpportunity(items,isCurrent){const body=by('opps');body.replaceChildren();if(!items.length){const tr=document.createElement('tr');cell(tr,'لا توجد فرص مسجلة');body.appendChild(tr);return}for(const p of items){const tr=document.createElement('tr');cell(tr,p.ticker||'—');cell(tr,p.rank??'—');cell(tr,[fmt(p.entryPlan?.low),fmt(p.entryPlan?.high)].join(' – '));cell(tr,fmt(p.stopLoss));cell(tr,fmt(p.targets?.[0]));cell(tr,isCurrent?'بحثية — تحتاج بوابات الاعتماد':'أرشيفية — غير صالحة كإشارة اليوم');body.appendChild(tr)}}
 async function refresh(){
  text('updated','جارٍ تحديث قراءة البيانات...');
- const paths=['data/stable/v15-price-truth.json','data/ops/g22-main-app-handoff.json','astra-prod/app/data.json','unified-console/gann-research.json'];
+ const paths=['data/stable/v15-price-truth.json','data/ops/g22-main-app-handoff.json','astra-prod/app/data.json','unified-console/gann-research.json','unified-console/independent-paper.json'];
  const results=await Promise.allSettled(paths.map(load));const values=results.map(r=>r.status==='fulfilled'?r.value:null);
- const [truth,handoff,astra,gann]=values;
+ const [truth,handoff,astra,gann,independent]=values;
  const market=date(truth?.expectedSession),aDate=date(astra?.decisionSnapshot?.sessionDate),gDate=date(gann?.sessionDate);
  text('marketDate',market||'غير متاح');text('accepted',truth?.acceptedRows??'—');text('marketStatus',truth?.ready===true?'قابل للمراجعة وفق مصدر الأسعار':'معلومات غير مكتملة');
  text('astraDate',aDate||'غير متاح');text('astraStatus',!aDate?'لا توجد لقطة':aDate===market?'متزامن — غير معتمد تلقائيًا':'قديم — للعرض التاريخي');
@@ -25,13 +26,28 @@ async function refresh(){
  const opps=Array.isArray(astra?.decisionSnapshot?.top5)?astra.decisionSnapshot.top5:[];
  const same=!!market&&aDate===market;renderOpportunity(opps,same);
  text('astraIntro',opps.length+' فرصة محفوظة؛ جلسة التوصيات '+(aDate||'غير محددة')+'. '+(same?'متزامنة زمنيًا؛ راجع بوابات الاعتماد.':'ليست توصيات جلسة السوق الحالية.'));
+ const independentRows=independent?.mode==='PAPER_ONLY'&&independent?.executable===false&&
+   Array.isArray(independent?.researchWatchlist)?independent.researchWatchlist:[];
+ const iBody=by('independentResults');iBody.replaceChildren();
+ if(!independentRows.length){const tr=document.createElement('tr');cell(tr,'لا توجد فرص بحثية تستوفي أدلة الجلسة؛ لا توصية');iBody.appendChild(tr)}
+ else for(const p of independentRows.slice(0,25)){
+  const tr=document.createElement('tr');cell(tr,p.ticker||'—');cell(tr,p.session||'—');
+  cell(tr,p.currency||'—');cell(tr,fmt(p.entry));cell(tr,fmt(p.stop));cell(tr,fmt(p.target));
+  cell(tr,p.evidenceLevel==='CROSS_PROVIDER_CONFIRMED'?'مصدر ثانٍ مؤكد — بحث فقط':'دليل مصدر مؤرخ — بحث فقط');
+  iBody.appendChild(tr);
+ }
+ const iSession=date(independent?.session);
+ text('independentIntro','جلسة البيانات: '+(iSession||'غير متاحة')+'؛ حالة المحرك: '+
+  (independent?.status||'غير متاحة')+'؛ أسهم بحثية: '+
+  (independent?.verifiedCandidates?.length??0)+'؛ مراقبة بحثية: '+independentRows.length+
+  '؛ توصيات تنفيذية: صفر. لا يعتمد البحث على تسليم Astra، ولا يتجاوز بوابة الأسعار للتداول.');
  const warnings=results.map((r,i)=>r.status==='rejected'?paths[i]+' غير متاح: '+String(r.reason):null).filter(Boolean);
  const scan=Number(gann?.analyzed)||0;
  const gBody=by('gannResults');gBody.replaceChildren();const gCurrent=!!market&&gDate===market&&gann?.current===true&&gann?.reviewPassed===true;const picks=gCurrent?(Array.isArray(gann.speculative)?gann.speculative:[]):[];const watch=gCurrent?(Array.isArray(gann.watchRadar)?gann.watchRadar:[]):[];
  text('gannIntro',gCurrent?'تحليل '+scan+' سهمًا؛ فرص الدخول: '+(gann.actionable??0)+'؛ قائمة المراقبة: '+(gann.watch??0)+'؛ لا أوامر تنفيذية.':'لا توجد لقطة Gann منشورة وحديثة واجتازت المراجعة؛ لا يتم عرض توصيات قديمة.');
  const candidates=picks.length?picks:watch;if(!candidates.length){const tr=document.createElement('tr');cell(tr,gCurrent?'لا توجد فرصة تستوفي شروط الإدخال — لا توصية فعلية':'لا توجد بيانات Gann حالية معتمدة للعرض');gBody.appendChild(tr)}else for(const p of candidates){const tr=document.createElement('tr');cell(tr,p.ticker||'—');cell(tr,fmt(p.rankScore??p.score));cell(tr,fmt(p.close));cell(tr,picks.length?'مراقبة شروط الدخول — بحث':'مراقبة فقط');gBody.appendChild(tr)}
- text('summary','تسليم السوق: '+(handoff?.sessionDate||'غير متاح')+'؛ جلسة Gann المنشورة: '+(gDate||'غير متاح')+'؛ الأسهم المحللة في اللقطة المنشورة: '+scan+'؛ حالة Gann: '+(gann?.publicationState||'غير متاحة')+'. '+(warnings.length?'مصادر غير متاحة: '+warnings.join('؛ '):'تم تحميل المصادر الأربعة.'));
- by('safety').textContent=(!same?'تحذير: توصيات Astra لا تتطابق مع جلسة السوق. لا تستخدم مستوياتها للدخول الحالي. ':'')+(gDate!==market?'تحديث Gann المنشور غير مكتمل أو غير متزامن. ':'')+'لا تنفيذ آلي، ولا نسبة نجاح معتمدة دون اختبار مستقل.';
+ text('summary','تسليم السوق: '+(handoff?.sessionDate||'غير متاح')+'؛ جلسة Gann المنشورة: '+(gDate||'غير متاح')+'؛ الأسهم المحللة في اللقطة المنشورة: '+scan+'؛ حالة Gann: '+(gann?.publicationState||'غير متاحة')+'. '+(warnings.length?'مصادر غير متاحة: '+warnings.join('؛ '):'تم تحميل المصادر الخمسة.'));
+ by('safety').textContent=(!same?'تحذير: توصيات Astra لا تتطابق مع جلسة السوق. لا تستخدم مستوياتها للدخول الحالي. ':'')+(gDate!==market?'تحديث Gann المنشور غير مكتمل أو غير متزامن. ':'')+'المحرك المستقل بحثي فقط، حتى لو ظهرت مستويات نظرية. لا تنفيذ آلي، ولا نسبة نجاح معتمدة دون اختبار مستقل.';
  text('updated','آخر تحقق محلي: '+new Date().toLocaleString('ar-EG'));
 }
 by('refresh').addEventListener('click',refresh);refresh();
