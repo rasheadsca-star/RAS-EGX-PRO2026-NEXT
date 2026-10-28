@@ -10,6 +10,7 @@ on:
     paths:
       - 'scripts/independent/egx-independent-paper.cjs'
       - 'scripts/independent/walkforward-backtest.cjs'
+      - 'scripts/independent/stale-bar-detector.cjs'
       - 'tests/independent/egx-independent-paper.test.cjs'
       - 'tests/independent/walkforward-backtest.test.cjs'
       - 'scripts/independent/preserve-verified-paper.cjs'
@@ -22,6 +23,7 @@ on:
     paths:
       - 'scripts/independent/egx-independent-paper.cjs'
       - 'scripts/independent/walkforward-backtest.cjs'
+      - 'scripts/independent/stale-bar-detector.cjs'
       - 'tests/independent/egx-independent-paper.test.cjs'
       - 'tests/independent/walkforward-backtest.test.cjs'
       - 'scripts/independent/preserve-verified-paper.cjs'
@@ -49,6 +51,7 @@ jobs:
         run: |
           node --check scripts/independent/egx-independent-paper.cjs
           node --check scripts/independent/walkforward-backtest.cjs
+          node --check scripts/independent/stale-bar-detector.cjs
           node --check scripts/independent/preserve-verified-paper.cjs
           node --test tests/independent/*.test.cjs
       - name: Build explicitly paper-only independent status

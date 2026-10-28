@@ -160,3 +160,18 @@ test('conflicted or undated historical source metadata blocks indicator eligibil
   assert.deepEqual(x.verifiedCandidates,[]);assert.deepEqual(x.researchWatchlist,[]);
  }
 });
+
+// Regression: a plausible OHL repeat must not reach SMA/ATR or a watchlist.
+test('copied positive-volume OHL bars block indicator eligibility without losing the dated observation',()=>{
+ const bars=sample.map(r=>({...r}));
+ for(const key of ['open','high','low'])bars[31][key]=bars[30][key];
+ bars[31].volume=bars[30].volume+1;
+ const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:bars})});
+ assert.equal(x.datedPriceObservations.length,1);
+ assert.equal(x.datedPriceObservations[0].indicatorReady,false);
+ assert.ok(x.datedPriceObservations[0].indicatorBlockers.includes('STALE_COPIED_BAR_IN_LOOKBACK'));
+ assert.deepEqual(x.verifiedCandidates,[]);
+ assert.deepEqual(x.researchWatchlist,[]);
+ assert.deepEqual(x.watchlist,[]);
+ assert.deepEqual(x.recommendations,[]);
+});
