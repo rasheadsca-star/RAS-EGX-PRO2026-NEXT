@@ -142,7 +142,11 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
 }
 function main(){
  const price=read('data/stable/v15-price-truth.json');
- const handoff=read('data/ops/g22-main-app-handoff.json');
+ // Astra G22 is informational for independent research, never a required input.
+ // Missing or malformed handoff must not disable valid, dated paper-only research.
+ let handoff=null;
+ try{handoff=read('data/ops/g22-main-app-handoff.json')}
+ catch(e){if(e?.code!=='ENOENT'&&!(e instanceof SyntaxError))throw e;}
  const symbols=read('data/symbol-map.json');
  const output=evaluate({price,handoff,symbols,session:day(price.expectedSession),
   loadHistory:t=>read('data/history/'+t+'.json')});
