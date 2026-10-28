@@ -1,44 +1,44 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-10-28T07:01:19.214Z",
+  "generatedAt": "2026-10-28T07:30:43.037Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-10-27",
-  "professionalReadinessScore": 69,
-  "foundationQualityScore": 68.9,
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 61.3,
   "stage": "PILOT",
   "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "WALK_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 24.42,
-      "scorePct": 97.7,
+      "points": 16.77,
+      "scorePct": 67.1,
       "details": {
-        "currentExecutionGrade": true,
+        "currentExecutionGrade": false,
         "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 96.2,
+        "currentSourceSessionEvidenceCoveragePct": 8.2,
         "publishedDecisionEvidenceCoveragePct": 96.2,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 177,
-        "currentAcceptedRows": 198,
-        "verifiedRows": 198,
-        "inputRows": 213,
+        "currentAcceptedRows": 0,
+        "verifiedRows": 177,
+        "inputRows": 135,
         "evidenceCoveragePct": 96.2,
-        "verifiedRowsRatioPct": 93,
-        "currentSourceHealth": "EXECUTION_GRADE"
+        "verifiedRowsRatioPct": 100,
+        "currentSourceHealth": "BLOCKED"
       },
       "requirements": [
         {
-          "code": "SOURCE_EVIDENCE_100",
-          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 96.2% إلى 100%",
-          "hard": false
+          "code": "EXECUTION_GRADE",
+          "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+          "hard": true
         },
         {
-          "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 198/213",
+          "code": "SOURCE_EVIDENCE_100",
+          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 96.2% إلى 100%",
           "hard": false
         }
       ]
@@ -173,12 +173,18 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": false,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_PF",
       "labelAr": "Profit Factor خارج العينة ≥ 1.20",
@@ -230,12 +236,6 @@
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
-      "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 198/213",
-      "hard": false,
-      "axis": "DATA_SESSION_INTEGRITY"
-    },
-    {
       "code": "RECOMMENDATION_HISTORY_COVERAGE",
       "labelAr": "تغطية تاريخ OHLCV لكل توصيات اليوم؛ الحالي 0/0",
       "hard": false,
@@ -249,6 +249,12 @@
     }
   ],
   "requirementsTo100": [
+    {
+      "code": "EXECUTION_GRADE",
+      "labelAr": "استعادة Execution Grade للمصدر الحالي قبل السماح بالتنفيذ",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_PF",
       "labelAr": "Profit Factor خارج العينة ≥ 1.20",
@@ -298,12 +304,6 @@
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
-      "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 198/213",
-      "hard": false,
-      "axis": "DATA_SESSION_INTEGRITY"
-    },
-    {
       "code": "RECOMMENDATION_HISTORY_COVERAGE",
       "labelAr": "تغطية تاريخ OHLCV لكل توصيات اليوم؛ الحالي 0/0",
       "hard": false,
@@ -323,11 +323,11 @@
     "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-10-28T07:00:47.717Z",
+    "priceTruthGeneratedAt": "2026-10-28T07:30:41.641Z",
     "basketGeneratedAt": "2026-10-28T07:01:05.689595+00:00",
     "liveGeneratedAt": "2026-10-28T07:01:16.672719+00:00",
-    "canonicalSnapshotHash": "c21fa692d4931bd057a32bad1a4e31a880b2ce03a6375ec9583f7dc43d6c8c07",
-    "consensusGeneratedAt": "2026-10-28T07:01:18.784Z",
+    "canonicalSnapshotHash": "13570e04d7f05097d8353ccbca2fd46df24f3a0025f241b1bfc856e45da06ede",
+    "consensusGeneratedAt": "2026-10-28T07:30:41.924Z",
     "intelligenceSnapshotGeneratedAt": "2026-10-28T05:34:23.394Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -362,5 +362,5 @@
       ]
     }
   },
-  "readinessHash": "e3fd0d082abc610b7e3ecdb7cf78ef1bf127664b8ae42317aede3f1bc4b9bc4c"
+  "readinessHash": "3230555c02e8cac5680f2e928e9b953a29399805bbeef867d8e3047edf4f9235"
 }
