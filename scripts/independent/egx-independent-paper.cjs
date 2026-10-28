@@ -3,6 +3,7 @@
 const fs=require('node:fs'),path=require('node:path');
 const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
 const {walkForwardBacktest,strictProvenance}=require('./walkforward-backtest.cjs');
+const {copiedBarReasons}=require('./stale-bar-detector.cjs');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const day=s=>typeof s==='string'?s.slice(0,10):'';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -82,6 +83,7 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
   if(recent.length!==60)indicatorBlockers.push('INSUFFICIENT_LOOKBACK_BARS');
   if(new Set(dates).size!==recent.length)indicatorBlockers.push('DUPLICATE_LOOKBACK_SESSION');
   if(cleanBars!==recent.length)indicatorBlockers.push('UNVERIFIED_HISTORICAL_OHLCV');
+  if(copiedBarReasons(recent).length)indicatorBlockers.push('STALE_COPIED_BAR_IN_LOOKBACK');
   const indicatorReady=indicatorBlockers.length===0;
   // Dated observations are NOT indicator-ready candidates or trade signals.
   // This exposes independently sourced current prices without laundering
