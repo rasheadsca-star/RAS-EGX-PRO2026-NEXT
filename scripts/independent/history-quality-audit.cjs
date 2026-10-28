@@ -82,8 +82,10 @@ function auditTicker(ticker,meta,history,calendar,actions=[],rawSha=null,target=
   if(i>=0)flag(i,'CORPORATE_ACTION_REVIEW_REQUIRED');
  }
  const shapeOK=r=>structural(r)&&dates.get(day(r))?.length===1&&calendar.includes(day(r));
- const strictOK=r=>identity.strict&&shapeOK(r)&&!quarantines.has(r.__auditSortedIndex);
+ const sourceOK=r=>shapeOK(r)&&!quarantines.has(r.__auditSortedIndex);
+ const strictOK=r=>identity.strict&&sourceOK(r);
  const shape=streak(ordered,shapeOK,calendar,target);
+ const source=streak(ordered,sourceOK,calendar,target);
  const strict=streak(ordered,strictOK,calendar,target);
  const sortedDates=[...dates.keys()].filter(iso).sort();
  const missing=sortedDates.length?calendar.filter(d=>d>=sortedDates[0]&&d<=sortedDates.at(-1)&&!dates.has(d)):[];
@@ -95,13 +97,14 @@ function auditTicker(ticker,meta,history,calendar,actions=[],rawSha=null,target=
   sourceNames,latestSession:latest,latestIsTarget:latest===target,
   inputRows:entries.length,uniqueDatedSessions:dates.size,
   structurallyValidRows:ordered.filter(shapeOK).length,
+  sourceProvenanceAcceptedRows:ordered.filter(sourceOK).length,
   strictlyAcceptedRows:ordered.filter(strictOK).length,
   partialOrSyntheticRows:ordered.filter(r=>/partial_ohlc|reconstruct|synthetic/i.test(String(r.validationStatus||'')+' '+(r.warnings||[]).join(' '))).length,
   copiedPairs:count(copied.map(c=>c.reason)),
   quarantineRows:quarantines.size,quarantineReasons:reasons,
   missingObservedSessions:missing.length,missingObservedSessionsSample:missing.slice(-12),
-  longestConsecutive:{structural:shape.longest,strict:strict.longest},
-  currentConsecutive:{structural:shape.trailing,strict:strict.trailing},
+  longestConsecutive:{structural:shape.longest,sourceProvenance:source.longest,strict:strict.longest},
+  currentConsecutive:{structural:shape.trailing,sourceProvenance:source.trailing,strict:strict.trailing},
   eligibility:{structural60:shape.trailing>=60,structural140:shape.trailing>=140,
    strict60:strict.trailing>=60,strict140:strict.trailing>=140,
    historicalStructural60:shape.longest>=60,historicalStructural140:shape.longest>=140,
@@ -137,11 +140,13 @@ function buildAudit({symbols,histories,calendar,actions=[],target,sourceShas={},
  const summary={symbolsAudited:rows.length,historyFiles:withFiles.length,
   rawInputRows:rows.reduce((n,x)=>n+x.inputRows,0),
   structuralAcceptedRows:rows.reduce((n,x)=>n+x.structurallyValidRows,0),
+  sourceProvenanceAcceptedRows:rows.reduce((n,x)=>n+x.sourceProvenanceAcceptedRows,0),
   strictAcceptedRows:rows.reduce((n,x)=>n+x.strictlyAcceptedRows,0),
   missingHistoryFiles:rows.filter(x=>!x.historyFilePresent).length,
   validHistoryIsin:withFiles.filter(x=>x.identity.isinChecksumValid).length,
   strictIdentity:withFiles.filter(x=>x.identity.strict).length,
   licensedForRedistribution:0, // no documented contract registry is connected
+  medianLongestSourceProvenanceConsecutive:median(withFiles.map(x=>x.longestConsecutive.sourceProvenance)),
   medianLongestStrictConsecutive:median(withFiles.map(x=>x.longestConsecutive.strict)),
   medianLongestStructuralConsecutive:median(withFiles.map(x=>x.longestConsecutive.structural)),
   currentEligibility:{structural60:sum('structural60'),structural140:sum('structural140'),
@@ -156,7 +161,8 @@ function buildAudit({symbols,histories,calendar,actions=[],target,sourceShas={},
    limitations:'Union of stored validated dates; missing dates or holidays cannot be certified as exchange closures.',
    sessionCount:calendar.length,latest:calendar.at(-1)},
   policies:{structural:'Numeric OHLCV and unique observed date; partial_ohlc allowed if structurally complete',
-   strict:'Structural plus ISO 6166 valid identity, dated source provenance, no partial/synthetic/copied/duplicate/corporate-action quarantine',
+   sourceProvenance:'Structural plus dated per-bar source evidence and quarantine exclusion, without security identity',
+   strict:'Source provenance plus ISO 6166 valid security identity and consistent ticker/currency/exchange',
    license:'Unverified rights never imply permission to redistribute; no automatic vendor download',
    eligibility:'Trailing streak MUST end on auditDate; historical maximum reported separately',
    performance:'No strategy calibration or OOS certification; no trade orders'},
