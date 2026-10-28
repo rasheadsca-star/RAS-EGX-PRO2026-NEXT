@@ -14,6 +14,7 @@ const mean=x=>x.reduce((a,b)=>a+b,0)/x.length;
 function strictProvenance(r,barValid){
  const d=r?.date||r?.sessionDate;
  return barValid(r)&&iso(d)&&r.sourceSessionDate===d&&
+  !(Array.isArray(r.warnings)&&r.warnings.some(w=>/invalid|conflict|quarantin|unresolved/i.test(String(w))))&&
   r.validationStatus==='precise_public_source_session_confirmed'&&
   typeof r.sourceSessionEvidence==='string'&&r.sourceSessionEvidence.length>=8&&
   /^https:\/\//.test(String(r.sourceUrls?.primary||''))&&
