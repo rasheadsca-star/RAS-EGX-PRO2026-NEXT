@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const {observed, retainedSameSessionBar} = require('./v16-verified-incremental-recovery.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const HISTORY_DIR = path.join(ROOT, 'data/history');
@@ -27,7 +28,7 @@ const CONTAMINATED_SESSION = '2026-08-13';
 const CONTAMINATED_FETCH_PREFIX = '2026-08-13T21:21:32';
 
 function n(value, fallback = null) {
-  if (value === null || value === undefined || value === '') return fallback;
+  if (value === null || value === undefined || typeof value === 'boolean' || (typeof value === 'string' && !value.trim())) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
@@ -287,14 +288,13 @@ function normalizeMarketRow(row, expectedSession, sourceName, generatedAt) {
   if (!(close > 0)) return { dropped: true, ticker, reason: 'INVALID_CLOSE' };
 
   const previousClose = n(row?.previousClose);
-  const hasCompleteOhlc = n(row?.open) > 0 && n(row?.high) > 0 && n(row?.low) > 0;
-  const open = n(row?.open, previousClose ?? close);
-  const high = Math.max(n(row?.high, Math.max(open, close)), open, close);
-  const low = Math.min(n(row?.low, Math.min(open, close)), open, close);
-  const volume = Math.max(0, n(row?.volume, 0));
-  if (!(open > 0 && high >= open && high >= close && low > 0 && low <= open && low <= close)) {
-    return { dropped: true, ticker, reason: 'INVALID_RECONSTRUCTED_OHLC', close: round(close), open: round(open), high: round(high), low: round(low) };
+  // Execution candles must be observed. Close/previous-close reconstruction
+  // belongs in research, never in the executable price-truth stream.
+  if (!observed(row, row?.price !== undefined ? 'price' : row?.last !== undefined ? 'last' : 'close')) {
+    return { rejected: true, ticker, reason: 'OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION', sourceSessionDate };
   }
+  const hasCompleteOhlc = true;
+  const open = n(row.open), high = n(row.high), low = n(row.low), volume = n(row.volume);
 
   const priorTrusted = previousTrustedClose(ticker, expectedSession);
   const jumpPct = priorTrusted > 0 ? Math.abs(close / priorTrusted - 1) * 100 : null;
@@ -395,7 +395,24 @@ async function main() {
   const legacyStatus = readJson(FETCH_STATUS_PATH, {});
   const generatedAt = market?.generatedAt || market?.updatedAt || legacyStatus?.generatedAt || null;
   const sourceName = String(market?.source || legacyStatus?.sourceName || 'unknown');
-  const inputRows = Array.isArray(market?.rows) ? market.rows : [];
+  const inputRows = Array.isArray(market?.rows) ? market.rows.filter(row => row.retainedIndependentInput !== true) : [];
+  const primaryInputRows = inputRows.length;
+  const second = readJson(path.join(ROOT, 'data/stable/v16-market-second-source-evidence.json'), {});
+  const symbols = readJson(path.join(ROOT, 'data/symbol-map.json'), {});
+  const omittedRetainedTickers = [];
+  const seen = new Set(inputRows.map(r => normSymbol(r.symbol || r.ticker || r.code)));
+  for (const ticker of Object.keys(second.records || {})) {
+    if (seen.has(ticker)) continue;
+    const bar = retainedSameSessionBar(ticker, expectedSession, second,
+      readJson(path.join(HISTORY_DIR, `${ticker}.json`), {}), symbols[ticker], null);
+    // If the primary omitted a symbol, require a complete independent candle
+    // whose OHLCV agrees with the retained observed candle. Close-only evidence
+    // cannot manufacture the omitted primary range or volume.
+    const e = second.records[ticker]?.approvedEvidence;
+    if (!bar || !observed(e) || ['open','high','low','close','volume'].some(k => Number(bar[k]) !== Number(e[k]))) continue;
+    inputRows.push({...bar, symbol:ticker, price:bar.close, retainedIndependentInput:true});
+    omittedRetainedTickers.push(ticker);
+  }
 
   const evidencedRows = await mapLimit(inputRows, EVIDENCE_CONCURRENCY, row => establishRowSessionEvidence(row, expectedSession));
   market.rows = evidencedRows;
@@ -415,14 +432,20 @@ async function main() {
   const preciseSource = PRECISE_SOURCE_PATTERN.test(sourceName);
   const realFetch = market?.ok === true && legacyStatus?.realFetch === true;
   const sameSessionRows = evidencedRows.filter(row => dateOnly(row?.sourceSessionDate) === expectedSession);
-  const sourceEligible = preciseSource && realFetch && sameSessionRows.length >= MIN_EXECUTION_ROWS;
+  const primarySameSessionRows = sameSessionRows.filter(row => !omittedRetainedTickers.includes(normSymbol(row.symbol || row.ticker || row.code)));
+  const sourceEligible = preciseSource && realFetch && primarySameSessionRows.length >= MIN_EXECUTION_ROWS;
 
+  const retainedTickers = [];
   const accepted = [];
   const rejected = [];
   const dropped = [];
 
   for (const row of evidencedRows) {
-    const normalized = normalizeMarketRow(row, expectedSession, sourceName, generatedAt);
+    let normalized = normalizeMarketRow(row, expectedSession, sourceName, generatedAt);
+    const ticker = normSymbol(row?.symbol || row?.ticker || row?.code);
+    const retained = sourceEligible ? retainedSameSessionBar(ticker, expectedSession, second,
+      readJson(path.join(HISTORY_DIR, `${ticker}.json`), {}), symbols[ticker], row) : null;
+    if (retained) { normalized = retained; retainedTickers.push(ticker); }
     if (normalized.rejected) rejected.push(normalized);
     else if (normalized.dropped) dropped.push(normalized);
     else if (sourceEligible) accepted.push(normalized);
@@ -485,6 +508,8 @@ async function main() {
     ready,
     executionGrade: ready,
     acceptanceMode: 'PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SOURCE_SESSION_EVIDENCE',
+    retainedIndependentSameSessionTickers: retainedTickers,
+    retainedOmittedIndependentSameSessionTickers: omittedRetainedTickers,
     minimumExecutionRows: MIN_EXECUTION_ROWS,
     maximumSingleSessionJumpPct: MAX_SINGLE_SESSION_JUMP_PCT,
     source: {
@@ -493,6 +518,8 @@ async function main() {
       preciseSource,
       realFetch,
       inputRows: evidencedRows.length,
+      primaryInputRows,
+      inputPolicy: 'Primary fetch rows plus omitted observed same-session independent candles with matching retained OHLCV; never prior-session carry-forward',
       verifiedExpectedSessionRows: sameSessionRows.length,
       sourceSessionEvidenceCoveragePct: market.sourceSessionEvidence.coveragePct
     },
@@ -566,7 +593,7 @@ async function main() {
   if (!ready) process.exitCode = 2;
 }
 
-main().catch(error => {
+if (require.main === module) main().catch(error => {
   const generatedAt = new Date().toISOString();
   const expectedSession = expectedLatestCompletedSessionCairo();
   writeJson(OUT_PATH, {
@@ -581,3 +608,5 @@ main().catch(error => {
   console.error(error);
   process.exitCode = 1;
 });
+
+module.exports = {normalizeMarketRow, mergeIntoHistory, expectedLatestCompletedSessionCairo};

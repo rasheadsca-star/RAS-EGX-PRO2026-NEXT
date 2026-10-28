@@ -22,7 +22,7 @@ function writeJson(file, value) {
   JSON.parse(fs.readFileSync(tmp, 'utf8'));
   fs.renameSync(tmp, file);
 }
-const n = v => Number.isFinite(Number(v)) ? Number(v) : null;
+const n = v => v === null || v === undefined || typeof v === 'boolean' || (typeof v === 'string' && !v.trim()) ? null : Number.isFinite(Number(v)) ? Number(v) : null;
 const round = (v, d = 4) => Number.isFinite(Number(v)) ? Number(Number(v).toFixed(d)) : null;
 const norm = v => String(v || '').trim().toUpperCase().replace(/\.CA$/i, '').replace(/[^A-Z0-9._-]/g, '');
 const dateOnly = v => (String(v || '').match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
@@ -42,17 +42,12 @@ function sourceLabel(provider) {
   if (provider === 'SIGMA_CAPITAL_LIVE_MARKET') return 'sigma_capital_independent_live_session_confirmation';
   return 'stockanalysis_egx_independent_session_confirmation';
 }
-function validOhlc(row, closeOverride = null, requireObservedRange = false) {
+function validOhlc(row, closeOverride = null) {
   const close = n(closeOverride ?? row?.close ?? row?.price ?? row?.last);
-  const observedOpen = n(row?.open), observedHigh = n(row?.high), observedLow = n(row?.low);
-  if (requireObservedRange && !(observedOpen > 0 && observedHigh > 0 && observedLow > 0)) return null;
-  const open = observedOpen ?? close;
-  const high = observedHigh ?? Math.max(open, close);
-  const low = observedLow ?? Math.min(open, close);
-  if (!(close > 0 && open > 0 && high > 0 && low > 0)) return null;
-  const tick = Math.max(0.01, close * 0.0025);
-  if (high + tick < Math.max(open, close) || low - tick > Math.min(open, close)) return null;
-  return { close, open, high: Math.max(high, open, close), low: Math.min(low, open, close), volume: n(row?.volume) };
+  const open = n(row?.open), high = n(row?.high), low = n(row?.low), volume = n(row?.volume);
+  if (!(close > 0 && open > 0 && high >= Math.max(open, close)
+    && low > 0 && low <= Math.min(open, close) && volume !== null && volume >= 0)) return null;
+  return { close, open, high, low, volume };
 }
 function minimalHistoryDocument(ticker, marketRow, provider) {
   return {
@@ -78,7 +73,7 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
   const primaryClose = n(marketRow?.price ?? marketRow?.last ?? marketRow?.close);
   let base = null, ohlcMode = null;
   if (sameSessionConfirmation) {
-    base = validOhlc(marketRow, primaryClose, false);
+    base = dateOnly(marketRow?.sourceSessionDate) === expectedSession ? validOhlc(marketRow, primaryClose) : null;
     ohlcMode = base ? 'PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED' : null;
     if (!base && evidence.provider !== 'SIGMA_CAPITAL_LIVE_MARKET') {
       base = validOhlc(evidence, n(evidence.close), true);
@@ -148,7 +143,7 @@ function main() {
   const historyResults = [], acceptedRecovered = [];
   for (const rejected of resolvableRejected) {
     const ticker = norm(rejected.ticker), record = approved.get(ticker), e = record.approvedEvidence, marketRow = marketByTicker.get(ticker) || {};
-    const originalReason = record.originalReason || rejected.reason;
+    const originalReason = rejected.reason;
     const history = mergeHistory(ticker, e, expectedSession, marketRow, originalReason);
     historyResults.push(history);
     if (!history.merged) continue;
@@ -217,4 +212,4 @@ function main() {
   if (!executionGrade) process.exitCode = 2;
 }
 if (require.main === module) main();
-module.exports = { reconcileFetchStatus };
+module.exports = { reconcileFetchStatus, validOhlc };
