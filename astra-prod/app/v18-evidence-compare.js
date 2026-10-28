@@ -14,7 +14,7 @@ const candidates=[...(quant.paperCandidates||[]),...(quant.watchCandidates||[])]
 const mostRecent=[...latest.values()].reduce((m,x)=>x.sessionId>m?x.sessionId:m,'');
 const old=mostRecent!==quant.sessionId;
 host.innerHTML='<h2>V18 — مقارنة تاريخية مع فرص Quant الحالية</h2><p>إشارات V18 المسجلة: '+legacy.entries.length+' | أسهم مختلفة في السجل: '+latest.size+' | أحدث إشارة: '+e(mostRecent)+' | جلسة Quant: '+e(quant.sessionId)+' | تقاطع الأسهم: '+joined.length+'</p>'+
-(old?'<p style="color:#ffd38c">بيانات V18 أقدم من Quant؛ لا تُستخدم لتأكيد دخول الجلسة القادمة أو إصدار إشارة شراء.</p>':'<p>توافق التاريخ لا يثبت مطابقة البيانات أو صلاحية التنفيذ.</p>')+
+(old?'<p style="color:#ffd38c">إشارات V18 ليست من جلسة Quant الحالية؛ لا تُستخدم لتأكيد دخول الجلسة القادمة أو إصدار إشارة شراء.</p>':'<p>توافق التاريخ لا يثبت مطابقة البيانات أو صلاحية التنفيذ.</p>')+
 '<div style="overflow-x:auto"><table><thead><tr><th>السهم</th><th>Quant الحالي</th><th>V18 التاريخي</th><th>عائلات استراتيجية V18</th><th>حالة التقييم V18</th><th>ملاحظة</th></tr></thead><tbody>'+
 joined.map(({q,v})=>'<tr><td>'+e(q.ticker)+'</td><td>'+e(q.signalDate)+'</td><td>'+e(v.sessionId)+'</td><td>'+e((v.strategyFamilies||[]).join('، '))+'</td><td>'+e(v.evaluation?.status)+'</td><td>'+e(v.futurePerformance?.status)+' — دليل تاريخي فقط</td></tr>').join('')+'</tbody></table></div>'+
 '<p>قاعدة الاستفادة: دمج خصائص الاستراتيجية أو البيانات فقط بعد توثيق مصدرها، ثم اختبارها من جديد خارج العينة. سجل V18 لا يثبت بذاته أداء تنفيذ حي أو احتمال نجاح معاير.</p>';
