@@ -6,6 +6,7 @@ on:
     paths:
       - 'scripts/independent/audit-history-provenance.cjs'
       - '.github/workflows/egx-history-provenance-audit.yml'
+      - 'tests/independent/audit-history-provenance.test.cjs'
 permissions:
   contents: read
 jobs:
@@ -19,6 +20,7 @@ jobs:
       - name: Check audit syntax and generate read-only evidence
         run: |
           node --check scripts/independent/audit-history-provenance.cjs
+          node --test tests/independent/audit-history-provenance.test.cjs
           node scripts/independent/audit-history-provenance.cjs
       - name: Upload dated history audit
         uses: actions/upload-artifact@v4
