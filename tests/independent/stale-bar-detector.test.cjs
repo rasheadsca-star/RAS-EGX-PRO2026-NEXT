@@ -22,3 +22,14 @@ test('identical OHLC with different positive volumes is classified separately',(
  const a=bar('2026-10-27',10,100),b=bar('2026-10-28',10,101);
  assert.equal(copiedBarReasons([a,b])[0].reason,'REPEATED_OHLC');
 });
+
+test('duplicate and out-of-order session dates are not labeled copied bars',()=>{
+ const a=bar('2026-10-28'),b=bar('2026-10-28'),c=bar('2026-10-27');
+ assert.equal(copiedBarReasons([a,b]).length,0);
+ assert.equal(copiedBarReasons([a,c]).length,0);
+});
+test('ARAB low-priced identical OHLC with changed volume remains conservatively flagged for manual evidence review',()=>{
+ const a={date:'2026-10-20',open:0.26,high:0.27,low:0.26,close:0.26,volume:279505454};
+ const b={date:'2026-10-21',open:0.26,high:0.27,low:0.26,close:0.26,volume:210950174};
+ assert.equal(copiedBarReasons([a,b])[0].reason,'REPEATED_OHLC');
+});
