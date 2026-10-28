@@ -96,17 +96,58 @@
           String(model.sessionDate)===date};
     }
     function showSafeState(reason, evidence) {
-      const details = evidence
-        ? 'جلسة المصدر: ' + evidence.date + ' | عدد الأسهم المقبولة: ' + evidence.rows +
-          ' | جلسة V18.2: ' + evidence.preview
-        : 'تعذر التحقق من حالة المصدر والجلسة.';
-      boot.innerHTML = '<h1>EGX PRO — وضع بيانات السوق</h1>' +
-        '<p style="color:#ffd08b">' + reason + '</p>' +
-        '<p>' + details + '</p>' +
-        '<p>تم حجب التوصيات القديمة؛ بيانات الأسعار ومراقبة السوق متاحة في الصفحة المستقلة.</p>' +
-        '<p><a style="color:#9ee9ff" href="https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/v18-live/market-status.html">فتح حالة أسعار السوق</a></p>' +
-        '<button id="retry">إعادة التحقق</button><div class="status">V18_FRESHNESS_FAIL_CLOSED_V1</div>';
-      document.getElementById('retry').addEventListener('click', () => location.reload());
+      // Presentation uses textContent for untrusted upstream values.
+      boot.replaceChildren();
+      const heading = document.createElement('h1');
+      heading.textContent = 'EGX PRO — لوحة مراقبة السوق';
+      boot.append(heading);
+      const warning = document.createElement('p');
+      warning.style.color = '#ffd08b';
+      warning.textContent = reason;
+      boot.append(warning);
+      const metrics = document.createElement('div');
+      metrics.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;text-align:right;margin:20px 0';
+      const values = [
+        ['جلسة الأسعار', evidence?.date || 'غير متاح'],
+        ['الأسهم المقبولة', String(evidence?.rows ?? '—')],
+        ['جلسة التوصيات القديمة', evidence?.preview || 'غير متاحة'],
+        ['صلاحية المصدر', evidence?.sourceOK ? (evidence.recent ? 'موثق وحديث' : 'موثق لكن قديم') : 'غير معتمدة']
+      ];
+      for (const [label, value] of values) {
+        const panel = document.createElement('div');
+        panel.style.cssText = 'border:1px solid #344b62;background:#13263a;border-radius:10px;padding:12px';
+        const labelNode = document.createElement('div');
+        labelNode.style.cssText = 'font-size:12px;color:#b9cede';
+        labelNode.textContent = label;
+        const valueNode = document.createElement('strong');
+        valueNode.style.cssText = 'display:block;margin-top:8px;font-size:19px;color:#fff';
+        valueNode.textContent = value;
+        panel.append(labelNode, valueNode);
+        metrics.append(panel);
+      }
+      boot.append(metrics);
+      const blocked = document.createElement('p');
+      blocked.textContent = 'لا توجد توصيات تنفيذية معتمدة. تظهر هذه اللوحة حالة بيانات السوق فقط، دون إشارات شراء أو بيع.';
+      boot.append(blocked);
+      const link = document.createElement('a');
+      link.href = 'https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/v18-live/market-status.html';
+      link.style.color = '#9ee9ff';
+      link.textContent = 'فتح تقرير حالة السوق التفصيلي';
+      boot.append(link);
+      const retry = document.createElement('button');
+      retry.style.margin = '16px';
+      retry.textContent = 'تحديث الآن';
+      retry.addEventListener('click', () => location.reload());
+      boot.append(retry);
+      const stamp = document.createElement('div');
+      stamp.className = 'status';
+      stamp.textContent = 'READ_ONLY_MARKET_MONITOR_V1 | تحديث تلقائي كل 5 دقائق';
+      boot.append(stamp);
+      // Monitor remains useful while execution is blocked, and rechecks as source ages.
+      if (!window.__EGX_MONITOR_REFRESH_SCHEDULED__) {
+        window.__EGX_MONITOR_REFRESH_SCHEDULED__ = true;
+        setTimeout(() => location.reload(), 300000);
+      }
     }
 
     async function loadShell() {
