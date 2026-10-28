@@ -63,3 +63,10 @@ test('insufficient chronological holdout never reports a performance result',()=
 test('unverified USD/EGP liquidity units cannot be backtested as EGP',()=>{
  assert.equal(run(fixture(),{currency:'USD'}).status,'EGP_LIQUIDITY_UNIT_UNVERIFIED');
 });
+
+test('historical source conflicts block OOS backtest even with plausible OHLCV',()=>{
+ const bars=fixture();bars[35].warnings=['source_conflict'];
+ const out=run(bars);
+ assert.equal(out.status,'UNVERIFIED_OR_DUPLICATE_HISTORICAL_OHLCV');
+ assert.equal(out.tradeCount,0);assert.equal(out.performanceCertified,false);
+});
