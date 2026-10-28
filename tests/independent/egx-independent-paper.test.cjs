@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {evaluate,validBar}=require('../../scripts/independent/egx-independent-paper.cjs');
+const {evaluate,validBar,validIsin}=require('../../scripts/independent/egx-independent-paper.cjs');
 const session='2026-10-27';
 const sample=Array.from({length:61},(_,i)=>({date:i===60?session:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),
  sourceSessionDate:i===60?session:new Date(Date.UTC(2026,6,1+i)).toISOString().slice(0,10),
@@ -11,7 +11,7 @@ const sample=Array.from({length:61},(_,i)=>({date:i===60?session:new Date(Date.U
 function run(changes={}){
  return evaluate({session,price:{expectedSession:session,ready:true,executionGrade:true,acceptedRows:190,sampleAccepted:[{ticker:'TEST'}]},
  handoff:{sessionDate:session,acceptedRows:190},symbols:[{ticker:'TEST',active:true,currency:'EGP',exchange:'EGX'}],
- loadHistory:()=>({symbolVerified:true,isin:'EG0000000000',ticker:'TEST',currency:'EGP',exchange:'EGX',sessions:sample}),...changes});
+ loadHistory:()=>({symbolVerified:true,isin:'EG0000000006',ticker:'TEST',currency:'EGP',exchange:'EGX',sessions:sample}),...changes});
 }
 test('failed fresh source cannot release stale or inferred paper recommendations',()=>{
  const x=run({price:{expectedSession:session,ready:false,executionGrade:false,acceptedRows:0}});
@@ -41,23 +41,23 @@ test('valid data may create research candidates but never executable recommendat
 test('duplicate lookback dates cannot inflate SMA/ATR observations',()=>{
  const bars=sample.map(r=>({...r}));
  bars[30].date=bars[29].date;bars[30].sourceSessionDate=bars[29].sourceSessionDate;
- const x=run({loadHistory:()=>({symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+ const x=run({loadHistory:()=>({symbolVerified:true,isin:'EG0000000006',sessions:bars})});
  assert.equal(x.verifiedCandidates.length,0);assert.equal(x.watchlist.length,0);
 });
 test('reconstructed historical OHLC is excluded from independent signals',()=>{
  const bars=sample.map(r=>({...r}));
  bars[30].warnings=['partial_ohlc_reconstructed_from_close_or_previous_close'];
- const x=run({loadHistory:()=>({symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+ const x=run({loadHistory:()=>({symbolVerified:true,isin:'EG0000000006',sessions:bars})});
  assert.equal(x.verifiedCandidates.length,0);assert.equal(x.watchlist.length,0);
 });
 test('historical session provenance mismatch cannot enter indicators',()=>{
  const bars=sample.map(r=>({...r}));bars[30].sourceSessionDate='2026-01-01';
- const x=run({loadHistory:()=>({symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+ const x=run({loadHistory:()=>({symbolVerified:true,isin:'EG0000000006',sessions:bars})});
  assert.equal(x.verifiedCandidates.length,0);
 });
 test('history ticker and symbol-map ISIN must agree with requested symbol',()=>{
  const x=run({symbols:[{ticker:'TEST',active:true,isin:'EG1111111111'}],
-  loadHistory:()=>({ticker:'OTHER',symbolVerified:true,isin:'EG0000000000',sessions:sample})});
+  loadHistory:()=>({ticker:'OTHER',symbolVerified:true,isin:'EG0000000006',sessions:sample})});
  assert.equal(x.verifiedCandidates.length,0);
 });
 test('path-like ticker never reaches history loader',()=>{
@@ -76,7 +76,7 @@ test('an unlisted symbol is research-only, not inferred accepted by an incomplet
 test('a missing dated source evidence prevents shadow research on blocked aggregate',()=>{
  const bars=sample.map(r=>({...r}));delete bars.at(-1).sourceSessionEvidence;
  const x=run({price:{expectedSession:session,ready:false,executionGrade:false,acceptedRows:0},
-  loadHistory:()=>({ticker:'TEST',currency:'EGP',symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+  loadHistory:()=>({ticker:'TEST',currency:'EGP',symbolVerified:true,isin:'EG0000000006',sessions:bars})});
  assert.equal(x.verifiedCandidates.length,0);assert.deepEqual(x.researchWatchlist,[]);
 });
 test('currency mismatches cannot pass the EGP liquidity test',()=>{
@@ -86,7 +86,7 @@ test('currency mismatches cannot pass the EGP liquidity test',()=>{
 test('USD-priced shares never use the EGP liquidity threshold',()=>{
  const bars=sample.map(r=>({...r,currency:'USD'}));
  const x=run({symbols:[{ticker:'TEST',active:true,currency:'USD'}],
-  loadHistory:()=>({ticker:'TEST',currency:'USD',symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+  loadHistory:()=>({ticker:'TEST',currency:'USD',symbolVerified:true,isin:'EG0000000006',sessions:bars})});
  assert.equal(x.verifiedCandidates.length,1);assert.equal(x.verifiedCandidates[0].liquid,false);
  assert.deepEqual(x.researchWatchlist,[]);
 });
@@ -97,7 +97,7 @@ test('an obsolete expected session cannot generate a fresh research snapshot',()
 });
 test('cross-provider evidence level is explicit, not inferred from one provider',()=>{
  const bars=sample.map(r=>({...r}));bars.at(-1).secondSourceConfirmed=true;
- const x=run({loadHistory:()=>({ticker:'TEST',currency:'EGP',symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+ const x=run({loadHistory:()=>({ticker:'TEST',currency:'EGP',symbolVerified:true,isin:'EG0000000006',sessions:bars})});
  assert.equal(x.verifiedCandidates[0].evidenceLevel,'CROSS_PROVIDER_CONFIRMED');
  const y=run();assert.equal(y.verifiedCandidates[0].evidenceLevel,'DATED_PROVIDER_EVIDENCE');
 });
@@ -106,7 +106,7 @@ test('partially reconstructed 60-bar history remains an observation, never an SM
  const bars=sample.map(r=>({...r}));
  bars[30].warnings=['partial_ohlc_reconstructed_from_close_or_previous_close'];
  const x=run({price:{expectedSession:session,ready:false,executionGrade:false,acceptedRows:0},
-  loadHistory:()=>({ticker:'TEST',currency:'EGP',symbolVerified:true,isin:'EG0000000000',sessions:bars})});
+  loadHistory:()=>({ticker:'TEST',currency:'EGP',symbolVerified:true,isin:'EG0000000006',sessions:bars})});
  assert.equal(x.datedPriceObservations.length,1);
  assert.equal(x.datedPriceObservations[0].indicatorReady,false);
  assert.equal(x.datedPriceObservations[0].cleanLookbackBars,59);
@@ -116,16 +116,16 @@ test('partially reconstructed 60-bar history remains an observation, never an SM
 test('observation exposes exact OHLCV blockers without manufacturing an indicator',()=>{
  const reconstructed=sample.map(r=>({...r}));
  reconstructed[30].warnings=['partial_ohlc_reconstructed_from_close_or_previous_close'];
- const partial=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',sessions:reconstructed})});
+ const partial=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000006',sessions:reconstructed})});
  assert.deepEqual(partial.datedPriceObservations[0].indicatorBlockers,['UNVERIFIED_HISTORICAL_OHLCV']);
  assert.equal(partial.datedPriceObservations[0].indicatorReady,false);
  assert.deepEqual(partial.researchWatchlist,[]);
  const duplicates=sample.map(r=>({...r}));
  duplicates[30].date=duplicates[29].date;
  duplicates[30].sourceSessionDate=duplicates[29].sourceSessionDate;
- const duplicate=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',sessions:duplicates})});
+ const duplicate=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000006',sessions:duplicates})});
  assert.ok(duplicate.datedPriceObservations[0].indicatorBlockers.includes('DUPLICATE_LOOKBACK_SESSION'));
- const short=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',sessions:sample.slice(-40)})});
+ const short=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000006',sessions:sample.slice(-40)})});
  assert.deepEqual(short.datedPriceObservations[0].indicatorBlockers,['INSUFFICIENT_LOOKBACK_BARS']);
  for(const result of [partial,duplicate,short]){
   assert.equal(result.executable,false);
@@ -143,7 +143,7 @@ test('a clean 60-bar series has an independently dated price observation',()=>{
 test('plausible historical OHLCV without dated provenance cannot produce SMA/ATR research candidates',()=>{
  const bars=sample.map(r=>({...r}));
  delete bars[30].sourceSessionEvidence;
- const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:bars})});
+ const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000006',currency:'EGP',exchange:'EGX',sessions:bars})});
  assert.equal(x.datedPriceObservations.length,1);
  assert.equal(x.datedPriceObservations[0].cleanLookbackBars,59);
  assert.deepEqual(x.datedPriceObservations[0].indicatorBlockers,['UNVERIFIED_HISTORICAL_OHLCV']);
@@ -154,7 +154,7 @@ test('plausible historical OHLCV without dated provenance cannot produce SMA/ATR
 test('conflicted or undated historical source metadata blocks indicator eligibility',()=>{
  for(const mutate of [r=>{r.warnings=['source_conflict'];},r=>{r.fetchedAt='not-a-timestamp';}]){
   const bars=sample.map(r=>({...r}));mutate(bars[30]);
-  const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:bars})});
+  const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000006',currency:'EGP',exchange:'EGX',sessions:bars})});
   assert.equal(x.datedPriceObservations[0].indicatorReady,false);
   assert.equal(x.datedPriceObservations[0].cleanLookbackBars,59);
   assert.deepEqual(x.verifiedCandidates,[]);assert.deepEqual(x.researchWatchlist,[]);
@@ -166,7 +166,7 @@ test('copied positive-volume OHL bars block indicator eligibility without losing
  const bars=sample.map(r=>({...r}));
  for(const key of ['open','high','low'])bars[31][key]=bars[30][key];
  bars[31].volume=bars[30].volume+1;
- const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:bars})});
+ const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000006',currency:'EGP',exchange:'EGX',sessions:bars})});
  assert.equal(x.datedPriceObservations.length,1);
  assert.equal(x.datedPriceObservations[0].indicatorReady,false);
  assert.ok(x.datedPriceObservations[0].indicatorBlockers.includes('STALE_COPIED_BAR_IN_LOOKBACK'));
@@ -190,7 +190,7 @@ test('independent CLI keeps dated research available when Astra handoff is missi
   put('data/symbol-map.json',[{ticker:'TEST',active:true,currency:'EGP',exchange:'EGX'}]);
   put('data/corporate-actions.json',{candidates:[]});
   put('data/history/TEST.json',
-   {ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:sample});
+   {ticker:'TEST',symbolVerified:true,isin:'EG0000000006',currency:'EGP',exchange:'EGX',sessions:sample});
   for(const malformed of [false,true]){
    if(malformed)fs.writeFileSync(path.join(root,'data/ops/g22-main-app-handoff.json'),'{not-json');
    const proc=spawnSync(process.execPath,[script],{cwd:root,env:{...process.env,GITHUB_WORKSPACE:root},encoding:'utf8'});
@@ -221,4 +221,15 @@ test('unresolved price discontinuity preserves dated observation but blocks SMA/
  assert.equal(resolved.datedPriceObservations[0].indicatorReady,true);
  const other=run({corporateActions:[{...event,ticker:'OTHER'}]});
  assert.equal(other.datedPriceObservations[0].indicatorReady,true);
+});
+
+test('ISO 6166 checksum blocks fabricated-looking ISINs while preserving valid EG identities',()=>{
+ assert.equal(validIsin('EGS60121C018'),true);
+ assert.equal(validIsin('EG0000000006'),true); // deterministic synthetic unit-test identity
+ assert.equal(validIsin('EG0000000000'),false);
+ assert.equal(validIsin('EGS60121C019'),false);
+ const x=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:sample})});
+ assert.deepEqual(x.datedPriceObservations,[]);
+ assert.deepEqual(x.verifiedCandidates,[]);
+ assert.deepEqual(x.recommendations,[]);
 });

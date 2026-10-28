@@ -9,6 +9,17 @@ const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const day=s=>typeof s==='string'?s.slice(0,10):'';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const round=(n,d=4)=>Number(n.toFixed(d));
+// ISO 6166 checksum: a plausible-looking EG prefix is not a verified ISIN.
+function validIsin(value){
+ if(typeof value!=='string'||!/^EG[A-Z0-9]{10}$/i.test(value))return false;
+ const digits=value.toUpperCase().replace(/[A-Z]/g,c=>String(c.charCodeAt(0)-55));
+ let sum=0;
+ for(let i=digits.length-1,j=0;i>=0;i--,j++){
+  let n=Number(digits[i])*(j%2===1?2:1);
+  sum+=Math.floor(n/10)+n%10;
+ }
+ return sum%10===0;
+}
 function historicalBarValid(r){
  const d=day(r?.date||r?.sessionDate);
  return /^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&
@@ -66,7 +77,7 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190,cor
   const ticker=String(sym?.ticker||'').trim().toUpperCase();
   if(!/^[A-Z0-9]{2,12}$/.test(ticker)||sym.active===false)continue;
   let h;try{h=loadHistory(ticker)}catch{continue}
-  if(h?.symbolVerified!==true||!/^EG[A-Z0-9]{10}$/i.test(h?.isin||'')||
+  if(h?.symbolVerified!==true||!validIsin(h?.isin)||
      (h.ticker&&String(h.ticker).toUpperCase()!==ticker)||
      (sym.isin&&String(sym.isin).toUpperCase()!==String(h.isin).toUpperCase())||
      (sym.currency&&h.currency&&String(sym.currency).toUpperCase()!==String(h.currency).toUpperCase())||
@@ -159,4 +170,4 @@ function main(){
  console.log('EGX_INDEPENDENT_PAPER '+JSON.stringify({status:output.status,blockers:output.blockers,watch:output.watchlist.length,research:output.researchWatchlist.length,candidates:output.verifiedCandidates.length,datedPrices:output.datedPriceObservations.length}));
 }
 if(require.main===module)main();
-module.exports={evaluate,validBar,historicalBarValid,currentEvidenceValid,atr};
+module.exports={evaluate,validBar,historicalBarValid,currentEvidenceValid,validIsin,atr};
