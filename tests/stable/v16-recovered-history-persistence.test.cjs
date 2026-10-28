@@ -5,7 +5,12 @@ const {observed}=require('../../scripts/stable/v16-verified-incremental-recovery
 test('all accepted independently recovered tickers persist a same-session, independently evidenced OHLCV history bar',()=>{
  const truth=read('data/stable/v15-price-truth.json'),second=read('data/stable/v16-market-second-source-evidence.json'),market=read('data/market.json');
  const tickers=truth.secondSourceReconciliation?.recoveredTickersThisRun||[];
- assert.equal(second.expectedSession,truth.expectedSession);
+ // A previous-session second-source archive may remain for audit. It cannot
+ // validate a current-session recovery, and must never cause a false promotion.
+ if(second.expectedSession!==truth.expectedSession){
+  assert.equal(tickers.length,0,'STALE_SECOND_SOURCE_CANNOT_CERTIFY_CURRENT_RECOVERY');
+  return;
+ }
  const marketByTicker=new Map((market.rows||[]).map(r=>[r.symbol,r]));
  for(const ticker of tickers){
   const h=read('data/history/'+ticker+'.json'),e=second.records?.[ticker]?.approvedEvidence,m=marketByTicker.get(ticker);
