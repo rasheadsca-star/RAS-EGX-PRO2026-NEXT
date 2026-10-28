@@ -87,6 +87,12 @@ jobs:
           node --test tests/trend-divergence.test.cjs
           node scripts/research/build-trend-divergence.cjs
 
+      - name: Validate independent paper and rendered MVP safety
+        run: |
+          set -euo pipefail
+          node --check scripts/independent/egx-independent-paper.cjs
+          node --test tests/independent/*.test.cjs tests/research/egx-unified-console.test.cjs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -150,6 +156,9 @@ jobs:
                   assert 'independent-last-verified.json' in html
                   assert 'independent-paper-ledger.json' in html
                   assert 'id="archivedPriceResults"' in html
+                  assert 'id="independentBlockers"' in html
+                  assert 'شموع OHLCV غير موثقة أو معاد بناؤها' in html
+                  assert 'جلسة الأسعار المستهدفة — لا تعني الاعتماد' in html
                   assert 'أرشيف فقط — ليس سعر اليوم ولا إشارة دخول' in html
                   current = json.loads(get('/unified-console/independent-paper.json'))
                   archive = json.loads(get('/unified-console/independent-last-verified.json'))
