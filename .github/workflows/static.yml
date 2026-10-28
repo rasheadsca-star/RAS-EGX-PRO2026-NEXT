@@ -161,14 +161,17 @@ jobs:
                   assert 'data/stable/v16-main-app-current.json' in html
                   assert 'data/quant/daily-recommendations.json' in html
                   assert 'data/source-health.json' in html
+                  assert 'data/fetch-status.json' in html
                   v16 = json.loads(get('/data/stable/v16-main-app-current.json'))
                   quant = json.loads(get('/data/quant/daily-recommendations.json'))
                   source = json.loads(get('/data/source-health.json'))
+                  fetch_status = json.loads(get('/data/fetch-status.json'))
                   gann = json.loads(get('/unified-console/gann-research.json'))
                   import re
                   assert isinstance(v16.get('executionReady'),bool)
                   assert isinstance(quant.get('liveExecutionEnabled'),bool)
                   assert isinstance(source.get('delayed'),bool)
+                  assert fetch_status['marketRows'] + fetch_status['rejectedCurrentSessionRows'] == fetch_status['inputRows']
                   assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',v16['sessionDate'])
                   assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',quant['sessionId'])
                   assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',gann['sourceSession'])
