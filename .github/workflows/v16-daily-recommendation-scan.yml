@@ -17,6 +17,9 @@ on:
       - "scripts/stable/v16-v169-live-resolution-normalizer.cjs"
       - "scripts/stable/v16-main-app-professional-readiness.cjs"
       - "scripts/stable/v16-postclose-scan-complete.cjs"
+      - "scripts/stable/v16-same-session-recovery-replay.cjs"
+      - "tests/stable/v16-same-session-recovery-replay.test.cjs"
+      - "tests/stable/v16-same-session-recovery-integration.test.cjs"
       - "tests/astra/postclose-source-recovery.test.cjs"
   schedule:
     # GitHub cron is UTC. We schedule both Egypt UTC+2 and UTC+3 candidates,
@@ -146,6 +149,8 @@ jobs:
           node --check scripts/stable/v16-mubasher-session-evidence-enricher.cjs
           node --check scripts/stable/v15-live-price-truth.cjs
           node --check scripts/stable/v15-price-truth-gate.cjs
+          node --check scripts/stable/v16-same-session-recovery-replay.cjs
+          node --test tests/stable/v16-same-session-recovery-replay.test.cjs tests/stable/v16-same-session-recovery-integration.test.cjs
           node --check scripts/stable/v16-publish-v169-basket.cjs
           node --check scripts/stable/v16-session-data-fingerprint.cjs
           node --check scripts/stable/v16-recommendation-freshness-guard.cjs
@@ -189,6 +194,12 @@ jobs:
             node scripts/stable/v15-live-price-truth.cjs
             TRUTH_CODE=$?
             set -e
+            # Reapply only previously approved exact-session independent evidence.
+            # Every recovered ticker must persist observed OHLCV and the fetch
+            # status must reconcile before the basket or signed G22 handoff.
+            if [ "$TRUTH_CODE" -eq 0 ]; then
+              node scripts/stable/v16-same-session-recovery-replay.cjs
+            fi
             echo "attempt=$ATTEMPT fetch=$FETCH_CODE fallback=$FALLBACK_CODE quorum=$QUORUM_CODE evidence=$EVIDENCE_CODE truth=$TRUTH_CODE"
 
             if node - <<'NODE'
