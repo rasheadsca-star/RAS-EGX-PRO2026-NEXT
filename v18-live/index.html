@@ -85,7 +85,7 @@
             const html = validateShell(await fetchText(SOURCES[i]));
             // Keep a visible date/freshness link after the remote shell replaces this bootstrap.
             const statusBanner = '<aside style="position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#122b42;color:#fff;padding:8px 12px;text-align:center;font:13px Arial,Tahoma,sans-serif;border-top:1px solid #44627a"><a style="color:#9ee9ff" target="_blank" rel="noopener noreferrer" href="https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/v18-live/market-status.html">تحقق من جلسة الأسعار وحالة اعتماد التوصيات قبل التداول</a></aside>';
-            const rendered = html.replace(/<\\/body>/i, statusBanner + '</body>');
+            const rendered = html.replace('</body>', statusBanner + '</body>');
             document.open();
             document.write(rendered);
             document.close();
