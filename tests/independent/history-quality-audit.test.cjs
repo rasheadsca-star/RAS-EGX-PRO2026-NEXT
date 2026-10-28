@@ -83,6 +83,7 @@ test('report is deterministic with fixed metadata and never certifies OOS',()=>{
  assert.equal(a.summary.historyFiles,1);
  assert.equal(a.summary.missingHistoryFiles,1);
  assert.equal(a.summary.currentEligibility.strict60,0);
+ assert.equal(a.summary.medianTrailingAtOwnLatestSourceProvenance,7);
  assert.equal(a.summary.medianLongestSourceProvenanceConsecutive,7);
  assert.equal(a.summary.medianLongestStrictConsecutive,7);
  assert.equal(a.calendar.officialExchangeCalendar,false);
