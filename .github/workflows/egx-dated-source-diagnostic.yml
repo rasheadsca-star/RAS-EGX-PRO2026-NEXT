@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 8
     env:
-      EGX_EXPECTED_SESSION: "2026-10-27"
       EGX_DIAGNOSTIC_SYMBOLS: "COMI,OCDI,EFID,ISMQ,TMGH"
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +20,18 @@ jobs:
           node-version: "22"
       - name: Verify diagnostic syntax
         run: node --check scripts/research/egx-dated-source-diagnostic.cjs
+      - name: Set latest completed weekday session (diagnostic only)
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const parts=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Cairo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"}).formatToParts(new Date()).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+          const d=new Date(Date.UTC(+parts.year,+parts.month-1,+parts.day));
+          if(+parts.hour<15 || [5,6].includes(d.getUTCDay())) d.setUTCDate(d.getUTCDate()-1);
+          while([5,6].includes(d.getUTCDay()))d.setUTCDate(d.getUTCDate()-1);
+          const session=d.toISOString().slice(0,10);
+          require("fs").appendFileSync(process.env.GITHUB_ENV,`EGX_EXPECTED_SESSION=${session}\n`);
+          console.log("Diagnostic target:",session,"(weekdays only; holiday exceptions require separate verification)");
+          NODE
       - name: Evaluate externally dated source (non-production)
         run: node scripts/research/egx-dated-source-diagnostic.cjs
       - name: Publish diagnosis artifact, never canonical prices
@@ -36,7 +47,9 @@ jobs:
           const d=JSON.parse(fs.readFileSync('data/research/dated-source-diagnostic.json','utf8'));
           const valid=Number(d.counts?.DATED_OHLCV_CANDIDATE||0);
           const total=(d.results||[]).length;
-          console.log(JSON.stringify({expectedSession:d.expectedSession,datedOhlcvCandidates:valid,checked:total,statusCounts:d.counts},null,2));
+          const summary=JSON.stringify({expectedSession:d.expectedSession,datedOhlcvCandidates:valid,checked:total,statusCounts:d.counts},null,2);
+          console.log(summary);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,`## Dated source evidence (research only)\n\n\`\`\`json\n${summary}\n\`\`\`\n\nThis is not approval to publish prices or recommendations.\n`);
           if(valid===0){console.error('::error::NO_DATED_OHLCV_ROWS_VERIFIED: workflow must not be reported as source validation success');process.exit(1)}
           console.log('RESEARCH_DATE_EVIDENCE_FOUND_NOT_PRODUCTION_READY');
           NODE
