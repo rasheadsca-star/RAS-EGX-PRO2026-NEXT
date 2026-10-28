@@ -2,7 +2,6 @@ name: EGX Persisted Price Acceptance Regression
 on:
   pull_request:
     paths:
-      - "scripts/stable/v16-persisted-price-acceptance.cjs"
       - "scripts/stable/v16-session-aware-price-truth.cjs"
       - "tests/stable/v16-persisted-price-acceptance.test.cjs"
       - ".github/workflows/egx-persisted-price-acceptance.yml"
@@ -23,13 +22,21 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/stable/v16-session-aware-price-truth.cjs
-          node --check scripts/stable/v16-persisted-price-acceptance.cjs
           node --test tests/stable/v16-persisted-price-acceptance.test.cjs
       - name: Audit real immutable handoff versus persisted OHLCV
         run: |
           node - <<'NODE'
-          const cp=require('child_process'),fs=require('fs');
-          const {partitionPersistable}=require('./scripts/stable/v16-persisted-price-acceptance.cjs');
+          const cp=require('child_process'),fs=require('fs'),path=require('path'),vm=require('vm');
+          const src=fs.readFileSync('scripts/stable/v16-session-aware-price-truth.cjs','utf8');
+          const start=src.indexOf('function partitionPersistable('),end=src.indexOf('function mergeIntoHistory(');
+          if(start<0||end<=start)throw Error('PRODUCER_GUARD_MISSING');
+          const context={fs,path,
+            n:(v,f=null)=>v===null||v===undefined||v===''?f:Number.isFinite(Number(v))?Number(v):f,
+            normSymbol:v=>String(v||'').trim().toUpperCase().replace(/\.CA$/i,'').replace(/[^A-Z0-9._-]/g,''),
+            dateOnly:v=>(String(v||'').match(/^(\d{4}-\d{2}-\d{2})/)||[])[1]||null,
+            readJson:(p,f=null)=>{try{return JSON.parse(fs.readFileSync(p,'utf8'));}catch{return f;}}
+          };
+          const {partitionPersistable}=vm.runInNewContext(src.slice(start,end)+';({partitionPersistable})',context);
           const marker=JSON.parse(fs.readFileSync('data/ops/g22-main-app-handoff.json','utf8'));
           const at=p=>JSON.parse(cp.execFileSync('git',['show',marker.canonicalDataHead+':'+p],{encoding:'utf8'}));
           const market=at('data/market.json'),truth=at('data/stable/v15-price-truth.json');
