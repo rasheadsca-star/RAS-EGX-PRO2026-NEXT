@@ -26,3 +26,12 @@ test('canonical source dates agree and display data has a dated provenance',()=>
  assert.notEqual(main.practicalReady,true,'main gate cannot be bypassed in viewer');
  assert.notEqual(quant.liveExecutionEnabled,true,'quant feed must not enable live orders');
 });
+
+test('missing prices never render as zero, dates and source state stay visible',()=>{
+ const html=fs.readFileSync(path.join(root,'latest-viewer/index.html'),'utf8');
+ assert.match(html,/n===null\|\|n===undefined/,'missing numbers must remain unavailable');
+ assert.match(html,/latest\.date!==today\(\)/,'stale session must be visible');
+ assert.match(html,/String\(y\.generated\|\|''\)/,'same-date source selection must be deterministic');
+ assert.match(html,/researchWatchlist/);
+ assert.match(html,/watchCandidates/);
+});
