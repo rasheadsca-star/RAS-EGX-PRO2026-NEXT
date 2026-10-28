@@ -1,0 +1,33 @@
+name: EGX Verified Same-Session Replay CI
+on:
+  pull_request:
+    paths:
+      - 'scripts/stable/v16-same-session-recovery-replay.cjs'
+      - 'tests/stable/v16-same-session-recovery-replay.test.cjs'
+      - '.github/workflows/v16-daily-recommendation-scan.yml'
+      - '.github/workflows/egx-same-session-replay-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/stable/v16-same-session-recovery-replay.cjs'
+      - 'tests/stable/v16-same-session-recovery-replay.test.cjs'
+      - '.github/workflows/v16-daily-recommendation-scan.yml'
+      - '.github/workflows/egx-same-session-replay-ci.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate replay and existing recovery modules
+        run: |
+          node --check scripts/stable/v16-same-session-recovery-replay.cjs
+          node --check scripts/stable/v16-verified-incremental-recovery.cjs
+          node --check scripts/stable/v16-market-coverage-reconciler.cjs
+      - name: Fail-closed same-session replay regression tests
+        run: node --test tests/stable/v16-same-session-recovery-replay.test.cjs tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs
