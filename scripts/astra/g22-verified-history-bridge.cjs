@@ -29,8 +29,16 @@ function reconcile({prodRoot,certRoot}) {
   const expected=isoDate(truth.expectedSession);
   if(!expected || truth.ready!==true || truth.executionGrade!==true ||
     fetchStatus.expectedSession!==expected || fetchStatus.executionGrade!==true || fetchStatus.ok!==true ||
+    !Number.isInteger(Number(fetchStatus.inputRows)) || Number(fetchStatus.inputRows)<=0 ||
+    !Number.isFinite(Number(fetchStatus.coveragePct)) ||
+    !Number.isFinite(Number(fetchStatus.sourceSessionEvidenceCoveragePct)) ||
     Number(fetchStatus.marketRows)!==Number(truth.acceptedRows) ||
+    Number(fetchStatus.currentSessionRows)!==Number(truth.acceptedRows) ||
+    Number(fetchStatus.rejectedCurrentSessionRows)!==Number(truth.rejectedRows) ||
+    Number(fetchStatus.droppedCurrentSessionRows)!==Number(truth.droppedRows||0) ||
     Number(fetchStatus.inputRows)!==Number(truth.source?.inputRows) ||
+    Number(fetchStatus.sourceSessionVerifiedRows)!==Number(truth.source?.verifiedExpectedSessionRows) ||
+    Math.abs(Number(fetchStatus.sourceSessionEvidenceCoveragePct)-Number(truth.source?.sourceSessionEvidenceCoveragePct))>0.02 ||
     Number(truth.acceptedRows)+Number(truth.rejectedRows)+Number(truth.droppedRows||0)!==Number(fetchStatus.inputRows) ||
     Math.abs(Number(fetchStatus.coveragePct)-100*Number(truth.acceptedRows)/Number(fetchStatus.inputRows))>0.02) {
     throw Error('G22_HISTORY_BRIDGE_SOURCE_TRUTH_MISMATCH');
