@@ -97,6 +97,16 @@ function parseSourceSessionDate(value, expectedSession) {
   const iso = text.match(/\b(20\d{2})-(\d{2})-(\d{2})\b/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
 
+  // Accept explicitly dated D/M/YYYY source timestamps, but never infer a
+  // trading session from a time-only quote or the local fetch timestamp.
+  const numeric = text.match(/(?:^|[^\\d])(\\d{1,2})[\\/.-](\\d{1,2})[\\/.-](20\\d{2})(?!\\d)/);
+  if (numeric) {
+    const day = Number(numeric[1]), month = Number(numeric[2]), year = Number(numeric[3]);
+    const check = new Date(Date.UTC(year, month - 1, day));
+    if (check.getUTCFullYear() === year && check.getUTCMonth() === month - 1 && check.getUTCDate() === day)
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+
   const yearFallback = Number(String(expectedSession || '').slice(0, 4)) || new Date().getUTCFullYear();
   let match = text.match(/\b(\d{1,2})\s+(January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|Sep|October|Oct|November|Nov|December|Dec)(?:\s+(20\d{2}))?\b/i);
   if (match) {
@@ -182,7 +192,9 @@ async function establishRowSessionEvidence(row, expectedSession) {
   try {
     const html = await fetchText(url);
     const plain = stripHtml(html);
-    const match = plain.match(/Last update:\s*(.{1,120}?market time)/i);
+    // Retain surrounding source text: the prior non-greedy match stopped at
+    // 'market time' and could discard a following explicit session date.
+    const match = plain.match(/Last update:\s*(.{1,180})/i);
     const sourceMarketTime = match ? match[1].trim() : null;
     const sourceSessionDate = parseSourceSessionDate(sourceMarketTime, expectedSession);
     return {
