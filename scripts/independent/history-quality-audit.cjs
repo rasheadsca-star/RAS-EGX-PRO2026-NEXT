@@ -88,6 +88,8 @@ function auditTicker(ticker,meta,history,calendar,actions=[],rawSha=null,target=
  const source=streak(ordered,sourceOK,calendar,target);
  const strict=streak(ordered,strictOK,calendar,target);
  const sortedDates=[...dates.keys()].filter(iso).sort();
+ const sourceAtOwnLatest=streak(ordered,sourceOK,calendar,sortedDates.at(-1)||null);
+ const strictAtOwnLatest=streak(ordered,strictOK,calendar,sortedDates.at(-1)||null);
  const missing=sortedDates.length?calendar.filter(d=>d>=sortedDates[0]&&d<=sortedDates.at(-1)&&!dates.has(d)):[];
  const reasons=count([...quarantines.values()].flatMap(x=>[...x]));
  const latest=sortedDates.at(-1)||null;
@@ -105,6 +107,7 @@ function auditTicker(ticker,meta,history,calendar,actions=[],rawSha=null,target=
   missingObservedSessions:missing.length,missingObservedSessionsSample:missing.slice(-12),
   longestConsecutive:{structural:shape.longest,sourceProvenance:source.longest,strict:strict.longest},
   currentConsecutive:{structural:shape.trailing,sourceProvenance:source.trailing,strict:strict.trailing},
+  trailingAtOwnLatest:{sourceProvenance:sourceAtOwnLatest.trailing,strict:strictAtOwnLatest.trailing},
   eligibility:{structural60:shape.trailing>=60,structural140:shape.trailing>=140,
    strict60:strict.trailing>=60,strict140:strict.trailing>=140,
    historicalStructural60:shape.longest>=60,historicalStructural140:shape.longest>=140,
@@ -143,9 +146,14 @@ function buildAudit({symbols,histories,calendar,actions=[],target,sourceShas={},
   sourceProvenanceAcceptedRows:rows.reduce((n,x)=>n+x.sourceProvenanceAcceptedRows,0),
   strictAcceptedRows:rows.reduce((n,x)=>n+x.strictlyAcceptedRows,0),
   missingHistoryFiles:rows.filter(x=>!x.historyFilePresent).length,
+  partialOrSyntheticRows:rows.reduce((n,x)=>n+x.partialOrSyntheticRows,0),
+  quarantinedRows:rows.reduce((n,x)=>n+x.quarantineRows,0),
+  copiedPairs:rows.reduce((acc,x)=>{for(const [k,v] of Object.entries(x.copiedPairs))acc[k]=(acc[k]||0)+v;return acc},{}),
   validHistoryIsin:withFiles.filter(x=>x.identity.isinChecksumValid).length,
   strictIdentity:withFiles.filter(x=>x.identity.strict).length,
   licensedForRedistribution:0, // no documented contract registry is connected
+  medianTrailingAtOwnLatestSourceProvenance:median(withFiles.map(x=>x.trailingAtOwnLatest.sourceProvenance)),
+  medianTrailingAtOwnLatestStrict:median(withFiles.map(x=>x.trailingAtOwnLatest.strict)),
   medianLongestSourceProvenanceConsecutive:median(withFiles.map(x=>x.longestConsecutive.sourceProvenance)),
   medianLongestStrictConsecutive:median(withFiles.map(x=>x.longestConsecutive.strict)),
   medianLongestStructuralConsecutive:median(withFiles.map(x=>x.longestConsecutive.structural)),
@@ -164,7 +172,7 @@ function buildAudit({symbols,histories,calendar,actions=[],target,sourceShas={},
    sourceProvenance:'Structural plus dated per-bar source evidence and quarantine exclusion, without security identity',
    strict:'Source provenance plus ISO 6166 valid security identity and consistent ticker/currency/exchange',
    license:'Unverified rights never imply permission to redistribute; no automatic vendor download',
-   eligibility:'Trailing streak MUST end on auditDate; historical maximum reported separately',
+   eligibility:'Current streak ends on auditDate; trailingAtOwnLatest ends on each ticker last stored date; historical maximum is separate',
    performance:'No strategy calibration or OOS certification; no trade orders'},
   summary,top10Recovery:rankRecovery(rows),tickers:rows,mode:'RESEARCH_ONLY',
   executionReady:false,performanceCertified:false,orders:[]};
