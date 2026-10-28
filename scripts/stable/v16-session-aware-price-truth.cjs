@@ -183,7 +183,9 @@ async function establishRowSessionEvidence(row, expectedSession) {
     const plain = stripHtml(html);
     // Retain surrounding source text: the prior non-greedy match stopped at
     // 'market time' and could discard a following explicit session date.
-    const match = plain.match(/Last update:\s*(.{1,180})/i);
+    // Capture only the timestamp adjacent to the label. Page-wide text may
+    // include unrelated advertisement or news dates and must not certify prices.
+    const match = plain.match(/Last update:\s*((?:(?:\d{1,2}[\/.\-]\d{1,2}[\/.\-]20\d{2}|20\d{2}-\d{2}-\d{2}|\d{1,2}\s+[A-Za-z]+\s+20\d{2}|[A-Za-z]+\s+\d{1,2}\s+20\d{2})\s*(?:at\s*)?)?(?:\d{1,2}:\d{2}\s*(?:AM|PM)?\s*)?(?:market time)?)/i);
     const sourceMarketTime = match ? match[1].trim() : null;
     const sourceSessionDate = parseSourceSessionDate(sourceMarketTime, expectedSession);
     return {
