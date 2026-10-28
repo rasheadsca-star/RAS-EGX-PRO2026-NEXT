@@ -70,3 +70,22 @@ test('historical source conflicts block OOS backtest even with plausible OHLCV',
  assert.equal(out.status,'UNVERIFIED_OR_DUPLICATE_HISTORICAL_OHLCV');
  assert.equal(out.tradeCount,0);assert.equal(out.performanceCertified,false);
 });
+
+// Regression: copied bars can be source-stamped yet must not generate OOS metrics.
+test('full positive-volume OHLC copy blocks OOS rather than fabricating performance',()=>{
+ const bars=fixture();
+ for(const key of ['open','high','low','close','volume'])bars[76][key]=bars[75][key];
+ const out=run(bars);
+ assert.equal(out.status,'STALE_COPIED_BAR_IN_LOOKBACK');
+ assert.equal(out.copiedBarCount,1);
+ assert.equal(out.tradeCount,0);
+ assert.equal(out.performanceCertified,false);
+ assert.equal(out.trades,undefined);
+});
+test('changed close with repeated positive-volume OHL also blocks OOS',()=>{
+ const bars=fixture();
+ for(const key of ['open','high','low'])bars[76][key]=bars[75][key];
+ const out=run(bars);
+ assert.equal(out.status,'STALE_COPIED_BAR_IN_LOOKBACK');
+ assert.equal(out.tradeCount,0);
+});
