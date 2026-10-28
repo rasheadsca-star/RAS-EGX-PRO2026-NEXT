@@ -7,7 +7,7 @@
 <section class="panel"><h2>الفرص المحفوظة في Astra</h2><p id="astraIntro" class="small">جارٍ التحميل</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الترتيب</th><th>الدخول</th><th>الوقف</th><th>الهدف الأول</th><th>الحالة</th></tr></thead><tbody id="opps"><tr><td colspan="6">جارٍ التحميل</td></tr></tbody></table></div></section>
 <section class="panel"><h2>المحرك المستقل — مراقبة بحثية فقط</h2><p id="independentIntro" class="small">جارٍ التحقق من بيانات OHLCV المؤرخة</p><p id="independentBlockers" class="warn">جارٍ فحص أسباب حجب المحرك المستقل</p><p id="verifiedArchive" class="small">جارٍ فحص آخر لقطة أسعار مؤرخة محفوظة</p><h3>آخر لقطة أسعار محفوظة — أرشيف فقط، ليست أسعار اليوم</h3><div class="scroll"><table><thead><tr><th>السهم</th><th>جلسة الأرشيف</th><th>إغلاق مؤرخ</th><th>العملة</th><th>الحالة</th></tr></thead><tbody id="archivedPriceResults"><tr><td colspan="5">جارٍ التحقق من الأرشيف</td></tr></tbody></table></div><p id="paperLedger" class="small">جارٍ فحص سجل المتابعة الورقية</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الجلسة</th><th>العملة</th><th>الدخول النظري</th><th>الوقف النظري</th><th>الهدف النظري</th><th>الاعتماد</th></tr></thead><tbody id="independentResults"><tr><td colspan="7">جارٍ التحميل</td></tr></tbody></table></div><h3>أسعار جلسة موثقة — دون إشارة فنية</h3><p class="small">تُعرض أسعار إغلاق مؤرخة ذات هوية ISIN متطابقة. أهلية SMA20/SMA50 وATR تتطلب توثيق المصدر وتاريخ الجلسة ورابط المصدر وتوقيت الجلب لكل شمعة من آخر 60؛ الشموع غير المثبتة أو المعاد بناؤها تمنع الإشارة.</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الجلسة</th><th>آخر إغلاق</th><th>العملة</th><th>شموع OHLCV موثقة المصدر من آخر 60</th><th>التصنيف</th><th>سبب حجب المؤشرات</th></tr></thead><tbody id="datedPriceResults"><tr><td colspan="7">جارٍ التحميل</td></tr></tbody></table></div><p class="bad">هذه نتائج بحثية مؤرخة وليست توصيات تداول أو أوامر أو إثباتًا لأداء الاستراتيجية.</p></section>
 <section class="panel"><h2>نتائج Gann الفعلية — بحث فقط</h2><p id="gannIntro" class="small">جارٍ التحميل</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الدرجة</th><th>آخر سعر</th><th>حالة التوصية</th></tr></thead><tbody id="gannResults"><tr><td colspan="4">جارٍ التحميل</td></tr></tbody></table></div></section><section class="panel"><h2>توافق المحركات ومصادر التشغيل</h2><div id="summary"></div><div class="actions"><a href="../gann-fusion-x/app/index-v1.html">فتح Gann Fusion X</a><a href="../astra-prod/app/index.html">فتح Astra</a><a href="../v18-live/index.html">فتح V18.2</a><a href="../data/history-summary.json">قاعدة التاريخ الحالية</a></div></section>
-<section class="panel"><h2>وضع التداول</h2><p class="bad"><strong>التنفيذ الآلي والتداول الورقي التنفيذي مغلقان في هذه الواجهة.</strong></p><p class="small">الصفحة تحليلية؛ كل حالة مبنية على ملفات JSON المقروءة لحظة التحديث، ولا تتصل بالوسيط ولا ترسل أوامر.</p></section></main>
+<section class="panel"><h2>وضع التداول</h2><p class="bad"><strong>التنفيذ الآلي والتداول الورقي التنفيذي مغلقان في هذه الواجهة.</strong></p><p class="small">الصفحة تحليلية؛ كل حالة مبنية على ملفات JSON المقروءة لحظة التحديث، ولا تتصل بالوسيط ولا ترسل أوامر.</p></section><section class="panel" id="elite-bridge"><h2>EGX ELITE / V16 — فرص البحث الحديثة (غير معتمدة للتنفيذ)</h2><p id="eliteNote" class="small">جار تحميل مرشحي V16 والكمّي من المصدر؛ لا توجد أوامر شراء.</p><div class="scroll"><table><thead><tr><th>السهم</th><th>الجلسة</th><th>المصدر</th><th>إغلاق المصدر</th><th>الدخول النظري</th><th>الوقف</th><th>الهدف</th><th>الحالة</th></tr></thead><tbody id="eliteRows"><tr><td colspan="8">جار التحقق</td></tr></tbody></table></div><p class="small">تُعرض كل جلسة بحسب ملف مصدرها، دون تحويل المتابعة البحثية إلى توصية شراء أو افتراض أن الأسعار لحظية.</p></section></main>
 <script>
 'use strict';const base='../',by=id=>document.getElementById(id),date=x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x||''))?x:null,fmt=n=>typeof n==='number'&&Number.isFinite(n)?n.toFixed(3):'—';
 async function load(p){const r=await fetch(base+p+(p.includes('?')?'&':'?')+'v='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(p+' HTTP '+r.status);return r.json()}
@@ -103,4 +103,34 @@ async function refresh(){
  text('updated','آخر تحقق محلي: '+new Date().toLocaleString('ar-EG'));
 }
 by('refresh').addEventListener('click',refresh);refresh();
+</script><script>
+(function(){
+'use strict';
+const base='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/';
+const paths=['data/stable/v16-main-app-current.json','data/quant/daily-recommendations.json','data/source-health.json'];
+const el=id=>document.getElementById(id);
+const n=x=>Number.isFinite(Number(x))?Number(x).toFixed(2):'—';
+const cell=(tr,v)=>{const td=document.createElement('td');td.textContent=String(v??'—');tr.appendChild(td)};
+async function get(p){const r=await fetch(base+p+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error(p+' HTTP '+r.status);return r.json()}
+async function load(){
+const res=await Promise.allSettled(paths.map(get));const v=res[0].status==='fulfilled'?res[0].value:null;
+const q=res[1].status==='fulfilled'?res[1].value:null;const h=res[2].status==='fulfilled'?res[2].value:null;
+const rows=[],seen=new Set();
+function add(a,session,source){
+for(const x of a||[]){if(!x||!x.ticker)continue;const key=String(x.ticker).toUpperCase()+'|'+session;
+if(seen.has(key))continue;seen.add(key);const p=x.plan||{};
+rows.push({ticker:x.ticker,session,source,close:x.close??x.price,lo:x.entryLow??p.entryLow,hi:x.entryHigh??p.entryHigh,stop:x.stopLoss??p.stopLoss,target:x.target1??p.target1});}
+}
+if(v)add(v.researchWatchlist,v.sessionDate,'V16 — بحث');
+if(q)add(q.watchCandidates,q.sessionId,'Quant — متابعة');
+rows.sort((a,b)=>String(b.session).localeCompare(String(a.session))||a.ticker.localeCompare(b.ticker));
+const body=el('eliteRows');body.replaceChildren();
+for(const x of rows){const tr=document.createElement('tr');
+[x.ticker,x.session,x.source,n(x.close),n(x.lo)+' – '+n(x.hi),n(x.stop),n(x.target),'RESEARCH_ONLY'].forEach(y=>cell(tr,y));body.appendChild(tr);}
+if(!rows.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=8;td.textContent='لا توجد بيانات بحثية متاحة من المصدرين';tr.appendChild(td);body.appendChild(tr)}
+el('eliteNote').textContent='V16: '+(v?.sessionDate||'غير متاح')+'، حالة '+(v?.status||'غير متاح')+'؛ الكمي: '+(q?.sessionId||'غير متاح')+'؛ عدد الأسهم غير المكررة حسب السهم والجلسة: '+rows.length+'؛ تأخير المصدر: '+(h?.delayed===true?'نعم':'غير مثبت')+'. هذه فرص مراقبة فقط، وليست توصيات شراء.';
+}
+load().catch(e=>{el('eliteNote').textContent='تعذر جلب بيانات EGX ELITE: '+String(e.message||e)+' — دون اعتماد توصيات.'});
+el('refresh')?.addEventListener('click',()=>load().catch(()=>{}));
+})();
 </script></body></html>
