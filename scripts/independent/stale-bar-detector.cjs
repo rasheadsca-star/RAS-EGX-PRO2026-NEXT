@@ -11,7 +11,7 @@ function copiedBarReasons(bars){
   const ohl=['open','high','low'].every(k=>eq(curr[k],prev[k]));
   if(!ohl)continue;
   issues.push({index:i,date:curr.date||curr.sessionDate||null,
-    reason:eq(curr.close,prev.close)?'REPEATED_OHLC':'REPEATED_OHL'});
+    reason:eq(curr.close,prev.close)?(eq(curr.volume,prev.volume)?'REPEATED_OHLCV':'REPEATED_OHLC'):'REPEATED_OHL'});
  }
  return issues;
 }
