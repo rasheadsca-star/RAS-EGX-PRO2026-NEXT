@@ -19,6 +19,7 @@ on:
       - "scripts/stable/v16-postclose-scan-complete.cjs"
       - "scripts/stable/v16-same-session-recovery-replay.cjs"
       - "tests/stable/v16-same-session-recovery-replay.test.cjs"
+      - "tests/stable/v16-same-session-recovery-integration.test.cjs"
       - "tests/astra/postclose-source-recovery.test.cjs"
   schedule:
     # GitHub cron is UTC. We schedule both Egypt UTC+2 and UTC+3 candidates,
@@ -149,7 +150,7 @@ jobs:
           node --check scripts/stable/v15-live-price-truth.cjs
           node --check scripts/stable/v15-price-truth-gate.cjs
           node --check scripts/stable/v16-same-session-recovery-replay.cjs
-          node --test tests/stable/v16-same-session-recovery-replay.test.cjs
+          node --test tests/stable/v16-same-session-recovery-replay.test.cjs tests/stable/v16-same-session-recovery-integration.test.cjs
           node --check scripts/stable/v16-publish-v169-basket.cjs
           node --check scripts/stable/v16-session-data-fingerprint.cjs
           node --check scripts/stable/v16-recommendation-freshness-guard.cjs
