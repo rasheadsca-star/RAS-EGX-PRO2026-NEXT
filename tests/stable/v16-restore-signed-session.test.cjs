@@ -24,7 +24,7 @@ test('require verified current OHLCV in persisted history for every accepted bar
  try{
   fs.mkdirSync(path.join(root,'data/history'),{recursive:true});const f=fixture();
   for(const r of f.market.rows)fs.writeFileSync(path.join(root,'data/history',r.symbol+'.json'),
-   JSON.stringify({symbolVerified:true,isin:'EGS123456789',sessions:[{date:session,open:r.open,high:r.high,low:r.low,close:r.close??r.price,volume:r.volume}]}));
+   JSON.stringify({ticker:r.symbol,symbolVerified:true,isin:'EGS123456789',sessions:[{date:session,open:r.open,high:r.high,low:r.low,close:r.close??r.price,volume:r.volume}]}));
   assert.equal(verifyHistory(root,f.market,session,2),2);
   const p=path.join(root,'data/history/EFGH.json'),h=JSON.parse(fs.readFileSync(p));
   h.sessions[0].close=22;fs.writeFileSync(p,JSON.stringify(h));
