@@ -124,7 +124,7 @@ test('MVP displays reproducible OHLCV audit counts separately from paper recomme
   generatedAt:'2026-10-28T20:00:00Z',inputsSha256:'abcd1234',
   calendar:{officialExchangeCalendar:false,latest:'2026-10-28'},
   summary:{historyFiles:201,rawInputRows:8000,structuralAcceptedRows:5000,
-   strictAcceptedRows:100,medianLongestStrictConsecutive:3,
+   strictAcceptedRows:100,medianLongestStrictConsecutive:3,medianTrailingAtOwnLatestSourceProvenance:3,medianLongestSourceProvenanceConsecutive:13,
    currentEligibility:{structural60:8,strict60:0,structural140:0,strict140:0}},
   tickers:[{ticker:'TEST'}],
   top10Recovery:[{ticker:'TEST',latestSession:'2026-10-28',structuralTrailing:8,
