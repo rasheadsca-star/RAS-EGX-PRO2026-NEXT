@@ -24,7 +24,19 @@ jobs:
       - name: Evaluate externally dated source (non-production)
         run: node scripts/research/egx-dated-source-diagnostic.cjs
       - name: Publish diagnosis artifact, never canonical prices
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: egx-dated-source-diagnostic
           path: data/research/dated-source-diagnostic.json
+      - name: Gate diagnostic evidence (not production approval)
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('data/research/dated-source-diagnostic.json','utf8'));
+          const valid=Number(d.counts?.DATED_OHLCV_CANDIDATE||0);
+          const total=(d.results||[]).length;
+          console.log(JSON.stringify({expectedSession:d.expectedSession,datedOhlcvCandidates:valid,checked:total,statusCounts:d.counts},null,2));
+          if(valid===0){console.error('::error::NO_DATED_OHLCV_ROWS_VERIFIED: workflow must not be reported as source validation success');process.exit(1)}
+          console.log('RESEARCH_DATE_EVIDENCE_FOUND_NOT_PRODUCTION_READY');
+          NODE
