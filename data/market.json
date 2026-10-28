@@ -3388,6 +3388,7 @@
       "updatedAt": "2026-10-28T21:55:28.979Z",
       "source": "mubasher_symbol_pages",
       "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
+      "sourceMarketTime": "28 April 2022 11:50 AM market time",
       "sourceSessionDate": "2022-04-28",
       "marketSessionDate": "2022-04-28",
       "sourceSessionEvidence": "mubasher_volume_statistics_explicit_date_volume_match",
@@ -5980,6 +5981,7 @@
       "updatedAt": "2026-10-28T21:55:28.979Z",
       "source": "mubasher_symbol_pages",
       "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DCCC/",
+      "sourceMarketTime": "7 April 2008 02:00 AM market time",
       "sourceSessionDate": "2008-04-07",
       "marketSessionDate": "2008-04-07",
       "sourceSessionEvidence": "mubasher_volume_statistics_explicit_date_volume_match",
@@ -6556,6 +6558,7 @@
       "updatedAt": "2026-10-28T21:55:28.979Z",
       "source": "mubasher_symbol_pages",
       "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
+      "sourceMarketTime": "5 February 2002 02:00 AM market time",
       "sourceSessionDate": "2002-02-05",
       "marketSessionDate": "2002-02-05",
       "sourceSessionEvidence": "mubasher_volume_statistics_explicit_date_volume_match",
@@ -6761,6 +6764,15 @@
   "note": "Public/delayed data fetched with price-precision priority. Symbol pages are preferred for exact sub-1 EGP prices. Validate with broker before trading. Missing-symbol fallback recovered 0/14.",
   "fallbackRecoveredRows": 0,
   "fallbackAttemptedRows": 14,
+  "sourceSessionEvidence": {
+    "expectedSession": "2026-10-28",
+    "checkedAt": "2026-10-28T22:18:52.180Z",
+    "totalRows": 211,
+    "matchingRows": 0,
+    "mismatchedRows": 3,
+    "unknownRows": 208,
+    "coveragePct": 0
+  },
   "sourceSessionQuorumInference": {
     "schemaVersion": "16.3.9-source-session-quorum-6-explicit-stale-minority-quarantine",
     "checkedAt": "2026-10-28T22:14:03.951Z",
@@ -6771,9 +6783,9 @@
     "marketFetchDate": "2026-10-28",
     "marketSource": "mubasher_symbol_pages_precise_enriched",
     "totalRows": 211,
-    "explicitExpectedRows": 206,
-    "explicitCoveragePct": 97.63,
-    "explicitQuorumPassed": true,
+    "explicitExpectedRows": 0,
+    "explicitCoveragePct": 0,
+    "explicitQuorumPassed": false,
     "timeOnlyCandidates": 0,
     "candidateCoveragePct": 0,
     "recoveredSourceMarketTimeRows": 0,
@@ -6782,32 +6794,16 @@
     "inferenceQuorumPassed": false,
     "minimumQuorum": 80,
     "minimumCoveragePct": 80,
-    "explicitMismatches": 5,
-    "explicitMismatchPct": 2.37,
+    "explicitMismatches": 3,
+    "explicitMismatchPct": 1.42,
     "maximumExplicitMismatchPct": 5,
     "explicitConflictQuarantinePassed": true,
-    "quarantinedExplicitMismatchRows": 5,
+    "quarantinedExplicitMismatchRows": 3,
     "quarantinedExplicitMismatches": [
-      {
-        "symbol": "ARVA",
-        "sourceSessionDate": "2026-08-16",
-        "sourceMarketTime": null,
-        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/ARVA/",
-        "executionEligible": false,
-        "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
-      },
-      {
-        "symbol": "EPPK",
-        "sourceSessionDate": "2026-09-08",
-        "sourceMarketTime": null,
-        "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/EPPK/",
-        "executionEligible": false,
-        "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
-      },
       {
         "symbol": "MEGM",
         "sourceSessionDate": "2022-04-28",
-        "sourceMarketTime": null,
+        "sourceMarketTime": "28 April 2022 11:50 AM market time",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/MEGM/",
         "executionEligible": false,
         "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
@@ -6815,7 +6811,7 @@
       {
         "symbol": "DCCC",
         "sourceSessionDate": "2008-04-07",
-        "sourceMarketTime": null,
+        "sourceMarketTime": "7 April 2008 02:00 AM market time",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/DCCC/",
         "executionEligible": false,
         "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
@@ -6823,18 +6819,19 @@
       {
         "symbol": "SEIGA",
         "sourceSessionDate": "2002-02-05",
-        "sourceMarketTime": null,
+        "sourceMarketTime": "5 February 2002 02:00 AM market time",
         "sourceUrl": "https://english.mubasher.info/markets/EGX/stocks/SEIGA/",
         "executionEligible": false,
         "quarantineReason": "EXPLICIT_SOURCE_SESSION_MISMATCH"
       }
     ],
-    "quorumPassed": true,
-    "mode": "EXPLICIT_SOURCE_SESSION_EVIDENCE_WITH_STALE_MINORITY_QUARANTINE",
+    "quorumPassed": false,
+    "mode": "FAIL_CLOSED",
     "promotedRows": 0,
     "candidateDiagnostics": {
       "reasonCounts": {
-        "HAS_EXPLICIT_SOURCE_DATE": 211
+        "INVALID_SOURCE_MARKET_TIME": 208,
+        "HAS_EXPLICIT_SOURCE_DATE": 3
       },
       "samples": [
         {
@@ -6845,8 +6842,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         },
         {
@@ -6857,8 +6854,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         },
         {
@@ -6869,8 +6866,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         },
         {
@@ -6881,8 +6878,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         },
         {
@@ -6893,8 +6890,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         },
         {
@@ -6905,8 +6902,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         },
         {
@@ -6917,8 +6914,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         },
         {
@@ -6929,8 +6926,8 @@
           "updatedAt": "2026-10-28T21:55:28.979Z",
           "classification": {
             "eligible": false,
-            "reason": "HAS_EXPLICIT_SOURCE_DATE",
-            "explicit": "2026-10-28"
+            "reason": "INVALID_SOURCE_MARKET_TIME",
+            "sourceMarketTime": null
           }
         }
       ]
