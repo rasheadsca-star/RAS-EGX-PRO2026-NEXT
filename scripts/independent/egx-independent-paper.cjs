@@ -6,13 +6,20 @@ const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const day=s=>typeof s==='string'?s.slice(0,10):'';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
 const round=(n,d=4)=>Number(n.toFixed(d));
-function validBar(r,session){
- return day(r?.date||r?.sessionDate)===session && day(r?.sourceSessionDate)===session &&
-  [r?.open,r?.high,r?.low,r?.close,r?.volume].every(finite) &&
+function historicalBarValid(r){
+ const d=day(r?.date||r?.sessionDate);
+ return /^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&
+  (!r?.sourceSessionDate||day(r.sourceSessionDate)===d)&&
+  [r?.open,r?.high,r?.low,r?.close,r?.volume].every(finite)&&
   r.open>0&&r.close>0&&r.low>0&&r.high>=Math.max(r.open,r.close)&&
   r.low<=Math.min(r.open,r.close)&&r.volume>=0&&
-  r.validationStatus==='precise_public_source_session_confirmed'&&
+  !/reconstruct|synthetic|partial_ohlc/i.test(String(r.validationStatus||''))&&
   !r.warnings?.some(x=>/reconstruct|synthetic|partial_ohlc/i.test(String(x)));
+}
+function validBar(r,session){
+ return historicalBarValid(r)&&day(r?.date||r?.sessionDate)===session&&
+  day(r?.sourceSessionDate)===session&&
+  r.validationStatus==='precise_public_source_session_confirmed';
 }
 function sma(rows,n){return rows.slice(-n).reduce((s,r)=>s+r.close,0)/n}
 function atr(rows,n=14){
@@ -36,13 +43,17 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
  const rows=Array.isArray(symbols)?symbols:Object.values(symbols||{});
  for(const sym of rows){
   const ticker=String(sym?.ticker||'').trim().toUpperCase();
-  if(!ticker||sym.active===false||!accepted.has(ticker))continue;
+  if(!/^[A-Z0-9]{2,12}$/.test(ticker)||sym.active===false||!accepted.has(ticker))continue;
   let h;try{h=loadHistory(ticker)}catch{continue}
-  if(h?.symbolVerified!==true||!/^EG[A-Z0-9]{9,}$/i.test(h?.isin||''))continue;
-  const bars=(h.sessions||[]).filter(r=>day(r.date||r.sessionDate)<=session).sort((a,b)=>day(a.date).localeCompare(day(b.date)));
+  if(h?.symbolVerified!==true||!/^EG[A-Z0-9]{10}$/i.test(h?.isin||'')||
+     (h.ticker&&String(h.ticker).toUpperCase()!==ticker)||
+     (sym.isin&&String(sym.isin).toUpperCase()!==String(h.isin).toUpperCase()))continue;
+  const bars=(Array.isArray(h.sessions)?h.sessions:[]).filter(r=>day(r?.date||r?.sessionDate)<=session)
+    .sort((a,b)=>day(a.date||a.sessionDate).localeCompare(day(b.date||b.sessionDate)));
   if(bars.length<60||!validBar(bars.at(-1),session))continue;
-  if(bars.slice(-60).some(r=>![r.open,r.high,r.low,r.close,r.volume].every(finite)||
-     r.close<=0||r.high<Math.max(r.open,r.close)||r.low>Math.min(r.open,r.close)))continue;
+  const recent=bars.slice(-60),dates=recent.map(r=>day(r.date||r.sessionDate));
+  // Each indicator observation must be a distinct, non-synthetic trading session.
+  if(new Set(dates).size!==recent.length||recent.some(r=>!historicalBarValid(r)))continue;
   const c=bars.at(-1),m20=sma(bars,20),m50=sma(bars,50),a=atr(bars);
   const avgVolume=bars.slice(-21,-1).reduce((s,r)=>s+r.volume,0)/20;
   if(!a||a<=0||avgVolume<=0)continue;
@@ -76,4 +87,4 @@ function main(){
  console.log('EGX_INDEPENDENT_PAPER '+JSON.stringify({status:output.status,blockers:output.blockers,watch:output.watchlist.length}));
 }
 if(require.main===module)main();
-module.exports={evaluate,validBar,atr};
+module.exports={evaluate,validBar,historicalBarValid,atr};
