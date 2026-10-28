@@ -16,7 +16,8 @@ function partitionPersistable(rows,historyDir){
   const t=ticker(row.ticker),h=readHistory(historyDir,t);
   const identityOk=h?.symbolVerified===true&&ticker(h.ticker)===t
     &&(!h.isin||/^EG[A-Z0-9]{9,}$/i.test(String(h.isin)));
-  const sourceOk=day(row.sourceSessionDate)===day(row.date)&&observed(row);
+  const sourceOk=day(row.sourceSessionDate)===day(row.date)&&observed(row)
+    &&!row.warnings?.includes('partial_ohlc_reconstructed_from_close_or_previous_close');
   if(!identityOk||!sourceOk){
    rejected.push({...row,reason:!h?'HISTORY_FILE_MISSING':!identityOk?'SYMBOL_IDENTITY_NOT_VERIFIED':'OBSERVED_SESSION_OHLCV_INVALID'});
    continue;
