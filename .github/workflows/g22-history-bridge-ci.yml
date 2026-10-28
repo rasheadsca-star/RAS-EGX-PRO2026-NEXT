@@ -1,0 +1,75 @@
+name: G22 Verified Intervening History Bridge CI
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/astra/g22-verified-history-bridge.cjs'
+      - 'tests/astra/g22-verified-history-bridge.test.cjs'
+      - '.github/workflows/astra-g22-postclose-refresh.yml'
+      - '.github/workflows/g22-history-bridge-ci.yml'
+  push:
+    branches: ['main']
+    paths:
+      - 'scripts/astra/g22-verified-history-bridge.cjs'
+      - 'tests/astra/g22-verified-history-bridge.test.cjs'
+      - '.github/workflows/g22-history-bridge-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verified-history-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout bridge implementation
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Checkout immutable certified G11 baseline
+        uses: actions/checkout@v4
+        with:
+          ref: 66b74d6f7586bd06201f6f7992ff9babf1104259
+          path: .astra-certified
+          fetch-depth: 1
+      - name: Checkout latest published MAIN APP source
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .main-app-final
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run bridge unit tests
+        run: |
+          node --check scripts/astra/g22-verified-history-bridge.cjs
+          node --test tests/astra/g22-verified-history-bridge.test.cjs
+      - name: Replay verified intermediate OHLCV into isolated certified checkout
+        env:
+          CERT_ROOT: .astra-certified
+          PROD_DATA_ROOT: .main-app-final
+        run: |
+          set -euo pipefail
+          node scripts/astra/g22-verified-history-bridge.cjs | tee /tmp/g22-history-bridge.log
+          node - <<'NODE'
+          const fs=require('fs'),path=require('path');
+          const prod=process.env.PROD_DATA_ROOT,cert=process.env.CERT_ROOT;
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const expected=read(path.join(prod,'data/stable/v15-price-truth.json')).expectedSession;
+          const report=JSON.parse(fs.readFileSync('/tmp/g22-history-bridge.log','utf8').trim().replace(/^G22_VERIFIED_HISTORY_BRIDGE /,''));
+          if(report.expectedSession!==expected || report.addedBars<1)throw Error('BRIDGE_NO_VERIFIED_PROGRESS');
+          const a=read(path.join(cert,'data/history/AALR.json')).sessions;
+          const before=a.filter(r=>r.date<expected).at(-1);
+          const actual=read(path.join(prod,'data/history/AALR.json')).sessions.find(r=>r.date===before?.date);
+          if(!actual || before.close!==actual.close || before.sourceSessionDate!==before.date)throw Error('BRIDGE_LAST_PRIOR_BAR_NOT_VERIFIED');
+          console.log('G22_BRIDGE_REAL_DATA_PASS',JSON.stringify({expected,addedBars:report.addedBars,filesChanged:report.filesChanged,aalrPreviousSession:before.date,aalrPreviousClose:before.close}));
+          NODE
+      - name: Archive verified bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: g22-verified-history-bridge
+          path: /tmp/g22-history-bridge.log
+          retention-days: 14
