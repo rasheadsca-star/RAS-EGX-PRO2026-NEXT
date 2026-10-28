@@ -3,6 +3,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const {observed} = require('./v16-verified-incremental-recovery.cjs');
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const P = rel => path.join(ROOT, rel);
@@ -119,10 +120,11 @@ function parseStockAnalysisRows(html) {
   const rows = [];
   for (const tr of String(html || '').matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
     const cells = [...tr[1].matchAll(/<(?:th|td)\b[^>]*>([\s\S]*?)<\/(?:th|td)>/gi)].map(m => decodeHtml(m[1]));
-    if (cells.length < 5) continue;
-    const time = Date.parse(cells[0]);
+    if (cells.length < 8) continue;
+    // Provider dates are exchange session labels, not host-local instants.
+    const time = Date.parse(`${cells[0]} UTC`);
     if (!Number.isFinite(time)) continue;
-    rows.push({ date: new Date(time).toISOString().slice(0, 10), raw: cells, open: parseNum(cells[1]), high: parseNum(cells[2]), low: parseNum(cells[3]), close: parseNum(cells[4]), volume: parseNum(cells.find((_, i) => i >= 5 && /[KMBT]|\d[\d,]{3,}/i.test(cells[i])) || cells[6]) });
+    rows.push({ date: new Date(time).toISOString().slice(0, 10), raw: cells, open: parseNum(cells[1]), high: parseNum(cells[2]), low: parseNum(cells[3]), close: parseNum(cells[4]), volume: parseNum(cells[7]) });
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -193,16 +195,18 @@ async function resolveTarget(target, marketByTicker, expectedSession) {
   const primary = marketByTicker.get(ticker) || {};
   const primaryClose = n(primary.price ?? primary.last ?? primary.close ?? target.close);
   const stalePrimary = ['SOURCE_SESSION_MISMATCH', 'SOURCE_SESSION_UNKNOWN'].includes(String(target.reason || ''));
+  const fullCandleRequired = stalePrimary || target.reason === 'OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION';
+  const usable = e => e.status === 'APPROVED' && (!fullCandleRequired || observed(e));
   const attempts = [];
 
-  if (!stalePrimary) {
+  if (!fullCandleRequired) {
     const sigma = await sigmaEvidence(ticker, expectedSession, primaryClose, target); attempts.push(sigma);
-    if (sigma.status === 'APPROVED') return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: sigma, attempts };
+    if (usable(sigma)) return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: sigma, attempts };
   }
   const yahoo = await yahooEvidence(ticker, expectedSession, primaryClose, stalePrimary); attempts.push(yahoo);
-  if (yahoo.status === 'APPROVED') return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: yahoo, attempts };
+  if (usable(yahoo)) return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: yahoo, attempts };
   const stock = await stockAnalysisEvidence(ticker, expectedSession, primaryClose, stalePrimary); attempts.push(stock);
-  if (stock.status === 'APPROVED') return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: stock, attempts };
+  if (usable(stock)) return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: true, approvedEvidence: stock, attempts };
   return { ticker, originalReason: target.reason, primary: { source: primary.source || null, sourceUrl: primary.sourceUrl || null, sourceSessionDate: dateOnly(primary.sourceSessionDate), close: primaryClose }, approved: false, approvedEvidence: null, attempts };
 }
 async function mapLimit(items, limit, worker) {
@@ -216,7 +220,7 @@ async function main() {
   const price = readJson(PRICE_TRUTH_PATH, {});
   const expectedSession = price.expectedSession || market?.sourceSessionEvidence?.expectedSession || null;
   if (!expectedSession) throw new Error('Missing expected session');
-  const targets = (Array.isArray(price.sampleRejected) ? price.sampleRejected : []).filter(r => r?.ticker && ['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN','EXTREME_JUMP_REQUIRES_SECOND_SOURCE','REPORTED_CHANGE_MISMATCH','SECOND_SOURCE_HISTORY_PERSIST_FAILED'].includes(r.reason));
+  const targets = (Array.isArray(price.sampleRejected) ? price.sampleRejected : []).filter(r => r?.ticker && ['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN','EXTREME_JUMP_REQUIRES_SECOND_SOURCE','REPORTED_CHANGE_MISMATCH','SECOND_SOURCE_HISTORY_PERSIST_FAILED','OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION'].includes(r.reason));
   const uniqueTargets = [...new Map(targets.map(r => [norm(r.ticker), { ...r, ticker: norm(r.ticker) }])).values()];
   const marketByTicker = new Map((market.rows || []).map(r => [norm(r.symbol || r.ticker || r.code), r]));
   const records = await mapLimit(uniqueTargets, CONCURRENCY, target => resolveTarget(target, marketByTicker, expectedSession));
@@ -236,4 +240,5 @@ async function main() {
   writeJson(OUT_PATH, out);
   console.log(JSON.stringify({ expectedSession, targets: out.targetCount, approved: out.approvedCount, unresolved: out.unresolvedCount, approvedTickers: out.approvedTickers, unresolvedTickers: out.unresolvedTickers }, null, 2));
 }
-main().catch(error => { console.error(error); process.exit(1); });
+if (require.main === module) main().catch(error => { console.error(error); process.exit(1); });
+module.exports = {parseStockAnalysisRows, yahooEvidence, stockAnalysisEvidence, resolveTarget};

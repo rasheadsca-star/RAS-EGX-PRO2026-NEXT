@@ -3,7 +3,44 @@
 
 const fs = require('fs');
 const path = require('path');
-const {observed, retainedSameSessionBar} = require('./v16-verified-incremental-recovery.cjs');
+// Pure local guards deliberately duplicated: this producer is S2-isolated
+// and must not load any history or recovery module. Adversarial parity tests
+// exercise both implementations.
+const retainedTickerOf=r=>String(r?.symbol||r?.ticker||r?.code||'').toUpperCase().replace(/\.CA$/,'');
+const retainedNumber=x=>x===null||x===undefined||!['number','string'].includes(typeof x)||(typeof x==='string'&&!x.trim())?null:Number.isFinite(Number(x))?Number(x):null;
+const retainedDate=x=>String(x||'').slice(0,10);
+function observed(r,closeKey='close'){
+ const c=retainedNumber(r?.[closeKey]??r?.close),o=retainedNumber(r?.open),h=retainedNumber(r?.high),l=retainedNumber(r?.low),v=retainedNumber(r?.volume);
+ return c>0&&o>0&&h>=Math.max(o,c)&&l>0&&l<=Math.min(o,c)&&v!==null&&v>=0;
+}
+// Preserve an observed independently approved candle only while its exact
+// session, verified security identity and approval remain valid. A fresh
+// same-session primary price conflict is quarantined rather than hidden.
+function retainedSameSessionBar(ticker, expected, second, history, symbol, primary) {
+ const record=second.records?.[ticker], e=record?.approvedEvidence;
+ if(retainedDate(second.expectedSession)!==expected||record?.approved!==true||e?.status!=='APPROVED'
+   ||retainedDate(e.sessionDate)!==expected||!['YAHOO_CHART','STOCKANALYSIS_EGX_HISTORY','SIGMA_CAPITAL_LIVE_MARKET'].includes(e.provider)
+   ||!(retainedNumber(e.close)>0)||symbol?.active===false||!symbol||history?.symbolVerified!==true
+   ||retainedTickerOf(history)!==ticker||(record.ticker&&retainedTickerOf(record)!==ticker)
+   ||(symbol.ticker&&retainedTickerOf(symbol)!==ticker)
+   ||(symbol.isin&&symbol.isin!==history.isin)||(e.ticker&&retainedTickerOf(e)!==ticker)
+   ||(symbol.isin&&String(symbol.isin).toUpperCase()!==String(history.isin||'').toUpperCase())
+   ||!/^EG[A-Z0-9]{9,}$/i.test(String(history.isin||'')))return null;
+ const bars=(history.sessions||[]).filter(r=>retainedDate(r.date||r.sessionDate)===expected);
+ if(bars.length!==1)return null;
+ const bar=bars[0];
+ if(retainedDate(bar.sourceSessionDate)!==expected||bar.secondSourceConfirmed!==true
+   ||bar.secondSourceProvider!==e.provider||!observed(bar)
+   ||(bar.ticker&&retainedTickerOf(bar)!==ticker)
+   ||/invalid|conflict|failed|quarantined|unresolved/i.test(String(bar.validationStatus||''))
+   ||(bar.warnings||[]).some(w=>/reconstruct|synthetic|conflict/i.test(String(w)))
+   ||Math.abs(bar.close/retainedNumber(e.close)-1)*100>2.5)return null;
+ const currentPrice=retainedNumber(primary?.price??primary?.last??primary?.close);
+ if(retainedDate(primary?.sourceSessionDate)===expected&&currentPrice>0
+   &&Math.abs(currentPrice/retainedNumber(e.close)-1)*100>2.5)return null;
+ return {...bar,ticker};
+}
+
 
 const ROOT = path.resolve(process.env.GITHUB_WORKSPACE || process.cwd());
 const HISTORY_DIR = path.join(ROOT, 'data/history');
@@ -28,7 +65,7 @@ const CONTAMINATED_SESSION = '2026-08-13';
 const CONTAMINATED_FETCH_PREFIX = '2026-08-13T21:21:32';
 
 function n(value, fallback = null) {
-  if (value === null || value === undefined || typeof value === 'boolean' || (typeof value === 'string' && !value.trim())) return fallback;
+  if (value === null || value === undefined || !['number','string'].includes(typeof value) || (typeof value === 'string' && !value.trim())) return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
@@ -549,7 +586,7 @@ async function main() {
       previousTrustedClose: row.previousTrustedClose, jumpPct: row.jumpPct,
       mode: row.priceTruthMode, warnings: row.warnings
     })),
-    sampleRejected: rejected.slice(0, 80),
+    sampleRejected: rejected,
     sampleDropped: dropped.slice(0, 50)
   };
   writeJson(OUT_PATH, report);
@@ -593,7 +630,7 @@ async function main() {
   if (!ready) process.exitCode = 2;
 }
 
-if (require.main === module) main().catch(error => {
+if (module.parent === null) main().catch(error => {
   const generatedAt = new Date().toISOString();
   const expectedSession = expectedLatestCompletedSessionCairo();
   writeJson(OUT_PATH, {
@@ -609,4 +646,4 @@ if (require.main === module) main().catch(error => {
   process.exitCode = 1;
 });
 
-module.exports = {normalizeMarketRow, mergeIntoHistory, expectedLatestCompletedSessionCairo};
+module.exports = {normalizeMarketRow, mergeIntoHistory, expectedLatestCompletedSessionCairo, observed, retainedSameSessionBar};

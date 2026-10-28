@@ -11,7 +11,7 @@ const evidence={expectedSession:session,records:{NAHO:{approved:true,approvedEvi
 const history={ticker,isin:'EGS69182C011',symbolVerified:true,sessions:[bar]};
 const retain=(e=evidence,h=history,m=primary)=>retainedSameSessionBar(ticker,session,e,h,{active:true},m);
 test('execution normalization rejects absent OHLCV and never fabricates candles',()=>{
- for(const k of ['open','high','low','volume'])for(const missing of [null,undefined,'',' ',false]){
+ for(const k of ['open','high','low','volume'])for(const missing of [null,undefined,'',' ',false,[],{}]){
   const row={...primary,[k]:missing};
   assert.equal(normalizeMarketRow(row,session,'source','2026-10-28').reason,'OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION',k);
   assert.equal(validOhlc(row,row.price),null,k);
@@ -66,3 +66,14 @@ test('full price-truth run retains omitted independently observed symbol and rem
 });
 
 test('whitespace and boolean fields cannot become observed volume',()=>{for(const volume of [' ', '\t', false, true]) assert.equal(require('../../scripts/stable/v16-verified-incremental-recovery.cjs').observed({open:10,high:11,low:9,close:10,volume}),false)});
+
+test('isolated producer and recovery guard agree on adversarial data',()=>{
+ const producer=require('../../scripts/stable/v16-session-aware-price-truth.cjs'), recovery=require('../../scripts/stable/v16-verified-incremental-recovery.cjs');
+ for(const field of ['open','high','low','close','volume'])for(const value of [null,undefined,'',' ',false,true,[],{},-1,0,0.13,Infinity]){
+  const row={...bar,[field]:value};assert.equal(producer.observed(row),recovery.observed(row));
+ }
+ for(const status of ['VALID','unresolved','conflict'])for(const isin of [history.isin,'EGS123456789'])for(const sourceSessionDate of [session,'2026-10-26']){
+  const h={...history,sessions:[{...bar,validationStatus:status,sourceSessionDate}]}, symbol={active:true,ticker,isin};
+  assert.deepEqual(producer.retainedSameSessionBar(ticker,session,evidence,h,symbol,primary),recovery.retainedSameSessionBar(ticker,session,evidence,h,symbol,primary));
+ }
+});

@@ -4,7 +4,7 @@ const root=process.env.GITHUB_WORKSPACE||process.cwd();
 const read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
 const write=(p,v)=>fs.writeFileSync(path.join(root,p),JSON.stringify(v,null,2)+'\n');
 const tickerOf=r=>String(r?.symbol||r?.ticker||r?.code||'').toUpperCase().replace(/\.CA$/,'');
-const num=x=>x===null||x===undefined||typeof x==='boolean'||(typeof x==='string'&&!x.trim())?null:Number.isFinite(Number(x))?Number(x):null;
+const num=x=>x===null||x===undefined||!['number','string'].includes(typeof x)||(typeof x==='string'&&!x.trim())?null:Number.isFinite(Number(x))?Number(x):null;
 const date=x=>String(x||'').slice(0,10);
 function observed(r,closeKey='close'){
  const c=num(r?.[closeKey]??r?.close),o=num(r?.open),h=num(r?.high),l=num(r?.low),v=num(r?.volume);
@@ -46,13 +46,13 @@ function filterApproved(second,price,market,symbols,historyByTicker){
  for(const [key,record] of Object.entries(filtered.records||{})){
   if(record.approved!==true)continue;
   const ticker=tickerOf({ticker:key}),h=historyByTicker[ticker],s=symbols[ticker],m=rows.get(ticker),reject=rejects.get(ticker);
-  const e=record.approvedEvidence,stale=['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN'].includes(reject?.reason);
+  const e=record.approvedEvidence,fullCandleRequired=reject?.reason==='OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION',stale=['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN'].includes(reject?.reason);
   let reason=null;
   if(!s||s.active===false||!h||h.symbolVerified!==true||!/^EG[A-Z0-9]{9,}$/i.test(String(h.isin||'')))reason='EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED';
   else if(!reject||!m||tickerOf(m)!==ticker)reason='PRIMARY_REJECTION_AND_TICKER_REQUIRED';
   else if(date(e?.sessionDate)!==expected||e?.status!=='APPROVED'||!['YAHOO_CHART','STOCKANALYSIS_EGX_HISTORY','SIGMA_CAPITAL_LIVE_MARKET'].includes(e?.provider))reason='INDEPENDENT_SAME_SESSION_EVIDENCE_REQUIRED';
   else if(!stale&&date(m?.sourceSessionDate)!==expected)reason='PRIMARY_SOURCE_SESSION_REQUIRED';
-  else if(stale?!observed(e):!observed(m,'price'))reason='OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION';
+  else if((stale||fullCandleRequired)?!observed(e):!observed(m,'price'))reason='OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION';
   else if(!stale&&Math.abs(num(e?.close)/num(m?.price)-1)*100>2.5)reason='SECOND_SOURCE_PRICE_DISAGREEMENT';
   if(reason){record.approved=false;record.quarantineReason=reason;record.approvedEvidence=null;quarantined.push({ticker,reason});}
  }

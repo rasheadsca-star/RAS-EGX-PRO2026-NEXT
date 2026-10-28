@@ -22,7 +22,7 @@ function writeJson(file, value) {
   JSON.parse(fs.readFileSync(tmp, 'utf8'));
   fs.renameSync(tmp, file);
 }
-const n = v => v === null || v === undefined || typeof v === 'boolean' || (typeof v === 'string' && !v.trim()) ? null : Number.isFinite(Number(v)) ? Number(v) : null;
+const n = v => v === null || v === undefined || !['number','string'].includes(typeof v) || (typeof v === 'string' && !v.trim()) ? null : Number.isFinite(Number(v)) ? Number(v) : null;
 const round = (v, d = 4) => Number.isFinite(Number(v)) ? Number(Number(v).toFixed(d)) : null;
 const norm = v => String(v || '').trim().toUpperCase().replace(/\.CA$/i, '').replace(/[^A-Z0-9._-]/g, '');
 const dateOnly = v => (String(v || '').match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
@@ -95,12 +95,12 @@ function mergeHistory(ticker, evidence, expectedSession, marketRow, originalReas
     source: primaryIsCanonical ? String(marketRow?.source || 'mubasher_symbol_pages') : sourceLabel(evidence.provider),
     verificationSources: [sourceLabel(evidence.provider)],
     sourceUrls: { primary: primaryIsCanonical ? (marketRow?.sourceUrl || null) : (evidence.url || null), verification: [primaryIsCanonical ? evidence.url : marketRow?.sourceUrl].filter(Boolean) },
-    sourceSessionEvidence: staleReplacement ? `independent_second_source_${String(evidence.provider).toLowerCase()}_exact_session_replacement` : `primary_exact_session_close_independently_confirmed_by_${String(evidence.provider).toLowerCase()}`,
+    sourceSessionEvidence: !primaryIsCanonical ? `independent_second_source_${String(evidence.provider).toLowerCase()}_exact_session_replacement` : `primary_exact_session_close_independently_confirmed_by_${String(evidence.provider).toLowerCase()}`,
     validationStatus: 'precise_public_source_session_confirmed', fetchedAt: now, validatedAt: now,
     secondSourceConfirmed: true, secondSourceProvider: evidence.provider, secondSourceClose: round(n(evidence.close), 6),
     primaryVsSecondSourceDifferencePct: n(evidence.priceDifferencePct), originalPrimaryClose: primaryClose,
     stalePrimaryReplaced: staleReplacement, originalRejectReason: originalReason || null, ohlcMode,
-    confidence: { overall: 95, policy: staleReplacement ? 'independent_exact_session_replacement_for_stale_primary' : 'primary_exact_session_close_plus_independent_exact_session_confirmation', failClosed: true }
+    confidence: { overall: 95, policy: !primaryIsCanonical ? 'independent_observed_exact_session_replacement' : 'primary_exact_session_close_plus_independent_exact_session_confirmation', failClosed: true }
   };
   document.sessions = document.sessions.filter(s => dateOnly(s?.date || s?.sessionDate) !== expectedSession);
   document.sessions.push(row);
@@ -149,7 +149,7 @@ function main() {
     if (!history.merged) continue;
     acceptedRecovered.push({ ticker, date: expectedSession, close: round(history.close, 6), mode: history.mode, originalRejectReason: originalReason, provider: e.provider,
       sourceSessionDate: expectedSession,
-      sourceSessionEvidence: STALE_REASONS.has(String(originalReason || '')) ? `independent_second_source_${String(e.provider).toLowerCase()}_exact_session_replacement` : `primary_exact_session_close_independently_confirmed_by_${String(e.provider).toLowerCase()}`,
+      sourceSessionEvidence: history.mode !== 'PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED' ? `independent_second_source_${String(e.provider).toLowerCase()}_exact_session_replacement` : `primary_exact_session_close_independently_confirmed_by_${String(e.provider).toLowerCase()}`,
       priceDifferencePct: n(e.priceDifferencePct), secondSourceConfirmed: true });
   }
 

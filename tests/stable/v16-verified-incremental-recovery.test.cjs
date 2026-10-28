@@ -35,3 +35,11 @@ test('recovery count and exact evidence must reconcile with accepted delta',()=>
  assert.throws(()=>verify(rejected,{...after,acceptedRows:195},f,{[ticker]:h}),/DELTA_MISMATCH/);
 });
 test('numeric missing fields are never treated as observed zero',()=>assert.equal(observed({open:1,high:1,low:1,close:1,volume:null}),false));
+
+test('missing primary range requires a complete independent candle, never close-only approval',()=>{
+ const r={...rejected,sampleRejected:[{ticker,reason:'OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION'}]};
+ const m={rows:[{...primary.rows[0],high:null}]};
+ assert.equal(filterApproved(second,r,m,symbols,{[ticker]:history}).approvedCount,0);
+ const e=structuredClone(second);Object.assign(e.records[ticker].approvedEvidence,{open:0.07,high:0.08,low:0.07,volume:1000});
+ assert.equal(filterApproved(e,r,m,symbols,{[ticker]:history}).approvedCount,1);
+});
