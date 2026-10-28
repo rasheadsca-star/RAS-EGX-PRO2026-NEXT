@@ -63,6 +63,33 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  }
  assert.ok(by('independentBlockers').textContent.includes('أسباب الحجب'));
  assert.ok(by('astraStatus').textContent.includes('أرشيفي'));
- assert.ok(by('marketStatus').textContent.includes('غير معتمد'));
+ const truth=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
+ const priceReady=truth.ready===true&&truth.executionGrade===true&&Number.isInteger(truth.acceptedRows)&&truth.acceptedRows>0;
+ assert.ok(by('marketStatus').textContent.includes(priceReady?'أسعار مؤرخة اجتازت بوابة المصدر':'غير معتمد'));
  assert.ok(by('paperLedger').textContent.includes('أوامر تداول: صفر'));
+ const radar=by('researchRadarResults').children;
+ assert.equal(radar.length,16,'V16 3 + Quant 7 + Gann 10 with four duplicate occurrences');
+ const tickers=radar.map(row=>row.children[0].textContent);
+ assert.equal(new Set(tickers).size,radar.length,'one row per ticker, never duplicate signals');
+ const find=t=>radar.find(row=>row.children[0].textContent===t).children.map(c=>c.textContent);
+ const faita=find('FAITA');
+ assert.ok(faita[1].includes('V16 2026-10-28'));
+ assert.ok(faita[2].includes('مؤشرات OHLCV محجوبة'));
+ const mfpc=find('MFPC');
+ assert.ok(mfpc[1].includes('Quant 2026-10-27 (أرشيف)'));
+ assert.ok(mfpc[1].includes('Gann 2026-10-27 (أرشيف)'));
+ for(const row of radar)assert.equal(row.children[3].textContent,'RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ');
+ assert.ok(by('sourceHealthInfo').textContent.includes('94.2%'));
+ assert.ok(by('sourceHealthInfo').textContent.includes('تأخر المصدر: نعم'));
+ assert.ok(by('researchRadarIntro').textContent.includes('executionReady=false'));
+});
+
+test('unified MVP consumes V16 and Quant source dates without V16 probability-as-calibration',()=>{
+ assert.ok(html.includes('data/stable/v16-main-app-current.json'));
+ assert.ok(html.includes('data/quant/daily-recommendations.json'));
+ assert.ok(html.includes('data/source-health.json'));
+ assert.ok(html.includes('researchRadarResults'));
+ assert.ok(html.includes('RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ'));
+ assert.ok(!html.includes('hasValidatedProbability'));
+ assert.ok(!html.includes('probabilityTop10Pct'));
 });
