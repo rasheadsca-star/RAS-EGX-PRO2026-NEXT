@@ -33,3 +33,8 @@ test('ARAB low-priced identical OHLC with changed volume remains conservatively 
  const b={date:'2026-10-21',open:0.26,high:0.27,low:0.26,close:0.26,volume:210950174};
  assert.equal(copiedBarReasons([a,b])[0].reason,'REPEATED_OHLC');
 });
+
+test('malformed date strings are never classified as duplicate market days',()=>{
+ const a=bar('invalid-date'),b=bar('2026-10-28');
+ assert.deepEqual(copiedBarReasons([a,b]),[]);
+});
