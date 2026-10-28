@@ -4,11 +4,38 @@ const root=process.env.GITHUB_WORKSPACE||process.cwd();
 const read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
 const write=(p,v)=>fs.writeFileSync(path.join(root,p),JSON.stringify(v,null,2)+'\n');
 const tickerOf=r=>String(r?.symbol||r?.ticker||r?.code||'').toUpperCase().replace(/\.CA$/,'');
-const num=x=>x===null||x===undefined||x===''?null:Number.isFinite(Number(x))?Number(x):null;
+const num=x=>x===null||x===undefined||!['number','string'].includes(typeof x)||(typeof x==='string'&&!x.trim())?null:Number.isFinite(Number(x))?Number(x):null;
 const date=x=>String(x||'').slice(0,10);
 function observed(r,closeKey='close'){
  const c=num(r?.[closeKey]??r?.close),o=num(r?.open),h=num(r?.high),l=num(r?.low),v=num(r?.volume);
  return c>0&&o>0&&h>=Math.max(o,c)&&l>0&&l<=Math.min(o,c)&&v!==null&&v>=0;
+}
+// Preserve an observed independently approved candle only while its exact
+// session, verified security identity and approval remain valid. A fresh
+// same-session primary price conflict is quarantined rather than hidden.
+function retainedSameSessionBar(ticker, expected, second, history, symbol, primary) {
+ const record=second.records?.[ticker], e=record?.approvedEvidence;
+ if(date(second.expectedSession)!==expected||record?.approved!==true||e?.status!=='APPROVED'
+   ||date(e.sessionDate)!==expected||!['YAHOO_CHART','STOCKANALYSIS_EGX_HISTORY','SIGMA_CAPITAL_LIVE_MARKET'].includes(e.provider)
+   ||!(num(e.close)>0)||symbol?.active===false||!symbol||history?.symbolVerified!==true
+   ||tickerOf(history)!==ticker||(record.ticker&&tickerOf(record)!==ticker)
+   ||(symbol.ticker&&tickerOf(symbol)!==ticker)
+   ||(symbol.isin&&symbol.isin!==history.isin)||(e.ticker&&tickerOf(e)!==ticker)
+   ||(symbol.isin&&String(symbol.isin).toUpperCase()!==String(history.isin||'').toUpperCase())
+   ||!/^EG[A-Z0-9]{9,}$/i.test(String(history.isin||'')))return null;
+ const bars=(history.sessions||[]).filter(r=>date(r.date||r.sessionDate)===expected);
+ if(bars.length!==1)return null;
+ const bar=bars[0];
+ if(date(bar.sourceSessionDate)!==expected||bar.secondSourceConfirmed!==true
+   ||bar.secondSourceProvider!==e.provider||!observed(bar)
+   ||(bar.ticker&&tickerOf(bar)!==ticker)
+   ||/invalid|conflict|failed|quarantined|unresolved/i.test(String(bar.validationStatus||''))
+   ||(bar.warnings||[]).some(w=>/reconstruct|synthetic|conflict/i.test(String(w)))
+   ||Math.abs(bar.close/num(e.close)-1)*100>2.5)return null;
+ const currentPrice=num(primary?.price??primary?.last??primary?.close);
+ if(date(primary?.sourceSessionDate)===expected&&currentPrice>0
+   &&Math.abs(currentPrice/num(e.close)-1)*100>2.5)return null;
+ return {...bar,ticker};
 }
 function filterApproved(second,price,market,symbols,historyByTicker){
  const expected=date(price.expectedSession);
@@ -19,12 +46,13 @@ function filterApproved(second,price,market,symbols,historyByTicker){
  for(const [key,record] of Object.entries(filtered.records||{})){
   if(record.approved!==true)continue;
   const ticker=tickerOf({ticker:key}),h=historyByTicker[ticker],s=symbols[ticker],m=rows.get(ticker),reject=rejects.get(ticker);
-  const e=record.approvedEvidence,stale=['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN'].includes(reject?.reason);
+  const e=record.approvedEvidence,fullCandleRequired=reject?.reason==='OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION',stale=['SOURCE_SESSION_MISMATCH','SOURCE_SESSION_UNKNOWN'].includes(reject?.reason);
   let reason=null;
   if(!s||s.active===false||!h||h.symbolVerified!==true||!/^EG[A-Z0-9]{9,}$/i.test(String(h.isin||'')))reason='EXISTING_VERIFIED_ISIN_HISTORY_REQUIRED';
   else if(!reject||!m||tickerOf(m)!==ticker)reason='PRIMARY_REJECTION_AND_TICKER_REQUIRED';
   else if(date(e?.sessionDate)!==expected||e?.status!=='APPROVED'||!['YAHOO_CHART','STOCKANALYSIS_EGX_HISTORY','SIGMA_CAPITAL_LIVE_MARKET'].includes(e?.provider))reason='INDEPENDENT_SAME_SESSION_EVIDENCE_REQUIRED';
-  else if(stale?!observed(e):!observed(m,'price'))reason='OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION';
+  else if(!stale&&date(m?.sourceSessionDate)!==expected)reason='PRIMARY_SOURCE_SESSION_REQUIRED';
+  else if((stale||fullCandleRequired)?!observed(e):!observed(m,'price'))reason='OBSERVED_OHLCV_REQUIRED_NO_RECONSTRUCTION';
   else if(!stale&&Math.abs(num(e?.close)/num(m?.price)-1)*100>2.5)reason='SECOND_SOURCE_PRICE_DISAGREEMENT';
   if(reason){record.approved=false;record.quarantineReason=reason;record.approvedEvidence=null;quarantined.push({ticker,reason});}
  }
@@ -71,4 +99,4 @@ function main(){
  }else throw Error('Use filter or verify');
 }
 if(require.main===module)main();
-module.exports={observed,filterApproved,verify};
+module.exports={observed,filterApproved,verify,retainedSameSessionBar};

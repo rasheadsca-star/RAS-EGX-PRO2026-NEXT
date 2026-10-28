@@ -1,0 +1,18 @@
+name: EGX Observed Price Regression
+on:
+  pull_request:
+    paths:
+      - 'scripts/stable/v16-*'
+      - 'tests/stable/v16-*'
+      - '.github/workflows/egx-observed-price-regression.yml'
+permissions:
+  contents: read
+jobs:
+  price-regression:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/stable/v16-verified-incremental-recovery.test.cjs tests/stable/v16-market-coverage-reconciler.test.cjs tests/stable/v16-same-session-recovery-integration.test.cjs tests/stable/v16-same-session-recovery-replay.test.cjs tests/stable/v16-observed-price-retention.test.cjs tests/stable/v16-second-source-date-parity.test.cjs
