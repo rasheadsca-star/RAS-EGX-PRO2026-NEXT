@@ -169,9 +169,9 @@ jobs:
                   assert isinstance(v16.get('executionReady'),bool)
                   assert isinstance(quant.get('liveExecutionEnabled'),bool)
                   assert isinstance(source.get('delayed'),bool)
-                  assert re.fullmatch(r'\\d{4}-\\d{2}-\\d{2}',v16['sessionDate'])
-                  assert re.fullmatch(r'\\d{4}-\\d{2}-\\d{2}',quant['sessionId'])
-                  assert re.fullmatch(r'\\d{4}-\\d{2}-\\d{2}',gann['sourceSession'])
+                  assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',v16['sessionDate'])
+                  assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',quant['sessionId'])
+                  assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',gann['sourceSession'])
                   sources = [v16.get('researchWatchlist',[]),
                              quant.get('watchCandidates',[]) if quant['status']=='WATCH_ONLY' else [],
                              gann.get('watchRadar',[]) if gann.get('reviewPassed') is True else []]
