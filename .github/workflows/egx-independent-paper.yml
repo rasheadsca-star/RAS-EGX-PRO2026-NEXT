@@ -25,6 +25,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'scripts/independent/history-quality-audit.cjs'
+      - 'tests/independent/history-quality-audit.test.cjs'
       - 'scripts/independent/egx-independent-paper.cjs'
       - 'scripts/independent/walkforward-backtest.cjs'
       - 'scripts/independent/stale-bar-detector.cjs'
@@ -87,8 +89,9 @@ jobs:
           git commit -m "Update independently gated paper decision status"
           git pull --rebase origin main
           # Rebuild against freshest main after rebase, to avoid publishing stale snapshots.
+          node scripts/independent/history-quality-audit.cjs
           node scripts/independent/egx-independent-paper.cjs
           node scripts/independent/preserve-verified-paper.cjs
-          git add unified-console/independent-paper.json unified-console/independent-last-verified.json unified-console/independent-paper-ledger.json
+          git add unified-console/history-quality-audit.json unified-console/independent-paper.json unified-console/independent-last-verified.json unified-console/independent-paper-ledger.json
           git commit --amend --no-edit
           git push origin HEAD:main
