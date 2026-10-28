@@ -75,12 +75,16 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
   const c=recent.at(-1),currency=String(h.currency||c.currency||sym.currency||'').toUpperCase();
   if(c.currency&&currency!==String(c.currency).toUpperCase())continue;
   const cleanBars=recent.filter(historicalBarValid).length;
-  const indicatorReady=recent.length===60&&new Set(dates).size===60&&cleanBars===60;
+  const indicatorBlockers=[];
+  if(recent.length!==60)indicatorBlockers.push('INSUFFICIENT_LOOKBACK_BARS');
+  if(new Set(dates).size!==recent.length)indicatorBlockers.push('DUPLICATE_LOOKBACK_SESSION');
+  if(cleanBars!==recent.length)indicatorBlockers.push('UNVERIFIED_HISTORICAL_OHLCV');
+  const indicatorReady=indicatorBlockers.length===0;
   // Dated observations are NOT indicator-ready candidates or trade signals.
   // This exposes independently sourced current prices without laundering
   // synthetic historical candles into SMA/ATR calculations.
   result.datedPriceObservations.push({ticker,session,close:c.close,currency,
-   cleanLookbackBars:cleanBars,lookbackBars:recent.length,indicatorReady,
+   cleanLookbackBars:cleanBars,lookbackBars:recent.length,indicatorReady,indicatorBlockers,
    evidenceLevel:c.secondSourceConfirmed===true?'CROSS_PROVIDER_CONFIRMED':'DATED_PROVIDER_EVIDENCE',
    state:'DATED_PRICE_OBSERVATION_NOT_A_SIGNAL'});
   if(!indicatorReady)continue;

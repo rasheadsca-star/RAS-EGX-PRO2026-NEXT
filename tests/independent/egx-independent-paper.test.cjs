@@ -113,8 +113,29 @@ test('partially reconstructed 60-bar history remains an observation, never an SM
  assert.deepEqual(x.verifiedCandidates,[]);assert.deepEqual(x.researchWatchlist,[]);
  assert.deepEqual(x.watchlist,[]);assert.deepEqual(x.recommendations,[]);
 });
+test('observation exposes exact OHLCV blockers without manufacturing an indicator',()=>{
+ const reconstructed=sample.map(r=>({...r}));
+ reconstructed[30].warnings=['partial_ohlc_reconstructed_from_close_or_previous_close'];
+ const partial=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',sessions:reconstructed})});
+ assert.deepEqual(partial.datedPriceObservations[0].indicatorBlockers,['UNVERIFIED_HISTORICAL_OHLCV']);
+ assert.equal(partial.datedPriceObservations[0].indicatorReady,false);
+ assert.deepEqual(partial.researchWatchlist,[]);
+ const duplicates=sample.map(r=>({...r}));
+ duplicates[30].date=duplicates[29].date;
+ duplicates[30].sourceSessionDate=duplicates[29].sourceSessionDate;
+ const duplicate=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',sessions:duplicates})});
+ assert.ok(duplicate.datedPriceObservations[0].indicatorBlockers.includes('DUPLICATE_LOOKBACK_SESSION'));
+ const short=run({loadHistory:()=>({ticker:'TEST',symbolVerified:true,isin:'EG0000000000',sessions:sample.slice(-40)})});
+ assert.deepEqual(short.datedPriceObservations[0].indicatorBlockers,['INSUFFICIENT_LOOKBACK_BARS']);
+ for(const result of [partial,duplicate,short]){
+  assert.equal(result.executable,false);
+  assert.deepEqual(result.recommendations,[]);
+  assert.deepEqual(result.watchlist,[]);
+ }
+});
 test('a clean 60-bar series has an independently dated price observation',()=>{
  const x=run();assert.equal(x.datedPriceObservations.length,1);
  assert.equal(x.datedPriceObservations[0].indicatorReady,true);
+ assert.deepEqual(x.datedPriceObservations[0].indicatorBlockers,[]);
  assert.equal(x.datedPriceObservations[0].state,'DATED_PRICE_OBSERVATION_NOT_A_SIGNAL');
 });
