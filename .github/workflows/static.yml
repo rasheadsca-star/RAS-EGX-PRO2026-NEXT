@@ -149,6 +149,8 @@ jobs:
                   html = get('/unified-console/index.html')
                   assert 'independent-last-verified.json' in html
                   assert 'independent-paper-ledger.json' in html
+                  assert 'id="archivedPriceResults"' in html
+                  assert 'أرشيف فقط — ليس سعر اليوم ولا إشارة دخول' in html
                   current = json.loads(get('/unified-console/independent-paper.json'))
                   archive = json.loads(get('/unified-console/independent-last-verified.json'))
                   ledger = json.loads(get('/unified-console/independent-paper-ledger.json'))

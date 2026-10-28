@@ -25,3 +25,14 @@ test('unified console distinguishes archived prices and paper observations from 
  assert.ok(html.includes('أوامر تداول: صفر'));
  assert.ok(html.includes('التنفيذ الآلي والتداول الورقي التنفيذي مغلقان'));
 });
+
+test('MVP archive table remains available even when current price fetch is blocked',()=>{
+ const html=fs.readFileSync('unified-console/index.html','utf8');
+ const current=read('unified-console/independent-paper.json');
+ const archive=read('unified-console/independent-last-verified.json');
+ assert.equal(current.inputs.aggregatePriceReady,false);
+ assert.ok(archive.datedPriceObservations.length>0);
+ assert.ok(html.includes('id="archivedPriceResults"'));
+ assert.ok(html.includes('archiveRows=archiveOK?archive.datedPriceObservations.filter'));
+ assert.ok(html.includes('أرشيف فقط — ليس سعر اليوم ولا إشارة دخول'));
+});

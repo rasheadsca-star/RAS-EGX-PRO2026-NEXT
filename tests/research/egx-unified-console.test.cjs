@@ -12,3 +12,12 @@ test('Pages workflow enforces live independent archive and zero-order ledger E2E
  assert.ok(yml.includes('/unified-console/independent-paper-ledger.json'));
  assert.ok(yml.includes("ledger['orders'] == []"));
 });
+
+test('MVP renders dated last-known-good archive rows separately from current research signals',()=>{
+ assert.ok(html.includes('id="archivedPriceResults"'));
+ assert.ok(html.includes('archive.datedPriceObservations.filter'));
+ assert.ok(html.includes("p.session===archive.session"));
+ assert.ok(html.includes('أرشيف فقط — ليس سعر اليوم ولا إشارة دخول'));
+ assert.ok(html.includes('archive.recommendations.length===0'));
+ assert.ok(html.includes('archive.orders.length===0'));
+});
