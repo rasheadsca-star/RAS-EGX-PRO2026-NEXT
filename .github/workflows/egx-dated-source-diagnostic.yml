@@ -1,0 +1,30 @@
+name: EGX Dated Source Diagnostic (Research Only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/research/egx-dated-source-diagnostic.cjs"
+      - ".github/workflows/egx-dated-source-diagnostic.yml"
+permissions:
+  contents: read
+jobs:
+  source-diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      EGX_EXPECTED_SESSION: "2026-10-27"
+      EGX_DIAGNOSTIC_SYMBOLS: "COMI,OCDI,EFID,ISMQ,TMGH"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify diagnostic syntax
+        run: node --check scripts/research/egx-dated-source-diagnostic.cjs
+      - name: Evaluate externally dated source (non-production)
+        run: node scripts/research/egx-dated-source-diagnostic.cjs
+      - name: Publish diagnosis artifact, never canonical prices
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-dated-source-diagnostic
+          path: data/research/dated-source-diagnostic.json
