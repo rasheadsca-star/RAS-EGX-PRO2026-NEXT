@@ -188,6 +188,7 @@ test('independent CLI keeps dated research available when Astra handoff is missi
   put('data/stable/v15-price-truth.json',
    {expectedSession:session,ready:false,executionGrade:false,acceptedRows:0,sampleAccepted:[]});
   put('data/symbol-map.json',[{ticker:'TEST',active:true,currency:'EGP',exchange:'EGX'}]);
+  put('data/corporate-actions.json',{candidates:[]});
   put('data/history/TEST.json',
    {ticker:'TEST',symbolVerified:true,isin:'EG0000000000',currency:'EGP',exchange:'EGX',sessions:sample});
   for(const malformed of [false,true]){
