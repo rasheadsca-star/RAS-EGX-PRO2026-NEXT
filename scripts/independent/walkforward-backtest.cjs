@@ -1,6 +1,7 @@
 'use strict';
 // Fixed-policy chronological OUT-OF-SAMPLE research backtest, never an order engine.
 // No optimization, no inferred bars, no lookahead; trade at NEXT session's open.
+const {copiedBarReasons}=require('./stale-bar-detector.cjs');
 const POLICY=Object.freeze({
  trainBars:100,minOosBars:40,fast:20,slow:50,atrBars:14,
  minTurnoverEgp:1000000,maxAtrPct:0.10,maxEntryGapAtr:0.5,
@@ -47,6 +48,7 @@ function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP'}={}){
   tradeCount:0,assumptions,...extra});
  if(currency!=='EGP')return blocked('EGP_LIQUIDITY_UNIT_UNVERIFIED');
  if(!Array.isArray(bars)||typeof barValid!=='function')return blocked('INVALID_INPUT');
+ if(copiedBarReasons(bars).length)return blocked('STALE_COPIED_BAR_IN_LOOKBACK',{copiedBarCount:copiedBarReasons(bars).length});
  // Fail closed on ANY contaminated candle in the study window.
  if(bars.some((r,i)=>!strictProvenance(r,barValid)||
    (i>0&&(r.date||r.sessionDate)<=(bars[i-1].date||bars[i-1].sessionDate))))
