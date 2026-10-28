@@ -20,8 +20,9 @@ jobs:
           node - <<'NODE'
           const fs = require('fs');
           const html = fs.readFileSync('v18-live/index.html','utf8');
-          const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)];
-          if (!scripts.length) throw Error('No inline JavaScript in V18 bootstrap');
-          fs.writeFileSync('/tmp/v18-bootstrap.js',scripts.map(x=>x[1]).join('\\n'));
+          const start=html.indexOf('<script>');
+          const end=html.indexOf('</script>',start);
+          if(start<0 || end<0)throw Error('No inline JavaScript in V18 bootstrap');
+          fs.writeFileSync('/tmp/v18-bootstrap.js',html.slice(start+8,end));
           NODE
           node --check /tmp/v18-bootstrap.js
