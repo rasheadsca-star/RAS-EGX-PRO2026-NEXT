@@ -15,6 +15,8 @@ on:
       - '.github/workflows/astra-g22-postclose-refresh.yml'
       - 'data/ops/g22-main-app-handoff.json'
       - 'scripts/astra/g22-postclose-refresh.cjs'
+      - 'scripts/astra/g22-verified-history-bridge.cjs'
+      - 'tests/astra/g22-verified-history-bridge.test.cjs'
       - 'scripts/astra/g22-postclose-handoff-guard.cjs'
       - 'scripts/astra/g22-refresh-session-exceptions.cjs'
       - 'scripts/astra/g22-refresh-v16-domain-exceptions.cjs'
@@ -118,6 +120,8 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/astra/g22-postclose-refresh.cjs
+          node --check scripts/astra/g22-verified-history-bridge.cjs
+          node --test tests/astra/g22-verified-history-bridge.test.cjs
           node --check scripts/astra/g22-postclose-handoff-guard.cjs
           node --check scripts/astra/g22-refresh-session-exceptions.cjs
           node --check scripts/astra/g22-refresh-v16-domain-exceptions.cjs
@@ -146,6 +150,12 @@ jobs:
           cp scripts/stable/v16-market-second-source-resolver.cjs "$CERT_ROOT/scripts/stable/v16-market-second-source-resolver.cjs"
           cp scripts/stable/v16-market-coverage-reconciler.cjs "$CERT_ROOT/scripts/stable/v16-market-coverage-reconciler.cjs"
           cp scripts/stable/v16-market-universe-disposition.cjs "$CERT_ROOT/scripts/stable/v16-market-universe-disposition.cjs"
+
+          # The pinned G11 baseline ends in September. Without independently
+          # verified intervening bars, October closes are falsely interpreted
+          # as one-day jumps and excluded by the unchanged V16 risk filters.
+          # Bridge only genuine dated OHLCV into the isolated certified checkout.
+          node scripts/astra/g22-verified-history-bridge.cjs
 
           node <<'NODE'
           const fs=require('fs');
