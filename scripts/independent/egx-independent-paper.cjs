@@ -2,6 +2,7 @@
 // Independent, fail-closed, paper-only engine. No Astra dependencies.
 const fs=require('node:fs'),path=require('node:path');
 const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
+const {walkForwardBacktest}=require('./walkforward-backtest.cjs');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const day=s=>typeof s==='string'?s.slice(0,10):'';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -96,7 +97,13 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
   const trending=c.close>m20&&m20>m50;
   const score=round((c.close/m20-1)*100+(m20/m50-1)*100,3);
   const evidenceLevel=c.secondSourceConfirmed===true?'CROSS_PROVIDER_CONFIRMED':'DATED_PROVIDER_EVIDENCE';
-  result.verifiedCandidates.push({ticker,session,close:c.close,currency,score,liquid,trending,evidenceLevel});
+  // Fixed, chronological holdout; every candle requires independently dated provenance.
+  // No result is a certification or a live/paper order. A dirty archive blocks the test.
+  const {trades:researchTrades,...oos}=walkForwardBacktest(bars,{
+   barValid:historicalBarValid,currency
+  });
+  result.verifiedCandidates.push({ticker,session,close:c.close,currency,score,liquid,trending,evidenceLevel,
+   outOfSample:oos});
   if(liquid&&trending&&a/c.close<=0.1){
    const entry=round(c.close),stop=round(Math.max(0.01,c.close-2*a));
    const target=round(c.close+4*a);
@@ -105,6 +112,13 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190}){
       riskReward:round((target-entry)/(entry-stop),2),
       signal:'SMA20_ABOVE_SMA50_AND_CLOSE_ABOVE_SMA20',
       source:'DATED_VERIFIED_SAME_SESSION_HISTORY',evidenceLevel,
+      // Close is an indicative reference, not a fill. Earliest simulated entry is
+      // the NEXT verified session open, subject to a <=0.5 ATR opening gap.
+      entryBasis:'DATED_CLOSE_INDICATIVE_NOT_EXECUTED',
+      earliestEntry:'NEXT_VERIFIED_SESSION_OPEN',expiresAfterSessions:1,
+      maxEntryGapAtr:0.5,maxHoldSessions:10,riskPerTradePct:0.005,
+      maxPositionPct:0.10,costBpsEachSide:25,
+      outOfSampleStatus:oos.status,performanceCertified:false,
       state:'RESEARCH_ONLY_NO_EXECUTION'};
     result.researchWatchlist.push(item);
     if(aggregateReady&&accepted.has(ticker))
