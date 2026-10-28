@@ -76,7 +76,47 @@
       return 'NETWORK/CORS';
     }
 
+    // Verify canonical source before loading a possibly outdated recommendation shell.
+    // Fail closed: unavailable evidence does not authorize executable suggestions.
+    async function preflight() {
+      const base = 'https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/';
+      const [status, model, manifest] = await Promise.all([
+        fetchText(base + 'main/data/fetch-status.json').then(JSON.parse),
+        fetchText(base + 'main/data/stable/v16-main-app-current.json').then(JSON.parse),
+        fetchText(base + 'v18-global-strategy-ensemble-20260906/preview-v18-web/manifest.json').then(JSON.parse)
+      ]);
+      const date = String(status.expectedSession || '');
+      const sourceOK = status.ok === true && status.executionGrade === true &&
+        status.realFetch === true && Number(status.currentSessionRows) >= 80;
+      const recent = Number.isFinite(Date.parse(status.generatedAt)) &&
+        Date.now() >= Date.parse(status.generatedAt) &&
+        Date.now() - Date.parse(status.generatedAt) <= 36 * 3600000;
+      return {date, rows:Number(status.currentSessionRows||0), preview:String(manifest.sessionId||''),
+        sourceOK, recent, modelReady:model.practicalReady===true && model.professionalEvidenceReady===true &&
+          String(model.sessionDate)===date};
+    }
+    function showSafeState(reason, evidence) {
+      const details = evidence
+        ? 'جلسة المصدر: ' + evidence.date + ' | عدد الأسهم المقبولة: ' + evidence.rows +
+          ' | جلسة V18.2: ' + evidence.preview
+        : 'تعذر التحقق من حالة المصدر والجلسة.';
+      boot.innerHTML = '<h1>EGX PRO — وضع بيانات السوق</h1>' +
+        '<p style="color:#ffd08b">' + reason + '</p>' +
+        '<p>' + details + '</p>' +
+        '<p>تم حجب التوصيات القديمة؛ بيانات الأسعار ومراقبة السوق متاحة في الصفحة المستقلة.</p>' +
+        '<p><a style="color:#9ee9ff" href="https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/v18-live/market-status.html">فتح حالة أسعار السوق</a></p>' +
+        '<button id="retry">إعادة التحقق</button><div class="status">V18_FRESHNESS_FAIL_CLOSED_V1</div>';
+      document.getElementById('retry').addEventListener('click', () => location.reload());
+    }
+
     async function loadShell() {
+      let gate;
+      try { gate = await preflight(); }
+      catch (error) { console.warn('Preflight not verifiable', error); showSafeState('التحقق من المصدر غير متاح.', null); return; }
+      if (!gate.sourceOK || !gate.recent || !gate.modelReady || gate.preview !== gate.date) {
+        showSafeState('الأسعار أو توصيات V18.2 لم تجتز جميع بوابات الجلسة والأداء.', gate);
+        return;
+      }
       let lastError = null;
       for (let round = 1; round <= 3; round++) {
         for (let i = 0; i < SOURCES.length; i++) {
