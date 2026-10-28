@@ -85,6 +85,9 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  assert.ok(mfpc[1].includes('Gann 2026-10-27 (أرشيف)'));
  for(const row of radar)assert.equal(row.children[3].textContent,'RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ');
  const health=JSON.parse(fs.readFileSync('data/source-health.json','utf8'));
+ const fetchStatus=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
+ if(fetchStatus.marketRows+fetchStatus.rejectedCurrentSessionRows===fetchStatus.inputRows)
+  assert.ok(by('sourceHealthInfo').textContent.includes(fetchStatus.marketRows+' / '+fetchStatus.inputRows));
  assert.ok(by('sourceHealthInfo').textContent.includes(health.coveragePct.toFixed(1)+'%'));
  assert.ok(by('sourceHealthInfo').textContent.includes('تأخر المصدر: '+(health.delayed?'نعم':'لا')));
  assert.ok(by('researchRadarIntro').textContent.includes('executionReady='+String(v16.executionReady===true)));
@@ -94,6 +97,8 @@ test('unified MVP consumes V16 and Quant source dates without V16 probability-as
  assert.ok(html.includes('data/stable/v16-main-app-current.json'));
  assert.ok(html.includes('data/quant/daily-recommendations.json'));
  assert.ok(html.includes('data/source-health.json'));
+ assert.ok(html.includes('data/fetch-status.json'));
+ assert.ok(html.includes('accepted/inputRows'));
  assert.ok(html.includes('researchRadarResults'));
  assert.ok(html.includes('RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ'));
  assert.ok(!html.includes('hasValidatedProbability'));
