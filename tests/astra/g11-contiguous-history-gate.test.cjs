@@ -20,3 +20,18 @@ test('a symbol can have >=20 total unique bars but fewer than 20 contiguous expe
  assert.equal(win.ready,true);
  assert.equal(validateWindow(calendar,last,20,included).reason,'MARKET_SESSION_GAP');
 });
+
+test('G11 rejects a latest date not in the observed market calendar',()=>{
+ assert.match(code,/expected\.at\(-1\)!==latest\)return 0/);
+});
+test('G11 rejects duplicate same-session bars for contiguous evidence',()=>{
+ assert.match(code,/new Set\(dates\)\.size!==dates\.length\)return 0/);
+});
+test('G11 requires 20 contiguous sessions even when precomputed support and resistance exist',()=>{
+ const start=code.indexOf('if((h?.latestContiguousHistory||0)<20)');
+ const ready=code.indexOf("else if(support>0&&resistance>0&&same)",start);
+ assert.ok(start>0 && ready>start,'history gate must precede VALID support/resistance');
+});
+test('G11 indicator diagnostics use contiguous history instead of total rows',()=>{
+ assert.match(code,/insufficientHistory:active\.filter\(s=>\(historyStats\.get\(normTicker\(s\.ticker\)\)\?\.latestContiguousHistory\|\|0\)<56\)/);
+});
