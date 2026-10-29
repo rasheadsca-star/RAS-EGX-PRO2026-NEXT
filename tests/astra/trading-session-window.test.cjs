@@ -25,3 +25,27 @@ test('20 sessions may span more than 20 calendar days',()=>{
  assert.equal(w.sessions.length,20);
  assert.ok((Date.parse(w.sessions.at(-1))-Date.parse(w.sessions[0]))/86400000>=25);
 });
+
+test('exactly 20 exchange sessions passes even when elapsed calendar time exceeds 20 days',()=>{
+ const dates=[];for(let i=0;i<36;i++){
+   const d=new Date(Date.UTC(2026,8,1+i));
+   if(![5,6].includes(d.getUTCDay()))dates.push(d.toISOString().slice(0,10));
+ }
+ const end=dates[dates.length-1];
+ const expected=sessionWindow(dates,end,20);
+ assert.equal(expected.ready,true);
+ assert.equal(validateWindow(dates,end,20,expected.sessions).ready,true);
+ const twentyCalendarDaysAgo=new Date(Date.parse(end+'T00:00:00Z')-20*86400000).toISOString().slice(0,10);
+ assert.ok(expected.sessions[0]<twentyCalendarDaysAgo);
+});
+test('20 dated rows cannot pass if one required observed market session is missing',()=>{
+ const dates=[];for(let i=0;i<36;i++){
+   const d=new Date(Date.UTC(2026,8,1+i));
+   if(![5,6].includes(d.getUTCDay()))dates.push(d.toISOString().slice(0,10));
+ }
+ const expected=sessionWindow(dates,dates.at(-1),20).sessions;
+ const staleReplacement=dates[dates.length-21];
+ const corrupted=[staleReplacement,...expected.filter((_,i)=>i!==9)];
+ assert.equal(corrupted.length,20);
+ assert.equal(validateWindow(dates,dates.at(-1),20,corrupted).reason,'MARKET_SESSION_GAP');
+});
