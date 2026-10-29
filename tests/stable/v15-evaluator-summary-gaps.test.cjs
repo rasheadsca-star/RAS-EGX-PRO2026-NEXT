@@ -8,7 +8,7 @@ const source=fs.readFileSync(path.resolve(__dirname,'../../scripts/stable/v15-re
 const begin=source.indexOf('function isEntered(record)');
 const end=source.indexOf('function byStrategy(records)');
 if(begin<0||end<=begin)throw new Error('V15 evaluator summary functions not found');
-const evaluateSummary=vm.runInNewContext(source.slice(begin,end)+'\nsummarize;', {});
+const evaluateSummary=vm.runInNewContext(source.slice(begin,end)+'\nsummarize;', {num:(v,fallback=null)=>v===null||v===undefined||v===''?fallback:Number(v),round:(v,digits=4)=>Number(Number(v).toFixed(digits))});
 test('session gaps are visible and excluded from performance denominator',()=>{
  const rows=[
   {evaluationStatus:'TARGET_HIT',entryDate:'2026-10-26',netReturnPct:2},
