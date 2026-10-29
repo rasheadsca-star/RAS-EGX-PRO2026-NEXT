@@ -32,6 +32,15 @@ jobs:
       - name: Print source alignment diagnostic (nonzero means blocked, not CI bypass)
         run: |
           node scripts/integration/source-alignment-audit.cjs || test "$?" -eq 2
+      - name: Export per-ticker history discrepancy audit (known mismatches remain blocked)
+        run: |
+          node scripts/integration/history-discrepancy-audit.cjs artifacts/history-discrepancies.json || test "$?" -eq 2
+      - name: Upload history discrepancy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-history-discrepancy-audit
+          path: artifacts/history-discrepancies.json
+          if-no-files-found: error
       - name: Syntax check for integrated browser scripts
         run: |
           node --check astra-prod/app/v18-evidence-compare.js
