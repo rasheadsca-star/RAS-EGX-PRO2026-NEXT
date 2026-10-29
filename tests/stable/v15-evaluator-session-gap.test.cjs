@@ -17,3 +17,8 @@ test('vetted reference calendar excludes the announced October closure',()=>{
 test('evaluator requires assessed end date to exist in vetted calendar',()=>{
  assert.ok(source.includes('!MARKET_SESSION_CALENDAR.includes(throughDate)'));
 });
+
+test('missing next ticker bar is not reported as pending when the market has traded',()=>{
+ assert.ok(source.includes("dataGapReason:'NO_NEXT_SYMBOL_SESSION'"));
+ assert.ok(source.includes('MARKET_SESSION_CALENDAR?.find(d=>d>record.recommendationDate)'));
+});
