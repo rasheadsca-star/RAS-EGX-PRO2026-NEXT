@@ -282,7 +282,7 @@ function evaluateRecord(record) {
 }
 function isEntered(record) { return !!record.entryDate; }
 function isResolvedTrade(record) { return ['TARGET_HIT', 'STOP_HIT', 'STOP_HIT_AMBIGUOUS_CONSERVATIVE', 'EXPIRED_POSITIVE', 'EXPIRED_NEGATIVE', 'EXPIRED_FLAT'].includes(record.evaluationStatus); }
-function isPositive(record) { return ['TARGET_HIT', 'EXPIRED_POSITIVE'].includes(record.evaluationStatus); }
+function isPositive(record) { return isResolvedTrade(record) && num(record.netReturnPct) !== null && num(record.netReturnPct) > 0; }
 function summarize(records) {
   const entered = records.filter(isEntered);
   const resolved = records.filter(isResolvedTrade);
@@ -292,6 +292,8 @@ function summarize(records) {
   const targetHits = records.filter(item => item.evaluationStatus === 'TARGET_HIT').length;
   const stopHits = records.filter(item => ['STOP_HIT', 'STOP_HIT_AMBIGUOUS_CONSERVATIVE'].includes(item.evaluationStatus)).length;
   const positives = resolved.filter(isPositive).length;
+  const evaluatedNet = returns.length;
+  const breakEven = returns.filter(value => value === 0).length;
   const sum = values => values.reduce((total, value) => total + value, 0);
   return {
     archivedRecommendations: records.length,
@@ -309,8 +311,10 @@ function summarize(records) {
     expiredNegative: records.filter(item => item.evaluationStatus === 'EXPIRED_NEGATIVE').length,
     expiredFlat: records.filter(item => item.evaluationStatus === 'EXPIRED_FLAT').length,
     profitableResolvedTrades: positives,
-    losingResolvedTrades: resolved.length - positives,
-    successRatePct: resolved.length ? round(positives / resolved.length * 100, 2) : null,
+    losingResolvedTrades: returns.filter(value => value < 0).length,
+    breakEvenResolvedTrades: breakEven,
+    missingNetReturnResolvedTrades: resolved.length - evaluatedNet,
+    successRatePct: evaluatedNet ? round(positives / evaluatedNet * 100, 2) : null,
     targetVsStopRatePct: targetHits + stopHits ? round(targetHits / (targetHits + stopHits) * 100, 2) : null,
     averageNetReturnPct: returns.length ? round(sum(returns) / returns.length, 3) : null,
     cumulativeNetReturnPct: returns.length ? round(sum(returns), 3) : null,
