@@ -5,7 +5,7 @@ const calendar=['2026-10-18','2026-10-19','2026-10-20','2026-10-21','2026-10-22'
 test('weekend does not consume a session',()=>{
  assert.deepEqual(sessionWindow(calendar,'2026-10-25',3).sessions,['2026-10-21','2026-10-22','2026-10-25']);
 });
-test('an observed exchange holiday does not consume session window',()=>{
+test('a calendar-excluded date does not consume a session; no official holiday claimed',()=>{
  const sessions=['2026-10-18','2026-10-19','2026-10-21','2026-10-22'];
  assert.deepEqual(sessionWindow(sessions,'2026-10-22',3).sessions,['2026-10-19','2026-10-21','2026-10-22']);
 });
