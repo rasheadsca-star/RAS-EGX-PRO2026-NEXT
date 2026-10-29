@@ -184,7 +184,10 @@ function evaluateRecord(record) {
     grossReturnPct: null, netReturnPct: null, maxFavorableExcursionPct: null, maxAdverseExcursionPct: null,
     sessionsObserved: sessions.length, evaluationWindowDates: []
   };
-  if (!next) return base;
+  if (!next) {
+    const subsequent=MARKET_SESSION_CALENDAR?.find(d=>d>record.recommendationDate);
+    return subsequent?{...base,evaluationStatus:'HISTORY_SESSION_GAP',statusAr:'جلسة سوق لاحقة مفقودة من تاريخ السهم — النتيجة غير معتمدة',missingMarketSessions:[subsequent],dataGapReason:'NO_NEXT_SYMBOL_SESSION'}:base;
+  }
   const assessmentEnd=sessions[Math.min(sessions.length,record.holdingSessions)-1]?.date||next.date;
   const missing=missingObservedMarketSessions(record.recommendationDate,assessmentEnd,sessions.map(x=>x.date));
   if(missing===null||missing.length)return {...base,evaluationStatus:'HISTORY_SESSION_GAP',statusAr:'فجوة في جلسات السوق أو تقويم مؤهل غير متاح — النتيجة غير معتمدة',missingMarketSessions:missing||[],dataGapReason:missing===null?'ELIGIBLE_CALENDAR_UNAVAILABLE':'SYMBOL_SESSION_GAP'};
