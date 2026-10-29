@@ -151,14 +151,22 @@ function buildSessionCalendar(repoRoot, summary) {
     const document = readJson(path.join(repoRoot, item.sourceFile), null);
     for (const session of document?.sessions || []) allDates.add(session.date);
   }
+  const closures = readJson(path.join(repoRoot, 'data', 'egx-exchange-closures.json'), { closures: [] });
+  const confirmedClosed = new Set((closures.closures || []).filter(e => e.status === 'confirmed_exchange_closure').map(e => e.date));
+  const observedSessions = [...allDates].sort();
+  const eligibleSessions = observedSessions.filter(d => ![5, 6].includes(new Date(d + 'T00:00:00Z').getUTCDay()) && !confirmedClosed.has(d));
+  const quarantinedClosedDates = observedSessions.filter(d => !eligibleSessions.includes(d));
   const calendar = {
     schemaVersion: '12.3.0',
     generatedAt: nowIso(),
     exchange: 'EGX',
     timezone: 'Africa/Cairo',
     latestMarketSession: [...allDates].sort().at(-1) || null,
-    sessions: [...allDates].sort(),
-    note: 'Union of validated stored sessions. It is not an official EGX holiday calendar.',
+    sessions: observedSessions,
+    eligibleSessions,
+    latestEligibleSession: eligibleSessions.at(-1) || null,
+    quarantinedClosedDates,
+    note: 'Raw dates retained for audit; eligibleSessions excludes weekly and exchange-confirmed closures. This is not an independently certified complete EGX calendar.',
   };
   writeJsonAtomic(path.join(repoRoot, 'data', 'session-calendar.json'), calendar);
   return calendar;
