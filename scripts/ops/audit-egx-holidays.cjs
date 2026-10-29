@@ -10,11 +10,17 @@ function audit(calendar,evidence){
   if(holiday.status!=='confirmed_exchange_closure')continue;
   if(!iso(holiday.date)||!holiday.source)throw new Error('Invalid verified closure evidence');
   closureDays.add(holiday.date);
-  if(raw.has(holiday.date)){quarantined.add(holiday.date);discrepancies.push({date:holiday.date,code:'HOLIDAY_MARKED_AS_SESSION',severity:'critical',source:holiday.source,action:'quarantine_and_verify_source_rows'});}
+  if(raw.has(holiday.date)){quarantined.add(holiday.date);discrepancies.push({date:holiday.date,code:'RAW_CLOSURE_OBSERVATION_QUARANTINED',severity:'review',source:holiday.source,action:'retain_raw_for_source_review'});}
  }
- for(const d of rows){if(!iso(d))discrepancies.push({date:d,code:'INVALID_DATE',severity:'critical'});}
- const vetted=rows.filter(d=>iso(d)&&!closureDays.has(d));
- return {exchange:'EGX',timezone:'Africa/Cairo',auditedAt:new Date().toISOString(),inputSessions:rows.length,checkedClosures:(evidence.closures||[]).length,quarantinedDates:[...quarantined].sort(),eligibleSessionCount:vetted.length,latestEligibleSession:vetted.at(-1)||null,discrepancies,pass:discrepancies.length===0,policy:'Fail closed for confirmed exchange closures; preserve raw observations; reconcile source rows before downstream backtests.'};
+ const isClosed=d=>[5,6].includes(new Date(d+'T00:00:00Z').getUTCDay())||closureDays.has(d);
+ const vetted=rows.filter(d=>iso(d)&&!isClosed(d));
+ const hasEligible=Array.isArray(calendar.eligibleSessions);
+ const effective=hasEligible?calendar.eligibleSessions:vetted;
+ for(const d of rows){if(!iso(d))discrepancies.push({date:d,code:'INVALID_RAW_DATE',severity:'critical'});}
+ for(const d of effective){if(!iso(d)||isClosed(d)||!raw.has(d))discrepancies.push({date:d,code:'INELIGIBLE_DATE_IN_TRADING_CALENDAR',severity:'critical'});}
+ if(hasEligible&&JSON.stringify(effective)!==JSON.stringify(vetted))discrepancies.push({code:'ELIGIBLE_CALENDAR_MISMATCH',severity:'critical'});
+ if(hasEligible&&JSON.stringify(calendar.quarantinedClosedDates||[])!==JSON.stringify(rows.filter(d=>!vetted.includes(d))))discrepancies.push({code:'QUARANTINE_LIST_MISMATCH',severity:'critical'});
+ return {exchange:'EGX',timezone:'Africa/Cairo',auditedAt:new Date().toISOString(),inputSessions:rows.length,checkedClosures:(evidence.closures||[]).length,quarantinedDates:[...quarantined].sort(),eligibleSessionCount:effective.length,latestEligibleSession:effective.at(-1)||null,discrepancies,pass:!discrepancies.some(x=>x.severity==='critical'),policy:'Raw closure observations remain review findings; only unsafe eligible calendar or invalid raw dates block the execution calendar.'};
 }
 if(require.main===module){
  const result=audit(load('data/session-calendar.json'),load('data/egx-exchange-closures.json'));
