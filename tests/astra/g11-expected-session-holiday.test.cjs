@@ -32,3 +32,10 @@ test('Cairo daylight saving transition does not promote weekend to trading day',
  assert.equal(expectedSession('2026-10-30T18:00:00Z',policy),'2026-10-29');
  assert.equal(expectedSession('2026-10-31T18:00:00Z',policy),'2026-10-29');
 });
+
+test('future canonical sessions must not be classified as stale or current',()=>{
+ const source=fs.readFileSync(path.join(root,'astra/data-health/g11-data-health.cjs'),'utf8');
+ assert.ok(source.includes("available>expected?'FUTURE_SESSION_CONFLICT'"));
+ assert.ok(source.includes("issue('SESSION_MISMATCH','CRITICAL'"));
+ assert.ok(source.includes("freshness==='FUTURE_SESSION_CONFLICT'"));
+});
