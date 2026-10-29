@@ -1,0 +1,30 @@
+name: EGX ELITE V18 ledger integrity audit
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/integration/audit-v18-forward-ledger.cjs'
+      - 'astra-prod/app/v18-evidence-compare.js'
+      - '.github/workflows/elite-v18-ledger-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check script syntax
+        run: node --check scripts/integration/audit-v18-forward-ledger.cjs
+      - name: Check browser comparison syntax
+        run: node --check astra-prod/app/v18-evidence-compare.js
+      - name: Download historical V18 ledger from pinned branch
+        run: |
+          curl --fail --location --retry 3 --silent --show-error \
+            "https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/v18-global-strategy-ensemble-20260906/data/stable/v18-forward-ledger.json" \
+            -o /tmp/egx-v18-forward-ledger.json
+      - name: Audit (does not certify trading)
+        run: node scripts/integration/audit-v18-forward-ledger.cjs /tmp/egx-v18-forward-ledger.json

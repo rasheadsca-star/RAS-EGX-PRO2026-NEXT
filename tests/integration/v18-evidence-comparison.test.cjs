@@ -1,0 +1,7 @@
+'use strict';const test=require('node:test');const assert=require('node:assert/strict');const {validDate,normalizeTicker,compare}=require('../../scripts/integration/v18-evidence-comparison.cjs');
+const q={sessionId:'2026-10-28',paperCandidates:[],watchCandidates:[{ticker:'MFPC',signalDate:'2026-10-28'}]};
+test('rejects impossible dates and invalid tickers',()=>{assert.equal(validDate('2026-02-30'),false);assert.equal(normalizeTicker('../MFPC'),null);});
+test('never uses future archive observations',()=>{const r=compare({entries:[{issued:{ticker:'MFPC',sessionId:'2026-10-29'}},{issued:{ticker:'MFPC',sessionId:'2026-10-21',strategyFamilies:['BREAKOUT']}}]},q);assert.equal(r.invalidCount,1);assert.equal(r.joined[0].v.sessionId,'2026-10-21');assert.equal(r.historicalOnly,true);});
+test('selects latest per ticker without treating older evidence as confirmation',()=>{const r=compare({entries:[{issued:{ticker:'MFPC',sessionId:'2026-10-01'}},{issued:{ticker:'MFPC',sessionId:'2026-10-21'}}]},q);assert.equal(r.validSymbols,1);assert.equal(r.joined[0].sameSession,false);assert.equal(r.allSameDate,false)});
+test('same-day comparison still not certified',()=>{const r=compare({entries:[{issued:{ticker:'MFPC',sessionId:'2026-10-28'}}]},q);assert.equal(r.allSameDate,true);assert.equal(r.historicalOnly,true)});
+test('fails closed on missing archive or quant session',()=>{assert.throws(()=>compare({},q));assert.throws(()=>compare({entries:[]},{sessionId:'bad'}));});

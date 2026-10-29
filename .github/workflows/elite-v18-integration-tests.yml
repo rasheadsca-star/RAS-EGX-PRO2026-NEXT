@@ -1,0 +1,59 @@
+name: EGX ELITE V18 integration tests
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/elite-v18-integrated-20261028
+    paths:
+      - 'scripts/integration/**'
+      - 'tests/integration/**'
+      - 'astra-prod/app/elite-decision.html'
+      - 'astra-prod/app/v18-evidence-compare.js'
+      - '.github/workflows/elite-v18-integration-tests.yml'
+  pull_request:
+    paths:
+      - 'scripts/integration/**'
+      - 'tests/integration/**'
+      - 'astra-prod/app/elite-decision.html'
+      - 'astra-prod/app/v18-evidence-compare.js'
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V18 comparison regression tests
+        run: node --test tests/integration/*.test.cjs
+      - name: Print source alignment diagnostic (nonzero means blocked, not CI bypass)
+        run: |
+          node scripts/integration/source-alignment-audit.cjs || test "$?" -eq 2
+      - name: Export per-ticker history discrepancy audit (known mismatches remain blocked)
+        run: |
+          node scripts/integration/history-discrepancy-audit.cjs artifacts/history-discrepancies.json || test "$?" -eq 2
+      - name: Upload history discrepancy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-history-discrepancy-audit
+          path: artifacts/history-discrepancies.json
+          if-no-files-found: error
+      - name: Audit same-session price reference mismatches
+        run: node scripts/integration/price-reference-session-audit.cjs artifacts/price-reference-session.json
+      - name: Upload price reference session evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-price-reference-session-audit
+          path: artifacts/price-reference-session.json
+          if-no-files-found: error
+      - name: Syntax check for integrated browser scripts
+        run: |
+          node --check astra-prod/app/v18-evidence-compare.js
+          node --check astra-prod/app/research-opportunities.js
+          node --check astra-prod/app/independent-paper-status.js
+      - name: Verify integration links
+        run: |
+          node -e "const fs=require('fs');const a=fs.readFileSync('astra-prod/app/index.html','utf8'),b=fs.readFileSync('astra-prod/app/elite-decision.html','utf8');if(!a.includes('elite-decision.html')||!b.includes('v18-evidence-compare.js')||!b.includes('independent-paper-status.js'))process.exit(1)"

@@ -1,0 +1,28 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EGX ELITE | Astra Integrated Research</title><style>
+:root{color-scheme:dark;font-family:Tahoma,Arial,sans-serif;background:#081521;color:#edf5ff}body{max-width:1250px;margin:auto;padding:20px}a{color:#9ce0ff}.panel,.card{background:#12283e;border:1px solid #31516e;border-radius:12px;padding:15px;margin:12px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}input,select,button{padding:9px;border-radius:7px;background:#23445f;color:white;border:1px solid #53728c}button{cursor:pointer}table{border-collapse:collapse;width:100%;min-width:900px}td,th{padding:10px;text-align:right;border-bottom:1px solid #36536b}#table{overflow-x:auto}.warn{color:#ffd38c}.dim{color:#aec7d9}h1{font-size:23px}
+</style></head><body><header><h1>EGX ELITE — التحليل العملي المدمج مع Astra</h1><p><a href="./index.html">العودة إلى Astra</a> | <a href="../../tomorrow.html">تفاصيل الفرص الفنية</a></p></header>
+<div class="panel warn">طبقة تحليل إضافية للبحث والتداول الورقي. لا يُسمح باستخدام بيانات قديمة أو نتائج غير مثبتة كأوامر شراء. لا تتغير قرارات Astra المعتمدة بسبب هذه الصفحة.</div>
+<div class="panel"><label>رأس المال الافتراضي <input id="capital" type="number" min="1000" value="100000"></label> <label>المخاطرة لكل صفقة <select id="risk"><option value=".005">0.5%</option><option value=".01" selected>1%</option><option value=".02">2%</option></select></label> <button id="reload">تحديث GitHub</button><p id="status">جارٍ التحميل…</p></div>
+<div id="summary" class="panel"></div><div id="cards" class="grid"></div><div id="table" class="panel"></div>
+<script>
+'use strict';
+const root='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/';
+const esc=s=>String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f=x=>Number.isFinite(Number(x))?Number(x).toLocaleString('en-US',{maximumFractionDigits:2,minimumFractionDigits:2}):'—';
+let data=null;
+const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const calc=x=>{const p=x.plan||{},mid=(+p.entryLow + +p.entryHigh)/2, stop=+p.stopLoss, target=+p.target1, valid=[mid,stop,target].every(v=>Number.isFinite(v)&&v>0)&&mid>stop&&target>mid;
+const cost=mid*.006, risk=mid-stop+cost, reward=target-mid-cost, rr=valid&&risk>0?reward/risk:null, min2r=mid+cost+2*risk;
+const capital=Math.max(0,+document.getElementById('capital').value||0),fraction=+document.getElementById('risk').value;
+const qty=valid?Math.floor(Math.max(0,Math.min(capital/mid,capital*fraction/risk))):0;
+return {valid,mid,rr,min2r,qty}};
+function render(){if(!data)return;const xs=[...(data.paperCandidates||[]),...(data.watchCandidates||[])],fresh=data.sessionId===today(),confirmed=(data.paperCandidates||[]).filter(x=>x.strategyValidationStatus!=='RESEARCH_ONLY');
+document.getElementById('status').textContent='المصدر: Quant V13.4 | جلسة '+data.sessionId+' | التوليد '+data.generatedAt+' | '+(fresh?'بيانات جلسة اليوم':'بيانات تاريخية؛ لا يجوز استخدامها كإشارة جديدة');
+document.getElementById('summary').innerHTML='<b>مكتملة فنيًا: '+xs.filter(x=>(x.failedConditions||[]).length===0).length+' | مرشحو تداول ورقي: '+(data.paperCandidates||[]).length+' | معتمدة من المحرك: '+confirmed.length+'</b><p>التاريخ وصلاحية التوصية وفشل اختبارات الأداء عوامل تمنع التنفيذ، حتى لو بدت الحسابات النظرية جذابة.</p>';
+document.getElementById('cards').innerHTML=xs.map(x=>{const p=x.plan||{},c=calc(x),complete=(x.failedConditions||[]).length===0;
+return '<div class="card"><h3>'+esc(x.ticker)+' — '+esc(x.companyNameAr)+'</h3><p class="warn">'+(complete?'مكتملة فنيًا — بحثية':'تحتاج شروطًا فنية')+' | '+esc(x.strategyValidationStatus)+'</p><p>الدخول: '+f(p.entryLow)+'–'+f(p.entryHigh)+' | وقف: '+f(p.stopLoss)+'</p><p>الهدف 1: '+f(p.target1)+' | الهدف 2: '+f(p.target2)+'</p><p>صافي R/R بعد تكلفة 0.6% افتراضية: '+f(c.rr)+' | عدد الأسهم الافتراضي: '+c.qty+'</p><p class="dim">المعادلة ليست احتمالًا معايرًا؛ '+(fresh?'مراقبة فقط':'صلاحية الجلسة منتهية')+'</p></div>'}).join('')||'لا توجد فرص';
+document.getElementById('table').innerHTML='<h3>مقارنة حسابات المخاطرة (بحثية)</h3><table><thead><tr><th>السهم</th><th>دخول متوسط</th><th>وقف</th><th>الهدف 1</th><th>R/R صافي تقريبي</th><th>سعر 2R نظري</th><th>كمية افتراضية</th></tr></thead><tbody>'+xs.map(x=>{let p=x.plan||{},c=calc(x);return '<tr><td>'+esc(x.ticker)+'</td><td>'+f(c.mid)+'</td><td>'+f(p.stopLoss)+'</td><td>'+f(p.target1)+'</td><td>'+f(c.rr)+'</td><td>'+f(c.min2r)+'</td><td>'+c.qty+'</td></tr>'}).join('')+'</tbody></table><p class="dim">وقف الخسارة غير مضمون عند الفجوات. 2R حد حسابي وليس توقعًا سعريًا. لا تتضمن النمذجة تكاليف فعلية مؤكدة أو احتمالات نجاح معايرة.</p>';
+}
+async function reload(){try{const r=await fetch(root+'data/quant/daily-recommendations.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);data=await r.json();if(!/^\d{4}-\d{2}-\d{2}$/.test(data.sessionId||''))throw Error('تاريخ الجلسة غير صالح');render()}catch(e){document.getElementById('status').textContent='خطأ: '+e.message}}
+document.getElementById('capital').oninput=render;document.getElementById('risk').onchange=render;document.getElementById('reload').onclick=reload;reload();
+</script><script src="./independent-paper-status.js?v=20261029-r1"></script><script src="./v18-evidence-compare.js?v=20261028-v1"></script></body></html>

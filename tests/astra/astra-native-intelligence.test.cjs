@@ -80,7 +80,11 @@ test('entry activation is evaluated only from effective session onward',()=>{
 });
 
 test('entry not triggered expires without becoming win or loss',()=>{
-  const rows=Array.from({length:20},(_,i)=>row('2026-10-'+String(i+1).padStart(2,'0'),8,9,7,8));
+  const {confirmedClosures,isTradingSession,shiftDay}=require('../../scripts/ops/egx-session-math.cjs');
+  const closed=confirmedClosures(path.resolve(__dirname,'../..'));
+  const dates=[];
+  for(let d='2026-10-01';dates.length<20;d=shiftDay(d,1)) if(isTradingSession(d,closed)) dates.push(d);
+  const rows=dates.map(d=>row(d,8,9,7,8));
   const o=mod.evaluateRows(recFixture(),rows,{expirySessions:20});
   assert.equal(o.state,'EXPIRED');
   assert.equal(o.entryNotTriggered,true);
