@@ -2,7 +2,7 @@
 const fs=require('node:fs');const path=require('node:path');
 const root=path.resolve(process.env.GITHUB_WORKSPACE||process.cwd());
 const load=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
-const iso=d=>/^\d{4}-\d{2}-\d{2}$/.test(d);
+const iso=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&!Number.isNaN(Date.parse(d+'T00:00:00Z'))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
 function audit(calendar,evidence){
  const rows=Array.isArray(calendar.sessions)?calendar.sessions:[];
  const raw=new Set(rows), discrepancies=[], quarantined=new Set(), closureDays=new Set();
@@ -15,6 +15,8 @@ function audit(calendar,evidence){
  const isClosed=d=>[5,6].includes(new Date(d+'T00:00:00Z').getUTCDay())||closureDays.has(d);
  const vetted=rows.filter(d=>iso(d)&&!isClosed(d));
  const hasEligible=Array.isArray(calendar.eligibleSessions);
+ if(new Set(rows).size!==rows.length)discrepancies.push({code:'DUPLICATE_RAW_SESSIONS',severity:'critical'});
+ if(hasEligible&&new Set(calendar.eligibleSessions).size!==calendar.eligibleSessions.length)discrepancies.push({code:'DUPLICATE_ELIGIBLE_SESSIONS',severity:'critical'});
  const effective=hasEligible?calendar.eligibleSessions:vetted;
  for(const d of rows){if(!iso(d))discrepancies.push({date:d,code:'INVALID_RAW_DATE',severity:'critical'});}
  for(const d of effective){if(!iso(d)||isClosed(d)||!raw.has(d))discrepancies.push({date:d,code:'INELIGIBLE_DATE_IN_TRADING_CALENDAR',severity:'critical'});}
@@ -25,6 +27,6 @@ function audit(calendar,evidence){
 if(require.main===module){
  const result=audit(load('data/session-calendar.json'),load('data/egx-exchange-closures.json'));
  process.stdout.write(JSON.stringify(result,null,2)+'\n');
- if(process.argv.includes('--strict'))process.exitCode=result.pass?0:2;
+ if(process.argv.includes('--strict')){const calendar=load('data/session-calendar.json');process.exitCode=result.pass&&Array.isArray(calendar.eligibleSessions)?0:2;}
 }
 module.exports={audit};
