@@ -295,6 +295,9 @@ function summarize(records) {
   const sum = values => values.reduce((total, value) => total + value, 0);
   return {
     archivedRecommendations: records.length,
+    unverifiedHistoryGap: records.filter(item => item.evaluationStatus === 'HISTORY_SESSION_GAP').length,
+    unverifiableOutcomeExcluded: records.filter(item => item.evaluationStatus === 'HISTORY_SESSION_GAP' || item.dataGapReason).length,
+    resolvedTradesWithNetReturn: returns.length,
     enteredTrades: entered.length,
     resolvedTrades: resolved.length,
     openTrades: records.filter(item => item.evaluationStatus === 'OPEN').length,
