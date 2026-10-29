@@ -36,6 +36,7 @@ jobs:
         run: |
           node --check astra-prod/app/v18-evidence-compare.js
           node --check astra-prod/app/research-opportunities.js
+          node --check astra-prod/app/independent-paper-status.js
       - name: Verify integration links
         run: |
-          node -e "const fs=require('fs');const a=fs.readFileSync('astra-prod/app/index.html','utf8'),b=fs.readFileSync('astra-prod/app/elite-decision.html','utf8');if(!a.includes('elite-decision.html')||!b.includes('v18-evidence-compare.js'))process.exit(1)"
+          node -e "const fs=require('fs');const a=fs.readFileSync('astra-prod/app/index.html','utf8'),b=fs.readFileSync('astra-prod/app/elite-decision.html','utf8');if(!a.includes('elite-decision.html')||!b.includes('v18-evidence-compare.js')||!b.includes('independent-paper-status.js'))process.exit(1)"
