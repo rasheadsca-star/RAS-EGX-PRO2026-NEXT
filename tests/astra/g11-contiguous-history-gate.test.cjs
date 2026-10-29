@@ -35,3 +35,9 @@ test('G11 requires 20 contiguous sessions even when precomputed support and resi
 test('G11 indicator diagnostics use contiguous history instead of total rows',()=>{
  assert.match(code,/insufficientHistory:active\.filter\(s=>\(historyStats\.get\(normTicker\(s\.ticker\)\)\?\.latestContiguousHistory\|\|0\)<56\)/);
 });
+
+test('G11 applies exchange-specific closure gate to expected session and lag',()=>{
+ assert.ok(code.includes("classifyEGXDate(s).status!=='CLOSED'"));
+ assert.ok(code.includes('return isTrading(c.date,policy)&&c.hour>='));
+ assert.ok(code.includes('if(isTrading(fmt(d),policy))count++'));
+});
