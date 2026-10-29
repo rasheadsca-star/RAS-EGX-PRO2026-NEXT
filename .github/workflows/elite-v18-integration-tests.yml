@@ -29,6 +29,9 @@ jobs:
           node-version: '22'
       - name: V18 comparison regression tests
         run: node --test tests/integration/*.test.cjs
+      - name: Print source alignment diagnostic (nonzero means blocked, not CI bypass)
+        run: |
+          node scripts/integration/source-alignment-audit.cjs || test "$?" -eq 2
       - name: Syntax check for integrated browser scripts
         run: |
           node --check astra-prod/app/v18-evidence-compare.js
