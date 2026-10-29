@@ -24,6 +24,23 @@ function strictProvenance(r,barValid){
   ((Array.isArray(r.verifiedBy)&&r.verifiedBy.length>0)||
    (r.secondSourceConfirmed===true&&Array.isArray(r.verificationSources)&&r.verificationSources.length>0));
 }
+// Repository observed-session union, NOT an official EGX trading calendar.
+function observedSessionGap(bars,calendar){
+ if(!Array.isArray(calendar)||!calendar.length||
+    calendar.some((d,i)=>!iso(d)||(i>0&&d<=calendar[i-1])))
+  return {status:'INVALID_OBSERVED_SESSION_CALENDAR'};
+ const index=new Map(calendar.map((d,i)=>[d,i]));
+ let prior=-1;
+ for(const bar of bars){
+  const d=bar?.date||bar?.sessionDate,at=index.get(d);
+  if(at===undefined)return {status:'BAR_OUTSIDE_OBSERVED_SESSION_CALENDAR',session:d||null};
+  if(prior>=0&&at!==prior+1)
+   return {status:'MISSING_OBSERVED_SESSIONS_IN_STUDY',previousSession:calendar[prior],
+    nextBarSession:d,missingObservedSessions:calendar.slice(prior+1,at).slice(0,12)};
+  prior=at;
+ }
+ return null;
+}
 function signalAt(bars,index,p=POLICY){
  if(index<p.slow||index>=bars.length)return null;
  const current=bars[index],prefix=bars.slice(0,index+1);
@@ -41,10 +58,11 @@ function signalAt(bars,index,p=POLICY){
  return {date:current.date||current.sessionDate,close:current.close,atr:a,
   sma20:fast,sma50:slow,averageVolume20:v};
 }
-function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP',ticker=null,corporateActions=[]}={}){
+function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP',ticker=null,corporateActions=[],observedSessions=null}={}){
  const assumptions={...policy,entryTiming:'NEXT_SESSION_OPEN',signalTiming:'PRIOR_SESSION_CLOSE',
   costs:'FIXED_HYPOTHETICAL_BPS_EACH_SIDE',ambiguousIntrabar:'STOP_FIRST',
-  overlappingPositions:false,parameterSearch:false};
+  overlappingPositions:false,parameterSearch:false,
+  observedCalendar:observedSessions===null?'NOT_PROVIDED':'REPOSITORY_OBSERVED_SESSIONS_NOT_OFFICIAL'};
  const blocked=(status,extra={})=>({status,performanceCertified:false,mode:'RESEARCH_ONLY',
   tradeCount:0,assumptions,...extra});
  if(currency!=='EGP')return blocked('EGP_LIQUIDITY_UNIT_UNVERIFIED');
@@ -63,6 +81,10 @@ function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP',ticker=
  if(bars.some((r,i)=>!strictProvenance(r,barValid)||
    (i>0&&(r.date||r.sessionDate)<=(bars[i-1].date||bars[i-1].sessionDate))))
   return blocked('UNVERIFIED_OR_DUPLICATE_HISTORICAL_OHLCV',{barsAvailable:bars.length});
+ if(observedSessions!==null){
+  const calendarIssue=observedSessionGap(bars,observedSessions);
+  if(calendarIssue)return blocked(calendarIssue.status,{...calendarIssue,barsAvailable:bars.length});
+ }
  if(bars.length<policy.trainBars+policy.minOosBars)
   return blocked('INSUFFICIENT_VERIFIED_HISTORY',{barsAvailable:bars.length,
    barsRequired:policy.trainBars+policy.minOosBars});
@@ -112,4 +134,4 @@ function walkForwardBacktest(bars,{barValid,policy=POLICY,currency='EGP',ticker=
   maxDrawdownPct:Number(maxDrawdownPct.toFixed(4)),
   unresolvedTrades:unresolved,skippedGaps,trades,assumptions};
 }
-module.exports={POLICY,strictProvenance,signalAt,walkForwardBacktest};
+module.exports={POLICY,strictProvenance,signalAt,observedSessionGap,walkForwardBacktest};
