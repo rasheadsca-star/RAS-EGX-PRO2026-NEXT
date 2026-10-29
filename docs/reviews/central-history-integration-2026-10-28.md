@@ -26,3 +26,22 @@ The original large patch and bundle were supplied in the ChatGPT conversation; t
 
 ### Important distinction
 A valid OHLC structure is not necessarily fully verified historical provenance, licensed re-distributable data or a 60/140/200-session uninterrupted execution-grade series.
+
+
+## 2026-10-29 corrected Claude integration package — VERIFIED IN LOCAL PATCH INSPECTION
+
+The newer package `EGX_PRO_Central_History_Integration_Package.zip` contains:
+- `central-history-on-main-ae99cb97.patch` and a matching Git bundle based on `ae99cb978c75a18fd944919e3f4a77a8731fe2ab`.
+- **478 unique added paths** counted from the actual patch (230 verified ticker JSONs, 230 quarantine ticker JSONs, scripts, tests and summary files); the report's **466** count is inconsistent and must not be used as an integrity gate.
+- Local patch application to a fresh scratch Git worktree succeeded; `node --test tests/history-central/central-history.test.cjs` passed **14/14**.
+- The report declares 70 independent tests passing on the author's full checkout; these have **not** been rerun here because the scratch patch alone does not include the original independent engine code.
+- JSON schemas inspected: `manifest.files`, `census.tickers` and `feasibility.segmentCounts` are present; both `executionReady` and `performanceCertified` are false.
+
+**Corrected quantitative results (supersede the October 28 preliminary report):**
+- 230 tickers, 79,760 admitted research bars, 27,280 quarantined observations.
+- Historical contiguous >=60/>=140/>=200: **38 / 10 / 4** tickers (not 43 / 10 / 5).
+- Current verified contiguous >=60 ending October 28: **zero**. Longest current streak: **14** sessions.
+- Corrected policy study: 50 ATR/SMA trades across 27 tickers, **50.0% wins, +1.92% expectancy** versus baseline **56.2% wins, +1.97% expectancy**; not certified and not better than baseline.
+- Critical market-wide observed-session gaps include August 27, October 8, October 22 and October 25; not to be bridged synthetically.
+
+**Merge status:** The complete dataset remains **outside this GitHub PR**. Neither a successfully applied local patch nor this review note is the same as an uploaded integration. The current connector can write text files to GitHub but cannot directly transfer this local 11 MB patch as one atomic commit, and this execution container cannot resolve github.com for `git push`. Keep PR draft / unmerged and research-only.
