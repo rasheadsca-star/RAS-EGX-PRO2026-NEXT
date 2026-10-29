@@ -6,6 +6,8 @@ on:
       - 'data/session-calendar.json'
       - 'data/egx-exchange-closures.json'
       - 'scripts/ops/audit-egx-holidays.cjs'
+      - 'scripts/history/history-summary-builder.cjs'
+      - 'tests/ops/history-summary-holiday-vetting.test.cjs'
       - 'tests/ops/egx-holiday-audit.test.cjs'
       - 'tests/ops/egx-session-math.test.cjs'
       - 'scripts/ops/egx-session-math.cjs'
@@ -27,7 +29,7 @@ jobs:
         with:
           node-version: '22'
       - name: Unit tests
-        run: node --test tests/ops/egx-holiday-audit.test.cjs tests/ops/egx-session-math.test.cjs tests/ops/egx-holiday-ledger-integration.test.cjs
+        run: node --test tests/ops/egx-holiday-audit.test.cjs tests/ops/egx-session-math.test.cjs tests/ops/egx-holiday-ledger-integration.test.cjs tests/ops/history-summary-holiday-vetting.test.cjs
       - name: Audit historical calendar
         run: |
           node scripts/ops/audit-egx-holidays.cjs > egx-holiday-audit.json
