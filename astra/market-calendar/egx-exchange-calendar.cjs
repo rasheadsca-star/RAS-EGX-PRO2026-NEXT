@@ -5,8 +5,8 @@ const iso=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&new Date(d+'T00
 function classify(date,closures=doc){
  if(!iso(date))throw Error('INVALID_DATE');
  const day=new Date(date+'T00:00:00Z').getUTCDay();
- if(closures.regularClosedWeekdaysJs.includes(day))return{status:'CLOSED',reason:'WEEKEND',verified:true};
- const event=closures.closed.find(x=>x.date===date);
+ if([5,6].includes(day))return{status:'CLOSED',reason:'WEEKEND',verified:true};
+ const event=(closures.closures||[]).find(x=>x.date===date&&x.status==='confirmed_exchange_closure');
  if(event)return{status:'CLOSED',reason:'EXCHANGE_CONFIRMED_HOLIDAY',verified:true,source:event.source};
  return{status:'UNCONFIRMED_OPEN',reason:'NO_VERIFIED_CLOSURE_NOT_PROOF_OF_TRADING',verified:false};
 }
