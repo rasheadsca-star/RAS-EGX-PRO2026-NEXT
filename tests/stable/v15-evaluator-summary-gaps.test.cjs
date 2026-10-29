@@ -39,3 +39,10 @@ test('target hit with net loss after costs must not count as winning trade',()=>
  assert.equal(r.missingNetReturnResolvedTrades,1);
  assert.equal(r.successRatePct,50);
 });
+
+test('profit factor is not invented when no losing trades exist',()=>{
+ const r=evaluateSummary([{evaluationStatus:'TARGET_HIT',entryDate:'2026-10-26',netReturnPct:2}]);
+ assert.equal(r.profitFactor,null);
+ assert.equal(r.profitFactorUndefinedReason,'NO_LOSING_TRADES');
+ assert.equal(r.successRatePct,100);
+});
