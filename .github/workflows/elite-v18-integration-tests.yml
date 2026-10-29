@@ -41,6 +41,14 @@ jobs:
           name: egx-history-discrepancy-audit
           path: artifacts/history-discrepancies.json
           if-no-files-found: error
+      - name: Audit same-session price reference mismatches
+        run: node scripts/integration/price-reference-session-audit.cjs artifacts/price-reference-session.json
+      - name: Upload price reference session evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-price-reference-session-audit
+          path: artifacts/price-reference-session.json
+          if-no-files-found: error
       - name: Syntax check for integrated browser scripts
         run: |
           node --check astra-prod/app/v18-evidence-compare.js
