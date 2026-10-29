@@ -106,3 +106,26 @@ test('unresolved corporate-action candidate blocks OOS even when OHLCV is source
  assert.equal(run(bars,{ticker:'TEST',corporateActions:[{...event,date:'2026-10-28'}]}).status,
   'OOS_RESEARCH_RESULTS_NOT_CERTIFIED');
 });
+
+test('missing observed trading session blocks OOS despite 154 clean dated bars',()=>{
+ const full=fixture(),missing=full.filter((_,i)=>i!==80);
+ const out=run(missing,{observedSessions:full.map(r=>r.date)});
+ assert.equal(out.status,'MISSING_OBSERVED_SESSIONS_IN_STUDY');
+ assert.equal(out.previousSession,full[79].date);
+ assert.equal(out.nextBarSession,full[81].date);
+ assert.deepEqual(out.missingObservedSessions,[full[80].date]);
+ assert.equal(out.tradeCount,0);assert.equal(out.performanceCertified,false);
+});
+test('matching observed session calendar allows research, never certification',()=>{
+ const bars=fixture(),out=run(bars,{observedSessions:bars.map(r=>r.date)});
+ assert.equal(out.status,'OOS_RESEARCH_RESULTS_NOT_CERTIFIED');
+ assert.equal(out.assumptions.observedCalendar,'REPOSITORY_OBSERVED_SESSIONS_NOT_OFFICIAL');
+ assert.equal(out.performanceCertified,false);
+});
+test('invalid or incomplete calendar fails closed instead of assuming weekends',()=>{
+ const bars=fixture();
+ assert.equal(run(bars,{observedSessions:['2025-01-01','2025-01-01']}).status,
+  'INVALID_OBSERVED_SESSION_CALENDAR');
+ assert.equal(run(bars,{observedSessions:bars.slice(1).map(r=>r.date)}).status,
+  'BAR_OUTSIDE_OBSERVED_SESSION_CALENDAR');
+});
