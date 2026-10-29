@@ -32,6 +32,29 @@ jobs:
           node scripts/stable/v15-recommendation-evaluator.cjs > v15-run-artifacts/revaluation-run.json
           cp data/stable/v15-recommendation-evaluation.json v15-run-artifacts/recommendation-evaluation.json
           cp data/stable/v15-recommendation-ledger.json v15-run-artifacts/recommendation-ledger.json
+      - name: Validate fresh evaluation invariants
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const report=JSON.parse(fs.readFileSync('v15-run-artifacts/recommendation-evaluation.json','utf8'));
+          const ledger=JSON.parse(fs.readFileSync('v15-run-artifacts/recommendation-ledger.json','utf8'));
+          const s=report.summary||{},records=report.records||[];
+          const fail=msg=>{throw new Error('V15 evaluation integrity: '+msg)};
+          if(!Array.isArray(records)||!Array.isArray(ledger.records))fail('missing records');
+          if(records.length!==ledger.records.length||records.length!==s.archivedRecommendations)fail('ledger/report total mismatch');
+          const resolved=new Set(['TARGET_HIT','STOP_HIT','STOP_HIT_AMBIGUOUS_CONSERVATIVE','EXPIRED_POSITIVE','EXPIRED_NEGATIVE','EXPIRED_FLAT']);
+          const wins=new Set(['TARGET_HIT','EXPIRED_POSITIVE']);
+          const n=records.filter(x=>resolved.has(x.evaluationStatus)).length;
+          const w=records.filter(x=>wins.has(x.evaluationStatus)).length;
+          const gaps=records.filter(x=>x.evaluationStatus==='HISTORY_SESSION_GAP').length;
+          if(s.resolvedTrades!==n||s.profitableResolvedTrades!==w||s.unverifiedHistoryGap!==gaps)fail('outcome count mismatch');
+          if(n&&Math.abs(s.successRatePct-Number((100*w/n).toFixed(2)))>0.001)fail('win rate denominator mismatch');
+          if(!n&&s.successRatePct!==null)fail('empty denominator must produce null win rate');
+          const rtime=Date.parse(report.generatedAt),ltime=Date.parse(ledger.generatedAt);
+          if(!Number.isFinite(rtime)||!Number.isFinite(ltime)||rtime!==ltime)fail('inconsistent generation timestamps');
+          const now=Date.now();if(Math.abs(now-rtime)>15*60*1000)fail('stale report timestamp');
+          console.log(JSON.stringify({verifiedRecords:records.length,resolved:n,wins:w,gaps,successRatePct:s.successRatePct}));
+          NODE
       - name: Produce evidence manifest
         if: success()
         run: |
