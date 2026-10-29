@@ -1,0 +1,21 @@
+name: Astra Honest Session UI
+on:
+  push:
+    branches: [fix/astra-honest-session-ui]
+  pull_request:
+    paths:
+      - 'astra-prod/app/app.js'
+      - 'tests/astra/astra-honest-session-ui.test.cjs'
+      - '.github/workflows/astra-honest-session-ui.yml'
+permissions:
+  contents: read
+jobs:
+  ui-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check astra-prod/app/app.js
+      - run: node --test tests/astra/astra-honest-session-ui.test.cjs

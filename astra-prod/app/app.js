@@ -7,15 +7,15 @@
   const A=v=>Array.isArray(v)?v:[];
   const fmtDate=v=>v?String(v).slice(0,10):'—';
   const loadJson=async url=>{const r=await fetch(url+(url.includes('?')?'&':'?')+'cb='+Date.now(),{cache:'no-store',headers:{'Cache-Control':'no-cache'}});if(!r.ok)throw new Error(url+' HTTP '+r.status);return r.json()};
-  const state={data:null,search:null,stocks:null,history:null,searchMap:new Map(),stockMap:new Map(),recMap:new Map(),portfolio:[],selected:null,historyDoc:null};
+  const state={data:null,search:null,stocks:null,history:null,searchMap:new Map(),stockMap:new Map(),recMap:new Map(),portfolio:[],selected:null,historyDoc:null,sessionAligned:false,handoff:null};
   const PORT_KEY='egx-astra-g22-portfolio';
 
   function nameOf(t){
     const s=state.searchMap.get(t)||state.stockMap.get(t)||{};
     return s.companyNameAr||s.companyNameEn||'';
   }
-  function recs(){return A(state.data?.decisionSnapshot?.top5)}
-  function basket(){return state.data?.decisionSnapshot?.basket||{}}
+  function recs(){return state.sessionAligned?A(state.data?.decisionSnapshot?.top5):[]}
+  function basket(){return state.sessionAligned?(state.data?.decisionSnapshot?.basket||{}):{}}
   function riskOf(o){return o?.risk||{}}
   function target(o,i=0){
     const t=A(o?.targets);
@@ -44,7 +44,7 @@
     const d=state.data,h=d.health,ds=d.decisionSnapshot,rs=basket(),rows=recs();
     $('#view-home').innerHTML=`
       <div class="grid cards">
-        <div class="card"><small>حالة Astra</small><b class="good">${E(ds.status)}</b></div>
+        <div class="card"><small>حالة Astra</small><b class="${state.sessionAligned?'good':'bad'}">${state.sessionAligned?E(ds.status):'محجوب — القرار أقدم من التسليم'}</b></div>
         <div class="card"><small>جلسة القرار</small><b>${E(d.sourceDecision.session)}</b></div>
         <div class="card"><small>فرص Astra الحالية</small><b class="blue">${rows.length}</b></div>
         <div class="card"><small>Decision Ready</small><b>${E(h.decisionReady?.pipelineReadySecurities??'—')}</b></div>
@@ -52,8 +52,8 @@
         <div class="card"><small>Cash reserve</small><b>${P(rs.cashReservePct)}</b></div>
       </div>
       <div class="panel">
-        <div class="section-title"><div><h2>أفضل فرص Astra</h2><p>الحد الأقصى 5؛ المعروض هو العدد الحقيقي الناتج من الـDecisionSnapshot.</p></div><span class="tag good">Snapshot exact rebuild</span></div>
-        <div class="grid">${rows.length?rows.map(recCard).join(''):'<div class="empty">لا توجد فرص صالحة في اللقطة الحالية.</div>'}</div>
+        <div class="section-title"><div><h2>أفضل فرص Astra</h2><p>الحد الأقصى 5؛ المعروض هو العدد الحقيقي الناتج من الـDecisionSnapshot.</p></div><span class="tag ${state.sessionAligned?'good':'bad'}">${state.sessionAligned?'Snapshot exact rebuild':'STALE — BLOCKED'}</span></div>
+        <div class="grid">${rows.length?rows.map(recCard).join('') :`<div class="empty">${state.sessionAligned?'لا توجد فرص صالحة في اللقطة الحالية.':'التوصيات محجوبة: جلسة القرار لا تطابق جلسة بيانات السوق.'}</div>`}</div>
       </div>
       <div class="grid two">
         <div class="panel"><div class="section-title"><div><h2>حالة السوق والبيانات</h2></div></div>
@@ -84,7 +84,7 @@
         <div class="card"><small>Total exposure</small><b>${P(rs.totalExposurePct)}</b></div>
         <div class="card"><small>Cash reserve</small><b>${P(rs.cashReservePct)}</b></div>
       </div>
-      <div class="panel"><div class="notice good">هذه هي الفرص الفعلية الناتجة من Astra snapshot المعتمد. إذا كان العدد أقل من 5 فلا يتم إنشاء أسهم إضافية لملء القائمة.</div></div>`;
+      <div class="panel"><div class="notice ${state.sessionAligned?'good':'bad'}">${state.sessionAligned?'هذه هي الفرص الفعلية الناتجة من Astra snapshot المعتمد.':'التوصيات محجوبة بسبب اختلاف جلسة القرار عن جلسة التسليم. لا تعتبر صفراً من الفرص.'} إذا كان العدد أقل من 5 فلا يتم إنشاء أسهم إضافية لملء القائمة.</div></div>`;
   }
 
   function mergedStock(ticker){
@@ -200,8 +200,8 @@
     const d=state.data,h=d.health,sd=d.sourceDecision;
     $('#view-health').innerHTML=`
       <div class="grid cards">
-        <div class="card"><small>Decision status</small><b class="good">${E(sd.status)}</b></div>
-        <div class="card"><small>Freshness</small><b class="good">${E(h.freshness)}</b></div>
+        <div class="card"><small>Decision status</small><b class="${state.sessionAligned?'good':'bad'}">${state.sessionAligned?E(sd.status):'BLOCKED_STALE_DECISION'}</b></div>
+        <div class="card"><small>Freshness</small><b class="${state.sessionAligned?'good':'bad'}">${state.sessionAligned?E(h.freshness):'STALE / BLOCKED'}</b></div>
         <div class="card"><small>CRITICAL</small><b class="good">${E(h.criticalUnresolved)}</b></div>
         <div class="card"><small>HIGH</small><b class="good">${E(h.highUnresolved)}</b></div>
         <div class="card"><small>Guard</small><b class="good">${E(h.guardStatus)}</b></div>
@@ -228,20 +228,27 @@
 
   async function boot(){
     try{
-      const [data,search,stocks,history]=await Promise.all([
+      const [data,search,stocks,history,handoff]=await Promise.all([
         loadJson('./data.json'),
         loadJson('../../data/quant/market-search-index-v13-17.json'),
         loadJson('../../data/quant/stock-intelligence-index.json'),
-        loadJson('../../data/rc2/recommendation-history.json')
+        loadJson('../../data/rc2/recommendation-history.json'),
+        loadJson('../../data/ops/g22-main-app-handoff.json').catch(()=>null)
       ]);
-      state.data=data;state.search=search;state.stocks=stocks;state.history=history;
+      state.data=data;state.search=search;state.stocks=stocks;state.history=history;state.handoff=handoff;
+      state.sessionAligned=Boolean(handoff&&handoff.final===true&&handoff.pagesPublished===true&&handoff.sourceReady===true&&handoff.executionGrade===true&&handoff.sessionDate===handoff.expectedSession&&data.sourceDecision.session===handoff.sessionDate);
       state.searchMap=new Map(A(search.stocks).map(x=>[x.ticker,x]));
       state.stockMap=new Map(A(stocks.stocks).map(x=>[x.ticker,x]));
       state.recMap=new Map(recs().map(x=>[x.ticker,x]));
       loadPortfolio();
-      $('#sessionBadge').textContent='جلسة '+data.sourceDecision.session;
+      $('#sessionBadge').textContent='قرار '+data.sourceDecision.session+' | تسليم '+(handoff?.sessionDate||'غير متاح');
       $('#snapshotBadge').textContent='Snapshot '+data.sourceDecision.decisionSnapshotId.slice(-8);
       renderHome();renderRecommendations();renderPortfolio();renderHistory();renderHealth();
+      if(!state.sessionAligned){
+        const message='التوصيات الجديدة محجوبة: آخر قرار '+data.sourceDecision.session+'، وجلسة البيانات المسلّمة '+(handoff?.sessionDate||'غير متاحة')+'. لا توجد توصية حديثة معتمدة.';
+        const panel=document.createElement('div');panel.className='notice bad';panel.setAttribute('role','alert');panel.textContent=message;
+        const view=$('#view-recommendations');if(view)view.prepend(panel);
+      }
       renderSearchShell();doSearch();
       $$('#nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
       const params=new URLSearchParams(location.search);const v=params.get('view');if(v&&$('#view-'+v))switchView(v);
