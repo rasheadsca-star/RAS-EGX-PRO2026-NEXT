@@ -17,3 +17,14 @@ test('correctly quarantined raw closure is a review finding, not eligible calend
  assert.equal(r.pass,true);
  assert.equal(r.eligibleSessionCount,2);
 });
+
+test('invalid calendar date fails even when shaped as ISO',()=>{
+ const r=audit({sessions:['2026-02-30']},{closures:[]});
+ assert.equal(r.pass,false);
+ assert.ok(r.discrepancies.some(x=>x.code==='INVALID_RAW_DATE'));
+});
+test('duplicate historical sessions are not silently counted twice',()=>{
+ const r=audit({sessions:['2026-10-07','2026-10-07'],eligibleSessions:['2026-10-07','2026-10-07'],quarantinedClosedDates:[]},{closures:[]});
+ assert.equal(r.pass,false);
+ assert.ok(r.discrepancies.some(x=>x.code==='DUPLICATE_ELIGIBLE_SESSIONS'));
+});
