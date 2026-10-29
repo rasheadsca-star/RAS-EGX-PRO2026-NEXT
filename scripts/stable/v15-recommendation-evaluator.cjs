@@ -318,7 +318,8 @@ function summarize(records) {
     targetVsStopRatePct: targetHits + stopHits ? round(targetHits / (targetHits + stopHits) * 100, 2) : null,
     averageNetReturnPct: returns.length ? round(sum(returns) / returns.length, 3) : null,
     cumulativeNetReturnPct: returns.length ? round(sum(returns), 3) : null,
-    profitFactor: negativeReturns.length ? round(sum(positiveReturns) / Math.abs(sum(negativeReturns)), 3) : positiveReturns.length ? 99 : null
+    profitFactor: negativeReturns.length ? round(sum(positiveReturns) / Math.abs(sum(negativeReturns)), 3) : positiveReturns.length ? null : null,
+    profitFactorUndefinedReason: negativeReturns.length ? null : positiveReturns.length ? 'NO_LOSING_TRADES' : 'NO_POSITIVE_OR_NEGATIVE_RETURNS'
   };
 }
 function byStrategy(records) {
