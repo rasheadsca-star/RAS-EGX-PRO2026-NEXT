@@ -49,3 +49,17 @@ test('20 dated rows cannot pass if one required observed market session is missi
  assert.equal(corrupted.length,20);
  assert.equal(validateWindow(dates,dates.at(-1),20,corrupted).reason,'MARKET_SESSION_GAP');
 });
+
+test('malformed dates and duplicate observed dates are rejected, not silently counted',()=>{
+ assert.throws(()=>sessionWindow(['2026-02-30'],'2026-02-30',1),/INVALID_SESSION_WINDOW_INPUT/);
+ assert.throws(()=>sessionWindow(['2026-10-18','2026-10-18'],'2026-10-18',2),/DUPLICATE/);
+ assert.equal(validateWindow(calendar,'2026-10-28',2,[{date:'2026-10-27'},{date:'not-a-date'}]).reason,'INVALID_OBSERVATION_SESSION');
+});
+test('an incomplete observed calendar is not an independently certified EGX trading calendar',()=>{
+ // A market-wide missing date can be invisible if the reference calendar is incomplete.
+ // The utility only establishes completeness relative to the provided calendar.
+ const incomplete=calendar.filter(d=>d!=='2026-10-27');
+ const w=validateWindow(incomplete,'2026-10-28',2,['2026-10-26','2026-10-28']);
+ assert.equal(w.ready,true);
+ assert.equal(w.sessions.includes('2026-10-27'),false);
+});
