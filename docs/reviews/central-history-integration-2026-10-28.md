@@ -45,3 +45,7 @@ The newer package `EGX_PRO_Central_History_Integration_Package.zip` contains:
 - Critical market-wide observed-session gaps include August 27, October 8, October 22 and October 25; not to be bridged synthetically.
 
 **Merge status:** The complete dataset remains **outside this GitHub PR**. Neither a successfully applied local patch nor this review note is the same as an uploaded integration. The current connector can write text files to GitHub but cannot directly transfer this local 11 MB patch as one atomic commit, and this execution container cannot resolve github.com for `git push`. Keep PR draft / unmerged and research-only.
+
+## Independent local archive integrity check (2026-10-29)
+
+Rechecked **all 461 SHA-256 manifest entries** against the files extracted from Claude's latest package: **461/461 byte lengths and digests match**. Reran the patch's isolated history-central tests: **14/14 pass**. This validates integrity of the supplied local archive, not CI on the PR. The 478 added patch paths are not uploaded to GitHub yet. A fail-closed local import-and-verify script was prepared for a clean checkout of this review branch; it makes no git push, merge or publication automatically.
