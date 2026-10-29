@@ -28,18 +28,21 @@ jobs:
           node --test tests/stable/v15-evaluator-session-gap.test.cjs tests/stable/v15-evaluator-summary-gaps.test.cjs
       - name: Re-evaluate archived paper recommendations
         run: |
-          node scripts/stable/v15-recommendation-evaluator.cjs > v15-revaluation-run.json
+          mkdir -p v15-run-artifacts
+          node scripts/stable/v15-recommendation-evaluator.cjs > v15-run-artifacts/revaluation-run.json
+          cp data/stable/v15-recommendation-evaluation.json v15-run-artifacts/recommendation-evaluation.json
+          cp data/stable/v15-recommendation-ledger.json v15-run-artifacts/recommendation-ledger.json
       - name: Produce evidence manifest
-        if: always()
+        if: success()
         run: |
           node - <<'NODE'
           const fs=require('node:fs');
-          const p='data/stable/v15-recommendation-evaluation.json';
+          const p='v15-run-artifacts/recommendation-evaluation.json';
           if(!fs.existsSync(p)){console.log('Evaluation report absent');process.exit(0)}
           const report=JSON.parse(fs.readFileSync(p));
           const s=report.summary||{};
           const evidence={generatedAt:report.generatedAt,methodologyVersion:report.methodology?.version||null,archivedRecommendations:s.archivedRecommendations??null,resolvedTrades:s.resolvedTrades??null,unverifiedHistoryGap:s.unverifiedHistoryGap??null,resolvedTradesWithNetReturn:s.resolvedTradesWithNetReturn??null,successRatePct:s.successRatePct??null,averageNetReturnPct:s.averageNetReturnPct??null,profitFactor:s.profitFactor??null,independentlyVerified:false,productionAuthorized:false};
-          fs.writeFileSync('v15-evidence-manifest.json',JSON.stringify(evidence,null,2)+'\n');
+          fs.writeFileSync('v15-run-artifacts/evidence-manifest.json',JSON.stringify(evidence,null,2)+'\n');
           console.log(JSON.stringify(evidence,null,2));
           NODE
       - name: Retain evaluation evidence
@@ -48,9 +51,6 @@ jobs:
         with:
           name: v15-paper-evaluation-evidence
           path: |
-            v15-revaluation-run.json
-            v15-evidence-manifest.json
-            data/stable/v15-recommendation-evaluation.json
-            data/stable/v15-recommendation-ledger.json
+            v15-run-artifacts/
           if-no-files-found: warn
           retention-days: 30
