@@ -12,6 +12,18 @@ const REPORT_PATH = path.join(ROOT, 'data/stable/v15-recommendation-evaluation.j
 const HISTORY_DIR = path.join(ROOT, 'data/history');
 const { confirmedClosures, isTradingSession } = require('../ops/egx-session-math.cjs');
 const VERIFIED_EGX_CLOSURES = confirmedClosures(ROOT);
+const MARKET_SESSION_CALENDAR = readEligibleCalendar();
+function readEligibleCalendar(){
+ const doc=JSON.parse(fs.readFileSync(path.join(ROOT,'data/session-calendar.json'),'utf8'));
+ if(!Array.isArray(doc.eligibleSessions))return null;
+ return doc.eligibleSessions.filter(d=>isTradingSession(d,VERIFIED_EGX_CLOSURES)).sort();
+}
+function missingObservedMarketSessions(startDate,throughDate,observedDates){
+ if(!MARKET_SESSION_CALENDAR||!throughDate)return null;
+ const required=MARKET_SESSION_CALENDAR.filter(d=>d>startDate&&d<=throughDate);
+ const seen=new Set(observedDates);
+ return required.filter(d=>!seen.has(d));
+}
 const DECISION_REPO_PATH = 'data/stable/v15-practical-decision.json';
 const AUDIT_START_AT = process.env.EGX_RECOMMENDATION_EVAL_START || '2026-08-02T22:10:00.000Z';
 const MAX_GIT_SNAPSHOTS = Math.max(20, Math.min(Number(process.env.EGX_EVAL_GIT_SNAPSHOTS || 160), 500));
@@ -173,6 +185,9 @@ function evaluateRecord(record) {
     sessionsObserved: sessions.length, evaluationWindowDates: []
   };
   if (!next) return base;
+  const assessmentEnd=sessions[Math.min(sessions.length,record.holdingSessions)-1]?.date||next.date;
+  const missing=missingObservedMarketSessions(record.recommendationDate,assessmentEnd,sessions.map(x=>x.date));
+  if(missing===null||missing.length)return {...base,evaluationStatus:'HISTORY_SESSION_GAP',statusAr:'فجوة في جلسات السوق أو تقويم مؤهل غير متاح — النتيجة غير معتمدة',missingMarketSessions:missing||[],dataGapReason:missing===null?'ELIGIBLE_CALENDAR_UNAVAILABLE':'SYMBOL_SESSION_GAP'};
 
   const gapTolerance = 0.005;
   if (next.open > record.entryHigh * (1 + gapTolerance)) {
