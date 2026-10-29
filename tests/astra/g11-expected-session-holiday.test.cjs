@@ -39,3 +39,11 @@ test('future canonical sessions must not be classified as stale or current',()=>
  assert.ok(source.includes("issue('SESSION_MISMATCH','CRITICAL'"));
  assert.ok(source.includes("freshness==='FUTURE_SESSION_CONFLICT'"));
 });
+
+test('multi-day Eid al-Adha closure does not manufacture missing EGX sessions',()=>{
+ assert.equal(expectedSession('2026-05-26T14:00:00Z',policy),'2026-05-25');
+ assert.equal(expectedSession('2026-05-28T14:00:00Z',policy),'2026-05-25');
+ assert.equal(expectedSession('2026-05-31T14:00:00Z',policy),'2026-05-25');
+ assert.equal(expectedSession('2026-06-01T14:00:00Z',policy),'2026-06-01');
+ assert.equal(tradingLag('2026-05-25','2026-06-01',policy),1);
+});
