@@ -30,6 +30,24 @@ jobs:
           test -d data/central-history/verified
           test -f scripts/history-central/lib/resolve.cjs
           test -f scripts/history-central/lib/validate.cjs
+      - name: Verify warehouse manifest checksums
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib,sys
+          root=pathlib.Path('data/central-history')
+          manifest=json.loads((root/'manifest.json').read_text())
+          files=manifest.get('files')
+          if not isinstance(files,dict) or len(files)<400:
+              raise SystemExit('Incomplete or invalid warehouse manifest')
+          for rel,metadata in files.items():
+              p=(root/rel).resolve()
+              if not p.is_relative_to(root.resolve()) or not p.is_file():
+                  raise SystemExit(f'Unsafe or missing: {rel}')
+              content=p.read_bytes()
+              if len(content)!=metadata.get('bytes') or hashlib.sha256(content).hexdigest()!=metadata.get('sha256'):
+                  raise SystemExit(f'SHA256 mismatch: {rel}')
+          print('WAREHOUSE_MANIFEST_SHA256_PASS',len(files))
+          PY
       - name: Run independent warehouse unit tests
         run: node --test tests/history-central/central-history.test.cjs
       - name: Run existing independent paper unit tests
