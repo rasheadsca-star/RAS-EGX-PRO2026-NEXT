@@ -40,4 +40,15 @@ jobs:
           node --check astra/market-calendar/egx-exchange-calendar.cjs
           node --check astra/data-health/g11-data-health.cjs
       - name: Verify session-count semantics
-        run: node --test tests/astra/trading-session-window.test.cjs tests/astra/g11-contiguous-history-gate.test.cjs tests/astra/egx-exchange-calendar.test.cjs tests/astra/g11-expected-session-holiday.test.cjs
+        run: |
+          mkdir -p test-results
+          set -o pipefail
+          node --test --test-reporter=tap tests/astra/trading-session-window.test.cjs tests/astra/g11-contiguous-history-gate.test.cjs tests/astra/egx-exchange-calendar.test.cjs tests/astra/g11-expected-session-holiday.test.cjs | tee test-results/astra-calendar.tap
+      - name: Save test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: astra-calendar-regression
+          path: test-results/astra-calendar.tap
+          if-no-files-found: warn
+          retention-days: 30
