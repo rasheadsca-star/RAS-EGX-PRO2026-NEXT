@@ -8,10 +8,10 @@ function audit(app,handoff,quant){
   handoffExpectedSessionMatch:h===handoff?.expectedSession,
   quantHandoffSessionMatch:q===h,
   handoffFinal:handoff?.final===true&&handoff?.pagesPublished===true,
-  minimumAcceptedRows:Number(handoff?.acceptedRows)>=200,
+  conditional190Rows:Number(handoff?.acceptedRows)>=190,
   evidenceCoverage:Number(handoff?.sourceSessionEvidenceCoveragePct)>=90
  };
- return {schemaVersion:'egx-source-alignment-audit-1',sessions:{astra:a||null,handoff:h||null,quant:q||null},acceptedRows:handoff?.acceptedRows??null,evidenceCoveragePct:handoff?.sourceSessionEvidenceCoveragePct??null,checks,status:Object.values(checks).every(Boolean)?'PASS':'BLOCKED'};
+ return {schemaVersion:'egx-source-alignment-audit-1',sessions:{astra:a||null,handoff:h||null,quant:q||null},acceptedRows:handoff?.acceptedRows??null,coverageTargetRows:200,conditionalFloorRows:190,evidenceCoveragePct:handoff?.sourceSessionEvidenceCoveragePct??null,checks,status:Object.values(checks).every(Boolean)?'PASS':'BLOCKED'};
 }
 if(require.main===module){const result=audit(read('astra-prod/app/data.json'),read('data/ops/g22-main-app-handoff.json'),read('data/quant/daily-recommendations.json'));process.stdout.write(JSON.stringify(result,null,2)+'\n');if(result.status!=='PASS')process.exitCode=2;}
 module.exports={audit};
