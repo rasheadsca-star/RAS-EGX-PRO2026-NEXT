@@ -43,13 +43,13 @@ jobs:
           if(!Array.isArray(records)||!Array.isArray(ledger.records))fail('missing records');
           if(records.length!==ledger.records.length||records.length!==s.archivedRecommendations)fail('ledger/report total mismatch');
           const resolved=new Set(['TARGET_HIT','STOP_HIT','STOP_HIT_AMBIGUOUS_CONSERVATIVE','EXPIRED_POSITIVE','EXPIRED_NEGATIVE','EXPIRED_FLAT']);
-          const wins=new Set(['TARGET_HIT','EXPIRED_POSITIVE']);
           const n=records.filter(x=>resolved.has(x.evaluationStatus)).length;
-          const w=records.filter(x=>wins.has(x.evaluationStatus)).length;
+          const valued=records.filter(x=>resolved.has(x.evaluationStatus)&&typeof x.netReturnPct==='number'&&Number.isFinite(x.netReturnPct));
+          const w=valued.filter(x=>x.netReturnPct>0).length;
           const gaps=records.filter(x=>x.evaluationStatus==='HISTORY_SESSION_GAP').length;
-          if(s.resolvedTrades!==n||s.profitableResolvedTrades!==w||s.unverifiedHistoryGap!==gaps)fail('outcome count mismatch');
-          if(n&&Math.abs(s.successRatePct-Number((100*w/n).toFixed(2)))>0.001)fail('win rate denominator mismatch');
-          if(!n&&s.successRatePct!==null)fail('empty denominator must produce null win rate');
+          if(s.resolvedTrades!==n||s.profitableResolvedTrades!==w||s.unverifiedHistoryGap!==gaps||s.resolvedTradesWithNetReturn!==valued.length)fail('outcome count mismatch');
+          if(valued.length&&Math.abs(s.successRatePct-Number((100*w/valued.length).toFixed(2)))>0.001)fail('win rate denominator mismatch');
+          if(!valued.length&&s.successRatePct!==null)fail('empty denominator must produce null win rate');
           const rtime=Date.parse(report.generatedAt),ltime=Date.parse(ledger.generatedAt);
           if(!Number.isFinite(rtime)||!Number.isFinite(ltime)||rtime!==ltime)fail('inconsistent generation timestamps');
           const now=Date.now();if(Math.abs(now-rtime)>15*60*1000)fail('stale report timestamp');
