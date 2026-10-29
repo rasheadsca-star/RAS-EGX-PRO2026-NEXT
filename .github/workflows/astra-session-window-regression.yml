@@ -35,6 +35,9 @@ jobs:
         with:
           node-version: '22'
       - name: Check source syntax
-        run: node --check astra/market-calendar/trading-session-window.cjs
+        run: |
+          node --check astra/market-calendar/trading-session-window.cjs
+          node --check astra/market-calendar/egx-exchange-calendar.cjs
+          node --check astra/data-health/g11-data-health.cjs
       - name: Verify session-count semantics
         run: node --test tests/astra/trading-session-window.test.cjs tests/astra/g11-contiguous-history-gate.test.cjs tests/astra/egx-exchange-calendar.test.cjs tests/astra/g11-expected-session-holiday.test.cjs
