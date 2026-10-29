@@ -7,6 +7,9 @@ on:
       - 'tests/astra/trading-session-window.test.cjs'
       - 'tests/astra/g11-contiguous-history-gate.test.cjs'
       - 'astra/data-health/g11-data-health.cjs'
+      - 'astra/market-calendar/egx-exchange-calendar.cjs'
+      - 'data/egx-exchange-closures.json'
+      - 'tests/astra/egx-exchange-calendar.test.cjs'
       - '.github/workflows/astra-session-window-regression.yml'
   pull_request:
     paths:
@@ -14,6 +17,9 @@ on:
       - 'tests/astra/trading-session-window.test.cjs'
       - 'tests/astra/g11-contiguous-history-gate.test.cjs'
       - 'astra/data-health/g11-data-health.cjs'
+      - 'astra/market-calendar/egx-exchange-calendar.cjs'
+      - 'data/egx-exchange-closures.json'
+      - 'tests/astra/egx-exchange-calendar.test.cjs'
       - '.github/workflows/astra-session-window-regression.yml'
   workflow_dispatch:
 permissions:
@@ -29,4 +35,4 @@ jobs:
       - name: Check source syntax
         run: node --check astra/market-calendar/trading-session-window.cjs
       - name: Verify session-count semantics
-        run: node --test tests/astra/trading-session-window.test.cjs tests/astra/g11-contiguous-history-gate.test.cjs
+        run: node --test tests/astra/trading-session-window.test.cjs tests/astra/g11-contiguous-history-gate.test.cjs tests/astra/egx-exchange-calendar.test.cjs
