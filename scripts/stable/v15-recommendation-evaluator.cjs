@@ -19,7 +19,7 @@ function readEligibleCalendar(){
  return doc.eligibleSessions.filter(d=>isTradingSession(d,VERIFIED_EGX_CLOSURES)).sort();
 }
 function missingObservedMarketSessions(startDate,throughDate,observedDates){
- if(!MARKET_SESSION_CALENDAR||!throughDate)return null;
+ if(!MARKET_SESSION_CALENDAR||!throughDate||!MARKET_SESSION_CALENDAR.includes(throughDate))return null;
  const required=MARKET_SESSION_CALENDAR.filter(d=>d>startDate&&d<=throughDate);
  const seen=new Set(observedDates);
  return required.filter(d=>!seen.has(d));
