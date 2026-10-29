@@ -18,3 +18,15 @@ test('builder preserves raw evidence but excludes confirmed closure from eligibl
   assert.equal(result.latestEligibleSession,'2026-10-11');
  }finally{fs.rmSync(temp,{recursive:true,force:true})}
 });
+
+test('published calendar isolates verified closures from eligible EGX sessions',()=>{
+ const repo=path.resolve(__dirname,'../..');
+ const calendar=JSON.parse(fs.readFileSync(path.join(repo,'data/session-calendar.json'),'utf8'));
+ const evidence=JSON.parse(fs.readFileSync(path.join(repo,'data/egx-exchange-closures.json'),'utf8'));
+ assert.ok(Array.isArray(calendar.eligibleSessions),'generated eligible sessions are required');
+ const closed=new Set(evidence.closures.filter(x=>x.status==='confirmed_exchange_closure').map(x=>x.date));
+ const expected=calendar.sessions.filter(d=>![5,6].includes(new Date(d+'T00:00:00Z').getUTCDay())&&!closed.has(d));
+ assert.deepEqual(calendar.eligibleSessions,expected);
+ assert.deepEqual(calendar.quarantinedClosedDates,calendar.sessions.filter(d=>!expected.includes(d)));
+ assert.equal(calendar.latestEligibleSession,expected.at(-1));
+});
