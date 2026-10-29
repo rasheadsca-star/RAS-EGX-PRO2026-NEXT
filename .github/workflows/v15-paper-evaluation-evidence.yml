@@ -38,7 +38,7 @@ jobs:
           node - <<'NODE'
           const fs=require('node:fs');
           const p='v15-run-artifacts/recommendation-evaluation.json';
-          if(!fs.existsSync(p)){console.log('Evaluation report absent');process.exit(0)}
+          if(!fs.existsSync(p)){console.error('Fresh evaluation report absent');process.exit(2)}
           const report=JSON.parse(fs.readFileSync(p));
           const s=report.summary||{};
           const evidence={generatedAt:report.generatedAt,methodologyVersion:report.methodology?.version||null,archivedRecommendations:s.archivedRecommendations??null,resolvedTrades:s.resolvedTrades??null,unverifiedHistoryGap:s.unverifiedHistoryGap??null,resolvedTradesWithNetReturn:s.resolvedTradesWithNetReturn??null,successRatePct:s.successRatePct??null,averageNetReturnPct:s.averageNetReturnPct??null,profitFactor:s.profitFactor??null,independentlyVerified:false,productionAuthorized:false};
