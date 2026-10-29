@@ -189,6 +189,7 @@ test('independent CLI keeps dated research available when Astra handoff is missi
    {expectedSession:session,ready:false,executionGrade:false,acceptedRows:0,sampleAccepted:[]});
   put('data/symbol-map.json',[{ticker:'TEST',active:true,currency:'EGP',exchange:'EGX'}]);
   put('data/corporate-actions.json',{candidates:[]});
+  put('data/session-calendar.json',{latestMarketSession:session,sessions:sample.map(r=>r.date)});
   put('data/history/TEST.json',
    {ticker:'TEST',symbolVerified:true,isin:'EG0000000006',currency:'EGP',exchange:'EGX',sessions:sample});
   for(const malformed of [false,true]){
@@ -232,4 +233,16 @@ test('ISO 6166 checksum blocks fabricated-looking ISINs while preserving valid E
  assert.deepEqual(x.datedPriceObservations,[]);
  assert.deepEqual(x.verifiedCandidates,[]);
  assert.deepEqual(x.recommendations,[]);
+});
+
+test('60 source-stamped candles cannot yield indicators across an observed-session gap',()=>{
+ const observed=[...sample.slice(0,-1).map(r=>r.date),'2026-08-31',session];
+ const out=run({observedSessions:observed});
+ assert.equal(out.datedPriceObservations.length,1);
+ assert.equal(out.datedPriceObservations[0].indicatorReady,false);
+ assert.ok(out.datedPriceObservations[0].indicatorBlockers.includes(
+  'MISSING_OBSERVED_SESSIONS_IN_STUDY'));
+ assert.deepEqual(out.verifiedCandidates,[]);
+ assert.deepEqual(out.researchWatchlist,[]);
+ assert.deepEqual(out.recommendations,[]);
 });

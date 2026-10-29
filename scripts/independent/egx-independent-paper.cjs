@@ -2,7 +2,7 @@
 // Independent, fail-closed, paper-only engine. No Astra dependencies.
 const fs=require('node:fs'),path=require('node:path');
 const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
-const {walkForwardBacktest,strictProvenance}=require('./walkforward-backtest.cjs');
+const {walkForwardBacktest,strictProvenance,observedSessionGap}=require('./walkforward-backtest.cjs');
 const {copiedBarReasons}=require('./stale-bar-detector.cjs');
 const {pendingCorporateActionCandidates}=require('./corporate-action-gate.cjs');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
@@ -53,7 +53,7 @@ function currentEvidenceValid(r,session){
    Number.isFinite(Date.parse(String(r.fetchedAt||'')))&&
    !r.warnings?.some(x=>/invalid|conflict|quarantined|unresolved/i.test(String(x)));
 }
-function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190,corporateActions=[]}){
+function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190,corporateActions=[],observedSessions=null}){
  const aggregateReady=day(price?.expectedSession)===session&&price?.ready===true&&
    price?.executionGrade===true&&Number(price?.acceptedRows||0)>=minimumRows;
  const handoffAligned=day(handoff?.sessionDate)===session&&
@@ -96,6 +96,10 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190,cor
   if(new Set(dates).size!==recent.length)indicatorBlockers.push('DUPLICATE_LOOKBACK_SESSION');
   if(cleanBars!==recent.length)indicatorBlockers.push('UNVERIFIED_HISTORICAL_OHLCV');
   if(copiedBarReasons(recent).length)indicatorBlockers.push('STALE_COPIED_BAR_IN_LOOKBACK');
+  if(observedSessions!==null){
+   const gap=observedSessionGap(recent,observedSessions);
+   if(gap)indicatorBlockers.push(gap.status);
+  }
   const pendingActions=pendingCorporateActionCandidates(corporateActions,ticker,dates[0],session);
   if(pendingActions.length)indicatorBlockers.push('UNRESOLVED_CORPORATE_ACTION_CANDIDATE_IN_LOOKBACK');
   const indicatorReady=indicatorBlockers.length===0;
@@ -118,7 +122,7 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190,cor
   // Fixed, chronological holdout; every candle requires independently dated provenance.
   // No result is a certification or a live/paper order. A dirty archive blocks the test.
   const {trades:researchTrades,...oos}=walkForwardBacktest(bars,{
-   barValid:historicalBarValid,currency,ticker,corporateActions
+   barValid:historicalBarValid,currency,ticker,corporateActions,observedSessions
   });
   result.verifiedCandidates.push({ticker,session,close:c.close,currency,score,liquid,trending,evidenceLevel,
    outOfSample:oos});
@@ -164,7 +168,8 @@ function main(){
  const symbols=read('data/symbol-map.json');
  const output=evaluate({price,handoff,symbols,session:day(price.expectedSession),
   loadHistory:t=>read('data/history/'+t+'.json'),
-  corporateActions:read('data/corporate-actions.json').candidates});
+  corporateActions:read('data/corporate-actions.json').candidates,
+  observedSessions:read('data/session-calendar.json').sessions});
  const out=path.join(ROOT,'unified-console/independent-paper.json');
  fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,JSON.stringify(output,null,2)+'\n');
  console.log('EGX_INDEPENDENT_PAPER '+JSON.stringify({status:output.status,blockers:output.blockers,watch:output.watchlist.length,research:output.researchWatchlist.length,candidates:output.verifiedCandidates.length,datedPrices:output.datedPriceObservations.length}));
