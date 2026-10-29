@@ -15,6 +15,7 @@ on:
       - 'scripts/astra/native/astra-intelligence.cjs'
       - 'scripts/stable/v15-recommendation-evaluator.cjs'
       - 'tests/stable/v15-evaluator-session-gap.test.cjs'
+      - 'tests/stable/v15-evaluator-summary-gaps.test.cjs'
       - 'tests/ops/egx-holiday-ledger-integration.test.cjs'
       - '.github/workflows/egx-holiday-audit.yml'
   schedule:
@@ -30,7 +31,7 @@ jobs:
         with:
           node-version: '22'
       - name: Unit tests
-        run: node --test tests/ops/egx-holiday-audit.test.cjs tests/ops/egx-session-math.test.cjs tests/ops/egx-holiday-ledger-integration.test.cjs tests/ops/history-summary-holiday-vetting.test.cjs tests/stable/v15-evaluator-session-gap.test.cjs
+        run: node --test tests/ops/egx-holiday-audit.test.cjs tests/ops/egx-session-math.test.cjs tests/ops/egx-holiday-ledger-integration.test.cjs tests/ops/history-summary-holiday-vetting.test.cjs tests/stable/v15-evaluator-session-gap.test.cjs tests/stable/v15-evaluator-summary-gaps.test.cjs
       - name: Audit historical calendar
         run: |
           node scripts/ops/audit-egx-holidays.cjs > egx-holiday-audit.json
