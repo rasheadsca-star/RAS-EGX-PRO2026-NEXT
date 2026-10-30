@@ -5,6 +5,7 @@ on:
       - 'preview-v16/app/v169-p2.html'
       - 'preview-v16/app/main-app-professional-readiness-v2.js'
       - 'tests/research/main-app-readiness-renderer.test.cjs'
+      - 'tests/research/egx-unified-console.test.cjs'
       - '.github/workflows/main-app-readiness-v2-regression.yml'
   push:
     branches: [main]
@@ -12,6 +13,7 @@ on:
       - 'preview-v16/app/v169-p2.html'
       - 'preview-v16/app/main-app-professional-readiness-v2.js'
       - 'tests/research/main-app-readiness-renderer.test.cjs'
+      - 'tests/research/egx-unified-console.test.cjs'
       - '.github/workflows/main-app-readiness-v2-regression.yml'
 permissions:
   contents: read
@@ -28,4 +30,4 @@ jobs:
       - name: Syntax and launcher regression
         run: |
           node --check preview-v16/app/main-app-professional-readiness-v2.js
-          node --test tests/research/main-app-readiness-renderer.test.cjs
+          node --test tests/research/main-app-readiness-renderer.test.cjs tests/research/egx-unified-console.test.cjs
