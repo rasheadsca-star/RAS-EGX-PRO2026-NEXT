@@ -1,0 +1,31 @@
+name: MAIN APP Readiness V2 Renderer Regression
+on:
+  pull_request:
+    paths:
+      - 'preview-v16/app/v169-p2.html'
+      - 'preview-v16/app/main-app-professional-readiness-v2.js'
+      - 'tests/research/main-app-readiness-renderer.test.cjs'
+      - '.github/workflows/main-app-readiness-v2-regression.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'preview-v16/app/v169-p2.html'
+      - 'preview-v16/app/main-app-professional-readiness-v2.js'
+      - 'tests/research/main-app-readiness-renderer.test.cjs'
+      - '.github/workflows/main-app-readiness-v2-regression.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and launcher regression
+        run: |
+          node --check preview-v16/app/main-app-professional-readiness-v2.js
+          node --test tests/research/main-app-readiness-renderer.test.cjs
