@@ -71,23 +71,33 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  const v16=JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json','utf8'));
  const quant=JSON.parse(fs.readFileSync('data/quant/daily-recommendations.json','utf8'));
  const gann=JSON.parse(fs.readFileSync('unified-console/gann-research.json','utf8'));
- const expected=[...(v16.researchWatchlist||[]),...(quant.status==='WATCH_ONLY'?quant.watchCandidates||[]:[]),
-  ...(gann.reviewPassed===true?gann.watchRadar||[]:[])].map(x=>x.ticker);
- assert.equal(radar.length,new Set(expected).size,'one dated research row per unique ticker');
- const tickers=radar.map(row=>row.children[0].textContent);
- assert.equal(new Set(tickers).size,radar.length,'one row per ticker, never duplicate signals');
- const find=t=>radar.find(row=>row.children[0].textContent===t).children.map(c=>c.textContent);
- // Compare each label with its actual source session; source dates advance independently.
- // An old Quant/Gann snapshot must be archived, but a same-session update must not.
- const sourceLabel=(name,sourceSession)=>name+' '+sourceSession+
-  (sourceSession===truth.expectedSession?'':' (أرشيف)');
- const faita=find('FAITA');
- assert.ok(faita[1].includes(sourceLabel('V16',v16.sessionDate)));
- assert.ok(faita[2].includes('مؤشرات OHLCV محجوبة'));
- const mfpc=find('MFPC');
- assert.ok(mfpc[1].includes(sourceLabel('Quant',quant.sessionId)));
- assert.ok(mfpc[1].includes(sourceLabel('Gann',gann.sourceSession)));
- for(const row of radar)assert.equal(row.children[3].textContent,'RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ');
+ const sources=[
+  {name:'V16',session:v16.sessionDate,items:v16.researchWatchlist||[]},
+  {name:'Quant',session:quant.sessionId,items:quant.status==='WATCH_ONLY'?quant.watchCandidates||[]:[]},
+  {name:'Gann',session:gann.sourceSession,items:gann.reviewPassed===true?gann.watchRadar||[]:[]}
+ ];
+ const expected=[...new Set(sources.flatMap(s=>s.items.map(x=>x.ticker).filter(Boolean)))];
+ if(!expected.length){
+  assert.equal(radar.length,1,'zero research candidates must render one explanatory placeholder');
+  assert.equal(radar[0].children[0].textContent,'لا توجد قوائم متابعة بحثية مؤرخة');
+ }else{
+  assert.equal(radar.length,expected.length,'one dated research row per unique ticker');
+  const tickers=radar.map(row=>row.children[0].textContent);
+  assert.equal(new Set(tickers).size,radar.length,'one row per ticker, never duplicate signals');
+  const sourceLabel=(name,sourceSession)=>name+' '+sourceSession+
+   (sourceSession===truth.expectedSession?'':' (أرشيف)');
+  for(const source of sources)for(const candidate of source.items){
+   const row=radar.find(r=>r.children[0].textContent===candidate.ticker);
+   assert.ok(row,'missing radar row for '+candidate.ticker);
+   assert.ok(row.children[1].textContent.includes(sourceLabel(source.name,source.session)),
+    'missing source/date label for '+candidate.ticker+' from '+source.name);
+   const observation=current.datedPriceObservations.find(p=>p.ticker===candidate.ticker&&p.session===source.session);
+   if(observation&&observation.indicatorReady!==true)
+    assert.ok(row.children[2].textContent.includes('مؤشرات OHLCV محجوبة'),
+     'unverified indicators must stay blocked for '+candidate.ticker);
+  }
+  for(const row of radar)assert.equal(row.children[3].textContent,'RESEARCH_ONLY — لا أمر ولا اعتماد تنفيذ');
+ }
  const health=JSON.parse(fs.readFileSync('data/source-health.json','utf8'));
  const fetchStatus=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
  if(fetchStatus.marketRows+fetchStatus.rejectedCurrentSessionRows===fetchStatus.inputRows)
