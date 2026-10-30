@@ -126,7 +126,7 @@
   function init(){
     ensurePanel();
     refresh();
-    if(!state.observer){state.observer=new MutationObserver(()=>{ensurePanel();scheduleRender();});state.observer.observe(document.body,{childList:true,subtree:true});}
+    if(!state.observer){state.observer=new MutationObserver(()=>{if(!document.getElementById('professionalReadinessV2Panel')){ensurePanel();scheduleRender();}});state.observer.observe(document.body,{childList:true,subtree:true});}
     setInterval(refresh,60000);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
