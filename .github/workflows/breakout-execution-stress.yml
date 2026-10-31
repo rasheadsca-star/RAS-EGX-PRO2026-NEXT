@@ -10,6 +10,7 @@ on:
       - 'scripts/quant/verify-execution-stress.cjs'
       - 'scripts/quant/verify-trade-ledger.cjs'
       - 'scripts/quant/research-daily-portfolio.cjs'
+      - 'scripts/quant/report-market-data-gaps.cjs'
       - 'tests/quant/research-daily-portfolio.test.cjs'
       - '.github/workflows/breakout-execution-stress.yml'
 permissions:
@@ -108,6 +109,8 @@ jobs:
           console.log('**Research only. Corporate actions and execution price assumptions are not verified. Not a certified equity curve.**');
           console.log('**Execution ready: NO. Performance certified: NO.**');
           NODE
+      - name: Aggregate missing prices across all six scenarios
+        run: node scripts/quant/report-market-data-gaps.cjs research-artifacts
       - uses: actions/upload-artifact@v4
         with:
           name: breakout-execution-stress
