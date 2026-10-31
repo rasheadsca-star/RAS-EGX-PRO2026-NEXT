@@ -20,6 +20,7 @@ function run(ledger,opts={}){
  const sessions=[...dates].filter(d=>start&&d>=start&&d<=end).sort();
  let cash=initial,peak=initial,maxDD=0,accepted=0,rejected=0,missingMarks=0,maxOpenPositions=0;
  const missingMarkDetails=[];
+ const missingByTicker={};
  const open=[],ledgerOut=[],curve=[];let cursor=0;
  for(const date of sessions){
   // Conservative daily bars: place entries before same-day exits; do not reuse unknown intraday proceeds.
@@ -32,7 +33,7 @@ function run(ledger,opts={}){
   for(const p of open){
    const close=history.get(p.trade.ticker)?.get(date);
    if(Number.isFinite(close)&&close>0)p.lastPrice=close;
-   else if(date>p.trade.entryDate&&date<p.trade.exitDate){missingMarks++;missingMarkDetails.push({date,ticker:p.trade.ticker,strategyId:p.trade.strategyId});}
+   else if(date>p.trade.entryDate&&date<p.trade.exitDate){missingMarks++;missingMarkDetails.push({date,ticker:p.trade.ticker,strategyId:p.trade.strategyId});missingByTicker[p.trade.ticker]=(missingByTicker[p.trade.ticker]||0)+1;}
    // On exit day, use simulated exitPrice, not the day's close.
    if(date===p.trade.exitDate)p.lastPrice=p.trade.exitPrice;
   }
@@ -47,7 +48,7 @@ function run(ledger,opts={}){
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,100*(peak-equity)/peak);
   curve.push({date,cashEgp:+cash.toFixed(2),investedEgp:+invested.toFixed(2),equityEgp:+equity.toFixed(2),drawdownPct:+(100*(peak-equity)/peak).toFixed(4),openPositions:open.length});
  }
- return {schemaVersion:'1.0',status:missingMarks?'INCOMPLETE_PRICE_MARKS':'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'recorded entry price; intraday timing unknown; new entries before same-day exits for cash conservatism',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'unverified'},accepted,rejected,missingMarks,missingMarkDetails,maxOpenPositions,valuationComplete:missingMarks===0,endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
+ return {schemaVersion:'1.0',status:missingMarks?'INCOMPLETE_PRICE_MARKS':'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'recorded entry price; intraday timing unknown; new entries before same-day exits for cash conservatism',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'unverified'},accepted,rejected,missingMarks,missingMarkDetails,missingByTicker,maxOpenPositions,valuationComplete:missingMarks===0,endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
 }
-if(require.main===module){const input=JSON.parse(fs.readFileSync(process.argv[2]||'data/quant/walk-forward-trade-ledger.json','utf8'));const result=run(input);const output=process.argv[3]||'data/quant/research-daily-portfolio.json';fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify({accepted:result.accepted,rejected:result.rejected,missingMarks:result.missingMarks,maxDrawdownPct:result.maxDrawdownPct,endingEquityEgp:result.endingEquityEgp}));}
+if(require.main===module){const input=JSON.parse(fs.readFileSync(process.argv[2]||'data/quant/walk-forward-trade-ledger.json','utf8'));const result=run(input);const output=process.argv[3]||'data/quant/research-daily-portfolio.json';fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify({accepted:result.accepted,rejected:result.rejected,missingMarks:result.missingMarks,missingTickers:Object.keys(result.missingByTicker).length,maxDrawdownPct:result.maxDrawdownPct,endingEquityEgp:result.endingEquityEgp}));}
 module.exports={run};
