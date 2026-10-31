@@ -584,7 +584,7 @@ function main() {
   const seen = new Set();
   for (const candidate of sourceCandidates) {
     const ticker = safeTicker(candidate.ticker);
-    if (!ticker || seen.has(`${ticker}:${candidate.strategyId}`) || blocked.has(ticker)) continue;
+    if (!ticker || seen.has(`${ticker}:${candidate.strategyId}`) || blocked.has(ticker) || v134Policy.safety?.frozenStrategies?.[candidate.strategyId]) continue;
     seen.add(`${ticker}:${candidate.strategyId}`);
     const strategy = healthMap.get(candidate.strategyId);
     if (!strategy) continue;
