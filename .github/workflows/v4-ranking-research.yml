@@ -1,6 +1,11 @@
 name: V4 transparent ranking research
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/v4-ranking-research.yml'
+      - 'scripts/paper-v4/build-ranking-forward.cjs'
   schedule:
     - cron: '35 16 * * 0-4'
 permissions:
