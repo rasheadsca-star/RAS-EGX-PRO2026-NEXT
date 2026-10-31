@@ -5,6 +5,7 @@ on:
       - 'index.html'
       - 'paper-v4/**'
       - 'tools/v4-freeze/**'
+      - 'tests/v4-freeze/**'
       - '.github/workflows/v4-frozen-display-guard.yml'
   push:
     branches: [main]
@@ -12,6 +13,7 @@ on:
       - 'index.html'
       - 'paper-v4/**'
       - 'tools/v4-freeze/**'
+      - 'tests/v4-freeze/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,4 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 tools/v4-freeze/guard.py
+      - name: Verify frozen V4 page
+        run: python3 tools/v4-freeze/guard.py
+      - name: Prove tampering is rejected
+        run: python3 -m unittest discover -s tests/v4-freeze -p 'test_*.py' -v
