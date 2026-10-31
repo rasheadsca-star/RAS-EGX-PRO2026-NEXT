@@ -51,7 +51,7 @@
     const d=state.data,h=d.health,ds=d.decisionSnapshot,rs=basket(),rows=recs();
     $('#view-home').innerHTML=`
       <div class="grid cards">
-        <div class="card"><small>حالة Astra</small><b class="good">${E(ds.status)}</b></div>
+        <div class="card"><small>حالة Astra</small><b class="${decisionFresh()?'good':'warn'}">${decisionFresh()?E(ds.status):'قرار أرشيفي — غير صالح للتداول'}</b></div>
         <div class="card"><small>جلسة القرار</small><b>${E(d.sourceDecision.session)}</b></div>
         <div class="card"><small>فرص Astra الحالية</small><b class="blue">${rows.length}</b></div>
         <div class="card"><small>Decision Ready</small><b>${E(h.decisionReady?.pipelineReadySecurities??'—')}</b></div>
