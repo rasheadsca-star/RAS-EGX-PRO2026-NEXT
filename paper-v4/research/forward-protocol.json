@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "program": "EGX Independent V4 prospective strategy comparison",
+  "status": "PENDING_FUTURE_OFFICIAL_SESSIONS",
+  "mode": "RESEARCH_ONLY",
+  "frozenAt": "2026-10-31",
+  "referenceSession": "2026-10-29",
+  "firstEligibleFutureSession": "2026-11-01",
+  "universe": 217,
+  "source": "Frozen SQLite historical screening 2026-10-29",
+  "dataIntegrity": {
+    "requires": "DIRECT_OFFICIAL_CLOSE",
+    "unverifiedBars": "EXCLUDE_FROM_CERTIFIED_PERFORMANCE",
+    "noRetrospectiveModification": true,
+    "noSameSessionOutcomes": true
+  },
+  "strategyCandidates": [
+    {
+      "id": "BREAKOUT",
+      "family": "breakout",
+      "parameters": "Use existing V5 research-lab frozen breakout rule; extract exact formula and hash before first prospective signal; not yet production-certified",
+      "status": "AWAITING_RULE_CODE_FREEZE"
+    },
+    {
+      "id": "MOMENTUM",
+      "family": "momentum",
+      "parameters": "Use existing V5 research-lab frozen momentum rule; extract exact formula and hash before first prospective signal; not yet production-certified",
+      "status": "AWAITING_RULE_CODE_FREEZE"
+    },
+    {
+      "id": "MULTIFACTOR_VOL20",
+      "family": "multi-factor",
+      "parameters": {
+        "closeAboveMA20": true,
+        "MA20AboveMA50": true,
+        "momentum5PctGreaterThan": 1.5,
+        "volumeAboveMA20": true,
+        "volatility20LogReturnStdPctMin": 1.5,
+        "volatility20LogReturnStdPctMax": 6
+      },
+      "status": "RULE_DEFINED_RESEARCH_ONLY"
+    }
+  ],
+  "evaluation": {
+    "requireRollingOutOfSample": true,
+    "selectionPolicy": "All three eligible strategies fixed ex ante; no tuning on future folds",
+    "report": [
+      "number_of_signals",
+      "number_of_observed_future_sessions",
+      "net_return_after_costs",
+      "win_rate",
+      "max_drawdown",
+      "profit_factor",
+      "source_coverage",
+      "missed_sessions"
+    ],
+    "unknownIs": "PENDING_NOT_ZERO",
+    "noClaimsOfOrders": true
+  },
+  "notes": [
+    "A frozen prospective protocol is not itself a completed Walk-Forward test.",
+    "BREAKOUT and MOMENTUM formulas need exact code-level freeze; no prospective numeric comparison can start before this.",
+    "2026-10-29 reference remains immutable; EGX official report required for every future observed session.",
+    "No orders and no automatic live recommendations until quality and OOS gates pass."
+  ]
+}
