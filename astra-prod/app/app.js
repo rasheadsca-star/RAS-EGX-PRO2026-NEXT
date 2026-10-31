@@ -14,7 +14,14 @@
     const s=state.searchMap.get(t)||state.stockMap.get(t)||{};
     return s.companyNameAr||s.companyNameEn||'';
   }
-  function recs(){return A(state.data?.decisionSnapshot?.top5)}
+  function decisionFresh(){
+    const session=String(state.data?.sourceDecision?.session||'');
+    // Never promote an older snapshot to a current actionable decision.
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const age=Math.floor((Date.parse(today+'T00:00:00Z')-Date.parse(session+'T00:00:00Z'))/86400000);
+    return !!session && Number.isFinite(age) && age>=0 && age<=3;
+  }
+  function recs(){return decisionFresh()?A(state.data?.decisionSnapshot?.top5):[]}
   function basket(){return state.data?.decisionSnapshot?.basket||{}}
   function riskOf(o){return o?.risk||{}}
   function target(o,i=0){
@@ -106,36 +113,42 @@
     const rows=A(state.search?.stocks).filter(s=>!q||String(s.searchText||[s.ticker,s.companyNameAr,s.companyNameEn].join(' ')).toLowerCase().includes(q)).slice(0,25);
     $('#searchResults').innerHTML=rows.length?rows.map(s=>{
       const r=state.recMap.get(s.ticker),x=state.stockMap.get(s.ticker)||s;
-      return `<div class="result" data-stock="${E(s.ticker)}"><div><b class="ticker">${E(s.ticker)}</b> — ${E(s.companyNameAr||s.companyNameEn||'')}<div class="name">${r?'ضمن توصيات Astra الحالية':'ليس ضمن توصيات Astra الحالية'}</div></div><div style="text-align:left"><b>${N(x.price,3)}</b><div class="${Number(x.change1Pct??x.changePct)>=0?'good':'bad'}">${P(x.change1Pct??x.changePct)}</div></div></div>`;
+      return `<div class="result" data-stock="${E(s.ticker)}"><div><b class="ticker">${E(s.ticker)}</b> — ${E(s.companyNameAr||s.companyNameEn||'')}<div class="name">${r?'ضمن توصيات Astra الحالية':'لا توجد توصية حديثة معتمدة'}</div></div><div style="text-align:left"><b class="warn">السعر قيد التحقق</b><div class="muted">افتح التفاصيل لمعرفة تاريخ المصدر</div></div></div>`;
     }).join(''):'<div class="empty">لا توجد نتائج.</div>';
     $$('[data-stock]').forEach(el=>el.onclick=()=>selectStock(el.dataset.stock));
   }
   async function selectStock(ticker){
     state.selected=mergedStock(ticker);
+    state.historyDoc=null;
     renderStockDetail();
     try{
       const h=await loadJson('../../data/history/'+encodeURIComponent(ticker)+'.json');
-      state.historyDoc=h;drawChart();
-    }catch{state.historyDoc=null;drawChart()}
+      state.historyDoc=h;renderStockDetail();drawChart();
+    }catch{state.historyDoc=null;renderStockDetail();drawChart()}
   }
   function renderStockDetail(){
     const x=state.selected;if(!x){$('#stockDetail').innerHTML='';return}
     const r=x.currentAstra,aux=state.stockMap.get(x.ticker)||{};
+    const last=historyRows(state.historyDoc).at(-1);
+    const conflict=x.ticker==='ABUK' && last?.date==='2026-10-29' && Math.abs(last.close-88.03)>0.01;
+    const verified=!!state.historyDoc?.officiallyVerifiedLatestSession && !!last && !conflict;
+    const safePrice=verified?N(last.close,3):'محجوب — غير موثق';
+    const qualityNote=conflict?'تعارض ABUK: السجل 88.22 جنيه، ومرجع الإغلاق 29 أكتوبر 88.03 جنيه؛ لا تعتمد أي توصية قبل التسوية.':(!verified?'لا يوجد تحقق رسمي مباشر لأحدث إغلاق. السعر القديم أو المختلف محجوب.':'الإغلاق موثق رسميًا.');
     $('#stockDetail').innerHTML=`
       <div class="panel">
         <div class="section-title"><div><h2><span class="ticker">${E(x.ticker)}</span> — ${E(x.companyNameAr||x.companyNameEn||'')}</h2><p>${r?'ضمن DecisionSnapshot الحالي':'ليس ضمن توصيات Astra الحالية'}</p></div>${r?'<span class="tag good">Astra current</span>':'<span class="tag">Search only</span>'}</div>
         <div class="stock-grid">
-          <div class="stock-box"><small>السعر المساعد</small><b>${N(aux.price??x.price,3)}</b></div>
-          <div class="stock-box"><small>التغير</small><b class="${Number(aux.change1Pct??x.changePct)>=0?'good':'bad'}">${P(aux.change1Pct??x.changePct)}</b></div>
+          <div class="stock-box"><small>الإغلاق الرسمي الموثق</small><b>${safePrice}</b></div>
+          <div class="stock-box"><small>حالة السعر</small><b class="warn">${verified?'موثق':'غير معتمد'}</b></div>
           <div class="stock-box"><small>RSI 14 — عرض فقط</small><b>${N(aux.rsi14,2)}</b></div>
           <div class="stock-box"><small>الاتجاه — عرض فقط</small><b>${E(aux.trendLabelAr||'—')}</b></div>
           <div class="stock-box"><small>دعم 20 — عرض فقط</small><b>${N(aux.support20??x.historicalSupport20,3)}</b></div>
           <div class="stock-box"><small>مقاومة 20 — عرض فقط</small><b>${N(aux.resistance20??x.historicalResistance20,3)}</b></div>
-          <div class="stock-box"><small>جلسة البيانات المساعدة</small><b>${E(aux.sessionId||x.updatedAt?.slice?.(0,10)||'—')}</b></div>
+          <div class="stock-box"><small>تاريخ أحدث سجل سعري</small><b>${E(last?.date||'غير متاح')}</b></div>
           <div class="stock-box"><small>حالة Astra</small><b class="${r?'good':'warn'}">${r?'موصى/مختار':'خارج القائمة الحالية'}</b></div>
         </div>
         ${r?`<div class="metrics" style="margin-top:10px"><div class="metric"><small>الدخول Astra</small><b>${N(r.entryPlan?.low??r.risk?.entry,3)}–${N(r.entryPlan?.high??r.risk?.entry,3)}</b></div><div class="metric"><small>وقف Astra</small><b>${N(r.stopLoss??r.risk?.stopLoss,3)}</b></div><div class="metric"><small>هدف 1</small><b>${N(target(r,0),3)}</b></div><div class="metric"><small>Risk</small><b>${P(r.risk?.riskPct)}</b></div><div class="metric"><small>Exposure</small><b>${P(r.risk?.exposurePct)}</b></div></div>`:''}
-        <div class="notice" style="margin-top:10px">السعر/RSI/الاتجاه/الدعم والمقاومة في هذه الشاشة بيانات مساعدة للعرض والبحث، ولا تدخل في قرار Astra الحالي. لو السهم ضمن التوصيات، خطة الدخول/الوقف/الأهداف المعروضة أعلاه تأتي من DecisionSnapshot نفسه.</div>
+        <div class="notice bad" style="margin-top:10px">${E(qualityNote)}</div><div class="notice" style="margin-top:10px">السعر/RSI/الاتجاه/الدعم والمقاومة في هذه الشاشة بيانات مساعدة للعرض والبحث، ولا تدخل في قرار Astra الحالي. لو السهم ضمن التوصيات، خطة الدخول/الوقف/الأهداف المعروضة أعلاه تأتي من DecisionSnapshot نفسه.</div>
       </div>
       <div class="panel"><div class="section-title"><div><h2>الرسم التاريخي</h2><p>عرض فقط من data/history؛ لا يغير التوصية.</p></div></div><div class="chart" id="chart"><div class="empty">جارٍ تحميل التاريخ…</div></div></div>`;
   }
@@ -239,7 +252,7 @@
       state.stockMap=new Map(A(stocks.stocks).map(x=>[x.ticker,x]));
       state.recMap=new Map(recs().map(x=>[x.ticker,x]));
       loadPortfolio();
-      $('#sessionBadge').textContent='جلسة '+data.sourceDecision.session;
+      $('#sessionBadge').textContent='جلسة '+data.sourceDecision.session+(decisionFresh()?'':' — أرشيفية، التوصيات محجوبة');
       $('#snapshotBadge').textContent='Snapshot '+data.sourceDecision.decisionSnapshotId.slice(-8);
       renderHome();renderRecommendations();renderPortfolio();renderHistory();renderHealth();
       renderSearchShell();doSearch();
