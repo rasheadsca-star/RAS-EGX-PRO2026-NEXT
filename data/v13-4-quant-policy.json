@@ -27,7 +27,7 @@
     "entrySlippagePct": 0.15,
     "roundTripCostPct": 0.6,
     "sameBarConflictRule": "stop_first",
-    "maximumEntryGapPct": 3.0
+    "maximumEntryGapPct": 3
   },
   "liquidity": {
     "minimumAverageTurnover20Egp": 100000,
@@ -37,7 +37,7 @@
   "validation": {
     "researchMinimumTrades": 5,
     "researchMinimumProfitFactor": 1.05,
-    "researchMinimumAverageR": 0.0,
+    "researchMinimumAverageR": 0,
     "researchMaximumDrawdownPct": 15,
     "productionMinimumTrades": 20,
     "productionMinimumProfitFactor": 1.2,
@@ -73,7 +73,23 @@
       "partial_and_stale",
       "manual_adjustment_review",
       "inactive_delisted"
-    ]
+    ],
+    "frozenStrategies": {
+      "breakout": {
+        "status": "FROZEN_RESEARCH_ONLY",
+        "decisionDate": "2026-10-31",
+        "basis": "Independent fixed-trade 110 closed trade clustered bootstrap review; net expectancy not statistically above zero; measured slippage unavailable",
+        "resumeConditions": [
+          "pre_registered_hypothesis",
+          "new_untouched_out_of_sample_market_sessions",
+          "verified_execution_cost_and_data",
+          "daily_portfolio_equity_curve",
+          "independent_review_approval"
+        ],
+        "executionReady": false,
+        "performanceCertified": false
+      }
+    }
   },
   "strategies": {
     "trend_follow": {
@@ -91,9 +107,9 @@
           "id": "strict",
           "minRsi": 52,
           "maxRsi": 68,
-          "minVolumeRatio": 1.0,
+          "minVolumeRatio": 1,
           "minRelativeStrength20": 2,
-          "minResistanceUpsidePct": 2.0
+          "minResistanceUpsidePct": 2
         },
         {
           "id": "momentum",
@@ -110,8 +126,8 @@
       "variants": [
         {
           "id": "early",
-          "breakoutBufferPct": 0.0,
-          "minVolumeRatio": 1.0,
+          "breakoutBufferPct": 0,
+          "minVolumeRatio": 1,
           "minRsi": 52,
           "maxRsi": 75,
           "minRelativeStrength20": 0
