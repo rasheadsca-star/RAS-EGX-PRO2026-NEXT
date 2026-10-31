@@ -12,4 +12,6 @@ r=validate([{...base,open:null}],req);assert(r.rejected[0].reasons.includes('inv
 r=validate([{...base,status:'UNRESOLVED'}],req);assert.equal(r.approved.length,0);assert.equal(r.complete,false);
 r=validate([{...base,volume:''}],req);assert(r.rejected[0].reasons.includes('invalid_ohlcv'));
 r=validate([{...base,sourceUrl:'https://example.org/daily'}],req);assert(r.rejected[0].reasons.includes('placeholder_source'));
+r=validate([{...base,date:'2026-02-30'}],{pairs:[{ticker:'FWRY',date:'2026-02-30'}]});assert(r.rejected[0].reasons.includes('invalid_session_date'));
+r=validate([{...base,date:'2026-05-06'}],req);assert.equal(r.rejected.length,0);
 console.log('Independent price import evidence gate PASS');
