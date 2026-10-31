@@ -404,7 +404,18 @@ function simulateTrade(rows, signalIndex, plan, policy, metadata) {
     };
   }
 
-  const slippage = Number(policy.research.entrySlippagePct) / 100;
+  const scenario = policy.research.slippageScenario || null;
+  const referenceOrderValue = Number(policy.research.referenceOrderValueEgp || 20000);
+  const priorBars = rows.slice(Math.max(0, signalIndex - 19), signalIndex + 1);
+  const averageTurnover = priorBars.length >= 20
+    ? priorBars.reduce((sum, bar) => sum + Math.max(0, Number(bar.close) * Number(bar.volume || 0)), 0) / priorBars.length
+    : null;
+  const executionStress = scenario ? require('./participation-slippage.cjs').estimate(referenceOrderValue, averageTurnover, scenario) : null;
+  if (executionStress && !executionStress.valid) {
+    return { ...metadata, signalDate: rows[signalIndex].date, status: 'CANCELLED',
+      outcome: 'UNVERIFIED_EXECUTION_LIQUIDITY', rMultiple: 0, netReturnPct: 0 };
+  }
+  const slippage = (executionStress ? executionStress.slippagePerSidePct : Number(policy.research.entrySlippagePct)) / 100;
   const entryPrice = next.open * (1 + slippage);
   const riskPct = Number(plan.riskPct) / 100;
   const stopLoss = entryPrice * (1 - riskPct);
@@ -421,7 +432,7 @@ function simulateTrade(rows, signalIndex, plan, policy, metadata) {
     const stopTouched = row.low <= stopLoss;
     const targetTouched = row.high >= target1;
     if (stopTouched) {
-      exitPrice = stopLoss;
+      exitPrice = Math.min(Number(row.open), stopLoss);
       exitDate = row.date;
       exitIndex = i;
       sameBarConflict = targetTouched;
@@ -437,10 +448,12 @@ function simulateTrade(rows, signalIndex, plan, policy, metadata) {
     }
   }
 
+  // Exit slippage is a conservative scenario assumption, not observed market execution.
+  if (executionStress) exitPrice = exitPrice * (1 - slippage);
   const grossReturnPct = ((exitPrice / entryPrice) - 1) * 100;
   // Research-only fee model: size-dependent invoice fees, never an execution instruction.
-  const orderValue = Number(policy.research.referenceOrderValueEgp || 20000);
-  const invoiceFees = policy.research.costModel === 'thndr_invoice_2026_10_21'
+  const orderValue = referenceOrderValue;
+  const invoiceFees = (executionStress || policy.research.costModel === 'thndr_invoice_2026_10_21')
     ? require('./thndr-cost.cjs').roundTrip(orderValue,orderValue * exitPrice / entryPrice)
     : null;
   const actualCostPct = invoiceFees ? invoiceFees.costPct : Number(policy.research.roundTripCostPct);
@@ -459,7 +472,9 @@ function simulateTrade(rows, signalIndex, plan, policy, metadata) {
     grossReturnPct: round(grossReturnPct, 3),
     netReturnPct: round(netReturnPct, 3),
     feeCostPct: round(actualCostPct, 4),
-    costModel: policy.research.costModel || 'legacy_fixed',
+    costModel: executionStress ? 'thndr_plus_hypothetical_participation' : (policy.research.costModel || 'legacy_fixed'),
+    executionParticipationPct: executionStress?.participationPct ?? null,
+    assumedSlippagePerSidePct: executionStress?.slippagePerSidePct ?? null,
     rMultiple: round(netReturnPct / (riskPct * 100), 3),
     holdingSessions: exitIndex - signalIndex,
     sameBarConflict
