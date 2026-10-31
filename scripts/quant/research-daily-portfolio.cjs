@@ -9,6 +9,10 @@ function run(ledger,opts={}){
  if(!(initial>0&&allocation>0&&allocation<=1&&maxPositions>=1&&Number.isInteger(maxPositions)))throw Error('invalid portfolio controls');
  const trades=(ledger.trades||[]).filter(t=>t.status==='CLOSED'&&t.entryDate&&t.exitDate&&t.entryPrice>0&&t.exitPrice>0&&Number.isFinite(t.netReturnPct)&&t.netReturnPct>-100)
    .sort((a,b)=>a.entryDate.localeCompare(b.entryDate)||a.ticker.localeCompare(b.ticker)||a.strategyId.localeCompare(b.strategyId));
+ const calendar=JSON.parse(fs.readFileSync(path.join(root,'data/quant/egx-verified-calendar-2026.json'),'utf8'));
+ const closures=new Set(calendar.verifiedClosures.map(x=>x.date));
+ const verifiedOpens=new Set(calendar.verifiedOpenSessions.map(x=>x.date));
+ if([...closures].some(x=>verifiedOpens.has(x)))throw Error('calendar contradictory evidence');
  const history=new Map();
  const dates=new Set();
  for(const t of trades){let file=path.join(root,'data/history',t.ticker+'.json');if(!history.has(t.ticker)){
@@ -22,10 +26,12 @@ function run(ledger,opts={}){
  const coverage=new Map();
  for(const series of history.values())for(const date of series.keys())coverage.set(date,(coverage.get(date)||0)+1);
  const mandatoryDates=new Set(trades.flatMap(t=>[t.entryDate,t.exitDate]));
+ const conflictingTrades=[...mandatoryDates].filter(d=>closures.has(d));
+ if(conflictingTrades.length)throw Error('trade booked on EGX verified closure: '+conflictingTrades.join(','));
  const minimumMarketCoverage=Math.max(2,Math.ceil(history.size*0.20));
- const candidateDates=[...dates].filter(d=>start&&d>=start&&d<=end).sort();
- const excludedCalendarDates=candidateDates.filter(d=>!mandatoryDates.has(d)&&(coverage.get(d)||0)<minimumMarketCoverage).map(date=>({date,stocksWithPrice:coverage.get(date)||0}));
- const sessions=candidateDates.filter(d=>mandatoryDates.has(d)||(coverage.get(d)||0)>=minimumMarketCoverage);
+ const candidateDates=[...new Set([...dates,...verifiedOpens])].filter(d=>start&&d>=start&&d<=end&&!closures.has(d)).sort();
+ const excludedCalendarDates=candidateDates.filter(d=>!verifiedOpens.has(d)&&!mandatoryDates.has(d)&&(coverage.get(d)||0)<minimumMarketCoverage).map(date=>({date,stocksWithPrice:coverage.get(date)||0}));
+ const sessions=candidateDates.filter(d=>verifiedOpens.has(d)||mandatoryDates.has(d)||(coverage.get(d)||0)>=minimumMarketCoverage);
  let cash=initial,peak=initial,maxDD=0,accepted=0,rejected=0,missingMarks=0,maxOpenPositions=0;
  const missingMarkDetails=[];
  const missingByTicker={};
@@ -56,7 +62,7 @@ function run(ledger,opts={}){
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,100*(peak-equity)/peak);
   curve.push({date,cashEgp:+cash.toFixed(2),investedEgp:+invested.toFixed(2),equityEgp:+equity.toFixed(2),drawdownPct:+(100*(peak-equity)/peak).toFixed(4),openPositions:open.length});
  }
- return {schemaVersion:'1.0',status:missingMarks?'INCOMPLETE_PRICE_MARKS':excludedCalendarDates.length?'UNVERIFIED_EXCLUDED_DATES':'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'recorded entry price; intraday timing unknown; new entries before same-day exits for cash conservatism',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'unverified',sessionCalendar:'cross-symbol coverage >=20%, plus mandatory entry and exit dates; provisional calendar, not official EGX',minimumMarketCoverage},accepted,rejected,missingMarks,missingMarkDetails,missingByTicker,marketSessionCount:sessions.length,historySymbolCount:history.size,excludedCalendarDates,maxOpenPositions,valuationComplete:missingMarks===0&&excludedCalendarDates.length===0,calendarVerified:false,endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
+ return {schemaVersion:'1.0',status:missingMarks?'INCOMPLETE_PRICE_MARKS':excludedCalendarDates.length?'UNVERIFIED_EXCLUDED_DATES':'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'recorded entry price; intraday timing unknown; new entries before same-day exits for cash conservatism',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'unverified',sessionCalendar:'cross-symbol coverage >=20%, plus mandatory entry and exit dates; provisional calendar, not official EGX',minimumMarketCoverage},accepted,rejected,missingMarks,missingMarkDetails,missingByTicker,marketSessionCount:sessions.length,historySymbolCount:history.size,excludedCalendarDates,maxOpenPositions,valuationComplete:missingMarks===0&&excludedCalendarDates.length===0,calendarVerified:false,verifiedClosuresApplied:[...closures],verifiedOpenDatesApplied:[...verifiedOpens],endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
 }
 if(require.main===module){const input=JSON.parse(fs.readFileSync(process.argv[2]||'data/quant/walk-forward-trade-ledger.json','utf8'));const result=run(input);const output=process.argv[3]||'data/quant/research-daily-portfolio.json';fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify({accepted:result.accepted,rejected:result.rejected,missingMarks:result.missingMarks,missingTickers:Object.keys(result.missingByTicker).length,maxDrawdownPct:result.maxDrawdownPct,endingEquityEgp:result.endingEquityEgp}));}
 module.exports={run};
