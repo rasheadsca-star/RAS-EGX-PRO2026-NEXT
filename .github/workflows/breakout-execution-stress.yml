@@ -43,7 +43,8 @@ jobs:
           const fs=require('fs'),m=require('./data/quant/recommendation-audit.json');
           const amount=Number(process.argv[2]),scenario=process.argv[3];
           const breakout=(m.modelStatuses||[]).find(x=>x.strategyId==='breakout');
-          const row={amountEgp:amount,scenario,latestMarketSession:m.latestMarketSession,metrics:breakout?.validationMetrics||null,executionReady:false,performanceCertified:false,method:'hypothetical slippage vs prior ADV; not measured execution'};
+          const policy=require('./data/v13-4-quant-policy.json');
+          const row={amountEgp:amount,scenario,latestMarketSession:m.latestMarketSession,metrics:breakout?.validationMetrics||null,actualPolicy:{orderValueEgp:policy.research.referenceOrderValueEgp,slippageScenario:policy.research.slippageScenario,costModel:policy.research.costModel,liveExecutionEnabled:policy.safety.liveExecutionEnabled},executionReady:false,performanceCertified:false,method:'hypothetical slippage vs prior ADV; not measured execution'};
           fs.writeFileSync('research-artifacts/breakout-'+amount+'-'+scenario+'.json',JSON.stringify(row,null,2));
           console.log(JSON.stringify(row));
           NODE
