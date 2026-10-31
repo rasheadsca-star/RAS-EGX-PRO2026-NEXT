@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const policy=JSON.parse(fs.readFileSync('data/v13-4-quant-policy.json','utf8'));
+const frozen=policy.safety.frozenStrategies?.breakout;
+assert.equal(frozen?.status,'FROZEN_RESEARCH_ONLY');
+assert.equal(frozen?.executionReady,false);
+assert.equal(frozen?.performanceCertified,false);
+assert.equal(policy.safety.liveExecutionEnabled,false);
+const v134=fs.readFileSync('scripts/quant/v13-4-quant-engine.cjs','utf8');
+const v135=fs.readFileSync('scripts/quant/v13-5-adaptive-paper-tracker.cjs','utf8');
+assert.match(v134,/isFrozenStrategy/);
+assert.match(v134,/!isFrozenStrategy\s*&&\s*validationMetrics/);
+assert.match(v135,/frozenStrategies\?\.\[candidate\.strategyId\]/);
+console.log('Breakout strategy research-only freeze controls PASS');
