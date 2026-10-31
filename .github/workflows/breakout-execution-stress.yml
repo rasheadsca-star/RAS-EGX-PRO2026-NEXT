@@ -14,6 +14,8 @@ on:
       - 'scripts/quant/build-unique-price-gaps.cjs'
       - 'scripts/quant/audit-legacy-gap-candidates.cjs'
       - 'scripts/quant/classify-instrument-sessions.cjs'
+      - 'scripts/quant/verify-gap-import.cjs'
+      - 'tests/quant/verify-gap-import.test.cjs'
       - 'scripts/quant/audit-calendar-conflicts.cjs'
       - 'data/quant/egx-verified-calendar-2026.json'
       - 'tests/quant/closed-session-history.test.cjs'
@@ -30,7 +32,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node tests/quant/thndr-cost.test.cjs && node tests/quant/participation-slippage.test.cjs && node tests/quant/research-daily-portfolio.test.cjs
+      - run: node tests/quant/thndr-cost.test.cjs && node tests/quant/participation-slippage.test.cjs && node tests/quant/research-daily-portfolio.test.cjs && node tests/quant/verify-gap-import.test.cjs
       - name: Recompute scenario metrics without committing or live trading
         shell: bash
         run: |
