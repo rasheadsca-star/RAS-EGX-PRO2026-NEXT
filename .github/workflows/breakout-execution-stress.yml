@@ -8,6 +8,7 @@ on:
       - 'scripts/quant/participation-slippage.cjs'
       - 'scripts/quant/thndr-cost.cjs'
       - 'scripts/quant/verify-execution-stress.cjs'
+      - 'scripts/quant/verify-trade-ledger.cjs'
       - '.github/workflows/breakout-execution-stress.yml'
 permissions:
   contents: read
@@ -39,6 +40,8 @@ jobs:
           fs.writeFileSync(p,JSON.stringify(x,null,2));
           NODE
               node scripts/quant/v13-4-quant-engine.cjs
+              node scripts/quant/verify-trade-ledger.cjs
+              cp data/quant/walk-forward-trade-ledger.json research-artifacts/trades-$amount-$scenario.json
               node - "$amount" "$scenario" <<'NODE'
           const fs=require('fs'),m=require('./data/quant/recommendation-audit.json');
           const amount=Number(process.argv[2]),scenario=process.argv[3];
