@@ -51,6 +51,21 @@ jobs:
           done
           cp /tmp/egx-original-policy.json data/v13-4-quant-policy.json
           node scripts/quant/verify-execution-stress.cjs research-artifacts
+      - name: Publish research comparison in GitHub run summary
+        shell: bash
+        run: |
+          node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs=require('fs');
+          const s=JSON.parse(fs.readFileSync('research-artifacts/comparison-summary.json','utf8'));
+          console.log('## Breakout execution-cost stress — RESEARCH ONLY');
+          console.log('These are hypothetical slippage scenarios, not observed trade fills or certified profitability.');
+          console.log('');
+          console.log('| Order EGP | Slippage | Closed trades | Average R | Profit factor |');
+          console.log('|---:|---|---:|---:|---:|');
+          for (const x of s.scenarios)console.log('| '+x.amountEgp+' | '+x.scenario+' | '+x.closedTrades+' | '+x.averageR+' | '+x.profitFactor+' |');
+          console.log('');
+          console.log('**Execution ready: NO. Performance certified: NO.**');
+          NODE
       - uses: actions/upload-artifact@v4
         with:
           name: breakout-execution-stress
