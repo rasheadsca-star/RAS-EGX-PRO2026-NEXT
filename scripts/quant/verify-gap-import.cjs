@@ -17,7 +17,7 @@ function validate(rows,requests){
    else if(nums[1]<Math.max(nums[0],nums[3],nums[2])||nums[2]>Math.min(nums[0],nums[3],nums[1]))reasons.push('ohlc_inconsistent');
    if(!credibleSourceUrl(row.sourceUrl)||!row.sourceSessionDate||row.sourceSessionDate!==row.date)reasons.push('missing_dated_source');
    if(!row.sourceInstrumentId||!row.verificationMethod||!row.reviewer)reasons.push('missing_identity_or_review');
-   if(String(row.sourceUrl||'').includes('example.org')||String(row.sourceUrl||'').includes('example.com'))reasons.push('placeholder_source');
+   if(/^https:\/\/(?:[^/]*\.)?(?:example\.org|example\.com)(?:\/|$)/i.test(String(row.sourceUrl||'')))reasons.push('placeholder_source');
   }else if(row.status==='VERIFIED_NO_TRADE'||row.status==='VERIFIED_SUSPENDED'){
    if(!credibleSourceUrl(row.sourceUrl)||row.sourceSessionDate!==row.date||!row.sourceInstrumentId||!row.reviewer)reasons.push('missing_status_evidence');
   }
