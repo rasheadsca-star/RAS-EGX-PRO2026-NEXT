@@ -17,7 +17,9 @@ for(const amount of values)for(const scenario of scenarios){
  rows.push(row);
 }
 if(rows.length===6&&new Set(rows.map(x=>x.latestMarketSession)).size!==1)failures.push('non-comparable market sessions');
-const out={status:failures.length?'FAILED_INCOMPLETE':'RESEARCH_ONLY_UNCERTIFIED',validationErrors:failures,
+const comparabilityNotes=[];
+for(const amount of values){const group=rows.filter(r=>r.amountEgp===amount);if(group.length===3&&new Set(group.map(r=>r.metrics?.closedTrades)).size>1)comparabilityNotes.push('Caution: '+amount+' EGP scenario trade counts vary; results are strategy re-selections, not a fixed-trade slippage comparison.');}
+const out={status:failures.length?'FAILED_INCOMPLETE':'RESEARCH_ONLY_UNCERTIFIED',validationErrors:failures,comparabilityNotes,
  scenarios:rows.map(r=>({amountEgp:r.amountEgp,scenario:r.scenario,closedTrades:r.metrics?.closedTrades??null,averageR:r.metrics?.averageR??null,profitFactor:r.metrics?.profitFactor??null,winRatePct:r.metrics?.winRatePct??null,maxDrawdownPct:r.metrics?.maxDrawdownPct??null,latestMarketSession:r.latestMarketSession,performanceCertified:false}))};
 fs.writeFileSync(path.join(folder,'comparison-summary.json'),JSON.stringify(out,null,2));
 console.log(JSON.stringify(out,null,2));
