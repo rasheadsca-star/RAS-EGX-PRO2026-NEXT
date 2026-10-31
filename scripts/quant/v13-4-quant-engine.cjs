@@ -611,13 +611,20 @@ function main() {
   const blockedTickers = new Set(policy.safety.blockedTickers.map(safeTicker));
   const blockedStatuses = new Set(policy.safety.blockedEligibilityStatuses || []);
 
+  const exchangeCalendar=readJson(path.join(QUANT_DIR,'egx-verified-calendar-2026.json'),null);
+  if(!exchangeCalendar)throw Error('Missing verified EGX calendar evidence');
+  const closedSessions=new Set((exchangeCalendar.verifiedClosures||[]).map(x=>x.date));
+  const historyClosureConflicts=[];
   const histories = new Map();
   const metadata = new Map();
   for (const file of fs.readdirSync(HISTORY_DIR).filter(name => name.endsWith('.json'))) {
     const ticker = safeTicker(path.basename(file, '.json'));
     if (!ticker) continue;
     const raw = readJson(path.join(HISTORY_DIR, file), null);
-    const rows = normalizeHistory(raw);
+    const sourceRows = normalizeHistory(raw);
+    const excluded = sourceRows.filter(row=>closedSessions.has(row.date));
+    if(excluded.length)historyClosureConflicts.push({ticker,dates:excluded.map(row=>row.date)});
+    const rows = sourceRows.filter(row=>!closedSessions.has(row.date));
     if (rows.length < Number(policy.research.minimumHistorySessions)) continue;
     histories.set(ticker, rows);
     const mapItem = mapEntries(symbolMap).find(item => safeTicker(item.ticker) === ticker) || {};
@@ -632,6 +639,7 @@ function main() {
       sessions: rows.length
     });
   }
+  writeJsonAtomic(path.join(QUANT_DIR,'closed-session-history-audit.json'),{schemaVersion:'1.0',generatedAt,closedDates:[...closedSessions].sort(),conflicts:historyClosureConflicts,removedRows:historyClosureConflicts.reduce((n,x)=>n+x.dates.length,0),warning:'Excluded from simulation, preserved in source history; manually verify source provenance.'});
   if (!histories.size) throw new Error('No valid histories with sufficient sessions');
 
   const proxy = buildMarketProxy(histories);
