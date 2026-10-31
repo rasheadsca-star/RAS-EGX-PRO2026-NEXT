@@ -1,0 +1,22 @@
+name: Thndr invoice fee model certification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/quant/thndr-cost.cjs'
+      - 'tests/quant/thndr-cost.test.cjs'
+      - 'scripts/quant/v13-4-quant-engine.cjs'
+      - '.github/workflows/thndr-cost-certification.yml'
+permissions:
+  contents: read
+jobs:
+  invoice-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/quant/v13-4-quant-engine.cjs
+      - run: node tests/quant/thndr-cost.test.cjs
