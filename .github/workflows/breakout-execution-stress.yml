@@ -13,6 +13,7 @@ on:
       - 'scripts/quant/report-market-data-gaps.cjs'
       - 'scripts/quant/build-unique-price-gaps.cjs'
       - 'scripts/quant/audit-legacy-gap-candidates.cjs'
+      - 'scripts/quant/classify-instrument-sessions.cjs'
       - 'scripts/quant/audit-calendar-conflicts.cjs'
       - 'data/quant/egx-verified-calendar-2026.json'
       - 'tests/quant/closed-session-history.test.cjs'
@@ -123,6 +124,7 @@ jobs:
           node scripts/quant/report-market-data-gaps.cjs research-artifacts
           node scripts/quant/build-unique-price-gaps.cjs research-artifacts/market-data-gap-inventory.json research-artifacts/unique-price-gaps.json
           node scripts/quant/audit-legacy-gap-candidates.cjs research-artifacts/unique-price-gaps.json research-artifacts/legacy-price-candidates-quarantine.json
+          node scripts/quant/classify-instrument-sessions.cjs research-artifacts/unique-price-gaps.json research-artifacts/instrument-session-classification.json
       - uses: actions/upload-artifact@v4
         with:
           name: breakout-execution-stress
