@@ -11,3 +11,12 @@ test('compute only later officially verified illustrative observation',()=>{cons
 test('reject invalid price',()=>{assert.throws(()=>e.forwardGuard({ticker:'AMOC',session:'2026-10-29',referenceClose:14,mode:'RESEARCH_ONLY'},{ticker:'AMOC',session:'2026-11-01',close:0,evidence:'DIRECT_OFFICIAL_CLOSE'}),/Invalid/)});
 test('parse read-only 217-rows CSV format',()=>{const head='ticker,last_session,last_close,last_close_evidence,history_rows,score,volatility20_pct,base_multifactor,volatility_pass,filtered_multifactor,frozen_seed_29oct';const s=head+'\nAMOC,2026-10-29,14,DIRECT_OFFICIAL_CLOSE,2353,63.9,2.9397,True,True,True,True';const x=e.normalizeCSV(s);assert.equal(x.rows[0].multiFactorPass,true);assert.equal(x.rows[0].frozenRecommendation,true);assert.equal(x.rows[0].historyEligible,true)});
 test('prevent any real order instruction in HTML snapshot',()=>{const page=fs.readFileSync(path.join(__dirname,'../../paper-v4/research/index.html'),'utf8');assert.match(page,/RESEARCH ONLY/);assert.match(page,/لا توجد أوامر شراء حقيقية/);assert.doesNotMatch(page,/astra-prod/);});
+
+test('full 217-stock research snapshot decompresses and validates exact counts',()=>{
+ const encoded=fs.readFileSync(path.join(__dirname,'../../paper-v4/research/universe-217.gzip.base64.txt'),'utf8').trim();
+ const raw=require('node:zlib').gunzipSync(Buffer.from(encoded,'base64')).toString('utf8');
+ const all=e.expandCompact(JSON.parse(raw));assert.equal(all.rows.length,217);assert.equal(all.eligibleHistory,148);assert.equal(all.volatilityQualified,117);
+ assert.equal(all.rows.find(x=>x.ticker==='AMOC').multiFactorPass,true);
+ assert.equal(all.rows.find(x=>x.ticker==='ENGC').evidence,'UNVERIFIED_CLOSE');
+ assert.equal(e.rank(all).length,217);
+});
