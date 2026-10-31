@@ -1,0 +1,12 @@
+'use strict';
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const calendar=JSON.parse(fs.readFileSync('data/quant/egx-verified-calendar-2026.json'));
+const audit=JSON.parse(fs.readFileSync('data/quant/closed-session-history-audit.json'));
+const closes=new Set(calendar.verifiedClosures.map(x=>x.date));
+assert.deepEqual([...audit.closedDates].sort(),[...closes].sort());
+assert.equal(audit.removedRows,audit.conflicts.reduce((sum,x)=>sum+x.dates.length,0));
+assert(audit.conflicts.every(x=>x.dates.every(d=>closes.has(d))));
+const ledger=JSON.parse(fs.readFileSync('data/quant/walk-forward-trade-ledger.json'));
+const conflicts=(ledger.trades||[]).filter(t=>closes.has(t.signalDate)||closes.has(t.entryDate)||closes.has(t.exitDate));
+if(conflicts.length)throw Error('Historical closed-session trades survived preprocessing: '+JSON.stringify(conflicts.slice(0,5)));
+console.log(JSON.stringify({status:'PASS',removedPriceBars:audit.removedRows,affectedSymbols:audit.conflicts.length,trades:(ledger.trades||[]).length,closedSessionTrades:0}));
