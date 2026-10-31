@@ -1,34 +1,30 @@
-name: Deploy Independent Paper V4 static preview to GitHub Pages
+# The V4-only Pages deployment was intentionally retired on 2026-10-31.
+# It competed with static.yml, which publishes repository root and preserves
+# /RAS-EGX-PRO2026-NEXT/paper-v4/index.html. Do not deploy a second Pages artifact.
+name: Independent Paper V4 source verification (no Pages deployment)
 on:
   push:
     branches: [main]
     paths:
       - 'paper-v4/**'
       - '.github/workflows/independent-paper-pages.yml'
+  pull_request:
+    paths:
+      - 'paper-v4/**'
+      - '.github/workflows/independent-paper-pages.yml'
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: independent-paper-v4-pages
-  cancel-in-progress: true
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify independent preview source
+      - name: Verify independent V4 page without changing any deployment
         run: |
-          test -f paper-v4/index.html
+          set -euo pipefail
+          test -s paper-v4/index.html
           grep -q 'Independent Paper Trading V4' paper-v4/index.html
+          grep -q '2026-10-29' paper-v4/index.html
           ! grep -q 'astra-prod/app' paper-v4/index.html
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: paper-v4
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          echo 'V4_SOURCE_CHECK_PASS_NO_DEPLOY'
