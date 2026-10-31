@@ -9,7 +9,7 @@ function validate(rows,requests){
   if(seen.has(key))reasons.push('duplicate');seen.add(key);
   if(!ALLOWED.has(row.status))reasons.push('invalid_status');
   if(row.status==='VERIFIED_TRADED'){
-   const nums=['open','high','low','close','volume'].map(k=>Number(row[k]));
+   const nums=['open','high','low','close','volume'].map(k=>row[k]===null||row[k]===undefined||String(row[k]).trim()===''?NaN:Number(row[k]));
    if(nums.some(v=>!Number.isFinite(v))||nums.slice(0,4).some(v=>v<=0)||nums[4]<=0)reasons.push('invalid_ohlcv');
    else if(nums[1]<Math.max(nums[0],nums[3],nums[2])||nums[2]>Math.min(nums[0],nums[3],nums[1]))reasons.push('ohlc_inconsistent');
    if(!/^https:\/\//.test(row.sourceUrl||'')||!row.sourceSessionDate||row.sourceSessionDate!==row.date)reasons.push('missing_dated_source');
@@ -17,10 +17,11 @@ function validate(rows,requests){
   }else if(row.status==='VERIFIED_NO_TRADE'||row.status==='VERIFIED_SUSPENDED'){
    if(!/^https:\/\//.test(row.sourceUrl||'')||row.sourceSessionDate!==row.date||!row.sourceInstrumentId||!row.reviewer)reasons.push('missing_status_evidence');
   }
+  if(row.status==='UNRESOLVED')reasons.push('unresolved_not_approved');
   if(reasons.length)rejected.push({ticker:row.ticker,date:row.date,reasons});
   else approved.push({...row,automaticCanonicalMergeAllowed:false});
  }
- return {approved,rejected,requested:known.size,submitted:rows.length,complete:seen.size===known.size,automaticCanonicalMergeAllowed:false};
+ return {approved,rejected,requested:known.size,submitted:rows.length,complete:seen.size===known.size&&rejected.length===0,automaticCanonicalMergeAllowed:false};
 }
 if(require.main===module){
  const input=process.argv[2],queue=process.argv[3]||'research-artifacts/unique-price-gaps.json',output=process.argv[4]||'research-artifacts/verified-import-gate.json';
