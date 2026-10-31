@@ -10,6 +10,9 @@ on:
       - 'scripts/quant/verify-execution-stress.cjs'
       - 'scripts/quant/verify-trade-ledger.cjs'
       - 'scripts/quant/research-daily-portfolio.cjs'
+      - 'scripts/quant/corporate-action-accounting.cjs'
+      - 'tests/quant/corporate-action-accounting.test.cjs'
+      - 'data/quant/corporate-action-research-2026.json'
       - 'scripts/quant/report-market-data-gaps.cjs'
       - 'scripts/quant/build-unique-price-gaps.cjs'
       - 'scripts/quant/audit-legacy-gap-candidates.cjs'
@@ -32,7 +35,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node tests/quant/thndr-cost.test.cjs && node tests/quant/participation-slippage.test.cjs && node tests/quant/research-daily-portfolio.test.cjs && node tests/quant/verify-gap-import.test.cjs
+      - run: node tests/quant/thndr-cost.test.cjs && node tests/quant/participation-slippage.test.cjs && node tests/quant/research-daily-portfolio.test.cjs && node tests/quant/corporate-action-accounting.test.cjs && node tests/quant/verify-gap-import.test.cjs
       - name: Recompute scenario metrics without committing or live trading
         shell: bash
         run: |
