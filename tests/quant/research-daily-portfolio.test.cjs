@@ -15,4 +15,10 @@ assert.equal(single.endingEquityEgp,100900);
 assert.equal(single.closedPositions[0].pnlEgp,900);
 assert.equal(single.closedPositions[0].netReturnPct,9);
 assert(Number.isInteger(single.missingMarks));
+const sameDay=run({trades:[
+ {...data.trades[0],netReturnPct:9},
+ {status:'CLOSED',ticker:'ABUK',strategyId:'trend_follow',entryDate:'2026-10-29',exitDate:'2026-10-29',entryPrice:20,exitPrice:20,netReturnPct:0,rMultiple:0}
+]},{initialEquityEgp:100000,positionFraction:.1,maxPositions:1});
+assert.equal(sameDay.accepted,1,'unknown intraday proceeds must not be recycled');
+assert.equal(sameDay.rejected,1,'same-session capacity must remain blocked at entry');
 console.log('Research daily portfolio guard PASS');
