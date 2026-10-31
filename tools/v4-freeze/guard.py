@@ -22,7 +22,9 @@ def check(root=ROOT):
     if 'independent paper trading v4' not in page.lower():errors.append('V4 independent identity missing')
     if '2026-10-29' not in page:errors.append('frozen session label missing')
     if 'astra-prod' in page.lower() or 'astra pro' in page.lower():errors.append('Astra reference forbidden')
-    if 'paper-v4/index.html' not in index:errors.append('main entry is not independent V4')
+    if 'content="0;url=./paper-v4/index.html"' not in index:errors.append('main HTML redirect is not independent V4')
+    if "location.replace('./paper-v4/index.html')" not in index:errors.append('main JS redirect is not independent V4')
+    if 'astra-prod' in index.lower() or 'astra pro' in index.lower():errors.append('Astra root redirect forbidden')
     rows=re.findall(r'<tr><td><strong>([A-Z]+)</strong></td><td>([^<]+)</td><td>([^<]+)</td><td>([^<]+)</td><td>([^<]+)</td><td>([^<]+)</td><td[^>]*>([^<]+)</td><td>([^<]+)</td></tr>',page)
     seen={}
     for t,last,entry,stop,t1,t2,score,weight in rows:
