@@ -1,0 +1,21 @@
+name: EGX gap import integrity tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/quant/verify-gap-import.cjs'
+      - 'tests/quant/verify-gap-import.test.cjs'
+      - '.github/workflows/gap-import-integrity.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test structural import rejection and status
+        run: node tests/quant/verify-gap-import.test.cjs
