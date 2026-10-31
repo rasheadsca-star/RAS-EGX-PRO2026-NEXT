@@ -46,6 +46,13 @@ jobs:
               cp data/quant/walk-forward-trade-ledger.json research-artifacts/trades-$amount-$scenario.json
               node scripts/quant/research-daily-portfolio.cjs data/quant/walk-forward-trade-ledger.json research-artifacts/portfolio-$amount-$scenario.json
               node - "$amount" "$scenario" <<'NODE'
+          const fs=require('fs');
+          const file='research-artifacts/portfolio-'+process.argv[2]+'-'+process.argv[3]+'.json';
+          const p=JSON.parse(fs.readFileSync(file,'utf8'));
+          if(p.valuationComplete!==true||p.missingMarks!==0||p.accepted+p.rejected!==p.closedPositions.length+p.rejected)throw Error('portfolio valuation/cash conservation gate failed: '+file);
+          if(p.maxOpenPositions>p.assumptions.maxPositions)throw Error('portfolio position cap breached');
+          NODE
+              node - "$amount" "$scenario" <<'NODE'
           const fs=require('fs'),m=require('./data/quant/recommendation-audit.json');
           const amount=Number(process.argv[2]),scenario=process.argv[3];
           const breakout=(m.modelStatuses||[]).find(x=>x.strategyId==='breakout');
