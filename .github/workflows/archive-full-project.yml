@@ -1,0 +1,47 @@
+name: Frozen complete EGX PRO source and research-data bundle
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/archive-full-project.yml'
+permissions:
+  contents: read
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Make integrity manifest and source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p package
+          python3 - <<'PY'
+          import os,hashlib,json,subprocess
+          files=[]
+          for base,dirs,names in os.walk('.'):
+              dirs[:]=[d for d in dirs if d not in ('.git','node_modules','package')]
+              for name in names:
+                  p=os.path.join(base,name)
+                  if os.path.isfile(p):
+                      raw=open(p,'rb').read()
+                      files.append({'path':p[2:], 'bytes':len(raw), 'sha256':hashlib.sha256(raw).hexdigest()})
+          files.sort(key=lambda x:x['path'])
+          commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          manifest={'repository':'rasheadsca-star/RAS-EGX-PRO2026-NEXT','sourceCommit':commit,
+            'files':files,'count':len(files),'totalBytes':sum(x['bytes'] for x in files),
+            'note':'Versioned source and tracked data. GitHub Pages is static; no live EGX feed is guaranteed.'}
+          os.makedirs('package',exist_ok=True)
+          with open('package/SNAPSHOT_MANIFEST.json','w') as f:json.dump(manifest,f,ensure_ascii=False,indent=2)
+          PY
+          git archive --format=zip --output=package/EGX_PRO_FULL_SOURCE.zip HEAD
+          (cd package && sha256sum EGX_PRO_FULL_SOURCE.zip > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EGX-PRO-FULL-SOURCE-${{ github.sha }}
+          path: package/
+          retention-days: 90
+          if-no-files-found: error
