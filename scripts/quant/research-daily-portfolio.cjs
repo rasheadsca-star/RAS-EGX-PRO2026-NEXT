@@ -27,7 +27,7 @@ function run(ledger,opts={}){
  for(const series of history.values())for(const date of series.keys())coverage.set(date,(coverage.get(date)||0)+1);
  const mandatoryDates=new Set(trades.flatMap(t=>[t.entryDate,t.exitDate]));
  const conflictingTrades=[...mandatoryDates].filter(d=>closures.has(d));
- if(conflictingTrades.length)throw Error('trade booked on EGX verified closure: '+conflictingTrades.join(','));
+ if(conflictingTrades.length)return {schemaVersion:'1.0',status:'TRADE_ON_VERIFIED_CLOSURE',executionReady:false,performanceCertified:false,calendarVerified:false,valuationComplete:false,conflictingTrades,accepted:0,rejected:trades.length,missingMarks:0,missingMarkDetails:[],missingByTicker:{},excludedCalendarDates:[],maxOpenPositions:0,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions},endingEquityEgp:null,maxDrawdownPct:null,curve:[],closedPositions:[]};
  const minimumMarketCoverage=Math.max(2,Math.ceil(history.size*0.20));
  const candidateDates=[...new Set([...dates,...verifiedOpens])].filter(d=>start&&d>=start&&d<=end&&!closures.has(d)).sort();
  const excludedCalendarDates=candidateDates.filter(d=>!verifiedOpens.has(d)&&!mandatoryDates.has(d)&&(coverage.get(d)||0)<minimumMarketCoverage).map(date=>({date,stocksWithPrice:coverage.get(date)||0}));
