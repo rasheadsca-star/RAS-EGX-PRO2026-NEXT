@@ -92,6 +92,15 @@ jobs:
             console.log('| '+x.amountEgp+' | '+x.scenario+' | '+p.accepted+' | '+p.rejected+' | '+p.endingEquityEgp+' | '+p.maxDrawdownPct+' | '+p.missingMarks+' |');
           }
           console.log('');
+          console.log('### Missing-price diagnostic (all scenarios)');
+          console.log('| Order EGP | Scenario | Missing marks | Affected tickers |');
+          console.log('|---:|---|---:|---:|');
+          for(const x of s.scenarios){
+            const d=JSON.parse(fs.readFileSync('research-artifacts/diagnosis-'+x.amountEgp+'-'+x.scenario+'.json','utf8'));
+            console.log('| '+x.amountEgp+' | '+x.scenario+' | '+d.missingMarkDetails.length+' | '+Object.keys(d.missingByTicker).length+' |');
+          }
+          console.log('Missing-price detail for each stock and session is preserved in diagnosis-*.json; never forward-fill missing prices for certification.');
+          console.log('');
           console.log('**Incomplete valuation marks are a blocking quality gate; numeric equity and drawdown remain unverified.**');
           console.log('**Research only. Corporate actions and execution price assumptions are not verified. Not a certified equity curve.**');
           console.log('**Execution ready: NO. Performance certified: NO.**');
