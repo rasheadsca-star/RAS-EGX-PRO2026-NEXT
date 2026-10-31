@@ -52,8 +52,11 @@ jobs:
           const errors=[];
           if(p.accepted+p.rejected!==p.closedPositions.length+p.rejected)errors.push('trade-count mismatch');
           if(p.maxOpenPositions>p.assumptions.maxPositions)errors.push('portfolio position cap breached');
-          if(p.valuationComplete!==true||p.missingMarks!==0)errors.push('missing daily prices: '+p.missingMarks);
-          const diagnosis={file,passed:errors.length===0,errors,missingByTicker:p.missingByTicker||{},missingMarkDetails:p.missingMarkDetails||[],accepted:p.accepted,rejected:p.rejected};
+          if(p.missingMarks!==0)errors.push('missing daily prices: '+p.missingMarks);
+          if((p.excludedCalendarDates||[]).length)errors.push('calendar dates excluded without EGX verification: '+p.excludedCalendarDates.length);
+          if(p.calendarVerified!==true)errors.push('official exchange calendar not verified');
+          if(p.valuationComplete!==true)errors.push('incomplete market valuation');
+          const diagnosis={file,passed:errors.length===0,errors,missingByTicker:p.missingByTicker||{},missingMarkDetails:p.missingMarkDetails||[],excludedCalendarDates:p.excludedCalendarDates||[],accepted:p.accepted,rejected:p.rejected};
           fs.writeFileSync(file.replace('portfolio-','diagnosis-'),JSON.stringify(diagnosis,null,2));
           console.log('Portfolio diagnostic: '+JSON.stringify({file,passed:diagnosis.passed,errors:diagnosis.errors,missingByTicker:diagnosis.missingByTicker}));
           NODE
