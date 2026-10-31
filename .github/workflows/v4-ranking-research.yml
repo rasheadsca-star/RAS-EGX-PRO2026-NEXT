@@ -33,5 +33,22 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add data/paper-v4/ranking-latest.json
             git commit -m "Refresh V4 transparency ranking research"
-            git push
+            # Concurrent workflows may update main while this job runs.
+            # Rebase this single generated artifact onto the latest remote head.
+            # Never force-push; fail if a genuine conflict requires review.
+            for attempt in 1 2 3 4 5; do
+              git fetch origin main
+              if ! git rebase origin/main; then
+                git rebase --abort || true
+                echo "Rebase conflict: preserve remote changes and require manual review."
+                exit 1
+              fi
+              if git push origin HEAD:main; then
+                echo "Ranking result published successfully."
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "Push rejected after safe rebase retries."
+            exit 1
           fi
