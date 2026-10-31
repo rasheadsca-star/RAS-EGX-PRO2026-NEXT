@@ -7,6 +7,7 @@ on:
       - 'scripts/quant/v13-4-quant-engine.cjs'
       - 'scripts/quant/participation-slippage.cjs'
       - 'scripts/quant/thndr-cost.cjs'
+      - 'scripts/quant/verify-execution-stress.cjs'
       - '.github/workflows/breakout-execution-stress.yml'
 permissions:
   contents: read
@@ -49,6 +50,7 @@ jobs:
             done
           done
           cp /tmp/egx-original-policy.json data/v13-4-quant-policy.json
+          node scripts/quant/verify-execution-stress.cjs research-artifacts
       - uses: actions/upload-artifact@v4
         with:
           name: breakout-execution-stress
