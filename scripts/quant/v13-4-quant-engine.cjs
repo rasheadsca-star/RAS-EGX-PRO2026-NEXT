@@ -438,7 +438,13 @@ function simulateTrade(rows, signalIndex, plan, policy, metadata) {
   }
 
   const grossReturnPct = ((exitPrice / entryPrice) - 1) * 100;
-  const netReturnPct = grossReturnPct - Number(policy.research.roundTripCostPct);
+  // Research-only fee model: size-dependent invoice fees, never an execution instruction.
+  const orderValue = Number(policy.research.referenceOrderValueEgp || 20000);
+  const invoiceFees = policy.research.costModel === 'thndr_invoice_2026_10_21'
+    ? require('./thndr-cost.cjs').roundTrip(orderValue,orderValue * exitPrice / entryPrice)
+    : null;
+  const actualCostPct = invoiceFees ? invoiceFees.costPct : Number(policy.research.roundTripCostPct);
+  const netReturnPct = grossReturnPct - actualCostPct;
   return {
     ...metadata,
     signalDate: rows[signalIndex].date,
@@ -452,6 +458,8 @@ function simulateTrade(rows, signalIndex, plan, policy, metadata) {
     target1: round(target1, 4),
     grossReturnPct: round(grossReturnPct, 3),
     netReturnPct: round(netReturnPct, 3),
+    feeCostPct: round(actualCostPct, 4),
+    costModel: policy.research.costModel || 'legacy_fixed',
     rMultiple: round(netReturnPct / (riskPct * 100), 3),
     holdingSessions: exitIndex - signalIndex,
     sameBarConflict
