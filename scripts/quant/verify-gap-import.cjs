@@ -3,11 +3,11 @@ const fs=require('node:fs'),path=require('node:path');
 const ALLOWED=new Set(['VERIFIED_TRADED','VERIFIED_NO_TRADE','VERIFIED_SUSPENDED','UNRESOLVED']);
 function validate(rows,requests){
  const known=new Set((requests.pairs||[]).map(x=>x.ticker+'|'+x.date)),seen=new Set(),approved=[],rejected=[];
- const datePattern=/^\\d{4}-\\d{2}-\\d{2}$/;
+ const datePattern=/^\d{4}-\d{2}-\d{2}$/;
  for(const row of rows){
   const reasons=[],key=row.ticker+'|'+row.date;
   if(!known.has(key))reasons.push('not_requested');
-  if(!datePattern.test(row.date)||!Number.isFinite(Date.parse(row.date+'T00:00:00Z')))reasons.push('invalid_session_date');
+  if(!datePattern.test(row.date)||!Number.isFinite(Date.parse(row.date+'T00:00:00Z'))||new Date(row.date+'T00:00:00Z').toISOString().slice(0,10)!==row.date)reasons.push('invalid_session_date');
   if(seen.has(key))reasons.push('duplicate');seen.add(key);
   if(!ALLOWED.has(row.status))reasons.push('invalid_status');
   if(row.status==='VERIFIED_TRADED'){
