@@ -31,8 +31,21 @@ function assess(h,cutoff){
  if(!volume20||volume20*t.close<1000000)issues.push('LOW_LIQUIDITY');
  if(ma20&&t.close<ma20)issues.push('BELOW_MA20');
  if(!cutoffIsLatest)issues.push('HISTORICAL_CUTOFF');
- const hard=issues.some(x=>['INSUFFICIENT_HISTORY','SYMBOL_NOT_VERIFIED','LATEST_SESSION_NOT_OFFICIALLY_VERIFIED','SOURCE_PRICE_CONFLICT','LOW_LIQUIDITY'].includes(x));
- return {ticker:h.ticker,companyNameAr:h.companyNameAr||'',date:latest,close:round(num(t?.close)),beforeScore:score,afterScore:hard?null:score,rankEligible:!hard,stage:hard?'DATA_OR_RISK_HOLD':issues.includes('BELOW_MA20')?'CONDITIONAL_WATCH':'RESEARCH_CANDIDATE',reasons:issues,indicators:{ma20:round(ma20),ma50:round(ma50),return5Pct:round(ret5),return20Pct:round(ret20),volumeRatio:round(volumeRatio),averageTurnoverEgp:round(volume20*t.close)},source:h.primarySource||null};
+ const filters=[
+  {id:'HISTORY',passed:ss.length>=60,hard:true,detail:ss.length+' sessions'},
+  {id:'IDENTITY',passed:!!h.symbolVerified,hard:true},
+  {id:'PRICE_VERIFICATION',passed:!!h.officiallyVerifiedLatestSession,hard:true},
+  {id:'SOURCE_AGREEMENT',passed:!sourceWarnings.length,hard:true,detail:sourceWarnings.join('|')},
+  {id:'LIQUIDITY',passed:!!volume20&&volume20*t.close>=1000000,hard:true,detail:round(volume20*t.close)},
+  {id:'TREND_MA20',passed:!!ma20&&t.close>=ma20,hard:false},
+  {id:'TREND_MA50',passed:!!ma50&&t.close>=ma50,hard:false},
+  {id:'MOMENTUM_20',passed:ret20!=null&&ret20>0,hard:false},
+  {id:'VOLUME_CONFIRMATION',passed:volumeRatio!=null&&volumeRatio>=1,hard:false}
+ ];
+ const hard=filters.some(x=>x.hard&&!x.passed);
+ const technicalPassed=filters.filter(x=>!x.hard&&x.passed).length;
+ const decision=hard?'DATA_OR_RISK_HOLD':technicalPassed>=3?'PAPER_RESEARCH_CANDIDATE':'CONDITIONAL_WATCH';
+ return {ticker:h.ticker,companyNameAr:h.companyNameAr||'',date:latest,close:round(num(t?.close)),beforeScore:score,afterScore:hard?null:score,rankEligible:!hard,stage:decision,filters,technicalPassed,reasons:issues.concat(filters.filter(x=>!x.passed).map(x=>'FILTER_'+x.id)),indicators:{ma20:round(ma20),ma50:round(ma50),return5Pct:round(ret5),return20Pct:round(ret20),volumeRatio:round(volumeRatio),averageTurnoverEgp:round(volume20*t.close)},source:h.primarySource||null};
 }
 function build(){
  const histories=fs.readdirSync(IN).filter(f=>f.endsWith('.json')).map(f=>{try{const h=JSON.parse(fs.readFileSync(path.join(IN,f),'utf8'));return h.sessions?.length?h:null}catch{return null}}).filter(Boolean);
@@ -48,14 +61,14 @@ function build(){
   const ss=(h.sessions||[]).filter(x=>num(x.close)>0).sort((a,b)=>a.date.localeCompare(b.date));
   for(let i=60;i<ss.length-1;i++){
    const cutoff=ss[i].date,signal=assess({...h,lastSession:cutoff,officiallyVerifiedLatestSession:h.officiallyVerifiedLatestSession},cutoff);
-   if(signal.stage!=='RESEARCH_CANDIDATE')continue;
+   if(signal.stage!=='PAPER_RESEARCH_CANDIDATE')continue;
    const next=ss[i+1],entry=num(next.open),exit=num(next.close);
    if(!(entry>0&&exit>0))continue;
    ledger.push({ticker:h.ticker,signalDate:cutoff,observedDate:next.date,score:signal.beforeScore,returnPct:round(100*(exit-entry)/entry,4),model:'next_open_to_close_observation_ONLY',costsIncluded:false});
   }
  }
  const n=ledger.length,ret=ledger.map(x=>x.returnPct),wins=ret.filter(x=>x>0).length;
- const output={schemaVersion:'v4-ranking-forward-0.1',generatedAt:new Date().toISOString(),latestSession:latest,status:'RESEARCH_ONLY_NOT_VERIFIED_FOR_LIVE_TRADING',noteAr:'الترتيب بحثي. أي تعارض في المصدر أو غياب التحقق الرسمي يمنع تحويل السهم إلى توصية تنفيذ. اختبار اليوم التالي تشخيصي وليس اختبار أداء قابل للتداول؛ لم تُطبق تكاليف أو انزلاق أو وقف وخروج.',counts:{analyzed:all.length,eligible:after.length,held:all.length-after.length,forwardObservations:n},beforeFilters:all,afterFilters:after,forwardResearch:{observations:n,winRatePct:n?round(100*wins/n,2):null,averageGrossReturnPct:n?round(mean(ret),3):null,netTradableMetricsAvailable:false,thresholdsFrozenBeforeHoldout:false},forwardLedger:ledger};
+ const output={schemaVersion:'v4-ranking-forward-0.1',generatedAt:new Date().toISOString(),latestSession:latest,status:'RESEARCH_ONLY_NOT_VERIFIED_FOR_LIVE_TRADING',noteAr:'الترتيب بحثي. أي تعارض في المصدر أو غياب التحقق الرسمي يمنع تحويل السهم إلى توصية تنفيذ. اختبار اليوم التالي تشخيصي وليس اختبار أداء قابل للتداول؛ لم تُطبق تكاليف أو انزلاق أو وقف وخروج.',counts:{analyzed:all.length,eligible:after.length,held:all.length-after.length,paperResearchCandidates:all.filter(x=>x.stage==='PAPER_RESEARCH_CANDIDATE').length,conditionalWatch:all.filter(x=>x.stage==='CONDITIONAL_WATCH').length,forwardObservations:n},beforeFilters:all,afterFilters:after,forwardResearch:{observations:n,winRatePct:n?round(100*wins/n,2):null,averageGrossReturnPct:n?round(mean(ret),3):null,netTradableMetricsAvailable:false,thresholdsFrozenBeforeHoldout:false},forwardLedger:ledger};
  fs.mkdirSync(path.dirname(OUT),{recursive:true});fs.writeFileSync(OUT,JSON.stringify(output,null,2)+'\n');
  console.log('V4 ranking',latest,output.counts,'forward observations:',n,'AMOC:',all.find(x=>x.ticker==='AMOC')?.stage,'ENGC:',all.find(x=>x.ticker==='ENGC')?.stage);
 }
