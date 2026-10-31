@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/v4-ranking-research.yml'
       - 'scripts/paper-v4/build-ranking-forward.cjs'
+      - 'tests/paper-v4/ranking-regression.cjs'
       - 'scripts/paper-v4/build-market-governor.cjs'
   schedule:
     - cron: '35 16 * * 0-4'
@@ -22,6 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check research ranking regression guards
+        run: node tests/paper-v4/ranking-regression.cjs
       - name: Build ranked full-universe research
         run: node scripts/paper-v4/build-ranking-forward.cjs && node scripts/paper-v4/build-market-governor.cjs
       - name: Check expected shape and coverage
