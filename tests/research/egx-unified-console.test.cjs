@@ -66,7 +66,7 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  const truth=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
  const priceReady=truth.ready===true&&truth.executionGrade===true&&Number.isInteger(truth.acceptedRows)&&truth.acceptedRows>0;
  const fetched=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
- const fetchReady=fetched.ok===true&&fetched.marketRows>0&&/^\\d{4}-\\d{2}-\\d{2}$/.test(fetched.expectedSession);
+ const fetchReady=fetched.ok===true&&fetched.marketRows>0&&/^\d{4}-\d{2}-\d{2}$/.test(fetched.expectedSession);
  assert.equal(by('marketDate').textContent,fetchReady?fetched.expectedSession:truth.expectedSession);
  if(fetchReady){
   assert.ok(by('marketStatus').textContent.includes(fetched.expectedSession));
