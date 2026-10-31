@@ -1,5 +1,6 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path');
+function credibleSourceUrl(value){try{const u=new URL(value);const h=u.hostname.toLowerCase();return u.protocol==='https:'&&!u.username&&!u.password&&!['localhost','example.org','example.com','example.net'].includes(h)&&!h.endsWith('.example.org')&&!h.endsWith('.example.com')&&!/^127\./.test(h)&&!/^10\./.test(h);}catch{return false;}}
 const ALLOWED=new Set(['VERIFIED_TRADED','VERIFIED_NO_TRADE','VERIFIED_SUSPENDED','UNRESOLVED']);
 function validate(rows,requests){
  const known=new Set((requests.pairs||[]).map(x=>x.ticker+'|'+x.date)),seen=new Set(),approved=[],rejected=[];
@@ -14,11 +15,11 @@ function validate(rows,requests){
    const nums=['open','high','low','close','volume'].map(k=>row[k]===null||row[k]===undefined||String(row[k]).trim()===''?NaN:Number(row[k]));
    if(nums.some(v=>!Number.isFinite(v))||nums.slice(0,4).some(v=>v<=0)||nums[4]<=0)reasons.push('invalid_ohlcv');
    else if(nums[1]<Math.max(nums[0],nums[3],nums[2])||nums[2]>Math.min(nums[0],nums[3],nums[1]))reasons.push('ohlc_inconsistent');
-   if(!/^https:\/\//.test(row.sourceUrl||'')||!row.sourceSessionDate||row.sourceSessionDate!==row.date)reasons.push('missing_dated_source');
+   if(!credibleSourceUrl(row.sourceUrl)||!row.sourceSessionDate||row.sourceSessionDate!==row.date)reasons.push('missing_dated_source');
    if(!row.sourceInstrumentId||!row.verificationMethod||!row.reviewer)reasons.push('missing_identity_or_review');
    if(String(row.sourceUrl||'').includes('example.org')||String(row.sourceUrl||'').includes('example.com'))reasons.push('placeholder_source');
   }else if(row.status==='VERIFIED_NO_TRADE'||row.status==='VERIFIED_SUSPENDED'){
-   if(!/^https:\/\//.test(row.sourceUrl||'')||row.sourceSessionDate!==row.date||!row.sourceInstrumentId||!row.reviewer)reasons.push('missing_status_evidence');
+   if(!credibleSourceUrl(row.sourceUrl)||row.sourceSessionDate!==row.date||!row.sourceInstrumentId||!row.reviewer)reasons.push('missing_status_evidence');
   }
   if(row.status==='UNRESOLVED')reasons.push('unresolved_not_approved');
   if(reasons.length)rejected.push({ticker:row.ticker,date:row.date,reasons});
