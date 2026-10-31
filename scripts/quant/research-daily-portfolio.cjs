@@ -21,11 +21,7 @@ function run(ledger,opts={}){
  let cash=initial,peak=initial,maxDD=0,accepted=0,rejected=0,missingMarks=0;
  const open=[],ledgerOut=[],curve=[];let cursor=0;
  for(const date of sessions){
-  // Exit previous positions first; capital freed on this session is usable for new entries.
-  for(let i=open.length-1;i>=0;i--)if(open[i].trade.exitDate===date&&open[i].trade.entryDate<date){
-   const p=open[i],proceeds=p.budget*(1+p.trade.netReturnPct/100);
-   cash+=proceeds;ledgerOut.push({ticker:p.trade.ticker,strategyId:p.trade.strategyId,entryDate:p.trade.entryDate,exitDate:date,allocatedEgp:p.budget,pnlEgp:+(proceeds-p.budget).toFixed(2),netReturnPct:p.trade.netReturnPct});open.splice(i,1);
-  }
+  // Conservative daily bars: place entries before same-day exits; do not reuse unknown intraday proceeds.
   // Open new positions at recorded entry price, before end-of-day mark.
   while(cursor<trades.length&&trades[cursor].entryDate===date){
    const t=trades[cursor++],budget=Math.min(initial*allocation,cash);
@@ -48,7 +44,7 @@ function run(ledger,opts={}){
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,100*(peak-equity)/peak);
   curve.push({date,cashEgp:+cash.toFixed(2),investedEgp:+invested.toFixed(2),equityEgp:+equity.toFixed(2),drawdownPct:+(100*(peak-equity)/peak).toFixed(4),openPositions:open.length});
  }
- return {schemaVersion:'1.0',status:'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'entry-day close; session OHLC not intraday',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'unverified'},accepted,rejected,missingMarks,endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
+ return {schemaVersion:'1.0',status:'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'recorded entry price; intraday timing unknown; new entries before same-day exits for cash conservatism',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'unverified'},accepted,rejected,missingMarks,endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
 }
 if(require.main===module){const input=JSON.parse(fs.readFileSync(process.argv[2]||'data/quant/walk-forward-trade-ledger.json','utf8'));const result=run(input);const output=process.argv[3]||'data/quant/research-daily-portfolio.json';fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify({accepted:result.accepted,rejected:result.rejected,missingMarks:result.missingMarks,maxDrawdownPct:result.maxDrawdownPct,endingEquityEgp:result.endingEquityEgp}));}
 module.exports={run};
