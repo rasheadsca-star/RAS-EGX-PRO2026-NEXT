@@ -2,8 +2,8 @@
 const assert=require('node:assert/strict');
 const {validate}=require('../../scripts/quant/verify-gap-import.cjs');
 const req={pairs:[{ticker:'FWRY',date:'2026-05-06'}]};
-const base={ticker:'FWRY',date:'2026-05-06',status:'VERIFIED_TRADED',open:10,high:11,low:9,close:10.5,volume:1000,sourceUrl:'https://example.org/daily',sourceSessionDate:'2026-05-06',sourceInstrumentId:'FWRY.CA',verificationMethod:'cross_reference',reviewer:'research'};
-let r=validate([base],req);assert.equal(r.approved.length,1);assert.equal(r.rejected.length,0);assert.equal(r.automaticCanonicalMergeAllowed,false);
+const base={ticker:'FWRY',date:'2026-05-06',status:'VERIFIED_TRADED',open:10,high:11,low:9,close:10.5,volume:1000,sourceUrl:'https://www.egx.com.eg/daily',sourceSessionDate:'2026-05-06',sourceInstrumentId:'FWRY.CA',verificationMethod:'cross_reference',reviewer:'research'};
+let r=validate([base],req);assert.equal(r.approved.length,1);assert.equal(r.rejected.length,0);assert.equal(r.automaticCanonicalMergeAllowed,false);assert.equal(r.approved[0].sourceIndependentlyChecked,false);assert.equal(r.eligibleForCanonicalMerge,false);
 r=validate([{...base,close:12}],req);assert.equal(r.rejected[0].reasons.includes('ohlc_inconsistent'),true);
 r=validate([{...base,sourceSessionDate:'2026-05-07'}],req);assert(r.rejected[0].reasons.includes('missing_dated_source'));
 r=validate([{...base,status:'VERIFIED_NO_TRADE',sourceSessionDate:null}],req);assert(r.rejected[0].reasons.includes('missing_status_evidence'));
@@ -11,4 +11,5 @@ r=validate([base,base],req);assert.equal(r.rejected.length,1);
 r=validate([{...base,open:null}],req);assert(r.rejected[0].reasons.includes('invalid_ohlcv'));
 r=validate([{...base,status:'UNRESOLVED'}],req);assert.equal(r.approved.length,0);assert.equal(r.complete,false);
 r=validate([{...base,volume:''}],req);assert(r.rejected[0].reasons.includes('invalid_ohlcv'));
+r=validate([{...base,sourceUrl:'https://example.org/daily'}],req);assert(r.rejected[0].reasons.includes('placeholder_source'));
 console.log('Independent price import evidence gate PASS');
