@@ -762,7 +762,8 @@ function main() {
       && validationMetrics.profitFactor >= Number(policy.validation.researchMinimumProfitFactor)
       && validationMetrics.averageR > Number(policy.validation.researchMinimumAverageR)
       && validationMetrics.maxDrawdownPct <= Number(policy.validation.researchMaximumDrawdownPct);
-    const productionEligible = validationMetrics.closedTrades >= Number(policy.validation.productionMinimumTrades)
+    const isFrozenStrategy = Boolean(policy.safety.frozenStrategies?.[strategyId]);
+    const productionEligible = !isFrozenStrategy && validationMetrics.closedTrades >= Number(policy.validation.productionMinimumTrades)
       && validationMetrics.profitFactor >= Number(policy.validation.productionMinimumProfitFactor)
       && validationMetrics.averageR >= Number(policy.validation.productionMinimumAverageR)
       && validationMetrics.maxDrawdownPct <= Number(policy.validation.productionMaximumDrawdownPct);
@@ -773,9 +774,9 @@ function main() {
       selectedVariant: strategy.variants.find(v => v.id === selectedVariantId),
       folds: selections.length,
       validationMetrics,
-      researchValidated,
+      researchValidated: isFrozenStrategy ? false : researchValidated,
       productionEligible,
-      status: productionEligible ? 'PRODUCTION_PAPER_ELIGIBLE' : researchValidated ? 'RESEARCH_VALIDATED' : 'RESEARCH_ONLY'
+      status: isFrozenStrategy ? 'FROZEN_RESEARCH_ONLY' : productionEligible ? 'PRODUCTION_PAPER_ELIGIBLE' : researchValidated ? 'RESEARCH_VALIDATED' : 'RESEARCH_ONLY'
     });
   }
 
