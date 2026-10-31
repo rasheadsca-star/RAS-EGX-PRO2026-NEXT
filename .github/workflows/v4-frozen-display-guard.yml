@@ -1,0 +1,23 @@
+name: V4 Independent Display Immutable Guard
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'paper-v4/**'
+      - 'tools/v4-freeze/**'
+      - '.github/workflows/v4-frozen-display-guard.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'paper-v4/**'
+      - 'tools/v4-freeze/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/v4-freeze/guard.py
