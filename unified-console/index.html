@@ -27,8 +27,9 @@ async function refresh(){
  const astraAligned=priceCertified&&!!market&&aDate===market&&
    handoff?.sessionDate===market&&handoff?.executionGrade===true&&
    handoff?.acceptedRows===truth.acceptedRows;
- text('marketDate',market||'غير متاح');text('accepted',truth?.acceptedRows??'—');
- text('marketStatus',priceCertified?'أسعار مؤرخة اجتازت بوابة المصدر':'مصدر الأسعار غير معتمد — لا إشارات حالية');
+ const fetchedSession=date(fetchStatus?.expectedSession);const fetchedRows=Number(fetchStatus?.marketRows)||0;const freshFetch=fetchStatus?.ok===true&&fetchedRows>0&&fetchedSession!==null;
+ text('marketDate',freshFetch?fetchedSession:(market||'غير متاح'));text('accepted',freshFetch?fetchedRows:(truth?.acceptedRows??'—'));
+ text('marketStatus',freshFetch?(fetchedSession===market&&priceCertified?'جلسة الجلب '+fetchedSession+' متطابقة مع بوابة السعر':'آخر جلسة جلب موثقة '+fetchedSession+'؛ شهادة V15 منفصلة '+(market||'غير متاحة')+' — لا اعتماد تداول'):(priceCertified?'أسعار مؤرخة اجتازت بوابة المصدر':'مصدر الأسعار غير معتمد — لا إشارات حالية'));
  text('astraDate',aDate||'غير متاح');
  text('astraStatus',!aDate?'لا توجد لقطة':astraAligned?'تطابق مبدئي — شهادة G22 مطلوبة':'أرشيفي أو غير معتمد — لا توصية حالية');
  text('gannDate',gDate||'غير منشور');text('gannStatus',gDate===market&&gann?.current&&gann?.reviewPassed?'لقطة بحثية حالية':'لقطة غير حالية أو BOOTSTRAP');

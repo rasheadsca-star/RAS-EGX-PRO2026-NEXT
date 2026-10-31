@@ -65,7 +65,14 @@ test('MVP render E2E: archived prices survive failed fetch and blockers are visi
  assert.ok(by('astraStatus').textContent.includes('أرشيفي'));
  const truth=JSON.parse(fs.readFileSync('data/stable/v15-price-truth.json','utf8'));
  const priceReady=truth.ready===true&&truth.executionGrade===true&&Number.isInteger(truth.acceptedRows)&&truth.acceptedRows>0;
- assert.ok(by('marketStatus').textContent.includes(priceReady?'أسعار مؤرخة اجتازت بوابة المصدر':'غير معتمد'));
+ const fetched=JSON.parse(fs.readFileSync('data/fetch-status.json','utf8'));
+ const fetchReady=fetched.ok===true&&fetched.marketRows>0&&/^\d{4}-\d{2}-\d{2}$/.test(fetched.expectedSession);
+ assert.equal(by('marketDate').textContent,fetchReady?fetched.expectedSession:truth.expectedSession);
+ if(fetchReady){
+  assert.ok(by('marketStatus').textContent.includes(fetched.expectedSession));
+  if(fetched.expectedSession!==truth.expectedSession)
+   assert.ok(by('marketStatus').textContent.includes('لا اعتماد تداول'));
+ }else assert.ok(by('marketStatus').textContent.includes(priceReady?'أسعار مؤرخة اجتازت بوابة المصدر':'غير معتمد'));
  assert.ok(by('paperLedger').textContent.includes('أوامر تداول: صفر'));
  const radar=by('researchRadarResults').children;
  const v16=JSON.parse(fs.readFileSync('data/stable/v16-main-app-current.json','utf8'));
