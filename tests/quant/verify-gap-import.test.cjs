@@ -14,4 +14,8 @@ r=validate([{...base,volume:''}],req);assert(r.rejected[0].reasons.includes('inv
 r=validate([{...base,sourceUrl:'https://example.org/daily'}],req);assert(r.rejected[0].reasons.includes('placeholder_source'));
 r=validate([{...base,date:'2026-02-30'}],{pairs:[{ticker:'FWRY',date:'2026-02-30'}]});assert(r.rejected[0].reasons.includes('invalid_session_date'));
 r=validate([{...base,date:'2026-05-06'}],req);assert.equal(r.rejected.length,0);
+r=validate([{...base,sourceUrl:'https://example.org.evil.test/daily'}],req);assert.equal(r.rejected.length,0,'Do not block unrelated hostnames based on substring');
+r=validate([{...base,sourceUrl:'https://user:password@www.egx.com.eg/daily'}],req);assert(r.rejected[0].reasons.includes('missing_dated_source'));
+r=validate([{...base,sourceUrl:'http://www.egx.com.eg/daily'}],req);assert(r.rejected[0].reasons.includes('missing_dated_source'));
+r=validate([{...base,sourceUrl:'https://localhost/daily'}],req);assert(r.rejected[0].reasons.includes('missing_dated_source'));
 console.log('Independent price import evidence gate PASS');
