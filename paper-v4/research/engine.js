@@ -42,5 +42,21 @@ function forwardGuard(signal, observation){
  if(!Number.isFinite(Number(signal.referenceClose))||Number(signal.referenceClose)<=0)throw Error('Invalid signal reference close');
  return {ticker:signal.ticker,signalSession:signal.session,observedSession:observation.session,returnPct:Math.round((Number(observation.close)/Number(signal.referenceClose)-1)*10000)/100,evidence:observation.evidence,mode:'RESEARCH_ONLY',noOrders:true};
 }
-return {STATES,classify,rank,normalizeCSV,forwardGuard};
+function expandCompact(records){
+ if(!Array.isArray(records)||records.length!==217)throw Error('Full universe must contain exactly 217 stocks');
+ const rows=records.map(v=>{
+ if(!Array.isArray(v)||v.length!==11)throw Error('Invalid compact stock record');
+ const [ticker,session,close,evidence,score,vol,before,volpass,filtered,frozen,eligible]=v;
+ return {ticker,session,close:Number(close),evidence:evidence==='O'?'DIRECT_OFFICIAL_CLOSE':'UNVERIFIED_CLOSE',
+ score:score===''?null:Number(score),volatility20Pct:vol===''?null:Number(vol),
+ historyEligible:eligible===1&&session==='2026-10-29',baseMultiFactorPass:before===1,
+ volatilityPass:volpass===1,multiFactorPass:filtered===1,frozenRecommendation:frozen===1};
+ });
+ if(new Set(rows.map(x=>x.ticker)).size!==217)throw Error('Duplicate or missing stock');
+ if(rows.filter(x=>x.historyEligible).length!==148)throw Error('History eligibility mismatch');
+ if(rows.filter(x=>x.historyEligible&&x.volatilityPass).length!==117)throw Error('Volatility eligibility mismatch');
+ if(rows.filter(x=>x.multiFactorPass).length!==1)throw Error('Multi-Factor count mismatch');
+ return {schema:1,session:'2026-10-29',mode:'RESEARCH_ONLY',snapshotType:'FULL_UNIVERSE_READ_ONLY_FROZEN_SCREEN',universeTotal:217,eligibleHistory:148,volatilityQualified:117,strictMultiFactorQualified:1,rows};
+}
+return {STATES,classify,rank,normalizeCSV,forwardGuard,expandCompact};
 });
