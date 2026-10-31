@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/quant/verify-gap-import.cjs'
+      - 'scripts/quant/stage-claude-gaps.cjs'
+      - 'tests/quant/stage-claude-gaps.test.cjs'
       - 'tests/quant/verify-gap-import.test.cjs'
       - '.github/workflows/gap-import-integrity.yml'
 permissions:
@@ -18,4 +20,4 @@ jobs:
         with:
           node-version: '22'
       - name: Test structural import rejection and status
-        run: node tests/quant/verify-gap-import.test.cjs
+        run: node tests/quant/verify-gap-import.test.cjs && node tests/quant/stage-claude-gaps.test.cjs
