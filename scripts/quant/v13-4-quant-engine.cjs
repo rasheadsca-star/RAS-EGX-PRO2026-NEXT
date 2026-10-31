@@ -1078,7 +1078,7 @@ function main() {
   writeJsonAtomic(OUTPUTS.walkForward, walkForward);
   // Historical out-of-sample trade audit: immutable facts of this recomputation, not a live ledger.
   const tradeAuditRows = folds.flatMap(f => (f.selections || []).flatMap(selection =>
-    (selection.validationTrades || []).map(trade => ({
+    (selection.validationTrades || []).filter(trade => trade.status === 'CLOSED').map(trade => ({
       fold: f.fold, foldTestStart: f.testStart, foldTestEnd: f.testEnd,
       strategyId: selection.strategyId, selectedVariantId: selection.selectedVariantId,
       ...trade
