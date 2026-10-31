@@ -1,0 +1,14 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {parseCsv,stage}=require('../../scripts/quant/stage-claude-gaps.cjs');
+const header='ticker,date,status,open,high,low,close,volume,source_url';
+const a=['FWRY','2026-05-06','VERIFIED_TRADED','','20.98','19.62','20.43','32855080','https://stockanalysis.com/quote/egx/FWRY/history/'].join(',');
+const b=['GGCC','2026-07-05','VERIFIED_TRADED','0.49','0.52','0.49','0.52','56351665','https://stockanalysis.com/quote/egx/GGCC/history/'].join(',');
+const d=['ADRI','2026-07-05','UNRESOLVED','','','','','',''].join(',');
+const rows=parseCsv([header,a,b,d].join('\n'));
+const r=stage(rows);
+assert.equal(r.total,3);assert.equal(r.counts.REVIEW_PARTIAL_HLCV_B,1);assert.equal(r.counts.REVIEW_COMPLETE_OHLCV_B,1);assert.equal(r.counts.UNRESOLVED,1);
+assert(r.records.every(x=>x.eligibleForCanonicalMerge===false));
+assert.equal(stage(parseCsv(header+'\n'+a+'\n'+a)).counts.QUARANTINE_INVALID,1);
+assert.equal(stage(parseCsv(header+'\n'+a.replace('20.43','30.43'))).counts.QUARANTINE_INVALID,1);
+console.log('Claude research gap staging PASS');
