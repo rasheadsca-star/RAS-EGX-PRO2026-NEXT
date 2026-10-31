@@ -21,4 +21,9 @@ const sameDay=run({trades:[
 ]},{initialEquityEgp:100000,positionFraction:.1,maxPositions:1});
 assert.equal(sameDay.accepted,1,'unknown intraday proceeds must not be recycled');
 assert.equal(sameDay.rejected,1,'same-session capacity must remain blocked at entry');
+assert.equal(single.maxOpenPositions,1);
+assert.equal(single.accepted+single.rejected,1);
+assert(single.curve.every(d=>d.cashEgp>=0&&d.equityEgp>=0));
+assert.equal(single.valuationComplete,single.missingMarks===0);
+assert.equal(single.missingMarkDetails.length,single.missingMarks);
 console.log('Research daily portfolio guard PASS');
