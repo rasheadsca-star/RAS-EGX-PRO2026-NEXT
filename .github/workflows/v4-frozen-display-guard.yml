@@ -26,3 +26,7 @@ jobs:
         run: python3 tools/v4-freeze/guard.py
       - name: Prove tampering is rejected
         run: python3 -m unittest discover -s tests/v4-freeze -p 'test_*.py' -v
+      - name: Verify research states and future observation evidence gates
+        run: |
+          node --check paper-v4/research/engine.js
+          node --test tests/v4-freeze/test_research_states.cjs
