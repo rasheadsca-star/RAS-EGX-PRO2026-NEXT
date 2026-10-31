@@ -44,7 +44,8 @@ jobs:
           const amount=Number(process.argv[2]),scenario=process.argv[3];
           const breakout=(m.modelStatuses||[]).find(x=>x.strategyId==='breakout');
           const policy=require('./data/v13-4-quant-policy.json');
-          const row={amountEgp:amount,scenario,latestMarketSession:m.latestMarketSession,metrics:breakout?.validationMetrics||null,actualPolicy:{orderValueEgp:policy.research.referenceOrderValueEgp,slippageScenario:policy.research.slippageScenario,costModel:policy.research.costModel,liveExecutionEnabled:policy.safety.liveExecutionEnabled},executionReady:false,performanceCertified:false,method:'hypothetical slippage vs prior ADV; not measured execution'};
+          const provenance=require('./data/quant/strategy-backtests.json').assumptions;
+          const row={amountEgp:amount,scenario,latestMarketSession:m.latestMarketSession,metrics:breakout?.validationMetrics||null,engineProvenance:provenance,actualPolicy:{orderValueEgp:policy.research.referenceOrderValueEgp,slippageScenario:policy.research.slippageScenario,costModel:policy.research.costModel,liveExecutionEnabled:policy.safety.liveExecutionEnabled},executionReady:false,performanceCertified:false,method:'hypothetical slippage vs prior ADV; not measured execution'};
           fs.writeFileSync('research-artifacts/breakout-'+amount+'-'+scenario+'.json',JSON.stringify(row,null,2));
           console.log(JSON.stringify(row));
           NODE
