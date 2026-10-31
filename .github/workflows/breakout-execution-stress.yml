@@ -72,6 +72,15 @@ jobs:
           console.log('|---:|---|---:|---:|---:|---:|---:|');
           for (const x of s.scenarios)console.log('| '+x.amountEgp+' | '+x.scenario+' | '+x.closedTrades+' | '+x.winRatePct+' | '+x.averageR+' | '+x.profitFactor+' | '+x.maxDrawdownPct+' |');
           console.log('');
+          console.log('### Daily position-sized portfolio research (10% fixed initial capital, 8 concurrent positions)');
+          console.log('| Order EGP | Scenario | Accepted | Capacity rejected | Ending equity EGP | Max daily drawdown % |');
+          console.log('|---:|---|---:|---:|---:|---:|');
+          for (const x of s.scenarios) {
+            const p=JSON.parse(fs.readFileSync('research-artifacts/portfolio-'+x.amountEgp+'-'+x.scenario+'.json','utf8'));
+            console.log('| '+x.amountEgp+' | '+x.scenario+' | '+p.accepted+' | '+p.rejected+' | '+p.endingEquityEgp+' | '+p.maxDrawdownPct+' |');
+          }
+          console.log('');
+          console.log('**Research only. Corporate actions and execution price assumptions are not verified. Not a certified equity curve.**');
           console.log('**Execution ready: NO. Performance certified: NO.**');
           NODE
       - uses: actions/upload-artifact@v4
