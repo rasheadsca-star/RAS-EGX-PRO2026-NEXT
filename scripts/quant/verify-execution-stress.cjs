@@ -11,6 +11,7 @@ for(const amount of values)for(const scenario of scenarios){
  if(row.executionReady!==false||row.performanceCertified!==false)failures.push('unsafe flags '+file);
  if(row.amountEgp!==amount||row.scenario!==scenario)failures.push('mismatched identity '+file);
  if(row.actualPolicy?.orderValueEgp!==amount||row.actualPolicy?.slippageScenario!==scenario||row.actualPolicy?.costModel!=='thndr_invoice_2026_10_21'||row.actualPolicy?.liveExecutionEnabled!==false)failures.push('actual policy not proven '+file);
+ if(row.engineProvenance?.researchOrderValueEgp!==amount||row.engineProvenance?.hypotheticalSlippageScenario!==scenario||row.engineProvenance?.researchCostModel!=='thndr_invoice_2026_10_21')failures.push('engine did not record expected simulation settings '+file);
  if(!row.metrics||requiredMetrics.some(k=>!Number.isFinite(row.metrics[k])))failures.push('missing key metrics '+file);
  if(!/^2026-\d\d-\d\d$/.test(String(row.latestMarketSession)))failures.push('invalid session '+file);
  rows.push(row);
