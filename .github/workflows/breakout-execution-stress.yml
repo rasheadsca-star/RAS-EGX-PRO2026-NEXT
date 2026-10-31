@@ -11,6 +11,8 @@ on:
       - 'scripts/quant/verify-trade-ledger.cjs'
       - 'scripts/quant/research-daily-portfolio.cjs'
       - 'scripts/quant/report-market-data-gaps.cjs'
+      - 'scripts/quant/audit-calendar-conflicts.cjs'
+      - 'data/quant/egx-verified-calendar-2026.json'
       - 'tests/quant/research-daily-portfolio.test.cjs'
       - '.github/workflows/breakout-execution-stress.yml'
 permissions:
@@ -45,6 +47,7 @@ jobs:
               node scripts/quant/v13-4-quant-engine.cjs
               node scripts/quant/verify-trade-ledger.cjs
               cp data/quant/walk-forward-trade-ledger.json research-artifacts/trades-$amount-$scenario.json
+              node scripts/quant/audit-calendar-conflicts.cjs data/quant/walk-forward-trade-ledger.json research-artifacts/calendar-$amount-$scenario.json
               node scripts/quant/research-daily-portfolio.cjs data/quant/walk-forward-trade-ledger.json research-artifacts/portfolio-$amount-$scenario.json
               node - "$amount" "$scenario" <<'NODE'
           const fs=require('fs');
@@ -56,8 +59,9 @@ jobs:
           if(p.missingMarks!==0)errors.push('missing daily prices: '+p.missingMarks);
           if((p.excludedCalendarDates||[]).length)errors.push('calendar dates excluded without EGX verification: '+p.excludedCalendarDates.length);
           if(p.calendarVerified!==true)errors.push('official exchange calendar not verified');
+          if(p.status==='TRADE_ON_VERIFIED_CLOSURE')errors.push('trade records conflict with verified EGX closures: '+(p.conflictingTrades||[]).join(','));
           if(p.valuationComplete!==true)errors.push('incomplete market valuation');
-          const diagnosis={file,passed:errors.length===0,errors,missingByTicker:p.missingByTicker||{},missingMarkDetails:p.missingMarkDetails||[],excludedCalendarDates:p.excludedCalendarDates||[],accepted:p.accepted,rejected:p.rejected};
+          const diagnosis={file,passed:errors.length===0,errors,missingByTicker:p.missingByTicker||{},missingMarkDetails:p.missingMarkDetails||[],excludedCalendarDates:p.excludedCalendarDates||[],conflictingTrades:p.conflictingTrades||[],accepted:p.accepted,rejected:p.rejected};
           fs.writeFileSync(file.replace('portfolio-','diagnosis-'),JSON.stringify(diagnosis,null,2));
           console.log('Portfolio diagnostic: '+JSON.stringify({file,passed:diagnosis.passed,errors:diagnosis.errors,missingByTicker:diagnosis.missingByTicker}));
           NODE
