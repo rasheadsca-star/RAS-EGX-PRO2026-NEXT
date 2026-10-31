@@ -10,4 +10,9 @@ assert.equal(r.accepted,1);assert.equal(r.rejected,1);assert.equal(r.executionRe
 assert.equal(r.performanceCertified,false);assert(r.curve.length>0);
 assert(r.curve.every(x=>x.openPositions<=1));
 assert(r.endingEquityEgp>0);assert(r.maxDrawdownPct>=0&&r.maxDrawdownPct<=100);
+const single=run({trades:[{...data.trades[0],netReturnPct:9}]},{initialEquityEgp:100000,positionFraction:.1,maxPositions:1});
+assert.equal(single.endingEquityEgp,100900);
+assert.equal(single.closedPositions[0].pnlEgp,900);
+assert.equal(single.closedPositions[0].netReturnPct,9);
+assert(Number.isInteger(single.missingMarks));
 console.log('Research daily portfolio guard PASS');
