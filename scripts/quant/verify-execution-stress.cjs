@@ -9,6 +9,7 @@ for(const amount of values)for(const scenario of scenarios){
  const row=JSON.parse(fs.readFileSync(file,'utf8'));
  if(row.executionReady!==false||row.performanceCertified!==false)failures.push('unsafe flags '+file);
  if(row.amountEgp!==amount||row.scenario!==scenario)failures.push('mismatched identity '+file);
+ if(row.actualPolicy?.orderValueEgp!==amount||row.actualPolicy?.slippageScenario!==scenario||row.actualPolicy?.costModel!=='thndr_invoice_2026_10_21'||row.actualPolicy?.liveExecutionEnabled!==false)failures.push('actual policy not proven '+file);
  if(!row.metrics||!Number.isFinite(row.metrics.closedTrades)||!Number.isFinite(row.metrics.averageR))failures.push('missing metrics '+file);
  rows.push(row);
 }
