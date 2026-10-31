@@ -11,6 +11,7 @@ on:
       - 'scripts/quant/verify-trade-ledger.cjs'
       - 'scripts/quant/research-daily-portfolio.cjs'
       - 'scripts/quant/report-market-data-gaps.cjs'
+      - 'scripts/quant/build-unique-price-gaps.cjs'
       - 'scripts/quant/audit-calendar-conflicts.cjs'
       - 'data/quant/egx-verified-calendar-2026.json'
       - 'tests/quant/closed-session-history.test.cjs'
@@ -116,8 +117,10 @@ jobs:
           console.log('**Research only. Corporate actions and execution price assumptions are not verified. Not a certified equity curve.**');
           console.log('**Execution ready: NO. Performance certified: NO.**');
           NODE
-      - name: Aggregate missing prices across all six scenarios
-        run: node scripts/quant/report-market-data-gaps.cjs research-artifacts
+      - name: Aggregate and deduplicate missing prices across six scenarios
+        run: |
+          node scripts/quant/report-market-data-gaps.cjs research-artifacts
+          node scripts/quant/build-unique-price-gaps.cjs research-artifacts/market-data-gap-inventory.json research-artifacts/unique-price-gaps.json
       - uses: actions/upload-artifact@v4
         with:
           name: breakout-execution-stress
