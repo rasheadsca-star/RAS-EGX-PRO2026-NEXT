@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'paper-v4/ranking.html'
+      - 'paper-v4/index.html'
+      - 'paper-v4/ticker-hover-chart.js'
       - 'data/history/**'
       - 'data/paper-v4/ranking-latest.json'
       - 'data/paper-v4/market-governor-latest.json'
@@ -29,11 +31,15 @@ jobs:
         run: |
           set -euo pipefail
           test -s paper-v4/ranking.html
+          test -s paper-v4/index.html
+          test -s paper-v4/ticker-hover-chart.js
           test -s data/paper-v4/ranking-latest.json
           test -s data/paper-v4/market-governor-latest.json
           node -e "const x=require('./data/paper-v4/ranking-latest.json'); if (!x.beforeFilters?.length || !x.beforeFilters.some(s=>s.ticker==='AMOC') || !x.beforeFilters.some(s=>s.ticker==='ENGC')) process.exit(1); console.log(x.latestSession,x.counts)"
           mkdir -p _site/paper-v4 _site/data/paper-v4 _site/data/history
           cp paper-v4/ranking.html _site/paper-v4/ranking.html
+          cp paper-v4/index.html _site/paper-v4/index.html
+          cp paper-v4/ticker-hover-chart.js _site/paper-v4/ticker-hover-chart.js
           cp data/paper-v4/ranking-latest.json _site/data/paper-v4/ranking-latest.json
           cp data/paper-v4/market-governor-latest.json _site/data/paper-v4/market-governor-latest.json
           cp data/history/*.json _site/data/history/
