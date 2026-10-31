@@ -8,4 +8,7 @@ r=validate([{...base,close:12}],req);assert.equal(r.rejected[0].reasons.includes
 r=validate([{...base,sourceSessionDate:'2026-05-07'}],req);assert(r.rejected[0].reasons.includes('missing_dated_source'));
 r=validate([{...base,status:'VERIFIED_NO_TRADE',sourceSessionDate:null}],req);assert(r.rejected[0].reasons.includes('missing_status_evidence'));
 r=validate([base,base],req);assert.equal(r.rejected.length,1);
+r=validate([{...base,open:null}],req);assert(r.rejected[0].reasons.includes('invalid_ohlcv'));
+r=validate([{...base,status:'UNRESOLVED'}],req);assert.equal(r.approved.length,0);assert.equal(r.complete,false);
+r=validate([{...base,volume:''}],req);assert(r.rejected[0].reasons.includes('invalid_ohlcv'));
 console.log('Independent price import evidence gate PASS');
