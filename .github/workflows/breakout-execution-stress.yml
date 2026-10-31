@@ -49,8 +49,13 @@ jobs:
           const fs=require('fs');
           const file='research-artifacts/portfolio-'+process.argv[2]+'-'+process.argv[3]+'.json';
           const p=JSON.parse(fs.readFileSync(file,'utf8'));
-          if(p.valuationComplete!==true||p.missingMarks!==0||p.accepted+p.rejected!==p.closedPositions.length+p.rejected)throw Error('portfolio valuation/cash conservation gate failed: '+file);
-          if(p.maxOpenPositions>p.assumptions.maxPositions)throw Error('portfolio position cap breached');
+          const errors=[];
+          if(p.accepted+p.rejected!==p.closedPositions.length+p.rejected)errors.push('trade-count mismatch');
+          if(p.maxOpenPositions>p.assumptions.maxPositions)errors.push('portfolio position cap breached');
+          if(p.valuationComplete!==true||p.missingMarks!==0)errors.push('missing daily prices: '+p.missingMarks);
+          const diagnosis={file,passed:errors.length===0,errors,missingByTicker:p.missingByTicker||{},missingMarkDetails:p.missingMarkDetails||[],accepted:p.accepted,rejected:p.rejected};
+          fs.writeFileSync(file.replace('portfolio-','diagnosis-'),JSON.stringify(diagnosis,null,2));
+          console.log('Portfolio diagnostic: '+JSON.stringify({file,passed:diagnosis.passed,errors:diagnosis.errors,missingByTicker:diagnosis.missingByTicker}));
           NODE
               node - "$amount" "$scenario" <<'NODE'
           const fs=require('fs'),m=require('./data/quant/recommendation-audit.json');
@@ -87,6 +92,7 @@ jobs:
             console.log('| '+x.amountEgp+' | '+x.scenario+' | '+p.accepted+' | '+p.rejected+' | '+p.endingEquityEgp+' | '+p.maxDrawdownPct+' | '+p.missingMarks+' |');
           }
           console.log('');
+          console.log('**Incomplete valuation marks are a blocking quality gate; numeric equity and drawdown remain unverified.**');
           console.log('**Research only. Corporate actions and execution price assumptions are not verified. Not a certified equity curve.**');
           console.log('**Execution ready: NO. Performance certified: NO.**');
           NODE
@@ -94,3 +100,14 @@ jobs:
         with:
           name: breakout-execution-stress
           path: research-artifacts/
+      - name: Enforce portfolio quality gate after uploading complete diagnostics
+        if: always()
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const files=fs.readdirSync('research-artifacts').filter(x=>/^diagnosis-.*\.json$/.test(x));
+          if(files.length!==6)throw Error('Expected six portfolio diagnosis files, got '+files.length);
+          const failed=files.map(x=>JSON.parse(fs.readFileSync('research-artifacts/'+x,'utf8'))).filter(x=>!x.passed);
+          if(failed.length)throw Error('Portfolio certification blocked for '+failed.length+' scenarios: '+failed.map(x=>x.file).join(', '));
+          NODE
