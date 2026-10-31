@@ -7,7 +7,7 @@ const root=path.resolve(__dirname,'../..');
 function run(ledger,opts={}){
  const initial=Number(opts.initialEquityEgp||1000000),allocation=Number(opts.positionFraction||.10),maxPositions=Number(opts.maxPositions||8);
  if(!(initial>0&&allocation>0&&allocation<=1&&maxPositions>=1&&Number.isInteger(maxPositions)))throw Error('invalid portfolio controls');
- const trades=(ledger.trades||[]).filter(t=>t.status==='CLOSED'&&t.entryDate&&t.exitDate&&t.entryPrice>0&&t.exitPrice>0)
+ const trades=(ledger.trades||[]).filter(t=>t.status==='CLOSED'&&t.entryDate&&t.exitDate&&t.entryPrice>0&&t.exitPrice>0&&Number.isFinite(t.netReturnPct)&&t.netReturnPct>-100)
    .sort((a,b)=>a.entryDate.localeCompare(b.entryDate)||a.ticker.localeCompare(b.ticker)||a.strategyId.localeCompare(b.strategyId));
  const history=new Map();
  const dates=new Set();
@@ -34,14 +34,15 @@ function run(ledger,opts={}){
    if(date===p.trade.exitDate)p.lastPrice=p.trade.exitPrice;
   }
   for(let i=open.length-1;i>=0;i--)if(open[i].trade.exitDate===date){
-   const p=open[i];cash+=p.units*p.trade.exitPrice;ledgerOut.push({ticker:p.trade.ticker,strategyId:p.trade.strategyId,entryDate:p.trade.entryDate,exitDate:date,allocatedEgp:p.budget,pnlEgp:p.units*(p.trade.exitPrice-p.trade.entryPrice)});
+   const p=open[i];const proceeds=p.budget*(1+p.trade.netReturnPct/100);
+   cash+=proceeds;ledgerOut.push({ticker:p.trade.ticker,strategyId:p.trade.strategyId,entryDate:p.trade.entryDate,exitDate:date,allocatedEgp:p.budget,pnlEgp:+(proceeds-p.budget).toFixed(2),netReturnPct:p.trade.netReturnPct});
    open.splice(i,1);
   }
   const invested=open.reduce((a,p)=>a+p.units*p.lastPrice,0),equity=cash+invested;
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,100*(peak-equity)/peak);
   curve.push({date,cashEgp:+cash.toFixed(2),investedEgp:+invested.toFixed(2),equityEgp:+equity.toFixed(2),drawdownPct:+(100*(peak-equity)/peak).toFixed(4),openPositions:open.length});
  }
- return {schemaVersion:'1.0',status:'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'entry-day close; session OHLC not intraday',exitMark:'trade exit price',brokerFees:'already reflected in simulated exit price only if trade exitPrice includes them; otherwise NOT INCLUDED',corporateActions:'unverified'},accepted,rejected,endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
+ return {schemaVersion:'1.0',status:'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'entry-day close; session OHLC not intraday',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'unverified'},accepted,rejected,endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
 }
 if(require.main===module){const input=JSON.parse(fs.readFileSync(process.argv[2]||'data/quant/walk-forward-trade-ledger.json','utf8'));const result=run(input);const output=process.argv[3]||'data/quant/research-daily-portfolio.json';fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify({accepted:result.accepted,rejected:result.rejected,maxDrawdownPct:result.maxDrawdownPct,endingEquityEgp:result.endingEquityEgp}));}
 module.exports={run};
