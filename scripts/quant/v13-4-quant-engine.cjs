@@ -21,7 +21,8 @@ const OUTPUTS = {
   model: path.join(QUANT_DIR, 'recommendation-model.json'),
   recommendations: path.join(QUANT_DIR, 'daily-recommendations.json'),
   audit: path.join(QUANT_DIR, 'recommendation-audit.json'),
-  gateTraceV139: path.join(QUANT_DIR, 'recommendation-gate-trace-v13-9.json')
+  gateTraceV139: path.join(QUANT_DIR, 'recommendation-gate-trace-v13-9.json'),
+  tradeAudit: path.join(QUANT_DIR, 'walk-forward-trade-ledger.json')
 };
 
 function readJson(filePath, fallback = null) {
@@ -1075,6 +1076,20 @@ function main() {
   writeJsonAtomic(OUTPUTS.marketRegime, { schemaVersion: '13.4.0', generatedAt, latestMarketSession: latestSession, ...regime });
   writeJsonAtomic(OUTPUTS.backtests, backtests);
   writeJsonAtomic(OUTPUTS.walkForward, walkForward);
+  // Historical out-of-sample trade audit: immutable facts of this recomputation, not a live ledger.
+  const tradeAuditRows = folds.flatMap(f => (f.selections || []).flatMap(selection =>
+    (selection.validationTrades || []).map(trade => ({
+      fold: f.fold, foldTestStart: f.testStart, foldTestEnd: f.testEnd,
+      strategyId: selection.strategyId, selectedVariantId: selection.selectedVariantId,
+      ...trade
+    }))
+  )).sort((a,b) => String(a.signalDate).localeCompare(String(b.signalDate)) || String(a.ticker).localeCompare(String(b.ticker)));
+  writeJsonAtomic(OUTPUTS.tradeAudit, {
+    schemaVersion: '1.0.0', generatedAt, latestMarketSession:latestSession,
+    warning:'RESEARCH ONLY: overlapping trades, hypothetical execution, and incomplete corporate-action verification. Not a portfolio equity curve.',
+    liveExecutionEnabled:false, performanceCertified:false, count:tradeAuditRows.length, trades:tradeAuditRows
+  });
+
   writeJsonAtomic(OUTPUTS.model, model);
   writeJsonAtomic(OUTPUTS.recommendations, recommendations);
   writeJsonAtomic(OUTPUTS.audit, audit);
