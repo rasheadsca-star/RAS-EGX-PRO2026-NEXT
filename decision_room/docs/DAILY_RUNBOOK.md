@@ -13,7 +13,7 @@ Order of stages (each is separately fail-closed; each exits 2 and leaves the pre
 `NO_STRATEGY_APPROVED`; H1 experimental only; entry/stop/target hidden; no real orders; ingested bars are never OFFICIAL and are never allowed to rewrite history.
 
 ## Stages added in v3.2
-0. **Preflight** (`tools/preflight.py`): required settings by name, source freshness (<=4 days), storage reachable + bucket versioning Enabled. Any failure = red run, nothing published.
+0. **Preflight** (`tools/preflight.py`): required settings by name, source freshness (<=4 days), storage reachable + usage ledger readable + cost guard below 80%. Any failure = red run, nothing published.
 1. **Fetch** `central_store.py fetch` (SHA-256 + size + integrity_check + schema; no silent fallback to an older DB) for the DB and the journal.
 2. **Ingest** now also compares EVERY already-canonical date (not only the last) and records new disagreements >0.5% as OPEN `INGEST_REVISION` conflicts even when no new session arrived (status `REVISIONS_RECORDED`); re-runs do not duplicate them.
 3. **Persist** `central_store.py publish --expect-parent <sha fetched>` only after publish succeeded (blob -> read-back SHA -> manifest -> pointer last). Immutable versions; `restore` re-verifies before re-pointing.

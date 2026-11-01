@@ -1,10 +1,10 @@
 name: decision-room-daily
-# SCHEDULED, GATED, FAIL-CLOSED. It does nothing until the owner sets the repository VARIABLE DECISION_ROOM_ENABLED=true.
-# Once enabled, ANY missing precondition (settings, secrets, bucket versioning, stale source/DB, failed verification) FAILS the run loudly.
-# It never deploys to production (no --prod) and never touches any Vercel project other than the one in VERCEL_PROJECT_ID.
+# MANUAL-ONLY. The schedule is deliberately REMOVED until the owner approves the storage-cost risk review (docs/STORAGE_COST_RISK.md).
+# To schedule later, re-add under `on:`:   schedule: [{cron: '45 20 * * 0-4'}]   (EGX trades Sun-Thu; after the existing warehouse runs).
+# It does nothing unless BOTH repository variables are set: DECISION_ROOM_ENABLED=true AND STORAGE_OWNER_APPROVED=true.
+# Once enabled, ANY missing precondition (settings, secrets, stale source/DB, storage guard at 80%, failed verification) FAILS the run loudly.
+# It never deploys to production (no --prod), never deletes any stored object, and only touches the Vercel project in VERCEL_PROJECT_ID.
 on:
-  schedule:
-    - cron: '45 20 * * 0-4'      # after the existing EGX central warehouse runs (15 16,20 * * 0-4 UTC); EGX trades Sun-Thu
   workflow_dispatch:
 permissions:
   contents: read
@@ -13,16 +13,18 @@ concurrency:
   cancel-in-progress: false
 jobs:
   daily:
-    if: ${{ vars.DECISION_ROOM_ENABLED == 'true' }}
+    if: ${{ vars.DECISION_ROOM_ENABLED == 'true' && vars.STORAGE_OWNER_APPROVED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
       EGX_STORE_BUCKET: ${{ secrets.EGX_STORE_BUCKET }}
       EGX_STORE_PREFIX: ${{ vars.EGX_STORE_PREFIX }}
       EGX_STORE_ENDPOINT: ${{ secrets.EGX_STORE_ENDPOINT }}
+      EGX_STORE_LIMIT_BYTES: ${{ vars.EGX_STORE_LIMIT_BYTES }}
+      EGX_STORE_LIMIT_CLASS_A: ${{ vars.EGX_STORE_LIMIT_CLASS_A }}
+      EGX_STORE_LIMIT_CLASS_B: ${{ vars.EGX_STORE_LIMIT_CLASS_B }}
       AWS_ACCESS_KEY_ID: ${{ secrets.EGX_STORE_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.EGX_STORE_SECRET_ACCESS_KEY }}
-      AWS_REGION: ${{ vars.EGX_STORE_REGION }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PREVIEW_PROJECT_ID }}
@@ -33,7 +35,7 @@ jobs:
           # checked before checkout so a mis-configured run fails immediately; only names are printed
           python3 - <<'PY'
           import os,sys
-          need=["EGX_STORE_BUCKET","AWS_ACCESS_KEY_ID","AWS_SECRET_ACCESS_KEY","VERCEL_TOKEN","VERCEL_ORG_ID","VERCEL_PROJECT_ID","DATA_REF"]
+          need=["EGX_STORE_BUCKET","EGX_STORE_ENDPOINT","AWS_ACCESS_KEY_ID","AWS_SECRET_ACCESS_KEY","VERCEL_TOKEN","VERCEL_ORG_ID","VERCEL_PROJECT_ID","DATA_REF"]
           miss=[n for n in need if not os.environ.get(n)]
           if miss:
               print("::error::decision-room-daily is ENABLED but not fully configured. Missing: "+", ".join(miss));sys.exit(2)
@@ -47,7 +49,7 @@ jobs:
       - run: pip install pandas numpy boto3
       - name: Preflight - source freshness (stale data is never presented as fresh)
         run: python3 -I code/decision_room/tools/preflight.py source --src data_src/data/history --max-age-days 4
-      - name: Preflight - storage reachable and bucket versioning enabled
+      - name: Preflight - storage reachable, usage ledger readable, cost guard below 80% (prints usage; no secrets)
         run: python3 -I code/decision_room/central_store.py check-config
       - name: Fetch verified central DB (SHA-256 + integrity) and journal
         run: |
