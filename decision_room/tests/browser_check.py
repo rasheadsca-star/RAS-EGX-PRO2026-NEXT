@@ -2,7 +2,7 @@
 import sys,json,pathlib,datetime,re
 from playwright.sync_api import sync_playwright
 out=pathlib.Path(sys.argv[1]).resolve();shots=pathlib.Path(sys.argv[2]).resolve();shots.mkdir(exist_ok=True,parents=True)
-html=(out/"index.html").read_text(encoding="utf-8")
+html=(out/ "current" / "index.html").read_text(encoding="utf-8")
 res=[]
 def ck(name,cond,extra=""):res.append((name,bool(cond),extra));print(("PASS" if cond else "FAIL"),name,extra)
 def variant(sub):  # make a modified page
@@ -14,7 +14,7 @@ with sync_playwright() as p:
         pg.on("pageerror",lambda e:errs.append(str(e)));pg.on("console",lambda m:errs.append(m.text) if m.type=="error" else None)
         pg.clock.install(time=datetime.datetime.fromisoformat(clock));pg.goto("file://"+str(path));return pg,errs
     # 1 fresh desktop
-    pg,errs=open_page(out/"index.html","2026-11-02T08:00:00+00:00")
+    pg,errs=open_page(out/ "current" / "index.html","2026-11-02T08:00:00+00:00")
     ck("fresh: banner says data fresh","البيانات حديثة" in pg.inner_text("#fresh"))
     ck("fresh: no JS errors",not errs,str(errs))
     ck("fresh: H1 labelled experimental/unapproved","غير معتمد" in pg.inner_text("#mkwhy"))
@@ -23,12 +23,13 @@ with sync_playwright() as p:
     ck("fresh: no entry/stop numbers rendered as orders","هدف أول" not in pg.inner_text("body"))
     n=pg.locator("button.sym").count();ck("fresh: list has symbols",n>0,str(n))
     pg.locator("button.sym").nth(2).click();ck("detail switches",pg.locator("button.sym.active").count()==1)
-    pg.fill("input","DCCC");ck("blocked filter works","DCCC" in pg.inner_text("#body") and "STALE" in pg.inner_text("#body"))
+    BT=json.loads((out/"current"/"decision_snapshot.json").read_text(encoding="utf-8"))["blocked"][0]["ticker"]
+    pg.fill("input",BT);ck("blocked filter works",BT in pg.inner_text("#body") and any(k in pg.inner_text("#body") for k in ("STALE","HISTORY","CONFLICT","LIQUIDITY","JUMP","CALENDAR_GAP","CORPORATE_ACTION","FLAT","NO_TRADING","OHLC")),BT)
     pg.screenshot(path=str(shots/"desktop_fresh.png"),full_page=True)
     pg.set_viewport_size({"width":390,"height":800});pg.screenshot(path=str(shots/"mobile_fresh.png"),full_page=True)
     ck("mobile: no horizontal scroll",pg.evaluate("document.documentElement.scrollWidth<=window.innerWidth+1"))
     # 2 stale
-    pg,errs=open_page(out/"index.html","2026-11-20T08:00:00+00:00")
+    pg,errs=open_page(out/ "current" / "index.html","2026-11-20T08:00:00+00:00")
     t=pg.inner_text("#fresh");ck("stale: red banner","بيانات قديمة" in t)
     ck("stale: market hidden","غير متاح" in pg.inner_text("#mk") and "لا توصية" in pg.inner_text("#expo"))
     ck("stale: no symbol buttons",pg.locator("button.sym").count()==0)

@@ -127,17 +127,18 @@ class Waterfall(unittest.TestCase):
         self.assertEqual(w["passed"]+w["blocked"],w["with_bars"]);self.assertEqual(w["registry_symbols"],w["with_bars"]+w["without_any_bar"])
         self.assertEqual(sum(w["first_blocking_reason"].values()),w["blocked"])
 class Pipeline(unittest.TestCase):
-    def test_ok_then_rerun_unchanged_and_failure_keeps_old_files(self):
+    def test_ok_then_rerun_unchanged_and_failure_keeps_old_release(self):
         import run_daily
+        from egx_decision import publish
         p,_=mk({"UPT":dict(close=up())});out=tempfile.mkdtemp();j=os.path.join(out,"j.jsonl")
         self.assertEqual(run_daily.main(["--db",p,"--out",out,"--journal",j,"--now",NOW.isoformat()]),0)
         h=json.load(open(os.path.join(out,"job_health.json")));self.assertEqual(h["status"],"OK");self.assertEqual(h["journal"],"APPENDED")
+        rid=publish.current_release(out)
         self.assertEqual(run_daily.main(["--db",p,"--out",out,"--journal",j,"--now",(NOW+datetime.timedelta(hours=2)).isoformat()]),0)
-        self.assertEqual(json.load(open(os.path.join(out,"job_health.json")))["journal"],"UNCHANGED")
-        self.assertEqual(len(journal.read(j)),1)
-        with open(os.path.join(out,"decision_snapshot.json")) as fh:before=fh.read()
+        self.assertEqual(json.load(open(os.path.join(out,"job_health.json")))["journal"],"UNCHANGED");self.assertEqual(len(journal.read(j)),1)
+        self.assertEqual(publish.current_release(out),rid)
         self.assertEqual(run_daily.main(["--db",os.path.join(out,"missing.sqlite"),"--out",out,"--journal",j,"--now",NOW.isoformat()]),2)
-        with open(os.path.join(out,"decision_snapshot.json")) as fh:self.assertEqual(fh.read(),before)
-        self.assertEqual(json.load(open(os.path.join(out,"job_health.json")))["status"],"FAILED")
+        self.assertEqual(publish.current_release(out),rid)
+        hh=json.load(open(os.path.join(out,"job_health.json")));self.assertEqual(hh["status"],"FAILED");self.assertEqual(hh["serving"],rid)
 
 if __name__=="__main__":unittest.main(verbosity=2)
