@@ -127,3 +127,9 @@ Rollback: الفرع جانبي؛ حذف الفرع أو `git revert` للـcomm
 
 اختبارات هذه الدفعة (`evidence/unit_test_output_v3_3.txt`): المحرك 24 · أمان النشر 9 · الاستيراد 24 · المخزن 60 · المعاينة 7 · preflight 6 · الثوابت 1 · التكامل 1 = **132**.
 فُحص أن عميل boto3 الحقيقي يُبنى بإعدادات R2 (endpoint، region=auto، `when_required` للـchecksum لأن R2 يرفض افتراضيات CRC الجديدة) **دون أي اتصال**؛ التواصل الفعلي مع R2 لم يُجرَّب.
+
+## حالة GitHub للدفعة v3.3 (تحقق فعلي)
+- Commit كود `da2cf4684e4dbb72fff3411ef1652ba8b2e9e652` على PR #197 (Draft، غير مدموج).
+- `decision-room-ci` run 41360892446: **unit = success** (132 اختبارًا) · **browser = success**.
+- `decision-room-daily`: لم يعمل (يدوي فقط ومغلق بمتغيرين). أي workflow قديم فاشل (Astra Production Audit وغيره) لم ألمسه.
+- رابط معاينة: غير متوفر بعد. لا عمليات على R2 نُفِّذت.
