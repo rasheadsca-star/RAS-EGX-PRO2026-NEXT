@@ -7,6 +7,8 @@ on:
       - 'scripts/quant/verify-gap-import.cjs'
       - 'scripts/quant/stage-claude-gaps.cjs'
       - 'scripts/quant/close-only-valuation-overlay.cjs'
+      - 'scripts/quant/prioritize-gap-recovery.cjs'
+      - 'tests/quant/prioritize-gap-recovery.test.cjs'
       - 'tests/quant/close-only-valuation-overlay.test.cjs'
       - 'tests/quant/stage-claude-gaps.test.cjs'
       - 'tests/quant/verify-gap-import.test.cjs'
@@ -22,4 +24,4 @@ jobs:
         with:
           node-version: '22'
       - name: Test structural import rejection and status
-        run: node tests/quant/verify-gap-import.test.cjs && node tests/quant/stage-claude-gaps.test.cjs && node tests/quant/close-only-valuation-overlay.test.cjs
+        run: node tests/quant/verify-gap-import.test.cjs && node tests/quant/stage-claude-gaps.test.cjs && node tests/quant/close-only-valuation-overlay.test.cjs && node tests/quant/prioritize-gap-recovery.test.cjs
