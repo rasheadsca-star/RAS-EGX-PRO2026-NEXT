@@ -5,13 +5,13 @@
   "mode": "EQUAL_WEIGHT_BASKET_PILOT",
   "practicalReady": false,
   "professionalEvidenceReady": false,
-  "evidenceTier": "BASKET_GATE_BLOCKED",
-  "status": "V16_9_BASKET_GATE_BLOCKED",
-  "statusAr": "لم تجتز سلة V16.9 بوابة الأداء، لذلك لا توجد خطة تنفيذ منشورة.",
+  "evidenceTier": "MODEL_CALIBRATION_REVIEW",
+  "status": "MODEL_CALIBRATION_UNDER_REVIEW",
+  "statusAr": "يوجد في السوق فرص محتملة، لكن معايرة V16.6 الحالية غير صالحة لاختيارها بثقة؛ النتائج معروضة للمراقبة فقط لحين التصحيح.",
   "selectedModel": {
-    "id": "V16_9_EQUAL_WEIGHT_BASKET",
-    "labelAr": "محرك السلة الاحتمالية متساوية الأوزان",
-    "profile": "RESEARCH_ONLY",
+    "id": "V16_6_TRIPLE_BARRIER",
+    "labelAr": "محرك Triple-Barrier الاحتمالي ببوابة إنتاج",
+    "profile": "CALIBRATION_UNDER_REVIEW",
     "watchOnly": true,
     "development": {
       "signals": 86,
@@ -52,14 +52,16 @@
     "validationPassed": false,
     "testPassed": false,
     "stabilityScore": 10,
-    "stabilityLabelAr": "لم يجتز بوابة السلة",
+    "stabilityLabelAr": "المعايرة قيد التصحيح — لا يعني غياب الفرص من السوق",
     "stabilityReasonsAr": [
-      "لم تثبت أفضلية موجبة خارج العينة."
+      "التشخيص أثبت وجود فرص رابحة فعلية في كل جلسات الاختبار.",
+      "شروط الاحتمال والهدف/الوقف الحالية رفضت جميع الأسهم بسبب خلل في المعايرة.",
+      "المرشحون معروضون للبحث فقط إلى أن يتم تصحيح النموذج وإعادة الاختبار."
     ],
     "pilotPassed": false,
-    "pilotRiskMode": "NO_TRADE",
+    "pilotRiskMode": "RESEARCH_ONLY",
     "professionalEvidencePassed": false,
-    "evidenceTier": "BASKET_GATE_BLOCKED",
+    "evidenceTier": "MODEL_CALIBRATION_REVIEW",
     "selectionScore": 19
   },
   "validatedModels": [],
@@ -280,10 +282,17 @@
       "volumeRatio20": 1,
       "holdingSessions": 1,
       "morningConfirmation": {
-        "cancelIfOpenAbove": 15.0332,
-        "cancelIfOpenBelow": 14.504,
-        "ruleAr": "لا يُنفذ السهم إذا افتتح أعلى نطاق الدخول أو ظهرت سيولة ضعيفة أول 10–15 دقيقة؛ يعاد توزيع وزنه بالتساوي على الأسهم المتبقية."
-      }
+        "status": "PENDING_OPEN_CONFIRMATION",
+        "cancelIfOpenAbove": 39.8449,
+        "cancelIfOpenBelowStop": 37.6266,
+        "ruleAr": "لا يتم الشراء إذا افتتح أعلى نطاق الدخول أو أسفل وقف الخسارة؛ يلزم بقاء السعر داخل النطاق وتأكيد السيولة صباحًا."
+      },
+      "exclusionReasons": [
+        "EXPECTED_VALUE_TOO_LOW",
+        "LOW_TARGET_PROBABILITY",
+        "LOW_TURNOVER",
+        "TARGET_STOP_RATIO_TOO_LOW"
+      ]
     },
     {
       "rank": 4,
@@ -326,5 +335,40 @@
       }
     }
   ],
-  "primaryDecisionSource": "V16_9_ISOLATED_FILE_SESSION_BOUND"
+  "primaryDecisionSource": "V16_9_ISOLATED_FILE_SESSION_BOUND",
+  "productionGate": {
+    "engine": "16.6.0-triple-barrier-research",
+    "passed": false,
+    "interpretation": "MODEL_FAILED_TO_DISCRIMINATE; THIS IS NOT EVIDENCE THAT THE MARKET HAS NO OPPORTUNITIES",
+    "acceptanceGate": {
+      "minimumEvaluatedSessions": true,
+      "positiveAverageReturn": false,
+      "positiveCompoundedReturn": false,
+      "profitFactorAtLeast125": false,
+      "maximumDrawdownAboveMinus10": false,
+      "targetStopRatioAtLeast125": false,
+      "tradeWinRateAtLeast45": false,
+      "allowsNoTradeDays": true
+    },
+    "walkForwardMetrics": {
+      "evaluatedSessions": 89,
+      "tradedSessions": 0,
+      "noTradeSessions": 89,
+      "sessionWinRatePct": 0,
+      "averageNetPortfolioReturnPct": 0,
+      "medianNetPortfolioReturnPct": 0,
+      "compoundedNetReturnPct": 0,
+      "maximumDrawdownPct": 0,
+      "profitFactor": null,
+      "selectedTrades": 0,
+      "targets": 0,
+      "stops": 0,
+      "timeExits": 0,
+      "targetStopRatio": 0,
+      "tradeWinRatePct": 0
+    },
+    "currentSelectionMeta": {
+      "reason": "NO_CANDIDATE_PASSED_GATES"
+    }
+  }
 }
