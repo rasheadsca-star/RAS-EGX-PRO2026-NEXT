@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "checkedAt": "2026-11-01",
+  "mode": "RESEARCH_ONLY",
+  "archiveDate": "2026-10-31",
+  "sources": {
+    "researchSeed": "EGX_Historical_100_Sessions_Seed_ARCHIVED.xlsx",
+    "existingHistory": "EGX_PRO_FROZEN_BACKUP_2026-10-31.zip data/history/*.json",
+    "lineage": "Both principally Yahoo/yfinance-derived; not independent confirmations"
+  },
+  "metrics": {
+    "overlapPairs": 1279,
+    "overlapTickers": 102,
+    "overlapDates": 174,
+    "exactRawCloseAndVolume": 1278,
+    "volumeMatches": 1279,
+    "rawCloseConflicts": 1,
+    "structurallyValidOverlap": 864,
+    "quarantinedOverlap": 415
+  },
+  "conflict": {
+    "ticker": "MOSC",
+    "date": "2026-01-26",
+    "classification": "ADJUSTED_VS_RAW_CLOSE",
+    "notes": "Private seed Close equals archived adjustedClose; archived unadjusted Close differs by 0.50 EGP, volume matches. Do not mix price bases."
+  },
+  "sourceDigests": {
+    "seedWorkbookSha256": "c02053decd1eaa1ccb3b6538f053b9b117762660732addf1fa34b299f4b75dc7",
+    "frozenRepositorySha256": "2e4dc4b414ce43bc327bf82c8e9de896dfa70e42b54635d3a3a21d8a69c2cd09"
+  },
+  "officialEgxImports": 0,
+  "priceGapsCertifiedResolved": 0,
+  "remainingMayJulyResearchBaselineMarks": 408,
+  "restrictions": [
+    "No independent exchange validation obtained from archive overlap",
+    "Vendor distribution or licence rights for Yahoo-origin bars unknown",
+    "No automatic merge into public data/history or live recommendations"
+  ],
+  "qa": "Local comparison reproducibly returned identical totals in two runs; GitHub Actions conclusion has not been verified."
+}
