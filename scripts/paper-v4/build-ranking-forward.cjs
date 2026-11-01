@@ -11,6 +11,30 @@ const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:null;
 const POLICY=JSON.parse(fs.readFileSync(path.join(ROOT,'data/v13-4-quant-policy.json'),'utf8'));
 const blocked=new Set(POLICY.safety.blockedTickers||[]),blockedStatuses=new Set(POLICY.safety.blockedEligibilityStatuses||[]);
 const clipped=x=>Math.max(-15,Math.min(15,x));
+// Forward evidence gate: missing rights, identity, corporate actions, official
+// session calendar or per-bar proof means NO performance observation.
+const {strictProvenance}=require('../independent/walkforward-backtest.cjs');
+const {historicalBarValid,validIsin}=require('../independent/egx-independent-paper.cjs');
+const COST_PER_SIDE=0.0035; // commission 0.25% + slippage 0.10%
+function certifiedForwardWindow(h,bars){
+ if(!Array.isArray(bars)||bars.length<62||!validIsin(h?.isin)||
+  h.licenseVerified!==true||!h.licenseRef||
+  h.corporateActionsReconciled!==true||h.officialSessionCalendarVerified!==true||
+  !Array.isArray(h.officialSessionDates))return false;
+ const calendar=h.officialSessionDates;
+ if(calendar.some((d,i)=>typeof d!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(d)||(i>0&&d<=calendar[i-1])))return false;
+ const positions=new Map(calendar.map((d,i)=>[d,i]));
+ let last=-1;
+ for(const bar of bars){
+  const at=positions.get(bar.date||bar.sessionDate);
+  if(at===undefined||(last>=0&&at!==last+1))return false;
+  last=at;
+  if(bar.officialVerified!==true||bar.licenseVerified!==true||
+   bar.licenseRef!==h.licenseRef||!strictProvenance(bar,historicalBarValid))return false;
+ }
+ return true;
+}
+
 function assess(h,cutoff,mode='live'){
  const ss=(h.sessions||[]).filter(x=>x.date<=cutoff&&num(x.close)>0).sort((a,b)=>a.date.localeCompare(b.date));
  const t=ss.at(-1),prev=ss.at(-2),cl=ss.map(x=>num(x.close)),vol=ss.map(x=>num(x.volume)||0);
@@ -71,6 +95,7 @@ function build(){
  // Forward-only research: take a signal from day t-1, score its next available session.
  // Do NOT use same-session close as an executable fill or optimize thresholds on holdout.
  const ledger=[];
+ let unverifiedExcluded=0;
  for(const h of histories){
   const ss=(h.sessions||[]).filter(x=>num(x.close)>0).sort((a,b)=>a.date.localeCompare(b.date));
   for(let i=60;i<ss.length-1;i++){
@@ -78,13 +103,15 @@ function build(){
    if(signal.stage!=='PAPER_RESEARCH_CANDIDATE')continue;
    const next=ss[i+1],entry=num(next.open),exit=num(next.close);
    if(!(entry>0&&exit>0))continue;
-   ledger.push({ticker:h.ticker,signalDate:cutoff,observedDate:next.date,score:signal.beforeScore,returnPct:round(100*(exit-entry)/entry,4),model:'next_open_to_close_observation_ONLY',costsIncluded:false});
+   if(!certifiedForwardWindow(h,ss.slice(i-60,i+2))){unverifiedExcluded++;continue;}
+   const gross=100*(exit/entry-1),net=100*(exit*(1-COST_PER_SIDE)/(entry*(1+COST_PER_SIDE))-1);
+   ledger.push({ticker:h.ticker,signalDate:cutoff,observedDate:next.date,score:signal.beforeScore,grossReturnPct:round(gross,4),netReturnPct:round(net,4),model:'next_open_to_close_observation_ONLY',costsIncluded:true,costPerSidePct:COST_PER_SIDE*100,evidence:'OFFICIAL_LICENSED_OHLCV',mode:'RESEARCH_ONLY'});
   }
  }
- const n=ledger.length,ret=ledger.map(x=>x.returnPct),wins=ret.filter(x=>x>0).length;
- const output={schemaVersion:'v4-ranking-forward-0.1',generatedAt:new Date().toISOString(),latestSession:latest,status:'RESEARCH_ONLY_NOT_VERIFIED_FOR_LIVE_TRADING',noteAr:'الترتيب بحثي. أي تعارض في المصدر أو غياب التحقق الرسمي يمنع تحويل السهم إلى توصية تنفيذ. اختبار اليوم التالي تشخيصي وليس اختبار أداء قابل للتداول؛ لم تُطبق تكاليف أو انزلاق أو وقف وخروج.',counts:{analyzed:all.length,eligible:after.length,held:all.length-after.length,paperResearchCandidates:all.filter(x=>x.stage==='PAPER_RESEARCH_CANDIDATE').length,conditionalWatch:all.filter(x=>x.stage==='CONDITIONAL_WATCH').length,forwardObservations:n},beforeFilters:all,currentResearchRanking:currentRanked,afterFilters:after,forwardResearch:{observations:n,winRatePct:n?round(100*wins/n,2):null,averageGrossReturnPct:n?round(mean(ret),3):null,netTradableMetricsAvailable:false,thresholdsFrozenBeforeHoldout:false},forwardLedger:ledger};
+ const n=ledger.length,ret=ledger.map(x=>x.netReturnPct),wins=ret.filter(x=>x>0).length;
+ const output={schemaVersion:'v4-ranking-forward-0.1',generatedAt:new Date().toISOString(),latestSession:latest,status:'RESEARCH_ONLY_NOT_VERIFIED_FOR_LIVE_TRADING',noteAr:'الترتيب بحثي. أي تعارض في المصدر أو غياب التحقق الرسمي يمنع تحويل السهم إلى توصية تنفيذ. لا تدخل الملاحظات المستقبلية في النتائج دون إثبات رسمي وترخيص وISIN وتقويم تداول وأحداث شركات؛ التكاليف المفترضة 0.35% لكل جانب. لم يُعتمد اختبار محفظة OOS بوقف وخروج.',counts:{analyzed:all.length,eligible:after.length,held:all.length-after.length,paperResearchCandidates:all.filter(x=>x.stage==='PAPER_RESEARCH_CANDIDATE').length,conditionalWatch:all.filter(x=>x.stage==='CONDITIONAL_WATCH').length,forwardObservations:n},beforeFilters:all,currentResearchRanking:currentRanked,afterFilters:after,forwardResearch:{observations:n,unverifiedObservationsExcluded:unverifiedExcluded,winRatePct:n?round(100*wins/n,2):null,averageNetReturnPct:n?round(mean(ret),3):null,costPerSidePct:COST_PER_SIDE*100,netTradableMetricsAvailable:false,thresholdsFrozenBeforeHoldout:false},forwardLedger:ledger};
  fs.mkdirSync(path.dirname(OUT),{recursive:true});fs.writeFileSync(OUT,JSON.stringify(output,null,2)+'\n');
  console.log('V4 ranking',latest,output.counts,'forward observations:',n,'AMOC:',all.find(x=>x.ticker==='AMOC')?.stage,'ENGC:',all.find(x=>x.ticker==='ENGC')?.stage);
 }
 if(require.main===module)build();
-module.exports={assess};
+module.exports={assess,certifiedForwardWindow,COST_PER_SIDE};
