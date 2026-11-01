@@ -104,3 +104,10 @@ Rollback: الفرع جانبي؛ حذف الفرع أو `git revert` للـcomm
 | 7 | الحزمة | تابع | هذا التقرير، `evidence/unit_test_output_v3_2.txt` (97 اختبارًا)، `evidence/screenshots_v3_2/`، `evidence/preview_v3_2/`. |
 
 التشغيل المستقل: `for t in test_engine test_publish_failures test_ingest test_central_store test_preview test_preflight test_invariants test_e2e_pipeline; do python3 -I decision_room/tests/$t.py; done`
+
+## حالة GitHub للدفعة v3.2 (تحقق فعلي)
+- Commit كود `bbba088b314a7bd7351df8ef85ccf0e1b6424b6c` على PR #197 (Draft، غير مدموج).
+- `decision-room-ci` run 41357494129: **unit = success** (8 ملفات اختبار، 97 اختبارًا) · **browser = success** (فحص Chromium + تجهيز المعاينة بلا روابط رمزية).
+- `decision-room-daily`: لم يعمل (مجدول ومعطّل بغياب `DECISION_ROOM_ENABLED`) — متوقع.
+- الفحوص الثلاثة غير المرتبطة بهذا العمل (Astra Production Audit وworkflowان قديمان) فاشلة سابقًا ولم ألمسها.
+- رابط معاينة: **غير متوفر** (مشروع Vercel `egx-pro-decision-preview` والتخزين لم يُنشآ).
