@@ -5,7 +5,7 @@ const make=(ticker='MOCK')=>({ticker,symbolVerified:true,officiallyVerifiedLates
 const h=make(),date=h.sessions.at(-1).date;
 const live=assess(h,date);
 assert(live.reasons.includes('FILTER_PRICE_VERIFICATION'));
-const old=assess(h,'2026-03-10');
+const old=assess(h,'2026-04-01');
 assert(old.reasons.includes('STALE_LAST_SESSION'));
 const back=assess({...h,lastSession:date},date,'historical');
 assert(!back.reasons.includes('FILTER_PRICE_VERIFICATION'));
