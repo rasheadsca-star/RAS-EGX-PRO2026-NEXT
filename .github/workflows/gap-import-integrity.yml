@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/quant/verify-gap-import.cjs'
+      - 'scripts/quant/audit-source-lineage.cjs'
+      - 'tests/quant/audit-source-lineage.test.cjs'
       - 'scripts/quant/stage-claude-gaps.cjs'
       - 'scripts/quant/close-only-valuation-overlay.cjs'
       - 'scripts/quant/prioritize-gap-recovery.cjs'
@@ -24,4 +26,4 @@ jobs:
         with:
           node-version: '22'
       - name: Test structural import rejection and status
-        run: node tests/quant/verify-gap-import.test.cjs && node tests/quant/stage-claude-gaps.test.cjs && node tests/quant/close-only-valuation-overlay.test.cjs && node tests/quant/prioritize-gap-recovery.test.cjs
+        run: node tests/quant/verify-gap-import.test.cjs && node tests/quant/stage-claude-gaps.test.cjs && node tests/quant/close-only-valuation-overlay.test.cjs && node tests/quant/prioritize-gap-recovery.test.cjs && node tests/quant/audit-source-lineage.test.cjs
