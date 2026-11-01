@@ -85,3 +85,7 @@ Rollback: الفرع جانبي؛ حذف الفرع أو `git revert` للـcomm
 | 5 | الثوابت | **محفوظة** | NO_STRATEGY_APPROVED، H1 تجريبي، المستويات مخفية (فحص متصفح)، لا أوامر حقيقية. |
 
 اختبارات هذه الدفعة: `evidence/unit_test_output_v3_1.txt` — test_engine 24 OK، test_publish_failures 9 OK، test_ingest 13 OK (المجموع 46).
+
+## حالة GitHub للدفعة v3.1 (تحقق فعلي)
+- Commit `1f5d168cedbeda6c1089f3dea849fb02fbdf20d4` على PR #197 (Draft، غير مدموج، لا نشر).
+- `decision-room-ci` run 41356079851: **unit = success** (46 اختبارًا) · **browser = success** (فحص Chromium 15/15 على إصدار اصطناعي) · artifact `decision-room-preview-and-screenshots` (780 KB).
