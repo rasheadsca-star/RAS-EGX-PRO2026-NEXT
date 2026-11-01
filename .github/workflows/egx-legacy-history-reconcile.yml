@@ -1,0 +1,31 @@
+name: EGX Legacy History Reconciliation
+on:
+  push:
+    branches: [feature/legacy-history-reconcile-20261101]
+    paths:
+      - 'scripts/research/egx_legacy_history_reconcile.py'
+      - 'tests/test_egx_legacy_history_reconcile.py'
+      - '.github/workflows/egx-legacy-history-reconcile.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run reconciliation tests
+        run: python -m unittest discover -s tests -p test_egx_legacy_history_reconcile.py -v
+      - name: Scan current canonical history
+        run: |
+          python scripts/research/egx_legacy_history_reconcile.py \
+            --history data/history \
+            --output artifacts/legacy-reconcile
+      - name: Upload per-symbol coverage and exceptions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-legacy-history-reconciliation
+          path: artifacts/legacy-reconcile/
+          retention-days: 30
