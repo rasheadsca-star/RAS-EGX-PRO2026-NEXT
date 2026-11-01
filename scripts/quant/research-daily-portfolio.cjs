@@ -5,12 +5,15 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const {loadActions,crossingActions}=require('./corporate-action-accounting.cjs');
+const {buildResearchCloseMap}=require('./research-close-evidence.cjs');
 function run(ledger,opts={}){
  const initial=Number(opts.initialEquityEgp??1000000),allocation=Number(opts.positionFraction??.10),maxPositions=Number(opts.maxPositions??8);
  if(!(initial>0&&allocation>0&&allocation<=1&&maxPositions>=1&&Number.isInteger(maxPositions)))throw Error('invalid portfolio controls');
  const trades=(ledger.trades||[]).filter(t=>t.status==='CLOSED'&&t.entryDate&&t.exitDate&&t.entryPrice>0&&t.exitPrice>0&&Number.isFinite(t.netReturnPct)&&t.netReturnPct>-100)
    .sort((a,b)=>a.entryDate.localeCompare(b.entryDate)||a.ticker.localeCompare(b.ticker)||a.strategyId.localeCompare(b.strategyId));
  const actionExposures=crossingActions(trades,loadActions(root));
+ const researchMarks=opts.researchCloseEvidence?buildResearchCloseMap(opts.researchCloseEvidence):new Map();
+ const researchMarkDetails=[];
  const calendar=JSON.parse(fs.readFileSync(path.join(root,'data/quant/egx-verified-calendar-2026.json'),'utf8'));
  const closures=new Set(calendar.verifiedClosures.map(x=>x.date));
  const verifiedOpens=new Set(calendar.verifiedOpenSessions.map(x=>x.date));
@@ -48,7 +51,9 @@ function run(ledger,opts={}){
   }
   for(const p of open){
    const close=history.get(p.trade.ticker)?.get(date);
+   const researchMark=date>p.trade.entryDate&&date<p.trade.exitDate?researchMarks.get(p.trade.ticker+'|'+date):null;
    if(Number.isFinite(close)&&close>0)p.lastPrice=close;
+   else if(researchMark){p.lastPrice=researchMark.close;researchMarkDetails.push({ticker:p.trade.ticker,date,sourceGrade:researchMark.sourceGrade});}
    else if(date>p.trade.entryDate&&date<p.trade.exitDate){missingMarks++;missingMarkDetails.push({date,ticker:p.trade.ticker,strategyId:p.trade.strategyId});missingByTicker[p.trade.ticker]=(missingByTicker[p.trade.ticker]||0)+1;}
    // On exit day, use simulated exitPrice, not the day's close.
    if(date===p.trade.exitDate)p.lastPrice=p.trade.exitPrice;
@@ -64,7 +69,7 @@ function run(ledger,opts={}){
   peak=Math.max(peak,equity);maxDD=Math.max(maxDD,100*(peak-equity)/peak);
   curve.push({date,cashEgp:+cash.toFixed(2),investedEgp:+invested.toFixed(2),equityEgp:+equity.toFixed(2),drawdownPct:+(100*(peak-equity)/peak).toFixed(4),openPositions:open.length});
  }
- return {schemaVersion:'1.0',status:actionExposures.length?'UNRECONCILED_CORPORATE_ACTIONS':missingMarks?'INCOMPLETE_PRICE_MARKS':excludedCalendarDates.length?'UNVERIFIED_EXCLUDED_DATES':'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'recorded entry price; intraday timing unknown; new entries before same-day exits for cash conservatism',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'cross-event trades require price-basis and quantity reconciliation; no synthetic adjustment applied',sessionCalendar:'cross-symbol coverage >=20%, plus mandatory entry and exit dates; provisional calendar, not official EGX',minimumMarketCoverage},accepted,rejected,corporateActionExposureCount:actionExposures.length,corporateActionExposures:actionExposures,missingMarks,missingMarkDetails,missingByTicker,marketSessionCount:sessions.length,historySymbolCount:history.size,excludedCalendarDates,maxOpenPositions,valuationComplete:missingMarks===0&&excludedCalendarDates.length===0&&actionExposures.length===0,calendarVerified:false,verifiedClosuresApplied:[...closures],verifiedOpenDatesApplied:[...verifiedOpens],endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
+ return {schemaVersion:'1.0',status:actionExposures.length?'UNRECONCILED_CORPORATE_ACTIONS':missingMarks?'INCOMPLETE_PRICE_MARKS':excludedCalendarDates.length?'UNVERIFIED_EXCLUDED_DATES':'RESEARCH_ONLY_UNCERTIFIED',executionReady:false,performanceCertified:false,assumptions:{initialEquityEgp:initial,positionFraction:allocation,maxPositions,entryMark:'recorded entry price; intraday timing unknown; new entries before same-day exits for cash conservatism',exitMark:'trade exit price',brokerFees:'realized P&L uses trade.netReturnPct (must include simulator fees and slippage); daily interim mark remains gross because future closing cost is unknown',corporateActions:'cross-event trades require price-basis and quantity reconciliation; no synthetic adjustment applied',sessionCalendar:'cross-symbol coverage >=20%, plus mandatory entry and exit dates; provisional calendar, not official EGX',minimumMarketCoverage},accepted,rejected,corporateActionExposureCount:actionExposures.length,corporateActionExposures:actionExposures,missingMarks,missingMarkDetails,missingByTicker,researchMarkCount:researchMarkDetails.length,researchMarkDetails,marketSessionCount:sessions.length,historySymbolCount:history.size,excludedCalendarDates,maxOpenPositions,valuationComplete:missingMarks===0&&excludedCalendarDates.length===0&&actionExposures.length===0,calendarVerified:false,verifiedClosuresApplied:[...closures],verifiedOpenDatesApplied:[...verifiedOpens],endingEquityEgp:curve.at(-1)?.equityEgp??initial,maxDrawdownPct:+maxDD.toFixed(4),curve,closedPositions:ledgerOut};
 }
-if(require.main===module){const input=JSON.parse(fs.readFileSync(process.argv[2]||'data/quant/walk-forward-trade-ledger.json','utf8'));const result=run(input);const output=process.argv[3]||'data/quant/research-daily-portfolio.json';fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify({accepted:result.accepted,rejected:result.rejected,missingMarks:result.missingMarks,missingTickers:Object.keys(result.missingByTicker).length,maxDrawdownPct:result.maxDrawdownPct,endingEquityEgp:result.endingEquityEgp}));}
+if(require.main===module){const input=JSON.parse(fs.readFileSync(process.argv[2]||'data/quant/walk-forward-trade-ledger.json','utf8'));const researchCloseEvidence=process.argv[4]?JSON.parse(fs.readFileSync(process.argv[4],'utf8')):null;const result=run(input,{researchCloseEvidence});const output=process.argv[3]||'data/quant/research-daily-portfolio.json';fs.writeFileSync(output,JSON.stringify(result,null,2));console.log(JSON.stringify({accepted:result.accepted,rejected:result.rejected,missingMarks:result.missingMarks,missingTickers:Object.keys(result.missingByTicker).length,maxDrawdownPct:result.maxDrawdownPct,endingEquityEgp:result.endingEquityEgp}));}
 module.exports={run};
