@@ -42,6 +42,22 @@ function forwardGuard(signal, observation){
  if(!Number.isFinite(Number(signal.referenceClose))||Number(signal.referenceClose)<=0)throw Error('Invalid signal reference close');
  return {ticker:signal.ticker,signalSession:signal.session,observedSession:observation.session,returnPct:Math.round((Number(observation.close)/Number(signal.referenceClose)-1)*10000)/100,evidence:observation.evidence,mode:'RESEARCH_ONLY',noOrders:true};
 }
+// Manual future prices are unverified scenarios, never official market observations.
+function manualScenario(signal,observation){
+ if(!signal||!observation||signal.mode!=='RESEARCH_ONLY')throw Error('Only research signals');
+ if(signal.ticker!==observation.ticker)throw Error('Ticker mismatch');
+ const iso=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&
+  !Number.isNaN(Date.parse(s+'T00:00:00Z'))&&new Date(s+'T00:00:00Z').toISOString().slice(0,10)===s;
+ if(!iso(signal.session)||!iso(observation.session)||observation.session<=signal.session)
+  throw Error('Future test requires valid later session');
+ if(!Number.isFinite(Number(observation.close))||Number(observation.close)<=0||
+    !Number.isFinite(Number(signal.referenceClose))||Number(signal.referenceClose)<=0)
+  throw Error('Invalid price');
+ return {ticker:signal.ticker,signalSession:signal.session,observedSession:observation.session,
+  returnPct:Math.round((Number(observation.close)/Number(signal.referenceClose)-1)*10000)/100,
+  evidence:'USER_ENTERED_UNVERIFIED',mode:'RESEARCH_ONLY',performanceCertified:false,
+  oosCertified:false,noOrders:true,illustrativeOnly:true};
+}
 function expandCompact(records){
  if(!Array.isArray(records)||records.length!==217)throw Error('Full universe must contain exactly 217 stocks');
  const rows=records.map(v=>{
@@ -58,5 +74,5 @@ function expandCompact(records){
  if(rows.filter(x=>x.multiFactorPass).length!==1)throw Error('Multi-Factor count mismatch');
  return {schema:1,session:'2026-10-29',mode:'RESEARCH_ONLY',snapshotType:'FULL_UNIVERSE_READ_ONLY_FROZEN_SCREEN',universeTotal:217,eligibleHistory:148,volatilityQualified:117,strictMultiFactorQualified:1,rows};
 }
-return {STATES,classify,rank,normalizeCSV,forwardGuard,expandCompact};
+return {STATES,classify,rank,normalizeCSV,forwardGuard,manualScenario,expandCompact};
 });
