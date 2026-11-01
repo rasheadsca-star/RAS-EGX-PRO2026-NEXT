@@ -1,42 +1,13 @@
-name: Deploy research paper dashboard to GitHub Pages
+# Legacy Pages publisher retired. Canonical deployment: .github/workflows/static.yml
+# V4 is the only active independent research application; no archival job
+# may overwrite its full-site Pages artifact with a partial deployment.
+name: Retired legacy publisher — github-pages-paper.yml
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'index.html'
-      - 'paper-v4/**'
-      - '.github/workflows/github-pages-paper.yml'
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  retired:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - name: Stage research-only static website
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p _site
-          cp index.html _site/index.html
-          cp -r paper-v4 _site/paper-v4
-          touch _site/.nojekyll
-          test -s _site/paper-v4/index.html
-          node -e "const x=require('./_site/paper-v4/market-status.json');if(x.mode!=='RESEARCH_ONLY'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(x.lastVerifiedMarketSession)||x.executionReady!==false)process.exit(1)"
-          grep -q '2026-10-29' _site/paper-v4/index.html
-          echo 'Static paper research snapshot, NOT live EGX data'
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - run: echo 'Legacy Pages publisher disabled; use static.yml for full-site V4 deployment.'

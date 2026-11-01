@@ -6,6 +6,11 @@ on:
       - '.github/workflows/v4-ranking-research.yml'
       - 'scripts/paper-v4/**'
       - 'tests/paper-v4/**'
+      - '.github/workflows/egx-github-pages.yml'
+      - '.github/workflows/github-pages-paper.yml'
+      - '.github/workflows/egx-elite-pages.yml'
+      - '.github/workflows/mobile-hotfix-deploy.yml'
+      - '.github/workflows/v13-20-stable-work-deploy.yml'
   push:
     branches: [main]
     paths:
@@ -31,7 +36,7 @@ jobs:
         with:
           node-version: '22'
       - name: Check research ranking regression guards
-        run: node tests/paper-v4/ranking-regression.cjs && node tests/paper-v4/official-session-publish-gate.test.cjs
+        run: node tests/paper-v4/ranking-regression.cjs && node tests/paper-v4/official-session-publish-gate.test.cjs && node tests/paper-v4/retired-pages-publishers.test.cjs
       - name: Require validated new official session before any publication
         id: official
         run: node scripts/paper-v4/official-session-publish-gate.cjs
