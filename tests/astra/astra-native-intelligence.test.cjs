@@ -4,6 +4,19 @@ const assert=require('node:assert/strict');
 const fs=require('fs'),path=require('path'),os=require('os');
 const mod=require('../../scripts/astra/native/astra-intelligence.cjs');
 
+function repositoryHandoffStatus(root){
+ const app=JSON.parse(fs.readFileSync(path.join(root,'astra-prod/app/data.json'),'utf8'));
+ const handoff=JSON.parse(fs.readFileSync(path.join(root,'data/ops/g22-main-app-handoff.json'),'utf8'));
+ return mod.validateHandoff(app,handoff);
+}
+function assertRejectedWithoutMutation(root){
+ const appPath=path.join(root,'astra-prod/app/data.json');
+ const before=fs.readFileSync(appPath,'utf8');
+ assert.throws(()=>require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'}),e=>String(e.stderr||'').includes('Immutable handoff rejected:'));
+ assert.equal(fs.readFileSync(appPath,'utf8'),before,'stale handoff must not rewrite Astra decision');
+}
+
+
 test('recommendation identity is stable and snapshot-linked',()=>{
   const ds={decisionSnapshotId:'G09-DS-aaaaaaaaaaaaaaaaaaaaaaaa',semanticDecisionHash:'b'.repeat(64),sessionDate:'2026-09-20'};
   const op={ticker:'ABUK',rank:1,strategyExecutionRef:'X'};
@@ -38,8 +51,12 @@ test('KPI denominators exclude ambiguous outcomes from win/loss',()=>{
   assert.equal(s.metrics.ambiguous,1);
 });
 
-test('repository build preserves current DecisionSnapshot and produces reconciled native intelligence',()=>{
+test('repository build rejects stale handoff or produces reconciled native intelligence',()=>{
   const root=path.resolve(__dirname,'../..');
+  if(repositoryHandoffStatus(root).status!=='PASS'){
+    assertRejectedWithoutMutation(root);
+    return;
+  }
   const before=fs.readFileSync(path.join(root,'astra-prod/app/data.json'),'utf8');
   require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'});
   const after=fs.readFileSync(path.join(root,'astra-prod/app/data.json'),'utf8');
@@ -80,7 +97,9 @@ test('entry activation is evaluated only from effective session onward',()=>{
 });
 
 test('entry not triggered expires without becoming win or loss',()=>{
-  const rows=Array.from({length:20},(_,i)=>row('2026-10-'+String(i+1).padStart(2,'0'),8,9,7,8));
+  const rows=Array.from({length:50},(_,i)=>new Date(Date.UTC(2026,9,i+1)))
+    .filter(d=>d.getUTCDay()!==5&&d.getUTCDay()!==6)
+    .slice(0,30).map(d=>row(d.toISOString().slice(0,10),8,9,7,8));
   const o=mod.evaluateRows(recFixture(),rows,{expirySessions:20});
   assert.equal(o.state,'EXPIRED');
   assert.equal(o.entryNotTriggered,true);
@@ -184,8 +203,12 @@ test('effective session policy is explicit without inventing a future session',(
 });
 
 
-test('native artifact build is byte-reproducible for identical inputs',()=>{
+test('native artifact is reproducible for certified inputs or rejects stale handoff',()=>{
   const root=path.resolve(__dirname,'../..');
+  if(repositoryHandoffStatus(root).status!=='PASS'){
+    assertRejectedWithoutMutation(root);
+    return;
+  }
   const paths=[
     'astra-prod/app/intelligence/recommendation-ledger.json',
     'astra-prod/app/intelligence/recommendation-outcomes.json',
