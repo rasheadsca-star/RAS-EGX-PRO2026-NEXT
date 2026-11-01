@@ -10,6 +10,8 @@ on:
       - 'scripts/quant/verify-execution-stress.cjs'
       - 'scripts/quant/verify-trade-ledger.cjs'
       - 'scripts/quant/research-daily-portfolio.cjs'
+      - 'scripts/quant/build-session-batch-worklist.cjs'
+      - 'tests/quant/build-session-batch-worklist.test.cjs'
       - 'scripts/quant/research-close-evidence.cjs'
       - 'scripts/quant/compare-research-replays.cjs'
       - 'tests/quant/research-close-evidence.test.cjs'
@@ -39,7 +41,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node tests/quant/thndr-cost.test.cjs && node tests/quant/participation-slippage.test.cjs && node tests/quant/research-daily-portfolio.test.cjs && node tests/quant/corporate-action-accounting.test.cjs && node tests/quant/research-close-evidence.test.cjs && node tests/quant/verify-gap-import.test.cjs
+      - run: node tests/quant/thndr-cost.test.cjs && node tests/quant/participation-slippage.test.cjs && node tests/quant/research-daily-portfolio.test.cjs && node tests/quant/corporate-action-accounting.test.cjs && node tests/quant/research-close-evidence.test.cjs && node tests/quant/build-session-batch-worklist.test.cjs && node tests/quant/verify-gap-import.test.cjs
       - name: Recompute scenario metrics without committing or live trading
         shell: bash
         run: |
@@ -131,6 +133,8 @@ jobs:
           NODE
       - name: Compare fixed-trade paper research with multi-source close evidence
         run: node scripts/quant/compare-research-replays.cjs research-artifacts
+      - name: Generate session-first multi-stock evidence worklist
+        run: node scripts/quant/build-session-batch-worklist.cjs research-artifacts research-artifacts/session-batch-worklist.json
       - name: Aggregate and deduplicate missing prices across six scenarios
         run: |
           node scripts/quant/report-market-data-gaps.cjs research-artifacts
