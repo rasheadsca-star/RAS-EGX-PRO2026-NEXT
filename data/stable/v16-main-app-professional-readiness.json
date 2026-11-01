@@ -1,49 +1,44 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-11-01T18:02:47.962Z",
+  "generatedAt": "2026-11-01T19:03:25.233Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
-  "sessionDate": "2026-10-29",
-  "professionalReadinessScore": 59,
-  "foundationQualityScore": 62.3,
+  "sessionDate": "2026-11-01",
+  "professionalReadinessScore": 64,
+  "foundationQualityScore": 63.9,
   "stage": "PILOT",
   "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "DATA_SESSION_HARD_GATE",
+  "capReason": "WALK_FORWARD_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 17.8,
-      "scorePct": 71.2,
+      "points": 23.24,
+      "scorePct": 92.9,
       "details": {
         "currentExecutionGrade": true,
-        "sessionAligned": false,
+        "sessionAligned": true,
         "currentSourceSessionEvidenceCoveragePct": 94.9,
-        "publishedDecisionEvidenceCoveragePct": 95.8,
+        "publishedDecisionEvidenceCoveragePct": 94.9,
         "publishedDecisionEvidenceReady": true,
-        "publishedEvidenceRows": 175,
+        "publishedEvidenceRows": 153,
         "currentAcceptedRows": 152,
-        "verifiedRows": 175,
+        "verifiedRows": 153,
         "inputRows": 216,
-        "evidenceCoveragePct": 95.8,
-        "verifiedRowsRatioPct": 81,
+        "evidenceCoveragePct": 94.9,
+        "verifiedRowsRatioPct": 70.8,
         "currentSourceHealth": "EXECUTION_GRADE"
       },
       "requirements": [
         {
-          "code": "SESSION_ALIGNMENT",
-          "labelAr": "تطابق جلسة السوق مع جلسة القرار",
-          "hard": true
-        },
-        {
           "code": "SOURCE_EVIDENCE_100",
-          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.8% إلى 100%",
+          "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 94.9% إلى 100%",
           "hard": false
         },
         {
           "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/216",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 153/216",
           "hard": false
         }
       ]
@@ -55,12 +50,12 @@
       "points": 11,
       "scorePct": 44,
       "details": {
-        "sessions": 90,
+        "sessions": 91,
         "minimumSessions": 30,
-        "averageNetReturnPct": 0.0628,
-        "profitFactor": 1.043,
-        "sessionWinRatePct": 46.67,
-        "maximumDrawdownPct": -49.958,
+        "averageNetReturnPct": 0.0369,
+        "profitFactor": 1.025,
+        "sessionWinRatePct": 46.15,
+        "maximumDrawdownPct": -51.106,
         "acceptanceGatePassed": false
       },
       "requirements": [
@@ -85,20 +80,25 @@
       "id": "V169_LIVE_FORWARD",
       "labelAr": "السجل الحي / Forward لـV16.9",
       "weight": 25,
-      "points": 12.5,
-      "scorePct": 50,
+      "points": 8.63,
+      "scorePct": 34.5,
       "details": {
-        "resolvedSessions": 27,
+        "resolvedSessions": 9,
         "minimumResolvedSessions": 20,
-        "sampleCompletionPct": 100,
+        "sampleCompletionPct": 45,
         "winningSessionPct": 44.44,
-        "averageNetReturnPct": -0.1417,
-        "profitFactor": 0.875,
-        "maximumDrawdownPct": -18.318,
+        "averageNetReturnPct": -0.081,
+        "profitFactor": 0.949,
+        "maximumDrawdownPct": -13.483,
         "promotionEligible": false,
         "hardGatePassed": false
       },
       "requirements": [
+        {
+          "code": "LIVE_MIN_RESOLVED_SESSIONS",
+          "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 9 والمتبقي 11",
+          "hard": true
+        },
         {
           "code": "LIVE_POSITIVE_RETURN",
           "labelAr": "متوسط عائد حي صافي موجب بعد التكاليف",
@@ -112,11 +112,6 @@
         {
           "code": "LIVE_WIN_RATE",
           "labelAr": "نسبة جلسات حية رابحة ≥ 45%",
-          "hard": true
-        },
-        {
-          "code": "LIVE_DRAWDOWN",
-          "labelAr": "Maximum Drawdown حي أفضل من -15%",
           "hard": true
         }
       ]
@@ -137,7 +132,7 @@
         "consensusCovered": true,
         "consensusRegressionPassed": true,
         "persistedAuditableIntelligenceSnapshot": false,
-        "intelligenceSnapshotSessionAligned": true,
+        "intelligenceSnapshotSessionAligned": false,
         "intelligenceSnapshotGeneratedAt": "2026-11-01T17:48:22.002Z",
         "technicalAuditCoveragePct": 0,
         "financialAuditCoveragePct": 0,
@@ -178,18 +173,12 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": false,
+    "dataAndSessionIntegrity": true,
     "walkForwardEvidence": false,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
-    {
-      "code": "SESSION_ALIGNMENT",
-      "labelAr": "تطابق جلسة السوق مع جلسة القرار",
-      "hard": true,
-      "axis": "DATA_SESSION_INTEGRITY"
-    },
     {
       "code": "WF_PF",
       "labelAr": "Profit Factor خارج العينة ≥ 1.20",
@@ -209,6 +198,12 @@
       "axis": "V169_WALK_FORWARD"
     },
     {
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 9 والمتبقي 11",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
+    },
+    {
       "code": "LIVE_POSITIVE_RETURN",
       "labelAr": "متوسط عائد حي صافي موجب بعد التكاليف",
       "hard": true,
@@ -225,24 +220,18 @@
       "labelAr": "نسبة جلسات حية رابحة ≥ 45%",
       "hard": true,
       "axis": "V169_LIVE_FORWARD"
-    },
-    {
-      "code": "LIVE_DRAWDOWN",
-      "labelAr": "Maximum Drawdown حي أفضل من -15%",
-      "hard": true,
-      "axis": "V169_LIVE_FORWARD"
     }
   ],
   "softGaps": [
     {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.8% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 94.9% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/216",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 153/216",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -261,12 +250,6 @@
   ],
   "requirementsTo100": [
     {
-      "code": "SESSION_ALIGNMENT",
-      "labelAr": "تطابق جلسة السوق مع جلسة القرار",
-      "hard": true,
-      "axis": "DATA_SESSION_INTEGRITY"
-    },
-    {
       "code": "WF_PF",
       "labelAr": "Profit Factor خارج العينة ≥ 1.20",
       "hard": true,
@@ -283,6 +266,12 @@
       "labelAr": "اجتياز جميع بوابات قبول V16.9 التاريخية",
       "hard": true,
       "axis": "V169_WALK_FORWARD"
+    },
+    {
+      "code": "LIVE_MIN_RESOLVED_SESSIONS",
+      "labelAr": "استكمال السجل الحي لـV16.9 إلى 20 جلسة محسومة؛ الحالي 9 والمتبقي 11",
+      "hard": true,
+      "axis": "V169_LIVE_FORWARD"
     },
     {
       "code": "LIVE_POSITIVE_RETURN",
@@ -303,20 +292,14 @@
       "axis": "V169_LIVE_FORWARD"
     },
     {
-      "code": "LIVE_DRAWDOWN",
-      "labelAr": "Maximum Drawdown حي أفضل من -15%",
-      "hard": true,
-      "axis": "V169_LIVE_FORWARD"
-    },
-    {
       "code": "SOURCE_EVIDENCE_100",
-      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.8% إلى 100%",
+      "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 94.9% إلى 100%",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/216",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 153/216",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -341,10 +324,10 @@
   },
   "evidence": {
     "priceTruthGeneratedAt": "2026-11-01T16:53:37.324Z",
-    "basketGeneratedAt": "2026-11-01T07:43:38.055284+00:00",
-    "liveGeneratedAt": "2026-11-01T07:43:49.802558+00:00",
-    "canonicalSnapshotHash": "349687394c0e7d904f2628e6745f8231242a4a7b27258586d9a623ce1640eb25",
-    "consensusGeneratedAt": "2026-11-01T14:24:00.730Z",
+    "basketGeneratedAt": "2026-11-01T18:11:41.082692+00:00",
+    "liveGeneratedAt": "2026-11-01T18:11:51.672697+00:00",
+    "canonicalSnapshotHash": "bee38296aca4ab9d9c756c92dde6d6878f2561a962323fc97ab7d93174f9e8eb",
+    "consensusGeneratedAt": "2026-11-01T19:03:23.451Z",
     "intelligenceSnapshotGeneratedAt": "2026-11-01T17:48:22.002Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -379,5 +362,5 @@
       ]
     }
   },
-  "readinessHash": "09a18aaec1946de283bf436bf1f6b5081e6b2ae3712306f857043cb79b91acd1"
+  "readinessHash": "7a0733c4e7b9fd625b6b7fa60a21e9e64cc57927ae2a8742b2c8b70105ad882b"
 }
