@@ -39,3 +39,12 @@ test('V4 banner session-date validation actually accepts ISO session',()=>{
  assert.equal(re.test('2026-10-29'),true);
  assert.equal(re.test('not-a-date'),false);
 });
+
+test('Pages deployment must verify live V4 SHA, session and manual-evidence isolation',()=>{
+ const yaml=fs.readFileSync(path.join(__dirname,'../../.github/workflows/static.yml'),'utf8');
+ assert.match(yaml,/V4_LIVE_SHA_MATCH_PASS/);
+ assert.match(yaml,/LIVE_SHA_MISMATCH/);
+ assert.match(yaml,/paper-v4\/market-status\.json/);
+ assert.match(yaml,/USER_ENTERED_UNVERIFIED/);
+ assert.match(yaml,/performanceCertified/);
+});
