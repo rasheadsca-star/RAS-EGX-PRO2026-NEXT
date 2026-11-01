@@ -32,6 +32,7 @@ jobs:
           cp -r paper-v4 _site/paper-v4
           touch _site/.nojekyll
           test -s _site/paper-v4/index.html
+          node -e "const x=require('./_site/paper-v4/market-status.json');if(x.mode!=='RESEARCH_ONLY'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(x.lastVerifiedMarketSession)||x.executionReady!==false)process.exit(1)"
           grep -q '2026-10-29' _site/paper-v4/index.html
           echo 'Static paper research snapshot, NOT live EGX data'
       - uses: actions/upload-pages-artifact@v3
