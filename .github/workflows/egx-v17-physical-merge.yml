@@ -1,0 +1,32 @@
+name: EGX V17 Long History Physical Merge
+on:
+  push:
+    branches: [feature/legacy-history-reconcile-20261101]
+    paths:
+      - 'scripts/research/merge_v17_research_warehouse.py'
+      - '.github/workflows/egx-v17-physical-merge.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: engine
+      - uses: actions/checkout@v4
+        with:
+          ref: egx-research-ledger
+          path: ledger
+      - name: Merge raw physical archives with fail-closed conflicts
+        run: |
+          python engine/scripts/research/merge_v17_research_warehouse.py engine/data/history ledger artifacts/egx-v17-merged
+      - name: Upload SQLite warehouse, coverage and conflicts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-v17-research-merged-sqlite
+          path: artifacts/egx-v17-merged/
+          retention-days: 45
