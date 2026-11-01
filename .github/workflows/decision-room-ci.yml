@@ -1,0 +1,52 @@
+name: decision-room-ci
+on:
+  pull_request:
+    paths: ['decision_room/**','.github/workflows/decision-room-ci.yml','.github/workflows/decision-room-daily.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install pandas numpy
+      - run: python3 -I decision_room/tests/test_engine.py
+      - run: python3 -I decision_room/tests/test_publish_failures.py
+      - run: python3 -I decision_room/tests/test_ingest.py
+      - run: python3 -I decision_room/tests/test_central_store.py
+      - run: python3 -I decision_room/tests/test_preview.py
+      - run: python3 -I decision_room/tests/test_preflight.py
+      - run: python3 -I decision_room/tests/test_invariants.py
+      - run: python3 -I decision_room/tests/test_e2e_pipeline.py
+  browser:
+    runs-on: ubuntu-latest
+    needs: unit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install pandas numpy playwright && playwright install --with-deps chromium
+      - name: Build a synthetic release (no real data in CI) and run real-browser checks
+        run: |
+          cd decision_room
+          python3 - <<'PY'
+          import sys,datetime;sys.path.insert(0,'tests');import fixtures as F,numpy as np
+          F.build('/tmp/ci.sqlite',{'UPT':dict(close=F.series(140,20,0.004,0.003,5)),'BLK':dict(last_n=80)},end='2026-10-29')
+          PY
+          python3 run_daily.py --db /tmp/ci.sqlite --out /tmp/pub --journal /tmp/pub/journal/j.jsonl --now 2026-10-30T09:00:00+00:00
+          python3 tests/browser_check.py /tmp/pub /tmp/shots | tee /tmp/browser.txt
+          cp -rL /tmp/pub/current /tmp/preview
+          python3 preview/prepare_preview.py --public /tmp/pub --out /tmp/dist
+          test -z "$(find /tmp/dist -type l)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: decision-room-preview-and-screenshots
+          path: |
+            /tmp/preview
+            /tmp/dist
+            /tmp/shots
+            /tmp/browser.txt

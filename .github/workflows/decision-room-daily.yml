@@ -1,0 +1,90 @@
+name: decision-room-daily
+# MANUAL-ONLY. The schedule is deliberately REMOVED until the owner approves the storage-cost risk review (docs/STORAGE_COST_RISK.md).
+# To schedule later, re-add under `on:`:   schedule: [{cron: '45 20 * * 0-4'}]   (EGX trades Sun-Thu; after the existing warehouse runs).
+# It does nothing unless BOTH repository variables are set: DECISION_ROOM_ENABLED=true AND STORAGE_OWNER_APPROVED=true.
+# Once enabled, ANY missing precondition (settings, secrets, stale source/DB, storage guard at 80%, failed verification) FAILS the run loudly.
+# It never deploys to production (no --prod), never deletes any stored object, and only touches the Vercel project in VERCEL_PROJECT_ID.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: decision-room-daily
+  cancel-in-progress: false
+jobs:
+  daily:
+    if: ${{ vars.DECISION_ROOM_ENABLED == 'true' && vars.STORAGE_OWNER_APPROVED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EGX_STORE_BUCKET: ${{ secrets.EGX_STORE_BUCKET }}
+      EGX_STORE_PREFIX: ${{ vars.EGX_STORE_PREFIX }}
+      EGX_STORE_ENDPOINT: ${{ secrets.EGX_STORE_ENDPOINT }}
+      EGX_STORE_LIMIT_BYTES: ${{ vars.EGX_STORE_LIMIT_BYTES }}
+      EGX_STORE_LIMIT_CLASS_A: ${{ vars.EGX_STORE_LIMIT_CLASS_A }}
+      EGX_STORE_LIMIT_CLASS_B: ${{ vars.EGX_STORE_LIMIT_CLASS_B }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.EGX_STORE_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.EGX_STORE_SECRET_ACCESS_KEY }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PREVIEW_PROJECT_ID }}
+      DATA_REF: ${{ vars.DECISION_ROOM_DATA_REF }}
+    steps:
+      - name: Preflight - required settings (fails if any is missing)
+        run: |
+          # checked before checkout so a mis-configured run fails immediately; only names are printed
+          python3 - <<'PY'
+          import os,sys
+          need=["EGX_STORE_BUCKET","EGX_STORE_ENDPOINT","AWS_ACCESS_KEY_ID","AWS_SECRET_ACCESS_KEY","VERCEL_TOKEN","VERCEL_ORG_ID","VERCEL_PROJECT_ID","DATA_REF"]
+          miss=[n for n in need if not os.environ.get(n)]
+          if miss:
+              print("::error::decision-room-daily is ENABLED but not fully configured. Missing: "+", ".join(miss));sys.exit(2)
+          PY
+      - uses: actions/checkout@v4
+        with: {ref: '${{ vars.DECISION_ROOM_DATA_REF }}', path: data_src}
+      - uses: actions/checkout@v4
+        with: {path: code}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install pandas numpy boto3
+      - name: Preflight - source freshness (stale data is never presented as fresh)
+        run: python3 -I code/decision_room/tools/preflight.py source --src data_src/data/history --max-age-days 4
+      - name: Preflight - storage reachable, usage ledger readable, cost guard below 80% (prints usage; no secrets)
+        run: python3 -I code/decision_room/central_store.py check-config
+      - name: Fetch verified central DB (SHA-256 + integrity) and journal
+        run: |
+          mkdir -p work
+          python3 -I code/decision_room/central_store.py fetch --dest work/central.sqlite
+          python3 -I code/decision_room/central_store.py --kind journal fetch --dest work/journal.jsonl --allow-empty
+          echo "DB_SHA_BEFORE=$(sha256sum work/central.sqlite | cut -d' ' -f1)" >> $GITHUB_ENV
+      - name: Ingest (staged; atomic; errors logged)
+        run: python3 -I code/decision_room/ingest_daily.py --src data_src/data/history --db work/central.sqlite --report work/ingest_report.json --errlog work/ingest_errors.jsonl
+      - name: Preflight - DB freshness after ingest
+        run: python3 -I code/decision_room/tools/preflight.py db --db work/central.sqlite --max-age-days 4
+      - name: Build decision snapshot and publish release (failure-safe)
+        run: python3 -I code/decision_room/run_daily.py --db work/central.sqlite --out work/public --journal work/journal.jsonl
+      - name: Persist DB and journal (only after everything above succeeded)
+        run: |
+          python3 -I code/decision_room/central_store.py publish --db work/central.sqlite --meta work/ingest_report.json --expect-parent "$DB_SHA_BEFORE"
+          if [ -f work/journal.jsonl ]; then python3 -I code/decision_room/central_store.py --kind journal publish --db work/journal.jsonl; fi
+      - name: Prepare static preview (resolves the current symlink, verifies manifest)
+        run: python3 -I code/decision_room/preview/prepare_preview.py --public work/public --out work/dist
+      - name: Deploy PREVIEW to Vercel project egx-pro-decision-preview (never --prod)
+        id: deploy
+        run: |
+          set -euo pipefail
+          URL=$(npx --yes vercel@39.1.1 deploy work/dist --token "$VERCEL_TOKEN" --yes 2>deploy.err | tail -n1) || { cat deploy.err; exit 2; }
+          echo "url=$URL" >> $GITHUB_OUTPUT; echo "Preview: $URL"
+      - name: Verify the deployed preview serves today's snapshot
+        run: |
+          SHA=$(python3 -c "import json;print(json.load(open('work/public/job_health.json'))['content_sha256'])")
+          python3 -I code/decision_room/tools/preflight.py deploy --url "${{ steps.deploy.outputs.url }}" --sha256 "$SHA"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: decision-room-daily-run
+          path: |
+            work/ingest_report.json
+            work/ingest_errors.jsonl
+            work/public/job_health.json
+            work/public/releases

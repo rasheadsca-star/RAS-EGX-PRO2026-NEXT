@@ -1,0 +1,55 @@
+test_adv_threshold_exact (__main__.Gate.test_adv_threshold_exact) ... ok
+test_all_blocked_gives_empty_state_without_error (__main__.Gate.test_all_blocked_gives_empty_state_without_error) ... ok
+test_calendar_gap_last20_with_and_without_conflict (__main__.Gate.test_calendar_gap_last20_with_and_without_conflict) ... ok
+test_clean_uptrend_is_ranked_and_levels_disabled (__main__.Gate.test_clean_uptrend_is_ranked_and_levels_disabled) ... ok
+test_conflict_inside_window_blocks (__main__.Gate.test_conflict_inside_window_blocks) ... ok
+test_corporate_action_in_window_blocks_old_does_not (__main__.Gate.test_corporate_action_in_window_blocks_old_does_not) ... ok
+test_downtrend_goes_to_watchlist_not_ranked_even_with_score (__main__.Gate.test_downtrend_goes_to_watchlist_not_ranked_even_with_score) ... ok
+test_future_session_refused (__main__.Gate.test_future_session_refused) ... ok
+test_h1_external_validation (__main__.Gate.test_h1_external_validation) ... ok
+test_h1_matches_reference_formula (__main__.Gate.test_h1_matches_reference_formula) ... ok
+test_h1_unknown_when_history_short (__main__.Gate.test_h1_unknown_when_history_short) ... ok
+test_missing_columns_fail_loudly (__main__.Gate.test_missing_columns_fail_loudly) ... ok
+test_missing_table_and_corrupt_db (__main__.Gate.test_missing_table_and_corrupt_db) ... /home/claude/ras-egx-pro2026-next/decision_room/tests/test_engine.py:63: ResourceWarning: unclosed file <_io.BufferedWriter name='/tmp/tmp9mcni39q/x.sqlite'>
+  d=tempfile.mkdtemp();p=os.path.join(d,"x.sqlite");open(p,"wb").write(b"not a database")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_old_conflict_outside_window_does_not_block (__main__.Gate.test_old_conflict_outside_window_does_not_block) ... ok
+test_stale_ticker_blocked (__main__.Gate.test_stale_ticker_blocked) ... ok
+test_unresolved_jump_blocks (__main__.Gate.test_unresolved_jump_blocks) ... ok
+test_zero_volume_flat_price_never_listed (__main__.Gate.test_zero_volume_flat_price_never_listed) ... ok
+test_idempotent_and_refuses_retroactive (__main__.Journal.test_idempotent_and_refuses_retroactive) ... ok
+test_older_session_refused_and_chain_detects_tamper (__main__.Journal.test_older_session_refused_and_chain_detects_tamper) ... ok
+test_rerun_of_same_snapshot_is_noop (__main__.Journal.test_rerun_of_same_snapshot_is_noop) ... ok
+test_null_names_do_not_break_json (__main__.Json.test_null_names_do_not_break_json) ... ok
+test_future_bars_do_not_change_past_snapshot (__main__.NoLookAhead.test_future_bars_do_not_change_past_snapshot) ... ok
+test_ok_then_rerun_unchanged_and_failure_keeps_old_files (__main__.Pipeline.test_ok_then_rerun_unchanged_and_failure_keeps_old_files) ... /home/claude/ras-egx-pro2026-next/decision_room/tests/test_engine.py:134: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpj9eni9we/job_health.json' mode='r' encoding='utf-8'>
+  h=json.load(open(os.path.join(out,"job_health.json")));self.assertEqual(h["status"],"OK");self.assertEqual(h["journal"],"APPENDED")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/claude/ras-egx-pro2026-next/decision_room/tests/test_engine.py:136: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpj9eni9we/job_health.json' mode='r' encoding='utf-8'>
+  self.assertEqual(json.load(open(os.path.join(out,"job_health.json")))["journal"],"UNCHANGED")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+Traceback (most recent call last):
+  File "/home/claude/ras-egx-pro2026-next/decision_room/run_daily.py", line 19, in main
+    snap=snapshot.build(x.db,now=now)
+  File "/home/claude/ras-egx-pro2026-next/decision_room/egx_decision/snapshot.py", line 15, in build
+    data=load(db,asof)
+  File "/home/claude/ras-egx-pro2026-next/decision_room/egx_decision/ingest.py", line 20, in load
+    c=open_ro(db)
+  File "/home/claude/ras-egx-pro2026-next/decision_room/egx_decision/ingest.py", line 7, in open_ro
+    if not p.exists():raise DataError(f"database not found: {db}")
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+egx_decision.ingest.DataError: database not found: /tmp/tmpj9eni9we/missing.sqlite
+/home/claude/ras-egx-pro2026-next/decision_room/tests/test_engine.py:141: ResourceWarning: unclosed file <_io.TextIOWrapper name='/tmp/tmpj9eni9we/job_health.json' mode='r' encoding='utf-8'>
+  self.assertEqual(json.load(open(os.path.join(out,"job_health.json")))["status"],"FAILED")
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+ok
+test_counts_add_up (__main__.Waterfall.test_counts_add_up) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 17.391s
+
+OK
+{"job": "egx-decision-daily", "started_utc": "2026-10-30T12:00:00+00:00", "status": "OK", "error": null, "journal": "APPENDED", "source_session": "2026-10-29", "content_sha256": "f057ba883fe8d37a0df98e3b95592a4f60f4ea922d83f5e91ab23bdad6d38f3d", "ranked": 20, "watchlist": 41, "blocked": 0, "market_state": "IN_MARKET"}
+{"job": "egx-decision-daily", "started_utc": "2026-10-30T14:00:00+00:00", "status": "OK", "error": null, "journal": "UNCHANGED", "source_session": "2026-10-29", "content_sha256": "f057ba883fe8d37a0df98e3b95592a4f60f4ea922d83f5e91ab23bdad6d38f3d", "ranked": 20, "watchlist": 41, "blocked": 0, "market_state": "IN_MARKET"}
+{"job": "egx-decision-daily", "started_utc": "2026-10-30T12:00:00+00:00", "status": "FAILED", "error": "DataError: database not found: /tmp/tmpj9eni9we/missing.sqlite"}
