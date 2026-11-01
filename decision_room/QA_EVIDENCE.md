@@ -63,3 +63,11 @@ python3 decision_room/tests/browser_check.py public/ evidence/
 python3 decision_room/tools/whatif.py /path/egx_central_research.sqlite     # تشخيص فقط
 ```
 Rollback: الفرع جانبي؛ حذف الفرع أو `git revert` للـcommit. لا تغيير في main/الإنتاج.
+
+## حالة GitHub (تحقق فعلي بعد الدفع)
+- الفرع `claude/decision-room-v3-20261101` · commit الأساس `ea10418e56302ab279352acf57afef2384f230be` · Draft PR **#197** (لم يُدمج، لا نشر).
+- `decision-room-ci` (اختبارات الوحدة الـ24 على GitHub Actions): **success** (run 41354413881).
+- `Security — Repository Secret Scan`: success · `S2 static history isolation`: success.
+- `Astra Production Audit`: **failure** في خطوة موجودة سابقًا في المستودع: «Ten consecutive decision and health reviews» — الرسالة `performance generator hash stale` (فحص Node قائم للمحرك القديم، لا علاقة له بملفات `decision_room/`). لم أتحقق إن كان يفشل على main أيضًا؛ لم أعدّل ذلك المحرك.
+- workflowان قائمان (`v15-practical-refinement` و`fix-v13-3-preview-page`) انطلقا بدفع الفرع الجديد وفشلا قبل بدء أي خطوة؛ لم ألمسهما.
+- Vercel: لم يُفحص ولا يوجد رابط معاينة.
