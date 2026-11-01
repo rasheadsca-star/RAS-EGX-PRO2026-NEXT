@@ -5,6 +5,7 @@ on:
     paths:
       - 'scripts/research/merge_v17_research_warehouse.py'
       - '.github/workflows/egx-v17-physical-merge.yml'
+      - 'tests/test_merge_v17_research_warehouse.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,6 +21,8 @@ jobs:
         with:
           ref: egx-research-ledger
           path: ledger
+      - name: Test V17 conflict quarantine
+        run: python -m unittest discover -s engine/tests -p test_merge_v17_research_warehouse.py -v
       - name: Merge raw physical archives with fail-closed conflicts
         run: |
           python engine/scripts/research/merge_v17_research_warehouse.py engine/data/history ledger artifacts/egx-v17-merged
