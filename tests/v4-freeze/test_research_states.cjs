@@ -20,3 +20,22 @@ test('full 217-stock research snapshot decompresses and validates exact counts',
  assert.equal(all.rows.find(x=>x.ticker==='ENGC').evidence,'UNVERIFIED_CLOSE');
  assert.equal(e.rank(all).length,217);
 });
+
+test('manual future close cannot claim official verification or OOS certification',()=>{
+ const signal={ticker:'AMOC',session:'2026-10-29',referenceClose:14,mode:'RESEARCH_ONLY'};
+ const r=e.manualScenario(signal,{ticker:'AMOC',session:'2026-11-01',close:14.7,evidence:'DIRECT_OFFICIAL_CLOSE'});
+ assert.equal(r.returnPct,5);assert.equal(r.evidence,'USER_ENTERED_UNVERIFIED');
+ assert.equal(r.performanceCertified,false);assert.equal(r.oosCertified,false);assert.equal(r.noOrders,true);
+ assert.throws(()=>e.manualScenario(signal,{ticker:'AMOC',session:'2026-10-29',close:15}),/later/);
+ const html=fs.readFileSync(path.join(__dirname,'../../paper-v4/research/index.html'),'utf8');
+ assert.doesNotMatch(html,/<option value="DIRECT_OFFICIAL_CLOSE">/);
+ assert.match(html,/EGXResearch\.manualScenario/);
+});
+test('V4 banner session-date validation actually accepts ISO session',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'../../paper-v4/index.html'),'utf8');
+ const match=html.match(/if\(!(.+?)\.test\(d\.lastVerifiedMarketSession\)/);
+ assert.ok(match,'status banner date-validation expression missing');
+ const re=require('node:vm').runInNewContext(match[1]);
+ assert.equal(re.test('2026-10-29'),true);
+ assert.equal(re.test('not-a-date'),false);
+});

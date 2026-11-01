@@ -11,7 +11,7 @@ try{
  const r=await fetch('./market-status.json',{cache:'no-store'});
  if(!r.ok)throw Error('No market evidence');
  const d=await r.json();
- if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(d.lastVerifiedMarketSession)||d.mode!=='RESEARCH_ONLY')throw Error('Bad provenance');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(d.lastVerifiedMarketSession)||d.mode!=='RESEARCH_ONLY')throw Error('Bad provenance');
  box.textContent='آخر جلسة موثقة: '+d.lastVerifiedMarketSession+' | حالة البيانات: '+d.dataStatus+' | توصيات ورقية بحثية فقط — ليست أسعارًا حية. نشر إصدار جديد لا يعني تحديث الأسعار.';
 }catch(e){box.textContent='تعذر تأكيد تاريخ بيانات السوق من ملف المصدر. لا تستخدم هذه الشاشة باعتبارها أسعار جلسة حديثة.';}
 })();
