@@ -1,36 +1,41 @@
 {
   "schemaVersion": "16.9.2-professional-readiness-v2",
-  "generatedAt": "2026-11-01T07:43:53.205Z",
+  "generatedAt": "2026-11-01T14:24:02.532Z",
   "engine": "V16_9_EQUAL_WEIGHT_BASKET",
   "sessionDate": "2026-10-29",
-  "professionalReadinessScore": 68,
-  "foundationQualityScore": 68.4,
+  "professionalReadinessScore": 59,
+  "foundationQualityScore": 62.3,
   "stage": "PILOT",
   "stageAr": "Pilot — يحتاج أدلة إضافية",
   "professionalClaimAllowed": false,
-  "capReason": "WALK_FORWARD_HARD_GATE",
+  "capReason": "DATA_SESSION_HARD_GATE",
   "axes": [
     {
       "id": "DATA_SESSION_INTEGRITY",
       "labelAr": "سلامة البيانات والجلسة",
       "weight": 25,
-      "points": 23.87,
-      "scorePct": 95.5,
+      "points": 17.8,
+      "scorePct": 71.2,
       "details": {
         "currentExecutionGrade": true,
-        "sessionAligned": true,
-        "currentSourceSessionEvidenceCoveragePct": 95.8,
+        "sessionAligned": false,
+        "currentSourceSessionEvidenceCoveragePct": 94.9,
         "publishedDecisionEvidenceCoveragePct": 95.8,
         "publishedDecisionEvidenceReady": true,
         "publishedEvidenceRows": 175,
-        "currentAcceptedRows": 175,
+        "currentAcceptedRows": 153,
         "verifiedRows": 175,
-        "inputRows": 212,
+        "inputRows": 216,
         "evidenceCoveragePct": 95.8,
-        "verifiedRowsRatioPct": 82.5,
+        "verifiedRowsRatioPct": 81,
         "currentSourceHealth": "EXECUTION_GRADE"
       },
       "requirements": [
+        {
+          "code": "SESSION_ALIGNMENT",
+          "labelAr": "تطابق جلسة السوق مع جلسة القرار",
+          "hard": true
+        },
         {
           "code": "SOURCE_EVIDENCE_100",
           "labelAr": "رفع أفضل تغطية موثقة لإثبات الجلسة من 95.8% إلى 100%",
@@ -38,7 +43,7 @@
         },
         {
           "code": "VERIFIED_ROWS_100",
-          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/212",
+          "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/216",
           "hard": false
         }
       ]
@@ -173,12 +178,18 @@
   ],
   "hardGates": {
     "engineIsV169": true,
-    "dataAndSessionIntegrity": true,
+    "dataAndSessionIntegrity": false,
     "walkForwardEvidence": false,
     "liveForwardMinimum": false,
     "governanceAndRisk": true
   },
   "hardBlockers": [
+    {
+      "code": "SESSION_ALIGNMENT",
+      "labelAr": "تطابق جلسة السوق مع جلسة القرار",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_PF",
       "labelAr": "Profit Factor خارج العينة ≥ 1.20",
@@ -231,7 +242,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/212",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/216",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -249,6 +260,12 @@
     }
   ],
   "requirementsTo100": [
+    {
+      "code": "SESSION_ALIGNMENT",
+      "labelAr": "تطابق جلسة السوق مع جلسة القرار",
+      "hard": true,
+      "axis": "DATA_SESSION_INTEGRITY"
+    },
     {
       "code": "WF_PF",
       "labelAr": "Profit Factor خارج العينة ≥ 1.20",
@@ -299,7 +316,7 @@
     },
     {
       "code": "VERIFIED_ROWS_100",
-      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/212",
+      "labelAr": "رفع تغطية الصفوف الموثقة؛ الحالي 175/216",
       "hard": false,
       "axis": "DATA_SESSION_INTEGRITY"
     },
@@ -323,11 +340,11 @@
     "sourceHealthMeaningAr": "فشل المصدر اللحظي يمنع التنفيذ فورًا، لكنه لا يمحو الدليل الموثق الذي صدر عليه القرار المنشور سابقًا."
   },
   "evidence": {
-    "priceTruthGeneratedAt": "2026-11-01T07:43:20.007Z",
+    "priceTruthGeneratedAt": "2026-11-01T14:01:08.764Z",
     "basketGeneratedAt": "2026-11-01T07:43:38.055284+00:00",
     "liveGeneratedAt": "2026-11-01T07:43:49.802558+00:00",
-    "canonicalSnapshotHash": "4ec7230908583eafa80a5a8c5f6fae9ac4b4c43d2bc6bd07663ef1043c67aa38",
-    "consensusGeneratedAt": "2026-11-01T07:43:52.015Z",
+    "canonicalSnapshotHash": "349687394c0e7d904f2628e6745f8231242a4a7b27258586d9a623ce1640eb25",
+    "consensusGeneratedAt": "2026-11-01T14:24:00.730Z",
     "intelligenceSnapshotGeneratedAt": "2026-10-29T23:09:24.407Z",
     "liveReleaseLock": {
       "version": "16.9.0",
@@ -362,5 +379,5 @@
       ]
     }
   },
-  "readinessHash": "8a30f98c81800681da4447ae7f34282aa7f076a92462201efdd760104d3afca0"
+  "readinessHash": "09a18aaec1946de283bf436bf1f6b5081e6b2ae3712306f857043cb79b91acd1"
 }
