@@ -12,7 +12,14 @@ Order of stages (each is separately fail-closed; each exits 2 and leaves the pre
 ## Hard limits (unchanged)
 `NO_STRATEGY_APPROVED`; H1 experimental only; entry/stop/target hidden; no real orders; ingested bars are never OFFICIAL and are never allowed to rewrite history.
 
+## Stages added in v3.2
+0. **Preflight** (`tools/preflight.py`): required settings by name, source freshness (<=4 days), storage reachable + bucket versioning Enabled. Any failure = red run, nothing published.
+1. **Fetch** `central_store.py fetch` (SHA-256 + size + integrity_check + schema; no silent fallback to an older DB) for the DB and the journal.
+2. **Ingest** now also compares EVERY already-canonical date (not only the last) and records new disagreements >0.5% as OPEN `INGEST_REVISION` conflicts even when no new session arrived (status `REVISIONS_RECORDED`); re-runs do not duplicate them.
+3. **Persist** `central_store.py publish --expect-parent <sha fetched>` only after publish succeeded (blob -> read-back SHA -> manifest -> pointer last). Immutable versions; `restore` re-verifies before re-pointing.
+4. **Preview** `preview/prepare_preview.py` resolves the `current` symlink into real files, verifies MANIFEST and health, writes vercel.json (no-store, noindex); deploy is a preview deployment to `egx-pro-decision-preview` only; `preflight.py deploy` checks the live URL serves the expected snapshot hash.
+
 ## What is NOT done yet (blocking production, stated honestly)
-* The central SQLite is not stored in the repo. A scheduler needs a durable home for it (release asset / ledger branch / storage bucket) — owner decision.
-* No hosting target (Vercel/Pages-preview) is linked to this repo, so no public preview URL exists. The built release is a plain static folder (`public/current/index.html`) deployable anywhere.
+* No bucket, no credentials and no Vercel project exist yet -> the daily workflow is disabled and cannot run; see `docs/SETUP_OWNER.md`. The S3 code path is tested with a fake client only; it has never talked to a real S3/R2.
+* No public preview URL exists. The `vercel deploy` step is unexecuted code.
 * Corroboration/official-disclosure ingestion (to calibrate provider disagreement) is a separate source and is not built.

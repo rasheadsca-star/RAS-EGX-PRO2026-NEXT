@@ -89,3 +89,18 @@ Rollback: الفرع جانبي؛ حذف الفرع أو `git revert` للـcomm
 ## حالة GitHub للدفعة v3.1 (تحقق فعلي)
 - Commit `1f5d168cedbeda6c1089f3dea849fb02fbdf20d4` على PR #197 (Draft، غير مدموج، لا نشر).
 - `decision-room-ci` run 41356079851: **unit = success** (46 اختبارًا) · **browser = success** (فحص Chromium 15/15 على إصدار اصطناعي) · artifact `decision-room-preview-and-screenshots` (780 KB).
+
+---
+# الدفعة v3.2 — الرد على مراجعة GPT-6 لـ V3.1
+
+| # | المهمة | الحالة | الدليل |
+|---|---|---|---|
+| 1 | مراجعات الأسعار | **مُصلَح ومُختبَر** | الاستيراد يقارن **كل** تاريخ قانوني سابق (لا آخر جلسة فقط) ويسجّل الفروق >0.5% كتعارض OPEN حتى دون جلسة جديدة (`REVISIONS_RECORDED`، لا NOOP)، ولا يكرر عند إعادة التشغيل. اختبارات: `Revisions` (5) + `RevisionReachesEngine`. **على البيانات الحقيقية**: 46 مراجعة جديدة في 27 رمزًا (23 منها مقابل إغلاق EGX الرسمي 11-01، والباقي تواريخ بين 06-11 و10-12 يختلف فيها Mubasher عن إغلاق مُؤكَّد من مصدرين)، إعادة التشغيل = NOOP مع `revisions_already_recorded=46`؛ أثرها في المحرك: المحجوب 191←192 والمراقبة 9←8 (27/27 رمزًا متأثرًا محجوب). `evidence/preview_v3_2/ingest_report_real_revisions.json` |
+| 2 | فشل الاستيراد | **مُختبَر** | `FailureHandling` (5): الفشل يحفظ DB و`.prev` بتجزئة متطابقة، لا ملفات مؤقتة، الانهيار بعد النسخ الاحتياطي متسق ويتقارب، التقرير `FAILED` مع `db_sha256_now`، وسجل أخطاء JSONL يُضاف إليه فقط (`--errlog`)، التقرير يُستبدل عند النجاح، رفض قاعدة مرحلية تالفة. `.prev` يُكتب ذريًا. |
+| 3 | تخزين دائم | **مُنفَّذ في الكود، غير مُهيَّأ** | `central_store.py`: S3/R2 مع Versioning مفروض (يرفض bucket بلا versioning)، كائنات غير قابلة للاستبدال، manifest + SHA-256 + حجم + integrity، القراءة الراجعة قبل تحريك المؤشر (يُكتب أخيرًا)، `--expect-parent` ضد التزامن، `restore` يعيد التحقق، ولا fallback صامت. نفس الآلية لسجل القرارات (hash-chain). 25 اختبارًا على LocalBackend وعميل S3 وهمي. على القاعدة الحقيقية 231MB: رفع 1.6 ث، جلب وتحقق 1.5 ث، SHA مطابق. **لم أُنشئ bucket ولا افترضت بيانات اعتماد؛ لم يُجرَّب على S3/R2 حقيقي.** |
+| 4 | معاينة Vercel | **جاهز للنشر، غير منشور** | `preview/prepare_preview.py`: يحل الرابط الرمزي إلى ملفات حقيقية (0 روابط رمزية في الناتج)، يتحقق من MANIFEST و`job_health`، يكتب `vercel.json` (no-store/noindex)، لا يكتب أي ربط مشروع ولا بيانات اعتماد؛ 7 اختبارات. فحص المتصفح 15/15 على إصدار حقيقي. المشروع `egx-pro-decision-preview` **لم يُنشأ** (لا صلاحية لي) — لا رابط معاينة حقيقي بعد. |
+| 5 | workflow مجدول | **مُضاف ومعطّل افتراضيًا** | `decision-room-daily.yml`: لا يعمل إلا مع `DECISION_ROOM_ENABLED=true`؛ بعدها يفشل عند غياب أي إعداد/سر، أو بيانات مصدر/قاعدة أقدم من 4 أيام، أو bucket بلا versioning، أو فشل التحقق من DB/journal؛ لا يحفظ نسخة جديدة إلا بعد نجاح كل شيء؛ نشر معاينة فقط ثم فحص أن الرابط يخدم نفس تجزئة اللقطة. 6 اختبارات preflight + اختبار تكامل شامل (يومان + يوم فاشل لا يغيّر شيئًا). الـworkflow نفسه **لم يُشغَّل** (لا موارد). |
+| 6 | الثوابت | **محفوظة** | اختبار جديد `test_invariants`: حتى لو كانت `live_ready=1` في القاعدة يبقى `NO_STRATEGY_APPROVED`, `live_ready=0`, المستويات None، ولا أرقام دخول/وقف/أهداف في JSON أو الصفحة. حقل `live_ready=0` ظاهر الآن في اللقطة. |
+| 7 | الحزمة | تابع | هذا التقرير، `evidence/unit_test_output_v3_2.txt` (97 اختبارًا)، `evidence/screenshots_v3_2/`، `evidence/preview_v3_2/`. |
+
+التشغيل المستقل: `for t in test_engine test_publish_failures test_ingest test_central_store test_preview test_preflight test_invariants test_e2e_pipeline; do python3 -I decision_room/tests/$t.py; done`

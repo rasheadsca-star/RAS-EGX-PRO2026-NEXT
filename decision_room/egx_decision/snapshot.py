@@ -40,7 +40,7 @@ def build(db,now=None,asof=None):
     market["guidance"]=("لا توصية تعرّض: لا توجد استراتيجية معتمدة ولا بيانات مراكزك. القراءة تجريبية للاختبار الأمامي فقط."
                         if h1_ok else "حالة السوق غير معروفة: لا قراءة سوقية.")
     core=dict(schema=SCHEMA_VERSION,source_session=session.date().isoformat(),market=market,counts=dict(wf,ranked=len(ranked),watchlist=len(watch)),
-        strategy_approved=False,live_execution_enabled=False,paper_signals_generated=0,verdict="NO_STRATEGY_APPROVED",
+        strategy_approved=False,live_execution_enabled=False,live_ready=0,paper_signals_generated=0,verdict="NO_STRATEGY_APPROVED",
         ranked=ranked,watchlist=watch,blocked=sorted(blocked,key=lambda b:b["ticker"]),no_bars_symbols=nobars)
     core["content_sha256"]=hashlib.sha256(json.dumps(core,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()).hexdigest()
     out=dict(core);out["generated_utc"]=now.isoformat()

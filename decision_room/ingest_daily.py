@@ -47,23 +47,30 @@ def _fsync_dir(p):
     fd=os.open(p,os.O_RDONLY)
     try:os.fsync(fd)
     finally:os.close(fd)
+def _integrity(con):return con.execute("pragma integrity_check").fetchone()[0]
+def _sha(p):
+    h=hashlib.sha256()
+    with open(p,"rb") as f:
+        for ch in iter(lambda:f.read(1<<20),b""):h.update(ch)
+    return h.hexdigest()
 def ingest(src,db,today=None,now=None):
     src=pathlib.Path(src);db=pathlib.Path(db).resolve()
     today=today or datetime.date.today();now=now or datetime.datetime.now(datetime.timezone.utc)
     if not db.exists():raise IngestError(f"central DB not found: {db}")
     files=sorted(src.glob("*.json"))
     if not files:raise IngestError(f"no source files in {src}")
-    staged=pathlib.Path(tempfile.mkstemp(dir=db.parent,prefix=".stage_",suffix=".sqlite")[1])
+    staged=pathlib.Path(tempfile.mkstemp(dir=db.parent,prefix=".stage_",suffix=".sqlite")[1]);b=None
     try:
-        a=sqlite3.connect(f"file:{db}?mode=ro",uri=True);b=sqlite3.connect(staged);a.backup(b);a.close()
+        a=sqlite3.connect(f"file:{db}?mode=ro",uri=True);b=sqlite3.connect(staged,isolation_level=None);a.backup(b);a.close()
         _prep(b)
         rows_before=b.execute("select count(*) from canonical_bars where price_basis='RAW'").fetchone()[0]
         last_before=b.execute("select max(date) from canonical_bars where price_basis='RAW'").fetchone()[0]
         known={r[0] for r in b.execute("select ticker from symbol_identity")}
         lastd=dict(b.execute("select ticker,max(date) from canonical_bars where price_basis='RAW' group by ticker").fetchall())
-        prev_close={}
-        rep=dict(started_utc=now.isoformat(),files=len(files),bad_files=[],unknown_tickers=[],inserted=0,rejected={},revisions=0,tickers_updated=0,new_dates={})
-        newbars=[];revs=[];sha_cache={}
+        canon={(t,d):c for t,d,c in b.execute("select ticker,date,close from canonical_bars where price_basis='RAW'")}
+        open_rev={(t,d,round(cb,6)) for t,d,cb in b.execute("select ticker,date,close_b from conflicts where kind='INGEST_REVISION'")}
+        rep=dict(started_utc=now.isoformat(),files=len(files),bad_files=[],unknown_tickers=[],inserted=0,rejected={},revisions_new=0,revisions_already_recorded=0,tickers_updated=0,new_dates={},db_sha256_before=_sha(db))
+        newbars=[];revs=[]
         for f in files:
             raw=f.read_bytes();sha=hashlib.sha256(raw).hexdigest()[:16]
             try:
@@ -72,39 +79,39 @@ def ingest(src,db,today=None,now=None):
             except Exception as e:
                 rep["bad_files"].append(f"{f.name}: {type(e).__name__}");continue
             if t not in known:rep["unknown_tickers"].append(t);continue
-            ld=lastd.get(t)
+            ld=lastd.get(t);seen=set()
             for i,r in enumerate(ses):
                 if not isinstance(r,dict):rep["rejected"]["NOT_AN_OBJECT"]=rep["rejected"].get("NOT_AN_OBJECT",0)+1;continue
                 d=r.get("date")
-                if ld and isinstance(d,str) and d<=ld:
-                    continue  # existing history is never rewritten (revisions of the last bar are flagged below)
+                if not isinstance(d,str):rep["rejected"]["BAD_DATE"]=rep["rejected"].get("BAD_DATE",0)+1;continue
+                if d in seen:rep["rejected"]["DUPLICATE_DATE_IN_SOURCE"]=rep["rejected"].get("DUPLICATE_DATE_IN_SOURCE",0)+1;continue
+                seen.add(d)
+                if ld and d<=ld:
+                    # EVERY already-canonical date is compared; history is never rewritten, disagreement is recorded as an OPEN conflict.
+                    cc=canon.get((t,d))
+                    if cc and cc>0 and _num(r.get("close")) and r["close"]>0:
+                        pct=abs(float(r["close"])/cc-1)*100
+                        if pct>REVISION_TOL_PCT:
+                            key=(t,d,round(float(r["close"]),6))
+                            if key in open_rev:rep["revisions_already_recorded"]+=1
+                            else:revs.append((t,d,cc,float(r["close"]),pct));open_rev.add(key)
+                    continue
                 bad=validate_row(r,t,today)
                 if bad:rep["rejected"][bad]=rep["rejected"].get(bad,0)+1;continue
                 newbars.append((t,d,float(r["open"]),float(r["high"]),float(r["low"]),float(r["close"]),float(r["volume"]),f"sha256:{sha}#{i}",f"data/history/{f.name}"))
-        # revision check on dates the DB already has (last canonical date only is cheap and is where scrapes revise)
-        for f in files:
-            try:j=json.loads(f.read_bytes().decode("utf-8"));t=j["ticker"]
-            except Exception:continue
-            ld=lastd.get(t)
-            if not ld or t not in known:continue
-            for r in j["sessions"]:
-                if isinstance(r,dict) and r.get("date")==ld and _num(r.get("close")):
-                    cc=b.execute("select close,evidence_tier from canonical_bars where ticker=? and date=? and price_basis='RAW'",(t,ld)).fetchone()
-                    if cc and cc[0]>0:
-                        pct=abs(float(r["close"])/cc[0]-1)*100
-                        if pct>REVISION_TOL_PCT:revs.append((t,ld,cc[0],float(r["close"]),pct))
         if len(rep["bad_files"])>MAX_BAD_FILE_FRAC*len(files):raise IngestError(f"too many unreadable source files: {len(rep['bad_files'])}/{len(files)}")
+        rep["revisions_new"]=len(revs);rep["revision_tickers"]=sorted({r[0] for r in revs})
+        if not newbars and not revs:
+            rep.update(status="NOOP",last_session=last_before,rows_before=rows_before,rows_after=rows_before,db_unchanged=True)
+            return rep
         by_date={}
         for x in newbars:by_date.setdefault(x[1],set()).add(x[0])
-        if not newbars:
-            rep.update(status="NOOP",last_session=last_before,rows_before=rows_before,rows_after=rows_before)
-            return rep
-        # partial-scrape guard: each NEW date needs coverage vs the previous session's ticker count
-        prev_cnt=b.execute("select count(distinct ticker) from canonical_bars where price_basis='RAW' and date=?",(last_before,)).fetchone()[0]
-        newest=max(by_date)
-        if len(by_date[newest])<MIN_COVERAGE*prev_cnt:
-            raise IngestError(f"partial scrape: {len(by_date[newest])} tickers on {newest} < {MIN_COVERAGE:.0%} of {prev_cnt}")
-        if newest<last_before:raise IngestError("session date would move backwards")
+        if newbars:
+            prev_cnt=b.execute("select count(distinct ticker) from canonical_bars where price_basis='RAW' and date=?",(last_before,)).fetchone()[0]
+            newest=max(by_date)
+            if len(by_date[newest])<MIN_COVERAGE*prev_cnt:
+                raise IngestError(f"partial scrape: {len(by_date[newest])} tickers on {newest} < {MIN_COVERAGE:.0%} of {prev_cnt}")
+            if newest<last_before:raise IngestError("session date would move backwards")
         _hook("before_insert")
         cur=b.cursor();cur.execute("begin")
         for (t,d,o,h,l,c,v,ref,path) in newbars:
@@ -114,35 +121,40 @@ def ingest(src,db,today=None,now=None):
                 (t,d,o,h,l,c,v,SOURCE_ID,"daily ingest; uncorroborated single scrape"))
             rep["inserted"]+=cur.rowcount
         for (t,d,ca,cb,pct) in revs:
-            cur.execute("insert into conflicts(ticker,date,kind,source_a,close_a,source_b,close_b,pct_diff,resolution) values(?,?,'INGEST_REVISION','canonical',?, ?,?,?,'OPEN_CANONICAL_UNCHANGED')",(t,d,ca,SOURCE_ID,cb,pct))
-        rep["revisions"]=len(revs);rep["revision_tickers"]=sorted({r[0] for r in revs})
+            cur.execute("insert into conflicts(ticker,date,kind,source_a,close_a,source_b,close_b,pct_diff,resolution) values(?,?,'INGEST_REVISION','canonical',?,?,?,?,'OPEN_CANONICAL_UNCHANGED')",(t,d,ca,SOURCE_ID,cb,pct))
         rep["new_dates"]={d:len(s) for d,s in sorted(by_date.items())};rep["tickers_updated"]=len({x[0] for x in newbars})
         rows_after=cur.execute("select count(*) from canonical_bars where price_basis='RAW'").fetchone()[0]
         last_after=cur.execute("select max(date) from canonical_bars where price_basis='RAW'").fetchone()[0]
         if rows_after<rows_before:raise IngestError("canonical rows decreased")
         if last_after<last_before:raise IngestError("last session decreased")
-        rep.update(status="UPDATED",rows_before=rows_before,rows_after=rows_after,last_session=last_after,prev_last_session=last_before)
+        rep.update(status="UPDATED" if newbars else "REVISIONS_RECORDED",rows_before=rows_before,rows_after=rows_after,last_session=last_after,prev_last_session=last_before)
         cur.execute("insert or replace into audit_metadata(key,value) values(?,?)",(f"ingest_{now.strftime('%Y%m%dT%H%M%SZ')}",json.dumps(rep,ensure_ascii=False,sort_keys=True)))
         cur.execute("commit")
-        if b.execute("pragma integrity_check").fetchone()[0]!="ok":raise IngestError("integrity_check failed on staged DB")
-        b.close();_fsync_file(staged);_hook("before_swap")
-        shutil.copy2(db,str(db)+".prev");os.chmod(staged,0o644);os.replace(staged,db);_fsync_dir(db.parent)
+        if _integrity(b)!="ok":raise IngestError("integrity_check failed on staged DB")
+        b.close();b=None;_fsync_file(staged);_hook("before_swap")
+        prev=pathlib.Path(str(db)+".prev");ptmp=pathlib.Path(str(prev)+".tmp");shutil.copy2(db,ptmp);_fsync_file(ptmp);os.replace(ptmp,prev)
+        _hook("after_prev")
+        rep["db_sha256_after"]=_sha(staged);os.chmod(staged,0o644);os.replace(staged,db);_fsync_dir(db.parent);rep["db_unchanged"]=False
         return rep
-    except BaseException:
-        raise
     finally:
-        try:b.close()
-        except Exception:pass
+        if b is not None:
+            try:b.close()
+            except Exception:pass
         if staged.exists():
             try:staged.unlink()
             except OSError:pass
 def main(argv=None):
-    p=argparse.ArgumentParser();p.add_argument("--src",required=True);p.add_argument("--db",required=True);p.add_argument("--report",default=None);p.add_argument("--today")
+    p=argparse.ArgumentParser();p.add_argument("--src",required=True);p.add_argument("--db",required=True);p.add_argument("--report",default=None);p.add_argument("--today");p.add_argument("--errlog",default=None)
     x=p.parse_args(argv);today=datetime.date.fromisoformat(x.today) if x.today else datetime.datetime.now(datetime.timezone.utc).date()
     try:rep=ingest(x.src,x.db,today=today);rc=0
     except BaseException as e:
-        rep=dict(status="FAILED",error=f"{type(e).__name__}: {e}");rc=2;sys.stderr.write(traceback.format_exc())
+        rep=dict(status="FAILED",error=f"{type(e).__name__}: {e}",failed_utc=datetime.datetime.now(datetime.timezone.utc).isoformat());rc=2;sys.stderr.write(traceback.format_exc())
+        try:rep["db_sha256_now"]=_sha(x.db)
+        except Exception:rep["db_sha256_now"]=None
+        if x.errlog:
+            ep=pathlib.Path(x.errlog);ep.parent.mkdir(parents=True,exist_ok=True)
+            with open(ep,"a",encoding="utf-8") as f:f.write(json.dumps(dict(ts=rep["failed_utc"],job="ingest_daily",error=rep["error"],db_sha256_now=rep["db_sha256_now"]),ensure_ascii=False)+"\n");f.flush();os.fsync(f.fileno())
     if x.report:
         pth=pathlib.Path(x.report);pth.parent.mkdir(parents=True,exist_ok=True);pth.write_text(json.dumps(rep,ensure_ascii=False,indent=1,sort_keys=True),encoding="utf-8")
-    print(json.dumps({k:rep.get(k) for k in ("status","error","inserted","rejected","revisions","tickers_updated","new_dates","last_session")},ensure_ascii=False));return rc
+    print(json.dumps({k:rep.get(k) for k in ("status","error","inserted","rejected","revisions_new","revisions_already_recorded","tickers_updated","new_dates","last_session")},ensure_ascii=False));return rc
 if __name__=="__main__":sys.exit(main())
