@@ -7,7 +7,7 @@ function selectCloseMarks(records, opts={}){
  for(const r of records){
   const key=r.ticker+'|'+r.date,reasons=[];
   if(seen.has(key))reasons.push('duplicate_key');seen.add(key);
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(r.date||''))reasons.push('bad_date');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(r.date||''))reasons.push('bad_date');
   if(!(Number.isFinite(Number(r.close))&&Number(r.close)>0&&r.close!==''&&r.close!=null))reasons.push('bad_close');
   if(r.sourceIndependentlyChecked!==true||!r.independentEvidenceUrl||!r.sourceUrl)reasons.push('unverified_independent_source');
   if(!['RAW_UNADJUSTED','ADJUSTED_WITH_VERIFIED_FACTOR'].includes(r.priceBasis))reasons.push('unresolved_price_basis');
