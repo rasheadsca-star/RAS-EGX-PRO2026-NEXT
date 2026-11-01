@@ -14,4 +14,7 @@ assert(blocked.reasons.includes('BLOCKED_BY_POLICY'));
 assert.equal(COST_PER_SIDE,0.0035);
 assert.equal(certifiedForwardWindow(h,h.sessions.slice(-62)),false);
 assert.equal(certifiedForwardWindow({...h,licenseVerified:true,licenseRef:'test',officialSessionCalendarVerified:true,officialSessionDates:h.sessions.map(x=>x.date)},h.sessions.slice(-62)),false);
+const ui=require('node:fs').readFileSync('paper-v4/ranking.html','utf8');
+assert.match(ui,/نسب الربح التاريخية محجوبة/);
+assert.doesNotMatch(ui,/data\.forwardResearch\.winRatePct/);
 console.log('V4 regression guards pass: stale/blocked/verification and forward evidence');
