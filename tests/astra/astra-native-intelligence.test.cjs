@@ -12,7 +12,7 @@ function repositoryHandoffStatus(root){
 function assertRejectedWithoutMutation(root){
  const appPath=path.join(root,'astra-prod/app/data.json');
  const before=fs.readFileSync(appPath,'utf8');
- assert.throws(()=>require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'}),/Command failed/);
+ assert.throws(()=>require('child_process').execFileSync(process.execPath,[path.join(root,'scripts/astra/native/astra-intelligence.cjs')],{cwd:root,stdio:'pipe'}),e=>String(e.stderr||'').includes('Immutable handoff rejected:'));
  assert.equal(fs.readFileSync(appPath,'utf8'),before,'stale handoff must not rewrite Astra decision');
 }
 
