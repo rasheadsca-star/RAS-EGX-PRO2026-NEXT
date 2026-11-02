@@ -54,6 +54,10 @@ class Gate(unittest.TestCase):
         self.assertIn("IDENTITY_UNVERIFIED",self.reasons(s,"UPT"))
         self.assertNotIn("UPT",[x["ticker"] for x in s["ranked"]+s["watchlist"]])
         self.assertEqual(s["counts"]["first_blocking_reason"]["IDENTITY_UNVERIFIED"],1)
+        self.assertEqual(s["counts"]["provisional_source_bars"],1)
+        self.assertEqual(s["market"]["state"],"UNKNOWN")
+        from egx_decision import render
+        self.assertIn("تحذير جودة المصدر",render.page(s))
         self.assertFalse(s["strategy_approved"])
     def test_stale_ticker_blocked(self):
         s,_=self.snap({"OLD":dict(close=up(),last_n=132)});self.assertIn("STALE",self.reasons(s,"OLD"))
