@@ -9,6 +9,8 @@ on:
   pull_request:
     paths:
       - 'scripts/independent/history-quality-audit.cjs'
+      - 'scripts/research/build-trend-divergence.cjs'
+      - 'tests/trend-divergence.test.cjs'
       - 'scripts/independent/official-egx-report-gate.cjs'
       - 'tests/independent/official-egx-report-gate.test.cjs'
       - 'tests/independent/history-quality-audit.test.cjs'
@@ -28,6 +30,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/independent/history-quality-audit.cjs'
+      - 'scripts/research/build-trend-divergence.cjs'
+      - 'tests/trend-divergence.test.cjs'
       - 'scripts/independent/official-egx-report-gate.cjs'
       - 'tests/independent/official-egx-report-gate.test.cjs'
       - 'tests/independent/history-quality-audit.test.cjs'
@@ -62,6 +66,8 @@ jobs:
       - name: Validate independent paper engine
         run: |
           node --check scripts/independent/official-egx-report-gate.cjs
+          node --check scripts/research/build-trend-divergence.cjs
+          node --test tests/trend-divergence.test.cjs
           node --check scripts/independent/history-quality-audit.cjs
           node --check scripts/independent/egx-independent-paper.cjs
           node --check scripts/independent/walkforward-backtest.cjs
