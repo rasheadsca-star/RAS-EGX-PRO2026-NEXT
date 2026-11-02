@@ -33,6 +33,8 @@ jobs:
           if [ -n "$USER_SESSION" ]; then echo "session=$USER_SESSION" >> "$GITHUB_OUTPUT"; fi
       - name: Install PDF text parser
         run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - name: Install geometric PDF parsing dependency
+        run: python3 -m pip install 'pymupdf>=1.24,<2'
       - name: Official bulletin — verify matching trading date
         id: fetch
         continue-on-error: true
@@ -97,5 +99,5 @@ jobs:
               subprocess.run(['gh','issue','create','-R',os.environ['REPO'],'--title',title,'--body',body],check=True)
           PY
       - name: Fail clearly until FULL verified EOD + recalculation
-        if: steps.fetch.outcome != 'success' || steps.gate.outcome == 'failure'
+        if: steps.fetch.outcome != 'success' || steps.quality.outcome != 'success' || steps.gate.outcome == 'failure'
         run: exit 2
