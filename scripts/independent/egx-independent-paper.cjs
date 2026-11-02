@@ -5,6 +5,7 @@ const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
 const {walkForwardBacktest,strictProvenance,observedSessionGap}=require('./walkforward-backtest.cjs');
 const {copiedBarReasons}=require('./stale-bar-detector.cjs');
 const {pendingCorporateActionCandidates}=require('./corporate-action-gate.cjs');
+const {reportCheck}=require('./official-egx-report-gate.cjs');
 const read=p=>JSON.parse(fs.readFileSync(path.join(ROOT,p),'utf8'));
 const day=s=>typeof s==='string'?s.slice(0,10):'';
 const finite=x=>typeof x==='number'&&Number.isFinite(x);
@@ -160,6 +161,13 @@ function evaluate({price,handoff,symbols,loadHistory,session,minimumRows=190,cor
 }
 function main(){
  const price=read('data/stable/v15-price-truth.json');
+ // Never replace a published paper snapshot with a newer provider-only session.
+ // Missing/invalid official EGX PDF means the previous files remain byte-for-byte intact.
+ const official=reportCheck(ROOT,day(price.expectedSession),price);
+ if(!official.ok){
+  console.log('EGX_INDEPENDENT_PAPER_FROZEN '+JSON.stringify(official));
+  return;
+ }
  // Astra G22 is informational for independent research, never a required input.
  // Missing or malformed handoff must not disable valid, dated paper-only research.
  let handoff=null;
