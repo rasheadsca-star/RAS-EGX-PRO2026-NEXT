@@ -15,7 +15,7 @@ class OfficialPipelineTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory()
   base=Path(self.tmp.name)
-  self.db=base/"db.sqlite";self.pdf=base/"official.pdf";self.mapped=base/"mapped.json"
+  self.db=base/"db.sqlite";self.pdf=base/"official.pdf";self.mapped=base/"mapped.json";self.bulletin=base/"bulletin.json"
   self.pdf.write_bytes(b"%PDF-fixture-only")
   c=sqlite3.connect(self.db);c.executescript(SCHEMA)
   c.execute("insert into symbol_identity values (?,?,?)",("TEST","Test Maritime Company","EGP"))
@@ -24,6 +24,7 @@ class OfficialPipelineTests(unittest.TestCase):
   c.commit();c.close()
   self.items=[dict(page=17,rank=1,market="MAIN",name="Test Maritime Company",currency="EGP",status="CANDIDATE",open=10,high=11,low=9,close=10.5,chg_pct=5,volume=1000,trades=10,value_traded=10000),
               dict(page=17,rank=2,market="MAIN",name="Other Company",currency="USD",status="CANDIDATE",open=10,high=11,low=9,close=10,chg_pct=0,volume=500,trades=5)]
+  self.bulletin.write_text(json.dumps({"session":"2026-11-02","pdf_sha256":sha(self.pdf),"items":self.items}))
   self.map=resolve(self.items,self.db,"2026-11-01",sha(self.pdf))
   self.mapped.write_text(json.dumps(self.map))
  def tearDown(self):self.tmp.cleanup()
@@ -40,7 +41,7 @@ class OfficialPipelineTests(unittest.TestCase):
    merge(self.db,self.pdf,self.mapped,"2026-11-02")
  def test_import_twice_noop_and_backup(self):
   start=sha(self.db)
-  self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True)["inserted"],1)
+  self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)["inserted"],1)
   self.assertEqual(sha(Path(str(self.db)+".prev")),start)
   after=sha(self.db)
   self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True)["outcome"],"NOOP")
@@ -54,12 +55,17 @@ class OfficialPipelineTests(unittest.TestCase):
  def test_injected_failure_preserves_bytes(self):
   start=sha(self.db)
   with self.assertRaisesRegex(MergeError,"INJECTED_BEFORE_SWAP"):
-   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,"before_swap")
+   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,"before_swap",bulletin=self.bulletin)
   self.assertEqual(sha(self.db),start)
  def test_pdf_tamper_rejected(self):
   self.pdf.write_bytes(self.pdf.read_bytes()+b"tamper")
   with self.assertRaisesRegex(MergeError,"PDF_SHA256_MISMATCH"):
    merge(self.db,self.pdf,self.mapped,"2026-11-02",True)
+ def test_source_row_tamper_rejected(self):
+  body=json.loads(self.mapped.read_text());body["items"][0]["close"]=10.6
+  self.mapped.write_text(json.dumps(body))
+  with self.assertRaisesRegex(MergeError,"STAGED_ROW_CHANGED"):
+   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
  def test_replay_conflict_rejected(self):
   merge(self.db,self.pdf,self.mapped,"2026-11-02",True)
   start=sha(self.db);body=json.loads(self.mapped.read_text())
