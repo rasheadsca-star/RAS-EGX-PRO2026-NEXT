@@ -34,6 +34,15 @@ class OfficialPipelineTests(unittest.TestCase):
   self.assertEqual(self.map["items"][1]["resolution_status"],"QUARANTINED_NON_EGP")
   bad={**self.items[0],"close":13,"chg_pct":5}
   self.assertIsNone(resolve([bad],self.db,"2026-11-01")["items"][0]["ticker"])
+ def test_provisional_alias_cannot_authorize_mapping(self):
+  c=sqlite3.connect(self.db)
+  c.execute("create table official_alias_registry(alias_normalized text primary key,ticker text,status text,first_session text,source_sha256 text,evidence_json text)")
+  c.execute("insert into official_alias_registry values (?,?,?,?,?,?)",("new verified name","TEST","PROVISIONAL","2026-11-01","source","{}"))
+  c.commit();c.close()
+  changed={**self.items[0],"name":"New Verified Name"}
+  self.assertIsNone(resolve([changed],self.db,"2026-11-01")["items"][0]["ticker"])
+  c=sqlite3.connect(self.db);c.execute("update official_alias_registry set status='VERIFIED'");c.commit();c.close()
+  self.assertEqual(resolve([changed],self.db,"2026-11-01")["items"][0]["ticker"],"TEST")
  def test_wrapped_name_normalization(self):
   self.assertEqual(similarity("Test Maritime\n Company","Test Maritime Company"),1)
  def test_research_opt_in_required(self):
