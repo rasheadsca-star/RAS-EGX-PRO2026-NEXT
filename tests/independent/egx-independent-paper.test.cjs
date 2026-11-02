@@ -176,7 +176,7 @@ test('copied positive-volume OHL bars block indicator eligibility without losing
  assert.deepEqual(x.recommendations,[]);
 });
 
-test('independent CLI keeps dated research available when Astra handoff is missing or malformed',()=>{
+test('independent CLI preserves prior snapshot without official PDF regardless of Astra handoff',()=>{
  const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
  const {spawnSync}=require('node:child_process');
  const script=path.resolve(__dirname,'../../scripts/independent/egx-independent-paper.cjs');
