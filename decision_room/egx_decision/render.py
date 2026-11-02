@@ -68,6 +68,9 @@ function main(){
   if(all.length)show(all[0].ticker);else det.append(E('div',null,'لا أسهم اجتازت بوابات الجودة اليوم. راجع أسباب الحجب في «صحة البيانات».'))}
  // data health
  const h=E('section','card');h.style.marginTop='12px';h.append(E('h2',null,'صحة البيانات — لماذا حُجب الآخرون؟'));
+ const groups=D.counts.blocked_categories||{};const labels={DATA_REVIEW:'تحتاج مراجعة بيانات قبل أي إشارة',LOW_LIQUIDITY:'سيولة غير كافية للتنفيذ',SHORT_HISTORY:'تاريخ غير كافٍ للمؤشرات',OTHER:'ملاحظات أخرى'};
+ const summary=E('div','grid3');Object.keys(labels).forEach(k=>{const c=E('div','m');c.append(E('small',null,labels[k]),E('div','lab',String(groups[k]||0)));summary.append(c)});h.append(summary);
+ h.append(E('p','mut','هذه الأسهم ليست توصيات. يمكن دراستها وفحص أسباب الحجب دون رفع بوابة التداول الورقي. بيانات السوق الأصلية لا تتغير.'));
  const wf=D.counts.first_blocking_reason||{};const t=E('table');const trh=E('tr');['السبب (أول بوابة)','عدد الرموز'].forEach(x=>trh.append(E('th',null,x)));t.append(trh);
  const names={STALE:'آخر شمعة قديمة',CALENDAR_GAP:'فجوات في الجلسات',HISTORY:'تاريخ قصير',NO_TRADING:'لا تداول',FLAT_PRICE:'سعر ثابت',LIQUIDITY:'سيولة أقل من مليون جنيه',OHLC:'شمعة غير متسقة',CONFLICT:'تعارض أسعار',CORPORATE_ACTION:'حدث شركات',JUMP:'حركة >11% غير محسومة'};
  Object.keys(wf).forEach(k=>{if(wf[k]){const r=E('tr');r.append(E('td',null,names[k]||k),E('td',null,String(wf[k])));t.append(r)}});h.append(t);
