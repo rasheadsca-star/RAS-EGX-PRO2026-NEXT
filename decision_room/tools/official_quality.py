@@ -10,7 +10,7 @@ class QualityError(ValueError):
 
 def inspect(data, min_rows=180):
     errors = []
-    counts = {"total": 0, "egp": 0, "usd": 0, "invalid": 0, "duplicate": 0}
+    counts = {"total": 0, "egp": 0, "usd": 0, "invalid": 0, "duplicate": 0, "quarantined": 0, "egp_valid": 0}
     items = data.get("items")
     if not isinstance(items, list):
         raise QualityError("ITEMS_NOT_LIST")
@@ -48,11 +48,20 @@ def inspect(data, min_rows=180):
             errors.append("NONFINITE_OHLCV:%d" % i)
             continue
         op, hi, lo, close, vol = vals
-        if min(op, hi, lo, close) <= 0 or vol < 0 or hi < max(op, close) or lo > min(op, close):
+        valid_ohlc = min(op, hi, lo, close) > 0 and vol >= 0 and hi >= max(op, close) and lo <= min(op, close)
+        if x.get("status") == "CHECK":
+            counts["quarantined"] += 1
+            if valid_ohlc or x.get("reason") != "INCONSISTENT_OHLC":
+                errors.append("UNEXPECTED_QUARANTINE:%d" % i)
+        elif x.get("status") != "CANDIDATE" or not valid_ohlc:
             counts["invalid"] += 1
-            errors.append("INVALID_OHLCV:%d" % i)
-        if x.get("status") != "CANDIDATE":
-            errors.append("QUARANTINED_ROW:%d" % i)
+            errors.append("UNQUARANTINED_INVALID_OHLCV:%d" % i)
+        elif currency == "EGP":
+            counts["egp_valid"] += 1
+    if counts["egp_valid"] < min_rows:
+        errors.append("INSUFFICIENT_VALID_EGP:%s<%s" % (counts["egp_valid"], min_rows))
+    if counts["quarantined"] > max(10, len(items)//10):
+        errors.append("TOO_MANY_QUARANTINED")
     if data.get("verified_for_trading") is not False:
         errors.append("TRADING_FLAG_NOT_FALSE")
     return {"ok": not errors, "session": data.get("session"), "counts": counts,
