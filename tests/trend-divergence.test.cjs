@@ -10,3 +10,23 @@ test('future bars cannot change a historical signal',()=>{const d=make(),session
 test('pivot needs two right-hand completed bars',()=>{assert.deepEqual(pivots([1,2,5,2,1],2,3,false),[]);assert.deepEqual(pivots([1,2,5,2,1],2,4,false),[2]);});
 test('no repeated breakout on following day',()=>{const d=make();d.sessions.push({date:'2026-04-16',close:104});assert.notEqual(run(d).status,'SIGNAL');});
 test('stale, malformed, discontinuous and mismatched data fail closed',()=>{let d=make();d.staleData=true;assert.equal(run(d).status,'BLOCKED');d=make();d.sessions.at(-1).close=NaN;assert.equal(run(d).status,'BLOCKED');d=make();d.sessions.at(-1).close=300;assert.equal(run(d).status,'BLOCKED');d=make();assert.equal(detect(d,'2026-04-16').status,'BLOCKED');});
+
+test('Pages trend build preserves last snapshot when fetch session or official PDF is missing',()=>{
+ const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),{spawnSync}=require('node:child_process');
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'egx-trend-freeze-'));
+ const script=path.resolve(__dirname,'../scripts/research/build-trend-divergence.cjs');
+ try{
+  fs.mkdirSync(path.join(root,'data/research'),{recursive:true});
+  const output=path.join(root,'data/research/trend-divergence.json');
+  const sentinel='{"session":"2026-10-29","mode":"RESEARCH_ONLY","rows":[]}';
+  fs.writeFileSync(output,sentinel);
+  fs.writeFileSync(path.join(root,'data/fetch-status.json'),JSON.stringify({ok:true,marketRows:215}));
+  for(const status of [{ok:true,marketRows:215},{ok:true,expectedSession:'2026-11-01'}]){
+   fs.writeFileSync(path.join(root,'data/fetch-status.json'),JSON.stringify(status));
+   const result=spawnSync(process.execPath,[script],{cwd:root,encoding:'utf8'});
+   assert.equal(result.status,0,result.stderr);
+   assert.match(result.stdout,/TREND_DIVERGENCE_FROZEN/);
+   assert.equal(fs.readFileSync(output,'utf8'),sentinel);
+  }
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+});
