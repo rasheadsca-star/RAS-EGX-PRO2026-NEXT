@@ -1,6 +1,6 @@
 {
   "schemaVersion": "16.3.4-session-aware-price-truth",
-  "generatedAt": "2026-11-02T20:27:49.513Z",
+  "generatedAt": "2026-11-02T20:46:55.887Z",
   "expectedSession": "2026-11-02",
   "ready": true,
   "executionGrade": true,
@@ -14,10 +14,14 @@
     "realFetch": true,
     "inputRows": 216,
     "verifiedExpectedSessionRows": 209,
-    "sourceSessionEvidenceCoveragePct": 96.76
+    "sourceSessionEvidenceCoveragePct": 96.8,
+    "primaryVerifiedExpectedSessionRows": 209,
+    "secondSourceVerifiedSessionRows": 0,
+    "secondSourceVerifiedSessionTickers": [],
+    "secondSourceEvidencePath": "data/stable/v16-market-second-source-evidence.json"
   },
-  "acceptedRows": 167,
-  "rejectedRows": 49,
+  "acceptedRows": 168,
+  "rejectedRows": 48,
   "droppedRows": 0,
   "updatedHistoryFiles": 167,
   "missingHistoryFiles": [],
@@ -411,6 +415,18 @@
       "jumpPct": 5.27,
       "mode": "PRECISE_PUBLIC_SOURCE_WITH_EXPLICIT_SESSION_EVIDENCE",
       "warnings": []
+    },
+    {
+      "ticker": "NAHO",
+      "date": "2026-11-02",
+      "close": 0.12,
+      "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+      "originalRejectReason": "REPORTED_CHANGE_MISMATCH",
+      "provider": "STOCKANALYSIS_EGX_HISTORY",
+      "sourceSessionDate": "2026-11-02",
+      "sourceSessionEvidence": "primary_exact_session_close_independently_confirmed_by_stockanalysis_egx_history",
+      "priceDifferencePct": 0,
+      "secondSourceConfirmed": true
     }
   ],
   "sampleRejected": [
@@ -483,17 +499,6 @@
       "rejected": true,
       "ticker": "DEIN",
       "reason": "SOURCE_SESSION_UNKNOWN"
-    },
-    {
-      "rejected": true,
-      "ticker": "NAHO",
-      "reason": "REPORTED_CHANGE_MISMATCH",
-      "close": 0.12,
-      "previousClose": 0.13,
-      "reportedChangePct": -2.38,
-      "impliedChangePct": -7.69,
-      "source": "mubasher_symbol_pages_precise_enriched",
-      "sourceSessionDate": "2026-11-02"
     },
     {
       "rejected": true,
@@ -2051,5 +2056,80 @@
       "reason": "HISTORY_FILE_MISSING"
     }
   ],
-  "sampleDropped": []
+  "sampleDropped": [],
+  "secondSourceReconciliation": {
+    "enabled": true,
+    "failClosed": true,
+    "expectedSession": "2026-11-02",
+    "targetRejectedRowsThisRun": 49,
+    "resolverApprovedRowsThisRun": 1,
+    "recoveredRowsThisRun": 1,
+    "unresolvedRows": 48,
+    "recoveredTickersThisRun": [
+      "NAHO"
+    ],
+    "cumulativeSecondSourceSessionTickers": [],
+    "unresolvedTickers": [
+      "DTPP",
+      "POUL",
+      "ARVA",
+      "ORHD",
+      "EPPK",
+      "MEGM",
+      "ARAB",
+      "DCCC",
+      "DEIN",
+      "SEIGA",
+      "EOSB",
+      "BONY",
+      "TANM",
+      "VLMRA",
+      "KORA",
+      "SEIG",
+      "UBEE",
+      "KRDI",
+      "CNFN",
+      "AIHC",
+      "AIDC",
+      "QNBE",
+      "TALM",
+      "OCPH",
+      "GGRN",
+      "EAST",
+      "GPIM",
+      "DGTZ",
+      "VLMR",
+      "VALU",
+      "CLHO",
+      "TAQA",
+      "EGBE",
+      "ACAP",
+      "NAPR",
+      "NARE",
+      "EPCO",
+      "ELWA",
+      "GMCI",
+      "CPME",
+      "TYCN",
+      "CRST",
+      "GTEX",
+      "ELNA",
+      "EGSA",
+      "ACTF",
+      "IRAX",
+      "TORA"
+    ],
+    "historyResults": [
+      {
+        "ticker": "NAHO",
+        "merged": true,
+        "provider": "STOCKANALYSIS_EGX_HISTORY",
+        "close": 0.12,
+        "mode": "PRIMARY_OHLC_SECOND_SOURCE_CLOSE_CONFIRMED",
+        "createdHistorySeed": false
+      }
+    ],
+    "changesAlphaOrRanking": false,
+    "changesEntryStopTargetAllocation": false
+  }
 }
