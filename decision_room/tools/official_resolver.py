@@ -24,6 +24,12 @@ def load_reference(db,previous_session):
             currencies[t]=cur
         for name,t in c.execute("select name_en,ticker from official_session where session_date=? and ticker is not null",(previous_session,)):
             if name and t in currencies:names[t].append(name)
+        # Persisted aliases are only reusable after an independent approval.
+        # PROVISIONAL alias rows are NEVER accepted as mapping authority.
+        has_alias=c.execute("select 1 from sqlite_master where type='table' and name='official_alias_registry'").fetchone()
+        if has_alias:
+            for alias,t in c.execute("select alias_normalized,ticker from official_alias_registry where status='VERIFIED'"):
+                if t in currencies and alias:names[t].append(alias)
         return previous,names,currencies
     finally:c.close()
 def is_ohlc_ok(row):
