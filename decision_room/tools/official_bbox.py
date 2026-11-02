@@ -19,6 +19,11 @@ class LayoutError(ValueError):
 # landscape table layout. They are checked per cell (not guessed by order).
 SME_EDGES = (233.5,270.7,308,352,395,439,473.7,541,582.3,649.5,693.4)
 MAIN_EDGES = (277.4,321.4,375,419,463,524,558,642,684,758,802)
+# Earlier official EGX bulletin uses a narrower page, and shifted selected
+# main-market numeric columns even though left company/currency coordinates
+# are unchanged. Recovered from verified Nov 1 and Nov 2 source PDFs.
+MAIN_EDGES_1525 = (277.4,331.4,375.4,419.3,463.2,523.9,561.1,635.1,669.7,743.7,787.6)
+KNOWN_SIZES = ((1539,1088),(1525,1078))
 FIELDS = ("open","high","low","high52","low52","close","chg_pct",
           "value","pct_total","volume","trades")
 
@@ -38,7 +43,8 @@ def extract_stocks(pdf):
     items = []
     try:
         for ip, page in enumerate(doc):
-            if abs(page.rect.width - 1539) > 2 or abs(page.rect.height - 1088) > 2:
+            if not any(abs(page.rect.width-w)<2 and abs(page.rect.height-h)<2
+                       for w,h in KNOWN_SIZES):
                 continue
             words = page.get_text("words", sort=False)
             coord = collections.Counter(round(w[0]) for w in words
@@ -51,7 +57,7 @@ def extract_stocks(pdf):
                 raise LayoutError("AMBIGUOUS_STOCK_TABLE_LAYOUT")
             currency_x = 164.9 if sme else 192.2
             rank_x = 55.6 if sme else (30.3 if ip == 16 else 24.3)
-            right_edges = SME_EDGES if sme else MAIN_EDGES
+            right_edges = SME_EDGES if sme else (MAIN_EDGES if page.rect.width>1530 else MAIN_EDGES_1525)
             candidates = sorted((w for w in words if w[4] in ("EGP","USD")
                                   and abs(w[0]-currency_x) < 1 and w[1] > 50),
                                 key=lambda w: w[1])
