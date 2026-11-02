@@ -17,12 +17,12 @@ def load_reference(db,previous_session):
     c=sqlite3.connect("file:"+str(Path(db).resolve())+"?mode=ro",uri=True)
     try:
         previous={t:float(close) for t,close in c.execute(
-            "select ticker,close from canonical_bars where date=? and price_basis='RAW'",(previous_session,))}
+            "select ticker,close from canonical_bars where date=? and price_basis='RAW' and coalesce(evidence_tier,'')!='PROVISIONAL_SYMBOL_IDENTITY'",(previous_session,))}
         names=collections.defaultdict(list);currencies={}
         for t,en,cur in c.execute("select ticker,name_en,currency from symbol_identity"):
             if en:names[t].append(en)
             currencies[t]=cur
-        for name,t in c.execute("select name_en,ticker from official_session where session_date=? and ticker is not null",(previous_session,)):
+        for name,t in c.execute("select name_en,ticker from official_session where session_date=? and ticker is not null and resolution_status in ('RESOLVED_CONFIRMED_NAME_PREVCLOSE','VERIFIED','OFFICIAL_VERIFIED')",(previous_session,)):
             if name and t in currencies:names[t].append(name)
         # Persisted aliases are only reusable after an independent approval.
         # PROVISIONAL alias rows are NEVER accepted as mapping authority.
