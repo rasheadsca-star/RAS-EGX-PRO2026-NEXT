@@ -70,14 +70,14 @@ function main(){
  const h=E('section','card');h.style.marginTop='12px';h.append(E('h2',null,'صحة البيانات — لماذا حُجب الآخرون؟'));
  const groups=D.counts.blocked_categories||{};const labels={DATA_REVIEW:'تحتاج مراجعة بيانات قبل أي إشارة',LOW_LIQUIDITY:'سيولة غير كافية للتنفيذ',SHORT_HISTORY:'تاريخ غير كافٍ للمؤشرات',OTHER:'ملاحظات أخرى'};
  const summary=E('div','grid3');Object.keys(labels).forEach(k=>{const c=E('div','m');c.append(E('small',null,labels[k]),E('div','lab',String(groups[k]||0)));summary.append(c)});h.append(summary);
- h.append(E('p','mut','هذه الأسهم ليست توصيات. يمكن دراستها وفحص أسباب الحجب دون رفع بوابة التداول الورقي. بيانات السوق الأصلية لا تتغير.'));
- const wf=D.counts.first_blocking_reason||{};const t=E('table');const trh=E('tr');['السبب (أول بوابة)','عدد الرموز'].forEach(x=>trh.append(E('th',null,x)));t.append(trh);
- const names={STALE:'آخر شمعة قديمة',CALENDAR_GAP:'فجوات في الجلسات',HISTORY:'تاريخ قصير',NO_TRADING:'لا تداول',FLAT_PRICE:'سعر ثابت',LIQUIDITY:'سيولة أقل من مليون جنيه',OHLC:'شمعة غير متسقة',CONFLICT:'تعارض أسعار',CORPORATE_ACTION:'حدث شركات',JUMP:'حركة >11% غير محسومة'};
+ h.append(E('p','mut','التصنيفات الرئيسية حصرية، لكن السهم قد يكون محجوبًا لأكثر من سبب. يعرض الجدول أدناه أول سبب فقط، وليس كل الأسباب. لا تُرفع بوابة التداول الورقي بمجرد تصنيف السهم.'));
+ const overlaps=D.counts.blocked_reason_overlap||D.counts.any_reason||{};h.append(E('p','mut','انتشار أسباب الحجب (قد يُحسب السهم في أكثر من سبب):'));const detail=E('table');const header=E('tr');['سبب الحجب','عدد الأسهم المتأثرة'].forEach(x=>header.append(E('th',null,x)));detail.append(header);const names={STALE:'آخر شمعة قديمة',CALENDAR_GAP:'فجوات في الجلسات',HISTORY:'تاريخ قصير',NO_TRADING:'لا تداول',FLAT_PRICE:'سعر ثابت',LIQUIDITY:'سيولة أقل من مليون جنيه',OHLC:'شمعة غير متسقة',CONFLICT:'تعارض أسعار',CORPORATE_ACTION:'حدث شركات',JUMP:'حركة >11% غير محسومة'};Object.keys(overlaps).forEach(k=>{if(overlaps[k]){const tr=E('tr');tr.append(E('td',null,names[k]||k),E('td',null,String(overlaps[k])));detail.append(tr)}});h.append(detail);const wf=D.counts.first_blocking_reason||{};const t=E('table');const trh=E('tr');['السبب (أول بوابة)','عدد الرموز'].forEach(x=>trh.append(E('th',null,x)));t.append(trh);
+
  Object.keys(wf).forEach(k=>{if(wf[k]){const r=E('tr');r.append(E('td',null,names[k]||k),E('td',null,String(wf[k])));t.append(r)}});h.append(t);
- const f=E('input');f.placeholder='ابحث برمز محجوب…';f.style.margin='8px 0';h.append(f);
- const bt=E('table');h.append(bt);
- function rb(q){bt.replaceChildren();const th=E('tr');['الرمز','الفئة','آخر شمعة','أسباب الحجب'].forEach(x=>th.append(E('th',null,x)));bt.append(th);
-  D.blocked.filter(b=>!q||b.ticker.includes(q.toUpperCase())||(b.name||'').includes(q)).slice(0,200).forEach(b=>{const r=E('tr');r.append(E('td',null,b.ticker),E('td',null,labels[b.research_category]||'غير مصنف'),E('td','ltr',b.last_date||'—'),E('td',null,b.reasons.join(' | ')));bt.append(r)})}
+ const f=E('input');f.placeholder='ابحث برمز أو اسم سهم محجوب…';f.style.margin='8px 0';h.append(f);
+ const counter=E('p','mut');h.append(counter);const bt=E('table');h.append(bt);
+ function rb(q){const filtered=D.blocked.filter(b=>!q||b.ticker.includes(q.toUpperCase())||(b.name||'').includes(q));counter.textContent=`عرض ${Math.min(filtered.length,200)} من ${filtered.length} سهمًا مطابقًا`;bt.replaceChildren();const th=E('tr');['الرمز','الفئة','آخر شمعة','أسباب الحجب'].forEach(x=>th.append(E('th',null,x)));bt.append(th);
+  filtered.slice(0,200).forEach(b=>{const r=E('tr');r.append(E('td',null,b.ticker),E('td',null,labels[b.research_category]||'غير مصنف'),E('td','ltr',b.last_date||'—'),E('td',null,b.reasons.join(' | ')));bt.append(r)})}
  f.oninput=()=>rb(f.value);rb('');body.append(h);
  T($('#foot'),`المخطط ${D.schema} · SHA ${D.content_sha256.slice(0,12)} · مصدر الأسعار: قاعدة SQLite المركزية (RAW، للقراءة فقط). لا تحديث مباشر ولا أوامر مالية من هذه الصفحة.`)}
 function draw(c,hist){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);if(!hist.length)return;const a=hist.map(p=>p.close),lo=Math.min(...a),hi=Math.max(...a),pad=34;
