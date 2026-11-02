@@ -4,6 +4,7 @@ from .ingest import load,DataError
 from .quality import evaluate,waterfall
 from .screening import indicators,reasons
 from .ranking import split
+from .paper_scenarios import propose
 from .regime import compute as h1_compute
 def _name(ident,t):
     for col in("name_ar","name_en"):
@@ -32,6 +33,7 @@ def build(db,now=None,asof=None):
                  gate_research=bool(gates.research_ready.get(t,0)),gate_paper=bool(gates.paper_ready.get(t,0)),
                  levels=dict(status="UNAPPROVED_NO_TESTED_RULE",entry=None,stop=None,target1=None,target2=None,
                              note="لا دخول معتمد: لا توجد استراتيجية مثبتة ولم يُتحقق من خطوة السعر الرسمية"))
+        row['paper_scenarios']=propose(g,ind)
         rows.append(row)
     ranked,watch=split(rows)
     h1=h1_compute(data,session.date().isoformat())
