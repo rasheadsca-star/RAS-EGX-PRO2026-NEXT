@@ -22,6 +22,25 @@ class Gate(unittest.TestCase):
         r=[x for x in s["ranked"] if x["ticker"]=="UPT"][0]
         self.assertEqual(r["rank"],1);self.assertIsNone(r["levels"]["entry"]);self.assertEqual(r["levels"]["status"],"UNAPPROVED_NO_TESTED_RULE")
         self.assertFalse(s["strategy_approved"]);self.assertFalse(s["live_execution_enabled"]);self.assertEqual(s["verdict"],"NO_STRATEGY_APPROVED")
+    def test_daily_snapshot_has_paper_levels_but_never_executable(self):
+        s,_=self.snap({"UPT":dict(close=up())})
+        r=next(x for x in s["ranked"] if x["ticker"]=="UPT")
+        self.assertIn("paper_scenarios",r)
+        ps=r["paper_scenarios"]
+        self.assertFalse(ps["tradable"])
+        self.assertFalse(ps["tick_verified"])
+        self.assertGreater(len(ps["scenarios"]),0,"Qualified uptrend must expose research-only paper levels")
+        for plan in ps["scenarios"]:
+            self.assertFalse(plan["executable"])
+            self.assertFalse(plan["verified_tick"])
+            self.assertLess(plan["stop_raw"],plan["entry_raw"])
+            self.assertLess(plan["entry_raw"],plan["target1_raw"])
+            self.assertLess(plan["target1_raw"],plan["target2_raw"])
+        from egx_decision import render
+        html=render.page(s)
+        self.assertIn("سيناريوهات ورقية تجريبية",html)
+        self.assertIn("PAPER_SCENARIO_UNVALIDATED",html)
+        self.assertEqual(s["verdict"],"NO_STRATEGY_APPROVED")
     def test_downtrend_goes_to_watchlist_not_ranked_even_with_score(self):
         s,_=self.snap({"DWN":dict(close=down())})
         self.assertNotIn("DWN",[r["ticker"] for r in s["ranked"]]);self.assertIn("DWN",[r["ticker"] for r in s["watchlist"]])
