@@ -78,7 +78,7 @@ def extract_stocks(pdf):
                         + max(w[3] for w in name_words)) / 2
                 rank, anchor = min(anchors,
                                    key=lambda a: abs((a[1][1]+a[1][3])/2-ymid))
-                if abs((anchor[1][1]+anchor[3])/2-ymid) > 45:
+                if abs((anchor[1]+anchor[3])/2-ymid) > 45:
                     continue
                 lines = collections.defaultdict(list)
                 for w in name_words:
