@@ -24,15 +24,27 @@ class OfficialQualityTests(unittest.TestCase):
     def test_invalid_price(self):
         a = sample()
         a["items"][0]["low"] = 12
-        self.assertIn("INVALID_OHLCV:0", inspect(a)["errors"])
+        self.assertIn("UNQUARANTINED_INVALID_OHLCV:0", inspect(a)["errors"])
     def test_unknown_currency(self):
         a = sample()
         a["items"][0]["currency"] = "OTHER"
         self.assertIn("UNKNOWN_CURRENCY:0", inspect(a)["errors"])
-    def test_quarantine_fails_closed(self):
-        a = sample()
+    def test_labelled_anomaly_is_quarantined_not_imported(self):
+        a = sample(200)
         a["items"][0]["status"] = "CHECK"
-        self.assertFalse(inspect(a)["ok"])
+        a["items"][0]["reason"] = "INCONSISTENT_OHLC"
+        a["items"][0]["low"] = 12
+        r = inspect(a)
+        self.assertTrue(r["ok"])
+        self.assertEqual(r["counts"]["quarantined"], 1)
+        self.assertFalse(r["verified_for_trading"])
+    def test_excessive_anomalies_block_session(self):
+        a = sample(210)
+        for x in a["items"][:25]:
+            x["status"] = "CHECK"
+            x["reason"] = "INCONSISTENT_OHLC"
+            x["low"] = 12
+        self.assertIn("TOO_MANY_QUARANTINED", inspect(a)["errors"])
     def test_nonfinite_price(self):
         a = sample()
         a["items"][0]["close"] = float("nan")
