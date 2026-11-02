@@ -24,7 +24,7 @@ def fsync_dir(path):
     try:os.fsync(fd)
     finally:os.close(fd)
 
-def merge(db,pdf,mapping,session,research_allow_provisional=False,fail_at=None):
+def merge(db,pdf,mapping,session,research_allow_provisional=False,fail_at=None,bulletin=None):
     db=Path(db).resolve();pdf=Path(pdf).resolve()
     if not db.is_file() or not pdf.is_file():raise MergeError("MISSING_DATABASE_OR_SOURCE_PDF")
     if not research_allow_provisional:raise MergeError("UNVERIFIED_SYMBOL_MAPPING: research only; approval required")
@@ -36,6 +36,17 @@ def merge(db,pdf,mapping,session,research_allow_provisional=False,fail_at=None):
     if len({(r["market"],r["rank"]) for r in items})!=len(items):raise MergeError("DUPLICATE_MARKET_RANK")
     if meta.get("provisional")!=sum(bool(r.get("ticker")) for r in items):raise MergeError("MATCH_COUNT_MISMATCH")
     if any(r.get("currency")!="EGP" for r in items if r.get("ticker")):raise MergeError("NON_EGP_MAPPED")
+    if bulletin is None:raise MergeError("STAGED_BULLETIN_REQUIRED")
+    original=json.loads(Path(bulletin).read_text(encoding="utf-8"))
+    if original.get("pdf_sha256")!=digest or original.get("session")!=session:
+        raise MergeError("STAGED_SOURCE_DATE_OR_SHA_MISMATCH")
+    if len(original.get("items",[]))!=len(items):raise MergeError("STAGED_SOURCE_COUNT_MISMATCH")
+    for idx,mapped in enumerate(items):
+        raw=original["items"][idx]
+        if mapped.get("row_index")!=idx:raise MergeError("STAGED_ROW_ORDER_MISMATCH")
+        for field in ("page","rank","market","name","currency","open","high","low","close","chg_pct","volume","trades"):
+            if mapped.get(field)!=raw.get(field):
+                raise MergeError("STAGED_ROW_CHANGED:%d:%s"%(idx,field))
     before=sha(db)
     fd,p=tempfile.mkstemp(prefix=".official_stage_",suffix=".sqlite",dir=db.parent)
     os.close(fd);temp=Path(p);c=None
@@ -111,10 +122,10 @@ def main():
     p=argparse.ArgumentParser()
     for k in ("db","pdf","mapping","session"):p.add_argument("--"+k,required=True)
     p.add_argument("--research-allow-provisional",action="store_true")
-    p.add_argument("--fail-at",choices=["before_swap"]);p.add_argument("--out")
+    p.add_argument("--fail-at",choices=["before_swap"]);p.add_argument("--out");p.add_argument("--bulletin",required=True)
     a=p.parse_args()
     try:
-        result=merge(a.db,a.pdf,a.mapping,a.session,a.research_allow_provisional,a.fail_at)
+        result=merge(a.db,a.pdf,a.mapping,a.session,a.research_allow_provisional,a.fail_at,a.bulletin)
         if a.out:Path(a.out).write_text(json.dumps(result,indent=2))
         print(json.dumps(result))
     except MergeError as e:
