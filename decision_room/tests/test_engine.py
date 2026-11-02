@@ -72,6 +72,22 @@ class Gate(unittest.TestCase):
         self.assertEqual(s["ranked"],[]);self.assertEqual(s["watchlist"],[]);self.assertEqual(len(s["blocked"]),55);self.assertEqual(s["counts"]["passed"],0)
         from egx_decision import render
         html=render.page(s);self.assertIn("لا فرص اليوم",html)
+    def test_blocked_categories_and_paper_gate(self):
+        s,_=self.snap({"LOW":dict(close=up(),volume=1000.0),"STA":dict(close=up(seed=7),last_n=132)})
+        grouped=s["counts"]["blocked_categories"]
+        self.assertEqual(sum(grouped.values()),len(s["blocked"]))
+        low=next(x for x in s["blocked"] if x["ticker"]=="LOW")
+        stale=next(x for x in s["blocked"] if x["ticker"]=="STA")
+        self.assertEqual(low["research_category"],"LOW_LIQUIDITY")
+        self.assertEqual(stale["research_category"],"DATA_REVIEW")
+        self.assertNotIn("LOW",[x["ticker"] for x in s["ranked"]+s["watchlist"]])
+        self.assertFalse(s["strategy_approved"])
+    def test_blocked_categories_in_render(self):
+        from egx_decision import render
+        s,_=self.snap({"LOW":dict(close=up(),volume=1000.0)})
+        h=render.page(s)
+        self.assertIn("تحتاج مراجعة بيانات",h)
+        self.assertIn("سيولة غير كافية",h)
     def test_h1_unknown_when_history_short(self):
         p,_=mk({"X":dict(close=up(n=115))},n=115)
         s=snapshot.build(p,now=NOW);self.assertEqual(s["market"]["state"],"UNKNOWN")
