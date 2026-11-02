@@ -15,6 +15,8 @@ class FakePage:
         self.words = words
         self.rect = type("Rect", (), {"width": 1525 if legacy else 1539, "height": 1078 if legacy else 1088})()
     def get_text(self, kind, sort=False):
+        if kind == "text":
+            return "#\nStock Name\nCR\nOpen Price\n"
         assert kind == "words"
         return self.words
 
@@ -23,12 +25,12 @@ class FakeDoc:
     def __iter__(self): return iter(self.pages)
     def close(self): pass
 
-def make_words(duplicate=False, drop_close=False, legacy=False):
+def make_words(duplicate=False, drop_close=False, legacy=False, rows=4):
     words = []
     def w(x0, x1, y, t, block):
         words.append((x0,y,x1,y+16,str(t),block,0,len(words)))
     w(42,70,270,"Stock",999);w(72,100,270,"Name",999)
-    for i in range(4):
+    for i in range(rows):
         y = 325 + i*55
         rank = i+1 if not (duplicate and i==3) else 3
         block = 10 + i
@@ -76,6 +78,12 @@ class BBoxStockTests(unittest.TestCase):
         self.assertEqual(rows[0]["close"],10.5)
         self.assertEqual(rows[0]["volume"],10000)
         self.assertEqual(rows[1]["name"],"AJWA Industries company Egypt")
+
+    def test_single_final_stock_row_not_silently_dropped(self):
+        rows = self.run_parser(legacy=True, rows=1)
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0]["market"],"MAIN")
+        self.assertEqual(rows[0]["rank"],1)
 
     def test_missing_numeric_column_is_rejected(self):
         with self.assertRaisesRegex(LayoutError,"INCOMPLETE_ROW"):
