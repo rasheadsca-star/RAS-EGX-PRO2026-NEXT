@@ -28,7 +28,7 @@ def build(db,now=None,asof=None):
             category=("DATA_REVIEW" if any(z in hard for z in tags) else
                       "LOW_LIQUIDITY" if "LIQUIDITY" in tags else
                       "SHORT_HISTORY" if "HISTORY" in tags else "OTHER")
-            blocked.append(dict(ticker=t,name=nm,last_date=q["last_date"],adv20=round(q["adv20"],0),reasons=q["reasons"],research_category=category));continue
+            blocked.append(dict(ticker=t,name=nm,last_date=q["last_date"],adv20=round(q["adv20"],0),reasons=q["reasons"],research_category=category,blocking_tags=sorted(set(tags))));continue
         g=bars[(bars.ticker==t)&(bars.date<=session)].drop_duplicates("date",keep="last").set_index("date").sort_index()
         ind=indicators(g,session);tier=g["evidence_tier"].iloc[-1]
         warn=[]
@@ -47,7 +47,7 @@ def build(db,now=None,asof=None):
     market=h1 if h1_ok else dict(state="UNKNOWN",reason=h1.get("reason","H1 غير مطابق للبيانات"))
     market["guidance"]=("لا توصية تعرّض: لا توجد استراتيجية معتمدة ولا بيانات مراكزك. القراءة تجريبية للاختبار الأمامي فقط."
                         if h1_ok else "حالة السوق غير معروفة: لا قراءة سوقية.")
-    core=dict(schema=SCHEMA_VERSION,source_session=session.date().isoformat(),market=market,counts=dict(wf,ranked=len(ranked),watchlist=len(watch),blocked_categories=blocked_categories),
+    core=dict(schema=SCHEMA_VERSION,source_session=session.date().isoformat(),market=market,counts=dict(wf,ranked=len(ranked),watchlist=len(watch),blocked_categories=blocked_categories,blocked_reason_overlap={tag:sum(tag in b["blocking_tags"] for b in blocked) for tag in ("STALE","CALENDAR_GAP","HISTORY","NO_TRADING","FLAT_PRICE","LIQUIDITY","OHLC","CONFLICT","CORPORATE_ACTION","JUMP")}),
         strategy_approved=False,live_execution_enabled=False,live_ready=0,paper_signals_generated=0,verdict="NO_STRATEGY_APPROVED",
         ranked=ranked,watchlist=watch,blocked=sorted(blocked,key=lambda b:b["ticker"]),no_bars_symbols=nobars)
     core["content_sha256"]=hashlib.sha256(json.dumps(core,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()).hexdigest()
