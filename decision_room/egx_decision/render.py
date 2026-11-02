@@ -76,8 +76,8 @@ function main(){
  Object.keys(wf).forEach(k=>{if(wf[k]){const r=E('tr');r.append(E('td',null,names[k]||k),E('td',null,String(wf[k])));t.append(r)}});h.append(t);
  const f=E('input');f.placeholder='ابحث برمز محجوب…';f.style.margin='8px 0';h.append(f);
  const bt=E('table');h.append(bt);
- function rb(q){bt.replaceChildren();const th=E('tr');['الرمز','آخر شمعة','أسباب الحجب'].forEach(x=>th.append(E('th',null,x)));bt.append(th);
-  D.blocked.filter(b=>!q||b.ticker.includes(q.toUpperCase())).slice(0,200).forEach(b=>{const r=E('tr');r.append(E('td',null,b.ticker),E('td','ltr',b.last_date||'—'),E('td',null,b.reasons.join(' | ')));bt.append(r)})}
+ function rb(q){bt.replaceChildren();const th=E('tr');['الرمز','الفئة','آخر شمعة','أسباب الحجب'].forEach(x=>th.append(E('th',null,x)));bt.append(th);
+  D.blocked.filter(b=>!q||b.ticker.includes(q.toUpperCase())||(b.name||'').includes(q)).slice(0,200).forEach(b=>{const r=E('tr');r.append(E('td',null,b.ticker),E('td',null,labels[b.research_category]||'غير مصنف'),E('td','ltr',b.last_date||'—'),E('td',null,b.reasons.join(' | ')));bt.append(r)})}
  f.oninput=()=>rb(f.value);rb('');body.append(h);
  T($('#foot'),`المخطط ${D.schema} · SHA ${D.content_sha256.slice(0,12)} · مصدر الأسعار: قاعدة SQLite المركزية (RAW، للقراءة فقط). لا تحديث مباشر ولا أوامر مالية من هذه الصفحة.`)}
 function draw(c,hist){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);if(!hist.length)return;const a=hist.map(p=>p.close),lo=Math.min(...a),hi=Math.max(...a),pad=34;
