@@ -6,7 +6,7 @@ def propose(g, ind):
     status="PAPER_SCENARIO_UNVALIDATED"
     blocked=dict(status=status, tradable=False, tick_verified=False, scenarios=[],
         note="لا مستويات تنفيذ معتمدة؛ حسابات بحثية غير مقرّبة لخطوة السعر. لا أوامر أو توصية شراء.")
-    if len(g)<55 or not ind.get("trend") or ind.get("adv20",0)<1_000_000:
+    if len(g)<51 or not ind.get("trend") or ind.get("adv20",0)<1_000_000:
         return blocked
     closes=[float(x) for x in g["close"].iloc[-55:]]
     if not all(math.isfinite(v) and v>0 for v in closes):return blocked
