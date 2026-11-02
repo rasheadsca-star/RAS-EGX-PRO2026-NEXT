@@ -6,6 +6,7 @@ bars OFFICIAL_EGX or publish executable trading recommendations.
 """
 import argparse, hashlib, json, os, shutil, sqlite3, tempfile
 from pathlib import Path
+from official_resolver import norm
 
 class MergeError(RuntimeError):pass
 
@@ -44,6 +45,9 @@ def merge(db,pdf,mapping,session,research_allow_provisional=False,fail_at=None):
         try:src.backup(c)
         finally:src.close()
         if c.execute("pragma integrity_check").fetchone()[0]!="ok":raise MergeError("STAGED_DB_INTEGRITY")
+        c.execute("""create table if not exists official_alias_registry(
+            alias_normalized text primary key,ticker text not null,status text not null,
+            first_session text not null,source_sha256 text not null,evidence_json text not null)""")
         prior=c.execute("select max(date) from canonical_bars where price_basis='RAW'").fetchone()[0]
         if prior not in (meta["previous_session"],session):raise MergeError("UNEXPECTED_PREVIOUS_SESSION:"+str(prior))
         known={r[0] for r in c.execute("select ticker from symbol_identity")}
@@ -51,6 +55,14 @@ def merge(db,pdf,mapping,session,research_allow_provisional=False,fail_at=None):
         for r in items:
             t=r.get("ticker");market=r["market"];rank=r["rank"]
             if t and t not in known:raise MergeError("UNRECOGNISED_TICKER:"+t)
+            if t:
+                alias_key=norm(r["name"])
+                if not alias_key:raise MergeError("EMPTY_NORMALIZED_ALIAS")
+                existing_alias=c.execute("select ticker from official_alias_registry where alias_normalized=?",(alias_key,)).fetchone()
+                if existing_alias and existing_alias[0]!=t:raise MergeError("ALIAS_CONFLICT:"+alias_key)
+                if not existing_alias:
+                    c.execute("insert into official_alias_registry(alias_normalized,ticker,status,first_session,source_sha256,evidence_json) values (?,?,?,?,?,?)",
+                        (alias_key,t,"PROVISIONAL",session,digest,json.dumps(r.get("evidence",{}),sort_keys=True)))
             if t:
                 old=c.execute("select open,high,low,close,volume from canonical_bars where ticker=? and date=? and price_basis='RAW'",(t,session)).fetchone()
                 price=tuple(float(r[k]) for k in ("open","high","low","close","volume"))
