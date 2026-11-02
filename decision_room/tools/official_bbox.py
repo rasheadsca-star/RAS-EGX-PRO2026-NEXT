@@ -50,7 +50,11 @@ def extract_stocks(pdf):
             coord = collections.Counter(round(w[0]) for w in words
                                          if w[4] in ("EGP","USD") and w[1] > 50)
             sme = coord[165] >= 4
-            main = coord[192] >= 4
+            # The final page of some bulletins contains a single final stock
+            # before the separate multi-ISIN table. Do not drop that row.
+            main = (coord[192] >= 4 or
+                    (coord[192] >= 1 and
+                     page.get_text("text").lstrip().startswith("#\nStock Name")))
             if not sme and not main:
                 continue
             if sme and main:
