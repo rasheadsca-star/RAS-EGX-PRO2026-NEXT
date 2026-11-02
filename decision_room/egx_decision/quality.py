@@ -17,6 +17,11 @@ def evaluate(data,session=None):
         if g.index.max()!=session:
             gap=int((cal>g.index.max()).sum());why.append(f"STALE: آخر شمعة {info['last_date']} (متأخرة {gap} جلسة)")
         w51=g.reindex(c51);w20=g.reindex(c20)
+        # A PDF row can be authentic while its company->ticker identity is not.
+        # Never allow these inferred bars to qualify a symbol for ranking or
+        # downstream paper levels. Review/approve mapping independently first.
+        if (w51["evidence_tier"] == "PROVISIONAL_SYMBOL_IDENTITY").any():
+            why.append("IDENTITY_UNVERIFIED: اسم السهم مطابق مبدئيًا فقط ولم تُعتمد هوية الرمز")
         miss20=[d for d in c20 if pd.isna(w20.loc[d,"close"])]
         miss51=[d for d in c51 if pd.isna(w51.loc[d,"close"])]
         if miss20 or miss51:
@@ -47,7 +52,7 @@ def evaluate(data,session=None):
     reg=set(data["ident"]["ticker"])-known
     return res,sorted(reg),session
 def waterfall(res,no_bars):
-    order=["STALE","CALENDAR_GAP","HISTORY","NO_TRADING","FLAT_PRICE","LIQUIDITY","OHLC","CONFLICT","CORPORATE_ACTION","JUMP"]
+    order=["IDENTITY_UNVERIFIED","STALE","CALENDAR_GAP","HISTORY","NO_TRADING","FLAT_PRICE","LIQUIDITY","OHLC","CONFLICT","CORPORATE_ACTION","JUMP"]
     w={"registry_symbols":len(res)+len(no_bars),"with_bars":len(res),"without_any_bar":len(no_bars),"passed":int(res["passed"].sum()),"blocked":int((~res["passed"]).sum())}
     first={k:0 for k in order};anyr={k:0 for k in order}
     for rs in res["reasons"]:
