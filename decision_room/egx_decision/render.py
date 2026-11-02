@@ -53,6 +53,12 @@ function main(){
    const ul=E('ul');r.reasons.forEach(x=>ul.append(E('li',null,x)));det.append(E('h3',null,'لماذا؟'),ul);
    const g=E('div','grid3');[['درجة الفرز (وصفية، ليست احتمال نجاح)',r.score+'/100'],['MA20',r.ma20],['MA50',r.ma50],['زخم 20 جلسة',r.momentum20+'%'],['حجم نسبي',r.relativeVolume+'×'],['أقصى أمر (1% من ADV20)',Math.round(r.max_order_egp).toLocaleString('en')+' جنيه']].forEach(([a,b])=>{const d=E('div','m');d.append(E('small',null,a),E('div','lab',String(b)));g.append(d)});det.append(g);
    const lv=E('div','banner warn');lv.append(E('b',null,'الدخول / الوقف / الأهداف: '),document.createTextNode(r.levels.note));det.append(lv);
+   const ps=r.paper_scenarios||{scenarios:[]};if(ps.scenarios.length){
+    det.append(E('h3',null,'سيناريوهات ورقية تجريبية — غير قابلة للتنفيذ'));
+    det.append(E('div','banner warn','مستويات RAW غير مقرّبة. خطوة السعر وحدود الحركة والرسوم والانزلاق لم تُعتمد، ولا تعني إشارة شراء.'));
+    const tbl=E('table');const hd=E('tr');['الفكرة','دخول افتراضي','وقف افتراضي','هدف 1','هدف 2','المسافة عن الإغلاق'].forEach(v=>hd.append(E('th',null,v)));tbl.append(hd);
+    ps.scenarios.forEach(p=>{const tr=E('tr');[p.type,p.entry_raw,p.stop_raw,p.target1_raw,p.target2_raw,p.distance_from_close_pct+'%'].forEach(v=>tr.append(E('td',null,String(v))));tbl.append(tr)});det.append(tbl);
+   }
    const c=E('canvas');c.width=900;c.height=240;det.append(E('h3',null,'تاريخ الإغلاق (آخر 75 جلسة)'),c);draw(c,r.history);
    if(r.warnings.length)det.append(E('small','mut','تنبيهات: '+r.warnings.join('؛ ')));
    document.querySelectorAll('.sym').forEach(b=>b.classList.toggle('active',b.dataset.t===t))}
