@@ -2,6 +2,7 @@
 // Preserve independently verified dated observations, never orders or inferred fills.
 const fs=require('node:fs'),path=require('node:path');
 const {currentEvidenceValid,validIsin}=require('./egx-independent-paper.cjs');
+const {reportCheck}=require('./official-egx-report-gate.cjs');
 const ROOT=process.env.GITHUB_WORKSPACE||process.cwd();
 const dateOK=s=>typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s)&&
   !Number.isNaN(Date.parse(s+'T00:00:00Z'))&&
@@ -128,6 +129,12 @@ function writeIfChanged(p,obj){
  fs.writeFileSync(p,value);
 }
 function main(){
+ const price=readIfExists(path.join(ROOT,'data/stable/v15-price-truth.json'));
+ const official=reportCheck(ROOT,price?.expectedSession,price);
+ if(!official.ok){
+  console.log('EGX_PAPER_ARCHIVE_FROZEN '+JSON.stringify(official));
+  return;
+ }
  const dir=path.join(ROOT,'unified-console');
  const current=readIfExists(path.join(dir,'independent-paper.json'));
  const archivePath=path.join(dir,'independent-last-verified.json');

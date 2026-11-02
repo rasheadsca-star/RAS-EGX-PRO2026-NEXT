@@ -176,7 +176,7 @@ test('copied positive-volume OHL bars block indicator eligibility without losing
  assert.deepEqual(x.recommendations,[]);
 });
 
-test('independent CLI keeps dated research available when Astra handoff is missing or malformed',()=>{
+test('independent CLI preserves prior snapshot without official PDF regardless of Astra handoff',()=>{
  const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
  const {spawnSync}=require('node:child_process');
  const script=path.resolve(__dirname,'../../scripts/independent/egx-independent-paper.cjs');
@@ -192,17 +192,15 @@ test('independent CLI keeps dated research available when Astra handoff is missi
   put('data/session-calendar.json',{latestMarketSession:session,sessions:sample.map(r=>r.date)});
   put('data/history/TEST.json',
    {ticker:'TEST',symbolVerified:true,isin:'EG0000000006',currency:'EGP',exchange:'EGX',sessions:sample});
+  const frozen=JSON.stringify({session:'2026-10-29',mode:'PAPER_ONLY',executable:false,recommendations:[]});
+  const outputPath=path.join(root,'unified-console/independent-paper.json');
+  fs.writeFileSync(outputPath,frozen);
   for(const malformed of [false,true]){
    if(malformed)fs.writeFileSync(path.join(root,'data/ops/g22-main-app-handoff.json'),'{not-json');
    const proc=spawnSync(process.execPath,[script],{cwd:root,env:{...process.env,GITHUB_WORKSPACE:root},encoding:'utf8'});
    assert.equal(proc.status,0,proc.stderr||proc.stdout);
-   const out=JSON.parse(fs.readFileSync(path.join(root,'unified-console/independent-paper.json'),'utf8'));
-   assert.equal(out.status,'RESEARCH_ONLY_PRICE_GATE_BLOCKED');
-   assert.equal(out.datedPriceObservations.length,1);
-   assert.equal(out.researchWatchlist.length,1);
-   assert.ok(out.diagnostics.includes('ASTRA_HANDOFF_NOT_ALIGNED_INFORMATIONAL'));
-   assert.deepEqual(out.recommendations,[]);
-   assert.equal(out.executable,false);
+   assert.match(proc.stdout,/EGX_INDEPENDENT_PAPER_FROZEN/);
+   assert.equal(fs.readFileSync(outputPath,'utf8'),frozen);
   }
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 });

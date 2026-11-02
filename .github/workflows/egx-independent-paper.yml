@@ -9,6 +9,8 @@ on:
   pull_request:
     paths:
       - 'scripts/independent/history-quality-audit.cjs'
+      - 'scripts/independent/official-egx-report-gate.cjs'
+      - 'tests/independent/official-egx-report-gate.test.cjs'
       - 'tests/independent/history-quality-audit.test.cjs'
       - 'scripts/independent/egx-independent-paper.cjs'
       - 'scripts/independent/walkforward-backtest.cjs'
@@ -26,6 +28,8 @@ on:
     branches: [main]
     paths:
       - 'scripts/independent/history-quality-audit.cjs'
+      - 'scripts/independent/official-egx-report-gate.cjs'
+      - 'tests/independent/official-egx-report-gate.test.cjs'
       - 'tests/independent/history-quality-audit.test.cjs'
       - 'scripts/independent/egx-independent-paper.cjs'
       - 'scripts/independent/walkforward-backtest.cjs'
@@ -57,6 +61,7 @@ jobs:
           node-version: '22'
       - name: Validate independent paper engine
         run: |
+          node --check scripts/independent/official-egx-report-gate.cjs
           node --check scripts/independent/history-quality-audit.cjs
           node --check scripts/independent/egx-independent-paper.cjs
           node --check scripts/independent/walkforward-backtest.cjs
@@ -64,12 +69,17 @@ jobs:
           node --check scripts/independent/corporate-action-gate.cjs
           node --check scripts/independent/preserve-verified-paper.cjs
           node --test tests/independent/*.test.cjs
+      - name: Require reconciled official EGX session PDF before any publication
+        id: official
+        run: node scripts/independent/official-egx-report-gate.cjs
       - name: Build explicitly paper-only independent status
+        if: steps.official.outputs.verified == 'true'
         run: |
           node scripts/independent/history-quality-audit.cjs
           node scripts/independent/egx-independent-paper.cjs
           node scripts/independent/preserve-verified-paper.cjs
-      - name: Archive evidence, including blocked states
+      - name: Archive evidence only for verified official report sessions
+        if: steps.official.outputs.verified == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: egx-independent-paper-${{ github.run_id }}
@@ -79,7 +89,7 @@ jobs:
             unified-console/independent-last-verified.json
             unified-console/independent-paper-ledger.json
       - name: Publish paper-only status when source files are current
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && steps.official.outputs.verified == 'true'
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
