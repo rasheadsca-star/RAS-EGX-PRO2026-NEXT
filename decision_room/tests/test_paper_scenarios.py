@@ -1,6 +1,7 @@
-import unittest
+import unittest,sys,pathlib
 import pandas as pd
-from decision_room.egx_decision.paper_scenarios import propose
+sys.path.insert(0,str(pathlib.Path(__file__).resolve().parent.parent))
+from egx_decision.paper_scenarios import propose
 
 class PaperScenariosTest(unittest.TestCase):
  def test_no_trend_means_no_levels(self):
