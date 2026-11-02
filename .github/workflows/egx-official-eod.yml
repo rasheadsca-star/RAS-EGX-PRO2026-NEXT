@@ -39,9 +39,14 @@ jobs:
         env:
           SESSION: ${{ steps.dates.outputs.session }}
         run: python3 decision_room/tools/official_bulletin.py --date "$SESSION" --out work/official_session.json
+      - name: Fail-closed official source quality assessment
+        id: quality
+        if: steps.fetch.outcome == 'success'
+        continue-on-error: true
+        run: python3 decision_room/tools/official_quality.py --input work/official_session.json --out work/official_quality.json
       - name: Do NOT calculate recommendations from unmerged/short-history data
         id: gate
-        if: steps.fetch.outcome == 'success'
+        if: steps.fetch.outcome == 'success' && steps.quality.outcome == 'success'
         continue-on-error: true
         run: |
           python3 - <<'PY'
@@ -59,16 +64,19 @@ jobs:
         if: always()
         with:
           name: egx-official-session-${{ steps.dates.outputs.session }}
-          path: work/official_session.json
+          path: |
+            work/official_session.json
+            work/official_quality.json
           if-no-files-found: ignore
           retention-days: 30
       - name: Notify owner clearly when report or safe recomputation missing
-        if: steps.fetch.outcome != 'success' || steps.gate.outcome == 'failure'
+        if: steps.fetch.outcome != 'success' || steps.quality.outcome != 'success' || steps.gate.outcome == 'failure'
         env:
           GH_TOKEN: ${{ github.token }}
           SESSION: ${{ steps.dates.outputs.session }}
           SOURCE_OK: ${{ steps.fetch.outcome }}
           GATE: ${{ steps.gate.outcome }}
+          QUALITY: ${{ steps.quality.outcome }}
           REPO: ${{ github.repository }}
         run: |
           python3 - <<'PY'
@@ -77,6 +85,8 @@ jobs:
           title=f'EGX PRO — تدخل مطلوب لجلسة {d}'
           if os.environ['SOURCE_OK']!='success':
               body=f'تعذر جلب نشرة EGX الرسمية أو تاريخها لا يطابق {d}. **برجاء رفع PDF النشرة الرسمية.** لا يتم إعادة استخدام أسعار جلسة سابقة كتوصيات جديدة.'
+          elif os.environ.get('QUALITY')!='success':
+              body=f'وصلت نشرة جلسة {d} لكن فشلت بوابة جودة المصدر، ولا تحديث تلقائي أو توصيات جديدة. راجع official_quality.json في artifact.'
           else:
               body=f'تم الحصول على نشرة EGX الرسمية لجلسة {d} وحفظها كـ GitHub Actions artifact، لكن تحديث التوصيات **محجوب**: قاعدة SQLite التاريخية/ربط رموز الأسهم غير جاهزين للتحقق. لا توجد توصيات جديدة منشورة.'
           p=subprocess.run(['gh','issue','list','-R',os.environ['REPO'],'--search',title,'--state','open','--json','number'],capture_output=True,text=True)
