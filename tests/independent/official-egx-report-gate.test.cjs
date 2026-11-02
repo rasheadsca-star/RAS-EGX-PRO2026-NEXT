@@ -63,3 +63,12 @@ test('row-level close, volume, ISIN and PDF page must be reconciled',t=>{
  f.manifest.rows[0].isin=ISIN;f.manifest.rows[0].sourcePage=0;f.save();
  assert.equal(f.check().reason,'INVALID_RECONCILED_ROW');
 });
+
+test('a ticker in the PDF without matching close AND volume is insufficient',t=>{
+ const f=fixture(t);
+ assert.equal(f.check({extractText:()=>SESSION+' COMI 999.00 3617630'}).reason,
+  'PDF_CLOSE_VOLUME_NOT_FOUND_NEAR_TICKER');
+ assert.equal(f.check({extractText:()=>SESSION+' COMI 117.77 999'}).reason,
+  'PDF_CLOSE_VOLUME_NOT_FOUND_NEAR_TICKER');
+ assert.equal(f.check({extractText:()=>SESSION+' COMI 117.77 3,617,630'}).ok,true);
+});
