@@ -58,6 +58,32 @@ function main(){
     det.append(E('div','banner warn','مستويات RAW غير مقرّبة. خطوة السعر وحدود الحركة والرسوم والانزلاق لم تُعتمد، ولا تعني إشارة شراء.'));
     const tbl=E('table');const hd=E('tr');['الفكرة','دخول افتراضي','وقف افتراضي','هدف 1','هدف 2','المسافة عن الإغلاق'].forEach(v=>hd.append(E('th',null,v)));tbl.append(hd);
     ps.scenarios.forEach(p=>{const tr=E('tr');[p.type,p.entry_raw,p.stop_raw,p.target1_raw,p.target2_raw,p.distance_from_close_pct+'%'].forEach(v=>tr.append(E('td',null,String(v))));tbl.append(tr)});det.append(tbl);
+    // EGX ELITE integration: illustrative position sizing, never an executable order.
+    const riskBox=E('div','card');riskBox.append(E('h3',null,'حساب توضيحي لحجم الصفقة وصافي R/R — غير تنفيذي'));
+    const capLabel=E('label',null,'رأس مال افتراضي (جنيه): ');
+    const capInput=E('input');capInput.type='number';capInput.min='1000';capInput.step='1000';capInput.value='100000';capLabel.append(capInput);
+    const riskLabel=E('label',null,' نسبة المخاطرة: ');
+    const riskSelect=E('select');[['0.005','0.5%'],['0.01','1%'],['0.02','2%']].forEach(([v,t])=>{const o=E('option',null,t);o.value=v;if(v==='0.01')o.selected=true;riskSelect.append(o)});riskLabel.append(riskSelect);
+    riskBox.append(capLabel,riskLabel);
+    const riskResult=E('div','mut');riskBox.append(riskResult);
+    const updateRisk=()=>{
+      riskResult.replaceChildren();
+      const cap=Number(capInput.value),risk=Number(riskSelect.value);
+      if(!Number.isFinite(cap)||cap<1000){riskResult.append(E('p',null,'رأس المال الافتراضي غير صالح'));return}
+      ps.scenarios.forEach(p=>{
+        const en=Number(p.entry_raw),sl=Number(p.stop_raw),target=Number(p.target1_raw),fee=0.0048;
+        const netRisk=(en-sl)+fee*(en+sl),netReward=(target-en)-fee*(en+target);
+        if(![en,sl,target,netRisk,netReward].every(Number.isFinite)||en<=sl||netRisk<=0||target<=en)return;
+        const quantity=Math.max(0,Math.floor(Math.min(cap/(en*(1+fee)),(cap*risk)/netRisk)));
+        const ratio=netReward/netRisk;
+        riskResult.append(E('p',null,p.type+': الحجم النظري '+quantity.toLocaleString('en-US')+
+          ' سهم | صافي R/R تقريبي '+ratio.toFixed(2)+':1 | صافي 2R الرياضي يتطلب سعرًا أعلى من الهدف الخام عند احتساب التكاليف.'));
+      });
+    };
+    capInput.oninput=updateRisk;riskSelect.onchange=updateRisk;updateRisk();
+    riskBox.append(E('small','mut','افتراض تكلفة 0.48% لكل طرف (0.96% ذهابًا وإيابًا)، غير متحقق من الوسيط. لا يُعتمد الحجم أو المستوى دون التحقق من خطوة السعر والسيولة والانزلاق. لا شراء مؤهل.'));
+    det.append(riskBox);
+
    }
    const c=E('canvas');c.width=900;c.height=240;det.append(E('h3',null,'تاريخ الإغلاق (آخر 75 جلسة)'),c);draw(c,r.history);
    if(r.warnings.length)det.append(E('small','mut','تنبيهات: '+r.warnings.join('؛ ')));
