@@ -49,6 +49,7 @@ class OfficialPipelineTests(unittest.TestCase):
   self.assertEqual(c.execute("pragma integrity_check").fetchone()[0],"ok")
   self.assertEqual(c.execute("select evidence_tier from canonical_bars where date='2026-11-02'").fetchone()[0],"PROVISIONAL_SYMBOL_IDENTITY")
   self.assertEqual(c.execute("select count(*) from official_session where session_date='2026-11-02'").fetchone()[0],2)
+  self.assertEqual(c.execute("select ticker,status from official_alias_registry").fetchone(),("TEST","PROVISIONAL"))
   c.close()
  def test_injected_failure_preserves_bytes(self):
   start=sha(self.db)
