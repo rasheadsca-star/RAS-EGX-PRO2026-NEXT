@@ -30,6 +30,9 @@ function main(){
  if(!D){const b=E('div','banner stale','تعذر تحميل بيانات القرار أو أنها غير صالحة. لا تُعرض أي فرص (إغلاق آمن).');$('#fresh').append(b);return}
  const now=new Date(),sess=new Date(D.source_session+'T00:00:00Z'),age=Math.floor((now-sess)/864e5);
  const stale=age>STALE;
+ if(Number(D.counts.provisional_source_bars||0)>0){
+  $('#fresh').append(E('div','banner stale','تحذير جودة المصدر: '+D.counts.provisional_source_bars+' شموع في هذه الجلسة بهوية أسهم غير معتمدة. القراءة السوقية محجوبة؛ لا توصيات جديدة.'));
+ }
  $('#fresh').append(E('div','banner '+(stale?'stale':'okb'),stale?`بيانات قديمة: آخر جلسة ${D.source_session} (قبل ${age} يوم). لا تُعرض فرص ولا قراءة سوق حتى التحديث.`:`البيانات حديثة: آخر جلسة ${D.source_session}، وقت البناء ${D.generated_utc.slice(0,16).replace('T',' ')} UTC.`));
  const m=D.market||{};
  T($('#sess'),D.source_session);$('#upd').className='ltr';T($('#upd'),'built '+D.generated_utc.slice(0,16).replace('T',' ')+' UTC');
