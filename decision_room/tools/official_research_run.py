@@ -38,7 +38,7 @@ def run(pdf,db,session,previous_session,out):
         mapped_path=out/"symbol_resolution.json"
         mapped_path.write_text(json.dumps(mapped,ensure_ascii=False,indent=2),encoding="utf-8")
         if mapped["summary"]["provisional"]<1:raise PipelineError("NO_SAFE_CANDIDATE_MAPPINGS")
-        merged=merge(base,pdf,mapped_path,session,research_allow_provisional=True)
+        merged=merge(base,pdf,mapped_path,session,research_allow_provisional=True,bulletin=staged)
         (out/"merge_report.json").write_text(json.dumps(merged,indent=2),encoding="utf-8")
         engine=Path(__file__).resolve().parents[1]/"run_daily.py"
         result=subprocess.run([sys.executable,str(engine),"--db",str(base),
