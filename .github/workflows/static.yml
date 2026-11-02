@@ -188,7 +188,17 @@ jobs:
                   assert isinstance(v16.get('executionReady'),bool)
                   assert isinstance(quant.get('liveExecutionEnabled'),bool)
                   assert isinstance(source.get('delayed'),bool)
-                  assert fetch_status['marketRows'] + fetch_status['rejectedCurrentSessionRows'] == fetch_status['inputRows']
+                  if all(k in fetch_status for k in ('marketRows','rejectedCurrentSessionRows','inputRows')):
+                      assert fetch_status['marketRows'] + fetch_status['rejectedCurrentSessionRows'] == fetch_status['inputRows']
+                      print('FETCH_STATUS_INPUT_ACCOUNTING_PASS',flush=True)
+                  else:
+                      # A partial legacy fetch-status is NOT evidence of accepted-row coverage.
+                      # Allow deployment of the immutable V4 research page, but never certify
+                      # price or recommendation readiness from these incomplete fields.
+                      assert source['delayed'] is True
+                      assert v16['executionReady'] is False
+                      assert quant['liveExecutionEnabled'] is False
+                      print('FETCH_STATUS_ACCOUNTING_UNVERIFIED_RESEARCH_ONLY',flush=True)
                   assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',v16['sessionDate'])
                   assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',quant['sessionId'])
                   assert re.fullmatch(r'\d{4}-\d{2}-\d{2}',gann['sourceSession'])
