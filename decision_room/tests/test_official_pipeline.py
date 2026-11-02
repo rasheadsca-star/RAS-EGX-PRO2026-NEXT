@@ -45,7 +45,7 @@ class OfficialPipelineTests(unittest.TestCase):
   self.assertEqual(resolve([changed],self.db,"2026-11-01")["items"][0]["ticker"],"TEST")
  def test_provisional_previous_close_must_not_seed_next_day(self):
   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
-  next_session={**self.items[0],"close":11.025,"chg_pct":5}
+  next_session={**self.items[0],"high":12,"close":11.025,"chg_pct":5}
   result=resolve([next_session],self.db,"2026-11-02")
   self.assertIsNone(result["items"][0]["ticker"])
   self.assertEqual(result["items"][0]["resolution_status"],"QUARANTINED_NAME_OR_AMBIGUITY")
