@@ -45,6 +45,16 @@ class Gate(unittest.TestCase):
         s,_=self.snap({"DWN":dict(close=down())})
         self.assertNotIn("DWN",[r["ticker"] for r in s["ranked"]]);self.assertIn("DWN",[r["ticker"] for r in s["watchlist"]])
         self.assertTrue(all(r["rank"] is None for r in s["watchlist"]))
+    def test_provisional_official_symbol_identity_is_never_a_recommendation(self):
+        p,_ = mk({"UPT":dict(close=up())})
+        c=sqlite3.connect(p)
+        c.execute("update canonical_bars set evidence_tier='PROVISIONAL_SYMBOL_IDENTITY' where ticker='UPT' and date=(select max(date) from canonical_bars where ticker='UPT')")
+        c.commit();c.close()
+        s=snapshot.build(p,now=NOW)
+        self.assertIn("IDENTITY_UNVERIFIED",self.reasons(s,"UPT"))
+        self.assertNotIn("UPT",[x["ticker"] for x in s["ranked"]+s["watchlist"]])
+        self.assertEqual(s["counts"]["first_blocking_reason"]["IDENTITY_UNVERIFIED"],1)
+        self.assertFalse(s["strategy_approved"])
     def test_stale_ticker_blocked(self):
         s,_=self.snap({"OLD":dict(close=up(),last_n=132)});self.assertIn("STALE",self.reasons(s,"OLD"))
         self.assertNotIn("OLD",[r["ticker"] for r in s["ranked"]+s["watchlist"]])
