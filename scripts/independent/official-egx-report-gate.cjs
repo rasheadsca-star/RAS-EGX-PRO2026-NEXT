@@ -68,8 +68,16 @@ function reportCheck(root,session,price,{extractText=defaultExtract,minRows=80}=
      matches[0].volume!==r.volume||matches[0].sourceSessionDate!==session)
    return fail('OFFICIAL_VS_PERSISTED_CLOSE_VOLUME_MISMATCH');
   // The PDF must identify each symbol; page and numeric cells are manually reconciled.
-  if(!new RegExp('(^|[^A-Z0-9])'+r.ticker+'([^A-Z0-9]|$)','i').test(txt))
-   return fail('PDF_TICKER_NOT_FOUND');
+  const tickerMatches=[...txt.matchAll(new RegExp('(^|[^A-Z0-9])'+r.ticker+'([^A-Z0-9]|$)','gi'))];
+  if(!tickerMatches.length)return fail('PDF_TICKER_NOT_FOUND');
+  // Confirm the actual PDF text contains BOTH numeric cells near this symbol,
+  // not merely a manually asserted row in the reconciliation manifest.
+  const numericNearTicker=tickerMatches.some(match=>{
+   const nearby=txt.slice(Math.max(0,match.index-100),Math.min(txt.length,match.index+250));
+   const nums=[...nearby.matchAll(/\d[\d,]*(?:\.\d+)?/g)].map(x=>Number(x[0].replaceAll(',','')));
+   return nums.some(x=>Math.abs(x-r.close)<1e-6)&&nums.some(x=>x===r.volume);
+  });
+  if(!numericNearTicker)return fail('PDF_CLOSE_VOLUME_NOT_FOUND_NEAR_TICKER');
  }
  return {ok:true,session,verifiedSymbols:seen.size,pdfSha256:m.pdfSha256};
 }
