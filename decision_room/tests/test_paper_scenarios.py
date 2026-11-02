@@ -17,6 +17,18 @@ class PaperScenariosTest(unittest.TestCase):
   for x in p["scenarios"]:
    self.assertFalse(x["executable"])
    self.assertLess(x["stop_raw"],x["entry_raw"])
+ def test_insufficient_history_blocks(self):
+  g=pd.DataFrame({"close":[100+i*.4 for i in range(50)]})
+  p=propose(g,{"trend":True,"adv20":2000000,"ma20":120})
+  self.assertEqual(p["scenarios"],[])
+ def test_liquidity_blocks(self):
+  g=pd.DataFrame({"close":[100+i*.4 for i in range(60)]})
+  p=propose(g,{"trend":True,"adv20":999999,"ma20":120})
+  self.assertEqual(p["scenarios"],[])
+ def test_invalid_stop_blocks(self):
+  g=pd.DataFrame({"close":[100.0]*50+[90.0]})
+  p=propose(g,{"trend":True,"adv20":2000000,"ma20":90})
+  self.assertEqual(p["scenarios"],[])
  def test_future_does_not_change_past(self):
   g=pd.DataFrame({"close":[100+i*.4 for i in range(60)]})
   ind={"trend":True,"adv20":2000000,"ma20":120}
