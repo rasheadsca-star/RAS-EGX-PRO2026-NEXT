@@ -44,7 +44,7 @@ class OfficialPipelineTests(unittest.TestCase):
   self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)["inserted"],1)
   self.assertEqual(sha(Path(str(self.db)+".prev")),start)
   after=sha(self.db)
-  self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True)["outcome"],"NOOP")
+  self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)["outcome"],"NOOP")
   self.assertEqual(sha(self.db),after)
   c=sqlite3.connect(self.db)
   self.assertEqual(c.execute("pragma integrity_check").fetchone()[0],"ok")
@@ -67,10 +67,12 @@ class OfficialPipelineTests(unittest.TestCase):
   with self.assertRaisesRegex(MergeError,"STAGED_ROW_CHANGED"):
    merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
  def test_replay_conflict_rejected(self):
-  merge(self.db,self.pdf,self.mapped,"2026-11-02",True)
-  start=sha(self.db);body=json.loads(self.mapped.read_text())
-  body["items"][0]["close"]=10.55;self.mapped.write_text(json.dumps(body))
+  merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  c=sqlite3.connect(self.db)
+  c.execute("update canonical_bars set close=10.6 where ticker='TEST' and date='2026-11-02'")
+  c.commit();c.close()
+  start=sha(self.db)
   with self.assertRaisesRegex(MergeError,"REPLAY_CONFLICT"):
-   merge(self.db,self.pdf,self.mapped,"2026-11-02",True)
+   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
   self.assertEqual(sha(self.db),start)
 if __name__=="__main__":unittest.main()
