@@ -76,6 +76,10 @@ class Gate(unittest.TestCase):
         s,_=self.snap({"LOW":dict(close=up(),volume=1000.0),"STA":dict(close=up(seed=7),last_n=132)})
         grouped=s["counts"]["blocked_categories"]
         self.assertEqual(sum(grouped.values()),len(s["blocked"]))
+        overlap=s["counts"]["blocked_reason_overlap"]
+        self.assertEqual(overlap["STALE"],sum(any(x.startswith("STALE:") for x in b["reasons"]) for b in s["blocked"]))
+        self.assertEqual(overlap["LIQUIDITY"],sum(any(x.startswith("LIQUIDITY:") for x in b["reasons"]) for b in s["blocked"]))
+        self.assertGreaterEqual(sum(overlap.values()),len(s["blocked"]))
         low=next(x for x in s["blocked"] if x["ticker"]=="LOW")
         stale=next(x for x in s["blocked"] if x["ticker"]=="STA")
         self.assertEqual(low["research_category"],"LOW_LIQUIDITY")
