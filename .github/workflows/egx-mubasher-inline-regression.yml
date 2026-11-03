@@ -1,0 +1,19 @@
+name: EGX Mubasher Supporting Analysis Regression
+on:
+  pull_request:
+    paths:
+      - 'scripts/collect-mubasher-analysis-tools.js'
+      - 'scripts/stable/mubasher-inline-analysis.cjs'
+      - 'tests/stable/mubasher-inline-analysis.test.cjs'
+      - '.github/workflows/egx-mubasher-inline-regression.yml'
+permissions:
+  contents: read
+jobs:
+  supporting-analysis:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/stable/mubasher-inline-analysis.test.cjs

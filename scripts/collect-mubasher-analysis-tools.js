@@ -3,6 +3,7 @@
    الهدف: استخدام الكاش الداخلي + مصادر مباشر/بدائل للوصول إلى 80%+ قابل للتحليل.
    لا يجعل السهم قابلًا للتنفيذ؛ التنفيذ يظل تحت حاكم السلامة. */
 const fs=require('fs'), path=require('path');
+const {parseInlineRows,selectSupportingRow}=require('./stable/mubasher-inline-analysis.cjs');
 const RUN_AT=new Date().toISOString();
 const TARGET=Number(process.env.EGX_TRUSTED_COVERAGE_TARGET||80);
 const MAX_CYCLES=Number(process.env.EGX_COVERAGE_MAX_CYCLES||5);
@@ -57,7 +58,9 @@ function symbolFromRow(rowHtml,universeSet){
  return '';
 }
 function numbersFromCells(cells){const out=[];for(const cell of cells){const re=/[+\-]?\d+(?:[.,]\d+)?\s*[%٪]?/g;let m;while((m=re.exec(cell))&&out.length<20)out.push({raw:m[0],value:num(m[0]),isPercent:/[%٪]/.test(m[0])});}return out}
-function parseHtmlRows(html,source,universeSet){
+function parseHtmlRows(html,source,universeSet,expectedSession=null){
+ const embedded=parseInlineRows(html,source.group,source.url,expectedSession).filter(row=>!universeSet.size||universeSet.has(row.symbol));
+ if(embedded.length)return embedded.map((row,index)=>({...row,sourceId:source.id,group:source.group,rowIndex:index+1,cells:[],numeric:[],rowText:'Observed provider inline dataset'}));
  const rows=[];const trRe=/<tr[\s\S]*?<\/tr>/gi;let m,idx=0;
  while((m=trRe.exec(html))&&rows.length<2000){const tr=m[0];const k=symbolFromRow(tr,universeSet);if(!k)continue;idx++;const cells=[...tr.matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(x=>stripTags(x[1])).filter(Boolean);rows.push({symbol:k,sourceId:source.id,group:source.group,rowIndex:idx,name:cells[0]||k,cells,numeric:numbersFromCells(cells),rowText:stripTags(tr)});}
  if(rows.length)return rows;
@@ -65,11 +68,11 @@ function parseHtmlRows(html,source,universeSet){
  while((mm=re.exec(text))&&rows.length<1500){const k=sym(mm[1]);if(!k||(universeSet.size&&!universeSet.has(k)))continue;const chunk=(mm[1]+(mm[2]||'')).slice(0,420);rows.push({symbol:k,sourceId:source.id,group:source.group,rowIndex:rows.length+1,name:k,cells:[chunk],numeric:numbersFromCells([chunk]),rowText:chunk,fallback:true});}
  return rows;
 }
-async function fetchOne(source,universeSet,attempt){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),TIMEOUT_MS);try{const res=await fetch(source.url,{signal:controller.signal,headers:{'user-agent':'Mozilla/5.0 EGX-Pro-Hub/10.0 RealCoverageRecovery','accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8','accept-language':'ar,en;q=0.8','cache-control':'no-cache'}});const text=await res.text();const rows=parseHtmlRows(text,source,universeSet);return{ok:rows.length>0,currentRunOk:res.ok,attempt,generatedAt:RUN_AT,id:source.id,group:source.group,title:source.title,url:source.url,httpStatus:res.status,count:rows.length,rows,error:rows.length?'':`no rows parsed; status ${res.status}`}}catch(e){return{ok:false,currentRunOk:false,attempt,generatedAt:RUN_AT,id:source.id,group:source.group,title:source.title,url:source.url,count:0,rows:[],error:String(e&&e.message||e)}}finally{clearTimeout(timeout)}}
+async function fetchOne(source,universeSet,attempt){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),TIMEOUT_MS);try{const res=await fetch(source.url,{signal:controller.signal,headers:{'user-agent':'Mozilla/5.0 EGX-Pro-Hub/10.0 RealCoverageRecovery','accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8','accept-language':'ar,en;q=0.8','cache-control':'no-cache'}});const text=await res.text();const expectedSession=read('data/stable/v15-price-truth.json',{}).expectedSession||read('data/market.json',{}).sourceSessionEvidence?.expectedSession||null;const rows=parseHtmlRows(text,source,universeSet,expectedSession);return{ok:rows.length>0,currentRunOk:res.ok,attempt,generatedAt:RUN_AT,id:source.id,group:source.group,title:source.title,url:source.url,httpStatus:res.status,count:rows.length,rows,error:rows.length?'':`no rows parsed; status ${res.status}`}}catch(e){return{ok:false,currentRunOk:false,attempt,generatedAt:RUN_AT,id:source.id,group:source.group,title:source.title,url:source.url,count:0,rows:[],error:String(e&&e.message||e)}}finally{clearTimeout(timeout)}}
 function previousGood(source){const old=read(`data/${source.id}.json`,null)||read(`data/mubasher-${source.group}.json`,null);if(old&&Array.isArray(old.rows)&&old.rows.length){return{...old,id:source.id,group:source.group,title:source.title,url:source.url,ok:true,currentRunOk:false,staleFallback:true,count:old.rows.length,generatedAt:old.generatedAt||RUN_AT,error:old.error||'current source unavailable; preserved last good rows'}}return null}
 function mergeEvidence(universe,sourceResults){
  const map=new Map();for(const r of universe){const k=sym(r.symbol);if(k)map.set(k,{symbol:k,name:nameOf(r)||k,base:r,sources:{}})}
- for(const src of sourceResults){for(const row of (src.rows||[])){const k=sym(row.symbol);if(!map.has(k))continue;const it=map.get(k);it.sources[src.group||src.id]={sourceId:src.id,title:src.title,currentRunOk:!!src.currentRunOk,staleFallback:!!src.staleFallback,row};}}
+ for(const src of sourceResults){for(const row of (src.rows||[])){const k=sym(row.symbol);if(!map.has(k))continue;const it=map.get(k),group=src.group||src.id,selected=selectSupportingRow(it.sources[group]?.row,row,src.group);it.sources[group]={sourceId:src.id,title:src.title,currentRunOk:!!src.currentRunOk&&selected.sourceSessionStatus==='EXPLICIT_SESSION',independentSource:false,sourceProvider:'MUBASHER',staleFallback:!!src.staleFallback,row:selected};}}
  const out=[];
  for(const it of map.values()){
    const r=it.base, sourceKeys=Object.keys(it.sources);let score=0;const conf=[],reasons=[],review=[];
@@ -80,15 +83,15 @@ function mergeEvidence(universe,sourceResults){
    if(pl){score+=18;conf.push('internal:valid plan')}else if(target1(r)&&stop(r)){score+=8;conf.push('internal:partial plan')}else reasons.push('خطة دخول/هدف/وقف غير مكتملة');
    if(q>=80){score+=12;conf.push('internal:data quality')}else if(q>=60){score+=6;conf.push('internal:partial quality')}else reasons.push('جودة بيانات ضعيفة أو غير محددة');
    const currentExternal=sourceKeys.filter(k=>it.sources[k].currentRunOk).length; const externalAny=sourceKeys.length;
-   if(externalAny){score+=Math.min(24,externalAny*5+currentExternal*3);conf.push(...sourceKeys.map(k=>'external:'+k));}else review.push('لا يوجد مصدر خارجي مباشر حاليًا؛ تم الاعتماد على الكاش الداخلي');
+   if(externalAny){score+=5+(currentExternal>0?3:0);conf.push('same-provider:MUBASHER');}else review.push('لا يوجد مصدر خارجي مباشر حاليًا؛ تم الاعتماد على الكاش الداخلي');
    score=Math.max(0,Math.min(100,Math.round(score)));
    const internalSignals=[p,vv,sr||tech,pl||target1(r),q>=60].filter(Boolean).length;
    let status='BLOCKED_MISSING_CORE_DATA';
    if(p && (vv||tech||pl||q>=60)) status=pr?'ANALYSIS_READY_PRICE_REVIEW':'ANALYSIS_READY_INTERNAL_CACHE';
    else if(p) status=pr?'WATCH_PRICE_REVIEW':'WATCH_NEEDS_EVIDENCE';
-   else if((vv&&tech)||(pl&&vv)||externalAny>=2) status='WATCH_NEEDS_PRICE';
+   else if((vv&&tech)||(pl&&vv)) status='WATCH_NEEDS_PRICE';
    const blocked=status==='BLOCKED_MISSING_CORE_DATA';
-   out.push({symbol:it.symbol,name:it.name,coverageStatus:status,sourceStrengthScore:score,evidenceScore:score,confirmationCount:conf.length,confirmations:conf.length,confirmationSources:conf,evidenceSources:conf,coreSignalCount:internalSignals,internalCacheUsed:p||vv||tech||pl,cacheExtracted:!!(p||vv||tech||pl),cacheEvidenceCount:[p,vv,tech,pl,q>=60].filter(Boolean).length,priceStatus:p?(pr?'سعر موجود لكن التنفيذ يحتاج 3 خانات':'ok'):'missing',executionPriceOk:p&&!pr,pricePrecisionRisk:!!pr,volumeStatus:vv?'حجم/قيمة من الكاش':'ناقص',supportStatus:sr?'دعم/مقاومة من الكاش':(tech?'فني جزئي من الكاش':'ناقص'),planStatus:pl?'خطة سعرية منطقية':(target1(r)&&stop(r)?'خطة جزئية':'ناقص'),sourceCount:sourceKeys.length,currentExternalSourceCount:currentExternal,sources:it.sources,exclusionReason:blocked?reasons.join('، '):review.join('، '),basePrice:price(r),baseVolume:volume(r),baseValue:value(r)});
+   out.push({symbol:it.symbol,name:it.name,coverageStatus:status,sourceStrengthScore:score,evidenceScore:score,confirmationCount:conf.length,confirmations:conf.length,independentConfirmationCount:0,confirmationSources:conf,evidenceSources:conf,coreSignalCount:internalSignals,internalCacheUsed:p||vv||tech||pl,cacheExtracted:!!(p||vv||tech||pl),cacheEvidenceCount:[p,vv,tech,pl,q>=60].filter(Boolean).length,priceStatus:p?(pr?'سعر موجود لكن التنفيذ يحتاج 3 خانات':'ok'):'missing',executionPriceOk:p&&!pr,pricePrecisionRisk:!!pr,volumeStatus:vv?'حجم/قيمة من الكاش':'ناقص',supportStatus:sr?'دعم/مقاومة من الكاش':(tech?'فني جزئي من الكاش':'ناقص'),planStatus:pl?'خطة سعرية منطقية':(target1(r)&&stop(r)?'خطة جزئية':'ناقص'),sourceCount:sourceKeys.length?1:0,datasetCount:sourceKeys.length,currentExternalSourceCount:0,independentExternalSourceCount:0,currentSameProviderDatasetCount:currentExternal,sourceProvider:sourceKeys.length?'MUBASHER':null,sources:it.sources,exclusionReason:blocked?reasons.join('، '):review.join('، '),basePrice:price(r),baseVolume:volume(r),baseValue:value(r)});
  }
  return out.sort((a,b)=>b.sourceStrengthScore-a.sourceStrengthScore||a.symbol.localeCompare(b.symbol));
 }
@@ -117,8 +120,10 @@ async function main(){
    if(s.reliableCoveragePct>=TARGET)break;
  }
  const sourceResults=Array.from(accepted.values()); rows=rows.length?rows:mergeEvidence(universe,sourceResults); const summary=summarize(rows,universe.length,TARGET,sourceResults,cycles);
- const report={ok:summary.reliableCoveragePct>=TARGET,engine:'v10_0_real_coverage_recovery_engine',generatedAt:RUN_AT,delayed:true,note:'V10 uses internal cache as valid analysis evidence and separates analysis/watch coverage from executable trading permission.',summary,sources:sourceResults.map(s=>({id:s.id,group:s.group,title:s.title,url:s.url,ok:!!s.ok,currentRunOk:!!s.currentRunOk,staleFallback:!!s.staleFallback,httpStatus:s.httpStatus,count:s.count,error:s.error||'',attempt:s.attempt||1})),rows};
- const mubasher={ok:sourceResults.some(s=>s.ok),engine:'v10_0_mubasher_alternative_sources_loop',generatedAt:RUN_AT,summary:{sources:sourceResults.length,sourcesOk:sourceResults.filter(s=>s.ok).length,currentSourcesOk:sourceResults.filter(s=>s.currentRunOk).length,staleFallbackSources:sourceResults.filter(s=>s.staleFallback).length,totalRows:sourceResults.reduce((s,x)=>s+(x.count||0),0),uniqueSymbols:new Set(rows.filter(x=>x.sourceCount>0).map(x=>x.symbol)).size},sources:report.sources,symbols:rows.map(x=>({symbol:x.symbol,name:x.name,sourceCount:x.sourceCount,currentExternalSourceCount:x.currentExternalSourceCount,sources:x.sources}))};
+ const report={ok:summary.reliableCoveragePct>=TARGET,engine:'v10_0_real_coverage_recovery_engine',generatedAt:RUN_AT,delayed:true,independentSource:false,executionGrade:false,evidenceScope:'SUPPORTING_ANALYSIS_ONLY_NO_OHLCV',note:'V10 uses internal cache as valid analysis evidence and separates analysis/watch coverage from executable trading permission.',summary,sources:sourceResults.map(s=>({id:s.id,group:s.group,title:s.title,url:s.url,ok:!!s.ok,currentRunOk:!!s.currentRunOk,staleFallback:!!s.staleFallback,httpStatus:s.httpStatus,count:s.count,error:s.error||'',attempt:s.attempt||1})),rows};
+ const mubasher={ok:sourceResults.some(s=>s.ok),engine:'v10_0_mubasher_alternative_sources_loop',generatedAt:RUN_AT,summary:{sources:sourceResults.length,sourcesOk:sourceResults.filter(s=>s.ok).length,currentSourcesOk:sourceResults.filter(s=>s.currentRunOk).length,staleFallbackSources:sourceResults.filter(s=>s.staleFallback).length,totalRows:sourceResults.reduce((s,x)=>s+(x.count||0),0),uniqueSymbols:new Set(rows.filter(x=>x.sourceCount>0).map(x=>x.symbol)).size},sources:report.sources,symbols:rows.map(x=>({symbol:x.symbol,name:x.name,sourceCount:x.sourceCount,datasetCount:x.datasetCount,currentExternalSourceCount:0,independentExternalSourceCount:0,currentSameProviderDatasetCount:x.currentSameProviderDatasetCount,sources:x.sources}))};
  write('data/evidence-coverage-loop-status.json',report); write('data/mubasher-analysis-tools.json',mubasher); console.log('V10 real coverage recovery summary',summary);
 }
-main().catch(e=>{console.error(e);write('data/evidence-coverage-loop-status.json',{ok:false,engine:'v10_0_real_coverage_recovery_engine',generatedAt:RUN_AT,error:String(e&&e.stack||e)});process.exitCode=0});
+if(require.main===module)main().catch(e=>{console.error(e);write('data/evidence-coverage-loop-status.json',{ok:false,engine:'v10_0_real_coverage_recovery_engine',generatedAt:RUN_AT,error:String(e&&e.stack||e)});process.exitCode=0});
+
+module.exports={parseHtmlRows,mergeEvidence};
