@@ -43,7 +43,7 @@ footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut)}@media(m
 <p class="small">لا ندمج مستويات محرك V16 مع خطط Quant لأن منهجيتيهما مختلفتان، ولم يُعتمد أي منهما للتداول.</p>
 <div class="wrap"><table><thead><tr><th>السهم</th><th>الاسم</th><th>نطاق الدخول النظري</th><th>وقف</th><th>هدف</th><th>التصنيف</th></tr></thead><tbody id="main-rows"><tr><td colspan="6">جارٍ التحميل...</td></tr></tbody></table></div>
 </section>
-<div class="notice"><strong>مصدر النشرة الرسمية المقدمة:</strong> تمت مراجعة نشرة EGX لجلسة <b>2026-11-02</b>، وبصمة PDF هي <code>1aeef13f1b967d73725525e724f46147df833cd82e154cbaea5a80c1dee2e760</code>. استخراج النشرة وحده لا يثبت صحة ربط أسماء الشركات برموزها؛ لا تتحول الأرقام إلى توصيات معتمدة بمجرد إضافتها للواجهة.</div>
+<div class="notice"><strong>فصل مصادر البيانات:</strong> مستويات المتابعة المعروضة تقرأ من ملفات V16 وQuant بالمستودع الرئيسي، ومصدرها ليس بالضرورة نشرة EGX الرسمية. نُشرت نشرة EGX لجلسة <b>2026-11-02</b> للمراجعة بشكل مستقل، لكن لم يُثبت ربط كل سعر ظاهر هنا برمز ISIN معتمد. يمنع اعتبار تطابق تاريخ الملف شهادة رسمية للسعر أو تحديثًا تلقائيًا للبورصة.</div>
 <section class="card">
 <h2 style="margin-top:0">روابط المصدر والأرشيف</h2>
 <p><a href="./paper-v4/index.html">أرشيف مستقل: فرص ورقية لجلسة 29 أكتوبر 2026 — ليس الإصدار الحالي</a></p>
@@ -59,7 +59,6 @@ const prefix='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-
 const urls={v:'data/stable/v16-main-app-current.json',q:'data/quant/daily-recommendations.json',h:'data/source-health.json'};
 const $=id=>document.getElementById(id),set=(id,value)=>{$(id).textContent=String(value)};
 const fmt=v=>v==null||v===''?'—':Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{maximumFractionDigits:4}):String(v);
-const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const validDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v);
 async function read(path){
  const control=new AbortController(),timer=setTimeout(()=>control.abort(),14000);
@@ -87,27 +86,44 @@ async function load(){
   const vwatch=Array.isArray(v.researchWatchlist)?v.researchWatchlist:[];
   set('count',watch.length);
   const qrows=watch.map(r=>{
-   const dated=r.signalDate===sq&&r.dataQuality?.latestHistorySession===sq;
    const p=r.plan||{};
-   return [r.ticker||'—',r.companyNameAr||r.companyNameEn||'—',dated?fmt(r.price):'محجوب',
-    dated?fmt(p.entryLow)+' – '+fmt(p.entryHigh):'غير مؤرخ',
-    dated?fmt(p.stopLoss):'—',dated?fmt(p.target1):'—',
-    dated?(r.statusLabelAr||'مراقبة غير تنفيذية'):'تاريخ السهم مختلف — محجوب'];
+   const dated=r.signalDate===sq&&r.dataQuality?.latestHistorySession===sq;
+   const values=[r.price,p.entryLow,p.entryHigh,p.stopLoss,p.target1];
+   const allPrices=values.every(x=>typeof x==='number'&&Number.isFinite(x)&&x>0);
+   const sanePlan=allPrices&&p.stopLoss<p.entryLow&&p.entryLow<=p.entryHigh&&p.target1>p.entryHigh;
+   const verifiedRow=dated&&sanePlan;
+   return [r.ticker||'—',r.companyNameAr||r.companyNameEn||'—',verifiedRow?fmt(r.price):'محجوب',
+    verifiedRow?fmt(p.entryLow)+' – '+fmt(p.entryHigh):'غير معتمد',
+    verifiedRow?fmt(p.stopLoss):'—',verifiedRow?fmt(p.target1):'—',
+    !dated?'تاريخ السهم مختلف — محجوب':!sanePlan?'مستويات غير متسقة — محجوبة':(r.statusLabelAr||'مراقبة غير تنفيذية')];
   });
-  const vrows=vwatch.map(r=>[r.ticker||'—',r.companyNameAr||'—',
-   fmt(r.entryLow)+' – '+fmt(r.entryHigh),fmt(r.stopLoss),fmt(r.target1),'بحثي فقط']);
+  const vrows=vwatch.map(r=>{
+   const name=r.companyNameAr||'—';
+   const plausible=![r.entryLow,r.entryHigh,r.stopLoss,r.target1].some(x=>typeof x!=='number'||!Number.isFinite(x)||x<=0)&&
+      r.stopLoss<r.entryLow&&r.entryLow<=r.entryHigh&&r.target1>r.entryHigh;
+   const malformed=/(###|size\s*:|<[^>]+>)/i.test(name);
+   const valid=plausible&&!malformed;
+   return [r.ticker||'—',malformed?'الاسم بحاجة مراجعة':name,valid?fmt(r.entryLow)+' – '+fmt(r.entryHigh):'محجوب',
+     valid?fmt(r.stopLoss):'—',valid?fmt(r.target1):'—',
+     valid?'V16 بحثي — دون تحقق هوية مستقل':'بيانات اسم/سعر غير موثوقة — محجوبة'];
+  });
   renderRows('quant-rows',qrows,7,'لا توجد فرص متابعة منشورة في ملف Quant');
   renderRows('main-rows',vrows,6,'لا توجد فرص متابعة منشورة في V16');
   const qReady=q.liveExecutionEnabled===true;
   const vReady=v.executionReady===true&&v.executionAllowed===true;
   const sourceDelayed=h.delayed===true;
   const refusal=!(qReady&&vReady)&&'التنفيذ محجوب ببوابات المحركات؛ ';
-  $('headline').className='notice '+(same?'info':'error');
-  $('headline').textContent=(same?'أحدث جلسة مسجلة في كلا ملفّي المحرك: ':'اختلاف تاريخ الجلسة بين المحركين — ')+latest+' | حالة التنفيذ: RESEARCH ONLY.';
+  $('headline').className='notice '+(same&&!sourceDelayed?'info':'error');
+  $('headline').textContent=(same?'آخر جلسة مسجلة في ملفات المحركين: ':'اختلاف تاريخ الجلسة بين المحركين — أحدث ملف: ')+latest+
+    (sourceDelayed?' | تحذير: المصدر متأخر حسب تقرير حالته.':' | ليست شهادة بأحدث جلسة رسمية.')+
+    ' | التنفيذ: RESEARCH ONLY.';
   $('quality').className='notice '+(same&&!sourceDelayed?'info':'error');
   $('quality').textContent=(same?'تاريخ المحركين متطابق. ':'تحذير: تواريخ المحركات مختلفة. ')+(refusal||'')+
    'حالة مصدر البيانات: '+(sourceDelayed?'DELAYED (متأخر)':'لا يحمل وسم تأخير')+
-   ' | التغطية المعلنة: '+fmt(h.coveragePct)+'% | حالة V16: '+(v.status||'غير محددة')+' | Quant: '+(q.status||'غير محددة')+'.';
+   ' | التغطية المعلنة: '+fmt(h.coveragePct)+'% | تحديث V16: '+(v.generatedAt||'غير متاح')+
+   ' | تحديث Quant: '+(q.generatedAt||'غير متاح')+
+   ' | آخر فحص صحة المصدر: '+(h.generatedAt||'غير متاح')+
+   ' | حالة V16: '+(v.status||'غير محددة')+' | Quant: '+(q.status||'غير محددة')+'.';
   set('loaded','آخر قراءة للملفات: '+new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo'})+' | تحديث ملفات المصدر ليس تلقائيًا عبر هذه الصفحة');
  }catch(error){
   $('headline').className='notice error';
