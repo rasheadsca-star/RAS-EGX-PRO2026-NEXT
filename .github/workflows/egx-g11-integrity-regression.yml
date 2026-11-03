@@ -1,0 +1,19 @@
+name: EGX G11 Source Integrity Regression
+on:
+  pull_request:
+    paths:
+      - 'astra/data-health/**'
+      - 'tests/astra/*g11*'
+      - '.github/workflows/egx-g11-integrity-regression.yml'
+permissions:
+  contents: read
+jobs:
+  integrity:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python3 tests/astra/test_g11_context_integrity.py
+      - run: node --test tests/astra/g11-data-health.test.cjs

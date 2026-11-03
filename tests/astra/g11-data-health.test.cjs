@@ -38,3 +38,6 @@ test('health snapshot is immutable-addressable and auditable',()=>{assert.match(
 test('severity model controls gate state without aggregate-threshold hiding',()=>{const material=h.issues.criticalUnresolved+h.issues.highUnresolved;if(material>0){assert.equal(h.gateStatus,'BLOCKED');assert.equal(h.overallStatus,'DEGRADED')}else assert.ok(['GREEN'].includes(h.gateStatus))});
 test('data-health evaluation is local and has no N plus one network access',()=>{assert.equal(h.performance.networkCalls,0);assert.equal(h.performance.nPlusOneNetworkAccess,0);assert.ok(h.performance.totalEvaluationMs>0)});
 test('G12 remains pending and all eight legacy dependencies remain',()=>{const gates=read('04_ACCEPTANCE_GATES.json').gates;assert.equal(gates.find(x=>x.id==='G12').status,'PENDING');assert.equal(h.legacyDependencies,8)});
+
+test('null blank and boolean volumes cannot masquerade as observed zero',()=>{for(const volume of [null,'',true,false])assert.equal(H.validHistoryRow({date:'2026-10-27',open:10,high:11,low:9,close:10,volume}).ok,false)});
+test('reconstructed OHLC cannot become canonical executable input',()=>assert.equal(H.validHistoryRow({date:'2026-10-27',open:10,high:11,low:9,close:10,volume:100,warnings:['partial_ohlc_reconstructed_from_close_or_previous_close']}).ok,false));
