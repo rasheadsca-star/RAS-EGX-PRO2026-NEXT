@@ -1,0 +1,52 @@
+name: EGX Targeted Missing History Source Staging
+on:
+  push:
+    branches:
+      - research/egx-21-source-recovery-20261027
+    paths:
+      - 'scripts/research/egx-targeted-source-staging.cjs'
+      - 'scripts/research/egx-independent-source-probes.cjs'
+      - 'scripts/research/egx-targeted-stage-assessment.cjs'
+      - 'scripts/research/egx-targeted-identity-requests.cjs'
+      - '.github/workflows/egx-targeted-missing-history.yml'
+  pull_request:
+    paths:
+      - 'scripts/research/egx-targeted-source-staging.cjs'
+      - '.github/workflows/egx-targeted-missing-history.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  stage-missing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax gate
+        run: |
+          node --check scripts/research/egx-targeted-source-staging.cjs
+          node --check scripts/research/egx-independent-source-probes.cjs
+          node --check scripts/research/egx-targeted-stage-assessment.cjs
+          node --check scripts/research/egx-targeted-identity-requests.cjs
+      - name: Generate exact identity and ISIN reconciliation requests
+        run: node scripts/research/egx-targeted-identity-requests.cjs
+      - name: Stage missing historical source evidence without promotion
+        run: node scripts/research/egx-targeted-source-staging.cjs
+      - name: Classify source evidence separately from approved recovery
+        run: node scripts/research/egx-targeted-stage-assessment.cjs
+      - name: Assert no market-data changes
+        if: always()
+        run: git diff --exit-code -- data/history data/stable docs/astra astra-prod
+      - name: Upload evidence even if providers fail
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-targeted-history-staging-${{ github.run_id }}
+          path: artifacts/history-recovery/targeted-21/
+          if-no-files-found: warn
+          retention-days: 30
