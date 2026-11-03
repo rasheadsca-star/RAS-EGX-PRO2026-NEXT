@@ -5,11 +5,12 @@ const val=x=>{const n=Number(clean(x).replace(/,/g,''));return Number.isFinite(n
 function parseRows(pages,session){
  const rows=[],rejected=[];
  for(const page of pages){
+  if(page.number<17||page.number>25)continue; // Main-market OHLCV annex; exclude unrelated tables
   const a=page.items.filter(t=>t.text).sort((x,y)=>x.y-y.y);
-  const ids=a.filter(t=>t.x<45&&/^\d{1,3}(?:\s|$)/.test(t.text)&&t.y>160&&t.y<1020);
+  const ids=a.filter(t=>t.x<45&&/^\d{1,3}(?:\s|$)/.test(t.text)&&t.y>60&&t.y<1070);
   for(let i=0;i<ids.length;i++){
    const m=ids[i].text.match(/^(\d{1,3})(?:\s+(.*))?$/);if(!m||Number(m[1])>400)continue;
-   const top=Math.max(310,((ids[i-1]?.y??ids[i].y-35)+ids[i].y)/2);
+   const top=Math.max(60,((ids[i-1]?.y??ids[i].y-35)+ids[i].y)/2);
    const end=Math.min(1100,((ids[i+1]?.y??ids[i].y+40)+ids[i].y)/2);
    const own=a.filter(t=>t.y>=top&&t.y<end);
    const curr=own.filter(t=>t.x>175&&t.x<227&&/^(EGP|USD)$/.test(t.text));
@@ -17,7 +18,7 @@ function parseRows(pages,session){
    const line=own.filter(t=>Math.abs(t.y-curr[0].y)<5.2);
    const cell=(lo,hi)=>val(line.filter(t=>t.x>=lo&&t.x<hi).map(t=>t.text).join(''));
    const name=clean([m[2]||'',...own.filter(t=>t.x>=40&&t.x<189).sort((x,y)=>x.y-y.y||x.x-y.x).map(t=>t.text)].join(' '));
-   const row={rowNumber:Number(m[1]),name,date:session,currency:curr[0].text,open:cell(228,285),high:cell(285,337),low:cell(337,382),close:cell(475,532),volume:cell(678,755),page:page.number,source:'USER_SUPPLIED_EGX_DAILY_PDF'};
+   const row={rowNumber:Number(m[1]),name,date:session,currency:curr[0].text,open:cell(225,285),high:cell(285,337),low:cell(329,382),close:cell(475,532),volume:cell(678,755),page:page.number,source:'USER_SUPPLIED_EGX_DAILY_PDF'};
    if(name.length>2&&row.low>0&&row.low<=Math.min(row.open,row.close)&&row.high>=Math.max(row.open,row.close)&&row.volume>=0&&[row.open,row.high,row.low,row.close,row.volume].every(Number.isFinite))rows.push(row);
    else rejected.push({rowNumber:row.rowNumber,page:page.number,reason:'INVALID_OHLCV'});
   }
