@@ -8,7 +8,7 @@ const expectedSession=()=>{
  let date=parts.year+'-'+parts.month+'-'+parts.day;
  // Before the session's 17:00 Cairo verification window, yesterday's completed session remains acceptable.
  if(Number(parts.hour)<17)date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
- while([0,6].includes(new Date(date+'T12:00:00Z').getUTCDay()))date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+ while([5,6].includes(new Date(date+'T12:00:00Z').getUTCDay()))date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
  return date;
 };
 const isRankingStale=()=>!state.snapshot||state.snapshot.session<expectedSession();
