@@ -11,6 +11,7 @@ on:
       - 'paper-v4/market-rules-audit.json'
       - 'scripts/paper-v4/build-daily-research-ranking.cjs'
       - 'paper-v4/decision-dashboard.js'
+      - 'tests/paper-v4/research-contract.test.cjs'
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,6 +29,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail-closed research and UI contract tests
+        run: |
+          node --check paper-v4/decision-dashboard.js
+          node --check scripts/paper-v4/build-daily-research-ranking.cjs
+          node --test tests/paper-v4/research-contract.test.cjs
       - name: Construct derived backup SQLite
         run: |
           mkdir -p "$RUNNER_TEMP/egx_backup"
@@ -72,6 +81,7 @@ jobs:
           html=get('decision.html');js=get('decision-dashboard.js');rank=json.loads(get('latest-ranking.json'))
           checks={'html_chart_and_cards':'stock-list' in html and 'chart-wrap' in html,
              'js_renders_entry_stop_target':'خطط التداول الورقي' in js and 'sc.target1' in js and 'sc.stop' in js,
+             'js_blocks_stale_and_conflicting_levels':'plans.hidden=!last||mismatch||stale' in js and 'RAW_RANKING' in js,
              'json_schema_2_4':rank.get('schemaVersion')=='2.4',
              'json_rows':len(rank.get('rows',[]))>0,
              'json_two_plans':all(len(x.get('scenarios',[]))>=1 for x in rank.get('rows',[])),
