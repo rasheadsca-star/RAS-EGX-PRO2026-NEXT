@@ -1,0 +1,76 @@
+name: EGX PRO immutable portable backup and production contract audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/egx-portable-backup-and-production-audit.yml'
+      - 'scripts/paper-v4/export-portable-sqlite.py'
+      - 'scripts/paper-v4/package-portable-backup.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: egx-portable-backup-main
+  cancel-in-progress: false
+jobs:
+  create-portable-backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Construct derived backup SQLite
+        run: |
+          mkdir -p "$RUNNER_TEMP/egx_backup"
+          python scripts/paper-v4/export-portable-sqlite.py --out "$RUNNER_TEMP/egx_backup/egx_research_snapshot.sqlite"
+      - name: Package repo code and research data with SHA256 inventory
+        run: |
+          python scripts/paper-v4/package-portable-backup.py --output "$RUNNER_TEMP/egx_backup/EGX_PRO_PORTABLE_BACKUP.zip" --sqlite "$RUNNER_TEMP/egx_backup/egx_research_snapshot.sqlite"
+          unzip -t "$RUNNER_TEMP/egx_backup/EGX_PRO_PORTABLE_BACKUP.zip" | tail -3
+          sha256sum "$RUNNER_TEMP/egx_backup/EGX_PRO_PORTABLE_BACKUP.zip" | tee "$RUNNER_TEMP/egx_backup/ZIP_SHA256.txt"
+          python - "$RUNNER_TEMP/egx_backup/egx_research_snapshot.sqlite" <<'PY'
+          import sqlite3,sys
+          c=sqlite3.connect(sys.argv[1]);assert c.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
+          print('BARS',c.execute('SELECT COUNT(*) FROM daily_bars').fetchone()[0],'TICKERS',c.execute('SELECT COUNT(*) FROM symbols').fetchone()[0]);c.close()
+          PY
+      - name: Upload ZIP backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EGX_PRO_PORTABLE_BACKUP_${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/egx_backup/EGX_PRO_PORTABLE_BACKUP.zip
+            ${{ runner.temp }}/egx_backup/ZIP_SHA256.txt
+          if-no-files-found: error
+          retention-days: 30
+  verify-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Assert deployment HTML/JS/JSON are truly served together
+        run: |
+          python - <<'PY'
+          import urllib.request,json,sys
+          base='https://egx-pro-decision-room.vercel.app/paper-v4/'
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'User-Agent':'EGX-Pro-Deployment-Contract-Audit/1.0','Cache-Control':'no-cache'})
+              with urllib.request.urlopen(req,timeout=25) as r:
+                  if r.status!=200:raise RuntimeError(f'{path}: HTTP {r.status}')
+                  return r.read().decode('utf-8')
+          html=get('decision.html');js=get('decision-dashboard.js');rank=json.loads(get('latest-ranking.json'))
+          checks={'html_chart_and_cards':'stock-list' in html and 'chart-wrap' in html,
+             'js_renders_entry_stop_target':'خطط التداول الورقي' in js and 'sc.target1' in js and 'sc.stop' in js,
+             'json_schema_2_1':rank.get('schemaVersion')=='2.1',
+             'json_rows':len(rank.get('rows',[]))>0,
+             'json_two_plans':all(len(x.get('scenarios',[]))>=1 for x in rank.get('rows',[])),
+             'safety_qualified_zero':rank.get('qualifiedTradeCount')==0}
+          print(json.dumps({'live_session':rank.get('session'),'live_rows':len(rank.get('rows',[])),'checks':checks},ensure_ascii=False))
+          if not all(checks.values()):raise SystemExit('DEPLOYMENT_CONTRACT_NOT_MET')
+          PY
