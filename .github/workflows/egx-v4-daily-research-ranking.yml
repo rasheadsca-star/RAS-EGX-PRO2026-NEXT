@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/egx-v4-daily-research-ranking.yml'
       - 'scripts/paper-v4/build-daily-research-ranking.cjs'
+      - 'scripts/paper-v4/validate-plan-market-rules.cjs'
   schedule:
     - cron: '15 18 * * 0-4'  # 20:15 UTC+2, Sun-Thu; EGX postclose
   workflow_dispatch:
@@ -53,6 +54,10 @@ jobs:
         id: generate
         continue-on-error: true
         run: node scripts/paper-v4/build-daily-research-ranking.cjs
+      - name: Audit market tick grid, price limits and R/R
+        id: market_rules
+        if: steps.generate.outcome == 'success'
+        run: node scripts/paper-v4/validate-plan-market-rules.cjs
       - name: Validate mode, date, provenance, and no orders
         id: validation
         if: steps.generate.outcome == 'success'
@@ -73,12 +78,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
       - name: Publish dated research JSON on main only if accepted
-        if: steps.generate.outcome == 'success' && steps.validation.outcome == 'success'
+        if: steps.generate.outcome == 'success' && steps.market_rules.outcome == 'success' && steps.validation.outcome == 'success'
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add paper-v4/latest-ranking.json
+          git add paper-v4/latest-ranking.json paper-v4/market-rules-audit.json
           if git diff --cached --quiet; then echo 'No changes'; exit 0; fi
           git commit -m "data(paper-v4): daily dated secondary research ranking"
           # Other EGX workflows update main frequently; retry optimistic push races.
@@ -94,7 +99,7 @@ jobs:
           echo "Failed to push current-session research output after retries" >&2
           exit 1
       - name: Open issue on failure instead of recycling old ranking
-        if: failure() || steps.generate.outcome != 'success' || steps.validation.outcome != 'success'
+        if: failure() || steps.generate.outcome != 'success' || steps.market_rules.outcome != 'success' || steps.validation.outcome != 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           SESSION: ${{ steps.session.outputs.session }}
