@@ -125,6 +125,27 @@ class Gate(unittest.TestCase):
         h=render.page(s)
         self.assertIn("تحتاج مراجعة بيانات",h)
         self.assertIn("سيولة غير كافية",h)
+    def test_old_official_price_is_not_independent_ticker_identity_proof(self):
+        p,cal=mk({"UPT":dict(close=up())})
+        session=cal[-1].strftime("%Y-%m-%d")
+        c=sqlite3.connect(p)
+        c.execute("create table official_session(ticker text,session_date text,resolution_status text)")
+        c.execute("insert into official_session values (?,?,?)",("UPT",session,"RESOLVED_CONFIRMED_NAME_PREVCLOSE"))
+        c.commit();c.close()
+        snap=snapshot.build(p,now=NOW)
+        self.assertIn("IDENTITY_UNVERIFIED",self.reasons(snap,"UPT"))
+        self.assertNotIn("UPT",[x["ticker"] for x in snap["ranked"]+snap["watchlist"]])
+        self.assertEqual(snap["counts"]["unverified_official_mappings"],1)
+        self.assertEqual(snap["market"]["state"],"UNKNOWN")
+        from egx_decision import render
+        self.assertIn("يلزم تحقق مستقل",render.page(snap))
+        c=sqlite3.connect(p)
+        c.execute("update official_session set resolution_status='OFFICIAL_VERIFIED'")
+        c.commit();c.close()
+        approved=snapshot.build(p,now=NOW)
+        self.assertNotIn("IDENTITY_UNVERIFIED",str(self.reasons(approved,"UPT")))
+        self.assertIn("UPT",[x["ticker"] for x in approved["ranked"]])
+
     def test_h1_blocks_provisional_identity_in_historical_lookback(self):
         p,cal=mk({"UPT":dict(close=up())})
         c=sqlite3.connect(p)
