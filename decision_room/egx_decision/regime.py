@@ -5,6 +5,14 @@ from . import config as K
 def compute(data,session):
     b=data["bars"];cal=data["calendar"];cal=cal[cal<=pd.Timestamp(session)]
     if len(cal)<121:return dict(state="UNKNOWN",reason="أقل من 121 جلسة")
+    # The H1 signal uses a 20-session ADV eligibility window and SMA100.
+    # A provisional ticker identity anywhere in the entire 121-session
+    # calculation horizon can contaminate historical basket returns.
+    historical=b[(b["date"].isin(cal[-121:])) &
+                 (b["evidence_tier"]=="PROVISIONAL_SYMBOL_IDENTITY")]
+    if len(historical):
+        return dict(state="UNKNOWN",reason="UNVERIFIED_H1_HISTORY: "+
+                    str(len(historical))+" شموع بهوية رموز غير معتمدة في نافذة المؤشر")
     b=b[b["date"].isin(cal)]
     c=b.pivot(index="date",columns="ticker",values="close").reindex(cal)
     v=b.pivot(index="date",columns="ticker",values="volume").reindex(cal)
