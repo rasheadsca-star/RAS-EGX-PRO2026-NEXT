@@ -54,17 +54,26 @@ function build(){
   const atr14=mean(tr.slice(-14));
   const window10=previous.slice(-10);
   const support10=Math.min(...window10.map(b=>+b.low));
-  const precision=close<1?4:close<10?3:2;
-  const px=v=>round(v,precision);
+  // Reference tick rule: 0.001 for securities below EGP 2, 0.01 otherwise.
+  // Indicative only: the exchange's instrument-specific current rule must be checked before order entry.
+  const tick=v=>v<2?0.001:0.01;
+  const tickUp=v=>{let z=Math.ceil((v-1e-9)/tick(v))*tick(v);if(tick(z)!==tick(v))z=Math.ceil((v-1e-9)/tick(z))*tick(z);return round(z,3)};
+  const tickDown=v=>{let z=Math.floor((v+1e-9)/tick(v))*tick(v);if(tick(z)!==tick(v))z=Math.floor((v+1e-9)/tick(z))*tick(z);return round(z,3)};
   function scenario(strategy,entry,stop,ready,reason){
     if(!(entry>0&&stop>0&&entry>stop))return null;
+    // Conservative directional rounding to tradable *indicative* grid.
+    entry=tickUp(entry);stop=tickDown(stop);
+    if(!(entry>stop))return null;
     const risk=entry-stop,riskPct=100*risk/entry;
-    if(riskPct>12||riskPct<.35)return {strategy,status:'REJECTED_RISK',reason:'مخاطرة السيناريو خارج الحدود البحثية',riskPct:round(riskPct,2)};
-    const target1=entry+1.5*risk,target2=entry+2.5*risk;
+    if(riskPct>12||riskPct<.35)return {strategy,status:'REJECTED_RISK',reason:'مخاطرة السيناريو خارج الحدود البحثية',riskPct:round(riskPct,2),isExecutable:false};
+    const target1=tickDown(entry+1.5*risk),target2=tickDown(entry+2.5*risk);
+    const rr1=round((target1-entry)/risk,3),rr2=round((target2-entry)/risk,3);
+    if(!(stop<entry&&entry<target1&&target1<target2&&rr1>=1.45&&rr2>=2.45))return {strategy,status:'REJECTED_REWARD_RISK',reason:'أهداف السيناريو لا تجتاز اختبار RR بعد تقريب الأسعار',isExecutable:false};
     return {strategy,status:ready?'PAPER_CONDITIONAL':'WAIT_CONFIRMATION',reason,
-      entry: px(entry),stop: px(stop),target1:px(target1),target2:px(target2),
-      riskPct:round(riskPct,2),rewardRisk1:1.5,rewardRisk2:2.5,
-      currency:'EGP',priceBasis:'SECONDARY_HISTORICAL_RESEARCH',isExecutable:false,
+      entry,stop,target1,target2,
+      riskPct:round(riskPct,2),rewardRisk1:rr1,rewardRisk2:rr2,
+      currency:'EGP',tickRuleReference:'EGP_LT_2_0_001_ELSE_0_01_PROVISIONAL',priceBasis:'SECONDARY_HISTORICAL_RESEARCH',isExecutable:false,
+      executionGuards:{tickSizeConfirmed:false,instrumentPriceLimitConfirmed:false,feesAndSlippageConfirmed:false,isinConfirmed:false},
       trigger:strategy==='BREAKOUT'?'إغلاق جلسة فوق عتبة الاختراق مع حجم تداول >= 1.2 من متوسط 20 جلسة':'ارتداد من الدعم مع إغلاق أعلى من الفتح وحجم تداول >= متوسط 20 جلسة'};
   }
   const breakoutEntry=resistance*1.002;
@@ -82,13 +91,13 @@ function build(){
     ||scenarios.find(x=>x.status==='WAIT_CONFIRMATION')?.strategy||null;
   const nearBreakout=dist>=-.01&&dist<=.06;
   const status=nearBreakout&&volumeRatio>=1.2&&trend20?'CONDITIONAL_BREAKOUT_WATCH':'RESEARCH_WATCH';
-  candidates.push({ticker,scenarios,preferredScenario,atr14:round(atr14,3),support10:round(support10,3),close:round(close,3),changePct:round(+m.changePct||0),volumeRatio20:round(volumeRatio,2),resistance20:round(resistance,3),support20:round(support,3),indicativeTrigger:round(resistance*1.002,3),relativeResearchScore:score,abovePriorSMA20:trend20,note: status==='CONDITIONAL_BREAKOUT_WATCH'?'قريب من الاختراق مع حجم نسبي داعم؛ إشارة مراقبة وليست أمر شراء':volumeRatio<.8?'السيولة دون المتوسط، يلزم تأكيد':'قيد المراقبة إلى حين تأكيد الاتجاه والاختراق',recommendation:'WATCH_ONLY',technicalSession:previous.at(-1).date,sourceSession:today,priceSource:'SECONDARY_PUBLIC',identityApproved:false,officialCloseVerified:false,decisionStatus:status});
+  candidates.push({ticker,scenarios,preferredScenario,priceLimitReviewed:false,atr14:round(atr14,3),support10:round(support10,3),close:round(close,3),changePct:round(+m.changePct||0),volumeRatio20:round(volumeRatio,2),resistance20:round(resistance,3),support20:round(support,3),indicativeTrigger:round(resistance*1.002,3),relativeResearchScore:score,abovePriorSMA20:trend20,note: status==='CONDITIONAL_BREAKOUT_WATCH'?'قريب من الاختراق مع حجم نسبي داعم؛ إشارة مراقبة وليست أمر شراء':volumeRatio<.8?'السيولة دون المتوسط، يلزم تأكيد':'قيد المراقبة إلى حين تأكيد الاتجاه والاختراق',recommendation:'WATCH_ONLY',technicalSession:previous.at(-1).date,sourceSession:today,priceSource:'SECONDARY_PUBLIC',identityApproved:false,officialCloseVerified:false,decisionStatus:status});
  }
  candidates.sort((a,b)=>b.relativeResearchScore-a.relativeResearchScore);
  const top=candidates.slice(0,25).map((x,i)=>({...x,rank:i+1}));
  const officialAvailable=false; // No durable, verified PDF/ISIN crosswalk connected to this scheduled process.
  return {
- schemaVersion:'2.1',generatedAt:new Date().toISOString(),session:today,mode:'AUTOMATED_SECONDARY_RESEARCH_WATCH',sampleUniverse:top.length,qualifiedTradeCount:0,
+ schemaVersion:'2.2',generatedAt:new Date().toISOString(),session:today,mode:'AUTOMATED_SECONDARY_RESEARCH_WATCH',sampleUniverse:top.length,qualifiedTradeCount:0,
  source:{provider:feed.source||'secondary',marketRows:source.length,sessionMatchedRows:snapshotRows.length,historyFilesExamined:fs.readdirSync(historyDir).filter(x=>x.endsWith('.json')).length,officialSessionVerified:officialAvailable,isinIndependentlyCertified:false},
  comparisonModel:{strategy:'breakout_research_proximity_volume_trend',status:'RESEARCH_ONLY'},
  rankingFormula:'35% resistance proximity +25% volume ratio +25% relative SMA20 trend +15% above SMA20; not a calibrated win probability',
