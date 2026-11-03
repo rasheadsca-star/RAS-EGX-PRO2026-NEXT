@@ -34,7 +34,7 @@ jobs:
           node scripts/paper-v4/validate-plan-market-rules.cjs
           node - <<'JS'
           const fs=require('fs');const d=JSON.parse(fs.readFileSync('paper-v4/latest-ranking.json'));
-          if(d.schemaVersion!=='2.3'||d.qualifiedTradeCount!==0||!Array.isArray(d.rows)||d.rows.length===0)throw Error('unsafe/current source invalid');
+          if(d.schemaVersion!=='2.4'||d.qualifiedTradeCount!==0||!Array.isArray(d.rows)||d.rows.length===0)throw Error('unsafe/current source invalid');
           JS
       - name: Require authorized Vercel credential
         shell: bash
