@@ -46,6 +46,9 @@ jobs:
           PY
           python3 run_daily.py --db /tmp/ci.sqlite --out /tmp/pub --journal /tmp/pub/journal/j.jsonl --now 2026-10-30T09:00:00+00:00
           python3 tests/browser_check.py /tmp/pub /tmp/shots | tee /tmp/browser.txt
+          cd ..
+          python3 decision_room/tests/root_dashboard_browser_check.py
+          cd decision_room
           cp -rL /tmp/pub/current /tmp/preview
           python3 preview/prepare_preview.py --public /tmp/pub --out /tmp/dist
           test -z "$(find /tmp/dist -type l)"
