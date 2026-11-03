@@ -1,0 +1,116 @@
+name: EGX official daily intake — research only
+# Runs from GitHub DEFAULT BRANCH (main). It does not touch SQLite or deploy.
+# Uses a pinned, independently CI-reviewed parser from PR #198.
+on:
+  schedule:
+    - cron: '30 17 * * 0-4'  # 19:30 Cairo (UTC+2 in 2026); Sun-Thu only
+  workflow_dispatch:
+    inputs:
+      session:
+        description: 'Official session YYYY-MM-DD; blank uses current Cairo date'
+        required: false
+        type: string
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: egx-research-intake-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  official-intake:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      INPUT_SESSION: ${{ inputs.session }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Immutable code source from feature review; DO NOT check out mutable
+          # unreviewed feature HEAD in a scheduled workflow.
+          ref: 7132e56f7caf3f6074a962a09067d8503e4bbba6
+          path: parser
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PDF parser dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y poppler-utils
+          python3 -m pip install 'pymupdf>=1.24,<2'
+      - id: date
+        name: Resolve Cairo session and validate input
+        run: |
+          python3 - <<'PY'
+          import datetime,os,re
+          from zoneinfo import ZoneInfo
+          from pathlib import Path
+          raw=os.getenv("INPUT_SESSION","").strip()
+          if not raw:
+              d=datetime.datetime.now(ZoneInfo("Africa/Cairo")).date()
+          else:
+              if not re.fullmatch(r"\d{4}-\d{2}-\d{2}",raw):
+                  raise SystemExit("invalid session date format")
+              d=datetime.date.fromisoformat(raw)
+          if d.weekday()>=5:raise SystemExit("Saturday/Friday not a trading session")
+          Path(os.environ["GITHUB_OUTPUT"]).open("a").write("session="+d.isoformat()+"\n")
+          PY
+      - name: Retrieve dated official bulletin
+        id: fetch
+        continue-on-error: true
+        env:
+          SESSION: ${{ steps.date.outputs.session }}
+        run: python3 parser/decision_room/tools/official_bulletin.py --date "$SESSION" --out work/official_session.json
+      - name: Validate OHLCV, coverage and no executable orders
+        id: validate
+        if: steps.fetch.outcome == 'success'
+        continue-on-error: true
+        run: python3 parser/decision_room/tools/official_quality.py --input work/official_session.json --out work/official_quality.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-egx-research-${{ steps.date.outputs.session || 'unresolved' }}
+          path: |
+            work/official_session.json
+            work/official_quality.json
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Inform owner on missing PDF or failed source checks
+        if: steps.fetch.outcome != 'success' || steps.validate.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SESSION: ${{ steps.date.outputs.session }}
+          FETCH: ${{ steps.fetch.outcome }}
+          QUALITY: ${{ steps.validate.outcome }}
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess
+          session=os.environ.get("SESSION") or "UNKNOWN"
+          title="EGX daily research intake failed — "+session
+          body=("\n".join((
+              "Official EOD intake did not meet the research acceptance gate.",
+              "Session: "+session,
+              "Official bulletin fetch: "+os.environ.get("FETCH","unknown"),
+              "OHLCV quality gate: "+os.environ.get("QUALITY","unknown"),
+              "Check Actions artifacts. If the official bulletin is unavailable, upload the dated PDF.",
+              "Last certified database/snapshot MUST remain unchanged. No recommendations published.",
+              "Run: "+os.environ.get("GITHUB_SERVER_URL","https://github.com")+"/"+os.environ["REPO"]+"/actions/runs/"+os.environ.get("GITHUB_RUN_ID",""),
+          )))
+          args=["gh","issue","list","-R",os.environ["REPO"],"--state","open","--search",title,"--json","number,title"]
+          q=subprocess.run(args,text=True,capture_output=True)
+          results=json.loads(q.stdout) if q.returncode==0 else []
+          match=next((x for x in results if x["title"]==title),None)
+          cmd=["gh","issue","comment",str(match["number"]),"-R",os.environ["REPO"],"--body",body] if match else [
+            "gh","issue","create","-R",os.environ["REPO"],"--title",title,"--body",body]
+          subprocess.run(cmd,check=True)
+          PY
+      - name: Enforce intake failure and keep DB / deployments intact
+        if: steps.fetch.outcome != 'success' || steps.validate.outcome != 'success'
+        run: exit 2
+      - name: Explicit research-only result
+        if: steps.fetch.outcome == 'success' && steps.validate.outcome == 'success'
+        run: |
+          echo "Official PDF staged and source-quality gated. RESEARCH_ONLY."
+          echo "NO ticker identity approval, NO database merge, NO snapshot and NO Vercel publish."
