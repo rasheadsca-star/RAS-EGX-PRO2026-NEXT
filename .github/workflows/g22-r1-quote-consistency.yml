@@ -1,0 +1,22 @@
+name: G22 R1 Quote Consistency Research
+on:
+  push:
+    branches: [research/g22-r1-price-rounding-band]
+  pull_request:
+    paths:
+      - 'scripts/stable/v16-price-change-consistency.cjs'
+      - 'scripts/stable/v16-session-aware-price-truth.cjs'
+      - 'tests/stable/v16-price-change-consistency.test.cjs'
+      - '.github/workflows/g22-r1-quote-consistency.yml'
+permissions:
+  contents: read
+jobs:
+  arithmetic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check scripts/stable/v16-session-aware-price-truth.cjs
+      - run: node --test tests/stable/v16-price-change-consistency.test.cjs
