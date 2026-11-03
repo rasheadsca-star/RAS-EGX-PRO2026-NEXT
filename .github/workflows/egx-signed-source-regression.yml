@@ -1,0 +1,52 @@
+name: EGX Signed Same-Session Source Regression
+on:
+  pull_request:
+    paths:
+      - "scripts/stable/v16-restore-signed-session.cjs"
+      - "tests/stable/v16-restore-signed-session.test.cjs"
+      - ".github/workflows/v16-daily-recommendation-scan.yml"
+      - ".github/workflows/egx-signed-source-regression.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  signed-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Adversarial source and persisted OHLCV tests
+        run: |
+          set -euo pipefail
+          node --check scripts/stable/v16-restore-signed-session.cjs
+          node --test tests/stable/v16-restore-signed-session.test.cjs
+      - name: Real repository immutable handoff replay (no commits)
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const t=read('data/stable/v15-price-truth.json');
+          fs.writeFileSync('/tmp/egx-was-ready',String(t.ready===true&&t.executionGrade===true));
+          NODE
+          node scripts/stable/v16-restore-signed-session.cjs
+          node - <<'NODE'
+          const fs=require('fs');
+          const read=p=>JSON.parse(fs.readFileSync(p,'utf8'));
+          const marker=read('data/ops/g22-main-app-handoff.json');
+          const truth=read('data/stable/v15-price-truth.json');
+          const status=read('data/fetch-status.json');
+          const wasReady=fs.readFileSync('/tmp/egx-was-ready','utf8')==='true';
+          if(!wasReady && marker.sessionDate===truth.expectedSession){
+            if(truth.ready!==true||truth.executionGrade!==true||truth.acceptedRows!==marker.acceptedRows
+               ||status.currentSessionRows!==truth.acceptedRows)throw Error('IMMUTABLE_SOURCE_NOT_RESTORED');
+            const failure=read('data/stable/v16-source-retry-failure.json');
+            if(failure.newPublicationAuthorized!==false||failure.preservedPublishedSource.matchedCurrentHistoryBars<truth.acceptedRows)
+              throw Error('SIGNED_HISTORY_NOT_VERIFIED');
+          }
+          console.log('SIGNED_SOURCE_REGRESSION_PASS',JSON.stringify({wasReady,session:truth.expectedSession,accepted:truth.acceptedRows}));
+          NODE

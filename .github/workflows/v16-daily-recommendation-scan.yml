@@ -11,6 +11,7 @@ on:
     types: [completed]
     branches: [main]
   push:
+    branches: [main]
     paths:
       - ".github/workflows/v16-daily-recommendation-scan.yml"
       - "scripts/stable/v16-source-session-quorum.cjs"
@@ -18,6 +19,8 @@ on:
       - "scripts/stable/v16-main-app-professional-readiness.cjs"
       - "scripts/stable/v16-postclose-scan-complete.cjs"
       - "scripts/stable/v16-same-session-recovery-replay.cjs"
+      - "scripts/stable/v16-restore-signed-session.cjs"
+      - "tests/stable/v16-restore-signed-session.test.cjs"
       - "tests/stable/v16-same-session-recovery-replay.test.cjs"
       - "tests/stable/v16-same-session-recovery-integration.test.cjs"
       - "tests/astra/postclose-source-recovery.test.cjs"
@@ -150,6 +153,8 @@ jobs:
           node --check scripts/stable/v15-live-price-truth.cjs
           node --check scripts/stable/v15-price-truth-gate.cjs
           node --check scripts/stable/v16-same-session-recovery-replay.cjs
+          node --check scripts/stable/v16-restore-signed-session.cjs
+          node --test tests/stable/v16-restore-signed-session.test.cjs
           node --test tests/stable/v16-same-session-recovery-replay.test.cjs tests/stable/v16-same-session-recovery-integration.test.cjs
           node --check scripts/stable/v16-publish-v169-basket.cjs
           node --check scripts/stable/v16-session-data-fingerprint.cjs
@@ -243,6 +248,9 @@ jobs:
             # side engine overwrite the canonical MAIN APP decision.
             cp /tmp/previous-primary.json data/stable/v16-v169-primary-decision.json
             cp /tmp/previous-legacy.json data/stable/v15-practical-decision.json
+            # A failed retry must not overwrite a previously signed SAME-session
+            # OHLCV snapshot with an empty fetch. No new publication is allowed.
+            node scripts/stable/v16-restore-signed-session.cjs
           fi
 
           # Canonical governance normalization runs on EVERY non-noop scan.
