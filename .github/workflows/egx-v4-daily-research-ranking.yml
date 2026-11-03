@@ -81,10 +81,20 @@ jobs:
           git add paper-v4/latest-ranking.json
           if git diff --cached --quiet; then echo 'No changes'; exit 0; fi
           git commit -m "data(paper-v4): daily dated secondary research ranking"
-          git pull --rebase origin main
-          git push origin HEAD:main
+          # Other EGX workflows update main frequently; retry optimistic push races.
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+            if git push origin HEAD:main; then
+              echo "Published on attempt $attempt"
+              exit 0
+            fi
+            sleep $((attempt * 2))
+          done
+          echo "Failed to push current-session research output after retries" >&2
+          exit 1
       - name: Open issue on failure instead of recycling old ranking
-        if: steps.generate.outcome != 'success' || steps.validation.outcome != 'success'
+        if: failure() || steps.generate.outcome != 'success' || steps.validation.outcome != 'success'
         env:
           GH_TOKEN: ${{ github.token }}
           SESSION: ${{ steps.session.outputs.session }}
