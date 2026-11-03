@@ -3,6 +3,15 @@ const $=id=>document.getElementById(id),base='../data/',fmt=(n,d=2)=>Number.isFi
 const state={snapshot:null,rows:[],selected:null,cache:new Map()};
 const status=(s)=>{$('status').textContent=s};
 const isDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||'');
+const expectedSession=()=>{
+ const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+ let date=parts.year+'-'+parts.month+'-'+parts.day;
+ // Before the session's 17:00 Cairo verification window, yesterday's completed session remains acceptable.
+ if(Number(parts.hour)<17)date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+ while([0,6].includes(new Date(date+'T12:00:00Z').getUTCDay()))date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+ return date;
+};
+const isRankingStale=()=>!state.snapshot||state.snapshot.session<expectedSession();
 async function get(url){const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status+' '+url);return r.json()}
 function safeText(x){return String(x??'—')}
 function tag(text,warn=false){const e=document.createElement('span');e.className='tag'+(warn?' warn':' good');e.textContent=text;return e}
@@ -49,6 +58,8 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
   const desc=document.createElement('p');desc.className='tiny sub';desc.textContent='شرط التفعيل: '+(sc.trigger||'غير محدد')+' | سبب الحالة: '+sc.reason+(sc.status.startsWith('REJECTED_')?' | لا توجد خطة دخول صالحة لهذا السيناريو':'');panel.append(desc);plans.append(panel);
  }
  d.append(plans);
+ // Numerical scenarios stay hidden until the underlying same-session chart is checked for conflicts.
+ plans.hidden=true;
  const chart=document.createElement('div');chart.className='chart-wrap';chart.textContent='جارٍ تحميل التاريخ السعري...';d.append(chart);
  const legend=document.createElement('p');legend.className='sub tiny';legend.textContent='الشارت: خط أزرق للإغلاقات المخزنة، أصفر SMA20، برتقالي للمقاومة السابقة. مصدر التاريخ قد يكون غير رسمي ويختلف عن إغلاق التقرير الرسمي.';d.append(legend);
  const why=document.createElement('h2');why.textContent='أسباب الترتيب والقرار';d.append(why);
@@ -65,16 +76,18 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
  if(t!==state.selected)return;const bars=(h.sessions||[]).filter(x=>x.date<=state.snapshot.session&&x.close>0).sort((a,b)=>a.date.localeCompare(b.date));svgChart(chart,bars,r);
  const last=bars.findLast(x=>x.date===state.snapshot.session);
  const mismatch=last&&Math.abs(last.close-r.close)>Math.max(.005,r.close*.001);
- evidence.textContent=!last?'الشارت لا يحتوي على جلسة الترتيب؛ المرجع الرسمي محفوظ منفصلًا. غير مؤهل للتداول.':mismatch?'تعارض أسعار: إغلاق التقرير المرجعي '+fmt(r.close)+' مقابل تاريخ المستودع '+fmt(last.close)+' لنفس الجلسة. ممنوع اعتماد إشارة حتى حل التعارض.':'السعر المخزن متفق حسابيًا مع مرجع التقرير لهذه الجلسة، لكن هوية ISIN واعتماد الاستراتيجية لا يزالان مطلوبين.';
+ const stale=isRankingStale();
+ plans.hidden=!last||mismatch||stale;
+ evidence.textContent=stale?'الترتيب مؤرخ '+state.snapshot.session+' بينما آخر جلسة متوقعة '+expectedSession()+'؛ تم حجب خطط الدخول القديمة.':!last?'الشارت لا يحتوي على جلسة الترتيب؛ تم حجب أرقام الدخول لعدم وجود مرجع تاريخي مطابق.':mismatch?'تعارض أسعار: إغلاق بيانات الترتيب '+fmt(r.close)+' مقابل تاريخ المستودع '+fmt(last.close)+' لنفس الجلسة. تم حجب خطط الدخول.':'السعر المخزن متفق حسابيًا مع مرجع الترتيب الثانوي لهذه الجلسة. الخطط أدناه بحثية فقط؛ لا يوجد اعتماد ISIN أو سعر إغلاق رسمي.';
  evidence.style.borderColor=mismatch?'#c97954':'#907338';
- }catch(e){chart.textContent='تعذر تحميل التاريخ السعري: '+e.message;evidence.textContent='الشارت غير متاح؛ لا يتم توليد توصية في غياب التاريخ الموثوق.'}
+ }catch(e){plans.hidden=true;chart.textContent='تعذر تحميل التاريخ السعري: '+e.message;evidence.textContent='الشارت غير متاح؛ تم حجب أرقام الدخول في غياب التاريخ الموثوق.'}
 }
 async function init(){try{
  const d=await get('./latest-ranking.json')
  if(!Array.isArray(d.rows)||!isDate(d.session))throw Error('تقرير ترتيب غير صالح');
  state.snapshot=d;state.rows=d.rows;$('session').textContent=d.session;$('count').textContent=d.rows.length;$('qualified').textContent=d.qualifiedTradeCount||0;$('mode').textContent='بحثي — مشروط';
- const age=(Date.now()-Date.parse(d.session+'T15:00:00+02:00'))/86400000;
- status((age>2?'تنبيه: بيانات الترتيب قديمة. ':'')+'جلسة '+d.session+' — '+d.rows.length+' أسهم مرتبة للبحث. الشارت من التاريخ المخزن؛ اختلاف مصادر الأسعار يُحجب معه قرار الشراء. لا توصيات شراء معتمدة.');
+ const stale=isRankingStale();
+ status((stale?'تحذير: التقرير المؤرخ '+d.session+' أقدم من آخر جلسة متوقعة '+expectedSession()+'؛ تم حجب جميع خطط الدخول القديمة. ':'')+'جلسة '+d.session+' — '+d.rows.length+' أسهم مرتبة للبحث. كل خطة تتطلب تطابق سعر الشارت لنفس الجلسة، ومراجعة مصدر السعر والهوية. لا توصيات شراء معتمدة.');
  drawList();await select(state.rows[0]?.ticker);
  }catch(e){status('فشل تحميل الترتيب: '+e.message+' — لا يجوز استخدام ترتيب قديم كأنه تحديث جديد.');$('list').textContent='لا توجد بيانات جاهزة للتقييم.'}}
 $('sort').addEventListener('change',drawList);$('q').addEventListener('input',drawList);$('reload').addEventListener('click',init);init();
