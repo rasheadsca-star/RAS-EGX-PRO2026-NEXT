@@ -67,6 +67,21 @@ jobs:
         if: steps.fetch.outcome == 'success'
         continue-on-error: true
         run: python3 parser/decision_room/tools/official_quality.py --input work/official_session.json --out work/official_quality.json
+      - name: Collect official EGX index ISIN candidates (nonblocking, never autoapproved)
+        if: steps.fetch.outcome == 'success'
+        id: isin
+        continue-on-error: true
+        env:
+          SESSION: ${{ steps.date.outputs.session }}
+        run: |
+          python3 parser/decision_room/tools/official_isin_indices.py \
+            --as-of "$SESSION" \
+            --source 'CASE30=https://beta.egx.com.eg/en/market/indices/constituents?index=CASE30' \
+            --csv-out work/egx30_isin_proposals.csv \
+            --evidence-out work/egx30_isin_provenance.json
+          python3 parser/decision_room/tools/egx_identity_reference.py \
+            --csv work/egx30_isin_proposals.csv --as-of "$SESSION" \
+            --out work/egx30_isin_format_check.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -74,6 +89,9 @@ jobs:
           path: |
             work/official_session.json
             work/official_quality.json
+            work/egx30_isin_proposals.csv
+            work/egx30_isin_provenance.json
+            work/egx30_isin_format_check.json
           retention-days: 30
           if-no-files-found: warn
       - name: Inform owner on missing PDF or failed source checks
