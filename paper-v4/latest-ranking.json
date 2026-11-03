@@ -1,6 +1,6 @@
 {
-  "schemaVersion": "2.2",
-  "generatedAt": "2026-11-03T19:50:25.995Z",
+  "schemaVersion": "2.3",
+  "generatedAt": "2026-11-03T19:56:07.935Z",
   "session": "2026-11-03",
   "mode": "AUTOMATED_SECONDARY_RESEARCH_WATCH",
   "sampleUniverse": 25,
@@ -57,7 +57,7 @@
   },
   "limitations": [
     "Generated only from same-date secondary rows; not equivalent to official EGX EOD certification.",
-    "Scenario entry/stop/targets are hypothetical 1.5R and 2.5R levels, not validated market orders; no broker orders or ISIN certification.",
+    "Scenario entry/stop/targets are hypothetical 1.5R and 2.5R levels. Tick-grid screening and conservative 20% band are not instrument-specific execution authorization; no broker orders or ISIN certification.",
     "Conflict with preserved user-provided official reference triggers exclusion.",
     "Stale or missing data must produce empty current ranking, never reuse previous ranking."
   ],
@@ -67,16 +67,18 @@
       "scenarios": [
         {
           "strategy": "BREAKOUT",
-          "status": "REJECTED_RISK",
-          "reason": "مخاطرة السيناريو خارج الحدود البحثية",
-          "riskPct": 12.43,
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 186.4,
+          "marketBoardConfirmed": false,
           "isExecutable": false
         },
         {
           "strategy": "SUPPORT_BOUNCE",
-          "status": "REJECTED_RISK",
-          "reason": "مخاطرة السيناريو خارج الحدود البحثية",
-          "riskPct": 46.81,
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 186.4,
+          "marketBoardConfirmed": false,
           "isExecutable": false
         }
       ],
@@ -443,26 +445,11 @@
       "scenarios": [
         {
           "strategy": "BREAKOUT",
-          "status": "WAIT_CONFIRMATION",
-          "reason": "اختراق قمة 20 جلسة، مع وقف أسفل دعم آخر 10 جلسات أو 1.5 ATR",
-          "entry": 360.22,
-          "stop": 317.18,
-          "target1": 424.78,
-          "target2": 467.82,
-          "riskPct": 11.95,
-          "rewardRisk1": 1.5,
-          "rewardRisk2": 2.5,
-          "currency": "EGP",
-          "tickRuleReference": "EGP_LT_2_0_001_ELSE_0_01_PROVISIONAL",
-          "priceBasis": "SECONDARY_HISTORICAL_RESEARCH",
-          "isExecutable": false,
-          "executionGuards": {
-            "tickSizeConfirmed": false,
-            "instrumentPriceLimitConfirmed": false,
-            "feesAndSlippageConfirmed": false,
-            "isinConfirmed": false
-          },
-          "trigger": "إغلاق جلسة فوق عتبة الاختراق مع حجم تداول >= 1.2 من متوسط 20 جلسة"
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 265.05,
+          "marketBoardConfirmed": false,
+          "isExecutable": false
         },
         {
           "strategy": "SUPPORT_BOUNCE",
@@ -472,7 +459,7 @@
           "isExecutable": false
         }
       ],
-      "preferredScenario": "BREAKOUT",
+      "preferredScenario": null,
       "priceLimitReviewed": false,
       "atr14": 28.687,
       "support10": 212.05,
@@ -499,9 +486,10 @@
       "scenarios": [
         {
           "strategy": "BREAKOUT",
-          "status": "REJECTED_RISK",
-          "reason": "مخاطرة السيناريو خارج الحدود البحثية",
-          "riskPct": 13.18,
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 124.07,
+          "marketBoardConfirmed": false,
           "isExecutable": false
         },
         {
@@ -539,26 +527,11 @@
       "scenarios": [
         {
           "strategy": "BREAKOUT",
-          "status": "WAIT_CONFIRMATION",
-          "reason": "اختراق قمة 20 جلسة، مع وقف أسفل دعم آخر 10 جلسات أو 1.5 ATR",
-          "entry": 163.8,
-          "stop": 147.23,
-          "target1": 188.65,
-          "target2": 205.22,
-          "riskPct": 10.12,
-          "rewardRisk1": 1.5,
-          "rewardRisk2": 2.5,
-          "currency": "EGP",
-          "tickRuleReference": "EGP_LT_2_0_001_ELSE_0_01_PROVISIONAL",
-          "priceBasis": "SECONDARY_HISTORICAL_RESEARCH",
-          "isExecutable": false,
-          "executionGuards": {
-            "tickSizeConfirmed": false,
-            "instrumentPriceLimitConfirmed": false,
-            "feesAndSlippageConfirmed": false,
-            "isinConfirmed": false
-          },
-          "trigger": "إغلاق جلسة فوق عتبة الاختراق مع حجم تداول >= 1.2 من متوسط 20 جلسة"
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 121.41,
+          "marketBoardConfirmed": false,
+          "isExecutable": false
         },
         {
           "strategy": "SUPPORT_BOUNCE",
@@ -568,7 +541,7 @@
           "isExecutable": false
         }
       ],
-      "preferredScenario": "BREAKOUT",
+      "preferredScenario": null,
       "priceLimitReviewed": false,
       "atr14": 11.04,
       "support10": 94.6,
@@ -723,26 +696,11 @@
       "scenarios": [
         {
           "strategy": "BREAKOUT",
-          "status": "WAIT_CONFIRMATION",
-          "reason": "اختراق قمة 20 جلسة، مع وقف أسفل دعم آخر 10 جلسات أو 1.5 ATR",
-          "entry": 80.67,
-          "stop": 72.67,
-          "target1": 92.67,
-          "target2": 100.67,
-          "riskPct": 9.92,
-          "rewardRisk1": 1.5,
-          "rewardRisk2": 2.5,
-          "currency": "EGP",
-          "tickRuleReference": "EGP_LT_2_0_001_ELSE_0_01_PROVISIONAL",
-          "priceBasis": "SECONDARY_HISTORICAL_RESEARCH",
-          "isExecutable": false,
-          "executionGuards": {
-            "tickSizeConfirmed": false,
-            "instrumentPriceLimitConfirmed": false,
-            "feesAndSlippageConfirmed": false,
-            "isinConfirmed": false
-          },
-          "trigger": "إغلاق جلسة فوق عتبة الاختراق مع حجم تداول >= 1.2 من متوسط 20 جلسة"
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 52.96,
+          "marketBoardConfirmed": false,
+          "isExecutable": false
         },
         {
           "strategy": "SUPPORT_BOUNCE",
@@ -752,7 +710,7 @@
           "isExecutable": false
         }
       ],
-      "preferredScenario": "BREAKOUT",
+      "preferredScenario": null,
       "priceLimitReviewed": false,
       "atr14": 5.326,
       "support10": 44.02,
@@ -1035,26 +993,11 @@
       "scenarios": [
         {
           "strategy": "BREAKOUT",
-          "status": "WAIT_CONFIRMATION",
-          "reason": "اختراق قمة 20 جلسة، مع وقف أسفل دعم آخر 10 جلسات أو 1.5 ATR",
-          "entry": 361.53,
-          "stop": 324.71,
-          "target1": 416.76,
-          "target2": 453.58,
-          "riskPct": 10.18,
-          "rewardRisk1": 1.5,
-          "rewardRisk2": 2.5,
-          "currency": "EGP",
-          "tickRuleReference": "EGP_LT_2_0_001_ELSE_0_01_PROVISIONAL",
-          "priceBasis": "SECONDARY_HISTORICAL_RESEARCH",
-          "isExecutable": false,
-          "executionGuards": {
-            "tickSizeConfirmed": false,
-            "instrumentPriceLimitConfirmed": false,
-            "feesAndSlippageConfirmed": false,
-            "isinConfirmed": false
-          },
-          "trigger": "إغلاق جلسة فوق عتبة الاختراق مع حجم تداول >= 1.2 من متوسط 20 جلسة"
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 299.99,
+          "marketBoardConfirmed": false,
+          "isExecutable": false
         },
         {
           "strategy": "SUPPORT_BOUNCE",
@@ -1064,7 +1007,7 @@
           "isExecutable": false
         }
       ],
-      "preferredScenario": "BREAKOUT",
+      "preferredScenario": null,
       "priceLimitReviewed": false,
       "atr14": 24.539,
       "support10": 238.6,
@@ -1419,26 +1362,11 @@
       "scenarios": [
         {
           "strategy": "BREAKOUT",
-          "status": "WAIT_CONFIRMATION",
-          "reason": "اختراق قمة 20 جلسة، مع وقف أسفل دعم آخر 10 جلسات أو 1.5 ATR",
-          "entry": 5.99,
-          "stop": 5.46,
-          "target1": 6.78,
-          "target2": 7.31,
-          "riskPct": 8.85,
-          "rewardRisk1": 1.491,
-          "rewardRisk2": 2.491,
-          "currency": "EGP",
-          "tickRuleReference": "EGP_LT_2_0_001_ELSE_0_01_PROVISIONAL",
-          "priceBasis": "SECONDARY_HISTORICAL_RESEARCH",
-          "isExecutable": false,
-          "executionGuards": {
-            "tickSizeConfirmed": false,
-            "instrumentPriceLimitConfirmed": false,
-            "feesAndSlippageConfirmed": false,
-            "isinConfirmed": false
-          },
-          "trigger": "إغلاق جلسة فوق عتبة الاختراق مع حجم تداول >= 1.2 من متوسط 20 جلسة"
+          "status": "REJECTED_DAILY_LIMIT",
+          "reason": "سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي",
+          "previousClose": 4.89,
+          "marketBoardConfirmed": false,
+          "isExecutable": false
         },
         {
           "strategy": "SUPPORT_BOUNCE",
@@ -1448,7 +1376,7 @@
           "isExecutable": false
         }
       ],
-      "preferredScenario": "BREAKOUT",
+      "preferredScenario": null,
       "priceLimitReviewed": false,
       "atr14": 0.346,
       "support10": 4.18,
