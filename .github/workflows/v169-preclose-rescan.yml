@@ -1,17 +1,7 @@
 name: V16.9.2 Pre-Close Rescan Orchestrator
 
-on:
+# Disabled legacy automatic trigger; available by manual dispatch only.\non:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/v169-preclose-rescan.yml"
-  schedule:
-    # Candidate runs around 14:15 Africa/Cairo across UTC+2 / UTC+3 seasons.
-    # GitHub schedules can start a few minutes late; the Cairo gate below accepts
-    # a bounded window and the completion lock prevents duplicate successful runs.
-    - cron: "12,15,18,21 11,12 * * 0-4"
-
 permissions:
   actions: write
   contents: write
