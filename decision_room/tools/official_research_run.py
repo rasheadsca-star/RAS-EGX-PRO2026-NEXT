@@ -37,9 +37,30 @@ def run(pdf,db,session,previous_session,out):
         mapped=resolve(bulletin["items"],base,previous_session,pdf_sha)
         mapped_path=out/"symbol_resolution.json"
         mapped_path.write_text(json.dumps(mapped,ensure_ascii=False,indent=2),encoding="utf-8")
-        if mapped["summary"]["provisional"]<1:raise PipelineError("NO_SAFE_CANDIDATE_MAPPINGS")
         merged=merge(base,pdf,mapped_path,session,research_allow_provisional=True,bulletin=staged)
         (out/"merge_report.json").write_text(json.dumps(merged,indent=2),encoding="utf-8")
+        if merged["outcome"]=="QUARANTINE_ONLY" or mapped["summary"]["provisional"]==0:
+            # A successfully authenticated PDF with ZERO attributable ticker
+            # identities can be audited, but must never be used to advance
+            # the published price session or emit a fresh recommendation.
+            if merged["outcome"]!="QUARANTINE_ONLY" or merged.get("inserted")!=0:
+                raise PipelineError("QUARANTINE_STATE_INCONSISTENT")
+            if sha(db)!=input_sha:
+                raise PipelineError("INPUT_DB_MODIFIED")
+            evidence=dict(
+                status="RESEARCH_QUARANTINE_ONLY",publication_status="WITHHELD",
+                reason="ZERO_APPROVABLE_TICKER_IDENTITIES",
+                approved_for_paper_automation=False,approved_for_trading=False,
+                source_session=session,pdf_sha256=pdf_sha,
+                original_db_sha256=input_sha,untouched_original=True,
+                research_db_sha256=sha(base),matched_provisional=0,
+                unresolved=len(mapped["items"]),snapshot_sha256=None,
+                generated_release=None,market_state="UNKNOWN")
+            (out/"evidence.json").write_text(
+                json.dumps(evidence,ensure_ascii=False,indent=2),encoding="utf-8")
+            return evidence
+        if merged["outcome"] not in ("RESEARCH_STAGED","NOOP"):
+            raise PipelineError("UNEXPECTED_MERGE_OUTCOME:"+str(merged["outcome"]))
         engine=Path(__file__).resolve().parents[1]/"run_daily.py"
         result=subprocess.run([sys.executable,str(engine),"--db",str(base),
             "--out",str(out/"decision_room"),"--now",session+"T18:30:00+02:00"],
@@ -74,7 +95,10 @@ def main():
         p.add_argument("--"+k,required=True)
     a=p.parse_args()
     try:
-        print(json.dumps(run(a.pdf,a.db,a.session,a.previous_session,a.out),ensure_ascii=False))
+        result=run(a.pdf,a.db,a.session,a.previous_session,a.out)
+        print(json.dumps(result,ensure_ascii=False))
+        if result.get("publication_status")=="WITHHELD":
+            raise SystemExit(3)
     except Exception as exc:
         print("::error::"+type(exc).__name__+": "+str(exc),file=sys.stderr)
         raise SystemExit(2)
