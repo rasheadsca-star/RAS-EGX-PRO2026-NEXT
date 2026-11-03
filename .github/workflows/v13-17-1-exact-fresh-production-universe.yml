@@ -1,25 +1,8 @@
 name: Install & Run V13.20 Exact-Fresh Production + Multi-Session Priority
 
+# Parked legacy engine; explicit manual dispatch only.
 on:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "Run mode"
-        required: true
-        default: "auto"
-        type: choice
-        options:
-          - auto
-          - intraday
-          - postclose
-          - install_only
-          - validate_only
-  push:
-    paths:
-      - ".github/workflows/v13-17-1-exact-fresh-production-universe.yml"
-  schedule:
-    - cron: "*/15 6-18 * * 0-4"
-
 permissions:
   contents: write
   pages: write

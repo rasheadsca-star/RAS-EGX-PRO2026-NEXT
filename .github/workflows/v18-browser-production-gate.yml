@@ -1,17 +1,8 @@
 name: V18 Browser Production Gate
 
+# Parked legacy engine; explicit manual dispatch only.
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - "V18 Durable Post-Close Coordinator"
-    types:
-      - completed
-  push:
-    paths:
-      - "v18-live/index.html"
-      - ".github/workflows/v18-browser-production-gate.yml"
-
 permissions:
   contents: read
 
