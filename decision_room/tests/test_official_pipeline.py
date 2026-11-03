@@ -72,6 +72,27 @@ class OfficialPipelineTests(unittest.TestCase):
   again=merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
   self.assertEqual(again["outcome"],"NOOP")
   self.assertEqual(sha(self.db),stable)
+ def test_two_quarantine_only_sessions_preserve_calendar_provenance(self):
+  body=json.loads(self.mapped.read_text())
+  body["summary"]["provisional"]=0
+  body["items"][0]["ticker"]=None
+  body["items"][0]["resolution_status"]="QUARANTINED_NAME_OR_AMBIGUITY"
+  self.mapped.write_text(json.dumps(body))
+  r1=merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  self.assertEqual(r1["outcome"],"QUARANTINE_ONLY")
+  self.pdf.write_bytes(b"%PDF-fixture-next-session")
+  sha3=sha(self.pdf)
+  bulletin=json.loads(self.bulletin.read_text())
+  bulletin.update(session="2026-11-03",pdf_sha256=sha3)
+  self.bulletin.write_text(json.dumps(bulletin))
+  body["summary"].update(previous_session="2026-11-02",source_sha256=sha3)
+  self.mapped.write_text(json.dumps(body))
+  r2=merge(self.db,self.pdf,self.mapped,"2026-11-03",True,bulletin=self.bulletin)
+  self.assertEqual(r2["outcome"],"QUARANTINE_ONLY")
+  c=sqlite3.connect(self.db)
+  self.assertEqual(c.execute("select count(*) from official_session where session_date in ('2026-11-02','2026-11-03')").fetchone()[0],4)
+  self.assertEqual(c.execute("select count(*) from canonical_bars where date>='2026-11-02'").fetchone()[0],0)
+  c.close()
  def test_import_twice_noop_and_backup(self):
   start=sha(self.db)
   self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)["inserted"],1)
