@@ -90,6 +90,7 @@ def _merge_exclusive(db,pdf,mapping,session,research_allow_provisional=False,fai
         if prior not in (meta["previous_session"],session):raise MergeError("UNEXPECTED_PREVIOUS_SESSION:"+str(prior))
         known={r[0] for r in c.execute("select ticker from symbol_identity")}
         inserted=0
+        staged_rows=0
         for r in items:
             t=r.get("ticker");market=r["market"];rank=r["rank"]
             if t and t not in known:raise MergeError("UNRECOGNISED_TICKER:"+t)
@@ -120,10 +121,11 @@ def _merge_exclusive(db,pdf,mapping,session,research_allow_provisional=False,fai
             else:
                 c.execute("insert into official_session(session_date,market,pdf_page,pdf_rank,name_en,currency,open,high,low,close,volume,value,chg_pct,ticker,resolution_status,resolution_evidence,bounds_status) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (session,market,r["page"],rank,r["name"],r["currency"],r["open"],r["high"],r["low"],r["close"],r["volume"],r.get("value_traded"),r["chg_pct"],t,status,json.dumps(r.get("evidence",{}),sort_keys=True),"CHECK" if status=="QUARANTINED_OHLC" else "OK"))
-        if not inserted:
+                staged_rows+=1
+        if not inserted and not staged_rows:
             c.rollback();c.close();c=None
             if sha(db)!=before:raise MergeError("DB_CHANGED_EXTERNALLY")
-            return dict(outcome="NOOP",inserted=0,db_sha256_before=before,db_sha256_after=before,source_sha256=digest)
+            return dict(outcome="NOOP",inserted=0,staged_rows=0,db_sha256_before=before,db_sha256_after=before,source_sha256=digest)
         c.execute("insert or replace into source_registry(source_id,provider_family,description,location,snapshot_ref,file_sha256,license_status,adjusted_or_raw,interval,currency,date_timezone,independence_note) values (?,?,?,?,?,?,?,?,?,?,?,?)",
             ("S6_EGX_"+session,"egx_official","Research EGX PDF: ticker identity provisional",pdf.name,session,digest,"Official PDF, symbol identity UNVERIFIED","RAW","1d","EGP","Africa/Cairo","Never executable"))
         c.commit()
@@ -138,7 +140,7 @@ def _merge_exclusive(db,pdf,mapping,session,research_allow_provisional=False,fai
             os.replace(tmp_backup,backup);fsync_dir(db.parent)
         finally:tmp_backup.unlink(missing_ok=True)
         os.replace(temp,db);fsync_dir(db.parent)
-        return dict(outcome="RESEARCH_STAGED",inserted=inserted,
+        return dict(outcome="RESEARCH_STAGED" if inserted else "QUARANTINE_ONLY",inserted=inserted,staged_rows=staged_rows,
                     db_sha256_before=before,db_sha256_after=sha(db),
                     source_sha256=digest,backup_path=str(backup))
     finally:
