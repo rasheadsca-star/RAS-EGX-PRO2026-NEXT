@@ -1,17 +1,7 @@
 name: Cascade MAIN APP Session to V17 V19 V20
 
-on:
+# Paused by user request: only explicit manual workflow_dispatch may run.\non:
   workflow_dispatch:
-    inputs:
-      force:
-        description: "Force refresh even when this session is already marked complete"
-        required: false
-        default: false
-        type: boolean
-  workflow_run:
-    workflows: ["EGX V16.9 Basket Engine", "EGX MAIN APP V16.9.2 P2 Automatic Scan"]
-    types: [completed]
-
 permissions:
   actions: write
   contents: write

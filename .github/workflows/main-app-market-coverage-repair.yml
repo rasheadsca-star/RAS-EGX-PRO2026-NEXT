@@ -1,19 +1,7 @@
 name: MAIN APP — Market Coverage Repair
 
-on:
+# Paused by user request: only explicit manual workflow_dispatch may run.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["EGX MAIN APP V16.9.2 P2 Automatic Scan"]
-    types: [completed]
-  push:
-    branches: ["main"]
-    paths:
-      - "scripts/stable/v16-market-second-source-resolver.cjs"
-      - "scripts/stable/v16-market-coverage-reconciler.cjs"
-      - "scripts/stable/v16-market-universe-disposition.cjs"
-      - "scripts/stable/v16-main-app-professional-coverage-finalizer.cjs"
-      - ".github/workflows/main-app-market-coverage-repair.yml"
-
 permissions:
   contents: write
   actions: write

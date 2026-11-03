@@ -1,29 +1,7 @@
 name: Astra G22 Post-Close Session Refresh
 
-on:
+# Paused by user request: only explicit manual workflow_dispatch may run.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows: ['EGX MAIN APP V16.9.2 P2 Automatic Scan']
-    types: [completed]
-  schedule:
-    # Hourly fallback only. The handoff guard uses Africa/Cairo and only
-    # permits 15:00-21:59 on EGX trading days after a final MAIN APP publish.
-    - cron: '10 12-19 * * 0-4'
-  push:
-    branches: ['main']
-    paths:
-      - '.github/workflows/astra-g22-postclose-refresh.yml'
-      - 'data/ops/g22-main-app-handoff.json'
-      - 'scripts/astra/g22-postclose-refresh.cjs'
-      - 'scripts/astra/g22-verified-history-bridge.cjs'
-      - 'tests/astra/g22-verified-history-bridge.test.cjs'
-      - 'scripts/astra/g22-postclose-handoff-guard.cjs'
-      - 'scripts/astra/g22-refresh-session-exceptions.cjs'
-      - 'scripts/astra/g22-refresh-v16-domain-exceptions.cjs'
-      - 'tests/astra/g22-postclose-handoff-guard.test.cjs'
-      - 'scripts/astra/native/astra-intelligence.cjs'
-      - 'tests/astra/astra-native-intelligence.test.cjs'
-
 permissions:
   contents: write
   actions: write

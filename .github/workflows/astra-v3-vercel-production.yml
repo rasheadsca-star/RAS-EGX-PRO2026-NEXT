@@ -3,22 +3,8 @@ name: Astra PRO v3 Vercel Production
 # post-close refresh dispatches this workflow explicitly because GITHUB_TOKEN commits do not fan out to other workflows
 # the self-healing supervisor also re-dispatches this publisher whenever live identity lags repository truth
 
-on:
+# Paused by user request: only explicit manual workflow_dispatch may run.\non:
   workflow_dispatch:
-  push:
-    branches: ['main']
-    paths:
-      - 'astra-prod/app/data.json'
-      - 'astra-prod/app/pro-v3.html'
-      - 'astra-prod/app/astra-core-pro-v3.js'
-      - 'astra-prod/app/astra-performance-pro-v3.js'
-      - 'astra-prod/app/astra-portfolio-pro-v3.js'
-      - 'astra-prod/app/astra-analytics-pro-v3.js'
-      - 'astra-prod/app/intelligence/**'
-      - 'tests/astra/astra-pro-v3-browser-smoke.cjs'
-      - 'scripts/astra/astra-claude-retrospective-comparison.mjs'
-      - '.github/workflows/astra-v3-vercel-production.yml'
-
 permissions:
   contents: write
 

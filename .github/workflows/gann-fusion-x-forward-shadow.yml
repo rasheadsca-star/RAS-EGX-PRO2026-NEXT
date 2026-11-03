@@ -1,19 +1,8 @@
 name: Gann Fusion X Forward Shadow
 
 # Runs twice after EGX sessions so late upstream snapshots can be captured without backfilling stale signals.
-on:
-  push:
-    branches: [main, feature/gann-fusion-x-forward-shadow]
-    paths:
-      - 'gann-fusion-x/scripts/forward-shadow-v2.cjs'
-      - 'gann-fusion-x/scripts/forward-shadow-check.cjs'
-      - 'gann-fusion-x/data/forward-shadow-ledger.json'
-      - '.github/workflows/gann-fusion-x-forward-shadow.yml'
+# Paused by user request: only explicit manual workflow_dispatch may run.\non:
   workflow_dispatch:
-  schedule:
-    - cron: '15 13 * * 0-4'
-    - cron: '15 15 * * 0-4'
-
 permissions:
   contents: write
 

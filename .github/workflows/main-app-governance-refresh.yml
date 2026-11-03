@@ -1,42 +1,7 @@
 name: MAIN APP — Canonical Governance Refresh
 
-on:
+# Paused by user request: only explicit manual workflow_dispatch may run.\non:
   workflow_dispatch:
-  push:
-    branches: ["main"]
-    paths:
-      - "data/stable/v16-v169-primary-decision.json"
-      - "data/stable/v15-price-truth.json"
-      - "data/fetch-status.json"
-      - "data/market.json"
-      - "data/v17/current.json"
-      - "data/stable/v16-v169-live-evaluation.json"
-      - "data/research/v16-v169-basket-engine.json"
-      - "data/research/v16-v169-target-hit-audit.json"
-      - "scripts/stable/v16-recommendation-freshness-guard.cjs"
-      - "scripts/stable/v16-main-app-governance.cjs"
-      - "scripts/stable/v16-main-app-ledger-reconcile.cjs"
-      - "scripts/stable/v16-main-app-consensus.cjs"
-      - "scripts/stable/v16-main-app-engine-performance.cjs"
-      - "scripts/stable/v16-main-app-professional-readiness.cjs"
-      - "scripts/stable/v16-main-app-professional-coverage-finalizer.cjs"
-      - "scripts/stable/v16-publish-v169-basket.cjs"
-      - "preview-v16/app/decision-source.js"
-      - "preview-v16/app/v169-p2.html"
-      - "preview-v16/app/main-app-governance-overlay.js"
-      - "preview-v16/app/main-app-consensus-overlay.js"
-      - "preview-v16/app/main-app-professional-readiness-v2.js"
-      - "preview-v16/app/stock-analyzer.js"
-      - "preview-v16/app/stock-analyzer-chart.js"
-      - "preview-v16/app/stock-analyzer-decision.js"
-      - ".github/workflows/main-app-governance-refresh.yml"
-      - ".github/workflows/main-app-v19v6-consensus-enrich.yml"
-      - ".github/workflows/main-app-immutability-guard.yml"
-  schedule:
-    # One canonical refresh cadence. Other comparison workflows are diagnostic-only.
-    # Cairo gate below accepts 10:00-21:59 only and handles Egypt DST dynamically.
-    - cron: "25 7-19 * * 0-4"
-
 permissions:
   contents: write
   actions: write

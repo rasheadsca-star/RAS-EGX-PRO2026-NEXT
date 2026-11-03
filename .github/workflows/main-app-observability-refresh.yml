@@ -1,24 +1,7 @@
 name: MAIN APP — Audit Drift Shadow Refresh
 
-on:
+# Paused by user request: only explicit manual workflow_dispatch may run.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["EGX MAIN APP V16.9.2 P2 Automatic Scan"]
-    types: [completed]
-  push:
-    branches: ["main"]
-    paths:
-      - "scripts/stable/v16-main-app-intelligence-snapshot.cjs"
-      - "scripts/stable/v16-main-app-intelligence-snapshot-v3.cjs"
-      - "scripts/stable/v16-main-app-financial-resolver.cjs"
-      - "scripts/stable/v16-main-app-drift-monitor.cjs"
-      - "scripts/stable/v16-main-app-challenger-shadow.cjs"
-      - "scripts/stable/v16-main-app-pilot-lock-guard.cjs"
-      - "scripts/stable/v16-main-app-auto-data-guard.cjs"
-      - "scripts/stable/v16-main-app-professional-readiness.cjs"
-      - "scripts/stable/v16-main-app-professional-coverage-finalizer.cjs"
-      - ".github/workflows/main-app-observability-refresh.yml"
-
 permissions:
   contents: write
   actions: write
