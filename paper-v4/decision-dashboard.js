@@ -13,6 +13,22 @@ const expectedSession=()=>{
 };
 const isRankingStale=()=>!state.snapshot||state.snapshot.session<expectedSession();
 async function get(url){const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status+' '+url);return r.json()}
+const RAW_RANKING='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/latest-ranking.json';
+const validRanking=d=>d&&/^(?:2\\.[4-9]|[3-9]\\.)/.test(String(d.schemaVersion||''))&&isDate(d.session)
+  &&d.qualifiedTradeCount===0&&String(d.mode).includes('RESEARCH')
+  &&Array.isArray(d.rows)&&d.rows.length>0
+  &&d.rows.every(r=>r.sourceSession===d.session&&r.recommendation==='WATCH_ONLY'
+  &&Array.isArray(r.scenarios)&&r.scenarios.every(p=>p.isExecutable===false));
+async function loadLatestRanking(){
+ const urls=[RAW_RANKING,'./latest-ranking.json'],results=await Promise.allSettled(urls.map(get));
+ const accepted=results.map((v,i)=>v.status==='fulfilled'?{data:v.value,source:i===0?'GitHub main':'Vercel static'}:null)
+  .filter(v=>v&&validRanking(v.data));
+ if(!accepted.length)throw Error('لا يوجد ملف ترتيبات بحثية صالح من GitHub أو Vercel');
+ accepted.sort((a,b)=>b.data.session.localeCompare(a.data.session)
+  ||String(b.data.generatedAt||'').localeCompare(String(a.data.generatedAt||'')));
+ return accepted[0];
+}
+
 function safeText(x){return String(x??'—')}
 function tag(text,warn=false){const e=document.createElement('span');e.className='tag'+(warn?' warn':' good');e.textContent=text;return e}
 function createCard(r){const b=document.createElement('button');b.type='button';b.className='stock';b.setAttribute('aria-selected',r.ticker===state.selected?'true':'false');b.addEventListener('click',()=>select(r.ticker));
@@ -83,11 +99,11 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
  }catch(e){plans.hidden=true;chart.textContent='تعذر تحميل التاريخ السعري: '+e.message;evidence.textContent='الشارت غير متاح؛ تم حجب أرقام الدخول في غياب التاريخ الموثوق.'}
 }
 async function init(){try{
- const d=await get('./latest-ranking.json')
+ const loaded=await loadLatestRanking(),d=loaded.data
  if(!Array.isArray(d.rows)||!isDate(d.session))throw Error('تقرير ترتيب غير صالح');
  state.snapshot=d;state.rows=d.rows;$('session').textContent=d.session;$('count').textContent=d.rows.length;$('qualified').textContent=d.qualifiedTradeCount||0;$('mode').textContent='بحثي — مشروط';
  const stale=isRankingStale();
- status((stale?'تحذير: التقرير المؤرخ '+d.session+' أقدم من آخر جلسة متوقعة '+expectedSession()+'؛ تم حجب جميع خطط الدخول القديمة. ':'')+'جلسة '+d.session+' — '+d.rows.length+' أسهم مرتبة للبحث. كل خطة تتطلب تطابق سعر الشارت لنفس الجلسة، ومراجعة مصدر السعر والهوية. لا توصيات شراء معتمدة.');
+ status((stale?'تحذير: التقرير المؤرخ '+d.session+' أقدم من آخر جلسة متوقعة '+expectedSession()+'؛ تم حجب جميع خطط الدخول القديمة. ':'')+'مصدر ملف الترتيب: '+loaded.source+' | جلسة '+d.session+' — '+d.rows.length+' أسهم مرتبة للبحث. كل خطة تتطلب تطابق سعر الشارت لنفس الجلسة، ومراجعة مصدر السعر والهوية. لا توصيات شراء معتمدة.');
  drawList();await select(state.rows[0]?.ticker);
  }catch(e){status('فشل تحميل الترتيب: '+e.message+' — لا يجوز استخدام ترتيب قديم كأنه تحديث جديد.');$('list').textContent='لا توجد بيانات جاهزة للتقييم.'}}
 $('sort').addEventListener('change',drawList);$('q').addEventListener('input',drawList);$('reload').addEventListener('click',init);init();
