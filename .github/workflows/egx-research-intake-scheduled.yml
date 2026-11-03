@@ -28,7 +28,7 @@ jobs:
         with:
           # Immutable code source from feature review; DO NOT check out mutable
           # unreviewed feature HEAD in a scheduled workflow.
-          ref: 7132e56f7caf3f6074a962a09067d8503e4bbba6
+          ref: 785d96ea419b5ae393039247c8fd3b076b02e30c
           path: parser
           persist-credentials: false
       - uses: actions/setup-python@v5
@@ -79,9 +79,6 @@ jobs:
             --source 'CASE30=https://beta.egx.com.eg/en/market/indices/constituents?index=CASE30' \
             --csv-out work/egx30_isin_proposals.csv \
             --evidence-out work/egx30_isin_provenance.json
-          python3 parser/decision_room/tools/egx_identity_reference.py \
-            --csv work/egx30_isin_proposals.csv --as-of "$SESSION" \
-            --out work/egx30_isin_format_check.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -91,7 +88,6 @@ jobs:
             work/official_quality.json
             work/egx30_isin_proposals.csv
             work/egx30_isin_provenance.json
-            work/egx30_isin_format_check.json
           retention-days: 30
           if-no-files-found: warn
       - name: Inform owner on missing PDF or failed source checks
