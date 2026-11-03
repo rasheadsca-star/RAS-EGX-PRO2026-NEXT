@@ -6,8 +6,8 @@
   "sourceSha256": "c87d961379f32a1beeb1498dc238010446a4b455e3d7511b5f634cf85d2b93a8",
   "sourcePages": 56,
   "reportIssuedAtCairo": "2026-11-03 16:06:23",
-  "reviewCsv": "EGX_Official_2026-11-03_extracted_review.csv",
-  "reviewCsvStatus": "PRELIMINARY_NOT_COMMITTED_TO_CENTRAL_DB",
+  "reviewCsv": "EGX_Official_2026-11-03_reconciled_review.csv",
+  "reviewCsvStatus": "RECONCILED_EXACT_PDF_VALUES_BUT_IDENTITIES_UNAPPROVED",
   "totalExtractedMainMarketRows": 217,
   "passOhlcConsistency": 190,
   "requiresOhlcReview": 27,
@@ -16,9 +16,22 @@
   "newDailyStrategySignalsFromThisImport": 0,
   "policy": "QUARANTINE_UNTIL_IDENTITY_AND_ROW_SOURCE_VERIFICATION",
   "notes": [
-    "190 means CSV rows pass arithmetic OHLC consistency only; it is NOT 190 approved symbols or verified closes.",
-    "27 rows require investigation of PDF values and text extraction; do not infer corrected values.",
-    "No Nov-01 / Nov-02 official PDFs included in this artifact.",
-    "No live automated server ingestion or certified strategy recalculation is represented by this audit."
+    "All 217 PDF rows independently matched on row number, page and five OHLCV fields after correction. This verifies transcription against the supplied PDF, NOT official ISIN/ticker identity.",
+    "190 rows pass arithmetic OHLC consistency; 27 require manual OHLC or market-rule investigation. The PDF itself displays some opens outside the day's high-low; do not silently alter values.",
+    "No symbol identity crosswalk certification or central database promotion has occurred.",
+    "No new certified strategy output generated."
+  ],
+  "reviewCsvSha256": "d8ce5e0a9cd0079135b47e2c201349c5ae0e5e4af133a3884701ad5aeb9fec8e",
+  "sourceRowPdfMatches": 217,
+  "sourceRowPdfMismatches": 0,
+  "egyptianPoundRows": 209,
+  "usdRows": 8,
+  "passEgpOhlc": 186,
+  "passUsdOhlc": 4,
+  "corrections": [
+    {
+      "rowNumber": 4,
+      "reason": "Original extracted CSV assigned a different company to rank 4; independently reconciled to Emaar Misr for Development from official PDF page 17. All five OHLCV values and source page rechecked."
+    }
   ]
 }
