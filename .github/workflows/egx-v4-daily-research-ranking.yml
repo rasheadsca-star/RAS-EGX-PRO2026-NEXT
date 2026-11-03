@@ -1,6 +1,11 @@
 name: EGX V4 daily research ranking dashboard
 # Research-only scheduled dashboard; never certifies prices, ISIN, trading strategies, or broker orders.
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/egx-v4-daily-research-ranking.yml'
+      - 'scripts/paper-v4/build-daily-research-ranking.cjs'
   schedule:
     - cron: '15 18 * * 0-4'  # 20:15 UTC+2, Sun-Thu; EGX postclose
   workflow_dispatch:
