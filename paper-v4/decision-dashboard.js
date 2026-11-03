@@ -39,14 +39,14 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
    const no=document.createElement('div');no.className='notice';no.textContent='خطط الدخول والوقف والأهداف غير متاحة في ملف الترتيب المعروض، أو رفضت بسبب مخاطر غير ملائمة. تحقق من تحديث نشر البيانات.';plans.append(no);
  }else for(const sc of r.scenarios){
   const panel=document.createElement('div');panel.className='notice';panel.style.margin='10px 0';
-  const heading=document.createElement('strong');heading.textContent=(scenarioNames[sc.strategy]||sc.strategy)+' — '+(sc.status==='PAPER_CONDITIONAL'?'مستوفٍ لشروط بحثية أولية؛ لم يُعتمد':'بانتظار تحقق الشروط');panel.append(heading);
+  const heading=document.createElement('strong');heading.textContent=(scenarioNames[sc.strategy]||sc.strategy)+' — '+(sc.status==='PAPER_CONDITIONAL'?'مستوفٍ لشروط بحثية أولية؛ لم يُعتمد':sc.status==='WAIT_CONFIRMATION'?'بانتظار تحقق الشروط':sc.status==='REJECTED_DAILY_LIMIT'?'مرفوض: خارج نطاق الحركة السعرية':sc.status==='REJECTED_RISK'?'مرفوض: مخاطرة مرتفعة':'مرفوض: لم يجتز الفحص');panel.append(heading);
   if(sc.entry!=null&&sc.stop!=null&&sc.target1!=null){
    const cells=document.createElement('div');cells.className='facts';cells.style.marginTop='10px';
    for(const [label,value] of [['الدخول الافتراضي',fmt(sc.entry,4)+' ج'],['وقف الخسارة',fmt(sc.stop,4)+' ج'],['الهدف الأول',fmt(sc.target1,4)+' ج'],['الهدف الثاني',fmt(sc.target2,4)+' ج'],['مخاطرة السعر',fmt(sc.riskPct)+'%'],['العائد / المخاطرة','1:'+fmt(sc.rewardRisk1,1)+' / 1:'+fmt(sc.rewardRisk2,1)]]){
     const c=document.createElement('div');c.className='fact';const t=document.createElement('small');t.className='sub';t.textContent=label;const v=document.createElement('b');v.textContent=value;c.append(t,v);cells.append(c);
    }panel.append(cells);
   }
-  const desc=document.createElement('p');desc.className='tiny sub';desc.textContent='شرط التفعيل: '+(sc.trigger||'غير محدد')+' | سبب الحالة: '+sc.reason+(sc.status==='REJECTED_RISK'?' | مرفوض لتجاوز ضوابط المخاطرة':'');panel.append(desc);plans.append(panel);
+  const desc=document.createElement('p');desc.className='tiny sub';desc.textContent='شرط التفعيل: '+(sc.trigger||'غير محدد')+' | سبب الحالة: '+sc.reason+(sc.status.startsWith('REJECTED_')?' | لا توجد خطة دخول صالحة لهذا السيناريو':'');panel.append(desc);plans.append(panel);
  }
  d.append(plans);
  const chart=document.createElement('div');chart.className='chart-wrap';chart.textContent='جارٍ تحميل التاريخ السعري...';d.append(chart);
