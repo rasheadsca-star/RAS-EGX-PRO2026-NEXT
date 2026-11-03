@@ -19,6 +19,7 @@ from pathlib import Path
 import re
 import urllib.parse
 import urllib.request
+from egx_identity_reference import isin_valid
 
 ISIN = re.compile(r"^EG[A-Z0-9]{9}[0-9]$")
 REUTERS = re.compile(r"^([A-Z0-9.]{2,20})\.CA$")
@@ -70,6 +71,7 @@ def parse(source_html,url,as_of):
         code=cells[1].upper().strip()
         m=REUTERS.fullmatch(code)
         if not ISIN.fullmatch(isin) or not m:continue
+        if not isin_valid(isin):raise ExtractError("INVALID_ISIN_CHECK_DIGIT:"+isin)
         name=cells[2].strip()
         if not name:raise ExtractError("EMPTY_COMPANY_NAME")
         rows.append(dict(ticker=m.group(1),isin=isin,name=name,source_url=url,effective_from=as_of))
