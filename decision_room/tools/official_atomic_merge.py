@@ -4,7 +4,7 @@
 Tickers derived from previous close/name are provisional. NEVER label such
 bars OFFICIAL_EGX or publish executable trading recommendations.
 """
-import argparse, hashlib, json, os, shutil, sqlite3, tempfile
+import argparse, contextlib, fcntl, hashlib, json, os, shutil, sqlite3, tempfile
 from pathlib import Path
 from official_resolver import norm
 
@@ -24,7 +24,34 @@ def fsync_dir(path):
     try:os.fsync(fd)
     finally:os.close(fd)
 
+@contextlib.contextmanager
+def exclusive_db_merge_lock(db):
+    """Nonblocking advisory lock: all EGX merge jobs must use this protocol."""
+    lock_path=Path(str(db)+".egx-merge.lock")
+    with lock_path.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise MergeError("CONCURRENT_OFFICIAL_MERGE_BLOCKED") from exc
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+
+def assert_no_active_sqlite_sidecars(db):
+    # Never replace an SQLite main DB while rollback or WAL recovery metadata
+    # might still reference its old file identity.
+    for suffix in ("-wal","-shm","-journal"):
+        if Path(str(db)+suffix).exists():
+            raise MergeError("SQLITE_SIDECAR_ACTIVE:"+suffix)
+
 def merge(db,pdf,mapping,session,research_allow_provisional=False,fail_at=None,bulletin=None):
+    db=Path(db).resolve()
+    with exclusive_db_merge_lock(db):
+        assert_no_active_sqlite_sidecars(db)
+        return _merge_exclusive(db,pdf,mapping,session,research_allow_provisional,fail_at,bulletin)
+
+def _merge_exclusive(db,pdf,mapping,session,research_allow_provisional=False,fail_at=None,bulletin=None):
     db=Path(db).resolve();pdf=Path(pdf).resolve()
     if not db.is_file() or not pdf.is_file():raise MergeError("MISSING_DATABASE_OR_SOURCE_PDF")
     if not research_allow_provisional:raise MergeError("UNVERIFIED_SYMBOL_MAPPING: research only; approval required")
