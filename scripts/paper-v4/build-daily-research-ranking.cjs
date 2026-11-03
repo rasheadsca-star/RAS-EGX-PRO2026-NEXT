@@ -31,6 +31,17 @@ function build(){
   const bars=(h.sessions||[]).filter(quality).sort((a,b)=>a.date.localeCompare(b.date));
   const previous=bars.filter(x=>x.date<today);
   if(previous.length<60){excluded.push({ticker,reason:'INSUFFICIENT_HISTORY'});continue}
+  // Prevent silent mixing of today's quote with a conflicting historical bar or a stale technical baseline.
+  const historyCurrent=bars.findLast(x=>x.date===today);
+  const currentQuote=Number(m.price??m.last);
+  if(historyCurrent && Math.abs(Number(historyCurrent.close)-currentQuote)>Math.max(.01,currentQuote*.001)){
+    excluded.push({ticker,reason:'HISTORY_SAME_SESSION_CLOSE_CONFLICT',historyClose:Number(historyCurrent.close),feedClose:currentQuote});continue;
+  }
+  const lastTechnicalSession=previous.at(-1).date;
+  const gapDays=(Date.parse(today+'T12:00:00Z')-Date.parse(lastTechnicalSession+'T12:00:00Z'))/86400000;
+  if(!Number.isFinite(gapDays)||gapDays>7){
+    excluded.push({ticker,reason:'STALE_TECHNICAL_HISTORY',lastTechnicalSession});continue;
+  }
   if(h.currency&&h.currency!=='EGP'){excluded.push({ticker,reason:'NON_EGP_CURRENCY_NOT_MODELED'});continue}
   if(h.isin==null){/* identity still unapproved; still research */}
   const close=Number(m.price||m.last), open=+m.open,high=+m.high,low=+m.low,volume=+m.volume;
@@ -104,12 +115,12 @@ function build(){
  const top=candidates.slice(0,25).map((x,i)=>({...x,rank:i+1}));
  const officialAvailable=false; // No durable, verified PDF/ISIN crosswalk connected to this scheduled process.
  return {
- schemaVersion:'2.3',generatedAt:new Date().toISOString(),session:today,mode:'AUTOMATED_SECONDARY_RESEARCH_WATCH',sampleUniverse:top.length,qualifiedTradeCount:0,
+ schemaVersion:'2.4',generatedAt:new Date().toISOString(),session:today,mode:'AUTOMATED_SECONDARY_RESEARCH_WATCH',sampleUniverse:top.length,qualifiedTradeCount:0,
  source:{provider:feed.source||'secondary',marketRows:source.length,sessionMatchedRows:snapshotRows.length,historyFilesExamined:fs.readdirSync(historyDir).filter(x=>x.endsWith('.json')).length,officialSessionVerified:officialAvailable,isinIndependentlyCertified:false},
  comparisonModel:{strategy:'breakout_research_proximity_volume_trend',status:'RESEARCH_ONLY'},
  rankingFormula:'35% resistance proximity +25% volume ratio +25% relative SMA20 trend +15% above SMA20; not a calibrated win probability',
  exclusions:{count:excluded.length,samples:excluded.slice(0,30)},
- limitations:['Generated only from same-date secondary rows; not equivalent to official EGX EOD certification.','Scenario entry/stop/targets are hypothetical 1.5R and 2.5R levels. Tick-grid screening and conservative 20% band are not instrument-specific execution authorization; no broker orders or ISIN certification.','Conflict with preserved user-provided official reference triggers exclusion.','Stale or missing data must produce empty current ranking, never reuse previous ranking.'],
+ limitations:['Generated only from same-date secondary rows; not equivalent to official EGX EOD certification.','Scenario entry/stop/targets are hypothetical 1.5R and 2.5R levels. Tick-grid screening and conservative 20% band are not instrument-specific execution authorization; no broker orders or ISIN certification.','Conflict with preserved user-provided official reference or same-session history close triggers exclusion.','Stale or missing data must produce empty current ranking, never reuse previous ranking.'],
  rows:top};
 }
 const output=build();
