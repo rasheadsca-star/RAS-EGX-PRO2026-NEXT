@@ -1,4 +1,4 @@
-import hashlib,json,sqlite3,sys,tempfile,unittest
+import fcntl,hashlib,json,sqlite3,sys,tempfile,unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parent.parent/"tools"))
 from official_resolver import resolve,similarity
@@ -81,6 +81,25 @@ class OfficialPipelineTests(unittest.TestCase):
   self.mapped.write_text(json.dumps(body))
   with self.assertRaisesRegex(MergeError,"STAGED_ROW_CHANGED"):
    merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+ def test_active_wal_sidecar_blocks_unsafe_replacement(self):
+  before=sha(self.db)
+  wal=Path(str(self.db)+"-wal")
+  wal.write_bytes(b"uncheckpointed-wal")
+  with self.assertRaisesRegex(MergeError,"SQLITE_SIDECAR_ACTIVE"):
+   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  self.assertEqual(sha(self.db),before)
+  wal.unlink()
+ def test_competing_merge_lock_fails_closed(self):
+  before=sha(self.db)
+  lock=Path(str(self.db)+".egx-merge.lock")
+  with lock.open("a+b") as handle:
+   fcntl.flock(handle.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB)
+   try:
+    with self.assertRaisesRegex(MergeError,"CONCURRENT_OFFICIAL_MERGE_BLOCKED"):
+     merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+   finally:
+    fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
+  self.assertEqual(sha(self.db),before)
  def test_replay_conflict_rejected(self):
   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
   c=sqlite3.connect(self.db)
