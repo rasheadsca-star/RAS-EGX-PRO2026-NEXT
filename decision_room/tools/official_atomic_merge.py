@@ -93,6 +93,9 @@ def _merge_exclusive(db,pdf,mapping,session,research_allow_provisional=False,fai
         # the canonical calendar.
         if prior not in (meta["previous_session"],session) and staged_previous!=meta["previous_session"]:
             raise MergeError("UNEXPECTED_PREVIOUS_SESSION:"+str(prior)+"/"+str(staged_previous))
+        existing_source=c.execute("select file_sha256 from source_registry where source_id=?",("S6_EGX_"+session,)).fetchone()
+        if existing_source and existing_source[0]!=digest:
+            raise MergeError("SOURCE_PDF_REPLAY_CONFLICT: session already tied to a different official PDF hash")
         known={r[0] for r in c.execute("select ticker from symbol_identity")}
         inserted=0
         staged_rows=0
@@ -120,9 +123,21 @@ def _merge_exclusive(db,pdf,mapping,session,research_allow_provisional=False,fai
                         (t,session,"S6_EGX_"+session,"egx_official",*price[:4],None,price[4],"EGP","RAW",1,None,pdf.name,"p%d:rank%d:sha256:%s"%(r["page"],rank,digest[:16]),0))
                     inserted+=1
             status=r["resolution_status"]
-            existing=c.execute("select ticker,resolution_status,close from official_session where session_date=? and market=? and pdf_rank=?",(session,market,rank)).fetchone()
+            existing=c.execute("""select ticker,resolution_status,pdf_page,name_en,currency,
+                    open,high,low,close,volume,value,chg_pct from official_session
+                    where session_date=? and market=? and pdf_rank=?""",(session,market,rank)).fetchone()
             if existing:
-                if existing!=(t,status,float(r["close"])):raise MergeError("OFFICIAL_SESSION_REPLAY_CONFLICT")
+                want=(t,status,r["page"],r["name"],r["currency"],
+                      r["open"],r["high"],r["low"],r["close"],r["volume"],
+                      r.get("value_traded"),r["chg_pct"])
+                for i,(oldval,newval) in enumerate(zip(existing,want)):
+                    if oldval is None or newval is None:
+                        equal=oldval is None and newval is None
+                    elif isinstance(oldval,(int,float)) and not isinstance(oldval,bool):
+                        equal=abs(float(oldval)-float(newval))<=1e-8*max(1,abs(float(oldval)))
+                    else:
+                        equal=oldval==newval
+                    if not equal:raise MergeError("OFFICIAL_SESSION_REPLAY_CONFLICT: field "+str(i))
             else:
                 c.execute("insert into official_session(session_date,market,pdf_page,pdf_rank,name_en,currency,open,high,low,close,volume,value,chg_pct,ticker,resolution_status,resolution_evidence,bounds_status) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     (session,market,r["page"],rank,r["name"],r["currency"],r["open"],r["high"],r["low"],r["close"],r["volume"],r.get("value_traded"),r["chg_pct"],t,status,json.dumps(r.get("evidence",{}),sort_keys=True),"CHECK" if status=="QUARANTINED_OHLC" else "OK"))
