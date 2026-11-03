@@ -17,7 +17,7 @@ function build(){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(today)||!tradingDay(today))throw Error('invalid or non-trading EGX session');
  const feed=read('data/market.json');
  const source=Array.isArray(feed.rows)?feed.rows:[];
- const snapshotRows=source.filter(r=>r.sourceSessionDate===today&&quality(r));
+ const snapshotRows=source.filter(r=>r.sourceSessionDate===today&&quality({...r,close:Number(r.price??r.last)}));
  const historyDir=path.join(ROOT,'data/history');
  const market=new Map(snapshotRows.map(r=>[String(r.symbol||'').toUpperCase(),r]));
  const candidates=[],excluded=[];
