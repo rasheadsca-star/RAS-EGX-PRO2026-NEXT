@@ -72,7 +72,7 @@ jobs:
           html=get('decision.html');js=get('decision-dashboard.js');rank=json.loads(get('latest-ranking.json'))
           checks={'html_chart_and_cards':'stock-list' in html and 'chart-wrap' in html,
              'js_renders_entry_stop_target':'خطط التداول الورقي' in js and 'sc.target1' in js and 'sc.stop' in js,
-             'json_schema_2_3':rank.get('schemaVersion')=='2.3',
+             'json_schema_2_4':rank.get('schemaVersion')=='2.4',
              'json_rows':len(rank.get('rows',[]))>0,
              'json_two_plans':all(len(x.get('scenarios',[]))>=1 for x in rank.get('rows',[])),
              'safety_qualified_zero':rank.get('qualifiedTradeCount')==0}
