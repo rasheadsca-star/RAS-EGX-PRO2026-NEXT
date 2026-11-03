@@ -1,45 +1,7 @@
 name: EGX Historical 100 Sessions — V12.5 Cleanup & Fallback
 
-on:
+# Legacy experimental engine paused; run manually if explicitly approved.\non:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "cleanup_and_classify, salvage_identity, import_approved_fallback, batch_backfill, incremental_batch, retry_failed, repair_failed_batch, repair_symbol, build_map_only"
-        required: true
-        type: choice
-        default: cleanup_and_classify
-        options:
-          - cleanup_and_classify
-          - salvage_identity
-          - import_approved_fallback
-          - batch_backfill
-          - incremental_batch
-          - retry_failed
-          - repair_failed_batch
-          - repair_symbol
-          - build_map_only
-      batch_number:
-        description: "1-based batch number; use 1 for cleanup/import"
-        required: true
-        default: "1"
-        type: string
-      batch_size:
-        description: "Symbols per batch (recommended 20; maximum 25)"
-        required: true
-        default: "20"
-        type: string
-      ticker:
-        description: "Ticker only when mode=repair_symbol"
-        required: false
-        type: string
-      min_success:
-        description: "Minimum valid files required when a fetch/import is performed"
-        required: true
-        default: "1"
-        type: string
-  schedule:
-    - cron: "30 15 * * 0-4"
-
 permissions:
   contents: write
   pages: write

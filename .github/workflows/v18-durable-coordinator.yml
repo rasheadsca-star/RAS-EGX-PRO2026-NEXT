@@ -1,21 +1,7 @@
 name: V18 Durable Post-Close Coordinator
 
-on:
+# Legacy experimental engine paused; run manually if explicitly approved.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - "EGX V16.3.3 Immediate Market Rescan and Deploy"
-    types:
-      - completed
-  push:
-    paths:
-      - ".github/workflows/v18-durable-coordinator.yml"
-      - "v18-live/index.html"
-  schedule:
-    - cron: "20 14 * * 0-4"
-    - cron: "30 17 * * 0-4"
-    - cron: "0 19 * * 0-4"
-
 permissions:
   contents: write
 
