@@ -1,37 +1,7 @@
 name: EGX V16.9 Basket Engine
 
-on:
+# Prior experimental engine frozen: manual execution only.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["EGX V16.3.3 Immediate Market Rescan and Deploy"]
-    types: [completed]
-  pull_request:
-    paths:
-      - "scripts/research/v16-v169-basket-engine.py"
-      - "scripts/research/v16-v169-target-hit-audit.py"
-      - "scripts/stable/v16-publish-v169-basket.cjs"
-      - "scripts/stable/v16-session-data-fingerprint.cjs"
-      - "scripts/stable/v16-v169-live-evaluation.py"
-      - "data/stable/v16-v169-release-lock.json"
-      - ".github/workflows/v16-v169-basket-engine.yml"
-  push:
-    paths:
-      - "scripts/research/v16-v169-basket-engine.py"
-      - "scripts/research/v16-v169-target-hit-audit.py"
-      - "scripts/stable/v16-publish-v169-basket.cjs"
-      - "scripts/stable/v16-session-data-fingerprint.cjs"
-      - "scripts/stable/v16-v169-live-evaluation.py"
-      - "data/stable/v16-v169-release-lock.json"
-      - "data/market.json"
-      - "data/history/**"
-      - "data/stable/v15-price-truth.json"
-      - "data/stable/v15-practical-decision.json"
-      - "data/stable/v16-v169-primary-decision.json"
-      - ".github/workflows/v16-v169-basket-engine.yml"
-  schedule:
-    # Safety re-check. The fingerprint prevents duplicate same-data publications.
-    - cron: "*/15 13-20 * * 0-4"
-
 permissions:
   contents: write
   pages: write
