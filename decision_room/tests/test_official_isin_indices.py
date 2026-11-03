@@ -8,6 +8,8 @@ HTML="""<html><table><tr><th>ISIN</th><th>Reuters Code</th><th>Company</th><th>W
 class OfficialIsinIndicesTests(unittest.TestCase):
     def test_extract_realistic_official_index_table(self):
         r=parse(HTML,URL,"2026-11-03")
+        self.assertTrue(all(x["observed_on"]=="2026-11-03" for x in r))
+        self.assertTrue(all(x["effective_from"]=="" for x in r))
         self.assertEqual([(x["ticker"],x["isin"]) for x in r],
                          [("COMI","EGS60121C018"),("ETEL","EGS48031C016")])
     def test_cross_index_duplicate_deduplicated_not_approved(self):
