@@ -1,0 +1,23 @@
+name: EGX Legacy Workflow Freeze Integrity
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/paper-v4/audit-legacy-workflow-freeze.cjs'
+      - '.github/workflows/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/paper-v4/audit-legacy-workflow-freeze.cjs
