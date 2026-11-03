@@ -1,0 +1,23 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EGX PRO — استيراد تقرير البورصة</title><style>body{font:16px Tahoma,Arial;background:#081322;color:#edf6ff;margin:0}main{max-width:1140px;margin:auto;padding:24px}header{background:#10233d;padding:22px}a{color:#8fd1ff}.panel{background:#152840;border:1px solid #456280;border-radius:12px;padding:20px;margin:16px 0;line-height:1.9}input,button{padding:14px;border-radius:8px;border:1px solid #718daa;background:#163751;color:#fff}button{cursor:pointer}.warning{border-color:#bd8a42;background:#30271b}table{border-collapse:collapse;width:100%;min-width:800px}th,td{padding:10px;text-align:right;border-bottom:1px solid #42617e}.scroll{overflow-x:auto}.ok{color:#abf4c8}</style></head><body><header><h1>EGX PRO — استيراد التقرير الرسمي للبورصة</h1><a href="./index.html">العودة إلى غرفة القرار V4</a></header><main><section class="panel warning"><b>لو المحرك لم يحصل على تقرير الجلسة:</b> اضغط على اختيار الملف وارفع Daily Report PDF. التطبيق يقرأ الملف داخل متصفحك، يفحص تاريخ الجلسة، يستخرج أسعار Open / High / Low / Close / Volume، ويسجل نتيجة الفحص محليًا. <b>الاستيراد لا يرفع PDF إلى الخادم ولا يحدّث SQLite المركزي ولا يصدر توصيات شراء معتمدة.</b> يحتاج الاعتماد المركزي إلى مطابقة موثقة لأسماء الشركات مع رموزها.</section><section class="panel"><h2>1 — رفع التقرير الرسمي (PDF)</h2><input id="file" type="file" accept="application/pdf,.pdf"><button id="start">استيراد وفحص الملف</button><p id="status" role="status">لم يتم اختيار تقرير بعد.</p><p id="previous"></p></section><section class="panel"><h2>2 — البيانات المستخرجة</h2><p id="summary">لم يُفحص أي ملف.</p><button id="export" disabled>تنزيل نتيجة الفحص JSON</button><div class="scroll"><table><thead><tr><th>رقم</th><th>اسم الشركة</th><th>الفتح</th><th>الأعلى</th><th>الأدنى</th><th>الإغلاق</th><th>الحجم</th><th>العملة</th></tr></thead><tbody id="rows"></tbody></table></div></section><section class="panel warning">هذه طبقة استيراد بحثية محلية. التقرير الرسمي يذكر أسماء الأسهم في بعض الصفحات دون رمز التداول أو ISIN، لذلك لا تتم الموافقة تلقائيًا على الهوية أو نشر توصيات إلى جميع المستخدمين. يمكن تنزيل ملف نتيجة الفحص لإرساله إلى مسؤول مراجعة قاعدة البيانات.</section></main><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script src="./official-import.js"></script><script>
+'use strict';
+if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const $=id=>document.getElementById(id);let latest=EGXOfficialImport.read();
+function render(d){
+ $('summary').textContent='تاريخ الجلسة: '+d.session+' | عدد الصفوف المقبولة: '+d.rows.length+' | المرفوض: '+d.rejected.length+' | SHA-256: '+d.sha256;
+ $('previous').textContent='آخر تقرير مستورد محليًا: '+d.filename;
+ $('rows').replaceChildren();
+ for(const r of d.rows){const tr=document.createElement('tr');for(const v of [r.rowNumber,r.name,r.open,r.high,r.low,r.close,r.volume,r.currency]){const td=document.createElement('td');td.textContent=String(v);tr.append(td)}$('rows').append(tr)}
+ $('export').disabled=false;
+}
+if(latest)render(latest);
+$('start').addEventListener('click',async()=>{
+ $('start').disabled=true;$('status').textContent='جارٍ قراءة التقرير...';
+ try{latest=await EGXOfficialImport.importPdf($('file').files[0],(p,n)=>$('status').textContent='قراءة صفحة '+p+' من '+n);render(latest);$('status').textContent='تم الاستيراد المحلي بنجاح؛ الأسعار تحتاج مراجعة هوية الأسهم قبل اعتمادها مركزيًا.';$('status').className='ok'}
+ catch(e){$('status').textContent='تعذر اعتماد الاستيراد: '+e.message;$('status').className=''}
+ finally{$('start').disabled=false}
+});
+$('export').addEventListener('click',()=>{
+ if(!latest)return;
+ const u=URL.createObjectURL(new Blob([JSON.stringify(latest,null,2)],{type:'application/json'})),a=document.createElement('a');a.href=u;a.download='egx-import-'+latest.session+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
+});
+</script></body></html>
