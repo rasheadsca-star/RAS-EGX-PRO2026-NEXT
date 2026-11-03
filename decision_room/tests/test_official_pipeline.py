@@ -151,6 +151,27 @@ class OfficialPipelineTests(unittest.TestCase):
    finally:
     fcntl.flock(handle.fileno(),fcntl.LOCK_UN)
   self.assertEqual(sha(self.db),before)
+ def test_second_pdf_with_same_session_but_different_bytes_is_rejected(self):
+  merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  before=sha(self.db)
+  self.pdf.write_bytes(self.pdf.read_bytes()+b"-revised")
+  new_pdf_sha=sha(self.pdf)
+  raw=json.loads(self.bulletin.read_text());raw["pdf_sha256"]=new_pdf_sha
+  self.bulletin.write_text(json.dumps(raw))
+  mapped=json.loads(self.mapped.read_text());mapped["summary"]["source_sha256"]=new_pdf_sha
+  self.mapped.write_text(json.dumps(mapped))
+  with self.assertRaisesRegex(MergeError,"SOURCE_PDF_REPLAY_CONFLICT"):
+   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  self.assertEqual(sha(self.db),before)
+ def test_replay_does_not_ignore_changed_stored_volume(self):
+  merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  c=sqlite3.connect(self.db)
+  c.execute("update official_session set volume=999999 where session_date='2026-11-02' and market='MAIN' and pdf_rank=1")
+  c.commit();c.close()
+  changed=sha(self.db)
+  with self.assertRaisesRegex(MergeError,"OFFICIAL_SESSION_REPLAY_CONFLICT"):
+   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  self.assertEqual(sha(self.db),changed)
  def test_replay_conflict_rejected(self):
   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
   c=sqlite3.connect(self.db)
