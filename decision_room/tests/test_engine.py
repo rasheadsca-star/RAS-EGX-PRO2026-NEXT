@@ -125,6 +125,18 @@ class Gate(unittest.TestCase):
         h=render.page(s)
         self.assertIn("تحتاج مراجعة بيانات",h)
         self.assertIn("سيولة غير كافية",h)
+    def test_h1_blocks_provisional_identity_in_historical_lookback(self):
+        p,cal=mk({"UPT":dict(close=up())})
+        c=sqlite3.connect(p)
+        c.execute("update canonical_bars set evidence_tier='PROVISIONAL_SYMBOL_IDENTITY' where ticker=? and date=?",("UPT",cal[-30].strftime("%Y-%m-%d")))
+        c.commit();c.close()
+        data=ingest.load(p)
+        h=regime.compute(data,cal[-1].strftime("%Y-%m-%d"))
+        self.assertEqual(h["state"],"UNKNOWN")
+        self.assertIn("UNVERIFIED_H1_HISTORY",h["reason"])
+        s=snapshot.build(p,now=NOW)
+        self.assertEqual(s["market"]["state"],"UNKNOWN")
+
     def test_h1_unknown_when_history_short(self):
         p,_=mk({"X":dict(close=up(n=115))},n=115)
         s=snapshot.build(p,now=NOW);self.assertEqual(s["market"]["state"],"UNKNOWN")
