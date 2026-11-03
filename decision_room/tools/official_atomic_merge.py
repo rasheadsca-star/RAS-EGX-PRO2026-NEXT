@@ -87,7 +87,12 @@ def _merge_exclusive(db,pdf,mapping,session,research_allow_provisional=False,fai
             alias_normalized text primary key,ticker text not null,status text not null,
             first_session text not null,source_sha256 text not null,evidence_json text not null)""")
         prior=c.execute("select max(date) from canonical_bars where price_basis='RAW'").fetchone()[0]
-        if prior not in (meta["previous_session"],session):raise MergeError("UNEXPECTED_PREVIOUS_SESSION:"+str(prior))
+        staged_previous=c.execute("select max(session_date) from official_session where session_date<?",(session,)).fetchone()[0]
+        # Every row may be quarantined in an intermediate session. Preserve
+        # dated reports without inventing a RAW history bar merely to advance
+        # the canonical calendar.
+        if prior not in (meta["previous_session"],session) and staged_previous!=meta["previous_session"]:
+            raise MergeError("UNEXPECTED_PREVIOUS_SESSION:"+str(prior)+"/"+str(staged_previous))
         known={r[0] for r in c.execute("select ticker from symbol_identity")}
         inserted=0
         staged_rows=0
