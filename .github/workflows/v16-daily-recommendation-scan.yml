@@ -4,7 +4,9 @@ run-name: MAIN APP V16.9.2 P2 scan for ${{ github.sha }}
 # G22 downstream handoff is event-driven: Astra waits for this entire workflow
 # to complete, then independently verifies final/published session state and fingerprint.
 
-# Deprecated automated pipeline: manual launch only, data/code retained.\non:\n  workflow_dispatch:
+# Deprecated automated pipeline: manual launch only, data/code retained.
+on:
+  workflow_dispatch:
 env:
   EGXAPI_KEY: ${{ secrets.EGXAPI_KEY }}
   EGX_KEY: ${{ secrets.EGX_KEY }}
