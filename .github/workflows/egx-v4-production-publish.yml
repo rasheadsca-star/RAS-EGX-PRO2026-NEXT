@@ -1,23 +1,28 @@
-name: EGX V4 Production deploy from verified Git commit
+name: EGX V4 Git-integrated Production Sync Verification
+# Vercel's connected GitHub integration deploys main. This job ONLY audits published bytes;
+# do not use the existing unauthorized VERCEL_TOKEN (repeated HTTP 403).
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/egx-v4-production-publish.yml'
+      - 'scripts/paper-v4/verify-production-sync.cjs'
+      - 'paper-v4/decision.html'
+      - 'paper-v4/decision-dashboard.js'
+  schedule:
+    - cron: '45 18 * * 0-4'   # postclose audit Sun-Thu 20:45 Cairo, independent of bot pushes
   workflow_dispatch:
 permissions:
   contents: read
+  issues: write
 concurrency:
-  group: egx-v4-prod-publish
+  group: egx-v4-production-sync-audit
   cancel-in-progress: false
 jobs:
-  production:
+  verify-production:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    env:
-      VERCEL_PROJECT_ID: prj_aJaUNjYi6sCnP6llb5VN594bKssn
-      VERCEL_ORG_ID: team_i1Nq5XyHsHxGMNSXr1nyi5qX
-      SITE_URL: https://egx-pro-decision-room.vercel.app
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,65 +31,31 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify release contracts before deployment
+      - name: Check source and market-rule invariants
         run: |
           node --check paper-v4/decision-dashboard.js
-          node --check scripts/paper-v4/build-daily-research-ranking.cjs
-          node --check scripts/paper-v4/validate-plan-market-rules.cjs
-          node scripts/paper-v4/validate-plan-market-rules.cjs
-          node - <<'JS'
-          const fs=require('fs');const d=JSON.parse(fs.readFileSync('paper-v4/latest-ranking.json'));
-          if(d.schemaVersion!=='2.4'||d.qualifiedTradeCount!==0||!Array.isArray(d.rows)||d.rows.length===0)throw Error('unsafe/current source invalid');
-          JS
-      - name: Require authorized Vercel credential
-        shell: bash
+          node --check scripts/paper-v4/verify-production-sync.cjs
+          node --test tests/paper-v4/research-contract.test.cjs
+      - name: Await Git integration and compare SHA256 of live HTML JS JSON
+        id: verify
+        continue-on-error: true
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          if [ -z "${VERCEL_TOKEN:-}" ]; then echo "::error::VERCEL_TOKEN missing; maintainer must authorize production deployment";exit 2;fi
-      - name: Deploy exactly committed Git tree to existing project
-        shell: bash
+          EGX_VERIFY_ATTEMPTS: '20'
+          EGX_VERIFY_INTERVAL_SECS: '20'
+        run: node scripts/paper-v4/verify-production-sync.cjs
+      - name: Preserve exact publish-evidence artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-v4-prod-sync-${{ github.run_id }}
+          path: paper-v4/production-sync-audit.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Fail and report unsynchronized Production
+        if: steps.verify.outcome != 'success'
         env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
-          sha="$(git rev-parse HEAD)"
-          printf '{"name":"egx-pro-decision-room","project":"%s","gitSource":{"type":"github","org":"rasheadsca-star","repo":"RAS-EGX-PRO2026-NEXT","ref":"main","sha":"%s"},"target":"production"}' "$VERCEL_PROJECT_ID" "$sha" > "$RUNNER_TEMP/deploy.json"
-          code="$(curl --silent --show-error --max-time 90 -o "$RUNNER_TEMP/response.json" -w '%{http_code}' -X POST "https://api.vercel.com/v13/deployments?teamId=$VERCEL_ORG_ID&forceNew=1" -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" --data-binary "@$RUNNER_TEMP/deploy.json")"
-          if [[ "$code" != 20* ]]; then
-            echo "::error::Vercel production API rejected publish (HTTP $code).";
-            python - <<'PY'
-          import json,os
-          try:
-           r=json.load(open(os.environ['RUNNER_TEMP']+'/response.json'))
-           print('Vercel response:',r.get('error',{}).get('code'),r.get('error',{}).get('message','')[:300])
-          except Exception:pass
-          PY
-            exit 3
-          fi
-          python - <<'PY'
-          import json,os
-          r=json.load(open(os.environ['RUNNER_TEMP']+'/response.json'));print('Deployment queued:',r.get('id'),r.get('url'),r.get('readyState'))
-          PY
-      - name: Validate public deployed contract after production promotion
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 12); do
-            if python - <<'PY'
-          import urllib.request,json,sys
-          root='https://egx-pro-decision-room.vercel.app/paper-v4/'
-          def get(p):
-           req=urllib.request.Request(root+p,headers={'Cache-Control':'no-cache'})
-           with urllib.request.urlopen(req,timeout=15) as r:return r.read().decode('utf8')
-          try:
-           html=get('decision.html');js=get('decision-dashboard.js');d=json.loads(get('latest-ranking.json'))
-           assert 'chart-wrap' in html and 'sc.target1' in js
-           assert d.get('schemaVersion')=='2.3' and d.get('qualifiedTradeCount')==0 and d.get('rows')
-           print('EGX_PRODUCTION_CONTRACT_VERIFIED',d['session'],len(d['rows']))
-          except Exception as e:print('NOT_YET_READY',type(e).__name__,str(e)[:120]);sys.exit(1)
-          PY
-            then exit 0;fi
-            sleep 10
-          done
-          exit 4
+          echo "::error::Vercel Production failed to serve verified main UI/data; check Vercel Git Integration and deploy settings."
+          gh issue comment 204 --body "Automated V4 production SHA256 check FAILED in run $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Vercel Git integration deployment not yet in sync. Existing direct-deploy token returns HTTP 403, so no unsafe direct deployment was attempted." || true
+          exit 1
