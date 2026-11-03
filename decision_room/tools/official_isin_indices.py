@@ -24,7 +24,7 @@ from egx_identity_reference import isin_valid
 ISIN = re.compile(r"^EG[A-Z0-9]{9}[0-9]$")
 REUTERS = re.compile(r"^([A-Z0-9.]{2,20})\.CA$")
 KNOWN = frozenset(("CASE30","EGX70","EGX100","EGX30","EGX30CAP","EGX30TR","EGX35","TAMAYUZ","EGX70EWI","EGX100EWI"))
-COLUMNS = ["ticker","isin","name","source_url","effective_from"]
+COLUMNS = ["ticker","isin","name","source_url","observed_on","effective_from"]
 class ExtractError(ValueError): pass
 
 class Tables(HTMLParser):
@@ -74,7 +74,7 @@ def parse(source_html,url,as_of):
         if not isin_valid(isin):raise ExtractError("INVALID_ISIN_CHECK_DIGIT:"+isin)
         name=cells[2].strip()
         if not name:raise ExtractError("EMPTY_COMPANY_NAME")
-        rows.append(dict(ticker=m.group(1),isin=isin,name=name,source_url=url,effective_from=as_of))
+        rows.append(dict(ticker=m.group(1),isin=isin,name=name,source_url=url,observed_on=as_of,effective_from=""))
     if not found_header or len(rows)<1:raise ExtractError("NO_OFFICIAL_ISIN_REUTERS_TABLE")
     return rows
 
@@ -99,7 +99,7 @@ def build(sources,as_of):
     if conflicts:raise ExtractError("CROSS_INDEX_IDENTITY_CONFLICT:"+json.dumps(conflicts,ensure_ascii=False))
     return dict(rows=sorted(pairs.values(),key=lambda r:r["ticker"]),provenance=dict(
         status="UNAPPROVED_CURRENT_INDEX_CROSSWALK",as_of=as_of,
-        source_authenticated=False,history_asof_proved=False,
+        source_authenticated=False,effective_dates_known=False,history_asof_proved=False,
         independent_symbol_approval=False,may_publish_official_prices=False,
         entries=len(pairs),sources=sources_report))
 
