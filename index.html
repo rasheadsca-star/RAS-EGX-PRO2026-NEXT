@@ -1,1 +1,124 @@
-<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="cache-control" content="no-store"><meta http-equiv="refresh" content="0;url=./paper-v4/index.html"><title>EGX PRO — Independent Paper Trading V4</title></head><body><p>EGX PRO — النسخة المستقلة للبحث والتداول الورقي، بيانات 29 أكتوبر 2026.</p><p><a href="./paper-v4/index.html">افتح نسخة EGX Independent Paper V4</a></p><script>location.replace('./paper-v4/index.html');</script></body></html>
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>EGX PRO — مركز متابعة أحدث جلسة</title>
+<style>
+:root{color-scheme:dark;--bg:#091526;--card:#15283f;--line:#36516a;--txt:#eaf3ff;--mut:#b5cadc;--blue:#78c8ff;--amber:#ffe0a1;--red:#ffbbbb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.7 Tahoma,Arial,sans-serif}
+header{background:#10243a;border-bottom:1px solid var(--line);padding:22px 4vw}h1{font-size:24px;margin:0 0 7px}header p{color:var(--mut);margin:0}
+main{max-width:1280px;padding:24px 14px 40px;margin:0 auto}h2{font-size:19px;margin:26px 0 12px}
+.notice{padding:13px 17px;margin:12px 0;border:1px solid #947038;border-radius:11px;background:#382b19;color:var(--amber)}
+.notice.error{border-color:#ae5151;background:#361b1b;color:var(--red)}.notice.info{border-color:#436b8c;background:#122e48;color:#b8e4ff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card small{display:block;color:var(--mut);margin-bottom:3px}.card b{font-size:23px;font-variant-numeric:tabular-nums}
+section{margin:12px 0}p{margin:8px 0}a{color:var(--blue)}.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:11px}
+table{border-collapse:collapse;width:100%;min-width:900px;background:#11233a}th,td{padding:11px 12px;border-bottom:1px solid #30475f;text-align:right;white-space:nowrap}
+th{background:#1e3650;position:sticky;top:0;color:#d9eaff}td.muted{color:var(--mut)}
+button{background:#21527d;color:#fff;border:1px solid #4d82a9;padding:10px 15px;border-radius:9px;cursor:pointer;font:inherit}
+button:disabled{opacity:.65;cursor:wait}.toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.stat{color:var(--mut);font-size:13px}.small{font-size:13px;color:var(--mut)}.tag{border:1px solid #b68e4c;color:#ffe3a2;padding:3px 8px;border-radius:99px;font-size:12px}
+footer{border-top:1px solid var(--line);padding:24px 0;color:var(--mut)}@media(max-width:600px){h1{font-size:19px}main{padding:12px 10px}}
+</style></head>
+<body><header><h1>EGX PRO — مركز المتابعة الموحد</h1><p>آخر بيانات متاحة بالمستودع · وضع بحثي فقط · لا تنفيذ تداول</p></header>
+<main>
+<div id="headline" class="notice info" role="status" aria-live="polite">جارٍ قراءة تاريخ أحدث جلسة من ملفات البيانات الفعلية...</div>
+<div class="notice"><strong>RESEARCH ONLY — NO_STRATEGY_APPROVED.</strong> هذه مستويات متابعة وليست أوامر شراء. لا يتم اعتماد هوية أي سهم أو استراتيجية قبل التحقق المستقل من المصدر وISIN والاختبارات. ولا توجد خدمة أسعار لحظية هنا.</div>
+<div class="grid">
+ <div class="card"><small>جلسة محرك V16</small><b id="main-session">—</b></div>
+ <div class="card"><small>جلسة محرك Quant</small><b id="quant-session">—</b></div>
+ <div class="card"><small>حالة التنفيذ</small><b id="execution">مُعطّل</b></div>
+ <div class="card"><small>عدد أسهم المتابعة البحثية</small><b id="count">—</b></div>
+</div>
+<div class="toolbar"><button id="reload" type="button">تحديث قراءة ملفات البيانات</button><span id="loaded" class="stat">لا يوجد تحديث مؤكد بعد</span></div>
+<div id="quality" class="notice info">سيتم إظهار مصدر جلسة كل محرك ومدى اتساقهما بمجرد قراءة البيانات.</div>
+<section>
+<h2>متابعة محرك Quant — أسهم ذات أسعار مؤرخة</h2>
+<p class="small">أسعار وخطط بحثية مأخوذة من ملف <code>data/quant/daily-recommendations.json</code> على الفرع الرئيسي. لا نعرض نقاطًا لسهم إذا كان سجل تاريخه لا يطابق جلسة الملف.</p>
+<div class="wrap"><table><thead><tr><th>السهم</th><th>الاسم</th><th>آخر سعر</th><th>الدخول النظري</th><th>الوقف النظري</th><th>هدف أول</th><th>حالة السهم</th></tr></thead><tbody id="quant-rows"><tr><td colspan="7">جارٍ التحميل...</td></tr></tbody></table></div>
+</section>
+<section>
+<h2>قائمة V16 — متابعة منفصلة وغير قابلة للتنفيذ</h2>
+<p class="small">لا ندمج مستويات محرك V16 مع خطط Quant لأن منهجيتيهما مختلفتان، ولم يُعتمد أي منهما للتداول.</p>
+<div class="wrap"><table><thead><tr><th>السهم</th><th>الاسم</th><th>نطاق الدخول النظري</th><th>وقف</th><th>هدف</th><th>التصنيف</th></tr></thead><tbody id="main-rows"><tr><td colspan="6">جارٍ التحميل...</td></tr></tbody></table></div>
+</section>
+<div class="notice"><strong>مصدر النشرة الرسمية المقدمة:</strong> تمت مراجعة نشرة EGX لجلسة <b>2026-11-02</b>، وبصمة PDF هي <code>1aeef13f1b967d73725525e724f46147df833cd82e154cbaea5a80c1dee2e760</code>. استخراج النشرة وحده لا يثبت صحة ربط أسماء الشركات برموزها؛ لا تتحول الأرقام إلى توصيات معتمدة بمجرد إضافتها للواجهة.</div>
+<section class="card">
+<h2 style="margin-top:0">روابط المصدر والأرشيف</h2>
+<p><a href="./paper-v4/index.html">أرشيف مستقل: فرص ورقية لجلسة 29 أكتوبر 2026 — ليس الإصدار الحالي</a></p>
+<p><a href="https://github.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/blob/main/data/quant/daily-recommendations.json" target="_blank" rel="noopener">مصدر توصيات المتابعة البحثية (GitHub)</a></p>
+<p><a href="https://github.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/blob/main/data/stable/v16-main-app-current.json" target="_blank" rel="noopener">مصدر حالة محرك V16 (GitHub)</a></p>
+<p><a href="https://github.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/issues/203" target="_blank" rel="noopener">قائمة إصلاحات وتطوير EGX PRO</a></p>
+</section>
+<footer id="foot">البيانات يتم قراءتها من مستودع GitHub الرئيسي عند فتح الصفحة أو الضغط على التحديث؛ هذا لا يشكل اتصالًا مباشرًا ببورصة EGX أو تشغيلًا يوميًا آليًا لقاعدة SQLite.</footer>
+</main>
+<script>
+(()=>{'use strict';
+const prefix='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/';
+const urls={v:'data/stable/v16-main-app-current.json',q:'data/quant/daily-recommendations.json',h:'data/source-health.json'};
+const $=id=>document.getElementById(id),set=(id,value)=>{$(id).textContent=String(value)};
+const fmt=v=>v==null||v===''?'—':Number.isFinite(Number(v))?Number(v).toLocaleString('en-US',{maximumFractionDigits:4}):String(v);
+const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const validDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v);
+async function read(path){
+ const control=new AbortController(),timer=setTimeout(()=>control.abort(),14000);
+ try{
+  const response=await fetch(prefix+path+'?nocache='+Date.now(),{cache:'no-store',signal:control.signal});
+  if(!response.ok)throw new Error('HTTP '+response.status+': '+path);
+  return await response.json();
+ }finally{clearTimeout(timer)}
+}
+function renderRows(id,records,cols,empty){
+ const tbody=$(id);tbody.replaceChildren();
+ if(!records.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=cols;td.textContent=empty;tr.append(td);tbody.append(tr);return}
+ records.forEach(c=>{const tr=document.createElement('tr');c.forEach((v,i)=>{const td=document.createElement('td');td.textContent=String(v);if(i>1)td.dir='ltr';tr.append(td)});tbody.append(tr)})
+}
+async function load(){
+ const btn=$('reload');btn.disabled=true;
+ try{
+  const [v,q,h]=await Promise.all([read(urls.v),read(urls.q),read(urls.h)]);
+  const sv=v.sessionDate,sq=q.sessionId;
+  if(!validDate(sv)||!validDate(sq))throw new Error('ملفات المصدر لا تحتوي على تاريخ جلسة صالح');
+  set('main-session',sv);set('quant-session',sq);
+  set('execution','0 — ممنوع');
+  const same=sv===sq,latest=same?sv:(sv>sq?sv:sq);
+  const watch=Array.isArray(q.watchCandidates)?q.watchCandidates:[];
+  const vwatch=Array.isArray(v.researchWatchlist)?v.researchWatchlist:[];
+  set('count',watch.length);
+  const qrows=watch.map(r=>{
+   const dated=r.signalDate===sq&&r.dataQuality?.latestHistorySession===sq;
+   const p=r.plan||{};
+   return [r.ticker||'—',r.companyNameAr||r.companyNameEn||'—',dated?fmt(r.price):'محجوب',
+    dated?fmt(p.entryLow)+' – '+fmt(p.entryHigh):'غير مؤرخ',
+    dated?fmt(p.stopLoss):'—',dated?fmt(p.target1):'—',
+    dated?(r.statusLabelAr||'مراقبة غير تنفيذية'):'تاريخ السهم مختلف — محجوب'];
+  });
+  const vrows=vwatch.map(r=>[r.ticker||'—',r.companyNameAr||'—',
+   fmt(r.entryLow)+' – '+fmt(r.entryHigh),fmt(r.stopLoss),fmt(r.target1),'بحثي فقط']);
+  renderRows('quant-rows',qrows,7,'لا توجد فرص متابعة منشورة في ملف Quant');
+  renderRows('main-rows',vrows,6,'لا توجد فرص متابعة منشورة في V16');
+  const qReady=q.liveExecutionEnabled===true;
+  const vReady=v.executionReady===true&&v.executionAllowed===true;
+  const sourceDelayed=h.delayed===true;
+  const refusal=!(qReady&&vReady)&&'التنفيذ محجوب ببوابات المحركات؛ ';
+  $('headline').className='notice '+(same?'info':'error');
+  $('headline').textContent=(same?'أحدث جلسة مسجلة في كلا ملفّي المحرك: ':'اختلاف تاريخ الجلسة بين المحركين — ')+latest+' | حالة التنفيذ: RESEARCH ONLY.';
+  $('quality').className='notice '+(same&&!sourceDelayed?'info':'error');
+  $('quality').textContent=(same?'تاريخ المحركين متطابق. ':'تحذير: تواريخ المحركات مختلفة. ')+(refusal||'')+
+   'حالة مصدر البيانات: '+(sourceDelayed?'DELAYED (متأخر)':'لا يحمل وسم تأخير')+
+   ' | التغطية المعلنة: '+fmt(h.coveragePct)+'% | حالة V16: '+(v.status||'غير محددة')+' | Quant: '+(q.status||'غير محددة')+'.';
+  set('loaded','آخر قراءة للملفات: '+new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo'})+' | تحديث ملفات المصدر ليس تلقائيًا عبر هذه الصفحة');
+ }catch(error){
+  $('headline').className='notice error';
+  $('headline').textContent='فشل جلب أحدث ملفات البيانات. لن يتم إظهار جلسة أو توصيات غير متحقق منها: '+error.message;
+  $('quality').className='notice error';$('quality').textContent='تعذر إثبات حداثة البيانات. تحقق من GitHub أو أعد المحاولة.';
+  set('main-session','غير متاح');set('quant-session','غير متاح');set('count','—');
+  renderRows('quant-rows',[],7,'فشل التحميل — لا نعرض بيانات قديمة بديلة');
+  renderRows('main-rows',[],6,'فشل التحميل — لا نعرض بيانات قديمة بديلة');
+  set('loaded','آخر محاولة: '+new Date().toLocaleString('ar-EG',{timeZone:'Africa/Cairo'}));
+ }finally{btn.disabled=false}
+}
+$('reload').addEventListener('click',load);load();setInterval(()=>{if(document.visibilityState==='visible')load()},300000);
+})();
+</script></body></html>
