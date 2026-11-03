@@ -43,6 +43,18 @@ class OfficialPipelineTests(unittest.TestCase):
   self.assertIsNone(resolve([changed],self.db,"2026-11-01")["items"][0]["ticker"])
   c=sqlite3.connect(self.db);c.execute("update official_alias_registry set status='VERIFIED'");c.commit();c.close()
   self.assertEqual(resolve([changed],self.db,"2026-11-01")["items"][0]["ticker"],"TEST")
+ def test_old_confirmed_by_price_label_is_not_independent_identity_proof(self):
+  c=sqlite3.connect(self.db)
+  c.execute("update official_session set name_en=?,resolution_status=? where session_date=?",("Unexpected Different Company","RESOLVED_CONFIRMED_NAME_PREVCLOSE","2026-11-01"))
+  c.commit();c.close()
+  candidate={**self.items[0],"name":"Unexpected Different Company"}
+  row=resolve([candidate],self.db,"2026-11-01")["items"][0]
+  self.assertIsNone(row["ticker"])
+  c=sqlite3.connect(self.db)
+  c.execute("update official_session set resolution_status=? where session_date=?",("OFFICIAL_VERIFIED","2026-11-01"))
+  c.commit();c.close()
+  row=resolve([candidate],self.db,"2026-11-01")["items"][0]
+  self.assertEqual(row["ticker"],"TEST")
  def test_provisional_previous_close_must_not_seed_next_day(self):
   merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
   next_session={**self.items[0],"high":12,"close":11.025,"chg_pct":5}
