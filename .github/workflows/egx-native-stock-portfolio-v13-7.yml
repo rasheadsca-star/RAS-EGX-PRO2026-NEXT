@@ -1,26 +1,7 @@
 name: EGX Native Stock Intelligence & Portfolio — V13.7
 
-on:
+# Legacy automation paused; retain manual dispatch for rollback.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows:
-      - "EGX V16.3.3 Immediate Market Rescan and Deploy"
-    types:
-      - completed
-  push:
-    paths:
-      - ".github/workflows/egx-native-stock-portfolio-v13-7.yml"
-      - "scripts/quant/v13-7-stock-intelligence.cjs"
-      - "scripts/quant/v13-7-acceptance.cjs"
-      - "preview-v13/app/portfolio.html"
-      - "preview-v13/app/portfolio-technical-scenarios.js"
-      - "preview-v13/app/portfolio-historical-calibration.js"
-  schedule:
-    # Primary post-close refresh.
-    - cron: "30 13 * * 0-4"
-    # Retry for delayed upstream market data; 14:50 UTC = 17:50 Cairo during DST.
-    - cron: "50 14 * * 0-4"
-
 permissions:
   contents: write
   pages: write

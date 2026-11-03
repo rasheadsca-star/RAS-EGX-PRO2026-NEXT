@@ -1,21 +1,7 @@
 name: EGX Adaptive Calibration & Paper Tracker — V13.5
 
-on:
+# Legacy automation paused; retain manual dispatch for rollback.\non:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: "Run mode"
-        required: true
-        default: "update"
-        type: choice
-        options:
-          - update
-          - check_only
-  schedule:
-    # Sunday through Thursday. GitHub cron uses UTC.
-    # Runs after the V13.4 quant workflow.
-    - cron: "50 14 * * 0-4"
-
 permissions:
   contents: write
   pages: write

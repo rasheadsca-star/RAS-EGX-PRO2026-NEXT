@@ -1,15 +1,7 @@
 name: EGX ONE Research Refresh Watchdog
 
-on:
+# Legacy automation paused; retain manual dispatch for rollback.\non:
   workflow_dispatch:
-  schedule:
-    # Cairo post-market retry window. GitHub scheduled jobs may start late,
-    # so the watchdog checks repeatedly and dispatches only when EGX ONE is stale.
-    - cron: '30 13 * * 0-4'
-    - cron: '0 14 * * 0-4'
-    - cron: '30 14 * * 0-4'
-    - cron: '0 15 * * 0-4'
-
 permissions:
   contents: read
   actions: write
