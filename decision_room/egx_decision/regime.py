@@ -13,6 +13,14 @@ def compute(data,session):
     if len(historical):
         return dict(state="UNKNOWN",reason="UNVERIFIED_H1_HISTORY: "+
                     str(len(historical))+" شموع بهوية رموز غير معتمدة في نافذة المؤشر")
+    off=data.get("official_identities")
+    if off is not None and not off.empty:
+        unverified=off[
+            off["date"].isin(cal[-121:]) &
+            (~off["resolution_status"].isin({"VERIFIED","OFFICIAL_VERIFIED"}))]
+        if len(unverified):
+            return dict(state="UNKNOWN",reason="UNVERIFIED_H1_IDENTITY_MAPPING: "+
+                        str(len(unverified))+" صفوف ذات رموز غير معتمدة في نافذة المؤشر")
     b=b[b["date"].isin(cal)]
     c=b.pivot(index="date",columns="ticker",values="close").reindex(cal)
     v=b.pivot(index="date",columns="ticker",values="volume").reindex(cal)
