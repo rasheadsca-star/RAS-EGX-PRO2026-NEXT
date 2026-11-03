@@ -31,6 +31,7 @@ function build(){
   const bars=(h.sessions||[]).filter(quality).sort((a,b)=>a.date.localeCompare(b.date));
   const previous=bars.filter(x=>x.date<today);
   if(previous.length<60){excluded.push({ticker,reason:'INSUFFICIENT_HISTORY'});continue}
+  if(h.currency&&h.currency!=='EGP'){excluded.push({ticker,reason:'NON_EGP_CURRENCY_NOT_MODELED'});continue}
   if(h.isin==null){/* identity still unapproved; still research */}
   const close=Number(m.price||m.last), open=+m.open,high=+m.high,low=+m.low,volume=+m.volume;
   if(!Number.isFinite(close)||close<=0){excluded.push({ticker,reason:'BAD_PRICE'});continue}
@@ -64,6 +65,12 @@ function build(){
     // Conservative directional rounding to tradable *indicative* grid.
     entry=tickUp(entry);stop=tickDown(stop);
     if(!(entry>stop))return null;
+    // Conservative screening at the documented main-market 20% daily bound.
+    // Actual board classification and execution reference must be independently verified.
+    const previousClose=+previous.at(-1).close;
+    if(!(previousClose>0)||entry>tickDown(previousClose*1.20)||entry<tickUp(previousClose*.80)){
+      return {strategy,status:'REJECTED_DAILY_LIMIT',reason:'سعر التفعيل خارج الحد النظري ±20% من آخر إغلاق مسجل؛ راجع سوق السهم وسعره المرجعي',previousClose:round(previousClose,3),marketBoardConfirmed:false,isExecutable:false};
+    }
     const risk=entry-stop,riskPct=100*risk/entry;
     if(riskPct>12||riskPct<.35)return {strategy,status:'REJECTED_RISK',reason:'مخاطرة السيناريو خارج الحدود البحثية',riskPct:round(riskPct,2),isExecutable:false};
     const target1=tickDown(entry+1.5*risk),target2=tickDown(entry+2.5*risk);
@@ -97,12 +104,12 @@ function build(){
  const top=candidates.slice(0,25).map((x,i)=>({...x,rank:i+1}));
  const officialAvailable=false; // No durable, verified PDF/ISIN crosswalk connected to this scheduled process.
  return {
- schemaVersion:'2.2',generatedAt:new Date().toISOString(),session:today,mode:'AUTOMATED_SECONDARY_RESEARCH_WATCH',sampleUniverse:top.length,qualifiedTradeCount:0,
+ schemaVersion:'2.3',generatedAt:new Date().toISOString(),session:today,mode:'AUTOMATED_SECONDARY_RESEARCH_WATCH',sampleUniverse:top.length,qualifiedTradeCount:0,
  source:{provider:feed.source||'secondary',marketRows:source.length,sessionMatchedRows:snapshotRows.length,historyFilesExamined:fs.readdirSync(historyDir).filter(x=>x.endsWith('.json')).length,officialSessionVerified:officialAvailable,isinIndependentlyCertified:false},
  comparisonModel:{strategy:'breakout_research_proximity_volume_trend',status:'RESEARCH_ONLY'},
  rankingFormula:'35% resistance proximity +25% volume ratio +25% relative SMA20 trend +15% above SMA20; not a calibrated win probability',
  exclusions:{count:excluded.length,samples:excluded.slice(0,30)},
- limitations:['Generated only from same-date secondary rows; not equivalent to official EGX EOD certification.','Scenario entry/stop/targets are hypothetical 1.5R and 2.5R levels, not validated market orders; no broker orders or ISIN certification.','Conflict with preserved user-provided official reference triggers exclusion.','Stale or missing data must produce empty current ranking, never reuse previous ranking.'],
+ limitations:['Generated only from same-date secondary rows; not equivalent to official EGX EOD certification.','Scenario entry/stop/targets are hypothetical 1.5R and 2.5R levels. Tick-grid screening and conservative 20% band are not instrument-specific execution authorization; no broker orders or ISIN certification.','Conflict with preserved user-provided official reference triggers exclusion.','Stale or missing data must produce empty current ranking, never reuse previous ranking.'],
  rows:top};
 }
 const output=build();
