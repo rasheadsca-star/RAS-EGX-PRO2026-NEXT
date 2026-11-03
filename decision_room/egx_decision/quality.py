@@ -8,6 +8,13 @@ def evaluate(data,session=None):
     c20=cal[-K.WIN20:];c51=cal[-K.WIN51:]
     conf=data["conflicts"].assign(date=lambda d:pd.to_datetime(d["date"]))
     ca=data["corp"].assign(date=lambda d:pd.to_datetime(d["date"]))
+    off=data.get("official_identities")
+    if off is None:
+        off=pd.DataFrame(columns=["ticker","date","resolution_status"])
+    elif not off.empty:
+        off=off.copy()
+        off["date"]=pd.to_datetime(off["date"])
+    verified={"VERIFIED","OFFICIAL_VERIFIED"}
     out=[]
     known=set(bars["ticker"].unique())
     for t,g in bars[bars["date"]<=session].groupby("ticker"):
@@ -22,6 +29,12 @@ def evaluate(data,session=None):
         # downstream paper levels. Review/approve mapping independently first.
         if (w51["evidence_tier"] == "PROVISIONAL_SYMBOL_IDENTITY").any():
             why.append("IDENTITY_UNVERIFIED: اسم السهم مطابق مبدئيًا فقط ولم تُعتمد هوية الرمز")
+        # A valid EGX price does not prove the name->ticker mapping.
+        # Historical RESOLVED_CONFIRMED_NAME_PREVCLOSE is not ISIN proof.
+        missing_identity=off[(off["ticker"]==t)&(off["date"].isin(c51))&
+            (~off["resolution_status"].isin(verified))]
+        if len(missing_identity) and not any(x.startswith("IDENTITY_UNVERIFIED") for x in why):
+            why.append("IDENTITY_UNVERIFIED: النشرة رسمية لكن ربط السعر برمز السهم لم يُعتمد من مرجع مستقل")
         miss20=[d for d in c20 if pd.isna(w20.loc[d,"close"])]
         miss51=[d for d in c51 if pd.isna(w51.loc[d,"close"])]
         if miss20 or miss51:
