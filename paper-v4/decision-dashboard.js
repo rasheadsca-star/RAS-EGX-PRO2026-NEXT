@@ -14,7 +14,7 @@ const expectedSession=()=>{
 const isRankingStale=()=>!state.snapshot||state.snapshot.session<expectedSession();
 async function get(url){const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status+' '+url);return r.json()}
 const RAW_RANKING='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/latest-ranking.json';
-const validRanking=d=>d&&/^(?:2\\.[4-9]|[3-9]\\.)/.test(String(d.schemaVersion||''))&&isDate(d.session)
+const validRanking=d=>d&&/^(?:2\.[4-9]|[3-9]\.)/.test(String(d.schemaVersion||''))&&isDate(d.session)
   &&d.qualifiedTradeCount===0&&String(d.mode).includes('RESEARCH')
   &&Array.isArray(d.rows)&&d.rows.length>0
   &&d.rows.every(r=>r.sourceSession===d.session&&r.recommendation==='WATCH_ONLY'
