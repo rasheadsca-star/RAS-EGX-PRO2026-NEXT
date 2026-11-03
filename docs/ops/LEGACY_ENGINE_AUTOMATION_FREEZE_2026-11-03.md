@@ -5,7 +5,7 @@ Decision: **STOP automatic execution of weak/redundant/legacy strategy engines; 
 
 ## Scope
 
-79 GitHub Actions workflow files were converted from scheduled, push, or workflow-completion triggers to **manual workflow_dispatch only** in eight Git commits. No strategy source, historical database, official PDF, or stored experiment was deleted.
+89 GitHub Actions workflow files were converted from scheduled, push, or workflow-completion triggers to **manual workflow_dispatch only** in multiple reversible Git commits. No strategy source, historical database, official PDF, or stored experiment was deleted.
 
 Grouped changes:
 - Astra, legacy main-app, G22, Gann, V16 two-stage supervisor/fan-out
@@ -37,10 +37,17 @@ Grouped changes:
 
 ## Rollback procedure
 
-Inspect the eight Git commits whose titles begin with `ops: pause`, `ops: suspend`, `ops: freeze`, and `ops: stop` and selectively restore a workflow's original `on:` triggers from Git history after approval. Never restore all 79 automatically.
+Inspect the eight Git commits whose titles begin with `ops: pause`, `ops: suspend`, `ops: freeze`, and `ops: stop` and selectively restore a workflow's original `on:` triggers from Git history after approval. Never restore all 89 automatically.
 
 ## Explicit exclusions
 
 - We have **not deleted** any allegedly weak algorithm, because no common independent performance comparison exists yet.
 - GitHub Actions triggered manually through the API may still run a parked workflow. Do not dispatch them without explicit authorization.
 - Ongoing workflows not in this frozen list might still independently commit; auditing the remaining schedule matrix is a follow-up governance step.
+
+## Follow-up audit (3 November 2026)
+
+- Ten additional workflows parked, including `v13-17-1-exact-fresh-production-universe.yml` previously scheduled every 15 minutes, and `v12-preview-safe-build.yml` triggered by source updates.
+- Repaired malformed YAML newlines in all 79 earlier paused files; verified the actual `on: workflow_dispatch:` section is valid and no automatic trigger remains.
+- Added `.github/workflows/egx-legacy-freeze-integrity.yml` and `scripts/paper-v4/audit-legacy-workflow-freeze.cjs`. The first test run [41727319780](https://github.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/actions/runs/41727319780) succeeded with 89 parked workflows, 207 workflow files total, and zero violations.
+- Active core ingest / V4 / backup workflows remain distinct; remaining non-parked workflows are not assumed safe or disabled until individually audited.
