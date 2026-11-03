@@ -4,33 +4,8 @@ run-name: MAIN APP V16.9.2 P2 scan for ${{ github.sha }}
 # G22 downstream handoff is event-driven: Astra waits for this entire workflow
 # to complete, then independently verifies final/published session state and fingerprint.
 
-on:
+# Deprecated automated pipeline: manual launch only, data/code retained.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Install & Run V13.17.1 Final Session Truth Sync"]
-    types: [completed]
-    branches: [main]
-  push:
-    paths:
-      - ".github/workflows/v16-daily-recommendation-scan.yml"
-      - "scripts/stable/v16-source-session-quorum.cjs"
-      - "scripts/stable/v16-v169-live-resolution-normalizer.cjs"
-      - "scripts/stable/v16-main-app-professional-readiness.cjs"
-      - "scripts/stable/v16-postclose-scan-complete.cjs"
-      - "scripts/stable/v16-same-session-recovery-replay.cjs"
-      - "tests/stable/v16-same-session-recovery-replay.test.cjs"
-      - "tests/stable/v16-same-session-recovery-integration.test.cjs"
-      - "tests/astra/postclose-source-recovery.test.cjs"
-  schedule:
-    # GitHub cron is UTC. We schedule both Egypt UTC+2 and UTC+3 candidates,
-    # then the preflight gate checks the real Africa/Cairo local clock.
-    # 10:15 Cairo
-    - cron: "15 7,8 * * 0-4"
-    # 14:15 Cairo
-    - cron: "15 11,12 * * 0-4"
-    # Post-close hourly candidates. The Cairo gate allows 15:00-21:00 only.
-    - cron: "0 12-19 * * 0-4"
-
 env:
   EGXAPI_KEY: ${{ secrets.EGXAPI_KEY }}
   EGX_KEY: ${{ secrets.EGX_KEY }}
