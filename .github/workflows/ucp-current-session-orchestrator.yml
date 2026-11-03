@@ -1,18 +1,7 @@
 name: UCP Current Session Orchestrator
 
-on:
+# Legacy automatic execution suspended. Manual dispatch only.\non:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["EGX V16.9 Basket Engine", "EGX MAIN APP V16.9.2 P2 Automatic Scan"]
-    types: [completed]
-    branches: [main]
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/ucp-current-session-orchestrator.yml"
-  schedule:
-    - cron: "12 14-20 * * 0-4"
-
 permissions:
   contents: read
   actions: write
