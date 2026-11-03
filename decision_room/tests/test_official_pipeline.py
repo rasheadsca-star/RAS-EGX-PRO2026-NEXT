@@ -54,6 +54,24 @@ class OfficialPipelineTests(unittest.TestCase):
  def test_research_opt_in_required(self):
   with self.assertRaisesRegex(MergeError,"UNVERIFIED_SYMBOL_MAPPING"):
    merge(self.db,self.pdf,self.mapped,"2026-11-02")
+ def test_zero_verified_tickers_still_preserves_all_quarantine_records(self):
+  body=json.loads(self.mapped.read_text())
+  body["summary"]["provisional"]=0
+  body["items"][0]["ticker"]=None
+  body["items"][0]["resolution_status"]="QUARANTINED_NAME_OR_AMBIGUITY"
+  self.mapped.write_text(json.dumps(body))
+  r=merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  self.assertEqual(r["outcome"],"QUARANTINE_ONLY")
+  self.assertEqual(r["inserted"],0)
+  self.assertEqual(r["staged_rows"],2)
+  c=sqlite3.connect(self.db)
+  self.assertEqual(c.execute("select count(*) from official_session where session_date='2026-11-02'").fetchone()[0],2)
+  self.assertEqual(c.execute("select count(*) from canonical_bars where date='2026-11-02'").fetchone()[0],0)
+  c.close()
+  stable=sha(self.db)
+  again=merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)
+  self.assertEqual(again["outcome"],"NOOP")
+  self.assertEqual(sha(self.db),stable)
  def test_import_twice_noop_and_backup(self):
   start=sha(self.db)
   self.assertEqual(merge(self.db,self.pdf,self.mapped,"2026-11-02",True,bulletin=self.bulletin)["inserted"],1)
