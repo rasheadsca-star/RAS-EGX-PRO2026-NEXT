@@ -11,7 +11,7 @@ function createCard(r){const b=document.createElement('button');b.type='button';
  const n=document.createElement('p');n.className='sub tiny';n.textContent=r.note||'مراقبة بحثية';b.append(n);
  const f=document.createElement('div');f.className='stat';const p=document.createElement('span');p.textContent=fmt(r.close)+' ج';const ch=document.createElement('span');ch.textContent=(r.changePct>=0?'+':'')+fmt(r.changePct)+'%';f.append(p,ch);b.append(f);
  const bar=document.createElement('div');bar.className='bar';const fill=document.createElement('span');fill.style.width=Math.max(0,Math.min(100,r.relativeResearchScore||0))+'%';bar.append(fill);b.append(bar);
- const e=document.createElement('div');e.style.marginTop='8px';e.append(tag('مراقبة فقط',true));b.append(e);return b;}
+ const e=document.createElement('div');e.style.marginTop='8px';e.append(tag(r.scenarios?.some(x=>x.status==='PAPER_CONDITIONAL')?'سيناريو ورقي مشروط':'انتظار تأكيد',true));b.append(e);return b;}
 function drawList(){let rows=[...state.rows],q=$('q').value.trim().toUpperCase(),sort=$('sort').value;rows=rows.filter(x=>x.ticker.includes(q));rows.sort((a,b)=>sort==='volume'?b.volumeRatio20-a.volumeRatio20:sort==='change'?b.changePct-a.changePct:b.relativeResearchScore-a.relativeResearchScore);$('list').replaceChildren(...rows.map(createCard))}
 function svgChart(el,points,ref){el.replaceChildren();const W=780,H=320,pad={l:52,r:12,t:18,b:38};const plotW=W-pad.l-pad.r,plotH=H-pad.t-pad.b;
  const valid=points.filter(x=>isDate(x.date)&&Number(x.close)>0).slice(-100);if(valid.length<8){el.textContent='لا توجد جلسات تاريخية كافية لرسم الشارت';return;}
@@ -30,8 +30,25 @@ function svgChart(el,points,ref){el.replaceChildren();const W=780,H=320,pad={l:5
 async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>x.ticker===t);if(!r)return;
  const d=$('detail');d.replaceChildren();const head=document.createElement('div');head.className='head';const title=document.createElement('h2');title.textContent=r.ticker+' — تحليل الفرصة البحثية';head.append(title,tag('لا توجد توصية شراء معتمدة',true));d.append(head);
  const summary=document.createElement('p');summary.className='sub';summary.textContent='جلسة الترتيب '+state.snapshot.session+' | نموذج اختراق سعري بحثي | التقييم '+fmt(r.relativeResearchScore,1)+'/100';d.append(summary);
- const facts=document.createElement('div');facts.className='facts';const entries=[['الإغلاق الرسمي المرجعي',fmt(r.close)+' جنيه'],['تغير الجلسة',(r.changePct>=0?'+':'')+fmt(r.changePct)+'%'],['المقاومة السابقة',fmt(r.resistance20)+' جنيه'],['عتبة مراقبة الاختراق',fmt(r.indicativeTrigger,3)+' جنيه'],['حجم التداول / متوسطه',fmt(r.volumeRatio20)+'×'],['القرار','مراقبة مشروطة']];
+ const facts=document.createElement('div');facts.className='facts';const entries=[['آخر إغلاق من مصدر '+(r.priceSource==='SECONDARY_PUBLIC'?'ثانوي':'غير مؤكد'),fmt(r.close)+' جنيه'],['تغير الجلسة',(r.changePct>=0?'+':'')+fmt(r.changePct)+'%'],['المقاومة السابقة',fmt(r.resistance20)+' جنيه'],['عتبة مراقبة الاختراق',fmt(r.indicativeTrigger,3)+' جنيه'],['حجم التداول / متوسطه',fmt(r.volumeRatio20)+'×'],['القرار','مراقبة مشروطة']];
  for(const [label,v]of entries){const box=document.createElement('div');box.className='fact';const s=document.createElement('small');s.className='sub';s.textContent=label;const b=document.createElement('b');b.textContent=v;box.append(s,b);facts.append(box)}d.append(facts);
+ const plans=document.createElement('section');plans.style.margin='16px 0';const planTitle=document.createElement('h2');planTitle.textContent='خطط التداول الورقي المشروطة — دخول ووقف وأهداف';plans.append(planTitle);
+ const intro=document.createElement('p');intro.className='sub tiny';intro.textContent='هذه مستويات سيناريو افتراضية مشتقة من المقاومة/الدعم وATR. ليست أوامر شراء، ولا نسبة نجاح مُثبتة. تفعيلها يتطلب جلسة جديدة تؤكد الشروط، واعتماد مصدر السعر والهوية والتكاليف.';plans.append(intro);
+ const scenarioNames={BREAKOUT:'دخول باختراق مقاومة',SUPPORT_BOUNCE:'دخول بارتداد من دعم'};
+ if(!Array.isArray(r.scenarios)||r.scenarios.length===0){
+   const no=document.createElement('div');no.className='notice';no.textContent='خطط الدخول والوقف والأهداف غير متاحة في ملف الترتيب المعروض، أو رفضت بسبب مخاطر غير ملائمة. تحقق من تحديث نشر البيانات.';plans.append(no);
+ }else for(const sc of r.scenarios){
+  const panel=document.createElement('div');panel.className='notice';panel.style.margin='10px 0';
+  const heading=document.createElement('strong');heading.textContent=(scenarioNames[sc.strategy]||sc.strategy)+' — '+(sc.status==='PAPER_CONDITIONAL'?'مستوفٍ لشروط بحثية أولية؛ لم يُعتمد':'بانتظار تحقق الشروط');panel.append(heading);
+  if(sc.entry!=null&&sc.stop!=null&&sc.target1!=null){
+   const cells=document.createElement('div');cells.className='facts';cells.style.marginTop='10px';
+   for(const [label,value] of [['الدخول الافتراضي',fmt(sc.entry,4)+' ج'],['وقف الخسارة',fmt(sc.stop,4)+' ج'],['الهدف الأول',fmt(sc.target1,4)+' ج'],['الهدف الثاني',fmt(sc.target2,4)+' ج'],['مخاطرة السعر',fmt(sc.riskPct)+'%'],['العائد / المخاطرة','1:'+fmt(sc.rewardRisk1,1)+' / 1:'+fmt(sc.rewardRisk2,1)]]){
+    const c=document.createElement('div');c.className='fact';const t=document.createElement('small');t.className='sub';t.textContent=label;const v=document.createElement('b');v.textContent=value;c.append(t,v);cells.append(c);
+   }panel.append(cells);
+  }
+  const desc=document.createElement('p');desc.className='tiny sub';desc.textContent='شرط التفعيل: '+(sc.trigger||'غير محدد')+' | سبب الحالة: '+sc.reason+(sc.status==='REJECTED_RISK'?' | مرفوض لتجاوز ضوابط المخاطرة':'');panel.append(desc);plans.append(panel);
+ }
+ d.append(plans);
  const chart=document.createElement('div');chart.className='chart-wrap';chart.textContent='جارٍ تحميل التاريخ السعري...';d.append(chart);
  const legend=document.createElement('p');legend.className='sub tiny';legend.textContent='الشارت: خط أزرق للإغلاقات المخزنة، أصفر SMA20، برتقالي للمقاومة السابقة. مصدر التاريخ قد يكون غير رسمي ويختلف عن إغلاق التقرير الرسمي.';d.append(legend);
  const why=document.createElement('h2');why.textContent='أسباب الترتيب والقرار';d.append(why);
@@ -40,7 +57,7 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
  'القرب من مقاومة 20 جلسة: '+fmt((r.resistance20/r.close-1)*100,2)+'%؛ الاختراق لم يُؤكَّد.',
  'قوة الحجم: '+fmt(r.volumeRatio20)+' مرة من متوسط 20 جلسة؛ '+(r.volumeRatio20>=1.2?'حجم داعم نسبيًا.':'الحجم غير كافٍ وحده لتأكيد الاختراق.'),
  r.abovePriorSMA20?'الإغلاق أعلى من المتوسط المتحرك السابق SMA20.':'الإغلاق دون المتوسط المتحرك السابق SMA20.',
- r.note||'لا ملاحظات إضافية','لا يوجد وقف أو هدف مصدّق؛ عدم استيفاء شروط الاستراتيجية يعني مراقبة دون شراء.'
+ r.note||'لا ملاحظات إضافية','الأهداف والوقف المعروضة افتراضية مبنية على وحدات المخاطرة، ولا تكون أوامر قابلة للتنفيذ دون قبول البيانات.'
  ];for(const reason of reasons){const li=document.createElement('li');li.textContent=reason;ul.append(li)}d.append(ul);
  const evidence=document.createElement('div');evidence.className='notice';evidence.textContent='جارٍ مقارنة بيانات الشارت مع مرجع الجلسة...';d.append(evidence);
  const foot=document.createElement('p');foot.className='tiny sub';foot.textContent='التحديث اليومي لا يعدّل إشارة قديمة بأثر رجعي. الدخول الافتراضي مشروط بتأكيد الجلسة والسيولة والهوية والرسوم وانضباط المخاطرة.';d.append(foot);
@@ -53,7 +70,7 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
  }catch(e){chart.textContent='تعذر تحميل التاريخ السعري: '+e.message;evidence.textContent='الشارت غير متاح؛ لا يتم توليد توصية في غياب التاريخ الموثوق.'}
 }
 async function init(){try{
- let d;try{d=await get('./latest-ranking.json')}catch(_){d=await get('./preliminary-ranking-2026-11-03.json')}
+ const d=await get('./latest-ranking.json')
  if(!Array.isArray(d.rows)||!isDate(d.session))throw Error('تقرير ترتيب غير صالح');
  state.snapshot=d;state.rows=d.rows;$('session').textContent=d.session;$('count').textContent=d.rows.length;$('qualified').textContent=d.qualifiedTradeCount||0;$('mode').textContent='بحثي — مشروط';
  const age=(Date.now()-Date.parse(d.session+'T15:00:00+02:00'))/86400000;
