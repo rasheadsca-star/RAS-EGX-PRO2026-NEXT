@@ -44,6 +44,8 @@ def run():
             assert "214.92" in page.locator("#quant-rows").inner_text()
             assert "ARVA" in page.locator("#main-rows").inner_text()
             assert "DELAYED" in page.locator("#quality").inner_text()
+            assert "المصدر متأخر" in page.locator("#headline").inner_text()
+            assert "فصل مصادر البيانات" in page.locator("body").inner_text()
             assert "paper-v4/index.html" in page.locator('a[href="./paper-v4/index.html"]').get_attribute("href")
             assert "RESEARCH ONLY" in page.locator("body").inner_text()
             assert "NO_STRATEGY_APPROVED" in page.locator("body").inner_text()
@@ -57,6 +59,21 @@ def run():
             assert "لا نعرض بيانات قديمة بديلة" in page.locator("#quant-rows").inner_text()
             assert page.locator("#main-session").inner_text()=="غير متاح"
             print("PASS: failed source refuses stale fallback")
+        finally:browser.close()
+        browser=p.chromium.launch(headless=True)
+        page=browser.new_page()
+        try:
+            malformed_main={**MAIN,"researchWatchlist":[{**MAIN["researchWatchlist"][0],
+                "companyNameAr":"' ### Size: 1 Malformed", "stopLoss":20.0}]}
+            malformed_quant={**QUANT,"watchCandidates":[{**QUANT["watchCandidates"][0],
+                "plan":{**QUANT["watchCandidates"][0]["plan"],"stopLoss":240.0}}]}
+            launch(page,{**routes,
+                "data/stable/v16-main-app-current.json":malformed_main,
+                "data/quant/daily-recommendations.json":malformed_quant})
+            assert "مستويات غير متسقة — محجوبة" in page.locator("#quant-rows").inner_text()
+            assert "بيانات اسم/سعر غير موثوقة — محجوبة" in page.locator("#main-rows").inner_text()
+            assert "محجوب" in page.locator("#quant-rows").inner_text()
+            print("PASS: malformed names and impossible entry/stop/target levels cannot appear as research plans")
         finally:browser.close()
 
 if __name__=="__main__":
