@@ -1,0 +1,33 @@
+name: EGX External OHLCV Source Verification
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check syntax
+        run: node --check scripts/research/egx-stockanalysis-ohlcv-stage.cjs
+      - name: Explain provider access restriction
+        run: |
+          echo 'Stock Analysis publicly states that it provides no programmatic API and cannot license programmatic redistribution.'
+          echo 'Do not fetch provider pages automatically. Use permitted licensed feeds for any operational pipeline.'
+      - name: Confirm no canonical market writes
+        if: always()
+        run: git diff --exit-code -- data/history/ data/stable/ docs/astra/ astra-prod/
+      - name: Retain data source evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-stockanalysis-stage-${{ github.run_id }}
+          path: artifacts/history-recovery/stockanalysis-stage/
+          retention-days: 30
+          if-no-files-found: ignore
