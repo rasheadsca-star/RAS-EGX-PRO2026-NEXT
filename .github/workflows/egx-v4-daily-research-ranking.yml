@@ -1,0 +1,90 @@
+name: EGX V4 daily research ranking dashboard
+# Research-only scheduled dashboard; never certifies prices, ISIN, trading strategies, or broker orders.
+on:
+  schedule:
+    - cron: '15 18 * * 0-4'  # 20:15 UTC+2, Sun-Thu; EGX postclose
+  workflow_dispatch:
+    inputs:
+      session:
+        description: 'EGX session YYYY-MM-DD; blank = current Cairo date'
+        required: false
+        type: string
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: egx-v4-daily-research-ranking-main
+  cancel-in-progress: false
+jobs:
+  research:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      EGX_SESSION: ${{ inputs.session }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve Cairo trading session
+        id: session
+        run: |
+          node - <<'JS'
+          const fs=require('fs');
+          const manual=process.env.EGX_SESSION?.trim();
+          const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+          const d=manual||today;
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(d))throw Error('Bad session');
+          const wd=new Date(d+'T12:00:00Z').getUTCDay();
+          if([5,6].includes(wd))throw Error('Non EGX trading day');
+          fs.appendFileSync(process.env.GITHUB_ENV,'EGX_SESSION='+d+'\n');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'session='+d+'\n');
+          JS
+      - name: Generate current-session research watchlist
+        id: generate
+        continue-on-error: true
+        run: node scripts/paper-v4/build-daily-research-ranking.cjs
+      - name: Validate mode, date, provenance, and no orders
+        id: validation
+        if: steps.generate.outcome == 'success'
+        run: |
+          node - <<'JS'
+          const fs=require('fs');const d=JSON.parse(fs.readFileSync('paper-v4/latest-ranking.json'));
+          if(d.session!==process.env.EGX_SESSION||!Array.isArray(d.rows)||d.rows.length<1)throw Error('No fresh session rank data');
+          if(d.qualifiedTradeCount!==0||!d.mode.includes('RESEARCH')||d.source.officialSessionVerified!==false)throw Error('Trade/readiness invariant failed');
+          if(d.rows.some(x=>x.recommendation!=='WATCH_ONLY'||x.sourceSession!==d.session||x.officialCloseVerified!==false))throw Error('Unsafe signal');
+          console.log('Research-only candidates:',d.rows.length);
+          JS
+      - name: Keep research evidence artifact for audit
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-research-ranking-${{ steps.session.outputs.session }}
+          path: paper-v4/latest-ranking.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Publish dated research JSON on main only if accepted
+        if: steps.generate.outcome == 'success' && steps.validation.outcome == 'success'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add paper-v4/latest-ranking.json
+          if git diff --cached --quiet; then echo 'No changes'; exit 0; fi
+          git commit -m "data(paper-v4): daily dated secondary research ranking [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - name: Open issue on failure instead of recycling old ranking
+        if: steps.generate.outcome != 'success' || steps.validation.outcome != 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SESSION: ${{ steps.session.outputs.session }}
+        run: |
+          title="EGX V4 research ranking intake failed — $SESSION"
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh issue create --title "$title" --body "Daily session ranking unavailable for $SESSION. Do NOT treat prior ranking as today's recommendations. Check source quality, dated market feeds and $run_url. Request the official daily EGX PDF from the owner if source retrieval failed." || true
+          exit 2
