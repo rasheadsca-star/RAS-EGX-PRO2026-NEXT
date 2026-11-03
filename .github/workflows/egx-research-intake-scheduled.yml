@@ -53,7 +53,7 @@ jobs:
               if not re.fullmatch(r"\d{4}-\d{2}-\d{2}",raw):
                   raise SystemExit("invalid session date format")
               d=datetime.date.fromisoformat(raw)
-          if d.weekday()>=5:raise SystemExit("Saturday/Friday not a trading session")
+          if d.weekday() in (4,5):raise SystemExit("Friday/Saturday are not EGX trading sessions")
           Path(os.environ["GITHUB_OUTPUT"]).open("a").write("session="+d.isoformat()+"\n")
           PY
       - name: Retrieve dated official bulletin
