@@ -30,7 +30,7 @@ Grouped changes:
 
 1. No legacy engine may become automatically scheduled again without a recorded evaluation comparing incremental performance, data trust, and cost to V4.
 2. Manual recovery remains possible from Actions; this is **not** a deletion or strategy ranking judgment.
-3. Every legacy push should not create a Production deployment: Vercel project has an Ignore Build Step selecting only actual application/source changes.
+3. Every legacy push should not create a Production deployment: Vercel project now has an Ignore Build Step restricted to `paper-v4/`, `vercel.json`, and `package.json`, preventing legacy `data/stable/`, old apps, and general `data/history/` commits from building independently. V4 daily ranking publication deploys the bundled up-to-date history snapshot.
 4. Do not misrepresent a GitHub commit as a live build; Production sync requires checksum verification.
 5. Vercel's current `Deployment rate limited — retry in 24 hours` is a platform quota and is **not** eliminated by repository edits. Reassess quota after scheduled sources settle.
 6. V4 signals remain **research-only** pending official ISIN, source, tick-size/board, fees and independent-out-of-sample gates.
