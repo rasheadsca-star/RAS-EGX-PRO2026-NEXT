@@ -79,7 +79,7 @@ jobs:
           if(d.mode==='OFFICIAL_CLOSE_SECONDARY_HISTORY_RESEARCH_WATCH'){
             const a=d.sourceScope;
             if(!a||a.kind!=='CURATED_SUBSET_NOT_FULL_MARKET'||a.coverageApproved!==false||a.marketWideRankingReady!==false||a.centralDatabaseImported!==false||a.chartOhlcvRefreshApproved!==false)throw Error('Missing conservative source-scope audit');
-            if(a.reviewedSubsetCount!==d.source.marketRows||a.rankedReviewedRows!==d.rows.length||a.excludedReviewedRows+a.rankedReviewedRows!==a.reviewedSubsetCount)throw Error('Official subset reconciliation failed');
+            if(a.reviewedSubsetCount!==d.source.marketRows||a.rankedReviewedRows!==d.rows.length||a.excludedReviewedRows+a.candidateReviewedRows!==a.reviewedSubsetCount||a.rankedReviewedRows+a.unrankedByCapCount!==a.candidateReviewedRows)throw Error('Official subset reconciliation failed');
           }
           console.log('Research-only candidates:',d.rows.length);
           JS
