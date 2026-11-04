@@ -55,7 +55,7 @@ function svgChart(el,points,ref){el.replaceChildren();const W=780,H=320,pad={l:5
 async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>x.ticker===t);if(!r)return;
  const d=$('detail');d.replaceChildren();const head=document.createElement('div');head.className='head';const title=document.createElement('h2');title.textContent=r.ticker+' — تحليل الفرصة البحثية';head.append(title,tag('لا توجد توصية شراء معتمدة',true));d.append(head);
  const summary=document.createElement('p');summary.className='sub';summary.textContent='جلسة الترتيب '+state.snapshot.session+' | نموذج اختراق سعري بحثي | التقييم '+fmt(r.relativeResearchScore,1)+'/100';d.append(summary);
- const facts=document.createElement('div');facts.className='facts';const entries=[['آخر إغلاق من مصدر '+(r.priceSource==='SECONDARY_PUBLIC'?'ثانوي':'غير مؤكد'),fmt(r.close)+' جنيه'],['تغير الجلسة',(r.changePct>=0?'+':'')+fmt(r.changePct)+'%'],['المقاومة السابقة',fmt(r.resistance20)+' جنيه'],['عتبة مراقبة الاختراق',fmt(r.indicativeTrigger,3)+' جنيه'],['حجم التداول / متوسطه',fmt(r.volumeRatio20)+'×'],['القرار','مراقبة مشروطة']];
+ const facts=document.createElement('div');facts.className='facts';const entries=[['آخر إغلاق من مصدر '+(r.closeOnlySession?'تقرير EGX (إغلاق فقط)':'ثانوي'),fmt(r.close)+' جنيه'],['تغير الجلسة',(r.changePct>=0?'+':'')+fmt(r.changePct)+'%'],['المقاومة السابقة',fmt(r.resistance20)+' جنيه'],['عتبة مراقبة الاختراق',fmt(r.indicativeTrigger,3)+' جنيه'],['حجم التداول / متوسطه',fmt(r.volumeRatio20)+'×'],['القرار','مراقبة مشروطة']];
  for(const [label,v]of entries){const box=document.createElement('div');box.className='fact';const s=document.createElement('small');s.className='sub';s.textContent=label;const b=document.createElement('b');b.textContent=v;box.append(s,b);facts.append(box)}d.append(facts);
  const plans=document.createElement('section');plans.style.margin='16px 0';const planTitle=document.createElement('h2');planTitle.textContent='خطط التداول الورقي المشروطة — دخول ووقف وأهداف';plans.append(planTitle);
  const intro=document.createElement('p');intro.className='sub tiny';intro.textContent='هذه مستويات سيناريو افتراضية مشتقة من المقاومة/الدعم وATR. ليست أوامر شراء، ولا نسبة نجاح مُثبتة. تفعيلها يتطلب جلسة جديدة تؤكد الشروط، واعتماد مصدر السعر والهوية والتكاليف.';plans.append(intro);
@@ -89,12 +89,32 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
  const evidence=document.createElement('div');evidence.className='notice';evidence.textContent='جارٍ مقارنة بيانات الشارت مع مرجع الجلسة...';d.append(evidence);
  const foot=document.createElement('p');foot.className='tiny sub';foot.textContent='التحديث اليومي لا يعدّل إشارة قديمة بأثر رجعي. الدخول الافتراضي مشروط بتأكيد الجلسة والسيولة والهوية والرسوم وانضباط المخاطرة.';d.append(foot);
  try{let h=state.cache.get(t);if(!h){h=await get(base+'history/'+encodeURIComponent(t)+'.json');state.cache.set(t,h)}
- if(t!==state.selected)return;const bars=(h.sessions||[]).filter(x=>x.date<=state.snapshot.session&&x.close>0).sort((a,b)=>a.date.localeCompare(b.date));svgChart(chart,bars,r);
+ if(t!==state.selected)return;
+ const bars=(h.sessions||[]).filter(x=>x.date<=state.snapshot.session&&x.close>0).sort((a,b)=>a.date.localeCompare(b.date));
  const last=bars.findLast(x=>x.date===state.snapshot.session);
  const mismatch=last&&Math.abs(last.close-r.close)>Math.max(.005,r.close*.001);
+ let closeOnlyEvidence=false;
+ if(r.closeOnlySession&&r.closeFromDatedOfficialPdf&&state.snapshot.source?.documentSha256){
+  try{
+   const official=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json');
+   const row=official.quotes?.find(x=>x.ticker===r.ticker);
+   closeOnlyEvidence=official.session===state.snapshot.session
+     && official.documentSha256===state.snapshot.source.documentSha256
+     && row&&Math.abs(Number(row.close)-Number(r.close))<.005;
+  }catch(_){closeOnlyEvidence=false}
+ }
+ // Append a documented close-only marker on the chart; no synthetic same-day OHLC.
+ const chartBars=[...bars];
+ if(closeOnlyEvidence&&!last)chartBars.push({date:state.snapshot.session,close:r.close,closeOnly:true});
+ svgChart(chart,chartBars,r);
  const stale=isRankingStale();
- plans.hidden=!last||mismatch||stale;
- evidence.textContent=stale?'الترتيب مؤرخ '+state.snapshot.session+' بينما آخر جلسة متوقعة '+expectedSession()+'؛ تم حجب خطط الدخول القديمة.':!last?'الشارت لا يحتوي على جلسة الترتيب؛ تم حجب أرقام الدخول لعدم وجود مرجع تاريخي مطابق.':mismatch?'تعارض أسعار: إغلاق بيانات الترتيب '+fmt(r.close)+' مقابل تاريخ المستودع '+fmt(last.close)+' لنفس الجلسة. تم حجب خطط الدخول.':'السعر المخزن متفق حسابيًا مع مرجع الترتيب الثانوي لهذه الجلسة. الخطط أدناه بحثية فقط؛ لا يوجد اعتماد ISIN أو سعر إغلاق رسمي.';
+ // Official close-only evidence suffices to display RESEARCH PLANS, not approve any order.
+ plans.hidden=stale||Boolean(mismatch)||(!last&&!closeOnlyEvidence);
+ evidence.textContent=stale?'الترتيب مؤرخ '+state.snapshot.session+' بينما آخر جلسة متوقعة '+expectedSession()+'؛ تم حجب خطط الدخول القديمة.'
+  :mismatch?'تعارض أسعار بين إغلاق الجلسة الرسمية والتاريخ: تم حجب أرقام الدخول.'
+  :closeOnlyEvidence?'تمت مطابقة إغلاق اليوم مع ملف التقرير الرسمي المؤرخ. آخر نقطة بالشارت هي إغلاق فقط، دون OHLC. خطط الدخول بحثية مشروطة وغير صالحة لإرسال أوامر؛ التاريخ السابق والهوية لم يُعتمدا.'
+  :!last?'لا يوجد شارت جلسة مطابق أو مرجع رسمي مكتمل؛ تم حجب أرقام الدخول.'
+  :'السعر المخزن متفق حسابيًا مع التاريخ الثانوي لهذه الجلسة. الخطط أدناه بحثية فقط؛ يلزم اعتماد ISIN والسعر الرسمي.';
  evidence.style.borderColor=mismatch?'#c97954':'#907338';
  }catch(e){plans.hidden=true;chart.textContent='تعذر تحميل التاريخ السعري: '+e.message;evidence.textContent='الشارت غير متاح؛ تم حجب أرقام الدخول في غياب التاريخ الموثوق.'}
 }
