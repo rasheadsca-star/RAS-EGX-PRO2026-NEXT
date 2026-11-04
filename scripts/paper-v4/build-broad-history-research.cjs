@@ -6,7 +6,8 @@ const ROOT=path.resolve(__dirname,'../..'),DIR=path.join(ROOT,'data/history');
 const iso=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||''))&&!Number.isNaN(Date.parse(s+'T12:00:00Z'));
 const good=b=>b&&iso(b.date)&&['open','high','low','close','volume'].every(k=>Number.isFinite(Number(b[k])))&&Number(b.low)>0&&Number(b.high)>=Math.max(Number(b.open),Number(b.close))&&Number(b.low)<=Math.min(Number(b.open),Number(b.close))&&Number(b.volume)>=0;
 const avg=a=>a.reduce((p,c)=>p+c,0)/a.length,fix=(n,d=3)=>Number(n.toFixed(d));
-function build({root=ROOT,asOf=process.env.EGX_SESSION||null}={}){
+const cairoDate=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+function build({root=ROOT,asOf=process.env.EGX_SESSION||cairoDate()}={}){
  if(asOf!==null&&!iso(asOf))throw Error('INVALID_AS_OF');
  const dir=path.join(root,'data/history'),files=fs.readdirSync(dir).filter(f=>/^[A-Z0-9_-]+\.json$/.test(f)).sort();
  const rows=[],excluded=[];
