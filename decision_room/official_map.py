@@ -54,9 +54,36 @@ def parse_words(pages):
                 a=min(anchors,key=lambda a:abs(a['ym']-ym))
                 if abs(a['ym']-ym)<=45:a['names'].append((ym,w[0],w[4]))
         for a in anchors:
-            a['name']=' '.join(t for _,_,t in sorted(a['names']));del a['names'];del a['ym'];rows.append(a)
+            a['name']=re.sub(r'^(Stock Name\s+)+','',' '.join(t for _,_,t in sorted(a['names'])));del a['names'];del a['ym'];rows.append(a)
     return rows
 def parse_pdf(pdf):return parse_words(_words(pdf))
+
+
+def parse_corporate_events(pdf,session):
+    """Pages 7-10 'Corporate Actions' block of the daily bulletin -> list of dicts (new listings, stock dividends, capital increases,
+    cash dividends = 'Paid Coupons' of equities). Text-layout regexes; unknown layouts yield no event (never invented)."""
+    txt=subprocess.run(['pdftotext','-f','7','-l','10','-layout',pdf,'-'],capture_output=True,text=True,check=True).stdout
+    sec=None;ev=[]
+    for ln in txt.splitlines():
+        l=ln.strip()
+        for h,k in(("- Stock Dividend","STOCK_DIVIDEND"),("- Capital Increases","CAPITAL_INCREASE"),("- New Listings","NEW_LISTING"),("- Paid Coupons","CASH_DIVIDEND_OR_COUPON"),("- Stock Split","STOCK_SPLIT"),("- Rights","RIGHTS")):
+            if l.startswith(h):sec=k
+        if l.startswith("Capital Increases"):sec="CAPITAL_INCREASE"
+        if l.startswith("Page "):continue
+        if sec=="STOCK_DIVIDEND":
+            m=re.match(r'(\d\d/\d\d/\d{4})\s+(EG\w{10})\s+(.+?)\s+(EGP|USD)\s+([\d.]+)\s+([\d.]+)$',l)
+            if m:ev.append(dict(kind=sec,date=m[1],isin=m[2],name=m[3],currency=m[4],ratio1=float(m[5]),ratio2=float(m[6])))
+        elif sec=="CAPITAL_INCREASE":
+            m=re.match(r'(\d\d/\d\d/\d{4})\s+(\w+)\s+(.+?)\s+(EGP|USD)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)$',l)
+            if m:ev.append(dict(kind=sec,date=m[1],company_code=m[2],name=m[3],currency=m[4],shares_before=int(m[5].replace(',','')),shares_after=int(m[6].replace(',','')),capital_increase=int(m[7].replace(',',''))))
+        elif sec=="NEW_LISTING":
+            m=re.match(r'(\w+)\s+(.+?)\s+([\d,]+)\s+([\d.]+)\s+(EGP|USD)\s+(\d\d/\d\d/\d{4})$',l)
+            if m:ev.append(dict(kind=sec,code=m[1],name=m[2],shares=int(m[3].replace(',','')),par=float(m[4]),currency=m[5],date=m[6]))
+        elif sec=="CASH_DIVIDEND_OR_COUPON":
+            m=re.match(r'(EG\w{10})\s+(.+?)\s+(EGP|USD)\s+(\d+)\s+(\d\d/\d\d/\d{4})\s+(\d\d/\d\d/\d{4})\s+([\d.]+)\s+(EGP|USD)$',l)
+            if m:ev.append(dict(kind=sec,isin=m[1],name=m[2],currency=m[3],cp_no=int(m[4]),div_date=m[5],pay_date=m[6],amount=float(m[7])))
+    for e in ev:e["session"]=session
+    return ev
 
 def load_alias(path):
     try:d=json.load(open(path))
