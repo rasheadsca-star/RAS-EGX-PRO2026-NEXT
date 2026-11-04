@@ -6,11 +6,20 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
 const base=path.resolve(__dirname,'../..');
 const site=process.env.EGX_SITE_ORIGIN||'https://egx-pro-decision-room.vercel.app';
-const files=['paper-v4/decision.html','paper-v4/decision-dashboard.js','paper-v4/latest-ranking.json'];
+const files=['paper-v4/decision.html','paper-v4/decision-dashboard.js','paper-v4/latest-ranking.json','paper-v4/official-session-latest.json','paper-v4/official-quotes-dashboard.js','paper-v4/official-import.js'];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const sha=b=>crypto.createHash('sha256').update(b).digest('hex');
 const contract=(filepath,bytes)=>{
- if(filepath.endsWith('latest-ranking.json')){
+ if(filepath.endsWith('official-session-latest.json')){
+  const data=JSON.parse(bytes.toString('utf8'));
+  if(data.session!=='2026-11-04'||data.quotes?.length<10||data.tradingApproved!==false)throw Error('Invalid official-date research quote preview');
+ }else if(filepath.endsWith('official-quotes-dashboard.js')){
+  const js=bytes.toString('utf8');
+  if(!js.includes('egx-v4-official-import-v1')||!js.includes('official-session-latest.json'))throw Error('Missing local/cloud official quote bridge');
+ }else if(filepath.endsWith('official-import.js')){
+  const js=bytes.toString('utf8');
+  if(!js.includes('CLOSE_ONLY_REVIEW')||!js.includes('LOCAL_RESEARCH_ONLY'))throw Error('Missing quarantined PDF import');
+ }else if(filepath.endsWith('latest-ranking.json')){
   const data=JSON.parse(bytes.toString('utf8'));
   if(data.schemaVersion!=='2.4'||!data.rows?.length||data.qualifiedTradeCount!==0||!data.mode?.includes('RESEARCH'))throw Error('Unapproved or outdated research ranking schema');
  }else if(filepath.endsWith('decision-dashboard.js')){
