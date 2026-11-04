@@ -76,6 +76,11 @@ jobs:
           if(d.session!==process.env.EGX_SESSION||!Array.isArray(d.rows)||d.rows.length<1)throw Error('No fresh session rank data');
           if(d.qualifiedTradeCount!==0||!d.mode.includes('RESEARCH')||d.source.officialSessionVerified!==false)throw Error('Trade/readiness invariant failed');
           if(d.rows.some(x=>x.recommendation!=='WATCH_ONLY'||x.sourceSession!==d.session||x.officialCloseVerified!==false))throw Error('Unsafe signal');
+          if(d.mode==='OFFICIAL_CLOSE_SECONDARY_HISTORY_RESEARCH_WATCH'){
+            const a=d.sourceScope;
+            if(!a||a.kind!=='CURATED_SUBSET_NOT_FULL_MARKET'||a.coverageApproved!==false||a.marketWideRankingReady!==false||a.centralDatabaseImported!==false||a.chartOhlcvRefreshApproved!==false)throw Error('Missing conservative source-scope audit');
+            if(a.reviewedSubsetCount!==d.source.marketRows||a.rankedReviewedRows!==d.rows.length||a.excludedReviewedRows+a.rankedReviewedRows!==a.reviewedSubsetCount)throw Error('Official subset reconciliation failed');
+          }
           console.log('Research-only candidates:',d.rows.length);
           JS
       - name: Keep research evidence artifact for audit
