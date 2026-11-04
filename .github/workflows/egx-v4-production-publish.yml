@@ -9,6 +9,10 @@ on:
       - 'scripts/paper-v4/verify-production-sync.cjs'
       - 'paper-v4/decision.html'
       - 'paper-v4/decision-dashboard.js'
+      - 'paper-v4/official-quotes-dashboard.js'
+      - 'paper-v4/official-session-latest.json'
+      - 'paper-v4/official-import.js'
+      - 'paper-v4/import.html'
   schedule:
     - cron: '45 18 * * 0-4'   # postclose audit Sun-Thu 20:45 Cairo, independent of bot pushes
   workflow_dispatch:
@@ -34,6 +38,8 @@ jobs:
       - name: Check source and market-rule invariants
         run: |
           node --check paper-v4/decision-dashboard.js
+          node --check paper-v4/official-quotes-dashboard.js
+          node --check paper-v4/official-import.js
           node --check scripts/paper-v4/verify-production-sync.cjs
           node --test tests/paper-v4/research-contract.test.cjs
       - name: Await Git integration and compare SHA256 of live HTML JS JSON
