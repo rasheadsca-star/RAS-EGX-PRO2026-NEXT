@@ -17,7 +17,13 @@ test('no published live orders or official claims',()=>{
   assert.equal(row.recommendation,'WATCH_ONLY');
   assert.equal(row.identityApproved,false);
   assert.equal(row.officialCloseVerified,false);
-  assert.equal(row.priceSource,'SECONDARY_PUBLIC');
+  assert.ok(['SECONDARY_PUBLIC','OFFICIAL_REPORT_CLOSE_RESEARCH_ONLY'].includes(row.priceSource),'Unrecognized quote provenance');
+  if(row.priceSource==='OFFICIAL_REPORT_CLOSE_RESEARCH_ONLY'){
+    assert.equal(row.closeOnlySession,true);
+    assert.equal(row.closeFromDatedOfficialPdf,true);
+    assert.equal(data.source.officialCloseEvidencePresent,true);
+    assert.equal(row.officialCloseVerified,false); // identity and full OHLC still not approved
+  }
  }
 });
 test('every numeric plan has valid tick-rounded stop/entry/targets and nonexecutability',()=>{
@@ -45,7 +51,7 @@ test('market audit matches current research rows',()=>{
  assert.equal(audit.status,'RESEARCH_ONLY_NOT_EXECUTION_APPROVED');
 });
 test('UI fail-closes stale, conflicting and unavailable chart evidence',()=>{
- for(const fragment of ['expectedSession','isRankingStale','plans.hidden=true','plans.hidden=!last||mismatch||stale','RAW_RANKING','validRanking','GitHub main','Vercel static']){
+ for(const fragment of ['expectedSession','isRankingStale','plans.hidden=true','plans.hidden=stale||Boolean(mismatch)||(!last&&!closeOnlyEvidence)','RAW_RANKING','validRanking','GitHub main','Vercel static']){
   assert.ok(js.includes(fragment),'Missing UI guard '+fragment);
  }
  assert.ok(!js.includes("get('./preliminary-ranking-2026-11-03.json')"),'Hardcoded stale fallback forbidden');
