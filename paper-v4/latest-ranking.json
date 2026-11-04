@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.4",
-  "generatedAt": "2026-11-04T17:27:03.003Z",
+  "generatedAt": "2026-11-04T17:28:40.091Z",
   "session": "2026-11-04",
   "mode": "OFFICIAL_CLOSE_SECONDARY_HISTORY_RESEARCH_WATCH",
   "sampleUniverse": 14,
@@ -19,7 +19,7 @@
     "strategy": "breakout_research_proximity_volume_trend",
     "status": "RESEARCH_ONLY"
   },
-  "rankingFormula": "35% resistance proximity +25% volume ratio +25% relative SMA20 trend +15% above SMA20; no calibrated success probability",
+  "rankingFormula": "35% resistance proximity +25% volume ratio +25% SMA20 trend strength +15% above SMA20; NOT calibrated probability",
   "exclusions": {
     "count": 2,
     "samples": [
@@ -29,15 +29,16 @@
       },
       {
         "ticker": "EMFD",
-        "reason": "MISSING_OFFICIAL_CLOSE_VOLUME_EGP"
+        "reason": "INSUFFICIENT_HISTORY_OR_VOLUME"
       }
     ]
   },
   "limitations": [
-    "Only the 16 curated mapped closing quotes from official PDF, NOT all listed companies.",
-    "Identity crosswalk is provisional; neither historical OHLC nor same-session open/high/low is certified.",
-    "Risk levels are provisional and no entry is executable or confirmed.",
-    "Share corporate actions may make prior levels unadjusted."
+    "Only 16 manually mapped report closes rather than entire EGX official report",
+    "Tickers not independently approved against official ISIN for automated trading",
+    "No fabricated current-session OHLC: today's close and volume only",
+    "Prior 20-day levels use unverified historical bars and may need corporate action adjustments",
+    "No trade execution or buy authorization"
   ],
   "rows": [
     {
@@ -64,12 +65,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 5.99,
           "stop": 5.47,
           "target1": 6.77,
@@ -86,12 +87,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "REJECTED_DAILY_LIMIT",
-          "reason": "المدخل البحثي يتجاوز الحد النظري مقارنة بآخر إغلاق تاريخي مخزن",
+          "reason": "عتبة الاختراق خارج نطاق ±20% النظري من آخر إغلاق مخزن",
           "isExecutable": false
         }
       ],
@@ -121,12 +122,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 49.41,
           "stop": 46.17,
           "target1": 54.27,
@@ -143,12 +144,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "REJECTED_RISK",
-          "reason": "نسبة مخاطرة السيناريو لا تستوفي نطاق .35%–12%",
+          "reason": "نسبة مخاطرة السيناريو خارج الحدود البحثية",
           "riskPct": 13.09,
           "isExecutable": false
         }
@@ -179,12 +180,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 32.51,
           "stop": 30.48,
           "target1": 35.55,
@@ -201,12 +202,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "REJECTED_RISK",
-          "reason": "نسبة مخاطرة السيناريو لا تستوفي نطاق .35%–12%",
+          "reason": "نسبة مخاطرة السيناريو خارج الحدود البحثية",
           "riskPct": 18.86,
           "isExecutable": false
         }
@@ -237,12 +238,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 128.94,
           "stop": 124.27,
           "target1": 135.94,
@@ -259,12 +260,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 125.88,
           "stop": 116.47,
           "target1": 139.99,
@@ -281,7 +282,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "BREAKOUT"
@@ -310,12 +311,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 25.54,
           "stop": 23.91,
           "target1": 27.98,
@@ -332,12 +333,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "REJECTED_RISK",
-          "reason": "نسبة مخاطرة السيناريو لا تستوفي نطاق .35%–12%",
+          "reason": "نسبة مخاطرة السيناريو خارج الحدود البحثية",
           "riskPct": 12.58,
           "isExecutable": false
         }
@@ -368,12 +369,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 119.17,
           "stop": 111.19,
           "target1": 131.14,
@@ -390,12 +391,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "REJECTED_RISK",
-          "reason": "نسبة مخاطرة السيناريو لا تستوفي نطاق .35%–12%",
+          "reason": "نسبة مخاطرة السيناريو خارج الحدود البحثية",
           "riskPct": 13.66,
           "isExecutable": false
         }
@@ -426,12 +427,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 621.24,
           "stop": 589.18,
           "target1": 669.33,
@@ -448,12 +449,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 598.11,
           "stop": 567.42,
           "target1": 644.14,
@@ -470,7 +471,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "BREAKOUT"
@@ -499,12 +500,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 230.44,
           "stop": 210.81,
           "target1": 259.88,
@@ -521,12 +522,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "REJECTED_RISK",
-          "reason": "نسبة مخاطرة السيناريو لا تستوفي نطاق .35%–12%",
+          "reason": "نسبة مخاطرة السيناريو خارج الحدود البحثية",
           "riskPct": 13.66,
           "isExecutable": false
         }
@@ -557,12 +558,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 19.24,
           "stop": 18.18,
           "target1": 20.83,
@@ -579,12 +580,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 17.02,
           "stop": 15.14,
           "target1": 19.84,
@@ -601,7 +602,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "BREAKOUT"
@@ -630,12 +631,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 16.65,
           "stop": 15.69,
           "target1": 18.09,
@@ -652,12 +653,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 14.63,
           "stop": 13.87,
           "target1": 15.77,
@@ -674,7 +675,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "BREAKOUT"
@@ -703,12 +704,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 90.09,
           "stop": 85.59,
           "target1": 96.84,
@@ -725,12 +726,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 80.68,
           "stop": 75.88,
           "target1": 87.88,
@@ -747,7 +748,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "BREAKOUT"
@@ -776,12 +777,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 27.06,
           "stop": 25.69,
           "target1": 29.11,
@@ -798,12 +799,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 23.39,
           "stop": 21.69,
           "target1": 25.94,
@@ -820,7 +821,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "BREAKOUT"
@@ -849,18 +850,18 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "REJECTED_DAILY_LIMIT",
-          "reason": "المدخل البحثي يتجاوز الحد النظري مقارنة بآخر إغلاق تاريخي مخزن",
+          "reason": "عتبة الاختراق خارج نطاق ±20% النظري من آخر إغلاق مخزن",
           "isExecutable": false
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 127.36,
           "stop": 114.08,
           "target1": 147.28,
@@ -877,7 +878,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "SUPPORT_BOUNCE"
@@ -906,12 +907,12 @@
       "identityApproved": false,
       "recommendation": "WATCH_ONLY",
       "decisionStatus": "RESEARCH_WATCH",
-      "note": "إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل",
+      "note": "إغلاق رسمي مؤرخ، دون OHLC رسمي مؤكد؛ المستويات مستمدة من سجل تاريخي بحثي غير معتمد",
       "scenarios": [
         {
           "strategy": "BREAKOUT",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة اختراق قمة 20 جلسة؛ غياب OHLC موثوق لليوم يمنع تأكيد شمعة الاختراق",
+          "reason": "اختراق مقاومة تاريخية فقط بعد تأكيد مستقل للإغلاق والحجم",
           "entry": 95.95,
           "stop": 89.65,
           "target1": 105.4,
@@ -928,12 +929,12 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "إغلاق لاحق فوق المقاومة وحجم تداول داعم مع تأكيد البيانات"
+          "trigger": "إغلاق أعلى المقاومة 20 جلسة مع حجم داعم وتأكيد مستقل"
         },
         {
           "strategy": "SUPPORT_BOUNCE",
           "status": "WAIT_CONFIRMATION",
-          "reason": "مراقبة ارتداد دعم 10 جلسات؛ لا يُعتمد دون شمعة تأكيد موثوقة",
+          "reason": "ارتداد دعم تاريخي يحتاج تأكيد شمعة السعر والسيولة",
           "entry": 79.81,
           "stop": 74.77,
           "target1": 87.37,
@@ -950,7 +951,7 @@
             "feesAndSlippageConfirmed": false,
             "isinConfirmed": false
           },
-          "trigger": "شمعة ارتداد لاحقة فوق الدعم مع تأكيد السيولة"
+          "trigger": "تأكيد ارتداد الدعم بشمعة يوم لاحق وسيولة معتمدة"
         }
       ],
       "preferredScenario": "BREAKOUT"
