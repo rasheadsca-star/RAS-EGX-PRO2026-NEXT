@@ -14,7 +14,10 @@ const rnd=(x,n=3)=>Number(x.toFixed(n)),tick=v=>v<2?.001:.01;
 const up=v=>rnd(Math.ceil((v-1e-9)/tick(v))*tick(v),3),down=v=>rnd(Math.floor((v+1e-9)/tick(v))*tick(v),3);
 let rejected=[],candidates=[];
 for(const quote of official.quotes){
- const ticker=quote.ticker;const file=path.join(root,'data/history',ticker+'.json');
+ const ticker=quote.ticker;
+ // Hard stop on cross-asset joins: never use MMAT (Marsa Marsa Alam) for MM Group (MTIE).
+ if(/MM Group for Industry/i.test(String(quote.company||''))&&ticker!=='MTIE')throw Error('INSTRUMENT_IDENTITY_CONFLICT: MM Group must map to MTIE, never '+ticker);
+ if(ticker==='MMAT'&&/MM Group/i.test(String(quote.company||'')))throw Error('FORBIDDEN_MM_GROUP_MMAt_JOIN');const file=path.join(root,'data/history',ticker+'.json');
  if(quote.currency!=='EGP'||!(Number(quote.close)>0)||!(Number(quote.volume)>0)){rejected.push({ticker,reason:'MISSING_OFFICIAL_CLOSE_VOLUME_EGP'});continue}
  if(!fs.existsSync(file)){rejected.push({ticker,reason:'NO_PRIOR_HISTORY'});continue}
  const history=JSON.parse(fs.readFileSync(file,'utf8'));
