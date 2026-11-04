@@ -36,6 +36,12 @@ def test_learn_aliases_only_confirmed():
     rows=[dict(page=1,rank=1,name="Alpha Foods Co"),dict(page=1,rank=2,name="Zed")]
     assert om.learn_aliases(rows,{(1,1):"AAA"})=={"alpha foods co":"AAA"}
 
+def test_prev_closes_uses_each_tickers_own_last_close():
+    import sqlite3
+    c=sqlite3.connect(":memory:");c.execute("create table canonical_bars(ticker,date,price_basis,close)")
+    c.executemany("insert into canonical_bars values(?,?,?,?)",[("A","2026-11-03","RAW",5.0),("B","2026-11-01","RAW",7.0),("C","2026-10-01","RAW",9.0),("A","2026-11-04","RAW",6.0)])
+    assert om.prev_closes(c,"2026-11-04")=={"A":5.0,"B":7.0}   # C too old, A's same-day bar excluded
+
 if __name__=="__main__":
     fs=[(k,v) for k,v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     for k,v in fs:v();print("ok",k)

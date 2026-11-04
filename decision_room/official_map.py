@@ -77,6 +77,8 @@ def resolve(rows,prev_close,ident,alias):
         key=norm_key(x["name"]);t=alias.get(key)
         if t and implied and t in prev_close and abs(implied/prev_close[t]-1)<=PREV_TOL:
             r.update(ticker=t,status="RESOLVED_ALIAS_PREVCLOSE",evidence=f"alias;prev_diff={abs(implied/prev_close[t]-1):.5f}")
+        elif t and t not in prev_close:
+            r.update(status="QUARANTINED_NO_PREV_CLOSE",evidence=f"alias->{t}")
         elif t:
             r.update(status="QUARANTINED_ALIAS_PREVCLOSE_MISMATCH",evidence=f"alias->{t}")
         else:
@@ -91,6 +93,11 @@ def resolve(rows,prev_close,ident,alias):
             for r in v:r.update(status="QUARANTINED_DUPLICATE_CLAIM",evidence=f"{t} claimed by {len(v)} rows",ticker=None)
     props=[r for r in res if r["status"]=="PROPOSED_FUZZY_NEEDS_APPROVAL"]
     return res,props
+
+def prev_closes(con,session,max_days=10):
+    """Per-ticker last RAW close BEFORE `session` (the bulletin's 'previous close' is the stock's own previous trading close, so a symbol that
+    did not trade yesterday is compared with its last close, within max_days calendar days; older -> no previous close available)."""
+    return {t:c for t,c in con.execute("select b.ticker,b.close from canonical_bars b where b.price_basis='RAW' and b.date>=date(?,?) and b.date=(select max(date) from canonical_bars where ticker=b.ticker and price_basis='RAW' and date<?)",(session,f"-{max_days} day",session))}
 
 def learn_aliases(rows,confirmed):
     """confirmed: {(page,rank): ticker} from rows the owner/pipeline resolved with name_similarity 1.0 + prev-close. Returns {norm_name: ticker}."""
@@ -111,7 +118,7 @@ def main(argv=None):
         conf={(p,r):t for p,r,t in con.execute("select pdf_page,pdf_rank,ticker from official_session where session_date=? and ticker is not null",(a.seed_session,))}
         al["aliases"].update(learn_aliases(parse_pdf(a.seed_pdf),conf));save_alias(al,a.alias)
     ident={t:(en,cur) for t,en,cur in con.execute("select ticker,name_en,currency from symbol_identity")}
-    prev={t:c for t,c in con.execute("select ticker,close from canonical_bars where price_basis='RAW' and date=(select max(date) from canonical_bars where price_basis='RAW' and date<?)",(a.session,))}
+    prev=prev_closes(con,a.session)
     res,props=resolve(rows,prev,ident,al["aliases"])
     cnt=collections.Counter(r["status"] for r in res)
     json.dump(dict(session=a.session,rows=len(rows),counts=cnt,results=res),open(a.out,"w"),ensure_ascii=False,indent=1)
