@@ -1,7 +1,7 @@
 (function(w){'use strict';
 const KEY='egx-v4-official-import-v1';
 const clean=x=>String(x||'').replace(/\s+/g,' ').trim();
-const val=x=>{const n=Number(clean(x).replace(/,/g,''));return Number.isFinite(n)?n:NaN};
+const val=x=>{const t=clean(x).replace(/,/g,'');if(!t)return NaN;const n=Number(t);return Number.isFinite(n)?n:NaN};
 function parseRows(pages,session){
  const rows=[],rejected=[];
  for(const page of pages){
@@ -18,9 +18,12 @@ function parseRows(pages,session){
    const line=own.filter(t=>Math.abs(t.y-curr[0].y)<5.2);
    const cell=(lo,hi)=>val(line.filter(t=>t.x>=lo&&t.x<hi).map(t=>t.text).join(''));
    const name=clean([m[2]||'',...own.filter(t=>t.x>=40&&t.x<189).sort((x,y)=>x.y-y.y||x.x-y.x).map(t=>t.text)].join(' '));
-   const row={rowNumber:Number(m[1]),name,date:session,currency:curr[0].text,open:cell(225,285),high:cell(285,337),low:cell(329,382),close:cell(475,532),volume:cell(678,755),page:page.number,source:'USER_SUPPLIED_EGX_DAILY_PDF'};
-   if(name.length>2&&row.low>0&&row.low<=Math.min(row.open,row.close)&&row.high>=Math.max(row.open,row.close)&&row.volume>=0&&[row.open,row.high,row.low,row.close,row.volume].every(Number.isFinite))rows.push(row);
-   else rejected.push({rowNumber:row.rowNumber,page:page.number,reason:'INVALID_OHLCV'});
+   const row={rowNumber:Number(m[1]),name,date:session,currency:curr[0].text,open:cell(220,285),high:cell(285,330),low:cell(330,375),close:cell(463,526),volume:cell(657,752),page:page.number,source:'USER_SUPPLIED_EGX_DAILY_PDF'};
+   const quoteOK=name.length>2&&row.close>0&&Number.isFinite(row.close);
+   const ohlcvOK=quoteOK&&row.low>0&&row.low<=Math.min(row.open,row.close)&&row.high>=Math.max(row.open,row.close)&&row.volume>=0&&[row.open,row.high,row.low,row.close,row.volume].every(Number.isFinite);
+   row.quality=ohlcvOK?'PASS_OHLCV':quoteOK?'CLOSE_ONLY_REVIEW':'REJECTED_UNREADABLE_CLOSE';
+   if(quoteOK)rows.push(row);
+   else rejected.push({rowNumber:row.rowNumber,page:page.number,reason:'UNREADABLE_CLOSE_OR_NAME'});
   }
  }
  const unique=new Map();for(const r of rows){if(unique.has(r.rowNumber))rejected.push({rowNumber:r.rowNumber,reason:'DUPLICATE_ROW'});else unique.set(r.rowNumber,r)}
@@ -50,8 +53,8 @@ async function importPdf(file,onPage){
  }
  if(!date||!issued||!official)throw Error('لم ينجح التحقق من شكل التقرير وتاريخ جلسة التداول');
  const parsed=parseRows(pages,date);
- if(parsed.rows.length<80)throw Error('تغطية الأسعار غير كافية: '+parsed.rows.length+'؛ لم تُحفظ البيانات');
- const result={schemaVersion:'1.0',session:date,filename:file.name,sha256,importedAt:new Date().toISOString(),mode:'LOCAL_RESEARCH_ONLY',rows:parsed.rows,rejected:parsed.rejected,identityVerified:false,sourceAuthenticated:false,centralDatabaseUpdated:false,recommendationsGenerated:false};
+ if(parsed.rows.length<80)throw Error('تغطية أسعار الإغلاق غير كافية: '+parsed.rows.length+'؛ لم تُحفظ البيانات');
+ const result={schemaVersion:'1.0',session:date,filename:file.name,sha256,importedAt:new Date().toISOString(),mode:'LOCAL_RESEARCH_ONLY',validOhlcvCount:parsed.rows.filter(x=>x.quality==='PASS_OHLCV').length,closeOnlyReviewCount:parsed.rows.filter(x=>x.quality==='CLOSE_ONLY_REVIEW').length,rows:parsed.rows,rejected:parsed.rejected,identityVerified:false,sourceAuthenticated:false,centralDatabaseUpdated:false,recommendationsGenerated:false};
  localStorage.setItem(KEY,JSON.stringify(result));return result;
 }
 function read(){try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(_){return null}}
