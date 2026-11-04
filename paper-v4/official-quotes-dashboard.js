@@ -46,3 +46,4 @@ function render(quotes,session,label,extra){
   $('official-quotes').textContent='لم تتوفر إغلاقات رسمية منشورة أو مستوردة محليًا حتى الآن.';
  }
 })();
+})();
