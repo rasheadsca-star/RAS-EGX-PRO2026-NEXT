@@ -8,6 +8,13 @@ const read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
 const today=process.env.EGX_SESSION||new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const official=read('paper-v4/official-session-latest.json');
 if(official.session!==today||!official.documentSha256||official.quotes?.length<10)throw Error('No same-session official closing evidence');
+// A dated, scoped quote is evidence of a close only. Identity and full-session OHLC remain unapproved.
+const seen=new Set();
+for(const q of official.quotes){
+ if(!/^[A-Z0-9_-]+$/.test(String(q.ticker||''))||q.date!==today)throw Error('OFFICIAL_QUOTE_IDENTITY_OR_DATE_INVALID: '+String(q.ticker||''));
+ if(seen.has(q.ticker))throw Error('DUPLICATE_OFFICIAL_QUOTE_TICKER: '+q.ticker);
+ seen.add(q.ticker);
+}
 const valid=x=>x&&+x.low>0&&+x.high>=Math.max(+x.open,+x.close)&&+x.low<=Math.min(+x.open,+x.close)&&+x.volume>=0;
 const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
 const rnd=(x,n=3)=>Number(x.toFixed(n)),tick=v=>v<2?.001:.01;
@@ -55,15 +62,28 @@ for(const quote of official.quotes){
  candidates.push({ticker,company:quote.company,rank:0,close:rnd(close),changePct:Number(quote.changePct)||0,volumeRatio20:rnd(volumeRatio,2),resistance20:rnd(high20),support20:rnd(low20),support10:rnd(support10),indicativeTrigger:up(high20*1.002),atr14:rnd(atr),relativeResearchScore:score,
   abovePriorSMA20:trend,technicalSession:latest.date,sourceSession:today,priceSource:'OFFICIAL_REPORT_CLOSE_RESEARCH_ONLY',officialCloseVerified:false,
   closeFromDatedOfficialPdf:true,closeOnlySession:true,officialQuoteOhlcStatus:quote.ohlcStatus,identityApproved:false,
-  recommendation:'WATCH_ONLY',decisionStatus:'RESEARCH_WATCH',note:'إغلاق 4 نوفمبر من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل',scenarios,preferredScenario:scenarios.find(x=>x.status==='WAIT_CONFIRMATION')?.strategy||null});
+  recommendation:'WATCH_ONLY',decisionStatus:'RESEARCH_WATCH',note:'إغلاق جلسة '+today+' من التقرير الرسمي؛ OHLC اليوم غير مستخدم؛ مستويات المراقبة محسوبة من تاريخ سابق غير معتمد بالكامل',scenarios,preferredScenario:scenarios.find(x=>x.status==='WAIT_CONFIRMATION')?.strategy||null});
 }
 candidates.sort((a,b)=>b.relativeResearchScore-a.relativeResearchScore);
 const rows=candidates.slice(0,25).map((r,i)=>({...r,rank:i+1}));
-const result={schemaVersion:'2.4',generatedAt:new Date().toISOString(),session:today,mode:'OFFICIAL_CLOSE_SECONDARY_HISTORY_RESEARCH_WATCH',sampleUniverse:rows.length,qualifiedTradeCount:0,
+const sourceScope={
+ kind:'CURATED_SUBSET_NOT_FULL_MARKET',
+ reportClaimedRows:official.sourceRowsInFile||null,
+ reportClaimedRowsIndependentlyAudited:false,
+ reviewedSubsetCount:official.quotes.length,
+ excludedReviewedRows:rejected.length,
+ rankedReviewedRows:rows.length,
+ rankingCap:25,
+ coverageApproved:false,
+ centralDatabaseImported:false,
+ chartOhlcvRefreshApproved:false,
+ marketWideRankingReady:false
+};
+const result={schemaVersion:'2.4',generatedAt:new Date().toISOString(),session:today,mode:'OFFICIAL_CLOSE_SECONDARY_HISTORY_RESEARCH_WATCH',sampleUniverse:rows.length,qualifiedTradeCount:0,sourceScope,
  source:{provider:'USER_PROVIDED_EGX_DAILY_REPORT_CLOSE_AND_UNCERTIFIED_HISTORY',marketRows:official.quotes.length,sessionMatchedRows:official.quotes.length,historyFilesExamined:fs.readdirSync(path.join(root,'data/history')).filter(x=>x.endsWith('.json')).length,officialSessionVerified:false,officialCloseEvidencePresent:true,isinIndependentlyCertified:false,documentSha256:official.documentSha256},
  comparisonModel:{strategy:'breakout_research_proximity_volume_trend',status:'RESEARCH_ONLY'},rankingFormula:'35% resistance proximity +25% volume ratio +25% relative SMA20 trend +15% above SMA20; no calibrated success probability',
- exclusions:{count:rejected.length,samples:rejected},limitations:['Only the 16 curated mapped closing quotes from official PDF, NOT all listed companies.','Identity crosswalk is provisional; neither historical OHLC nor same-session open/high/low is certified.','Risk levels are provisional and no entry is executable or confirmed.','Share corporate actions may make prior levels unadjusted.'],
+ exclusions:{count:rejected.length,samples:rejected},limitations:['Only '+official.quotes.length+' curated mapped closing quotes from official PDF, NOT all listed companies.','Identity crosswalk is provisional; neither historical OHLC nor same-session open/high/low is certified.','Risk levels are provisional and no entry is executable or confirmed.','Share corporate actions may make prior levels unadjusted.'],
  rows};
 fs.writeFileSync(path.join(root,'paper-v4/latest-ranking.json'),JSON.stringify(result,null,2)+'\n');
-console.log(JSON.stringify({session:today,rows:rows.length,excluded:rejected,officialCloses:official.quotes.length}));
+console.log(JSON.stringify({session:today,rows:rows.length,excluded:rejected,officialCloses:official.quotes.length,sourceScope}));
 if(!rows.length)process.exitCode=2;
