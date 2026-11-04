@@ -34,7 +34,7 @@ for(const quote of official.quotes){
  if(!(gapDays>=1&&gapDays<=7)){rejected.push({ticker,reason:'STALE_TECHNICAL_HISTORY',last:latest.date});continue}
  const close=Number(quote.close),volume=Number(quote.volume),prev20=bars.slice(-20),prev15=bars.slice(-15);
  const sma20=mean(prev20.map(b=>+b.close)),avgVol=mean(prev20.map(b=>+b.volume));
- if(!(avgVol>0&&sma20>0))continue;
+ if(!(avgVol>0&&sma20>0)){rejected.push({ticker,reason:'INVALID_PRIOR_VOLUME_OR_SMA'});continue}
  const high20=Math.max(...prev20.map(b=>+b.high)),low20=Math.min(...prev20.map(b=>+b.low)),support10=Math.min(...bars.slice(-10).map(b=>+b.low));
  const tr=prev15.map((b,i)=>Math.max(b.high-b.low,Math.abs(b.high-(i?prev15[i-1].close:bars.at(-16).close)),Math.abs(b.low-(i?prev15[i-1].close:bars.at(-16).close))));
  const atr=mean(tr.slice(-14)),volumeRatio=volume/avgVol,trend=close>sma20,prox=high20/close-1;
@@ -72,7 +72,9 @@ const sourceScope={
  reportClaimedRowsIndependentlyAudited:false,
  reviewedSubsetCount:official.quotes.length,
  excludedReviewedRows:rejected.length,
+ candidateReviewedRows:candidates.length,
  rankedReviewedRows:rows.length,
+ unrankedByCapCount:candidates.length-rows.length,
  rankingCap:25,
  coverageApproved:false,
  centralDatabaseImported:false,
