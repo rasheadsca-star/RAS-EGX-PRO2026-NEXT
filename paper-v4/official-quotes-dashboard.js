@@ -35,7 +35,7 @@ function render(quotes,session,label,extra){
 (async()=>{
  const local=readLocal(),published=await readPublished();
  // A locally imported report is visible immediately in the same browser, but never claimed to be centrally published.
- if(local&&(!published||local.session>published.session)){
+ if(local&&(!published||local.session>=published.session)){
   const quotes=local.rows.filter(x=>Number(x.close)>0&&x.currency==='EGP').sort((a,b)=>(b.volume||0)-(a.volume||0)).slice(0,24).map(x=>({...x,ticker:local.session==='2026-11-04'?sampleMap.get(String(x.rowNumber)):null}));
   render(quotes,local.session,'استيرادك المحلي — غير منشور مركزيًا','تم قراءة '+local.rows.length+' صف إغلاق محليًا؛ '+(local.validOhlcvCount??'؟')+' OHLC اجتاز الفحص.');
  }else if(published){
