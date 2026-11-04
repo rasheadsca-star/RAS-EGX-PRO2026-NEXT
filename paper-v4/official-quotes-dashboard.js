@@ -4,7 +4,7 @@ const key='egx-v4-official-import-v1';
 const base='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json';
 const money=n=>Number.isFinite(Number(n))?Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:3}):'—';
 const sampleMap=new Map([['1','COMI'],['8','TMGH'],['11','ETEL'],['12','FWRY'],['13','AUTO'],['18','EMFD'],['21','ADIB'],['29','ABUK'],['45','SKPC'],['52','SWDY'],['55','HRHO'],['64','EAST'],['91','JUFO'],['113','AJWA'],['140','MMAT'],['185','CPCI']]);
-const readLocal=()=>{try{const d=JSON.parse(localStorage.getItem(key)||'null');return d&&/^\\d{4}-\\d{2}-\\d{2}$/.test(d.session)&&Array.isArray(d.rows)&&d.rows.length>=80?d:null}catch{return null}};
+const readLocal=()=>{try{const d=JSON.parse(localStorage.getItem(key)||'null');return d&&/^\d{4}-\d{2}-\d{2}$/.test(d.session)&&Array.isArray(d.rows)&&d.rows.length>=80?d:null}catch{return null}};
 async function readPublished(){
  for(const url of [base,'./official-session-latest.json']){
   try{const r=await fetch(url+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)continue;const d=await r.json();if(d.session&&Array.isArray(d.quotes)&&d.quotes.length)return d}catch(_){}
