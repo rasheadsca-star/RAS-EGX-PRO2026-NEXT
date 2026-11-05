@@ -1,9 +1,13 @@
 """Quarantines carried-forward 'phantom' sessions: moves RAW bars of a session into canonical_bars_superseded (no deletion
 of evidence; raw_observations untouched). Refuses unless >=90% of that session's bars equal the previous session's bar
-(close AND volume>0) and no bar is OFFICIAL_EGX. usage: quarantine_phantom_sessions.py --db in --out out DATE [DATE...]"""
+(close AND volume>0) and no bar is OFFICIAL_EGX. Also requires the date in config/egx_non_trading_days.json.
+usage: quarantine_phantom_sessions.py --db in --out out --calendar cal.json DATE [DATE...]"""
 import argparse,shutil,sqlite3,sys
 def main(argv=None):
-    a=argparse.ArgumentParser();a.add_argument("--db",required=True);a.add_argument("--out",required=True);a.add_argument("dates",nargs="+");x=a.parse_args(argv)
+    a=argparse.ArgumentParser();a.add_argument("--db",required=True);a.add_argument("--out",required=True);a.add_argument("--calendar",required=True);a.add_argument("dates",nargs="+");x=a.parse_args(argv)
+    import json;cal={e["date"] for e in json.load(open(x.calendar))["days"]}
+    for d in x.dates:
+        if d not in cal:raise SystemExit(f"{d}: not in the non-trading calendar; refusing")
     shutil.copyfile(x.db,x.out);c=sqlite3.connect(x.out)
     c.execute("create table if not exists phantom_session_quarantine(session text,prev_session text,n_bars integer,n_identical_to_prev integer,share real,reason text)")
     cols="ticker,date,price_basis,open,high,low,close,volume,evidence_tier,providers,selected_source_id,n_observations,notes"
