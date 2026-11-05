@@ -55,6 +55,12 @@ def main(argv=None):
             official_vs_existing_close_disagreements_gt_0_1pct=len(rp["disagree_with_existing_bar"]),superseded_max_diff_pct=max([x[4] for x in rp["superseded"]],default=0)))
     json.dump(dict(registry_symbols=243,symbols_with_any_bar=nsym,hole_fill=fill["summary"],sessions=sr),open(a.out+"/session_report.json","w"),ensure_ascii=False,indent=1)
     # --- symbol status
+    pend=set(t for (t,) in q("select distinct ticker from identity_review where status='LEGACY_IDENTITY_PENDING_REVIEW'")) if q("select 1 from sqlite_master where name='identity_review'") else set()
+    for k in("ranked","watchlist"):
+        drop=[r for r in snap[k] if r["ticker"] in pend];snap[k]=[r for r in snap[k] if r["ticker"] not in pend]
+        snap["blocked"]+= [dict(ticker=r["ticker"],reasons=["IDENTITY_PENDING_REVIEW: LEGACY_IDENTITY_PENDING_REVIEW"]) for r in drop]
+    for b in snap["blocked"]:
+        if b["ticker"] in pend and not any(x.startswith("IDENTITY_PENDING") for x in b["reasons"]):b["reasons"]=list(b["reasons"])+["IDENTITY_PENDING_REVIEW: LEGACY_IDENTITY_PENDING_REVIEW"]
     reasons={b["ticker"]:b["reasons"] for b in snap["blocked"]};cat={r["ticker"]:"RANKED" for r in snap["ranked"]};cat.update({r["ticker"]:"WATCHLIST" for r in snap["watchlist"]})
     last={t:(d,tier) for t,d,tier in q("select b.ticker,b.date,b.evidence_tier from canonical_bars b where b.price_basis='RAW' and b.date=(select max(date) from canonical_bars where ticker=b.ticker and price_basis='RAW')")}
     lo={t:d for t,d in q("select ticker,max(date) from canonical_bars where price_basis='RAW' and evidence_tier='OFFICIAL_EGX' group by 1")}
@@ -76,15 +82,26 @@ def main(argv=None):
                 depends_on_official_open_exemption=r["ticker"] not in strict,last_bar_tier=last[r["ticker"]][1],last_official_date=lo.get(r["ticker"],""),
                 stop_bar_date=(lambda g10:g10.loc[g10.close.idxmin(),"date"])(bars_all[bars_all.ticker==r["ticker"]].tail(10)),stop_bar_tier=(lambda g10:g10.loc[g10.close.idxmin(),"evidence_tier"])(bars_all[bars_all.ticker==r["ticker"]].tail(10)),
                 paper_entry=s0 and s0["entry_raw"],paper_stop=s0 and s0["stop_raw"],paper_target1=s0 and s0["target1_raw"],paper_target2=s0 and s0["target2_raw"],executable=False,status="RESEARCH_ONLY_NO_STRATEGY_APPROVED"))
+            # stop/targets are derived from the lowest close of the last 10 bars: unless THAT bar is official or corroborated by 2 providers the level is NOT presented as reliable
+            x=rows[-1]
+            if x["paper_entry"] and x["stop_bar_tier"] not in("OFFICIAL_EGX","CORROBORATED_2_PROVIDERS"):
+                x.update(paper_stop_candidate_untrusted=x["paper_stop"],paper_target1_candidate_untrusted=x["paper_target1"],paper_target2_candidate_untrusted=x["paper_target2"],paper_stop=None,paper_target1=None,paper_target2=None,paper_levels_status=f"WITHHELD_STOP_BAR_{x['stop_bar_date']}_{x['stop_bar_tier']}_UNVERIFIED")
+            else:x["paper_levels_status"]="STOP_BAR_VERIFIED" if x["paper_entry"] else "NO_SCENARIO"
+    cols=[]
+    for r_ in rows:
+        for k in r_:
+            if k not in cols:cols.append(k)
+    for r_ in rows:
+        for k in cols:r_.setdefault(k,None)
     if rows:
         with open(a.out+"/ranking.csv","w",newline="",encoding="utf-8") as f:
-            w=csv.DictWriter(f,fieldnames=list(rows[0]));w.writeheader();w.writerows(rows)
+            w=csv.DictWriter(f,fieldnames=cols);w.writeheader();w.writerows(rows)
     json.dump(rows,open(a.out+"/ranking.json","w"),ensure_ascii=False,indent=1)
     bars=pd.read_sql("select ticker,date,open,high,low,close,volume,evidence_tier from canonical_bars where price_basis='RAW' and close>0 order by ticker,date",con)
     H=['<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EGX PRO — staged charts 2026-11-04</title><body style="font-family:system-ui;margin:16px;max-width:900px"><h1>الشارتات من القاعدة المرحلية (بحث فقط)</h1><p>أعمدة High–Low مع علامة الإغلاق؛ <b>سعر الفتح الرسمي غير مستخدم</b> (تعريفه غير مؤكد). MA20 (وردي) وMA50 (بني) من الإغلاق. اللون = مستوى الدليل: أخضر رسمي، أزرق مؤكد من مزودين، رمادي مزود واحد. المسافات الفارغة = جلسات بلا شمعة موثوقة. <b>NO_STRATEGY_APPROVED</b> — لا توصية تداول.</p>']
     for r in rows:
         g=bars[bars.ticker==r["ticker"]]
-        H.append(f'<h2>{html.escape(r["ticker"])} — {html.escape(r["name"])} <small>({r["list"]})</small></h2><p>آخر شمعة موثوقة: <b>{r["last_date"]}</b> ({r["last_bar_tier"]}) · آخر شمعة رسمية: {r["last_official_date"] or "—"} · إغلاق {r["last_close"]} · MA20 {r["ma20"]} · MA50 {r["ma50"]}'+(" · <b>يعتمد تأهله على استثناء فتح الرسمي</b>" if r["depends_on_official_open_exemption"] else "")+(f' · سيناريو ورقي غير تنفيذي: دخول {r["paper_entry"]} / وقف {r["paper_stop"]} / هدف1 {r["paper_target1"]}' if r["paper_entry"] else "")+"</p>"+svg_chart(g))
+        H.append(f'<h2>{html.escape(r["ticker"])} — {html.escape(r["name"])} <small>({r["list"]})</small></h2><p>آخر شمعة موثوقة: <b>{r["last_date"]}</b> ({r["last_bar_tier"]}) · آخر شمعة رسمية: {r["last_official_date"] or "—"} · إغلاق {r["last_close"]} · MA20 {r["ma20"]} · MA50 {r["ma50"]}'+(" · <b>يعتمد تأهله على استثناء فتح الرسمي</b>" if r["depends_on_official_open_exemption"] else "")+((f' · سيناريو ورقي غير تنفيذي: دخول {r["paper_entry"]} / وقف {r["paper_stop"]} / هدف1 {r["paper_target1"]}' if r["paper_stop"] else f' · مستوى الوقف والأهداف محجوب: شمعة الوقف ({r["stop_bar_date"]}) غير مثبتة ({r["stop_bar_tier"]})') if r["paper_entry"] else "")+"</p>"+svg_chart(g))
     open(a.out+"/charts.html","w",encoding="utf-8").write("".join(H)+"</body>")
     print(json.dumps(dict(qualified=len(rows),ranked=len(snap["ranked"]),watchlist=len(snap["watchlist"]),blocked=len(snap["blocked"]),content_sha256=snap["content_sha256"])))
 if __name__=="__main__":main()

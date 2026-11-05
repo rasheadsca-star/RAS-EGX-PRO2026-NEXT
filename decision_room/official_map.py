@@ -12,6 +12,11 @@ Nothing is invented: unmatched rows stay QUARANTINED with the reason. The ISIN i
 usage: official_map.py --pdf f.pdf --db central.sqlite --session YYYY-MM-DD --alias alias.json --out mapping.json [--seed-pdf old.pdf --seed-session YYYY-MM-DD]"""
 import argparse,collections,difflib,hashlib,html,json,re,sqlite3,subprocess,sys
 PREV_TOL=0.007;FUZZY_MIN=0.74;FUZZY_GAP=0.09
+# Look-alike pairs that must NEVER be linked automatically (owner decision 2026-11-05): fuzzy matching never proposes/applies them and an alias link to one of them
+# is accepted only if the bulletin name is clearly closer to its own registry name than to the sibling's.
+IDENTITY_GUARD=({'MTIE','MMAT'},)
+GUARDED=frozenset().union(*IDENTITY_GUARD)
+GUARD_MARGIN=0.15
 NUM=re.compile(r'^-?[\d,]*\.?\d+$')
 STOP={'s','a','e','sae','co','company','for','and','the','of','egypt','egyptian','el','al','holding','group','in','industries','investment','development'}
 
@@ -102,6 +107,11 @@ def resolve(rows,prev_close,ident,alias):
         if x["cur"]!="EGP":r.update(status="EXCLUDED_NON_EGP",evidence=x["cur"]);res.append(r);continue
         implied=x["close"]/(1+x["chg_pct"]/100) if x["chg_pct"]>-100 else None
         key=norm_key(x["name"]);t=alias.get(key)
+        if t in GUARDED:
+            sib=[o for g in IDENTITY_GUARD if t in g for o in g if o!=t]
+            own=sim(x["name"],ident[t][0]) if t in ident else 0
+            if any(o in ident and sim(x["name"],ident[o][0])>own-GUARD_MARGIN for o in sib):
+                r.update(status="QUARANTINED_GUARDED_IDENTITY",evidence=f"alias->{t} but name not clearly closer than sibling {sib}");res.append(r);continue
         if t and implied and t in prev_close and abs(implied/prev_close[t]-1)<=PREV_TOL:
             r.update(ticker=t,status="RESOLVED_ALIAS_PREVCLOSE",evidence=f"alias;prev_diff={abs(implied/prev_close[t]-1):.5f}")
         elif t and t not in prev_close:
@@ -110,6 +120,8 @@ def resolve(rows,prev_close,ident,alias):
             r.update(status="QUARANTINED_ALIAS_PREVCLOSE_MISMATCH",evidence=f"alias->{t}")
         else:
             cands=sorted(((sim(x["name"],en),abs(implied/prev_close[tk]-1),tk) for tk,(en,cur) in ident.items() if cur=="EGP" and tk in prev_close and implied and abs(implied/prev_close[tk]-1)<=PREV_TOL),key=lambda z:(-z[0],z[2]))
+            if cands and cands[0][2] in GUARDED and cands[0][0]>=FUZZY_MIN:
+                r.update(status="QUARANTINED_GUARDED_IDENTITY",evidence=f"fuzzy->{cands[0][2]} blocked: guarded look-alike pair (no automatic match)");res.append(r);continue
             if cands and cands[0][0]>=FUZZY_MIN and (len(cands)==1 or cands[0][0]-cands[1][0]>=FUZZY_GAP):
                 r.update(ticker=cands[0][2],status="PROPOSED_FUZZY_NEEDS_APPROVAL",evidence=f"sim={cands[0][0]:.2f};prev_diff={cands[0][1]:.5f}")
             else:r.update(status="QUARANTINED_NO_MATCH",evidence=str([(round(a,2),c) for a,_,c in cands[:2]]))
