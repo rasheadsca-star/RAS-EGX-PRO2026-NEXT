@@ -35,7 +35,7 @@ def svg_chart(g,w=860,h=300):
         if pts:p.append(f'<polyline fill="none" stroke="{cl}" stroke-width="1.3" points="{pts}"/>')
     p.append(f'<text x="52" y="{h-1}" font-size="10" fill="#555">{g.date.iloc[0]} → {g.date.iloc[-1]}</text></svg>');return "".join(p)
 def main(argv=None):
-    ap=argparse.ArgumentParser();[ap.add_argument("--"+k,required=True) for k in("db","reports","out")];ap.add_argument("--scenarios");a=ap.parse_args(argv)
+    ap=argparse.ArgumentParser();[ap.add_argument("--"+k,required=True) for k in("db","reports","out")];ap.add_argument("--scenarios");ap.add_argument("--strategy");a=ap.parse_args(argv)
     os.makedirs(a.out,exist_ok=True);snap=snapshot.build(a.db);strict=strict_set(a.db)
     con=sqlite3.connect(f"file:{a.db}?mode=ro",uri=True)
     q=lambda s,*x:con.execute(s,x).fetchall()
@@ -61,6 +61,10 @@ def main(argv=None):
         snap["blocked"]+= [dict(ticker=r["ticker"],reasons=["IDENTITY_PENDING_REVIEW: LEGACY_IDENTITY_PENDING_REVIEW"]) for r in drop]
     for b in snap["blocked"]:
         if b["ticker"] in pend and not any(x.startswith("IDENTITY_PENDING") for x in b["reasons"]):b["reasons"]=list(b["reasons"])+["IDENTITY_PENDING_REVIEW: LEGACY_IDENTITY_PENDING_REVIEW"]
+    if q("select 1 from sqlite_master where name='pending_corporate_events'"):
+        for tk,kind,ex,st in q("select ticker,kind,first_ex_session,status from pending_corporate_events"):
+            for b in snap["blocked"]:
+                if b["ticker"]==tk:b["reasons"]=list(b["reasons"])+[f"NOTE_PENDING_EVENT: {kind} ex {ex} {st} - explains JUMP/CONFLICT but the gate is NOT relaxed and no series is adjusted"]
     reasons={b["ticker"]:b["reasons"] for b in snap["blocked"]};cat={r["ticker"]:"RANKED" for r in snap["ranked"]};cat.update({r["ticker"]:"WATCHLIST" for r in snap["watchlist"]})
     last={t:(d,tier) for t,d,tier in q("select b.ticker,b.date,b.evidence_tier from canonical_bars b where b.price_basis='RAW' and b.date=(select max(date) from canonical_bars where ticker=b.ticker and price_basis='RAW')")}
     lo={t:d for t,d in q("select ticker,max(date) from canonical_bars where price_basis='RAW' and evidence_tier='OFFICIAL_EGX' group by 1")}
@@ -87,6 +91,14 @@ def main(argv=None):
             if x["paper_entry"] and x["stop_bar_tier"] not in("OFFICIAL_EGX","CORROBORATED_2_PROVIDERS"):
                 x.update(paper_stop_candidate_untrusted=x["paper_stop"],paper_target1_candidate_untrusted=x["paper_target1"],paper_target2_candidate_untrusted=x["paper_target2"],paper_stop=None,paper_target1=None,paper_target2=None,paper_levels_status=f"WITHHELD_STOP_BAR_{x['stop_bar_date']}_{x['stop_bar_tier']}_UNVERIFIED")
             else:x["paper_levels_status"]="STOP_BAR_VERIFIED" if x["paper_entry"] else "NO_SCENARIO"
+    # execution gate: a stock is an executable recommendation ONLY if ALL checks hold; with no strategy that passed the pre-registered holdout nothing can be executable
+    strat=json.load(open(a.strategy)) if a.strategy else {}
+    sp=bool(strat.get("holdout_pass")) and str(strat.get("decision","")).startswith("STRATEGY_PASSED")
+    gate={}
+    for r_ in rows:
+        ck=dict(strategy_passed_holdout=sp,data_quality_gate_passed=True,last_bar_official=r_["last_bar_tier"]=="OFFICIAL_EGX",entry_defined=bool(r_["paper_entry"]),stop_bar_verified=r_.get("paper_levels_status")=="STOP_BAR_VERIFIED",targets_defined=bool(r_["paper_target1"]) and bool(r_["paper_target2"]))
+        r_["execution_checks_failed"]=",".join(k for k,v in ck.items() if not v) or None;r_["executable"]=all(ck.values());gate[r_["ticker"]]=ck
+    json.dump(dict(qualifiedTradeCount=sum(1 for r_ in rows if r_["executable"]),strategy_decision=strat.get("decision","NO_STRATEGY_APPROVED"),qualified_research_stocks=len(rows),per_ticker=gate),open(a.out+"/execution_gate.json","w"),ensure_ascii=False,indent=1)
     cols=[]
     for r_ in rows:
         for k in r_:
