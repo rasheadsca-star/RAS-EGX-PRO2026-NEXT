@@ -22,8 +22,13 @@ def check(root=ROOT):
     if 'independent paper trading v4' not in page.lower():errors.append('V4 independent identity missing')
     if '2026-10-29' not in page:errors.append('frozen session label missing')
     if 'astra-prod' in page.lower() or 'astra pro' in page.lower():errors.append('Astra reference forbidden')
-    if 'content="0;url=./paper-v4/index.html"' not in index:errors.append('main HTML redirect is not independent V4')
-    if "location.replace('./paper-v4/index.html')" not in index:errors.append('main JS redirect is not independent V4')
+    # The immutable V4 page remains an archived historical artifact. The
+    # current home MUST NOT redirect users back to its October 29 snapshot.
+    if 'content="0;url=./paper-v4/index.html"' in index:errors.append('main HTML still redirects to stale V4')
+    if "location.replace('./paper-v4/index.html')" in index:errors.append('main JS still redirects to stale V4')
+    if 'href="./paper-v4/index.html"' not in index:errors.append('historical V4 archive link missing')
+    if 'NO_STRATEGY_APPROVED' not in index:errors.append('main research-only safety notice missing')
+    if 'data/quant/daily-recommendations.json' not in index:errors.append('current source not connected to main page')
     if 'astra-prod' in index.lower() or 'astra pro' in index.lower():errors.append('Astra root redirect forbidden')
     rows=re.findall(r'<tr><td><strong>([A-Z]+)</strong></td><td>([^<]+)</td><td>([^<]+)</td><td>([^<]+)</td><td>([^<]+)</td><td>([^<]+)</td><td[^>]*>([^<]+)</td><td>([^<]+)</td></tr>',page)
     seen={}

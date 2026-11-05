@@ -8,6 +8,13 @@ def evaluate(data,session=None):
     c20=cal[-K.WIN20:];c51=cal[-K.WIN51:]
     conf=data["conflicts"].assign(date=lambda d:pd.to_datetime(d["date"]))
     ca=data["corp"].assign(date=lambda d:pd.to_datetime(d["date"]))
+    off=data.get("official_identities")
+    if off is None:
+        off=pd.DataFrame(columns=["ticker","date","resolution_status"])
+    elif not off.empty:
+        off=off.copy()
+        off["date"]=pd.to_datetime(off["date"])
+    verified={"VERIFIED","OFFICIAL_VERIFIED"}
     out=[]
     known=set(bars["ticker"].unique())
     for t,g in bars[bars["date"]<=session].groupby("ticker"):
@@ -17,6 +24,17 @@ def evaluate(data,session=None):
         if g.index.max()!=session:
             gap=int((cal>g.index.max()).sum());why.append(f"STALE: آخر شمعة {info['last_date']} (متأخرة {gap} جلسة)")
         w51=g.reindex(c51);w20=g.reindex(c20)
+        # A PDF row can be authentic while its company->ticker identity is not.
+        # Never allow these inferred bars to qualify a symbol for ranking or
+        # downstream paper levels. Review/approve mapping independently first.
+        if (w51["evidence_tier"] == "PROVISIONAL_SYMBOL_IDENTITY").any():
+            why.append("IDENTITY_UNVERIFIED: اسم السهم مطابق مبدئيًا فقط ولم تُعتمد هوية الرمز")
+        # A valid EGX price does not prove the name->ticker mapping.
+        # Historical RESOLVED_CONFIRMED_NAME_PREVCLOSE is not ISIN proof.
+        missing_identity=off[(off["ticker"]==t)&(off["date"].isin(c51))&
+            (~off["resolution_status"].isin(verified))]
+        if len(missing_identity) and not any(x.startswith("IDENTITY_UNVERIFIED") for x in why):
+            why.append("IDENTITY_UNVERIFIED: النشرة رسمية لكن ربط السعر برمز السهم لم يُعتمد من مرجع مستقل")
         miss20=[d for d in c20 if pd.isna(w20.loc[d,"close"])]
         miss51=[d for d in c51 if pd.isna(w51.loc[d,"close"])]
         if miss20 or miss51:
@@ -47,7 +65,7 @@ def evaluate(data,session=None):
     reg=set(data["ident"]["ticker"])-known
     return res,sorted(reg),session
 def waterfall(res,no_bars):
-    order=["STALE","CALENDAR_GAP","HISTORY","NO_TRADING","FLAT_PRICE","LIQUIDITY","OHLC","CONFLICT","CORPORATE_ACTION","JUMP"]
+    order=["IDENTITY_UNVERIFIED","STALE","CALENDAR_GAP","HISTORY","NO_TRADING","FLAT_PRICE","LIQUIDITY","OHLC","CONFLICT","CORPORATE_ACTION","JUMP"]
     w={"registry_symbols":len(res)+len(no_bars),"with_bars":len(res),"without_any_bar":len(no_bars),"passed":int(res["passed"].sum()),"blocked":int((~res["passed"]).sum())}
     first={k:0 for k in order};anyr={k:0 for k in order}
     for rs in res["reasons"]:

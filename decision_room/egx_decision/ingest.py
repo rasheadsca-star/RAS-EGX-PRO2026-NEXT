@@ -24,11 +24,16 @@ def load(db,asof=None):
         ca=pd.read_sql("select ticker,date,status,raw_change_pct from corporate_actions",c)
         gates=pd.read_sql("select ticker,research_ready,paper_ready,live_ready from quality_gates",c)
         ident=pd.read_sql("select ticker,name_en,name_ar from symbol_identity",c)
+        has_official=c.execute("select 1 from sqlite_master where type='table' and name='official_session'").fetchone()
+        official_identities=(pd.read_sql(
+            "select ticker,session_date as date,resolution_status from official_session where ticker is not null",c)
+            if has_official else pd.DataFrame(columns=["ticker","date","resolution_status"]))
     finally:c.close()
     if bars.empty:raise DataError("no RAW bars")
     bars["date"]=pd.to_datetime(bars["date"])
+    if not official_identities.empty:official_identities["date"]=pd.to_datetime(official_identities["date"])
     if asof is not None:bars=bars[bars["date"]<=pd.Timestamp(asof)]
     cnt=bars.groupby("date")["ticker"].nunique()
     cal=cnt[cnt>=CALENDAR_MIN_TICKERS].index.sort_values()
     if len(cal)<111:raise DataError("insufficient confirmed market sessions")
-    return dict(bars=bars,calendar=cal,conflicts=conf,corp=ca,gates=gates,ident=ident,session_counts=cnt)
+    return dict(bars=bars,calendar=cal,conflicts=conf,corp=ca,gates=gates,ident=ident,session_counts=cnt,official_identities=official_identities)

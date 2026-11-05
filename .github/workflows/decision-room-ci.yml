@@ -1,7 +1,7 @@
 name: decision-room-ci
 on:
   pull_request:
-    paths: ['decision_room/**','.github/workflows/decision-room-ci.yml','.github/workflows/decision-room-daily.yml']
+    paths: ['decision_room/**','.github/workflows/decision-room-ci.yml','.github/workflows/decision-room-daily.yml','index.html','.github/workflows/egx-official-eod.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,8 +12,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - run: pip install pandas numpy
+      - run: pip install pandas numpy pymupdf
+      - run: python3 -I decision_room/tests/test_official_quality.py
+      - run: python3 -I decision_room/tests/test_official_bbox.py
+      - run: python3 -I decision_room/tests/test_official_pipeline.py
+      - run: python3 -I decision_room/tests/test_official_research_run.py
+      - run: python3 -I decision_room/tests/test_identity_reference.py
+      - run: python3 -I decision_room/tests/test_official_isin_indices.py
+      - run: python3 -I decision_room/tests/test_verify_live.py
+      - run: python3 -I decision_room/tests/test_root_route.py
       - run: python3 -I decision_room/tests/test_engine.py
+      - run: python3 -I decision_room/tests/test_paper_scenarios.py
+      - run: python3 -I decision_room/tests/test_execution_checks.py
       - run: python3 -I decision_room/tests/test_publish_failures.py
       - run: python3 -I decision_room/tests/test_ingest.py
       - run: python3 -I decision_room/tests/test_central_store.py
@@ -38,6 +48,9 @@ jobs:
           PY
           python3 run_daily.py --db /tmp/ci.sqlite --out /tmp/pub --journal /tmp/pub/journal/j.jsonl --now 2026-10-30T09:00:00+00:00
           python3 tests/browser_check.py /tmp/pub /tmp/shots | tee /tmp/browser.txt
+          cd ..
+          python3 decision_room/tests/root_dashboard_browser_check.py
+          cd decision_room
           cp -rL /tmp/pub/current /tmp/preview
           python3 preview/prepare_preview.py --public /tmp/pub --out /tmp/dist
           test -z "$(find /tmp/dist -type l)"

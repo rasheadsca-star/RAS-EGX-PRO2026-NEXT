@@ -1,0 +1,103 @@
+name: EGX Official EOD — Auto Intake & Decision Gate
+on:
+  schedule:
+    - cron: '15 15 * * 0-4'
+    - cron: '15 17 * * 0-4'
+  workflow_dispatch:
+    inputs:
+      session:
+        description: 'YYYY-MM-DD; default current Cairo date'
+        required: false
+        type: string
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: egx-official-eod
+  cancel-in-progress: false
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      session: ${{ steps.dates.outputs.session }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - id: dates
+        env:
+          USER_SESSION: ${{ inputs.session }}
+        run: |
+          echo "session=$(TZ=Africa/Cairo date +%F)" >> "$GITHUB_OUTPUT"
+          if [ -n "$USER_SESSION" ]; then echo "session=$USER_SESSION" >> "$GITHUB_OUTPUT"; fi
+      - name: Install PDF text parser
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - name: Install geometric PDF parsing dependency
+        run: python3 -m pip install 'pymupdf>=1.24,<2'
+      - name: Official bulletin — verify matching trading date
+        id: fetch
+        continue-on-error: true
+        env:
+          SESSION: ${{ steps.dates.outputs.session }}
+        run: python3 decision_room/tools/official_bulletin.py --date "$SESSION" --out work/official_session.json
+      - name: Fail-closed official source quality assessment
+        id: quality
+        if: steps.fetch.outcome == 'success'
+        continue-on-error: true
+        run: python3 decision_room/tools/official_quality.py --input work/official_session.json --out work/official_quality.json
+      - name: Do NOT calculate recommendations from unmerged/short-history data
+        id: gate
+        if: steps.fetch.outcome == 'success' && steps.quality.outcome == 'success'
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import pathlib,sys
+          db=pathlib.Path('decision_room/data/central.sqlite')
+          if not db.exists():
+              print('::error::CENTRAL_DB_NOT_AVAILABLE — verified PDF staged but historical database unavailable. No recommendations published.')
+              sys.exit(2)
+          # The official PDF has company names, not canonical ticker IDs.
+          # An independently verified name→ticker resolver and reviewed SQLite merger are mandatory.
+          print('::error::UNVERIFIED_SYMBOL_MAPPING — no safe merge into central database; no recommendations published.')
+          sys.exit(2)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: egx-official-session-${{ steps.dates.outputs.session }}
+          path: |
+            work/official_session.json
+            work/official_quality.json
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Notify owner clearly when report or safe recomputation missing
+        if: steps.fetch.outcome != 'success' || steps.quality.outcome != 'success' || steps.gate.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SESSION: ${{ steps.dates.outputs.session }}
+          SOURCE_OK: ${{ steps.fetch.outcome }}
+          GATE: ${{ steps.gate.outcome }}
+          QUALITY: ${{ steps.quality.outcome }}
+          REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import os,json,subprocess
+          d=os.environ['SESSION']
+          title=f'EGX PRO — تدخل مطلوب لجلسة {d}'
+          if os.environ['SOURCE_OK']!='success':
+              body=f'تعذر جلب نشرة EGX الرسمية أو تاريخها لا يطابق {d}. **برجاء رفع PDF النشرة الرسمية.** لا يتم إعادة استخدام أسعار جلسة سابقة كتوصيات جديدة.'
+          elif os.environ.get('QUALITY')!='success':
+              body=f'وصلت نشرة جلسة {d} لكن فشلت بوابة جودة المصدر، ولا تحديث تلقائي أو توصيات جديدة. راجع official_quality.json في artifact.'
+          else:
+              body=f'تم الحصول على نشرة EGX الرسمية لجلسة {d} وحفظها كـ GitHub Actions artifact، لكن تحديث التوصيات **محجوب**: قاعدة SQLite التاريخية/ربط رموز الأسهم غير جاهزين للتحقق. لا توجد توصيات جديدة منشورة.'
+          p=subprocess.run(['gh','issue','list','-R',os.environ['REPO'],'--search',title,'--state','open','--json','number'],capture_output=True,text=True)
+          previous=json.loads(p.stdout or '[]') if p.returncode==0 else []
+          if previous:
+              subprocess.run(['gh','issue','comment',str(previous[0]['number']),'-R',os.environ['REPO'],'--body',body],check=True)
+          else:
+              subprocess.run(['gh','issue','create','-R',os.environ['REPO'],'--title',title,'--body',body],check=True)
+          PY
+      - name: Fail clearly until FULL verified EOD + recalculation
+        if: steps.fetch.outcome != 'success' || steps.quality.outcome != 'success' || steps.gate.outcome == 'failure'
+        run: exit 2

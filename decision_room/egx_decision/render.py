@@ -30,6 +30,10 @@ function main(){
  if(!D){const b=E('div','banner stale','تعذر تحميل بيانات القرار أو أنها غير صالحة. لا تُعرض أي فرص (إغلاق آمن).');$('#fresh').append(b);return}
  const now=new Date(),sess=new Date(D.source_session+'T00:00:00Z'),age=Math.floor((now-sess)/864e5);
  const stale=age>STALE;
+ const uncertainNames=Number(D.counts.provisional_source_bars||0)+Number(D.counts.unverified_official_mappings||0);
+ if(uncertainNames>0){
+  $('#fresh').append(E('div','banner stale','تحذير جودة المصدر: '+uncertainNames+' سجلات رسمية/بحثية تربط السعر برمز غير معتمد في هذه الجلسة. لا تُعرض توصيات جديدة؛ يلزم تحقق مستقل من هوية السهم وISIN.'));
+ }
  $('#fresh').append(E('div','banner '+(stale?'stale':'okb'),stale?`بيانات قديمة: آخر جلسة ${D.source_session} (قبل ${age} يوم). لا تُعرض فرص ولا قراءة سوق حتى التحديث.`:`البيانات حديثة: آخر جلسة ${D.source_session}، وقت البناء ${D.generated_utc.slice(0,16).replace('T',' ')} UTC.`));
  const m=D.market||{};
  T($('#sess'),D.source_session);$('#upd').className='ltr';T($('#upd'),'built '+D.generated_utc.slice(0,16).replace('T',' ')+' UTC');
@@ -53,6 +57,38 @@ function main(){
    const ul=E('ul');r.reasons.forEach(x=>ul.append(E('li',null,x)));det.append(E('h3',null,'لماذا؟'),ul);
    const g=E('div','grid3');[['درجة الفرز (وصفية، ليست احتمال نجاح)',r.score+'/100'],['MA20',r.ma20],['MA50',r.ma50],['زخم 20 جلسة',r.momentum20+'%'],['حجم نسبي',r.relativeVolume+'×'],['أقصى أمر (1% من ADV20)',Math.round(r.max_order_egp).toLocaleString('en')+' جنيه']].forEach(([a,b])=>{const d=E('div','m');d.append(E('small',null,a),E('div','lab',String(b)));g.append(d)});det.append(g);
    const lv=E('div','banner warn');lv.append(E('b',null,'الدخول / الوقف / الأهداف: '),document.createTextNode(r.levels.note));det.append(lv);
+   const ps=r.paper_scenarios||{scenarios:[]};if(ps.scenarios.length){
+    det.append(E('h3',null,'سيناريوهات ورقية تجريبية — غير قابلة للتنفيذ'));
+    det.append(E('div','banner warn','مستويات RAW غير مقرّبة. خطوة السعر وحدود الحركة والرسوم والانزلاق لم تُعتمد، ولا تعني إشارة شراء.'));
+    const tbl=E('table');const hd=E('tr');['الفكرة','دخول افتراضي','وقف افتراضي','هدف 1','هدف 2','المسافة عن الإغلاق'].forEach(v=>hd.append(E('th',null,v)));tbl.append(hd);
+    ps.scenarios.forEach(p=>{const tr=E('tr');[p.type,p.entry_raw,p.stop_raw,p.target1_raw,p.target2_raw,p.distance_from_close_pct+'%'].forEach(v=>tr.append(E('td',null,String(v))));tbl.append(tr)});det.append(tbl);
+    // EGX ELITE integration: illustrative position sizing, never an executable order.
+    const riskBox=E('div','card');riskBox.append(E('h3',null,'حساب توضيحي لحجم الصفقة وصافي R/R — غير تنفيذي'));
+    const capLabel=E('label',null,'رأس مال افتراضي (جنيه): ');
+    const capInput=E('input');capInput.type='number';capInput.min='1000';capInput.step='1000';capInput.value='100000';capLabel.append(capInput);
+    const riskLabel=E('label',null,' نسبة المخاطرة: ');
+    const riskSelect=E('select');[['0.005','0.5%'],['0.01','1%'],['0.02','2%']].forEach(([v,t])=>{const o=E('option',null,t);o.value=v;if(v==='0.01')o.selected=true;riskSelect.append(o)});riskLabel.append(riskSelect);
+    riskBox.append(capLabel,riskLabel);
+    const riskResult=E('div','mut');riskBox.append(riskResult);
+    const updateRisk=()=>{
+      riskResult.replaceChildren();
+      const cap=Number(capInput.value),risk=Number(riskSelect.value);
+      if(!Number.isFinite(cap)||cap<1000){riskResult.append(E('p',null,'رأس المال الافتراضي غير صالح'));return}
+      ps.scenarios.forEach(p=>{
+        const en=Number(p.entry_raw),sl=Number(p.stop_raw),target=Number(p.target1_raw),fee=0.0048;
+        const netRisk=(en-sl)+fee*(en+sl),netReward=(target-en)-fee*(en+target);
+        if(![en,sl,target,netRisk,netReward].every(Number.isFinite)||en<=sl||netRisk<=0||target<=en)return;
+        const quantity=Math.max(0,Math.floor(Math.min(cap/(en*(1+fee)),(cap*risk)/netRisk)));
+        const ratio=netReward/netRisk;
+        riskResult.append(E('p',null,p.type+': الحجم النظري '+quantity.toLocaleString('en-US')+
+          ' سهم | صافي R/R تقريبي '+ratio.toFixed(2)+':1 | صافي 2R الرياضي يتطلب سعرًا أعلى من الهدف الخام عند احتساب التكاليف.'));
+      });
+    };
+    capInput.oninput=updateRisk;riskSelect.onchange=updateRisk;updateRisk();
+    riskBox.append(E('small','mut','افتراض تكلفة 0.48% لكل طرف (0.96% ذهابًا وإيابًا)، غير متحقق من الوسيط. لا يُعتمد الحجم أو المستوى دون التحقق من خطوة السعر والسيولة والانزلاق. لا شراء مؤهل.'));
+    det.append(riskBox);
+
+   }
    const c=E('canvas');c.width=900;c.height=240;det.append(E('h3',null,'تاريخ الإغلاق (آخر 75 جلسة)'),c);draw(c,r.history);
    if(r.warnings.length)det.append(E('small','mut','تنبيهات: '+r.warnings.join('؛ ')));
    document.querySelectorAll('.sym').forEach(b=>b.classList.toggle('active',b.dataset.t===t))}
@@ -62,13 +98,16 @@ function main(){
   if(all.length)show(all[0].ticker);else det.append(E('div',null,'لا أسهم اجتازت بوابات الجودة اليوم. راجع أسباب الحجب في «صحة البيانات».'))}
  // data health
  const h=E('section','card');h.style.marginTop='12px';h.append(E('h2',null,'صحة البيانات — لماذا حُجب الآخرون؟'));
- const wf=D.counts.first_blocking_reason||{};const t=E('table');const trh=E('tr');['السبب (أول بوابة)','عدد الرموز'].forEach(x=>trh.append(E('th',null,x)));t.append(trh);
- const names={STALE:'آخر شمعة قديمة',CALENDAR_GAP:'فجوات في الجلسات',HISTORY:'تاريخ قصير',NO_TRADING:'لا تداول',FLAT_PRICE:'سعر ثابت',LIQUIDITY:'سيولة أقل من مليون جنيه',OHLC:'شمعة غير متسقة',CONFLICT:'تعارض أسعار',CORPORATE_ACTION:'حدث شركات',JUMP:'حركة >11% غير محسومة'};
+ const groups=D.counts.blocked_categories||{};const labels={DATA_REVIEW:'تحتاج مراجعة بيانات قبل أي إشارة',LOW_LIQUIDITY:'سيولة غير كافية للتنفيذ',SHORT_HISTORY:'تاريخ غير كافٍ للمؤشرات',OTHER:'ملاحظات أخرى'};
+ const summary=E('div','grid3');Object.keys(labels).forEach(k=>{const c=E('div','m');c.append(E('small',null,labels[k]),E('div','lab',String(groups[k]||0)));summary.append(c)});h.append(summary);
+ h.append(E('p','mut','التصنيفات الرئيسية حصرية، لكن السهم قد يكون محجوبًا لأكثر من سبب. يعرض الجدول أدناه أول سبب فقط، وليس كل الأسباب. لا تُرفع بوابة التداول الورقي بمجرد تصنيف السهم.'));
+ const overlaps=D.counts.blocked_reason_overlap||D.counts.any_reason||{};h.append(E('p','mut','انتشار أسباب الحجب (قد يُحسب السهم في أكثر من سبب):'));const detail=E('table');const header=E('tr');['سبب الحجب','عدد الأسهم المتأثرة'].forEach(x=>header.append(E('th',null,x)));detail.append(header);const names={IDENTITY_UNVERIFIED:'هوية الرمز غير معتمدة',STALE:'آخر شمعة قديمة',CALENDAR_GAP:'فجوات في الجلسات',HISTORY:'تاريخ قصير',NO_TRADING:'لا تداول',FLAT_PRICE:'سعر ثابت',LIQUIDITY:'سيولة أقل من مليون جنيه',OHLC:'شمعة غير متسقة',CONFLICT:'تعارض أسعار',CORPORATE_ACTION:'حدث شركات',JUMP:'حركة >11% غير محسومة'};Object.keys(overlaps).forEach(k=>{if(overlaps[k]){const tr=E('tr');tr.append(E('td',null,names[k]||k),E('td',null,String(overlaps[k])));detail.append(tr)}});h.append(detail);const wf=D.counts.first_blocking_reason||{};const t=E('table');const trh=E('tr');['السبب (أول بوابة)','عدد الرموز'].forEach(x=>trh.append(E('th',null,x)));t.append(trh);
+
  Object.keys(wf).forEach(k=>{if(wf[k]){const r=E('tr');r.append(E('td',null,names[k]||k),E('td',null,String(wf[k])));t.append(r)}});h.append(t);
- const f=E('input');f.placeholder='ابحث برمز محجوب…';f.style.margin='8px 0';h.append(f);
- const bt=E('table');h.append(bt);
- function rb(q){bt.replaceChildren();const th=E('tr');['الرمز','آخر شمعة','أسباب الحجب'].forEach(x=>th.append(E('th',null,x)));bt.append(th);
-  D.blocked.filter(b=>!q||b.ticker.includes(q.toUpperCase())).slice(0,200).forEach(b=>{const r=E('tr');r.append(E('td',null,b.ticker),E('td','ltr',b.last_date||'—'),E('td',null,b.reasons.join(' | ')));bt.append(r)})}
+ const f=E('input');f.placeholder='ابحث برمز أو اسم سهم محجوب…';f.style.margin='8px 0';h.append(f);
+ const counter=E('p','mut');h.append(counter);const bt=E('table');h.append(bt);
+ function rb(q){const filtered=D.blocked.filter(b=>!q||b.ticker.includes(q.toUpperCase())||(b.name||'').includes(q));counter.textContent=`عرض ${Math.min(filtered.length,200)} من ${filtered.length} سهمًا مطابقًا`;bt.replaceChildren();const th=E('tr');['الرمز','الفئة','آخر شمعة','أسباب الحجب'].forEach(x=>th.append(E('th',null,x)));bt.append(th);
+  filtered.slice(0,200).forEach(b=>{const r=E('tr');r.append(E('td',null,b.ticker),E('td',null,labels[b.research_category]||'غير مصنف'),E('td','ltr',b.last_date||'—'),E('td',null,b.reasons.join(' | ')));bt.append(r)})}
  f.oninput=()=>rb(f.value);rb('');body.append(h);
  T($('#foot'),`المخطط ${D.schema} · SHA ${D.content_sha256.slice(0,12)} · مصدر الأسعار: قاعدة SQLite المركزية (RAW، للقراءة فقط). لا تحديث مباشر ولا أوامر مالية من هذه الصفحة.`)}
 function draw(c,hist){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);if(!hist.length)return;const a=hist.map(p=>p.close),lo=Math.min(...a),hi=Math.max(...a),pad=34;

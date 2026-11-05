@@ -22,10 +22,43 @@ class Gate(unittest.TestCase):
         r=[x for x in s["ranked"] if x["ticker"]=="UPT"][0]
         self.assertEqual(r["rank"],1);self.assertIsNone(r["levels"]["entry"]);self.assertEqual(r["levels"]["status"],"UNAPPROVED_NO_TESTED_RULE")
         self.assertFalse(s["strategy_approved"]);self.assertFalse(s["live_execution_enabled"]);self.assertEqual(s["verdict"],"NO_STRATEGY_APPROVED")
+    def test_daily_snapshot_has_paper_levels_but_never_executable(self):
+        s,_=self.snap({"UPT":dict(close=up())})
+        r=next(x for x in s["ranked"] if x["ticker"]=="UPT")
+        self.assertIn("paper_scenarios",r)
+        ps=r["paper_scenarios"]
+        self.assertFalse(ps["tradable"])
+        self.assertFalse(ps["tick_verified"])
+        self.assertGreater(len(ps["scenarios"]),0,"Qualified uptrend must expose research-only paper levels")
+        for plan in ps["scenarios"]:
+            self.assertFalse(plan["executable"])
+            self.assertFalse(plan["verified_tick"])
+            self.assertLess(plan["stop_raw"],plan["entry_raw"])
+            self.assertLess(plan["entry_raw"],plan["target1_raw"])
+            self.assertLess(plan["target1_raw"],plan["target2_raw"])
+        from egx_decision import render
+        html=render.page(s)
+        self.assertIn("سيناريوهات ورقية تجريبية",html)
+        self.assertIn("PAPER_SCENARIO_UNVALIDATED",html)
+        self.assertEqual(s["verdict"],"NO_STRATEGY_APPROVED")
     def test_downtrend_goes_to_watchlist_not_ranked_even_with_score(self):
         s,_=self.snap({"DWN":dict(close=down())})
         self.assertNotIn("DWN",[r["ticker"] for r in s["ranked"]]);self.assertIn("DWN",[r["ticker"] for r in s["watchlist"]])
         self.assertTrue(all(r["rank"] is None for r in s["watchlist"]))
+    def test_provisional_official_symbol_identity_is_never_a_recommendation(self):
+        p,_ = mk({"UPT":dict(close=up())})
+        c=sqlite3.connect(p)
+        c.execute("update canonical_bars set evidence_tier='PROVISIONAL_SYMBOL_IDENTITY' where ticker='UPT' and date=(select max(date) from canonical_bars where ticker='UPT')")
+        c.commit();c.close()
+        s=snapshot.build(p,now=NOW)
+        self.assertIn("IDENTITY_UNVERIFIED",self.reasons(s,"UPT"))
+        self.assertNotIn("UPT",[x["ticker"] for x in s["ranked"]+s["watchlist"]])
+        self.assertEqual(s["counts"]["first_blocking_reason"]["IDENTITY_UNVERIFIED"],1)
+        self.assertEqual(s["counts"]["provisional_source_bars"],1)
+        self.assertEqual(s["market"]["state"],"UNKNOWN")
+        from egx_decision import render
+        self.assertIn("تحذير جودة المصدر",render.page(s))
+        self.assertFalse(s["strategy_approved"])
     def test_stale_ticker_blocked(self):
         s,_=self.snap({"OLD":dict(close=up(),last_n=132)});self.assertIn("STALE",self.reasons(s,"OLD"))
         self.assertNotIn("OLD",[r["ticker"] for r in s["ranked"]+s["watchlist"]])
@@ -72,6 +105,59 @@ class Gate(unittest.TestCase):
         self.assertEqual(s["ranked"],[]);self.assertEqual(s["watchlist"],[]);self.assertEqual(len(s["blocked"]),55);self.assertEqual(s["counts"]["passed"],0)
         from egx_decision import render
         html=render.page(s);self.assertIn("لا فرص اليوم",html)
+    def test_blocked_categories_and_paper_gate(self):
+        s,_=self.snap({"LOW":dict(close=up(),volume=1000.0),"STA":dict(close=up(seed=7),last_n=132)})
+        grouped=s["counts"]["blocked_categories"]
+        self.assertEqual(sum(grouped.values()),len(s["blocked"]))
+        overlap=s["counts"]["blocked_reason_overlap"]
+        self.assertEqual(overlap["STALE"],sum(any(x.startswith("STALE:") for x in b["reasons"]) for b in s["blocked"]))
+        self.assertEqual(overlap["LIQUIDITY"],sum(any(x.startswith("LIQUIDITY:") for x in b["reasons"]) for b in s["blocked"]))
+        self.assertGreaterEqual(sum(overlap.values()),len(s["blocked"]))
+        low=next(x for x in s["blocked"] if x["ticker"]=="LOW")
+        stale=next(x for x in s["blocked"] if x["ticker"]=="STA")
+        self.assertEqual(low["research_category"],"LOW_LIQUIDITY")
+        self.assertEqual(stale["research_category"],"DATA_REVIEW")
+        self.assertNotIn("LOW",[x["ticker"] for x in s["ranked"]+s["watchlist"]])
+        self.assertFalse(s["strategy_approved"])
+    def test_blocked_categories_in_render(self):
+        from egx_decision import render
+        s,_=self.snap({"LOW":dict(close=up(),volume=1000.0)})
+        h=render.page(s)
+        self.assertIn("تحتاج مراجعة بيانات",h)
+        self.assertIn("سيولة غير كافية",h)
+    def test_old_official_price_is_not_independent_ticker_identity_proof(self):
+        p,cal=mk({"UPT":dict(close=up())})
+        session=cal[-1].strftime("%Y-%m-%d")
+        c=sqlite3.connect(p)
+        c.execute("create table official_session(ticker text,session_date text,resolution_status text)")
+        c.execute("insert into official_session values (?,?,?)",("UPT",session,"RESOLVED_CONFIRMED_NAME_PREVCLOSE"))
+        c.commit();c.close()
+        snap=snapshot.build(p,now=NOW)
+        self.assertIn("IDENTITY_UNVERIFIED",self.reasons(snap,"UPT"))
+        self.assertNotIn("UPT",[x["ticker"] for x in snap["ranked"]+snap["watchlist"]])
+        self.assertEqual(snap["counts"]["unverified_official_mappings"],1)
+        self.assertEqual(snap["market"]["state"],"UNKNOWN")
+        from egx_decision import render
+        self.assertIn("يلزم تحقق مستقل",render.page(snap))
+        c=sqlite3.connect(p)
+        c.execute("update official_session set resolution_status='OFFICIAL_VERIFIED'")
+        c.commit();c.close()
+        approved=snapshot.build(p,now=NOW)
+        self.assertNotIn("IDENTITY_UNVERIFIED",str(self.reasons(approved,"UPT")))
+        self.assertIn("UPT",[x["ticker"] for x in approved["ranked"]])
+
+    def test_h1_blocks_provisional_identity_in_historical_lookback(self):
+        p,cal=mk({"UPT":dict(close=up())})
+        c=sqlite3.connect(p)
+        c.execute("update canonical_bars set evidence_tier='PROVISIONAL_SYMBOL_IDENTITY' where ticker=? and date=?",("UPT",cal[-30].strftime("%Y-%m-%d")))
+        c.commit();c.close()
+        data=ingest.load(p)
+        h=regime.compute(data,cal[-1].strftime("%Y-%m-%d"))
+        self.assertEqual(h["state"],"UNKNOWN")
+        self.assertIn("UNVERIFIED_H1_HISTORY",h["reason"])
+        s=snapshot.build(p,now=NOW)
+        self.assertEqual(s["market"]["state"],"UNKNOWN")
+
     def test_h1_unknown_when_history_short(self):
         p,_=mk({"X":dict(close=up(n=115))},n=115)
         s=snapshot.build(p,now=NOW);self.assertEqual(s["market"]["state"],"UNKNOWN")
