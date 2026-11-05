@@ -12,6 +12,8 @@ import re
 import subprocess
 import sys
 import urllib.request
+import urllib.error
+import time
 
 from official_bbox import extract_stocks, LayoutError
 
@@ -61,8 +63,21 @@ def main():
     if not args.pdf:
         request = urllib.request.Request(
             URL, headers={"User-Agent": "Mozilla/5.0 EGX-PRO-research/1.0"})
-        with urllib.request.urlopen(request, timeout=35) as response:
-            body = response.read(15_000_001)
+        # Retry only transport failures; date/layout/quality checks never retry or relax.
+        # Bounded attempts prevent a transient remote disconnect from losing a session.
+        body = None
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(request, timeout=35) as response:
+                    body = response.read(15_000_001)
+                break
+            except (urllib.error.URLError, ConnectionError, TimeoutError,
+                    OSError) as exc:
+                if attempt == 2:
+                    raise BulletinError("OFFICIAL_FETCH_UNAVAILABLE_AFTER_RETRIES") from exc
+                time.sleep(2 ** attempt)
+        if body is None:
+            raise BulletinError("OFFICIAL_FETCH_EMPTY")
         if len(body) > 15_000_000:
             raise BulletinError("PDF_OVERSIZE")
         pdf.write_bytes(body)
