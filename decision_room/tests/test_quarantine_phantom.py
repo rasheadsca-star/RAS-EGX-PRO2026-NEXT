@@ -1,6 +1,7 @@
 import os,sys,sqlite3,tempfile
 sys.path.insert(0,os.path.join(os.path.dirname(os.path.abspath(__file__)),"..","tools"))
 import quarantine_phantom_sessions as Q
+Q.MIN_CMP=5
 d=tempfile.mkdtemp();src=d+"/a.sqlite";out=d+"/b.sqlite"
 c=sqlite3.connect(src)
 c.execute("create table canonical_bars(ticker,date,price_basis,open,high,low,close,volume,evidence_tier,providers,selected_source_id,n_observations,notes)")
