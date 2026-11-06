@@ -4,6 +4,7 @@ from .ingest import load,DataError
 from .quality import evaluate,waterfall
 from .screening import indicators,reasons
 from .ranking import split
+from .market_scanner import report as market_scan_report
 from .regime import compute as h1_compute
 def _name(ident,t):
     for col in("name_ar","name_en"):
@@ -34,6 +35,8 @@ def build(db,now=None,asof=None):
                              note="لا دخول معتمد: لا توجد استراتيجية مثبتة ولم يُتحقق من خطوة السعر الرسمية"))
         rows.append(row)
     ranked,watch=split(rows)
+    # Descriptive full-universe scanner is deliberately separate from approval gates.
+    broad_scanner=market_scan_report(data,session,res)
     h1=h1_compute(data,session.date().isoformat())
     h1_ok=h1.get("state") in("CASH","IN_MARKET") and h1.get("session")==session.date().isoformat()
     market=h1 if h1_ok else dict(state="UNKNOWN",reason=h1.get("reason","H1 غير مطابق للبيانات"))
@@ -41,7 +44,7 @@ def build(db,now=None,asof=None):
                         if h1_ok else "حالة السوق غير معروفة: لا قراءة سوقية.")
     core=dict(schema=SCHEMA_VERSION,source_session=session.date().isoformat(),market=market,counts=dict(wf,ranked=len(ranked),watchlist=len(watch)),
         strategy_approved=False,live_execution_enabled=False,live_ready=0,paper_signals_generated=0,verdict="NO_STRATEGY_APPROVED",
-        ranked=ranked,watchlist=watch,blocked=sorted(blocked,key=lambda b:b["ticker"]),no_bars_symbols=nobars)
+        ranked=ranked,watchlist=watch,market_scanner=broad_scanner,blocked=sorted(blocked,key=lambda b:b["ticker"]),no_bars_symbols=nobars)
     core["content_sha256"]=hashlib.sha256(json.dumps(core,sort_keys=True,ensure_ascii=False,separators=(",",":"),allow_nan=False).encode()).hexdigest()
     out=dict(core);out["generated_utc"]=now.isoformat()
     json.dumps(out,allow_nan=False)  # fail loudly on NaN/Inf: invalid JSON would blank the UI
