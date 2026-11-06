@@ -54,11 +54,12 @@ def scan(data, session, quality=None):
     if quality is not None:
         gate = {str(r["ticker"]): r for _, r in quality.iterrows()}
     result = []
-    known = set(bars["ticker"].dropna().astype(str))
+    groups = {str(t): g for t, g in bars.groupby("ticker", sort=False)}
+    known = set(groups)
     if len(identity):
         known |= set(identity.index.astype(str))
     for ticker in sorted(known):
-        g = bars[bars["ticker"] == ticker].sort_values("date").drop_duplicates("date", keep="last")
+        g = groups.get(ticker, bars.iloc[:0]).sort_values("date").drop_duplicates("date", keep="last")
         g = g[g["date"] <= cutoff]
         name = ""
         if len(identity) and ticker in identity.index:
@@ -162,6 +163,8 @@ def cli(argv=None):
     p.add_argument("--asof", required=True)
     p.add_argument("--out", required=True)
     args = p.parse_args(argv)
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from egx_decision.ingest import load
     from egx_decision.quality import evaluate
     data = load(args.db, pd.Timestamp(args.asof))
