@@ -48,7 +48,7 @@ def scan(data, session, quality=None):
     cutoff = pd.Timestamp(session)
     bars = data["bars"].copy()
     bars["date"] = pd.to_datetime(bars["date"])
-    bars = bars[(bars["date"] <= cutoff) & (bars["price_basis"] == "RAW")]
+    bars = bars[bars["date"] <= cutoff]\n    if "price_basis" in bars.columns:\n        bars = bars[bars["price_basis"] == "RAW"]  # ingest.load already returns RAW only
     identity = data["ident"].set_index("ticker") if len(data.get("ident", [])) else pd.DataFrame()
     gate = {}
     if quality is not None:
@@ -76,7 +76,7 @@ def scan(data, session, quality=None):
             base["reasons"].append("NO_HISTORY")
             result.append(base)
             continue
-        base["last_date"] = str(g["date"].iloc[-1].date())
+        base["last_date"] = str(g["date"].iloc[-1].date())\n        if "calendar" in data:\n            market_days = pd.DatetimeIndex(data["calendar"])\n            expected = market_days[(market_days <= cutoff)][-OBSERVED_BARS:]\n            observed = set(g["date"].iloc[-OBSERVED_BARS:])\n            base["missing_calendar_sessions_60"] = int(sum(dt not in observed for dt in expected))\n        else:\n            base["missing_calendar_sessions_60"] = None
         if g["date"].iloc[-1] != cutoff:
             base["classification"] = "STALE"
             base["reasons"].append("LAST_SESSION_MISSING")
@@ -128,7 +128,7 @@ def scan(data, session, quality=None):
             base["reasons"].append("QUALITY_GATE_BLOCKED")
         if uptrend and near_support and bounce and vol_confirmed and liquid:
             base["classification"] = "ASCENDING_CHANNEL_BOUNCE_RESEARCH"
-            base["has_valid_setup"] = bool(base["quality_passed"])
+            base["has_valid_setup"] = bool(base["quality_passed"] and not base["missing_calendar_sessions_60"])
         elif uptrend and near_support:
             base["classification"] = "ASCENDING_PULLBACK_WATCH"
         elif uptrend:
