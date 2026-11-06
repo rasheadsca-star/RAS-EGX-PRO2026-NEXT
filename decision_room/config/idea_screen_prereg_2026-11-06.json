@@ -1,0 +1,14 @@
+{"schema":"egx-prereg-3","registered":"2026-11-06","purpose":"Discovery/validation screen of 6 EGX-structure ideas. Fixed textbook thresholds, not tuned. Discovery 2017-01..2021-12 ; validation 2022-01..2024-12 (not looked at for these ideas) ; 2025-01..2026-11 exposed, informational only.",
+ "universe":"ADV20 >= 5,000,000 EGP at t, close at t, no >11.5% close-to-close move in the 252 sessions up to t-1 (ex-ante hygiene). Entry = close of t+1; exit = close of t+1+H. Forward returns with |r|>60% are dropped symmetrically from events AND benchmark (split artefacts), count reported. Round-trip cost 0.96% (fee+slippage, impact ignored => optimistic).",
+ "benchmark":"equal-weight mean forward return (same horizon) of ALL eligible names on the same signal date.",
+ "ideas":{
+  "I1_limit_up_continuation":"ret_t in [+9%,+11.5%] and volume_t >= 2 x mean volume(t-20..t-1); H=5",
+  "I2_limit_down_rebound":"ret_t in [-11.5%,-9%] and volume_t >= 2 x mean volume(t-20..t-1); H=5",
+  "I3_volume_breakout":"close_t > max close(t-20..t-1), volume_t >= 3 x mean volume(t-20..t-1), ret_t>0; H=10",
+  "I4_turn_of_month":"equal-weight eligible universe, hold from close of the 2nd-last session of the month to close of the 3rd session of the next month (one round trip per month, cost 0.96%)",
+  "I6_oversold_in_uptrend":"RSI(5, simple means of gains/losses) < 15 and close_t > MA200; H=5",
+  "I7_liquidity_surge":"ADV20_t / mean(ADV20 over t-60..t-21) >= 2 and close_t > MA50; H=10"},
+ "events":"de-clustered: per ticker no new event within H sessions of the previous event",
+ "statistics":"mean net excess over benchmark per event (I4: mean net monthly return); month-cluster bootstrap one-sided lower bound at alpha=0.05/6, 20000 draws, seed 20261106",
+ "pass_rule":"an idea is a CANDIDATE only if: discovery mean net excess > 0 AND validation mean net excess > 0 AND validation lower bound (alpha 0.05/6) > 0 AND n_validation >= 100 (I4: >= 30 months). Candidates still only license forward paper testing; nothing licenses an executable recommendation.",
+ "weekday_note":"mean eligible-universe daily return per weekday is reported descriptively (not an idea, not tested)."}
