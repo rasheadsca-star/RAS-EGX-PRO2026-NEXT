@@ -1,0 +1,63 @@
+{
+  "schema": "egx-fundamental-prereg-v1",
+  "status": "FROZEN_NOT_ACTIVATED_NO_TESTS_RUN",
+  "registered_on": "2026-11-06",
+  "source_review_commit": "b7dc326bbd573acf525d0f1ede30dea3a279f741",
+  "research_only": true,
+  "factor_count": 1,
+  "factor": {
+    "id": "F1_AUDITED_ANNUAL_EARNINGS_GROWTH",
+    "hypothesis": "Companies with stronger strictly point-in-time audited annual net earnings growth subsequently have stronger forward net excess returns.",
+    "input_field": "audited consolidated annual net profit attributable to common shareholders; if consolidated not available, exclude rather than mix scopes",
+    "comparison": "same company, identical scope and currency, latest two consecutive audited 12-month financial years; require both profits > 0; growth=(latest_profit/prior_profit)-1",
+    "rank_rule": "highest positive annual growth; deterministic tie-break by verified ticker in ascending order; no absolute growth cutoff beyond positivity",
+    "selection": "top 10 eligible stocks; if fewer than 10, hold 100% cash, and record why",
+    "rebalancing": "once per calendar quarter at first market session after all signal-date facts are known; select at prior market-session close and model purchase at next official EGX session close; hold until next quarter's analogous close",
+    "holding_period": "quarterly, no discretionary exit, no intraperiod rule changes",
+    "cash_return": "0 in primary test; no invented Treasury bill yield",
+    "corporate_actions": "require split and share-count adjustment documentation; quarantine affected rows and preserve raw source"
+  },
+  "point_in_time": {
+    "source_preference": "official EGX issuer disclosure and its timestamp, then separately official quarter/annual market report, stored with source URLs or original PDF checksums",
+    "period_end_is_not_publication_date": true,
+    "market_report_issued_at_is_not_proof_of_public_access": true,
+    "availability_date_rule": "Use earliest independently verifiable public dissemination timestamp for the exact issuer earnings figure. If only the market-report issue time is verifiable but public release is not, mark UNKNOWN and exclude.",
+    "first_usable_signal": "first trading decision made after public timestamp plus a full next exchange session; never the publication day itself",
+    "revisions": "append-only versions, original and restated values separated; use only the version actually public at signal time",
+    "identity_rule": "issuer legal name and source name must both match a dated official issuer-symbol mapping, with an independent second identity check (official filing or EGX listing record); manual approval logged; no ISIN inference",
+    "null_policy": "unverified publication, scope, currency, year, company identity, or unresolved corporate action => NOT_ELIGIBLE; no imputation"
+  },
+  "eligibility": {
+    "universe": "all officially listed EGX ordinary equities, historical as-of-date constituents only; no survivorship-future constituents",
+    "required_price_history": "official EGX close/volume data as of signal date and all subsequent hold dates",
+    "liquidity": "ADV20 >= EGP 5000000 using preceding 20 verified completed EGX sessions, excluding current signal-day information when not yet public",
+    "position_size_egp": 250000,
+    "max_names": 10,
+    "weighting": "equal initial gross EGP positions, cash remainder if a name fails liquidity, track actual fractional units deterministically",
+    "required_fundamental_completeness": "two comparable annual audited net profits per issuer with independently verified first public timestamps"
+  },
+  "data_activation_gate": {
+    "minimum_report_audit": "five distinct year-stamped official EGX Annual/Quarter market reports across >=5 years, including >=2 Arabic ARB documents and independent publication-date evidence checks",
+    "pilot_audit": "manual double extraction of >=30 issuer observations across >=3 report years and both language types, each with second reviewer",
+    "acceptance": "100% correct issuer identity and financial period/timestamp classification; >=98% exact net profit/currency/scope numeric agreement; all mismatches quarantined",
+    "coverage_required": "at least 60 unique verifiably identified eligible issuers per evaluation year and at least 20 with both consecutive annual reports; otherwise NOT_TESTABLE",
+    "current_state": "NOT_MET; only one library-accessible 2020 ENG report inspected and no ARB report or issuer-level public timestamp verified"
+  },
+  "evaluation": {
+    "development": ["2017-01-01", "2021-12-31"],
+    "sealed_validation": ["2022-01-01", "2024-12-31"],
+    "exposed_informational_excluded": ["2025-01-01", "2026-11-06"],
+    "forward_paper_only_after_validation": "not before 2026-11-07, subject to availability of new official bulletins and market-calendar checks",
+    "benchmark": "same signal-date, point-in-time eligible universe, equal-weight, quarterly rebalanced, identically costed and using identical fill/exit assumptions; report cash-only baseline separately",
+    "costs_per_side": {"fee": 0.0018, "slippage": 0.003, "liquidity_impact": "0.25 * (250000 / ADV20_EGP)"},
+    "costs_rule": "Apply costs at buys/sells based on actual traded shares/notional and ADV20 available as of transaction; never approximate with portfolio turnover alone; missing or zero ADV => no trade, not zero cost",
+    "returns_rule": "calculate only after frozen prereg and complete data audit; no outcomes viewed for rule design",
+    "missing_price_rule": "do not silently drop a losing or missing position; quarantine and report counts, bound outcomes conservatively, no future-conditioned eligible universe",
+    "risk_free_rate": "unknown until official historical CBE data is verified; primary excess versus equally costed universe, not risk-free Sharpe",
+    "inference": "calendar-quarter block bootstrap with 10000 draws, seed 20261106, one-sided lower confidence bound on validation net excess",
+    "multiple_testing": "single new factor; use conservative one-sided family-wise alpha 0.001 for this candidate, and do not claim global multiplicity control until all previously tested family counts are exhaustively registered; freeze count and recompute Bonferroni alpha <= 0.05 / cumulative_count if stricter",
+    "pass_rule": "validation >= 12 nonmissing quarters, development positive mean net excess, validation positive mean net excess, lower bootstrap bound > 0 at the stricter registered family-wise alpha, zero material look-ahead exceptions, all data activation and audit gates pass; advancement permits only forward paper observation, never executable trading"
+  },
+  "anti_tuning": "Parameters and tests are immutable after this prereg file is created; any remediation creates a new version and cannot re-label already inspected validation as unseen.",
+  "forbidden": ["merge PR #207", "Vercel production or preview deploy", "write production DB", "upload private SQLite", "R2 operations", "real trades", "investment recommendations"]
+}
