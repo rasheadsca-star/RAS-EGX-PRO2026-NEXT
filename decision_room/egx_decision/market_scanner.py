@@ -107,6 +107,9 @@ def scan(data, session, quality=None):
         uptrend = bool(slope * 252 > MIN_ANNUAL_LOG_SLOPE and r2 >= MIN_TREND_R2 and price > ma50)
         vol_confirmed = relative_volume is not None and relative_volume >= MIN_REL_VOLUME
         liquid = adv20 >= MIN_ADV20_EGP
+        base["history"] = [{"date": str(row["date"].date()), "close": float(row["close"]),
+                            "high": float(row["high"]), "low": float(row["low"])}
+                           for _, row in w.iterrows()]
         base.update(close=price, ma20=ma20, ma50=ma50, channel_lower=lower,
                     channel_center=center, channel_upper=upper, channel_r2=r2,
                     channel_annual_log_slope=slope * 252, observed_advance_days=len(w),
