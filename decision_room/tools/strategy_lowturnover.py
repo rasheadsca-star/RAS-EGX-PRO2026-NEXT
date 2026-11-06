@@ -20,51 +20,92 @@ def signals(cl,vo,i,kind,adv,ret1,idxma,idx):
     s=s[el&~jl&s.notna()]
     if kind=="H3" and not(idx.iloc[i]>idxma.iloc[i]):return s.iloc[0:0]
     return s
-def run(cl,vo,start,end,N=10):
+def run(cl,vo,start,end,N=10,excl_jump_hold=False):
+    """ex-ante membership only (amendment 1). excl_jump_hold=True is a BIASED sensitivity, never used for advancement."""
     ret1=cl.pct_change(fill_method=None);adv=(cl*vo.fillna(0)).rolling(20).mean()
     el_all=(adv>=5e6)&cl.notna();jl_all=(ret1.abs()>JUMP).rolling(252,min_periods=1).max()>0
     ew=ret1.where(el_all&~jl_all).mean(axis=1).fillna(0);idx=(1+ew).cumprod();idxma=idx.rolling(100).mean()
     dates=cl.index;me=[k for k in range(len(dates)-1) if dates[k].month!=dates[k+1].month]
-    kinds=["H1","H2","H3","H4","H5"];res={k:[] for k in kinds};bench=[];hold={k:set() for k in kinds};excl=dict(jump_in_hold=0,missing_exit=0)
+    kinds=["H1","H2","H3","H4","H5"];res={k:[] for k in kinds};bench=[];hold={k:{} for k in kinds}
+    info=dict(unfilled_entries=0,exit_marked_last_close=0,jump_in_hold_names=0,cost_fallback_used=0)
+    def price_at(t,i):
+        v=cl.iloc[:i+1][t].dropna();return (v.iloc[-1],v.index[-1]) if len(v) else (np.nan,None)
     for a,b in zip(me[:-1],me[1:]):
         if not(pd.Timestamp(start)<=dates[a]<=pd.Timestamp(end)) or a<260 or b+1>=len(dates):continue
-        en,ex=a+1,b+1;r=cl.iloc[ex]/cl.iloc[en]-1
-        jh=(ret1.iloc[en+1:ex+1].abs()>JUMP).any();ok=r.notna()&~jh
-        excl["jump_in_hold"]+=int((jh&r.notna()).sum());excl["missing_exit"]+=int(r.isna().sum())
-        elig=(adv.iloc[a]>=5e6)&cl.iloc[a].notna()&~jl_all.iloc[a]&ok
+        en,ex=a+1,b+1
+        elig=(adv.iloc[a]>=5e6)&cl.iloc[a].notna()&~jl_all.iloc[a]   # information up to t only
         if elig.sum()<N:continue
-        bench.append((dates[ex],float(r[elig].mean())))
+        def realized(t):
+            p0=cl.iloc[en][t]
+            if p0!=p0:return None,"unfilled"
+            p1=cl.iloc[ex][t];mk=False
+            if p1!=p1:p1,_=price_at(t,ex);mk=True
+            jh=bool((ret1.iloc[en+1:ex+1][t].abs()>JUMP).any())
+            return (p1/p0-1,mk,jh),"ok"
+        cache={}
+        def R(t):
+            if t not in cache:cache[t]=realized(t)
+            return cache[t]
+        names=list(elig[elig].index);br=[]
+        for t in names:
+            r,st=R(t)
+            if r is None:continue
+            if excl_jump_hold and r[2]:continue
+            br.append(r[0])
+        bench.append((dates[ex],float(np.mean(br)) if br else 0.0))
         for k in kinds:
-            s=signals(cl,vo,a,k,adv,ret1,idxma,idx);s=s[s.index.isin(r.index[ok])]
+            s=signals(cl,vo,a,k,adv,ret1,idxma,idx)
             top=list(s.sort_values(ascending=False).index[:N]) if len(s)>=N else []
-            new=set(top);old=hold[k];w=1.0/N
-            imp=lambda t:0.25*SIZE/(adv.iloc[a][t] if t in adv.columns and adv.iloc[a][t]==adv.iloc[a][t] and adv.iloc[a][t]>=5e6 else 5e6)
-            cost=sum(w*(FEE+SLIP+imp(t)) for t in new-old)+sum(w*(FEE+SLIP+imp(t)) for t in old-new)
-            gross=sum(w*float(r[t]) for t in top) if top else 0.0
-            res[k].append((dates[ex],gross-cost,gross,cost));hold[k]=new
-    return res,bench,excl
-def boot(x,seed=20261106,B=5000,blk=3,q=0.01):
-    x=np.asarray(x);n=len(x);rng=np.random.default_rng(seed);m=[]
+            w=1.0/N;gross_r={};filled=[]
+            for t in top:
+                r,st=R(t)
+                if r is None:info["unfilled_entries"]+=1;continue
+                if excl_jump_hold and r[2]:continue
+                info["exit_marked_last_close"]+=int(r[1]);info["jump_in_hold_names"]+=int(r[2]);gross_r[t]=r[0];filled.append(t)
+            gross=sum(w*gross_r[t] for t in filled)
+            port=1+gross;old=hold[k]
+            def imp(t):
+                v=adv.iloc[a][t] if t in adv.columns else np.nan
+                if not(np.isfinite(v)) or v<5e6:info["cost_fallback_used"]+=1;v=5e6
+                return 0.25*SIZE/v
+            c=0.0
+            for t in filled:
+                tw=w if t not in old else abs(w-old[t]);c+=tw*(FEE+SLIP+imp(t))
+            for t in old:
+                if t not in filled:c+=old[t]*(FEE+SLIP+imp(t))
+            res[k].append((dates[ex],gross-c,gross,c,filled,list(top)))
+            hold[k]={t:w*(1+gross_r[t])/port for t in filled}
+    return res,bench,info
+def boot(x,seed=20261106,B=20000,blk=3,q=0.01/9):
+    x=np.asarray(x,dtype=float)
+    if not np.isfinite(x).all():raise ValueError('non-finite series; refusing to bootstrap')
+    n=len(x);rng=np.random.default_rng(seed);m=[]
     nb=int(np.ceil(n/blk))
     for _ in range(B):
         st=rng.integers(0,n-blk+1,nb);m.append(np.concatenate([x[s:s+blk] for s in st])[:n].mean())
     return float(np.quantile(m,q))
 def stats(rows,bench):
-    d=pd.Series({a:b for a,b,*_ in rows});bm=pd.Series(dict(bench)).reindex(d.index);ex=d-bm
+    d=pd.Series({r[0]:r[1] for r in rows});bm=pd.Series(dict(bench)).reindex(d.index);ex=d-bm
     eq=(1+d).cumprod();dd=(eq/eq.cummax()-1).min();n=len(d)
     yr=ex.groupby(d.index.year).mean();net_yr=d.groupby(d.index.year).mean()
-    return dict(n_months=n,mean_net_m=float(d.mean()),ann_net=float(eq.iloc[-1]**(12/n)-1) if n else None,ann_vol=float(d.std()*12**.5),sharpe_rf0=float(d.mean()/d.std()*12**.5) if d.std()>0 else None,max_dd=float(dd),
-      mean_excess_m=float(ex.mean()),boot99_lb_net=boot(d.values),boot99_lb_excess=boot(ex.values),years_positive_excess=int((yr>0).sum()),years=int(len(yr)),mean_gross_m=float(np.mean([g for *_,g,c in rows])),mean_cost_m=float(np.mean([c for *_,c in rows])),bench_mean_m=float(bm.mean()))
+    return dict(n_months=n,mean_net_m=float(d.mean()),ann_net=float(eq.iloc[-1]**(12/n)-1) if n else None,ann_vol=float(d.std()*12**.5),ratio_rf_zero_diagnostic=float(d.mean()/d.std()*12**.5) if d.std()>0 else None,max_dd=float(dd),
+      mean_excess_m=float(ex.mean()),boot_lb_net=boot(d.values),boot_lb_excess=boot(ex.values),years_positive_excess=int((yr>0).sum()),years=int(len(yr)),mean_gross_m=float(np.mean([r[2] for r in rows])),mean_cost_m=float(np.mean([r[3] for r in rows])),bench_mean_m=float(bm.mean()))
+def sha(p):return hashlib.sha256(open(p,"rb").read()).hexdigest()
 def main(argv=None):
-    ap=argparse.ArgumentParser();[ap.add_argument("--"+k,required=True) for k in("db","prereg","out")];a=ap.parse_args(argv)
-    P=json.load(open(a.prereg));cl,vo=load(a.db);out=dict(prereg_sha256=hashlib.sha256(open(a.prereg,"rb").read()).hexdigest(),data_range=[str(cl.index.min().date()),str(cl.index.max().date())])
-    for name,(s,e) in dict(development=P["periods"]["development"],exposed_informational=P["periods"]["exposed_informational"]).items():
-        res,bench,excl=run(cl,vo,s,e);blk={}
-        for k,rows in res.items():
-            if len(rows)>=12:blk[k]=stats(rows,bench)
-        out[name]=dict(period=[s,e],exclusions=excl,hypotheses=blk)
-    dv=out["development"]["hypotheses"];adv={}
-    for k,v in dv.items():adv[k]=bool(v["n_months"]>=60 and v["mean_net_m"]>0 and v["boot99_lb_excess"]>0 and v["years_positive_excess"]>=6)
+    ap=argparse.ArgumentParser();[ap.add_argument("--"+k,required=True) for k in("db","prereg","amendment","out")];a=ap.parse_args(argv)
+    P=json.load(open(a.prereg));cl,vo=load(a.db)
+    out=dict(prereg_sha256=sha(a.prereg),amendment_sha256=sha(a.amendment),db_sha256=sha(a.db),alpha="0.01/9",data_range=[str(cl.index.min().date()),str(cl.index.max().date())])
+    for name,(s_,e) in dict(development=P["periods"]["development"],exposed_informational=P["periods"]["exposed_informational"]).items():
+        res,bench,info=run(cl,vo,s_,e);blk={k:stats(r,bench) for k,r in res.items() if len(r)>=12}
+        res2,bench2,info2=run(cl,vo,s_,e,excl_jump_hold=True)
+        sens={k:dict(mean_net_m=float(np.mean([x[1] for x in r])),n_months=len(r)) for k,r in res2.items() if len(r)>=12}
+        out[name]=dict(period=[s_,e],execution_info=info,hypotheses=blk,BIASED_sensitivity_excluding_jump_in_hold=sens)
+    dv=out["development"]["hypotheses"];adv={k:bool(v["n_months"]>=60 and v["mean_net_m"]>0 and v["boot_lb_excess"]>0 and v["years_positive_excess"]>=6) for k,v in dv.items()}
     out["advance_to_forward_paper"]=adv;out["decision"]="ADVANCE_TO_FORWARD_PAPER:"+",".join(k for k,v in adv.items() if v) if any(adv.values()) else "NO_STRATEGY_APPROVED"
-    json.dump(out,open(a.out,"w"),indent=1);print(json.dumps(dict(decision=out["decision"],adv=adv,dev={k:{x:round(y,4) if isinstance(y,float) else y for x,y in v.items() if x in("n_months","mean_net_m","ann_net","sharpe_rf0","max_dd","mean_excess_m","boot99_lb_excess","years_positive_excess")} for k,v in dv.items()}),indent=1));return 0
+    json.dump(out,open(a.out,"w"),indent=1)
+    print(out["decision"],out["development"]["execution_info"])
+    for part in("development","exposed_informational"):
+        print(part)
+        for k,v in out[part]["hypotheses"].items():print(" ",k,{x:round(v[x],4) for x in("n_months","mean_net_m","ann_net","max_dd","mean_excess_m","boot_lb_excess","mean_gross_m","mean_cost_m","bench_mean_m")},v["years_positive_excess"],"/",v["years"])
+    return 0
 if __name__=="__main__":raise SystemExit(main())
