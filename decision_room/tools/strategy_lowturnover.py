@@ -38,8 +38,8 @@ def run(cl,vo,start,end,N=10):
             s=signals(cl,vo,a,k,adv,ret1,idxma,idx);s=s[s.index.isin(r.index[ok])]
             top=list(s.sort_values(ascending=False).index[:N]) if len(s)>=N else []
             new=set(top);old=hold[k];w=1.0/N
-            imp=lambda t:0.25*SIZE/max(adv.iloc[a][t],1.0)
-            cost=sum(w*(FEE+SLIP+imp(t)) for t in new-old)+sum(w*(FEE+SLIP+imp(t)) for t in old-new if t in adv.columns)
+            imp=lambda t:0.25*SIZE/(adv.iloc[a][t] if t in adv.columns and adv.iloc[a][t]==adv.iloc[a][t] and adv.iloc[a][t]>=5e6 else 5e6)
+            cost=sum(w*(FEE+SLIP+imp(t)) for t in new-old)+sum(w*(FEE+SLIP+imp(t)) for t in old-new)
             gross=sum(w*float(r[t]) for t in top) if top else 0.0
             res[k].append((dates[ex],gross-cost,gross,cost));hold[k]=new
     return res,bench,excl
