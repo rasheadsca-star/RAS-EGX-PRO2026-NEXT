@@ -80,6 +80,36 @@ function main(){
   const sel=E('select');[['ALL','كل الأسهم'],['ASCENDING_CHANNEL_BOUNCE_RESEARCH','قناة صاعدة + ارتداد + حجم'],['ASCENDING_PULLBACK_WATCH','قناة صاعدة قرب دعم'],['ASCENDING_CHANNEL_WATCH','قناة صاعدة'],['REBOUND_WITHOUT_UPTREND','ارتداد في اتجاه غير صاعد'],['INSUFFICIENT_DATA','بيانات غير كافية'],['STALE','بيانات قديمة'],['OTHER','أخرى']].forEach(([v,n])=>{const o=E('option',null,n);o.value=v;sel.append(o)});
   const search=E('input');search.placeholder='ابحث عن رمز أو شركة';filters.append(sel,search);sec.append(filters);
   const t=E('table');sec.append(t);
+  const detail=E('div','card');detail.style.marginTop='10px';detail.append(E('p','mut','اختر سهمًا من الجدول لعرض قناة السعر والمتوسطات وفيبوناتشي. العرض بحثي وليس إشارة تداول.'));sec.append(detail);
+  const chartDetail=r=>{
+    detail.replaceChildren();detail.append(E('h3',null,r.ticker+' — '+(r.name||'')+' (بحث فقط)'));
+    detail.append(E('small','mut','آخر تاريخ '+(r.last_date||'—')+' | مصدر '+(r.source_tier||'غير معلوم')+' | الجودة '+(r.quality_passed?'مقبولة':'محجوبة')+' | فجوات 60 جلسة '+(r.missing_calendar_sessions_60??'غير محسوبة')));
+    const b=r.history||[];
+    if(b.length<50){detail.append(E('div','banner warn','لا توجد سلسلة موثوقة كافية لرسم هذه المؤشرات؛ راجع سبب الحجب.'));return}
+    const c=E('canvas');c.width=1000;c.height=360;c.style.height='300px';detail.append(c);
+    const ctx=c.getContext('2d');if(!ctx)return;
+    const closes=b.map(x=>x.close),mavg=n=>closes.map((v,i)=>i>=n-1?closes.slice(i-n+1,i+1).reduce((a,z)=>a+z,0)/n:null);
+    const ma20=mavg(20),ma50=mavg(50),end=b.length-1,slope=r.channel_annual_log_slope/252;
+    const bounds=['channel_lower','channel_center','channel_upper'].map(k=>closes.map((_,i)=>r[k]*Math.exp(slope*(i-end))));
+    const last50=b.slice(-50),high=Math.max(...last50.map(z=>z.high)),low=Math.min(...last50.map(z=>z.low));
+    const fib=[.236,.382,.5,.618,.786].map(k=>({value:high-(high-low)*k,label:'Fib '+(k*100).toFixed(1)+'%'}));
+    const vals=[...closes,...ma20.filter(Number.isFinite),...ma50.filter(Number.isFinite),...bounds.flat(),...fib.map(z=>z.value)];
+    const min=Math.min(...vals)*.97,max=Math.max(...vals)*1.03,left=64,right=120,top=22,bottom=45;
+    if(!(max>min))return;const X=i=>left+i*(c.width-left-right)/Math.max(1,end),Y=v=>top+(max-v)*(c.height-top-bottom)/(max-min);
+    ctx.font='12px Arial';ctx.strokeStyle='#34516c';ctx.fillStyle='#b6c9dd';
+    for(let i=0;i<5;i++){const v=min+(max-min)*i/4,y=Y(v);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(c.width-right,y);ctx.stroke();ctx.fillText(v.toFixed(2),4,y+4)}
+    const line=(values,color,w=2,dashed=false)=>{
+      ctx.strokeStyle=color;ctx.lineWidth=w;ctx.setLineDash(dashed?[5,5]:[]);ctx.beginPath();let active=false;
+      values.forEach((value,i)=>{if(!Number.isFinite(value)){active=false;return}if(active)ctx.lineTo(X(i),Y(value));else ctx.moveTo(X(i),Y(value));active=true});ctx.stroke();ctx.setLineDash([]);
+    };
+    line(closes,'#72c8ff',2.6);line(ma20,'#f9af54',2);line(ma50,'#f76e96',2);
+    bounds.forEach((a,i)=>line(a,'#48d5b7',i===1?1.8:1.2,true));
+    fib.forEach(z=>{ctx.strokeStyle='#b9a0ff';ctx.lineWidth=.7;ctx.setLineDash([2,4]);ctx.beginPath();ctx.moveTo(left,Y(z.value));ctx.lineTo(c.width-right,Y(z.value));ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#b9a0ff';ctx.fillText(z.label,c.width-right+5,Y(z.value)+3)});
+    ctx.fillStyle='#b6c9dd';ctx.fillText(b[0].date,left,c.height-8);ctx.fillText(b[end].date,c.width-right-85,c.height-8);
+    detail.append(E('p','mut','الأزرق: الإغلاق | البرتقالي: MA20 | الوردي: MA50 | الأخضر: قناة انحدار لوغاريتمي 60 شمعة | البنفسجي: فيبوناتشي من أعلى/أدنى 50 شمعة. لا مستويات دخول أو وقف أو أهداف تنفيذية.'));
+    if(!r.quality_passed)detail.append(E('div','banner warn','هذا السهم محجوب من بوابات الجودة؛ الشارت استكشافي فقط، وأي فجوة أو تعارض قد يؤثر على القناة.'));
+  };
+
   const name={ASCENDING_CHANNEL_BOUNCE_RESEARCH:'قناة صاعدة وارتداد (بحثي)',ASCENDING_PULLBACK_WATCH:'قناة صاعدة قرب الدعم',ASCENDING_CHANNEL_WATCH:'قناة صاعدة',REBOUND_WITHOUT_UPTREND:'ارتداد بلا قناة صاعدة',INSUFFICIENT_DATA:'بيانات غير كافية',STALE:'بيانات قديمة',OTHER:'أخرى'};
   const safeNum=(v,d=2)=>typeof v==='number'&&Number.isFinite(v)?v.toLocaleString('en-US',{maximumFractionDigits:d}):'—';
   const renderRows=()=>{t.replaceChildren();const hd=E('tr');['الرمز / الاسم','التصنيف','الاتجاه والقناة','الارتداد والحجم','السيولة 20','جودة البيانات'].forEach(x=>hd.append(E('th',null,x)));t.append(hd);
@@ -92,7 +122,7 @@ function main(){
        E('td',null,r.relative_volume===undefined?'—':((r.near_support?'قرب القناة السفلى':'ليس قرب الدعم')+' | الحجم '+safeNum(r.relative_volume)+'×')),
        E('td',null,safeNum(r.adv20_egp,0)+' ج'),
        E('td',null,(r.quality_passed?'اجتاز الجودة':'محجوب')+' | '+(r.reasons||[]).join('، ')));
-      t.append(tr)});
+      tr.style.cursor='pointer';tr.onclick=()=>chartDetail(r);t.append(tr)});
     if(!rows.length)t.append(E('tr',null,'لا أسهم تحقق هذا التصنيف بالبيانات الحالية.'));};
   sel.onchange=renderRows;search.oninput=renderRows;renderRows();body.append(sec)
  }
