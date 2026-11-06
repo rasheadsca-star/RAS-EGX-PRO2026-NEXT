@@ -1,0 +1,12 @@
+{"schema":"egx-prereg-2-amendment","registered":"2026-11-06","amends":"strategy_preregistration_2026-11-06_lowturnover.json (commit 5266947)",
+ "reason":"Independent review (GPT, on f5a831d) found a look-ahead: v1 filtered candidates by future availability/jump in the holding window. v1 results (commit f5a831d) are RETRACTED and must not be used as evidence. This amendment changes NO strategy rule or parameter of H1-H5.",
+ "changes":{
+  "membership":"ex-ante only: eligibility uses information up to the signal date t (ADV20>=5M, close at t, no >11.5% jump in the 252 sessions up to t). Nothing about t+1..exit is used to select or to filter.",
+  "execution_realism":"if a selected name has no bar at the entry day t+1 the order is unfilled and that slot stays cash; if it has no bar at the exit day the position is marked at its last available close on/before the exit day.",
+  "jumps_in_holding":"primary result keeps raw returns including any >11.5% move in the holding window (possible unrecorded corporate actions are NOT excluded). A separate sensitivity series excludes them and is labelled biased; it is never used for advancement.",
+  "costs":"names kept across months also pay trading cost on the rebalance back to 1/N (|1/N - drifted weight| per side). Missing/non-finite ADV for a name uses ADV20=5M (conservative) and the count of such cases is reported (cost_fallback_used).",
+  "benchmark":"equal-weight of the ex-ante eligible set, same fill rules, GROSS (still no costs; conservative for strategies); stated as such.",
+  "multiple_testing":"bootstrap lower bounds use alpha = 0.01/9 (family-wise 1% over the 9 hypotheses of both families), 20000 draws, 3-month blocks, seed 20261106.",
+  "naming":"sharpe_rf0 renamed ratio_rf_zero_diagnostic (not a risk-free-adjusted measure).",
+  "provenance":"result file records the SHA-256 of the preregistration, of this amendment and of the DB."},
+ "unchanged":"periods, universe thresholds, N=10, costs, H1-H5 definitions, advance_rule (n_months>=60, mean net>0, lower bound of mean excess>0, positive excess in >=6 of 8 years). Family 2 (H6-H9) is NOT run: its frozen file is held by the reviewer and has not been added to the repository."}
