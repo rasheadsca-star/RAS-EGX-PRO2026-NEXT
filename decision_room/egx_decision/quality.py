@@ -31,7 +31,12 @@ def evaluate(data,session=None):
             if (vv>0).sum()<K.MIN_VOLUME_DAYS_20*len(av)/K.WIN20:why.append(f"NO_TRADING: أيام التداول {(vv>0).sum()} من {len(av)} شمعة متاحة")
             if av["close"].nunique()==1 and len(av)>=K.WIN20//2:why.append("FLAT_PRICE: سعر ثابت طوال الشموع المتاحة")
             if adv<K.MIN_ADV20_EGP:why.append(f"LIQUIDITY: ADV20={adv:,.0f} أقل من 1,000,000 جنيه")
-            bad=av[(av["high"]<av[["open","close"]].max(axis=1))|(av["low"]>av[["open","close"]].min(axis=1))|(av["low"]<=0)]
+            off=av["evidence_tier"].eq("OFFICIAL_EGX") if "evidence_tier" in av else pd.Series(False,index=av.index)
+            # Official bulletin 'Open' is the opening-auction price and may lie outside the continuous Min/Max range (audit 2026-11-04:
+            # 131 of 221 rows on a broad rally day). For OFFICIAL_EGX bars only, open is not range-checked; close/high/low still are.
+            rng=(av["high"]<av["close"])|(av["low"]>av["close"])|(av["high"]<av["low"])
+            strict=(av["high"]<av[["open","close"]].max(axis=1))|(av["low"]>av[["open","close"]].min(axis=1))
+            bad=av[rng|(av["low"]<=0)|(strict&~off)]
             if len(bad):why.append("OHLC: شمعة غير متسقة في "+"، ".join(d.date().isoformat() for d in bad.index[:3]))
         info["adv20"]=adv
         cc=conf[(conf.ticker==t)&(conf.date.isin(c51))]

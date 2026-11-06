@@ -1,0 +1,16 @@
+{"schema":"egx-prereg-3-amendment","amends":"idea_screen_prereg_2026-11-06.json","registered":"2026-11-06","reason":"Independent review (GPT, on b7dc326) found defects in tools/idea_screen.py v1. v1 results are RETRACTED as the formal screen; v2 below is registered BEFORE it is run. The 6 ideas and their thresholds are unchanged; only the measurement is repaired.",
+ "changes":[
+  "C1 No future-conditioned filtering: the |fwd return|<=60% filter is REMOVED. All returns enter as observed. Events/benchmark with |fwd|>60% are only COUNTED and reported (no exclusion, no clipping).",
+  "C2 I4: no clip, no fillna(0). Buy-and-hold equal-weight of names eligible at t0 from close t0 to close t1. Benchmark = identically-costed buy-and-hold of the same eligible set over every other window of the same length in the same period; excess = TOM-window net minus the mean of those windows (per month).",
+  "C3 Costs: round trip fee+slippage 0.96% PLUS impact 2*0.25*(250000/ADV20_t) per name, applied to events AND benchmark. Missing/zero ADV => no trade (event not formed, logged).",
+  "C4 Declustering uses ENTRY-based information only (signal and ex-ante eligibility at t); an event whose outcome is later missing still blocks the next H sessions and is counted as MISSING (not dropped silently). Missing share must be <=5% per idea/window or the idea cannot be a candidate.",
+  "C5 Every exclusion/missing event is written to an events CSV with ticker, date, status.",
+  "C6 All thresholds are read from the parameters block below, not hardcoded.",
+  "C7 RSI: no losses in window and gains>0 => RSI=100; gains=0 and losses=0 => undefined => no signal.",
+  "C8 Multiplicity disclosed: alpha=0.05/6 covers only these 6 ideas. Project-wide cumulative test count is larger, so the lower bound is ALSO reported at alpha_strict=0.001. Candidate status requires the strict one."],
+ "parameters":{"fee_slip_round_trip":0.0096,"position_egp":250000,"impact_coef":0.25,"adv_min":5000000,"jump_hygiene":0.115,"jump_lookback":252,
+  "alpha_family":0.008333333333333333,"alpha_strict":0.001,"B":20000,"seed":20261106,"max_missing_share":0.05,
+  "windows":{"discovery":["2017-01-01","2021-12-31"],"validation":["2022-01-01","2024-12-31"],"exposed_informational":["2025-01-01","2026-11-05"]},
+  "ideas":{"I1":{"H":5,"ret_lo":0.09,"ret_hi":0.115,"volx":2,"nmin":100},"I2":{"H":5,"ret_lo":-0.115,"ret_hi":-0.09,"volx":2,"nmin":100},
+   "I3":{"H":10,"volx":3,"lookback":20,"nmin":100},"I6":{"H":5,"rsi_n":5,"rsi_max":15,"ma":200,"nmin":100},"I7":{"H":10,"ratio":2,"ma":50,"nmin":100},"I4":{"min_months":30,"cluster_months":3}}},
+ "pass_rule":"unchanged, plus: lower bound at alpha_strict > 0, missing share <= 5%. Nothing licenses an executable recommendation."}

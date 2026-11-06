@@ -1,0 +1,13 @@
+{"schema":"egx-prereg-1","registered":"2026-11-05","note":"Frozen BEFORE the holdout run. No parameter is tuned; candidates A and B use textbook parameters; C is the previously frozen PR#198 rule kept as benchmark.",
+ "data":"staged RAW canonical bars (NOT adjusted); symbols/windows with an unresolved >11.5% close-to-close move (possible unrecorded corporate action) excluded symmetrically; bars are mostly single-provider non-official",
+ "periods":{"development":["2017-01-01","2024-12-31"],"holdout":["2025-01-01","2026-11-04"]},
+ "universe":"ADV20 >= 1,000,000 EGP at signal; position cap 5% of ADV20 (trade skipped above); 250,000 EGP per position",
+ "execution":"signal at close t; entry at CLOSE of t+1 (official/auction 'open' never used); exits evaluated at closes",
+ "candidates":{
+  "A_breakout55":{"entry":"close_t > max(high_{t-55..t-1}) and close_t > MA50_t","exit":"first close < min(low_{t-20..t-1}) (lowest low of the 20 sessions before the evaluated day), or 60 sessions"},
+  "B_xsmom63":{"entry":"last session of each month: rank return close_{t-5}/close_{t-68}-1 among eligible symbols, top decile (min 3 names)","exit":"21 sessions after entry"},
+  "C_ma20_pullback":{"entry":"PR#198 frozen rule via walkforward.signals (limit at MA20, stop=min last-10 closes, T1=entry+1.5R, <=20 sessions)","exit":"as in walkforward.py"}},
+ "costs":{"fee_per_side":0.0018,"slippage_per_side":0.003,"impact_per_side":"0.25 x (position / ADV20)","sensitivity":[0,1,2]},
+ "selection_rule":"on development only: candidate with the highest 95% month-cluster-bootstrap LOWER bound of mean net return per trade, provided it is > 0 and n >= 200; otherwise NO candidate is selected",
+ "pass_rule_holdout":"selected candidate must have n >= 200, mean net > 0, bootstrap 95% lower bound > 0, and positive mean net in >= 3 of the 4 half-year buckets of the holdout",
+ "interpretation":"PASS only licenses further independent validation (official data, adjusted series, paper trading). It never produces an executable recommendation by itself."}
