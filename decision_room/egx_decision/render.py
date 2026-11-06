@@ -70,6 +70,32 @@ function main(){
  function rb(q){bt.replaceChildren();const th=E('tr');['الرمز','آخر شمعة','أسباب الحجب'].forEach(x=>th.append(E('th',null,x)));bt.append(th);
   D.blocked.filter(b=>!q||b.ticker.includes(q.toUpperCase())).slice(0,200).forEach(b=>{const r=E('tr');r.append(E('td',null,b.ticker),E('td','ltr',b.last_date||'—'),E('td',null,b.reasons.join(' | ')));bt.append(r)})}
  f.oninput=()=>rb(f.value);rb('');body.append(h);
+ // Full-market technical screening is an informational overlay, never a trading list.
+ const scan=D.market_scanner;
+ if(scan&&Array.isArray(scan.rows)){
+  const sec=E('section','card');sec.style.marginTop='12px';sec.append(E('h2',null,'Market Scanner — فحص السوق الكامل (بحث فقط)'));
+  sec.append(E('p','mut','يستخدم قاعدة RAW نفسها. لا يغير بوابات الجودة ولا يولّد توصيات. القناة الصاعدة دعم إحصائي تقريبي؛ الإشارات غير مثبتة الأداء. الأسهم المحجوبة تبقى محجوبة.'));
+  const count=E('div','banner warn','عدد الأسهم المفحوصة '+scan.counts.total+' | اجتازت بوابات الجودة '+scan.counts.quality_passed+' | الاستراتيجية غير معتمدة');sec.append(count);
+  const filters=E('div');filters.style.display='flex';filters.style.gap='8px';filters.style.flexWrap='wrap';filters.style.marginBottom='8px';
+  const sel=E('select');[['ALL','كل الأسهم'],['ASCENDING_CHANNEL_BOUNCE_RESEARCH','قناة صاعدة + ارتداد + حجم'],['ASCENDING_PULLBACK_WATCH','قناة صاعدة قرب دعم'],['ASCENDING_CHANNEL_WATCH','قناة صاعدة'],['REBOUND_WITHOUT_UPTREND','ارتداد في اتجاه غير صاعد'],['INSUFFICIENT_DATA','بيانات غير كافية'],['STALE','بيانات قديمة'],['OTHER','أخرى']].forEach(([v,n])=>{const o=E('option',null,n);o.value=v;sel.append(o)});
+  const search=E('input');search.placeholder='ابحث عن رمز أو شركة';filters.append(sel,search);sec.append(filters);
+  const t=E('table');sec.append(t);
+  const name={ASCENDING_CHANNEL_BOUNCE_RESEARCH:'قناة صاعدة وارتداد (بحثي)',ASCENDING_PULLBACK_WATCH:'قناة صاعدة قرب الدعم',ASCENDING_CHANNEL_WATCH:'قناة صاعدة',REBOUND_WITHOUT_UPTREND:'ارتداد بلا قناة صاعدة',INSUFFICIENT_DATA:'بيانات غير كافية',STALE:'بيانات قديمة',OTHER:'أخرى'};
+  const safeNum=(v,d=2)=>typeof v==='number'&&Number.isFinite(v)?v.toLocaleString('en-US',{maximumFractionDigits:d}):'—';
+  const renderRows=()=>{t.replaceChildren();const hd=E('tr');['الرمز / الاسم','التصنيف','الاتجاه والقناة','الارتداد والحجم','السيولة 20','جودة البيانات'].forEach(x=>hd.append(E('th',null,x)));t.append(hd);
+    const filter=sel.value,needle=search.value.trim().toUpperCase();
+    const rows=scan.rows.filter(r=>(filter==='ALL'||r.classification===filter)&&(!needle||r.ticker.includes(needle)||(r.name||'').toUpperCase().includes(needle)));
+    rows.sort((a,b)=>{const priority={ASCENDING_CHANNEL_BOUNCE_RESEARCH:0,ASCENDING_PULLBACK_WATCH:1,ASCENDING_CHANNEL_WATCH:2,REBOUND_WITHOUT_UPTREND:3,OTHER:4,INSUFFICIENT_DATA:5,STALE:6};return (priority[a.classification]??9)-(priority[b.classification]??9)||((b.adv20_egp||0)-(a.adv20_egp||0))||a.ticker.localeCompare(b.ticker)});
+    rows.slice(0,250).forEach(r=>{const tr=E('tr');
+      tr.append(E('td',null,r.ticker+' — '+(r.name||'')),E('td',null,name[r.classification]||r.classification),
+       E('td',null,r.channel_annual_log_slope===undefined?'—':safeNum(100*r.channel_annual_log_slope)+'% ميل سنوي (لوغاريتمي)، R²='+safeNum(r.channel_r2)),
+       E('td',null,r.relative_volume===undefined?'—':((r.near_support?'قرب القناة السفلى':'ليس قرب الدعم')+' | الحجم '+safeNum(r.relative_volume)+'×')),
+       E('td',null,safeNum(r.adv20_egp,0)+' ج'),
+       E('td',null,(r.quality_passed?'اجتاز الجودة':'محجوب')+' | '+(r.reasons||[]).join('، ')));
+      t.append(tr)});
+    if(!rows.length)t.append(E('tr',null,'لا أسهم تحقق هذا التصنيف بالبيانات الحالية.'));};
+  sel.onchange=renderRows;search.oninput=renderRows;renderRows();body.append(sec)
+ }
  T($('#foot'),`المخطط ${D.schema} · SHA ${D.content_sha256.slice(0,12)} · مصدر الأسعار: قاعدة SQLite المركزية (RAW، للقراءة فقط). لا تحديث مباشر ولا أوامر مالية من هذه الصفحة.`)}
 function draw(c,hist){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);if(!hist.length)return;const a=hist.map(p=>p.close),lo=Math.min(...a),hi=Math.max(...a),pad=34;
  x.direction='ltr';x.textAlign='left';x.fillStyle='#a8bbd4';x.font='12px sans-serif';x.fillText(hi.toFixed(3),2,14);x.fillText(lo.toFixed(3),2,c.height-14);x.fillText(hist[0].date,c.width-80,c.height-2);x.fillText(hist[hist.length-1].date,pad+2,c.height-2);
