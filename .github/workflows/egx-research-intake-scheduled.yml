@@ -1,6 +1,6 @@
 name: EGX official daily intake — research only
 # Runs from GitHub DEFAULT BRANCH (main). It does not touch SQLite or deploy.
-# Uses a pinned, independently CI-reviewed parser from PR #198.
+# Uses a pinned parser commit with four successful CI checks; source download still unverified.
 on:
   schedule:
     - cron: '30 17 * * 0-4'  # 19:30 Cairo (UTC+2 in 2026); Sun-Thu only
@@ -28,7 +28,7 @@ jobs:
         with:
           # Immutable code source from feature review; DO NOT check out mutable
           # unreviewed feature HEAD in a scheduled workflow.
-          ref: 785d96ea419b5ae393039247c8fd3b076b02e30c
+          ref: 56a2ee4a163a16381223b357b5d9e61577f37af9
           path: parser
           persist-credentials: false
       - uses: actions/setup-python@v5
