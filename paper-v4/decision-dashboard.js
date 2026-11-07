@@ -4,17 +4,10 @@ const state={snapshot:null,rows:[],selected:null,cache:new Map()};
 const guards=window.EGXResearchGuards;
 const status=(s)=>{$('status').textContent=s};
 const isDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||'');
-const expectedSession=()=>{
- const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
- let date=parts.year+'-'+parts.month+'-'+parts.day;
- // Before the session's 17:00 Cairo verification window, yesterday's completed session remains acceptable.
- if(Number(parts.hour)<17)date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
- while([5,6].includes(new Date(date+'T12:00:00Z').getUTCDay()))date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
- return date;
-};
+const expectedSession=()=>window.EGXResearchGuards.expectedSession();
 const isRankingStale=()=>!state.snapshot||state.snapshot.session<expectedSession();
 async function get(url){const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status+' '+url);return r.json()}
-const RAW_RANKING='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/latest-ranking.json';
+const RAW_RANKING='./latest-ranking.json'; // Same origin; branch-aware, no main fallback
 const validRanking=d=>d&&/^(?:2\.[4-9]|[3-9]\.)/.test(String(d.schemaVersion||''))&&isDate(d.session)
   &&d.qualifiedTradeCount===0&&String(d.mode).includes('RESEARCH')
   &&Array.isArray(d.rows)&&d.rows.length>0
@@ -23,7 +16,7 @@ const validRanking=d=>d&&/^(?:2\.[4-9]|[3-9]\.)/.test(String(d.schemaVersion||''
 async function loadLatestRanking(){
  // Prefer the published EGX daily PDF session, but never confuse a liquidity screen with strategy recommendations.
  try{
-  const report=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json');
+  const report=await get('./official-session-latest.json');
   if(guards.isCurrentReport(report,expectedSession())){
    // Only nominally matched rows appear in the research list; provisional joins remain quarantined.
    // No quote is granted strategy eligibility without separate ISIN/identity evidence.
@@ -74,7 +67,7 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
   const chart=document.createElement('div');chart.className='chart-wrap';chart.textContent='جارٍ تحميل التاريخ السعري…';d.append(chart);
   const note=document.createElement('p');note.className='sub tiny';note.textContent='الشموع من التاريخ المنفصل، ولا تتم إضافة شمعة 5 نوفمبر إلى السلسلة إذا كان OHLC غير متسق أو مطابقة الرمز مبدئية. إغلاق 5 نوفمبر الرسمي يظهر في بطاقة البيانات أعلاه.';d.append(note);
   window.egxSelectEnhanced?.(r.ticker);
-  try{const hist=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/data/history/'+encodeURIComponent(r.ticker)+'.json');if(t!==state.selected)return;
+  try{const hist=await get('../data/history/'+encodeURIComponent(r.ticker)+'.json');if(t!==state.selected)return;
    const bars=guards.datedHistory(hist.sessions,state.snapshot.session);
    // Identity is not independently verified here: a PDF close is displayed separately,
    // never injected as a fabricated historical OHLCV candle.
@@ -126,10 +119,10 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
  let closeOnlyEvidence=false;
  if(r.closeOnlySession&&r.closeFromDatedOfficialPdf&&state.snapshot.source?.documentSha256){
   try{
-   const official=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json');
+   const official=await get('./official-session-latest.json');
    const row=official.quotes?.find(x=>x.ticker===r.ticker);
    closeOnlyEvidence=official.session===state.snapshot.session
-     && official.documentSha256===state.snapshot.source.documentSha256
+     && official.sourceHash===state.snapshot.source.documentSha256
      && row&&Math.abs(Number(row.close)-Number(r.close))<.005;
   }catch(_){closeOnlyEvidence=false}
  }

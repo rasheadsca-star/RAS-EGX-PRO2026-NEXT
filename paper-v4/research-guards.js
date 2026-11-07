@@ -6,6 +6,18 @@
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  const isDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(String(x||''));
+ const expectedSession=(now=new Date(),verifiedHolidayDates=[])=>{
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hourCycle:'h23'}).formatToParts(now).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+  let date=parts.year+'-'+parts.month+'-'+parts.day;
+  if(Number(parts.hour)<17)date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+  const holidays=new Set(verifiedHolidayDates);
+  for(let k=0;k<60;k++){
+   const day=new Date(date+'T12:00:00Z').getUTCDay();
+   if(day!==5&&day!==6&&!holidays.has(date))return date;
+   date=new Date(Date.parse(date+'T12:00:00Z')-86400000).toISOString().slice(0,10);
+  }
+  return null; // Fail closed if an authoritative calendar cannot be resolved.
+ };
  const isCurrentReport=(report,expected)=>
   Boolean(report&&isDate(report.session)&&report.session===expected&&Array.isArray(report.quotes)&&report.quotes.length>0);
  // A name-based join is not independent identity evidence. Treat even exact token matches as research-only.
@@ -16,5 +28,5 @@
  const quarantinedRows=report=>(report?.quotes||[]).filter(q=>provisional(q)||q.matching==='UNRESOLVED');
  // Never fabricate a daily candle from a separate report. Immutable historical rows only.
  const datedHistory=(sessions,session)=>Array.isArray(sessions)?sessions.filter(q=>isDate(q.date)&&q.date<=session&&Number(q.close)>0).slice().sort((a,b)=>a.date.localeCompare(b.date)):[];
- return Object.freeze({isCurrentReport,nameMatched,provisional,eligible,researchRows,quarantinedRows,datedHistory});
+ return Object.freeze({expectedSession,isCurrentReport,nameMatched,provisional,eligible,researchRows,quarantinedRows,datedHistory});
 });
