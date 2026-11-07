@@ -20,6 +20,16 @@ const validRanking=d=>d&&/^(?:2\.[4-9]|[3-9]\.)/.test(String(d.schemaVersion||''
   &&d.rows.every(r=>r.sourceSession===d.session&&r.recommendation==='WATCH_ONLY'
   &&Array.isArray(r.scenarios)&&r.scenarios.every(p=>p.isExecutable===false));
 async function loadLatestRanking(){
+ // Prefer the published EGX daily PDF session, but never confuse a liquidity screen with strategy recommendations.
+ try{
+  const report=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json');
+  if(report.session==='2026-11-05'&&Array.isArray(report.quotes)&&report.quotes.length>=200){
+   const mapped=report.quotes.filter(q=>q.ticker&&q.currency==='EGP'&&Number(q.close)>0&&q.matching!=='DUPLICATE_UNRESOLVED');
+   const rows=mapped.map(q=>({ticker:q.ticker,rank:q.rowNumber,sourceSession:report.session,close:q.close,changePct:q.changePct,volume:q.volume,tradedValue:q.tradedValue,relativeResearchScore:null,volumeRatio20:null,isOfficialPdf:true,ohlcvStatus:q.ohlcvStatus,matching:q.matching,sourcePage:q.sourcePage,note:'إغلاق رسمي من تقرير EGX · '+(q.matching==='MANUAL_PROVISIONAL'?'مطابقة رمز مبدئية':'مطابقة رمز اسمية')+' · دون إشارة شراء',scenarios:[],recommendation:'WATCH_ONLY'}));
+   rows.sort((a,b)=>(b.tradedValue||0)-(a.tradedValue||0));
+   return{source:'تقرير EGX الرسمي 05/11/2026',data:{session:report.session,qualifiedTradeCount:0,mode:'RESEARCH_LIQUIDITY_SCREEN_ONLY',sampleUniverse:report.quotes.length,rows,source:{provider:report.source,documentSha256:report.sourceHash,officialSessionVerified:true,ohlcvReviewRequired:report.ohlcvReviewRequired,provisionalMapped:report.tickerProvisional}}};
+  }
+ }catch(e){console.warn('EGX official 05 Nov import unavailable',e)}
  const urls=[RAW_RANKING,'./latest-ranking.json'],results=await Promise.allSettled(urls.map(get));
  const accepted=results.map((v,i)=>v.status==='fulfilled'?{data:v.value,source:i===0?'GitHub main':'Vercel static'}:null)
   .filter(v=>v&&validRanking(v.data));
@@ -32,12 +42,12 @@ async function loadLatestRanking(){
 function safeText(x){return String(x??'—')}
 function tag(text,warn=false){const e=document.createElement('span');e.className='tag'+(warn?' warn':' good');e.textContent=text;return e}
 function createCard(r){const b=document.createElement('button');b.type='button';b.className='stock';b.setAttribute('aria-selected',r.ticker===state.selected?'true':'false');b.addEventListener('click',()=>select(r.ticker));
- const a=document.createElement('div');a.className='head';const t=document.createElement('strong');t.textContent=r.ticker+' · '+(r.rank||'—');const s=document.createElement('span');s.textContent=fmt(r.relativeResearchScore,1)+'/100';a.append(t,s);b.append(a);
+ const a=document.createElement('div');a.className='head';const t=document.createElement('strong');t.textContent=r.ticker+' · '+(r.rank||'—');const s=document.createElement('span');s.textContent=r.isOfficialPdf?'سيولة '+fmt(r.tradedValue,0)+' ج':fmt(r.relativeResearchScore,1)+'/100';a.append(t,s);b.append(a);
  const n=document.createElement('p');n.className='sub tiny';n.textContent=r.note||'مراقبة بحثية';b.append(n);
  const f=document.createElement('div');f.className='stat';const p=document.createElement('span');p.textContent=fmt(r.close)+' ج';const ch=document.createElement('span');ch.textContent=(r.changePct>=0?'+':'')+fmt(r.changePct)+'%';f.append(p,ch);b.append(f);
  const bar=document.createElement('div');bar.className='bar';const fill=document.createElement('span');fill.style.width=Math.max(0,Math.min(100,r.relativeResearchScore||0))+'%';bar.append(fill);b.append(bar);
- const e=document.createElement('div');e.style.marginTop='8px';e.append(tag(r.scenarios?.some(x=>x.status==='PAPER_CONDITIONAL')?'سيناريو ورقي مشروط':'انتظار تأكيد',true));b.append(e);return b;}
-function drawList(){let rows=[...state.rows],q=$('q').value.trim().toUpperCase(),sort=$('sort').value;rows=rows.filter(x=>x.ticker.includes(q));rows.sort((a,b)=>sort==='volume'?b.volumeRatio20-a.volumeRatio20:sort==='change'?b.changePct-a.changePct:b.relativeResearchScore-a.relativeResearchScore);$('list').replaceChildren(...rows.map(createCard))}
+ const e=document.createElement('div');e.style.marginTop='8px';e.append(tag(r.isOfficialPdf?(r.matching==='MANUAL_PROVISIONAL'?'الرمز قيد المراجعة':'إغلاق رسمي · بلا توصية'):(r.scenarios?.some(x=>x.status==='PAPER_CONDITIONAL')?'سيناريو ورقي مشروط':'انتظار تأكيد'),true));b.append(e);return b;}
+function drawList(){let rows=[...state.rows],q=$('q').value.trim().toUpperCase(),sort=$('sort').value;rows=rows.filter(x=>x.ticker.includes(q));rows.sort((a,b)=>sort==='volume'?(state.snapshot?.mode==='RESEARCH_LIQUIDITY_SCREEN_ONLY'?Number(b.volume||0)-Number(a.volume||0):b.volumeRatio20-a.volumeRatio20):sort==='change'?b.changePct-a.changePct:(state.snapshot?.mode==='RESEARCH_LIQUIDITY_SCREEN_ONLY'?Number(b.tradedValue||0)-Number(a.tradedValue||0):b.relativeResearchScore-a.relativeResearchScore));$('list').replaceChildren(...rows.map(createCard))}
 function svgChart(el,points,ref){el.replaceChildren();const W=780,H=320,pad={l:52,r:12,t:18,b:38};const plotW=W-pad.l-pad.r,plotH=H-pad.t-pad.b;
  const valid=points.filter(x=>isDate(x.date)&&Number(x.close)>0).slice(-100);if(valid.length<8){el.textContent='لا توجد جلسات تاريخية كافية لرسم الشارت';return;}
  const close=valid.map(x=>Number(x.close)),res=Number(ref.resistance20),lo=Math.min(...close,res||Infinity)*.965,hi=Math.max(...close,res||0)*1.035;
@@ -53,7 +63,23 @@ function svgChart(el,points,ref){el.replaceChildren();const W=780,H=320,pad={l:5
  el.append(svg);
 }
 async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>x.ticker===t);if(!r)return;
- const d=$('detail');d.replaceChildren();const head=document.createElement('div');head.className='head';const title=document.createElement('h2');title.textContent=r.ticker+' — تحليل الفرصة البحثية';head.append(title,tag('لا توجد توصية شراء معتمدة',true));d.append(head);
+ const d=$('detail');d.replaceChildren();
+ if(r.isOfficialPdf){
+  const title=document.createElement('h2');title.textContent=r.ticker+' — إغلاق جلسة 5 نوفمبر الرسمي';d.append(title);
+  const notice=document.createElement('div');notice.className='notice';notice.textContent='ترتيب بسيولة التداول الرسمية وليس نموذج توصيات. حالة الهوية: '+(r.matching==='MANUAL_PROVISIONAL'?'مطابقة رمز مبدئية — تتطلب مراجعة':'مطابقة اسمية')+' | حالة الشمعة: '+r.ohlcvStatus+'. جميع الأوامر والسيناريوهات غير مفعلة.';d.append(notice);
+  const facts=document.createElement('div');facts.className='facts';for(const [key,value] of [['الإغلاق الرسمي',fmt(r.close,3)+' جنيه'],['تغير الجلسة',fmt(r.changePct,2)+'%'],['الحجم',fmt(r.volume,0)+' سهم'],['قيمة التداول',fmt(r.tradedValue,0)+' جنيه'],['الصف في التقرير',String(r.rank)],['الصفحة المصدرية',String(r.sourcePage)]]){const box=document.createElement('div');box.className='fact';const sm=document.createElement('small');sm.className='sub';sm.textContent=key;const strong=document.createElement('b');strong.textContent=value;box.append(sm,strong);facts.append(box)}d.append(facts);
+  const chart=document.createElement('div');chart.className='chart-wrap';chart.textContent='جارٍ تحميل التاريخ السعري…';d.append(chart);
+  const note=document.createElement('p');note.className='sub tiny';note.textContent='الشموع من التاريخ المنفصل، ولا تتم إضافة شمعة 5 نوفمبر إلى السلسلة إذا كان OHLC غير متسق أو مطابقة الرمز مبدئية. إغلاق 5 نوفمبر الرسمي يظهر في بطاقة البيانات أعلاه.';d.append(note);
+  window.egxSelectEnhanced?.(r.ticker);
+  try{const hist=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/data/history/'+encodeURIComponent(r.ticker)+'.json');if(t!==state.selected)return;
+   const bars=(hist.sessions||[]).filter(q=>q.date<state.snapshot.session&&Number(q.close)>0).sort((a,b)=>a.date.localeCompare(b.date));
+   const verified=r.matching!=='MANUAL_PROVISIONAL'&&r.ohlcvStatus==='PASS_ARITHMETIC';
+   if(verified){const official=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json');const q=official.quotes.find(x=>x.ticker===r.ticker);if(q&&q.close===r.close)bars.push({date:official.session,open:q.open,high:q.high,low:q.low,close:q.close,volume:q.volume})}
+   svgChart(chart,bars,{resistance20:null});
+  }catch(err){chart.textContent='التاريخ السعري غير متاح لهذا السهم: '+err.message}
+  return;
+ }
+ const head=document.createElement('div');head.className='head';const title=document.createElement('h2');title.textContent=r.ticker+' — تحليل الفرصة البحثية';head.append(title,tag('لا توجد توصية شراء معتمدة',true));d.append(head);
  const summary=document.createElement('p');summary.className='sub';summary.textContent='جلسة الترتيب '+state.snapshot.session+' | نموذج اختراق سعري بحثي | التقييم '+fmt(r.relativeResearchScore,1)+'/100';d.append(summary);
  const facts=document.createElement('div');facts.className='facts';const entries=[['آخر إغلاق من مصدر '+(r.closeOnlySession?'تقرير EGX (إغلاق فقط)':'ثانوي'),fmt(r.close)+' جنيه'],['تغير الجلسة',(r.changePct>=0?'+':'')+fmt(r.changePct)+'%'],['المقاومة السابقة',fmt(r.resistance20)+' جنيه'],['عتبة مراقبة الاختراق',fmt(r.indicativeTrigger,3)+' جنيه'],['حجم التداول / متوسطه',fmt(r.volumeRatio20)+'×'],['القرار','مراقبة مشروطة']];
  for(const [label,v]of entries){const box=document.createElement('div');box.className='fact';const s=document.createElement('small');s.className='sub';s.textContent=label;const b=document.createElement('b');b.textContent=v;box.append(s,b);facts.append(box)}d.append(facts);
@@ -121,7 +147,7 @@ async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>
 async function init(){try{
  const loaded=await loadLatestRanking(),d=loaded.data
  if(!Array.isArray(d.rows)||!isDate(d.session))throw Error('تقرير ترتيب غير صالح');
- state.snapshot=d;state.rows=d.rows;$('session').textContent=d.session;$('count').textContent=d.rows.length;$('qualified').textContent=d.qualifiedTradeCount||0;$('mode').textContent='بحثي — مشروط';
+ state.snapshot=d;state.rows=d.rows;$('session').textContent=d.session;$('count').textContent=d.rows.length;$('qualified').textContent=d.qualifiedTradeCount||0;$('mode').textContent=d.mode==='RESEARCH_LIQUIDITY_SCREEN_ONLY'?'ماسح سيولة / بحثي':'بحثي — مشروط';
  const stale=isRankingStale();
  if(stale){
   // A stale archive is never the current research opportunity ranking.
@@ -133,7 +159,7 @@ async function init(){try{
   $('detail').innerHTML='<p class="sub">لا توجد توصيات حديثة. يمكن استخدام قسم التحليل الفني والمالي أدناه للاطلاع على شموع الأسهم المتاحة، مع تاريخ ومصدر كل شمعة.</p>';
   return;
  }
- status('مصدر الترتيب: '+loaded.source+' | جلسة '+d.session+' — '+d.rows.length+' أسهم بحثية، وليست فرص شراء معتمدة.');
+ status(d.mode==='RESEARCH_LIQUIDITY_SCREEN_ONLY'?'جلسة 05/11/2026 الرسمية · ماسح سيولة بحثي لعدد '+d.rows.length+' سهمًا مربوطًا من إجمالي '+d.sampleUniverse+' صفًا في التقرير، منها '+(d.source.provisionalMapped||0)+' مطابقة رموز مبدئية. لا توجد إشارات تداول معتمدة.':'مصدر الترتيب: '+loaded.source+' | جلسة '+d.session+' — '+d.rows.length+' أسهم بحثية، وليست فرص شراء معتمدة.');
  drawList();await select(state.rows[0]?.ticker);
  }catch(e){status('فشل تحميل الترتيب: '+e.message+' — لا يجوز استخدام ترتيب قديم كأنه تحديث جديد.');$('list').textContent='لا توجد بيانات جاهزة للتقييم.'}}
 $('sort').addEventListener('change',drawList);$('q').addEventListener('input',drawList);$('reload').addEventListener('click',init);init();
