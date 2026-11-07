@@ -1,6 +1,7 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id),base='../data/',fmt=(n,d=2)=>Number.isFinite(Number(n))?Number(n).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
 const state={snapshot:null,rows:[],selected:null,cache:new Map()};
+const guards=window.EGXResearchGuards;
 const status=(s)=>{$('status').textContent=s};
 const isDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||'');
 const expectedSession=()=>{
@@ -23,11 +24,13 @@ async function loadLatestRanking(){
  // Prefer the published EGX daily PDF session, but never confuse a liquidity screen with strategy recommendations.
  try{
   const report=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json');
-  if(report.session==='2026-11-05'&&Array.isArray(report.quotes)&&report.quotes.length>=200){
-   const mapped=report.quotes.filter(q=>q.ticker&&q.currency==='EGP'&&Number(q.close)>0&&q.matching!=='DUPLICATE_UNRESOLVED');
-   const rows=mapped.map(q=>({ticker:q.ticker,rank:q.rowNumber,sourceSession:report.session,close:q.close,changePct:q.changePct,volume:q.volume,tradedValue:q.tradedValue,relativeResearchScore:null,volumeRatio20:null,isOfficialPdf:true,ohlcvStatus:q.ohlcvStatus,matching:q.matching,sourcePage:q.sourcePage,note:'إغلاق رسمي من تقرير EGX · '+(q.matching==='MANUAL_PROVISIONAL'?'مطابقة رمز مبدئية':'مطابقة رمز اسمية')+' · دون إشارة شراء',scenarios:[],recommendation:'WATCH_ONLY'}));
+  if(guards.isCurrentReport(report,expectedSession())){
+   // Only nominally matched rows appear in the research list; provisional joins remain quarantined.
+   // No quote is granted strategy eligibility without separate ISIN/identity evidence.
+   const mapped=guards.researchRows(report);
+   const rows=mapped.map(q=>({ticker:q.ticker,rank:q.rowNumber,sourceSession:report.session,close:q.close,changePct:q.changePct,volume:q.volume,tradedValue:q.tradedValue,relativeResearchScore:null,volumeRatio20:null,isOfficialPdf:true,identityEligible:guards.eligible(q),ohlcvStatus:q.ohlcvStatus,matching:q.matching,sourcePage:q.sourcePage,note:'إغلاق رسمي من تقرير EGX · '+(q.matching==='MANUAL_PROVISIONAL'?'مطابقة رمز مبدئية':'مطابقة رمز اسمية')+' · دون إشارة شراء',scenarios:[],recommendation:'WATCH_ONLY'}));
    rows.sort((a,b)=>(b.tradedValue||0)-(a.tradedValue||0));
-   return{source:'تقرير EGX الرسمي 05/11/2026',data:{session:report.session,qualifiedTradeCount:0,mode:'RESEARCH_LIQUIDITY_SCREEN_ONLY',sampleUniverse:report.quotes.length,rows,source:{provider:report.source,documentSha256:report.sourceHash,officialSessionVerified:true,ohlcvReviewRequired:report.ohlcvReviewRequired,provisionalMapped:report.tickerProvisional}}};
+   return{source:'تقرير EGX الرسمي 05/11/2026',data:{session:report.session,qualifiedTradeCount:0,mode:'RESEARCH_LIQUIDITY_SCREEN_ONLY',sampleUniverse:report.quotes.length,rows,quarantinedCount:guards.quarantinedRows(report).length,source:{provider:report.source,documentSha256:report.sourceHash,officialSessionVerified:true,ohlcvReviewRequired:report.ohlcvReviewRequired,provisionalMapped:report.tickerProvisional}}};
   }
  }catch(e){console.warn('EGX official 05 Nov import unavailable',e)}
  const urls=[RAW_RANKING,'./latest-ranking.json'],results=await Promise.allSettled(urls.map(get));
@@ -65,16 +68,17 @@ function svgChart(el,points,ref){el.replaceChildren();const W=780,H=320,pad={l:5
 async function select(t){state.selected=t;drawList();const r=state.rows.find(x=>x.ticker===t);if(!r)return;
  const d=$('detail');d.replaceChildren();
  if(r.isOfficialPdf){
-  const title=document.createElement('h2');title.textContent=r.ticker+' — إغلاق جلسة 5 نوفمبر الرسمي';d.append(title);
-  const notice=document.createElement('div');notice.className='notice';notice.textContent='ترتيب بسيولة التداول الرسمية وليس نموذج توصيات. حالة الهوية: '+(r.matching==='MANUAL_PROVISIONAL'?'مطابقة رمز مبدئية — تتطلب مراجعة':'مطابقة اسمية')+' | حالة الشمعة: '+r.ohlcvStatus+'. جميع الأوامر والسيناريوهات غير مفعلة.';d.append(notice);
+  const title=document.createElement('h2');title.textContent=r.ticker+' — إغلاق جلسة '+state.snapshot.session+' (بحث فقط)';d.append(title);
+  const notice=document.createElement('div');notice.className='notice';notice.textContent='ترتيب بحثي بالسيولة وليس نموذج توصيات. الهوية: مطابقة اسمية غير موثقة ISIN؛ الأهلية: محجوبة | حالة الشمعة: '+r.ohlcvStatus+'. جميع الأوامر والسيناريوهات غير مفعلة.';d.append(notice);
   const facts=document.createElement('div');facts.className='facts';for(const [key,value] of [['الإغلاق الرسمي',fmt(r.close,3)+' جنيه'],['تغير الجلسة',fmt(r.changePct,2)+'%'],['الحجم',fmt(r.volume,0)+' سهم'],['قيمة التداول',fmt(r.tradedValue,0)+' جنيه'],['الصف في التقرير',String(r.rank)],['الصفحة المصدرية',String(r.sourcePage)]]){const box=document.createElement('div');box.className='fact';const sm=document.createElement('small');sm.className='sub';sm.textContent=key;const strong=document.createElement('b');strong.textContent=value;box.append(sm,strong);facts.append(box)}d.append(facts);
   const chart=document.createElement('div');chart.className='chart-wrap';chart.textContent='جارٍ تحميل التاريخ السعري…';d.append(chart);
   const note=document.createElement('p');note.className='sub tiny';note.textContent='الشموع من التاريخ المنفصل، ولا تتم إضافة شمعة 5 نوفمبر إلى السلسلة إذا كان OHLC غير متسق أو مطابقة الرمز مبدئية. إغلاق 5 نوفمبر الرسمي يظهر في بطاقة البيانات أعلاه.';d.append(note);
   window.egxSelectEnhanced?.(r.ticker);
   try{const hist=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/data/history/'+encodeURIComponent(r.ticker)+'.json');if(t!==state.selected)return;
-   const bars=(hist.sessions||[]).filter(q=>q.date<state.snapshot.session&&Number(q.close)>0).sort((a,b)=>a.date.localeCompare(b.date));
-   const verified=r.matching!=='MANUAL_PROVISIONAL'&&r.ohlcvStatus==='PASS_ARITHMETIC';
-   if(verified){const official=await get('https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/paper-v4/official-session-latest.json');const q=official.quotes.find(x=>x.ticker===r.ticker);if(q&&q.close===r.close)bars.push({date:official.session,open:q.open,high:q.high,low:q.low,close:q.close,volume:q.volume})}
+   const bars=guards.datedHistory(hist.sessions,state.snapshot.session);
+   // Identity is not independently verified here: a PDF close is displayed separately,
+   // never injected as a fabricated historical OHLCV candle.
+   // Identity evidence must first pass guards.eligible(q) in a separately reviewed process.
    svgChart(chart,bars,{resistance20:null});
   }catch(err){chart.textContent='التاريخ السعري غير متاح لهذا السهم: '+err.message}
   return;
@@ -159,7 +163,7 @@ async function init(){try{
   $('detail').innerHTML='<p class="sub">لا توجد توصيات حديثة. يمكن استخدام قسم التحليل الفني والمالي أدناه للاطلاع على شموع الأسهم المتاحة، مع تاريخ ومصدر كل شمعة.</p>';
   return;
  }
- status(d.mode==='RESEARCH_LIQUIDITY_SCREEN_ONLY'?'جلسة 05/11/2026 الرسمية · ماسح سيولة بحثي لعدد '+d.rows.length+' سهمًا مربوطًا من إجمالي '+d.sampleUniverse+' صفًا في التقرير، منها '+(d.source.provisionalMapped||0)+' مطابقة رموز مبدئية. لا توجد إشارات تداول معتمدة.':'مصدر الترتيب: '+loaded.source+' | جلسة '+d.session+' — '+d.rows.length+' أسهم بحثية، وليست فرص شراء معتمدة.');
+ status(d.mode==='RESEARCH_LIQUIDITY_SCREEN_ONLY'?'جلسة '+d.session+' · ماسح سيولة بحثي '+d.rows.length+' صف مطابقة اسمية غير معتمدة، من أصل '+d.sampleUniverse+' صفًا. '+(d.quarantinedCount||0)+' صف محجوب/مبدئي؛ qualifiedTradeCount=0. لا إشارات تداول معتمدة.':'مصدر الترتيب: '+loaded.source+' | جلسة '+d.session+' — '+d.rows.length+' أسهم بحثية، وليست فرص شراء معتمدة.');
  drawList();await select(state.rows[0]?.ticker);
  }catch(e){status('فشل تحميل الترتيب: '+e.message+' — لا يجوز استخدام ترتيب قديم كأنه تحديث جديد.');$('list').textContent='لا توجد بيانات جاهزة للتقييم.'}}
 $('sort').addEventListener('change',drawList);$('q').addEventListener('input',drawList);$('reload').addEventListener('click',init);init();
