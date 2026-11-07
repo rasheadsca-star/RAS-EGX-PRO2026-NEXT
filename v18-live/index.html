@@ -166,7 +166,8 @@
             const html = validateShell(await fetchText(SOURCES[i]));
             // Keep a visible date/freshness link after the remote shell replaces this bootstrap.
             const statusBanner = '<aside style="position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#122b42;color:#fff;padding:8px 12px;text-align:center;font:13px Arial,Tahoma,sans-serif;border-top:1px solid #44627a"><a style="color:#9ee9ff" target="_blank" rel="noopener noreferrer" href="https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/v18-live/market-status.html">تحقق من جلسة الأسعار وحالة اعتماد التوصيات قبل التداول</a></aside>';
-            const rendered = html.replace('</body>', statusBanner + '</body>');
+            const integrated = '<script src="' + new URL('./overlay.js', location.href).href + '"><\/script>';
+            const rendered = html.replace('</body>', statusBanner + integrated + '</body>');
             document.open();
             document.write(rendered);
             document.close();
@@ -184,6 +185,11 @@
       document.getElementById('retry').addEventListener('click', () => location.reload());
     }
 
+    // The research tools remain accessible even when the trading recommendation gate fails.
+    const researchScript = document.createElement('script');
+    researchScript.src = new URL('./overlay.js', location.href).href;
+    researchScript.defer = true;
+    document.body.appendChild(researchScript);
     loadShell();
   })();
   </script>
