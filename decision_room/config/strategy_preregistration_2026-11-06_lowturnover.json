@@ -1,0 +1,17 @@
+{"schema":"egx-prereg-2","registered":"2026-11-06","note":"Frozen BEFORE any run. Five low-turnover, textbook-parameter hypotheses. No parameter is tuned. Multiple-testing: Bonferroni over 5 hypotheses (99% bootstrap bound).",
+ "data":"staged RAW canonical bars (V8, NOT adjusted; phantom sessions quarantined). Months/positions containing an unresolved >11.5% close-to-close move (possible unrecorded corporate action) are excluded symmetrically for all strategies and the benchmark; the count is reported. Mostly single-provider non-official bars.",
+ "periods":{"development":["2017-01-01","2024-12-31"],"exposed_informational":["2025-01-01","2026-11-05"],"true_out_of_sample":"forward paper trading from 2026-11-06 with fresh official bars"},
+ "universe":"eligible at signal: ADV20 >= 5,000,000 EGP (so 250,000 EGP is <=5% of ADV20), valid close history for the lookback, no >11.5% jump in the lookback window",
+ "execution":"signal at last session of each month t; entry at CLOSE of t+1; exit at CLOSE of t'+1 (next month's entry day); names kept across months incur no trade cost; official/auction open never used",
+ "portfolio":"top N=10 equal-weight, 250,000 EGP per name",
+ "costs":{"fee_per_side":0.0018,"slippage_per_side":0.003,"impact_per_side":"0.25 x (250000 / ADV20)","applies_to":"bought and sold names only"},
+ "hypotheses":{
+  "H1_mom_6_1":"rank close_{t-21}/close_{t-126}-1 descending",
+  "H2_mom_12_1":"rank close_{t-21}/close_{t-252}-1 descending",
+  "H3_mom_6_1_regime":"H1, but invest only if the equal-weight eligible-universe index (cumulated mean daily return) closes above its 100-session mean at t; otherwise cash (0%)",
+  "H4_lowvol_60":"rank stdev of daily returns over 60 sessions ascending (lowest first)",
+  "H5_high52":"rank close_t / max(close_{t-251..t}) descending"},
+ "benchmark":"equal-weight ALL eligible names, monthly, GROSS (no costs) - conservative for the strategies. Cash earns 0% in this test; the Egyptian risk-free rate is NOT in the database and is a real extra hurdle.",
+ "statistics":"monthly net return series; mean, compounded annual, annualized stdev, Sharpe (rf=0), max drawdown; 3-month block bootstrap (5000 draws, seed 20261106) 99% lower bound of mean monthly net AND of mean monthly excess over benchmark",
+ "advance_rule":"a hypothesis ADVANCES to forward paper trading only if on development: n_months >= 60, mean net > 0, 99% lower bound of mean excess over benchmark > 0, and positive mean excess in >= 6 of the 8 calendar years. If none qualifies: NO_STRATEGY_APPROVED stays. Advancing never licenses an executable recommendation.",
+ "reporting":"2025-01..2026-11 is exposed (earlier tests looked at it); it is reported as informational only and never used for selection."}
