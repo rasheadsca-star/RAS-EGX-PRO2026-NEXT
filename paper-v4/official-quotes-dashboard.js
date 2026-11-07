@@ -15,9 +15,9 @@ const cell=(label,value)=>{const wrap=document.createElement('div');wrap.style.c
 function render(quotes,session,label,extra){
  const root=$('official-quotes');root.replaceChildren();
  const heading=document.createElement('div');heading.style.cssText='display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap';
- const h=document.createElement('h2');h.textContent='أسعار إغلاق البورصة الرسمية — '+session;h.style.margin='0';
+ const h=document.createElement('h2');h.textContent=(session<'2026-11-05'?'أرشيف إغلاقات سابق — ':'إغلاقات جلسة — ')+session;h.style.margin='0';
  const source=document.createElement('span');source.className='tag warn';source.textContent=label;heading.append(h,source);root.append(heading);
- const note=document.createElement('p');note.className='sub';note.textContent='هذه أسعار إغلاق واردة بتقرير الجلسة؛ ليست توصيات جديدة. لا يتم اعتماد OHLC أو مستويات الدخول والوقف إذا اختلفت القيم أو لم تُراجع هوية السهم. '+extra;root.append(note);
+ const note=document.createElement('p');note.className='sub';note.textContent=(session<'2026-11-05'?'تحذير: هذه إغلاقات أقدم من جلسة 5 نوفمبر 2026؛ لا تعرض باعتبارها بيانات الجلسة الأخيرة. ':'')+'هذه أسعار إغلاق واردة بتقرير الجلسة؛ ليست توصيات جديدة. لا يتم اعتماد OHLC أو مستويات الدخول والوقف إذا اختلفت القيم أو لم تُراجع هوية السهم. '+extra;root.append(note);
  const box=document.createElement('div');box.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:9px';
  for(const q of quotes){
   if(!(Number(q.close)>0))continue;
