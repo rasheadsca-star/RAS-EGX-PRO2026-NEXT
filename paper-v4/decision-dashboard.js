@@ -123,7 +123,17 @@ async function init(){try{
  if(!Array.isArray(d.rows)||!isDate(d.session))throw Error('تقرير ترتيب غير صالح');
  state.snapshot=d;state.rows=d.rows;$('session').textContent=d.session;$('count').textContent=d.rows.length;$('qualified').textContent=d.qualifiedTradeCount||0;$('mode').textContent='بحثي — مشروط';
  const stale=isRankingStale();
- status((stale?'تحذير: التقرير المؤرخ '+d.session+' أقدم من آخر جلسة متوقعة '+expectedSession()+'؛ تم حجب جميع خطط الدخول القديمة. ':'')+'مصدر ملف الترتيب: '+loaded.source+' | جلسة '+d.session+' — '+d.rows.length+' أسهم مرتبة للبحث. كل خطة تتطلب تطابق سعر الشارت لنفس الجلسة، ومراجعة مصدر السعر والهوية. لا توصيات شراء معتمدة.');
+ if(stale){
+  // A stale archive is never the current research opportunity ranking.
+  state.rows=[];state.selected=null;
+  $('session').textContent='لا توجد جلسة '+expectedSession();
+  $('count').textContent='0';$('qualified').textContent='0';$('mode').textContent='بيانات غير مكتملة';
+  status('لا يوجد ترتيب منشور ومتحقق لجلسة '+expectedSession()+'؛ أحدث ملف ترتيب محفوظ بتاريخ '+d.session+' (أرشيف فقط). تم منع عرض فرص 4 نوفمبر كأنها فرص 5 نوفمبر. ملف المصدر الحالي ليس بديلًا عن بيانات OHLCV الرسمية للجلسة الجديدة.');
+  $('list').textContent='لا توجد فرص حديثة معتمدة للعرض. بيانات 4 نوفمبر مؤرشفة ولا تُنقل إلى جلسة 5 نوفمبر.';
+  $('detail').innerHTML='<p class="sub">لا توجد توصيات حديثة. يمكن استخدام قسم التحليل الفني والمالي أدناه للاطلاع على شموع الأسهم المتاحة، مع تاريخ ومصدر كل شمعة.</p>';
+  return;
+ }
+ status('مصدر الترتيب: '+loaded.source+' | جلسة '+d.session+' — '+d.rows.length+' أسهم بحثية، وليست فرص شراء معتمدة.');
  drawList();await select(state.rows[0]?.ticker);
  }catch(e){status('فشل تحميل الترتيب: '+e.message+' — لا يجوز استخدام ترتيب قديم كأنه تحديث جديد.');$('list').textContent='لا توجد بيانات جاهزة للتقييم.'}}
 $('sort').addEventListener('change',drawList);$('q').addEventListener('input',drawList);$('reload').addEventListener('click',init);init();
