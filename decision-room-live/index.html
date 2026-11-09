@@ -41,6 +41,13 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
 <div class="chart"><svg id="chart" viewBox="0 0 640 300" aria-label="مخطط مستويات الأسعار"></svg><div id="levels">سيظهر مستوى الاختراق والأهداف والوقف مع بيانات السهم.</div></div>
 <p class="sub">قاعدة اختبارية فقط: الدخول = أعلى سعر + 0.01؛ الوقف = أدنى سعر - 0.01؛ الهدف الأول = 1R والثاني = 2R. القاعدة لا تراعي بالضرورة الحد الأدنى الصحيح لحركة السعر لكل ورقة مالية، ولم تُعتمد بعد بالاختبار الخلفي. الدرجة ليست نسبة نجاح.</p>
 </section>
+<section class="panel" id="centralImport">
+<h2>إرسال التقرير للمراجعة المركزية</h2>
+<div class="notice">الاستيراد المحلي لا يحدّث قاعدة SQLite المركزية. المرحلة المركزية الحالية تتطلب رفع PDF الرسمي مع CSV مُراجع يحمل نفس تاريخ الجلسة. بعد الرفع ينفّذ GitHub فحص تطابق بيانات PDF، ويخرج ملف مراجعة فقط؛ لا يتم تغيير الأسعار المعتمدة تلقائيًا حتى تكتمل صلاحيات التخزين والمراجعة.</div>
+<p class="sub">استخدم الاسم YYYY-MM-DD.pdf للتقرير، وYYYY-MM-DD.csv للبيانات المُراجعة. أعمدة CSV المطلوبة: session,rank,pdf_page,ticker,open,high,low,close,volume,validation. قيمة validation للصف المتحقق هي PASS_OHLC.</p>
+<p><a style="color:#91d6ff" href="https://github.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/upload/main/data/official-egx-reports" target="_blank" rel="noopener noreferrer">رفع التقرير الرسمي وملف المراجعة إلى المستودع</a></p>
+<p><a style="color:#91d6ff" href="https://github.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/actions/workflows/egx-pdf-reviewed-staging.yml" target="_blank" rel="noopener noreferrer">متابعة نتيجة فحص الاستيراد المركزي</a></p>
+</section>
 <section class="panel" id="pdfPanel" hidden><h2>استيراد بيانات الجلسة من تقرير PDF</h2>
 <div class="notice">يستخدم التقرير داخل متصفحك فقط، دون رفعه إلى خادم أو تحديث قاعدة بيانات GitHub. ملفات PDF تختلف في تنسيقها؛ لذلك تُعرض الصفوف المستخرجة للمراجعة قبل اعتمادها في هذه الصفحة. التقارير المصورة غير القابلة لاستخراج النص تحتاج بيانات منظمة يدويًا.</div>
 <div class="inputrow"><label>تاريخ الجلسة <input id="pdfDate" type="date" required></label><label>اختر PDF <input id="pdfFile" type="file" accept="application/pdf,.pdf"></label><button id="extractPdf">قراءة التقرير</button></div>
