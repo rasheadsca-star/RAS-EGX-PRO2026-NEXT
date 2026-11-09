@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EGX PRO | غرفة القرار اليومية</title>
+<style>
+:root{color-scheme:dark;--bg:#071522;--panel:#14283f;--line:#35526b;--ink:#f0f5fc;--muted:#b5c4d4;--blue:#62b7f7;--green:#65e2b4;--red:#ff8498}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.7 Tahoma,Arial,sans-serif}
+header{padding:22px max(15px,calc((100vw - 1250px)/2));background:#10263f;border-bottom:1px solid var(--line)}
+header h1{margin:0;font-size:25px}.meta{font-size:12px;color:var(--muted)}
+main{max-width:1250px;margin:0 auto;padding:15px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:19px;margin-bottom:13px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.stat{background:#1b3554;padding:13px;border-radius:9px}.stat b{display:block;font-size:21px}.stat small{color:var(--muted)}
+h2{margin:4px 0 11px;font-size:19px}h3{font-size:15px;margin:10px 0}
+.notice{padding:12px;border-radius:8px;border:1px solid #a8823e;background:#44371f;color:#fff0c5;margin:10px 0}
+.ok{border-color:#34795d;background:#173a36;color:#bbf6d8}.error{border-color:#a44d55;background:#40262f;color:#ffd5da}
+button,input,textarea,select{font:inherit;background:#0b2034;color:var(--ink);border:1px solid #426381;border-radius:7px;padding:10px}
+button{cursor:pointer;background:#20567f}button:hover{background:#2d709f}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.controls input{flex:1;min-width:160px}.sub{font-size:12px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;white-space:nowrap;font-size:12px}th,td{padding:9px;border-bottom:1px solid #34516a;text-align:right}th{background:#173851;position:sticky;top:0}tbody tr:hover{background:#1f4564}
+.scroll{overflow:auto;max-height:550px}.green{color:var(--green)}.red{color:var(--red)}
+.chart{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}.chart svg{width:100%;height:290px;background:#0b2034;border:1px solid var(--line);border-radius:8px}
+.line{display:flex;justify-content:space-between;padding:7px;border-bottom:1px solid var(--line)}
+details{border:1px solid var(--line);border-radius:9px;padding:13px;margin-top:12px}summary{cursor:pointer;font-weight:bold}
+textarea{width:100%;min-height:145px;direction:ltr;text-align:left}.inputrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.inputrow label{font-size:13px}.inputrow input{max-width:230px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:25px}
+@media(max-width:760px){header h1{font-size:20px}.stats{grid-template-columns:repeat(2,1fr)}.chart{grid-template-columns:1fr}.panel{padding:12px}}
+</style></head>
+<body><header><div class="meta">EGX PRO / DAILY RESEARCH DECISION ROOM</div><h1>غرفة الفرص والتداول الورقي</h1><div class="meta">ترتيب الأوزان: 50% للتغير اليومي + 30% لموقع الإغلاق + 20% للسيولة | لا تنفيذ تلقائي</div></header>
+<main><section class="panel"><h2>البيانات اليومية وترتيب الفرص</h2>
+<div class="stats">
+<div class="stat"><small>جلسة بيانات السوق</small><b id="date">—</b></div>
+<div class="stat"><small>آخر تحديث للمصدر</small><b id="updated" style="font-size:14px">—</b></div>
+<div class="stat"><small>الأسهم الصالحة للترتيب</small><b id="count">—</b></div>
+<div class="stat"><small>اعتماد القرار</small><b style="font-size:16px;color:#ffd49b">بحثي فقط</b></div>
+</div>
+<div id="notice" class="notice" role="status">جارٍ محاولة تحميل أحدث بيانات من GitHub...</div>
+<div class="controls"><input id="search" placeholder="بحث برمز السهم" aria-label="بحث السهم"><button id="reload">تحديث البيانات الآن</button><button id="importOpen">استيراد تقرير PDF</button><span id="fetchStatus" class="sub"></span></div>
+<div class="scroll"><table><thead><tr><th>#</th><th>السهم</th><th>إغلاق</th><th>تغير %</th><th>الدرجة</th><th>دخول افتراضي</th><th>هدف 1</th><th>هدف 2</th><th>وقف</th><th>الشارت</th></tr></thead><tbody id="rows"><tr><td colspan="10">جارٍ قراءة البيانات</td></tr></tbody></table></div>
+</section>
+<section class="panel"><h2>تفاصيل فرصة وشارت المستويات</h2><div id="stockMeta" class="sub">اختر سهمًا من الجدول</div>
+<div class="chart"><svg id="chart" viewBox="0 0 640 300" aria-label="مخطط مستويات الأسعار"></svg><div id="levels">سيظهر مستوى الاختراق والأهداف والوقف مع بيانات السهم.</div></div>
+<p class="sub">قاعدة اختبارية فقط: الدخول = أعلى سعر + 0.01؛ الوقف = أدنى سعر - 0.01؛ الهدف الأول = 1R والثاني = 2R. القاعدة لا تراعي بالضرورة الحد الأدنى الصحيح لحركة السعر لكل ورقة مالية، ولم تُعتمد بعد بالاختبار الخلفي. الدرجة ليست نسبة نجاح.</p>
+</section>
+<section class="panel" id="pdfPanel" hidden><h2>استيراد بيانات الجلسة من تقرير PDF</h2>
+<div class="notice">يستخدم التقرير داخل متصفحك فقط، دون رفعه إلى خادم أو تحديث قاعدة بيانات GitHub. ملفات PDF تختلف في تنسيقها؛ لذلك تُعرض الصفوف المستخرجة للمراجعة قبل اعتمادها في هذه الصفحة. التقارير المصورة غير القابلة لاستخراج النص تحتاج بيانات منظمة يدويًا.</div>
+<div class="inputrow"><label>تاريخ الجلسة <input id="pdfDate" type="date" required></label><label>اختر PDF <input id="pdfFile" type="file" accept="application/pdf,.pdf"></label><button id="extractPdf">قراءة التقرير</button></div>
+<p class="sub" id="parseStatus">سنحاول استخراج رموز الأسهم والأسعار. لا يُعتمد أي صف تلقائيًا دون مراجعة.</p>
+<h3>مراجعة/تصحيح البيانات المستخرجة</h3>
+<p class="sub">كل سطر بصيغة: SYMBOL,Close,PreviousClose,High,Low,Volume,Turnover. مثال تعليمي: ABCD,10,9.8,10.2,9.7,100000,1000000. يجب أن تكون الأرقام من تقرير الجلسة نفسه؛ لا تستخدم المثال كبيانات حقيقية.</p>
+<textarea id="pdfRows" placeholder="SYMBOL,Close,PreviousClose,High,Low,Volume,Turnover"></textarea>
+<div class="controls"><button id="validate">فحص الصفوف</button><button id="apply">اعتماد البيانات في هذا المتصفح</button><button id="export">تصدير نسخة CSV</button></div>
+<div id="validation" class="sub">لا توجد صفوف مدققة بعد.</div>
+</section>
+</main><footer>مصدر التحديث الآلي: GitHub / data/market.json • البيانات العامة قد تتأخر • لا تُنشر توصيات تنفيذ إلا بعد تحقق مستقل من مصدر وأسعار وتوقيت الجلسة</footer>
+<script>
+'use strict';
+const BASE='https://raw.githubusercontent.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/main/data/market.json';
+const KEY='EGX_PRO_MANUAL_PDF_V1';
+const E=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let rows=[],chosen=null,currentSession='',manual=false;
+const money=v=>Number.isFinite(v)?v.toFixed(2):'—',round=v=>Math.round(v*100)/100;
+function localDate(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()),o=Object.fromEntries(p.map(x=>[x.type,x.value]));return o.year+'-'+o.month+'-'+o.day}
+function setNotice(t,cls=''){E('notice').className='notice '+cls;E('notice').textContent=t}
+function rank(data){
+let a=data.filter(x=>Number.isFinite(x.price)&&Number.isFinite(x.high)&&Number.isFinite(x.low)&&Number.isFinite(x.volume)&&Number.isFinite(x.changePct)&&x.high>x.low&&x.price>=x.low&&x.price<=x.high&&x.volume>0).map(x=>({...x,position:(x.price-x.low)/(x.high-x.low),liquidity:Number.isFinite(x.valueTraded)?x.valueTraded:x.price*x.volume}));
+const percentile=(v,arr)=>100*(arr.filter(z=>z<v).length+(arr.filter(z=>z===v).length+1)/2)/arr.length;
+let ch=a.map(x=>x.changePct),pos=a.map(x=>x.position),liq=a.map(x=>x.liquidity);
+a.forEach(x=>{x.score=.5*percentile(x.changePct,ch)+.3*percentile(x.position,pos)+.2*percentile(x.liquidity,liq);x.entry=round(x.high+.01);x.stop=round(x.low-.01);let r=x.entry-x.stop;x.t1=round(x.entry+r);x.t2=round(x.entry+2*r)});
+return a.sort((x,y)=>y.score-x.score);
+}
+function useData(a,date,generated,fromManual=false){
+rows=rank(a);currentSession=date;manual=fromManual;
+E('date').textContent=date;E('updated').textContent=generated?String(generated).replace('T',' ').slice(0,19):'ملف مستورد';E('count').textContent=rows.length;
+if(date<localDate())setNotice('البيانات المتاحة لجلسة '+date+' أقدم من تاريخ اليوم '+localDate()+'. إذا كانت جلسة تداول أحدث قد انتهت، يرجى إرفاق تقرير PDF للتحقق يدويًا.','error');
+else setNotice('البيانات المؤرخة '+date+' محملة ('+(fromManual?'ملف PDF راجعه المستخدم':'GitHub')+'). لا يعني ذلك اكتمال اعتماد الأسعار أو توصيات الدخول.','ok');
+render();select(chosen&&rows.some(x=>x.symbol===chosen)?chosen:rows[0]?.symbol);
+}
+function render(){let q=E('search').value.trim().toUpperCase();let a=rows.filter(x=>x.symbol.includes(q));E('rows').innerHTML=a.slice(0,150).map(x=>'<tr><td>'+(rows.indexOf(x)+1)+'</td><td><b>'+esc(x.symbol)+'</b></td><td>'+money(x.price)+'</td><td class="'+(x.changePct>=0?'green':'red')+'">'+money(x.changePct)+'%</td><td><b>'+money(x.score)+'</b></td><td>'+money(x.entry)+'</td><td>'+money(x.t1)+'</td><td>'+money(x.t2)+'</td><td>'+money(x.stop)+'</td><td><button data-code="'+esc(x.symbol)+'">عرض</button></td></tr>').join('')||'<tr><td colspan="10">لا توجد بيانات مطابقة</td></tr>';document.querySelectorAll('[data-code]').forEach(b=>b.onclick=()=>select(b.dataset.code))}
+function select(code){const x=rows.find(r=>r.symbol===code);if(!x)return;chosen=code;E('stockMeta').textContent=code+' | إغلاق '+money(x.price)+' جنيه | '+money(x.changePct)+'% تغير | درجة '+money(x.score)+'/100 | جلسة '+currentSession;
+const lv=[['الهدف الثاني',x.t2,'#65e2b4'],['الهدف الأول',x.t1,'#9beaab'],['الدخول الافتراضي',x.entry,'#6dbaf5'],['الإغلاق',x.price,'#ffffff'],['الوقف',x.stop,'#ff8498']];
+E('levels').innerHTML=lv.map(v=>'<div class="line"><span>'+v[0]+'</span><b style="color:'+v[2]+'">'+money(v[1])+' جنيه</b></div>').join('')+'<p class="sub">موقع الإغلاق داخل نطاق الجلسة: '+money(100*x.position)+'% • السيولة: '+Math.round(x.liquidity).toLocaleString('en-US')+' جنيه</p>';
+let min=x.stop,max=x.t2,d=max-min||1;E('chart').innerHTML=lv.map((v,i)=>{let y=260-220*(v[1]-min)/d;return '<line x1="24" x2="615" y1="'+y+'" y2="'+y+'" stroke="'+v[2]+'" stroke-width="'+(i===3?2:1)+'"/><text x="605" y="'+(y-6)+'" font-size="14" text-anchor="end" fill="'+v[2]+'">'+v[0]+' '+money(v[1])+'</text>'}).join('')}
+async function autoLoad(){
+E('fetchStatus').textContent='جارٍ تحديث بيانات GitHub';E('reload').disabled=true;
+try{let ctrl=new AbortController,t=setTimeout(()=>ctrl.abort(),18000),resp;try{resp=await fetch(BASE+'?ts='+Date.now(),{cache:'no-store',signal:ctrl.signal})}finally{clearTimeout(t)}
+if(!resp.ok)throw Error('HTTP '+resp.status);const d=await resp.json();if(!d.marketDate||!Array.isArray(d.rows))throw Error('صيغة المصدر غير متوقعة');
+const cached=readManual();
+if(cached&&cached.sessionDate>d.marketDate){useData(cached.rows,cached.sessionDate,'استيراد محفوظ',true);E('fetchStatus').textContent='ملفك أحدث من GitHub';return}
+useData(d.rows,d.marketDate,d.generatedAt,false);
+E('fetchStatus').textContent='تمت المراجعة الآلية: '+new Date().toLocaleTimeString('ar-EG');
+if(d.executionGrade!==true)E('notice').textContent+=' بوابة اعتماد تنفيذ المصدر مغلقة.';
+}catch(err){let saved=readManual();if(saved){useData(saved.rows,saved.sessionDate,'استيراد محفوظ',true);setNotice('تعذر تحديث GitHub ('+err.message+'). أُعيد عرض آخر ملف مستورد بتاريخ '+saved.sessionDate+'. أرفق PDF أحدث إذا توفر.','error')}else{setNotice('فشل جلب بيانات السوق ('+err.message+'). يرجى إرفاق تقرير PDF للجلسة عبر زر الاستيراد.','error');E('pdfPanel').hidden=false}
+E('fetchStatus').textContent='فشل التحديث';
+}finally{E('reload').disabled=false}}
+function readManual(){try{let x=JSON.parse(localStorage.getItem(KEY));return x&&Array.isArray(x.rows)?x:null}catch{return null}}
+function parseManualText(t){const out=[],bad=[];const lines=t.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+lines.forEach((s,i)=>{let p=s.split(/[,\t;]+/).map(x=>x.trim().replace(/,/g,''));if(p[0]?.toUpperCase()==='SYMBOL')return;if(p.length<7){bad.push(i+1);return}let [symbol,...ns]=p;symbol=symbol.toUpperCase();let [close,prev,high,low,volume,turnover]=ns.map(Number);
+if(!/^[A-Z0-9]{2,12}$/.test(symbol)||![close,prev,high,low,volume,turnover].every(Number.isFinite)||close<=0||prev<=0||high<=low||low<=0||close<low||close>high||volume<=0||turnover<0){bad.push(i+1);return}
+out.push({symbol,price:close,previousClose:prev,high,low,volume,valueTraded:turnover,changePct:100*(close-prev)/prev})});
+let codes=new Set,out2=[];for(const x of out){if(codes.has(x.symbol)){bad.push('تكرار '+x.symbol);continue}codes.add(x.symbol);out2.push(x)}
+return {rows:out2,bad}}
+async function extractPdf(){
+let file=E('pdfFile').files[0];if(!file){E('parseStatus').textContent='اختر ملف PDF أولًا';return}
+if(file.size>22e6){E('parseStatus').textContent='الملف كبير جدًا؛ الحد 22 ميجابايت';return}
+E('parseStatus').textContent='جارٍ قراءة النص من PDF داخل جهازك...';
+try{
+if(!window.pdfjsLib)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=resolve;s.onerror=()=>reject(Error('تعذر تحميل مكتبة PDF.js؛ يلزم اتصال إنترنت'));document.head.appendChild(s)});
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let doc=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;
+let lines=[];for(let n=1;n<=Math.min(doc.numPages,300);n++){let page=await doc.getPage(n),c=await page.getTextContent(),ys=new Map();for(const item of c.items){const y=Math.round(item.transform?.[5]||0);let arr=ys.get(y)||[];arr.push({x:item.transform?.[4]||0,text:item.str});ys.set(y,arr)}for(let v of ys.values()){lines.push(v.sort((a,b)=>a.x-b.x).map(i=>i.text).join(' '))}}
+let seen=new Set(),samples=[];
+for(const line of lines){let m=line.match(/\b([A-Z]{2,6})\b[\s|:,-]+((?:\d{1,6}(?:\.\d{1,4})?[\s,]+){5,8})/);if(!m)continue;let nums=m[2].trim().split(/[\s,]+/).map(Number);if(seen.has(m[1])||nums.length<6)continue;
+const options=[[nums[0],nums[1],nums[2],nums[3],nums[4],nums[5]],[nums[0],nums[1],nums[3],nums[2],nums[4],nums[5]]];
+let match=options.find(([cl,pr,hi,lo,vol,to])=>[cl,pr,hi,lo,vol,to].every(Number.isFinite)&&cl>0&&pr>0&&lo>0&&hi>lo&&cl>=lo&&cl<=hi&&vol>0&&to>=0);if(!match)continue;seen.add(m[1]);samples.push(m[1]+','+match.join(','))}
+E('pdfRows').value=samples.join('\n');E('parseStatus').textContent='تم استخراج نص من '+doc.numPages+' صفحة؛ التعرف المبدئي على '+samples.length+' صف. راجع الأسعار والرموز أمام التقرير قبل الاعتماد. إذا لم يتعرف على صفوف، أدخل البيانات في الصندوق بالصيغة المحددة.';
+}catch(e){E('parseStatus').textContent='تعذر تحليل PDF: '+e.message+' — يمكنك إدخال الصفوف يدويًا من التقرير.'}}
+function validate(){let r=parseManualText(E('pdfRows').value);E('validation').textContent='صفوف صحيحة: '+r.rows.length+' | أسطر مرفوضة: '+r.bad.length+(r.bad.length?' ('+r.bad.slice(0,15).join('، ')+')':'');return r}
+function apply(){let date=E('pdfDate').value,r=validate();if(!date||!/^\d{4}-\d{2}-\d{2}$/.test(date)){E('validation').textContent+=' | يجب تحديد تاريخ الجلسة';return}if(date>localDate()){E('validation').textContent+=' | تاريخ الجلسة لا يمكن أن يكون في المستقبل';return}
+if(!r.rows.length||r.bad.length){E('validation').textContent+=' | صحح كل الأسطر قبل الاعتماد';return}
+if(!confirm('هل راجعت أن جميع الرموز والأسعار ونطاقات الجلسة تطابق تقرير PDF بتاريخ '+date+'؟'))return;
+try{localStorage.setItem(KEY,JSON.stringify({sessionDate:date,rows:r.rows,savedAt:new Date().toISOString()}));}catch(e){E('validation').textContent+=' | تعذر حفظ نسخة محلية: '+e.message;return}
+useData(r.rows,date,'استيراد PDF',true);E('validation').textContent='تم اعتماد '+r.rows.length+' صف للعرض البحثي في هذا المتصفح فقط.';E('pdfPanel').hidden=true;window.scrollTo({top:0,behavior:'smooth'})}
+function exportCsv(){let r=validate();if(!r.rows.length)return;const head='SYMBOL,Close,PreviousClose,High,Low,Volume,Turnover';let s=[head,...r.rows.map(x=>[x.symbol,x.price,x.previousClose,x.high,x.low,x.volume,x.valueTraded].join(','))].join('\n');const blob=new Blob([s],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='egx-import-'+(E('pdfDate').value||'review')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)}
+E('search').oninput=render;E('reload').onclick=autoLoad;E('importOpen').onclick=()=>{E('pdfPanel').hidden=false;E('pdfPanel').scrollIntoView({behavior:'smooth'})};E('extractPdf').onclick=extractPdf;E('validate').onclick=validate;E('apply').onclick=apply;E('export').onclick=exportCsv;
+E('pdfDate').value=localDate();autoLoad();setInterval(autoLoad,15*60*1000);
+</script></body></html>
