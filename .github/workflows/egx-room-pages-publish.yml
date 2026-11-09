@@ -1,0 +1,74 @@
+name: Publish EGX Decision Room (full site)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'decision-room-live/**'
+      - '404.html'
+      - '.github/workflows/egx-room-pages-publish.yml'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check decision-room bundle and secret guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s decision-room-live/index.html
+          test -s data/market.json
+          test ! -e .env
+          test ! -e .project-config.json
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo "::error::Refusing to publish tracked .env"
+            exit 1
+          fi
+          grep -q 'EGX PRO | غرفة القرار اليومية' decision-room-live/index.html
+          grep -q 'decision-room-live/index.html' 404.html
+          node --check <(sed -n '/<script>/,/<\/script>/p' decision-room-live/index.html | sed '1d;$d') || {
+            echo "::error::Decision room script syntax invalid"
+            exit 1
+          }
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify published page body and session metadata
+        env:
+          SITE: ${{ steps.deployment.outputs.page_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,time,urllib.request
+          base=os.environ['SITE'].rstrip('/')
+          u=base+'/decision-room-live/index.html'
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(u,headers={'Cache-Control':'no-cache'}),timeout=20) as r:
+                      page=r.read().decode('utf8')
+                      assert r.status==200 and 'EGX PRO | غرفة القرار اليومية' in page
+                      assert 'egx-pdf-reviewed-staging.yml' in page
+                      print('EGX_DECISION_ROOM_PUBLISH_VERIFIED',u)
+                      break
+              except Exception as e:
+                  if attempt==11:raise
+                  print('Retry',attempt+1,str(e))
+                  time.sleep(10)
+          PY
