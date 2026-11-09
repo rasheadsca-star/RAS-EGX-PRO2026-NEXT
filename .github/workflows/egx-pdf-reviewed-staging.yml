@@ -1,0 +1,51 @@
+name: Official EGX PDF import — verified staging
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'data/official-egx-reports/*.pdf'
+      - 'data/official-egx-reports/*.csv'
+      - 'tools/egx_pdf_stage_verified.py'
+      - 'tools/egx_official_pdf_crosscheck.py'
+      - '.github/workflows/egx-pdf-reviewed-staging.yml'
+permissions:
+  contents: read
+concurrency:
+  group: egx-pdf-staging
+  cancel-in-progress: false
+jobs:
+  verify-pdf-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'pymupdf==1.24.14'
+      - name: Audit PDF against manually reviewed CSV
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(data/official-egx-reports/*.csv)
+          test ${#files[@]} -gt 0 || { echo "No reviewed CSV uploaded; central import remains disabled."; exit 2; }
+          mkdir -p staged
+          for csv in "${files[@]}"; do
+            pdf="${csv%.csv}.pdf"
+            test -s "$pdf" || { echo "Missing matching PDF for $csv"; exit 2; }
+            session="$(basename "${csv%.csv}")"
+            [[ "$session" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "Invalid session filename"; exit 2; }
+            python tools/egx_pdf_stage_verified.py "$pdf" "$csv" "staged/$session.json"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reviewed-egx-pdf-staging
+          path: staged/
+          if-no-files-found: error
+          retention-days: 30
+# Intentional fail-closed barrier: this workflow does NOT mutate the central DB.
+# An authenticated backend must perform separate symbol/ISIN approval, conflict
+# checks, atomic SQLite staging, and verified R2/S3 publish before production use.
