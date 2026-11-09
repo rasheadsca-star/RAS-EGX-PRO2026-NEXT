@@ -39,10 +39,15 @@ jobs:
           fi
           grep -q 'EGX PRO | غرفة القرار اليومية' decision-room-live/index.html
           grep -q 'decision-room-live/index.html' 404.html
-          node --check <(sed -n '/<script>/,/<\/script>/p' decision-room-live/index.html | sed '1d;$d') || {
-            echo "::error::Decision room script syntax invalid"
-            exit 1
-          }
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('decision-room-live/index.html').read_text(encoding='utf-8')
+          matches=re.findall(r'<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>',html,flags=re.I)
+          if not matches: raise SystemExit("No inline JavaScript found")
+          Path('/tmp/egx-room-check.js').write_text("\\n".join(matches),encoding='utf-8')
+          PY
+          node --check /tmp/egx-room-check.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
