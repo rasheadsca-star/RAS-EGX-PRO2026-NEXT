@@ -1,135 +1,19 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#071a2b">
-  <meta name="description" content="EGX Pro unified ranked opportunities and execution gate">
-  <title>EGX Pro V15.3 — مركز القرار الموحد</title>
-  <link rel="manifest" href="manifest.json?v=15301">
-  <link rel="stylesheet" href="styles.css?v=15301">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EGX PRO — الرابط غير موجود</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#071522;color:#eef7ff;font:16px/1.8 Tahoma,Arial,sans-serif;display:grid;place-items:center;min-height:100vh;padding:20px}
+main{max-width:700px;width:100%;border:1px solid #31516a;background:#132940;border-radius:16px;padding:30px;box-shadow:0 16px 55px #0004}
+p{color:#b9ccda}h1{margin:0 0 8px;font-size:26px}a{display:inline-block;background:#2476ad;color:white;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:bold}
+small{display:block;margin-top:24px;color:#8aafc8}
+</style>
 </head>
-<body>
-  <div id="loading" class="loading">
-    <div class="spinner"></div>
-    <b>جارٍ تحميل القرار الموحد…</b>
-    <span>V15.3 — فصل الفرص المرتبة عن التنفيذ الآمن</span>
-  </div>
-
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="logo">
-        <strong>EGX Pro V15.3</strong>
-        <span>مركز القرار الموحد</span>
-        <small>فرص مرتبة ≠ أمر شراء</small>
-      </div>
-      <nav>
-        <button class="nav active" data-view="decision">قرار اليوم</button>
-        <button class="nav" data-view="ranking">الترتيب الكامل</button>
-        <button class="nav" data-view="support">الدعم والمقاومة</button>
-        <button class="nav" data-view="health">صحة البيانات</button>
-      </nav>
-      <div class="side-state">
-        <span id="sideDot" class="dot"></span>
-        <b id="sideTitle">جار التحقق</b>
-        <small id="sideBuild">V15.3-SR-TRUTH</small>
-      </div>
-    </aside>
-
-    <main>
-      <header>
-        <div>
-          <h1>مركز القرار الموحد <em>V15.3</em></h1>
-          <p>نعرض أفضل الفرص المتاحة للمتابعة حتى لو كانت بوابة التنفيذ مغلقة.</p>
-        </div>
-        <div class="actions">
-          <input id="search" type="search" placeholder="ابحث باسم السهم أو الرمز…">
-          <a class="btn primary" target="_blank" rel="noreferrer"
-             href="https://github.com/rasheadsca-star/RAS-EGX0.1/actions/workflows/update-market-data.yml">تحديث البيانات</a>
-          <button id="reload" class="btn">إعادة تحميل</button>
-          <button id="install" class="btn hidden">تثبيت التطبيق</button>
-        </div>
-      </header>
-
-      <section class="truth-strip">
-        <div><span>Build</span><b>V15.3</b></div>
-        <div><span>آخر سوق</span><b id="marketTime">--</b></div>
-        <div><span>فرص مرتبة</span><b id="rankedStrip">--</b></div>
-        <div><span>تنفيذ آمن</span><b id="executionStrip">--</b></div>
-        <div><span>دعم/مقاومة موثقان</span><b id="srStrip">--</b></div>
-      </section>
-
-      <section id="message" class="message">جار التحقق من البيانات…</section>
-
-      <section id="decision" class="view active">
-        <div class="kpis">
-          <article class="kpi cyan"><span>أفضل فرص للمتابعة</span><strong id="rankedCount">0</strong><small>ترتيب تحليلي وليس أمر شراء</small></article>
-          <article class="kpi green"><span>توصيات تنفيذية</span><strong id="executionCount">0</strong><small>اجتازت كل بوابات الأمان</small></article>
-          <article class="kpi amber"><span>مراقبة مشروطة</span><strong id="watchCount">0</strong><small>خطة تجريبية تحتاج تحققًا</small></article>
-          <article class="kpi red"><span>مستبعد/محجوب</span><strong id="blockedCount">0</strong><small>جودة أو سعر أو بيانات ناقصة</small></article>
-        </div>
-
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>أفضل الفرص الآن</h2>
-              <p id="decisionSubtitle">يتم تحميل الترتيب…</p>
-            </div>
-            <select id="decisionFilter">
-              <option value="ALL">جميع الفرص</option>
-              <option value="EXECUTABLE">تنفيذية فقط</option>
-              <option value="CONDITIONAL_WATCH">مراقبة مشروطة</option>
-              <option value="BLOCKED">مستبعدة</option>
-            </select>
-          </div>
-          <div id="topCards" class="cards"></div>
-        </section>
-      </section>
-
-      <section id="ranking" class="view">
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>الترتيب التحليلي الكامل</h2>
-              <p>ترتيب الفرص مستقل عن عدد التوصيات التنفيذية.</p>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>#</th><th>الرمز</th><th>الاسم</th><th>السعر</th><th>الدخول</th><th>هدف 1</th><th>الوقف</th><th>الثقة</th><th>R/R</th><th>الحالة</th></tr></thead>
-              <tbody id="rankingRows"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <section id="support" class="view">
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>الدعم والمقاومة</h2>
-              <p>المستويات الموثقة من ملف السوق فقط، ولا نعتبر المستويات التقديرية من محرك الترتيب مصدر مباشر.</p>
-            </div>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead><tr><th>الرمز</th><th>السعر</th><th>Pivot</th><th>دعم 1</th><th>دعم 2</th><th>مقاومة 1</th><th>مقاومة 2</th><th>المصدر</th></tr></thead>
-              <tbody id="supportRows"></tbody>
-            </table>
-          </div>
-        </section>
-      </section>
-
-      <section id="health" class="view">
-        <div id="healthGrid" class="health-grid"></div>
-        <section class="panel">
-          <h2>تفسير الحالة الحالية</h2>
-          <ul id="healthNotes" class="notes"></ul>
-        </section>
-      </section>
-    </main>
-  </div>
-
-  <script src="app.js?v=15301"></script>
-</body>
-</html>
+<body><main>
+<div style="font-size:12px;color:#91bdd7">EGX PRO / PAGE NOT FOUND</div>
+<h1>الرابط غير موجود — إصدار قديم أو مسار غير صحيح</h1>
+<p>هذه صفحة خطأ وليست محرك V15.3. افتح غرفة القرار البحثي الحالية من الرابط التالي. تحقق من تاريخ الجلسة وجودة البيانات قبل استخدام الأرقام.</p>
+<a href="/RAS-EGX-PRO2026-NEXT/decision-room-live/index.html">فتح غرفة القرار اليومية EGX PRO</a>
+<small>HTTP 404 — لا يتم تقديم بيانات أو توصيات قديمة كأنها حديثة.</small>
+</main></body></html>
