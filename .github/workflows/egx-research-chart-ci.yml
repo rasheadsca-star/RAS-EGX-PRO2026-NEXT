@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'egx-pro-research-12nov2026/chart-pro.js'
+      - 'egx-pro-research-12nov2026/chart-universe.json'
       - 'egx-pro-research-12nov2026/index.html'
       - '.github/workflows/egx-research-chart-ci.yml'
   workflow_dispatch:
@@ -27,6 +28,11 @@ jobs:
           assert "chartContainer.appendChild(chartScript)" in h
           assert "main.appendChild(chartContainer)" in h
           assert 'chart-pro.js?v=20261112-fixed2' in h
+          import json
+          catalog=json.loads((root/'chart-universe.json').read_text())
+          symbols=[r['ticker'] for r in catalog['symbols']]
+          assert len(symbols)>=200 and len(symbols)==len(set(symbols))
+          assert "chart-universe.json" in js and 'cpSearch' in js
           assert "data/history/" in js
           assert "plan?.entry" in js and "plan?.stop" in js
           assert "getElementById('data')" in js
