@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "egx-engine-eligibility-audit-v1",
+  "auditedOn": "2026-11-13",
+  "repository": "rasheadsca-star/RAS-EGX-PRO2026-NEXT",
+  "scope": "Additional engines in saved-engine list vs three already-isolated primary tracks.",
+  "verificationBoundary": "GitHub repository source and dated artifacts verified; live browser accessibility and working DOM not verified because remote site fetch unavailable.",
+  "primaryTracks": [
+    "RESEARCH_12NOV",
+    "FUSION_V17",
+    "CLAUDE_UI_V169"
+  ],
+  "independentAddition": [
+    {
+      "engineId": "EGX_FUSION_V18_ISOLATED",
+      "name": "EGX Fusion V18 isolated",
+      "status": "INCLUDE_RESEARCH_PAPER_TRACK",
+      "url": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/egx-fusion-isolated-v18/",
+      "sourceFiles": [
+        "egx-fusion-isolated-v18/index.html",
+        "egx-fusion-isolated-v18/fusion-data.json"
+      ],
+      "snapshotDate": "2026-11-12",
+      "generatedAt": "2026-11-12T18:36:30.098988+00:00",
+      "universeTotal": 213,
+      "eligibleCount": 174,
+      "weightsCount": 9,
+      "reason": "Independent ranking formulas and dated 12 Nov source data present; use immutable pre-session snapshot, no prospective claims without timestamp evidence. V18 specifically states RC2 code unavailable and algorithm not matched.",
+      "notRC2": true
+    },
+    {
+      "engineId": "EGX_GANN_FUSION_X",
+      "name": "Gann Fusion X",
+      "status": "INCLUDE_HISTORICAL_SHADOW_ONLY_UNTIL_FRESH",
+      "url": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/gann-fusion-x/app/",
+      "sourceFiles": [
+        "gann-fusion-x/app/index.html",
+        "gann-fusion-x/engine/fusion.js",
+        "gann-fusion-x/engine/gann.js",
+        "gann-fusion-x/data/forward-shadow-ledger.json",
+        "gann-fusion-x/data/current.json"
+      ],
+      "lastRunSession": "2026-11-03",
+      "lastRunGeneratedAt": "2026-11-03T20:58:31.269Z",
+      "currentSnapshotStatus": "BOOTSTRAP",
+      "historicalShadow": {
+        "signalsIssued": 76,
+        "evaluated": 75,
+        "filled": 73,
+        "positiveRatePct": 27.4,
+        "avgNetPct": -1.016,
+        "profitFactor": 0.51,
+        "roundTripCostPct": 0.6
+      },
+      "reason": "Preserved forward ledger enables historical review but no current Nov12 Gann signals or fresh current.json. Resume daily prospective ranking only after fresh verified signals."
+    }
+  ],
+  "excludedOrStandby": [
+    {
+      "engineId": "EGX_MAIN_V169",
+      "status": "STANDBY_NO_CURRENT_SIGNALS",
+      "url": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/preview-v16/app/v169.html",
+      "sourcePaths": [
+        "preview-v16/app/v169.html",
+        "data/stable/v16-main-app-current.json"
+      ],
+      "lastVerifiedSession": "2026-11-03",
+      "recommendations": 0,
+      "state": "V16_9_BASKET_GATE_BLOCKED",
+      "note": "Not established as original UI CLAUDE. Preserve as separate diagnostic track, do not merge with third primary track."
+    },
+    {
+      "engineId": "EGX_RC2",
+      "status": "STANDBY_NO_CURRENT_SIGNALS",
+      "url": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/deploy/rc2-safe-shell/",
+      "sourcePaths": [
+        "data/rc2/current-session.json",
+        "data/rc2/recommendation-history.json"
+      ],
+      "lastVerifiedSession": "2026-11-03",
+      "recommendations": 0,
+      "note": "Current session no eligible recommendation. Historical candidates exist but are not live trade recommendations."
+    },
+    {
+      "engineId": "EGX_PAPER_V4",
+      "status": "AUDIT_REFERENCE_NOT_COMPETING",
+      "url": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/paper-v4/",
+      "sourcePaths": [
+        "paper-v4/index.html",
+        "paper-v4/official-audit-2026-11-03.json"
+      ],
+      "lastVerifiedSession": "2026-11-03",
+      "verification": "RECONCILED_EXACT_PDF_VALUES_BUT_IDENTITIES_UNAPPROVED",
+      "note": "Official audit material helpful to verify sessions; not a comparable active engine now."
+    }
+  ],
+  "rules": [
+    "Keep all three primary tracks unchanged and independent.",
+    "Introduce V18 as fourth prospective research challenger; do not imply that V18 is RC2 or V16.9 Claude.",
+    "Record Gann as fifth historical shadow track until fresh new dated actionable signals are independently verified.",
+    "Exclude stale/no-signal engines from winner rankings but display separately with reasons.",
+    "Evaluate same sessions using archived pre-session recommendations only; timestamp and commit each signal and data source.",
+    "Do not equate GitHub static page existence with live browser functionality.",
+    "Paper research only; never claim execution-approved."
+  ]
+}
