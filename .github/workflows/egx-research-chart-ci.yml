@@ -23,8 +23,10 @@ jobs:
           root=Path('egx-pro-research-12nov2026')
           h=(root/'index.html').read_text()
           js=(root/'chart-pro.js').read_text()
-          assert "frame.srcdoc=source.replace(" in h
-          assert 'chart-pro.js?v=20261112' in h
+          assert "frame.srcdoc=source;" in h
+          assert "chartContainer.appendChild(chartScript)" in h
+          assert "main.appendChild(chartContainer)" in h
+          assert 'chart-pro.js?v=20261112-fixed2' in h
           assert "data/history/" in js
           assert "plan?.entry" in js and "plan?.stop" in js
           assert "getElementById('data')" in js
