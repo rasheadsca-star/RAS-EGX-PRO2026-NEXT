@@ -1,0 +1,59 @@
+name: Publish EGX Official Reviewed Research — Independent
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'data/official-egx-reports/*.pdf'
+      - 'data/official-egx-reports/*.csv'
+      - 'tools/egx_research_rank_verified.py'
+      - '.github/workflows/egx-official-research-publish.yml'
+permissions:
+  contents: write
+concurrency:
+  group: egx-research-reviewed-import
+  cancel-in-progress: false
+jobs:
+  publish-reviewed-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'pymupdf==1.24.14'
+      - name: Publish reviewed paired PDF + CSV only
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          csvs=(data/official-egx-reports/20??-??-??.csv)
+          if (( ${#csvs[@]} == 0 )); then
+            echo "::notice::PDF alone is not enough to certify ticker-to-name mapping; please upload reviewed CSV to match official PDF."
+            exit 0
+          fi
+          for csv in "${csvs[@]}"; do
+            pdf="${csv%.csv}.pdf"
+            if [[ ! -s "$pdf" ]]; then
+              echo "::notice::Waiting for PDF that matches $csv"
+              continue
+            fi
+            session="$(basename "${csv%.csv}")"
+            if [[ "$session" > "2026-11-12" ]]; then
+              python tools/egx_research_rank_verified.py "$pdf" "$csv"
+            fi
+          done
+      - name: Commit only independent research snapshots (never canonical prices)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add egx-pro-research-12nov2026/latest.json egx-pro-research-12nov2026/sessions/ egx-pro-research-12nov2026/staging/ 2>/dev/null || true
+          if ! git diff --cached --quiet; then
+            git commit -m "data(egx-research): publish official PDF-reviewed paper ranking"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
