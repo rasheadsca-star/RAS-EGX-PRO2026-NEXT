@@ -1,0 +1,34 @@
+name: EGX Research Chart — safety and syntax checks
+on:
+  push:
+    paths:
+      - 'egx-pro-research-12nov2026/chart-pro.js'
+      - 'egx-pro-research-12nov2026/index.html'
+      - '.github/workflows/egx-research-chart-ci.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify chart JavaScript
+        run: node --check egx-pro-research-12nov2026/chart-pro.js
+      - name: Check frozen-room integration and safety
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('egx-pro-research-12nov2026')
+          h=(root/'index.html').read_text()
+          js=(root/'chart-pro.js').read_text()
+          assert "frame.srcdoc=source.replace(" in h
+          assert 'chart-pro.js?v=20261112' in h
+          assert "data/history/" in js
+          assert "plan?.entry" in js and "plan?.stop" in js
+          assert "getElementById('data')" in js
+          assert 'fetch(' in js
+          assert "localStorage.setItem" not in js
+          print('CHART_RESEARCH_SAFE_PASS')
+          PY
