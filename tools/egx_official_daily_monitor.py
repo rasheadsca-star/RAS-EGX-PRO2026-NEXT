@@ -49,6 +49,12 @@ def check_pdf(data):
     if stock_pages<1:raise ValueError("NO_MAIN_MARKET_TABLE")
     return str(primary)
 def main():
+    # Existing independent 12-Nov official snapshot is already the frozen baseline.
+    # Never request its PDF again just because the EGX site is unreachable.
+    if expected_session(local_today()) <= dt.date(2026,11,12):
+        update("BASELINE_AVAILABLE",source="https://egx.com.eg/en/Services_Reports.aspx",
+               date="2026-11-12",reason="Frozen official 12-Nov research snapshot already exists; no later trading session due")
+        return
     if local_today().weekday() in (4,5):
         update("MARKET_CLOSED",reason="Friday/Saturday — no new session due");return
     errors=[]
