@@ -1,0 +1,57 @@
+name: EGX Official Daily Research Report Watch
+on:
+  schedule:
+    # 17:15 UTC = 19:15 Cairo in winter; market days Sunday–Thursday.
+    - cron: '15 17 * * 0-4'
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: egx-official-research-daily
+  cancel-in-progress: false
+jobs:
+  monitor-official-pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install official-PDF validator
+        run: python -m pip install 'pymupdf==1.24.14'
+      - name: Check latest official EGX report with date and PDF guards
+        run: python tools/egx_official_daily_monitor.py
+      - name: Preserve fetched PDF as workflow evidence, not unverified canonical data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-official-pdf-evidence
+          path: egx-official-inbox/*.pdf
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Publish transparent monitor status to separate research page
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add egx-pro-research-12nov2026/official-status.json
+          if ! git diff --cached --quiet; then
+            git commit -m "data(egx-research): publish official report acquisition status"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Create user-visible report-upload issue on failure without duplicates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          state="$(python -c "import json;print(json.load(open('egx-pro-research-12nov2026/official-status.json'))['status'])")"
+          if [ "$state" != NEEDS_UPLOAD ]; then exit 0; fi
+          date="$(python -c "import json;print(json.load(open('egx-pro-research-12nov2026/official-status.json'))['expectedSession'])")"
+          title="EGX official report missing — $date"
+          if gh issue list --state all --limit 100 --json title -q '.[].title' | grep -Fxq "$title"; then exit 0; fi
+          gh issue create --title "$title" --body "Official EGX PDF could not be retrieved or validated. Upload the genuine daily report for $date to data/official-egx-reports/ and a reviewed matching CSV. Until reconciled, the research page keeps the previous dated rankings. Source: https://egx.com.eg/en/Services_Reports.aspx"
