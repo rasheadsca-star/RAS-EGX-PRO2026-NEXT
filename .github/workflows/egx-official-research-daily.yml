@@ -4,6 +4,10 @@ on:
     # 17:15 UTC = 19:15 Cairo in winter; market days Sunday–Thursday.
     - cron: '15 17 * * 0-4'
   workflow_dispatch:
+  push:
+    paths:
+      - 'tools/egx_official_daily_monitor.py'
+      - '.github/workflows/egx-official-research-daily.yml'
 permissions:
   contents: write
   issues: write
