@@ -1,0 +1,102 @@
+{
+  "schemaVersion": "egx-independent-three-engine-test-v1",
+  "created": "2026-11-13",
+  "status": "ACTIVE_PROTOCOL_WITH_IDENTITY_GUARD",
+  "scope": "Three specifically requested engines ONLY as three separate comparison tracks. Do not collapse any two merely because of common UI code, underlying pricing, or labels.",
+  "referenceCommit": "4e9d57e4a8267d1b28159c70dd028e4c4361463c",
+  "repository": "rasheadsca-star/RAS-EGX-PRO2026-NEXT",
+  "tracks": [
+    {
+      "id": "RESEARCH_12NOV",
+      "label": "EGX PRO research 12 November 2026",
+      "launchUrl": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/egx-pro-research-12nov2026/",
+      "entry": "egx-pro-research-12nov2026/index.html",
+      "sourcePaths": [
+        "egx-pro-research-12nov2026/index.html",
+        "egx-pro-research-12nov2026/chart-pro.js",
+        "egx-pro-research-12nov2026/latest.json"
+      ],
+      "sourceCommit": "4e9d57e4a8267d1b28159c70dd028e4c4361463c",
+      "model": "rankings and weights (research-only)",
+      "identity": "VERIFIED_IN_REPO",
+      "recommendationSource": "embedded frozen Nov 12 ranking; future official reviewed latest.json only",
+      "baselineDate": "2026-11-12",
+      "weights": [
+        "50/30/20",
+        "20/40/40",
+        "30/30/40",
+        "60/20/20",
+        "50/20/30",
+        "40/40/20",
+        "40/30/30",
+        "30/40/30",
+        "33/33/34"
+      ]
+    },
+    {
+      "id": "FUSION_V17",
+      "label": "EGX Pro Professional V17.2 Fusion",
+      "launchUrl": "https://rasheadsca-star.github.io/RAS-EGX-PRO2026-NEXT/egx-professional-v17-fusion/",
+      "entry": "egx-professional-v17-fusion/index.html",
+      "sourcePaths": [
+        "egx-professional-v17-fusion/index.html",
+        "data/market.json"
+      ],
+      "sourceCommit": "4e9d57e4a8267d1b28159c70dd028e4c4361463c",
+      "model": "independent ranking engine using current data/market.json",
+      "identity": "VERIFIED_IN_REPO",
+      "recommendationSource": "browser-side ranking not durable by default; timestamp/pin before next market session",
+      "baselineDate": null
+    },
+    {
+      "id": "CLAUDE_UI_V169",
+      "label": "EGX Pro Professional V16.9 UI CLAUDE (historical frozen RC2 algorithm)",
+      "launchUrl": null,
+      "entry": null,
+      "sourcePaths": [
+        "docs/astra/ASTRA_CLAUDE_RETROSPECTIVE_COMPARISON.json",
+        "docs/astra/ASTRA_CLAUDE_RETROSPECTIVE_COMPARISON.md",
+        "scripts/astra/astra-claude-retrospective-comparison.mjs"
+      ],
+      "sourceCommit": "cf5f9e2f4db9e81dc8245becf45f280aa42dc010",
+      "sourceCommitUrl": "https://github.com/rasheadsca-star/RAS-EGX-PRO2026-NEXT/commit/cf5f9e2f4db9e81dc8245becf45f280aa42dc010",
+      "frozenSourceBranch": "release/rc2-frozen",
+      "model": "frozen TFE_V20_FUSION_RC2 historically documented as UI CLAUDE comparator",
+      "identity": "ALGORITHM_LINEAGE_DOCUMENTED_UI_UNVERIFIED",
+      "recommendationSource": "only actual dated frozen RC2 emitted signals; do not use V16.9.2 MAIN APP or latest RC2 as silent substitute",
+      "baselineDate": null,
+      "discoveryEvidence": "docs/astra/ASTRA_CLAUDE_RETROSPECTIVE_COMPARISON.json contains sources.rc2Ui and sources.rc2FrozenCommit"
+    }
+  ],
+  "mandatoryIsolation": [
+    "Each engine has its own engineId, source code SHA, data snapshot hash, issuedAt, signal session, output list in original rank order and source provenance.",
+    "Never use output of V17 or Research as Claude output or vice versa.",
+    "Claude track may remain NO_VERIFIED_PUBLIC_UI or NO_DATED_LIVE_SIGNAL; retain as independent row with NOT_EVALUABLE state, never invent signals.",
+    "Use official EGX daily PDF to resolve next-session outcomes, keep original timestamped candidate sets unchanged.",
+    "Lock forward recommendation snapshots before target session open (or mark LATE_CAPTURE and exclude prospective evaluation).",
+    "Rank by identical session intersection and disclose missingness, abstentions, costs and no-trade.",
+    "Maintain all sources independently, do not modify original engines, research-only testing."
+  ],
+  "evaluationSchema": {
+    "trackId": "string",
+    "codeCommit": "40-char SHA",
+    "dataSnapshotHash": "sha256",
+    "signalSession": "YYYY-MM-DD",
+    "issuedAt": "ISO timestamp",
+    "captureAt": "ISO timestamp",
+    "weights": "string or null",
+    "rank": "integer",
+    "ticker": "string",
+    "entry": "number or null",
+    "stop": "number or null",
+    "target1": "number or null",
+    "target2": "number or null",
+    "sourceLink": "URL",
+    "evaluationStatus": "VERIFIED|NOT_EVALUABLE|ABSTAINED|LATE_CAPTURE",
+    "nextSession": "YYYY-MM-DD",
+    "officialPdfSha256": "sha256 or null",
+    "closeToClosePct": "number or null",
+    "tradeNetPct": "number or null"
+  },
+  "caveat": "Original CLAUDE V16.9 UI launch URL and source file have not been identified. Algorithm is historically attributed to a frozen RC2; do not claim UI and RC2 are identical without proof."
+}
