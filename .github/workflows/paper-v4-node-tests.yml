@@ -1,0 +1,24 @@
+name: paper-v4-node-tests
+# Tests only: no build, no deploy, no secrets, read-only token.
+on:
+  pull_request:
+    paths:
+      - 'paper-v4/**'
+      - '.github/workflows/paper-v4-node-tests.yml'
+permissions:
+  contents: read
+jobs:
+  node-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --version
+      - run: |
+          for f in decision-enhancements decision-dashboard official-quotes-dashboard research-guards; do node --check paper-v4/$f.js; done
+      - run: node --test paper-v4/tests/*.test.cjs
