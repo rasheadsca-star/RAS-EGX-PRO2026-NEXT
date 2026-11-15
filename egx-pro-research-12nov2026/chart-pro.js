@@ -71,5 +71,5 @@ selector.addEventListener('change',()=>{plan=(ranks[selector.value]||[]).find(r=
 search.addEventListener('input',()=>{const before=chosen;options();if(before!==chosen)load(chosen)});
 const table=D.getElementById('ranking');table?.addEventListener('click',e=>{const row=e.target.closest('tr'),txt=row?.querySelector('td:nth-child(2)')?.textContent||'',match=txt.match(/\b[A-Z]{2,12}\b/);if(!match||!catalog.has(match[0]))return;const t=match[0];if(![...sym.options].some(x=>x.value===t)){let o=D.createElement('option');o.value=t;o.textContent=t;sym.append(o)}sym.value=t;box.scrollIntoView({behavior:'smooth',block:'center'});load(t)});
 if('ResizeObserver'in window)new ResizeObserver(()=>draw()).observe(canvas.parentElement);else window.addEventListener('resize',draw);
-options();load(chosen);loadCatalog();
+const requested=new URLSearchParams(location.search).get('stock');if(requested&&/^[A-Z0-9.]{2,15}$/.test(requested)){chosen=requested;search.value=requested;if(!catalog.has(requested))catalog.set(requested,{ticker:requested,name:requested,hasHistoricalFile:true});}options();load(chosen);loadCatalog();
 })();
