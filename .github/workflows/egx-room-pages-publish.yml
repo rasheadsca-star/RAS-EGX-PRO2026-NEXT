@@ -78,3 +78,41 @@ jobs:
                   print('Retry',attempt+1,str(e))
                   time.sleep(10)
           PY
+
+      - name: Verify live EGX research latest session — byte-for-byte
+        env:
+          SITE: ${{ steps.deployment.outputs.page_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,time,urllib.request
+          base=os.environ['SITE'].rstrip('/')
+          rroot=pathlib.Path('egx-pro-research-12nov2026')
+          latest=json.loads((rroot/'latest.json').read_text(encoding='utf-8'))
+          date=latest['session']
+          paths=[
+            '/egx-pro-research-12nov2026/index.html',
+            '/egx-pro-research-12nov2026/chart.html',
+            '/egx-pro-research-12nov2026/latest.json',
+            '/egx-pro-research-12nov2026/sessions/'+date+'/index.html',
+            '/egx-pro-research-12nov2026/sessions/'+date+'/research.json',
+          ]
+          for attempt in range(1,13):
+            try:
+              for path in paths:
+                url=base+path+'?release='+os.environ.get('GITHUB_SHA','')[:12]+'&attempt='+str(attempt)
+                req=urllib.request.Request(url,headers={'Cache-Control':'no-cache'})
+                with urllib.request.urlopen(req,timeout=25) as resp:
+                  assert resp.status==200,(resp.status,path)
+                  live=resp.read()
+                local=pathlib.Path('.'+path).read_bytes()
+                if hashlib.sha256(live).digest()!=hashlib.sha256(local).digest():
+                  raise AssertionError('LIVE_SHA_MISMATCH '+path)
+              print('EGX_RESEARCH_LIVE_SHA_MATCH',date,'checked',len(paths),flush=True)
+              break
+            except Exception as exc:
+              print('EGX_RESEARCH_LIVE_CHECK_RETRY',attempt,str(exc),flush=True)
+              if attempt==12:raise
+              time.sleep(10)
+          PY
