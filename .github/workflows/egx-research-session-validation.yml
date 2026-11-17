@@ -1,0 +1,66 @@
+name: EGX Research Session — Schema, UI and Provenance
+on:
+  push:
+    paths:
+      - 'egx-pro-research-12nov2026/sessions/**'
+      - 'egx-pro-research-12nov2026/latest.json'
+      - 'egx-pro-research-12nov2026/official-status.json'
+      - '.github/workflows/egx-research-session-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check dated research release, immutable history and UI JavaScript
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,re,subprocess,math
+          from pathlib import Path
+          root=Path('egx-pro-research-12nov2026')
+          latest=json.loads((root/'latest.json').read_text(encoding='utf-8'))
+          date=latest['session']
+          folder=root/'sessions'/date
+          assert (folder/'index.html').exists(), 'Missing dated HTML'
+          data=json.loads((folder/'research.json').read_text(encoding='utf-8'))
+          assert date==data['session'] and data['nextSession']>date
+          assert latest['recentSessionPage']==f'sessions/{date}/'
+          assert latest['executionGrade'] is False and data['executionApproved'] is False
+          assert data['totalMainRows']>=200 and data['eligibleEGPStrict']>=150
+          assert data['totalMainRows']==data['eligibleEGPStrict']+data['excludedRows']
+          assert len(data['weights'])==9
+          for weight,stocks in data['weights'].items():
+              assert len(stocks)==5,(weight,len(stocks))
+              assert [r['rank'] for r in stocks]==list(range(1,6)),weight
+              assert len({r['symbol'] for r in stocks})==5,weight
+              assert [x['symbol'] for x in latest['rankings'][weight]]==[x['symbol'] for x in stocks]
+              assert all(stocks[i]['score']>=stocks[i+1]['score'] for i in range(4))
+              for r in stocks:
+                  assert r['high']>=max(r['open'],r['close'])
+                  assert r['low']<=min(r['open'],r['close'])
+                  assert math.isclose(r['entry'],round(r['high']+.01,3),abs_tol=.0001)
+                  assert math.isclose(r['stop'],round(r['low']-.01,3),abs_tol=.0001)
+                  risk=r['entry']-r['stop']
+                  assert math.isclose(r['t1'],round(r['entry']+risk,3),abs_tol=.0001)
+                  assert math.isclose(r['t2'],round(r['entry']+2*risk,3),abs_tol=.0001)
+          prior=data['previousSession']
+          assert prior['resultDate']==date
+          for v in prior['stocks'].values():
+              assert math.isclose(v['returnPct'],round((v['close']/v['last']-1)*100,4),abs_tol=.0001)
+              assert v['executionVerified'] is False
+          html=(folder/'index.html').read_text(encoding='utf-8')
+          assert 'id="recs"' in html and 'id="outcomes"' in html and 'id="performance"' in html
+          assert 'research.json?' in html
+          assert 'إغلاق 16/11' in html and 'إغلاق 17/11' in html if date=='2026-11-17' else True
+          scripts=re.findall(r'<script[^>]*>([\s\S]*?)</script>',html)
+          assert scripts,'Missing inline script'
+          Path('/tmp/egx-release-inline.js').write_text('\n'.join(scripts),encoding='utf-8')
+          subprocess.run(['node','--check','/tmp/egx-release-inline.js'],check=True)
+          status=json.loads((root/'official-status.json').read_text(encoding='utf-8'))
+          assert status['downloadedReportSession']==date and status['centralDbUpdated'] is False
+          print('EGX_RESEARCH_SESSION_SCHEMA_AND_JS_PASS',date, data['eligibleEGPStrict'])
+          PY
