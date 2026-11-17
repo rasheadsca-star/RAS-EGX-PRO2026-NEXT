@@ -27,7 +27,7 @@ jobs:
           home=(root/'index.html').read_text()
           assert 'latest.json' in home and 'location.replace(path+' in home
           import re,subprocess
-          home_js=re.findall(r'<script[^>]*>([\\s\\S]*?)</script>',home)
+          home_js=[home.split('<script>',1)[1].split('</script>',1)[0]] if '<script>' in home else []
           assert home_js,'Missing latest-session loader JS'
           Path('/tmp/egx-research-home.js').write_text('\n'.join(home_js))
           subprocess.run(['node','--check','/tmp/egx-research-home.js'],check=True)
