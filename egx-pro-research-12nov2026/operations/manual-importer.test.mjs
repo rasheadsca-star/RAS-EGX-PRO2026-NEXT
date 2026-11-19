@@ -29,7 +29,7 @@ test('actual EGX 19-Nov value column starts at x=575, not 577, and yields valid 
    item(124.2,317.2,'Medical'),item(42.3,330.6,'Center'),
    item(192.2,y,'EGP'),item(244.4,y,'39.500'),item(310.4,y,'40.5'),
    item(348.3,y,'37.52'),item(490.9,y,'38.590'),item(536.1,y,'-2.30'),
-   item(575.1,y,'321,260,726'),item(695.7,y,'8,265,248'),
+   item(575.1,y,'321,260,726'),item(644.7,y,'5.5%'),item(695.7,y,'8,265,248'),
    item(754.6,y,'10,101')
   ];
   const page={view:[0,0,1525,H],getTextContent:async()=>({items:tokens})};
@@ -43,7 +43,7 @@ test('EGX 18-Nov wider page remains valid, and trades column is not counted as v
   const item=(x,str)=>({str,transform:[1,0,0,1,x,H-y]});
   const tokens=[item(30.3,'2'),item(42.3,'EFG'),item(68,'Holding'),item(192.2,'EGP'),
     item(239,'24.090'),item(300,'25.5'),item(345,'23.84'),item(484.9,'25.300'),
-    item(536.1,'5.02'),item(579.1,'280,912,743'),item(700,'11,245,018'),item(763,'2,454')];
+    item(536.1,'5.02'),item(579.1,'280,912,743'),item(648.7,'4.4%'),item(700,'11,245,018'),item(763,'2,454')];
   const page={view:[0,0,1536,H],getTextContent:async()=>({items:tokens})};
   const [r]=await fromPage(page,17);
   assert.equal(r.value,280912743);assert.equal(r.volume,11245018);assert.deepEqual(r.issues,[]);
