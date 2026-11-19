@@ -27,7 +27,7 @@ const MASTER={
 };
 const COLS={
   ref:[230,284],high:[286,333],low:[335,385],
-  close:[476,533],change:[532,566],value:[565,649],volume:[680,750]
+  close:[476,533],change:[532,566],value:[565,643],volume:[680,750]
 };
 function number(s){const v=String(s||"").replace(/,/g,"").replace(/\s/g,"");return /^-?\d+(?:\.\d+)?$/.test(v)?Number(v):null}
 const cleanName=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
