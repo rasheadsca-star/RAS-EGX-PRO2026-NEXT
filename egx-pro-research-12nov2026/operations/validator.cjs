@@ -21,8 +21,11 @@ function validateRow(r,master) {
   for(const k of REQUIRED) if(r[k]===undefined || r[k]===null || r[k]==='') reasons.push('MISSING_'+k.toUpperCase());
   for(const k of ['open','high','low','close','volume','valueTraded']) if(!finitePositive(r[k])) reasons.push('INVALID_'+k.toUpperCase());
   if(['open','high','low','close'].every(k=>finitePositive(r[k]))) {
-    if(r.high<Math.max(r.open,r.close)) reasons.push('HIGH_VIOLATION');
-    if(r.low>Math.min(r.open,r.close)) reasons.push('LOW_VIOLATION');
+    // EGX bulletin's "Open Price" sometimes falls outside the printed intraday
+    // high/low range; only reject if the CLOSE falls outside the range.
+    // The reference/open field must be source-defined before using it as OHLC open.
+    if(r.high<r.close) reasons.push('HIGH_VIOLATION');
+    if(r.low>r.close) reasons.push('LOW_VIOLATION');
     if(r.low>r.high) reasons.push('REVERSED_RANGE');
   }
   if(typeof r.isin!=='string' || !/^[A-Z]{2}[A-Z0-9]{10}$/.test(r.isin)) reasons.push('INVALID_ISIN');
