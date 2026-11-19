@@ -11,6 +11,7 @@ test('valid synthetic session with matching ISIN and tick can be staged',()=>{co
 test('fails closed for missing security master',()=>{const q=validateSession({...request(),master:null});assert.equal(q.ok,false);assert(q.errors.includes('NO_VERSIONED_SECURITY_MASTER'))});
 test('unmatched ISIN must quarantine row',()=>{const q=validateSession({...request(),rows:[{...row(),isin:'EGS111111111'}]});assert.equal(q.ok,false);assert.equal(q.acceptedRows,0)});
 test('OHLC corruption must quarantine row',()=>{const q=validateSession({...request(),rows:[{...row(),high:10.1}]});assert.equal(q.ok,false);assert.equal(q.acceptedRows,0)});
+test('EGX printed open/reference may be outside intraday range without invalidating close',()=>{const q=validateSession({...request(),rows:[{...row(),open:9.0}]});assert.equal(q.ok,true);});
 test('tick mismatch must quarantine row',()=>{const q=validateSession({...request(),rows:[{...row(),close:10.505}]});assert.equal(q.ok,false)});
 test('duplicate ISIN is not published',()=>{const q=validateSession({...request(),rows:[row(),row()]});assert.equal(q.ok,false);assert(q.errors.includes('UNRESOLVED_QUARANTINE'))});
 test('missing row coverage blocks release',()=>{const q=validateSession({...request(),minRows:200});assert.equal(q.ok,false);assert(q.errors.includes('INSUFFICIENT_VERIFIED_COVERAGE'))});
