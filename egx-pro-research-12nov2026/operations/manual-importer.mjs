@@ -141,8 +141,8 @@ function compute(data) {
   return rankings;
 }
 function outcomes(data,prev){
-  if(!prev||!prev.rankings)return [];
-  const plans=prev.rankings["30/40/30"]||[];
+  if(!prev||!(prev.rankings||prev.weights))return [];
+  const plans=(prev.rankings||prev.weights)["30/40/30"]||[];
   const bySymbol=new Map(data.mapped.map(r=>[r.symbol,r]));
   return plans.map(p=>{
     const r=bySymbol.get(p.symbol);
