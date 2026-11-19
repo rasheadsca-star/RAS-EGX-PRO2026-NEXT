@@ -27,7 +27,7 @@ const MASTER={
 };
 const COLS={
   ref:[230,284],high:[286,333],low:[335,385],
-  close:[480,533],change:[533,577],value:[577,649],volume:[694,764]
+  close:[476,533],change:[532,566],value:[565,643],volume:[680,750]
 };
 function number(s){const v=String(s||"").replace(/,/g,"").replace(/\s/g,"");return /^-?\d+(?:\.\d+)?$/.test(v)?Number(v):null}
 const cleanName=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -113,7 +113,13 @@ async function parse(file,update){
   const full=rows.length>0 && ranks[0]===1 && ranks.every((n,i)=>n===i+1);
   const eligible=rows.filter(r=>r.currency==="EGP"&&r.issues.length===0);
   if(!full||rows.length<200)throw Error("فشل اكتمال جدول السوق — "+rows.length+" صفًا، يرجى رفع التقرير الرسمي الكامل");
-  if(eligible.length<190)throw Error("عدد صفوف الأسعار السليمة أقل من المطلوب: "+eligible.length);
+  if(eligible.length<190){
+    const counts={};for(const r of rows)for(const k of r.issues)counts[k]=(counts[k]||0)+1;
+    const summary=Object.entries(counts).map(([k,n])=>k+"="+n).join("، ");
+    throw Error("عدد صفوف الأسعار السليمة "+eligible.length+" من "+rows.length+
+      " | أسباب الرفض: "+(summary||"غير محددة")+
+      " | لا تغيّر التوصيات حتى يتم تصحيح الاستيراد");
+  }
   const mapped=eligible.filter(r=>r.symbol);
   const distinct=new Set(mapped.map(r=>r.symbol));
   if(distinct.size!==mapped.length)throw Error("تكرار في رموز الشركات المطابقة");
@@ -154,4 +160,4 @@ function outcomes(data,prev){
     return {symbol:p.symbol,close:r.close,high,low,state,executed:false};
   });
 }
-export {parse,compute,outcomes,RANKS};
+export {parse,compute,outcomes,RANKS,fromPage,COLS};
