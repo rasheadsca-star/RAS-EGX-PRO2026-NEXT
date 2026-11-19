@@ -17,6 +17,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Syntax-check manual browser ingestion module and fetcher
+        run: |
+          node --check egx-pro-research-12nov2026/operations/manual-importer.mjs
+          node --test egx-pro-research-12nov2026/operations/manual-importer.test.mjs
+          python -m py_compile egx-pro-research-12nov2026/operations/fetch_official.py
+          python -m py_compile egx-pro-research-12nov2026/operations/egx_pdf_extract.py
       - name: Validate EGX research ingestion gates
         run: node --test egx-pro-research-12nov2026/operations/validator.test.cjs
       - name: Install PDF extraction dependency

@@ -1,0 +1,43 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EGX PRO — استيراد التقرير وتحليل الجلسة محليًا</title>
+<style>:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#081929;color:#eaf3fb;font:15px/1.8 Tahoma,Arial,sans-serif}main{max-width:1160px;margin:auto;padding:22px}h1{margin:0}header,.panel{background:#102b42;border:1px solid #2c5670;padding:19px;border-radius:13px;margin:12px 0}.warn{background:#302b22;border:1px solid #9e7b39;color:#ffe2ab;padding:12px;border-radius:9px}.good{color:#91ebc3}.bad{color:#ff9ead}button{background:#17618a;color:#fff;border:1px solid #69c5f5;border-radius:8px;padding:9px 16px;font:inherit;cursor:pointer}button:disabled{opacity:.5}input,select{font:inherit;color:white;border:1px solid #80b9d6;background:#0e3651;padding:9px;border-radius:8px;max-width:100%}.muted{color:#a8c2d2;font-size:13px}.scroll{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:960px}th,td{border-bottom:1px solid #37536a;text-align:right;padding:9px}th{background:#17415d;color:#b7e6ff}a{color:#80d4ff}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{background:#163d56;padding:12px;border-radius:8px}small{color:#b5d0df}.stat strong{display:block;font-size:23px}@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}</style></head>
+<body><main><header><h1>EGX PRO — الاستيراد اليدوي والتحليل الفوري</h1><p class="muted">نسخة اختبار محلية: تقرير PDF → فحص الأسعار → ترتيب الأوزان التسعة → مقارنة التوصيات السابقة.</p></header>
+<div class="warn"><b>مهم:</b> هذا التحليل يحدث أمامك في المتصفح بعد رفع الملف، لكنه لا يحفظ البيانات على خادم، ولا يغيّر صفحة الجلسة العامة، ولا يصدر اعتماد تداول ورقي. ربط ISIN وخطوات السعر لم يكتمل؛ قد يكون اسم الشركة ظاهرًا دون رمز موثق. لا تدخل صفقات حقيقية بناءً عليه.</div>
+<section class="panel"><h2>رفع النشرة الرسمية</h2><input type="file" id="pdf" accept="application/pdf,.pdf" aria-label="اختيار تقرير جلسة EGX"> <button id="run">استيراد وتحليل PDF</button> <button id="export" disabled>تصدير تقرير التحليل JSON</button><p id="status" role="status" class="muted">لم يتم تحليل أي ملف.</p></section>
+<section class="panel" id="summary" hidden><h2>نتيجة التحقق من التقرير</h2><div class="stats"><div class="stat"><small>جلسة البيانات</small><strong id="session">—</strong></div><div class="stat"><small>إجمالي الصفوف</small><strong id="rows">—</strong></div><div class="stat"><small>صفوف EGP الصالحة مبدئيًا</small><strong id="valid">—</strong></div><div class="stat"><small>هويات الأسهم المطابقة اسميًا</small><strong id="mapped">—</strong></div></div><p id="quality" class="muted"></p></section>
+<section class="panel" id="rankingPanel" hidden><h2>أفضل خمسة وفق ترتيب الأوزان</h2><label for="weight">الأوزان: </label><select id="weight"></select><div class="scroll"><table><thead><tr><th>الترتيب</th><th>اسم الشركة من التقرير</th><th>رمز مبدئي</th><th>الإغلاق</th><th>تغير اليوم</th><th>الدرجة</th><th>الدخول</th><th>هدف 1</th><th>هدف 2</th><th>وقف</th><th>مخاطرة</th></tr></thead><tbody id="rankingRows"></tbody></table></div><p class="muted">قد تظهر شركات برمز UNVERIFIED. هذه نتائج فرز تجريبية لا يجوز اعتمادها قبل مطابقة هويتها وISIN وخطوة السعر.</p></section>
+<section class="panel" id="evaluationPanel" hidden><h2>تقييم التوصيات المحفوظة عند توفرها</h2><div class="scroll"><table><thead><tr><th>السهم</th><th>إغلاق التقرير الجديد</th><th>القمة</th><th>القاع</th><th>حالة ملامسة الخطة</th></tr></thead><tbody id="evaluationRows"></tbody></table></div><p class="muted">أي تعارض في ترتيب لمس الدخول والوقف والهدف يُسجل ORDER_UNKNOWN؛ لا تُسجل أرباح أو خسائر صفقات منفذة دون دليل تنفيذ.</p></section>
+<section class="panel"><a href="../">العودة إلى EGX PRO</a></section></main>
+<script type="module">
+import {parse,compute,outcomes,RANKS} from './manual-importer.mjs';
+const $=id=>document.getElementById(id);let result=null,rankings=null,comparisons=null;
+const fix=n=>Number(n).toFixed(2);
+function table(id,data){const tb=$(id);tb.replaceChildren();for(const cells of data){const tr=document.createElement('tr');for(const v of cells){const td=document.createElement('td');td.textContent=v??'—';tr.append(td)}tb.append(tr)}}
+function showWeights(){const select=$('weight');select.replaceChildren();for(const w of RANKS){let o=document.createElement('option');o.value=w;o.textContent=w;select.append(o)}select.value='30/40/30';draw()}
+function draw(){const w=$('weight').value;table('rankingRows',(rankings[w]||[]).map((r,i)=>[i+1,r.name,r.symbol,fix(r.close),fix(r.change)+'%',fix(r.score),fix(r.entry),fix(r.t1),fix(r.t2),fix(r.stop),fix(r.riskPct)+'%']))}
+$('weight').onchange=draw;
+$('run').onclick=async()=>{const f=$('pdf').files?.[0];if(!f){$('status').textContent='اختر ملف PDF أولًا';return}$('run').disabled=true;$('export').disabled=true;for(const id of ['summary','rankingPanel','evaluationPanel'])$(id).hidden=true;
+try{
+ result=await parse(f,msg=>$('status').textContent=msg);
+ const prevResponse=await fetch('../latest.json?ts='+Date.now(),{cache:'no-store'});
+ let prev=null;if(prevResponse.ok)prev=await prevResponse.json();
+ if(prev&&prev.session>result.session)throw Error('التقرير أقدم من آخر جلسة محفوظة: '+prev.session);
+ if(prev&&prev.session===result.session){
+  let found=null;
+  for(let delta=1;delta<=7;delta++){
+   const dt=new Date(result.session+'T12:00:00Z');dt.setUTCDate(dt.getUTCDate()-delta);
+   const name=dt.toISOString().slice(0,10);
+   try{const response=await fetch('../sessions/'+name+'/research.json?ts='+Date.now(),{cache:'no-store'});if(response.ok){const obj=await response.json();if(obj.session===name&&(obj.weights||obj.rankings)){found=obj;break}}}catch(_e){}
+  }
+  prev=found;
+ }
+ rankings=compute(result);comparisons=outcomes(result,prev);
+ $('session').textContent=result.session;$('rows').textContent=result.rows.length;$('valid').textContent=result.eligible.length;$('mapped').textContent=result.mapped.length;
+ $('quality').textContent='الفحص الأولي مكتمل — SHA-256: '+result.hash+' | الصفوف المستبعدة أو غير المقومة بالجنيه: '+(result.rows.length-result.eligible.length)+' | التحقق من ISIN غير مكتمل.';
+ $('summary').hidden=false;$('rankingPanel').hidden=false;showWeights();
+ if(comparisons.length){table('evaluationRows',comparisons.map(x=>[x.symbol,x.close==null?'—':fix(x.close),x.high==null?'—':fix(x.high),x.low==null?'—':fix(x.low),x.state]));$('evaluationPanel').hidden=false;}
+ $('status').textContent='تم التحليل داخل المتصفح بنجاح، لكن لم تُحدث قاعدة البيانات المركزية أو الصفحة المنشورة.';$('export').disabled=false;
+}catch(e){$('status').textContent='توقف التحليل دون أي تغيير في البيانات المنشورة: '+String(e.message||e)}
+finally{$('run').disabled=false}};
+$('export').onclick=()=>{if(!result||!rankings)return;const payload={schemaVersion:'egx-local-research-preview-v1',session:result.session,sourceHash:result.hash,sourcePages:result.pages,sourceRows:result.rows.length,eligibleEGP:result.eligible.length,quality:result.quality,certified:false,centralDbUpdated:false,rankings,outcomes:comparisons,exclusions:result.rows.filter(r=>r.issues.length).map(r=>({rank:r.rank,name:r.name,issues:r.issues}))};const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='EGX-PREVIEW-'+result.session+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000)};
+</script></body></html>
