@@ -21,7 +21,16 @@ try{
  result=await parse(f,msg=>$('status').textContent=msg);
  const prevResponse=await fetch('../latest.json?ts='+Date.now(),{cache:'no-store'});
  let prev=null;if(prevResponse.ok)prev=await prevResponse.json();
- if(prev&&prev.session>=result.session)throw Error('التقرير ليس أحدث من آخر جلسة محفوظة: '+prev.session);
+ if(prev&&prev.session>result.session)throw Error('التقرير أقدم من آخر جلسة محفوظة: '+prev.session);
+ if(prev&&prev.session===result.session){
+  let found=null;
+  for(let delta=1;delta<=7;delta++){
+   const dt=new Date(result.session+'T12:00:00Z');dt.setUTCDate(dt.getUTCDate()-delta);
+   const name=dt.toISOString().slice(0,10);
+   try{const response=await fetch('../sessions/'+name+'/research.json?ts='+Date.now(),{cache:'no-store'});if(response.ok){const obj=await response.json();if(obj.session===name&&(obj.weights||obj.rankings)){found=obj;break}}}catch(_e){}
+  }
+  prev=found;
+ }
  rankings=compute(result);comparisons=outcomes(result,prev);
  $('session').textContent=result.session;$('rows').textContent=result.rows.length;$('valid').textContent=result.eligible.length;$('mapped').textContent=result.mapped.length;
  $('quality').textContent='الفحص الأولي مكتمل — SHA-256: '+result.hash+' | الصفوف المستبعدة أو غير المقومة بالجنيه: '+(result.rows.length-result.eligible.length)+' | التحقق من ISIN غير مكتمل.';
