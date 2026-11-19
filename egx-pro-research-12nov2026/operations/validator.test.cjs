@@ -1,0 +1,26 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {validateSession,evaluatePlan,shouldAdvanceLatest,validDate,WEIGHTS}=require('./validator.cjs');
+const master={'EGS000000001':{symbol:'TEST',tickSize:0.01}};
+const row=()=>({symbol:'TEST',isin:'EGS000000001',open:10,high:11,low:9.8,close:10.5,volume:10000,valueTraded:105000});
+const request=()=>({session:'2026-11-18',rows:[row()],sourceHash:'a'.repeat(64),sourcePages:56,master,minRows:1});
+test('weights are nine independent configurations',()=>{assert.equal(WEIGHTS.length,9);assert.equal(new Set(WEIGHTS).size,9)});
+test('calendar date is validated',()=>{assert.equal(validDate('2026-11-18'),true);assert.equal(validDate('2026-02-31'),false)});
+test('valid synthetic session with matching ISIN and tick can be staged',()=>{const q=validateSession(request());assert.equal(q.ok,true);assert.equal(q.acceptedRows,1)});
+test('fails closed for missing security master',()=>{const q=validateSession({...request(),master:null});assert.equal(q.ok,false);assert(q.errors.includes('NO_VERSIONED_SECURITY_MASTER'))});
+test('unmatched ISIN must quarantine row',()=>{const q=validateSession({...request(),rows:[{...row(),isin:'EGS111111111'}]});assert.equal(q.ok,false);assert.equal(q.acceptedRows,0)});
+test('OHLC corruption must quarantine row',()=>{const q=validateSession({...request(),rows:[{...row(),high:10.1}]});assert.equal(q.ok,false);assert.equal(q.acceptedRows,0)});
+test('tick mismatch must quarantine row',()=>{const q=validateSession({...request(),rows:[{...row(),close:10.505}]});assert.equal(q.ok,false)});
+test('duplicate ISIN is not published',()=>{const q=validateSession({...request(),rows:[row(),row()]});assert.equal(q.ok,false);assert(q.errors.includes('UNRESOLVED_QUARANTINE'))});
+test('missing row coverage blocks release',()=>{const q=validateSession({...request(),minRows:200});assert.equal(q.ok,false);assert(q.errors.includes('INSUFFICIENT_VERIFIED_COVERAGE'))});
+test('stale session blocks release',()=>{const q=validateSession({...request(),previousSession:'2026-11-18'});assert.equal(q.ok,false);assert(q.errors.includes('NON_MONOTONIC_SESSION_DATE'))});
+test('no-entry does not count as a loss',()=>{assert.equal(evaluatePlan({entry:11,stop:9,t1:13,t2:15},{high:10.5,low:9.8,close:10}).status,'NO_ENTRY')});
+test('daily bar touching target and stop is unresolved',()=>{assert.equal(evaluatePlan({entry:11,stop:9,t1:13,t2:15},{high:15.5,low:8.5,close:11}).status,'ORDER_UNKNOWN')});
+test('latest pointer only advances after all gates pass',()=>{
+ const p={current:'2026-11-17',proposed:'2026-11-18',validation:{ok:true},artifactsPresent:true};
+ assert.equal(shouldAdvanceLatest(p),true);
+ assert.equal(shouldAdvanceLatest({...p,artifactsPresent:false}),false);
+ assert.equal(shouldAdvanceLatest({...p,validation:{ok:false}}),false);
+ assert.equal(shouldAdvanceLatest({...p,proposed:'2026-11-17'}),false);
+});
