@@ -1,0 +1,36 @@
+name: EGX Research Ingestion Gates
+on:
+  pull_request:
+    paths:
+      - 'egx-pro-research-12nov2026/operations/**'
+      - 'egx-pro-research-12nov2026/sessions/**'
+      - '.github/workflows/egx-research-gates.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate EGX research ingestion gates
+        run: node --test egx-pro-research-12nov2026/operations/validator.test.cjs
+      - name: Check latest research manifest and published session consistency
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const root='egx-pro-research-12nov2026';
+          const j=JSON.parse(fs.readFileSync(root+'/latest.json','utf8'));
+          if(!/^sessions\/20\d\d-\d\d-\d\d\/$/.test(j.recentSessionPage)) throw Error('Unsafe latest path');
+          const p=root+'/'+j.recentSessionPage;
+          const r=JSON.parse(fs.readFileSync(p+'research.json','utf8'));
+          if(r.session!==j.session) throw Error('latest/session mismatch');
+          if(!fs.existsSync(p+'index.html')) throw Error('published session missing');
+          if(r.executionApproved===true||j.readyToTrade===true) throw Error('False paper certification');
+          console.log('Session pointer valid:',j.session,'research-only');
+          NODE
