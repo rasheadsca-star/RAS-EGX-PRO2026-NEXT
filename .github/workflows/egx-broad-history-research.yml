@@ -1,0 +1,46 @@
+name: EGX broad historical research screen
+on:
+  workflow_dispatch:
+    inputs:
+      session:
+        description: "Research cutoff YYYY-MM-DD (not a current quote certification)"
+        required: false
+        type: string
+  schedule:
+    - cron: '30 18 * * 0-4'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/paper-v4/build-broad-history-research.cjs'
+      - 'tests/paper-v4/broad-history-research.test.cjs'
+      - '.github/workflows/egx-broad-history-research.yml'
+permissions:
+  contents: read
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Unit tests
+        run: node --test tests/paper-v4/broad-history-research.test.cjs
+      - name: Build research-only output
+        env:
+          EGX_SESSION: ${{ inputs.session }}
+        run: |
+          node scripts/paper-v4/build-broad-history-research.cjs
+          node - <<'JS'
+          const d=require('./paper-v4/broad-history-research.json');
+          if(d.qualifiedTradeCount!==0||d.marketWideCurrentSessionVerified!==false||d.rows.some(r=>r.isExecutable||r.currentSessionVerified||r.recommendation!=='HISTORICAL_RESEARCH_ONLY'))throw Error('Unsafe broad market ranking');
+          if(d.counts.screened+d.counts.excluded!==d.counts.historyFiles)throw Error('History-file totals mismatch');
+          console.log('Historical eligible:',d.counts.screened,'Excluded:',d.counts.excluded);
+          JS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: egx-broad-history-research
+          path: paper-v4/broad-history-research.json
+          if-no-files-found: error
+          retention-days: 30

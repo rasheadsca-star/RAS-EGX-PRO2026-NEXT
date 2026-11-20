@@ -1,0 +1,8 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {build}=require('../../scripts/paper-v4/build-broad-history-research.cjs');
+function setup(){const root=fs.mkdtempSync(path.join(os.tmpdir(),'egx-broad-'));fs.mkdirSync(path.join(root,'data/history'),{recursive:true});return root}
+function bars(n=70){return Array.from({length:n},(_,i)=>{const d=new Date(Date.UTC(2026,6,1+i)),close=10+i*.1;return {date:d.toISOString().slice(0,10),open:close-.02,high:close+.1,low:close-.1,close,volume:1000+i}})}
+test('historical research cannot be a current buy',()=>{const root=setup();fs.writeFileSync(path.join(root,'data/history/TEST.json'),JSON.stringify({sessions:bars()}));const r=build({root,asOf:'2026-11-04'});assert.equal(r.counts.screened,1);assert.equal(r.qualifiedTradeCount,0);assert.equal(r.rows[0].isExecutable,false);assert.equal(r.rows[0].currentSessionVerified,false);assert.notEqual(r.rows[0].latestBarDate,'2026-11-04')});
+test('duplicate date must be excluded',()=>{const root=setup(),b=bars();b.push({...b[0]});fs.writeFileSync(path.join(root,'data/history/TEST.json'),JSON.stringify({sessions:b}));const r=build({root,asOf:'2026-11-04'});assert.equal(r.counts.screened,0);assert.equal(r.excluded[0].reason,'DUPLICATE_DATED_BAR')});
+test('no future sessions can leak into as-of screen',()=>{const root=setup();fs.writeFileSync(path.join(root,'data/history/TEST.json'),JSON.stringify({sessions:bars()}));const r=build({root,asOf:'2026-07-15'});assert.equal(r.counts.screened,0);assert.equal(r.excluded[0].reason,'INSUFFICIENT_VALID_BARS')});
