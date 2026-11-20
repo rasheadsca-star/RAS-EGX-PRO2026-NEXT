@@ -1,0 +1,75 @@
+name: EGX - Historical Coverage Audit
+on:
+  push:
+    branches:
+      - feature/market-coverage-gate-20261101
+    paths:
+      - 'scripts/ohlcv_coverage_audit.py'
+      - 'tests/test_ohlcv_coverage_audit.py'
+      - '.github/workflows/egx-historical-coverage-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify-historical-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify unit tests
+        run: python -m unittest discover -s tests -p 'test_ohlcv_coverage_audit.py' -v
+      - name: Download archived migration evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p artifacts/g07
+          gh run download 35019349149 -R "${GITHUB_REPOSITORY}" -n astra-g07-migration-evidence-35019349149 -D artifacts/g07
+      - name: Inventory actual archived data and audit supported SQLite candle tables
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, sqlite3
+          from pathlib import Path
+          from scripts.ohlcv_coverage_audit import audit
+          root = Path('artifacts/g07')
+          output = Path('artifacts/coverage')
+          output.mkdir(parents=True, exist_ok=True)
+          files = [p for p in root.rglob('*') if p.is_file()]
+          inventory = []
+          audits = []
+          for file in files:
+              entry = {'path': str(file.relative_to(root)), 'bytes': file.stat().st_size}
+              inventory.append(entry)
+              if file.suffix.lower() not in ('.sqlite','.db','.sqlite3'):
+                  continue
+              try:
+                  con = sqlite3.connect(f'file:{file.resolve()}?mode=ro', uri=True)
+                  tables = [r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")]
+                  for table in tables:
+                      cols = {r[1] for r in con.execute('PRAGMA table_info("' + table.replace('"','""') + '")')}
+                      if {'ticker','session','open','high','low','close','volume'} <= cols:
+                          result = audit(file, table, 'ticker','session','open','high','low','close','volume')
+                          audits.append({'file':str(file.relative_to(root)),'table':table,'report':result})
+                  con.close()
+              except Exception as exc:
+                  entry['auditError']=str(exc)
+          (output/'inventory.json').write_text(json.dumps(inventory,indent=2),encoding='utf-8')
+          (output/'audit.json').write_text(json.dumps(audits,indent=2),encoding='utf-8')
+          print('Archived files:',len(files),'supported SQLite tables:',len(audits))
+          if not files:
+              raise SystemExit('No archive files downloaded')
+          # A JSONL historical archive requires an explicit normalization adapter
+          # before any claim of OHLCV coverage; never manufacture a PASS.
+          if not audits:
+              (output/'STATUS.txt').write_text('BLOCKED: no mapped SQLite OHLCV table; source JSONL needs explicit adapter.\n')
+              print('BLOCKED: no mapped SQLite OHLCV table: see inventory artifact')
+          PY
+      - name: Upload coverage and inventory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-coverage-audit-evidence
+          path: artifacts/coverage/
+          retention-days: 30
