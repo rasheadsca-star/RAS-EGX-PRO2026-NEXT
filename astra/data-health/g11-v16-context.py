@@ -3,6 +3,8 @@ import argparse
 import json
 import math
 import os
+import re
+from datetime import date
 import runpy
 import statistics
 from pathlib import Path
@@ -10,7 +12,7 @@ from pathlib import Path
 ROOT = Path(os.getenv('GITHUB_WORKSPACE') or '.').resolve()
 SRC = runpy.run_path(str(ROOT / 'scripts/research/v16-two-stage-predictor.py'), run_name='g11_v16_source')
 BASE = SRC['BASE']
-norm_hist = SRC['norm_hist']
+source_norm_hist = SRC['norm_hist']
 base_feature = SRC['base_feature']
 augment_feature = SRC['augment_feature']
 extended_flags = SRC['extended_flags']
@@ -26,6 +28,48 @@ def read_json(path, default=None):
         return json.loads(Path(path).read_text(encoding='utf-8'))
     except Exception:
         return default
+
+
+def norm_hist(path):
+    """G11 admission must agree with canonical validation; never fill volume."""
+    doc = read_json(path, {}) or {}
+    if not isinstance(doc, dict):
+        return {'ticker': path.stem.upper(), 'name': path.stem, 'ok': False, 'rows': []}
+    source_rows = doc.get('sessions', [])
+    rows_by_date = {}
+    conflicts = set()
+    for raw in source_rows:
+        try:
+            day = str(raw.get('date') or raw.get('sessionDate') or '')[:10]
+            if raw.get('ticker') and str(raw['ticker']).upper() != path.stem.upper():
+                continue
+            if raw.get('sourceSessionDate') and raw['sourceSessionDate'] != day:
+                continue
+            parsed_day = date.fromisoformat(day)
+            if parsed_day.weekday() in (4, 5):
+                continue
+            values = [raw.get(key) for key in ('open', 'high', 'low', 'close', 'volume')]
+            if any(value is None or isinstance(value, bool) or str(value).strip() == '' for value in values):
+                continue
+            o, h, l, c, v = map(float, values)
+            if not all(math.isfinite(value) for value in (o, h, l, c, v)):
+                continue
+            if not (min(o, h, l, c) > 0 and h >= max(o, c) and l <= min(o, c) and v >= 0):
+                continue
+            if re.search(r'invalid|conflict|failed|unresolved|quarantined', str(raw.get('validationStatus', '')), re.I):
+                continue
+            if any(re.search(r'reconstruct|synthetic|carry.forward', str(warning), re.I) for warning in raw.get('warnings', [])):
+                continue
+            row = {**raw, 'date': day, 'open': o, 'high': h, 'low': l, 'close': c, 'volume': v}
+            if day in rows_by_date and any(rows_by_date[day][key] != row[key] for key in ('open', 'high', 'low', 'close', 'volume')):
+                conflicts.add(day)
+            rows_by_date[day] = row
+        except (ValueError, TypeError):
+            continue
+    ticker = str(doc.get('ticker') or path.stem).upper()
+    return {'ticker': ticker, 'name': doc.get('companyNameAr') or doc.get('companyNameEn') or ticker,
+            'ok': doc.get('symbolVerified') is True and ticker == path.stem.upper() and doc.get('staleData') is not True,
+            'rows': [rows_by_date[day] for day in sorted(rows_by_date) if day not in conflicts]}
 
 
 def active_tickers():
@@ -100,11 +144,25 @@ def build(session):
         for feature in by_date[date]:
             feature['rs20'] = feature['ret20'] - med
 
+    # Labels use observed next-market-session closes, never tomorrow's
+    # risk-filtered feature universe. Otherwise extreme outcomes disappear.
+    observed_by_date = {}
+    for history in histories:
+        for row in history['rows']:
+            observed_by_date.setdefault(row['date'], {})[history['ticker']] = row
+    calendar = read_json(ROOT / 'data/session-calendar.json', {}) or {}
+    market_dates = sorted(day for day in calendar.get('sessions', []) if day <= session)
+    if not market_dates:
+        raise RuntimeError('G11 requires a canonical market session calendar for outcome labels')
+
     all_labeled = []
     session_rows = []
-    for date_index, signal_date in enumerate(eligible_dates[:-1]):
-        outcome_date = eligible_dates[date_index + 1]
-        outcome_map = {feature['ticker']: feature for feature in by_date[outcome_date]}
+    for signal_date in eligible_dates:
+        next_dates = [date for date in market_dates if date > signal_date]
+        if not next_dates:
+            continue
+        outcome_date = next_dates[0]
+        outcome_map = observed_by_date.get(outcome_date, {})
         rows = []
         for feature in by_date[signal_date]:
             outcome = outcome_map.get(feature['ticker'])
@@ -114,6 +172,7 @@ def build(session):
             next_return = pct(outcome['close'], feature['close'])
             rows.append({
                 'sessionDate': signal_date,
+                'outcomeSessionDate': outcome_date,
                 'ticker': feature['ticker'],
                 'xNew': extended_vector(feature, flags),
                 'nextReturn': next_return,
