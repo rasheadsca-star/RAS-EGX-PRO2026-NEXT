@@ -1,0 +1,35 @@
+name: EGX Central History Recovery Audit
+on:
+  push:
+    branches: [research/central-history-recovery-20261027]
+  pull_request:
+    paths:
+      - 'scripts/stable/central-history-recovery.cjs'
+      - 'tests/stable/central-history-recovery.test.cjs'
+      - '.github/workflows/egx-central-history-recovery.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  history-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Safe recovery tests
+        run: |
+          node --check scripts/stable/central-history-recovery.cjs
+          node --test tests/stable/central-history-recovery.test.cjs
+      - name: Inspect historical files in all tracked legacy engines
+        run: node scripts/stable/central-history-recovery.cjs --out=artifacts/central-history-recovery.json
+      - name: Upload independently verifiable gap and legacy-candidate inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: egx-central-history-recovery-inventory
+          path: artifacts/central-history-recovery.json
+          if-no-files-found: error
