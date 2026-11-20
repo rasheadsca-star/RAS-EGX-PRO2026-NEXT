@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "egx-p0-independent-leads-v1",
+  "reviewedDate": "2026-10-24",
+  "status": "LEADS_ONLY_NOT_VERIFIED",
+  "cases": [
+    {
+      "ticker": "SEIGA",
+      "conflictingSessions": 44,
+      "hypothesis": "POSSIBLE_CURRENCY_OR_SHARE_CLASS_MISMATCH",
+      "evidence": [
+        {
+          "source": "Mubasher SEIGA",
+          "url": "https://www.mubasher.info/markets/EGX/stocks/SEIGA",
+          "observation": "Historical SEIGA page labels quote currency USD; quoted displayed snapshot is from 2002 and is NOT usable as a current close.",
+          "type": "SECONDARY_WEB_REFERENCE"
+        },
+        {
+          "source": "Mubasher SEIG",
+          "url": "https://www.mubasher.info/markets/EGX/stocks/SEIG/",
+          "observation": "SEIG listing labels quote currency EGP; distinct ticker from SEIGA.",
+          "type": "SECONDARY_WEB_REFERENCE"
+        },
+        {
+          "source": "Stock Analysis SEIGA",
+          "url": "https://stockanalysis.com/quote/egx/SEIGA/",
+          "observation": "SEIGA page reports price in USD and historical stale/flat quotes; data suitability remains unverified.",
+          "type": "SECONDARY_WEB_REFERENCE"
+        }
+      ],
+      "requiredBeforeResolution": [
+        "OFFICIAL_ISIN_BOTH_LISTINGS",
+        "EXCHANGE_CONFIRMED_CURRENCY_AND_MARKET",
+        "CORRECT_DATE_SPECIFIC_FX_IF_CURRENCY_CONVERSION_IS_INTENDED",
+        "EXCHANGE_CLOSES_MATCHED_TO_CONFLICT_DATES"
+      ],
+      "autoAdjust": false
+    },
+    {
+      "ticker": "OCPH",
+      "conflictingSessions": 7,
+      "hypothesis": "POSSIBLE_2026_ONE_FOR_ONE_BONUS_SHARE_ADJUSTMENT",
+      "evidence": [
+        {
+          "source": "Arab Finance April 28 2026 announcement",
+          "url": "https://www.arabfinance.com/ar/news/newdetails/%D8%A3%D9%83%D8%AA%D9%88%D8%A8%D8%B1-%D9%81%D8%A7%D8%B1%D9%85%D8%A7-%D8%AA%D9%82%D8%B1%D8%B1-%D8%AA%D9%88%D8%B2%D9%8A%D8%B9-%D8%A3%D8%B3%D9%87%D9%85-%D9%85%D8%AC%D8%A7%D9%86%D9%8A%D8%A9-%D9%88%D8%B2%D9%8A%D8%A7%D8%AF%D8%A9-%D8%B1%D8%A3%D8%B3-%D8%A7%D9%84%D9%85%D8%A7%D9%84",
+          "observation": "Reports April 27 2026 shareholder approval for 1 bonus share per existing share; share capital EGP 120m to 240m.",
+          "type": "SECONDARY_REPORT_OF_EXCHANGE_DISCLOSURE"
+        },
+        {
+          "source": "Investing OCPH split history",
+          "url": "https://www.investing.com/equities/october-pharma-historical-data-splits",
+          "observation": "Shows 2-for-1 split dated August 6 2026; event convention and effective date need official confirmation.",
+          "type": "SECONDARY_DATA"
+        },
+        {
+          "source": "Mubasher OCPH announcements",
+          "url": "https://www.mubasher.info/markets/EGX/stocks/OCPH/announcements/",
+          "observation": "Listings include 2026 filings for bonus issue and paid capital increase.",
+          "type": "SECONDARY_INDEX_OF_EXCHANGE_FILINGS"
+        }
+      ],
+      "requiredBeforeResolution": [
+        "EXCHANGE_APPROVED_BONUS_ISSUE_DOCUMENT",
+        "EX_DIVIDEND_AND_EFFECTIVE_ADJUSTMENT_DATE",
+        "RAW_UNADJUSTED_EXCHANGE_CLOSES_ON_SEVEN_DATES",
+        "VALIDATE_HISTORICAL_PRICE_ADJUSTMENT_CONVENTION"
+      ],
+      "autoAdjust": false
+    }
+  ],
+  "approvedPrices": 0,
+  "productionPromotionAllowed": false
+}

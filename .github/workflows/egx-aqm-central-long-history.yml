@@ -8,8 +8,18 @@ on:
       - 'scripts/research/egx-aqm-single-trading-readiness-gate-v1.cjs'
       - 'tests/research/egx-aqm-single-trading-readiness-gate-v1.test.cjs'
       - 'scripts/research/egx-central-price-conflict-attribution-v1.cjs'
+      - 'scripts/research/egx-price-evidence-triage-v1.cjs'
+      - 'scripts/research/egx-p0-scale-investigation-v1.cjs'
+      - 'scripts/research/egx-p0-evidence-crosscheck-v1.cjs'
+      - 'tests/research/egx-p0-evidence-crosscheck-v1.test.cjs'
+      - 'data/research/egx-p0-independent-leads-v1.json'
+      - 'tests/research/egx-p0-scale-investigation-v1.test.cjs'
+      - 'tests/research/egx-price-evidence-triage-v1.test.cjs'
       - 'tests/research/egx-central-price-conflict-attribution-v1.test.cjs'
       - 'scripts/research/egx-central-research-ohlcv-gateway-v1.cjs'
+      - 'scripts/research/egx-egp-only-universe-policy-v1.cjs'
+      - 'tests/research/egx-egp-only-universe-policy-v1.test.cjs'
+      - 'data/research/egx-egp-only-universe-policy-v1.json'
       - 'scripts/research/egx-aqm-mark-integrity-v1.cjs'
       - 'tests/research/egx-aqm-mark-integrity-v1.test.cjs'
       - 'scripts/research/egx-aqm-research-v1.cjs'
@@ -37,12 +47,26 @@ jobs:
             /raw-long-history-quality.json
       - name: Validate audit trail for market-to-market stale price valuation
         run: node --test tests/research/egx-aqm-mark-integrity-v1.test.cjs tests/research/egx-aqm-research-v1.test.cjs
+      - name: Enforce EGP research universe policy
+        run: node --test tests/research/egx-egp-only-universe-policy-v1.test.cjs
       - name: Gate test of actual long-history candle reader
         run: node --test tests/research/egx-central-research-ohlcv-gateway-v1.test.cjs
       - name: Test and attribute price conflicts without auto-promoting sources
         run: |
           node --test tests/research/egx-central-price-conflict-attribution-v1.test.cjs
           node scripts/research/egx-central-price-conflict-attribution-v1.cjs
+      - name: Validate and export independent price evidence intake queue (no price promotion)
+        run: |
+          node --test tests/research/egx-price-evidence-triage-v1.test.cjs
+          node scripts/research/egx-price-evidence-triage-v1.cjs
+      - name: Produce P0 case-by-security investigation with zero price adjustments
+        run: |
+          node --test tests/research/egx-p0-scale-investigation-v1.test.cjs
+          node scripts/research/egx-p0-scale-investigation-v1.cjs
+      - name: Cross-check P0 evidence leads and require official date matching
+        run: |
+          node --test tests/research/egx-p0-evidence-crosscheck-v1.test.cjs
+          node scripts/research/egx-p0-evidence-crosscheck-v1.cjs
       - name: Run AQM with restored central history research source, never live
         run: node scripts/research/egx-aqm-central-long-history-research-v1.cjs
       - name: Validate single production readiness gate and issue final research-only report
@@ -88,5 +112,9 @@ jobs:
           path: |
             data/research/egx-aqm-central-long-history-research-v1.json
             data/research/egx-central-price-conflict-attribution-v1.json
+            data/research/egx-price-evidence-triage-v1.json
+            data/research/egx-price-evidence-triage-v1.csv
+            data/research/egx-p0-scale-investigation-v1.json
+            data/research/egx-p0-evidence-crosscheck-v1.json
             data/research/egx-aqm-single-trading-readiness-gate-v1.json
           retention-days: 30

@@ -1,0 +1,6 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {loadPolicy,excludedTicker}=require('../../scripts/research/egx-egp-only-universe-policy-v1.cjs');
+test('SEIGA is excluded and OCPH remains in the EGP research universe',()=>{const p=loadPolicy();assert.equal(p.baseCurrency,'EGP');assert.equal(excludedTicker('SEIGA',p),true);assert.equal(excludedTicker('OCPH',p),false)});
+test('non-USD policy rows are rejected to avoid accidental omissions',()=>{const f=path.join(os.tmpdir(),'egx-currency-invalid-'+process.pid+'.json');try{fs.writeFileSync(f,JSON.stringify({schemaVersion:'egx-egp-only-universe-policy-v1',baseCurrency:'EGP',excluded:[{ticker:'ABC',currency:'EGP'}]}));assert.throws(()=>loadPolicy(f),/Invalid/)}finally{fs.rmSync(f,{force:true})}});
+test('duplicate exclusion identities rejected',()=>{const f=path.join(os.tmpdir(),'egx-currency-dupe-'+process.pid+'.json');try{fs.writeFileSync(f,JSON.stringify({schemaVersion:'egx-egp-only-universe-policy-v1',baseCurrency:'EGP',excluded:[{ticker:'SEIGA',currency:'USD'},{ticker:'SEIGA',currency:'USD'}]}));assert.throws(()=>loadPolicy(f),/duplicate/)}finally{fs.rmSync(f,{force:true})}});
