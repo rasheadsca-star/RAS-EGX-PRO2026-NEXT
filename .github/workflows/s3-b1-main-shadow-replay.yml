@@ -1,0 +1,34 @@
+name: S3-B1 Nonblocking Main Shadow Replay
+on:
+  pull_request:
+    paths:
+      - 'scripts/stable/history-s3-main-replay.cjs'
+      - 'scripts/stable/history-s3-shadow-evidence.cjs'
+      - '.github/workflows/s3-b1-main-shadow-replay.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch exact main reference
+        run: git fetch origin main:refs/remotes/origin/main
+      - name: Install pinned S2 parser
+        run: npm ci --prefix tests/stable/s2 --ignore-scripts
+      - name: Replay main read-only in temporary worktree
+        continue-on-error: true
+        run: node scripts/stable/history-s3-main-replay.cjs "$GITHUB_WORKSPACE" "$RUNNER_TEMP/s3-main-replay.json"
+      - name: Archive evidence regardless of replay result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-b1-main-replay-evidence
+          path: ${{ runner.temp }}/s3-main-replay.json
+          if-no-files-found: error
