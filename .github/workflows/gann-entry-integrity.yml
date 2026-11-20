@@ -1,0 +1,21 @@
+name: Gann Backtest Entry Integrity
+on:
+  pull_request:
+    paths:
+      - 'gann-fusion-x/review/backtest.js'
+      - 'tests/gann/gann-entry-integrity.test.cjs'
+      - '.github/workflows/gann-entry-integrity.yml'
+  push:
+    branches: [fix/gann-backtest-entry-integrity]
+permissions:
+  contents: read
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check gann-fusion-x/review/backtest.js
+      - run: node --test tests/gann/gann-entry-integrity.test.cjs
