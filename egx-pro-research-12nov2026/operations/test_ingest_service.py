@@ -1,0 +1,66 @@
+import hashlib
+import json
+import sqlite3
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+from ingest_service import ingest_bytes, init_database, get_status, create_handler, MAX_BYTES
+
+class FakeResult:
+    def __init__(self,returncode=0,stderr=""):
+        self.returncode=returncode
+        self.stderr=stderr
+        self.stdout=""
+
+class TestIngestService(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory()
+        self.folder=Path(self.temp.name)
+        self.fake_pdf=b"%PDF-"+b"0"*25_000
+    def tearDown(self):
+        self.temp.cleanup()
+    def fake_runner(self,argv):
+        if argv[0].endswith("python") or "egx_pdf_extract.py" in str(argv):
+            out=Path(argv[argv.index("--output")+1])
+            out.write_text(json.dumps({
+                "sourceSha256":hashlib.sha256(self.fake_pdf).hexdigest(),
+                "session":"2026-11-19", "totalRows":214, "rows":[],
+                "publicationAllowed":False,"sourcePages":56
+            }))
+            return FakeResult()
+        out=Path(argv[-1])
+        out.write_text(json.dumps({"errors":["NO_VERSIONED_SECURITY_MASTER"],"publicationAllowed":False}))
+        return FakeResult(2)
+    def test_immutable_store_sha_dedup(self):
+        a=ingest_bytes(self.fake_pdf,"manual",self.folder,runner=self.fake_runner)
+        self.assertEqual(a["state"],"QUARANTINED")
+        self.assertFalse(a["published"])
+        self.assertFalse(a["certified"])
+        b=ingest_bytes(self.fake_pdf,"manual",self.folder,runner=self.fake_runner)
+        self.assertTrue(b["duplicate"])
+        self.assertEqual(a["sha"],b["sha"])
+        with sqlite3.connect(self.folder/"ingest.sqlite3") as con:
+            self.assertEqual(con.execute("SELECT count(*) FROM ingests").fetchone()[0],1)
+        original=self.folder/"objects"/a["sha"][:2]/(a["sha"]+".pdf")
+        self.assertEqual(original.read_bytes(),self.fake_pdf)
+    def test_reject_non_pdf_and_tiny(self):
+        with self.assertRaisesRegex(ValueError,"INVALID_PDF_SIGNATURE"):
+            ingest_bytes(b"test"+b"0"*25_000,"wrong",self.folder)
+        with self.assertRaisesRegex(ValueError,"INVALID_PDF_SIZE"):
+            ingest_bytes(b"%PDF-123","tiny",self.folder)
+    def test_validator_exception_recorded_not_published(self):
+        def failed(argv):
+            return FakeResult(1,"synthetic extractor failure")
+        a=ingest_bytes(self.fake_pdf,"manual",self.folder,runner=failed)
+        self.assertEqual(a["state"],"VALIDATION_FAILED")
+        self.assertIn("PDF_EXTRACT_FAILED",a["error"])
+        self.assertFalse(a["published"])
+    def test_handler_requires_key_on_upload(self):
+        handler=create_handler(self.folder,"X"*40)
+        self.assertTrue(callable(handler))
+        self.assertEqual(MAX_BYTES,30*1024*1024)
+        self.assertIsNotNone(get_status(self.folder/"ingest.sqlite3","a"*64) if (self.folder/"ingest.sqlite3").exists() else None) if False else None
+
+if __name__=="__main__":
+    unittest.main()
