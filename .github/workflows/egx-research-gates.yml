@@ -39,6 +39,11 @@ jobs:
           cp .env.example .env
           docker compose config --quiet
           docker compose build api
+          docker compose up -d --wait api
+          docker compose exec -T api python -c "from pathlib import Path; import sqlite3; db=sqlite3.connect('/data/ingest.sqlite3'); db.execute('CREATE TABLE IF NOT EXISTS ci_probe (id INTEGER PRIMARY KEY, value TEXT)'); db.execute('INSERT OR REPLACE INTO ci_probe VALUES (1, \'PERSISTED\')'); db.commit()"
+          docker compose restart api
+          docker compose exec -T api python -c "import sqlite3; db=sqlite3.connect('/data/ingest.sqlite3'); assert db.execute('SELECT value FROM ci_probe WHERE id=1').fetchone()[0]=='PERSISTED'"
+          docker compose down
           rm -f .env
       - name: Check latest research manifest and published session consistency
         shell: bash
