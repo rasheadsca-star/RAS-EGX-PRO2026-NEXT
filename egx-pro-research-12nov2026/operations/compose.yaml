@@ -1,0 +1,61 @@
+name: egx-pro-ingestion
+services:
+  api:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      EGX_DATA_DIR: /data
+      EGX_CONTAINER_INTERNAL_BIND: "1"
+    volumes:
+      - egx_data:/data
+    networks: [internal]
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8787/api/health',timeout=5)"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 30s
+  scheduler:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      EGX_DATA_DIR: /data
+      EGX_CONTAINER_INTERNAL_BIND: "1"
+    volumes:
+      - egx_data:/data
+    networks: [internal]
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["python", "scheduled_worker.py"]
+    security_opt:
+      - no-new-privileges:true
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      EGX_DOMAIN: ${EGX_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [internal]
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  egx_data:
+  caddy_data:
+  caddy_config:
+networks:
+  internal:
+    driver: bridge

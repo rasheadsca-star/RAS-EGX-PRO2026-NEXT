@@ -1,0 +1,16 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EGX PRO — الاستيراد الإداري</title><style>body{background:#081b2d;color:#e8f5ff;font:16px/1.8 Tahoma,Arial;margin:0}main{max-width:780px;margin:35px auto;padding:20px}.panel{padding:24px;background:#123047;border:1px solid #396582;border-radius:12px}input,button{padding:10px;border-radius:8px;font:inherit;max-width:100%;margin:6px}input{background:#082338;color:white;border:1px solid #638ba7}button{background:#17618a;color:white;border:1px solid #5da7db;cursor:pointer}.warn{background:#42371d;color:#ffe9bb;padding:12px;border-radius:8px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#062035;padding:12px;border-radius:8px}a{color:#9cdbff}</style></head><body><main><div class="panel"><h1>EGX PRO — استيراد تقرير البورصة</h1><p class="warn"><strong>مرحلة التخزين والتحقق فقط.</strong> كل تقرير يُحفظ على الخادم ثم يُفحص؛ لا يصدر هذا النظام توصيات معتمدة أو يحدّث موقع البحث العام. لا تشارك مفتاح التشغيل.</p><label for="key">مفتاح المشغّل الخاص (لا يُحفظ في المتصفح):</label><p><input id="key" type="password" autocomplete="off" placeholder="مفتاح التشغيل" size="40"></p><label for="pdf">النشرة الرسمية EGX بصيغة PDF:</label><p><input id="pdf" type="file" accept="application/pdf,.pdf"></p><button id="upload">رفع التقرير والتحقق منه وحفظه</button><button id="clear">مسح المفتاح من الصفحة</button><p id="status" role="status">جاهز لاستقبال ملف.</p><pre id="result">لم تُرسل بيانات بعد.</pre></div></main><script>
+const $=id=>document.getElementById(id);
+$('clear').addEventListener('click',()=>{$('key').value='';$('status').textContent='تم إخلاء المفتاح من الحقل.'});
+$('upload').addEventListener('click',async()=>{
+ const key=$('key').value, f=$('pdf').files?.[0];
+ if(key.length<32){$('status').textContent='أدخل مفتاح التشغيل الصحيح أولًا';return}
+ if(!f){$('status').textContent='اختر تقرير PDF';return}
+ if(f.size<20000||f.size>30*1024*1024){$('status').textContent='حجم التقرير خارج النطاق المسموح';return}
+ $('upload').disabled=true;$('status').textContent='جارٍ نقل الملف وفحصه على الخادم...';$('result').textContent='';
+ try{const response=await fetch('/api/ingest',{method:'POST',headers:{'Content-Type':'application/pdf','X-EGX-Upload-Key':key},body:f,cache:'no-store',credentials:'omit'});
+  const data=await response.json();if(!response.ok)throw Error(data.error||'تعذر الاستيراد');
+  $('status').textContent=data.duplicate?'الملف مسجل بالفعل — لم تتم إضافة نسخة مكررة':'تم استلام الملف وحفظه وعرض نتيجة التحقق. لا توجد توصيات معتمدة منشورة.';
+  $('result').textContent=JSON.stringify({session:data.session,sha256:data.sha,state:data.state,duplicate:data.duplicate,certified:data.certified,published:data.published,issues:data.validation?.errors||[],error:data.error||null},null,2);
+ }catch(e){$('status').textContent='خطأ: '+String(e.message||e)}finally{$('upload').disabled=false}
+});
+</script></body></html>
