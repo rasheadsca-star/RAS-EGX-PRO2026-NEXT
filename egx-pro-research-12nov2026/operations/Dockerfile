@@ -3,7 +3,7 @@ FROM python:3.12-slim-bookworm
 WORKDIR /app
 COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
 RUN groupadd --system egx && useradd --system --gid egx --home /app egx \
- && pip install --no-cache-dir pymupdf==1.26.5 \
+ && pip install --no-cache-dir pymupdf==1.26.5 tzdata \
  && mkdir -p /data && chown egx:egx /data
 COPY --chown=egx:egx . /app/
 USER egx
