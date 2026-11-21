@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: egx-pro-ingestion
+    runtime: docker
+    plan: starter
+    numInstances: 1
+    dockerfilePath: ./egx-pro-research-12nov2026/operations/Dockerfile
+    dockerContext: ./egx-pro-research-12nov2026/operations
+    dockerCommand: /bin/bash render-start.sh
+    healthCheckPath: /api/health
+    disk:
+      name: egx-ingestion
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: EGX_DATA_DIR
+        value: /data
+      - key: EGX_CONTAINER_INTERNAL_BIND
+        value: "1"
+      - key: EGX_UPLOAD_KEY
+        generateValue: true
+      - key: EGX_FETCH_ENABLED
+        value: "true"
+      - key: EGX_OFFICIAL_REPORT_URL
+        value: https://www.egx.com.eg/en/get_pdf.aspx?Lang=ENG&ID=1022
