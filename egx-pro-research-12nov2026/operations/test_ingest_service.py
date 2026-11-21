@@ -60,7 +60,8 @@ class TestIngestService(unittest.TestCase):
         handler=create_handler(self.folder,"X"*40)
         self.assertTrue(callable(handler))
         self.assertEqual(MAX_BYTES,30*1024*1024)
-        self.assertIsNotNone(get_status(self.folder/"ingest.sqlite3","a"*64) if (self.folder/"ingest.sqlite3").exists() else None) if False else None
+        init_database(self.folder/"ingest.sqlite3")
+        self.assertIsNone(get_status(self.folder/"ingest.sqlite3","a"*64))
 
 if __name__=="__main__":
     unittest.main()
