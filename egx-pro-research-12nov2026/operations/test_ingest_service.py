@@ -7,6 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 from ingest_service import ingest_bytes, init_database, get_status, create_handler, MAX_BYTES
 from ingest_cli import run as run_scheduled
+from scheduled_worker import next_schedule, run_once
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 class FakeResult:
     def __init__(self,returncode=0,stderr=""):
@@ -64,6 +67,22 @@ class TestIngestService(unittest.TestCase):
             result=run_scheduled(pdf,self.folder)
             mocked.assert_called_once_with(self.fake_pdf,"automatic_official_fetch",self.folder)
             self.assertEqual(result["state"],"QUARANTINED")
+    def test_cairo_schedule_skips_friday_saturday(self):
+        tz=ZoneInfo("Africa/Cairo")
+        friday=datetime(2026,11,20,12,0,tzinfo=tz)
+        self.assertEqual(next_schedule(friday).isoformat(),"2026-11-22T19:00:00+02:00")
+    def test_automatic_local_fixture_routes_to_shared_storage(self):
+        pdf=self.folder/"official.pdf"
+        pdf.write_bytes(self.fake_pdf)
+        with patch("scheduled_worker.ingest_local",return_value={"sha":"a"*64,"session":"2026-11-19","state":"QUARANTINED"}) as call:
+            value=run_once(source_file=pdf,storage=self.folder)
+            call.assert_called_once_with(pdf,self.folder)
+            self.assertEqual(value["mode"],"local-fixture")
+            self.assertFalse(value["published"])
+            self.assertFalse(value["certified"])
+    def test_missing_official_fetch_source_fails_closed(self):
+        with self.assertRaisesRegex(ValueError,"SOURCE_URL_NOT_CONFIGURED"):
+            run_once(storage=self.folder)
     def test_handler_requires_key_on_upload(self):
         handler=create_handler(self.folder,"X"*40)
         self.assertTrue(callable(handler))
