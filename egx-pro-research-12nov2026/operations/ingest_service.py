@@ -151,6 +151,18 @@ def create_handler(data_dir, upload_key):
             supplied = self.headers.get("X-EGX-Upload-Key", "")
             return bool(upload_key) and hmac.compare_digest(upload_key, supplied)
         def do_GET(self):
+            if self.path == "/admin":
+                page = (ROOT / "admin.html").read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-store")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("X-Frame-Options", "DENY")
+                self.send_header("Referrer-Policy", "no-referrer")
+                self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; form-action 'none'; base-uri 'none'")
+                self.send_header("Content-Length", str(len(page)))
+                self.end_headers()
+                return self.wfile.write(page)
             if self.path == "/api/health":
                 return self._json(200, {"state": "RUNNING", "publicationEnabled": False})
             if not self._authorized():
@@ -193,8 +205,11 @@ def main():
     key = os.environ.get("EGX_UPLOAD_KEY", "")
     if len(key) < 32:
         raise SystemExit("EGX_UPLOAD_KEY must be at least 32 characters")
-    if args.host not in ("127.0.0.1", "::1", "localhost"):
-        raise SystemExit("Bind to loopback only; use HTTPS reverse proxy with access control")
+    allowed = ("127.0.0.1", "::1", "localhost")
+    if os.environ.get("EGX_CONTAINER_INTERNAL_BIND") == "1":
+        allowed += ("0.0.0.0",)
+    if args.host not in allowed:
+        raise SystemExit("Bind loopback only or set EGX_CONTAINER_INTERNAL_BIND=1 inside an unexposed private container network")
     folder = os.environ.get("EGX_DATA_DIR")
     if not folder:
         raise SystemExit("EGX_DATA_DIR must point to persistent private storage")
