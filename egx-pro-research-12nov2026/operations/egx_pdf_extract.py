@@ -10,8 +10,13 @@ DATE_RE = re.compile(r"Trading\s+Date\s*:\s*(\d{2})/(\d{2})/(20\d{2})", re.I)
 NUM_RE = re.compile(r"^-?\d[\d,]*(?:\.\d+)?$")
 COLUMNS = {
     "referencePrice": (230, 284), "high": (286, 333), "low": (335, 385),
-    "close": (480, 533), "changePct": (533, 577), "valueTraded": (577, 649),
-    "volume": (694, 764)
+    # Kept in sync with manual-importer.mjs COLS (commit 934435594a /
+    # "Fix manual EGX PDF import returning zero valid rows on 19 November").
+    # The EGX bulletin's value-traded column starts at x=575 on some layouts
+    # (e.g. the 19-Nov-2026 report), not x=577 as previously assumed here;
+    # the old range also captured the adjacent "% of total value" column.
+    "close": (476, 533), "changePct": (532, 566), "valueTraded": (565, 643),
+    "volume": (680, 750)
 }
 
 def _number(value):
