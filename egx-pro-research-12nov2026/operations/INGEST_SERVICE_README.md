@@ -11,7 +11,7 @@ Current workflow:
 5. `validate-extraction.cjs` invokes the central `validator.cjs`, recording `validation.json`.
 6. The job remains **QUARANTINED / REVIEW_REQUIRED / VALIDATION_FAILED** and does *not* change `latest.json` or publish new scores.
 
-The same `ingest_bytes()` function is intended to be used by a future official automatic fetch adapter (not currently connected).
+The same `ingest_bytes()` function is used by `ingest_cli.py` for scheduled local files. The live EGX fetch scheduler is **not** yet connected to this persistent service, and the GitHub Actions artifact path remains temporary.
 
 ## Requirements
 - Python 3.12, PyMuPDF 1.26.5, Node 22
@@ -51,3 +51,11 @@ The response must say **published:false** and **certified:false**. Do not expose
 
 ## Important
 Do not publish raw ingestion errors or secrets. Treat all PDF and issuer text as untrusted input.
+
+## Scheduled ingestion via persistent host
+After downloading the official PDF to a private path and verifying the source, an operator/scheduler on **the same persistent host** can run:
+```bash
+export EGX_DATA_DIR=/secure/persistent/egx-pro
+python egx-pro-research-12nov2026/operations/ingest_cli.py /secure/incoming/egx-latest.pdf
+```
+This shares the same SQLite store and validator with the manual HTTP path. It **does not** advance latest.json. Do not run this on ephemeral GitHub Actions runners while claiming durable storage.
