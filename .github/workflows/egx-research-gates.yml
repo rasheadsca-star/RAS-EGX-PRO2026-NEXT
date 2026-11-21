@@ -32,6 +32,14 @@ jobs:
         run: cd egx-pro-research-12nov2026/operations && python -m unittest -v test_egx_pdf_extract.py
       - name: Test authenticated immutable staging service
         run: cd egx-pro-research-12nov2026/operations && python -m unittest -v test_ingest_service.py
+      - name: Validate persistent Docker stack configuration and build
+        shell: bash
+        run: |
+          cd egx-pro-research-12nov2026/operations
+          cp .env.example .env
+          docker compose config --quiet
+          docker compose build api
+          rm -f .env
       - name: Check latest research manifest and published session consistency
         shell: bash
         run: |
