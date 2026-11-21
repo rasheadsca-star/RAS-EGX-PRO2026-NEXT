@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from ingest_service import ingest_bytes, init_database, get_status, create_handler, MAX_BYTES
+from ingest_cli import run as run_scheduled
 
 class FakeResult:
     def __init__(self,returncode=0,stderr=""):
@@ -56,6 +57,13 @@ class TestIngestService(unittest.TestCase):
         self.assertEqual(a["state"],"VALIDATION_FAILED")
         self.assertIn("PDF_EXTRACT_FAILED",a["error"])
         self.assertFalse(a["published"])
+    def test_scheduled_and_manual_share_ingest_function(self):
+        pdf=self.folder/"latest.pdf"
+        pdf.write_bytes(self.fake_pdf)
+        with patch("ingest_cli.ingest_bytes", return_value={"sha":"a"*64,"state":"QUARANTINED"}) as mocked:
+            result=run_scheduled(pdf,self.folder)
+            mocked.assert_called_once_with(self.fake_pdf,"automatic_official_fetch",self.folder)
+            self.assertEqual(result["state"],"QUARANTINED")
     def test_handler_requires_key_on_upload(self):
         handler=create_handler(self.folder,"X"*40)
         self.assertTrue(callable(handler))
