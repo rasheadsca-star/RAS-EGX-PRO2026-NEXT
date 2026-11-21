@@ -1,52 +1,59 @@
-name: EGX Official Daily PDF — Fetch and Quarantine
+name: EGX official PDF intake
 on:
   schedule:
     - cron: '0 17 * * 0-4'
+  push:
+    branches: [main]
+    paths: ['egx-official-inbox/*.pdf']
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
+concurrency:
+  group: egx-official-persistent-intake
+  cancel-in-progress: false
 jobs:
-  fetch:
+  ingest:
+    if: github.event.repository.private == false && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install --disable-pip-version-check pymupdf==1.26.5
-      - name: Fetch official EGX 1022 PDF — staged only
-        id: fetch
-        continue-on-error: true
-        run: python egx-pro-research-12nov2026/operations/fetch_official.py --output ingest-staging/latest.pdf
-      - name: Parse PDF and run central validator (quarantine only)
-        id: validation
-        if: steps.fetch.outcome == 'success'
-        continue-on-error: true
-        shell: bash
+          cache: ''
+      - run: python -m pip install --no-cache-dir pymupdf==1.26.5
+      - name: Open persistent data branch
         run: |
-          python egx-pro-research-12nov2026/operations/egx_pdf_extract.py ingest-staging/latest.pdf --output ingest-staging/extracted.json
-          node egx-pro-research-12nov2026/operations/validate-extraction.cjs ingest-staging/extracted.json ingest-staging/validation.json
-      - name: Report fetch status
-        if: always()
-        shell: bash
-        run: |
-          if [ "${{ steps.fetch.outcome }}" = "success" ]; then
-            echo '### Official EGX PDF downloaded and sent to quarantine validation.' >> "$GITHUB_STEP_SUMMARY"
-            cat ingest-staging/latest.pdf.json >> "$GITHUB_STEP_SUMMARY"
-            if [ -f ingest-staging/validation.json ]; then cat ingest-staging/validation.json >> "$GITHUB_STEP_SUMMARY"; fi
+          set -eu
+          if git ls-remote --exit-code --heads origin refs/heads/egx-official-data; then
+            git fetch --depth=1 origin refs/heads/egx-official-data
+            git worktree add -b egx-official-data "$RUNNER_TEMP/ledger" FETCH_HEAD
           else
-            echo '### UPLOAD_REQUIRED — official EGX fetch failed or produced no new valid PDF.' >> "$GITHUB_STEP_SUMMARY"
-            echo 'Use the browser manual-preview importer. No recommendations were changed.' >> "$GITHUB_STEP_SUMMARY"
+            code=$?
+            test "$code" = 2
+            git worktree add --detach "$RUNNER_TEMP/ledger" HEAD
+            git -C "$RUNNER_TEMP/ledger" checkout --orphan egx-official-data
+            git -C "$RUNNER_TEMP/ledger" rm -rqf .
           fi
-      - uses: actions/upload-artifact@v4
-        if: steps.fetch.outcome == 'success'
-        with:
-          name: egx-official-pdf-staging
-          path: ingest-staging/
-          retention-days: 14
-      - name: Fail workflow when source or validation fails; never publish from staging
-        if: steps.fetch.outcome != 'success' || steps.validation.outcome != 'success'
+      - name: Import operator uploads and official download
+        id: intake
+        continue-on-error: true
+        env:
+          EGX_DATA_DIR: ${{ runner.temp }}/ledger
         run: |
-          echo 'RESEARCH ONLY / UPLOAD_REQUIRED OR VALIDATION_BLOCKED. No latest.json or signals changed.'
-          exit 1
+          python egx-pro-research-12nov2026/operations/github_intake.py
+      - name: Persist completed imports
+        run: |
+          cd "$RUNNER_TEMP/ledger"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record official EGX bulletin intake'
+            git push origin HEAD:refs/heads/egx-official-data
+          fi
+      - if: steps.intake.outcome != 'success'
+        run: exit 1
