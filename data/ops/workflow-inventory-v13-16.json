@@ -1,22 +1,22 @@
 {
   "schemaVersion": "13.16.0",
-  "generatedAt": "2026-11-19T15:00:06.604Z",
+  "generatedAt": "2026-11-22T13:52:23.083Z",
   "auditMode": "REPORT_ONLY",
   "automaticArchiveEnabled": false,
   "primaryWorkflow": ".github/workflows/v13-17-full-market-search-money-flow.yml",
   "counts": {
-    "total": 214,
-    "scheduled": 16,
-    "scheduledLegacy": 16,
+    "total": 215,
+    "scheduled": 17,
+    "scheduledLegacy": 17,
     "pageDeployers": 39,
-    "repositoryWriters": 121,
+    "repositoryWriters": 122,
     "emergency": 3
   },
   "status": "WARNING",
   "warnings": [
-    "16 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
+    "17 legacy/auxiliary workflow(s) still have schedules and may update data independently.",
     "39 workflows can deploy GitHub Pages.",
-    "121 workflows can write to the repository."
+    "122 workflows can write to the repository."
   ],
   "scheduledLegacy": [
     {
@@ -66,6 +66,13 @@
       "name": "EGX Independent Historical Data Recovery",
       "schedules": [
         "45 17 * * 0-4"
+      ]
+    },
+    {
+      "filename": "egx-official-daily-fetch.yml",
+      "name": "EGX official PDF intake",
+      "schedules": [
+        "0 17 * * 0-4"
       ]
     },
     {
@@ -985,6 +992,22 @@
       "hasWorkflowDispatch": true,
       "hasPush": false,
       "deploysPages": true,
+      "writesRepository": true,
+      "classification": "LEGACY_OR_AUXILIARY"
+    },
+    {
+      "filename": "egx-official-daily-fetch.yml",
+      "relativePath": ".github/workflows/egx-official-daily-fetch.yml",
+      "name": "EGX official PDF intake",
+      "isPrimary": false,
+      "isEmergency": false,
+      "hasSchedule": true,
+      "schedules": [
+        "0 17 * * 0-4"
+      ],
+      "hasWorkflowDispatch": true,
+      "hasPush": true,
+      "deploysPages": false,
       "writesRepository": true,
       "classification": "LEGACY_OR_AUXILIARY"
     },
